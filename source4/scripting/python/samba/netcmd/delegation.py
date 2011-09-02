@@ -56,9 +56,12 @@ def _get_user_realm_domain(user):
         realm = m.group(2)
     return (baseuser.lower(), domain, realm.upper())
 
+
+
 class cmd_delegation_show(Command):
     """Show the delegation setting of an account."""
-    synopsis = "%prog delegation show <accountname>"
+    
+    synopsis = "%prog delegation show <accountname> [options]"
 
     takes_args = ["accountname"]
 
@@ -97,9 +100,12 @@ class cmd_delegation_show(Command):
             for a in allowed:
                 print "msDS-AllowedToDelegateTo: %s" % (str(a))
 
+
+
 class cmd_delegation_for_any_service(Command):
     """Set/unset UF_TRUSTED_FOR_DELEGATION for an account."""
-    synopsis = "%prog delegation for-any-service <accountname> on|off"
+
+    synopsis = "%prog delegation for-any-service <accountname> [(on|off)] [options]"
 
     takes_args = ["accountname", "onoff"]
 
@@ -129,9 +135,12 @@ class cmd_delegation_for_any_service(Command):
         except Exception, err:
             raise CommandError(err)
 
+
+
 class cmd_delegation_for_any_protocol(Command):
     """Set/unset UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION (S4U2Proxy) for an account."""
-    synopsis = "%prog delegation for-any-protocol <accountname> on|off"
+
+    synopsis = "%prog delegation for-any-protocol <accountname> [(on|off)] [options]"
 
     takes_args = ["accountname", "onoff"]
 
@@ -161,9 +170,12 @@ class cmd_delegation_for_any_protocol(Command):
         except Exception, err:
             raise CommandError(err)
 
+
+
 class cmd_delegation_add_service(Command):
     """Add a service principal as msDS-AllowedToDelegateTo"""
-    synopsis = "%prog delegation add-service  <accountname> <principal>"
+
+    synopsis = "%prog delegation add-service <accountname> <principal> [options]"
 
     takes_args = ["accountname", "principal"]
 
@@ -194,9 +206,12 @@ class cmd_delegation_add_service(Command):
         except Exception, err:
             raise CommandError(err)
 
+
+
 class cmd_delegation_del_service(Command):
-    """Add a service principal as msDS-AllowedToDelegateTo"""
-    synopsis = "%prog delegation del-service  <accountname> <principal>"
+    """Delete a service principal as msDS-AllowedToDelegateTo"""
+
+    synopsis = "%prog delegation del-service <accountname> <principal> [options]"
 
     takes_args = ["accountname", "principal"]
 
@@ -227,8 +242,10 @@ class cmd_delegation_del_service(Command):
         except Exception, err:
             raise CommandError(err)
 
+
+
 class cmd_delegation(SuperCommand):
-    """Delegation management *"""
+    """Delegation management"""
 
     subcommands = {}
     subcommands["show"] = cmd_delegation_show()
