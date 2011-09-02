@@ -32,6 +32,8 @@ from samba.netcmd import (
     Option
     )
 
+
+
 def _get_user_realm_domain(user):
     """ get the realm or the domain and the base user
         from user like:
@@ -39,6 +41,7 @@ def _get_user_realm_domain(user):
         * DOMAIN\username
         * username@REALM
     """
+    
     baseuser = user
     realm = ""
     domain = ""
@@ -53,9 +56,12 @@ def _get_user_realm_domain(user):
         realm = m.group(2)
     return (baseuser.lower(), domain, realm.upper())
 
+
+
 class cmd_spn_list(Command):
     """List spns of a given user."""
-    synopsis = "%prog spn list <user>"
+
+    synopsis = "%prog spn list <user> [options]"
 
     takes_args = ["user"]
 
@@ -80,15 +86,17 @@ class cmd_spn_list(Command):
                 print "User %s has the following servicePrincipalName: " %  str(res[0].dn)
                 for e in spns:
                     print "\t %s" % (str(e))
-
             else:
                 print "User %s has no servicePrincipalName" % str(res[0].dn)
         else:
             raise CommandError("User %s not found" % user)
 
+
+
 class cmd_spn_add(Command):
     """Create a new spn."""
-    synopsis = "%prog spn add [--force] <name> <user>"
+
+    synopsis = "%prog spn add <name> <user> [options]"
 
     takes_options = [
         Option("--force", help="Force the addition of the spn"\
@@ -139,9 +147,11 @@ class cmd_spn_add(Command):
             raise CommandError("User %s not found" % user)
 
 
+
 class cmd_spn_delete(Command):
     """Delete a spn."""
-    synopsis = "%prog spn delete <name> [user]"
+
+    synopsis = "%prog spn delete <name> [user] [options]"
 
     takes_args = ["name", "user?"]
 
@@ -191,8 +201,10 @@ class cmd_spn_delete(Command):
         else:
             raise CommandError("Service principal %s not affected" % name)
 
+
+
 class cmd_spn(SuperCommand):
-    """Service Principal Name (SPN) management *"""
+    """Service Principal Name (SPN) management"""
 
     subcommands = {}
     subcommands["add"] = cmd_spn_add()
