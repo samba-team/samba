@@ -60,5 +60,25 @@ Troubleshooting
 
  +  After installing or restarting the agent, the PMCD log file
     ($PCP_LOG_DIR/pmcd/pmcd.log) and the PMDA log file
-    ($PCP_LOG_DIR/pmcd/ctdb.log) should be checked for any warnings
+    ($PCP_LOG_DIR/pmcd/pmda_ctdb.log) should be checked for any warnings
     or errors.
+
+
+Adding a New Metric
+===================
+
+This section walks through the development task of adding a new metric to the
+CTDB PMDA.
+
+  + Define the metric in the pmns file with a unique metric id. See the pmns(4)
+    man page for details.
+
+  + Add a description of the metric to the help file.
+
+  + Taking note of the previously assigned metric id, add a new entry to the
+    metrictab structure in pmda_ctdb.c. See the pmdaInit(3) man page for
+    details.
+
+  + Ensure the counter is already a member of the ctdb_statistics structure.
+    Finally, add code to pmda_ctdb_fetch_cb() to handle fetch requests for the
+    newly defined metric.
