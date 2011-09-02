@@ -929,6 +929,9 @@ restart_ctdb ()
 	    continue
 	fi
 
+	echo "Doing a sync..."
+	onnode -q 0 $CTDB sync
+
 	echo "ctdb is ready"
 	return 0
     done
