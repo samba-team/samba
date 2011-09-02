@@ -1010,6 +1010,12 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	struct ctdb_client *client = NULL;
 
+	if (ctdb->tunable.allow_client_db_attach == 0) {
+		DEBUG(DEBUG_ERR, ("DB Attach to database %s denied by tunable "
+				  "AllowClientDBAccess == 0\n", db_name));
+		return -1;
+	}
+
 	/* dont allow any local clients to attach while we are in recovery mode
 	 * except for the recovery daemon.
 	 * allow all attach from the network since these are always from remote

@@ -121,6 +121,7 @@ struct ctdb_tunable {
 	uint32_t deferred_attach_timeout;
 	uint32_t vacuum_fast_path_count;
 	uint32_t lcp2_public_ip_assignment;
+	uint32_t allow_client_db_attach;
 };
 
 /*
