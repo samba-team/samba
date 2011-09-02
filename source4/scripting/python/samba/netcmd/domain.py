@@ -52,7 +52,8 @@ from samba.dsdb import (
 
 class cmd_domain_export_keytab(Command):
     """Dumps kerberos keys of the domain into a keytab"""
-    synopsis = "%prog domain exportkeytab <keytab>"
+
+    synopsis = "%prog domain exportkeytab <keytab> [options]"
 
     takes_options = [
         ]
@@ -67,9 +68,9 @@ class cmd_domain_export_keytab(Command):
 
 
 class cmd_domain_join(Command):
-    """Joins domain as either member or backup domain controller [server connection needed]"""
+    """Joins domain as either member or backup domain controller *"""
 
-    synopsis = "%prog domain join <dnsdomain> [DC | RODC | MEMBER] [options]"
+    synopsis = "%prog domain join <dnsdomain> [DC|RODC|MEMBER] [options]"
 
     takes_options = [
         Option("--server", help="DC to join", type=str),
@@ -115,14 +116,14 @@ class cmd_domain_join(Command):
                       domain_critical_only=domain_critical_only)
             return
         else:
-            raise CommandError("Invalid role %s (possible values: MEMBER, BDC, RODC)" % role)
+            raise CommandError("Invalid role %s (possible values: MEMBER, DC, RODC)" % role)
 
 
 
 class cmd_domain_level(Command):
     """Raises domain and forest function levels"""
 
-    synopsis = "%prog domain level (show | raise <options>)"
+    synopsis = "%prog domain level (show|raise <options>) [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -308,7 +309,7 @@ class cmd_domain_level(Command):
 class cmd_domain_machinepassword(Command):
     """Gets a machine password out of our SAM"""
 
-    synopsis = "%prog domain machinepassword <accountname>"
+    synopsis = "%prog domain machinepassword <accountname> [options]"
 
     takes_args = ["secret"]
 
@@ -339,7 +340,7 @@ class cmd_domain_passwordsettings(Command):
     and maximum password age) on a Samba4 server.
     """
 
-    synopsis = "%prog domain passwordsettings (show | set <options>)"
+    synopsis = "%prog domain passwordsettings (show|set <options>) [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
