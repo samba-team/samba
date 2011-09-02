@@ -36,6 +36,8 @@ from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
 import common
 
+
+
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
     binding_options = "seal"
@@ -49,6 +51,7 @@ def drsuapi_connect(ctx):
         raise CommandError("DRS connection to %s failed" % ctx.server, e)
 
 
+
 def samdb_connect(ctx):
     '''make a ldap connection to the server'''
     try:
@@ -59,6 +62,7 @@ def samdb_connect(ctx):
         raise CommandError("LDAP connection to %s failed" % ctx.server, e)
 
 
+
 def drs_errmsg(werr):
     '''return "was successful" or an error string'''
     (ecode, estring) = werr
@@ -67,11 +71,13 @@ def drs_errmsg(werr):
     return "failed, result %u (%s)" % (ecode, estring)
 
 
+
 def attr_default(msg, attrname, default):
     '''get an attribute from a ldap msg with a default'''
     if attrname in msg:
         return msg[attrname][0]
     return default
+
 
 
 def drs_parse_ntds_dn(ntds_dn):
@@ -84,16 +90,18 @@ def drs_parse_ntds_dn(ntds_dn):
     return (site, server)
 
 
+
 def get_dsServiceName(samdb):
     '''get the NTDS DN from the rootDSE'''
     res = samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
     return res[0]["dsServiceName"][0]
 
 
+
 class cmd_drs_showrepl(Command):
     """show replication status"""
 
-    synopsis = "%prog drs showrepl <DC> [options]"
+    synopsis = "%prog drs showrepl [<DC>] [options]"
 
     takes_args = ["DC?"]
 
@@ -122,7 +130,6 @@ class cmd_drs_showrepl(Command):
         except Exception, e:
             raise CommandError("DsReplicaGetInfo of type %u failed" % info_type, e)
         return (info_type, info)
-
 
     def run(self, DC=None, sambaopts=None,
             credopts=None, versionopts=None, server=None):
@@ -195,10 +202,11 @@ class cmd_drs_showrepl(Command):
                         self.message("\t\t\t%s" % s)
 
 
+
 class cmd_drs_kcc(Command):
     """trigger knowledge consistency center run"""
 
-    synopsis = "%prog drs kcc <DC> [options]"
+    synopsis = "%prog drs kcc [<DC>] [options]"
 
     takes_args = ["DC?"]
 
@@ -222,8 +230,10 @@ class cmd_drs_kcc(Command):
         self.message("Consistency check on %s successful." % DC)
 
 
+
 def drs_local_replicate(self, SOURCE_DC, NC):
     '''replicate from a source DC to the local SAM'''
+
     self.server = SOURCE_DC
     drsuapi_connect(self)
 
@@ -328,7 +338,7 @@ class cmd_drs_replicate(Command):
 class cmd_drs_bind(Command):
     """show DRS capabilities of a server"""
 
-    synopsis = "%prog drs bind <DC> [options]"
+    synopsis = "%prog drs bind [<DC>] [options]"
 
     takes_args = ["DC?"]
 
@@ -421,14 +431,13 @@ class cmd_drs_bind(Command):
 class cmd_drs_options(Command):
     """query or change 'options' for NTDS Settings object of a domain controller"""
 
-    synopsis = ("%prog drs options <DC>"
-                " [--dsa-option={+|-}IS_GC | {+|-}DISABLE_INBOUND_REPL"
-                " |{+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE] [options]")
+    synopsis = ("%prog drs options [<DC>] [options]")
 
     takes_args = ["DC?"]
 
     takes_options = [
-        Option("--dsa-option", help="DSA option to enable/disable", type="str"),
+        Option("--dsa-option", help="DSA option to enable/disable", type="str",
+               metavar="{+|-}IS_GC | {+|-}DISABLE_INBOUND_REPL | {+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE" ),
         ]
 
     option_map = {"IS_GC": 0x00000001,
