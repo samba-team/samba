@@ -39,7 +39,12 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
 	-DLOGDIR=\"$(logdir)\" \
-	-DUSE_MMAP=1 -DTEVENT_DEPRECATED_QUIET=1 @CFLAGS@ -Wno-format-zero-length $(POPT_CFLAGS)
+	-DUSE_MMAP=1 -DTEVENT_DEPRECATED_QUIET=1 @CFLAGS@ -Wno-format-zero-length $(POPT_CFLAGS) \
+	-fPIC
+
+LDSHFLAGS=-fPIC -shared
+#LDSHFLAGS=-fPIC -shared -Wl,-Bsymbolic -Wl,-z,relo -Wl,-Bsymbolic-funtions -Wl,--as-needed -Wl,-z,defs
+SHLD=${CC} ${CFLAGS} ${LDSHFLAGS} -o $@
 
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@ @CTDB_PCAP_LDFLAGS@
 
@@ -124,6 +129,15 @@ libctdb/libctdb.a: $(CTDB_LIB_OBJ)
 	-rm -f libctdb.a
 	@$(AR) $(ARFLAGS) libctdb/libctdb.a $(CTDB_LIB_OBJ)
 	@$(RANLIB) libctdb/libctdb.a
+
+libctdb/libctdb.so.0: $(CTDB_LIB_OBJ)
+	@echo Linking $@
+	@$(SHLD) -Wl,-soname=libctdb.so.0 $(CTDB_LIB_OBJ)
+
+libctdb/libctdb.so: libctdb/libctdb.so.0
+	@echo Creating $@
+	-@rm -f libctdb/libctdb.so
+	@ln -s libctdb.so.0 libctdb/libctdb.so
 
 bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o 
 	@echo Linking $@
