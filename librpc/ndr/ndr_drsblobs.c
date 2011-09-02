@@ -32,7 +32,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_AuthenticationInformationArray(struct ndr_pu
 		for (cntr_array_0 = 0; cntr_array_0 < r->count; cntr_array_0++) {
 			NDR_CHECK(ndr_push_AuthenticationInformation(ndr, NDR_SCALARS, &r->array[cntr_array_0]));
 		}
-		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+		NDR_CHECK(ndr_push_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -51,7 +51,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AuthenticationInformationArray(struct ndr_pu
 			NDR_CHECK(ndr_pull_AuthenticationInformation(ndr, NDR_SCALARS, &r->array[r->count]));
 			r->count++;
 		}
-		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+		NDR_CHECK(ndr_pull_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -64,12 +64,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, (r->count > 0)?12:0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, (r->count > 0)?12 + ndr_size_AuthenticationInformationArray(&r->current, ndr_flags):0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, (r->count > 0)?12 + ndr_size_AuthenticationInformationArray(&r->current, 0):0));
 		{
 			struct ndr_push *_ndr_current;
-			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_current, 0, ((r->count > 0)?12 + ndr_size_AuthenticationInformationArray(&r->current, ndr_flags):0) - ((r->count > 0)?12:0)));
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_current, 0, ((r->count > 0)?12 + ndr_size_AuthenticationInformationArray(&r->current, 0):0) - ((r->count > 0)?12:0)));
 			NDR_CHECK(ndr_push_AuthenticationInformationArray(_ndr_current, NDR_SCALARS, &r->current));
-			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_current, 0, ((r->count > 0)?12 + ndr_size_AuthenticationInformationArray(&r->current, ndr_flags):0) - ((r->count > 0)?12:0)));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_current, 0, ((r->count > 0)?12 + ndr_size_AuthenticationInformationArray(&r->current, 0):0) - ((r->count > 0)?12:0)));
 		}
 		{
 			uint32_t _flags_save_AuthenticationInformationArray = ndr->flags;
