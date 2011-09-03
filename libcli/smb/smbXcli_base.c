@@ -139,6 +139,7 @@ struct smbXcli_session {
 struct smbXcli_req_state {
 	struct tevent_context *ev;
 	struct smbXcli_conn *conn;
+	struct smbXcli_session *session; /* maybe NULL */
 
 	uint8_t length_hdr[4];
 
@@ -188,6 +189,8 @@ struct smbXcli_req_state {
 		struct iovec *recv_iov;
 
 		uint16_t credit_charge;
+
+		bool signing_skipped;
 	} smb2;
 };
 
@@ -2101,6 +2104,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	nbt_len = 0;
 
 	for (i=0; i<num_reqs; i++) {
+		int hdr_iov;
 		size_t reqlen;
 		bool ret;
 		uint64_t avail;
@@ -2160,6 +2164,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT, credits);
 		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 
+		hdr_iov = num_iov;
 		iov[num_iov].iov_base = state->smb2.hdr;
 		iov[num_iov].iov_len  = sizeof(state->smb2.hdr);
 		num_iov += 1;
@@ -2190,15 +2195,21 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		}
 		nbt_len += reqlen;
 
+		if (state->session && state->session->smb2.should_sign) {
+			NTSTATUS status;
+
+			status = smb2_signing_sign_pdu(state->session->smb2.signing_key,
+						       &iov[hdr_iov], num_iov - hdr_iov);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+
 		ret = smbXcli_req_set_pending(reqs[i]);
 		if (!ret) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
-
-	/*
-	 * TODO: Do signing here
-	 */
 
 	state = tevent_req_data(reqs[0], struct smbXcli_req_state);
 	_smb_setlen_tcp(state->length_hdr, nbt_len);
@@ -2413,6 +2424,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	int i, num_iov;
 	NTSTATUS status;
 	bool defer = true;
+	struct smbXcli_session *last_session = NULL;
 
 	status = smb2cli_inbuf_parse_compound(inbuf, tmp_mem,
 					      &iov, &num_iov);
@@ -2428,8 +2440,11 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		uint32_t flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 		uint16_t req_opcode;
+		uint32_t req_flags;
 		uint16_t credits = SVAL(inhdr, SMB2_HDR_CREDIT);
 		uint32_t new_credits;
+		struct smbXcli_session *session = NULL;
+		const DATA_BLOB *signing_key = NULL;
 
 		new_credits = conn->smb2.cur_credits;
 		new_credits += credits;
@@ -2448,6 +2463,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		if (opcode != req_opcode) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
+		req_flags = SVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
 
 		if (!(flags & SMB2_HDR_FLAG_REDIRECT)) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -2456,13 +2472,127 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		status = NT_STATUS(IVAL(inhdr, SMB2_HDR_STATUS));
 		if ((flags & SMB2_HDR_FLAG_ASYNC) &&
 		    NT_STATUS_EQUAL(status, STATUS_PENDING)) {
-			uint32_t req_flags = IVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
 			uint64_t async_id = BVAL(inhdr, SMB2_HDR_ASYNC_ID);
 
+			/*
+			 * async interim responses are not signed,
+			 * even if the SMB2_HDR_FLAG_SIGNED flag
+			 * is set.
+			 */
 			req_flags |= SMB2_HDR_FLAG_ASYNC;
 			SBVAL(state->smb2.hdr, SMB2_HDR_FLAGS, req_flags);
 			SBVAL(state->smb2.hdr, SMB2_HDR_ASYNC_ID, async_id);
 			continue;
+		}
+
+		session = state->session;
+		if (req_flags & SMB2_HDR_FLAG_CHAINED) {
+			session = last_session;
+		}
+		last_session = session;
+
+		if (session && session->smb2.should_sign) {
+			if (!(flags & SMB2_HDR_FLAG_SIGNED)) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
+		}
+
+		if (flags & SMB2_HDR_FLAG_SIGNED) {
+			uint64_t uid = BVAL(inhdr, SMB2_HDR_SESSION_ID);
+
+			if (session == NULL) {
+				struct smbXcli_session *s;
+
+				s = state->conn->sessions;
+				for (; s; s = s->next) {
+					if (s->smb2.session_id != uid) {
+						continue;
+					}
+
+					session = s;
+					break;
+				}
+			}
+
+			if (session == NULL) {
+				return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			}
+
+			last_session = session;
+			signing_key = &session->smb2.signing_key;
+		}
+
+		if ((opcode == SMB2_OP_SESSSETUP) &&
+		     NT_STATUS_IS_OK(status)) {
+			/*
+			 * the caller has to check the signing
+			 * as only the caller knows the correct
+			 * session key
+			 */
+			signing_key = NULL;
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
+			/*
+			 * if the server returns NT_STATUS_USER_SESSION_DELETED
+			 * the response is not signed and we should
+			 * propagate the NT_STATUS_USER_SESSION_DELETED
+			 * status to the caller.
+			 */
+			if (signing_key) {
+				signing_key = NULL;
+			}
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			/*
+			 * if the server returns
+			 * NT_STATUS_NETWORK_NAME_DELETED
+			 * NT_STATUS_FILE_CLOSED
+			 * NT_STATUS_INVALID_PARAMETER
+			 * the response might not be signed
+			 * as this happens before the signing checks.
+			 *
+			 * If server echos the signature (or all zeros)
+			 * we should report the status from the server
+			 * to the caller.
+			 */
+			if (signing_key) {
+				int cmp;
+
+				cmp = memcmp(inhdr+SMB2_HDR_SIGNATURE,
+					     state->smb2.hdr+SMB2_HDR_SIGNATURE,
+					     16);
+				if (cmp == 0) {
+					state->smb2.signing_skipped = true;
+					signing_key = NULL;
+				}
+			}
+			if (signing_key) {
+				int cmp;
+				static const uint8_t zeros[16];
+
+				cmp = memcmp(inhdr+SMB2_HDR_SIGNATURE,
+					     zeros,
+					     16);
+				if (cmp == 0) {
+					state->smb2.signing_skipped = true;
+					signing_key = NULL;
+				}
+			}
+		}
+
+		if (signing_key) {
+			status = smb2_signing_check_pdu(*signing_key, cur, 3);
+			if (!NT_STATUS_IS_OK(status)) {
+				/*
+				 * If the signing check fails, we disconnect
+				 * the connection.
+				 */
+				return status;
+			}
 		}
 
 		smbXcli_req_unset_pending(req);
@@ -2563,6 +2693,15 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	if (!found_status) {
 		return status;
+	}
+
+	if (state->smb2.signing_skipped) {
+		if (num_expected > 0) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		if (!NT_STATUS_IS_ERR(status)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if (!found_size) {
