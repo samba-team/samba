@@ -22,6 +22,7 @@
 #define _SMBXCLI_BASE_H_
 
 struct smbXcli_conn;
+struct smbXcli_session;
 struct smb_trans_enc_state;
 struct GUID;
 
@@ -192,5 +193,16 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 			 uint32_t timeout_msec,
 			 enum protocol_types min_protocol,
 			 enum protocol_types max_protocol);
+
+struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
+					       struct smbXcli_conn *conn);
+uint8_t smb2cli_session_security_mode(struct smbXcli_session *session);
+uint64_t smb2cli_session_current_id(struct smbXcli_session *session);
+void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
+				      uint64_t session_id,
+				      uint16_t session_flags);
+NTSTATUS smb2cli_session_update_session_key(struct smbXcli_session *session,
+					    const DATA_BLOB session_key,
+					    const struct iovec *recv_iov);
 
 #endif /* _SMBXCLI_BASE_H_ */

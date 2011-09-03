@@ -24,12 +24,17 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/tevent_unix.h"
 #include "lib/util/util_net.h"
+#include "lib/util/dlinklist.h"
 #include "../libcli/smb/smb_common.h"
 #include "../libcli/smb/smb_seal.h"
 #include "../libcli/smb/smb_signing.h"
 #include "../libcli/smb/read_smb.h"
 #include "smbXcli_base.h"
 #include "librpc/ndr/libndr.h"
+
+struct smbXcli_conn;
+struct smbXcli_req;
+struct smbXcli_session;
 
 struct smbXcli_conn {
 	int fd;
@@ -114,6 +119,21 @@ struct smbXcli_conn {
 		uint16_t cur_credits;
 		uint16_t max_credits;
 	} smb2;
+
+	struct smbXcli_session *sessions;
+};
+
+struct smbXcli_session {
+	struct smbXcli_session *prev, *next;
+	struct smbXcli_conn *conn;
+
+	struct {
+		uint64_t session_id;
+		uint16_t session_flags;
+		DATA_BLOB signing_key;
+		DATA_BLOB session_key;
+		bool should_sign;
+	} smb2;
 };
 
 struct smbXcli_req_state {
@@ -177,6 +197,11 @@ static int smbXcli_conn_destructor(struct smbXcli_conn *conn)
 	 * NT_STATUS_OK, means we do not notify the callers
 	 */
 	smbXcli_conn_disconnect(conn, NT_STATUS_OK);
+
+	while (conn->sessions) {
+		conn->sessions->conn = NULL;
+		DLIST_REMOVE(conn->sessions, conn->sessions);
+	}
 
 	if (conn->smb1.trans_enc) {
 		common_free_encryption_state(&conn->smb1.trans_enc);
@@ -3390,4 +3415,119 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
  fail:
 	TALLOC_FREE(frame);
 	return status;
+}
+
+static int smbXcli_session_destructor(struct smbXcli_session *session)
+{
+	if (session->conn == NULL) {
+		return 0;
+	}
+
+	DLIST_REMOVE(session->conn->sessions, session);
+	return 0;
+}
+
+struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
+					       struct smbXcli_conn *conn)
+{
+	struct smbXcli_session *session;
+
+	session = talloc_zero(mem_ctx, struct smbXcli_session);
+	if (session == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(session, smbXcli_session_destructor);
+
+	DLIST_ADD_END(conn->sessions, session, struct smbXcli_session *);
+	session->conn = conn;
+
+	return session;
+}
+
+uint8_t smb2cli_session_security_mode(struct smbXcli_session *session)
+{
+	struct smbXcli_conn *conn = session->conn;
+	uint8_t security_mode = 0;
+
+	if (conn == NULL) {
+		return security_mode;
+	}
+
+	security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
+	if (conn->mandatory_signing) {
+		security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
+	}
+
+	return security_mode;
+}
+
+uint64_t smb2cli_session_current_id(struct smbXcli_session *session)
+{
+	return session->smb2.session_id;
+}
+
+void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
+				      uint64_t session_id,
+				      uint16_t session_flags)
+{
+	session->smb2.session_id = session_id;
+	session->smb2.session_flags = session_flags;
+}
+
+NTSTATUS smb2cli_session_update_session_key(struct smbXcli_session *session,
+					    const DATA_BLOB session_key,
+					    const struct iovec *recv_iov)
+{
+	struct smbXcli_conn *conn = session->conn;
+	uint16_t no_sign_flags;
+	DATA_BLOB signing_key;
+	NTSTATUS status;
+
+	if (conn == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	no_sign_flags = SMB2_SESSION_FLAG_IS_GUEST | SMB2_SESSION_FLAG_IS_NULL;
+
+	if (session->smb2.session_flags & no_sign_flags) {
+		session->smb2.should_sign = false;
+		return NT_STATUS_OK;
+	}
+
+	if (session->smb2.signing_key.length > 0) {
+		signing_key = session->smb2.signing_key;
+	} else {
+		signing_key = session_key;
+	}
+
+	status = smb2_signing_check_pdu(signing_key, recv_iov, 3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	session->smb2.session_key = data_blob_dup_talloc(session, session_key);
+	if (session->smb2.session_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (session->smb2.signing_key.length > 0) {
+		return NT_STATUS_OK;
+	}
+
+	session->smb2.signing_key = data_blob_dup_talloc(session, signing_key);
+	if (session->smb2.signing_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session->smb2.should_sign = false;
+
+	if (conn->desire_signing) {
+		session->smb2.should_sign = true;
+	}
+
+	if (conn->smb2.server.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
+		session->smb2.should_sign = true;
+	}
+
+	return NT_STATUS_OK;
 }
