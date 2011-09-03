@@ -252,10 +252,14 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	for (i=0; i<num_reqs; i++) {
 		size_t reqlen;
 		bool ret;
+		uint64_t mid;
 
 		state = tevent_req_data(reqs[i], struct smb2cli_req_state);
 
-		SBVAL(state->hdr, SMB2_HDR_MESSAGE_ID, state->cli->smb2.mid++);
+		mid = state->cli->smb2.mid;
+		state->cli->smb2.mid += 1;
+
+		SBVAL(state->hdr, SMB2_HDR_MESSAGE_ID, mid);
 
 		iov[num_iov].iov_base = state->hdr;
 		iov[num_iov].iov_len  = sizeof(state->hdr);
