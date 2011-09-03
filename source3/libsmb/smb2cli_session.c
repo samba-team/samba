@@ -25,6 +25,7 @@
 #include "libsmb/proto.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "../libcli/auth/spnego.h"
+#include "../libcli/auth/ntlmssp.h"
 
 struct smb2cli_sesssetup_blob_state {
 	struct ntlmssp_state *ntlmssp;
@@ -170,6 +171,8 @@ struct tevent_req *smb2cli_sesssetup_send(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto post_status;
 	}
+	ntlmssp_want_feature(state->ntlmssp,
+			     NTLMSSP_FEATURE_SESSION_KEY);
 	status = ntlmssp_set_username(state->ntlmssp, user);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto post_status;
