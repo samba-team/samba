@@ -31,7 +31,7 @@ static inline struct tevent_req *cli_state_smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    uint32_t timeout_msec,
 				    uint32_t pid,
 				    uint32_t tid,
-				    uint64_t uid,
+				    struct smbXcli_session *session,
 				    const uint8_t *fixed,
 				    uint16_t fixed_len,
 				    const uint8_t *dyn,
@@ -53,7 +53,7 @@ static inline struct tevent_req *cli_state_smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				cli->smb2.conn, cmd,
 				additional_flags, clear_flags,
 				timeout_msec,
-				pid, tid, uid,
+				pid, tid, session,
 				fixed, fixed_len,
 				dyn, dyn_len);
 }
@@ -61,12 +61,12 @@ static inline struct tevent_req *cli_state_smb2cli_req_send(TALLOC_CTX *mem_ctx,
 #define smb2cli_req_send(mem_ctx, ev, cli, cmd, \
 			 additional_flags, clear_flags, \
 			 timeout_msec, \
-			 pid, tid, uid, \
+			 pid, tid, session, \
 			 fixed, fixed_len, dyn, dyn_len) \
 	cli_state_smb2cli_req_send(mem_ctx, ev, cli, cmd, \
 			 additional_flags, clear_flags, \
 			 timeout_msec, \
-			 pid, tid, uid, \
+			 pid, tid, session, \
 			 fixed, fixed_len, dyn, dyn_len)
 
 #endif

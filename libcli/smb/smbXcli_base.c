@@ -2008,7 +2008,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      uint32_t timeout_msec,
 				      uint32_t pid,
 				      uint32_t tid,
-				      uint64_t uid,
+				      struct smbXcli_session *session,
 				      const uint8_t *fixed,
 				      uint16_t fixed_len,
 				      const uint8_t *dyn,
@@ -2017,6 +2017,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbXcli_req_state *state;
 	uint32_t flags = 0;
+	uint64_t uid = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbXcli_req_state);
@@ -2026,6 +2027,11 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->conn = conn;
+	state->session = session;
+
+	if (session) {
+		uid = session->smb2.session_id;
+	}
 
 	state->smb2.recv_iov = talloc_zero_array(state, struct iovec, 3);
 	if (state->smb2.recv_iov == NULL) {
@@ -2247,7 +2253,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    uint32_t timeout_msec,
 				    uint32_t pid,
 				    uint32_t tid,
-				    uint64_t uid,
+				    struct smbXcli_session *session,
 				    const uint8_t *fixed,
 				    uint16_t fixed_len,
 				    const uint8_t *dyn,
@@ -2259,7 +2265,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 	req = smb2cli_req_create(mem_ctx, ev, conn, cmd,
 				 additional_flags, clear_flags,
 				 timeout_msec,
-				 pid, tid, uid,
+				 pid, tid, session,
 				 fixed, fixed_len, dyn, dyn_len);
 	if (req == NULL) {
 		return NULL;
@@ -3347,7 +3353,7 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 				state->conn, SMB2_OP_NEGPROT,
 				0, 0, /* flags */
 				state->timeout_msec,
-				0xFEFF, 0, 0, /* pid, tid, uid */
+				0xFEFF, 0, NULL, /* pid, tid, session */
 				state->smb2.fixed, sizeof(state->smb2.fixed),
 				state->smb2.dyn, dialect_count*2);
 }

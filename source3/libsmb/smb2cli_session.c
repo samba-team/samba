@@ -20,32 +20,44 @@
 #include "includes.h"
 #include "client.h"
 #include "async_smb.h"
-#include "smb2cli_base.h"
 #include "smb2cli.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "libsmb/proto.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "../libcli/auth/spnego.h"
 #include "../auth/ntlmssp/ntlmssp.h"
 
 struct smb2cli_session_setup_state {
+	struct smbXcli_session *session;
 	uint8_t fixed[24];
 	uint8_t dyn_pad[1];
-	uint64_t uid;
-	DATA_BLOB out;
+	struct iovec *recv_iov;
+	DATA_BLOB out_security_buffer;
+	NTSTATUS status;
 };
 
 static void smb2cli_session_setup_done(struct tevent_req *subreq);
 
 static struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
-						struct tevent_context *ev,
-						struct cli_state *cli,
-						DATA_BLOB *blob)
+				struct tevent_context *ev,
+				struct smbXcli_conn *conn,
+				uint32_t timeout_msec,
+				struct smbXcli_session *session,
+				uint8_t in_flags,
+				uint32_t in_capabilities,
+				uint32_t in_channel,
+				struct smbXcli_session *in_previous_session,
+				const DATA_BLOB *in_security_buffer)
 {
 	struct tevent_req *req, *subreq;
 	struct smb2cli_session_setup_state *state;
 	uint8_t *buf;
 	uint8_t *dyn;
 	size_t dyn_len;
+	uint8_t security_mode;
+	uint16_t security_buffer_offset = 0;
+	uint16_t security_buffer_length = 0;
+	uint64_t previous_session_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_session_setup_state);
@@ -53,31 +65,53 @@ static struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (session == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
+	}
+	state->session = session;
+	security_mode = smb2cli_session_security_mode(session);
+
+	if (in_security_buffer) {
+		if (in_security_buffer->length > UINT16_MAX) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return tevent_req_post(req, ev);
+		}
+		security_buffer_offset = SMB2_HDR_BODY + 24;
+		security_buffer_length = in_security_buffer->length;
+	}
+
+	if (in_previous_session) {
+		previous_session_id =
+			smb2cli_session_current_id(in_previous_session);
+	}
+
 	buf = state->fixed;
 
-	SSVAL(buf, 0, 25);
-	SCVAL(buf, 2, 0); /* VcNumber */
-	SCVAL(buf, 3, 0); /* SecurityMode */
-	SIVAL(buf, 4, 0); /* Capabilities */
-	SIVAL(buf, 8, 0); /* Channel */
-	SSVAL(buf, 12, SMB2_HDR_BODY + 24); /* SecurityBufferOffset */
-	SSVAL(buf, 14, blob->length);
-	SBVAL(buf, 16, 0); /* PreviousSessionId */
+	SSVAL(buf,  0, 25);
+	SCVAL(buf,  2, in_flags);
+	SCVAL(buf,  3, security_mode);
+	SIVAL(buf,  4, in_capabilities);
+	SIVAL(buf,  8, in_channel);
+	SSVAL(buf, 12, security_buffer_offset);
+	SSVAL(buf, 14, security_buffer_length);
+	SBVAL(buf, 16, previous_session_id);
 
-	if (blob->length > 0) {
-		dyn = blob->data;
-		dyn_len = blob->length;
+	if (security_buffer_length > 0) {
+		dyn = in_security_buffer->data;
+		dyn_len = in_security_buffer->length;
 	} else {
 		dyn = state->dyn_pad;;
 		dyn_len = sizeof(state->dyn_pad);
 	}
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_SESSSETUP,
+	subreq = smb2cli_req_send(state, ev,
+				  conn, SMB2_OP_SESSSETUP,
 				  0, 0, /* flags */
-				  cli->timeout,
-				  cli->smb2.pid,
+				  timeout_msec,
+				  0xFEFF,
 				  0, /* tid */
-				  cli->smb2.uid,
+				  session,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
@@ -96,8 +130,15 @@ static void smb2cli_session_setup_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct smb2cli_session_setup_state);
 	NTSTATUS status;
-	struct iovec *iov;
-	uint16_t offset, length;
+	uint64_t current_session_id;
+	uint64_t session_id;
+	uint16_t session_flags;
+	uint16_t expected_offset = 0;
+	uint16_t security_buffer_offset;
+	uint16_t security_buffer_length;
+	uint8_t *security_buffer_data = NULL;
+	const uint8_t *hdr;
+	const uint8_t *body;
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
 		.status = NT_STATUS_MORE_PROCESSING_REQUIRED,
@@ -109,47 +150,93 @@ static void smb2cli_session_setup_done(struct tevent_req *subreq)
 	}
 	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+	status = smb2cli_req_recv(subreq, state, &state->recv_iov,
 				  expected, ARRAY_SIZE(expected));
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	offset = SVAL(iov[1].iov_base, 4);
-	length = SVAL(iov[1].iov_base, 6);
+	hdr = (const uint8_t *)state->recv_iov[0].iov_base;
+	body = (const uint8_t *)state->recv_iov[1].iov_base;
 
-	if ((offset != SMB2_HDR_BODY + 8) || (length > iov[2].iov_len)) {
-		TALLOC_FREE(subreq);
+	session_id = BVAL(hdr, SMB2_HDR_SESSION_ID);
+	session_flags = SVAL(body, 2);
+
+	security_buffer_offset = SVAL(body, 4);
+	security_buffer_length = SVAL(body, 6);
+
+	if (security_buffer_length > 0) {
+		expected_offset = SMB2_HDR_BODY + 8;
+	}
+	if (security_buffer_offset != 0) {
+		security_buffer_data = (uint8_t *)state->recv_iov[2].iov_base;
+		expected_offset = SMB2_HDR_BODY + 8;
+	}
+
+	if (security_buffer_offset != expected_offset) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
-	state->uid = BVAL(iov[0].iov_base, SMB2_HDR_SESSION_ID);
-	state->out.data = (uint8_t *)iov[2].iov_base;
-	state->out.length = length;
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
+	if (security_buffer_length > state->recv_iov[2].iov_len) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
+
+	state->out_security_buffer.data = security_buffer_data;
+	state->out_security_buffer.length = security_buffer_length;
+
+	current_session_id = smb2cli_session_current_id(state->session);
+	if (current_session_id == 0) {
+		/* A new session was requested */
+		current_session_id = session_id;
+	}
+
+	if (current_session_id != session_id) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	smb2cli_session_set_id_and_flags(state->session,
+					 session_id, session_flags);
+
+	state->status = status;
 	tevent_req_done(req);
 }
 
 static NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
-					    uint64_t *uid, DATA_BLOB *out)
+					   TALLOC_CTX *mem_ctx,
+					   struct iovec **recv_iov,
+					   DATA_BLOB *out_security_buffer)
 {
 	struct smb2cli_session_setup_state *state =
 		tevent_req_data(req,
 		struct smb2cli_session_setup_state);
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
+	struct iovec *_tmp;
 
-	if (tevent_req_is_nterror(req, &status)
-	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
-	*uid = state->uid;
-	*out = state->out;
+
+	if (recv_iov == NULL) {
+		recv_iov = &_tmp;
+	}
+
+	*recv_iov = talloc_move(mem_ctx, &state->recv_iov);
+
+	*out_security_buffer = state->out_security_buffer;
+
+	/*
+	 * Return the status from the server:
+	 * NT_STATUS_MORE_PROCESSING_REQUIRED or
+	 * NT_STATUS_OK.
+	 */
+	status = state->status;
+	tevent_req_received(req);
 	return status;
 }
 
@@ -218,8 +305,20 @@ struct tevent_req *smb2cli_sesssetup_ntlmssp_send(TALLOC_CTX *mem_ctx,
 	blob_out = spnego_gen_negTokenInit(state, OIDs_ntlm, &blob_out, NULL);
 	state->turn = 1;
 
-	subreq = smb2cli_session_setup_send(
-		state, state->ev, state->cli, &blob_out);
+	state->cli->smb2.session = smbXcli_session_create(cli, cli->smb2.conn);
+	if (tevent_req_nomem(state->cli->smb2.session, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = smb2cli_session_setup_send(state, state->ev,
+					    state->cli->smb2.conn,
+					    state->cli->timeout,
+					    state->cli->smb2.session,
+					    0, /* in_flags */
+					    SMB2_CAP_DFS, /* in_capabilities */
+					    0, /* in_channel */
+					    NULL, /* in_previous_session */
+					    &blob_out);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -239,20 +338,26 @@ static void smb2cli_sesssetup_ntlmssp_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct smb2cli_sesssetup_ntlmssp_state);
 	NTSTATUS status;
-	uint64_t uid = 0;
 	DATA_BLOB blob, blob_in, blob_out, spnego_blob;
 	bool ret;
+	struct iovec *recv_iov;
 
-	status = smb2cli_session_setup_recv(subreq, &uid, &blob);
+	status = smb2cli_session_setup_recv(subreq, state, &recv_iov, &blob);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
+		status = smb2cli_session_update_session_key(state->cli->smb2.session,
+							state->ntlmssp->session_key,
+							recv_iov);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+
 		tevent_req_done(req);
 		return;
 	}
@@ -280,16 +385,21 @@ static void smb2cli_sesssetup_ntlmssp_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->cli->smb2.uid = uid;
-
 	spnego_blob = spnego_gen_auth(state, blob_out);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nomem(spnego_blob.data, req)) {
 		return;
 	}
 
-	subreq = smb2cli_session_setup_send(
-		state, state->ev, state->cli, &spnego_blob);
+	subreq = smb2cli_session_setup_send(state, state->ev,
+					    state->cli->smb2.conn,
+					    state->cli->timeout,
+					    state->cli->smb2.session,
+					    0, /* in_flags */
+					    SMB2_CAP_DFS, /* in_capabilities */
+					    0, /* in_channel */
+					    NULL, /* in_previous_session */
+					    &spnego_blob);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -353,12 +463,13 @@ struct tevent_req *smb2cli_logoff_send(TALLOC_CTX *mem_ctx,
 	}
 	SSVAL(state->fixed, 0, 4);
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_LOGOFF,
+	subreq = smb2cli_req_send(state, ev,
+				  cli->smb2.conn, SMB2_OP_LOGOFF,
 				  0, 0, /* flags */
 				  cli->timeout,
 				  cli->smb2.pid,
 				  0, /* tid */
-				  cli->smb2.uid,
+				  cli->smb2.session,
 				  state->fixed, sizeof(state->fixed),
 				  NULL, 0);
 	if (tevent_req_nomem(subreq, req)) {

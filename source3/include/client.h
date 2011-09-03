@@ -38,6 +38,7 @@ struct print_job_info {
 };
 
 struct smbXcli_conn;
+struct smbXcli_session;
 
 struct cli_state {
 	/**
@@ -165,7 +166,7 @@ struct cli_state {
 
 		uint32_t pid;
 		uint32_t tid;
-		uint64_t uid;
+		struct smbXcli_session *session;
 
 		/* SMB2 tcon */
 		uint8_t share_type;
