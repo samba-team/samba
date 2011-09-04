@@ -491,13 +491,17 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None):
                next_rid = rid + 1
 
         # Get members for each group/alias
-        if group.sid_name_use == lsa.SID_NAME_ALIAS or group.sid_name_use == lsa.SID_NAME_WKN_GRP:
+        if group.sid_name_use == lsa.SID_NAME_ALIAS:
             members = s3db.enum_aliasmem(group.sid)
         elif group.sid_name_use == lsa.SID_NAME_DOM_GRP:
             try:
                 members = s3db.enum_group_members(group.sid)
             except:
                 continue
+        elif group.sid_name_use == lsa.SID_NAME_WKN_GRP:
+            logger.warn("Ignoring 'well known' group '%s' (should already be in AD, and have no members)",
+                        group.nt_name, group.sid_name_use)
+            continue
         else:
             logger.warn("Ignoring group '%s' with sid_name_use=%d",
                         group.nt_name, group.sid_name_use)
