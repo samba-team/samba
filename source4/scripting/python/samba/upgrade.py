@@ -109,13 +109,20 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
                             str(sid), str(xid), xid_type, str(e))
 
 
-def import_idmap(idmapdb, samba3_idmap, logger):
+def import_idmap(idmapdb, samba3, logger):
     """Import idmap data.
 
     :param idmapdb: Samba4 IDMAP database
     :param samba3_idmap: Samba3 IDMAP database to import from
     :param logger: Logger object
     """
+
+    try:
+        samba3_idmap = samba3.get_idmap_db()
+    except IOError as (errno, strerror):
+        logger.warn('Cannot open idmap database, Ignoring: ({0}): {1}'.format(errno, strerror))
+        return
+
     currentxid = max(samba3_idmap.get_user_hwm(), samba3_idmap.get_group_hwm())
     lowerbound = currentxid
     # FIXME: upperbound
@@ -559,7 +566,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None):
 
     # Migrate IDMAP database
     logger.info("Importing idmap database")
-    import_idmap(result.idmap, samba3.get_idmap_db(), logger)
+    import_idmap(result.idmap, samba3, logger)
 
     # Set the s3 context for samba4 configuration
     new_lp_ctx = s3param.get_context()
