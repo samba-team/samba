@@ -28,6 +28,7 @@
 struct smb2cli_tcon_state {
 	struct cli_state *cli;
 	uint8_t fixed[8];
+	uint8_t dyn_pad[1];
 };
 
 static void smb2cli_tcon_done(struct tevent_req *subreq);
@@ -69,6 +70,11 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	SSVAL(fixed, 0, 9);
 	SSVAL(fixed, 4, SMB2_HDR_BODY + 8);
 	SSVAL(fixed, 6, dyn_len);
+
+	if (dyn_len == 0) {
+		dyn = state->dyn_pad;;
+		dyn_len = sizeof(state->dyn_pad);
+	}
 
 	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_TCON,
 				  0, 0, /* flags */
