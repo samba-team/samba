@@ -715,7 +715,7 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
   add a dom_sid element to a message
 */
 int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			 const char *attr_name, struct dom_sid *sid)
+			  const char *attr_name, const struct dom_sid *sid)
 {
 	struct ldb_val v;
 	enum ndr_err_code ndr_err;
