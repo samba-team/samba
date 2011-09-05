@@ -524,7 +524,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs,
 	}
 
 	/* SMB2 doesn't allow a leading slash */
-	if (req->ctx->protocol == PROTOCOL_SMB2 &&
+	if (req->ctx->protocol >= PROTOCOL_SMB2_02 &&
 	    *cifs_name == '\\') {
 		return NT_STATUS_INVALID_PARAMETER;
 	}

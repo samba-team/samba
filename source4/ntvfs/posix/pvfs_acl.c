@@ -595,7 +595,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	bool allow_delete = false;
 
 	/* on SMB2 a blank access mask is always denied */
-	if (pvfs->ntvfs->ctx->protocol == PROTOCOL_SMB2 &&
+	if (pvfs->ntvfs->ctx->protocol >= PROTOCOL_SMB2_02 &&
 	    *access_mask == 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}

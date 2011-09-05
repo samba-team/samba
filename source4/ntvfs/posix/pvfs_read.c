@@ -96,7 +96,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* only SMB2 honors mincnt */
-	if (req->ctx->protocol == PROTOCOL_SMB2) {
+	if (req->ctx->protocol >= PROTOCOL_SMB2_02) {
 		if (rd->readx.in.mincnt > ret ||
 		    (ret == 0 && maxcnt > 0)) {
 			return NT_STATUS_END_OF_FILE;

@@ -1284,7 +1284,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* what does this bit really mean?? */
-	if (req->ctx->protocol == PROTOCOL_SMB2 &&
+	if (req->ctx->protocol >= PROTOCOL_SMB2_02 &&
 	    access_mask == SEC_STD_SYNCHRONIZE) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1502,7 +1502,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	 * on existing files
 	 */
 	if (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE &&
-	    req->ctx->protocol == PROTOCOL_SMB2) {
+	    req->ctx->protocol >= PROTOCOL_SMB2_02) {
 		del_on_close = true;
 	} else {
 		del_on_close = false;

@@ -148,7 +148,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 	}
 
 	/* construct the fully qualified windows name for the new file name */
-	if (req->ctx->protocol == PROTOCOL_SMB2) {
+	if (req->ctx->protocol >= PROTOCOL_SMB2_02) {
 		/* SMB2 sends the full path of the new name */
 		new_name = talloc_asprintf(req, "\\%s", info->rename_information.in.new_name);
 	} else {

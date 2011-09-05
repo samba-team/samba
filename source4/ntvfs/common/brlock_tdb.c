@@ -242,7 +242,7 @@ static NTSTATUS brl_tdb_lock_failed(struct brl_handle *brlh, struct lock_struct 
 	 */
 
 	/* in SMB2 mode always return NT_STATUS_LOCK_NOT_GRANTED! */
-	if (lock->ntvfs->ctx->protocol == PROTOCOL_SMB2) {
+	if (lock->ntvfs->ctx->protocol >= PROTOCOL_SMB2_02) {
 		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
