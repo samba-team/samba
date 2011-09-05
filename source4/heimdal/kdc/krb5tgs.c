@@ -1508,6 +1508,7 @@ tgs_build_reply(krb5_context context,
 
     Key *tkey_check;
     Key *tkey_sign;
+    Key *tkey_krbtgt_check = NULL;
     int flags = HDB_F_FOR_TGS_REQ;
 
     memset(&sessionkey, 0, sizeof(sessionkey));
@@ -1781,6 +1782,13 @@ server_lookup:
 	goto out;
     }
 
+    /* Check if we would know the krbtgt key for the PAC.  We would
+     * only know this if the krbtgt principal was the same (ie, in our
+     * realm, regardless of KVNO) */
+    if (krb5_principal_compare(context, krbtgt_out->entry.principal, krbtgt->entry.principal)) {
+	tkey_krbtgt_check = tkey_check;
+    }
+
     ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | flags,
 			NULL, &clientdb, &client);
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
@@ -1813,7 +1821,8 @@ server_lookup:
 
     ret = check_PAC(context, config, cp, NULL,
 		    client, server, krbtgt,
-		    &tkey_check->key, &tkey_check->key,
+		    &tkey_check->key,
+		    tkey_krbtgt_check ? &tkey_krbtgt_check->key : NULL,
 		    ekey, &tkey_sign->key,
 		    tgt, &rspac, &signedpath);
     if (ret) {
