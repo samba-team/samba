@@ -892,7 +892,7 @@ def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=Non
     ctx.domguid = str(uuid.uuid4())
     ctx.acct_dn = None
     ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)
-    ctx.trustdom_pass = samba.generate_random_password(32, 40)
+    ctx.trustdom_pass = samba.generate_random_password(128, 128)
 
     ctx.userAccountControl = samba.dsdb.UF_SERVER_TRUST_ACCOUNT | samba.dsdb.UF_TRUSTED_FOR_DELEGATION
 
