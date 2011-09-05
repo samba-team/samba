@@ -122,6 +122,8 @@ class dc_join(object):
         ctx.krbtgt_dn = None
         ctx.drsuapi = None
         ctx.managedby = None
+        ctx.subdomain = False
+        ctx.domguid = None
 
 
     def del_noerror(ctx, dn, recursive=False):
