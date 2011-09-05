@@ -4145,7 +4145,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 			DEBUG(DEBUG_ERR,("database '%s' is unhealthy: %s\n",
 					 argv[0], reason));
 
-			DEBUG(DEBUG_ERR,("disallow backup : tunnable AllowUnhealthyDBRead = %u\n",
+			DEBUG(DEBUG_ERR,("disallow backup : tunable AllowUnhealthyDBRead = %u\n",
 					 allow_unhealthy));
 			talloc_free(tmp_ctx);
 			return -1;
