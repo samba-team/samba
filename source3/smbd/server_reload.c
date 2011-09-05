@@ -31,11 +31,22 @@
 #include "messages.h"
 #include "lib/param/loadparm.h"
 
-/****************************************************************************
- purge stale printers and reload from pre-populated pcap cache
-**************************************************************************/
-void reload_printers(struct tevent_context *ev,
-		     struct messaging_context *msg_ctx)
+/**
+ * @brief Purge stale printers and reload from pre-populated pcap cache.
+ *
+ * This function should normally only be called as a callback on a successful
+ * pcap_cache_reload() or after a MSG_PRINTER_CAP message is received.
+ *
+ * This function can cause DELETION of printers and drivers from our registry,
+ * so calling it on a failed pcap reload may REMOVE permanently all printers
+ * and drivers.
+ *
+ * @param[in] ev        The event context.
+ *
+ * @param[in] msg_ctx   The messaging context.
+ */
+void delete_and_reload_printers(struct tevent_context *ev,
+				struct messaging_context *msg_ctx)
 {
 	struct auth_session_info *session_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;

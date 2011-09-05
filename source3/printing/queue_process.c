@@ -339,7 +339,7 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 		ret = printing_subsystem_queue_tasks(ev_ctx, msg_ctx);
 
 		/* Publish nt printers, this requires a working winreg pipe */
-		pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
+		pcap_cache_reload(ev_ctx, msg_ctx, &delete_and_reload_printers);
 
 		return ret;
 	}
@@ -368,5 +368,5 @@ void printing_subsystem_update(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	pcap_cache_reload(ev_ctx, msg_ctx, &reload_printers);
+	pcap_cache_reload(ev_ctx, msg_ctx, &delete_and_reload_printers);
 }

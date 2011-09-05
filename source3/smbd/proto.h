@@ -964,8 +964,8 @@ void init_sec_ctx(void);
 struct event_context *smbd_event_context(void);
 struct messaging_context *smbd_messaging_context(void);
 struct memcache *smbd_memcache(void);
-void reload_printers(struct tevent_context *ev,
-		     struct messaging_context *msg_ctx);
+void delete_and_reload_printers(struct tevent_context *ev,
+				struct messaging_context *msg_ctx);
 bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 		     bool test);
 void exit_server(const char *const explanation);

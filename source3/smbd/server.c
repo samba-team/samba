@@ -88,7 +88,7 @@ static void smb_pcap_updated(struct messaging_context *msg,
 
 	DEBUG(10,("Got message saying pcap was updated. Reloading.\n"));
 	change_to_root_user();
-	reload_printers(ev_ctx, msg);
+	delete_and_reload_printers(ev_ctx, msg);
 }
 
 /*******************************************************************

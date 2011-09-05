@@ -131,7 +131,7 @@ static void update_pcap(struct tevent_context *ev_ctx,
 			struct messaging_context *msg_ctx)
 {
 	change_to_root_user();
-	reload_printers(ev_ctx, msg_ctx);
+	delete_and_reload_printers(ev_ctx, msg_ctx);
 }
 
 static void pcap_updated(struct messaging_context *msg,
