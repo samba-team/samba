@@ -29,7 +29,7 @@ from samba.param import LoadParm
 from samba.provision import provision, FILL_FULL, ProvisioningError
 from samba.samba3 import passdb
 from samba.samba3 import param as s3param
-from samba.dcerpc import lsa
+from samba.dcerpc import lsa, samr, security
 from samba.dcerpc.security import dom_sid
 from samba import dsdb
 from samba.ndr import ndr_pack
@@ -169,7 +169,10 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
                             str(groupmap.sid), groupmap.nt_name, msg[0]['sAMAccountName'][0])
     else:
         if groupmap.sid_name_use == lsa.SID_NAME_WKN_GRP:
-            return
+            # In a lot of Samba3 databases, aliases are marked as well known groups
+            (group_dom_sid, rid) = group.sid.split()
+            if (group_dom_sid != security.dom_sid(security.SID_BUILTIN)):
+                return
 
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, "CN=%s,CN=Users,%s" % (groupmap.nt_name, samdb.get_default_basedn()))
@@ -179,7 +182,8 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
         m['a04'] = ldb.MessageElement(groupmap.comment, ldb.FLAG_MOD_ADD, 'description')
         m['a05'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD, 'sAMAccountName')
 
-        if groupmap.sid_name_use == lsa.SID_NAME_ALIAS:
+        # Fix up incorrect 'well known' groups that are actually builtin (per test above) to be aliases
+        if groupmap.sid_name_use == lsa.SID_NAME_ALIAS or groupmap.sid_name_use == lsa.SID_NAME_WKN_GRP:
             m['a06'] = ldb.MessageElement(str(dsdb.GTYPE_SECURITY_DOMAIN_LOCAL_GROUP), ldb.FLAG_MOD_ADD, 'groupType')
 
         try:
@@ -504,15 +508,19 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
                 members = s3db.enum_group_members(group.sid)
             except:
                 continue
+            groupmembers[group.nt_name] = members
         elif group.sid_name_use == lsa.SID_NAME_WKN_GRP:
-            logger.warn("Ignoring 'well known' group '%s' (should already be in AD, and have no members)",
-                        group.nt_name, group.sid_name_use)
-            continue
+            (group_dom_sid, rid) = group.sid.split()
+            if (group_dom_sid != security.dom_sid(security.SID_BUILTIN)):
+                logger.warn("Ignoring 'well known' group '%s' (should already be in AD, and have no members)",
+                            group.nt_name)
+                continue
+            # A number of buggy databases mix up well known groups and aliases.
+            members = s3db.enum_aliasmem(group.sid)
         else:
             logger.warn("Ignoring group '%s' with sid_name_use=%d",
                         group.nt_name, group.sid_name_use)
             continue
-        groupmembers[group.nt_name] = members
 
 
     # Export users from old passdb backend
@@ -530,10 +538,29 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
             continue
         if entry['rid'] >= next_rid:
             next_rid = entry['rid'] + 1
+
+        user = s3db.getsampwnam(username)
+        acct_type = (user.acct_ctrl & (samr.ACB_NORMAL|samr.ACB_WSTRUST|samr.ACB_SVRTRUST|samr.ACB_DOMTRUST))
+        if (acct_type == samr.ACB_NORMAL or acct_type == samr.ACB_WSTRUST or acct_type == samr.ACB_SVRTRUST):
+            pass
+        elif acct_type == samr.ACB_DOMTRUST:
+            logger.warn("  Skipping inter-domain trust from domain %s, this trust must be re-created as an AD trust" % username[:-1])
+            continue
+        elif acct_type == (samr.ACB_NORMAL|samr.ACB_WSTRUST) and username[-1] == '$':
+            logger.warn("  Fixing account %s which had both ACB_NORMAL (U) and ACB_WSTRUST (W) set.  Account will be marked as ACB_WSTRUST (W), i.e. as a domain member" % username)
+            user.acct_ctrl = (user.acct_ctrl & ~samr.ACB_NORMAL)
+        else:
+            raise ProvisioningError("""Failed to upgrade due to invalid account %s, account control flags 0x%08X must have exactly one of
+ACB_NORMAL (N, 0x%08X), ACB_WSTRUST (W 0x%08X), ACB_SVRTRUST (S 0x%08X) or ACB_DOMTRUST (D 0x%08X).
+
+Please fix this account before attempting to upgrade again
+"""
+                                    % (user.acct_flags, username,
+                                       samr.ACB_NORMAL, samr.ACB_WSTRUST, samr.ACB_SVRTRUST, samr.ACB_DOMTRUST))
         
-        userdata[username] = s3db.getsampwnam(username)
+        userdata[username] = user
         try:
-            uids[username] = s3db.sid_to_id(userdata[username].user_sid)[0]
+            uids[username] = s3db.sid_to_id(user.user_sid)[0]
         except:
             try:
                 uids[username] = pwd.getpwnam(username).pw_uid
