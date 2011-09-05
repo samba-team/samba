@@ -15,14 +15,14 @@ ldap/${NTDSGUID}._msdcs.${DNSFOREST}
 ldap/${NETBIOSNAME}
 RestrictedKrbHost/${NETBIOSNAME}
 RestrictedKrbHost/${HOSTNAME}
+ldap/${HOSTNAME}/DomainDnsZones.${DNSDOMAIN}
+ldap/${HOSTNAME}/ForestDnsZones.${DNSDOMAIN}
 
 # These are not supported yet:
 # NtFrs-88f5d2bd-b646-11d2-a6d3-00c04fc9b232/${HOSTNAME}
 # Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/${HOSTNAME}
-# ldap/${HOSTNAME}/DomainDnsZones.${DNSDOMAIN}
-# ldap/${HOSTNAME}/ForestDnsZones.${DNSDOMAIN}
 #
-# Only used in DNS mode:
+# Only used in DNS mode: (This is added on dns-${HOSTNAME} account, should not be added here)
 # DNS/${HOSTNAME}
 #
 # Only used on Terminal Server mode:
