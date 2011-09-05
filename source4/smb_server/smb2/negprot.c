@@ -113,7 +113,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	req->smb_conn->negotiate.protocol = PROTOCOL_SMB2;
+	req->smb_conn->negotiate.protocol = PROTOCOL_SMB2_02;
 
 	current_time = timeval_current(); /* TODO: handle timezone?! */
 	boot_time = timeval_current(); /* TODO: fix me */
