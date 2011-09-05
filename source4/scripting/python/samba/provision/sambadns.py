@@ -65,7 +65,7 @@ def get_ntdsguid(samdb, domaindn):
 
 
 class ARecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, ip_addr, serial=1, ttl=3600):
+    def __init__(self, ip_addr, serial=1, ttl=900):
         super(ARecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_A
         self.dwSerial = serial
@@ -73,7 +73,7 @@ class ARecord(dnsp.DnssrvRpcRecord):
         self.data = ip_addr
 
 class AAAARecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, ip6_addr, serial=1, ttl=3600):
+    def __init__(self, ip6_addr, serial=1, ttl=900):
         super(AAAARecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_AAAA
         self.dwSerial = serial
@@ -89,7 +89,7 @@ class CNameRecord(dnsp.DnssrvRpcRecord):
         self.data = cname
 
 class NSRecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, dns_server, serial=1, ttl=3600):
+    def __init__(self, dns_server, serial=1, ttl=900):
         super(NSRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_NS
         self.dwSerial = serial
@@ -122,7 +122,7 @@ class SOARecord(dnsp.DnssrvRpcRecord):
         self.data = soa
 
 class SRVRecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, target, port, priority=0, weight=0, serial=1, ttl=3600):
+    def __init__(self, target, port, priority=0, weight=100, serial=1, ttl=900):
         super(SRVRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_SRV
         self.dwSerial = serial
