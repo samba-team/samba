@@ -1518,7 +1518,8 @@ def provision(logger, session_info, credentials, smbconf=None,
         domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
         next_rid=1000, dc_rid=None, adminpass=None, ldapadminpass=None, krbtgtpass=None,
         domainguid=None, policyguid=None, policyguid_dc=None,
-        invocationid=None, machinepass=None, ntdsguid=None, dnspass=None,
+        invocationid=None, machinepass=None, ntdsguid=None,
+        dns_backend=None, dnspass=None,
         root=None, nobody=None, users=None, wheel=None, backup=None, aci=None,
         serverrole=None, dom_for_fun_level=None, ldap_backend_extra_port=None,
         ldap_backend_forced_uri=None, backend_type=None, sitename=None,
@@ -1783,7 +1784,8 @@ def provision(logger, session_info, credentials, smbconf=None,
                     dnsdomain=names.dnsdomain,
                     dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
 
-                setup_ad_dns(samdb, names=names, hostip=hostip, hostip6=hostip6)
+                setup_ad_dns(samdb, names, logger, hostip=hostip, hostip6=hostip6,
+                            dns_backend=dns_backend, os_level=dom_for_fun_level)
 
                 domainguid = samdb.searchone(basedn=domaindn,
                     attribute="objectGUID")
@@ -1911,7 +1913,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
         serverdn=None, domain=None, hostname=None, domainsid=None,
         adminpass=None, krbtgtpass=None, domainguid=None, policyguid=None,
         policyguid_dc=None, invocationid=None, machinepass=None, dnspass=None,
-        root=None, nobody=None, users=None, wheel=None, backup=None,
+        dns_backend=None, root=None, nobody=None, users=None, wheel=None, backup=None,
         serverrole=None, ldap_backend=None, ldap_backend_type=None,
         sitename=None, debuglevel=1):
 
@@ -1924,7 +1926,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
         configdn=configdn, serverdn=serverdn, domain=domain,
         hostname=hostname, hostip=None, domainsid=domainsid,
         machinepass=machinepass, serverrole="domain controller",
-        sitename=sitename)
+        sitename=sitename, dns_backend=dns_backend, dnspass=dnspass)
     res.lp.set("debuglevel", str(debuglevel))
     return res
 
