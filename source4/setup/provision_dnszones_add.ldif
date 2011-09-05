@@ -1,0 +1,74 @@
+#################################
+# Required objectclasses
+#################################
+dn: CN=Deleted Objects,${DOMAINZONE_DN}
+objectClass: top
+objectClass: container
+description: Deleted objects
+isDeleted: TRUE
+isCriticalSystemObject: TRUE
+systemFlags: -1946157056
+
+dn: CN=LostAndFound,${DOMAINZONE_DN}
+objectClass: top
+objectClass: lostAndFound
+isCriticalSystemObject: TRUE
+systemFlags: -1946157056
+
+dn: CN=Infrastructure,${DOMAINZONE_DN}
+objectClass: top
+objectClass: infrastructureUpdate
+isCriticalSystemObject: TRUE
+systemFlags: -1946157056
+
+dn: CN=NTDS Quotas,${DOMAINZONE_DN}
+objectClass: top
+objectClass: msDS-QuotaContainer
+description: Quota specifications container
+isCriticalSystemObject: TRUE
+msDS-TombstoneQuotaFactor: 100
+
+
+dn: CN=Deleted Objects,${FORESTZONE_DN}
+objectClass: top
+objectClass: container
+description: Deleted objects
+isDeleted: TRUE
+isCriticalSystemObject: TRUE
+systemFlags: -1946157056
+
+dn: CN=LostAndFound,${FORESTZONE_DN}
+objectClass: top
+objectClass: lostAndFound
+isCriticalSystemObject: TRUE
+systemFlags: -1946157056
+
+dn: CN=Infrastructure,${FORESTZONE_DN}
+objectClass: top
+objectClass: infrastructureUpdate
+isCriticalSystemObject: TRUE
+systemFlags: -1946157056
+
+dn: CN=NTDS Quotas,${FORESTZONE_DN}
+objectClass: top
+objectClass: msDS-QuotaContainer
+description: Quota specifications container
+isCriticalSystemObject: TRUE
+msDS-TombstoneQuotaFactor: 100
+
+#################################
+# Configure partitions
+#################################
+dn: CN=${DOMAINZONE_GUID},CN=Partitions,${CONFIGDN}
+objectClass: top
+objectClass: crossRef
+nCName: ${DOMAINZONE_DN}
+dnsRoot: ${DOMAINZONE_DNS}
+systemFlags: 5
+
+dn: CN=${FORESTZONE_GUID},CN=Partitions,${CONFIGDN}
+objectClass: top
+objectClass: crossRef
+nCName: ${FORESTZONE_DN}
+dnsRoot: ${FORESTZONE_DNS}
+systemFlags: 5

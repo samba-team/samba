@@ -44,11 +44,11 @@ hasMasterNCs: ${DOMAINDN}
 invocationId: ${INVOCATIONID}
 msDS-Behavior-Version: ${DOMAIN_CONTROLLER_FUNCTIONALITY}
 msDS-HasDomainNCs: ${DOMAINDN}
-# "msDS-HasInstantiatedNCs"s for DNS don't exist since we don't support AD DNS
+# "msDS-HasInstantiatedNCs"s for DNS is added from provision_dnszones_modify.ldif
 msDS-HasInstantiatedNCs: B:8:0000000D:${CONFIGDN}
 msDS-HasInstantiatedNCs: B:8:0000000D:${SCHEMADN}
 msDS-HasInstantiatedNCs: B:8:00000005:${DOMAINDN}
-# "msDS-hasMasterNCs"s for DNS don't exist since we don't support AD DNS
+# "msDS-hasMasterNCs"s for DNS is added from provision_dnszones_modify.ldif
 msDS-hasMasterNCs: ${CONFIGDN}
 msDS-hasMasterNCs: ${SCHEMADN}
 msDS-hasMasterNCs: ${DOMAINDN}

@@ -1019,7 +1019,7 @@ systemFlags: -2147483648
 msDS-Behavior-Version: ${FOREST_FUNCTIONALITY}
 showInAdvancedViewOnly: TRUE
 
-# Partitions for DNS are missing since we don't support AD DNS
+# Partitions for DNS are missing here, they are added from provision_dnszones.ldif
 
 dn: CN=Enterprise Configuration,CN=Partitions,${CONFIGDN}
 objectClass: top

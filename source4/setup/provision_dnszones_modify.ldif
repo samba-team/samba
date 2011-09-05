@@ -1,0 +1,36 @@
+dn: ${DOMAINZONE_DN}
+changetype: modify
+add: wellKnownObjects
+wellKnownObjects: B:32:6227f0af1fc2410d8e3bb10615bb5b0f:CN=NTDS Quotas,${DOMAINZONE_DN}
+wellKnownObjects: B:32:18e2ea80684f11d2b9aa00c04f79f805:CN=Deleted Objects,${DOMAINZONE_DN}
+wellKnownObjects: B:32:2fbac1870ade11d297c400c04fd8d5cd:CN=Infrastructure,${DOMAINZONE_DN}
+wellKnownObjects: B:32:ab8153b7768811d1aded00c04fd8d5cd:CN=LostAndFound,${DOMAINZONE_DN}
+
+dn: CN=Infrastructure,${DOMAINZONE_DN}
+changetype: modify
+add: fSMORoleOwner
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+
+dn: CN=Infrastructure,${FORESTZONE_DN}
+changetype: modify
+add: fSMORoleOwner
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
+
+dn: ${FORESTZONE_DN}
+changetype: modify
+add: wellKnownObjects
+wellKnownObjects: B:32:6227f0af1fc2410d8e3bb10615bb5b0f:CN=NTDS Quotas,${FORESTZONE_DN}
+wellKnownObjects: B:32:18e2ea80684f11d2b9aa00c04f79f805:CN=Deleted Objects,${FORESTZONE_DN}
+wellKnownObjects: B:32:2fbac1870ade11d297c400c04fd8d5cd:CN=Infrastructure,${FORESTZONE_DN}
+wellKnownObjects: B:32:ab8153b7768811d1aded00c04fd8d5cd:CN=LostAndFound,${FORESTZONE_DN}
+
+dn: CN=NTDS Settings,${SERVERDN}
+changetype: modify
+add: msDS-HasInstantiatedNCs
+msDS-HasInstantiatedNCs: B:8:0000000D:${DOMAINZONE_DN}
+msDS-HasInstantiatedNCs: B:8:0000000D:${FORESTZONE_DN}
+-
+add: msDS-hasMasterNCs
+msDS-hasMasterNCs: ${DOMAINZONE_DN}
+msDS-hasMasterNCs: ${FORESTZONE_DN}
+-
