@@ -134,22 +134,11 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 						 "(&(objectCategory=DomainDNS)(objectGUID=%s))", 
 						 ldb_binary_encode(mem_ctx, guid_val));
 		} else { /* domain_sid case */
-			struct dom_sid *sid;
-			struct ldb_val sid_val;
-			enum ndr_err_code ndr_err;
-			
-			/* Rather than go via the string, just push into the NDR form */
-			ndr_err = ndr_push_struct_blob(&sid_val, mem_ctx, &sid,
-						       (ndr_push_flags_fn_t)ndr_push_dom_sid);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
 			ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
-						 NULL, LDB_SCOPE_SUBTREE, 
-						 dom_attrs, 
-						 "(&(objectCategory=DomainDNS)(objectSid=%s))",
-						 ldb_binary_encode(mem_ctx, sid_val));
+					 NULL, LDB_SCOPE_SUBTREE,
+					 dom_attrs,
+					 "(&(objectCategory=DomainDNS)(objectSid=%s))",
+					 dom_sid_string(mem_ctx, domain_sid));
 		}
 		
 		if (ret != LDB_SUCCESS) {
