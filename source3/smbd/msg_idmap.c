@@ -27,10 +27,11 @@
 #include "messages.h"
 #include "lib/id_cache.h"
 
-static bool uid_in_use(const struct user_struct* user, uid_t uid)
+static bool uid_in_use(const struct user_struct *user, uid_t uid)
 {
 	while (user) {
-		if (user->session_info && (user->session_info->unix_token->uid == uid)) {
+		if (user->session_info &&
+		    (user->session_info->unix_token->uid == uid)) {
 			return true;
 		}
 		user = user->next;
@@ -38,12 +39,14 @@ static bool uid_in_use(const struct user_struct* user, uid_t uid)
 	return false;
 }
 
-static bool gid_in_use(const struct user_struct* user, gid_t gid)
+static bool gid_in_use(const struct user_struct *user, gid_t gid)
 {
 	while (user) {
 		if (user->session_info != NULL) {
 			int i;
-			struct security_unix_token *utok = user->session_info->unix_token;
+			struct security_unix_token *utok;
+
+			utok = user->session_info->unix_token;
 			if (utok->gid == gid) {
 				return true;
 			}
@@ -58,7 +61,8 @@ static bool gid_in_use(const struct user_struct* user, gid_t gid)
 	return false;
 }
 
-static bool sid_in_use(const struct user_struct* user, const struct dom_sid* psid)
+static bool sid_in_use(const struct user_struct *user,
+		       const struct dom_sid *psid)
 {
 	uid_t uid;
 	gid_t gid;
@@ -70,8 +74,8 @@ static bool sid_in_use(const struct user_struct* user, const struct dom_sid* psi
 	return false;
 }
 
-static bool id_in_use(const struct user_struct* user,
-		      const struct id_cache_ref* id)
+static bool id_in_use(const struct user_struct *user,
+		      const struct id_cache_ref *id)
 {
 	switch(id->type) {
 	case UID:
@@ -87,13 +91,15 @@ static bool id_in_use(const struct user_struct* user,
 }
 
 static void id_cache_kill(struct messaging_context *msg_ctx,
-				 void *private_data,
-				 uint32_t msg_type,
-				 struct server_id server_id,
-				 DATA_BLOB* data)
+			  void *private_data,
+			  uint32_t msg_type,
+			  struct server_id server_id,
+			  DATA_BLOB* data)
 {
-	const char *msg = (data && data->data) ? (const char *)data->data : "<NULL>";
-	struct user_struct *validated_users = smbd_server_conn->smb1.sessions.validated_users;
+	const char *msg = (data && data->data)
+		? (const char *)data->data : "<NULL>";
+	struct user_struct *validated_users =
+		smbd_server_conn->smb1.sessions.validated_users;
 	struct id_cache_ref id;
 
 	if (!id_cache_ref_parse(msg, &id)) {
