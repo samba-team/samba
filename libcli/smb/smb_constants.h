@@ -41,7 +41,8 @@ enum protocol_types {
 	PROTOCOL_LANMAN1,
 	PROTOCOL_LANMAN2,
 	PROTOCOL_NT1,
-	PROTOCOL_SMB2_02
+	PROTOCOL_SMB2_02,
+	PROTOCOL_SMB2_10
 };
 
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
