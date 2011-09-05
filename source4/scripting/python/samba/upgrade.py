@@ -202,8 +202,8 @@ def add_users_to_group(samdb, group, members, logger):
     """
     for member_sid in members:
         m = ldb.Message()
-        m.dn = ldb.Dn(samdb, "<SID=%s" % str(group.sid))
-        m['a01'] = ldb.MessageElement("<SID=%s>" % str(member_sid), ldb.FLAG_MOD_REPLACE, 'member')
+        m.dn = ldb.Dn(samdb, "<SID=%s>" % str(group.sid))
+        m['a01'] = ldb.MessageElement("<SID=%s>" % str(member_sid), ldb.FLAG_MOD_ADD, 'member')
 
         try:
             samdb.modify(m)
