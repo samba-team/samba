@@ -105,7 +105,8 @@ static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
 
 static const struct enum_list enum_protocol[] = {
-	{PROTOCOL_SMB2, "SMB2"},
+	{PROTOCOL_SMB2_02, "SMB2"},
+	{PROTOCOL_SMB2_02, "SMB2_02"},
 	{PROTOCOL_NT1, "NT1"},
 	{PROTOCOL_LANMAN2, "LANMAN2"},
 	{PROTOCOL_LANMAN1, "LANMAN1"},
