@@ -27,6 +27,7 @@
 
 struct smb2cli_write_state {
 	uint8_t fixed[48];
+	uint8_t dyn_pad[1];
 };
 
 static void smb2cli_write_done(struct tevent_req *subreq);
@@ -45,6 +46,8 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct smb2cli_write_state *state;
 	uint8_t *fixed;
+	const uint8_t *dyn;
+	size_t dyn_len;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_write_state);
@@ -63,13 +66,21 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 	SIVAL(fixed, 36, remaining_bytes);
 	SIVAL(fixed, 44, flags);
 
+	if (length > 0) {
+		dyn = data;
+		dyn_len = length;
+	} else {
+		dyn = state->dyn_pad;;
+		dyn_len = sizeof(state->dyn_pad);
+	}
+
 	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_WRITE,
 				  0, 0, /* flags */
 				  cli->smb2.pid,
 				  cli->smb2.tid,
 				  cli->smb2.uid,
 				  state->fixed, sizeof(state->fixed),
-				  data, length);
+				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
