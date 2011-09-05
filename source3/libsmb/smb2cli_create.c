@@ -77,10 +77,15 @@ struct tevent_req *smb2cli_create_send(
 	}
 
 	if (!convert_string_talloc(state, CH_UNIX, CH_UTF16,
-				   filename, strlen(filename)+1,
+				   filename, strlen(filename),
 				   &name_utf16, &name_utf16_len)) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
+	}
+
+	if (strlen(filename) == 0) {
+		TALLOC_FREE(name_utf16);
+		name_utf16_len = 0;
 	}
 
 	fixed = state->fixed;
@@ -118,8 +123,10 @@ struct tevent_req *smb2cli_create_send(
 		return tevent_req_post(req, ev);
 	}
 
-	memcpy(dyn, name_utf16, name_utf16_len);
-	TALLOC_FREE(name_utf16);
+	if (name_utf16) {
+		memcpy(dyn, name_utf16, name_utf16_len);
+		TALLOC_FREE(name_utf16);
+	}
 
 	if (blob.data != NULL) {
 		memcpy(dyn + blobs_offset - (SMB2_HDR_BODY + 56),
