@@ -256,6 +256,10 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 
 		state = tevent_req_data(reqs[i], struct smb2cli_req_state);
 
+		if (state->cli->smb2.mid == UINT64_MAX) {
+			return NT_STATUS_CONNECTION_ABORTED;
+		}
+
 		mid = state->cli->smb2.mid;
 		state->cli->smb2.mid += 1;
 
@@ -580,7 +584,17 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 
 	num_pending = talloc_array_length(cli->conn.pending);
 	if (num_pending == 0) {
-		/* no more pending requests, so we are done for now */
+		if (state->cli->smb2.mid < UINT64_MAX) {
+			/* no more pending requests, so we are done for now */
+			return;
+		}
+
+		/*
+		 * If there are no more requests possible,
+		 * because we are out of message ids,
+		 * we need to disconnect.
+		 */
+		smb2cli_notify_pending(cli, NT_STATUS_CONNECTION_ABORTED);
 		return;
 	}
 	req = cli->conn.pending[0];
