@@ -27,6 +27,7 @@
 
 struct smb2cli_query_directory_state {
 	uint8_t fixed[32];
+	uint8_t dyn_pad[1];
 	struct iovec *recv_iov;
 	uint8_t *data;
 	uint32_t data_length;
@@ -74,6 +75,11 @@ struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
 	SSVAL(fixed, 24, SMB2_HDR_BODY + 32);
 	SSVAL(fixed, 26, dyn_len);
 	SSVAL(fixed, 28, outbuf_len);
+
+	if (dyn_len == 0) {
+		dyn = state->dyn_pad;
+		dyn_len = sizeof(state->dyn_pad);
+	}
 
 	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_FIND,
 				  0, 0, /* flags */
