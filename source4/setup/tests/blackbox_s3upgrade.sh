@@ -43,6 +43,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
    workgroup = SAMBA
    netbiosname = S3UPGRADE
    security = user
+   realm = s3.samba.example.com
    passdb backend = tdbsam:$PREFIX/samba3-upgrade/samba3/passdb.tdb
    private dir = $PREFIX/samba3-upgrade/samba3
    lock directory = $PREFIX/samba3-upgrade/samba3
