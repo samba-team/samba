@@ -27,6 +27,7 @@
 
 struct smb2cli_read_state {
 	uint8_t fixed[48];
+	uint8_t dyn_pad[1];
 	struct iovec *recv_iov;
 	uint8_t *data;
 	uint32_t data_length;
@@ -70,7 +71,7 @@ struct tevent_req *smb2cli_read_send(TALLOC_CTX *mem_ctx,
 				  cli->smb2.tid,
 				  cli->smb2.uid,
 				  state->fixed, sizeof(state->fixed),
-				  NULL, 0);
+				  state->dyn_pad, sizeof(state->dyn_pad));
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
