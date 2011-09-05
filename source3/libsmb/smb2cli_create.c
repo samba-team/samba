@@ -112,7 +112,7 @@ struct tevent_req *smb2cli_create_send(
 	SIVAL(fixed, 48, blobs_offset + SMB2_HDR_BODY + 56);
 	SIVAL(fixed, 52, blob.length);
 
-	dyn_len = blobs_offset + blob.length;
+	dyn_len = MAX(1, blobs_offset + blob.length);
 	dyn = talloc_zero_array(state, uint8_t, dyn_len);
 	if (tevent_req_nomem(dyn, req)) {
 		return tevent_req_post(req, ev);
