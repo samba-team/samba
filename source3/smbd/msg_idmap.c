@@ -21,6 +21,7 @@
 #include "smbd/globals.h"
 #include "smbd/smbd.h"
 #include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security_token.h"
 #include "idmap_cache.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
@@ -64,12 +65,25 @@ static bool gid_in_use(const struct user_struct *user, gid_t gid)
 static bool sid_in_use(const struct user_struct *user,
 		       const struct dom_sid *psid)
 {
-	uid_t uid;
-	gid_t gid;
-	if (sid_to_gid(psid, &gid)) {
-		return gid_in_use(user, gid);
-	} else if (sid_to_uid(psid, &uid)) {
-		return uid_in_use(user, uid);
+	while (user) {
+		struct security_token *tok;
+
+		if (user->session_info == NULL) {
+			continue;
+		}
+		tok = user->session_info->security_token;
+		if (tok == NULL) {
+			/*
+			 * Not sure session_info->security_token can
+			 * ever be NULL. This check might be not
+			 * necessary.
+			 */
+			continue;
+		}
+		if (security_token_has_sid(tok, psid)) {
+			return true;
+		}
+		user = user->next;
 	}
 	return false;
 }
