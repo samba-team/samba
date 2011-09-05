@@ -927,6 +927,19 @@ static int ldif_write_supplementalCredentialsBlob(struct ldb_context *ldb, void 
 			      true);
 }
 
+/*
+  convert a NDR formatted blob to a ldif formatted trustAuthInOutBlob
+*/
+static int ldif_write_trustAuthInOutBlob(struct ldb_context *ldb, void *mem_ctx,
+					   const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out,
+			      sizeof(struct trustAuthInOutBlob),
+			      (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob,
+			      (ndr_print_fn_t)ndr_print_trustAuthInOutBlob,
+			      true);
+}
+
 
 static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
@@ -1280,6 +1293,13 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.comparison_fn	  = ldb_comparison_binary,
 		.operator_fn      = samba_syntax_operator_fn
 	},{
+		.name		  = LDB_SYNTAX_SAMBA_TRUSTAUTHINOUTBLOB,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_trustAuthInOutBlob,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
+	},{
 		.name		  = DSDB_SYNTAX_BINARY_DN,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldb_handler_copy,
@@ -1395,6 +1415,8 @@ static const struct {
 	{ "repsTo",                     LDB_SYNTAX_SAMBA_REPSFROMTO },
 	{ "replPropertyMetaData",       LDB_SYNTAX_SAMBA_REPLPROPERTYMETADATA },
 	{ "replUpToDateVector",         LDB_SYNTAX_SAMBA_REPLUPTODATEVECTOR },
+	{ "trustAuthIncoming",          LDB_SYNTAX_SAMBA_TRUSTAUTHINOUTBLOB },
+	{ "trustAuthOutgoing",          LDB_SYNTAX_SAMBA_TRUSTAUTHINOUTBLOB },
 	{ "rIDAllocationPool",		LDB_SYNTAX_SAMBA_RANGE64 },
 	{ "rIDPreviousAllocationPool",	LDB_SYNTAX_SAMBA_RANGE64 },
 	{ "rIDAvailablePool",		LDB_SYNTAX_SAMBA_RANGE64 },
