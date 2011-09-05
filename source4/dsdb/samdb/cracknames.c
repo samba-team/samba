@@ -299,12 +299,14 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 					 principal);
 
 	ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
-				     samdb_partitions_dn(sam_ctx, mem_ctx), 
-				     LDB_SCOPE_ONELEVEL,
-				     domain_attrs,
-				     "(&(&(|(&(dnsRoot=%s)(nETBIOSName=*))(nETBIOSName=%s))(objectclass=crossRef))(ncName=*))",
-				     ldb_binary_encode_string(mem_ctx, realm), 
-				     ldb_binary_encode_string(mem_ctx, realm));
+			     samdb_partitions_dn(sam_ctx, mem_ctx),
+			     LDB_SCOPE_ONELEVEL,
+			     domain_attrs,
+			     "(&(objectClass=crossRef)(|(dnsRoot=%s)(netbiosName=%s))(systemFlags:%s:=%u))",
+			     ldb_binary_encode_string(mem_ctx, realm),
+			     ldb_binary_encode_string(mem_ctx, realm),
+			     LDB_OID_COMPARATOR_AND,
+			     SYSTEM_FLAG_CR_NTDS_DOMAIN);
 
 	if (ldb_ret != LDB_SUCCESS) {
 		DEBUG(2, ("DsCrackNameUPN domain ref search failed: %s\n", ldb_errstring(sam_ctx)));
@@ -464,7 +466,6 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT: {
 		char *p;
 		char *domain;
-		struct ldb_dn *dn_domain;
 		const char *account = NULL;
 
 		domain = talloc_strdup(mem_ctx, name);
@@ -482,14 +483,12 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			account = &p[1];
 		}
 
-		/* it could be in DNS domain form */
-		dn_domain = samdb_dns_domain_to_dn(sam_ctx, mem_ctx, domain);
-		W_ERROR_HAVE_NO_MEMORY(dn_domain);
-
 		domain_filter = talloc_asprintf(mem_ctx, 
-						"(&(&(|(nETBIOSName=%s)(nCName=%s))(objectclass=crossRef))(ncName=*))",
+						"(&(objectClass=crossRef)(|(dnsRoot=%s)(netbiosName=%s))(systemFlags:%s:=%u))",
 						ldb_binary_encode_string(mem_ctx, domain),
-						ldb_dn_get_linearized(dn_domain));
+						ldb_binary_encode_string(mem_ctx, domain),
+						LDB_OID_COMPARATOR_AND,
+						SYSTEM_FLAG_CR_NTDS_DOMAIN);
 		W_ERROR_HAVE_NO_MEMORY(domain_filter);
 		if (account) {
 			result_filter = talloc_asprintf(mem_ctx, "(sAMAccountName=%s)",
