@@ -26,7 +26,7 @@ import pwd
 
 from samba import Ldb, registry
 from samba.param import LoadParm
-from samba.provision import provision, FILL_FULL
+from samba.provision import provision, FILL_FULL, ProvisioningError
 from samba.samba3 import passdb
 from samba.samba3 import param as s3param
 from samba.dcerpc import lsa
@@ -414,7 +414,7 @@ def import_registry(samba4_registry, samba3_regdb):
             key_handle.set_value(value_name, value_type, value_data)
 
 
-def upgrade_from_samba3(samba3, logger, targetdir, session_info=None):
+def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=False):
     """Upgrade from samba3 database to samba4 AD database
 
     :param samba3: samba3 object
@@ -445,8 +445,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None):
 
     if not realm:
         if serverrole == "domain controller":
-            logger.warning("No realm specified in smb.conf file and being a DC. That upgrade path doesn't work! Please add a 'realm' directive to your old smb.conf to let us know which one you want to use (generally it's the upcased DNS domainname).")
-            return
+            raise ProvisioningError("No realm specified in smb.conf file and being a DC. That upgrade path doesn't work! Please add a 'realm' directive to your old smb.conf to let us know which one you want to use (it is the DNS name of the AD domain you wish to create.")
         else:
             realm = domainname.upper()
             logger.warning("No realm specified in smb.conf file, assuming '%s'",
@@ -554,7 +553,8 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None):
                        domainsid=str(domainsid), next_rid=next_rid,
                        dc_rid=machinerid,
                        hostname=netbiosname, machinepass=machinepass,
-                       serverrole=serverrole, samdb_fill=FILL_FULL)
+                       serverrole=serverrole, samdb_fill=FILL_FULL,
+                       useeadb=useeadb)
 
     # Import WINS database
     logger.info("Importing WINS database")

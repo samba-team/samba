@@ -19,6 +19,7 @@
 import logging
 import optparse
 import os, sys
+import tempfile
 
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
@@ -29,6 +30,7 @@ from samba.auth import system_session
 from samba.upgrade import upgrade_from_samba3
 from samba.samba3 import Samba3
 from samba.samba3 import param as s3param
+from samba.provision import ProvisioningError
 
 def get_testparm_var(testparm, varname):
     cmd = "%s -s -l --parameter-name='%s' 2>/dev/null" % (testparm, varname)
@@ -51,6 +53,7 @@ parser.add_option("--libdir", type="string", metavar="DIR",
                   help="samba3 database directory")
 parser.add_option("--testparm", type="string", metavar="PATH",
                   help="samba3 testparm utility")
+parser.add_option("--use-xattrs", type="choice", choices=["yes","no","auto"], help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto")
 
 opts, args = parser.parse_args()
 
@@ -88,6 +91,20 @@ else:
 
 s3conf = s3param.get_context()
 
+eadb = True
+if opts.use_xattrs == "yes":
+	eadb = False
+elif opts.use_xattrs == "auto" and not s3conf.get("posix:eadb"):
+	file = tempfile.NamedTemporaryFile()
+	try:
+		samba.ntacls.setntacl(lp, file.name,
+			"O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+		eadb = False
+	except:
+		logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
+			    "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
+	file.close()
+
 # Set correct default values from libdir or testparm
 paths = {}
 if libdir:
@@ -108,4 +125,8 @@ s3conf.load(smbconf)
 samba3 = Samba3(smbconf, s3conf)
 
 logger.info("Provisioning")
-upgrade_from_samba3(samba3, logger, targetdir, session_info=system_session())
+try:
+    upgrade_from_samba3(samba3, logger, targetdir, session_info=system_session(), useeadb=eadb)
+except ProvisioningError, e:
+	print str(e)
+	exit(1)
