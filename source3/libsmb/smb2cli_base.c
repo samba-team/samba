@@ -254,6 +254,10 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		bool ret;
 		uint64_t mid;
 
+		if (!tevent_req_is_in_progress(reqs[i])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
 		state = tevent_req_data(reqs[i], struct smb2cli_req_state);
 
 		if (state->cli->smb2.mid == UINT64_MAX) {
