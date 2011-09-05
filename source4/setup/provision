@@ -256,4 +256,4 @@ try:
 		  useeadb=eadb, next_rid=opts.next_rid, lp=lp)
 except ProvisioningError, e:
 	print str(e)
-	exit(1)
+	sys.exit(1)
