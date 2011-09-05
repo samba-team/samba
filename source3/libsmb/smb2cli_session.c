@@ -30,6 +30,7 @@
 struct smb2cli_sesssetup_blob_state {
 	struct ntlmssp_state *ntlmssp;
 	uint8_t fixed[24];
+	uint8_t dyn_pad[1];
 	uint64_t uid;
 	DATA_BLOB out;
 };
@@ -44,6 +45,8 @@ static struct tevent_req *smb2cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct smb2cli_sesssetup_blob_state *state;
 	uint8_t *buf;
+	uint8_t *dyn;
+	size_t dyn_len;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_sesssetup_blob_state);
@@ -62,12 +65,20 @@ static struct tevent_req *smb2cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
 	SSVAL(buf, 14, blob->length);
 	SBVAL(buf, 16, 0); /* PreviousSessionId */
 
+	if (blob->length > 0) {
+		dyn = blob->data;
+		dyn_len = blob->length;
+	} else {
+		dyn = state->dyn_pad;;
+		dyn_len = sizeof(state->dyn_pad);
+	}
+
 	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_SESSSETUP,
 				  0, 0, /* flags */
 				  cli->smb2.pid,
 				  0, 0, /* tid, uid */
 				  state->fixed, sizeof(state->fixed),
-				  blob->data, blob->length);
+				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
