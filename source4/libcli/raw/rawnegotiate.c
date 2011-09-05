@@ -42,7 +42,7 @@ static const struct {
 	{PROTOCOL_NT1,"NT LM 0.12"},
 #if 0
 	/* we don't yet handle chaining a SMB transport onto SMB2 */
-	{PROTOCOL_SMB2,"SMB 2.002"},
+	{PROTOCOL_SMB2_02,"SMB 2.002"},
 #endif
 };
 
