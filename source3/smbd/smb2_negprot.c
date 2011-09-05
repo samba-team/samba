@@ -25,9 +25,9 @@
 
 /*
  * this is the entry point if SMB2 is selected via
- * the SMB negprot and the "SMB 2.002" dialect.
+ * the SMB negprot and the given dialect.
  */
-void reply_smb2002(struct smb_request *req, uint16_t choice)
+static void reply_smb20xx(struct smb_request *req, uint16_t dialect)
 {
 	uint8_t *smb2_inbuf;
 	uint8_t *smb2_hdr;
@@ -51,12 +51,31 @@ void reply_smb2002(struct smb_request *req, uint16_t choice)
 	SSVAL(smb2_body, 0x00, 0x0024);	/* struct size */
 	SSVAL(smb2_body, 0x02, 0x0001);	/* dialect count */
 
-	SSVAL(smb2_dyn,  0x00, SMB2_DIALECT_REVISION_202);
+	SSVAL(smb2_dyn,  0x00, dialect);
 
 	req->outbuf = NULL;
 
 	smbd_smb2_first_negprot(req->sconn, smb2_inbuf, len);
 	return;
+}
+
+/*
+ * this is the entry point if SMB2 is selected via
+ * the SMB negprot and the "SMB 2.002" dialect.
+ */
+void reply_smb2002(struct smb_request *req, uint16_t choice)
+{
+	reply_smb20xx(req, SMB2_DIALECT_REVISION_202);
+}
+
+/*
+ * this is the entry point if SMB2 is selected via
+ * the SMB negprot and the "SMB 2.???" dialect.
+ */
+void reply_smb20ff(struct smb_request *req, uint16_t choice)
+{
+	req->sconn->smb2.negprot_2ff = true;
+	reply_smb20xx(req, SMB2_DIALECT_REVISION_2FF);
 }
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
@@ -108,6 +127,28 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	indyn = (const uint8_t *)req->in.vector[i+2].iov_base;
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
+		if (lp_maxprotocol() < PROTOCOL_SMB2_10) {
+			break;
+		}
+		if (lp_minprotocol() > PROTOCOL_SMB2_10) {
+			break;
+		}
+
+		dialect = SVAL(indyn, c*2);
+		if (dialect == SMB2_DIALECT_REVISION_210) {
+			protocol = PROTOCOL_SMB2_10;
+			break;
+		}
+	}
+
+	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
+		if (lp_maxprotocol() < PROTOCOL_SMB2_02) {
+			break;
+		}
+		if (lp_minprotocol() > PROTOCOL_SMB2_02) {
+			break;
+		}
+
 		dialect = SVAL(indyn, c*2);
 		if (dialect == SMB2_DIALECT_REVISION_202) {
 			protocol = PROTOCOL_SMB2_02;
@@ -115,11 +156,28 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		}
 	}
 
+	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
+		if (lp_maxprotocol() < PROTOCOL_SMB2_10) {
+			break;
+		}
+
+		dialect = SVAL(indyn, c*2);
+		if (dialect == SMB2_DIALECT_REVISION_2FF) {
+			if (req->sconn->smb2.negprot_2ff) {
+				req->sconn->smb2.negprot_2ff = false;
+				protocol = PROTOCOL_SMB2_10;
+				break;
+			}
+		}
+	}
+
 	if (protocol == PROTOCOL_NONE) {
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_SUPPORTED);
 	}
 
-	set_Protocol(protocol);
+	if (dialect != SMB2_DIALECT_REVISION_2FF) {
+		set_Protocol(protocol);
+	}
 
 	if (get_remote_arch() != RA_SAMBA) {
 		set_remote_arch(RA_VISTA);

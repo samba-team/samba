@@ -241,6 +241,7 @@ const char *smb2_opcode_name(uint16_t opcode);
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 
 void reply_smb2002(struct smb_request *req, uint16_t choice);
+void reply_smb20ff(struct smb_request *req, uint16_t choice);
 void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 			     const uint8_t *inbuf, size_t size);
 
@@ -578,6 +579,7 @@ struct smbd_server_connection {
 		struct tevent_queue *recv_queue;
 		struct tevent_queue *send_queue;
 		struct tstream_context *stream;
+		bool negprot_2ff;
 		struct {
 			/* an id tree used to allocate vuids */
 			/* this holds info on session vuids that are already

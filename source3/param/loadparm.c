@@ -312,7 +312,8 @@ static void add_to_file_list(const char *fname, const char *subfname);
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
 
 static const struct enum_list enum_protocol[] = {
-	{PROTOCOL_SMB2_02, "SMB2"},
+	{PROTOCOL_SMB2_02, "SMB2"}, /* for now keep PROTOCOL_SMB2_02 */
+	{PROTOCOL_SMB2_10, "SMB2_10"},
 	{PROTOCOL_SMB2_02, "SMB2_02"},
 	{PROTOCOL_NT1, "NT1"},
 	{PROTOCOL_LANMAN2, "LANMAN2"},
