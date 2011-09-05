@@ -127,7 +127,16 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		cn_name[cn_name_len - 1] = '\0';
 		container = "OU=Domain Controllers";
 		obj_class = "computer";
+	} else if (acct_flags == ACB_DOMTRUST) {
+		DEBUG(3, ("Invalid account flags specified:  cannot create domain trusts via this interface (must use LSA CreateTrustedDomain calls\n"));
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_PARAMETER;
 	} else {
+		DEBUG(3, ("Invalid account flags specified 0x%08X, must be exactly one of \n"
+			  "ACB_NORMAL (0x%08X) ACB_WSTRUST (0x%08X) or ACB_SVRTRUST (0x%08X)\n",
+			  acct_flags,
+			  ACB_NORMAL, ACB_WSTRUST, ACB_SVRTRUST));
 		ldb_transaction_cancel(ldb);
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
