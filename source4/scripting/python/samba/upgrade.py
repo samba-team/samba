@@ -207,8 +207,11 @@ def add_users_to_group(samdb, group, members, logger):
 
         try:
             samdb.modify(m)
-        except ldb.LdbError, e:
-            logger.warn("Could not add member to group '%s'", groupmap.nt_name)
+        except ldb.LdbError, (ecode, emsg):
+            if ecode == ldb.ERR_NO_SUCH_OBJECT:
+                logger.warn("Could not add member '%s' to group '%s' as either group or user record doesn't exist: %s", member_sid, group.sid, emsg)
+            else:
+                logger.warn("Could not add member '%s' to group '%s': %s", member_sid, group.sid, emsg)
 
 
 def import_wins(samba4_winsdb, samba3_winsdb):
