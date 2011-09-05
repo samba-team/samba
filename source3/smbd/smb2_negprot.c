@@ -25,7 +25,7 @@
 
 /*
  * this is the entry point if SMB2 is selected via
- * the SMB negprot
+ * the SMB negprot and the "SMB 2.002" dialect.
  */
 void reply_smb2002(struct smb_request *req, uint16_t choice)
 {
@@ -51,7 +51,7 @@ void reply_smb2002(struct smb_request *req, uint16_t choice)
 	SSVAL(smb2_body, 0x00, 0x0024);	/* struct size */
 	SSVAL(smb2_body, 0x02, 0x0001);	/* dialect count */
 
-	SSVAL(smb2_dyn,  0x00, 0x0202);	/* dialect 2.002 */
+	SSVAL(smb2_dyn,  0x00, SMB2_DIALECT_REVISION_202);
 
 	req->outbuf = NULL;
 
@@ -77,6 +77,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint16_t dialect_count;
 	uint16_t dialect = 0;
 	uint32_t capabilities;
+	enum protocol_types protocol = PROTOCOL_NONE;
 	uint32_t max_limit;
 	uint32_t max_trans = lp_smb2_max_trans();
 	uint32_t max_read = lp_smb2_max_read();
@@ -106,18 +107,19 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 	indyn = (const uint8_t *)req->in.vector[i+2].iov_base;
 
-	for (c=0; c < dialect_count; c++) {
+	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
 		dialect = SVAL(indyn, c*2);
 		if (dialect == SMB2_DIALECT_REVISION_202) {
+			protocol = PROTOCOL_SMB2_02;
 			break;
 		}
 	}
 
-	if (dialect != SMB2_DIALECT_REVISION_202) {
-		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	if (protocol == PROTOCOL_NONE) {
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_SUPPORTED);
 	}
 
-	set_Protocol(PROTOCOL_SMB2_02);
+	set_Protocol(protocol);
 
 	if (get_remote_arch() != RA_SAMBA) {
 		set_remote_arch(RA_VISTA);
