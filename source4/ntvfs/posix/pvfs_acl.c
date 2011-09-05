@@ -568,7 +568,7 @@ static NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+	if (pvfs->ntvfs->ctx->protocol < PROTOCOL_SMB2_02) {
 		/* on SMB, this bit is always granted, even if not
 		   asked for */
 		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
@@ -621,7 +621,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 
 	/* expand the generic access bits to file specific bits */
 	*access_mask = pvfs_translate_mask(*access_mask);
-	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+	if (pvfs->ntvfs->ctx->protocol < PROTOCOL_SMB2_02) {
 		*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
 	}
 
@@ -647,7 +647,7 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	status = se_access_check(sd, token, *access_mask, access_mask);
 	talloc_free(acl);
 done:
-	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+	if (pvfs->ntvfs->ctx->protocol < PROTOCOL_SMB2_02) {
 		/* on SMB, this bit is always granted, even if not
 		   asked for */
 		*access_mask |= SEC_FILE_READ_ATTRIBUTE;
@@ -745,7 +745,7 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 		*access_mask &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 	}
 
-	if (pvfs->ntvfs->ctx->protocol != PROTOCOL_SMB2) {
+	if (pvfs->ntvfs->ctx->protocol < PROTOCOL_SMB2_02) {
 		/* on SMB, this bit is always granted, even if not
 		   asked for */
 		*access_mask |= SEC_FILE_READ_ATTRIBUTE;

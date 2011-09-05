@@ -130,7 +130,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 
 	/* renames are only allowed within a directory */
 	if (strchr_m(info->rename_information.in.new_name, '\\') &&
-	    (req->ctx->protocol != PROTOCOL_SMB2)) {
+	    (req->ctx->protocol < PROTOCOL_SMB2_02)) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -143,7 +143,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 	/* w2k3 does not appear to allow relative rename. On SMB2, vista sends it sometimes,
 	   but I suspect it is just uninitialised memory */
 	if (info->rename_information.in.root_fid != 0 && 
-	    (req->ctx->protocol != PROTOCOL_SMB2)) {
+	    (req->ctx->protocol < PROTOCOL_SMB2_02)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

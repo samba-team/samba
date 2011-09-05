@@ -59,7 +59,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	}
 
 	maxcnt = rd->readx.in.maxcnt;
-	if (maxcnt > 2*UINT16_MAX && req->ctx->protocol < PROTOCOL_SMB2) {
+	if (maxcnt > 2*UINT16_MAX && req->ctx->protocol < PROTOCOL_SMB2_02) {
 		DEBUG(3,(__location__ ": Invalid SMB maxcnt 0x%x\n", maxcnt));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
