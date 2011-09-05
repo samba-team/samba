@@ -314,6 +314,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_dom_sid(struct ndr_push *ndr, int ndr_flags,
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sid_rev_num));
 		NDR_CHECK(ndr_push_int8(ndr, NDR_SCALARS, r->num_auths));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->id_auth, 6));
+		if (r->num_auths < 0 || r->num_auths > ARRAY_SIZE(r->sub_auths)) {
+			return ndr_push_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		for (cntr_sub_auths_0 = 0; cntr_sub_auths_0 < r->num_auths; cntr_sub_auths_0++) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sub_auths[cntr_sub_auths_0]));
 		}
@@ -328,7 +331,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dom_sid(struct ndr_pull *ndr, int ndr_flags,
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sid_rev_num));
 		NDR_CHECK(ndr_pull_int8(ndr, NDR_SCALARS, &r->num_auths));
-		if (r->num_auths < 0 || r->num_auths > 15) {
+		if (r->num_auths < 0 || r->num_auths > ARRAY_SIZE(r->sub_auths)) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->id_auth, 6));
