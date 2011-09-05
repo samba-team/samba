@@ -22,6 +22,7 @@
 #include "client.h"
 #include "read_smb.h"
 #include "smb2cli_base.h"
+#include "libsmb/proto.h"
 #include "lib/async_req/async_sock.h"
 #include "lib/util/tevent_ntstatus.h"
 
@@ -259,6 +260,10 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		}
 
 		state = tevent_req_data(reqs[i], struct smb2cli_req_state);
+
+		if (!cli_state_is_connected(state->cli)) {
+			return NT_STATUS_CONNECTION_DISCONNECTED;
+		}
 
 		if (state->cli->smb2.mid == UINT64_MAX) {
 			return NT_STATUS_CONNECTION_ABORTED;
