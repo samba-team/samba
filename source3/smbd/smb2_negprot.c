@@ -80,6 +80,7 @@ void reply_smb20ff(struct smb_request *req, uint16_t choice)
 
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 {
+	NTSTATUS status;
 	const uint8_t *inbody;
 	const uint8_t *indyn = NULL;
 	int i = req->current_idx;
@@ -88,8 +89,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	DATA_BLOB negprot_spnego_blob;
 	uint16_t security_offset;
 	DATA_BLOB security_buffer;
-	size_t expected_body_size = 0x24;
-	size_t body_size;
 	size_t expected_dyn_size = 0;
 	size_t c;
 	uint16_t security_mode;
@@ -104,16 +103,11 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 /* TODO: drop the connection with INVALID_PARAMETER */
 
-	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
-		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	status = smbd_smb2_request_verify_sizes(req, 0x24);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
 	}
-
 	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
-
-	body_size = SVAL(inbody, 0x00);
-	if (body_size != expected_body_size) {
-		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
-	}
 
 	dialect_count = SVAL(inbody, 0x02);
 	if (dialect_count == 0) {
