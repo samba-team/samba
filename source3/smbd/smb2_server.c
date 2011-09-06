@@ -1250,6 +1250,48 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
+					size_t expected_body_size)
+{
+	const uint8_t *inbody;
+	int i = req->current_idx;
+	size_t body_size;
+
+	/*
+	 * The following should be checked already.
+	 */
+	if ((i+2) > req->in.vector_count) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	if (req->in.vector[i+0].iov_len != SMB2_HDR_BODY) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	if (req->in.vector[i+1].iov_len < 2) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/*
+	 * Now check the expected body size,
+	 * where the last byte might be in the
+	 * dynnamic section..
+	 */
+	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (req->in.vector[i+2].iov_len < (expected_body_size & 0x00000001)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+
+	body_size = SVAL(inbody, 0x00);
+	if (body_size != expected_body_size) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;

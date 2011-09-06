@@ -269,6 +269,9 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req);
 void remove_smb2_chained_fsp(files_struct *fsp);
 
+NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
+					size_t expected_body_size);
+
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req);
