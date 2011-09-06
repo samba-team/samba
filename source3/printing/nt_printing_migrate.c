@@ -73,6 +73,10 @@ NTSTATUS printing_tdb_migrate_form(TALLOC_CTX *mem_ctx,
 	result = winreg_printer_addform1(mem_ctx,
 					 b,
 					 &f1);
+	if (W_ERROR_EQUAL(result, WERR_FILE_EXISTS)) {
+		/* Don't migrate form if it already exists. */
+		result = WERR_OK;
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		return werror_to_ntstatus(result);
 	}
