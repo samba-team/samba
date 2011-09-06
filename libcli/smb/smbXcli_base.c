@@ -111,6 +111,8 @@ struct smbXcli_conn {
 		} server;
 
 		uint64_t mid;
+		uint16_t cur_credits;
+		uint16_t max_credits;
 	} smb2;
 };
 
@@ -164,6 +166,8 @@ struct smbXcli_req_state {
 
 		/* always an array of 3 talloc elements */
 		struct iovec *recv_iov;
+
+		uint16_t credit_charge;
 	} smb2;
 };
 
@@ -275,6 +279,9 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 	if (client_guid) {
 		conn->smb2.client.guid = *client_guid;
 	}
+
+	conn->smb2.cur_credits = 1;
+	conn->smb2.max_credits = 0;
 
 	talloc_set_destructor(conn, smbXcli_conn_destructor);
 	return conn;
@@ -1958,6 +1965,12 @@ uint32_t smb2cli_conn_max_write_size(struct smbXcli_conn *conn)
 	return conn->smb2.server.max_write_size;
 }
 
+void smb2cli_conn_set_max_credits(struct smbXcli_conn *conn,
+				  uint16_t max_credits)
+{
+	conn->smb2.max_credits = max_credits;
+}
+
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct smbXcli_conn *conn,
@@ -2002,10 +2015,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 
 	SIVAL(state->smb2.hdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
 	SSVAL(state->smb2.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
-	SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT_CHARGE,	1);
-	SIVAL(state->smb2.hdr, SMB2_HDR_STATUS,		NT_STATUS_V(NT_STATUS_OK));
 	SSVAL(state->smb2.hdr, SMB2_HDR_OPCODE,		cmd);
-	SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT,		31);
 	SIVAL(state->smb2.hdr, SMB2_HDR_FLAGS,		flags);
 	SIVAL(state->smb2.hdr, SMB2_HDR_PID,		pid);
 	SIVAL(state->smb2.hdr, SMB2_HDR_TID,		tid);
@@ -2068,6 +2078,9 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	for (i=0; i<num_reqs; i++) {
 		size_t reqlen;
 		bool ret;
+		uint64_t avail;
+		uint16_t charge;
+		uint16_t credits;
 		uint64_t mid;
 
 		if (!tevent_req_is_in_progress(reqs[i])) {
@@ -2085,13 +2098,41 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 			return NT_STATUS_REVISION_MISMATCH;
 		}
 
-		if (state->conn->smb2.mid == UINT64_MAX) {
+		avail = UINT64_MAX - state->conn->smb2.mid;
+		if (avail < 1) {
 			return NT_STATUS_CONNECTION_ABORTED;
 		}
 
-		mid = state->conn->smb2.mid;
-		state->conn->smb2.mid += 1;
+		if (state->conn->smb2.server.capabilities & SMB2_CAP_LARGE_MTU) {
+			charge = (MAX(state->smb2.dyn_len, 1) - 1)/ 65536 + 1;
+		} else {
+			charge = 1;
+		}
 
+		charge = MAX(state->smb2.credit_charge, charge);
+
+		avail = MIN(avail, state->conn->smb2.cur_credits);
+		if (avail < charge) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		credits = 0;
+		if (state->conn->smb2.max_credits > state->conn->smb2.cur_credits) {
+			credits = state->conn->smb2.max_credits -
+				  state->conn->smb2.cur_credits;
+		}
+		if (state->conn->smb2.max_credits >= state->conn->smb2.cur_credits) {
+			credits += 1;
+		}
+
+		mid = state->conn->smb2.mid;
+		state->conn->smb2.mid += charge;
+		state->conn->smb2.cur_credits -= charge;
+
+		if (state->conn->smb2.server.capabilities & SMB2_CAP_LARGE_MTU) {
+			SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT_CHARGE, charge);
+		}
+		SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT, credits);
 		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 
 		iov[num_iov].iov_base = state->smb2.hdr;
@@ -2150,6 +2191,15 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	}
 	tevent_req_set_callback(subreq, smb2cli_writev_done, reqs[0]);
 	return NT_STATUS_OK;
+}
+
+void smb2cli_req_set_credit_charge(struct tevent_req *req, uint16_t charge)
+{
+	struct smbXcli_req_state *state =
+		tevent_req_data(req,
+		struct smbXcli_req_state);
+
+	state->smb2.credit_charge = charge;
 }
 
 struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
@@ -2353,6 +2403,15 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		uint32_t flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 		uint16_t req_opcode;
+		uint16_t credits = SVAL(inhdr, SMB2_HDR_CREDIT);
+		uint32_t new_credits;
+
+		new_credits = conn->smb2.cur_credits;
+		new_credits += credits;
+		if (new_credits > UINT16_MAX) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		conn->smb2.cur_credits += credits;
 
 		req = smb2cli_conn_find_pending(conn, mid);
 		if (req == NULL) {
