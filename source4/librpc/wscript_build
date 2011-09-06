@@ -144,7 +144,7 @@ bld.SAMBA_LIBRARY('dcerpc',
 	public_headers='''rpc/dcerpc.h ../../librpc/gen_ndr/mgmt.h
 	../../librpc/gen_ndr/ndr_mgmt.h ../../librpc/gen_ndr/ndr_mgmt_c.h
 	../../librpc/gen_ndr/epmapper.h ../../librpc/gen_ndr/ndr_epmapper.h
-	../../librpc/gen_ndr/ndr_epmapper_c.h ../../librpc/rpc/rpc_common.h''',
+	../../librpc/gen_ndr/ndr_epmapper_c.h''',
 	# It's very important to keep this form of construction
 	# it force the sambawaf extension to put everything that match the first element
 	# (*gen_ndr*) into the dir named by the second element (gen_ndr).
