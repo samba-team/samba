@@ -386,16 +386,28 @@ struct ncList {
 static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 			     const char *ntds_guid_str, struct ncList **master_nc_list)
 {
-	const char *attrs[] = { "hasMasterNCs", NULL };
+	const char *post_2003_attrs[] = { "msDs-hasMasterNCs", NULL };
+	const char *pre_2003_attrs[] = { "hasMasterNCs", NULL };
 	struct ldb_result *res;
 	struct ncList *nc_list = NULL;
 	struct ncList *nc_list_elem;
 	int ret;
 	unsigned int i;
 	char *nc_str;
+	int is_level_post_2003;
 
+	/* In W2003 and greater, msDs-hasMasterNCs attribute lists the writable NC replicas */
+	is_level_post_2003 = 1;
 	ret = ldb_search(samdb, mem_ctx, &res, ldb_get_config_basedn(samdb),
-			LDB_SCOPE_DEFAULT, attrs, "(objectguid=%s)", ntds_guid_str);
+			LDB_SCOPE_DEFAULT, post_2003_attrs, "(objectguid=%s)", ntds_guid_str);
+
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed objectguid search - %s\n", ldb_errstring(samdb)));
+
+		is_level_post_2003 = 0;
+		ret = ldb_search(samdb, mem_ctx, &res, ldb_get_config_basedn(samdb),
+			LDB_SCOPE_DEFAULT, pre_2003_attrs, "(objectguid=%s)", ntds_guid_str);
+	}
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed objectguid search - %s\n", ldb_errstring(samdb)));
@@ -408,8 +420,14 @@ static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 	}
 
 	for (i = 0; i < res->count; i++) {
-		struct ldb_message_element *msg_elem = ldb_msg_find_element(res->msgs[i], "hasMasterNCs");
+		struct ldb_message_element *msg_elem;
 		unsigned int k;
+
+		if (is_level_post_2003) {
+			msg_elem = ldb_msg_find_element(res->msgs[i], "msDs-hasMasterNCs");
+		} else {
+			msg_elem = ldb_msg_find_element(res->msgs[i], "hasMasterNCs");
+		}
 
 		if (!msg_elem || msg_elem->num_values == 0) {
 			DEBUG(0,(__location__ ": Failed: Attribute hasMasterNCs not found - %s\n",
