@@ -414,6 +414,7 @@ struct ctdb_context {
 	uint32_t recovery_mode;
 	TALLOC_CTX *tickle_update_context;
 	TALLOC_CTX *keepalive_ctx;
+	TALLOC_CTX *check_public_ifaces_ctx;
 	struct ctdb_tunable tunable;
 	enum ctdb_freeze_mode freeze_mode[NUM_DB_PRIORITIES+1];
 	struct ctdb_freeze_handle *freeze_handles[NUM_DB_PRIORITIES+1];
@@ -1111,6 +1112,7 @@ int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
 uint32_t uint16_checksum(uint16_t *data, size_t n);
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
+bool ctdb_sys_check_iface_exists(const char *iface);
 int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
 		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst);
