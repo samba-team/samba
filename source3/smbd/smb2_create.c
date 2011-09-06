@@ -100,8 +100,6 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 {
 	const uint8_t *inbody;
 	int i = smb2req->current_idx;
-	size_t expected_body_size = 0x39;
-	size_t body_size;
 	uint8_t in_oplock_level;
 	uint32_t in_impersonation_level;
 	uint32_t in_desired_access;
@@ -127,16 +125,11 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	bool ok;
 	struct tevent_req *tsubreq;
 
-	if (smb2req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
-		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
+	status = smbd_smb2_request_verify_sizes(smb2req, 0x39);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(smb2req, status);
 	}
-
 	inbody = (const uint8_t *)smb2req->in.vector[i+1].iov_base;
-
-	body_size = SVAL(inbody, 0x00);
-	if (body_size != expected_body_size) {
-		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
-	}
 
 	in_oplock_level		= CVAL(inbody, 0x03);
 	in_impersonation_level	= IVAL(inbody, 0x04);
@@ -158,7 +151,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	 *       overlap
 	 */
 
-	dyn_offset = SMB2_HDR_BODY + (body_size & 0xFFFFFFFE);
+	dyn_offset = SMB2_HDR_BODY + smb2req->in.vector[i+1].iov_len;
 
 	if (in_name_offset == 0 && in_name_length == 0) {
 		/* This is ok */
