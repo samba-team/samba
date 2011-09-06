@@ -65,6 +65,7 @@ objectClass: crossRef
 nCName: ${DOMAINZONE_DN}
 dnsRoot: ${DOMAINZONE_DNS}
 systemFlags: 5
+msDS-NC-Replica-Locations: CN=NTDS Settings,${SERVERDN}
 
 dn: CN=${FORESTZONE_GUID},CN=Partitions,${CONFIGDN}
 objectClass: top
@@ -72,3 +73,5 @@ objectClass: crossRef
 nCName: ${FORESTZONE_DN}
 dnsRoot: ${FORESTZONE_DNS}
 systemFlags: 5
+msDS-NC-Replica-Locations: CN=NTDS Settings,${SERVERDN}
+

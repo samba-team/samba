@@ -165,6 +165,7 @@ def setup_dns_partitions(samdb, domaindn, forestdn, configdn, serverdn):
         "DOMAINZONE_DNS": domainzone_dns,
         "FORESTZONE_DNS": forestzone_dns,
         "CONFIGDN": configdn,
+        "SERVERDN": serverdn,
         })
 
     modify_ldif(samdb, "provision_dnszones_modify.ldif", {
