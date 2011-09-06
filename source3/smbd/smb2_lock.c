@@ -58,8 +58,6 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	const uint8_t *inhdr;
 	const uint8_t *inbody;
 	const int i = req->current_idx;
-	size_t expected_body_size = 0x30;
-	size_t body_size;
 	uint32_t in_smbpid;
 	uint16_t in_lock_count;
 	uint64_t in_file_id_persistent;
@@ -68,18 +66,14 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	struct tevent_req *subreq;
 	const uint8_t *lock_buffer;
 	uint16_t l;
+	NTSTATUS status;
 
+	status = smbd_smb2_request_verify_sizes(req, 0x30);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
+	}
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
-	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
-		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
-	}
-
 	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
-
-	body_size = SVAL(inbody, 0x00);
-	if (body_size != expected_body_size) {
-		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
-	}
 
 	in_smbpid			= IVAL(inhdr, SMB2_HDR_PID);
 
