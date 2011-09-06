@@ -35,6 +35,13 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
+				      struct winbindd_domain *domain,
+				      uint32_t num_names,
+				      const char **names,
+				      const char ***domains,
+				      struct dom_sid **sids,
+				      enum lsa_SidType **types);
 
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
@@ -1154,13 +1161,13 @@ typedef NTSTATUS (*lookup_names_fn_t)(struct dcerpc_binding_handle *h,
 				      enum lsa_SidType **types,
 				      NTSTATUS *result);
 
-NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
-			       struct winbindd_domain *domain,
-			       uint32_t num_names,
-			       const char **names,
-			       const char ***domains,
-			       struct dom_sid **sids,
-			       enum lsa_SidType **types)
+static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
+				      struct winbindd_domain *domain,
+				      uint32_t num_names,
+				      const char **names,
+				      const char ***domains,
+				      struct dom_sid **sids,
+				      enum lsa_SidType **types)
 {
 	NTSTATUS status;
 	NTSTATUS result;
