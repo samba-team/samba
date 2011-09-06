@@ -212,6 +212,14 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 		return smbd_smb2_request_error(smb2req, NT_STATUS_ILLEGAL_CHARACTER);
 	}
 
+	if (in_name_buffer.length == 0) {
+		in_name_string_size = 0;
+	}
+
+	if (strlen(in_name_string) != in_name_string_size) {
+		return smbd_smb2_request_error(smb2req, NT_STATUS_OBJECT_NAME_INVALID);
+	}
+
 	ZERO_STRUCT(in_context_blobs);
 	status = smb2_create_blob_parse(smb2req, in_context_buffer, &in_context_blobs);
 	if (!NT_STATUS_IS_OK(status)) {
