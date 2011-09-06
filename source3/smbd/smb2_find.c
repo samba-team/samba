@@ -107,6 +107,14 @@ NTSTATUS smbd_smb2_request_process_find(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_ILLEGAL_CHARACTER);
 	}
 
+	if (in_file_name_buffer.length == 0) {
+		in_file_name_string_size = 0;
+	}
+
+	if (strlen(in_file_name_string) != in_file_name_string_size) {
+		return smbd_smb2_request_error(req, NT_STATUS_OBJECT_NAME_INVALID);
+	}
+
 	if (req->compat_chain_fsp) {
 		/* skip check */
 	} else if (in_file_id_persistent != in_file_id_volatile) {
