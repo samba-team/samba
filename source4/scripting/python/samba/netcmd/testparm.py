@@ -44,7 +44,7 @@ from samba.netcmd import Command, CommandError, Option
 class cmd_testparm(Command):
     """Syntax check the configuration file"""
 
-    synopsis = ""
+    synopsis = "%prog testparm [<hostname>] [<hostip>] [options]"
 
     takes_optiongroups = {
         "sambaopts" : options.SambaOptions,
