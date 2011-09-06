@@ -326,6 +326,12 @@ done:
 	return ret;
 }
 
+static bool is_zero_terminated_ucs2(const uint8_t* data, size_t len) {
+	const size_t idx = len/sizeof(smb_ucs2_t);
+	const smb_ucs2_t *str = (const smb_ucs2_t*)data;
+	return (idx > 0) && (str[idx] == 0);
+}
+
 int reg_format_value(struct reg_format* f, const char* name, uint32_t type,
 		     const uint8_t* data, size_t len)
 {
@@ -334,7 +340,9 @@ int reg_format_value(struct reg_format* f, const char* name, uint32_t type,
 
 	switch (type) {
 	case REG_SZ:
-		if (!(f->flags & REG_FMT_HEX_SZ)) {
+		if (!(f->flags & REG_FMT_HEX_SZ)
+		    && is_zero_terminated_ucs2(data, len))
+		{
 			char* str = NULL;
 			size_t dlen;
 			if (pull_ucs2_talloc(mem_ctx, &str, (const smb_ucs2_t*)data, &dlen)) {
