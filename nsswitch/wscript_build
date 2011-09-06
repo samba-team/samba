@@ -27,6 +27,7 @@ if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
 		deps='intl talloc wbclient winbind-client LIBINIPARSER pam',
 		cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
 		realname='pam_winbind.so',
+		install_path='${PAMMODULESDIR}'
 		)
 
 if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
