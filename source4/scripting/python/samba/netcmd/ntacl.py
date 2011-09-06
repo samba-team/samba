@@ -41,7 +41,7 @@ from samba.netcmd import (
 
 class cmd_ntacl_set(Command):
     """Set ACLs on a file"""
-    synopsis = "%prog set <acl> <file> [--xattr-backend=native|tdb] [--eadb-file=file] [options]"
+    synopsis = "%prog set <acl> <file> [options]"
 
     takes_options = [
         Option("--quiet", help="Be quiet", action="store_true"),
@@ -79,7 +79,7 @@ class cmd_ntacl_set(Command):
 
 class cmd_ntacl_get(Command):
     """Set ACLs on a file"""
-    synopsis = "%prog get <file> [--as-sddl] [--xattr-backend=native|tdb] [--eadb-file=file] [options]"
+    synopsis = "%prog get <file> [options]"
 
     takes_options = [
         Option("--as-sddl", help="Output ACL in the SDDL format", action="store_true"),
