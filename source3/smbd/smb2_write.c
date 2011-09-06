@@ -245,7 +245,7 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->smb2req = smb2req;
-	if (in_flags & 0x00000001) {
+	if (in_flags & SMB2_WRITEFLAG_WRITE_THROUGH) {
 		state->write_through = true;
 	}
 	state->in_length = in_data.length;
