@@ -108,7 +108,7 @@ class cmd_user_add(Command):
 class cmd_user_delete(Command):
     """Delete a user"""
 
-    synopsis = "%prog user delete <username>"
+    synopsis = "%prog user delete <username> [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -129,6 +129,7 @@ class cmd_user_delete(Command):
         except Exception, e:
             raise CommandError('Failed to remove user "%s"' % username, e)
         print("Deleted user %s" % username)
+
 
 
 class cmd_user_enable(Command):
