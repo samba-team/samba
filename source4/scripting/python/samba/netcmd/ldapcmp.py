@@ -412,7 +412,7 @@ class Descriptor(object):
         return (self_aces == [] and other_aces == [], res)
 
 class LDAPObject(object):
-    def __init__(self, connection, dn, summary):
+    def __init__(self, connection, dn, summary, filter_list):
         self.con = connection
         self.two_domains = self.con.two_domains
         self.quiet = self.con.quiet
@@ -434,7 +434,10 @@ class LDAPObject(object):
                 "repsFrom", "dSCorePropagationData", "msExchServer1HighestUSN",
                 "replUpToDateVector", "repsTo", "whenChanged", "uSNChanged", "uSNCreated",
                 # Schema Naming Context
-                "prefixMap",]
+                "prefixMap"]
+        if filter_list:
+            self.ignore_attributes += filter_list
+
         self.dn_attributes = []
         self.domain_attributes = []
         self.servername_attributes = []
@@ -662,7 +665,7 @@ class LDAPObject(object):
 
 
 class LDAPBundel(object):
-    def __init__(self, connection, context, dn_list=None):
+    def __init__(self, connection, context, dn_list=None, filter_list=None):
         self.con = connection
         self.two_domains = self.con.two_domains
         self.quiet = self.con.quiet
@@ -674,6 +677,7 @@ class LDAPBundel(object):
         self.summary["df_value_attrs"] = []
         self.summary["known_ignored_dn"] = []
         self.summary["abnormal_ignored_dn"] = []
+        self.filter_list = filter_list
         if dn_list:
             self.dn_list = dn_list
         elif context.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]:
@@ -751,7 +755,8 @@ class LDAPBundel(object):
             try:
                 object1 = LDAPObject(connection=self.con,
                                      dn=self.dn_list[index],
-                                     summary=self.summary)
+                                     summary=self.summary,
+                                     filter_list=self.filter_list)
             except LdbError, (enum, estr):
                 if enum == ERR_NO_SUCH_OBJECT:
                     self.log( "\n!!! Object not found: %s" % self.dn_list[index] )
@@ -760,7 +765,8 @@ class LDAPBundel(object):
             try:
                 object2 = LDAPObject(connection=other.con,
                         dn=other.dn_list[index],
-                        summary=other.summary)
+                        summary=other.summary,
+                        filter_list=self.filter_list)
             except LdbError, (enum, estr):
                 if enum == ERR_NO_SUCH_OBJECT:
                     self.log( "\n!!! Object not found: %s" % other.dn_list[index] )
@@ -865,12 +871,15 @@ class cmd_ldapcmp(Command):
             help="Pass search base that will build DN list for the second DC. Used when --two or when compare two different DNs."),
         Option("--scope", dest="scope", default="SUB",
             help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
+        Option("--filter", dest="filter", default="",
+            help="List of comma separated attributes to ignore in the comparision"),
         ]
 
     def run(self, URL1, URL2,
             context1=None, context2=None, context3=None,
-            two=False, quiet=False, verbose=False, descriptor=False, sort_aces=False, view="section",
-            base="", base2="", scope="SUB", credopts=None, sambaopts=None, versionopts=None):
+            two=False, quiet=False, verbose=False, descriptor=False, sort_aces=False,
+            view="section", base="", base2="", scope="SUB", filter="",
+            credopts=None, sambaopts=None, versionopts=None):
 
         lp = sambaopts.get_loadparm()
 
@@ -926,13 +935,15 @@ class cmd_ldapcmp(Command):
                         verbose=verbose, view=view, base=base2, scope=scope)
         assert len(con2.base_dn) > 0
 
+        filter_list = filter.split(",")
+
         status = 0
         for context in contexts:
             if not quiet:
                 print "\n* Comparing [%s] context..." % context
 
-            b1 = LDAPBundel(con1, context=context)
-            b2 = LDAPBundel(con2, context=context)
+            b1 = LDAPBundel(con1, context=context, filter_list=filter_list)
+            b2 = LDAPBundel(con2, context=context, filter_list=filter_list)
 
             if b1 == b2:
                 if not quiet:
