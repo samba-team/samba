@@ -537,3 +537,25 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 }
 
 
+bool ctdb_sys_check_iface_exists(const char *iface)
+{
+	int s;
+	struct ifreq ifr;
+
+	s = socket(PF_PACKET, SOCK_RAW, 0);
+	if (s == -1){
+		/* We dont know if the interface exists, so assume yes */
+		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
+		return true;
+	}
+
+	strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
+	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0 && errno == ENODEV) {
+		DEBUG(DEBUG_CRIT,(__location__ " interface '%s' not found\n", iface));
+		close(s);
+		return false;
+	}
+	close(s);
+	
+	return true;
+}

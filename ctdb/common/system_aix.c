@@ -357,4 +357,8 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 }
 
 
+bool ctdb_sys_check_iface_exists(const char *iface)
+{
+	return true;
+}
 

@@ -1111,6 +1111,7 @@ int ctdb_ctrl_set_iface_link(struct ctdb_context *ctdb,
 uint32_t uint16_checksum(uint16_t *data, size_t n);
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
+bool ctdb_sys_check_iface_exists(const char *iface);
 int ctdb_sys_send_tcp(const ctdb_sock_addr *dest, 
 		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst);
