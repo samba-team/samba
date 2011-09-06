@@ -414,6 +414,7 @@ struct ctdb_context {
 	uint32_t recovery_mode;
 	TALLOC_CTX *tickle_update_context;
 	TALLOC_CTX *keepalive_ctx;
+	TALLOC_CTX *check_public_ifaces_ctx;
 	struct ctdb_tunable tunable;
 	enum ctdb_freeze_mode freeze_mode[NUM_DB_PRIORITIES+1];
 	struct ctdb_freeze_handle *freeze_handles[NUM_DB_PRIORITIES+1];

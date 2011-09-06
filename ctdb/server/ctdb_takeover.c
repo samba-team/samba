@@ -951,6 +951,51 @@ int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir)
 	return 0;
 }
 
+static void ctdb_check_interfaces_event(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, 
+							struct ctdb_context);
+	struct ctdb_vnn *vnn;
+
+	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
+		int i;
+
+		for (i=0; vnn->ifaces[i] != NULL; i++) {
+			if (!ctdb_sys_check_iface_exists(vnn->ifaces[i])) {
+				DEBUG(DEBUG_CRIT,("Interface %s does not exist but is used by public ip %s\n",
+					vnn->ifaces[i],
+					ctdb_addr_to_str(&vnn->public_address)));
+			}
+		}
+	}
+
+	event_add_timed(ctdb->ev, ctdb->check_public_ifaces_ctx, 
+		timeval_current_ofs(30, 0), 
+		ctdb_check_interfaces_event, ctdb);
+}
+
+
+static int ctdb_start_monitoring_interfaces(struct ctdb_context *ctdb)
+{
+	if (ctdb->check_public_ifaces_ctx != NULL) {
+		talloc_free(ctdb->check_public_ifaces_ctx);
+		ctdb->check_public_ifaces_ctx = NULL;
+	}
+
+	ctdb->check_public_ifaces_ctx = talloc_new(ctdb);
+	if (ctdb->check_public_ifaces_ctx == NULL) {
+		ctdb_fatal(ctdb, "failed to allocate context for checking interfaces");
+	}
+
+	event_add_timed(ctdb->ev, ctdb->check_public_ifaces_ctx, 
+		timeval_current_ofs(30, 0), 
+		ctdb_check_interfaces_event, ctdb);
+
+	return 0;
+}
+
+
 /*
   setup the public address lists from a file
 */
@@ -1012,6 +1057,9 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 			return -1;
 		}
 	}
+
+
+	ctdb_start_monitoring_interfaces(ctdb);
 
 	talloc_free(lines);
 	return 0;
