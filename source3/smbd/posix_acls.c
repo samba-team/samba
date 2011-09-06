@@ -1457,29 +1457,12 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		pace->unix_ug.uid = pst->st_ex_gid;
 		pace->trustee = *pfile_grp_sid;
 		pace->attr = ALLOW_ACE;
-		/* Start with existing permissions, principle of least
-		   surprises for the user. */
-		pace->perms = pst->st_ex_mode;
-
 		if (setting_acl) {
-			/* See if there's a matching group entry.
-			   If so, OR in the permissions from that entry. */
-
-			canon_ace *pace_iter;
-
-			for (pace_iter = *pp_ace; pace_iter; pace_iter = pace_iter->next) {
-				if (pace_iter->type == SMB_ACL_GROUP &&
-							pace_iter->unix_ug.gid == pace->unix_ug.gid) {
-					pace->perms |= pace_iter->perms;
-					break;
-				}
-			}
-
 			/* If we only got an "everyone" perm, just use that. */
-			if (pace->perms == 0) {
-				if (got_other)
-					pace->perms = pace_other->perms;
-			}
+			if (got_other)
+				pace->perms = pace_other->perms;
+			else
+				pace->perms = 0;
 			apply_default_perms(params, is_directory, pace, S_IRGRP);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_ex_mode, S_IRGRP, S_IWGRP, S_IXGRP);
