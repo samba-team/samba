@@ -159,7 +159,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
 				   const char *remote_name,
 				   const char *remote_realm,
-				   int signing_state);
+				   int signing_state,
+				   int flags);
 bool cli_state_encryption_on(struct cli_state *cli);
 void cli_nt_pipes_close(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);

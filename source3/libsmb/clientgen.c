@@ -165,7 +165,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int fd,
 				   const char *remote_name,
 				   const char *remote_realm,
-				   int signing_state)
+				   int signing_state, int flags)
 {
 	struct cli_state *cli = NULL;
 	bool allow_smb_signing = false;
@@ -203,6 +203,27 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	   ones.  This intended only as a temporary hack. */	
 	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = true;
+
+	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO) {
+		cli->use_spnego = false;
+	} else if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
+		cli->use_kerberos = true;
+	}
+	if ((flags & CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS) &&
+	     cli->use_kerberos) {
+		cli->fallback_after_kerberos = true;
+	}
+
+	if (flags & CLI_FULL_CONNECTION_USE_CCACHE) {
+		cli->use_ccache = true;
+	}
+
+	if (flags & CLI_FULL_CONNECTION_OPLOCKS) {
+		cli->use_oplocks = true;
+	}
+	if (flags & CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS) {
+		cli->use_level_II_oplocks = true;
+	}
 
 	if (lp_client_signing()) {
 		allow_smb_signing = true;

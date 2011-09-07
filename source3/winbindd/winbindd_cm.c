@@ -787,6 +787,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	char *ipc_username = NULL;
 	char *ipc_domain = NULL;
 	char *ipc_password = NULL;
+	int flags = 0;
 
 	struct named_mutex *mutex;
 
@@ -806,9 +807,11 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto done;
 	}
 
+	flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+
 	*cli = cli_state_create(NULL, sockfd,
 				controller, domain->alt_name,
-				Undefined);
+				Undefined, flags);
 	if (*cli == NULL) {
 		DEBUG(1, ("Could not cli_initialize\n"));
 		result = NT_STATUS_NO_MEMORY;
@@ -816,8 +819,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	}
 
 	cli_set_timeout(*cli, 10000); /* 10 seconds */
-
-	(*cli)->use_kerberos = True;
 
 	result = cli_negprot(*cli);
 

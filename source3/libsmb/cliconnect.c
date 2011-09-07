@@ -2854,6 +2854,7 @@ NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss
 	int fd = -1;
 	char *desthost;
 	char *p;
+	int flags = 0;
 
 	desthost = talloc_strdup(talloc_tos(), host);
 	if (desthost == NULL) {
@@ -2875,7 +2876,7 @@ NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss
 		goto fail;
 	}
 
-	cli = cli_state_create(NULL, fd, desthost, NULL, signing_state);
+	cli = cli_state_create(NULL, fd, desthost, NULL, signing_state, flags);
 	if (cli == NULL) {
 		goto fail;
 	}
