@@ -219,9 +219,9 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	SSVAL(state->hdr, SMB2_HDR_OPCODE,	cmd);
 	SSVAL(state->hdr, SMB2_HDR_CREDIT,	31);
 	SIVAL(state->hdr, SMB2_HDR_FLAGS,	flags);
-	SIVAL(state->hdr, SMB2_HDR_PID,		cli->smb2.pid);
-	SIVAL(state->hdr, SMB2_HDR_TID,		cli->smb2.tid);
-	SBVAL(state->hdr, SMB2_HDR_SESSION_ID,	cli->smb2.uid);
+	SIVAL(state->hdr, SMB2_HDR_PID,		pid);
+	SIVAL(state->hdr, SMB2_HDR_TID,		tid);
+	SBVAL(state->hdr, SMB2_HDR_SESSION_ID,	uid);
 
 	return req;
 }
