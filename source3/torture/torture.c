@@ -3323,18 +3323,20 @@ static bool run_trans2test(int dummy)
 		printf("ERROR: qpathinfo failed (%s)\n", nt_errstr(status));
 		correct = False;
 	} else {
+		time_t t = time(NULL);
+
 		if (c_time != m_time) {
 			printf("create time=%s", ctime(&c_time));
 			printf("modify time=%s", ctime(&m_time));
 			printf("This system appears to have sticky create times\n");
 		}
-		if (a_time % (60*60) == 0) {
+		if ((abs(a_time - t) > 60) && (a_time % (60*60) == 0)) {
 			printf("access time=%s", ctime(&a_time));
 			printf("This system appears to set a midnight access time\n");
 			correct = False;
 		}
 
-		if (abs(m_time - time(NULL)) > 60*60*24*7) {
+		if (abs(m_time - t) > 60*60*24*7) {
 			printf("ERROR: totally incorrect times - maybe word reversed? mtime=%s", ctime(&m_time));
 			correct = False;
 		}
