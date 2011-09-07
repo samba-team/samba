@@ -3,6 +3,7 @@
 # common functions for samba-tool python commands
 #
 # Copyright Andrew Tridgell 2010
+# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,14 +19,40 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import re
 from samba.dcerpc import nbt
 from samba.net import Net
+
+
+
+def _get_user_realm_domain(user):
+    """ get the realm or the domain and the base user
+        from user like:
+        * username
+        * DOMAIN\username
+        * username@REALM
+    """
+    baseuser = user
+    realm = ""
+    domain = ""
+    m = re.match(r"(\w+)\\(\w+$)", user)
+    if m:
+        domain = m.group(1)
+        baseuser = m.group(2)
+        return (baseuser.lower(), domain.upper(), realm)
+    m = re.match(r"(\w+)@(\w+)", user)
+    if m:
+        baseuser = m.group(1)
+        realm = m.group(2)
+    return (baseuser.lower(), domain, realm.upper())
+
 
 
 def netcmd_dnsname(lp):
     '''return the full DNS name of our own host. Used as a default
        for hostname when running status queries'''
     return lp.get('netbios name').lower() + "." + lp.get('realm').lower()
+
 
 
 def netcmd_finddc(lp, creds):

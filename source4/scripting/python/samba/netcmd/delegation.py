@@ -23,38 +23,17 @@
 
 import samba.getopt as options
 import ldb
-import re
 from samba import provision
 from samba import dsdb
 from samba.samdb import SamDB
 from samba.auth import system_session
+from samba.netcmd.common import _get_user_realm_domain
 from samba.netcmd import (
     Command,
     CommandError,
     SuperCommand,
     Option
     )
-
-def _get_user_realm_domain(user):
-    """ get the realm or the domain and the base user
-        from user like:
-        * username
-        * DOMAIN\username
-        * username@REALM
-    """
-    baseuser = user
-    realm = ""
-    domain = ""
-    m = re.match(r"(\w+)\\(\w+$)", user)
-    if m:
-        domain = m.group(1)
-        baseuser = m.group(2)
-        return (baseuser.lower(), domain.upper(), realm)
-    m = re.match(r"(\w+)@(\w+)", user)
-    if m:
-        baseuser = m.group(1)
-        realm = m.group(2)
-    return (baseuser.lower(), domain, realm.upper())
 
 
 
