@@ -1907,6 +1907,7 @@ static NTSTATUS regdb_set_secdesc_action(struct db_context *db,
 
 	tdbkey = talloc_asprintf(frame, "%s\\%s", REG_SECDESC_PREFIX, ctx->key);
 	if (tdbkey == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
