@@ -33,7 +33,7 @@ from samba.dcerpc import lsa, samr, security
 from samba.dcerpc.security import dom_sid
 from samba import dsdb
 from samba.ndr import ndr_pack
-
+from samba import unix2nttime
 
 def import_sam_policy(samdb, policy, logger):
     """Import a Samba 3 policy.
@@ -53,16 +53,29 @@ def import_sam_policy(samdb, policy, logger):
 
     m = ldb.Message()
     m.dn = samdb.get_default_basedn()
-    m['a01'] = ldb.MessageElement(str(policy['min password length']), ldb.FLAG_MOD_REPLACE,
+    m['a01'] = ldb.MessageElement(str(unix2nttime(policy['min password length'])), ldb.FLAG_MOD_REPLACE,
                             'minPwdLength')
     m['a02'] = ldb.MessageElement(str(policy['password history']), ldb.FLAG_MOD_REPLACE,
                             'pwdHistoryLength')
-    m['a03'] = ldb.MessageElement(str(policy['minimum password age']), ldb.FLAG_MOD_REPLACE,
-                            'minPwdAge')
-    m['a04'] = ldb.MessageElement(str(policy['maximum password age']), ldb.FLAG_MOD_REPLACE,
-                            'maxPwdAge')
-    m['a05'] = ldb.MessageElement(str(policy['lockout duration']), ldb.FLAG_MOD_REPLACE,
-                            'lockoutDuration')
+
+    min_pw_age_unix = policy['minimum password age']
+    min_pw_age_nt = 0 - unix2nttime(min_pw_age_unix)
+    m['a03'] = ldb.MessageElement(str(min_pw_age_nt), ldb.FLAG_MOD_REPLACE, 'minPwdAge')
+
+    max_pw_age_unix = policy['maximum password age']
+    if (max_pw_age_unix == 0xFFFFFFFF):
+        max_pw_age_nt = 0
+    else:
+        max_pw_age_nt = unix2nttime(max_pw_age_unix)
+
+    m['a04'] = ldb.MessageElement(str(max_pw_age_nt), ldb.FLAG_MOD_REPLACE,
+                                  'maxPwdAge')
+
+    lockout_duration_mins = policy['lockout duration']
+    lockout_duration_nt = unix2nttime(lockout_duration_mins * 60)
+
+    m['a05'] = ldb.MessageElement(str(lockout_duration_nt), ldb.FLAG_MOD_REPLACE,
+                                  'lockoutDuration')
 
     try:
         samdb.modify(m)
