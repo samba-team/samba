@@ -1332,6 +1332,7 @@ sub ParseStructPush($$$$)
 
 	$self->start_flags($struct, $ndr);
 
+	$self->pidl("NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);");
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
 	$self->ParseStructPushPrimitives($struct, $ndr, $varname, $env);
@@ -1645,6 +1646,7 @@ sub ParseStructPull($$$$)
 
 	my $env = GenerateStructEnv($struct, $varname);
 
+	$self->pidl("NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);");
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
 	$self->ParseStructPullPrimitives($struct,$ndr,$varname,$env);
@@ -1808,6 +1810,7 @@ sub ParseUnionPush($$$$)
 
 	$self->start_flags($e, $ndr);
 
+	$self->pidl("NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);");
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
 	$self->ParseUnionPushPrimitives($e, $ndr, $varname);
@@ -1985,6 +1988,7 @@ sub ParseUnionPull($$$$)
 
 	$self->pidl("level = ndr_pull_get_switch_value($ndr, $varname);");
 
+	$self->pidl("NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);");
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
 	$self->ParseUnionPullPrimitives($e,$ndr,$varname,$switch_type);
@@ -2267,6 +2271,8 @@ sub ParseFunctionPush($$)
 		$self->DeclareArrayVariables($e);
 	}
 
+	$self->pidl("NDR_PUSH_CHECK_FN_FLAGS(ndr, flags);");
+
 	$self->pidl("if (flags & NDR_IN) {");
 	$self->indent;
 
@@ -2353,6 +2359,8 @@ sub ParseFunctionPull($$)
 		$self->DeclareMemCtxVariables($e);
 		$double_cases{"$e->{NAME}"} = 1;
 	}
+
+	$self->pidl("NDR_PULL_CHECK_FN_FLAGS(ndr, flags);");
 
 	$self->pidl("if (flags & NDR_IN) {");
 	$self->indent;
