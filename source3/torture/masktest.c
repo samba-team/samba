@@ -179,7 +179,7 @@ static struct cli_state *connect_one(char *share)
 
 	server_n = server;
 
-	status = cli_connect_nb(server, NULL, 0, 0x20, "masktest", Undefined,
+	status = cli_connect_nb(server, NULL, 0, 0x20, "masktest", Undefined, 0,
 				&c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Connection to %s failed. Error %s\n", server_n,

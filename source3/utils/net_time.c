@@ -33,7 +33,7 @@ static time_t cli_servertime(const char *host,
 	NTSTATUS status;
 
 	status = cli_connect_nb(host, dest_ss, 0, 0x20, lp_netbios_name(),
-				Undefined, &cli);
+				Undefined, 0, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, _("Can't contact server %s. Error %s\n"),
 			host, nt_errstr(status));

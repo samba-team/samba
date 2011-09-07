@@ -71,7 +71,7 @@ bool smbd_running(void)
 	in_addr_to_sockaddr_storage(&ss, loopback_ip);
 
 	status = cli_connect_nb("localhost", &ss, 0, 0x20, lp_netbios_name(),
-				Undefined, &cli);
+				Undefined, 0, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}

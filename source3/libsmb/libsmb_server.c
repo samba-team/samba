@@ -253,6 +253,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
         const char *username_used;
  	NTSTATUS status;
 	char *newserver, *newshare;
+	int flags = 0;
 
 	ZERO_STRUCT(c);
 	*in_cache = false;
@@ -401,13 +402,25 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	status = NT_STATUS_UNSUCCESSFUL;
 
+	if (smbc_getOptionUseKerberos(context)) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	}
+
+	if (smbc_getOptionFallbackAfterKerberos(context)) {
+		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
+	}
+
+	if (smbc_getOptionUseCCache(context)) {
+		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
+	}
+
         if (share == NULL || *share == '\0' || is_ipc) {
 		/*
 		 * Try 139 first for IPC$
 		 */
 		status = cli_connect_nb(server_n, NULL, 139, 0x20,
 					smbc_getNetbiosName(context),
-					Undefined, &c);
+					Undefined, flags, &c);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -416,24 +429,12 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		 */
 		status = cli_connect_nb(server_n, NULL, 0, 0x20,
 					smbc_getNetbiosName(context),
-					Undefined, &c);
+					Undefined, flags, &c);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return NULL;
-	}
-
-        if (smbc_getOptionUseKerberos(context)) {
-		c->use_kerberos = True;
-	}
-
-        if (smbc_getOptionFallbackAfterKerberos(context)) {
-		c->fallback_after_kerberos = True;
-	}
-
-        if (smbc_getOptionUseCCache(context)) {
-		c->use_ccache = True;
 	}
 
 	cli_set_timeout(c, smbc_getTimeout(context));

@@ -181,19 +181,28 @@ static struct cli_state *open_nbt_connection(void)
 {
 	struct cli_state *c;
 	NTSTATUS status;
+	int flags = 0;
+
+	if (use_oplocks) {
+		flags |= CLI_FULL_CONNECTION_OPLOCKS;
+	}
+
+	if (use_level_II_oplocks) {
+		flags |= CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS;
+	}
+
+	if (use_kerberos) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	}
 
 	status = cli_connect_nb(host, NULL, port_to_use, 0x20, myname,
-				signing_state, &c);
+				signing_state, flags, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
 		return NULL;
 	}
 
-	c->use_kerberos = use_kerberos;
-
 	cli_set_timeout(c, 120000); /* set a really long timeout (2 minutes) */
-	if (use_oplocks) c->use_oplocks = True;
-	if (use_level_II_oplocks) c->use_level_II_oplocks = True;
 
 	return c;
 }
@@ -3545,17 +3554,11 @@ static bool run_oplock2(int dummy)
 		return False;
 	}
 
-	cli1->use_oplocks = True;
-	cli1->use_level_II_oplocks = True;
-
 	if (!torture_open_connection(&cli2, 1)) {
 		use_level_II_oplocks = False;
 		use_oplocks = saved_use_oplocks;
 		return False;
 	}
-
-	cli2->use_oplocks = True;
-	cli2->use_level_II_oplocks = True;
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 

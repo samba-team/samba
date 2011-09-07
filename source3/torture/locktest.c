@@ -169,6 +169,7 @@ static struct cli_state *connect_one(char *share, int snum)
 	fstring myname;
 	static int count;
 	NTSTATUS status;
+	int flags = 0;
 
 	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
@@ -182,15 +183,20 @@ static struct cli_state *connect_one(char *share, int snum)
 
 	/* have to open a new connection */
 
-	status = cli_connect_nb(server_n, NULL, 0, 0x20, myname, Undefined,
-				&c);
+	if (use_kerberos) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	}
+	if (use_oplocks) {
+		flags |= CLI_FULL_CONNECTION_OPLOCKS;
+	}
+
+	status = cli_connect_nb(server_n, NULL, 0, 0x20, myname,
+				Undefined, flags, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Connection to %s failed. Error %s\n", server_n,
 			  nt_errstr(status)));
 		return NULL;
 	}
-
-	c->use_kerberos = use_kerberos;
 
 	status = cli_negprot(c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -245,8 +251,6 @@ static struct cli_state *connect_one(char *share, int snum)
 	}
 
 	DEBUG(4,(" tconx ok\n"));
-
-	c->use_oplocks = use_oplocks;
 
 	return c;
 }

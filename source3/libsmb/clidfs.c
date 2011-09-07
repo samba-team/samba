@@ -95,6 +95,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	const char *username;
 	const char *password;
 	NTSTATUS status;
+	int flags = 0;
 
 	/* make a copy so we don't modify the global string 'service' */
 	servicename = talloc_strdup(ctx,share);
@@ -118,9 +119,20 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (get_cmdline_auth_info_use_kerberos(auth_info)) {
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	}
+	if (get_cmdline_auth_info_fallback_after_kerberos(auth_info)) {
+		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
+	}
+	if (get_cmdline_auth_info_use_ccache(auth_info)) {
+		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
+	}
+
 	status = cli_connect_nb(
 		server, NULL, port, name_type, NULL,
-		get_cmdline_auth_info_signing_state(auth_info), &c);
+		get_cmdline_auth_info_signing_state(auth_info),
+		flags, &c);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed (Error %s)\n",
@@ -133,10 +145,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		max_protocol = PROTOCOL_NT1;
 	}
 	c->protocol = max_protocol;
-	c->use_kerberos = get_cmdline_auth_info_use_kerberos(auth_info);
-	c->fallback_after_kerberos =
-		get_cmdline_auth_info_fallback_after_kerberos(auth_info);
-	c->use_ccache = get_cmdline_auth_info_use_ccache(auth_info);
 
 	DEBUG(4,(" session request ok\n"));
 

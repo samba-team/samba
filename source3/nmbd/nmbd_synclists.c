@@ -82,7 +82,7 @@ static void sync_child(char *name, int nm_type,
 	in_addr_to_sockaddr_storage(&ss, ip);
 
 	status = cli_connect_nb(name, &ss, 139, nm_type,
-				get_local_machine_name(), Undefined,
+				get_local_machine_name(), Undefined, 0,
 				&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return;

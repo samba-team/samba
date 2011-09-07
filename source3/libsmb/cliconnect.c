@@ -2846,7 +2846,7 @@ fail:
 
 NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
 			uint16_t port, int name_type, const char *myname,
-			int signing_state, struct cli_state **pcli)
+			int signing_state, int flags, struct cli_state **pcli)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct cli_state *cli;
@@ -2854,7 +2854,6 @@ NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss
 	int fd = -1;
 	char *desthost;
 	char *p;
-	int flags = 0;
 
 	desthost = talloc_strdup(talloc_tos(), host);
 	if (desthost == NULL) {
@@ -2905,7 +2904,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	struct cli_state *cli;
 
 	nt_status = cli_connect_nb(dest_host, dest_ss, port, 0x20, my_name,
-				   signing_state, &cli);
+				   signing_state, flags, &cli);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("cli_connect_nb failed: %s\n",
 			   nt_errstr(nt_status)));
