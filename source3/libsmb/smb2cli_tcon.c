@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "client.h"
 #include "async_smb.h"
-#include "smb2cli_base.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "smb2cli.h"
 #include "libsmb/proto.h"
 #include "lib/util/tevent_ntstatus.h"
@@ -81,7 +81,7 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 		dyn_len = sizeof(state->dyn_pad);
 	}
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_TCON,
+	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_TCON,
 				  0, 0, /* flags */
 				  cli->timeout,
 				  cli->smb2.pid,
@@ -189,7 +189,7 @@ struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
 	}
 	SSVAL(state->fixed, 0, 4);
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_TDIS,
+	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_TDIS,
 				  0, 0, /* flags */
 				  cli->timeout,
 				  cli->smb2.pid,

@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "client.h"
 #include "async_smb.h"
-#include "smb2cli_base.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "smb2cli.h"
 #include "libsmb/proto.h"
 #include "lib/util/tevent_ntstatus.h"
@@ -74,7 +74,7 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 		dyn_len = sizeof(state->dyn_pad);
 	}
 
-	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_WRITE,
+	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_WRITE,
 				  0, 0, /* flags */
 				  cli->timeout,
 				  cli->smb2.pid,
