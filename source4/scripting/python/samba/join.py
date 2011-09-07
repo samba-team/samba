@@ -34,6 +34,7 @@ from samba.dcerpc import security
 import logging
 import talloc
 import random
+import time
 
 # this makes debugging easier
 talloc.enable_null_tracking()
@@ -123,7 +124,6 @@ class dc_join(object):
         ctx.drsuapi = None
         ctx.managedby = None
         ctx.subdomain = False
-        ctx.domguid = None
 
 
     def del_noerror(ctx, dn, recursive=False):
@@ -346,6 +346,10 @@ class dc_join(object):
             print("DsAddEntry failed with status %s info %s" % (ctr.err_data.status,
                                                                 ctr.err_data.info.extended_err))
             raise RuntimeError("DsAddEntry failed")
+        if ctr.err_data.dir_err != drsuapi.DRSUAPI_DIRERR_OK:
+            print("DsAddEntry failed with dir_err %u" % ctr.err_data.dir_err)
+            raise RuntimeError("DsAddEntry failed")
+
 
     def join_add_ntdsdsa(ctx):
         '''add the ntdsdsa object'''
@@ -539,7 +543,6 @@ class dc_join(object):
                             configdn=ctx.config_dn,
                             serverdn=ctx.server_dn, domain=ctx.domain_name,
                             hostname=ctx.myname, domainsid=ctx.domsid,
-                            domainguid=ctx.domguid,
                             machinepass=ctx.acct_pass, serverrole="domain controller",
                             sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid)
         print "Provision OK for domain DN %s" % presult.domaindn
@@ -561,6 +564,13 @@ class dc_join(object):
         ctx.samdb.set_invocation_id(str(ctx.invocation_id))
         ctx.local_samdb = ctx.samdb
 
+        print("Finding domain GUID from ncName")
+        res = ctx.samdb.search(base=ctx.partition_dn, scope=ldb.SCOPE_BASE, attrs=['ncName'],
+                               controls=["extended_dn:1:1"])
+        domguid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['ncName'][0]).get_extended_component('GUID')))
+        print("Got domain GUID %s" % domguid)
+
+
         ctx.join_add_ntdsdsa()
 
         print("Calling own domain provision")
@@ -572,7 +582,7 @@ class dc_join(object):
 
         presult = provision_fill(ctx.local_samdb, secrets_ldb,
                                  logger, ctx.names, ctx.paths, domainsid=security.dom_sid(ctx.domsid),
-                                 domainguid=ctx.domguid,
+                                 domainguid=domguid,
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="domain controller",
                                  lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6)
@@ -892,7 +902,6 @@ def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=Non
     ctx.partition_dn = "CN=%s,CN=Partitions,%s" % (ctx.domain_name, ctx.config_dn)
     ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
     ctx.domsid = str(security.random_sid())
-    ctx.domguid = str(uuid.uuid4())
     ctx.acct_dn = None
     ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)
     ctx.trustdom_pass = samba.generate_random_password(128, 128)
