@@ -721,21 +721,13 @@ class dc_join(object):
         clear_value.password = password_blob
 
         clear_authentication_information = drsblobs.AuthenticationInformation()
-        clear_authentication_information.LastUpdateTime = 0
+        clear_authentication_information.LastUpdateTime = samba.unix2nttime(int(time.time()))
         clear_authentication_information.AuthType = lsa.TRUST_AUTH_TYPE_CLEAR
         clear_authentication_information.AuthInfo = clear_value
 
-        version_value = drsblobs.AuthInfoVersion()
-        version_value.version = 1
-
-        version = drsblobs.AuthenticationInformation()
-        version.LastUpdateTime = 0
-        version.AuthType = lsa.TRUST_AUTH_TYPE_VERSION
-        version.AuthInfo = version_value
-
         authentication_information_array = drsblobs.AuthenticationInformationArray()
-        authentication_information_array.count = 2
-        authentication_information_array.array = [clear_authentication_information, version]
+        authentication_information_array.count = 1
+        authentication_information_array.array = [clear_authentication_information]
 
         outgoing = drsblobs.trustAuthInOutBlob()
         outgoing.count = 1
