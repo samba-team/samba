@@ -3106,7 +3106,7 @@ bool init_wcache(void)
 		return true;
 
 	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(cache_path("winbindd_cache.tdb"),
+	wcache->tdb = tdb_open_log(state_path("winbindd_cache.tdb"),
 				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
 				TDB_INCOMPATIBLE_HASH |
 					(lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST)),
