@@ -283,6 +283,9 @@ static int construct_parent_guid(struct ldb_module *module,
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
 	                            DSDB_FLAG_NEXT_MODULE |
 	                            DSDB_SEARCH_SHOW_RECYCLED, parent);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	instanceType = ldb_msg_find_attr_as_uint(res->msgs[0],
 						 "instanceType", 0);
