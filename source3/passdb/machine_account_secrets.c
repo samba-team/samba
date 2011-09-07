@@ -57,7 +57,7 @@ bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
 {
 	bool ret;
 
-#ifdef _SAMBA_WAF_BUILD_
+#if _SAMBA_BUILD_ == 4
 	if (strequal(domain, get_global_sam_name()) &&
 	    (pdb_capabilities() & PDB_CAP_ADS)) {
 		/* If we have a ADS-capable passdb backend, we
@@ -81,7 +81,7 @@ bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid)
 	struct dom_sid  *dyn_sid;
 	size_t size = 0;
 
-#ifdef _SAMBA_WAF_BUILD_
+#if _SAMBA_BUILD_ == 4
 	if (strequal(domain, get_global_sam_name()) &&
 	    (pdb_capabilities() & PDB_CAP_ADS)) {
 		struct pdb_domain_info *domain_info;
@@ -118,7 +118,7 @@ bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 {
 	fstring key;
 
-#ifdef _SAMBA_WAF_BUILD_
+#if _SAMBA_BUILD_ == 4
 	if (strequal(domain, get_global_sam_name()) &&
 	    (pdb_capabilities() & PDB_CAP_ADS)) {
 		/* If we have a ADS-capable passdb backend, we
@@ -141,7 +141,7 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 	size_t size = 0;
 	struct GUID new_guid;
 
-#ifdef _SAMBA_WAF_BUILD_
+#if _SAMBA_BUILD_ == 4
 	if (strequal(domain, get_global_sam_name()) &&
 	    (pdb_capabilities() & PDB_CAP_ADS)) {
 		struct pdb_domain_info *domain_info;
