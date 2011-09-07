@@ -412,7 +412,15 @@ _PUBLIC_ void string_replace(char *s, char oldc, char newc);
 /**
  Base64 decode a string, place into a data blob.  Caller to data_blob_free() the result.
 **/
+_PUBLIC_ DATA_BLOB base64_decode_data_blob_talloc(TALLOC_CTX *mem_ctx, const char *s);
+
+/**
+ Base64 decode a string, place into a data blob on NULL context.
+ Caller to data_blob_free() the result.
+**/
 _PUBLIC_ DATA_BLOB base64_decode_data_blob(const char *s);
+
+
 /**
  Base64 decode a string, inplace
 **/

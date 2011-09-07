@@ -29,10 +29,10 @@ static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0
 /**
  * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
  **/
-_PUBLIC_ DATA_BLOB base64_decode_data_blob(const char *s)
+_PUBLIC_ DATA_BLOB base64_decode_data_blob_talloc(TALLOC_CTX *mem_ctx, const char *s)
 {
 	int bit_offset, byte_offset, idx, i, n;
-	DATA_BLOB decoded = data_blob(s, strlen(s)+1);
+	DATA_BLOB decoded = data_blob_talloc(mem_ctx, s, strlen(s)+1);
 	unsigned char *d = decoded.data;
 	char *p;
 
@@ -61,7 +61,16 @@ _PUBLIC_ DATA_BLOB base64_decode_data_blob(const char *s)
 
 	/* fix up length */
 	decoded.length = n;
+	decoded.data = talloc_realloc(mem_ctx, decoded.data, uint8_t, n);
 	return decoded;
+}
+
+/**
+ * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
+ **/
+_PUBLIC_ DATA_BLOB base64_decode_data_blob(const char *s)
+{
+	return base64_decode_data_blob_talloc(NULL, s);
 }
 
 /**
