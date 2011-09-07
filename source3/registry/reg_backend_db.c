@@ -1792,6 +1792,7 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 	}
 	keystr = normalize_reg_path(ctx, keystr);
 	if (!keystr) {
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
