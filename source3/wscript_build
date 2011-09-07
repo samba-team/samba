@@ -637,10 +637,7 @@ if bld.env.toplevel_build:
 else:
     config_h = "include/config.h"
 
-bld.SAMBA_GENERATOR('build_options',
-                    source= config_h + ' script/mkbuildoptions-waf.awk',
-                    target='smbd/build_options.c',
-                    rule='${AWK} -f ${SRC[1].abspath(env)} > ${TGT} < ${SRC[0].abspath(env)}')
+bld.SAMBA_BLDOPTIONS('smbd/build_options.c')
 
 t = bld.SAMBA_GENERATOR('build_env.h',
                         source='script/build_env.sh',
