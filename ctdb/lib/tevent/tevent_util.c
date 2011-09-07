@@ -107,7 +107,7 @@ void tevent_before_wait(struct event_context *ev) {
 	if (!tevent_timeval_is_zero(&tevent_after_wait_ts)) {
 		diff = tevent_timeval_until(&tevent_after_wait_ts, &now);
 		if (diff.tv_sec > 3) {
-			tevent_debug(ev, TEVENT_DEBUG_FATAL,  __location__ 
+			tevent_debug(ev, TEVENT_DEBUG_ERROR,  __location__ 
 				     " Handling event took %d seconds!",
 				     (int) diff.tv_sec);
 		}
