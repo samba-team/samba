@@ -442,8 +442,10 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		s[0] = '\0';
 		s++;
 
-		domain_filter = talloc_asprintf(mem_ctx, "(&(objectClass=crossRef)(ncName=%s))", 
-						ldb_dn_get_linearized(samdb_dns_domain_to_dn(sam_ctx, mem_ctx, str)));
+		domain_filter = talloc_asprintf(mem_ctx, "(&(objectClass=crossRef)(dnsRoot=%s)(systemFlags:%s:=%u))",
+						ldb_binary_encode_string(mem_ctx, str),
+						LDB_OID_COMPARATOR_AND,
+						SYSTEM_FLAG_CR_NTDS_DOMAIN);
 		W_ERROR_HAVE_NO_MEMORY(domain_filter);
 
 		/* There may not be anything after the domain component (search for the domain itself) */
