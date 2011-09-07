@@ -1248,7 +1248,6 @@ static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
 		   final choice is the null context. */
 		void *child = TC_PTR_FROM_CHUNK(tc->child);
 		const void *new_parent = null_context;
-		struct talloc_chunk *old_parent = NULL;
 		if (unlikely(tc->child->refs)) {
 			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
 			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
