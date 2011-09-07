@@ -23,7 +23,8 @@ import sys
 sys.path.insert(0, "bin/python")
 
 from samba import netcmd
-from samba.netcmd import Command, CommandError, Option
+from samba.netcmd import Command, CommandError
+
 
 class MainCommand(Command):
     """Main class for samba tool commands"""
@@ -73,5 +74,5 @@ if __name__ == '__main__':
     try:
         retval = cmd._run("samba-tool", command, *args)
         sys.exit(retval)
-    except Exception as e:
+    except Exception, e:
         cmd.show_command_error(e)
