@@ -515,6 +515,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 	ssize_t received;
 	int err;
 	size_t num_pending;
+	bool defer = true;
 
 	received = read_smb_recv(subreq, frame, &inbuf, &err);
 	TALLOC_FREE(subreq);
@@ -602,7 +603,13 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		 * There might be more than one response
 		 * we need to defer the notifications
 		 */
-		tevent_req_defer_callback(req, state->ev);
+		if ((num_iov == 4) && (talloc_array_length(cli->conn.pending) == 0)) {
+			defer = false;
+		}
+
+		if (defer) {
+			tevent_req_defer_callback(req, state->ev);
+		}
 
 		/*
 		 * Note: here we use talloc_reference() in a way
@@ -622,6 +629,10 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 	}
 
 	TALLOC_FREE(frame);
+
+	if (!defer) {
+		return;
+	}
 
 	num_pending = talloc_array_length(cli->conn.pending);
 	if (num_pending == 0) {
