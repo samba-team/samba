@@ -1784,6 +1784,10 @@ def provision(logger, session_info, credentials, smbconf=None,
                     dnsdomain=names.dnsdomain,
                     dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
 
+                # Default DNS backend is BIND9 using txt files for zone information 
+                if not dns_backend:
+                    dns_backend = "BIND9"
+
                 setup_ad_dns(samdb, names, logger, hostip=hostip, hostip6=hostip6,
                             dns_backend=dns_backend, os_level=dom_for_fun_level)
 
@@ -1793,13 +1797,14 @@ def provision(logger, session_info, credentials, smbconf=None,
 
                 # Only make a zone file on the first DC, it should be
                 # replicated with DNS replication
-                create_zone_file(lp, logger, paths, targetdir,
-                    dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
-                    hostname=names.hostname, realm=names.realm,
-                    domainguid=domainguid, ntdsguid=names.ntdsguid)
+                if dns_backend == "BIND9":
+                    create_zone_file(lp, logger, paths, targetdir,
+                        dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
+                        hostname=names.hostname, realm=names.realm,
+                        domainguid=domainguid, ntdsguid=names.ntdsguid)
 
                 create_named_conf(paths, realm=names.realm,
-                    dnsdomain=names.dnsdomain, private_dir=paths.private_dir)
+                    dnsdomain=names.dnsdomain, dns_backend=dns_backend)
 
                 create_named_txt(paths.namedtxt,
                     realm=names.realm, dnsdomain=names.dnsdomain,
@@ -2029,28 +2034,37 @@ def create_dns_update_list(lp, logger, paths):
     setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
 
 
-def create_named_conf(paths, realm, dnsdomain,
-                      private_dir):
+def create_named_conf(paths, realm, dnsdomain, dns_backend):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
 
     :param paths: all paths
     :param realm: Realm name
     :param dnsdomain: DNS Domain name
-    :param private_dir: Path to private directory
+    :param dns_backend: DNS backend type
     :param keytab_name: File name of DNS keytab file
     """
 
-    setup_file(setup_path("named.conf"), paths.namedconf, {
-            "DNSDOMAIN": dnsdomain,
-            "REALM": realm,
-            "ZONE_FILE": paths.dns,
-            "REALM_WC": "*." + ".".join(realm.split(".")[1:]),
-            "NAMED_CONF": paths.namedconf,
-            "NAMED_CONF_UPDATE": paths.namedconf_update
-            })
+    if dns_backend == "BIND9":
+        setup_file(setup_path("named.conf"), paths.namedconf, {
+                    "DNSDOMAIN": dnsdomain,
+                    "REALM": realm,
+                    "ZONE_FILE": paths.dns,
+                    "REALM_WC": "*." + ".".join(realm.split(".")[1:]),
+                    "NAMED_CONF": paths.namedconf,
+                    "NAMED_CONF_UPDATE": paths.namedconf_update
+                    })
 
-    setup_file(setup_path("named.conf.update"), paths.namedconf_update)
+        setup_file(setup_path("named.conf.update"), paths.namedconf_update)
+
+    elif dns_backend == "BIND9_DLZ":
+        dlz_module_path = os.path.join(samba.param.modules_dir(), 
+                                        "bind9/dlz_bind9.so")
+        setup_file(setup_path("named.conf.dlz"), paths.namedconf, {
+                    "NAMED_CONF": paths.namedconf,
+                    "BIND9_DLZ_MODULE": dlz_module_path,
+                    })
+
 
 
 def create_named_txt(path, realm, dnsdomain, dnsname, private_dir,
