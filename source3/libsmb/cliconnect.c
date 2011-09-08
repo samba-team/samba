@@ -357,18 +357,31 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli, const char *use
  Work out suitable capabilities to offer the server.
 ****************************************************************************/
 
-static uint32 cli_session_setup_capabilities(struct cli_state *cli)
+static uint32_t cli_session_setup_capabilities(struct cli_state *cli,
+					       uint32_t sesssetup_capabilities)
 {
-	uint32 capabilities = CAP_NT_SMBS;
+	uint32_t client_capabilities = cli_state_capabilities(cli);
 
-	if (!cli->force_dos_errors)
-		capabilities |= CAP_STATUS32;
+	/*
+	 * We only send capabilities based on the mask for:
+	 * - client only flags
+	 * - flags used in both directions
+	 *
+	 * We do not echo the server only flags.
+	 */
+	client_capabilities &= (SMB_CAP_BOTH_MASK | SMB_CAP_CLIENT_MASK);
 
-	if (cli->use_level_II_oplocks)
-		capabilities |= CAP_LEVEL_II_OPLOCKS;
+	/*
+	 * Session Setup specific flags CAP_DYNAMIC_REAUTH
+	 * and CAP_EXTENDED_SECURITY are passed by the caller.
+	 * We need that in order to do guest logins even if
+	 * CAP_EXTENDED_SECURITY is negotiated.
+	 */
+	client_capabilities &= ~(CAP_DYNAMIC_REAUTH|CAP_EXTENDED_SECURITY);
+	sesssetup_capabilities &= (CAP_DYNAMIC_REAUTH|CAP_EXTENDED_SECURITY);
+	client_capabilities |= sesssetup_capabilities;
 
-	capabilities |= (cli_state_capabilities(cli) & (CAP_UNICODE|CAP_LARGE_FILES|CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_DFS));
-	return capabilities;
+	return client_capabilities;
 }
 
 /****************************************************************************
@@ -412,7 +425,7 @@ struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
 	SSVAL(vwv+8, 0, 0);
 	SSVAL(vwv+9, 0, 0);
 	SSVAL(vwv+10, 0, 0);
-	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli));
+	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli, 0));
 
 	bytes = talloc_array(state, uint8_t, 0);
 
@@ -627,7 +640,7 @@ static struct tevent_req *cli_session_setup_plain_send(
 	SSVAL(vwv+8, 0, 0);
 	SSVAL(vwv+9, 0, 0);
 	SSVAL(vwv+10, 0, 0);
-	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli));
+	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli, 0));
 
 	bytes = talloc_array(state, uint8_t, 0);
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), pass, strlen(pass)+1,
@@ -972,7 +985,7 @@ static struct tevent_req *cli_session_setup_nt1_send(
 	SSVAL(vwv+8, 0, nt_response.length);
 	SSVAL(vwv+9, 0, 0);
 	SSVAL(vwv+10, 0, 0);
-	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli));
+	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli, 0));
 
 	bytes = talloc_array(state, uint8_t,
 			     lm_response.length + nt_response.length);
@@ -1226,8 +1239,7 @@ static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
 	SSVAL(state->vwv+8, 0, 0);
 	SSVAL(state->vwv+9, 0, 0);
 	SIVAL(state->vwv+10, 0,
-	      cli_session_setup_capabilities(state->cli)
-	      | CAP_EXTENDED_SECURITY);
+		cli_session_setup_capabilities(state->cli, CAP_EXTENDED_SECURITY));
 
 	state->buf = (uint8_t *)talloc_memdup(state, state->blob.data,
 					      thistime);
