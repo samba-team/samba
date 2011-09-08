@@ -3761,10 +3761,7 @@ static bool run_oplock4(int dummy)
 	}
 
 	cli1->use_oplocks = true;
-	cli1->use_level_II_oplocks = true;
-
 	cli2->use_oplocks = true;
-	cli2->use_level_II_oplocks = true;
 
 	status = cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
