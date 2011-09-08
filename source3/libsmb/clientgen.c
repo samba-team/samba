@@ -206,6 +206,14 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	}
 	if (flags & CLI_FULL_CONNECTION_FORCE_DOS_ERRORS) {
 		cli->force_dos_errors = true;
+	}
+
+	if (getenv("CLI_FORCE_ASCII")) {
+		cli->force_ascii = true;
+	}
+	if (flags & CLI_FULL_CONNECTION_FORCE_ASCII) {
+		cli->force_ascii = true;
+	}
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO) {
 		cli->use_spnego = false;

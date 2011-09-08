@@ -2723,8 +2723,9 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
 
 	/* a way to force ascii SMB */
-	if (getenv("CLI_FORCE_ASCII"))
+	if (cli->force_ascii) {
 		cli->capabilities &= ~CAP_UNICODE;
+	}
 
 	tevent_req_done(req);
 }

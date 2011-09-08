@@ -114,6 +114,7 @@ struct cli_state {
 	bool use_level_II_oplocks; /* should we use level II oplocks? */
 
 	bool force_dos_errors;
+	bool force_ascii;
 	bool case_sensitive; /* False by default. */
 
 	/* Where (if anywhere) this is mounted under DFS. */
@@ -194,5 +195,6 @@ struct file_info {
 #define CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS 0x0020
 #define CLI_FULL_CONNECTION_USE_CCACHE 0x0040
 #define CLI_FULL_CONNECTION_FORCE_DOS_ERRORS 0x0080
+#define CLI_FULL_CONNECTION_FORCE_ASCII 0x0100
 
 #endif /* _CLIENT_H */
