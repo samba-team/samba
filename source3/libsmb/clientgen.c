@@ -197,8 +197,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 	cli->use_spnego = lp_client_use_spnego();
 
-	cli->capabilities = CAP_UNICODE | CAP_STATUS32 | CAP_DFS;
-
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
 	   ones.  This intended only as a temporary hack. */	
@@ -277,6 +275,30 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 					      mandatory_signing);
 	if (!cli->signing_state) {
 		goto error;
+	}
+
+	cli->capabilities = 0;
+	cli->capabilities |= CAP_LARGE_FILES;
+	cli->capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
+	cli->capabilities |= CAP_LOCK_AND_READ | CAP_NT_FIND;
+	cli->capabilities |= CAP_DFS | CAP_W2K_SMBS;
+	cli->capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX;
+	cli->capabilities |= CAP_LWIO;
+
+	if (!cli->force_dos_errors) {
+		cli->capabilities |= CAP_STATUS32;
+	}
+
+	if (!cli->force_ascii) {
+		cli->capabilities |= CAP_UNICODE;
+	}
+
+	if (cli->use_spnego) {
+		cli->capabilities |= CAP_EXTENDED_SECURITY;
+	}
+
+	if (cli->use_level_II_oplocks) {
+		cli->capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
 
 	cli->conn.outgoing = tevent_queue_create(cli, "cli_outgoing");
