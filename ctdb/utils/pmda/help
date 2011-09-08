@@ -1,0 +1,106 @@
+#
+# Copyright (c) 2000-2004 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# ctdb PMDA help file in the ASCII format
+#
+# lines beginning with a # are ignored
+# lines beginning @ introduce a new entry of the form
+#  @ metric_name oneline-text
+#  help test goes
+#  here over multiple lines
+#  ...
+#
+# the metric_name is decoded against the default PMNS -- as a special case,
+# a name of the form NNN.MM (for numeric NNN and MM) is interpreted as an
+# instance domain identification, and the text describes the instance domain
+#
+# blank lines before the @ line are ignored
+#
+
+@ ctdb.num_clients number of clients connected to ctdbd
+
+@ ctdb.frozen whether any databases are frozen
+
+@ ctdb.recovering whether recovery is active
+
+@ ctdb.client_packets_sent number of packets sent to all clients
+
+@ ctdb.client_packets_recv number of packets received from all clients
+
+@ ctdb.node_packets_sent number of packets sent to other nodes
+
+@ ctdb.node_packets_recv number of packets received from other nodes
+
+@ ctdb.keepalive_packets_sent number of keepalive packets sent to other nodes
+
+@ ctdb.keepalive_packets_recv number of keepalive packets received from other nodes
+
+@ ctdb.node.req_call number of node CTDB_REQ_CALL packets handled
+
+@ ctdb.node.reply_call number of node CTDB_REPLY_CALL packets handled
+
+@ ctdb.node.req_dmaster number of node CTDB_REQ_DMASTER packets handled
+
+@ ctdb.node.reply_dmaster number of node CTDB_REPLY_DMASTER packets handled
+
+@ ctdb.node.reply_error number of node CTDB_REPLY_ERROR packets handled
+
+@ ctdb.node.req_message number of node CTDB_REQ_MESSAGE packets handled
+
+@ ctdb.node.req_control number of node CTDB_REQ_CONTROL packets handled
+
+@ ctdb.node.reply_control number of node CTDB_REPLY_CONTROL packets handled
+
+@ ctdb.client.req_call number of client CTDB_REQ_CALL packets handled
+
+@ ctdb.client.req_message number of client CTDB_REQ_MESSAGE packets handled
+
+@ ctdb.client.req_control number of client CTDB_REQ_CONTROL packets handled
+
+@ ctdb.timeouts.call (counter not implemented) number of call timeouts
+
+@ ctdb.timeouts.control number of node control message request timeouts awaiting reply
+
+@ ctdb.timeouts.traverse number of database traversal timeouts
+
+@ ctdb.total_calls total number of client ctdb request calls received
+
+@ ctdb.pending_calls total number of client ctdb request calls in progress
+
+@ ctdb.lockwait_calls number of tdb chainlock lockwait calls
+
+@ ctdb.pending_lockwait_calls number of lockwait calls waiting for a lock
+
+@ ctdb.childwrite_calls number of childwrite calls
+
+@ ctdb.pending_childwrite_calls number of childwrite calls in progress
+
+@ ctdb.memory_used total size of the ctdbd null talloc pool
+
+@ ctdb.max_hop_count maximum hops performed by a CTDB_REQ_CALL packet
+
+@ ctdb.max_reclock_ctdbd maximum recovery lock latency during setrecmode
+
+@ ctdb.max_reclock_recd maximum recovery lock latency as reported by the recovery process
+
+@ ctdb.max_call_latency maximum time spent handling a client request call
+
+@ ctdb.max_lockwait_latency maximum time spent waiting for a tdb chainlock
+
+@ ctdb.max_childwrite_latency maximum time spent performing a childwrite
+
+@ ctdb.num_recoveries number of recoveries finished

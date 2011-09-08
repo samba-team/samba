@@ -624,9 +624,10 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		return ret;
 	}
 
-	if(options.machinereadable){
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped:Inactive:PartiallyOnline:\n");
-		for(i=0;i<nodemap->num;i++){
+	if (options.machinereadable) {
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
+		       ":Inactive:PartiallyOnline:ThisNode:\n");
+		for (i=0;i<nodemap->num;i++) {
 			int partially_online = 0;
 			int j;
 
@@ -650,7 +651,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 					talloc_free(ifaces);
 				}
 			}
-			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
@@ -658,7 +659,8 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE),
-			       partially_online);
+			       partially_online,
+			       (nodemap->nodes[i].pnn == mypnn));
 		}
 		return 0;
 	}
@@ -2983,7 +2985,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
@@ -3029,7 +3031,7 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
@@ -3078,7 +3080,7 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
@@ -3142,7 +3144,7 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
@@ -3305,8 +3307,7 @@ static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv
 
 	db_name = argv[0];
 
-	ctdb_db = ctdb_attach(ctdb, db_name, true, 0);
-
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, true, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		talloc_free(tmp_ctx);
@@ -3950,7 +3951,7 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 		persistent = true;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		return -1;
@@ -4158,7 +4159,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 				     allow_unhealthy));
 	}
 
-	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], dbmap->dbs[i].persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
 		talloc_free(tmp_ctx);
@@ -4305,7 +4306,7 @@ static int control_restoredb(struct ctdb_context *ctdb, int argc, const char **a
 		dbname, tbuf);
 
 
-	ctdb_db = ctdb_attach(ctdb, dbname, dbhdr.persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), dbname, dbhdr.persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", dbname));
 		talloc_free(tmp_ctx);
@@ -4557,7 +4558,7 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, argv[0], dbmap->dbs[i].persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], dbmap->dbs[i].persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR, ("Unable to attach to database '%s'\n",
 				  argv[0]));
@@ -5134,7 +5135,7 @@ int main(int argc, const char *argv[])
 			}
 
 			/* initialise ctdb */
-			ctdb = ctdb_cmdline_client(ev);
+			ctdb = ctdb_cmdline_client(ev, TIMELIMIT());
 
 			if (ctdb_commands[i].without_daemon == false) {
 				const char *socket_name;

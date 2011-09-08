@@ -29,6 +29,10 @@ POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
 POPT_OBJ = @POPT_OBJ@
 
+PMDA_LIBS = -lpcp -lpcp_pmda
+PMDA_INSTALL = @CTDB_PMDA_INSTALL@
+PMDA_DEST_DIR = /var/lib/pcp/pmdas
+
 CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
@@ -73,7 +77,8 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_takeover_tests
 	@INFINIBAND_BINS@
 
-BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool
+BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool @CTDB_PMDA@
+
 SBINS = bin/ctdbd
 
 DIRS = lib bin tests/bin
@@ -150,6 +155,9 @@ bin/ping_pong: utils/ping_pong/ping_pong.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ utils/ping_pong/ping_pong.o
 
+bin/pmdactdb: $(CTDB_CLIENT_OBJ) utils/pmda/pmda_ctdb.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ utils/pmda/pmda_ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) $(PMDA_LIBS)
 
 tests/bin/rb_test: $(CTDB_CLIENT_OBJ) tests/src/rb_test.o 
 	@echo Linking $@
@@ -224,7 +232,7 @@ distclean: clean
 	rm -f config.log config.status config.cache config.h
 	rm -f Makefile
 
-install: all
+install: all $(PMDA_INSTALL)
 	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
 	mkdir -p $(DESTDIR)$(bindir)
 	mkdir -p $(DESTDIR)$(sbindir)
@@ -276,6 +284,12 @@ install: all
 	if [ -f doc/ping_pong.1 ];then ${INSTALLCMD} -m 644 doc/ping_pong.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/notify.sh ];then ${INSTALLCMD} -m 755 config/notify.sh $(DESTDIR)$(etcdir)/ctdb; fi
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/ctdb-crash-cleanup.sh ];then ${INSTALLCMD} -m 755 config/ctdb-crash-cleanup.sh $(DESTDIR)$(etcdir)/ctdb; fi
+
+install_pmda:
+	$(INSTALLCMD) -m 755 -d $(PMDA_DEST_DIR)
+	$(INSTALLCMD) -m 755 pmda/Install pmda/Remove $(PMDA_DEST_DIR)
+	$(INSTALLCMD) -m 644 pmda/pmns pmda/domain.h pmda/help pmda/README $(PMDA_DEST_DIR)
+	$(INSTALLCMD) -m 755 bin/pmdactdb $(PMDA_DEST_DIR)
 
 test: all
 	tests/run_tests.sh

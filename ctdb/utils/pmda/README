@@ -1,0 +1,84 @@
+CTDB PMDA
+===========
+
+This PMDA extracts metrics from the locally running ctdbd daemon for
+export to PMCD.
+
+Note:
+	This PMDA may be remade from source and hence requires IDO (or
+	more specifically a C compiler) to be installed.
+
+	Uses of make(1) may fail (without removing or clobbering files)
+	if the C compiler cannot be found.  This is most likely to
+	happen when running the PMDA ./Install script.
+
+	The only remedial action is to install the C compiler, or
+	hand-craft changes to the Makefile.
+
+Metrics
+=======
+
+The file ./help contains descriptions for all of the metrics exported
+by this PMDA.
+
+Once the PMDA has been installed, the following command will list all
+the available metrics and their explanatory "help" text:
+
+	$ pminfo -fT ctdb
+
+Installation
+============
+
+ +  # cd $PCP_PMDAS_DIR/ctdb
+
+ +  Check that there is no clash in the Performance Metrics Domain
+    defined in ./domain.h and the other PMDAs currently in use (see
+    $PCP_PMCDCONF_PATH).  If there is, edit ./domain.h to choose another
+    domain number.
+
+ +  Then simply use
+
+	# ./Install
+
+    and choose both the "collector" and "monitor" installation
+    configuration options.
+
+    You will be prompted to choose either a daemon implementation
+    or a DSO implementation of the PMDA, and in the case of the daemon
+    variant to select an IPC method -- everything else is automated
+
+De-installation
+===============
+
+ +  Simply use
+
+	# cd $PCP_PMDAS_DIR/ctdb
+	# ./Remove
+
+Troubleshooting
+===============
+
+ +  After installing or restarting the agent, the PMCD log file
+    ($PCP_LOG_DIR/pmcd/pmcd.log) and the PMDA log file
+    ($PCP_LOG_DIR/pmcd/pmda_ctdb.log) should be checked for any warnings
+    or errors.
+
+
+Adding a New Metric
+===================
+
+This section walks through the development task of adding a new metric to the
+CTDB PMDA.
+
+  + Define the metric in the pmns file with a unique metric id. See the pmns(4)
+    man page for details.
+
+  + Add a description of the metric to the help file.
+
+  + Taking note of the previously assigned metric id, add a new entry to the
+    metrictab structure in pmda_ctdb.c. See the pmdaInit(3) man page for
+    details.
+
+  + Ensure the counter is already a member of the ctdb_statistics structure.
+    Finally, add code to pmda_ctdb_fetch_cb() to handle fetch requests for the
+    newly defined metric.

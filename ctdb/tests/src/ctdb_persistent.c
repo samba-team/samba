@@ -220,7 +220,7 @@ int main(int argc, const char *argv[])
 
 	ev = event_context_init(NULL);
 
-	ctdb = ctdb_cmdline_client(ev);
+	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(3, 0));
 	if (ctdb == NULL) {
 		printf("Could not attach to daemon\n");
 		return 1;
@@ -228,9 +228,11 @@ int main(int argc, const char *argv[])
 
 	/* attach to a specific database */
 	if (unsafe_writes == 1) {
-		ctdb_db = ctdb_attach(ctdb, "persistent.tdb", true, TDB_NOSYNC);
+		ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(2, 0),
+				      "persistent.tdb", true, TDB_NOSYNC);
 	} else {
-		ctdb_db = ctdb_attach(ctdb, "persistent.tdb", true, 0);
+		ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(2, 0),
+				      "persistent.tdb", true, 0);
 	}
 
 	if (!ctdb_db) {
