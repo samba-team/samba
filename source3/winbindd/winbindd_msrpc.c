@@ -254,7 +254,7 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	name_map_status = normalize_name_unmap(mem_ctx, full_name,
 					       &mapped_name);
 
-	/* Reset the full_name pointer if we mapped anytthing */
+	/* Reset the full_name pointer if we mapped anything */
 
 	if (NT_STATUS_IS_OK(name_map_status) ||
 	    NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
