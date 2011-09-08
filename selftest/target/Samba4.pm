@@ -115,6 +115,7 @@ sub check_or_start($$$)
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
+		$ENV{NSS_WRAPPER_WINBIND_SO_PATH} = $env_vars->{NSS_WRAPPER_WINBIND_SO_PATH};
 
 		$ENV{UID_WRAPPER} = "1";
 
@@ -700,6 +701,7 @@ nogroup:x:65534:nobody
 		SAMBA_TEST_FIFO => "$ctx->{prefix}/samba_test.fifo",
 		SAMBA_TEST_LOG => "$ctx->{prefix}/samba_test.log",
 		SAMBA_TEST_LOG_POS => 0,
+	        NSS_WRAPPER_WINBIND_SO_PATH => Samba::bindir_path($self, "default/nsswitch/libnss-winbind.so")
 	};
 
 	return $ret;
@@ -760,6 +762,8 @@ sub provision($$$$$$$$$)
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 500000
+	create mask = 777
+	force create mode = 777
 
 [test1]
 	path = $ctx->{tmpdir}/test1
@@ -1287,8 +1291,12 @@ sub provision_plugin_s4_dc($$)
 	my ($self, $prefix) = @_;
 
 	my $extra_smbconf_options = "
-server services = -smb
+server services = -smb +s3fs
 dcerpc endpoint servers = -unixinfo -rpcecho -spoolss -winreg -wkssvc -srvsvc
+
+[IPC\$]
+	vfs objects = dfs_samba4
+
 ";
 
 	print "PROVISIONING PLUGIN S4 DC...";
@@ -1721,11 +1729,6 @@ sub setup_plugin_s4_dc($$)
 	$self->check_or_start($env, "single");
 	
 	$self->wait_for_start($env);
-	
-	my $s3_part_env = $self->{target3}->setup_plugin_s4_dc($path, $env, 30);
-	unless ($s3_part_env) {
-		return undef;
-	}
 	
 	$self->{vars}->{plugin_s4_dc} = $env;
 	return $env;
