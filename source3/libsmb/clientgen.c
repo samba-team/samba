@@ -201,7 +201,10 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
 	   ones.  This intended only as a temporary hack. */	
-	if (getenv("CLI_FORCE_DOSERR"))
+	if (getenv("CLI_FORCE_DOSERR")) {
+		cli->force_dos_errors = true;
+	}
+	if (flags & CLI_FULL_CONNECTION_FORCE_DOS_ERRORS) {
 		cli->force_dos_errors = true;
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO) {
