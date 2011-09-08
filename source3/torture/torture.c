@@ -56,6 +56,7 @@ static fstring randomfname;
 static bool use_oplocks;
 static bool use_level_II_oplocks;
 static const char *client_txt = "client_oplocks.txt";
+static bool disable_spnego;
 static bool use_kerberos;
 static bool force_dos_errors;
 static fstring multishare_conn_fname;
@@ -183,6 +184,10 @@ static struct cli_state *open_nbt_connection(void)
 	struct cli_state *c;
 	NTSTATUS status;
 	int flags = 0;
+
+	if (disable_spnego) {
+		flags |= CLI_FULL_CONNECTION_DONT_SPNEGO;
+	}
 
 	if (use_oplocks) {
 		flags |= CLI_FULL_CONNECTION_OPLOCKS;
@@ -6292,11 +6297,12 @@ static bool run_error_map_extract(int dummy) {
 
 	/* NT-Error connection */
 
+	disable_spnego = true;
 	if (!(c_nt = open_nbt_connection())) {
+		disable_spnego = false;
 		return False;
 	}
-
-	c_nt->use_spnego = False;
+	disable_spnego = false;
 
 	status = cli_negprot(c_nt);
 
@@ -6315,14 +6321,15 @@ static bool run_error_map_extract(int dummy) {
 
 	/* DOS-Error connection */
 
+	disable_spnego = true;
 	force_dos_errors = true;
 	if (!(c_dos = open_nbt_connection())) {
+		disable_spnego = false;
 		force_dos_errors = false;
 		return False;
 	}
+	disable_spnego = false;
 	force_dos_errors = false;
-
-	c_dos->use_spnego = False;
 
 	status = cli_negprot(c_dos);
 	if (!NT_STATUS_IS_OK(status)) {
