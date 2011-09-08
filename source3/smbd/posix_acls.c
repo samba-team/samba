@@ -2239,44 +2239,6 @@ static void process_deny_list( canon_ace **pp_ace_list )
 }
 
 /****************************************************************************
- Create a default mode that will be used if a security descriptor entry has
- no user/group/world entries.
-****************************************************************************/
-
-static mode_t create_default_mode(files_struct *fsp, bool interitable_mode)
-{
-	int snum = SNUM(fsp->conn);
-	mode_t and_bits = (mode_t)0;
-	mode_t or_bits = (mode_t)0;
-	mode_t mode;
-
-	if (interitable_mode) {
-		mode = unix_mode(fsp->conn, FILE_ATTRIBUTE_ARCHIVE,
-				 fsp->fsp_name, NULL);
-	} else {
-		mode = S_IRUSR;
-	}
-
-	if (fsp->is_directory)
-		mode |= (S_IWUSR|S_IXUSR);
-
-	/*
-	 * Now AND with the create mode/directory mode bits then OR with the
-	 * force create mode/force directory mode bits.
-	 */
-
-	if (fsp->is_directory) {
-		and_bits = lp_dir_security_mask(snum);
-		or_bits = lp_force_dir_security_mode(snum);
-	} else {
-		and_bits = lp_security_mask(snum);
-		or_bits = lp_force_security_mode(snum);
-	}
-
-	return ((mode & and_bits)|or_bits);
-}
-
-/****************************************************************************
  Unpack a SEC_DESC into two canonical ace lists. We don't depend on this
  succeeding.
 ****************************************************************************/
@@ -2290,7 +2252,6 @@ static bool unpack_canon_ace(files_struct *fsp,
 				uint32 security_info_sent,
 				const SEC_DESC *psd)
 {
-	SMB_STRUCT_STAT st;
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
 
@@ -2354,17 +2315,8 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	print_canon_ace_list( "file ace - before valid", file_ace);
 
-	st = *pst;
-
-	/*
-	 * A default 3 element mode entry for a file should be r-- --- ---.
-	 * A default 3 element mode entry for a directory should be rwx --- ---.
-	 */
-
-	st.st_ex_mode = create_default_mode(fsp, False);
-
 	if (!ensure_canon_entry_valid(&file_ace, fsp->conn->params,
-			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, &st, True)) {
+			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
@@ -2372,16 +2324,8 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 	print_canon_ace_list( "dir ace - before valid", dir_ace);
 
-	/*
-	 * A default inheritable 3 element mode entry for a directory should be the
-	 * mode Samba will use to create a file within. Ensure user rwx bits are set if
-	 * it's a directory.
-	 */
-
-	st.st_ex_mode = create_default_mode(fsp, True);
-
 	if (dir_ace && !ensure_canon_entry_valid(&dir_ace, fsp->conn->params,
-			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, &st, True)) {
+			fsp->is_directory, pfile_owner_sid, pfile_grp_sid, pst, True)) {
 		free_canon_ace_list(file_ace);
 		free_canon_ace_list(dir_ace);
 		return False;
