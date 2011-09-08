@@ -665,7 +665,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     public_deps='''talloc tdb_compat cap wbclient smbd_shim libsmb KRBCLIENT
                     pdb SMBLDAP param samba-util
                     LIBMSRPC_GEN msrpc3 ads LIBNET DCUTIL NDR_LIBNETAPI
-                    RPC_CLIENT_SCHANNEL smbconf REG_SMBCONF TOKEN_UTIL
+                    RPC_CLIENT_SCHANNEL smbconf REG_SMBCONF
                     LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON
                     RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR popt_samba3''',
