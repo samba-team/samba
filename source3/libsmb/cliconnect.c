@@ -2963,10 +2963,6 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		return nt_status;
 	}
 
-	cli->use_oplocks = ((flags & CLI_FULL_CONNECTION_OPLOCKS) != 0);
-	cli->use_level_II_oplocks =
-		((flags & CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS) != 0);
-
 	nt_status = cli_session_setup(cli, user, password, pw_len, password,
 				      pw_len, domain);
 	if (!NT_STATUS_IS_OK(nt_status)) {
