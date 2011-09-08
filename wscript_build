@@ -123,3 +123,4 @@ bld.RECURSE('source3')
 bld.RECURSE('testsuite/headers')
 
 bld.SYMBOL_CHECK()
+bld.DUP_SYMBOL_CHECK()

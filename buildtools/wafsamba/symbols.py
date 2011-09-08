@@ -567,7 +567,7 @@ def symbols_whyneeded(task):
         Logs.info("target '%s' uses symbols %s from '%s'" % (target, overlap, subsystem))
 
 
-def report_duplicate(bld, binname, sym, libs):
+def report_duplicate(bld, binname, sym, libs, fail_on_error):
     '''report duplicated symbols'''
     if sym in ['_init', '_fini']:
         return
@@ -577,10 +577,13 @@ def report_duplicate(bld, binname, sym, libs):
             libnames.append(bld.env.library_dict[lib])
         else:
             libnames.append(lib)
-    print("%s: Symbol %s linked in multiple libraries %s" % (binname, sym, libnames))
+    if fail_on_error:
+        raise Utils.WafError("%s: Symbol %s linked in multiple libraries %s" % (binname, sym, libnames))
+    else:
+        print("%s: Symbol %s linked in multiple libraries %s" % (binname, sym, libnames))
 
 
-def symbols_dupcheck_binary(bld, binname):
+def symbols_dupcheck_binary(bld, binname, fail_on_error):
     '''check for duplicated symbols in one binary'''
 
     libs = get_libs_recursive(bld, binname, set())
@@ -596,10 +599,10 @@ def symbols_dupcheck_binary(bld, binname):
         if len(symmap[sym]) > 1:
             for libpath in symmap[sym]:
                 if libpath in bld.env.library_dict:
-                    report_duplicate(bld, binname, sym, symmap[sym])
+                    report_duplicate(bld, binname, sym, symmap[sym], fail_on_error)
                     break
 
-def symbols_dupcheck(task):
+def symbols_dupcheck(task, fail_on_error=False):
     '''check for symbols defined in two different subsystems'''
     bld = task.env.bld
     tgt_list = get_tgt_list(bld)
@@ -610,8 +613,12 @@ def symbols_dupcheck(task):
     for t in tgt_list:
         if t.samba_type == 'BINARY':
             binname = os_path_relpath(t.link_task.outputs[0].abspath(bld.env), os.getcwd())
-            symbols_dupcheck_binary(bld, binname)
+            symbols_dupcheck_binary(bld, binname, fail_on_error)
 
+
+def symbols_dupcheck_fatal(task):
+    '''check for symbols defined in two different subsystems (and fail if duplicates are found)'''
+    symbols_dupcheck(task, fail_on_error=True)
 
 
 def SYMBOL_CHECK(bld):
@@ -636,3 +643,12 @@ def SYMBOL_CHECK(bld):
 
 
 Build.BuildContext.SYMBOL_CHECK = SYMBOL_CHECK
+
+def DUP_SYMBOL_CHECK(bld):
+    if Options.options.DUP_SYMBOLCHECK and bld.env.DEVELOPER and not bld.env.BUILD_FARM:
+        '''check for duplicate symbols'''
+        bld.SET_BUILD_GROUP('syslibcheck')
+        task = bld(rule=symbols_dupcheck_fatal, always=True, name='symbol duplicate checking')
+        task.env.bld = bld
+
+Build.BuildContext.DUP_SYMBOL_CHECK = DUP_SYMBOL_CHECK

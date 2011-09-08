@@ -121,6 +121,10 @@ def set_options(opt):
                   help=("check symbols in object files against project rules"),
                   action='store_true', dest='SYMBOLCHECK', default=False)
 
+    gr.add_option('--dup-symbol-check',
+                  help=("check for duplicate symbols in object files and system libs (must be configured with --enable-developer)"),
+                  action='store_true', dest='DUP_SYMBOLCHECK', default=False)
+
     gr.add_option('--why-needed',
                   help=("TARGET:DEPENDENCY check why TARGET needs DEPENDENCY"),
                   action='store', type='str', dest='WHYNEEDED', default=None)

@@ -13,20 +13,20 @@ uninstall:
 	$(WAF) uninstall
 
 test:
-	$(WAF) test $(TEST_OPTIONS)
+	$(WAF) test --dup-symbol-check $(TEST_OPTIONS)
 
 help:
 	@echo NOTE: to run extended waf options use $(WAF_BINARY) or modify your PATH
 	$(WAF) --help
 
 subunit-test:
-	$(WAF) test --filtered-subunit $(TEST_OPTIONS)
+	$(WAF) test --dup-symbol-check --filtered-subunit $(TEST_OPTIONS)
 
 testenv:
-	$(WAF) test --testenv $(TEST_OPTIONS)
+	$(WAF) test --dup-symbol-check --testenv $(TEST_OPTIONS)
 
 quicktest:
-	$(WAF) test --quick $(TEST_OPTIONS)
+	$(WAF) test --dup-symbol-check --quick $(TEST_OPTIONS)
 
 dist:
 	touch .tmplock

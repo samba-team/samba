@@ -52,6 +52,7 @@ def configure(conf):
 
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
+        conf.env.DEVELOPER = True
 
     # this enables smbtorture.static for s3 in the build farm
     conf.env.BUILD_FARM = Options.options.BUILD_FARM or os.environ.get('RUN_FROM_BUILD_FARM')
