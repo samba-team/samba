@@ -90,7 +90,7 @@ void cli_setup_packet_buf(struct cli_state *cli, char *buf)
 		flags2 |= FLAGS2_DFS_PATHNAMES;
 	if (cli_state_capabilities(cli) & CAP_STATUS32)
 		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-	if (cli->use_spnego)
+	if (cli_state_capabilities(cli) & CAP_EXTENDED_SECURITY)
 		flags2 |= FLAGS2_EXTENDED_SECURITY;
 	SSVAL(buf,smb_flg2, flags2);
 }
