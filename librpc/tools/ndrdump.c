@@ -23,10 +23,8 @@
 #include "system/locale.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_table.h"
-#if (_SAMBA_BUILD_ >= 4)
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
-#endif
 
 static const struct ndr_interface_call *find_function(
 	const struct ndr_interface_table *p,
