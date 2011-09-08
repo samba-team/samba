@@ -1,0 +1,14 @@
+# This DNS configuration is for BIND 9.8.0 or later with dlz_dlopen support.
+#
+# This file should be included in your main BIND configuration file
+#
+# For example with
+# include "${NAMED_CONF}";
+
+#
+# This configures dynamically loadable zones (DLZ) from AD schema
+#
+dlz "AD DNS Zone" {
+    database "dlopen ${BIND9_DLZ_MODULE}";
+};
+
