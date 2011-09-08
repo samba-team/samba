@@ -2911,19 +2911,6 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 		return nt_status;
 	}
 
-	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO)
-		cli->use_spnego = False;
-	else if (flags & CLI_FULL_CONNECTION_USE_KERBEROS)
-		cli->use_kerberos = True;
-
-	if ((flags & CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS) &&
-	     cli->use_kerberos) {
-		cli->fallback_after_kerberos = true;
-	}
-	if (flags & CLI_FULL_CONNECTION_USE_CCACHE) {
-		cli->use_ccache = true;
-	}
-
 	nt_status = cli_negprot(cli);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("failed negprot: %s\n", nt_errstr(nt_status)));
