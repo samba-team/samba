@@ -969,8 +969,8 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 	}
 
 	centry_end(centry, "SN/%s", sid_to_fstring(sid_string, sid));
-	DEBUG(10,("wcache_save_sid_to_name: %s -> %s (%s)\n", sid_string, 
-		  name, nt_errstr(status)));
+	DEBUG(10,("wcache_save_sid_to_name: %s -> %s\\%s (%s)\n", sid_string,
+		  domain_name, name, nt_errstr(status)));
 	centry_free(centry);
 }
 
