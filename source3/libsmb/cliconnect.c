@@ -2592,6 +2592,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint16_t protnum;
 	uint8_t *inbuf;
+	uint32_t both_capabilities;
 	uint32_t server_capabilities = 0;
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
@@ -2729,12 +2730,17 @@ static void cli_negprot_done(struct tevent_req *subreq)
 
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
 
-	cli->capabilities = server_capabilities;
-
-	/* a way to force ascii SMB */
-	if (cli->force_ascii) {
-		cli->capabilities &= ~CAP_UNICODE;
-	}
+	/*
+	 * Now calculate the negotiated capabilities
+	 * based on the mask for:
+	 * - client only flags
+	 * - flags used in both directions
+	 * - server only flags
+	 */
+	both_capabilities = cli->capabilities & server_capabilities;
+	cli->capabilities = cli->capabilities & SMB_CAP_CLIENT_MASK;
+	cli->capabilities |= both_capabilities & SMB_CAP_BOTH_MASK;
+	cli->capabilities |= server_capabilities & SMB_CAP_SERVER_MASK;
 
 	tevent_req_done(req);
 }
