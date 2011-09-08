@@ -173,6 +173,10 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	bool mandatory_signing;
 	socklen_t ss_length;
 	int ret;
+	bool use_spnego = lp_client_use_spnego();
+	bool force_dos_errors = false;
+	bool force_ascii = false;
+	bool use_level_II_oplocks = false;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -195,27 +199,25 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	cli->max_xmit = CLI_BUFFER_SIZE+4;
 	cli->case_sensitive = false;
 
-	cli->use_spnego = lp_client_use_spnego();
-
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
 	   ones.  This intended only as a temporary hack. */	
 	if (getenv("CLI_FORCE_DOSERR")) {
-		cli->force_dos_errors = true;
+		force_dos_errors = true;
 	}
 	if (flags & CLI_FULL_CONNECTION_FORCE_DOS_ERRORS) {
-		cli->force_dos_errors = true;
+		force_dos_errors = true;
 	}
 
 	if (getenv("CLI_FORCE_ASCII")) {
-		cli->force_ascii = true;
+		force_ascii = true;
 	}
 	if (flags & CLI_FULL_CONNECTION_FORCE_ASCII) {
-		cli->force_ascii = true;
+		force_ascii = true;
 	}
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO) {
-		cli->use_spnego = false;
+		use_spnego = false;
 	} else if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
 		cli->use_kerberos = true;
 	}
@@ -232,7 +234,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		cli->use_oplocks = true;
 	}
 	if (flags & CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS) {
-		cli->use_level_II_oplocks = true;
+		use_level_II_oplocks = true;
 	}
 
 	if (signing_state == Undefined) {
@@ -285,19 +287,19 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	cli->capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX;
 	cli->capabilities |= CAP_LWIO;
 
-	if (!cli->force_dos_errors) {
+	if (!force_dos_errors) {
 		cli->capabilities |= CAP_STATUS32;
 	}
 
-	if (!cli->force_ascii) {
+	if (!force_ascii) {
 		cli->capabilities |= CAP_UNICODE;
 	}
 
-	if (cli->use_spnego) {
+	if (use_spnego) {
 		cli->capabilities |= CAP_EXTENDED_SECURITY;
 	}
 
-	if (cli->use_level_II_oplocks) {
+	if (use_level_II_oplocks) {
 		cli->capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
 

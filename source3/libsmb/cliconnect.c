@@ -2557,9 +2557,6 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 
-	if (cli_state_protocol(cli) < PROTOCOL_NT1)
-		cli->use_spnego = False;
-
 	/* setup the protocol strings */
 	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
 		uint8_t c = 2;
@@ -2708,7 +2705,6 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			return;
 		}
 
-		cli->use_spnego = False;
 		cli->sec_mode = SVAL(vwv + 1, 0);
 		cli->max_xmit = SVAL(vwv + 2, 0);
 		cli->max_mux = SVAL(vwv + 3, 0);
@@ -2723,7 +2719,6 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		cli->secblob = data_blob(bytes, num_bytes);
 	} else {
 		/* the old core protocol */
-		cli->use_spnego = False;
 		cli->sec_mode = 0;
 		cli->serverzone = get_time_zone(time(NULL));
 		cli->max_xmit = 1024;

@@ -96,15 +96,11 @@ struct cli_state {
 
 	bool use_kerberos;
 	bool fallback_after_kerberos;
-	bool use_spnego;
 	bool use_ccache;
 	bool got_kerberos_mechanism; /* Server supports krb5 in SPNEGO. */
 
 	bool use_oplocks; /* should we use oplocks? */
-	bool use_level_II_oplocks; /* should we use level II oplocks? */
 
-	bool force_dos_errors;
-	bool force_ascii;
 	bool case_sensitive; /* False by default. */
 
 	/* Where (if anywhere) this is mounted under DFS. */
