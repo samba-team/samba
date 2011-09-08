@@ -57,6 +57,7 @@ static bool use_oplocks;
 static bool use_level_II_oplocks;
 static const char *client_txt = "client_oplocks.txt";
 static bool use_kerberos;
+static bool force_dos_errors;
 static fstring multishare_conn_fname;
 static bool use_multishare_conn = False;
 static bool do_encrypt;
@@ -193,6 +194,10 @@ static struct cli_state *open_nbt_connection(void)
 
 	if (use_kerberos) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+	}
+
+	if (force_dos_errors) {
+		flags |= CLI_FULL_CONNECTION_FORCE_DOS_ERRORS;
 	}
 
 	status = cli_connect_nb(host, NULL, port_to_use, 0x20, myname,
@@ -6310,12 +6315,14 @@ static bool run_error_map_extract(int dummy) {
 
 	/* DOS-Error connection */
 
+	force_dos_errors = true;
 	if (!(c_dos = open_nbt_connection())) {
+		force_dos_errors = false;
 		return False;
 	}
+	force_dos_errors = false;
 
 	c_dos->use_spnego = False;
-	c_dos->force_dos_errors = True;
 
 	status = cli_negprot(c_dos);
 	if (!NT_STATUS_IS_OK(status)) {
