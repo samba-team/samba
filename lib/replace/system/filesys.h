@@ -100,6 +100,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
 /*
  * Veritas File System.  Often in addition to native.
  * Quotas different.
