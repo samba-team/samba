@@ -53,7 +53,7 @@ def import_sam_policy(samdb, policy, logger):
 
     m = ldb.Message()
     m.dn = samdb.get_default_basedn()
-    m['a01'] = ldb.MessageElement(str(unix2nttime(policy['min password length'])), ldb.FLAG_MOD_REPLACE,
+    m['a01'] = ldb.MessageElement(str(policy['min password length']), ldb.FLAG_MOD_REPLACE,
                             'minPwdLength')
     m['a02'] = ldb.MessageElement(str(policy['password history']), ldb.FLAG_MOD_REPLACE,
                             'pwdHistoryLength')
