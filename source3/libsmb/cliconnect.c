@@ -2602,6 +2602,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint16_t protnum;
 	uint8_t *inbuf;
+	uint32_t server_capabilities = 0;
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
 			      &num_bytes, &bytes);
@@ -2652,13 +2653,13 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		ts = interpret_long_date(((char *)(vwv+11))+1);
 		cli->servertime = ts.tv_sec;
 		cli->secblob = data_blob(bytes, num_bytes);
-		cli->capabilities = IVAL(vwv + 9, 1);
-		if (cli_state_capabilities(cli) & CAP_RAW_MODE) {
+		server_capabilities = IVAL(vwv + 9, 1);
+		if (server_capabilities & CAP_RAW_MODE) {
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
 		}
 		/* work out if they sent us a workgroup */
-		if (!(cli_state_capabilities(cli) & CAP_EXTENDED_SECURITY) &&
+		if (!(server_capabilities & CAP_EXTENDED_SECURITY) &&
 		    smb_buflen(inbuf) > 8) {
 			ssize_t ret;
 			status = smb_bytes_talloc_string(
@@ -2737,6 +2738,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	}
 
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
+
+	cli->capabilities = server_capabilities;
 
 	/* a way to force ascii SMB */
 	if (cli->force_ascii) {
