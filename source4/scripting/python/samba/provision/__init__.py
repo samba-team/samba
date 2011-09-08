@@ -2005,13 +2005,6 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
             "GC_MSDCS_IP6_LINE": gc_msdcs_ip6_line,
         })
 
-    # note that we use no variable substitution on this file
-    # the substitution is done at runtime by samba_dnsupdate
-    setup_file(setup_path("dns_update_list"), paths.dns_update_list, None)
-
-    # and the SPN update list
-    setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
-
     if paths.bind_gid is not None:
         try:
             os.chown(dns_dir, -1, paths.bind_gid)
@@ -2031,7 +2024,7 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
 def create_dns_update_list(lp, logger, paths):
     """Write out a dns_update_list file"""
     # note that we use no variable substitution on this file
-    # the substitution is done at runtime by samba_dnsupdate
+    # the substitution is done at runtime by samba_dnsupdate, samba_spnupdate
     setup_file(setup_path("dns_update_list"), paths.dns_update_list, None)
     setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
 
