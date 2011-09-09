@@ -22,7 +22,6 @@
 #define _SAMBA_MODULES_H
 
 /* Module support */
-typedef NTSTATUS (init_module_function) (void);
 typedef NTSTATUS (*init_module_fn) (void);
 
 NTSTATUS init_samba_module(void);

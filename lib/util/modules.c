@@ -136,7 +136,7 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 {
 	void *handle;
-	init_module_function *init;
+	init_module_fn init;
 	NTSTATUS status;
 	const char *error;
 
@@ -156,7 +156,7 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	init = (init_module_function *)dlsym(handle, "init_samba_module");
+	init = (init_module_fn)dlsym(handle, "init_samba_module");
 
 	/* we must check dlerror() to determine if it worked, because
            dlsym() can validly return NULL */
