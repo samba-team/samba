@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-#ifdef HAVE_DLOPEN
-
 /* Load a dynamic module.  Only log a level 0 error if we are not checking 
    for the existence of a module (probling). */
 
@@ -134,28 +132,6 @@ NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 	TALLOC_FREE(ctx);
 	return status;
 }
-
-#else /* HAVE_DLOPEN */
-
-NTSTATUS smb_load_module(const char *module_name)
-{
-	DEBUG(0,("This samba executable has not been built with plugin support\n"));
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
-int smb_load_modules(const char **modules)
-{
-	DEBUG(0,("This samba executable has not been built with plugin support\n"));
-	return -1;
-}
-
-NTSTATUS smb_probe_module(const char *subsystem, const char *module)
-{
-	DEBUG(0,("This samba executable has not been built with plugin support, not probing\n")); 
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
-#endif /* HAVE_DLOPEN */
 
 void init_modules(void)
 {
