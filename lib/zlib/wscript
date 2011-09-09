@@ -9,10 +9,13 @@ def configure(conf):
                     #else
                     #error "ZLIB_VERNUM < 0x1230"
                     #endif
+                    z_stream *z;
+                    inflateInit2(z, -15);
                     ''',
                     headers='zlib.h',
+                    lib='z',
                     local_include=False,
-                    msg='Checking for ZLIB_VERNUM >= 0x1230',
+                    msg='Checking for ZLIB_VERNUM >= 0x1230 and working link to zlib',
                     define='HAVE_ZLIB')
 
     # If we don't do this then we will receive an error that lib 'z'
