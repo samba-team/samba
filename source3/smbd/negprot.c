@@ -315,7 +315,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	   distinguish from NT which doesn't set it either. */
 
 	if ( (req->flags2 & FLAGS2_EXTENDED_SECURITY) &&
-		((req->flags2 & FLAGS2_UNKNOWN_BIT4) == 0) )
+		((req->flags2 & FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED) == 0) )
 	{
 		if (get_remote_arch() != RA_SAMBA) {
 			set_remote_arch( RA_VISTA );
