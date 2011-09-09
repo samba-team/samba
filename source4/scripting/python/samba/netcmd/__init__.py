@@ -39,7 +39,7 @@ class Command(object):
     description = property(_get_description)
 
     # synopsis must be defined in all subclasses in order to provide the command usage
-    synopsis = ""
+    synopsis = "Please provide synopsis for this command."
     # long_description is a string describing the command in details
     long_description = ""
     takes_args = []
