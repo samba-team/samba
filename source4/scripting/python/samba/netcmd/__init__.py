@@ -49,8 +49,6 @@ class Command(object):
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
         }
-    # This epilog will print at the end when the user invokes the command w/ -h or --help
-    epilog = ""
     outf = sys.stdout
 
     def usage(self, *args):
@@ -92,7 +90,7 @@ class Command(object):
         sys.exit(1)
 
     def _create_parser(self):
-        parser = optparse.OptionParser(usage=self.synopsis, epilog=self.epilog, 
+        parser = optparse.OptionParser(usage=self.synopsis, 
                                        description=self.long_description)
         parser.add_options(self.takes_options)
         optiongroups = {}
@@ -165,7 +163,6 @@ class SuperCommand(Command):
         max_length = max(map(lambda c: len(c), subcmds))
         for cmd in subcmds:
             print "  %*s  - %s" % (-max_length, cmd, self.subcommands[cmd].description)
-        print " *  server connection needed"
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:
