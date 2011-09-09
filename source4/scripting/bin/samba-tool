@@ -77,6 +77,8 @@ if __name__ == '__main__':
 
     try:
         retval = cmd._run("samba-tool", subcommand, *args)
-        sys.exit(retval)
+    except SystemExit, e:
+	retval = -1
     except Exception, e:
         cmd.show_command_error(e)
+    sys.exit(retval)
