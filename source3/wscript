@@ -1817,7 +1817,7 @@ main() {
             conf.DEFINE('static_init_%s' % p, '{}')
         if p in shared_list:
             for entry in shared_list[p]:
-                conf.DEFINE('%s_init' % entry, 'init_samba_module')
+                conf.DEFINE('%s_init' % entry, 'samba_init_module')
                 conf.env[shared_env].append('%s' % entry)
 
     if not os.getenv('TOPLEVEL_BUILD'):

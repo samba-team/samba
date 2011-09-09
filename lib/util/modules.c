@@ -156,14 +156,14 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	init = (init_module_fn)dlsym(handle, "init_samba_module");
+	init = (init_module_fn)dlsym(handle, SAMBA_INIT_MODULE);
 
 	/* we must check dlerror() to determine if it worked, because
            dlsym() can validly return NULL */
 	error = dlerror();
 	if (error) {
-		DEBUG(0, ("Error trying to resolve symbol 'init_samba_module' "
-			  "in %s: %s\n", module_name, error));
+		DEBUG(0, ("Error trying to resolve symbol '" SAMBA_INIT_MODULE
+			  "' in %s: %s\n", module_name, error));
 		dlclose(handle);
 		return NT_STATUS_UNSUCCESSFUL;
 	}

@@ -24,7 +24,7 @@
 /* Module support */
 typedef NTSTATUS (*init_module_fn) (void);
 
-NTSTATUS init_samba_module(void);
+NTSTATUS samba_init_module(void);
 
 /* this needs to be a string which is not in the C library. We
    previously used "init_module", but that meant that modules which
