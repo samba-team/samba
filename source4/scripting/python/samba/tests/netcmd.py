@@ -23,12 +23,6 @@ from samba.netcmd import Command
 import samba.tests
 
 class CommandTests(samba.tests.TestCase):
-
-    def test_name(self):
-        class cmd_foo(Command):
-            pass
-        self.assertEquals("foo", cmd_foo().name)
-
     def test_description(self):
         class cmd_foo(Command):
             """Mydescription"""
