@@ -162,7 +162,7 @@ class SuperCommand(Command):
         print "Available subcommands:"
         subcmds = self.subcommands.keys()
         subcmds.sort()
-        max_length = len(max(subcmds, key=len))
+        max_length = max(map(lambda c: len(c), subcmds))
         for cmd in subcmds:
             print "  %*s  - %s" % (-max_length, cmd, self.subcommands[cmd].description)
         print " *  server connection needed"
