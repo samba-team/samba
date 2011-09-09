@@ -33,9 +33,11 @@ NTSTATUS samba_init_module(void);
 #define SAMBA_INIT_MODULE "samba_init_module"
 
 /**
- * Obtain the init function from a shared library file
+ * Obtain the init function from a shared library file.  
+ *
+ * The handle to dlclose() in case of error is returns in *handle if handle is not NULL
  */
-init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path);
+init_module_fn load_module(const char *path, bool is_probe, void **handle);
 
 /**
  * Run the specified init functions.

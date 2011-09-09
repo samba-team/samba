@@ -28,18 +28,40 @@
 /**
  * Obtain the init function from a shared library file
  */
-init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
+init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
 {
 	void *handle;
 	void *init_fn;
+	char *error;
 
+#if _SAMBA_BUILD_ == 3
+	/* Always try to use LAZY symbol resolving; if the plugin has
+	 * backwards compatibility, there might be symbols in the
+	 * plugin referencing to old (removed) functions
+	 */
+	handle = dlopen(path, RTLD_LAZY);
+#else
+	/* This should be a WAF build, where modules should be built
+	 * with no undefined symbols and are already linked against
+	 * the libraries that they are loaded by */
 	handle = dlopen(path, RTLD_NOW);
+#endif
+
+	/* This call should reset any possible non-fatal errors that
+	   occured since last call to dl* functions */
+	error = dlerror();
+
 	if (handle == NULL) {
-		DEBUG(0, ("Unable to open %s: %s\n", path, dlerror()));
+		int level = is_probe ? 5 : 0;
+		DEBUG(level, ("Error loading module '%s': %s\n", path, error ? error : ""));
 		return NULL;
 	}
 
-	init_fn = dlsym(handle, SAMBA_INIT_MODULE);
+	init_fn = (init_module_fn)dlsym(handle, SAMBA_INIT_MODULE);
+
+	/* we could check dlerror() to determine if it worked, because
+           dlsym() can validly return NULL, but what would we do with
+           a NULL pointer as a module init function? */
 
 	if (init_fn == NULL) {
 		DEBUG(0, ("Unable to find %s() in %s: %s\n",
@@ -47,6 +69,10 @@ init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
 		DEBUG(1, ("Loading module '%s' failed\n", path));
 		dlclose(handle);
 		return NULL;
+	}
+
+	if (handle_out) {
+		*handle_out = handle;
 	}
 
 	return (init_module_fn)init_fn;
@@ -78,7 +104,7 @@ static init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 
 		filename = talloc_asprintf(mem_ctx, "%s/%s", path, entry->d_name);
 
-		ret[success] = load_module(mem_ctx, filename);
+		ret[success] = load_module(filename, true, NULL);
 		if (ret[success]) {
 			ret = talloc_realloc(mem_ctx, ret, init_module_fn, success+2);
 			success++;
@@ -138,33 +164,9 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 	void *handle;
 	init_module_fn init;
 	NTSTATUS status;
-	const char *error;
 
-	/* Always try to use LAZY symbol resolving; if the plugin has
-	 * backwards compatibility, there might be symbols in the
-	 * plugin referencing to old (removed) functions
-	 */
-	handle = dlopen(module_name, RTLD_LAZY);
-
-	/* This call should reset any possible non-fatal errors that
-	   occured since last call to dl* functions */
-	error = dlerror();
-
-	if(!handle) {
-		int level = is_probe ? 3 : 0;
-		DEBUG(level, ("Error loading module '%s': %s\n", module_name, error ? error : ""));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	init = (init_module_fn)dlsym(handle, SAMBA_INIT_MODULE);
-
-	/* we must check dlerror() to determine if it worked, because
-           dlsym() can validly return NULL */
-	error = dlerror();
-	if (error) {
-		DEBUG(0, ("Error trying to resolve symbol '" SAMBA_INIT_MODULE
-			  "' in %s: %s\n", module_name, error));
-		dlclose(handle);
+	init = load_module(module_name, is_probe, &handle);
+	if (!init) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
