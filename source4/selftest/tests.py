@@ -267,6 +267,12 @@ plansmbtorturetestsuite('echo.udp', 'dc:local', '//$SERVER/whatever')
 for t in smb4torture_testsuites("local."):
     plansmbtorturetestsuite(t, "none", "ncalrpc:")
 
+# Confirm these tests with the system iconv too
+for t in ["local.convert_string_handle", "local.convert_string", "local.ndr"]:
+    modname = "samba4.%s.iconv.modules" % t
+    cmdline = "%s %s %s" % (valgrindify(smb4torture), "ncalrpc: --option='iconv:native=false'", t)
+    plantestsuite_loadlist(modname, env, cmdline)
+
 tdbtorture4 = binpath("tdbtorture")
 if os.path.exists(tdbtorture4):
     plantestsuite("tdb.stress", "none", valgrindify(tdbtorture4))

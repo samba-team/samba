@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "lib/util/charset/charset.h"
+#include "param/param.h"
 
 /* The text below is in ancient and a latin charset transliteration of
  * greek, and an english translation.  It from Apology by Plato and sourced from
@@ -105,7 +106,8 @@ static bool test_gd_iso8859_cp850_handle(struct torture_context *tctx)
 	talloc_steal(tctx, gd_iso8859_1.data);
 	talloc_steal(tctx, gd_utf16le.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850");
+	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850",
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting iconv handle");
 		
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
@@ -297,7 +299,8 @@ static bool test_gd_minus_1_handle(struct torture_context *tctx)
 	talloc_steal(tctx, gd_cp850.data);
 	talloc_steal(tctx, gd_utf16le.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "CP850", "CP850");
+	iconv_handle = get_iconv_testing_handle(tctx, "CP850", "CP850", 
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting iconv handle");
 
 	gd_utf8_terminated = data_blob_talloc(tctx, NULL, gd_utf8.length + 1);
@@ -481,7 +484,8 @@ static bool test_gd_ascii_handle(struct torture_context *tctx)
 	talloc_steal(tctx, gd_iso8859_1.data);
 	talloc_steal(tctx, gd_utf16le.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8");
+	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8", 
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting iconv handle");
 
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle,
@@ -550,7 +554,8 @@ static bool test_plato_english_iso8859_cp850_handle(struct torture_context *tctx
 	
 	talloc_steal(tctx, plato_english_utf16le.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850");
+	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850", 
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting iconv handle");
 		
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
@@ -668,7 +673,8 @@ static bool test_plato_english_minus_1_handle(struct torture_context *tctx)
 	
 	talloc_steal(tctx, plato_english_utf16le.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850");
+	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850", 
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting iconv handle");
 
 	plato_english_utf8_terminated = data_blob_talloc(tctx, NULL, plato_english_utf8.length + 1);
@@ -809,7 +815,8 @@ static bool test_plato_minus_1_handle(struct torture_context *tctx)
 	talloc_steal(tctx, plato_utf8.data);
 	talloc_steal(tctx, plato_utf16le.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850");
+	iconv_handle = get_iconv_testing_handle(tctx, "ISO8859-1", "CP850",
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting iconv handle");
 
 	plato_utf8_terminated = data_blob_talloc(tctx, NULL, plato_utf8.length + 1);
@@ -923,7 +930,8 @@ static bool test_plato_cp850_utf8_handle(struct torture_context *tctx)
 	talloc_steal(tctx, plato_utf8.data);
 	talloc_steal(tctx, plato_utf16le.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "CP850", "UTF8");
+	iconv_handle = get_iconv_testing_handle(tctx, "CP850", "UTF8", 
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "creating iconv handle");
 		
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
@@ -1114,7 +1122,8 @@ static bool test_plato_latin_cp850_utf8_handle(struct torture_context *tctx)
 	talloc_steal(tctx, plato_latin_utf8.data);
 	talloc_steal(tctx, plato_latin_utf16le.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "CP850", "UTF8");
+	iconv_handle = get_iconv_testing_handle(tctx, "CP850", "UTF8",
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "creating iconv handle");
 		
 	torture_assert(tctx, convert_string_talloc_handle(tctx, iconv_handle, 
@@ -1182,7 +1191,8 @@ static bool test_gd_case_utf8_handle(struct torture_context *tctx)
 	char *gd_lower, *gd_upper;
 	talloc_steal(tctx, gd_utf8.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8");
+	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8",
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting utf8 iconv handle");
 
 	torture_assert(tctx,
@@ -1245,7 +1255,8 @@ static bool test_gd_case_cp850_handle(struct torture_context *tctx)
 	char *gd_lower, *gd_upper;
 	talloc_steal(tctx, gd_cp850.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "CP850");
+	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "CP850",
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting cp850 iconv handle");
 
 	torture_assert(tctx,
@@ -1306,7 +1317,8 @@ static bool test_plato_case_utf8_handle(struct torture_context *tctx)
 	char *plato_lower, *plato_upper;
 	talloc_steal(tctx, plato_utf8.data);
 
-	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8");
+	iconv_handle = get_iconv_testing_handle(tctx, "ASCII", "UTF8",
+						lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true));
 	torture_assert(tctx, iconv_handle, "getting utf8 iconv handle");
 
 	torture_assert(tctx,

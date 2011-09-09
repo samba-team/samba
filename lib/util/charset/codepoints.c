@@ -174,10 +174,11 @@ struct smb_iconv_handle *get_iconv_handle(void)
 
 struct smb_iconv_handle *get_iconv_testing_handle(TALLOC_CTX *mem_ctx, 
 						  const char *dos_charset, 
-						  const char *unix_charset)
+						  const char *unix_charset,
+						  bool native_iconv)
 {
 	return smb_iconv_handle_reinit(mem_ctx,
-				       dos_charset, unix_charset, true, NULL);
+				       dos_charset, unix_charset, native_iconv, NULL);
 }
 
 /**
