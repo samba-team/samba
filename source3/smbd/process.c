@@ -1674,15 +1674,21 @@ void remove_from_common_flags2(uint32 v)
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf)
 {
+	uint16_t in_flags2 = SVAL(inbuf,smb_flg2);
+	uint16_t out_flags2 = common_flags2;
+
+	out_flags2 |= in_flags2 & FLAGS2_UNICODE_STRINGS;
+	out_flags2 |= in_flags2 & FLAGS2_SMB_SECURITY_SIGNATURES;
+	out_flags2 |= in_flags2 & FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED;
+
 	srv_set_message(outbuf,0,0,false);
 
 	SCVAL(outbuf, smb_com, req->cmd);
 	SIVAL(outbuf,smb_rcls,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
-	SSVAL(outbuf,smb_flg2,
-		(SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS) |
-		common_flags2);
+	SSVAL(outbuf,smb_flg2, out_flags2);
 	memset(outbuf+smb_pidhigh,'\0',(smb_tid-smb_pidhigh));
+	memcpy(outbuf+smb_ss_field, inbuf+smb_ss_field, 8);
 
 	SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
 	SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
