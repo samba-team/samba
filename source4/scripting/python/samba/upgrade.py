@@ -132,8 +132,8 @@ def import_idmap(idmapdb, samba3, logger):
 
     try:
         samba3_idmap = samba3.get_idmap_db()
-    except IOError as (errno, strerror):
-        logger.warn('Cannot open idmap database, Ignoring: ({0}): {1}'.format(errno, strerror))
+    except IOError, e:
+        logger.warn('Cannot open idmap database, Ignoring: %s', str(e))
         return
 
     currentxid = max(samba3_idmap.get_user_hwm(), samba3_idmap.get_group_hwm())
