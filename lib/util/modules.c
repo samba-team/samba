@@ -56,7 +56,7 @@ init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path)
  * Obtain list of init functions from the modules in the specified
  * directory
  */
-init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
+static init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -180,11 +180,6 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 	return status;
 }
 
-NTSTATUS smb_load_module(const char *module_name)
-{
-	return do_smb_load_module(module_name, false);
-}
-
 /* Load all modules in list and return number of
  * modules that has been successfully loaded */
 int smb_load_modules(const char **modules)
@@ -193,7 +188,7 @@ int smb_load_modules(const char **modules)
 	int success = 0;
 
 	for(i = 0; modules[i]; i++){
-		if(NT_STATUS_IS_OK(smb_load_module(modules[i]))) {
+		if(NT_STATUS_IS_OK(do_smb_load_module(modules[i], false))) {
 			success++;
 		}
 	}

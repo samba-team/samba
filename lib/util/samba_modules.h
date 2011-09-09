@@ -39,12 +39,6 @@ NTSTATUS init_samba_module(void);
 init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path);
 
 /**
- * Obtain list of init functions from the modules in the specified
- * directory
- */
-init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path);
-
-/**
  * Run the specified init functions.
  *
  * @return true if all functions ran successfully, false otherwise
@@ -58,7 +52,6 @@ bool run_init_functions(init_module_fn *fns);
  */
 init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
 
-NTSTATUS smb_load_module(const char *module_name);
 int smb_load_modules(const char **modules);
 NTSTATUS smb_probe_module(const char *subsystem, const char *module);
 
