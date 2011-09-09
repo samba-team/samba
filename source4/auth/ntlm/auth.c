@@ -27,6 +27,7 @@
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/wbclient/wbclient.h"
+#include "lib/util/samba_modules.h"
 
 /***************************************************************************
  Set a fixed challenge

@@ -39,14 +39,6 @@ struct smbsrv_connection;
 
 #define Auto (2)
 
-typedef NTSTATUS (*init_module_fn) (void);
-
-/* this needs to be a string which is not in the C library. We
-   previously used "init_module", but that meant that modules which
-   did not define this function ended up calling the C library
-   function init_module() which makes a system call */
-#define SAMBA_INIT_MODULE "samba_init_module"
-
 #include "libds/common/roles.h"
 
 struct loadparm_context;
@@ -293,30 +285,6 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx,
 			     struct loadparm_context *lp_ctx,
 			     const char *name);
 
-/**
- * Obtain the init function from a shared library file
- */
-init_module_fn load_module(TALLOC_CTX *mem_ctx, const char *path);
-
-/**
- * Obtain list of init functions from the modules in the specified
- * directory
- */
-init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path);
-
-/**
- * Run the specified init functions.
- *
- * @return true if all functions ran successfully, false otherwise
- */
-bool run_init_functions(init_module_fn *fns);
-
-/**
- * Load the initialization functions from DSO files for a specific subsystem.
- *
- * Will return an array of function pointers to initialization functions
- */
-init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
 const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx);
 struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,

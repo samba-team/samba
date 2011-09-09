@@ -17,6 +17,12 @@ bld.SAMBA_LIBRARY('samba-util',
                   pc_files='samba-util.pc'
                   )
 
+bld.SAMBA_LIBRARY('samba-modules',
+		  source='modules.c',
+		  deps='errors samba-util',
+		  local_include=False,
+		  private_library=True)
+
 bld.SAMBA_LIBRARY('asn1util',
                   source='asn1.c',
                   deps='talloc samba-util',

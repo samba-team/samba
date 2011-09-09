@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "param/share.h"
 #include "param/param.h"
+#include "lib/util/samba_modules.h"
 
 const char *share_string_option(struct share_config *scfg, const char *opt_name, const char *defval)
 {

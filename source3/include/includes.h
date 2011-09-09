@@ -524,7 +524,7 @@ typedef char fstring[FSTRING_LEN];
 #include "smb.h"
 #include "../lib/util/byteorder.h"
 
-#include "module.h"
+#include "../lib/util/samba_modules.h"
 #include "../lib/util/talloc_stack.h"
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"

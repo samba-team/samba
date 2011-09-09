@@ -23,6 +23,7 @@
 #include "param/param.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/smbtorture.h"
+#include "lib/util/samba_modules.h"
 
 _PUBLIC_ int torture_numops=10;
 _PUBLIC_ int torture_entries=1000;

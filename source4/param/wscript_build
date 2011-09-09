@@ -32,7 +32,7 @@ bld.SAMBA_SUBSYSTEM('PROVISION',
 bld.SAMBA_SUBSYSTEM('share',
 	source='share.c',
 	public_headers='share.h',
-	deps='samba-util'
+	deps='samba-util samba-modules'
 	)
 
 

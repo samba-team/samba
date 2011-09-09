@@ -185,16 +185,6 @@ void init_ldap_debugging(void);
 char *escape_ldap_string(TALLOC_CTX *mem_ctx, const char *s);
 char *escape_rdn_val_string_alloc(const char *s);
 
-/* The following definitions come from lib/module.c  */
-
-NTSTATUS smb_load_module(const char *module_name);
-int smb_load_modules(const char **modules);
-NTSTATUS smb_probe_module(const char *subsystem, const char *module);
-NTSTATUS smb_load_module(const char *module_name);
-int smb_load_modules(const char **modules);
-NTSTATUS smb_probe_module(const char *subsystem, const char *module);
-void init_modules(void);
-
 /* The following definitions come from lib/ms_fnmatch.c  */
 
 int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
@@ -604,6 +594,7 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				 uint32 *pcreate_disposition,
 				 uint32 *pcreate_options,
 				 uint32_t *pprivate_flags);
+void init_modules(void);
 
 /* The following definitions come from lib/util_cmdline.c  */
 

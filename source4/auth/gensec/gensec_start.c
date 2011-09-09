@@ -35,6 +35,7 @@
 #include "param/param.h"
 #include "lib/util/tsort.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
+#include "lib/util/samba_modules.h"
 
 /* the list of currently registered GENSEC backends */
 static struct gensec_security_ops **generic_security_ops;

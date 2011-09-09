@@ -26,6 +26,7 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 #include "../lib/util/unix_privs.h"
+#include "lib/util/samba_modules.h"
 
 #if defined(UID_WRAPPER)
 #if !defined(UID_WRAPPER_REPLACE) && !defined(UID_WRAPPER_NOT_REPLACE)

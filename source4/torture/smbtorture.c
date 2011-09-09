@@ -32,6 +32,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "lib/util/samba_modules.h"
 
 #if HAVE_READLINE_HISTORY_H
 #include <readline/history.h>

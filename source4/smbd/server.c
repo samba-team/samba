@@ -42,6 +42,7 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "cluster/cluster.h"
 #include "dynconfig/dynconfig.h"
+#include "lib/util/samba_modules.h"
 
 /*
   recursively delete a directory tree

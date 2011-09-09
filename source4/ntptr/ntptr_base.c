@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "ntptr/ntptr.h"
 #include "param/param.h"
+#include "lib/util/samba_modules.h"
 
 /* the list of currently registered NTPTR backends */
 static struct ntptr_backend {
