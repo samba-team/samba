@@ -244,7 +244,7 @@ static int smb_iconv_t_destructor(smb_iconv_t hwd)
 }
 
 _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
-			      const char *fromcode, bool native_iconv)
+			      const char *fromcode, bool allow_native_iconv)
 {
 	smb_iconv_t ret;
 	const struct charset_functions *from=NULL, *to=NULL;
@@ -268,6 +268,7 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 		return ret;
 	}
 
+	/* check if we have a builtin function for this conversion */
 	for (i=0;i<ARRAY_SIZE(builtin_functions);i++) {
 		if (strcasecmp(fromcode, builtin_functions[i].name) == 0) {
 			from = &builtin_functions[i];
@@ -277,42 +278,67 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 		}
 	}
 
-	if (from == NULL) {
-		for (from=charsets; from; from=from->next) {
-			if (strcasecmp(from->name, fromcode) == 0) break;
-		}
-	}
-
-	if (to == NULL) {
-		for (to=charsets; to; to=to->next) {
-			if (strcasecmp(to->name, tocode) == 0) break;
-		}
-	}
-
 #ifdef HAVE_NATIVE_ICONV
-	if ((!from || !to) && !native_iconv) {
-		goto failed;
-	}
-	if (!from) {
-		ret->pull = sys_iconv;
+	/* the from and to varaibles indicate a samba module or
+	 * internal conversion, ret->pull and ret->push are
+	 * initialised only in this block for iconv based
+	 * conversions */
+
+	if (allow_native_iconv && from == NULL) {
 		ret->cd_pull = iconv_open("UTF-16LE", fromcode);
 		if (ret->cd_pull == (iconv_t)-1)
 			ret->cd_pull = iconv_open("UCS-2LE", fromcode);
-		if (ret->cd_pull == (iconv_t)-1) goto failed;
+		if (ret->cd_pull != (iconv_t)-1) {
+			ret->pull = sys_iconv;
+		}
 	}
-
-	if (!to) {
-		ret->push = sys_iconv;
+	
+	if (allow_native_iconv && to == NULL) {
 		ret->cd_push = iconv_open(tocode, "UTF-16LE");
 		if (ret->cd_push == (iconv_t)-1)
 			ret->cd_push = iconv_open(tocode, "UCS-2LE");
-		if (ret->cd_push == (iconv_t)-1) goto failed;
-	}
-#else
-	if (!from || !to) {
-		goto failed;
+		if (ret->cd_push != (iconv_t)-1) {
+			ret->push = sys_iconv;
+		}
 	}
 #endif
+
+	/* If iconv was unable to provide the conversion, or if use of
+	 * it was disabled, and it wasn't a builtin charset, try a
+	 * module */
+	if (ret->pull == NULL && from == NULL) {
+		from = find_charset_functions(fromcode);
+	}
+	
+	if (ret->push == NULL && to == NULL) {
+		to = find_charset_functions(tocode);
+	}
+
+	/* In the WAF builds, all charset modules are linked in at compile
+	 * time, as we have shared libs.  Using run-time loading as well will
+	 * cause dependency loops.  For the autoconf build, try loading from a module */
+#ifndef _SAMBA_WAF_BUILD_
+	/* check if there is a module available that can do this conversion */
+	if (from == NULL && ret->pull == NULL && NT_STATUS_IS_OK(smb_probe_module("charset", fromcode))) {
+		if (!(from = find_charset_functions(fromcode))) {
+			DEBUG(0, ("Module %s doesn't provide charset %s!\n", fromcode, fromcode));
+		}
+	}
+	
+	if (to == NULL && ret->push == NULL && NT_STATUS_IS_OK(smb_probe_module("charset", tocode))) {
+		if (!(to = find_charset_functions(tocode))) {
+			DEBUG(0, ("Module %s doesn't provide charset %s!\n", tocode, tocode));
+		}
+	}
+#endif
+
+	if (ret->pull == NULL && from == NULL) {
+		goto failed;
+	}
+	
+	if (ret->push == NULL && to == NULL) {
+		goto failed;
+	}
 
 	/* check for conversion to/from ucs2 */
 	if (is_utf16(fromcode) && to) {

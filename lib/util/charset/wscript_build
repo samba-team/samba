@@ -10,35 +10,39 @@ bld.SAMBA_SUBSYSTEM('charset',
                     deps='DYNCONFIG ICONV_WRAPPER',
                     public_deps='talloc')
 
+# In the WAF builds, all charset modules are linked in at compile
+# time, as we have shared libs.  Using run-time loading as well will
+# cause dependency loops
+
 bld.SAMBA_MODULE('charset_weird',
                  subsystem='charset',
                  source='weird.c',
-                 init_function='',
+                 init_function='charset_weird_init',
                  deps='samba-util',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('charset_weird'),
+                 internal_module=True,
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_weird'))
 
 bld.SAMBA_MODULE('charset_CP850',
                  subsystem='charset',
                  source='CP850.c',
-                 init_function='',
+                 init_function='charset_CP850_init',
                  deps='samba-util',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('charset_CP850'),
+                 internal_module=True,
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_CP850'))
 
 bld.SAMBA_MODULE('charset_CP437',
                  subsystem='charset',
                  source='CP437.c',
-                 init_function='',
+                 init_function='charset_CP437_init',
                  deps='samba-util',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('charset_CP437'),
+                 internal_module=True,
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_CP437'))
 
 bld.SAMBA_MODULE('charset_macosxfs',
                  subsystem='charset',
                  source='charset_macosxfs.c',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('charset_macosxfs'),
+                 init_function='charset_macosxfs_init',
+                 internal_module=True,
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_macosxfs'))
 
 
