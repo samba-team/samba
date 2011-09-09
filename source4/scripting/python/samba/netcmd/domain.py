@@ -131,6 +131,8 @@ class cmd_domain_level(Command):
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--forest", type="choice", choices=["2003", "2008", "2008_R2"],
             help="The forest function level (2003 | 2008 | 2008_R2)"),
+        Option("--domain", type="choice", choices=["2003", "2008", "2008_R2"],
+            help="The domain function level (2003 | 2008 | 2008_R2)")
             ]
 
     takes_args = ["subcommand"]
@@ -219,6 +221,18 @@ class cmd_domain_level(Command):
                 outstr = "2008 R2"
             else:
                 outstr = "higher than 2008 R2"
+            self.message("Domain function level: (Windows) " + outstr)
+
+            if min_level_dc == DS_DOMAIN_FUNCTION_2000:
+                outstr = "2000"
+            elif min_level_dc == DS_DOMAIN_FUNCTION_2003:
+                outstr = "2003"
+            elif min_level_dc == DS_DOMAIN_FUNCTION_2008:
+                outstr = "2008"
+            elif min_level_dc == DS_DOMAIN_FUNCTION_2008_R2:
+                outstr = "2008 R2"
+            else:
+                outstr = "higher than 2008 R2"
             self.message("Lowest function level of a DC: (Windows) " + outstr)
 
         elif subcommand == "raise":
@@ -261,7 +275,8 @@ class cmd_domain_level(Command):
                 # Directly on the base DN
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, domain_dn)
-                m["msDS-Behavior-Version"]= ldb.MessageElement(                                                                                             str(new_level_domain), ldb.FLAG_MOD_REPLACE,
+                m["msDS-Behavior-Version"]= ldb.MessageElement(
+                  str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                             "msDS-Behavior-Version")
                 samdb.modify(m)
                 # Under partitions
