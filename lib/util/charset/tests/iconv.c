@@ -159,7 +159,19 @@ static bool test_buffer(struct torture_context *test,
 						     charset));
 		}
 		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
+		if (cd2 == (iconv_t)-1) {
+			torture_fail(test, 
+				     talloc_asprintf(test, 
+						     "failed to open %s to UTF-16LE via smb_iconv_open_ex",
+						     charset));
+		}
 		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
+		if (cd3 == (iconv_t)-1) {
+			torture_fail(test, 
+				     talloc_asprintf(test, 
+						     "failed to open UTF-16LE to %s via smb_iconv_open_ex",
+						     charset));
+		}
 		last_charset = charset;
 	}
 
@@ -206,7 +218,8 @@ static bool test_buffer(struct torture_context *test,
 		show_buf(" rem1:", inbuf+(size-size_in1), size_in1);
 		show_buf(" rem2:", inbuf+(size-size_in2), size_in2);
 		torture_fail(test, talloc_asprintf(test, 
-						   "e1=%d/%s e2=%d/%s", 
+						   "errno mismatch with %s internal=%d/%s system=%d/%s", 
+						   charset, 
 						   errno1, strerror(errno1), 
 						   errno2, strerror(errno2)));
 	}
