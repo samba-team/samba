@@ -158,14 +158,14 @@ static bool test_buffer(struct torture_context *test,
 						     "failed to open %s to UTF-16LE",
 						     charset));
 		}
-		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
+		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", false);
 		if (cd2 == (iconv_t)-1) {
 			torture_fail(test, 
 				     talloc_asprintf(test, 
 						     "failed to open %s to UTF-16LE via smb_iconv_open_ex",
 						     charset));
 		}
-		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "native", true));
+		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, false);
 		if (cd3 == (iconv_t)-1) {
 			torture_fail(test, 
 				     talloc_asprintf(test, 
