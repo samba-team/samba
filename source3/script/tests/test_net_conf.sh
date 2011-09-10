@@ -6,15 +6,16 @@
 
 if [ $# -lt 3 ]; then
 cat <<EOF
-Usage: test_net_conf.sh SCRIPTDIR SERVERCONFFILE CONFIGURATION [rpc]
+Usage: test_net_conf.sh SCRIPTDIR SERVERCONFFILE NET CONFIGURATION [rpc]
 EOF
 exit 1;
 fi
 
 SCRIPTDIR="$1"
 SERVERCONFFILE="$2"
-CONFIGURATION="$3"
-RPC="$4"
+NET="$3"
+CONFIGURATION="$4"
+RPC="$5"
 
 LOGDIR_PREFIX="conf_test"
 

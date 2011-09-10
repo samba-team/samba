@@ -7,17 +7,18 @@
 
 if [ $# -lt 3 ]; then
 cat <<EOF
-Usage: test_net_registry_roundtrip.sh SCRIPTDIR SERVERCONFFILE PREFIX CONFIGURATION
+Usage: test_net_registry_roundtrip.sh SCRIPTDIR SERVERCONFFILE NET CONFIGURATION RPC
 EOF
 exit 1;
 fi
 
 SCRIPTDIR="$1"
 SERVERCONFFILE="$2"
-CONFIGURATION="$3"
-RPC="$4"
+NET="$3"
+CONFIGURATION="$4"
+RPC="$5"
 
-NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
+NET="$VALGRIND ${NET} $CONFIGURATION"
 
 if test "x${RPC}" = "xrpc" ; then
 	NETCMD="${NET} -U${USERNAME}%${PASSWORD} -I ${SERVER_IP} rpc"
