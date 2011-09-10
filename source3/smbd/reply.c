@@ -3738,6 +3738,7 @@ nosendfile_read:
 
 void reply_read_and_X(struct smb_request *req)
 {
+	struct smbd_server_connection *sconn = req->sconn;
 	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	SMB_OFF_T startpos;
@@ -3776,7 +3777,15 @@ void reply_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (global_client_caps & CAP_LARGE_READX) {
+	if ((sconn->smb1.unix_info.client_cap_low & CIFS_UNIX_LARGE_READ_CAP) ||
+	    (get_remote_arch() == RA_SAMBA)) {
+		/*
+		 * This is Samba only behavior (up to Samba 3.6)!
+		 *
+		 * Windows 2008 R2 ignores the upper_size,
+		 * so we do unless unix extentions are active
+		 * or "smbclient" is talking to us.
+		 */
 		size_t upper_size = SVAL(req->vwv+7, 0);
 		smb_maxcnt |= (upper_size<<16);
 		if (upper_size > 1) {
