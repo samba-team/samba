@@ -65,8 +65,6 @@ void verify_nodes(struct ctdb_context *ctdb, TDB_DATA data)
 	
 void add_node(struct ctdb_context *ctdb, TDB_DATA *data, int pnn)
 {
-	int i;
-
 	printf("Add node %d\n", pnn);
 	if (ctdb_trackingdb_add_pnn(ctdb, data, pnn)) {
 		printf("Failed to add tracking db data\n");
@@ -128,7 +126,7 @@ int main(int argc, const char *argv[])
 
 	ev = event_context_init(NULL);
 
-	ctdb = ctdb_cmdline_client(ev);
+	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(5, 0));
 
 	trackdb_test(ctdb);
 

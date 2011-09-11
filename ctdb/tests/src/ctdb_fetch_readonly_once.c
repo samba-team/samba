@@ -100,7 +100,7 @@ int main(int argc, const char *argv[])
 
 	ev = event_context_init(NULL);
 
-	ctdb = ctdb_cmdline_client(ev);
+	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(5, 0));
 
 	key.dptr  = TESTKEY;
 	key.dsize = strlen(TESTKEY);
@@ -114,7 +114,7 @@ int main(int argc, const char *argv[])
 	printf("Lmaster : %d\n", ctdb_lmaster(ctdb, &key)); 
 
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, "test.tdb", false, 0);
+	ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(5, 0), "test.tdb", false, 0);
 	if (!ctdb_db) {
 		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
 		exit(1);
