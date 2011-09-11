@@ -179,6 +179,8 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
 					   TDB_DATA key, TDB_DATA *data);
 
+struct ctdb_record_handle *ctdb_fetch_readonly_lock(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx, TDB_DATA key, TDB_DATA *data, int read_only);
+
 int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data);
 
 int ctdb_fetch(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx,
@@ -215,7 +217,9 @@ struct ctdb_dbid_map {
 	uint32_t num;
 	struct ctdb_dbid {
 		uint32_t dbid;
-		bool persistent;
+#define CTDB_DB_FLAGS_PERSISTENT	0x01
+#define CTDB_DB_FLAGS_READONLY		0x02
+		uint8_t flags;
 	} dbs[1];
 };
 int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb,
@@ -591,5 +595,20 @@ int ctdb_ctrl_get_db_priority(struct ctdb_context *ctdb, struct timeval timeout,
 
 int ctdb_ctrl_getstathistory(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, TALLOC_CTX *mem_ctx, struct ctdb_statistics_wire **stats);
 
+
+
+struct ctdb_client_control_state *
+ctdb_ctrl_updaterecord_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data);
+
+int ctdb_ctrl_updaterecord_recv(struct ctdb_context *ctdb, struct ctdb_client_control_state *state);
+
+int
+ctdb_ctrl_updaterecord(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data);
+
+
+struct ctdb_client_control_state *
+ctdb_ctrl_set_db_readonly_send(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
+int ctdb_ctrl_set_db_readonly_recv(struct ctdb_context *ctdb, struct ctdb_client_control_state *state);
+int ctdb_ctrl_set_db_readonly(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
 
 #endif /* _CTDB_CLIENT_H */

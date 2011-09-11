@@ -504,9 +504,11 @@ struct ctdb_db_context {
 	uint32_t db_id;
 	uint32_t priority;
 	bool persistent;
+	bool readonly; /* Do we support read-only delegations ? */
 	const char *db_name;
 	const char *db_path;
 	struct tdb_wrap *ltdb;
+	struct tdb_context *rottdb; /* ReadOnly tracking TDB */
 	struct ctdb_registered_call *calls; /* list of registered calls */
 	uint32_t seqnum;
 	struct timed_event *seqnum_update;
@@ -517,6 +519,7 @@ struct ctdb_db_context {
 	int pending_requests;
 	struct lockwait_handle *lockwait_active;
 	struct lockwait_handle *lockwait_overflow;
+	struct revokechild_handle *revokechild_active;
 	struct ctdb_persistent_state *persistent_state;
 	struct trbt_tree *delete_queue;
 	int (*ctdb_ltdb_store_fn)(struct ctdb_db_context *ctdb_db,
@@ -668,6 +671,9 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key, 
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 int ctdb_ltdb_delete(struct ctdb_db_context *ctdb_db, TDB_DATA key);
+int ctdb_ltdb_fetch_readonly(struct ctdb_db_context *ctdb_db, 
+		    TDB_DATA key, struct ctdb_ltdb_header *header, 
+		    TALLOC_CTX *mem_ctx, TDB_DATA *data);
 int32_t ctdb_control_start_persistent_update(struct ctdb_context *ctdb, 
 			struct ctdb_req_control *c,
 			TDB_DATA recdata);
@@ -791,7 +797,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
-		    TDB_DATA *data);
+		    TDB_DATA *data, bool updatetdb);
 
 #define ctdb_reqid_find(ctdb, reqid, type)	(type *)_ctdb_reqid_find(ctdb, reqid, #type, __location__)
 
@@ -1448,5 +1454,18 @@ void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 			    struct ctdb_node_map *nodemap,
 			    struct ctdb_public_ip_list **all_ips_p);
 
+int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t pnn);
+
+typedef void (*ctdb_trackingdb_cb)(struct ctdb_context *ctdb, uint32_t pnn, void *private_data);
+
+void ctdb_trackingdb_traverse(struct ctdb_context *ctdb, TDB_DATA data, ctdb_trackingdb_cb cb, void *private_data);
+
+int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data);
+
+typedef void (*deferred_requeue_fn)(void *call_context, struct ctdb_req_header *hdr);
+
+int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context);
+
+int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
 
 #endif

@@ -2,6 +2,7 @@
    ctdb ltdb code
 
    Copyright (C) Andrew Tridgell  2006
+   Copyright (C) Ronnie sahlberg  2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -118,6 +119,40 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 	return 0;
 }
 
+/*
+  fetch a record from the ltdb, separating out the header information
+  and returning the body of the record.
+  if the record does not exist, *header will be NULL
+  and data = {0, NULL}
+*/
+int ctdb_ltdb_fetch_readonly(struct ctdb_db_context *ctdb_db, 
+		    TDB_DATA key, struct ctdb_ltdb_header *header, 
+		    TALLOC_CTX *mem_ctx, TDB_DATA *data)
+{
+	TDB_DATA rec;
+
+	rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
+	if (rec.dsize < sizeof(*header)) {
+		free(rec.dptr);
+
+		data->dsize = 0;
+		data->dptr = NULL;
+		return -1;
+	}
+
+	*header = *(struct ctdb_ltdb_header *)rec.dptr;
+	if (data) {
+		data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
+		data->dptr = talloc_memdup(mem_ctx, 
+					   sizeof(struct ctdb_ltdb_header)+rec.dptr,
+					   data->dsize);
+	}
+
+	free(rec.dptr);
+
+	return 0;
+}
+
 
 /*
   write a record to a normal database
@@ -216,3 +251,48 @@ int ctdb_ltdb_delete(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 	}
 	return 0;
 }
+
+int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t pnn)
+{
+	int byte_pos = pnn / 8;
+	int bit_mask   = 1 << (pnn % 8);
+
+	if (byte_pos + 1 > data->dsize) {
+		char *buf;
+
+		buf = malloc(byte_pos + 1);
+		memset(buf, 0, byte_pos + 1);
+		if (buf == NULL) {
+			DEBUG(DEBUG_ERR, ("Out of memory when allocating buffer of %d bytes for trackingdb\n", byte_pos + 1));
+			return -1;
+		}
+		if (data->dptr != NULL) {
+			memcpy(buf, data->dptr, data->dsize);
+			free(data->dptr);
+		}
+		data->dptr  = (uint8_t *)buf;
+		data->dsize = byte_pos + 1;
+	}
+
+	data->dptr[byte_pos] |= bit_mask;
+	return 0;
+}
+
+void ctdb_trackingdb_traverse(struct ctdb_context *ctdb, TDB_DATA data, ctdb_trackingdb_cb cb, void *private_data)
+{
+	int i;
+
+	for(i = 0; i < data.dsize; i++) {
+		int j;
+
+		for (j=0; j<8; j++) {
+			int mask = 1<<j;
+
+			if (data.dptr[i] & mask) {
+				cb(ctdb, i * 8 + j, private_data);
+			}
+		}
+	}
+}
+
+

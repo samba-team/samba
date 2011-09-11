@@ -439,7 +439,8 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 				return -1;
 			}
 			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					   mem_ctx, name, dbmap->dbs[db].persistent);
+					   mem_ctx, name,
+					   dbmap->dbs[db].flags & CTDB_DB_FLAGS_PERSISTENT);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to create remote db:%s\n", name));
 				return -1;
@@ -502,7 +503,7 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 				return -1;
 			}
 			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, name, 
-					   remote_dbmap->dbs[db].persistent);
+					   remote_dbmap->dbs[db].flags & CTDB_DB_FLAGS_PERSISTENT);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to create local db:%s\n", name));
 				return -1;
@@ -823,7 +824,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	for (i=0;i<dbmap->num;i++) {
 		if (dbmap->dbs[i].dbid == recs->db_id) {
-			persistent = dbmap->dbs[i].persistent;
+			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 			break;
 		}
 	}
@@ -1515,7 +1516,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	for (i=0;i<dbmap->num;i++) {
 		ret = recover_database(rec, mem_ctx,
 				       dbmap->dbs[i].dbid,
-				       dbmap->dbs[i].persistent,
+				       dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT,
 				       pnn, nodemap, generation);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));

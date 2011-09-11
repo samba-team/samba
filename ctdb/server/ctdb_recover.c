@@ -187,7 +187,12 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 	dbid_map->num = len;
 	for (i=0,ctdb_db=ctdb->db_list;ctdb_db;i++,ctdb_db=ctdb_db->next){
 		dbid_map->dbs[i].dbid       = ctdb_db->db_id;
-		dbid_map->dbs[i].persistent = ctdb_db->persistent;
+		if (ctdb_db->persistent != 0) {
+			dbid_map->dbs[i].flags |= CTDB_DB_FLAGS_PERSISTENT;
+		}
+		if (ctdb_db->readonly != 0) {
+			dbid_map->dbs[i].flags |= CTDB_DB_FLAGS_READONLY;
+		}
 	}
 
 	return 0;
@@ -469,6 +474,11 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 			goto failed;
 		}
 		hdr = (struct ctdb_ltdb_header *)data.dptr;
+		/* strip off any read only record flags. All readonly records
+		   are revoked implicitely by a recovery
+		*/
+		hdr->flags &= ~(CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE);
+
 		data.dptr += sizeof(*hdr);
 		data.dsize -= sizeof(*hdr);
 
@@ -483,6 +493,22 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	DEBUG(DEBUG_DEBUG,("finished push of %u records for dbid 0x%x\n",
 		 reply->count, reply->db_id));
+
+	if (ctdb_db->readonly) {
+		DEBUG(DEBUG_CRIT,("Clearing the tracking database for dbid 0x%x\n",
+				  ctdb_db->db_id));
+		if (tdb_wipe_all(ctdb_db->rottdb) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to wipe tracking database for 0x%x. Dropping read-only delegation support\n", ctdb_db->db_id));
+			ctdb_db->readonly = false;
+			tdb_close(ctdb_db->rottdb);
+			ctdb_db->rottdb = NULL;
+			ctdb_db->readonly = false;
+		}
+		while (ctdb_db->revokechild_active != NULL) {
+			talloc_free(ctdb_db->revokechild_active);
+			ctdb_db->revokechild_active = NULL;
+		}
+	}
 
 	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
 	return 0;
@@ -1298,3 +1324,4 @@ int32_t ctdb_control_continue_node(struct ctdb_context *ctdb)
 
 	return 0;
 }
+

@@ -30,8 +30,9 @@
 #define CTDB_DS_ALIGNMENT 8
 
 
-#define CTDB_NULL_FUNC      0xFF000001
-#define CTDB_FETCH_FUNC     0xFF000002
+#define CTDB_NULL_FUNC                  0xFF000001
+#define CTDB_FETCH_FUNC                 0xFF000002
+#define CTDB_FETCH_WITH_HEADER_FUNC     0xFF000003
 
 
 struct ctdb_call {
@@ -40,8 +41,9 @@ struct ctdb_call {
 	TDB_DATA call_data;
 	TDB_DATA reply_data;
 	uint32_t status;
-#define CTDB_IMMEDIATE_MIGRATION	0x00000001
+#define CTDB_IMMEDIATE_MIGRATION		0x00000001
 #define CTDB_CALL_FLAG_VACUUM_MIGRATION		0x00000002
+#define CTDB_WANT_READONLY			0x00000004
 	uint32_t flags;
 };
 
@@ -50,6 +52,7 @@ struct ctdb_call {
 */
 struct ctdb_call_info {
 	TDB_DATA key;          /* record key */
+	struct ctdb_ltdb_header *header;
 	TDB_DATA record_data;  /* current data in the record */
 	TDB_DATA *new_data;    /* optionally updated record data */
 	TDB_DATA *call_data;   /* optionally passed from caller */
@@ -363,6 +366,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE  = 126,
 		    CTDB_CONTROL_GET_STAT_HISTORY	 = 127,
 		    CTDB_CONTROL_SCHEDULE_FOR_DELETION   = 128,
+		    CTDB_CONTROL_SET_DB_READONLY	 = 129,
 };
 
 /*
@@ -486,6 +490,10 @@ struct ctdb_ltdb_header {
 #define CTDB_REC_FLAG_MIGRATED_WITH_DATA	0x00010000
 #define CTDB_REC_FLAG_VACUUM_MIGRATED		0x00020000
 #define CTDB_REC_FLAG_AUTOMATIC			0x00040000
+#define CTDB_REC_RO_HAVE_DELEGATIONS		0x01000000
+#define CTDB_REC_RO_HAVE_READONLY		0x02000000
+#define CTDB_REC_RO_REVOKING_READONLY		0x04000000
+#define CTDB_REC_RO_REVOKE_COMPLETE		0x08000000
 	uint32_t flags;
 };
 

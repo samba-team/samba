@@ -123,7 +123,7 @@ static int db_exists(struct ctdb_context *ctdb, const char *db_name, bool *persi
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		if (!strcmp(name, db_name)) {
 			if (persistent) {
-				*persistent = dbmap->dbs[i].persistent;
+				*persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 			}
 			return 0;
 		}
@@ -3007,6 +3007,62 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
+struct cattdb_data {
+	struct ctdb_context *ctdb;
+	uint32_t count;
+};
+
+static int cattdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct cattdb_data *d = private_data;
+
+	d->count++;
+	
+	return ctdb_dumpdb_record(d->ctdb, key, data, stdout);
+}
+
+/*
+  cat the local tdb database using same format as catdb
+ */
+static int control_cattdb(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	struct cattdb_data d;
+	bool persistent;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	db_name = argv[0];
+
+
+	if (db_exists(ctdb, db_name, &persistent)) {
+		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, false, 0);
+
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		return -1;
+	}
+
+	/* traverse the local tdb */
+	d.count = 0;
+	d.ctdb  = ctdb;
+	if (tdb_traverse_read(ctdb_db->ltdb->tdb, cattdb_traverse, &d) == -1) {
+		printf("Failed to cattdb data\n");
+		exit(10);
+	}
+	talloc_free(ctdb_db);
+
+	printf("Dumped %d records\n", d.count);
+	return 0;
+}
+
 /*
   display the content of a database key
  */
@@ -3492,12 +3548,13 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	}
 
 	if(options.machinereadable){
-		printf(":ID:Name:Path:Persistent:Unhealthy:\n");
+		printf(":ID:Name:Path:Persistent:Unhealthy:ReadOnly:\n");
 		for(i=0;i<dbmap->num;i++){
 			const char *path;
 			const char *name;
 			const char *health;
 			bool persistent;
+			bool readonly;
 
 			ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn,
 					    dbmap->dbs[i].dbid, ctdb, &path);
@@ -3505,10 +3562,11 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 					    dbmap->dbs[i].dbid, ctdb, &name);
 			ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
 					      dbmap->dbs[i].dbid, ctdb, &health);
-			persistent = dbmap->dbs[i].persistent;
-			printf(":0x%08X:%s:%s:%d:%d:\n",
+			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
+			readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
+			printf(":0x%08X:%s:%s:%d:%d:%d:\n",
 			       dbmap->dbs[i].dbid, name, path,
-			       !!(persistent), !!(health));
+			       !!(persistent), !!(health), !!(readonly));
 		}
 		return 0;
 	}
@@ -3519,14 +3577,17 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		const char *name;
 		const char *health;
 		bool persistent;
+		bool readonly;
 
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
-		persistent = dbmap->dbs[i].persistent;
-		printf("dbid:0x%08x name:%s path:%s%s%s\n",
+		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
+		readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
+		printf("dbid:0x%08x name:%s path:%s%s%s%s\n",
 		       dbmap->dbs[i].dbid, name, path,
 		       persistent?" PERSISTENT":"",
+		       readonly?" READONLY":"",
 		       health?" UNHEALTHY":"");
 	}
 
@@ -3559,6 +3620,7 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 		const char *name;
 		const char *health;
 		bool persistent;
+		bool readonly;
 
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		if (strcmp(name, db_name) != 0) {
@@ -3567,10 +3629,12 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
-		persistent = dbmap->dbs[i].persistent;
-		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nHEALTH: %s\n",
+		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
+		readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
+		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nREADONLY: %s\nHEALTH: %s\n",
 		       dbmap->dbs[i].dbid, name, path,
 		       persistent?"yes":"no",
+		       readonly?"yes":"no",
 		       health?health:"OK");
 		return 0;
 	}
@@ -4010,6 +4074,29 @@ static int control_getdbprio(struct ctdb_context *ctdb, int argc, const char **a
 }
 
 /*
+  set the readonly capability for a database
+ */
+static int control_setdbreadonly(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	uint32_t db_id;
+	int ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	db_id = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_ctrl_set_db_readonly(ctdb, options.pnn, db_id);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Unable to set db to support readonly\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
   run an eventscript on a node
  */
 static int control_eventscript(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -4159,7 +4246,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 				     allow_unhealthy));
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], dbmap->dbs[i].persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
 		talloc_free(tmp_ctx);
@@ -4211,7 +4298,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 
 	dbhdr.version = DB_VERSION;
 	dbhdr.timestamp = time(NULL);
-	dbhdr.persistent = dbmap->dbs[i].persistent;
+	dbhdr.persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 	dbhdr.size = bd->len;
 	if (strlen(argv[0]) >= MAX_DB_NAME) {
 		DEBUG(DEBUG_ERR,("Too long dbname\n"));
@@ -4558,7 +4645,7 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], dbmap->dbs[i].persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR, ("Unable to attach to database '%s'\n",
 				  argv[0]));
@@ -4934,6 +5021,7 @@ static const struct {
 	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
 	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname>" },
 	{ "catdb",           control_catdb,             true,	false,  "dump a database" ,                     "<dbname>"},
+	{ "cattdb",          control_cattdb,            true,	false,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,	false,  "show monitoring mode" },
 	{ "getcapabilities", control_getcapabilities,   true,	false,  "show node capabilities" },
 	{ "pnn",             control_pnn,               true,	false,  "show the pnn of the currnet node" },
@@ -4999,6 +5087,7 @@ static const struct {
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
 	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbid> <prio:1-3>"},
 	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
+	{ "setdbreadonly",    control_setdbreadonly,	false,	false, "Set DB readonly capable", "<dbid>"},
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
 	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },

@@ -312,6 +312,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	}
 	r->hdr.reqid        = dstate->reqid;
 	r->datalen          = dstate->call->reply_data.dsize;
+	r->status           = dstate->call->status;
 	memcpy(&r->data[0], dstate->call->reply_data.dptr, r->datalen);
 
 	res = daemon_queue_send(client, &r->hdr);
@@ -422,6 +423,56 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
 	}
+
+	/* Dont do READONLY if we dont have a tracking database */
+	if ((c->flags & CTDB_WANT_READONLY) && !ctdb_db->readonly) {
+		c->flags &= ~CTDB_WANT_READONLY;
+	}
+
+	if (header.flags & CTDB_REC_RO_REVOKE_COMPLETE) {
+		header.flags &= ~(CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE);
+		if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
+			ctdb_fatal(ctdb, "Failed to write header with cleared REVOKE flag");
+		}
+		/* and clear out the tracking data */
+		if (tdb_delete(ctdb_db->rottdb, key) != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to clear out trackingdb record\n"));
+		}
+	}
+
+	/* if we are revoking, we must defer all other calls until the revoke
+	 * had completed.
+	 */
+	if (header.flags & CTDB_REC_RO_REVOKING_READONLY) {
+		talloc_free(data.dptr);
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+
+		if (ctdb_add_revoke_deferred_call(ctdb, ctdb_db, key, (struct ctdb_req_header *)c, daemon_incoming_packet, client) != 0) {
+			ctdb_fatal(ctdb, "Failed to add deferred call for revoke child");
+		}
+		return;
+	}
+
+	if ((header.dmaster == ctdb->pnn)
+	&& (!(c->flags & CTDB_WANT_READONLY))
+	&& (header.flags & (CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY)) ) {
+		header.flags   |= CTDB_REC_RO_REVOKING_READONLY;
+		if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
+			ctdb_fatal(ctdb, "Failed to store record with HAVE_DELEGATIONS set");
+		}
+		ret = ctdb_ltdb_unlock(ctdb_db, key);
+
+		if (ctdb_start_revoke_ro_record(ctdb, ctdb_db, key, &header, data) != 0) {
+			ctdb_fatal(ctdb, "Failed to start record revoke");
+		}
+		talloc_free(data.dptr);
+
+		if (ctdb_add_revoke_deferred_call(ctdb, ctdb_db, key, (struct ctdb_req_header *)c, daemon_incoming_packet, client) != 0) {
+			ctdb_fatal(ctdb, "Failed to add deferred call for revoke child");
+		}
+
+		return;
+	}		
 
 	dstate = talloc(client, struct daemon_call_state);
 	if (dstate == NULL) {
