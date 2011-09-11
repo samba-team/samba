@@ -129,16 +129,16 @@ class cmd_domain_level(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         Option("--quiet", help="Be quiet", action="store_true"),
-        Option("--forest", type="choice", choices=["2003", "2008", "2008_R2"],
+        Option("--forest-level", type="choice", choices=["2003", "2008", "2008_R2"],
             help="The forest function level (2003 | 2008 | 2008_R2)"),
-        Option("--domain", type="choice", choices=["2003", "2008", "2008_R2"],
+        Option("--domain-level", type="choice", choices=["2003", "2008", "2008_R2"],
             help="The domain function level (2003 | 2008 | 2008_R2)")
             ]
 
     takes_args = ["subcommand"]
 
-    def run(self, subcommand, H=None, forest=None, domain=None, quiet=False,
-            credopts=None, sambaopts=None, versionopts=None):
+    def run(self, subcommand, H=None, forest_level=None, domain_level=None,
+            quiet=False, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -238,12 +238,12 @@ class cmd_domain_level(Command):
         elif subcommand == "raise":
             msgs = []
 
-            if domain is not None:
-                if domain == "2003":
+            if domain_level is not None:
+                if domain_level == "2003":
                     new_level_domain = DS_DOMAIN_FUNCTION_2003
-                elif domain == "2008":
+                elif domain_level == "2008":
                     new_level_domain = DS_DOMAIN_FUNCTION_2008
-                elif domain == "2008_R2":
+                elif domain_level == "2008_R2":
                     new_level_domain = DS_DOMAIN_FUNCTION_2008_R2
 
                 if new_level_domain <= level_domain and level_domain_mixed == 0:
@@ -295,12 +295,12 @@ class cmd_domain_level(Command):
                 level_domain = new_level_domain
                 msgs.append("Domain function level changed!")
 
-            if forest is not None:
-                if forest == "2003":
+            if forest_level is not None:
+                if forest_level == "2003":
                     new_level_forest = DS_DOMAIN_FUNCTION_2003
-                elif forest == "2008":
+                elif forest_level == "2008":
                     new_level_forest = DS_DOMAIN_FUNCTION_2008
-                elif forest == "2008_R2":
+                elif forest_level == "2008_R2":
                     new_level_forest = DS_DOMAIN_FUNCTION_2008_R2
                 if new_level_forest <= level_forest:
                     raise CommandError("Forest function level can't be smaller equal to the actual one!")
