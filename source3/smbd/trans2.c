@@ -3539,6 +3539,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 				 char **ppdata, int total_data,
 				 unsigned int max_data_bytes)
 {
+	struct smbd_server_connection *sconn = req->sconn;
 	char *pdata = *ppdata;
 	char *params = *pparams;
 	uint16 info_level;
@@ -3579,54 +3580,47 @@ static void call_trans2setfsinfo(connection_struct *conn,
 
 	switch(info_level) {
 		case SMB_SET_CIFS_UNIX_INFO:
-			{
-				uint16 client_unix_major;
-				uint16 client_unix_minor;
-				uint32 client_unix_cap_low;
-				uint32 client_unix_cap_high;
-
-				if (!lp_unix_extensions()) {
-					reply_nterror(req,
-						      NT_STATUS_INVALID_LEVEL);
-					return;
-				}
-
-				/* There should be 12 bytes of capabilities set. */
-				if (total_data < 8) {
-					reply_nterror(
-						req,
-						NT_STATUS_INVALID_PARAMETER);
-					return;
-				}
-				client_unix_major = SVAL(pdata,0);
-				client_unix_minor = SVAL(pdata,2);
-				client_unix_cap_low = IVAL(pdata,4);
-				client_unix_cap_high = IVAL(pdata,8);
-				/* Just print these values for now. */
-				DEBUG(10,("call_trans2setfsinfo: set unix info. major = %u, minor = %u \
-cap_low = 0x%x, cap_high = 0x%x\n",
-					(unsigned int)client_unix_major,
-					(unsigned int)client_unix_minor,
-					(unsigned int)client_unix_cap_low,
-					(unsigned int)client_unix_cap_high ));
-
-				/* Here is where we must switch to posix pathname processing... */
-				if (client_unix_cap_low & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
-					lp_set_posix_pathnames();
-					mangle_change_to_posix();
-				}
-
-				if ((client_unix_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) &&
-				    !(client_unix_cap_low & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)) {
-					/* Client that knows how to do posix locks,
-					 * but not posix open/mkdir operations. Set a
-					 * default type for read/write checks. */
-
-					lp_set_posix_default_cifsx_readwrite_locktype(POSIX_LOCK);
-
-				}
-				break;
+			if (!lp_unix_extensions()) {
+				reply_nterror(req,
+					      NT_STATUS_INVALID_LEVEL);
+				return;
 			}
+
+			/* There should be 12 bytes of capabilities set. */
+			if (total_data < 8) {
+				reply_nterror(
+					req,
+					NT_STATUS_INVALID_PARAMETER);
+				return;
+			}
+			sconn->smb1.unix_info.client_major = SVAL(pdata,0);
+			sconn->smb1.unix_info.client_minor = SVAL(pdata,2);
+			sconn->smb1.unix_info.client_cap_low = IVAL(pdata,4);
+			sconn->smb1.unix_info.client_cap_high = IVAL(pdata,8);
+			/* Just print these values for now. */
+			DEBUG(10,("call_trans2setfsinfo: set unix_info info. major = %u, minor = %u \
+cap_low = 0x%x, cap_highn",
+				(unsigned int)sconn->smb1.unix_info.client_major,
+				(unsigned int)sconn->smb1.unix_info.client_minor,
+				(unsigned int)sconn->smb1.unix_info.client_cap_low,
+				(unsigned int)sconn->smb1.unix_info.client_cap_high));
+
+			/* Here is where we must switch to posix pathname processing... */
+			if (sconn->smb1.unix_info.client_cap_low & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+				lp_set_posix_pathnames();
+				mangle_change_to_posix();
+			}
+
+			if ((sconn->smb1.unix_info.client_cap_low & CIFS_UNIX_FCNTL_LOCKS_CAP) &&
+			    !(sconn->smb1.unix_info.client_cap_low & CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP)) {
+				/* Client that knows how to do posix locks,
+				 * but not posix open/mkdir operations. Set a
+				 * default type for read/write checks. */
+
+				lp_set_posix_default_cifsx_readwrite_locktype(POSIX_LOCK);
+
+			}
+			break;
 
 		case SMB_REQUEST_TRANSPORT_ENCRYPTION:
 			{

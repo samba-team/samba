@@ -532,6 +532,13 @@ struct smbd_server_connection {
 		} negprot;
 
 		struct {
+			uint16_t client_major;
+			uint16_t client_minor;
+			uint32_t client_cap_low;
+			uint32_t client_cap_high;
+		} unix_info;
+
+		struct {
 			bool done_sesssetup;
 			/*
 			 * Size of data we can send to client. Set
