@@ -497,7 +497,7 @@ def setup_ad_dns(samdb, names, logger, hostip=None, hostip6=None, dns_backend=No
     logger.info("Adding DNS accounts")
     add_dns_accounts(samdb, domaindn)
 
-    logger.info("Populating CN=System,%s" % domaindn)
+    logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % domaindn)
 
     # Set up MicrosoftDNS container
     add_dns_container(samdb, domaindn, "CN=System")
