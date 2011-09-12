@@ -293,7 +293,7 @@ void load_interface_list(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, s
 {
 	const char **ptr = lpcfg_interfaces(lp_ctx);
 	int i;
-	struct iface_struct *ifaces;
+	struct iface_struct *ifaces = NULL;
 	int total_probed;
 	bool enable_ipv6 = lpcfg_parm_bool(lp_ctx, NULL, "ipv6", "enable", true);
 
