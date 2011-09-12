@@ -29,7 +29,7 @@ import sys
 import samba.param
 
 def source_tree_topdir():
-    '''return the top level directory (the one containing the source4 directory)'''
+    """Return the top level source directory."""
     paths = [ "../../..", "../../../.." ]
     for p in paths:
         topdir = os.path.normpath(os.path.join(os.path.dirname(__file__), p))
@@ -38,13 +38,12 @@ def source_tree_topdir():
     raise RuntimeError("unable to find top level source directory")
 
 def in_source_tree():
-    '''return True if we are running from within the samba source tree'''
+    """Return True if we are running from within the samba source tree"""
     try:
         topdir = source_tree_topdir()
     except RuntimeError:
         return False
     return True
-
 
 
 import ldb

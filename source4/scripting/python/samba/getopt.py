@@ -21,7 +21,8 @@
 
 __docformat__ = "restructuredText"
 
-import optparse, os
+import optparse
+import os
 from samba.credentials import (
     Credentials,
     DONT_USE_KERBEROS,
@@ -44,7 +45,8 @@ class SambaOptions(optparse.OptionGroup):
                         type=int, metavar="DEBUGLEVEL", help="debug level",
                         callback=self._set_debuglevel)
         self.add_option("--option", action="callback",
-                        type=str, metavar="OPTION", help="set smb.conf option from command line",
+                        type=str, metavar="OPTION",
+                        help="set smb.conf option from command line",
                         callback=self._set_option)
         self.add_option("--realm", action="callback",
                         type=str, metavar="REALM", help="set the realm name",
@@ -53,7 +55,7 @@ class SambaOptions(optparse.OptionGroup):
         self._lp = LoadParm()
 
     def get_loadparm_path(self):
-        """Return the path to the smb.conf file specified on the command line.  """
+        """Return path to the smb.conf file specified on the command line."""
         return self._configfile
 
     def _load_configfile(self, option, opt_str, arg, parser):
@@ -73,7 +75,7 @@ class SambaOptions(optparse.OptionGroup):
         self._lp.set(a[0], a[1])
 
     def get_loadparm(self):
-        """Return a loadparm object with data specified on the command line.  """
+        """Return loadparm object with data specified on the command line."""
         if self._configfile is not None:
             self._lp.load(self._configfile)
         elif os.getenv("SMB_CONF_PATH") is not None:
@@ -124,7 +126,8 @@ class CredentialsOptions(optparse.OptionGroup):
                         help="Use Kerberos", callback=self._set_kerberos)
         self.add_option("", "--ipaddress", metavar="IPADDRESS",
                         action="callback", type=str,
-                        help="IP address of server", callback=self._set_ipaddress)
+                        help="IP address of server",
+                        callback=self._set_ipaddress)
         self.creds = Credentials()
 
     def _parse_username(self, option, opt_str, arg, parser):
@@ -171,6 +174,7 @@ class CredentialsOptions(optparse.OptionGroup):
 
         return self.creds
 
+
 class CredentialsOptionsDouble(CredentialsOptions):
     """Command line options for specifying credentials of two servers."""
     def __init__(self, parser):
@@ -180,13 +184,16 @@ class CredentialsOptionsDouble(CredentialsOptions):
                         callback=self._set_simple_bind_dn2, type=str,
                         help="DN to use for a simple bind")
         self.add_option("--password2", metavar="PASSWORD2", action="callback",
-                        help="Password", type=str, callback=self._set_password2)
+                        help="Password", type=str,
+                        callback=self._set_password2)
         self.add_option("--username2", metavar="USERNAME2",
                         action="callback", type=str,
-                        help="Username for second server", callback=self._parse_username2)
+                        help="Username for second server",
+                        callback=self._parse_username2)
         self.add_option("--workgroup2", metavar="WORKGROUP2",
                         action="callback", type=str,
-                        help="Workgroup for second server", callback=self._parse_workgroup2)
+                        help="Workgroup for second server",
+                        callback=self._parse_workgroup2)
         self.add_option("--no-pass2", action="store_true",
                         help="Don't ask for a password for the second server")
         self.add_option("--kerberos2", metavar="KERBEROS2",

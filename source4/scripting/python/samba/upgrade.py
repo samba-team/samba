@@ -35,6 +35,7 @@ from samba import dsdb
 from samba.ndr import ndr_pack
 from samba import unix2nttime
 
+
 def import_sam_policy(samdb, policy, logger):
     """Import a Samba 3 policy.
 
@@ -53,14 +54,15 @@ def import_sam_policy(samdb, policy, logger):
 
     m = ldb.Message()
     m.dn = samdb.get_default_basedn()
-    m['a01'] = ldb.MessageElement(str(policy['min password length']), ldb.FLAG_MOD_REPLACE,
-                            'minPwdLength')
-    m['a02'] = ldb.MessageElement(str(policy['password history']), ldb.FLAG_MOD_REPLACE,
-                            'pwdHistoryLength')
+    m['a01'] = ldb.MessageElement(str(policy['min password length']),
+        ldb.FLAG_MOD_REPLACE, 'minPwdLength')
+    m['a02'] = ldb.MessageElement(str(policy['password history']),
+        ldb.FLAG_MOD_REPLACE, 'pwdHistoryLength')
 
     min_pw_age_unix = policy['minimum password age']
     min_pw_age_nt = 0 - unix2nttime(min_pw_age_unix)
-    m['a03'] = ldb.MessageElement(str(min_pw_age_nt), ldb.FLAG_MOD_REPLACE, 'minPwdAge')
+    m['a03'] = ldb.MessageElement(str(min_pw_age_nt), ldb.FLAG_MOD_REPLACE,
+        'minPwdAge')
 
     max_pw_age_unix = policy['maximum password age']
     if (max_pw_age_unix == 0xFFFFFFFF):
@@ -74,8 +76,8 @@ def import_sam_policy(samdb, policy, logger):
     lockout_duration_mins = policy['lockout duration']
     lockout_duration_nt = unix2nttime(lockout_duration_mins * 60)
 
-    m['a05'] = ldb.MessageElement(str(lockout_duration_nt), ldb.FLAG_MOD_REPLACE,
-                                  'lockoutDuration')
+    m['a05'] = ldb.MessageElement(str(lockout_duration_nt),
+        ldb.FLAG_MOD_REPLACE, 'lockoutDuration')
 
     try:
         samdb.modify(m)
@@ -103,12 +105,15 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
         try:
             m = ldb.Message()
             m.dn = msg[0]['dn']
-            m['xidNumber'] = ldb.MessageElement(str(xid), ldb.FLAG_MOD_REPLACE, 'xidNumber')
-            m['type'] = ldb.MessageElement(xid_type, ldb.FLAG_MOD_REPLACE, 'type')
+            m['xidNumber'] = ldb.MessageElement(
+                str(xid), ldb.FLAG_MOD_REPLACE, 'xidNumber')
+            m['type'] = ldb.MessageElement(
+                xid_type, ldb.FLAG_MOD_REPLACE, 'type')
             idmapdb.modify(m)
         except ldb.LdbError, e:
-            logger.warn('Could not modify idmap entry for sid=%s, id=%s, type=%s (%s)',
-                            str(sid), str(xid), xid_type, str(e))
+            logger.warn(
+                'Could not modify idmap entry for sid=%s, id=%s, type=%s (%s)',
+                str(sid), str(xid), xid_type, str(e))
     else:
         try:
             idmapdb.add({"dn": "CN=%s" % str(sid),
@@ -118,8 +123,9 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
                         "type": xid_type,
                         "xidNumber": str(xid)})
         except ldb.LdbError, e:
-            logger.warn('Could not add idmap entry for sid=%s, id=%s, type=%s (%s)',
-                            str(sid), str(xid), xid_type, str(e))
+            logger.warn(
+                'Could not add idmap entry for sid=%s, id=%s, type=%s (%s)',
+                str(sid), str(xid), xid_type, str(e))
 
 
 def import_idmap(idmapdb, samba3, logger):
@@ -142,8 +148,10 @@ def import_idmap(idmapdb, samba3, logger):
 
     m = ldb.Message()
     m.dn = ldb.Dn(idmapdb, 'CN=CONFIG')
-    m['lowerbound'] = ldb.MessageElement(str(lowerbound), ldb.FLAG_MOD_REPLACE, 'lowerBound')
-    m['xidNumber'] = ldb.MessageElement(str(currentxid), ldb.FLAG_MOD_REPLACE, 'xidNumber')
+    m['lowerbound'] = ldb.MessageElement(
+        str(lowerbound), ldb.FLAG_MOD_REPLACE, 'lowerBound')
+    m['xidNumber'] = ldb.MessageElement(
+        str(currentxid), ldb.FLAG_MOD_REPLACE, 'xidNumber')
     idmapdb.modify(m)
 
     for id_type, xid in samba3_idmap.ids():
@@ -169,7 +177,8 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
 
     # First try to see if we already have this entry
     try:
-        msg = samdb.search(base='<SID=%s>' % str(groupmap.sid), scope=ldb.SCOPE_BASE)
+        msg = samdb.search(
+            base='<SID=%s>' % str(groupmap.sid), scope=ldb.SCOPE_BASE)
         found = True
     except ldb.LdbError, (ecode, emsg):
         if ecode == ldb.ERR_NO_SUCH_OBJECT:
@@ -183,7 +192,7 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
     else:
         if groupmap.sid_name_use == lsa.SID_NAME_WKN_GRP:
             # In a lot of Samba3 databases, aliases are marked as well known groups
-            (group_dom_sid, rid) = group.sid.split()
+            (group_dom_sid, rid) = groupmap.sid.split()
             if (group_dom_sid != security.dom_sid(security.SID_BUILTIN)):
                 return
 
@@ -238,7 +247,7 @@ def import_wins(samba4_winsdb, samba3_winsdb):
     version_id = 0
 
     for (name, (ttl, ips, nb_flags)) in samba3_winsdb.items():
-        version_id+=1
+        version_id += 1
 
         type = int(name.split("#", 1)[1], 16)
 
@@ -260,7 +269,7 @@ def import_wins(samba4_winsdb, samba3_winsdb):
         else:
             rState = 0x1 # released
 
-        nType = ((nb_flags & 0x60)>>5)
+        nType = ((nb_flags & 0x60) >> 5)
 
         samba4_winsdb.add({"dn": "name=%s,type=0x%s" % tuple(name.split("#")),
                            "type": name.split("#")[1],
@@ -278,6 +287,7 @@ def import_wins(samba4_winsdb, samba3_winsdb):
                        "cn": "VERSION",
                        "objectClass": "winsMaxVersion",
                        "maxVersion": str(version_id)})
+
 
 def enable_samba3sam(samdb, ldapurl):
     """Enable Samba 3 LDAP URL database.
@@ -387,7 +397,8 @@ smbconf_keep = [
     "host msdfs",
     "winbind separator"]
 
-def upgrade_smbconf(oldconf,mark):
+
+def upgrade_smbconf(oldconf, mark):
     """Remove configuration variables not present in Samba4
 
     :param oldconf: Old configuration structure
@@ -408,13 +419,14 @@ def upgrade_smbconf(oldconf,mark):
             if keep:
                 newconf.set(s, p, oldconf.get(s, p))
             elif mark:
-                newconf.set(s, "samba3:"+p, oldconf.get(s,p))
+                newconf.set(s, "samba3:" + p, oldconf.get(s, p))
 
     return newconf
 
 SAMBA3_PREDEF_NAMES = {
         'HKLM': registry.HKEY_LOCAL_MACHINE,
 }
+
 
 def import_registry(samba4_registry, samba3_regdb):
     """Import a Samba 3 registry database into the Samba 4 registry.
@@ -516,7 +528,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
         sid, rid = group.sid.split()
         if sid == domainsid:
             if rid >= next_rid:
-               next_rid = rid + 1
+                next_rid = rid + 1
 
         # Get members for each group/alias
         if group.sid_name_use == lsa.SID_NAME_ALIAS:
@@ -539,7 +551,6 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
             logger.warn("Ignoring group '%s' with sid_name_use=%d",
                         group.nt_name, group.sid_name_use)
             continue
-
 
     # Export users from old passdb backend
     logger.info("Exporting users")
@@ -575,7 +586,7 @@ Please fix this account before attempting to upgrade again
 """
                                     % (user.acct_flags, username,
                                        samr.ACB_NORMAL, samr.ACB_WSTRUST, samr.ACB_SVRTRUST, samr.ACB_DOMTRUST))
-        
+
         userdata[username] = user
         try:
             uids[username] = s3db.sid_to_id(user.user_sid)[0]

@@ -23,7 +23,7 @@
 
 def ndr_pack(object):
     """Pack a NDR object.
-    
+
     :param object: Object to pack
     :return: String object with marshalled object.
     """
