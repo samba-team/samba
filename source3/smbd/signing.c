@@ -173,6 +173,14 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 		break;
 	}
 
+	/*
+	 * if the client and server allow signing,
+	 * we desire to use it.
+	 *
+	 * This matches Windows behavior and is needed
+	 * because not every client that requires signing
+	 * sends FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED.
+	 */
 	desired = allowed;
 
 	if (lp_async_smb_echo_handler()) {
@@ -210,10 +218,11 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 	return true;
 }
 
-void srv_set_signing_negotiated(struct smbd_server_connection *conn)
+void srv_set_signing_negotiated(struct smbd_server_connection *conn,
+				bool allowed, bool mandatory)
 {
 	smb_signing_set_negotiated(conn->smb1.signing_state,
-				   true, false);
+				   allowed, mandatory);
 }
 
 /***********************************************************

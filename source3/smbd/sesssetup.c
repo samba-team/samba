@@ -1306,6 +1306,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	struct smbd_server_connection *sconn = req->sconn;
 
 	bool doencrypt = sconn->smb1.negprot.encrypted_passwords;
+	bool signing_allowed = false;
+	bool signing_mandatory = false;
 
 	START_PROFILE(SMBsesssetupX);
 
@@ -1314,6 +1316,22 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	ZERO_STRUCT(plaintext_password);
 
 	DEBUG(3,("wct=%d flg2=0x%x\n", req->wct, req->flags2));
+
+	if (req->flags2 & FLAGS2_SMB_SECURITY_SIGNATURES) {
+		signing_allowed = true;
+	}
+	if (req->flags2 & FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED) {
+		signing_mandatory = true;
+	}
+
+	/*
+	 * We can call srv_set_signing_negotiated() each time.
+	 * It finds out when it needs to turn into a noop
+	 * itself.
+	 */
+	srv_set_signing_negotiated(req->sconn,
+				   signing_allowed,
+				   signing_mandatory);
 
 	/* a SPNEGO session setup has 12 command words, whereas a normal
 	   NT1 session setup has 13. See the cifs spec. */
