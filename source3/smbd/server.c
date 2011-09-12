@@ -475,7 +475,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 					    "serverid.tdb");
 		}
 
-		smbd_process(ev, smbd_server_conn);
+		smbd_process(ev, sconn);
 	 exit:
 		exit_server_cleanly("end of child");
 		return;
