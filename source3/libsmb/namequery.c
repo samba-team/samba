@@ -2699,6 +2699,7 @@ bool resolve_name(const char *name,
 	struct ip_service *ss_list = NULL;
 	char *sitename = NULL;
 	int count = 0;
+	NTSTATUS status;
 
 	if (is_ipaddress(name)) {
 		return interpret_string_addr(return_ss, name, AI_NUMERICHOST);
@@ -2706,9 +2707,10 @@ bool resolve_name(const char *name,
 
 	sitename = sitename_fetch(lp_realm()); /* wild guess */
 
-	if (NT_STATUS_IS_OK(internal_resolve_name(name, name_type, sitename,
-						  &ss_list, &count,
-						  lp_name_resolve_order()))) {
+	status = internal_resolve_name(name, name_type, sitename,
+				       &ss_list, &count,
+				       lp_name_resolve_order());
+	if (NT_STATUS_IS_OK(status)) {
 		int i;
 
 		if (prefer_ipv4) {
