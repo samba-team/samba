@@ -260,6 +260,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	/* initialise signing */
 	cli->signing_state = smb_signing_init(cli,
 					      allow_smb_signing,
+					      allow_smb_signing,
 					      mandatory_signing);
 	if (!cli->signing_state) {
 		goto error;

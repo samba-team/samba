@@ -29,14 +29,14 @@ struct smb_signing_state {
 	/* is signing localy allowed */
 	bool allowed;
 
+	/* is signing localy desired */
+	bool desired;
+
 	/* is signing localy mandatory */
 	bool mandatory;
 
 	/* is signing negotiated by the peer */
 	bool negotiated;
-
-	/* send BSRSPYL signatures */
-	bool bsrspyl;
 
 	bool active; /* Have I ever seen a validly signed packet? */
 
@@ -54,7 +54,6 @@ struct smb_signing_state {
 static void smb_signing_reset_info(struct smb_signing_state *si)
 {
 	si->active = false;
-	si->bsrspyl = false;
 	si->seqnum = 0;
 
 	if (si->free_fn) {
@@ -68,6 +67,7 @@ static void smb_signing_reset_info(struct smb_signing_state *si)
 
 struct smb_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
 					      bool allowed,
+					      bool desired,
 					      bool mandatory,
 					      void *(*alloc_fn)(TALLOC_CTX *, size_t),
 					      void (*free_fn)(TALLOC_CTX *, void *))
@@ -92,10 +92,15 @@ struct smb_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
 	}
 
 	if (mandatory) {
+		desired = true;
+	}
+
+	if (desired) {
 		allowed = true;
 	}
 
 	si->allowed = allowed;
+	si->desired = desired;
 	si->mandatory = mandatory;
 
 	return si;
@@ -103,9 +108,11 @@ struct smb_signing_state *smb_signing_init_ex(TALLOC_CTX *mem_ctx,
 
 struct smb_signing_state *smb_signing_init(TALLOC_CTX *mem_ctx,
 					   bool allowed,
+					   bool desired,
 					   bool mandatory)
 {
-	return smb_signing_init_ex(mem_ctx, allowed, mandatory, NULL, NULL);
+	return smb_signing_init_ex(mem_ctx, allowed, desired, mandatory,
+				   NULL, NULL);
 }
 
 static bool smb_signing_good(struct smb_signing_state *si,
@@ -210,10 +217,11 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 			  uint8_t *outbuf, uint32_t seqnum)
 {
 	uint8_t calc_md5_mac[16];
-	uint16_t flags2;
+	uint8_t com;
+	uint8_t flags;
 
 	if (si->mac_key.length == 0) {
-		if (!si->bsrspyl) {
+		if (!si->negotiated) {
 			return;
 		}
 	}
@@ -226,15 +234,32 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 		abort();
 	}
 
-	/* mark the packet as signed - BEFORE we sign it...*/
-	flags2 = SVAL(outbuf,smb_flg2);
-	flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
-	SSVAL(outbuf, smb_flg2, flags2);
+	com = SVAL(outbuf,smb_com);
+	flags = SVAL(outbuf,smb_flg);
 
-	if (si->bsrspyl) {
+	if (!(flags & FLAG_REPLY)) {
+		uint16_t flags2 = SVAL(outbuf,smb_flg2);
+		/*
+		 * If this is a request, specify what is
+		 * supported or required by the client
+		 */
+		if (si->negotiated && si->desired) {
+			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
+		}
+		if (si->negotiated && si->mandatory) {
+			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED;
+		}
+		SSVAL(outbuf, smb_flg2, flags2);
+	}
+
+	if (si->mac_key.length == 0) {
 		/* I wonder what BSRSPYL stands for - but this is what MS
 		   actually sends! */
-		memcpy(calc_md5_mac, "BSRSPYL ", 8);
+		if (com == SMBsesssetupX) {
+			memcpy(calc_md5_mac, "BSRSPYL ", 8);
+		} else {
+			memset(calc_md5_mac, 0, 8);
+		}
 	} else {
 		smb_signing_md5(&si->mac_key, outbuf,
 				seqnum, calc_md5_mac);
@@ -303,21 +328,6 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 	}
 
 	return smb_signing_good(si, good, seqnum);
-}
-
-bool smb_signing_set_bsrspyl(struct smb_signing_state *si)
-{
-	if (!si->negotiated) {
-		return false;
-	}
-
-	if (si->active) {
-		return false;
-	}
-
-	si->bsrspyl = true;
-
-	return true;
 }
 
 bool smb_signing_activate(struct smb_signing_state *si,
@@ -398,14 +408,42 @@ bool smb_signing_is_mandatory(struct smb_signing_state *si)
 	return si->mandatory;
 }
 
-bool smb_signing_set_negotiated(struct smb_signing_state *si)
+bool smb_signing_set_negotiated(struct smb_signing_state *si,
+				bool allowed, bool mandatory)
 {
-	if (!si->allowed) {
+	if (si->active) {
+		return true;
+	}
+
+	if (!si->allowed && mandatory) {
 		return false;
 	}
 
-	si->negotiated = true;
+	if (si->mandatory && !allowed) {
+		return false;
+	}
 
+	if (si->mandatory) {
+		si->negotiated = true;
+		return true;
+	}
+
+	if (mandatory) {
+		si->negotiated = true;
+		return true;
+	}
+
+	if (!si->desired) {
+		si->negotiated = false;
+		return true;
+	}
+
+	if (si->desired && allowed) {
+		si->negotiated = true;
+		return true;
+	}
+
+	si->negotiated = false;
 	return true;
 }
 

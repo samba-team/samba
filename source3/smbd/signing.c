@@ -157,6 +157,7 @@ static void smbd_shm_signing_free(TALLOC_CTX *mem_ctx, void *ptr)
 bool srv_init_signing(struct smbd_server_connection *conn)
 {
 	bool allowed = true;
+	bool desired;
 	bool mandatory = false;
 
 	switch (lp_server_signing()) {
@@ -171,6 +172,8 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 		allowed = false;
 		break;
 	}
+
+	desired = allowed;
 
 	if (lp_async_smb_echo_handler()) {
 		struct smbd_shm_signing *s;
@@ -189,7 +192,7 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 		}
 		talloc_set_destructor(s, smbd_shm_signing_destructor);
 		conn->smb1.signing_state = smb_signing_init_ex(s,
-							allowed, mandatory,
+							allowed, desired, mandatory,
 							smbd_shm_signing_alloc,
 							smbd_shm_signing_free);
 		if (!conn->smb1.signing_state) {
@@ -199,7 +202,7 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 	}
 
 	conn->smb1.signing_state = smb_signing_init(server_event_context(),
-						    allowed, mandatory);
+						    allowed, desired, mandatory);
 	if (!conn->smb1.signing_state) {
 		return false;
 	}
@@ -209,7 +212,8 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 
 void srv_set_signing_negotiated(struct smbd_server_connection *conn)
 {
-	smb_signing_set_negotiated(conn->smb1.signing_state);
+	smb_signing_set_negotiated(conn->smb1.signing_state,
+				   true, false);
 }
 
 /***********************************************************

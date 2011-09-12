@@ -44,7 +44,7 @@ bool cli_simple_set_signing(struct cli_state *cli,
 
 bool cli_temp_set_signing(struct cli_state *cli)
 {
-	return smb_signing_set_bsrspyl(cli->signing_state);
+	return true;
 }
 
 void cli_calculate_sign_mac(struct cli_state *cli, char *buf, uint32_t *seqnum)
@@ -70,7 +70,7 @@ bool cli_check_sign_mac(struct cli_state *cli, const char *buf, uint32_t seqnum)
 
 void cli_set_signing_negotiated(struct cli_state *cli)
 {
-	smb_signing_set_negotiated(cli->signing_state);
+	smb_signing_set_negotiated(cli->signing_state, true, false);
 }
 
 bool client_is_signing_on(struct cli_state *cli)
