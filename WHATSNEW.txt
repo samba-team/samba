@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha16
+What's new in Samba 4 alpha17
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -10,14 +10,11 @@ and above.
 WARNINGS
 ========
 
-Samba4 alpha16 is not a final Samba release, however we are now making
+Samba4 alpha17 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains both the technology of Samba 3.6
 (that you can reasonably expect to upgrade existing Samba 3.x releases
 to) and the AD domain controller work previously known as 'samba4'.
-No migration path is currently provided between these two sets of
-technology.  These missing migration paths will be the focus of
-development between now and a Samba 4.0 release.
 
 While binaries for the stable file server are provided in this
 release, for a stable, supported file server, Samba3 domain or AD
@@ -58,36 +55,69 @@ programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE alpha15
+CHANGES SINCE alpha16
 =====================
 
 For a list of changes since alpha 15, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log release-4-0-0alpha15..release-4-0-0alpha16
+$ git log release-4-0-0alpha16..release-4-0-0alpha17
 
-The biggest user-visible change is that binaries from the Samba 3.x
-series of development are now built and installed.  These binaries
-(smbd, nmbd, winbindd, net, testparm, etc) operate much as they do in
-the Samba 3.6 release candidates. 
+Some major user-visible changes include:
 
-CHANGES
-=======
+samba-tool dbcheck
+------------------
 
-smb.conf changes
-----------------
+We now have an fsck-like tool for Samba's internal sam.ldb database.
+Run samba-tool dbcheck after installation to check your database for
+self-consistency.  Any database created with a previous Samba4 alpha
+will have a very large number of consistency errors, which this tool
+can fix.
 
-   Parameter Name                      Description     Default
-   --------------                      -----------     -------
-   announce version 		       Removed
-   announce as	 		       Removed
+See also the -H option to point dbcheck at a different database to the
+default, and the --fix and --yes options to make changes and to not
+prompt about those changes. 
 
-Those familiar with Samba 3 can find a list of user-visible changes
-between the two technology sets provided in the NEWS file.
+New default paths
+-----------------
+
+The configure options for paths have changed again, and the
+--enable-fhs option has been reinstated.  Packagers should attempt to
+first package Samba using:
+
+./configure --enable-fhs --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+
+and only after examining the location Samba uses with these options
+should further changes be made.  Existing packaging scripts are not
+expected to work unmodified, instead the Samba Team's aim is to
+simplify such scripts for the long term. 
+
+samba-tool domain samba3upgrade
+-------------------------------
+
+The new samba-tool domain samba3upgrade command is a supported upgrade route from Samba
+3.x domain controllers to Samba 4.0 AD domain controllers.  This
+provides a one-time migration of all users, domain members, passwords,
+groups, group members and account polcies. 
+
+This tool is still under development and may fail when presented with
+an inconsistant Samba3 database (such as many LDAP configurations).
+We hope to improve the error handling and recovery in these
+situations, so please provide feedback using the samba-technical
+mailing list.
 
 KNOWN ISSUES
 ============
+
+- Installation on systems without a system iconv (and developer
+  headers at compile time) is known to cause errors when dealing with
+  non-ASCII characters.
+
+- In some situations, group members may not be upgraded by the
+  samba-tool domain upgrade_from_s3 script
+
+- The samba-tool domain join script will not join Windows 2000 domains.
 
 - Domain member support in the 'samba' binary is in it's infancy, and
   is not comparable to the support found in winbindd.  As such, do not
@@ -96,8 +126,8 @@ KNOWN ISSUES
 
 - There is no printing support in the 'samba' binary (use smbd instead)
 
-- There is no NetBIOS browsing support in the 'samba' binary (use nmbd
-  and smbd instead)
+- There is no NetBIOS browsing support (network neighbourhood) in the
+  'samba' binary (use nmbd and smbd instead)
 
 - Clock Synchronisation is critical.  Many 'wrong password' errors are
   actually due to Kerberos objecting to a clock skew between client
@@ -107,14 +137,6 @@ KNOWN ISSUES
 - The DRS replication code may fail.  Please contact the team if you
   experience issues with DRS replication, as we have fixed many issues
   here in response to feedback from our production users. 
-
-- Users upgrading existing databases to Samba4 should carefully
-  consult upgrading-samba4.txt.  We have made a number of changes in
-  this release that should make it easier to upgrade in future.
-  Btw: there exists also a script under the "setup" directory of the
-  source distribution called "upgrade_from_s3" which should allow a step-up
-  from Samba3 to Samba4. It's not included yet in the binary distributions
-  since it's completely experimental!
 
 RUNNING Samba 4.0 as an AD DC
 =============================
