@@ -4325,7 +4325,7 @@ done:
 		}
 	}
 
-	DEBUG(DEBUG_ERR,("Database acked up to %s\n", argv[1]));
+	DEBUG(DEBUG_ERR,("Database backed up to %s\n", argv[1]));
 
 	talloc_free(tmp_ctx);
 	return status;
