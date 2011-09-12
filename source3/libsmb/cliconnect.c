@@ -944,7 +944,6 @@ static struct tevent_req *cli_session_setup_nt1_send(
 			SMBsesskeygen_ntv1(nt_hash, session_key.data);
 #endif
 		}
-		cli_temp_set_signing(cli);
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
@@ -1444,8 +1443,6 @@ static struct tevent_req *cli_session_setup_kerberos_send(
 	state->cli = cli;
 	state->ads_status = ADS_SUCCESS;
 
-	cli_temp_set_signing(cli);
-
 	/*
 	 * Ok, this is cheating: spnego_gen_krb5_negTokenInit can block if
 	 * we have to acquire a ticket. To be fixed later :-)
@@ -1589,8 +1586,6 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	state->ntlmssp_state = NULL;
 	talloc_set_destructor(
 		state, cli_session_setup_ntlmssp_state_destructor);
-
-	cli_temp_set_signing(cli);
 
 	status = ntlmssp_client_start(state,
 				      lp_netbios_name(),
@@ -2643,7 +2638,11 @@ static void cli_negprot_done(struct tevent_req *subreq)
 
 	if (cli_state_protocol(cli) >= PROTOCOL_NT1) {
 		struct timespec ts;
-		bool negotiated_smb_signing = false;
+		const char *client_signing = NULL;
+		bool server_mandatory;
+		bool server_allowed;
+		const char *server_signing = NULL;
+		bool ok;
 
 		if (wct != 0x11) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
@@ -2678,35 +2677,33 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			}
 		}
 
-		/*
-		 * As signing is slow we only turn it on if either the client or
-		 * the server require it. JRA.
-		 */
-
-		if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
-			/* Fail if server says signing is mandatory and we don't want to support it. */
-			if (!client_is_signing_allowed(cli)) {
-				DEBUG(0,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
-				tevent_req_nterror(req,
-						   NT_STATUS_ACCESS_DENIED);
-				return;
-			}
-			negotiated_smb_signing = true;
-		} else if (client_is_signing_mandatory(cli) && client_is_signing_allowed(cli)) {
-			/* Fail if client says signing is mandatory and the server doesn't support it. */
-			if (!(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED)) {
-				DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
-				tevent_req_nterror(req,
-						   NT_STATUS_ACCESS_DENIED);
-				return;
-			}
-			negotiated_smb_signing = true;
-		} else if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
-			negotiated_smb_signing = true;
+		client_signing = "disabled";
+		if (client_is_signing_allowed(cli)) {
+			client_signing = "allowed";
+		}
+		if (client_is_signing_mandatory(cli)) {
+			client_signing = "required";
 		}
 
-		if (negotiated_smb_signing) {
-			cli_set_signing_negotiated(cli);
+		server_signing = "not supported";
+		if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
+			server_signing = "supported";
+			server_allowed = true;
+		}
+		if (cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
+			server_signing = "required";
+			server_mandatory = true;
+		}
+
+		ok = cli_set_signing_negotiated(cli,
+						server_allowed,
+						server_mandatory);
+		if (!ok) {
+			DEBUG(1,("cli_negprot: SMB signing is required, "
+				 "but client[%s] and server[%s] mismatch\n",
+				 client_signing, server_signing));
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
 		}
 
 	} else if (cli_state_protocol(cli) >= PROTOCOL_LANMAN1) {

@@ -865,13 +865,13 @@ void cli_free_enc_buffer(struct cli_state *cli, char *buf);
 bool cli_simple_set_signing(struct cli_state *cli,
 			    const DATA_BLOB user_session_key,
 			    const DATA_BLOB response);
-bool cli_temp_set_signing(struct cli_state *cli);
 void cli_calculate_sign_mac(struct cli_state *cli, char *buf, uint32_t *seqnum);
 bool cli_check_sign_mac(struct cli_state *cli, const char *buf, uint32_t seqnum);
 bool client_is_signing_on(struct cli_state *cli);
 bool client_is_signing_allowed(struct cli_state *cli);
 bool client_is_signing_mandatory(struct cli_state *cli);
-void cli_set_signing_negotiated(struct cli_state *cli);
+bool cli_set_signing_negotiated(struct cli_state *cli,
+				bool allowed, bool mandatory);
 
 /* The following definitions come from libsmb/reparse_symlink.c  */
 

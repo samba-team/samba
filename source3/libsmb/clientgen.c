@@ -168,8 +168,9 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int signing_state, int flags)
 {
 	struct cli_state *cli = NULL;
-	bool allow_smb_signing = false;
-	bool mandatory_signing = false;
+	bool allow_smb_signing;
+	bool desire_smb_signing;
+	bool mandatory_signing;
 	socklen_t ss_length;
 	int ret;
 
@@ -236,31 +237,43 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		cli->use_level_II_oplocks = true;
 	}
 
-	if (lp_client_signing()) {
-		allow_smb_signing = true;
+	if (signing_state == Undefined) {
+		signing_state = lp_client_signing();
 	}
 
-	if (lp_client_signing() == Required) {
-		mandatory_signing = true;
-	}
-
-	if (signing_state != Undefined) {
-		allow_smb_signing = true;
-	}
-
-	if (signing_state == false) {
+	switch (signing_state) {
+	case false:
+		/* never */
 		allow_smb_signing = false;
+		desire_smb_signing = false;
 		mandatory_signing = false;
-	}
-
-	if (signing_state == Required) {
+		break;
+	case true:
+		/* if the server supports it */
+		allow_smb_signing = true;
+		desire_smb_signing = true;
+		mandatory_signing = false;
+		break;
+	default:
+	case Undefined:
+	case Auto:
+		/* if the server requires it */
+		allow_smb_signing = true;
+		desire_smb_signing = false;
+		mandatory_signing = false;
+		break;
+	case Required:
+		/* always */
+		allow_smb_signing = true;
+		desire_smb_signing = true;
 		mandatory_signing = true;
+		break;
 	}
 
 	/* initialise signing */
 	cli->signing_state = smb_signing_init(cli,
 					      allow_smb_signing,
-					      allow_smb_signing,
+					      desire_smb_signing,
 					      mandatory_signing);
 	if (!cli->signing_state) {
 		goto error;

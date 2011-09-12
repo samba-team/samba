@@ -42,11 +42,6 @@ bool cli_simple_set_signing(struct cli_state *cli,
 	return true;
 }
 
-bool cli_temp_set_signing(struct cli_state *cli)
-{
-	return true;
-}
-
 void cli_calculate_sign_mac(struct cli_state *cli, char *buf, uint32_t *seqnum)
 {
 	*seqnum = smb_signing_next_seqnum(cli->signing_state, false);
@@ -68,9 +63,11 @@ bool cli_check_sign_mac(struct cli_state *cli, const char *buf, uint32_t seqnum)
 	return true;
 }
 
-void cli_set_signing_negotiated(struct cli_state *cli)
+bool cli_set_signing_negotiated(struct cli_state *cli,
+				bool allowed, bool mandatory)
 {
-	smb_signing_set_negotiated(cli->signing_state, true, false);
+	return smb_signing_set_negotiated(cli->signing_state,
+					  allowed, mandatory);
 }
 
 bool client_is_signing_on(struct cli_state *cli)
