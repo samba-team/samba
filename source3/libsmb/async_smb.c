@@ -30,9 +30,14 @@
 static NTSTATUS cli_pull_raw_error(const uint8_t *buf)
 {
 	uint32_t flags2 = SVAL(buf, smb_flg2);
+	NTSTATUS status = NT_STATUS(IVAL(buf, smb_rcls));
+
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OK;
+	}
 
 	if (flags2 & FLAGS2_32_BIT_ERROR_CODES) {
-		return NT_STATUS(IVAL(buf, smb_rcls));
+		return status;
 	}
 
 	return NT_STATUS_DOS(CVAL(buf, smb_rcls), SVAL(buf,smb_err));
