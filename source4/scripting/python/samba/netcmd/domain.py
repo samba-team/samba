@@ -54,7 +54,10 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008_R2,
     )
 
-
+def get_testparm_var(testparm, varname):
+    cmd = "%s -s -l --parameter-name='%s' 2>/dev/null" % (testparm, varname)
+    output = os.popen(cmd, 'r').readline()
+    return output.strip()
 
 class cmd_domain_export_keytab(Command):
     """Dumps kerberos keys of the domain into a keytab"""
