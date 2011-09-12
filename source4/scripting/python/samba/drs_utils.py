@@ -139,14 +139,14 @@ class drs_Replicate:
                 req8.replica_flags |= drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING
             else:
                 req8.replica_flags |= drsuapi.DRSUAPI_DRS_WRIT_REP
-        req8.max_object_count		     = 402
-        req8.max_ndr_size		     = 402116
-        req8.extended_op		     = exop
-        req8.fsmo_info			     = 0
-        req8.partial_attribute_set	     = None
-        req8.partial_attribute_set_ex	     = None
-        req8.mapping_ctr.num_mappings	     = 0
-        req8.mapping_ctr.mappings	     = None
+        req8.max_object_count = 402
+        req8.max_ndr_size = 402116
+        req8.extended_op = exop
+        req8.fsmo_info = 0
+        req8.partial_attribute_set = None
+        req8.partial_attribute_set_ex = None
+        req8.mapping_ctr.num_mappings = 0
+        req8.mapping_ctr.mappings = None
 
         if not schema and rodc:
             req8.partial_attribute_set = self.drs_get_rodc_partial_attribute_set()
@@ -168,7 +168,7 @@ class drs_Replicate:
             if ctr.first_object == None and ctr.object_count != 0:
                 raise RuntimeError("DsGetNCChanges: NULL first_object with object_count=%u" % (ctr.object_count))
             self.net.replicate_chunk(self.replication_state, level, ctr,
-				     schema=schema, req_level=req_level, req=req)
+                schema=schema, req_level=req_level, req=req)
             if ctr.more_data == 0:
                 break
             req.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
