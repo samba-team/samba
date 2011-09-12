@@ -10,6 +10,9 @@ fi
 PREFIX=`pwd`"/$1"
 shift 1
 
+samba4bindir="$BINDIR"
+samba_tool="$samba4bindir/samba-tool$EXEEXT"
+
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 rm -rf $PREFIX/samba3-upgrade
@@ -35,7 +38,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb1.conf <<EOF
    debug level = 0
 EOF
 
-testit "samba3-upgrade-member" $PYTHON $SRCDIR/source4/setup/upgrade_from_s3 $PREFIX/samba3-upgrade/samba3/smb1.conf $PREFIX/samba3-upgrade/s4_1 --libdir=$PREFIX/samba3-upgrade/samba3
+testit "samba3-upgrade-member" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb1.conf $PREFIX/samba3-upgrade/s4_1 --libdir=$PREFIX/samba3-upgrade/samba3
 
 # Test 2 (s3 dc)
 cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
@@ -56,7 +59,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
    domain logons = yes
 EOF
 
-testit "samba3-upgrade-dc" $PYTHON $SRCDIR/source4/setup/upgrade_from_s3 $PREFIX/samba3-upgrade/samba3/smb2.conf $PREFIX/samba3-upgrade/s4_2 --libdir=$PREFIX/samba3-upgrade/samba3
+testit "samba3-upgrade-dc" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf $PREFIX/samba3-upgrade/s4_2 --libdir=$PREFIX/samba3-upgrade/samba3
 
 rm -rf $PREFIX/samba3-upgrade
 
