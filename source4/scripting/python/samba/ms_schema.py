@@ -1,8 +1,19 @@
-#
 # create schema.ldif (as a string) from WSPP documentation
 #
 # based on minschema.py and minschema_wspp
 #
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Generate LDIF from WSPP documentation."""
 
@@ -207,14 +218,14 @@ def __transform_entry(entry, objectClass):
 
         if not cn and key == "cn":
             cn = l[1]
-        
+
         if key in multivalued_attrs:
             # unlike LDIF, these are comma-separated
             l[1] = l[1].replace("\n ", "")
             l[1] = l[1].replace(" ", "")
 
             l[1] = l[1].split(",")
-            
+
         if key in bitFields:
             l[1] = __convert_bitfield(key, l[1])
 
@@ -275,5 +286,5 @@ if __name__ == '__main__':
     except IndexError:
         print >>sys.stderr, "Usage: %s attr-file.txt classes-file.txt" % (sys.argv[0])
         sys.exit(1)
-        
+
     print read_ms_schema(attr_file, classes_file)
