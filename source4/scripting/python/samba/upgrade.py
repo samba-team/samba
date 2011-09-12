@@ -592,6 +592,16 @@ Please fix this account before attempting to upgrade again
 
     logger.info("Next rid = %d", next_rid)
 
+    # Check for same username/groupname
+    group_names = set(map(lambda g: g.nt_name, grouplist))
+    user_names = set(map(lambda u: u['account_name'], userlist))
+    common_names = group_names.intersection(user_names)
+    if common_names:
+        logger.error("Following names are both user names and group names:")
+        for name in common_names:
+            logger.error("   %s" % name)
+        raise ProvisioningError("Please remove common user/group names before upgrade.")
+
     # Do full provision
     result = provision(logger, session_info, None,
                        targetdir=targetdir, realm=realm, domain=domainname,
