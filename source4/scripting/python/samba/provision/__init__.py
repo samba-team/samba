@@ -1795,6 +1795,8 @@ def provision(logger, session_info, credentials, smbconf=None,
                     attribute="objectGUID")
                 assert isinstance(domainguid, str)
 
+                create_dns_dir(logger, paths)
+
                 # Only make a zone file on the first DC, it should be
                 # replicated with DNS replication
                 if dns_backend == "BIND9":
@@ -1945,6 +1947,32 @@ def create_phpldapadmin_config(path, ldapi_uri):
             {"S4_LDAPI_URI": ldapi_uri})
 
 
+def create_dns_dir(logger, paths):
+    """Write out a DNS zone file, from the info in the current database.
+
+    :param logger: Logger object
+    :param paths: paths object
+    """
+    dns_dir = os.path.dirname(paths.dns)
+
+    try:
+        shutil.rmtree(dns_dir, True)
+    except OSError:
+        pass
+
+    os.mkdir(dns_dir, 0770)
+
+    if paths.bind_gid is not None:
+        try:
+            os.chown(dns_dir, -1, paths.bind_gid)
+            # chmod needed to cope with umask
+            os.chmod(dns_dir, 0770)
+        except OSError:
+            if not os.environ.has_key('SAMBA_SELFTEST'):
+                logger.error("Failed to chown %s to bind gid %u" % (
+                    dns_dir, paths.bind_gid))
+
+
 def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
                      hostip, hostip6, hostname, realm, domainguid,
                      ntdsguid):
@@ -1980,15 +2008,6 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
         hostip_host_line = ""
         gc_msdcs_ip_line = ""
 
-    dns_dir = os.path.dirname(paths.dns)
-
-    try:
-        shutil.rmtree(dns_dir, True)
-    except OSError:
-        pass
-
-    os.mkdir(dns_dir, 0775)
-
     # we need to freeze the zone while we update the contents
     if targetdir is None:
         rndc = ' '.join(lp.get("rndc command"))
@@ -2012,15 +2031,13 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
 
     if paths.bind_gid is not None:
         try:
-            os.chown(dns_dir, -1, paths.bind_gid)
             os.chown(paths.dns, -1, paths.bind_gid)
             # chmod needed to cope with umask
-            os.chmod(dns_dir, 0775)
             os.chmod(paths.dns, 0664)
         except OSError:
             if not os.environ.has_key('SAMBA_SELFTEST'):
                 logger.error("Failed to chown %s to bind gid %u" % (
-                    dns_dir, paths.bind_gid))
+                    paths.dns, paths.bind_gid))
 
     if targetdir is None:
         os.system(rndc + " unfreeze " + lp.get("realm"))
