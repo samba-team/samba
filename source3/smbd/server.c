@@ -63,11 +63,12 @@ static void smb_conf_updated(struct messaging_context *msg,
 {
 	struct tevent_context *ev_ctx =
 		talloc_get_type_abort(private_data, struct tevent_context);
+	struct smbd_server_connection *sconn = msg_ctx_to_sconn(msg);
 
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
-	reload_services(msg, smbd_server_conn->sock, False);
+	reload_services(msg, sconn->sock, False);
 	if (am_parent) {
 		printing_subsystem_update(ev_ctx, msg, false);
 	}
