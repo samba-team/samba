@@ -242,6 +242,10 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				   "make_server_info_pw\n", username));
 			status = make_server_info_pw(&tmp, username, pw);
 		}
+
+		/* Steal tmp server info into the server_info pointer. */
+		server_info = talloc_move(mem_ctx, &tmp);
+
 		TALLOC_FREE(sampass);
 
 		if (!NT_STATUS_IS_OK(status)) {
