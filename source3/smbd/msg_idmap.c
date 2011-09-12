@@ -112,9 +112,17 @@ static void id_cache_kill(struct messaging_context *msg_ctx,
 {
 	const char *msg = (data && data->data)
 		? (const char *)data->data : "<NULL>";
-	struct user_struct *validated_users =
-		smbd_server_conn->smb1.sessions.validated_users;
+	struct smbd_server_connection *sconn;
+	struct user_struct *validated_users;
 	struct id_cache_ref id;
+
+	sconn = msg_ctx_to_sconn(msg_ctx);
+	if (sconn == NULL) {
+		DEBUG(1, ("could not find sconn\n"));
+		return;
+	}
+
+	validated_users = sconn->smb1.sessions.validated_users;
 
 	if (!id_cache_ref_parse(msg, &id)) {
 		DEBUG(0, ("Invalid ?ID: %s\n", msg));
