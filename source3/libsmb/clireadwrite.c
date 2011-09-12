@@ -73,35 +73,42 @@ static size_t cli_write_max_bufsize(struct cli_state *cli,
 				    uint16_t write_mode,
 				    uint8_t wct)
 {
-        if (write_mode == 0 &&
-	    !client_is_signing_on(cli) &&
-	    !cli_encryption_on(cli) &&
-	    (cli->server_posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
-	    (cli_state_capabilities(cli) & CAP_LARGE_FILES)) {
-		/* Only do massive writes if we can do them direct
-		 * with no signing or encrypting - not on a pipe. */
-		return CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE;
+	uint32_t min_space;
+	uint32_t data_offset;
+	uint32_t useable_space = 0;
+
+	data_offset = HDR_VWV;
+	data_offset += wct * sizeof(uint16_t);
+	data_offset += sizeof(uint16_t); /* byte count */
+	data_offset += 1; /* pad */
+
+	min_space = cli_state_available_size(cli, data_offset);
+
+	if (cli->server_posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) {
+		useable_space = 0xFFFFFF - data_offset;
+	} else if (cli_state_capabilities(cli) & CAP_LARGE_WRITEX) {
+		useable_space = 0x1FFFF - data_offset;
+	} else {
+		return min_space;
 	}
 
-	if (cli->is_samba) {
-		return CLI_SAMBA_MAX_LARGE_WRITEX_SIZE;
+	if (write_mode != 0) {
+		return min_space;
 	}
 
-	if (((cli_state_capabilities(cli) & CAP_LARGE_WRITEX) == 0)
-	    || client_is_signing_on(cli)
-	    || strequal(cli->dev, "LPT1:")) {
-		size_t data_offset = smb_size - 4;
-		size_t useable_space;
-
-		data_offset += wct * sizeof(uint16_t);
-		data_offset += 1; /* pad */
-
-		useable_space = cli_state_available_size(cli, data_offset);
-
-		return useable_space;
+	if (client_is_signing_on(cli)) {
+		return min_space;
 	}
 
-	return CLI_WINDOWS_MAX_LARGE_WRITEX_SIZE;
+	if (cli_encryption_on(cli)) {
+		return min_space;
+	}
+
+	if (strequal(cli->dev, "LPT1:")) {
+		return min_space;
+	}
+
+	return useable_space;
 }
 
 struct cli_read_andx_state {
