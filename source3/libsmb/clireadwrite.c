@@ -28,27 +28,42 @@
 ****************************************************************************/
 static size_t cli_read_max_bufsize(struct cli_state *cli)
 {
-	size_t data_offset = smb_size - 4;
-	size_t wct = 12;
+	uint8_t wct = 12;
+	uint32_t min_space;
+	uint32_t data_offset;
+	uint32_t useable_space = 0;
 
-	size_t useable_space;
-
-	if (!client_is_signing_on(cli) && !cli_encryption_on(cli)
-	    && (cli->server_posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
-		return CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
-	}
-	if (cli_state_capabilities(cli) & CAP_LARGE_READX) {
-		return cli->is_samba
-			? CLI_SAMBA_MAX_LARGE_READX_SIZE
-			: CLI_WINDOWS_MAX_LARGE_READX_SIZE;
-	}
-
+	data_offset = HDR_VWV;
 	data_offset += wct * sizeof(uint16_t);
+	data_offset += sizeof(uint16_t); /* byte count */
 	data_offset += 1; /* pad */
 
-	useable_space = cli_state_available_size(cli, data_offset);
+	min_space = cli_state_available_size(cli, data_offset);
 
-	return useable_space;
+	if (cli->server_posix_capabilities & CIFS_UNIX_LARGE_READ_CAP) {
+		useable_space = 0xFFFFFF - data_offset;
+
+		if (client_is_signing_on(cli)) {
+			return min_space;
+		}
+
+		if (cli_encryption_on(cli)) {
+			return min_space;
+		}
+
+		return useable_space;
+	} else if (cli_state_capabilities(cli) & CAP_LARGE_READX) {
+		/*
+		 * Note: CAP_LARGE_READX also works with signing
+		 */
+		useable_space = 0x1FFFF - data_offset;
+
+		useable_space = MIN(useable_space, UINT16_MAX);
+
+		return useable_space;
+	}
+
+	return min_space;
 }
 
 /****************************************************************************
