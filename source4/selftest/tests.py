@@ -292,6 +292,7 @@ for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
 # work correctly.
 
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
+planpythontestsuite("none", "samba.tests.source")
 plantestsuite("samba4.blackbox.samba_tool(dc:local)", "dc:local", [os.path.join(samba4srcdir, "utils/tests/test_samba_tool.sh"),  '$SERVER', "$USERNAME", "$PASSWORD", "$DOMAIN"])
 plantestsuite("samba4.blackbox.pkinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_pkinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", configuration])
 plantestsuite("samba4.blackbox.kinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_kinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", configuration])
