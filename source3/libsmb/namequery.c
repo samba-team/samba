@@ -48,13 +48,9 @@ static char *saf_key(TALLOC_CTX *mem_ctx, const char *domain)
 	return talloc_asprintf_strupper_m(mem_ctx, SAFKEY_FMT, domain);
 }
 
-static char *saf_join_key(const char *domain)
+static char *saf_join_key(TALLOC_CTX *mem_ctx, const char *domain)
 {
-	char *keystr;
-
-	asprintf_strupper_m(&keystr, SAFJOINKEY_FMT, domain);
-
-	return keystr;
+	return talloc_asprintf_strupper_m(mem_ctx, SAFJOINKEY_FMT, domain);
 }
 
 /****************************************************************************
@@ -111,7 +107,11 @@ bool saf_join_store( const char *domain, const char *servername )
 		return False;
 	}
 
-	key = saf_join_key( domain );
+	key = saf_join_key(talloc_tos(), domain);
+	if (key == NULL) {
+		DEBUG(1, ("saf_join_key() failed\n"));
+		return false;
+	}
 	expire = time( NULL ) + lp_parm_int(-1, "saf","join ttl", SAFJOIN_TTL);
 
 	DEBUG(10,("saf_join_store: domain = [%s], server = [%s], expire = [%u]\n",
@@ -119,7 +119,7 @@ bool saf_join_store( const char *domain, const char *servername )
 
 	ret = gencache_set( key, servername, expire );
 
-	SAFE_FREE( key );
+	TALLOC_FREE( key );
 
 	return ret;
 }
@@ -134,9 +134,13 @@ bool saf_delete( const char *domain )
 		return False;
 	}
 
-	key = saf_join_key(domain);
+	key = saf_join_key(talloc_tos(), domain);
+	if (key == NULL) {
+		DEBUG(1, ("saf_join_key() failed\n"));
+		return false;
+	}
 	ret = gencache_del(key);
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 
 	if (ret) {
 		DEBUG(10,("saf_delete[join]: domain = [%s]\n", domain ));
@@ -172,11 +176,15 @@ char *saf_fetch( const char *domain )
 		return NULL;
 	}
 
-	key = saf_join_key( domain );
+	key = saf_join_key(talloc_tos(), domain);
+	if (key == NULL) {
+		DEBUG(1, ("saf_join_key() failed\n"));
+		return NULL;
+	}
 
 	ret = gencache_get( key, &server, &timeout );
 
-	SAFE_FREE( key );
+	TALLOC_FREE( key );
 
 	if ( ret ) {
 		DEBUG(5,("saf_fetch[join]: Returning \"%s\" for \"%s\" domain\n",
