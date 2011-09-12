@@ -2355,7 +2355,8 @@ static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
  */
 static bool keepalive_fn(const struct timeval *now, void *private_data)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn = talloc_get_type_abort(
+		private_data, struct smbd_server_connection);
 	bool ret;
 
 	if (sconn->using_smb2) {
@@ -3115,7 +3116,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	    && !(event_add_idle(ev_ctx, NULL,
 				timeval_set(lp_keepalive(), 0),
 				"keepalive", keepalive_fn,
-				NULL))) {
+				sconn))) {
 		DEBUG(0, ("Could not add keepalive event\n"));
 		exit(1);
 	}
