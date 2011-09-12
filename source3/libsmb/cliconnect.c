@@ -2643,6 +2643,11 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		struct timespec ts;
 		bool negotiated_smb_signing = false;
 
+		if (wct != 0x11) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
 		/* NT protocol */
 		cli->sec_mode = CVAL(vwv + 1, 0);
 		cli->max_mux = SVAL(vwv + 1, 1);
@@ -2716,6 +2721,11 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		}
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
+		if (wct != 0x0D) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
 		cli->use_spnego = False;
 		cli->sec_mode = SVAL(vwv + 1, 0);
 		cli->max_xmit = SVAL(vwv + 2, 0);
