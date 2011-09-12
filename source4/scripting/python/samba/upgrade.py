@@ -602,6 +602,16 @@ Please fix this account before attempting to upgrade again
             logger.error("   %s" % name)
         raise ProvisioningError("Please remove common user/group names before upgrade.")
 
+    # Check for same user sid/group sid
+    group_sids = set(map(lambda g: str(g.sid), grouplist))
+    user_sids = set(map(lambda u: "%s-%u" % (domainsid, u['rid']), userlist))
+    common_sids = group_sids.intersection(user_sids)
+    if common_sids:
+        logger.error("Following sids are both user and group sids:")
+        for sid in common_sids:
+            logger.error("   %s" % str(sid))
+        raise ProvisioningError("Please remove duplicate sid entries before upgrade.")
+
     # Do full provision
     result = provision(logger, session_info, None,
                        targetdir=targetdir, realm=realm, domain=domainname,
