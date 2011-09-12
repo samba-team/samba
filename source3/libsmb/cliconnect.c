@@ -317,9 +317,6 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 	}
 	p += ret;
 
-	if (strstr(cli->server_type, "Samba")) {
-		cli->is_samba = True;
-	}
 	status = cli_set_username(cli, state->user);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -545,10 +542,6 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	}
 	p += ret;
 
-	if (strstr(cli->server_type, "Samba")) {
-		cli->is_samba = True;
-	}
-
 	status = cli_set_username(cli, "");
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -756,9 +749,7 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	if (strstr(cli->server_type, "Samba")) {
-		cli->is_samba = True;
-	}
+
 	tevent_req_done(req);
 }
 
@@ -1105,10 +1096,6 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	}
 	p += ret;
 
-	if (strstr(cli->server_type, "Samba")) {
-		cli->is_samba = True;
-	}
-
 	status = cli_set_username(cli, state->user);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -1357,10 +1344,6 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 		return;
 	}
 	p += ret;
-
-	if (strstr(cli->server_type, "Samba")) {
-		cli->is_samba = True;
-	}
 
 	if (state->blob.length != 0) {
 		/*
@@ -2084,10 +2067,6 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 				 "failed: %s\n", nt_errstr(status)));
 			return status;
 		}
-	}
-
-	if (strstr(cli->server_type, "Samba")) {
-		cli->is_samba = True;
 	}
 
 	return NT_STATUS_OK;

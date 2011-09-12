@@ -75,7 +75,6 @@ struct cli_state {
 	size_t max_mux;
 	int initialised;
 	int win95;
-	bool is_samba;
 	bool is_guestlogin;
 	uint32 capabilities;
 	/* What the server offered. */

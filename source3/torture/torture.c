@@ -979,14 +979,6 @@ static bool run_readwritelarge_internal(void)
 	cli_sockopt(cli1, sockops);
 	memset(buf,'\0',sizeof(buf));
 
-	if (signing_state == Required) {
-		/* Horrible cheat to force
-		   multiple signed outstanding
-		   packets against a Samba server.
-		*/
-		cli1->is_samba = false;
-	}
-
 	printf("starting readwritelarge_internal\n");
 
 	cli_unlink(cli1, lockfname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
