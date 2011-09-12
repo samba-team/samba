@@ -25,7 +25,9 @@
 
 import samba.getopt as options
 import ldb
-import os
+import sys, os
+import tempfile
+import logging
 from samba import Ldb
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
@@ -39,6 +41,10 @@ from samba.netcmd import (
     SuperCommand,
     Option
     )
+from samba.samba3 import Samba3
+from samba.samba3 import param as s3param
+from samba.upgrade import upgrade_from_samba3
+from samba.provision import ProvisioningError
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -512,6 +518,105 @@ class cmd_domain_passwordsettings(Command):
             raise CommandError("Wrong argument '%s'!" % subcommand)
 
 
+class cmd_domain_samba3upgrade(Command):
+    """Upgrade from Samba3 database to Samba4 AD database"""
+
+    synopsis = "%prog domain samba3upgrade [options] <samba3_smb_conf> <targetdir>"
+
+    long_description = """Specify either samba3 database directory (with --libdir) or
+samba3 testparm utility (with --testparm)."""
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions
+    }
+
+    takes_options = [
+        Option("--libdir", type="string", metavar="DIR",
+                  help="Path to samba3 database directory"),
+        Option("--testparm", type="string", metavar="PATH",
+                  help="Path to samba3 testparm utility"),
+        Option("--quiet", help="Be quiet"),
+        Option("--use-xattrs", type="choice", choices=["yes","no","auto"], metavar="[yes|no|auto]",
+                   help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
+    ]
+
+    takes_args = ["smbconf", "targetdir"]
+
+    def run(self, smbconf=None, targetdir=None, libdir=None, testparm=None, 
+            quiet=None, use_xattrs=None, sambaopts=None, versionopts=None):
+
+        if not os.path.exists(smbconf):
+            raise CommandError("File %s does not exist" % smbconf)
+        
+        if not os.path.isdir(targetdir):
+            raise CommandError("Directory %s does not exist" % targetdir)
+
+        if testparm and not os.path.exists(testparm):
+            raise CommandError("Testparm utility %s does not exist" % testparm)
+
+        if libdir and not os.path.exists(libdir):
+            raise CommandError("Directory %s does not exist" % libdir)
+
+        if not libdir and not testparm:
+            raise CommandError("Please specify either libdir or testparm")
+
+        if libdir and testparm:
+            self.outf.write("warning: both libdir and testparm specified, ignoring libdir.\n")
+            libdir = None
+
+        logger = logging.getLogger("upgrade")
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+        if quiet:
+        	logger.setLevel(logging.WARNING)
+        else:
+        	logger.setLevel(logging.INFO)
+
+        lp = sambaopts.get_loadparm()
+        realm = lp.get("realm")
+
+        s3conf = s3param.get_context()
+
+        if realm:
+            s3conf.set("realm", realm)
+
+        eadb = True
+        if use_xattrs == "yes":
+        	eadb = False
+        elif use_xattrs == "auto" and not s3conf.get("posix:eadb"):
+        	tmpfile = tempfile.NamedTemporaryFile()
+    	try:
+    		samba.ntacls.setntacl(lp, tmpfile.name,
+    			"O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+    		eadb = False
+    	except:
+    		logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
+			    "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
+    	tmpfile.close()
+
+        # Set correct default values from libdir or testparm
+        paths = {}
+        if libdir:
+            paths["state directory"] = libdir
+            paths["private dir"] = libdir
+            paths["lock directory"] = libdir
+        else:
+            paths["state directory"] = get_testparm_var(testparm, "state directory")
+            paths["private dir"] = get_testparm_var(testparm, "private dir")
+            paths["lock directory"] = get_testparm_var(testparm, "lock directory")
+    
+        for p in paths:
+            s3conf.set(p, paths[p])
+    
+        # load smb.conf parameters
+        logger.info("Reading smb.conf")
+        s3conf.load(smbconf)
+        samba3 = Samba3(smbconf, s3conf)
+    
+        logger.info("Provisioning")
+        upgrade_from_samba3(samba3, logger, targetdir, session_info=system_session(), 
+                            useeadb=eadb)
+
 
 class cmd_domain(SuperCommand):
     """Domain management"""
@@ -522,3 +627,4 @@ class cmd_domain(SuperCommand):
     subcommands["level"] = cmd_domain_level()
     subcommands["machinepassword"] = cmd_domain_machinepassword()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
+    subcommands["samba3upgrade"] = cmd_domain_samba3upgrade()
