@@ -476,6 +476,7 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct cli_pull_state *state;
 	int i;
+	size_t page_size = 1024;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_pull_state);
 	if (req == NULL) {
@@ -501,6 +502,9 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->chunk_size = cli_read_max_bufsize(cli);
+	if (state->chunk_size > page_size) {
+		state->chunk_size &= ~(page_size - 1);
+	}
 
 	state->max_reqs = cli_state_max_requests(cli);
 
@@ -1171,6 +1175,7 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	struct tevent_req *req;
 	struct cli_push_state *state;
 	uint32_t i;
+	size_t page_size = 1024;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_push_state);
 	if (req == NULL) {
@@ -1188,6 +1193,9 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->next_offset = start_offset;
 
 	state->chunk_size = cli_write_max_bufsize(cli, mode, 14);
+	if (state->chunk_size > page_size) {
+		state->chunk_size &= ~(page_size - 1);
+	}
 
 	state->max_reqs = cli_state_max_requests(cli);
 
