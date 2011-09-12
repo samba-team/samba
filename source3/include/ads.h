@@ -26,7 +26,7 @@ enum ads_saslwrap_type {
 
 typedef struct ads_struct {
 	int is_mine;	/* do I own this structure's memory? */
-	
+
 	/* info needed to find the server */
 	struct {
 		char *realm;
