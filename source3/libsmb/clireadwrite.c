@@ -732,7 +732,8 @@ NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
 	bytes[0] = 1;
 
 	do {
-		size_t size = MIN(size1, cli->max_xmit - 48);
+		uint32_t usable_space = cli_state_available_size(cli, 48);
+		size_t size = MIN(size1, usable_space);
 		struct tevent_req *req;
 		uint16_t vwv[5];
 		uint16_t *ret_vwv;
