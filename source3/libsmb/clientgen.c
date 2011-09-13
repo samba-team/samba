@@ -519,6 +519,11 @@ uint16_t cli_state_max_requests(struct cli_state *cli)
 	return cli->max_mux;
 }
 
+uint16_t cli_state_security_mode(struct cli_state *cli)
+{
+	return cli->sec_mode;
+}
+
 struct cli_echo_state {
 	uint16_t vwv[1];
 	DATA_BLOB data;
