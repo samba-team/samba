@@ -144,11 +144,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	if (max_protocol == 0) {
 		max_protocol = PROTOCOL_NT1;
 	}
-	c->protocol = max_protocol;
-
 	DEBUG(4,(" session request ok\n"));
 
-	status = cli_negprot(c);
+	status = cli_negprot(c, max_protocol);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("protocol negotiation failed: %s\n",

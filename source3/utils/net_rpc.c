@@ -7096,7 +7096,7 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
-	status = cli_negprot(cli);
+	status = cli_negprot(cli, PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 	if (cli_state_protocol(cli) < PROTOCOL_NT1)

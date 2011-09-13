@@ -106,7 +106,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 	DEBUG(3,("got session\n"));
 
-	status = cli_negprot(cli);
+	status = cli_negprot(cli, PROTOCOL_NT1);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mutex);

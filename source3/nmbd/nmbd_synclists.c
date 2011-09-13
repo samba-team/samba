@@ -88,7 +88,7 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	status = cli_negprot(cli);
+	status = cli_negprot(cli, PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(cli);
 		return;

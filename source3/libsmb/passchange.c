@@ -66,9 +66,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		return result;
 	}
 
-	cli->protocol = PROTOCOL_NT1;
-
-	result = cli_negprot(cli);
+	result = cli_negprot(cli, PROTOCOL_NT1);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		if (asprintf(err_str, "machine %s rejected the negotiate "

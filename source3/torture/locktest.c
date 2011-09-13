@@ -198,7 +198,7 @@ static struct cli_state *connect_one(char *share, int snum)
 		return NULL;
 	}
 
-	status = cli_negprot(c);
+	status = cli_negprot(c, PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("protocol negotiation failed: %s\n",
 			  nt_errstr(status)));

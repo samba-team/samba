@@ -2545,7 +2545,8 @@ static void cli_negprot_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 				    struct event_context *ev,
-				    struct cli_state *cli)
+				    struct cli_state *cli,
+				    enum protocol_types max_protocol)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_negprot_state *state;
@@ -2558,7 +2559,7 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->cli = cli;
-	state->max_protocol = cli->protocol;
+	state->max_protocol = max_protocol;
 
 	/* setup the protocol strings */
 	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
@@ -2765,7 +2766,7 @@ NTSTATUS cli_negprot_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS cli_negprot(struct cli_state *cli)
+NTSTATUS cli_negprot(struct cli_state *cli, enum protocol_types max_protocol)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
@@ -2786,7 +2787,7 @@ NTSTATUS cli_negprot(struct cli_state *cli)
 		goto fail;
 	}
 
-	req = cli_negprot_send(frame, ev, cli);
+	req = cli_negprot_send(frame, ev, cli, max_protocol);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -2942,7 +2943,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 		return nt_status;
 	}
 
-	nt_status = cli_negprot(cli);
+	nt_status = cli_negprot(cli, PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("failed negprot: %s\n", nt_errstr(nt_status)));
 		cli_shutdown(cli);
