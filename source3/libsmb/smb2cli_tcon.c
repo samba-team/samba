@@ -118,7 +118,7 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 	body = (uint8_t *)iov[1].iov_base;
 	cli->smb2.share_type		= CVAL(body, 2);
 	cli->smb2.share_flags		= IVAL(body, 4);
-	cli->capabilities		= IVAL(body, 8);
+	cli->smb2.share_capabilities	= IVAL(body, 8);
 	cli->smb2.maximal_access	= IVAL(body, 12);
 
 	TALLOC_FREE(subreq);
