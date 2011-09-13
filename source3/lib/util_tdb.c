@@ -102,7 +102,7 @@ static int tdb_chainlock_with_timeout_internal(struct tdb_context *tdb,
 		locking.base.attr = TDB_ATTRIBUTE_FLOCK;
 		ecode = tdb_get_attribute(tdb, &locking);
 		if (ecode != TDB_SUCCESS)
-			return ecode;
+			return -1;
 
 		/* Replace locking function with our own. */
 		locking.flock.data = &timeout;
@@ -110,7 +110,7 @@ static int tdb_chainlock_with_timeout_internal(struct tdb_context *tdb,
 
 		ecode = tdb_set_attribute(tdb, &locking);
 		if (ecode != TDB_SUCCESS)
-			return ecode;
+			return -1;
 	}
 	if (rw_type == F_RDLCK)
 		ecode = tdb_chainlock_read(tdb, key);
