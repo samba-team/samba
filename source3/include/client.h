@@ -42,7 +42,6 @@ struct cli_state {
 	 * A list of subsidiary connections for DFS.
 	 */
         struct cli_state *prev, *next;
-	int sec_mode;
 	int rap_error;
 	NTSTATUS raw_status; /* maybe via NT_STATUS_DOS() */
 
@@ -135,6 +134,7 @@ struct cli_state {
 				uint32_t capabilities;
 				uint32_t max_xmit;
 				uint16_t max_mux;
+				uint16_t security_mode;
 			} server;
 
 			uint32_t capabilities;

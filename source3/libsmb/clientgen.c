@@ -568,7 +568,7 @@ uint16_t cli_state_max_requests(struct cli_state *cli)
 
 uint16_t cli_state_security_mode(struct cli_state *cli)
 {
-	return cli->sec_mode;
+	return cli->conn.smb1.server.security_mode;
 }
 
 int cli_state_server_time_zone(struct cli_state *cli)
