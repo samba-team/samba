@@ -1198,6 +1198,7 @@ static struct tevent_req *cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_sesssetup_blob_state *state;
+	uint32_t usable_space;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_sesssetup_blob_state);
@@ -1208,16 +1209,17 @@ static struct tevent_req *cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
 	state->blob = blob;
 	state->cli = cli;
 
-	if (cli->max_xmit < BASE_SESSSETUP_BLOB_PACKET_SIZE + 1) {
+	usable_space = cli_state_available_size(cli,
+				BASE_SESSSETUP_BLOB_PACKET_SIZE);
+
+	if (usable_space == 0) {
 		DEBUG(1, ("cli_session_setup_blob: cli->max_xmit too small "
-			  "(was %u, need minimum %u)\n",
-			  (unsigned int)cli->max_xmit,
-			  BASE_SESSSETUP_BLOB_PACKET_SIZE));
+			  "(not possible to send %u bytes)\n",
+			  BASE_SESSSETUP_BLOB_PACKET_SIZE + 1));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
-	state->max_blob_size =
-		MIN(cli->max_xmit - BASE_SESSSETUP_BLOB_PACKET_SIZE, 0xFFFF);
+	state->max_blob_size = MIN(usable_space, 0xFFFF);
 
 	if (!cli_sesssetup_blob_next(state, &subreq)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
