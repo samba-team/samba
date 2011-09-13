@@ -63,12 +63,12 @@ int64_t tdb_traverse_read_(struct tdb_context *tdb,
  */
 static enum TDB_ERROR clear_if_first(int fd, void *unused)
 {
-	/* We hold a lock offset 63 always, so we can tell if anyone else is. */
+	/* We hold a lock offset 4 always, so we can tell if anyone else is. */
 	struct flock fl;
 
 	fl.l_type = F_WRLCK;
 	fl.l_whence = SEEK_SET;
-	fl.l_start = 63;
+	fl.l_start = 4; /* ACTIVE_LOCK */
 	fl.l_len = 1;
 
 	if (fcntl(fd, F_SETLK, &fl) == 0) {
