@@ -534,6 +534,11 @@ int cli_state_server_time_zone(struct cli_state *cli)
 	return cli->serverzone;
 }
 
+time_t cli_state_server_time(struct cli_state *cli)
+{
+	return cli->servertime;
+}
+
 struct cli_echo_state {
 	uint16_t vwv[1];
 	DATA_BLOB data;
