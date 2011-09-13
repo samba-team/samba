@@ -514,6 +514,11 @@ uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
 	return ret;
 }
 
+uint16_t cli_state_max_requests(struct cli_state *cli)
+{
+	return cli->max_mux;
+}
+
 struct cli_echo_state {
 	uint16_t vwv[1];
 	DATA_BLOB data;
