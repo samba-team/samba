@@ -1,9 +1,13 @@
-#include "tdb2-source.h"
+#include <ccan/tdb2/tdb2.h>
 #include <ccan/tap/tap.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <err.h>
+#include <unistd.h>
 #include "external-agent.h"
 #include "logging.h"
 
