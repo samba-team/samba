@@ -105,9 +105,6 @@ static bool must_free_cliplist = False;
 extern char *cmd_ptr;
 
 extern bool lowercase;
-extern uint16 cnum;
-extern bool readbraw_supported;
-extern int max_xmit;
 extern int get_total_time_ms;
 extern int get_total_size;
 
