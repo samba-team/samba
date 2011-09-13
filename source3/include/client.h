@@ -137,11 +137,12 @@ struct cli_state {
 			} server;
 
 			uint32_t capabilities;
+
+			uint16_t mid;
 		} smb1;
 	} conn;
 
 	struct {
-		uint16_t mid;
 		uint16_t pid;
 		uint16_t vc_num;
 		uint16_t tid;

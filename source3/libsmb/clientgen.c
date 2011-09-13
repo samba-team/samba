@@ -304,6 +304,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 	cli->conn.smb1.capabilities = cli->conn.smb1.client.capabilities;
 
+	cli->conn.smb1.mid = 1;
+
 	cli->conn.outgoing = tevent_queue_create(cli, "cli_outgoing");
 	if (cli->conn.outgoing == NULL) {
 		goto error;
@@ -339,7 +341,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	cli->smb1.mid = 1;
 	cli->smb1.pid = (uint16_t)sys_getpid();
 	cli->smb1.vc_num = cli->smb1.pid;
 	cli->smb1.tid = UINT16_MAX;
