@@ -2616,6 +2616,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	uint32_t max_xmit;
 	uint32_t server_max_mux = 0;
 	uint16_t server_security_mode = 0;
+	bool server_readbraw = false;
+	bool server_writebraw = false;
 	enum protocol_types protocol;
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
@@ -2669,8 +2671,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		cli->secblob = data_blob(bytes, num_bytes);
 		server_capabilities = IVAL(vwv + 9, 1);
 		if (server_capabilities & CAP_RAW_MODE) {
-			cli->readbraw_supported = True;
-			cli->writebraw_supported = True;      
+			server_readbraw = true;
+			server_writebraw = true;
 		}
 		/* work out if they sent us a workgroup */
 		if (!(server_capabilities & CAP_EXTENDED_SECURITY) &&
@@ -2728,8 +2730,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		/* this time is converted to GMT by make_unix_date */
 		cli->servertime = make_unix_date(
 			(char *)(vwv + 8), cli->serverzone);
-		cli->readbraw_supported = ((SVAL(vwv + 5, 0) & 0x1) != 0);
-		cli->writebraw_supported = ((SVAL(vwv + 5, 0) & 0x2) != 0);
+		server_readbraw = ((SVAL(vwv + 5, 0) & 0x1) != 0);
+		server_writebraw = ((SVAL(vwv + 5, 0) & 0x2) != 0);
 		cli->secblob = data_blob(bytes, num_bytes);
 	} else {
 		/* the old core protocol */
@@ -2774,6 +2776,9 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	cli->conn.smb1.server.max_mux = server_max_mux;
 
 	cli->conn.smb1.server.security_mode = server_security_mode;
+
+	cli->conn.smb1.server.readbraw = server_readbraw;
+	cli->conn.smb1.server.writebraw = server_writebraw;
 
 	tevent_req_done(req);
 }

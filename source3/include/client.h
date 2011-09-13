@@ -66,8 +66,6 @@ struct cli_state {
 	uint32 sesskey;
 	int serverzone;
 	uint32 servertime;
-	int readbraw_supported;
-	int writebraw_supported;
 	int timeout; /* in milliseconds. */
 	int initialised;
 	int win95;
@@ -135,6 +133,8 @@ struct cli_state {
 				uint32_t max_xmit;
 				uint16_t max_mux;
 				uint16_t security_mode;
+				bool readbraw;
+				bool writebraw;
 			} server;
 
 			uint32_t capabilities;

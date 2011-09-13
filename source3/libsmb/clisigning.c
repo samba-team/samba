@@ -36,9 +36,6 @@ bool cli_simple_set_signing(struct cli_state *cli,
 		return false;
 	}
 
-	cli->readbraw_supported = false;
-	cli->writebraw_supported = false;
-
 	return true;
 }
 
