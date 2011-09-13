@@ -2617,6 +2617,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	uint32_t max_xmit;
 	uint32_t server_max_mux = 0;
 	uint16_t server_security_mode = 0;
+	uint32_t server_session_key = 0;
 	bool server_readbraw = false;
 	bool server_writebraw = false;
 	bool server_lockread = false;
@@ -2672,7 +2673,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		server_security_mode = CVAL(vwv + 1, 0);
 		server_max_mux = SVAL(vwv + 1, 1);
 		server_max_xmit = IVAL(vwv + 3, 1);
-		cli->sesskey = IVAL(vwv + 7, 1);
+		server_session_key = IVAL(vwv + 7, 1);
 		cli->serverzone = SVALS(vwv + 15, 1);
 		cli->serverzone *= 60;
 		/* this time arrives in real GMT */
@@ -2737,7 +2738,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		server_security_mode = SVAL(vwv + 1, 0);
 		server_max_xmit = SVAL(vwv + 2, 0);
 		server_max_mux = SVAL(vwv + 3, 0);
-		cli->sesskey = IVAL(vwv + 6, 0);
+		server_session_key = IVAL(vwv + 6, 0);
 		cli->serverzone = SVALS(vwv + 10, 0);
 		cli->serverzone *= 60;
 		/* this time is converted to GMT by make_unix_date */
@@ -2794,6 +2795,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	cli->conn.smb1.server.writebraw = server_writebraw;
 	cli->conn.smb1.server.lockread = server_lockread;
 	cli->conn.smb1.server.writeunlock = server_writeunlock;
+
+	cli->conn.smb1.server.session_key = server_session_key;
 
 	tevent_req_done(req);
 }

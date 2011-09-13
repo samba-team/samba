@@ -475,7 +475,7 @@ uint16_t cli_state_get_vc_num(struct cli_state *cli)
 
 uint32_t cli_state_server_session_key(struct cli_state *cli)
 {
-	return cli->sesskey;
+	return cli->conn.smb1.server.session_key;
 }
 
 /****************************************************************************
