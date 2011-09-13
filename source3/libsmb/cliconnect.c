@@ -33,6 +33,7 @@
 #include "async_smb.h"
 #include "libsmb/nmblib.h"
 #include "read_smb.h"
+#include "librpc/ndr/libndr.h"
 
 static const struct {
 	int prot;
@@ -2622,7 +2623,13 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	bool server_writebraw = false;
 	bool server_lockread = false;
 	bool server_writeunlock = false;
+	struct GUID server_guid = GUID_zero();
+	DATA_BLOB server_gss_blob = data_blob_null;
+	uint8_t server_challenge[8];
+	char *server_workgroup = NULL;
 	enum protocol_types protocol;
+
+	ZERO_STRUCT(server_challenge);
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
 			      &num_bytes, &bytes);
@@ -2663,6 +2670,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		bool server_allowed;
 		const char *server_signing = NULL;
 		bool ok;
+		uint16_t key_len;
 
 		if (wct != 0x11) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
@@ -2680,6 +2688,9 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		ts = interpret_long_date(((char *)(vwv+11))+1);
 		cli->servertime = ts.tv_sec;
 		server_capabilities = IVAL(vwv + 9, 1);
+
+		key_len = CVAL(vwv + 16, 1);
+
 		if (server_capabilities & CAP_RAW_MODE) {
 			server_readbraw = true;
 			server_writebraw = true;
@@ -2687,22 +2698,53 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		if (server_capabilities & CAP_LOCK_AND_READ) {
 			server_lockread = true;
 		}
+
 		if (server_capabilities & CAP_EXTENDED_SECURITY) {
+			DATA_BLOB blob1, blob2;
+
 			if (num_bytes < 16) {
-				tevent_req_nterror(req,
-					NT_STATUS_INVALID_NETWORK_RESPONSE);
+				tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 				return;
 			}
-			cli->secblob = data_blob(bytes+16, num_bytes-16);
+
+			blob1 = data_blob_const(bytes, 16);
+			GUID_from_data_blob(&blob1, &server_guid);
+
+			blob1 = data_blob_const(bytes+16, num_bytes-16);
+			blob2 = data_blob_dup_talloc(state, &blob1);
+			if (blob1.length > 0 &&
+			    tevent_req_nomem(blob2.data, req)) {
+				return;
+			}
+			server_gss_blob = blob2;
 		} else {
-			cli->secblob = data_blob(bytes, MIN(num_bytes, 8));
-			/* work out if they sent us a workgroup */
-			if (num_bytes > 8) {
-				ssize_t ret;
-				status = smb_bytes_talloc_string(
-					cli, (char *)inbuf, &cli->server_domain,
-					bytes + 8, num_bytes - 8, &ret);
-				if (tevent_req_nterror(req, status)) {
+			DATA_BLOB blob1;
+			ssize_t ret;
+
+			if (num_bytes < key_len) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+				return;
+			}
+
+			if (key_len != 0 && key_len != 8) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+				return;
+			}
+
+			if (key_len == 8) {
+				memcpy(server_challenge, bytes, 8);
+			}
+
+			blob1 = data_blob_const(bytes+key_len, num_bytes-key_len);
+			if (blob1.length > 0) {
+				ret = pull_string_talloc(state,
+							 (char *)inbuf,
+							 SVAL(inbuf, smb_flg2),
+							 &server_workgroup,
+							 blob1.data, blob1.length,
+							 STR_TERMINATE);
+				if (ret == -1) {
+					tevent_req_oom(req);
 					return;
 				}
 			}
@@ -2754,7 +2796,15 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			(char *)(vwv + 8), cli->serverzone);
 		server_readbraw = ((SVAL(vwv + 5, 0) & 0x1) != 0);
 		server_writebraw = ((SVAL(vwv + 5, 0) & 0x2) != 0);
-		cli->secblob = data_blob(bytes, MIN(num_bytes, 8));
+
+		if (num_bytes != 0 && num_bytes != 8) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (num_bytes == 8) {
+			memcpy(server_challenge, bytes, 8);
+		}
 	} else {
 		/* the old core protocol */
 		cli->serverzone = get_time_zone(time(NULL));
@@ -2787,6 +2837,13 @@ static void cli_negprot_done(struct tevent_req *subreq)
 
 	max_xmit = MIN(client_max_xmit, server_max_xmit);
 
+	if (server_workgroup) {
+		cli->server_domain = talloc_strdup(cli, server_workgroup);
+		if (tevent_req_nomem(cli->server_domain, req)) {
+			return;
+		}
+	}
+
 	cli->conn.protocol = protocol;
 
 	cli->conn.smb1.server.capabilities = server_capabilities;
@@ -2805,6 +2862,12 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	cli->conn.smb1.server.writeunlock = server_writeunlock;
 
 	cli->conn.smb1.server.session_key = server_session_key;
+
+	talloc_steal(cli, server_gss_blob.data);
+	cli->conn.smb1.server.gss_blob = server_gss_blob;
+	cli->conn.smb1.server.guid = server_guid;
+	memcpy(cli->conn.smb1.server.challenge, server_challenge, 8);
+	cli->conn.smb1.server.workgroup = talloc_move(cli, &server_workgroup);
 
 	tevent_req_done(req);
 }

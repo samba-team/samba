@@ -62,7 +62,6 @@ struct cli_state {
 	char *share;
 	char *dev;
 
-	DATA_BLOB secblob; /* cryptkey or negTokenInit */
 	int serverzone;
 	uint32 servertime;
 	int timeout; /* in milliseconds. */
@@ -137,6 +136,10 @@ struct cli_state {
 				bool lockread;
 				bool writeunlock;
 				uint32_t session_key;
+				struct GUID guid;
+				DATA_BLOB gss_blob;
+				uint8_t challenge[8];
+				const char *workgroup;
 			} server;
 
 			uint32_t capabilities;
