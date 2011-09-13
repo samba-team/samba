@@ -1785,7 +1785,7 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)cli->secblob.length));
 
 	/* the server might not even do spnego */
-	if (cli->secblob.length <= 16) {
+	if (cli->secblob.length == 0) {
 		DEBUG(3,("server didn't supply a full spnego negprot\n"));
 		goto ntlmssp;
 	}
@@ -1794,8 +1794,7 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	file_save("negprot.dat", cli->secblob.data, cli->secblob.length);
 #endif
 
-	/* there is 16 bytes of GUID before the real spnego packet starts */
-	blob = data_blob(cli->secblob.data+16, cli->secblob.length-16);
+	blob = data_blob(cli->secblob.data, cli->secblob.length);
 
 	/* The server sent us the first part of the SPNEGO exchange in the
 	 * negprot reply. It is WRONG to depend on the principal sent in the
@@ -2688,7 +2687,12 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			server_lockread = true;
 		}
 		if (server_capabilities & CAP_EXTENDED_SECURITY) {
-			cli->secblob = data_blob(bytes, num_bytes);
+			if (num_bytes < 16) {
+				tevent_req_nterror(req,
+					NT_STATUS_INVALID_NETWORK_RESPONSE);
+				return;
+			}
+			cli->secblob = data_blob(bytes+16, num_bytes-16);
 		} else {
 			cli->secblob = data_blob(bytes, MIN(num_bytes, 8));
 			/* work out if they sent us a workgroup */
