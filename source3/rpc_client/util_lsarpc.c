@@ -222,6 +222,7 @@ static NTSTATUS trust_domain_info_buffer_2_ai_array(TALLOC_CTX *mem_ctx,
 							   b[i].data.size,
 							   &ai->array[i].AuthInfo.clear.password,
 							   &size)) {
+					status = NT_STATUS_INVALID_PARAMETER;
 					goto fail;
 				}
 				ai->array[i].AuthInfo.clear.size = size;
