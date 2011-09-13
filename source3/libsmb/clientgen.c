@@ -566,6 +566,22 @@ uint16_t cli_state_max_requests(struct cli_state *cli)
 	return cli->conn.smb1.server.max_mux;
 }
 
+const uint8_t *cli_state_server_challenge(struct cli_state *cli)
+{
+	static const uint8_t zero;
+
+	if (cli->secblob.length == 8)
+		return cli->secblob.data;
+	}
+
+	return zero;
+}
+
+const DATA_BLOB *cli_state_server_gss_blob(struct cli_state *cli)
+{
+	return &cli->secblob;
+}
+
 uint16_t cli_state_security_mode(struct cli_state *cli)
 {
 	return cli->conn.smb1.server.security_mode;
