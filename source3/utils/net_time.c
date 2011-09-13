@@ -47,8 +47,8 @@ static time_t cli_servertime(const char *host,
 		goto done;
 	}
 
-	ret = cli->servertime;
-	if (zone) *zone = cli->serverzone;
+	ret = cli_state_server_time(cli);
+	if (zone) *zone = cli_state_server_time_zone(cli);
 
 done:
 	if (cli) {
