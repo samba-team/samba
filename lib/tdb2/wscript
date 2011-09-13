@@ -61,7 +61,11 @@ def build(bld):
             # FIXME: hide_symbols=True, abi_directory='ABI', abi_match='tdb_*',  vnum=VERSION,
             bld.SAMBA_LIBRARY('tdb',
                               '''check.c free.c hash.c io.c lock.c open.c
-                                 summary.c tdb.c transaction.c traverse.c''',
+                                 summary.c tdb.c transaction.c traverse.c
+                                 tdb1_check.c tdb1_freelist.c tdb1_hash.c
+                                 tdb1_io.c tdb1_lock.c tdb1_open.c
+                                 tdb1_summary.c tdb1_tdb.c tdb1_transaction.c
+                                 tdb1_traverse.c''',
                               deps='replace ccan',
                               private_library=private_library)
 
