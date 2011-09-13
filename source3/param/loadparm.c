@@ -3900,6 +3900,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
+		.label		= "allow insecure wide links",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bAllowInsecureWidelinks),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "wide links",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
@@ -5390,6 +5399,7 @@ FN_GLOBAL_INTEGER(lp_ctdb_timeout, ctdb_timeout)
 FN_GLOBAL_INTEGER(lp_ctdb_locktime_warn_threshold, ctdb_locktime_warn_threshold)
 FN_GLOBAL_BOOL(lp_async_smb_echo_handler, bAsyncSMBEchoHandler)
 FN_GLOBAL_BOOL(lp_multicast_dns_register, bMulticastDnsRegister)
+FN_GLOBAL_BOOL(lp_allow_insecure_widelinks, bAllowInsecureWidelinks)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_winbind_reconnect_delay, winbind_reconnect_delay)
 FN_GLOBAL_INTEGER(lp_winbind_max_clients, winbind_max_clients)
@@ -9637,6 +9647,10 @@ static bool lp_widelinks_internal(int snum)
 
 void widelinks_warning(int snum)
 {
+	if (lp_allow_insecure_widelinks()) {
+		return;
+	}
+
 	if (lp_unix_extensions() && lp_widelinks_internal(snum)) {
 		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
 			"These parameters are incompatible. "
@@ -9649,7 +9663,13 @@ bool lp_widelinks(int snum)
 {
 	/* wide links is always incompatible with unix extensions */
 	if (lp_unix_extensions()) {
-		return false;
+		/*
+		 * Unless we have "allow insecure widelinks"
+		 * turned on.
+		 */
+		if (!lp_allow_insecure_widelinks()) {
+			return false;
+		}
 	}
 
 	return lp_widelinks_internal(snum);
