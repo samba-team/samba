@@ -522,7 +522,7 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 	}
 
 	if (db == NULL) {
-		DEBUG(0, ("regdb_normalize_keynames_fn: ERROR: "
+		DEBUG(0, ("regdb_upgrade_v2_to_v3_fn: ERROR: "
 			  "NULL db context handed in via private_data\n"));
 		return 1;
 	}
