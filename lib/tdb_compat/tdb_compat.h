@@ -62,8 +62,13 @@ static inline TDB_DATA tdb_nextkey_compat(struct tdb_context *tdb, TDB_DATA k)
 	return k;
 }
 
-/* tdb_traverse_read and tdb_traverse are equal: both only take read locks. */
-#define tdb_traverse_read tdb_traverse
+#define tdb_traverse_read(tdb, fn, p)					\
+	tdb_traverse_read_(tdb, typesafe_cb_preargs(int, void *, (fn), (p), \
+						    struct tdb_context *, \
+						    TDB_DATA, TDB_DATA), (p))
+int64_t tdb_traverse_read_(struct tdb_context *tdb,
+			   int (*fn)(struct tdb_context *,
+				     TDB_DATA, TDB_DATA, void *), void *p);
 
 /* Old-style tdb_errorstr */
 #define tdb_errorstr_compat(tdb) tdb_errorstr(tdb_error(tdb))

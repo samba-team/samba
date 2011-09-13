@@ -38,6 +38,26 @@ enum TDB_ERROR tdb_transaction_start_nonblock(struct tdb_context *tdb)
 	return ecode;
 }
 
+/* For TDB1 tdbs, read traverse vs normal matters: write traverse
+   locks the entire thing! */
+int64_t tdb_traverse_read_(struct tdb_context *tdb,
+			   int (*fn)(struct tdb_context *,
+						       TDB_DATA, TDB_DATA,
+						       void *),
+			   void *p)
+{
+	int64_t ret;
+
+	if (tdb_get_flags(tdb) & TDB_RDONLY) {
+		return tdb_traverse(tdb, fn, p);
+	}
+
+	tdb_add_flag(tdb, TDB_RDONLY);
+	ret = tdb_traverse(tdb, fn, p);
+	tdb_remove_flag(tdb, TDB_RDONLY);
+	return ret;
+}
+
 /*
  * This handles TDB_CLEAR_IF_FIRST.
  */
