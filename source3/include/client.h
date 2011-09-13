@@ -62,8 +62,6 @@ struct cli_state {
 	char *share;
 	char *dev;
 
-	int serverzone;
-	uint32 servertime;
 	int timeout; /* in milliseconds. */
 	int initialised;
 	int win95;
@@ -140,6 +138,8 @@ struct cli_state {
 				DATA_BLOB gss_blob;
 				uint8_t challenge[8];
 				const char *workgroup;
+				int time_zone;
+				time_t system_time;
 			} server;
 
 			uint32_t capabilities;

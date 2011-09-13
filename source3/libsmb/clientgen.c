@@ -582,12 +582,12 @@ uint16_t cli_state_security_mode(struct cli_state *cli)
 
 int cli_state_server_time_zone(struct cli_state *cli)
 {
-	return cli->serverzone;
+	return cli->conn.smb1.server.time_zone;
 }
 
 time_t cli_state_server_time(struct cli_state *cli)
 {
-	return cli->servertime;
+	return cli->conn.smb1.server.system_time;
 }
 
 struct cli_echo_state {

@@ -2627,6 +2627,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	DATA_BLOB server_gss_blob = data_blob_null;
 	uint8_t server_challenge[8];
 	char *server_workgroup = NULL;
+	int server_time_zone = 0;
+	time_t server_system_time = 0;
 	enum protocol_types protocol;
 
 	ZERO_STRUCT(server_challenge);
@@ -2682,11 +2684,11 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		server_max_mux = SVAL(vwv + 1, 1);
 		server_max_xmit = IVAL(vwv + 3, 1);
 		server_session_key = IVAL(vwv + 7, 1);
-		cli->serverzone = SVALS(vwv + 15, 1);
-		cli->serverzone *= 60;
+		server_time_zone = SVALS(vwv + 15, 1);
+		server_time_zone *= 60;
 		/* this time arrives in real GMT */
 		ts = interpret_long_date(((char *)(vwv+11))+1);
-		cli->servertime = ts.tv_sec;
+		server_system_time = ts.tv_sec;
 		server_capabilities = IVAL(vwv + 9, 1);
 
 		key_len = CVAL(vwv + 16, 1);
@@ -2789,11 +2791,11 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		server_max_xmit = SVAL(vwv + 2, 0);
 		server_max_mux = SVAL(vwv + 3, 0);
 		server_session_key = IVAL(vwv + 6, 0);
-		cli->serverzone = SVALS(vwv + 10, 0);
-		cli->serverzone *= 60;
+		server_time_zone = SVALS(vwv + 10, 0);
+		server_time_zone *= 60;
 		/* this time is converted to GMT by make_unix_date */
-		cli->servertime = make_unix_date(
-			(char *)(vwv + 8), cli->serverzone);
+		server_system_time = make_unix_date(
+			(char *)(vwv + 8), server_time_zone);
 		server_readbraw = ((SVAL(vwv + 5, 0) & 0x1) != 0);
 		server_writebraw = ((SVAL(vwv + 5, 0) & 0x2) != 0);
 
@@ -2807,7 +2809,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		}
 	} else {
 		/* the old core protocol */
-		cli->serverzone = get_time_zone(time(NULL));
+		server_time_zone = get_time_zone(time(NULL));
+		server_system_time = 0;
 		server_max_xmit = 1024;
 		server_max_mux = 1;
 		server_security_mode = 0;
@@ -2868,6 +2871,9 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	cli->conn.smb1.server.guid = server_guid;
 	memcpy(cli->conn.smb1.server.challenge, server_challenge, 8);
 	cli->conn.smb1.server.workgroup = talloc_move(cli, &server_workgroup);
+
+	cli->conn.smb1.server.time_zone = server_time_zone;
+	cli->conn.smb1.server.system_time = server_system_time;
 
 	tevent_req_done(req);
 }
