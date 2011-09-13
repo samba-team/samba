@@ -75,7 +75,6 @@ struct cli_state {
 	int initialised;
 	int win95;
 	bool is_guestlogin;
-	uint32 capabilities;
 	/* What the server offered. */
 	uint32_t server_posix_capabilities;
 	/* What the client requested. */
@@ -127,6 +126,18 @@ struct cli_state {
 					      uint8_t *inbuf);
 
 		enum protocol_types protocol;
+
+		struct {
+			struct {
+				uint32_t capabilities;
+			} client;
+
+			struct {
+				uint32_t capabilities;
+			} server;
+
+			uint32_t capabilities;
+		} smb1;
 	} conn;
 
 	struct {

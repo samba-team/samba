@@ -2607,8 +2607,10 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint16_t protnum;
 	uint8_t *inbuf;
+	uint32_t client_capabilities = cli->conn.smb1.client.capabilities;
 	uint32_t both_capabilities;
 	uint32_t server_capabilities = 0;
+	uint32_t capabilities;
 	enum protocol_types protocol;
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
@@ -2751,12 +2753,15 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	 * - flags used in both directions
 	 * - server only flags
 	 */
-	both_capabilities = cli->capabilities & server_capabilities;
-	cli->capabilities = cli->capabilities & SMB_CAP_CLIENT_MASK;
-	cli->capabilities |= both_capabilities & SMB_CAP_BOTH_MASK;
-	cli->capabilities |= server_capabilities & SMB_CAP_SERVER_MASK;
+	both_capabilities = client_capabilities & server_capabilities;
+	capabilities = client_capabilities & SMB_CAP_CLIENT_MASK;
+	capabilities |= both_capabilities & SMB_CAP_BOTH_MASK;
+	capabilities |= server_capabilities & SMB_CAP_SERVER_MASK;
 
 	cli->conn.protocol = protocol;
+
+	cli->conn.smb1.server.capabilities = server_capabilities;
+	cli->conn.smb1.capabilities = capabilities;
 
 	tevent_req_done(req);
 }

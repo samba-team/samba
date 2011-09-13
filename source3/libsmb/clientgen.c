@@ -278,29 +278,31 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	cli->capabilities = 0;
-	cli->capabilities |= CAP_LARGE_FILES;
-	cli->capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
-	cli->capabilities |= CAP_LOCK_AND_READ | CAP_NT_FIND;
-	cli->capabilities |= CAP_DFS | CAP_W2K_SMBS;
-	cli->capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX;
-	cli->capabilities |= CAP_LWIO;
+	cli->conn.smb1.client.capabilities = 0;
+	cli->conn.smb1.client.capabilities |= CAP_LARGE_FILES;
+	cli->conn.smb1.client.capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
+	cli->conn.smb1.client.capabilities |= CAP_LOCK_AND_READ | CAP_NT_FIND;
+	cli->conn.smb1.client.capabilities |= CAP_DFS | CAP_W2K_SMBS;
+	cli->conn.smb1.client.capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX;
+	cli->conn.smb1.client.capabilities |= CAP_LWIO;
 
 	if (!force_dos_errors) {
-		cli->capabilities |= CAP_STATUS32;
+		cli->conn.smb1.client.capabilities |= CAP_STATUS32;
 	}
 
 	if (!force_ascii) {
-		cli->capabilities |= CAP_UNICODE;
+		cli->conn.smb1.client.capabilities |= CAP_UNICODE;
 	}
 
 	if (use_spnego) {
-		cli->capabilities |= CAP_EXTENDED_SECURITY;
+		cli->conn.smb1.client.capabilities |= CAP_EXTENDED_SECURITY;
 	}
 
 	if (use_level_II_oplocks) {
-		cli->capabilities |= CAP_LEVEL_II_OPLOCKS;
+		cli->conn.smb1.client.capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
+
+	cli->conn.smb1.capabilities = cli->conn.smb1.client.capabilities;
 
 	cli->conn.outgoing = tevent_queue_create(cli, "cli_outgoing");
 	if (cli->conn.outgoing == NULL) {
@@ -540,7 +542,7 @@ enum protocol_types cli_state_protocol(struct cli_state *cli)
 
 uint32_t cli_state_capabilities(struct cli_state *cli)
 {
-	return cli->capabilities;
+	return cli->conn.smb1.capabilities;
 }
 
 uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
