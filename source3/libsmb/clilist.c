@@ -298,6 +298,7 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 	struct cli_list_old_state *state;
 	uint8_t *bytes;
 	static const uint16_t zero = 0;
+	uint32_t usable_space;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_list_old_state);
 	if (req == NULL) {
@@ -311,7 +312,8 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->mask, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->num_asked = (cli->max_xmit - 100) / DIR_STRUCT_SIZE;
+	usable_space = cli_state_available_size(cli, 100);
+	state->num_asked = usable_space / DIR_STRUCT_SIZE;
 
 	SSVAL(state->vwv + 0, 0, state->num_asked);
 	SSVAL(state->vwv + 1, 0, state->attribute);
