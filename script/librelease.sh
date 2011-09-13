@@ -1,8 +1,13 @@
 #!/bin/bash
 # make a release of a Samba library
 
-GPG_USER='Samba Library Distribution Key <samba-bugs@samba.org>'
-GPG_KEYID='13084025'
+[ -z "$GPG_USER" ] && {
+    GPG_USER='Samba Library Distribution Key <samba-bugs@samba.org>'
+}
+
+[ -z "$GPG_KEYID" ] && {
+    GPG_KEYID='13084025'
+}
 
 if [ ! -d ".git" ]; then
 	echo "Run this script from the top-level directory in the"
@@ -20,6 +25,7 @@ umask 0022
 release_lib() {
     lib="$1"
     srcdir="$2"
+    ftpdir="$3"
 
     pushd $srcdir
 
@@ -67,21 +73,21 @@ release_lib() {
     }
 
     echo "Transferring for FTP"
-    rsync -Pav $tarname.asc $tgzname master.samba.org:~ftp/pub/$lib/ || {
+    rsync -Pav $tarname.asc $tgzname master.samba.org:~ftp/pub/$ftpdir/ || {
 	exit 1
     }
-    rsync master.samba.org:~ftp/pub/$lib/$tarname.*
+    rsync master.samba.org:~ftp/pub/$ftpdir/$tarname.*
 
     popd
 }
 
 for lib in $*; do
     case $lib in
-	talloc | tdb | tevent)
-	    release_lib $lib "lib/$lib"
+	talloc | tdb | tevent | ldb)
+	    release_lib $lib "lib/$lib" $lib
 	    ;;
-	ldb)
-	    release_lib $lib "source4/lib/$lib"
+	samba4)
+	    release_lib $lib "." "samba/$lib"
 	    ;;
 	*)
 	    echo "Unknown library $lib"
