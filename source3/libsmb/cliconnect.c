@@ -2731,9 +2731,15 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		cli->sec_mode = 0;
 		cli->serverzone = get_time_zone(time(NULL));
 		cli->max_xmit = 1024;
+		cli->max_mux = 1;
 	}
 
 	if (cli->max_xmit < 1024) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (cli->max_mux < 1) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
