@@ -120,4 +120,50 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 	return tdb_open(name, tdb_flags|TDB_ALLOW_NESTING, open_flags, mode,
 			attr);
 }
+
+/* We only need these for the CLEAR_IF_FIRST lock. */
+static int reacquire_cif_lock(struct tdb_context *tdb, bool *fail)
+{
+	struct flock fl;
+	union tdb_attribute cif;
+
+	cif.openhook.base.attr = TDB_ATTRIBUTE_OPENHOOK;
+	cif.openhook.base.next = NULL;
+
+	if (tdb_get_attribute(tdb, &cif) != TDB_SUCCESS
+	    || cif.openhook.fn != clear_if_first) {
+		return 0;
+	}
+
+	/* We hold a lock offset 4 always, so we can tell if anyone else is. */
+	fl.l_type = F_RDLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 4; /* ACTIVE_LOCK */
+	fl.l_len = 1;
+	if (fcntl(tdb_fd(tdb), F_SETLKW, &fl) != 0) {
+		*fail = true;
+		return -1;
+	}
+	return 0;
+}
+
+int tdb_reopen(struct tdb_context *tdb)
+{
+	bool unused;
+	return reacquire_cif_lock(tdb, &unused);
+}
+
+int tdb_reopen_all(int parent_longlived)
+{
+	bool fail = false;
+
+	if (parent_longlived) {
+		return 0;
+	}
+
+	tdb_foreach(reacquire_cif_lock, &fail);
+	if (fail)
+		return -1;
+	return 0;
+}
 #endif

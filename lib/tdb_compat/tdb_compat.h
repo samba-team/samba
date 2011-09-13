@@ -76,9 +76,9 @@ int64_t tdb_traverse_read_(struct tdb_context *tdb,
 /* This typedef doesn't exist in TDB2. */
 typedef struct tdb_context TDB_CONTEXT;
 
-/* We don't need these any more. */
-#define tdb_reopen_all(flag) 0
-#define tdb_reopen(tdb) 0
+/* We only need these for the CLEAR_IF_FIRST lock. */
+int tdb_reopen(struct tdb_context *tdb);
+int tdb_reopen_all(int parent_longlived);
 
 /* These no longer exist in tdb2. */
 #define TDB_CLEAR_IF_FIRST 1048576
