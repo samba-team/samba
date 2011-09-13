@@ -81,7 +81,7 @@ static size_t cli_write_max_bufsize(struct cli_state *cli,
 		data_offset += wct * sizeof(uint16_t);
 		data_offset += 1; /* pad */
 
-		useable_space = cli->max_xmit - data_offset;
+		useable_space = cli_state_available_size(cli, data_offset);
 
 		return useable_space;
 	}
