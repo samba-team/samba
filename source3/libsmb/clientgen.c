@@ -501,6 +501,19 @@ uint32_t cli_state_capabilities(struct cli_state *cli)
 	return cli->capabilities;
 }
 
+uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
+{
+	uint32_t ret = cli->max_xmit;
+
+	if (ofs >= ret) {
+		return 0;
+	}
+
+	ret -= ofs;
+
+	return ret;
+}
+
 struct cli_echo_state {
 	uint16_t vwv[1];
 	DATA_BLOB data;
