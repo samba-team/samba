@@ -529,6 +529,11 @@ uint16_t cli_state_security_mode(struct cli_state *cli)
 	return cli->sec_mode;
 }
 
+int cli_state_server_time_zone(struct cli_state *cli)
+{
+	return cli->serverzone;
+}
+
 struct cli_echo_state {
 	uint16_t vwv[1];
 	DATA_BLOB data;
