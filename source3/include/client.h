@@ -160,7 +160,7 @@ struct cli_state {
 		uint16_t security_mode;
 		uint16_t dialect_revision;
 		struct GUID server_guid;
-		uint16_t server_capabilities;
+		uint32_t server_capabilities;
 		uint32_t max_transact_size;
 		uint32_t max_read_size;
 		uint32_t max_write_size;
