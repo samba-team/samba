@@ -45,6 +45,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	/* security = server just can't function with spnego */
 	int flags = CLI_FULL_CONNECTION_DONT_SPNEGO;
+	uint16_t sec_mode = 0;
 
         pserver = talloc_strdup(mem_ctx, lp_passwordserver());
 	p = pserver;
@@ -115,8 +116,9 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
+	sec_mode = cli_state_security_mode(cli);
 	if (cli_state_protocol(cli) < PROTOCOL_LANMAN2 ||
-	    !(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
+	    !(sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		TALLOC_FREE(mutex);
 		DEBUG(1,("%s isn't in user level security mode\n",desthost));
 		cli_shutdown(cli);
@@ -228,9 +230,11 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 	struct cli_state *cli = server_cryptkey(mem_ctx);
 
 	if (cli) {
+		uint16_t sec_mode = cli_state_security_mode(cli);
+
 		DEBUG(3,("using password server validation\n"));
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
+		if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 			/* We can't work with unencrypted password servers
 			   unless 'encrypt passwords = no' */
 			DEBUG(5,("make_auth_info_server: Server is unencrypted, no challenge available..\n"));
@@ -277,6 +281,7 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	static bool bad_password_server = False;
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	bool locally_made_cli = False;
+	uint16_t sec_mode = 0;
 
 	DEBUG(10, ("check_smbserver_security: Check auth for: [%s]\n",
 		user_info->mapped.account_name));
@@ -301,7 +306,8 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		return NT_STATUS_LOGON_FAILURE;
 	}  
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
+	sec_mode = cli_state_security_mode(cli);
+	if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (user_info->password_state != AUTH_PASSWORD_PLAIN) {
 			DEBUG(1,("password server %s is plaintext, but we are encrypted. This just can't work :-(\n", cli_state_remote_name(cli)));
 			return NT_STATUS_LOGON_FAILURE;		
