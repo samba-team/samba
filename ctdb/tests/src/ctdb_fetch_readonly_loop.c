@@ -27,7 +27,7 @@
 
 static struct ctdb_db_context *ctdb_db;
 
-char *TESTKEY = "testkey";
+const char *TESTKEY = "testkey";
 static int count;
 
 /*
@@ -53,7 +53,7 @@ static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev)
 	}
 
 	count++;
-	printf("%d   data:%.*s\n", (int)count, data.dsize, data.dptr);
+	printf("%d   data:%.*s\n", (int)count, (int)data.dsize, data.dptr);
 	talloc_free(tmp_ctx);
 }
 
@@ -99,7 +99,7 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(5, 0));
 
-	key.dptr  = TESTKEY;
+	key.dptr  = discard_const(TESTKEY);
 	key.dsize = strlen(TESTKEY);
 
 	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_zero(), CTDB_CURRENT_NODE, ctdb, &ctdb->vnn_map);
