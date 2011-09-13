@@ -2730,6 +2730,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		cli->use_spnego = False;
 		cli->sec_mode = 0;
 		cli->serverzone = get_time_zone(time(NULL));
+		cli->max_xmit = 1024;
 	}
 
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
