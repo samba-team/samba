@@ -963,7 +963,7 @@ static bool run_readwritemulti(int dummy)
 	return test;
 }
 
-static bool run_readwritelarge_internal(int max_xmit_k)
+static bool run_readwritelarge_internal(void)
 {
 	static struct cli_state *cli1;
 	uint16_t fnum1;
@@ -978,8 +978,6 @@ static bool run_readwritelarge_internal(int max_xmit_k)
 	}
 	cli_sockopt(cli1, sockops);
 	memset(buf,'\0',sizeof(buf));
-
-	cli1->max_xmit = max_xmit_k*1024;
 
 	if (signing_state == Required) {
 		/* Horrible cheat to force
@@ -1037,8 +1035,6 @@ static bool run_readwritelarge_internal(int max_xmit_k)
 		return False;
 	}
 
-	cli1->max_xmit = 4*1024;
-
 	cli_smbwrite(cli1, fnum1, buf, 0, sizeof(buf), NULL);
 
 	status = cli_qfileinfo_basic(cli1, fnum1, NULL, &fsize, NULL, NULL,
@@ -1086,14 +1082,14 @@ static bool run_readwritelarge_internal(int max_xmit_k)
 
 static bool run_readwritelarge(int dummy)
 {
-	return run_readwritelarge_internal(128);
+	return run_readwritelarge_internal();
 }
 
 static bool run_readwritelarge_signtest(int dummy)
 {
 	bool ret;
 	signing_state = Required;
-	ret = run_readwritelarge_internal(2);
+	ret = run_readwritelarge_internal();
 	signing_state = Undefined;
 	return ret;
 }
