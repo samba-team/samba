@@ -1774,15 +1774,21 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
-	DATA_BLOB blob;
+	DATA_BLOB *server_blob;
+	DATA_BLOB blob = data_blob_null;
 	const char *p = NULL;
 	char *account = NULL;
 	NTSTATUS status;
 
-	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)cli->secblob.length));
+	server_blob = cli_state_server_gss_blob(cli);
+	if (server_blob) {
+		blob = data_blob(server_blob->data, server_blob->length);
+	}
+
+	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)blob.length));
 
 	/* the server might not even do spnego */
-	if (cli->secblob.length == 0) {
+	if (blob.length == 0) {
 		DEBUG(3,("server didn't supply a full spnego negprot\n"));
 		goto ntlmssp;
 	}
@@ -1790,8 +1796,6 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 #if 0
 	file_save("negprot.dat", cli->secblob.data, cli->secblob.length);
 #endif
-
-	blob = data_blob(cli->secblob.data, cli->secblob.length);
 
 	/* The server sent us the first part of the SPNEGO exchange in the
 	 * negprot reply. It is WRONG to depend on the principal sent in the
