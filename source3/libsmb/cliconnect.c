@@ -2600,6 +2600,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	struct cli_negprot_state *state = tevent_req_data(
 		req, struct cli_negprot_state);
 	struct cli_state *cli = state->cli;
+	uint8_t flags;
 	uint8_t wct;
 	uint16_t *vwv;
 	uint32_t num_bytes;
@@ -2618,6 +2619,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	uint16_t server_security_mode = 0;
 	bool server_readbraw = false;
 	bool server_writebraw = false;
+	bool server_lockread = false;
+	bool server_writeunlock = false;
 	enum protocol_types protocol;
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
@@ -2627,6 +2630,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
+
+	flags = CVAL(inbuf, smb_flg);
 
 	protnum = SVAL(vwv, 0);
 
@@ -2643,6 +2648,11 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		DEBUG(0,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
+	}
+
+	if (flags & FLAG_SUPPORT_LOCKREAD) {
+		server_lockread = true;
+		server_writeunlock = true;
 	}
 
 	if (protocol >= PROTOCOL_NT1) {
@@ -2673,6 +2683,9 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		if (server_capabilities & CAP_RAW_MODE) {
 			server_readbraw = true;
 			server_writebraw = true;
+		}
+		if (server_capabilities & CAP_LOCK_AND_READ) {
+			server_lockread = true;
 		}
 		/* work out if they sent us a workgroup */
 		if (!(server_capabilities & CAP_EXTENDED_SECURITY) &&
@@ -2779,6 +2792,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 
 	cli->conn.smb1.server.readbraw = server_readbraw;
 	cli->conn.smb1.server.writebraw = server_writebraw;
+	cli->conn.smb1.server.lockread = server_lockread;
+	cli->conn.smb1.server.writeunlock = server_writeunlock;
 
 	tevent_req_done(req);
 }

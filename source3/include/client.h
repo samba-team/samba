@@ -135,6 +135,8 @@ struct cli_state {
 				uint16_t security_mode;
 				bool readbraw;
 				bool writebraw;
+				bool lockread;
+				bool writeunlock;
 			} server;
 
 			uint32_t capabilities;
