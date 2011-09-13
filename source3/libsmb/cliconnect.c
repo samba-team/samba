@@ -2733,6 +2733,11 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		cli->max_xmit = 1024;
 	}
 
+	if (cli->max_xmit < 1024) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
 	cli->max_xmit = MIN(cli->max_xmit, CLI_BUFFER_SIZE);
 
 	/* a way to force ascii SMB */
