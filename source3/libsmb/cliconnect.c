@@ -122,6 +122,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 	uint16_t *vwv;
 	uint8_t *bytes;
 	char *tmp;
+	uint16_t sec_mode = cli_state_security_mode(cli);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_lanman2_state);
@@ -145,12 +146,12 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 	/*
 	 * if in share level security then don't send a password now
 	 */
-	if (!(cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
+	if (!(sec_mode & NEGOTIATE_SECURITY_USER_LEVEL)) {
 		passlen = 0;
 	}
 
 	if (passlen > 0
-	    && (cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)
+	    && (sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)
 	    && passlen != 24) {
 		/*
 		 * Encrypted mode needed, and non encrypted password
@@ -169,7 +170,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return tevent_req_post(req, ev);
 		}
-	} else if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)
+	} else if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)
 		   && passlen == 24) {
 		/*
 		 * Encrypted mode needed, and encrypted password
@@ -1976,6 +1977,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 {
 	char *p;
 	char *user2;
+	uint16_t sec_mode = cli_state_security_mode(cli);
 
 	if (user) {
 		user2 = talloc_strdup(talloc_tos(), user);
@@ -2016,7 +2018,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
+		if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
 		    !lp_client_plaintext_auth() && (*pass)) {
 			DEBUG(1, ("Server requested LM password but 'client plaintext auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
@@ -2037,13 +2039,13 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
            password at this point. The password is sent in the tree
            connect */
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) 
+	if ((sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0)
 		return cli_session_setup_plain(cli, user, "", workgroup);
 
 	/* if the server doesn't support encryption then we have to use 
 	   plaintext. The second password is ignored */
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
+	if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (!lp_client_plaintext_auth() && (*pass)) {
 			DEBUG(1, ("Server requested LM password but 'client plaintext auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
@@ -2193,6 +2195,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	uint16_t *vwv;
 	char *tmp = NULL;
 	uint8_t *bytes;
+	uint16_t sec_mode = cli_state_security_mode(cli);
 
 	*psmbreq = NULL;
 
@@ -2209,7 +2212,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	}
 
 	/* in user level security don't send a password now */
-	if (cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
+	if (sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 		passlen = 1;
 		pass = "";
 	} else if (pass == NULL) {
@@ -2218,7 +2221,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		goto access_denied;
 	}
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) &&
+	if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) &&
 	    *pass && passlen != 24) {
 		if (!lp_client_lanman_auth()) {
 			DEBUG(1, ("Server requested LANMAN password "
@@ -2235,7 +2238,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		passlen = 24;
 		pass = (const char *)p24;
 	} else {
-		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL
+		if((sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL
 				     |NEGOTIATE_SECURITY_CHALLENGE_RESPONSE))
 		   == 0) {
 			uint8_t *tmp_pass;
