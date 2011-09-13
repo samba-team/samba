@@ -506,7 +506,6 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		}
 		while (ctdb_db->revokechild_active != NULL) {
 			talloc_free(ctdb_db->revokechild_active);
-			ctdb_db->revokechild_active = NULL;
 		}
 	}
 
