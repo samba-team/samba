@@ -1174,6 +1174,12 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
       </para>
     </refsect2>
 
+    <refsect2><title>cattdb &lt;dbname&gt;</title>
+      <para>
+        This command will dump the content of the local TDB database to the screen. This is a debugging command.
+      </para>
+    </refsect2>
+
     <refsect2><title>dumpdbbackup &lt;backup-file&gt;</title>
       <para>
 	This command will dump the content of database backup to the screen
