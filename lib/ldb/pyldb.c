@@ -1245,7 +1245,6 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwar
 	PyObject *py_dn1, *py_dn2;
 	struct ldb_dn *dn1, *dn2;
 	int ret;
-	struct ldb_context *ldb;
 	TALLOC_CTX *mem_ctx;
 	PyObject *py_controls = Py_None;
 	struct ldb_control **parsed_controls;
@@ -1266,7 +1265,6 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwar
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ldb = pyldb_Ldb_AsLdbContext(self);
 
 	if (py_controls == Py_None) {
 		parsed_controls = NULL;
@@ -1277,12 +1275,12 @@ static PyObject *py_ldb_rename(PyLdbObject *self, PyObject *args, PyObject *kwar
 	}
 
 
-	if (!pyldb_Object_AsDn(mem_ctx, py_dn1, ldb, &dn1)) {
+	if (!pyldb_Object_AsDn(mem_ctx, py_dn1, ldb_ctx, &dn1)) {
 		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	if (!pyldb_Object_AsDn(mem_ctx, py_dn2, ldb, &dn2)) {
+	if (!pyldb_Object_AsDn(mem_ctx, py_dn2, ldb_ctx, &dn2)) {
 		talloc_free(mem_ctx);
 		return NULL;
 	}
