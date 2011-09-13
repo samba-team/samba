@@ -2690,7 +2690,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		if (server_capabilities & CAP_EXTENDED_SECURITY) {
 			cli->secblob = data_blob(bytes, num_bytes);
 		} else {
-			cli->secblob = data_blob(bytes, num_bytes);
+			cli->secblob = data_blob(bytes, MIN(num_bytes, 8));
 			/* work out if they sent us a workgroup */
 			if (num_bytes > 8) {
 				ssize_t ret;
@@ -2749,7 +2749,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			(char *)(vwv + 8), cli->serverzone);
 		server_readbraw = ((SVAL(vwv + 5, 0) & 0x1) != 0);
 		server_writebraw = ((SVAL(vwv + 5, 0) & 0x2) != 0);
-		cli->secblob = data_blob(bytes, num_bytes);
+		cli->secblob = data_blob(bytes, MIN(num_bytes, 8));
 	} else {
 		/* the old core protocol */
 		cli->serverzone = get_time_zone(time(NULL));
