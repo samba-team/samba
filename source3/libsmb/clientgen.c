@@ -195,7 +195,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	}
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
-	cli->max_xmit = CLI_BUFFER_SIZE+4;
 	cli->case_sensitive = false;
 
 	/* Set the CLI_FORCE_DOSERR environment variable to test
@@ -302,7 +301,10 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		cli->conn.smb1.client.capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
 
+	cli->conn.smb1.client.max_xmit = CLI_BUFFER_SIZE;
+
 	cli->conn.smb1.capabilities = cli->conn.smb1.client.capabilities;
+	cli->conn.smb1.max_xmit = 1024;
 
 	cli->conn.smb1.mid = 1;
 
@@ -548,7 +550,7 @@ uint32_t cli_state_capabilities(struct cli_state *cli)
 
 uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
 {
-	uint32_t ret = cli->max_xmit;
+	uint32_t ret = cli->conn.smb1.max_xmit;
 
 	if (ofs >= ret) {
 		return 0;

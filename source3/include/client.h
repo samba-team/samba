@@ -70,7 +70,6 @@ struct cli_state {
 	int readbraw_supported;
 	int writebraw_supported;
 	int timeout; /* in milliseconds. */
-	size_t max_xmit;
 	size_t max_mux;
 	int initialised;
 	int win95;
@@ -130,13 +129,16 @@ struct cli_state {
 		struct {
 			struct {
 				uint32_t capabilities;
+				uint32_t max_xmit;
 			} client;
 
 			struct {
 				uint32_t capabilities;
+				uint32_t max_xmit;
 			} server;
 
 			uint32_t capabilities;
+			uint32_t max_xmit;
 
 			uint16_t mid;
 		} smb1;
