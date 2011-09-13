@@ -348,6 +348,9 @@ struct tdb_context {
 		       void *data);
 	void *log_data;
 
+	/* Last error we returned. */
+	enum TDB_ERROR last_error;
+
 	/* Open flags passed to tdb_open. */
 	int open_flags;
 
@@ -386,9 +389,6 @@ struct tdb_context {
 
 	/* Direct access information */
 	struct tdb_access_hdr *access;
-
-	/* Last error we returned. */
-	enum TDB_ERROR last_error;
 
 	/* The actual file information */
 	struct tdb_file *file;
