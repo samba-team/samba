@@ -101,7 +101,7 @@ int cli_print_queue(struct cli_state *cli,
 					fix_char_ptr(SVAL(p,4), converter,
 						     rdata, rdrcnt));
 				job.t = make_unix_date3(
-					p + 12, cli->serverzone);
+					p + 12, cli_state_server_time_zone(cli));
 				job.size = IVAL(p,16);
 				fstrcpy(job.name,fix_char_ptr(SVAL(p,24),
 							      converter,
