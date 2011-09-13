@@ -2538,6 +2538,7 @@ fail:
 
 struct cli_negprot_state {
 	struct cli_state *cli;
+	enum protocol_types max_protocol;
 };
 
 static void cli_negprot_done(struct tevent_req *subreq);
@@ -2550,17 +2551,19 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 	struct cli_negprot_state *state;
 	uint8_t *bytes = NULL;
 	int numprots;
+	enum protocol_types tmp_protocol;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_negprot_state);
 	if (req == NULL) {
 		return NULL;
 	}
 	state->cli = cli;
+	state->max_protocol = cli->protocol;
 
 	/* setup the protocol strings */
 	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
 		uint8_t c = 2;
-		if (prots[numprots].prot > cli_state_protocol(cli)) {
+		if (prots[numprots].prot > state->max_protocol) {
 			break;
 		}
 		bytes = (uint8_t *)talloc_append_blob(
@@ -2577,9 +2580,11 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	tmp_protocol = cli->protocol;
+	cli->protocol = state->max_protocol;
 	subreq = cli_smb_send(state, ev, cli, SMBnegprot, 0, 0, NULL,
 			      talloc_get_size(bytes), bytes);
-
+	cli->protocol = tmp_protocol;
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2603,6 +2608,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	uint8_t *inbuf;
 	uint32_t both_capabilities;
 	uint32_t server_capabilities = 0;
+	enum protocol_types protocol;
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
 			      &num_bytes, &bytes);
@@ -2615,21 +2621,21 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	protnum = SVAL(vwv, 0);
 
 	if ((protnum >= ARRAY_SIZE(prots))
-	    || (prots[protnum].prot > cli_state_protocol(cli))) {
+	    || (prots[protnum].prot > state->max_protocol)) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
-	cli->protocol = prots[protnum].prot;
+	protocol = prots[protnum].prot;
 
-	if ((cli_state_protocol(cli) < PROTOCOL_NT1) &&
+	if ((protocol < PROTOCOL_NT1) &&
 	    client_is_signing_mandatory(cli)) {
 		DEBUG(0,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 
-	if (cli_state_protocol(cli) >= PROTOCOL_NT1) {
+	if (protocol >= PROTOCOL_NT1) {
 		struct timespec ts;
 		const char *client_signing = NULL;
 		bool server_mandatory;
@@ -2699,7 +2705,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			return;
 		}
 
-	} else if (cli_state_protocol(cli) >= PROTOCOL_LANMAN1) {
+	} else if (protocol >= PROTOCOL_LANMAN1) {
 		if (wct != 0x0D) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
@@ -2748,6 +2754,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	cli->capabilities = cli->capabilities & SMB_CAP_CLIENT_MASK;
 	cli->capabilities |= both_capabilities & SMB_CAP_BOTH_MASK;
 	cli->capabilities |= server_capabilities & SMB_CAP_SERVER_MASK;
+
+	cli->protocol = protocol;
 
 	tevent_req_done(req);
 }
