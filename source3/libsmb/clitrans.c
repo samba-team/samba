@@ -184,6 +184,7 @@ static NTSTATUS cli_trans_pull_blob(TALLOC_CTX *mem_ctx,
 static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 			     int *piov_count)
 {
+	struct cli_state *cli = state->cli;
 	uint8_t wct = 0;
 	struct iovec *iov = state->iov;
 	uint8_t *pad = state->pad;
@@ -242,7 +243,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 	}
 
 	param_offset += wct * sizeof(uint16_t);
-	useable_space = state->cli->max_xmit - param_offset;
+	useable_space = cli_state_available_size(cli, param_offset);
 
 	param_pad = param_offset % 4;
 	if (param_pad > 0) {
@@ -252,7 +253,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		iov += 1;
 		param_offset += param_pad;
 	}
-	useable_space = state->cli->max_xmit - param_offset;
+	useable_space = cli_state_available_size(cli, param_offset);
 
 	if (state->param_sent < state->num_param) {
 		this_param = MIN(state->num_param - state->param_sent,
@@ -263,7 +264,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 	}
 
 	data_offset = param_offset + this_param;
-	useable_space = state->cli->max_xmit - data_offset;
+	useable_space = cli_state_available_size(cli, data_offset);
 
 	data_pad = data_offset % 4;
 	if (data_pad > 0) {
@@ -273,7 +274,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		iov += 1;
 		data_offset += data_pad;
 	}
-	useable_space = state->cli->max_xmit - data_offset;
+	useable_space = cli_state_available_size(cli, data_offset);
 
 	if (state->data_sent < state->num_data) {
 		this_data = MIN(state->num_data - state->data_sent,
