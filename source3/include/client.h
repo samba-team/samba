@@ -166,6 +166,7 @@ struct cli_state {
 		uint32_t max_write_size;
 		struct timespec system_time;
 		struct timespec server_start_time;
+		DATA_BLOB gss_blob;
 
 		/* SMB2 tcon */
 		uint8_t share_type;

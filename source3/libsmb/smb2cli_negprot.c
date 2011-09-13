@@ -123,7 +123,7 @@ static void smb2cli_negprot_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
-	cli->secblob = data_blob(iov[1].iov_base, security_length);
+	cli->smb2.gss_blob = data_blob(iov[1].iov_base, security_length);
 
 	tevent_req_done(req);
 }
