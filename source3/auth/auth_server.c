@@ -231,6 +231,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 
 	if (cli) {
 		uint16_t sec_mode = cli_state_security_mode(cli);
+		const uint8_t *server_challenge = cli_state_server_challenge(cli);
 
 		DEBUG(3,("using password server validation\n"));
 
@@ -244,11 +245,6 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 			*my_private_data =
 				(void *)make_server_security_state(cli);
 			return data_blob_null;
-		} else if (cli->secblob.length < 8) {
-			/* We can't do much if we don't get a full challenge */
-			DEBUG(2,("make_auth_info_server: Didn't receive a full challenge from server\n"));
-			cli_shutdown(cli);
-			return data_blob_null;
 		}
 
 		if (!(*my_private_data = (void *)make_server_security_state(cli))) {
@@ -257,7 +253,7 @@ static DATA_BLOB auth_get_challenge_server(const struct auth_context *auth_conte
 
 		/* The return must be allocated on the caller's mem_ctx, as our own will be
 		   destoyed just after the call. */
-		return data_blob_talloc(discard_const_p(TALLOC_CTX, auth_context), cli->secblob.data,8);
+		return data_blob_talloc(discard_const_p(TALLOC_CTX, auth_context), server_challenge ,8);
 	} else {
 		return data_blob_null;
 	}
@@ -313,7 +309,9 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 			return NT_STATUS_LOGON_FAILURE;		
 		}
 	} else {
-		if (memcmp(cli->secblob.data, auth_context->challenge.data, 8) != 0) {
+		const uint8_t *server_challenge = cli_state_server_challenge(cli);
+
+		if (memcmp(server_challenge, auth_context->challenge.data, 8) != 0) {
 			DEBUG(1,("the challenge that the password server (%s) supplied us is not the one we gave our client. This just can't work :-(\n", cli_state_remote_name(cli)));
 			return NT_STATUS_LOGON_FAILURE;		
 		}
