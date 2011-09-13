@@ -74,10 +74,12 @@ static PyObject *PyString_FromTDB_DATA(TDB_DATA data)
 
 static void stderr_log(struct tdb_context *tdb,
 		       enum tdb_log_level level,
+		       enum TDB_ERROR ecode,
 		       const char *message,
 		       void *data)
 {
-	fprintf(stderr, "%s:%s\n", tdb_name(tdb), message);
+	fprintf(stderr, "%s:%s:%s\n",
+		tdb_name(tdb), tdb_errorstr(ecode), message);
 }
 
 static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwargs)

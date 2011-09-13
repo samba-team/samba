@@ -28,6 +28,7 @@
 #if BUILD_TDB2
 static void ltdb_log_fn(struct tdb_context *tdb,
 			enum tdb_log_level level,
+			enum TDB_ERROR ecode,
 			const char *message,
 			struct ldb_context *ldb)
 {
@@ -45,7 +46,8 @@ static void ltdb_log_fn(struct tdb_context *tdb,
 		ldb_level = LDB_DEBUG_FATAL;
 	}
 
-	ldb_debug(ldb, ldb_level, "ltdb: tdb(%s): %s", name, message);
+	ldb_debug(ldb, ldb_level, "ltdb: tdb(%s): %s: %s", name,
+		  tdb_errorstr(ecode), message);
 }
 #else /* !TDB2 */
 static void ltdb_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);

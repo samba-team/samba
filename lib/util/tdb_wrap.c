@@ -27,6 +27,7 @@
 #if BUILD_TDB2
 static void tdb_wrap_log(struct tdb_context *tdb,
 			 enum tdb_log_level level,
+			 enum TDB_ERROR ecode,
 			 const char *message,
 			 void *unused)
 {
@@ -45,7 +46,8 @@ static void tdb_wrap_log(struct tdb_context *tdb,
 		dl = 0;
 	}
 
-	DEBUG(dl, ("tdb(%s): %s", name ? name : "unnamed", message));
+	DEBUG(dl, ("tdb(%s):%s: %s", name ? name : "unnamed",
+		   tdb_errorstr(ecode), message));
 }
 #else
 /*

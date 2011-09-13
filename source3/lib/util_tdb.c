@@ -472,10 +472,11 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 
 #ifdef BUILD_TDB2
 static void tdb_log(TDB_CONTEXT *tdb, enum tdb_log_level level,
-		    const char *message, void *unused)
+		    enum TDB_ERROR ecode, const char *message, void *unused)
 {
-	DEBUG((int)level, ("tdb(%s): %s",
-			   tdb_name(tdb) ? tdb_name(tdb) : "unnamed", message));
+	DEBUG((int)level, ("tdb(%s):%s: %s",
+			   tdb_name(tdb) ? tdb_name(tdb) : "unnamed",
+			   tdb_errorstr(ecode), message));
 }
 #else
 static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *format, ...)

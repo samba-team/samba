@@ -69,6 +69,7 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 		 int tdb_flags, int open_flags, mode_t mode,
 		 void (*log_fn)(struct tdb_context *,
 				enum tdb_log_level,
+				enum TDB_ERROR,
 				const char *message,
 				void *data),
 		 void *log_data)
