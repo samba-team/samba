@@ -788,6 +788,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	char *ipc_domain = NULL;
 	char *ipc_password = NULL;
 	int flags = 0;
+	uint16_t sec_mode = 0;
 
 	struct named_mutex *mutex;
 
@@ -910,7 +911,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
-	if ((((*cli)->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) != 0) &&
+	sec_mode = cli_state_security_mode(*cli);
+	if (((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) != 0) &&
 	    (strlen(ipc_username) > 0)) {
 
 		/* Only try authenticated if we have a username */
