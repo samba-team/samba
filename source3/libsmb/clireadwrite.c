@@ -1083,6 +1083,7 @@ struct cli_push_state {
 	 * Outstanding requests
 	 */
 	uint32_t pending;
+	uint16_t max_reqs;
 	uint32_t num_reqs;
 	struct cli_push_write_state **reqs;
 };
@@ -1166,14 +1167,16 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	state->chunk_size = cli_write_max_bufsize(cli, mode, 14);
 
+	state->max_reqs = cli_state_max_requests(cli);
+
 	if (window_size == 0) {
-		window_size = cli->max_mux * state->chunk_size;
+		window_size = state->max_reqs * state->chunk_size;
 	}
 	state->num_reqs = window_size/state->chunk_size;
 	if ((window_size % state->chunk_size) > 0) {
 		state->num_reqs += 1;
 	}
-	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
+	state->num_reqs = MIN(state->num_reqs, state->max_reqs);
 	state->num_reqs = MAX(state->num_reqs, 1);
 
 	state->reqs = talloc_zero_array(state, struct cli_push_write_state *,
