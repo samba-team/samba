@@ -2581,11 +2581,11 @@ struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	tmp_protocol = cli->protocol;
-	cli->protocol = state->max_protocol;
+	tmp_protocol = cli->conn.protocol;
+	cli->conn.protocol = state->max_protocol;
 	subreq = cli_smb_send(state, ev, cli, SMBnegprot, 0, 0, NULL,
 			      talloc_get_size(bytes), bytes);
-	cli->protocol = tmp_protocol;
+	cli->conn.protocol = tmp_protocol;
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2756,7 +2756,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	cli->capabilities |= both_capabilities & SMB_CAP_BOTH_MASK;
 	cli->capabilities |= server_capabilities & SMB_CAP_SERVER_MASK;
 
-	cli->protocol = protocol;
+	cli->conn.protocol = protocol;
 
 	tevent_req_done(req);
 }

@@ -535,7 +535,7 @@ bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 
 enum protocol_types cli_state_protocol(struct cli_state *cli)
 {
-	return cli->protocol;
+	return cli->conn.protocol;
 }
 
 uint32_t cli_state_capabilities(struct cli_state *cli)
