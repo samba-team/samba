@@ -54,8 +54,8 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008_R2,
     )
 
-def get_testparm_var(testparm, varname):
-    cmd = "%s -s -l --parameter-name='%s' 2>/dev/null" % (testparm, varname)
+def get_testparm_var(testparm, smbconf, varname):
+    cmd = "%s -s -l --parameter-name='%s' %s 2>/dev/null" % (testparm, varname, smbconf)
     output = os.popen(cmd, 'r').readline()
     return output.strip()
 
@@ -532,7 +532,7 @@ class cmd_domain_passwordsettings(Command):
 class cmd_domain_samba3upgrade(Command):
     """Upgrade from Samba3 database to Samba4 AD database"""
 
-    synopsis = "%prog domain samba3upgrade [options] <samba3_smb_conf> <targetdir>"
+    synopsis = "%prog domain samba3upgrade [options] <samba3_smb_conf>"
 
     long_description = """Specify either samba3 database directory (with --libdir) or
 samba3 testparm utility (with --testparm)."""
@@ -547,12 +547,14 @@ samba3 testparm utility (with --testparm)."""
                   help="Path to samba3 database directory"),
         Option("--testparm", type="string", metavar="PATH",
                   help="Path to samba3 testparm utility"),
+        Option("--targetdir", type="string", metavar="DIR",
+                  help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
         Option("--quiet", help="Be quiet"),
         Option("--use-xattrs", type="choice", choices=["yes","no","auto"], metavar="[yes|no|auto]",
                    help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
     ]
 
-    takes_args = ["smbconf", "targetdir"]
+    takes_args = ["smbconf"]
 
     def run(self, smbconf=None, targetdir=None, libdir=None, testparm=None, 
             quiet=None, use_xattrs=None, sambaopts=None, versionopts=None):
@@ -560,9 +562,6 @@ samba3 testparm utility (with --testparm)."""
         if not os.path.exists(smbconf):
             raise CommandError("File %s does not exist" % smbconf)
         
-        if not os.path.isdir(targetdir):
-            raise CommandError("Directory %s does not exist" % targetdir)
-
         if testparm and not os.path.exists(testparm):
             raise CommandError("Testparm utility %s does not exist" % testparm)
 
@@ -584,12 +583,11 @@ samba3 testparm utility (with --testparm)."""
             logger.setLevel(logging.INFO)
 
         lp = sambaopts.get_loadparm()
-        realm = lp.get("realm")
 
         s3conf = s3param.get_context()
 
-        if realm:
-            s3conf.set("realm", realm)
+        if sambaopts.realm:
+            s3conf.set("realm", sambaopts.realm)
 
         eadb = True
         if use_xattrs == "yes":
@@ -613,9 +611,9 @@ samba3 testparm utility (with --testparm)."""
             paths["private dir"] = libdir
             paths["lock directory"] = libdir
         else:
-            paths["state directory"] = get_testparm_var(testparm, "state directory")
-            paths["private dir"] = get_testparm_var(testparm, "private dir")
-            paths["lock directory"] = get_testparm_var(testparm, "lock directory")
+            paths["state directory"] = get_testparm_var(testparm, smbconf, "state directory")
+            paths["private dir"] = get_testparm_var(testparm, smbconf, "private dir")
+            paths["lock directory"] = get_testparm_var(testparm, smbconf, "lock directory")
     
         for p in paths:
             s3conf.set(p, paths[p])

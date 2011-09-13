@@ -53,6 +53,7 @@ class SambaOptions(optparse.OptionGroup):
                         callback=self._set_realm)
         self._configfile = None
         self._lp = LoadParm()
+        self.realm = None
 
     def get_loadparm_path(self):
         """Return path to the smb.conf file specified on the command line."""
@@ -66,6 +67,7 @@ class SambaOptions(optparse.OptionGroup):
 
     def _set_realm(self, option, opt_str, arg, parser):
         self._lp.set('realm', arg)
+        self.realm = arg
 
     def _set_option(self, option, opt_str, arg, parser):
         if arg.find('=') == -1:
