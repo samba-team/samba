@@ -79,6 +79,21 @@ See also the -H option to point dbcheck at a different database to the
 default, and the --fix and --yes options to make changes and to not
 prompt about those changes. 
 
+After upgrading Samba, it is suggested that you do the following:
+
+  - stop samba
+  - take a backup copy of your sam.ldb and sam.ldb.d/* database files
+  - run samba-tool dbcheck --cross-ncs --fix
+  - use 'all' to say yes to fixing each type of error found
+  - after it has finished, run dbcheck again to ensure it reports no
+    errors
+
+There will be a lot of errors fixed, particularly related to
+bad/missing GUID values. This is due to a bug in previous releases
+that left many objects with bad GUID values. These can all be fixed
+using dbcheck with steps above.
+
+
 New default paths
 -----------------
 
