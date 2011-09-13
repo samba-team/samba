@@ -194,7 +194,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
-	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000; /* Timeout is in milliseconds. */
 	cli->max_xmit = CLI_BUFFER_SIZE+4;
 	cli->case_sensitive = false;
