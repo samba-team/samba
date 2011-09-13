@@ -205,7 +205,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 	SSVAL(vwv+2, 0, CLI_BUFFER_SIZE);
 	SSVAL(vwv+3, 0, 2);
 	SSVAL(vwv+4, 0, 1);
-	SIVAL(vwv+5, 0, cli->sesskey);
+	SIVAL(vwv+5, 0, cli_state_server_session_key(cli));
 	SSVAL(vwv+7, 0, lm_response.length);
 
 	bytes = talloc_array(state, uint8_t, lm_response.length);
@@ -420,7 +420,7 @@ struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
 	SSVAL(vwv+2, 0, CLI_BUFFER_SIZE);
 	SSVAL(vwv+3, 0, 2);
 	SSVAL(vwv+4, 0, cli_state_get_vc_num(cli));
-	SIVAL(vwv+5, 0, cli->sesskey);
+	SIVAL(vwv+5, 0, cli_state_server_session_key(cli));
 	SSVAL(vwv+7, 0, 0);
 	SSVAL(vwv+8, 0, 0);
 	SSVAL(vwv+9, 0, 0);
@@ -639,7 +639,7 @@ static struct tevent_req *cli_session_setup_plain_send(
 	SSVAL(vwv+2, 0, CLI_BUFFER_SIZE);
 	SSVAL(vwv+3, 0, 2);
 	SSVAL(vwv+4, 0, cli_state_get_vc_num(cli));
-	SIVAL(vwv+5, 0, cli->sesskey);
+	SIVAL(vwv+5, 0, cli_state_server_session_key(cli));
 	SSVAL(vwv+7, 0, 0);
 	SSVAL(vwv+8, 0, 0);
 	SSVAL(vwv+9, 0, 0);
@@ -987,7 +987,7 @@ static struct tevent_req *cli_session_setup_nt1_send(
 	SSVAL(vwv+2, 0, CLI_BUFFER_SIZE);
 	SSVAL(vwv+3, 0, 2);
 	SSVAL(vwv+4, 0, cli_state_get_vc_num(cli));
-	SIVAL(vwv+5, 0, cli->sesskey);
+	SIVAL(vwv+5, 0, cli_state_server_session_key(cli));
 	SSVAL(vwv+7, 0, lm_response.length);
 	SSVAL(vwv+8, 0, nt_response.length);
 	SSVAL(vwv+9, 0, 0);
