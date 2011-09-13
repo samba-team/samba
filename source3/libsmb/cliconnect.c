@@ -2679,7 +2679,6 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		/* this time arrives in real GMT */
 		ts = interpret_long_date(((char *)(vwv+11))+1);
 		cli->servertime = ts.tv_sec;
-		cli->secblob = data_blob(bytes, num_bytes);
 		server_capabilities = IVAL(vwv + 9, 1);
 		if (server_capabilities & CAP_RAW_MODE) {
 			server_readbraw = true;
@@ -2688,15 +2687,19 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		if (server_capabilities & CAP_LOCK_AND_READ) {
 			server_lockread = true;
 		}
-		/* work out if they sent us a workgroup */
-		if (!(server_capabilities & CAP_EXTENDED_SECURITY) &&
-		    smb_buflen(inbuf) > 8) {
-			ssize_t ret;
-			status = smb_bytes_talloc_string(
-				cli, (char *)inbuf, &cli->server_domain,
-				bytes + 8, num_bytes - 8, &ret);
-			if (tevent_req_nterror(req, status)) {
-				return;
+		if (server_capabilities & CAP_EXTENDED_SECURITY) {
+			cli->secblob = data_blob(bytes, num_bytes);
+		} else {
+			cli->secblob = data_blob(bytes, num_bytes);
+			/* work out if they sent us a workgroup */
+			if (num_bytes > 8) {
+				ssize_t ret;
+				status = smb_bytes_talloc_string(
+					cli, (char *)inbuf, &cli->server_domain,
+					bytes + 8, num_bytes - 8, &ret);
+				if (tevent_req_nterror(req, status)) {
+					return;
+				}
 			}
 		}
 
