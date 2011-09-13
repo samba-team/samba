@@ -396,6 +396,7 @@ struct cli_pull_state {
 	/*
 	 * Outstanding requests
 	 */
+	uint16_t max_reqs;
 	int num_reqs;
 	struct cli_pull_subreq *reqs;
 
@@ -479,8 +480,10 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 
 	state->chunk_size = cli_read_max_bufsize(cli);
 
+	state->max_reqs = cli_state_max_requests(cli);
+
 	state->num_reqs = MAX(window_size/state->chunk_size, 1);
-	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
+	state->num_reqs = MIN(state->num_reqs, state->max_reqs);
 
 	state->reqs = talloc_zero_array(state, struct cli_pull_subreq,
 					state->num_reqs);
