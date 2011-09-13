@@ -79,6 +79,9 @@ def configure(conf):
         Logs.error("Failed endian determination.  The PDP-11 is back?")
         sys.exit(1)
 
+    conf.CHECK_CODE('return __builtin_choose_expr(1, 0, "garbage");',
+                    link=True,
+                    define='HAVE_BUILTIN_CHOOSE_EXPR')
     conf.CHECK_CODE('return __builtin_clz(1) == (sizeof(int)*8 - 1) ? 0 : 1;',
                     link=True,
                     define='HAVE_BUILTIN_CLZ')
