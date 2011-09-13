@@ -125,7 +125,7 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
   if the record does not exist, *header will be NULL
   and data = {0, NULL}
 */
-int ctdb_ltdb_fetch_readonly(struct ctdb_db_context *ctdb_db, 
+int ctdb_ltdb_fetch_with_header(struct ctdb_db_context *ctdb_db, 
 		    TDB_DATA key, struct ctdb_ltdb_header *header, 
 		    TALLOC_CTX *mem_ctx, TDB_DATA *data)
 {

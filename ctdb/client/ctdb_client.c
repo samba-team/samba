@@ -756,7 +756,7 @@ again:
 	talloc_set_destructor(h, fetch_lock_destructor);
 
 	/* Check if record exists yet in the TDB */
-	ret = ctdb_ltdb_fetch_readonly(ctdb_db, key, &h->header, h, data);
+	ret = ctdb_ltdb_fetch_with_header(ctdb_db, key, &h->header, h, data);
 	if (ret != 0) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		ret = ctdb_client_force_migration(ctdb_db, key);
@@ -829,7 +829,7 @@ again:
 			return NULL;
 		}
 
-		ret = ctdb_ltdb_fetch_readonly(ctdb_db, key, &h->header, h, data);
+		ret = ctdb_ltdb_fetch_with_header(ctdb_db, key, &h->header, h, data);
 		if (ret != 0) {
 			ctdb_ltdb_unlock(ctdb_db, key);
 
