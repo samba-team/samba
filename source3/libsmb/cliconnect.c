@@ -152,7 +152,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 			return tevent_req_post(req, ev);
 		}
 
-		if (!SMBencrypt(pass, cli->secblob.data,
+		if (!SMBencrypt(pass, cli_state_server_challenge(cli),
 				(uint8_t *)lm_response.data)) {
 			DEBUG(1, ("Password is > 14 chars in length, and is "
 				  "therefore incompatible with Lanman "
@@ -847,11 +847,9 @@ static struct tevent_req *cli_session_setup_nt1_send(
 			DATA_BLOB server_chal;
 			DATA_BLOB names_blob;
 
-			server_chal = data_blob(cli->secblob.data,
-						MIN(cli->secblob.length, 8));
-			if (tevent_req_nomem(server_chal.data, req)) {
-				return tevent_req_post(req, ev);
-			}
+			server_chal =
+				data_blob_const(cli_state_server_challenge(cli),
+						8);
 
 			/*
 			 * note that the 'workgroup' here is a best
@@ -871,13 +869,11 @@ static struct tevent_req *cli_session_setup_nt1_send(
 					      &lm_response, &nt_response,
 					      NULL, &session_key)) {
 				data_blob_free(&names_blob);
-				data_blob_free(&server_chal);
 				tevent_req_nterror(
 					req, NT_STATUS_ACCESS_DENIED);
 				return tevent_req_post(req, ev);
 			}
 			data_blob_free(&names_blob);
-			data_blob_free(&server_chal);
 
 		} else {
 			uchar nt_hash[16];
@@ -891,7 +887,7 @@ static struct tevent_req *cli_session_setup_nt1_send(
 				return tevent_req_post(req, ev);
 			}
 
-			SMBNTencrypt(pass, cli->secblob.data,
+			SMBNTencrypt(pass, cli_state_server_challenge(cli),
 				     nt_response.data);
 #endif
 			/* non encrypted password supplied. Ignore ntpass. */
@@ -902,7 +898,8 @@ static struct tevent_req *cli_session_setup_nt1_send(
 					return tevent_req_post(req, ev);
 				}
 
-				if (!SMBencrypt(pass,cli->secblob.data,
+				if (!SMBencrypt(pass,
+						cli_state_server_challenge(cli),
 						lm_response.data)) {
 					/*
 					 * Oops, the LM response is
@@ -2222,7 +2219,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		 * Non-encrypted passwords - convert to DOS codepage before
 		 * encryption.
 		 */
-		SMBencrypt(pass, cli->secblob.data, p24);
+		SMBencrypt(pass, cli_state_server_challenge(cli), p24);
 		passlen = 24;
 		pass = (const char *)p24;
 	} else {
