@@ -173,12 +173,15 @@ static PyObject *obj_unlockall_read(PyTdbObject *self)
 
 static PyObject *obj_close(PyTdbObject *self)
 {
-	enum TDB_ERROR ret;
+	int ret;
 	if (self->closed)
 		Py_RETURN_NONE;
 	ret = tdb_close(self->ctx);
 	self->closed = true;
-	PyErr_TDB_ERROR_IS_ERR_RAISE(ret);
+	if (ret != 0) {
+		PyErr_SetTDBError(TDB_ERR_IO);
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
@@ -265,17 +268,16 @@ static PyObject *obj_delete(PyTdbObject *self, PyObject *args)
 static PyObject *obj_has_key(PyTdbObject *self, PyObject *args)
 {
 	TDB_DATA key;
-	enum TDB_ERROR ret;
 	PyObject *py_key;
 	if (!PyArg_ParseTuple(args, "O", &py_key))
 		return NULL;
 
 	key = PyString_AsTDB_DATA(py_key);
-	ret = tdb_exists(self->ctx, key);
-	if (ret == TDB_ERR_NOEXIST)
-		return Py_False;
-	PyErr_TDB_ERROR_IS_ERR_RAISE(ret);
-	return Py_True;
+	if (tdb_exists(self->ctx, key))
+		return Py_True;
+	if (tdb_error(self->ctx) != TDB_ERR_NOEXIST)
+		PyErr_TDB_ERROR_IS_ERR_RAISE(tdb_error(self->ctx));
+	return Py_False;
 }
 
 static PyObject *obj_store(PyTdbObject *self, PyObject *args)
