@@ -563,7 +563,7 @@ uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
 
 uint16_t cli_state_max_requests(struct cli_state *cli)
 {
-	return cli->max_mux;
+	return cli->conn.smb1.server.max_mux;
 }
 
 uint16_t cli_state_security_mode(struct cli_state *cli)

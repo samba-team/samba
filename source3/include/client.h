@@ -70,7 +70,6 @@ struct cli_state {
 	int readbraw_supported;
 	int writebraw_supported;
 	int timeout; /* in milliseconds. */
-	size_t max_mux;
 	int initialised;
 	int win95;
 	bool is_guestlogin;
@@ -135,6 +134,7 @@ struct cli_state {
 			struct {
 				uint32_t capabilities;
 				uint32_t max_xmit;
+				uint16_t max_mux;
 			} server;
 
 			uint32_t capabilities;

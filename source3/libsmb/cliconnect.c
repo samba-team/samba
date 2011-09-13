@@ -2614,6 +2614,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	uint32_t client_max_xmit = cli->conn.smb1.client.max_xmit;
 	uint32_t server_max_xmit = 0;
 	uint32_t max_xmit;
+	uint32_t server_max_mux = 0;
 	enum protocol_types protocol;
 
 	status = cli_smb_recv(subreq, state, &inbuf, 1, &wct, &vwv,
@@ -2656,7 +2657,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 
 		/* NT protocol */
 		cli->sec_mode = CVAL(vwv + 1, 0);
-		cli->max_mux = SVAL(vwv + 1, 1);
+		server_max_mux = SVAL(vwv + 1, 1);
 		server_max_xmit = IVAL(vwv + 3, 1);
 		cli->sesskey = IVAL(vwv + 7, 1);
 		cli->serverzone = SVALS(vwv + 15, 1);
@@ -2719,7 +2720,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 
 		cli->sec_mode = SVAL(vwv + 1, 0);
 		server_max_xmit = SVAL(vwv + 2, 0);
-		cli->max_mux = SVAL(vwv + 3, 0);
+		server_max_mux = SVAL(vwv + 3, 0);
 		cli->sesskey = IVAL(vwv + 6, 0);
 		cli->serverzone = SVALS(vwv + 10, 0);
 		cli->serverzone *= 60;
@@ -2734,7 +2735,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		cli->sec_mode = 0;
 		cli->serverzone = get_time_zone(time(NULL));
 		server_max_xmit = 1024;
-		cli->max_mux = 1;
+		server_max_mux = 1;
 	}
 
 	if (server_max_xmit < 1024) {
@@ -2742,7 +2743,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (cli->max_mux < 1) {
+	if (server_max_mux < 1) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
@@ -2768,6 +2769,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 
 	cli->conn.smb1.server.max_xmit = server_max_xmit;
 	cli->conn.smb1.max_xmit = max_xmit;
+
+	cli->conn.smb1.server.max_mux = server_max_mux;
 
 	tevent_req_done(req);
 }
