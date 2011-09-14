@@ -274,7 +274,7 @@ void SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24])
 
 /* Does the des encryption. */
 
-void SMBNTencrypt_hash(const uint8_t nt_hash[16], uint8_t *c8, uint8_t *p24)
+void SMBNTencrypt_hash(const uint8_t nt_hash[16], const uint8_t *c8, uint8_t *p24)
 {
 	uint8_t p21[21];
 
@@ -292,7 +292,7 @@ void SMBNTencrypt_hash(const uint8_t nt_hash[16], uint8_t *c8, uint8_t *p24)
 
 /* Does the NT MD4 hash then des encryption. Plaintext version of the above. */
 
-void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24)
+void SMBNTencrypt(const char *passwd, const uint8_t *c8, uint8_t *p24)
 {
 	uint8_t nt_hash[16];
 	E_md4hash(passwd, nt_hash);

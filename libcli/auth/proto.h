@@ -112,8 +112,8 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 		  bool upper_case_domain, /* Transform the domain into UPPER case */
 		  uint8_t kr_buf[16]);
 void SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24]);
-void SMBNTencrypt_hash(const uint8_t nt_hash[16], uint8_t *c8, uint8_t *p24);
-void SMBNTencrypt(const char *passwd, uint8_t *c8, uint8_t *p24);
+void SMBNTencrypt_hash(const uint8_t nt_hash[16], const uint8_t *c8, uint8_t *p24);
+void SMBNTencrypt(const char *passwd, const uint8_t *c8, uint8_t *p24);
 void SMBOWFencrypt_ntv2(const uint8_t kr[16],
 			const DATA_BLOB *srv_chal,
 			const DATA_BLOB *smbcli_chal,
