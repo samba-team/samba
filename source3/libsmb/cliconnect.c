@@ -1997,6 +1997,19 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	}
 
 	if (cli->protocol < PROTOCOL_LANMAN1) {
+		/*
+		 * Ensure cli->server_domain,
+		 * cli->server_os and cli->server_type
+		 * are valid pointers.
+		 */
+		cli->server_domain = talloc_strdup(cli, "");
+		cli->server_os = talloc_strdup(cli, "");
+		cli->server_type = talloc_strdup(cli, "");
+		if (cli->server_domain == NULL ||
+				cli->server_os == NULL ||
+				cli->server_type == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		return NT_STATUS_OK;
 	}
 
