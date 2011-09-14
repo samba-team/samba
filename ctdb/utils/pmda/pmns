@@ -21,53 +21,53 @@
 
 ctdb {
 	num_clients		CTDB:0:0
-	frozen			CTDB:1:2
-	recovering		CTDB:3:3
-	client_packets_sent	CTDB:4:4
-	client_packets_recv	CTDB:5:5
-	node_packets_sent	CTDB:6:6
-	node_packets_recv	CTDB:7:7
-	keepalive_packets_sent	CTDB:8:8
-	keepalive_packets_recv	CTDB:9:9
+	frozen			CTDB:0:1
+	recovering		CTDB:0:2
+	client_packets_sent	CTDB:0:3
+	client_packets_recv	CTDB:0:4
+	node_packets_sent	CTDB:0:5
+	node_packets_recv	CTDB:0:6
+	keepalive_packets_sent	CTDB:0:7
+	keepalive_packets_recv	CTDB:0:8
 	node
 	client
 	timeouts
-	total_calls		CTDB:13:24
-	pending_calls		CTDB:14:25
-	lockwait_calls		CTDB:15:27
-	pending_lockwait_calls	CTDB:16:27
-	childwrite_calls	CTDB:17:28
-	pending_childwrite_calls CTDB:18:29
-	memory_used		CTDB:19:30
-	max_hop_count		CTDB:20:31
-	max_reclock_ctdbd	CTDB:21:32
-	max_reclock_recd	CTDB:22:33
-	max_call_latency	CTDB:23:34
-	max_lockwait_latency	CTDB:24:35
-	max_childwrite_latency	CTDB:25:36
-	num_recoveries		CTDB:26:37
+	total_calls		CTDB:0:9
+	pending_calls		CTDB:0:10
+	lockwait_calls		CTDB:0:11
+	pending_lockwait_calls	CTDB:0:12
+	childwrite_calls	CTDB:0:13
+	pending_childwrite_calls CTDB:0:14
+	memory_used		CTDB:0:15
+	max_hop_count		CTDB:0:16
+	max_reclock_ctdbd	CTDB:0:17
+	max_reclock_recd	CTDB:0:18
+	max_call_latency	CTDB:0:19
+	max_lockwait_latency	CTDB:0:20
+	max_childwrite_latency	CTDB:0:21
+	num_recoveries		CTDB:0:22
 }
 
 ctdb.node {
-	req_call	CTDB:10:10
-	reply_call	CTDB:10:11
-	req_dmaster	CTDB:10:12
-	reply_dmaster	CTDB:10:13
-	reply_error	CTDB:10:14
-	req_message	CTDB:10:15
-	req_control	CTDB:10:16
-	reply_control	CTDB:10:17
+	req_call	CTDB:1:0
+	reply_call	CTDB:1:1
+	req_dmaster	CTDB:1:2
+	reply_dmaster	CTDB:1:3
+	reply_error	CTDB:1:4
+	req_message	CTDB:1:5
+	req_control	CTDB:1:6
+	reply_control	CTDB:1:7
 }
 
 ctdb.client {
-	req_call	CTDB:11:18
-	req_message	CTDB:11:19
-	req_control	CTDB:11:20
+	req_call	CTDB:2:0
+	req_message	CTDB:2:1
+	req_control	CTDB:2:2
 }
 
 ctdb.timeouts {
-	call		CTDB:12:21
-	control		CTDB:12:22
-	traverse	CTDB:12:23
+	call		CTDB:3:0
+	control		CTDB:3:1
+	traverse	CTDB:3:2
 }
 
