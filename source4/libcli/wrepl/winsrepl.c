@@ -359,7 +359,7 @@ struct tevent_req *wrepl_request_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (wrepl_socket->stream == NULL) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_DISCONNECTED);
 		return tevent_req_post(req, ev);
 	}
 
@@ -408,7 +408,7 @@ static void wrepl_request_trigger(struct tevent_req *req,
 	struct tevent_req *subreq;
 
 	if (state->caller.wrepl_socket->stream == NULL) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_DISCONNECTED);
 		return;
 	}
 
@@ -450,7 +450,7 @@ static void wrepl_request_writev_done(struct tevent_req *subreq)
 	}
 
 	if (state->caller.wrepl_socket->stream == NULL) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_DISCONNECTED);
 		return;
 	}
 
