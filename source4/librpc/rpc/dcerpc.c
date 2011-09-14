@@ -221,7 +221,7 @@ static struct tevent_req *dcerpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 
 	ok = dcerpc_bh_is_connected(h);
 	if (!ok) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_DISCONNECTED);
 		return tevent_req_post(req, ev);
 	}
 
@@ -313,7 +313,7 @@ static struct tevent_req *dcerpc_bh_disconnect_send(TALLOC_CTX *mem_ctx,
 
 	ok = dcerpc_bh_is_connected(h);
 	if (!ok) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_CONNECTION);
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_DISCONNECTED);
 		return tevent_req_post(req, ev);
 	}
 
