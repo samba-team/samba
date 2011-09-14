@@ -1128,9 +1128,12 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 					size_t expected_body_size)
 {
+	const uint8_t *inhdr;
+	uint16_t opcode;
 	const uint8_t *inbody;
 	int i = req->current_idx;
 	size_t body_size;
+	size_t min_dyn_size = expected_body_size & 0x00000001;
 
 	/*
 	 * The following should be checked already.
@@ -1145,6 +1148,15 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+	opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
+
+	switch (opcode) {
+	case SMB2_OP_GETINFO:
+		min_dyn_size = 0;
+		break;
+	}
+
 	/*
 	 * Now check the expected body size,
 	 * where the last byte might be in the
@@ -1153,7 +1165,7 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	if (req->in.vector[i+2].iov_len < (expected_body_size & 0x00000001)) {
+	if (req->in.vector[i+2].iov_len < min_dyn_size) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
