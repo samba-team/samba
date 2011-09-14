@@ -186,7 +186,7 @@ static struct tevent_req *rpc_tstream_read_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	if (!rpc_tstream_is_connected(transp)) {
-		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_DISCONNECTED);
 		return tevent_req_post(req, ev);
 	}
 	state->transp = transp;
@@ -270,7 +270,7 @@ static struct tevent_req *rpc_tstream_write_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	if (!rpc_tstream_is_connected(transp)) {
-		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_DISCONNECTED);
 		return tevent_req_post(req, ev);
 	}
 	state->ev = ev;
@@ -366,7 +366,7 @@ static struct tevent_req *rpc_tstream_trans_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!rpc_tstream_is_connected(transp)) {
-		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_DISCONNECTED);
 		return tevent_req_post(req, ev);
 	}
 	state->ev = ev;
