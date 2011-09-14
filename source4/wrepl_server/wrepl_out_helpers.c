@@ -223,7 +223,7 @@ static NTSTATUS wreplsrv_out_connect_recv(struct composite_context *c, TALLOC_CT
 			*wreplconn = talloc_reference(mem_ctx, state->wreplconn);
 			if (!*wreplconn) status = NT_STATUS_NO_MEMORY;
 		} else {
-			status = NT_STATUS_INVALID_CONNECTION;
+			status = NT_STATUS_CONNECTION_DISCONNECTED;
 		}
 	}
 
