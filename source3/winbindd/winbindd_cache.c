@@ -3150,9 +3150,9 @@ bool initialize_winbindd_cache(void)
 		tdb_close(wcache->tdb);
 		wcache->tdb = NULL;
 
-		if (unlink(cache_path("winbindd_cache.tdb")) == -1) {
+		if (unlink(state_path("winbindd_cache.tdb")) == -1) {
 			DEBUG(0,("initialize_winbindd_cache: unlink %s failed %s ",
-				cache_path("winbindd_cache.tdb"),
+				state_path("winbindd_cache.tdb"),
 				strerror(errno) ));
 			return false;
 		}
@@ -3279,7 +3279,7 @@ void wcache_flush_cache(void)
 	}
 
 	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(cache_path("winbindd_cache.tdb"),
+	wcache->tdb = tdb_open_log(state_path("winbindd_cache.tdb"),
 				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE, 
 				TDB_INCOMPATIBLE_HASH |
 				(lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST)),
@@ -4093,7 +4093,7 @@ static void validate_panic(const char *const why)
 int winbindd_validate_cache(void)
 {
 	int ret = -1;
-	const char *tdb_path = cache_path("winbindd_cache.tdb");
+	const char *tdb_path = state_path("winbindd_cache.tdb");
 	TDB_CONTEXT *tdb = NULL;
 
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
@@ -4136,7 +4136,7 @@ done:
 int winbindd_validate_cache_nobackup(void)
 {
 	int ret = -1;
-	const char *tdb_path = cache_path("winbindd_cache.tdb");
+	const char *tdb_path = state_path("winbindd_cache.tdb");
 
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
 	smb_panic_fn = validate_panic;

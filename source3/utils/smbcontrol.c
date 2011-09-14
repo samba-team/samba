@@ -954,10 +954,10 @@ static bool do_winbind_online(struct messaging_context *msg_ctx,
 	/* Remove the entry in the winbindd_cache tdb to tell a later
 	   starting winbindd that we're online. */
 
-	tdb = tdb_open_log(cache_path("winbindd_cache.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
+	tdb = tdb_open_log(state_path("winbindd_cache.tdb"), 0, TDB_DEFAULT, O_RDWR, 0600);
 	if (!tdb) {
 		fprintf(stderr, "Cannot open the tdb %s for writing.\n",
-			cache_path("winbindd_cache.tdb"));
+			state_path("winbindd_cache.tdb"));
 		return False;
 	}
 
@@ -984,14 +984,14 @@ static bool do_winbind_offline(struct messaging_context *msg_ctx,
 	   starting winbindd that we're offline. We may actually create
 	   it here... */
 
-	tdb = tdb_open_log(cache_path("winbindd_cache.tdb"),
+	tdb = tdb_open_log(state_path("winbindd_cache.tdb"),
 				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
 				TDB_DEFAULT|TDB_INCOMPATIBLE_HASH /* TDB_CLEAR_IF_FIRST */,
 				O_RDWR|O_CREAT, 0600);
 
 	if (!tdb) {
 		fprintf(stderr, "Cannot open the tdb %s for writing.\n",
-			cache_path("winbindd_cache.tdb"));
+			state_path("winbindd_cache.tdb"));
 		return False;
 	}
 
