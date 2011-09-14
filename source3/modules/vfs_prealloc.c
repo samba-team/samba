@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "system/filesys.h"
 
 /* Extent preallocation module.
  *
