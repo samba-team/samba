@@ -1636,6 +1636,7 @@ bool lp_oplocks(int );
 bool lp_level2_oplocks(int );
 bool lp_onlyuser(int );
 bool lp_manglednames(const struct share_params *p );
+bool lp_allow_insecure_widelinks(void);
 bool lp_widelinks(int );
 bool lp_symlinks(int );
 bool lp_syncalways(int );

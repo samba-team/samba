@@ -379,6 +379,7 @@ struct global {
 	bool bMapUntrustedToDomain;
 	bool bAsyncSMBEchoHandler;
 	bool bMulticastDnsRegister;
+	bool bAllowInsecureWidelinks;
 	int ismb2_max_read;
 	int ismb2_max_write;
 	int ismb2_max_trans;
@@ -4356,6 +4357,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
+		.label		= "allow insecure wide links",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.bAllowInsecureWidelinks,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "wide links",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
@@ -5996,6 +6006,7 @@ FN_LOCAL_BOOL(lp_dos_filetime_resolution, bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_GLOBAL_BOOL(lp_async_smb_echo_handler, &Globals.bAsyncSMBEchoHandler)
 FN_GLOBAL_BOOL(lp_multicast_dns_register, &Globals.bMulticastDnsRegister)
+FN_GLOBAL_BOOL(lp_allow_insecure_widelinks, &Globals.bAllowInsecureWidelinks)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
@@ -10322,6 +10333,10 @@ static bool lp_widelinks_internal(int snum)
 
 void widelinks_warning(int snum)
 {
+	if (lp_allow_insecure_widelinks()) {
+		return;
+	}
+
 	if (lp_unix_extensions() && lp_widelinks_internal(snum)) {
 		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
 			"These parameters are incompatible. "
@@ -10334,7 +10349,13 @@ bool lp_widelinks(int snum)
 {
 	/* wide links is always incompatible with unix extensions */
 	if (lp_unix_extensions()) {
-		return false;
+		/*
+		 * Unless we have "allow insecure widelinks"
+		 * turned on.
+		 */
+		if (!lp_allow_insecure_widelinks()) {
+			return false;
+		}
 	}
 
 	return lp_widelinks_internal(snum);

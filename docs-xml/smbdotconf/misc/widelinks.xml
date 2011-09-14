@@ -17,6 +17,10 @@
 	disabled (with a message in the log file) if the
 	<smbconfoption name="unix extensions"/> option is on.
 	</para>
+	<para>
+	See the parameter <smbconfoption name="allow insecure wide links"/>
+	if you wish to change this coupling between the two parameters.
+	</para>
 </description>
 
 <value type="default">no</value>
