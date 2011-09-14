@@ -478,7 +478,7 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (!cli_state_is_connected(state->cli)) {
-		return NT_STATUS_CONNECTION_INVALID;
+		return NT_STATUS_CONNECTION_DISCONNECTED;
 	}
 
 	if (iov[0].iov_len < smb_wct) {
