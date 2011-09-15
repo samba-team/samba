@@ -675,7 +675,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     vnum='0',
                     vars=locals())
 
-bld.SAMBA3_LIBRARY('libsmb/smbclient',
+bld.SAMBA3_LIBRARY('smbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb_compat wbclient cap param  smbd_shim libsmb KRBCLIENT pdb SMBLDAP
                     LIBMSRPC_GEN msrpc3 libcli_lsa3 RPC_NDR_SRVSVC popt_samba3''',
@@ -1175,7 +1175,7 @@ bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
                  source=CLIENT_SRC,
                  deps='''talloc tdb_compat cap popt_samba3 pdb libsmb smbd_shim
                  param wbclient param KRBCLIENT LIBMSRPC_GEN
-                 msrpc3 SMBREADLINE libsmb/smbclient RPC_NDR_SRVSVC INIT_LSA
+                 msrpc3 SMBREADLINE smbclient RPC_NDR_SRVSVC INIT_LSA
                  cli_smb_common''',
                  vars=locals())
 
@@ -1252,7 +1252,7 @@ bld.SAMBA3_BINARY('pdbedit',
 
 bld.SAMBA3_BINARY('smbget',
                  source=SMBGET_SRC,
-                 deps='''talloc tdb_compat libsmb/smbclient popt_samba3''',
+                 deps='''talloc tdb_compat smbclient popt_samba3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('nmblookup' + bld.env.suffix3,
