@@ -43,8 +43,20 @@ const struct sockaddr_storage *smbXcli_conn_local_sockaddr(struct smbXcli_conn *
 const struct sockaddr_storage *smbXcli_conn_remote_sockaddr(struct smbXcli_conn *conn);
 const char *smbXcli_conn_remote_name(struct smbXcli_conn *conn);
 
+uint16_t smbXcli_conn_max_requests(struct smbXcli_conn *conn);
+NTTIME smbXcli_conn_server_system_time(struct smbXcli_conn *conn);
+const DATA_BLOB *smbXcli_conn_server_gss_blob(struct smbXcli_conn *conn);
+const struct GUID *smbXcli_conn_server_guid(struct smbXcli_conn *conn);
+
 void smbXcli_req_unset_pending(struct tevent_req *req);
 bool smbXcli_req_set_pending(struct tevent_req *req);
+
+uint32_t smb1cli_conn_capabilities(struct smbXcli_conn *conn);
+uint32_t smb1cli_conn_max_xmit(struct smbXcli_conn *conn);
+uint32_t smb1cli_conn_server_session_key(struct smbXcli_conn *conn);
+const uint8_t *smb1cli_conn_server_challenge(struct smbXcli_conn *conn);
+uint16_t smb1cli_conn_server_security_mode(struct smbXcli_conn *conn);
+int smb1cli_conn_server_time_zone(struct smbXcli_conn *conn);
 
 bool smb1cli_conn_activate_signing(struct smbXcli_conn *conn,
 				   const DATA_BLOB user_session_key,
@@ -116,6 +128,12 @@ NTSTATUS smb1cli_req_recv(struct tevent_req *req,
 			  uint8_t **pinbuf,
 			  const struct smb1cli_req_expected_response *expected,
 			  size_t num_expected);
+
+uint32_t smb2cli_conn_server_capabilities(struct smbXcli_conn *conn);
+uint16_t smb2cli_conn_server_security_mode(struct smbXcli_conn *conn);
+uint32_t smb2cli_conn_max_trans_size(struct smbXcli_conn *conn);
+uint32_t smb2cli_conn_max_read_size(struct smbXcli_conn *conn);
+uint32_t smb2cli_conn_max_write_size(struct smbXcli_conn *conn);
 
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,

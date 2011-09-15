@@ -78,6 +78,7 @@ struct smbXcli_conn {
 			DATA_BLOB gss_blob;
 			uint8_t challenge[8];
 			const char *workgroup;
+			const char *name;
 			int time_zone;
 			NTTIME system_time;
 		} server;
@@ -327,6 +328,75 @@ const struct sockaddr_storage *smbXcli_conn_remote_sockaddr(struct smbXcli_conn 
 const char *smbXcli_conn_remote_name(struct smbXcli_conn *conn)
 {
 	return conn->remote_name;
+}
+
+uint16_t smbXcli_conn_max_requests(struct smbXcli_conn *conn)
+{
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
+		/*
+		 * TODO...
+		 */
+		return 1;
+	}
+
+	return conn->smb1.server.max_mux;
+}
+
+NTTIME smbXcli_conn_server_system_time(struct smbXcli_conn *conn)
+{
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
+		return conn->smb2.server.system_time;
+	}
+
+	return conn->smb1.server.system_time;
+}
+
+const DATA_BLOB *smbXcli_conn_server_gss_blob(struct smbXcli_conn *conn)
+{
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
+		return &conn->smb2.server.gss_blob;
+	}
+
+	return &conn->smb1.server.gss_blob;
+}
+
+const struct GUID *smbXcli_conn_server_guid(struct smbXcli_conn *conn)
+{
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
+		return &conn->smb2.server.guid;
+	}
+
+	return &conn->smb1.server.guid;
+}
+
+uint32_t smb1cli_conn_capabilities(struct smbXcli_conn *conn)
+{
+	return conn->smb1.capabilities;
+}
+
+uint32_t smb1cli_conn_max_xmit(struct smbXcli_conn *conn)
+{
+	return conn->smb1.max_xmit;
+}
+
+uint32_t smb1cli_conn_server_session_key(struct smbXcli_conn *conn)
+{
+	return conn->smb1.server.session_key;
+}
+
+const uint8_t *smb1cli_conn_server_challenge(struct smbXcli_conn *conn)
+{
+	return conn->smb1.server.challenge;
+}
+
+uint16_t smb1cli_conn_server_security_mode(struct smbXcli_conn *conn)
+{
+	return conn->smb1.server.security_mode;
+}
+
+int smb1cli_conn_server_time_zone(struct smbXcli_conn *conn)
+{
+	return conn->smb1.server.time_zone;
 }
 
 bool smb1cli_conn_activate_signing(struct smbXcli_conn *conn,
@@ -1856,6 +1926,31 @@ bool smbXcli_conn_has_async_calls(struct smbXcli_conn *conn)
 {
 	return ((tevent_queue_length(conn->outgoing) != 0)
 		|| (talloc_array_length(conn->pending) != 0));
+}
+
+uint32_t smb2cli_conn_server_capabilities(struct smbXcli_conn *conn)
+{
+	return conn->smb2.server.capabilities;
+}
+
+uint16_t smb2cli_conn_server_security_mode(struct smbXcli_conn *conn)
+{
+	return conn->smb2.server.security_mode;
+}
+
+uint32_t smb2cli_conn_max_trans_size(struct smbXcli_conn *conn)
+{
+	return conn->smb2.server.max_trans_size;
+}
+
+uint32_t smb2cli_conn_max_read_size(struct smbXcli_conn *conn)
+{
+	return conn->smb2.server.max_read_size;
+}
+
+uint32_t smb2cli_conn_max_write_size(struct smbXcli_conn *conn)
+{
+	return conn->smb2.server.max_write_size;
 }
 
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
