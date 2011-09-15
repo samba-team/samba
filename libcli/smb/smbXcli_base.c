@@ -95,6 +95,7 @@ struct smbXcli_conn {
 	struct {
 		struct {
 			uint16_t security_mode;
+			struct GUID guid;
 		} client;
 
 		struct {
@@ -184,7 +185,8 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 int fd,
 					 const char *remote_name,
 					 enum smb_signing_setting signing_state,
-					 uint32_t smb1_capabilities)
+					 uint32_t smb1_capabilities,
+					 struct GUID *client_guid)
 {
 	struct smbXcli_conn *conn = NULL;
 	void *ss = NULL;
@@ -269,6 +271,9 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 	conn->smb2.client.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
 	if (conn->mandatory_signing) {
 		conn->smb2.client.security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
+	}
+	if (client_guid) {
+		conn->smb2.client.guid = *client_guid;
 	}
 
 	talloc_set_destructor(conn, smbXcli_conn_destructor);
