@@ -28,6 +28,8 @@
 
 #include "ads.h"
 
+struct smb_trans_enc_state;
+
 /* The following definitions come from libsmb/cliconnect.c  */
 
 NTSTATUS cli_session_setup(struct cli_state *cli,
