@@ -1070,7 +1070,8 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		case NCALRPC:
 			rc = sys_getpeereid(s, &uid);
 			if (rc < 0) {
-				DEBUG(2, ("Failed to get ncalrpc connecting uid!"));
+				DEBUG(2, ("Failed to get ncalrpc connecting "
+					  "uid - %s!\n", strerror(errno)));
 			} else {
 				if (uid == sec_initial_uid()) {
 					system_user = true;
