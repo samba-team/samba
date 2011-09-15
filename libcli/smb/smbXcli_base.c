@@ -2486,3 +2486,806 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 	return status;
 }
+
+static const struct {
+	enum protocol_types proto;
+	const char *smb1_name;
+} smb1cli_prots[] = {
+	{PROTOCOL_CORE,		"PC NETWORK PROGRAM 1.0"},
+	{PROTOCOL_COREPLUS,	"MICROSOFT NETWORKS 1.03"},
+	{PROTOCOL_LANMAN1,	"MICROSOFT NETWORKS 3.0"},
+	{PROTOCOL_LANMAN1,	"LANMAN1.0"},
+	{PROTOCOL_LANMAN2,	"LM1.2X002"},
+	{PROTOCOL_LANMAN2,	"DOS LANMAN2.1"},
+	{PROTOCOL_LANMAN2,	"LANMAN2.1"},
+	{PROTOCOL_LANMAN2,	"Samba"},
+	{PROTOCOL_NT1,		"NT LANMAN 1.0"},
+	{PROTOCOL_NT1,		"NT LM 0.12"},
+	{PROTOCOL_SMB2_02,	"SMB 2.002"},
+};
+
+static const struct {
+	enum protocol_types proto;
+	uint16_t smb2_dialect;
+} smb2cli_prots[] = {
+	{PROTOCOL_SMB2_02,	SMB2_DIALECT_REVISION_202},
+};
+
+struct smbXcli_negprot_state {
+	struct smbXcli_conn *conn;
+	struct tevent_context *ev;
+	uint32_t timeout_msec;
+	enum protocol_types min_protocol;
+	enum protocol_types max_protocol;
+
+	struct {
+		uint8_t fixed[36];
+		uint8_t dyn[ARRAY_SIZE(smb2cli_prots)*2];
+	} smb2;
+};
+
+static void smbXcli_negprot_invalid_done(struct tevent_req *subreq);
+static struct tevent_req *smbXcli_negprot_smb1_subreq(struct smbXcli_negprot_state *state);
+static void smbXcli_negprot_smb1_done(struct tevent_req *subreq);
+static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_state *state);
+static void smbXcli_negprot_smb2_done(struct tevent_req *subreq);
+static NTSTATUS smbXcli_negprot_dispatch_incoming(struct smbXcli_conn *conn,
+						  TALLOC_CTX *frame,
+						  uint8_t *inbuf);
+
+struct tevent_req *smbXcli_negprot_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbXcli_conn *conn,
+					uint32_t timeout_msec,
+					enum protocol_types min_protocol,
+					enum protocol_types max_protocol)
+{
+	struct tevent_req *req, *subreq;
+	struct smbXcli_negprot_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbXcli_negprot_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->conn = conn;
+	state->ev = ev;
+	state->timeout_msec = timeout_msec;
+	state->min_protocol = min_protocol;
+	state->max_protocol = max_protocol;
+
+	if (min_protocol == PROTOCOL_NONE) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
+	}
+
+	if (max_protocol == PROTOCOL_NONE) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
+	}
+
+	if (min_protocol > max_protocol) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
+	}
+
+	if ((min_protocol < PROTOCOL_SMB2_02) &&
+	    (max_protocol < PROTOCOL_SMB2_02)) {
+		/*
+		 * SMB1 only...
+		 */
+		conn->dispatch_incoming = smb1cli_conn_dispatch_incoming;
+
+		subreq = smbXcli_negprot_smb1_subreq(state);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, smbXcli_negprot_smb1_done, req);
+		return req;
+	}
+
+	if ((min_protocol >= PROTOCOL_SMB2_02) &&
+	    (max_protocol >= PROTOCOL_SMB2_02)) {
+		/*
+		 * SMB2 only...
+		 */
+		conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
+
+		subreq = smbXcli_negprot_smb2_subreq(state);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, smbXcli_negprot_smb2_done, req);
+		return req;
+	}
+
+	/*
+	 * We send an SMB1 negprot with the SMB2 dialects
+	 * and expect a SMB1 or a SMB2 response.
+	 *
+	 * smbXcli_negprot_dispatch_incoming() will fix the
+	 * callback to match protocol of the response.
+	 */
+	conn->dispatch_incoming = smbXcli_negprot_dispatch_incoming;
+
+	subreq = smbXcli_negprot_smb1_subreq(state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbXcli_negprot_invalid_done, req);
+	return req;
+}
+
+static void smbXcli_negprot_invalid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	NTSTATUS status;
+
+	/*
+	 * we just want the low level error
+	 */
+	status = tevent_req_simple_recv_ntstatus(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/* this should never happen */
+	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+}
+
+static struct tevent_req *smbXcli_negprot_smb1_subreq(struct smbXcli_negprot_state *state)
+{
+	size_t i;
+	DATA_BLOB bytes = data_blob_null;
+	uint8_t flags;
+	uint16_t flags2;
+
+	/* setup the protocol strings */
+	for (i=0; i < ARRAY_SIZE(smb1cli_prots); i++) {
+		uint8_t c = 2;
+		bool ok;
+
+		if (smb1cli_prots[i].proto < state->min_protocol) {
+			continue;
+		}
+
+		if (smb1cli_prots[i].proto > state->max_protocol) {
+			continue;
+		}
+
+		ok = data_blob_append(state, &bytes, &c, sizeof(c));
+		if (!ok) {
+			return NULL;
+		}
+
+		/*
+		 * We now it is already ascii and
+		 * we want NULL termination.
+		 */
+		ok = data_blob_append(state, &bytes,
+				      smb1cli_prots[i].smb1_name,
+				      strlen(smb1cli_prots[i].smb1_name)+1);
+		if (!ok) {
+			return NULL;
+		}
+	}
+
+	smb1cli_req_flags(state->max_protocol,
+			  state->conn->smb1.client.capabilities,
+			  SMBnegprot,
+			  0, 0, &flags,
+			  0, 0, &flags2);
+
+	return smb1cli_req_send(state, state->ev, state->conn,
+				SMBnegprot,
+				flags, ~flags,
+				flags2, ~flags2,
+				state->timeout_msec,
+				0xFFFE, 0, 0, /* pid, tid, uid */
+				0, NULL, /* wct, vwv */
+				bytes.length, bytes.data);
+}
+
+static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smbXcli_negprot_state *state =
+		tevent_req_data(req,
+		struct smbXcli_negprot_state);
+	struct smbXcli_conn *conn = state->conn;
+	struct iovec *recv_iov = NULL;
+	uint8_t *inhdr;
+	uint8_t wct;
+	uint16_t *vwv;
+	uint32_t num_bytes;
+	uint8_t *bytes;
+	NTSTATUS status;
+	uint16_t protnum;
+	size_t i;
+	size_t num_prots = 0;
+	uint8_t flags;
+	uint32_t client_capabilities = conn->smb1.client.capabilities;
+	uint32_t both_capabilities;
+	uint32_t server_capabilities = 0;
+	uint32_t capabilities;
+	uint32_t client_max_xmit = conn->smb1.client.max_xmit;
+	uint32_t server_max_xmit = 0;
+	uint32_t max_xmit;
+	uint32_t server_max_mux = 0;
+	uint16_t server_security_mode = 0;
+	uint32_t server_session_key = 0;
+	bool server_readbraw = false;
+	bool server_writebraw = false;
+	bool server_lockread = false;
+	bool server_writeunlock = false;
+	struct GUID server_guid = GUID_zero();
+	DATA_BLOB server_gss_blob = data_blob_null;
+	uint8_t server_challenge[8];
+	char *server_workgroup = NULL;
+	char *server_name = NULL;
+	int server_time_zone = 0;
+	NTTIME server_system_time = 0;
+	static const struct smb1cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.wct = 0x11, /* NT1 */
+	},
+	{
+		.status = NT_STATUS_OK,
+		.wct = 0x0D, /* LM */
+	},
+	{
+		.status = NT_STATUS_OK,
+		.wct = 0x01, /* CORE */
+	}
+	};
+
+	ZERO_STRUCT(server_challenge);
+
+	status = smb1cli_req_recv(subreq, state,
+				  &recv_iov,
+				  &inhdr,
+				  &wct,
+				  &vwv,
+				  NULL, /* pvwv_offset */
+				  &num_bytes,
+				  &bytes,
+				  NULL, /* pbytes_offset */
+				  NULL, /* pinbuf */
+				  expected, ARRAY_SIZE(expected));
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	flags = CVAL(inhdr, HDR_FLG);
+
+	protnum = SVAL(vwv, 0);
+
+	for (i=0; i < ARRAY_SIZE(smb1cli_prots); i++) {
+		if (smb1cli_prots[i].proto < state->min_protocol) {
+			continue;
+		}
+
+		if (smb1cli_prots[i].proto > state->max_protocol) {
+			continue;
+		}
+
+		if (protnum != num_prots) {
+			num_prots++;
+			continue;
+		}
+
+		conn->protocol = smb1cli_prots[i].proto;
+		break;
+	}
+
+	if (conn->protocol == PROTOCOL_NONE) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if ((conn->protocol < PROTOCOL_NT1) && conn->mandatory_signing) {
+		DEBUG(0,("smbXcli_negprot: SMB signing is mandatory "
+			 "and the selected protocol level doesn't support it.\n"));
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	if (flags & FLAG_SUPPORT_LOCKREAD) {
+		server_lockread = true;
+		server_writeunlock = true;
+	}
+
+	if (conn->protocol >= PROTOCOL_NT1) {
+		const char *client_signing = NULL;
+		bool server_mandatory = false;
+		bool server_allowed = false;
+		const char *server_signing = NULL;
+		bool ok;
+		uint8_t key_len;
+
+		if (wct != 0x11) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		/* NT protocol */
+		server_security_mode = CVAL(vwv + 1, 0);
+		server_max_mux = SVAL(vwv + 1, 1);
+		server_max_xmit = IVAL(vwv + 3, 1);
+		server_session_key = IVAL(vwv + 7, 1);
+		server_time_zone = SVALS(vwv + 15, 1);
+		server_time_zone *= 60;
+		/* this time arrives in real GMT */
+		server_system_time = BVAL(vwv + 11, 1);
+		server_capabilities = IVAL(vwv + 9, 1);
+
+		key_len = CVAL(vwv + 16, 1);
+
+		if (server_capabilities & CAP_RAW_MODE) {
+			server_readbraw = true;
+			server_writebraw = true;
+		}
+		if (server_capabilities & CAP_LOCK_AND_READ) {
+			server_lockread = true;
+		}
+
+		if (server_capabilities & CAP_EXTENDED_SECURITY) {
+			DATA_BLOB blob1, blob2;
+
+			if (num_bytes < 16) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+				return;
+			}
+
+			blob1 = data_blob_const(bytes, 16);
+			status = GUID_from_data_blob(&blob1, &server_guid);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+
+			blob1 = data_blob_const(bytes+16, num_bytes-16);
+			blob2 = data_blob_dup_talloc(state, blob1);
+			if (blob1.length > 0 &&
+			    tevent_req_nomem(blob2.data, req)) {
+				return;
+			}
+			server_gss_blob = blob2;
+		} else {
+			DATA_BLOB blob1, blob2;
+
+			if (num_bytes < key_len) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+				return;
+			}
+
+			if (key_len != 0 && key_len != 8) {
+				tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+				return;
+			}
+
+			if (key_len == 8) {
+				memcpy(server_challenge, bytes, 8);
+			}
+
+			blob1 = data_blob_const(bytes+key_len, num_bytes-key_len);
+			blob2 = data_blob_const(bytes+key_len, num_bytes-key_len);
+			if (blob1.length > 0) {
+				size_t len;
+
+				len = utf16_len_n(blob1.data,
+						  blob1.length);
+				blob1.length = len;
+
+				ok = convert_string_talloc(state,
+							   CH_UTF16LE,
+							   CH_UNIX,
+							   blob1.data,
+							   blob1.length,
+							   &server_workgroup,
+							   &len);
+				if (!ok) {
+					status = map_nt_error_from_unix_common(errno);
+					tevent_req_nterror(req, status);
+					return;
+				}
+			}
+
+			blob2.data += blob1.length;
+			blob2.length -= blob1.length;
+			if (blob2.length > 0) {
+				size_t len;
+
+				len = utf16_len_n(blob1.data,
+						  blob1.length);
+				blob1.length = len;
+
+				ok = convert_string_talloc(state,
+							   CH_UTF16LE,
+							   CH_UNIX,
+							   blob2.data,
+							   blob2.length,
+							   &server_name,
+							   &len);
+				if (!ok) {
+					status = map_nt_error_from_unix_common(errno);
+					tevent_req_nterror(req, status);
+					return;
+				}
+			}
+		}
+
+		client_signing = "disabled";
+		if (conn->allow_signing) {
+			client_signing = "allowed";
+		}
+		if (conn->mandatory_signing) {
+			client_signing = "required";
+		}
+
+		server_signing = "not supported";
+		if (server_security_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
+			server_signing = "supported";
+			server_allowed = true;
+		}
+		if (server_security_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
+			server_signing = "required";
+			server_mandatory = true;
+		}
+
+		ok = smb_signing_set_negotiated(conn->smb1.signing,
+						server_allowed,
+						server_mandatory);
+		if (!ok) {
+			DEBUG(1,("cli_negprot: SMB signing is required, "
+				 "but client[%s] and server[%s] mismatch\n",
+				 client_signing, server_signing));
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+
+	} else if (conn->protocol >= PROTOCOL_LANMAN1) {
+		DATA_BLOB blob1;
+		uint8_t key_len;
+		time_t t;
+
+		if (wct != 0x0D) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		server_security_mode = SVAL(vwv + 1, 0);
+		server_max_xmit = SVAL(vwv + 2, 0);
+		server_max_mux = SVAL(vwv + 3, 0);
+		server_readbraw = ((SVAL(vwv + 5, 0) & 0x1) != 0);
+		server_writebraw = ((SVAL(vwv + 5, 0) & 0x2) != 0);
+		server_session_key = IVAL(vwv + 6, 0);
+		server_time_zone = SVALS(vwv + 10, 0);
+		server_time_zone *= 60;
+		/* this time is converted to GMT by make_unix_date */
+		t = pull_dos_date((const uint8_t *)(vwv + 8), server_time_zone);
+		unix_to_nt_time(&server_system_time, t);
+		key_len = SVAL(vwv + 11, 0);
+
+		if (num_bytes < key_len) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (key_len != 0 && key_len != 8) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (key_len == 8) {
+			memcpy(server_challenge, bytes, 8);
+		}
+
+		blob1 = data_blob_const(bytes+key_len, num_bytes-key_len);
+		if (blob1.length > 0) {
+			size_t len;
+			bool ok;
+
+			len = utf16_len_n(blob1.data,
+					  blob1.length);
+			blob1.length = len;
+
+			ok = convert_string_talloc(state,
+						   CH_DOS,
+						   CH_UNIX,
+						   blob1.data,
+						   blob1.length,
+						   &server_workgroup,
+						   &len);
+			if (!ok) {
+				status = map_nt_error_from_unix_common(errno);
+				tevent_req_nterror(req, status);
+				return;
+			}
+		}
+
+	} else {
+		/* the old core protocol */
+		server_time_zone = get_time_zone(time(NULL));
+		server_max_xmit = 1024;
+		server_max_mux = 1;
+	}
+
+	if (server_max_xmit < 1024) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (server_max_mux < 1) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	/*
+	 * Now calculate the negotiated capabilities
+	 * based on the mask for:
+	 * - client only flags
+	 * - flags used in both directions
+	 * - server only flags
+	 */
+	both_capabilities = client_capabilities & server_capabilities;
+	capabilities = client_capabilities & SMB_CAP_CLIENT_MASK;
+	capabilities |= both_capabilities & SMB_CAP_BOTH_MASK;
+	capabilities |= server_capabilities & SMB_CAP_SERVER_MASK;
+
+	max_xmit = MIN(client_max_xmit, server_max_xmit);
+
+	conn->smb1.server.capabilities = server_capabilities;
+	conn->smb1.capabilities = capabilities;
+
+	conn->smb1.server.max_xmit = server_max_xmit;
+	conn->smb1.max_xmit = max_xmit;
+
+	conn->smb1.server.max_mux = server_max_mux;
+
+	conn->smb1.server.security_mode = server_security_mode;
+
+	conn->smb1.server.readbraw = server_readbraw;
+	conn->smb1.server.writebraw = server_writebraw;
+	conn->smb1.server.lockread = server_lockread;
+	conn->smb1.server.writeunlock = server_writeunlock;
+
+	conn->smb1.server.session_key = server_session_key;
+
+	talloc_steal(conn, server_gss_blob.data);
+	conn->smb1.server.gss_blob = server_gss_blob;
+	conn->smb1.server.guid = server_guid;
+	memcpy(conn->smb1.server.challenge, server_challenge, 8);
+	conn->smb1.server.workgroup = talloc_move(conn, &server_workgroup);
+	conn->smb1.server.name = talloc_move(conn, &server_name);
+
+	conn->smb1.server.time_zone = server_time_zone;
+	conn->smb1.server.system_time = server_system_time;
+
+	tevent_req_done(req);
+}
+
+static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_state *state)
+{
+	size_t i;
+	uint8_t *buf;
+	uint16_t dialect_count = 0;
+
+	buf = state->smb2.dyn;
+	for (i=0; i < ARRAY_SIZE(smb2cli_prots); i++) {
+		if (smb2cli_prots[i].proto < state->min_protocol) {
+			continue;
+		}
+
+		if (smb2cli_prots[i].proto > state->max_protocol) {
+			continue;
+		}
+
+		SSVAL(buf, dialect_count*2, smb2cli_prots[i].smb2_dialect);
+		dialect_count++;
+	}
+
+	buf = state->smb2.fixed;
+	SSVAL(buf, 0, 36);
+	SSVAL(buf, 2, dialect_count);
+	SSVAL(buf, 4, state->conn->smb2.client.security_mode);
+	SSVAL(buf, 6, 0);	/* Reserved */
+	SSVAL(buf, 8, 0); 	/* Capabilities */
+	memset(buf+12, 0, 16);	/* ClientGuid */
+	SBVAL(buf, 28, 0);	/* ClientStartTime */
+
+	return smb2cli_req_send(state, state->ev,
+				state->conn, SMB2_OP_NEGPROT,
+				0, 0, /* flags */
+				state->timeout_msec,
+				0xFEFF, 0, 0, /* pid, tid, uid */
+				state->smb2.fixed, sizeof(state->smb2.fixed),
+				state->smb2.dyn, dialect_count*2);
+}
+
+static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smbXcli_negprot_state *state =
+		tevent_req_data(req,
+		struct smbXcli_negprot_state);
+	struct smbXcli_conn *conn = state->conn;
+	size_t security_offset, security_length;
+	DATA_BLOB blob;
+	NTSTATUS status;
+	struct iovec *iov;
+	uint8_t *body;
+	size_t i;
+	uint16_t dialect_revision;
+	static const struct smb2cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.body_size = 0x41
+	}
+	};
+
+	status = smb2cli_req_recv(subreq, state, &iov,
+				  expected, ARRAY_SIZE(expected));
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	body = (uint8_t *)iov[1].iov_base;
+
+	dialect_revision = SVAL(body, 4);
+
+	for (i=0; i < ARRAY_SIZE(smb2cli_prots); i++) {
+		if (smb2cli_prots[i].proto < state->min_protocol) {
+			continue;
+		}
+
+		if (smb2cli_prots[i].proto > state->max_protocol) {
+			continue;
+		}
+
+		if (smb2cli_prots[i].smb2_dialect != dialect_revision) {
+			continue;
+		}
+
+		conn->protocol = smb2cli_prots[i].proto;
+		break;
+	}
+
+	if (conn->protocol == PROTOCOL_NONE) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	conn->smb2.server.security_mode = SVAL(body, 2);
+
+	blob = data_blob_const(body + 8, 16);
+	status = GUID_from_data_blob(&blob, &conn->smb2.server.guid);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	conn->smb2.server.capabilities	= IVAL(body, 24);
+	conn->smb2.server.max_trans_size= IVAL(body, 28);
+	conn->smb2.server.max_read_size	= IVAL(body, 32);
+	conn->smb2.server.max_write_size= IVAL(body, 36);
+	conn->smb2.server.system_time	= BVAL(body, 40);
+	conn->smb2.server.start_time	= BVAL(body, 48);
+
+	security_offset = SVAL(body, 56);
+	security_length = SVAL(body, 58);
+
+	if (security_offset != SMB2_HDR_BODY + iov[1].iov_len) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (security_length > iov[2].iov_len) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	conn->smb2.server.gss_blob = data_blob_talloc(conn,
+						iov[2].iov_base,
+						security_length);
+	if (tevent_req_nomem(conn->smb2.server.gss_blob.data, req)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS smbXcli_negprot_dispatch_incoming(struct smbXcli_conn *conn,
+						  TALLOC_CTX *tmp_mem,
+						  uint8_t *inbuf)
+{
+	size_t num_pending = talloc_array_length(conn->pending);
+	struct tevent_req *subreq;
+	struct smbXcli_req_state *substate;
+	struct tevent_req *req;
+	struct smbXcli_negprot_state *state;
+	uint32_t protocol_magic = IVAL(inbuf, 4);
+
+	if (num_pending != 1) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	subreq = conn->pending[0];
+	substate = tevent_req_data(subreq, struct smbXcli_req_state);
+	req = tevent_req_callback_data(subreq, struct tevent_req);
+	state = tevent_req_data(req, struct smbXcli_negprot_state);
+
+	switch (protocol_magic) {
+	case SMB_MAGIC:
+		tevent_req_set_callback(subreq, smbXcli_negprot_smb1_done, req);
+		conn->dispatch_incoming = smb1cli_conn_dispatch_incoming;
+		return smb1cli_conn_dispatch_incoming(conn, tmp_mem, inbuf);
+
+	case SMB2_MAGIC:
+		if (substate->smb2.recv_iov == NULL) {
+			/*
+			 * For the SMB1 negprot we have move it.
+			 */
+			substate->smb2.recv_iov = substate->smb1.recv_iov;
+			substate->smb1.recv_iov = NULL;
+		}
+
+		tevent_req_set_callback(subreq, smbXcli_negprot_smb2_done, req);
+		conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
+		return smb2cli_conn_dispatch_incoming(conn, tmp_mem, inbuf);
+	}
+
+	DEBUG(10, ("Got non-SMB PDU\n"));
+	return NT_STATUS_INVALID_NETWORK_RESPONSE;
+}
+
+NTSTATUS smbXcli_negprot_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
+			 uint32_t timeout_msec,
+			 enum protocol_types min_protocol,
+			 enum protocol_types max_protocol)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool ok;
+
+	if (smbXcli_conn_has_async_calls(conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto fail;
+	}
+	ev = tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = smbXcli_negprot_send(frame, ev, conn, timeout_msec,
+				   min_protocol, max_protocol);
+	if (req == NULL) {
+		goto fail;
+	}
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		status = map_nt_error_from_unix_common(errno);
+		goto fail;
+	}
+	status = smbXcli_negprot_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
