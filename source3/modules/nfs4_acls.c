@@ -553,29 +553,29 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 {
 	static struct db_context *mapping_db = NULL;
 	TDB_DATA data;
-	
+
 	if (mapping_db == NULL) {
 		const char *dbname = lp_parm_const_string(
 			-1, SMBACL4_PARAM_TYPE_NAME, "sidmap", NULL);
-		
+
 		if (dbname == NULL) {
 			DEBUG(10, ("%s:sidmap not defined\n",
 				   SMBACL4_PARAM_TYPE_NAME));
 			return False;
 		}
-		
+
 		become_root();
 		mapping_db = db_open(NULL, dbname, 0, TDB_DEFAULT,
 				     O_RDONLY, 0600);
 		unbecome_root();
-		
+
 		if (mapping_db == NULL) {
 			DEBUG(1, ("could not open sidmap: %s\n",
 				  strerror(errno)));
 			return False;
 		}
 	}
-	
+
 	if (mapping_db->fetch(mapping_db, NULL,
 			      string_term_tdb_data(sid_string_tos(src)),
 			      &data) != 0) {
@@ -583,7 +583,7 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 			   sid_string_dbg(src)));
 		return False;
 	}
-	
+
 	if ((data.dptr == NULL) || (data.dsize <= 0)
 	    || (data.dptr[data.dsize-1] != '\0')) {
 		DEBUG(5, ("invalid mapping for SID %s\n",
@@ -591,7 +591,7 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 		TALLOC_FREE(data.dptr);
 		return False;
 	}
-	
+
 	if (!string_to_sid(dst, (char *)data.dptr)) {
 		DEBUG(1, ("invalid mapping %s for SID %s\n",
 			  (char *)data.dptr, sid_string_dbg(src)));
@@ -600,7 +600,7 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 	}
 
 	TALLOC_FREE(data.dptr);
-	
+
 	return True;
 }
 
@@ -641,23 +641,23 @@ static bool smbacl4_fill_ace4(
 		uid_t uid;
 		gid_t gid;
 		struct dom_sid sid;
-		
+
 		sid_copy(&sid, &ace_nt->trustee);
-		
+
 		if (!lookup_sid(mem_ctx, &sid, &dom, &name, &type)) {
-			
+
 			struct dom_sid mapped;
-			
+
 			if (!nfs4_map_sid(params, &sid, &mapped)) {
 				DEBUG(1, ("nfs4_acls.c: file [%s]: SID %s "
 					  "unknown\n", filename, sid_string_dbg(&sid)));
 				errno = EINVAL;
 				return False;
 			}
-			
+
 			DEBUG(2, ("nfs4_acls.c: file [%s]: mapped SID %s "
 				  "to %s\n", filename, sid_string_dbg(&sid), sid_string_dbg(&mapped)));
-			
+
 			if (!lookup_sid(mem_ctx, &mapped, &dom,
 					&name, &type)) {
 				DEBUG(1, ("nfs4_acls.c: file [%s]: SID %s "
@@ -666,10 +666,10 @@ static bool smbacl4_fill_ace4(
 				errno = EINVAL;
 				return False;
 			}
-			
+
 			sid_copy(&sid, &mapped);
 		}
-		
+
 		if (type == SID_NAME_USER) {
 			if (!sid_to_uid(&sid, &uid)) {
 				DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
@@ -691,7 +691,7 @@ static bool smbacl4_fill_ace4(
 					  sid_string_dbg(&sid)));
 				return False;
 			}
-				
+
 			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
 
 			if (params->mode==e_special && gid==ownerGID) {
