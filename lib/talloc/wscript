@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'talloc'
-VERSION = '2.0.6'
+VERSION = '2.0.7'
 
 
 blddir = 'bin'
