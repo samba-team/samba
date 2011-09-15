@@ -500,7 +500,7 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 		return status;
 	}
 
-	if (cli_encryption_on(state->cli)) {
+	if (cli_state_encryption_on(state->cli)) {
 		char *buf, *enc_buf;
 
 		buf = (char *)iov_concat(talloc_tos(), iov, iov_count);
@@ -674,7 +674,7 @@ static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	if (cli_encryption_on(cli) && (CVAL(inbuf, 0) == 0)) {
+	if (cli_state_encryption_on(cli) && (CVAL(inbuf, 0) == 0)) {
 		uint16_t enc_ctx_num;
 
 		status = get_enc_ctx_num(inbuf, &enc_ctx_num);
