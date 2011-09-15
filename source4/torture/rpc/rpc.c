@@ -503,6 +503,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_samr_passwords_lockout(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_user_privileges(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_large_dc(suite));
+	torture_suite_add_suite(suite, torture_rpc_samr_priv(suite));
 	torture_suite_add_suite(suite, torture_rpc_epmapper(suite));
 	torture_suite_add_suite(suite, torture_rpc_initshutdown(suite));
 	torture_suite_add_suite(suite, torture_rpc_oxidresolve(suite));
