@@ -443,7 +443,7 @@ return acl_get_perm_np(permset_d, perm);
 
     conf.CHECK_CODE('''
 		#include <sys/types.h>
-		#include <sys/socket.h>],
+		#include <sys/socket.h>
 		struct ucred cred;
 		socklen_t cred_len;
 		int ret = getsockopt(0, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len);''',
