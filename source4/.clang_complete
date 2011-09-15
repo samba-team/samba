@@ -1,0 +1,10 @@
+-I../bin/default
+-I../bin/default/include
+-I../bin/default/include/public/
+-I../bin/default/source4
+-I../lib
+-I../lib/popt
+-I../lib/replace
+-I..
+-I./include
+-I.
