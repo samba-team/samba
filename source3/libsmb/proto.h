@@ -859,9 +859,6 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf);
 void common_free_encryption_state(struct smb_trans_enc_state **pp_es);
 void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf);
-bool cli_encryption_on(struct cli_state *cli);
-void cli_free_encryption_context(struct cli_state *cli);
-void cli_free_enc_buffer(struct cli_state *cli, char *buf);
 
 /* The following definitions come from libsmb/clisigning.c  */
 
