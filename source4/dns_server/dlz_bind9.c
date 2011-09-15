@@ -28,9 +28,6 @@
 #include "auth/session.h"
 #include "auth/gensec/gensec.h"
 #include "gen_ndr/ndr_dnsp.h"
-#include "lib/cmdline/popt_common.h"
-#include "lib/cmdline/popt_credentials.h"
-#include "ldb_module.h"
 #include "dlz_minimal.h"
 
 struct dlz_bind9_data {
@@ -426,42 +423,12 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 				  unsigned int argc, char *argv[],
 				  struct b9_options *options)
 {
-	int opt;
-	poptContext pc;
-	struct poptOption long_options[] = {
-		{ "url",       'H', POPT_ARG_STRING, &options->url, 0, "database URL", "URL" },
-		{ NULL }
-	};
-	struct poptOption **popt_options;
-	int ret;
-
-	fault_setup_disable();
-
-	popt_options = ldb_module_popt_options(state->samdb);
-	(*popt_options) = long_options;
-
-	ret = ldb_modules_hook(state->samdb, LDB_MODULE_HOOK_CMDLINE_OPTIONS);
-	if (ret != LDB_SUCCESS) {
-		state->log(ISC_LOG_ERROR, "dlz samba: failed cmdline hook");
-		return ISC_R_FAILURE;
-	}
-
-	pc = poptGetContext("dlz_bind9", argc, (const char **)argv, *popt_options,
-			    POPT_CONTEXT_KEEP_FIRST);
-
-	while ((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt) {
-		default:
-			state->log(ISC_LOG_ERROR, "dlz samba: Invalid option %s: %s",
-				   poptBadOption(pc, 0), poptStrerror(opt));
-			return ISC_R_FAILURE;
+	if (argc == 2) {
+		options->url = talloc_strdup(state, argv[1]);
+		if (options->url == NULL) {
+			return ISC_R_NOMEMORY;
 		}
-	}
-
-	ret = ldb_modules_hook(state->samdb, LDB_MODULE_HOOK_CMDLINE_PRECONNECT);
-	if (ret != LDB_SUCCESS) {
-		state->log(ISC_LOG_ERROR, "dlz samba: failed cmdline preconnect");
-		return ISC_R_FAILURE;
+		state->log(ISC_LOG_INFO, "samba_dlz: Using samdb URL %s", options->url);
 	}
 
 	return ISC_R_SUCCESS;
@@ -480,7 +447,6 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	va_list ap;
 	isc_result_t result;
 	TALLOC_CTX *tmp_ctx;
-	int ret;
 	struct ldb_dn *dn;
 	struct b9_options options;
 
@@ -506,13 +472,6 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		goto failed;
 	}
 
-	state->samdb = ldb_init(state, state->ev_ctx);
-	if (state->samdb == NULL) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to create ldb");
-		result = ISC_R_FAILURE;
-		goto failed;
-	}
-
 	result = parse_options(state, argc, argv, &options);
 	if (result != ISC_R_SUCCESS) {
 		goto failed;
@@ -525,26 +484,21 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	}
 
 	if (options.url == NULL) {
-		options.url = talloc_asprintf(tmp_ctx, "ldapi://%s",
-					      lpcfg_private_path(tmp_ctx, state->lp, "ldap_priv/ldapi"));
+		options.url = lpcfg_private_path(tmp_ctx, state->lp, "dns/sam.ldb");
 		if (options.url == NULL) {
 			result = ISC_R_NOMEMORY;
 			goto failed;
 		}
 	}
 
-	ret = ldb_connect(state->samdb, options.url, 0, NULL);
-	if (ret != LDB_SUCCESS) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to connect to %s - %s",
-			   options.url, ldb_errstring(state->samdb));
-		result = ISC_R_FAILURE;
-		goto failed;
-	}
+	/* Do not install samba signal handlers */
+	fault_setup_disable();
 
-	ret = ldb_modules_hook(state->samdb, LDB_MODULE_HOOK_CMDLINE_POSTCONNECT);
-	if (ret != LDB_SUCCESS) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: Failed postconnect for %s - %s",
-			   options.url, ldb_errstring(state->samdb));
+	state->samdb = samdb_connect_url(state, state->ev_ctx, state->lp,
+					system_session(state->lp), 0, options.url);
+	if (state->samdb == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to connect to %s",
+			options.url);
 		result = ISC_R_FAILURE;
 		goto failed;
 	}
