@@ -37,6 +37,8 @@ struct print_job_info {
 	time_t t;
 };
 
+struct smbXcli_conn;
+
 struct cli_state {
 	/**
 	 * A list of subsidiary connections for DFS.
@@ -159,7 +161,8 @@ struct cli_state {
 	} smb1;
 
 	struct {
-		uint64_t mid;
+		struct smbXcli_conn *conn;
+
 		uint32_t pid;
 		uint32_t tid;
 		uint64_t uid;
