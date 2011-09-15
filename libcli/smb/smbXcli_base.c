@@ -90,6 +90,26 @@ struct smbXcli_conn {
 		struct smb_signing_state *signing;
 		struct smb_trans_enc_state *trans_enc;
 	} smb1;
+
+	struct {
+		struct {
+			uint16_t security_mode;
+		} client;
+
+		struct {
+			uint32_t capabilities;
+			uint16_t security_mode;
+			struct GUID guid;
+			uint32_t max_trans_size;
+			uint32_t max_read_size;
+			uint32_t max_write_size;
+			NTTIME system_time;
+			NTTIME start_time;
+			DATA_BLOB gss_blob;
+		} server;
+
+		uint64_t mid;
+	} smb2;
 };
 
 struct smbXcli_req_state {
@@ -127,6 +147,19 @@ struct smbXcli_req_state {
 		int chain_length;
 		struct tevent_req **chained_requests;
 	} smb1;
+
+	struct {
+		const uint8_t *fixed;
+		uint16_t fixed_len;
+		const uint8_t *dyn;
+		uint32_t dyn_len;
+
+		uint8_t hdr[64];
+		uint8_t pad[7];	/* padding space for compounding */
+
+		/* always an array of 3 talloc elements */
+		struct iovec *recv_iov;
+	} smb2;
 };
 
 static int smbXcli_conn_destructor(struct smbXcli_conn *conn)
@@ -227,6 +260,11 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					      conn->mandatory_signing);
 	if (!conn->smb1.signing) {
 		goto error;
+	}
+
+	conn->smb2.client.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
+	if (conn->mandatory_signing) {
+		conn->smb2.client.security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
 	}
 
 	talloc_set_destructor(conn, smbXcli_conn_destructor);
@@ -554,6 +592,17 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 	}
 
 	if (num_pending == 0) {
+		if (conn->smb2.mid < UINT64_MAX) {
+			/* no more pending requests, so we are done for now */
+			return true;
+		}
+
+		/*
+		 * If there are no more SMB2 requests possible,
+		 * because we are out of message ids,
+		 * we need to disconnect.
+		 */
+		smbXcli_conn_disconnect(conn, NT_STATUS_CONNECTION_ABORTED);
 		return true;
 	}
 
@@ -1561,11 +1610,11 @@ bool smbXcli_conn_has_async_calls(struct smbXcli_conn *conn)
 
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
-				      struct cli_state *cli,
+				      struct smbXcli_conn *conn,
 				      uint16_t cmd,
 				      uint32_t additional_flags,
 				      uint32_t clear_flags,
-				      unsigned int timeout,
+				      uint32_t timeout_msec,
 				      uint32_t pid,
 				      uint32_t tid,
 				      uint64_t uid,
@@ -1575,19 +1624,20 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      uint32_t dyn_len)
 {
 	struct tevent_req *req;
-	struct smb2cli_req_state *state;
+	struct smbXcli_req_state *state;
 	uint32_t flags = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct smb2cli_req_state);
+				struct smbXcli_req_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	state->ev = ev;
-	state->cli = cli;
 
-	state->recv_iov = talloc_zero_array(state, struct iovec, 3);
-	if (state->recv_iov == NULL) {
+	state->ev = ev;
+	state->conn = conn;
+
+	state->smb2.recv_iov = talloc_zero_array(state, struct iovec, 3);
+	if (state->smb2.recv_iov == NULL) {
 		TALLOC_FREE(req);
 		return NULL;
 	}
@@ -1595,26 +1645,32 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	flags |= additional_flags;
 	flags &= ~clear_flags;
 
-	state->fixed = fixed;
-	state->fixed_len = fixed_len;
-	state->dyn = dyn;
-	state->dyn_len = dyn_len;
+	state->smb2.fixed = fixed;
+	state->smb2.fixed_len = fixed_len;
+	state->smb2.dyn = dyn;
+	state->smb2.dyn_len = dyn_len;
 
-	SIVAL(state->hdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
-	SSVAL(state->hdr, SMB2_HDR_LENGTH,	SMB2_HDR_BODY);
-	SSVAL(state->hdr, SMB2_HDR_EPOCH,	1);
-	SIVAL(state->hdr, SMB2_HDR_STATUS,     	NT_STATUS_V(NT_STATUS_OK));
-	SSVAL(state->hdr, SMB2_HDR_OPCODE,	cmd);
-	SSVAL(state->hdr, SMB2_HDR_CREDIT,	31);
-	SIVAL(state->hdr, SMB2_HDR_FLAGS,	flags);
-	SIVAL(state->hdr, SMB2_HDR_PID,		pid);
-	SIVAL(state->hdr, SMB2_HDR_TID,		tid);
-	SBVAL(state->hdr, SMB2_HDR_SESSION_ID,	uid);
+	SIVAL(state->smb2.hdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
+	SSVAL(state->smb2.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
+	SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT_CHARGE,	1);
+	SIVAL(state->smb2.hdr, SMB2_HDR_STATUS,		NT_STATUS_V(NT_STATUS_OK));
+	SSVAL(state->smb2.hdr, SMB2_HDR_OPCODE,		cmd);
+	SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT,		31);
+	SIVAL(state->smb2.hdr, SMB2_HDR_FLAGS,		flags);
+	SIVAL(state->smb2.hdr, SMB2_HDR_PID,		pid);
+	SIVAL(state->smb2.hdr, SMB2_HDR_TID,		tid);
+	SBVAL(state->smb2.hdr, SMB2_HDR_SESSION_ID,	uid);
 
-	if (timeout > 0) {
+	switch (cmd) {
+	case SMB2_OP_CANCEL:
+		state->one_way = true;
+		break;
+	}
+
+	if (timeout_msec > 0) {
 		struct timeval endtime;
 
-		endtime = timeval_current_ofs_msec(timeout);
+		endtime = timeval_current_ofs_msec(timeout_msec);
 		if (!tevent_req_set_endtime(req, ev, endtime)) {
 			return req;
 		}
@@ -1624,11 +1680,14 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 }
 
 static void smb2cli_writev_done(struct tevent_req *subreq);
+static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
+					       TALLOC_CTX *tmp_mem,
+					       uint8_t *inbuf);
 
 NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 				     int num_reqs)
 {
-	struct smb2cli_req_state *state;
+	struct smbXcli_req_state *state;
 	struct tevent_req *subreq;
 	struct iovec *iov;
 	int i, num_iov, nbt_len;
@@ -1656,51 +1715,57 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		state = tevent_req_data(reqs[i], struct smb2cli_req_state);
+		state = tevent_req_data(reqs[i], struct smbXcli_req_state);
 
-		if (!cli_state_is_connected(state->cli)) {
+		if (!smbXcli_conn_is_connected(state->conn)) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}
 
-		if (state->cli->smb2.mid == UINT64_MAX) {
+		if ((state->conn->protocol != PROTOCOL_NONE) &&
+		    (state->conn->protocol < PROTOCOL_SMB2_02)) {
+			return NT_STATUS_REVISION_MISMATCH;
+		}
+
+		if (state->conn->smb2.mid == UINT64_MAX) {
 			return NT_STATUS_CONNECTION_ABORTED;
 		}
 
-		mid = state->cli->smb2.mid;
-		state->cli->smb2.mid += 1;
+		mid = state->conn->smb2.mid;
+		state->conn->smb2.mid += 1;
 
-		SBVAL(state->hdr, SMB2_HDR_MESSAGE_ID, mid);
+		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 
-		iov[num_iov].iov_base = state->hdr;
-		iov[num_iov].iov_len  = sizeof(state->hdr);
+		iov[num_iov].iov_base = state->smb2.hdr;
+		iov[num_iov].iov_len  = sizeof(state->smb2.hdr);
 		num_iov += 1;
 
-		iov[num_iov].iov_base = discard_const(state->fixed);
-		iov[num_iov].iov_len  = state->fixed_len;
+		iov[num_iov].iov_base = discard_const(state->smb2.fixed);
+		iov[num_iov].iov_len  = state->smb2.fixed_len;
 		num_iov += 1;
 
-		if (state->dyn != NULL) {
-			iov[num_iov].iov_base = discard_const(state->dyn);
-			iov[num_iov].iov_len  = state->dyn_len;
+		if (state->smb2.dyn != NULL) {
+			iov[num_iov].iov_base = discard_const(state->smb2.dyn);
+			iov[num_iov].iov_len  = state->smb2.dyn_len;
 			num_iov += 1;
 		}
 
-		reqlen = sizeof(state->hdr) + state->fixed_len +
-			state->dyn_len;
+		reqlen  = sizeof(state->smb2.hdr);
+		reqlen += state->smb2.fixed_len;
+		reqlen += state->smb2.dyn_len;
 
 		if (i < num_reqs-1) {
 			if ((reqlen % 8) > 0) {
 				uint8_t pad = 8 - (reqlen % 8);
-				iov[num_iov].iov_base = state->pad;
+				iov[num_iov].iov_base = state->smb2.pad;
 				iov[num_iov].iov_len = pad;
 				num_iov += 1;
 				reqlen += pad;
 			}
-			SIVAL(state->hdr, SMB2_HDR_NEXT_COMMAND, reqlen);
+			SIVAL(state->smb2.hdr, SMB2_HDR_NEXT_COMMAND, reqlen);
 		}
 		nbt_len += reqlen;
 
-		ret = smb2cli_req_set_pending(reqs[i]);
+		ret = smbXcli_req_set_pending(reqs[i]);
 		if (!ret) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1710,13 +1775,17 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	 * TODO: Do signing here
 	 */
 
-	state = tevent_req_data(reqs[0], struct smb2cli_req_state);
-	_smb_setlen_tcp(state->nbt, nbt_len);
-	iov[0].iov_base = state->nbt;
-	iov[0].iov_len  = sizeof(state->nbt);
+	state = tevent_req_data(reqs[0], struct smbXcli_req_state);
+	_smb_setlen_tcp(state->length_hdr, nbt_len);
+	iov[0].iov_base = state->length_hdr;
+	iov[0].iov_len  = sizeof(state->length_hdr);
 
-	subreq = writev_send(state, state->ev, state->cli->conn.outgoing,
-			     state->cli->conn.fd, false, iov, num_iov);
+	if (state->conn->dispatch_incoming == NULL) {
+		state->conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
+	}
+
+	subreq = writev_send(state, state->ev, state->conn->outgoing,
+			     state->conn->fd, false, iov, num_iov);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1726,11 +1795,11 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 
 struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
-				    struct cli_state *cli,
+				    struct smbXcli_conn *conn,
 				    uint16_t cmd,
 				    uint32_t additional_flags,
 				    uint32_t clear_flags,
-				    unsigned int timeout,
+				    uint32_t timeout_msec,
 				    uint32_t pid,
 				    uint32_t tid,
 				    uint64_t uid,
@@ -1742,9 +1811,9 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	NTSTATUS status;
 
-	req = smb2cli_req_create(mem_ctx, ev, cli, cmd,
+	req = smb2cli_req_create(mem_ctx, ev, conn, cmd,
 				 additional_flags, clear_flags,
-				 timeout,
+				 timeout_msec,
 				 pid, tid, uid,
 				 fixed, fixed_len, dyn, dyn_len);
 	if (req == NULL) {
@@ -1765,9 +1834,9 @@ static void smb2cli_writev_done(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct smb2cli_req_state *state =
+	struct smbXcli_req_state *state =
 		tevent_req_data(req,
-		struct smb2cli_req_state);
+		struct smbXcli_req_state);
 	ssize_t nwritten;
 	int err;
 
@@ -1776,7 +1845,7 @@ static void smb2cli_writev_done(struct tevent_req *subreq)
 	if (nwritten == -1) {
 		/* here, we need to notify all pending requests */
 		NTSTATUS status = map_nt_error_from_unix_common(err);
-		smb2cli_notify_pending(state->cli, status);
+		smbXcli_conn_disconnect(state->conn, status);
 		return;
 	}
 }
@@ -1881,68 +1950,40 @@ inval:
 	return NT_STATUS_INVALID_NETWORK_RESPONSE;
 }
 
-static struct tevent_req *cli_smb2_find_pending(struct cli_state *cli,
-						uint64_t mid)
+static struct tevent_req *smb2cli_conn_find_pending(struct smbXcli_conn *conn,
+						    uint64_t mid)
 {
-	int num_pending = talloc_array_length(cli->conn.pending);
-	int i;
+	size_t num_pending = talloc_array_length(conn->pending);
+	size_t i;
 
 	for (i=0; i<num_pending; i++) {
-		struct tevent_req *req = cli->conn.pending[i];
-		struct smb2cli_req_state *state =
+		struct tevent_req *req = conn->pending[i];
+		struct smbXcli_req_state *state =
 			tevent_req_data(req,
-			struct smb2cli_req_state);
+			struct smbXcli_req_state);
 
-		if (mid == BVAL(state->hdr, SMB2_HDR_MESSAGE_ID)) {
+		if (mid == BVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID)) {
 			return req;
 		}
 	}
 	return NULL;
 }
 
-static void smb2cli_inbuf_received(struct tevent_req *subreq)
+static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
+					       TALLOC_CTX *tmp_mem,
+					       uint8_t *inbuf)
 {
-	struct cli_state *cli =
-		tevent_req_callback_data(subreq,
-		struct cli_state);
-	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_req *req;
-	struct smb2cli_req_state *state = NULL;
+	struct smbXcli_req_state *state = NULL;
 	struct iovec *iov;
 	int i, num_iov;
 	NTSTATUS status;
-	uint8_t *inbuf;
-	ssize_t received;
-	int err;
-	size_t num_pending;
 	bool defer = true;
 
-	received = read_smb_recv(subreq, frame, &inbuf, &err);
-	TALLOC_FREE(subreq);
-	if (received == -1) {
-		/*
-		 * We need to close the connection and notify
-		 * all pending requests.
-		 */
-		status = map_nt_error_from_unix_common(err);
-		smb2cli_notify_pending(cli, status);
-		TALLOC_FREE(frame);
-		return;
-	}
-
-	status = smb2cli_inbuf_parse_compound(inbuf, frame,
+	status = smb2cli_inbuf_parse_compound(inbuf, tmp_mem,
 					      &iov, &num_iov);
 	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * if we cannot parse the incoming pdu,
-		 * the connection becomes unusable.
-		 *
-		 * We need to close the connection and notify
-		 * all pending requests.
-		 */
-		smb2cli_notify_pending(cli, status);
-		TALLOC_FREE(frame);
-		return;
+		return status;
 	}
 
 	for (i=0; i<num_iov; i+=3) {
@@ -1954,57 +1995,40 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 		uint16_t req_opcode;
 
-		req = cli_smb2_find_pending(cli, mid);
+		req = smb2cli_conn_find_pending(conn, mid);
 		if (req == NULL) {
-			/*
-			 * TODO: handle oplock breaks and async responses
-			 */
-
-			/*
-			 * We need to close the connection and notify
-			 * all pending requests.
-			 */
-			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-			smb2cli_notify_pending(cli, status);
-			TALLOC_FREE(frame);
-			return;
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
-		state = tevent_req_data(req, struct smb2cli_req_state);
+		state = tevent_req_data(req, struct smbXcli_req_state);
 
-		req_opcode = SVAL(state->hdr, SMB2_HDR_OPCODE);
+		req_opcode = SVAL(state->smb2.hdr, SMB2_HDR_OPCODE);
 		if (opcode != req_opcode) {
-			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-			smb2cli_notify_pending(cli, status);
-			TALLOC_FREE(frame);
-			return;
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 
 		if (!(flags & SMB2_HDR_FLAG_REDIRECT)) {
-			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-			smb2cli_notify_pending(cli, status);
-			TALLOC_FREE(frame);
-			return;
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 
 		status = NT_STATUS(IVAL(inhdr, SMB2_HDR_STATUS));
 		if ((flags & SMB2_HDR_FLAG_ASYNC) &&
 		    NT_STATUS_EQUAL(status, STATUS_PENDING)) {
-			uint32_t req_flags = IVAL(state->hdr, SMB2_HDR_FLAGS);
+			uint32_t req_flags = IVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
 			uint64_t async_id = BVAL(inhdr, SMB2_HDR_ASYNC_ID);
 
 			req_flags |= SMB2_HDR_FLAG_ASYNC;
-			SBVAL(state->hdr, SMB2_HDR_FLAGS, req_flags);
-			SBVAL(state->hdr, SMB2_HDR_ASYNC_ID, async_id);
+			SBVAL(state->smb2.hdr, SMB2_HDR_FLAGS, req_flags);
+			SBVAL(state->smb2.hdr, SMB2_HDR_ASYNC_ID, async_id);
 			continue;
 		}
 
-		smb2cli_req_unset_pending(req);
+		smbXcli_req_unset_pending(req);
 
 		/*
 		 * There might be more than one response
 		 * we need to defer the notifications
 		 */
-		if ((num_iov == 4) && (talloc_array_length(cli->conn.pending) == 0)) {
+		if ((num_iov == 4) && (talloc_array_length(conn->pending) == 0)) {
 			defer = false;
 		}
 
@@ -2016,53 +2040,24 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		 * Note: here we use talloc_reference() in a way
 		 *       that does not expose it to the caller.
 		 */
-		inbuf_ref = talloc_reference(state->recv_iov, inbuf);
+		inbuf_ref = talloc_reference(state->smb2.recv_iov, inbuf);
 		if (tevent_req_nomem(inbuf_ref, req)) {
 			continue;
 		}
 
 		/* copy the related buffers */
-		state->recv_iov[0] = cur[0];
-		state->recv_iov[1] = cur[1];
-		state->recv_iov[2] = cur[2];
+		state->smb2.recv_iov[0] = cur[0];
+		state->smb2.recv_iov[1] = cur[1];
+		state->smb2.recv_iov[2] = cur[2];
 
 		tevent_req_done(req);
 	}
 
-	TALLOC_FREE(frame);
-
-	if (!defer) {
-		return;
+	if (defer) {
+		return NT_STATUS_RETRY;
 	}
 
-	num_pending = talloc_array_length(cli->conn.pending);
-	if (num_pending == 0) {
-		if (state->cli->smb2.mid < UINT64_MAX) {
-			/* no more pending requests, so we are done for now */
-			return;
-		}
-
-		/*
-		 * If there are no more requests possible,
-		 * because we are out of message ids,
-		 * we need to disconnect.
-		 */
-		smb2cli_notify_pending(cli, NT_STATUS_CONNECTION_ABORTED);
-		return;
-	}
-	req = cli->conn.pending[0];
-	state = tevent_req_data(req, struct smb2cli_req_state);
-
-	/*
-	 * add the read_smb request that waits for the
-	 * next answer from the server
-	 */
-	subreq = read_smb_send(cli->conn.pending, state->ev, cli->conn.fd);
-	if (subreq == NULL) {
-		smb2cli_notify_pending(cli, NT_STATUS_NO_MEMORY);
-		return;
-	}
-	tevent_req_set_callback(subreq, smb2cli_inbuf_received, cli);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
@@ -2070,9 +2065,9 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  const struct smb2cli_req_expected_response *expected,
 			  size_t num_expected)
 {
-	struct smb2cli_req_state *state =
+	struct smbXcli_req_state *state =
 		tevent_req_data(req,
-		struct smb2cli_req_state);
+		struct smbXcli_req_state);
 	NTSTATUS status;
 	size_t body_size;
 	bool found_status = false;
@@ -2103,8 +2098,8 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		found_size = true;
 	}
 
-	status = NT_STATUS(IVAL(state->recv_iov[0].iov_base, SMB2_HDR_STATUS));
-	body_size = SVAL(state->recv_iov[1].iov_base, 0);
+	status = NT_STATUS(IVAL(state->smb2.recv_iov[0].iov_base, SMB2_HDR_STATUS));
+	body_size = SVAL(state->smb2.recv_iov[1].iov_base, 0);
 
 	for (i=0; i < num_expected; i++) {
 		if (!NT_STATUS_EQUAL(status, expected[i].status)) {
@@ -2132,7 +2127,7 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	}
 
 	if (piov != NULL) {
-		*piov = talloc_move(mem_ctx, &state->recv_iov);
+		*piov = talloc_move(mem_ctx, &state->smb2.recv_iov);
 	}
 
 	return status;
