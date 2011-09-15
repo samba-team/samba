@@ -92,6 +92,7 @@ bool run_smb_any_connect(int dummy);
 bool run_addrchange(int dummy);
 bool run_notify_online(int dummy);
 bool run_nttrans_create(int dummy);
+bool run_nttrans_fsctl(int dummy);
 bool run_smb2_basic(int dummy);
 bool run_local_conv_auth_info(int dummy);
 
