@@ -139,7 +139,7 @@ class cmd_fsmo_show(Command):
 
         domain_dn = samdb.domain_dn()
         self.infrastructure_dn = "CN=Infrastructure," + domain_dn
-        self.naming_dn = "CN=Partitions," + samdb.get_config_basedn()
+        self.naming_dn = "CN=Partitions,%s" % samdb.get_config_basedn()
         self.schema_dn = samdb.get_schema_basedn()
         self.rid_dn = "CN=RID Manager$,CN=System," + domain_dn
 

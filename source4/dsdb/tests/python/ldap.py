@@ -1574,7 +1574,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.assertEquals(res[0]["objectClass"][4], "computer");
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
-        self.assertEquals(res[0]["objectCategory"][0], ("CN=Computer," + ldb.get_schema_basedn()))
+        self.assertEquals(res[0]["objectCategory"][0], ("CN=Computer,%s" % ldb.get_schema_basedn()))
         self.assertEquals(int(res[0]["primaryGroupID"][0]), 513);
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT);
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE);
@@ -1883,7 +1883,7 @@ servicePrincipalName: host/ldaptest2computer29
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
         try:
-            ldb.rename("cn=ldaptestuser3,cn=users," + self.base_dn, "cn=ldaptestuser3," + ldb.get_config_basedn())
+            ldb.rename("cn=ldaptestuser3,cn=users,%s" % self.base_dn, "cn=ldaptestuser3,%s" % ldb.get_config_basedn())
             self.fail()
         except LdbError, (num, _):
             self.assertTrue(num in (71, 64))
@@ -2014,15 +2014,15 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(set(res[0]["objectClass"]), set(["top", "person", "organizationalPerson", "user"]))
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
-        self.assertEquals(str(res[0]["objectCategory"]), ("CN=Person," + ldb.get_schema_basedn()))
+        self.assertEquals(str(res[0]["objectCategory"]), ("CN=Person,%s" % ldb.get_schema_basedn()))
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT)
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE)
         self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
         self.assertEquals(len(res[0]["memberOf"]), 1)
 
-        print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person," + ldb.get_schema_basedn() + "))"
-        res2 = ldb.search(expression="(&(cn=ldaptestuser)(objectCategory=cn=person," + ldb.get_schema_basedn() + "))")
-        self.assertEquals(len(res2), 1, "Could not find (&(cn=ldaptestuser)(objectCategory=cn=person," + ldb.get_schema_basedn() + "))")
+        print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,%s))" % ldb.get_schema_basedn()
+        res2 = ldb.search(expression="(&(cn=ldaptestuser)(objectCategory=cn=person,%s))" % ldb.get_schema_basedn())
+        self.assertEquals(len(res2), 1, "Could not find (&(cn=ldaptestuser)(objectCategory=cn=person,%s))" % ldb.get_schema_basedn())
 
         self.assertEquals(res[0].dn, res2[0].dn)
 
@@ -2059,23 +2059,23 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(set(res[0]["objectClass"]), set(["top", "person", "organizationalPerson", "user", "computer"]))
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
-        self.assertEquals(str(res[0]["objectCategory"]), ("CN=Computer," + ldb.get_schema_basedn()))
+        self.assertEquals(str(res[0]["objectCategory"]), ("CN=Computer,%s" % ldb.get_schema_basedn()))
         self.assertEquals(int(res[0]["primaryGroupID"][0]), 513)
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT)
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE)
         self.assertEquals(res[0]["memberOf"][0].upper(), ("CN=ldaptestgroup2,CN=Users," + self.base_dn).upper())
         self.assertEquals(len(res[0]["memberOf"]), 1)
 
-        print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer," + ldb.get_schema_basedn() + "))"
-        res2 = ldb.search(expression="(&(cn=ldaptestcomputer)(objectCategory=cn=computer," + ldb.get_schema_basedn() + "))")
-        self.assertEquals(len(res2), 1, "Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer," + ldb.get_schema_basedn() + "))")
+        print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,%s))" % ldb.get_schema_basedn()
+        res2 = ldb.search(expression="(&(cn=ldaptestcomputer)(objectCategory=cn=computer,%s))" % ldb.get_schema_basedn())
+        self.assertEquals(len(res2), 1, "Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer,%s))" % ldb.get_schema_basedn())
 
         self.assertEquals(res[0].dn, res2[0].dn)
 
         if gc_ldb is not None:
-            print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer," + gc_ldb.get_schema_basedn() + ")) in Global Catlog"
-            res2gc = gc_ldb.search(expression="(&(cn=ldaptestcomputer)(objectCategory=cn=computer," + gc_ldb.get_schema_basedn() + "))")
-            self.assertEquals(len(res2gc), 1, "Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer," + gc_ldb.get_schema_basedn() + ")) in Global Catlog")
+            print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,%s)) in Global Catalog" % gc_ldb.get_schema_basedn()
+            res2gc = gc_ldb.search(expression="(&(cn=ldaptestcomputer)(objectCategory=cn=computer,%s))" % gc_ldb.get_schema_basedn())
+            self.assertEquals(len(res2gc), 1, "Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer,%s)) In Global Catalog" % gc_ldb.get_schema_basedn())
 
             self.assertEquals(res[0].dn, res2gc[0].dn)
 
@@ -2122,7 +2122,7 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
         self.assertEquals(list(res[0]["objectClass"]), ["top", "person", "organizationalPerson", "user", "computer"])
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
-        self.assertEquals(res[0]["objectCategory"][0], "CN=Computer," + ldb.get_schema_basedn())
+        self.assertEquals(res[0]["objectCategory"][0], "CN=Computer,%s" % ldb.get_schema_basedn())
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_WORKSTATION_TRUST)
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_WORKSTATION_TRUST_ACCOUNT)
 
@@ -2761,7 +2761,7 @@ class BaseDnTests(unittest.TestCase):
         self.assertEquals(len(res4[0]["msDS-Behavior-Version"]), 1)
         self.assertEquals(int(res[0]["domainFunctionality"][0]), int(res4[0]["msDS-Behavior-Version"][0]))
 
-        res5 = self.ldb.search("cn=partitions," + str(ldb.get_config_basedn()), scope=SCOPE_BASE, attrs=["msDS-Behavior-Version"])
+        res5 = self.ldb.search("cn=partitions,%s" % ldb.get_config_basedn(), scope=SCOPE_BASE, attrs=["msDS-Behavior-Version"])
         self.assertEquals(len(res5), 1)
         self.assertEquals(len(res5[0]["msDS-Behavior-Version"]), 1)
         self.assertEquals(int(res[0]["forestFunctionality"][0]), int(res5[0]["msDS-Behavior-Version"][0]))
