@@ -51,7 +51,7 @@ def get_domainguid(samdb, domaindn):
     return domainguid
 
 def get_ntdsguid(samdb, domaindn):
-    configdn = "CN=Configuration,%s" % domaindn
+    configdn = samdb.get_config_basedn()
 
     res1 = samdb.search(base="OU=Domain Controllers,%s" % domaindn, scope=ldb.SCOPE_ONELEVEL,
                         attrs=["dNSHostName"])
