@@ -698,7 +698,7 @@ class AclSearchTests(AclTests):
         else:
             self.fail()
         try:
-            res = anonymous.search("CN=Configuration," + self.base_dn, expression="(objectClass=*)",
+            res = anonymous.search(anonymous.get_config_basedn(), expression="(objectClass=*)",
                                         scope=SCOPE_SUBTREE)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
@@ -719,7 +719,7 @@ class AclSearchTests(AclTests):
         self.assertTrue("dn" in res[0])
         self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin,
                                            "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn))
-        res = anonymous.search("CN=Configuration," + self.base_dn, expression="(objectClass=*)",
+        res = anonymous.search(anonymous.get_config_basedn(), expression="(objectClass=*)",
                                scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
         self.assertTrue("dn" in res[0])

@@ -87,7 +87,7 @@ class UrgentReplicationTests(samba.tests.TestCase):
         '''Test if the urgent replication is activated
            when handling a nTDSDSA object'''
         self.ldb.add({
-            "dn": "cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration," + self.base_dn,
+            "dn": "cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites," + self.ldb.get_config_basedn(),
             "objectclass":"server",
             "cn":"test server",
             "name":"test server",
