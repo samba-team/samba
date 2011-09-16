@@ -797,8 +797,6 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/pdb_util.o
 
 DEVEL_HELP_WEIRD_OBJ = ../lib/util/charset/weird.o
-CP850_OBJ = ../lib/util/charset/CP850.o
-CP437_OBJ = ../lib/util/charset/CP437.o
 CHARSET_MACOSXFS_OBJ = ../lib/util/charset/charset_macosxfs.o
 
 GROUPDB_OBJ = groupdb/mapping.o groupdb/mapping_tdb.o
@@ -2910,14 +2908,6 @@ bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ldap.o $(IDMAP_RW_OBJ)
 bin/weird.@SHLIBEXT@: $(BINARY_PREREQS) $(DEVEL_HELP_WEIRD_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(DEVEL_HELP_WEIRD_OBJ)
-
-bin/CP850.@SHLIBEXT@: $(BINARY_PREREQS) $(CP850_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(CP850_OBJ)
-
-bin/CP437.@SHLIBEXT@: $(BINARY_PREREQS) $(CP437_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(CP437_OBJ)
 
 bin/macosxfs.@SHLIBEXT@: $(BINARY_PREREQS) $(CHARSET_MACOSXFS_OBJ)
 	@echo "Building plugin $@"

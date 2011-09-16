@@ -22,22 +22,6 @@ bld.SAMBA_MODULE('charset_weird',
                  internal_module=True,
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_weird'))
 
-bld.SAMBA_MODULE('charset_CP850',
-                 subsystem='charset',
-                 source='CP850.c',
-                 init_function='charset_CP850_init',
-                 deps='samba-util',
-                 internal_module=True,
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_CP850'))
-
-bld.SAMBA_MODULE('charset_CP437',
-                 subsystem='charset',
-                 source='CP437.c',
-                 init_function='charset_CP437_init',
-                 deps='samba-util',
-                 internal_module=True,
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_CP437'))
-
 bld.SAMBA_MODULE('charset_macosxfs',
                  subsystem='charset',
                  source='charset_macosxfs.c',

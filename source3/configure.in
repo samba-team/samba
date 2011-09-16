@@ -455,8 +455,6 @@ default_shared_modules="$default_shared_modules vfs_cap"
 default_shared_modules="$default_shared_modules vfs_expand_msdfs"
 default_shared_modules="$default_shared_modules vfs_shadow_copy"
 default_shared_modules="$default_shared_modules vfs_shadow_copy2"
-default_shared_modules="$default_shared_modules charset_CP850"
-default_shared_modules="$default_shared_modules charset_CP437"
 default_shared_modules="$default_shared_modules auth_script"
 default_shared_modules="$default_shared_modules vfs_readahead"
 default_shared_modules="$default_shared_modules vfs_xattr_tdb"
@@ -6880,8 +6878,6 @@ SMB_MODULE(nss_info_template, winbindd/nss_info_template.o, "bin/template.$SHLIB
 SMB_SUBSYSTEM(NSS_INFO, winbindd/nss_info.o)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
-SMB_MODULE(charset_CP850, modules/CP850.o, "bin/CP850.$SHLIBEXT", CHARSET)
-SMB_MODULE(charset_CP437, modules/CP437.o, "bin/CP437.$SHLIBEXT", CHARSET)
 SMB_MODULE(charset_macosxfs, modules/charset_macosxfs.o,"bin/macosxfs.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 

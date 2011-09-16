@@ -1735,9 +1735,6 @@ main() {
         default_static_modules.extend(TO_LIST('pdb_ads auth_netlogond charset_weird'))
         default_shared_modules.extend(TO_LIST('perfcount_test'))
 
-    if Options.options.developer or not conf.CONFIG_SET('HAVE_NATIVE_ICONV'):
-        default_static_modules.extend(TO_LIST('charset_CP850 charset_CP437'))
-
     if conf.env.toplevel_build:
         default_static_modules.extend(TO_LIST('pdb_samba4 auth_samba4'))
 
