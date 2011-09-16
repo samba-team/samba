@@ -2121,12 +2121,16 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 				   char **ppdata, uint32 data_count,
 				   uint32 max_data_count)
 {
+	NTSTATUS status;
 	uint32 function;
 	uint16 fidnum;
 	files_struct *fsp;
 	uint8 isFSctl;
 	uint8 compfilter;
+	char *out_data = NULL;
+	uint32 out_data_len = 0;
 	char *pdata = *ppdata;
+	TALLOC_CTX *ctx = talloc_tos();
 
 	if (setup_count != 8) {
 		DEBUG(3,("call_nt_transact_ioctl: invalid setup count %d\n", setup_count));
@@ -2139,353 +2143,46 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 	isFSctl = CVAL(*ppsetup, 6);
 	compfilter = CVAL(*ppsetup, 7);
 
-	DEBUG(10,("call_nt_transact_ioctl: function[0x%08X] FID[0x%04X] isFSctl[0x%02X] compfilter[0x%02X]\n", 
+	DEBUG(10, ("call_nt_transact_ioctl: function[0x%08X] FID[0x%04X] isFSctl[0x%02X] compfilter[0x%02X]\n", 
 		 function, fidnum, isFSctl, compfilter));
 
 	fsp=file_fsp(req, fidnum);
-	/* this check is done in each implemented function case for now
-	   because I don't want to break anything... --metze
-	FSP_BELONGS_CONN(fsp,conn);*/
+
+	/*
+	 * We don't really implement IOCTLs, especially on files.
+	 */
+	if (!isFSctl) {
+		DEBUG(10, ("isFSctl: 0x%02X indicates IOCTL, not FSCTL!\n",
+			isFSctl));
+		reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return;
+	}
+
+	/* Has to be for an open file! */
+	if (!check_fsp_open(conn, req, fsp)) {
+		return;
+	}
 
 	SMB_PERFCOUNT_SET_IOCTL(&req->pcd, function);
 
-	switch (function) {
-	case FSCTL_SET_SPARSE:
-	{
-		bool set_sparse = true;
-		NTSTATUS status;
-
-		if (data_count >= 1 && pdata[0] == 0) {
-			set_sparse = false;
-		}
-
-		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X]set[%u]\n",
-			 fidnum, set_sparse));
-
-		if (!check_fsp_open(conn, req, fsp)) {
-			return;
-		}
-
-		status = file_set_sparse(conn, fsp, set_sparse);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(9,("FSCTL_SET_SPARSE: fname[%s] set[%u] - %s\n",
-				 smb_fname_str_dbg(fsp->fsp_name), set_sparse, nt_errstr(status)));
-			reply_nterror(req, status);
-			return;
-		}
-
-		DEBUG(10,("FSCTL_SET_SPARSE: fname[%s] set[%u] - %s\n",
-			 smb_fname_str_dbg(fsp->fsp_name), set_sparse, nt_errstr(status)));
-		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
-		return;
+	/*
+	 * out_data might be allocated by the VFS module, but talloc should be
+	 * used, and should be cleaned up when the request ends.
+	 */
+	status = SMB_VFS_FSCTL(fsp, 
+			       ctx,
+			       function, 
+			       req->flags2,
+			       (uint8_t *)pdata, 
+			       data_count, 
+			       (uint8_t **)&out_data,
+			       max_data_count,
+			       &out_data_len);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+	} else {
+		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, out_data, out_data_len);
 	}
-	case FSCTL_CREATE_OR_GET_OBJECT_ID:
-	{
-		unsigned char objid[16];
-
-		/* This should return the object-id on this file.
-		 * I think I'll make this be the inode+dev. JRA.
-		 */
-
-		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on FID[0x%04X]\n",fidnum));
-
-		if (!check_fsp_open(conn, req, fsp)) {
-			return;
-		}
-
-		data_count = 64;
-		pdata = nttrans_realloc(ppdata, data_count);
-		if (pdata == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		/* For backwards compatibility only store the dev/inode. */
-		push_file_id_16(pdata, &fsp->file_id);
-		memcpy(pdata+16,create_volume_objectid(conn,objid),16);
-		push_file_id_16(pdata+32, &fsp->file_id);
-		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0,
-				pdata, data_count);
-		return;
-	}
-
-	case FSCTL_GET_REPARSE_POINT:
-		/* pretend this fail - my winXP does it like this
-		 * --metze
-		 */
-
-		DEBUG(10,("FSCTL_GET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		reply_nterror(req, NT_STATUS_NOT_A_REPARSE_POINT);
-		return;
-
-	case FSCTL_SET_REPARSE_POINT:
-		/* pretend this fail - I'm assuming this because of the FSCTL_GET_REPARSE_POINT case.
-		 * --metze
-		 */
-
-		DEBUG(10,("FSCTL_SET_REPARSE_POINT: called on FID[0x%04X](but not implemented)\n",fidnum));
-		reply_nterror(req, NT_STATUS_NOT_A_REPARSE_POINT);
-		return;
-
-	case FSCTL_GET_SHADOW_COPY_DATA: /* don't know if this name is right...*/
-	{
-		/*
-		 * This is called to retrieve the number of Shadow Copies (a.k.a. snapshots)
-		 * and return their volume names.  If max_data_count is 16, then it is just
-		 * asking for the number of volumes and length of the combined names.
-		 *
-		 * pdata is the data allocated by our caller, but that uses
-		 * total_data_count (which is 0 in our case) rather than max_data_count.
-		 * Allocate the correct amount and return the pointer to let
-		 * it be deallocated when we return.
-		 */
-		struct shadow_copy_data *shadow_data = NULL;
-		bool labels = False;
-		uint32 labels_data_count = 0;
-		uint32 i;
-		char *cur_pdata;
-
-		if (!check_fsp_open(conn, req, fsp)) {
-			return;
-		}
-
-		if (max_data_count < 16) {
-			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) < 16 is invalid!\n",
-				max_data_count));
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		if (max_data_count > 16) {
-			labels = True;
-		}
-
-		shadow_data = talloc_zero(talloc_tos(),
-					    struct shadow_copy_data);
-		if (shadow_data == NULL) {
-			DEBUG(0,("TALLOC_ZERO() failed!\n"));
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		/*
-		 * Call the VFS routine to actually do the work.
-		 */
-		if (SMB_VFS_GET_SHADOW_COPY_DATA(fsp, shadow_data, labels)!=0) {
-			TALLOC_FREE(shadow_data);
-			if (errno == ENOSYS) {
-				DEBUG(5,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, not supported.\n", 
-					conn->connectpath));
-				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
-				return;
-			} else {
-				DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, failed.\n", 
-					conn->connectpath));
-				reply_nterror(req, NT_STATUS_UNSUCCESSFUL);
-				return;
-			}
-		}
-
-		labels_data_count = (shadow_data->num_volumes*2*sizeof(SHADOW_COPY_LABEL))+2;
-
-		if (!labels) {
-			data_count = 16;
-		} else {
-			data_count = 12+labels_data_count+4;
-		}
-
-		if (max_data_count<data_count) {
-			DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: max_data_count(%u) too small (%u) bytes needed!\n",
-				max_data_count,data_count));
-			TALLOC_FREE(shadow_data);
-			reply_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
-			return;
-		}
-
-		pdata = nttrans_realloc(ppdata, data_count);
-		if (pdata == NULL) {
-			TALLOC_FREE(shadow_data);
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		cur_pdata = pdata;
-
-		/* num_volumes 4 bytes */
-		SIVAL(pdata,0,shadow_data->num_volumes);
-
-		if (labels) {
-			/* num_labels 4 bytes */
-			SIVAL(pdata,4,shadow_data->num_volumes);
-		}
-
-		/* needed_data_count 4 bytes */
-		SIVAL(pdata, 8, labels_data_count+4);
-
-		cur_pdata+=12;
-
-		DEBUG(10,("FSCTL_GET_SHADOW_COPY_DATA: %u volumes for path[%s].\n",
-			  shadow_data->num_volumes, fsp_str_dbg(fsp)));
-		if (labels && shadow_data->labels) {
-			for (i=0;i<shadow_data->num_volumes;i++) {
-				srvstr_push(pdata, req->flags2,
-					    cur_pdata, shadow_data->labels[i],
-					    2*sizeof(SHADOW_COPY_LABEL),
-					    STR_UNICODE|STR_TERMINATE);
-				cur_pdata+=2*sizeof(SHADOW_COPY_LABEL);
-				DEBUGADD(10,("Label[%u]: '%s'\n",i,shadow_data->labels[i]));
-			}
-		}
-
-		TALLOC_FREE(shadow_data);
-
-		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0,
-				pdata, data_count);
-
-		return;
-        }
-
-	case FSCTL_FIND_FILES_BY_SID: /* I hope this name is right */
-	{
-		/* pretend this succeeded -
-		 *
-		 * we have to send back a list with all files owned by this SID
-		 *
-		 * but I have to check that --metze
-		 */
-		struct dom_sid sid;
-		uid_t uid;
-		size_t sid_len;
-
-		DEBUG(10,("FSCTL_FIND_FILES_BY_SID: called on FID[0x%04X]\n",fidnum));
-
-		if (!check_fsp_open(conn, req, fsp)) {
-			return;
-		}
-
-		if (data_count < 8) {
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		sid_len = MIN(data_count-4,SID_MAX_SIZE);
-
-		/* unknown 4 bytes: this is not the length of the sid :-(  */
-		/*unknown = IVAL(pdata,0);*/
-
-		if (!sid_parse(pdata+4,sid_len,&sid)) {
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-		DEBUGADD(10, ("for SID: %s\n", sid_string_dbg(&sid)));
-
-		if (!sid_to_uid(&sid, &uid)) {
-			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_len[%lu]\n",
-				 sid_string_dbg(&sid),
-				 (unsigned long)sid_len));
-			uid = (-1);
-		}
-
-		/* we can take a look at the find source :-)
-		 *
-		 * find ./ -uid $uid  -name '*'   is what we need here
-		 *
-		 *
-		 * and send 4bytes len and then NULL terminated unicode strings
-		 * for each file
-		 *
-		 * but I don't know how to deal with the paged results
-		 * (maybe we can hang the result anywhere in the fsp struct)
-		 *
-		 * we don't send all files at once
-		 * and at the next we should *not* start from the beginning,
-		 * so we have to cache the result
-		 *
-		 * --metze
-		 */
-
-		/* this works for now... */
-		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
-		return;
-	}
-	case FSCTL_QUERY_ALLOCATED_RANGES:
-	{
-		/* FIXME: This is just a dummy reply, telling that all of the
-		 * file is allocated. MKS cp needs that.
-		 * Adding the real allocated ranges via FIEMAP on Linux
-		 * and SEEK_DATA/SEEK_HOLE on Solaris is needed to make
-		 * this FSCTL correct for sparse files.
-		 */
-		NTSTATUS status;
-		uint64_t offset, length;
-
-		if (!check_fsp_open(conn, req, fsp)) {
-			return;
-		}
-
-		if (data_count != 16) {
-			DEBUG(0,("FSCTL_QUERY_ALLOCATED_RANGES: data_count(%u) != 16 is invalid!\n",
-				data_count));
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		if (max_data_count < 16) {
-			DEBUG(0,("FSCTL_QUERY_ALLOCATED_RANGES: max_data_count(%u) < 16 is invalid!\n",
-				max_data_count));
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		offset = BVAL(pdata,0);
-		length = BVAL(pdata,8);
-
-		if (offset + length < offset) {
-			/* No 64-bit integer wrap. */
-			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		status = vfs_stat_fsp(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
-
-		if (offset > fsp->fsp_name->st.st_ex_size ||
-				fsp->fsp_name->st.st_ex_size == 0 ||
-				length == 0) {
-			send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
-		} else {
-			uint64_t end = offset + length;
-			end = MIN(end, fsp->fsp_name->st.st_ex_size);
-			SBVAL(pdata,0,0);
-			SBVAL(pdata,8,end);
-			send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0,
-				pdata, 16);
-		}
-		return;
-	}
-	case FSCTL_IS_VOLUME_DIRTY:
-		DEBUG(10,("FSCTL_IS_VOLUME_DIRTY: called on FID[0x%04X] "
-			  "(but not implemented)\n", (int)fidnum));
-		/*
-		 * http://msdn.microsoft.com/en-us/library/cc232128%28PROT.10%29.aspx
-		 * says we have to respond with NT_STATUS_INVALID_PARAMETER
-		 */
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	default:
-		/* Only print this once... */
-		if (!logged_ioctl_message) {
-			logged_ioctl_message = true;
-			DEBUG(2,("call_nt_transact_ioctl(0x%x): "
-				 "Currently not implemented.\n",
-				 function));
-		}
-	}
-
-	reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 }
 
 

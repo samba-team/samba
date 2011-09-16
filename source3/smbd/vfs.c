@@ -1721,6 +1721,23 @@ NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
 					   mapped_name);
 }
 
+NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
+			    struct files_struct *fsp,
+			    TALLOC_CTX *ctx,
+			    uint32_t function,
+			    uint16_t req_flags,
+			    const uint8_t *in_data,
+			    uint32_t in_len,
+			    uint8_t **out_data,
+			    uint32_t max_out_len,
+			    uint32_t *out_len)
+{
+	VFS_FIND(fsctl);
+	return handle->fns->fsctl(handle, fsp, ctx, function, req_flags, 
+				  in_data, in_len, out_data, max_out_len, 
+				  out_len);
+}
+
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,

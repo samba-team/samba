@@ -136,6 +136,7 @@
 /* Leave at 28 - not yet released. Rename open function to open_fn. - gd */
 /* Leave at 28 - not yet released. Make getwd function always return malloced memory. JRA. */
 /* Bump to version 29 - Samba 3.6.0 will ship with interface version 28. */
+/* Leave at 29 - not yet releases. Add fsctl. Richard Sharpe */
 #define SMB_VFS_INTERFACE_VERSION 29
 
 /*
@@ -328,6 +329,17 @@ struct vfs_fn_pointers {
 				   enum vfs_translate_direction direction,
 				   TALLOC_CTX *mem_ctx,
 				   char **mapped_name);
+
+	NTSTATUS (*fsctl)(struct vfs_handle_struct *handle,
+			  struct files_struct *fsp,
+			  TALLOC_CTX *ctx,
+			  uint32_t function,
+			  uint16_t req_flags,
+			  const uint8_t *_in_data,
+			  uint32_t in_len,
+			  uint8_t **_out_data,
+			  uint32_t max_out_len,
+			  uint32_t *out_len); 
 
 	/* NT ACL operations. */
 
@@ -692,6 +704,16 @@ NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
 				     enum vfs_translate_direction direction,
 				     TALLOC_CTX *mem_ctx,
 				     char **mapped_name);
+NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
+			    struct files_struct *fsp,
+			    TALLOC_CTX *ctx,
+			    uint32_t function,
+			    uint16_t req_flags,
+			    const uint8_t *_in_data,
+			    uint32_t in_len,
+			    uint8_t **_out_data,
+			    uint32_t max_out_len,
+			    uint32_t *out_len); 
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,
