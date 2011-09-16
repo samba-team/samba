@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.6.1
-                          , 2011
+                         September 27, 2011
                    =============================
 
 
@@ -13,6 +13,69 @@ Changes since 3.6.0:
 --------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 8368: Fix the fallback to the deprecated spelling idmap:script.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8229: Fix 'widelinks' regression.
+    * BUG 8370: Fix vfs_chown_fsp.
+    * BUG 8412: Fix "saving as" of MS Office 2007 (Word) documents on Samba
+      shares with SMB2.
+    * BUG 8422: Fix infinite loop in ACL module code.
+    * BUG 8429: Compound SMB2 requests on an IPC connection can corrupt the
+      reply stream.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 8428: Fix wrong reply to DHnC (durable handle reconnect).
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 8364: Fix the build of gpfs.c on RHEL 6.0 with gpfs 3.4.0-4.
+
+
+o   Ira Cooper <ira@wakeful.net>
+    * BUG 8395: Optimize serverid_exists() for Solaris.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8363: Fix build of vfs_prealloc on SLES8.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7864: Fix usage of cli_errstr().
+    * BUG 8334: smb2: smbd logs "Invalid SMB packet: first request: 0x0008" and crashes.
+    * BUG 8338: Add a fallback for missing open&x support in MAC OS/X Lion.
+    * BUG 8360: OS/2 sends an unexpected write&x/read&x chain.
+    * BUG 8385: Fix smbclient access to NT4 shares.
+    * BUG 8409: Fix a Winbind race leading to 100% CPU load.
+    * BUG 8420: Fix 'getent group' if trusted domains are not reachable.
+    * BUG 8433: Fix segfault in iconv.c.
+
+
+o   Herb Lewis <hlewis@panasas.com>
+    * BUG 8365: Fix warning messages on Freebsd 4.6.2.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8407: SMB2 server can return requests out-of-order when processing
+      a compound request.
+    * BUG 8452: Check the wct of the incoming SMBnegprot responses.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 8390: Fix the build of vfs_aixacl2.c.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8236: Empty notify servername.
+    * BUG 8351: While migrating forms, don't fail if the form already exists.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * BUG 8384: Fix smbd crashes triggered by Windows XP clients.
+
 
 ######################################################################
 Reporting bugs & Development Discussion
@@ -24,7 +87,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 3.5 product in the project's Bugzilla
+be filed under the Samba 3.6 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
