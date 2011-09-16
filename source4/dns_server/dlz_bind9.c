@@ -53,6 +53,7 @@ struct dlz_bind9_data {
 static const char *zone_prefixes[] = {
 	"CN=MicrosoftDNS,DC=DomainDnsZones",
 	"CN=MicrosoftDNS,DC=ForestDnsZones",
+	"CN=MicrosoftDNS,CN=System",
 	NULL
 };
 
