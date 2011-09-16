@@ -139,8 +139,8 @@ class cmd_fsmo_show(Command):
 
         domain_dn = samdb.domain_dn()
         self.infrastructure_dn = "CN=Infrastructure," + domain_dn
-        self.naming_dn = "CN=Partitions,CN=Configuration," + domain_dn
-        self.schema_dn = "CN=Schema,CN=Configuration," + domain_dn
+        self.naming_dn = "CN=Partitions," + samdb.get_config_basedn()
+        self.schema_dn = samdb.get_schema_basedn()
         self.rid_dn = "CN=RID Manager$,CN=System," + domain_dn
 
         res = samdb.search(self.infrastructure_dn,
