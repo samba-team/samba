@@ -2575,6 +2575,7 @@ static const struct {
 } smb2cli_prots[] = {
 	{PROTOCOL_SMB2_02,	SMB2_DIALECT_REVISION_202},
 	{PROTOCOL_SMB2_10,	SMB2_DIALECT_REVISION_210},
+	{PROTOCOL_SMB2_22,	SMB2_DIALECT_REVISION_222},
 };
 
 struct smbXcli_negprot_state {
