@@ -896,7 +896,15 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	entry_ex->entry.kvno = -1;
+	entry_ex->entry.kvno = 0;
+	/*
+	  we usually don't have a TRUST_AUTH_TYPE_VERSION field, as
+	  windows doesn't create one, so we rely on the fact that both
+	  windows and Samba don't actually check the kvno and instead
+	  just check against the latest password blob. If we do have a
+	  TRUST_AUTH_TYPE_VERSION field then we do use it, otherwise
+	  we just use 0.
+	 */
 	for (i=0; i < password_blob.count; i++) {
 		if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_VERSION) {
 			entry_ex->entry.kvno = password_blob.current.array[i].AuthInfo.version.version;
