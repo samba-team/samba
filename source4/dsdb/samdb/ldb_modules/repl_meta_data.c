@@ -3972,6 +3972,15 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 
 	unix_to_nt_time(&now, t);
 
+	if (ar->search_msg == NULL) {
+		/* this happens for a REPL_OBJ call where we are
+		   creating the target object by replicating it. The
+		   subdomain join code does this for the partition DN
+		*/
+		DEBUG(4,(__location__ ": Skipping UDV and repsFrom update as no target DN\n"));
+		return ldb_module_done(ar->req, NULL, NULL, LDB_SUCCESS);
+	}
+
 	instanceType = ldb_msg_find_attr_as_uint(ar->search_msg, "instanceType", 0);
 	if (! (instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
 		DEBUG(4,(__location__ ": Skipping UDV and repsFrom update as not NC root: %s\n",
@@ -4251,11 +4260,7 @@ static int replmd_replicated_uptodate_search_callback(struct ldb_request *req,
 		break;
 
 	case LDB_REPLY_DONE:
-		if (ar->search_msg == NULL) {
-			ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
-		} else {
-			ret = replmd_replicated_uptodate_modify(ar);
-		}
+		ret = replmd_replicated_uptodate_modify(ar);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ar->req, NULL, NULL, ret);
 		}
