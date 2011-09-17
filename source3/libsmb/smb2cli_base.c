@@ -178,6 +178,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      uint16_t cmd,
 				      uint32_t additional_flags,
 				      uint32_t clear_flags,
+				      unsigned int timeout,
 				      uint32_t pid,
 				      uint32_t tid,
 				      uint64_t uid,
@@ -222,6 +223,15 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	SIVAL(state->hdr, SMB2_HDR_PID,		pid);
 	SIVAL(state->hdr, SMB2_HDR_TID,		tid);
 	SBVAL(state->hdr, SMB2_HDR_SESSION_ID,	uid);
+
+	if (timeout > 0) {
+		struct timeval endtime;
+
+		endtime = timeval_current_ofs_msec(timeout);
+		if (!tevent_req_set_endtime(req, ev, endtime)) {
+			return req;
+		}
+	}
 
 	return req;
 }
@@ -333,6 +343,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    uint16_t cmd,
 				    uint32_t additional_flags,
 				    uint32_t clear_flags,
+				    unsigned int timeout,
 				    uint32_t pid,
 				    uint32_t tid,
 				    uint64_t uid,
@@ -346,6 +357,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 
 	req = smb2cli_req_create(mem_ctx, ev, cli, cmd,
 				 additional_flags, clear_flags,
+				 timeout,
 				 pid, tid, uid,
 				 fixed, fixed_len, dyn, dyn_len);
 	if (req == NULL) {

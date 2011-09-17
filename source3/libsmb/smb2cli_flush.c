@@ -53,6 +53,7 @@ struct tevent_req *smb2cli_flush_send(TALLOC_CTX *mem_ctx,
 
 	subreq = smb2cli_req_send(state, ev, cli, SMB2_OP_FLUSH,
 				  0, 0, /* flags */
+				  cli->timeout,
 				  cli->smb2.pid,
 				  cli->smb2.tid,
 				  cli->smb2.uid,
