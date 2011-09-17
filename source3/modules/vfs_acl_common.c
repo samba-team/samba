@@ -656,7 +656,8 @@ static int open_acl_common(vfs_handle_struct *handle,
 			/* Cache the parent security descriptor for
 			 * later use. */
 
-			pp_psd = VFS_ADD_FSP_EXTENSION(handle,
+			pp_psd = (struct security_descriptor **)
+				VFS_ADD_FSP_EXTENSION(handle,
 					fsp,
 					struct security_descriptor *,
 					NULL);
