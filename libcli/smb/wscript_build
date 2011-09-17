@@ -7,6 +7,7 @@ bld.SAMBA_LIBRARY('cli_smb_common',
 		smb2_create_blob.c smb2_signing.c
 		util.c read_smb.c
 		smbXcli_base.c
+		smb1cli_trans.c
 	''',
 	autoproto='smb_common_proto.h',
 	deps='LIBCRYPTO errors gssapi gensec KRB5_WRAP LIBASYNC_REQ',
