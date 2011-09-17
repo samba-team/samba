@@ -73,7 +73,7 @@ static void smb2cli_flush_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	struct iovec *iov;
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov, 60);
+	status = smb2cli_req_recv(subreq, talloc_tos(), &iov, 4);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
