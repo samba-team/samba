@@ -1759,6 +1759,9 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	struct winreg_String key, keyclass;
 	enum winreg_CreateAction action = 0;
 
+	const char *canon_valname;
+	const char *canon_valstr;
+
 	ZERO_STRUCT(hive_hnd);
 	ZERO_STRUCT(key_hnd);
 	ZERO_STRUCT(share_hnd);
@@ -1839,9 +1842,6 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 			break;
 	}
 
-
-	const char *canon_valname;
-	const char *canon_valstr;
 	/* check if parameter is valid for writing */
 	if (!lp_canonicalize_parameter_with_value(argv[1], argv[2],
 						  &canon_valname,
