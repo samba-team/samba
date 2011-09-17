@@ -24,8 +24,6 @@ struct smbXcli_conn;
 struct smbXcli_session;
 struct cli_state;
 
-NTSTATUS smb2cli_negprot(struct cli_state *cli);
-
 struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct smbXcli_conn *conn,

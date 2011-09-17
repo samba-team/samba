@@ -608,7 +608,6 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     ../libcli/smb/smb_seal.o \
 	     ../libcli/smb/read_smb.o \
 	     ../libcli/smb/smbXcli_base.o \
-	     libsmb/smb2cli_negprot.o \
 	     libsmb/smb2cli_session.o \
 	     libsmb/smb2cli_tcon.o \
 	     libsmb/smb2cli_create.o \
