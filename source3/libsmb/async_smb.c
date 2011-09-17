@@ -420,7 +420,7 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 	if (cli->timeout) {
 		endtime = timeval_current_ofs_msec(cli->timeout);
 		if (!tevent_req_set_endtime(result, ev, endtime)) {
-			tevent_req_oom(result);
+			return result;
 		}
 	}
 
@@ -563,7 +563,9 @@ struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
 	status = cli_smb_req_send(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
