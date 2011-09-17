@@ -50,7 +50,7 @@ static NTSTATUS ai_array_2_trust_domain_info_buffer(TALLOC_CTX *mem_ctx,
 					status = NT_STATUS_INVALID_PARAMETER;
 					goto fail;
 				}
-				b[i].data.data = talloc_memdup(b,
+				b[i].data.data = (uint8_t *)talloc_memdup(b,
 				    &ai->array[i].AuthInfo.nt4owf.password.hash,
 				    16);
 				if (b[i].data.data == NULL) {
@@ -76,7 +76,7 @@ static NTSTATUS ai_array_2_trust_domain_info_buffer(TALLOC_CTX *mem_ctx,
 					goto fail;
 				}
 				b[i].data.size = 4;
-				b[i].data.data = talloc_memdup(b,
+				b[i].data.data = (uint8_t *)talloc_memdup(b,
 				     &ai->array[i].AuthInfo.version.version, 4);
 				if (b[i].data.data == NULL) {
 					status = NT_STATUS_NO_MEMORY;
