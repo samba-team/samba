@@ -584,6 +584,18 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 			return;
 		}
 
+		status = NT_STATUS(IVAL(inhdr, SMB2_HDR_STATUS));
+		if ((flags & SMB2_HDR_FLAG_ASYNC) &&
+		    NT_STATUS_EQUAL(status, STATUS_PENDING)) {
+			uint32_t req_flags = IVAL(state->hdr, SMB2_HDR_FLAGS);
+			uint64_t async_id = BVAL(inhdr, SMB2_HDR_ASYNC_ID);
+
+			req_flags |= SMB2_HDR_FLAG_ASYNC;
+			SBVAL(state->hdr, SMB2_HDR_FLAGS, req_flags);
+			SBVAL(state->hdr, SMB2_HDR_ASYNC_ID, async_id);
+			continue;
+		}
+
 		smb2cli_req_unset_pending(req);
 
 		/*
