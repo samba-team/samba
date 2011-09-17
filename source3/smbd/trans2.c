@@ -3599,7 +3599,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 			sconn->smb1.unix_info.client_cap_high = IVAL(pdata,8);
 			/* Just print these values for now. */
 			DEBUG(10,("call_trans2setfsinfo: set unix_info info. major = %u, minor = %u \
-cap_low = 0x%x, cap_highn",
+cap_low = 0x%x, cap_high = 0x%xn",
 				(unsigned int)sconn->smb1.unix_info.client_major,
 				(unsigned int)sconn->smb1.unix_info.client_minor,
 				(unsigned int)sconn->smb1.unix_info.client_cap_low,
