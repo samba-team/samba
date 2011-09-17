@@ -2198,7 +2198,8 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		return len;
 	}
 
-	ret = real_sendto(s, buf, len, flags, msg.msg_name, msg.msg_namelen);
+	ret = real_sendto(s, buf, len, flags, (struct sockaddr *)msg.msg_name,
+			  msg.msg_namelen);
 
 	swrap_sendmsg_after(si, &msg, to, ret);
 
