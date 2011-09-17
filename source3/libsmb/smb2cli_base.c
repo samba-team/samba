@@ -548,6 +548,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		struct iovec *cur = &iov[i];
 		uint8_t *inhdr = (uint8_t *)cur[0].iov_base;
 		uint16_t opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
+		uint32_t flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 		uint16_t req_opcode;
 
@@ -570,6 +571,13 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 
 		req_opcode = SVAL(state->hdr, SMB2_HDR_OPCODE);
 		if (opcode != req_opcode) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			smb2cli_notify_pending(cli, status);
+			TALLOC_FREE(frame);
+			return;
+		}
+
+		if (!(flags & SMB2_HDR_FLAG_REDIRECT)) {
 			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 			smb2cli_notify_pending(cli, status);
 			TALLOC_FREE(frame);
