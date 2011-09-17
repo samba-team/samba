@@ -79,6 +79,12 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
+	status = smb2cli_flush(cli, fid_persistent, fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_read(cli, 0x10000, 0, fid_persistent,
 			       fid_volatile, 2, 0,
 			       talloc_tos(), &result, &nread);
