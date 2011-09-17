@@ -559,6 +559,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 			 * We need to close the connection and notify
 			 * all pending requests.
 			 */
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 			smb2cli_notify_pending(cli, status);
 			TALLOC_FREE(frame);
 			return;
