@@ -109,6 +109,12 @@ static void tevent_req_finish(struct tevent_req *req,
 			      enum tevent_req_state state,
 			      const char *location)
 {
+	/*
+	 * make sure we do not timeout after
+	 * the request was already finished
+	 */
+	TALLOC_FREE(req->internal.timer);
+
 	req->internal.state = state;
 	_tevent_req_notify_callback(req, location);
 }
