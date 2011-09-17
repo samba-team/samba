@@ -539,6 +539,10 @@ NTSTATUS cli_smb_req_send(struct tevent_req *req)
 	struct cli_smb_state *state = tevent_req_data(
 		req, struct cli_smb_state);
 
+	if (!tevent_req_is_in_progress(req)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	return cli_smb_req_iov_send(req, state, state->iov, state->iov_count);
 }
 
@@ -993,6 +997,10 @@ NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 
 	iovlen = 0;
 	for (i=0; i<num_reqs; i++) {
+		if (!tevent_req_is_in_progress(reqs[i])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
 		state = tevent_req_data(reqs[i], struct cli_smb_state);
 		iovlen += state->iov_count;
 	}
