@@ -49,7 +49,7 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_sesssetup(cli, username, workgroup, password);
+	status = smb2cli_sesssetup_ntlmssp(cli, username, workgroup, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_sesssetup returned %s\n", nt_errstr(status));
 		return false;

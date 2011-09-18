@@ -154,7 +154,7 @@ static NTSTATUS smb2cli_sesssetup_blob_recv(struct tevent_req *req,
 	return status;
 }
 
-struct smb2cli_sesssetup_state {
+struct smb2cli_sesssetup_ntlmssp_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
 	struct ntlmssp_state *ntlmssp;
@@ -164,9 +164,9 @@ struct smb2cli_sesssetup_state {
 	int turn;
 };
 
-static void smb2cli_sesssetup_done(struct tevent_req *subreq);
+static void smb2cli_sesssetup_ntlmssp_done(struct tevent_req *subreq);
 
-struct tevent_req *smb2cli_sesssetup_send(TALLOC_CTX *mem_ctx,
+struct tevent_req *smb2cli_sesssetup_ntlmssp_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct cli_state *cli,
 					  const char *user,
@@ -174,13 +174,13 @@ struct tevent_req *smb2cli_sesssetup_send(TALLOC_CTX *mem_ctx,
 					  const char *pass)
 {
 	struct tevent_req *req, *subreq;
-	struct smb2cli_sesssetup_state *state;
+	struct smb2cli_sesssetup_ntlmssp_state *state;
 	NTSTATUS status;
 	DATA_BLOB blob_out;
 	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct smb2cli_sesssetup_state);
+				struct smb2cli_sesssetup_ntlmssp_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -224,21 +224,21 @@ struct tevent_req *smb2cli_sesssetup_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, smb2cli_sesssetup_done, req);
+	tevent_req_set_callback(subreq, smb2cli_sesssetup_ntlmssp_done, req);
 	return req;
 post_status:
 	tevent_req_nterror(req, status);
 	return tevent_req_post(req, ev);
 }
 
-static void smb2cli_sesssetup_done(struct tevent_req *subreq)
+static void smb2cli_sesssetup_ntlmssp_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct smb2cli_sesssetup_state *state =
+	struct smb2cli_sesssetup_ntlmssp_state *state =
 		tevent_req_data(req,
-		struct smb2cli_sesssetup_state);
+		struct smb2cli_sesssetup_ntlmssp_state);
 	NTSTATUS status;
 	uint64_t uid = 0;
 	DATA_BLOB blob, blob_in, blob_out, spnego_blob;
@@ -294,15 +294,15 @@ static void smb2cli_sesssetup_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, smb2cli_sesssetup_done, req);
+	tevent_req_set_callback(subreq, smb2cli_sesssetup_ntlmssp_done, req);
 }
 
-NTSTATUS smb2cli_sesssetup_recv(struct tevent_req *req)
+NTSTATUS smb2cli_sesssetup_ntlmssp_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS smb2cli_sesssetup(struct cli_state *cli, const char *user,
+NTSTATUS smb2cli_sesssetup_ntlmssp(struct cli_state *cli, const char *user,
 			   const char *domain, const char *pass)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -321,14 +321,14 @@ NTSTATUS smb2cli_sesssetup(struct cli_state *cli, const char *user,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smb2cli_sesssetup_send(frame, ev, cli, user, domain, pass);
+	req = smb2cli_sesssetup_ntlmssp_send(frame, ev, cli, user, domain, pass);
 	if (req == NULL) {
 		goto fail;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = smb2cli_sesssetup_recv(req);
+	status = smb2cli_sesssetup_ntlmssp_recv(req);
  fail:
 	TALLOC_FREE(frame);
 	return status;
