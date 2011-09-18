@@ -28,7 +28,6 @@
 #include "../libcli/auth/ntlmssp.h"
 
 struct smb2cli_session_setup_state {
-	struct ntlmssp_state *ntlmssp;
 	uint8_t fixed[24];
 	uint8_t dyn_pad[1];
 	uint64_t uid;
