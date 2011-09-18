@@ -75,7 +75,7 @@ int kerberos_kinit_password(const char *principal,
 bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *domain,
 						const char *sitename,
-						struct sockaddr_storage *pss,
+					        const struct sockaddr_storage *pss,
 						const char *kdc_name);
 
 /* The following definitions come from libads/authdata.c  */
