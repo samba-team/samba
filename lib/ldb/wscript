@@ -113,7 +113,7 @@ def build(bld):
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
         bld.SAMBA_LIBRARY('pyldb-util',
-                          deps='ldb pytalloc-util',
+                          deps='ldb',
                           source='pyldb_util.c',
                           public_headers='pyldb.h',
                           public_headers_install=not private_library,

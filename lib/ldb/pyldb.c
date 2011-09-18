@@ -29,7 +29,6 @@
 */
 
 #include <Python.h>
-#include <pytalloc.h>
 #include "ldb_private.h"
 #include "pyldb.h"
 
