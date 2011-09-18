@@ -15,7 +15,7 @@
 	<para>
 		This option can be set for each available rpc service in Samba.
 		The following list shows all available pipe names services you
-		can modify with this options.
+		can modify with this option.
 	</para>
 
 	<itemizedlist>
@@ -50,7 +50,7 @@
 
 	<para>
 		Choosing the <emphasis>external</emphasis> option allows to run
-		separate daemon or even a completely independent (3rd party)
+		a separate daemon or even a completely independent (3rd party)
 		server capable of interfacing with samba via the MS-RPC
 		interface over named pipes.
 	</para>
@@ -60,9 +60,6 @@
 		lsasd. These daemons can be enabled using the
 		<emphasis>rpc_daemon</emphasis> option. For spoolssd you have
 		to to enable the daemon and proxy the named pipe with:
-		Currently in Samba3 we support thre daemons, spoolssd, epmd and
-		lsasd. These daemons can be enabled using the
-		<emphasis>rpc_daemon</emphasis> option.
 	</para>
 
 	<para>
