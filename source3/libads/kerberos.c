@@ -738,7 +738,7 @@ static char *print_kdc_line(char *mem_ctx,
 static char *get_kdc_ip_string(char *mem_ctx,
 		const char *realm,
 		const char *sitename,
-		struct sockaddr_storage *pss,
+		const struct sockaddr_storage *pss,
 		const char *kdc_name)
 {
 	int i;
