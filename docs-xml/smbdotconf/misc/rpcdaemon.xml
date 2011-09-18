@@ -55,7 +55,7 @@
 	Samba includes separate daemons for spoolss and the lsarpc/lsass,
 	netlogon and samr pipes. Currently three daemons are available and they
 	are called:
-		<command moreinfo="none">empd</command>
+		<command moreinfo="none">epmd</command>
 		<command moreinfo="none">lsasd</command>
 		<command moreinfo="none">spoolssd</command>
 	Example:
