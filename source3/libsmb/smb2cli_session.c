@@ -27,7 +27,7 @@
 #include "../libcli/auth/spnego.h"
 #include "../libcli/auth/ntlmssp.h"
 
-struct smb2cli_sesssetup_blob_state {
+struct smb2cli_session_setup_state {
 	struct ntlmssp_state *ntlmssp;
 	uint8_t fixed[24];
 	uint8_t dyn_pad[1];
@@ -35,21 +35,21 @@ struct smb2cli_sesssetup_blob_state {
 	DATA_BLOB out;
 };
 
-static void smb2cli_sesssetup_blob_done(struct tevent_req *subreq);
+static void smb2cli_session_setup_done(struct tevent_req *subreq);
 
-static struct tevent_req *smb2cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct cli_state *cli,
 						DATA_BLOB *blob)
 {
 	struct tevent_req *req, *subreq;
-	struct smb2cli_sesssetup_blob_state *state;
+	struct smb2cli_session_setup_state *state;
 	uint8_t *buf;
 	uint8_t *dyn;
 	size_t dyn_len;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct smb2cli_sesssetup_blob_state);
+				struct smb2cli_session_setup_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -84,18 +84,18 @@ static struct tevent_req *smb2cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, smb2cli_sesssetup_blob_done, req);
+	tevent_req_set_callback(subreq, smb2cli_session_setup_done, req);
 	return req;
 }
 
-static void smb2cli_sesssetup_blob_done(struct tevent_req *subreq)
+static void smb2cli_session_setup_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct smb2cli_sesssetup_blob_state *state =
+	struct smb2cli_session_setup_state *state =
 		tevent_req_data(req,
-		struct smb2cli_sesssetup_blob_state);
+		struct smb2cli_session_setup_state);
 	NTSTATUS status;
 	struct iovec *iov;
 	uint16_t offset, length;
@@ -137,12 +137,12 @@ static void smb2cli_sesssetup_blob_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS smb2cli_sesssetup_blob_recv(struct tevent_req *req,
+static NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
 					    uint64_t *uid, DATA_BLOB *out)
 {
-	struct smb2cli_sesssetup_blob_state *state =
+	struct smb2cli_session_setup_state *state =
 		tevent_req_data(req,
-		struct smb2cli_sesssetup_blob_state);
+		struct smb2cli_session_setup_state);
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (tevent_req_is_nterror(req, &status)
@@ -219,7 +219,7 @@ struct tevent_req *smb2cli_sesssetup_ntlmssp_send(TALLOC_CTX *mem_ctx,
 	blob_out = spnego_gen_negTokenInit(state, OIDs_ntlm, &blob_out, NULL);
 	state->turn = 1;
 
-	subreq = smb2cli_sesssetup_blob_send(
+	subreq = smb2cli_session_setup_send(
 		state, state->ev, state->cli, &blob_out);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -244,7 +244,7 @@ static void smb2cli_sesssetup_ntlmssp_done(struct tevent_req *subreq)
 	DATA_BLOB blob, blob_in, blob_out, spnego_blob;
 	bool ret;
 
-	status = smb2cli_sesssetup_blob_recv(subreq, &uid, &blob);
+	status = smb2cli_session_setup_recv(subreq, &uid, &blob);
 	if (!NT_STATUS_IS_OK(status)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		TALLOC_FREE(subreq);
@@ -289,7 +289,7 @@ static void smb2cli_sesssetup_ntlmssp_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = smb2cli_sesssetup_blob_send(
+	subreq = smb2cli_session_setup_send(
 		state, state->ev, state->cli, &spnego_blob);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
