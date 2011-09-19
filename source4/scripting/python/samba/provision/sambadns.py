@@ -37,6 +37,10 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008_R2
     )
 from base64 import b64encode
+from samba.provision.descriptor import (
+    get_domain_descriptor,
+    get_dns_partition_descriptor
+    )
 
 
 def add_ldif(ldb, ldif_file, subst_vars, controls=["relax:0"]):
@@ -90,61 +94,6 @@ def get_ntdsguid(samdb, domaindn):
                         attrs=["objectGUID"])
     ntdsguid = str(ndr_unpack(misc.GUID, res3[0]["objectGUID"][0]))
     return ntdsguid
-
-def get_dns_partition_descriptor(domainsid):
-    sddl = "O:SYG:BAD:AI" \
-    "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
-    "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
-    "(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
-    "(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
-    "(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
-    "(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
-    "(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
-    "(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
-    "(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
-    "(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
-    "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ER)" \
-    "(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)" \
-    "(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)" \
-    "(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)" \
-    "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)" \
-    "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
-    "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
-    "(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
-    "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
-    "(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
-    "(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;IF)" \
-    "(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)" \
-    "(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)" \
-    "(OA;CIIO;RPLCLORC;;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
-    "(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)" \
-    "(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
-    "(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)" \
-    "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)" \
-    "(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)" \
-    "(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)" \
-    "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
-    "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
-    "(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
-    "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
-    "(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
-    "(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)" \
-    "(OA;CIIO;RPWPCR;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)" \
-    "(A;;RPWPCRCCLCLORCWOWDSW;;;DA)" \
-    "(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
-    "(A;;RPRC;;;RU)" \
-    "(A;CI;LC;;;RU)" \
-    "(A;CI;RPWPCRCCLCLORCWOWDSDSW;;;BA)" \
-    "(A;;RP;;;WD)" \
-    "(A;;RPLCLORC;;;ED)" \
-    "(A;;RPLCLORC;;;AU)" \
-    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
-    "S:AI" \
-    "(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
-    "(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
-    "(AU;SA;CR;;;DU)(AU;SA;CR;;;BA)(AU;SA;WPWOWD;;;WD)"
-    sec = security.descriptor.from_sddl(sddl, domainsid)
-    return ndr_pack(sec)
 
 class ARecord(dnsp.DnssrvRpcRecord):
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
@@ -671,6 +620,99 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
         os.system(rndc + " unfreeze " + lp.get("realm"))
 
 
+def create_samdb_copy(logger, paths, names, domainsid, domainguid):
+    """Create a copy of samdb and give write permissions to named for dns partitions
+    """
+    private_dir = paths.private_dir
+    samldb_dir = os.path.join(private_dir, "sam.ldb.d")
+    dns_dir = os.path.dirname(paths.dns)
+    dns_samldb_dir = os.path.join(dns_dir, "sam.ldb.d")
+    domainpart_file = "%s.ldb" % names.domaindn.upper()
+    configpart_file = "%s.ldb" % names.configdn.upper()
+    schemapart_file = "%s.ldb" % names.schemadn.upper()
+    domainzone_file = "DC=DOMAINDNSZONES,%s.ldb" % names.domaindn.upper()
+    forestzone_file = "DC=FORESTDNSZONES,%s.ldb" % names.rootdn.upper()
+    metadata_file = "metadata.tdb"
+
+    # Copy config, schema partitions, create empty domain partition
+    try:
+        shutil.copyfile(os.path.join(private_dir, "sam.ldb"),
+                        os.path.join(dns_dir, "sam.ldb"))
+        os.mkdir(dns_samldb_dir)
+        file(os.path.join(dns_samldb_dir, domainpart_file), 'w').close()
+        shutil.copyfile(os.path.join(samldb_dir, configpart_file),
+                        os.path.join(dns_samldb_dir, configpart_file))
+        shutil.copyfile(os.path.join(samldb_dir, schemapart_file),
+                        os.path.join(dns_samldb_dir, schemapart_file))
+    except:
+        logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
+        raise
+
+    # Link metadata and dns partitions
+    try:
+        os.link(os.path.join(samldb_dir, metadata_file),
+            os.path.join(dns_samldb_dir, metadata_file))
+        os.link(os.path.join(samldb_dir, domainzone_file),
+            os.path.join(dns_samldb_dir, domainzone_file))
+        os.link(os.path.join(samldb_dir, forestzone_file),
+            os.path.join(dns_samldb_dir, forestzone_file))
+    except OSError, e:
+        try:
+            os.symlink(os.path.join(samldb_dir, metadata_file),
+                os.path.join(dns_samldb_dir, metadata_file))
+            os.symlink(os.path.join(samldb_dir, domainzone_file),
+                os.path.join(dns_samldb_dir, domainzone_file))
+            os.symlink(os.path.join(samldb_dir, forestzone_file),
+                os.path.join(dns_samldb_dir, forestzone_file))
+        except OSError, e:
+            logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
+            raise
+
+    # Fill the basedn and @OPTION records in domain partition
+    try:
+        ldb = samba.Ldb(os.path.join(dns_samldb_dir, domainpart_file))
+        domainguid_line = "objectGUID: %s\n-" % domainguid
+        descr = b64encode(get_domain_descriptor(domainsid))
+        add_ldif(ldb, "provision_basedn.ldif", {
+            "DOMAINDN" : names.domaindn,
+            "DOMAINGUID" : domainguid_line,
+            "DOMAINSID" : str(domainsid),
+            "DESCRIPTOR" : descr})
+        add_ldif(ldb, "provision_basedn_options.ldif", None)
+    except:
+        logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
+        raise
+
+    # Give bind read/write permissions dns partitions
+    if paths.bind_gid is not None:
+        try:
+            os.chown(samldb_dir, -1, paths.bind_gid)
+            os.chmod(samldb_dir, 0750)
+            os.chown(os.path.join(dns_dir, "sam.ldb"), -1, paths.bind_gid)
+            os.chmod(os.path.join(dns_dir, "sam.ldb"), 0660)
+            os.chown(dns_samldb_dir, -1, paths.bind_gid)
+            os.chmod(dns_samldb_dir, 0770)
+            os.chown(os.path.join(dns_samldb_dir, domainpart_file), -1, paths.bind_gid)
+            os.chmod(os.path.join(dns_samldb_dir, domainpart_file), 0660)
+            os.chown(os.path.join(dns_samldb_dir, configpart_file), -1, paths.bind_gid)
+            os.chmod(os.path.join(dns_samldb_dir, configpart_file), 0660)
+            os.chown(os.path.join(dns_samldb_dir, schemapart_file), -1, paths.bind_gid)
+            os.chmod(os.path.join(dns_samldb_dir, schemapart_file), 0660)
+            os.chown(os.path.join(samldb_dir, metadata_file), -1, paths.bind_gid)
+            os.chmod(os.path.join(samldb_dir, metadata_file), 0660)
+            os.chown(os.path.join(samldb_dir, domainzone_file), -1, paths.bind_gid)
+            os.chmod(os.path.join(samldb_dir, domainzone_file), 0660)
+            os.chown(os.path.join(samldb_dir, forestzone_file), -1, paths.bind_gid)
+            os.chmod(os.path.join(samldb_dir, forestzone_file), 0660)
+        except OSError:
+            if not os.environ.has_key('SAMBA_SELFTEST'):
+                logger.error("Failed to set permissions to sam.ldb* files, fix manually")
+    else:
+        if not os.environ.has_key('SAMBA_SELFTEST'):
+            logger.warning("""Unable to find group id for BIND,
+                set permissions to sam.ldb* files manually""")
+
+
 def create_dns_update_list(lp, logger, paths):
     """Write out a dns_update_list file"""
     # note that we use no variable substitution on this file
@@ -871,6 +913,9 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
                              dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
                              hostname=names.hostname, realm=names.realm,
                              domainguid=domainguid, ntdsguid=names.ntdsguid)
+
+        if dns_backend == "BIND9_DLZ" and os_level >= DS_DOMAIN_FUNCTION_2003:
+            create_samdb_copy(logger, paths, names, domainsid, domainguid)
 
         create_named_conf(paths, realm=names.realm,
                           dnsdomain=names.dnsdomain, dns_backend=dns_backend)

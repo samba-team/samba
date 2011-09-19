@@ -1558,7 +1558,6 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                               'ipsecNFAReference'])
     samdb.transaction_commit()
 
-
 def provision(logger, session_info, credentials, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
