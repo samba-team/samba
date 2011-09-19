@@ -2131,18 +2131,75 @@ static int cmd_delprivileges(struct smbclient_context *ctx, const char **args)
 
 
 /****************************************************************************
+open a file
 ****************************************************************************/
 static int cmd_open(struct smbclient_context *ctx, const char **args)
 {
-	char *mask;
-	
+	char *filename;
+	union smb_open io;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
 	if (!args[1]) {
 		d_printf("open <filename>\n");
 		return 1;
 	}
-	mask = talloc_asprintf(ctx, "%s%s", ctx->remote_cur_dir, args[1]);
+	tmp_ctx = talloc_new(ctx);
 
-	smbcli_open(ctx->cli->tree, mask, O_RDWR, DENY_ALL);
+	filename = talloc_asprintf(tmp_ctx, "%s%s", ctx->remote_cur_dir, args[1]);
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = filename;
+
+	status = smb_raw_open(ctx->cli->tree, tmp_ctx, &io);
+	talloc_free(tmp_ctx);
+
+	if (NT_STATUS_IS_OK(status)) {
+		d_printf("Opened file with fnum %u\n", (unsigned)io.ntcreatex.out.file.fnum);
+	} else {
+		d_printf("Opened failed: %s\n", nt_errstr(status));
+	}
+
+	return 0;
+}
+
+/****************************************************************************
+close a file
+****************************************************************************/
+static int cmd_close(struct smbclient_context *ctx, const char **args)
+{
+	union smb_close io;
+	NTSTATUS status;
+	uint16_t fnum;
+
+	if (!args[1]) {
+		d_printf("close <fnum>\n");
+		return 1;
+	}
+
+	fnum = atoi(args[1]);
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_CLOSE_CLOSE;
+	io.close.in.file.fnum = fnum;
+
+	status = smb_raw_close(ctx->cli->tree, &io);
+
+	if (NT_STATUS_IS_OK(status)) {
+		d_printf("Closed file OK\n");
+	} else {
+		d_printf("Close failed: %s\n", nt_errstr(status));
+	}
 
 	return 0;
 }
@@ -2694,6 +2751,7 @@ static struct
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
+  {"close",cmd_close,"<fnum> close a file",{COMPL_NONE,COMPL_NONE}},
   {"privileges",cmd_privileges,"<user> show privileges for a user",{COMPL_NONE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"printmode",cmd_printmode,"<graphics or text> set the print mode",{COMPL_NONE,COMPL_NONE}},
