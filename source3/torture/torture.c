@@ -8876,6 +8876,7 @@ static struct {
 	{ "SMB2-BASIC", run_smb2_basic },
 	{ "SMB2-NEGPROT", run_smb2_negprot },
 	{ "SMB2-SESSION-RECONNECT", run_smb2_session_reconnect },
+	{ "SMB2-TCON-DEPENDENCE", run_smb2_tcon_dependence },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
