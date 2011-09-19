@@ -38,7 +38,7 @@ struct smb2cli_session_setup_state {
 
 static void smb2cli_session_setup_done(struct tevent_req *subreq);
 
-static struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
+struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct smbXcli_conn *conn,
 				uint32_t timeout_msec,
@@ -206,10 +206,10 @@ static void smb2cli_session_setup_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
-					   TALLOC_CTX *mem_ctx,
-					   struct iovec **recv_iov,
-					   DATA_BLOB *out_security_buffer)
+NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    struct iovec **recv_iov,
+				    DATA_BLOB *out_security_buffer)
 {
 	struct smb2cli_session_setup_state *state =
 		tevent_req_data(req,

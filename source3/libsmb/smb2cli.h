@@ -20,7 +20,25 @@
 #ifndef __SMB2CLI_H__
 #define __SMB2CLI_H__
 
+struct smbXcli_conn;
+struct smbXcli_session;
+
 NTSTATUS smb2cli_negprot(struct cli_state *cli);
+
+struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_conn *conn,
+				uint32_t timeout_msec,
+				struct smbXcli_session *session,
+				uint8_t in_flags,
+				uint32_t in_capabilities,
+				uint32_t in_channel,
+				struct smbXcli_session *in_previous_session,
+				const DATA_BLOB *in_security_buffer);
+NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    struct iovec **recv_iov,
+				    DATA_BLOB *out_security_buffer);
 
 struct tevent_req *smb2cli_sesssetup_ntlmssp_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
