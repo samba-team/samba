@@ -398,6 +398,73 @@ static int partition_send_all(struct ldb_module *module,
 	return partition_call_first(ac);
 }
 
+
+/**
+ * send an operation to the top partition, then copy the resulting
+ * object to all other partitions
+ */
+static int partition_copy_all(struct ldb_module *module,
+			      struct partition_context *ac,
+			      struct ldb_request *req,
+			      struct ldb_dn *dn)
+{
+	unsigned int i;
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
+							      struct partition_private_data);
+	int ret, search_ret;
+	struct ldb_result *res;
+
+	/* do the request on the top level sam.ldb synchronously */
+	ret = ldb_next_request(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* now fetch the resulting object, and then copy it to all the
+	 * other partitions. We need this approach to cope with the
+	 * partitions getting out of sync. If for example the
+	 * @ATTRIBUTES object exists on one partition but not the
+	 * others then just doing each of the partitions in turn will
+	 * lead to an error
+	 */
+	search_ret = dsdb_module_search_dn(module, ac, &res, dn, NULL, DSDB_FLAG_NEXT_MODULE, req);
+	if (search_ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
+		return search_ret;
+	}
+
+	/* now delete the object in the other partitions. Once that is
+	   done we will re-add the object, if search_ret was not
+	   LDB_ERR_NO_SUCH_OBJECT
+	*/
+	for (i=0; data->partitions && data->partitions[i]; i++) {
+		int pret;
+		pret = dsdb_module_del(data->partitions[i]->module, dn, DSDB_FLAG_NEXT_MODULE, req);
+		if (pret != LDB_SUCCESS && pret != LDB_ERR_NO_SUCH_OBJECT) {
+			/* we should only get success or no
+			   such object from the other partitions */
+			return pret;
+		}
+	}
+
+
+	if (search_ret != LDB_ERR_NO_SUCH_OBJECT) {
+		/* now re-add in the other partitions */
+		for (i=0; data->partitions && data->partitions[i]; i++) {
+			int pret;
+			pret = dsdb_module_add(data->partitions[i]->module, res->msgs[0], DSDB_FLAG_NEXT_MODULE, req);
+			if (pret != LDB_SUCCESS) {
+				return pret;
+			}
+		}
+	}
+
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+}
+
 /**
  * Figure out which backend a request needs to be aimed at.  Some
  * requests must be replicated to all backends
@@ -427,7 +494,7 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 					return ldb_operr(ldb_module_get_ctx(module));
 				}
 				
-				return partition_send_all(module, ac, req);
+				return partition_copy_all(module, ac, req, dn);
 			}
 		}
 	}
