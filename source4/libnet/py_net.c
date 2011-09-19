@@ -21,7 +21,6 @@
 
 #include <Python.h>
 #include "includes.h"
-#include <ldb.h>
 #include <pyldb.h>
 #include "libnet.h"
 #include "auth/credentials/pycredentials.h"
@@ -30,9 +29,9 @@
 #include "param/pyparam.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/rpc/pyrpc_util.h"
-#include "libcli/finddc.h"
 #include "libcli/resolve/resolve.h"
-#include "dsdb/common/proto.h"
+#include "libcli/finddc.h"
+#include "dsdb/samdb/samdb.h"
 
 void initnet(void);
 
