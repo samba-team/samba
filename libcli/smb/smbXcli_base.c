@@ -133,6 +133,7 @@ struct smbXcli_session {
 		DATA_BLOB signing_key;
 		DATA_BLOB session_key;
 		bool should_sign;
+		bool channel_setup;
 	} smb2;
 };
 
@@ -2117,6 +2118,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		uint16_t charge;
 		uint16_t credits;
 		uint64_t mid;
+		bool should_sign = false;
 
 		if (!tevent_req_is_in_progress(reqs[i])) {
 			return NT_STATUS_INTERNAL_ERROR;
@@ -2201,7 +2203,14 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		}
 		nbt_len += reqlen;
 
-		if (state->session && state->session->smb2.should_sign) {
+		if (state->session) {
+			should_sign = state->session->smb2.should_sign;
+			if (state->session->smb2.channel_setup) {
+				should_sign = true;
+			}
+		}
+
+		if (should_sign) {
 			NTSTATUS status;
 
 			status = smb2_signing_sign_pdu(state->session->smb2.signing_key,
@@ -2451,6 +2460,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		uint32_t new_credits;
 		struct smbXcli_session *session = NULL;
 		const DATA_BLOB *signing_key = NULL;
+		bool should_sign = false;
 
 		new_credits = conn->smb2.cur_credits;
 		new_credits += credits;
@@ -2497,7 +2507,14 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		}
 		last_session = session;
 
-		if (session && session->smb2.should_sign) {
+		if (session) {
+			should_sign = session->smb2.should_sign;
+			if (session->smb2.channel_setup) {
+				should_sign = true;
+			}
+		}
+
+		if (should_sign) {
 			if (!(flags & SMB2_HDR_FLAG_SIGNED)) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -3644,15 +3661,26 @@ NTSTATUS smb2cli_session_update_session_key(struct smbXcli_session *session,
 	} else {
 		signing_key = session_key;
 	}
+	if (session->smb2.channel_setup) {
+		signing_key = session_key;
+	}
 
 	status = smb2_signing_check_pdu(signing_key, recv_iov, 3);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	session->smb2.session_key = data_blob_dup_talloc(session, session_key);
-	if (session->smb2.session_key.data == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (!session->smb2.channel_setup) {
+		session->smb2.session_key = data_blob_dup_talloc(session,
+								 session_key);
+		if (session->smb2.session_key.data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (session->smb2.channel_setup) {
+		data_blob_free(&session->smb2.signing_key);
+		session->smb2.channel_setup = false;
 	}
 
 	if (session->smb2.signing_key.length > 0) {
@@ -3674,5 +3702,61 @@ NTSTATUS smb2cli_session_update_session_key(struct smbXcli_session *session,
 		session->smb2.should_sign = true;
 	}
 
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
+					struct smbXcli_session *session1,
+					struct smbXcli_conn *conn,
+					struct smbXcli_session **_session2)
+{
+	struct smbXcli_session *session2;
+	uint16_t no_sign_flags;
+
+	no_sign_flags = SMB2_SESSION_FLAG_IS_GUEST | SMB2_SESSION_FLAG_IS_NULL;
+
+	if (session1->smb2.session_flags & no_sign_flags) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (session1->smb2.session_key.length == 0) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (session1->smb2.signing_key.length == 0) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (conn == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	session2 = talloc_zero(mem_ctx, struct smbXcli_session);
+	if (session2 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	session2->smb2.session_id = session1->smb2.session_id;
+	session2->smb2.session_flags = session1->smb2.session_flags;
+
+	session2->smb2.session_key = data_blob_dup_talloc(session2,
+						session1->smb2.session_key);
+	if (session2->smb2.session_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session2->smb2.signing_key = data_blob_dup_talloc(session2,
+						session1->smb2.signing_key);
+	if (session2->smb2.signing_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session2->smb2.should_sign = session1->smb2.should_sign;
+	session2->smb2.channel_setup = true;
+
+	talloc_set_destructor(session2, smbXcli_session_destructor);
+	DLIST_ADD_END(conn->sessions, session2, struct smbXcli_session *);
+	session2->conn = conn;
+
+	*_session2 = session2;
 	return NT_STATUS_OK;
 }

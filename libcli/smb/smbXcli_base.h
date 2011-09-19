@@ -204,5 +204,9 @@ void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
 NTSTATUS smb2cli_session_update_session_key(struct smbXcli_session *session,
 					    const DATA_BLOB session_key,
 					    const struct iovec *recv_iov);
+NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
+					struct smbXcli_session *session1,
+					struct smbXcli_conn *conn,
+					struct smbXcli_session **_session2);
 
 #endif /* _SMBXCLI_BASE_H_ */
