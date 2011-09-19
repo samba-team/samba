@@ -106,7 +106,6 @@ static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct gensec_security *gensec_ctx;
 	struct imessaging_context *msg_ctx;
-	struct server_id *server_id;
 	struct cli_credentials *server_credentials;
 
 	lp_ctx = loadparm_init_s3(frame, loadparm_s3_context());

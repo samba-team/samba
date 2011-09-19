@@ -220,7 +220,6 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 
 	nt_status = gensec_generate_session_info(mem_ctx,
 						 gensec_security,

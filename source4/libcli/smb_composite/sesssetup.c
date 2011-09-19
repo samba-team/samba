@@ -82,7 +82,6 @@ static void request_handler(struct smbcli_request *req)
 	struct composite_context *c = (struct composite_context *)req->async.private_data;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	struct smbcli_session *session = req->session;
-	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 	NTSTATUS session_key_err, nt_status;
 	struct smbcli_request *check_req = NULL;
