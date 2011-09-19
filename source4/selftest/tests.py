@@ -231,6 +231,10 @@ plantestsuite_loadlist("samba4.rpc.echo on ncacn_np over smb2", "dc", [smb4tortu
 
 plantestsuite_loadlist("samba4.ntp.signd", "dc:local", [smb4torture, "$LISTOPT", 'ncacn_np:$SERVER', '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', 'ntp.signd'])
 
+nbt_tests = smb4torture_testsuites("nbt.")
+for t in nbt_tests:
+    plansmbtorturetestsuite(t, "dc", "//$SERVER/_none_ -U\"$USERNAME%$PASSWORD\"")
+
 # Tests against the NTVFS POSIX backend
 ntvfsargs = ["--option=torture:sharedelay=10000", "--option=torture:oplocktimeout=3", "--option=torture:writetimeupdatedelay=50000"]
 
@@ -363,9 +367,6 @@ plantestsuite_loadlist("samba4.smb.signing --signing=yes anon", "dc", [valgrindi
 plantestsuite_loadlist("samba4.smb.signing --signing=required anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=required', '-U%', 'base.xcopy'])
 plantestsuite_loadlist("samba4.smb.signing --signing=no anon", "s4member",  [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=no', '-U%', 'base.xcopy'])
 
-nbt_tests = smb4torture_testsuites("nbt.")
-for t in nbt_tests:
-    plansmbtorturetestsuite(t, "dc", "//$SERVER/_none_ -U\"$USERNAME%$PASSWORD\"")
 
 wb_opts = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=1\"", "--option=\"torture:winbindd_separator=/\"", "--option=\"torture:winbindd_netbios_name=$SERVER\"", "--option=\"torture:winbindd_netbios_domain=$DOMAIN\""]
 
