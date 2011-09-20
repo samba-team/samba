@@ -451,40 +451,46 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 					 struct dreplsrv_partition *p)
 {
 	WERROR status;
-	struct dom_sid *nc_sid;
+	NTSTATUS ntstatus;
 	struct ldb_message_element *orf_el = NULL;
-	struct ldb_result *r;
+	struct ldb_result *r = NULL;
 	unsigned int i;
 	int ret;
 	TALLOC_CTX *mem_ctx = talloc_new(p);
 	static const char *attrs[] = {
-		"objectSid",
-		"objectGUID",
 		"repsFrom",
 		"repsTo",
 		NULL
 	};
+	struct ldb_dn *dn;
 
 	DEBUG(4, ("dreplsrv_refresh_partition(%s)\n",
 		ldb_dn_get_linearized(p->dn)));
 
-	ret = ldb_search(s->samdb, mem_ctx, &r, p->dn, LDB_SCOPE_BASE, attrs,
-			 "(objectClass=*)");
-	if (ret != LDB_SUCCESS) {
+	ret = dsdb_search_dn(s->samdb, mem_ctx, &r, p->dn, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* we haven't replicated the partition yet, but we
+		 * can fill in the guid, sid etc from the partition DN */
+		dn = p->dn;
+	} else if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
+	} else {
+		dn = r->msgs[0]->dn;
 	}
 	
 	talloc_free(discard_const(p->nc.dn));
 	ZERO_STRUCT(p->nc);
-	p->nc.dn	= ldb_dn_alloc_linearized(p, p->dn);
+	p->nc.dn	= ldb_dn_alloc_linearized(p, dn);
 	W_ERROR_HAVE_NO_MEMORY(p->nc.dn);
-	p->nc.guid	= samdb_result_guid(r->msgs[0], "objectGUID");
-	nc_sid		= samdb_result_dom_sid(p, r->msgs[0], "objectSid");
-	if (nc_sid) {
-		p->nc.sid	= *nc_sid;
-		talloc_free(nc_sid);
+	ntstatus = dsdb_get_extended_dn_guid(dn, &p->nc.guid, "GUID");
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		DEBUG(0,(__location__ ": unable to get GUID for %s: %s\n",
+			 p->nc.dn, nt_errstr(ntstatus)));
+		talloc_free(mem_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
+	dsdb_get_extended_dn_sid(dn, &p->nc.sid, "SID");
 
 	talloc_free(p->uptodatevector.cursors);
 	talloc_free(p->uptodatevector_ex.cursors);
@@ -496,27 +502,27 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 		DEBUG(4,(__location__ ": no UDV available for %s\n", ldb_dn_get_linearized(p->dn)));
 	}
 
-	orf_el = ldb_msg_find_element(r->msgs[0], "repsFrom");
-	if (orf_el) {
+	status = WERR_OK;
+
+	if (r != NULL && (orf_el = ldb_msg_find_element(r->msgs[0], "repsFrom"))) {
 		for (i=0; i < orf_el->num_values; i++) {
 			status = dreplsrv_partition_add_source_dsa(s, p, &p->sources, 
 								   NULL, &orf_el->values[i]);
-			W_ERROR_NOT_OK_RETURN(status);	
+			W_ERROR_NOT_OK_GOTO_DONE(status);
 		}
 	}
 
-	orf_el = ldb_msg_find_element(r->msgs[0], "repsTo");
-	if (orf_el) {
+	if (r != NULL && (orf_el = ldb_msg_find_element(r->msgs[0], "repsTo"))) {
 		for (i=0; i < orf_el->num_values; i++) {
 			status = dreplsrv_partition_add_source_dsa(s, p, &p->notifies, 
 								   p->sources, &orf_el->values[i]);
-			W_ERROR_NOT_OK_RETURN(status);	
+			W_ERROR_NOT_OK_GOTO_DONE(status);
 		}
 	}
 
+done:
 	talloc_free(mem_ctx);
-
-	return WERR_OK;
+	return status;
 }
 
 WERROR dreplsrv_refresh_partitions(struct dreplsrv_service *s)
