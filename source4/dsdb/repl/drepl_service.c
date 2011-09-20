@@ -306,6 +306,16 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 			werr = dreplsrv_partition_source_dsa_by_guid(p,
 			                                             &req1->source_dsa_guid,
 			                                             &dsa);
+			if (W_ERROR_EQUAL(werr, WERR_DS_DRA_NO_REPLICA)) {
+				/* we don't have this source setup as
+				   a replication partner. Create a
+				   temporary dsa structure for this
+				   replication */
+				werr = dreplsrv_partition_source_dsa_temporary(p,
+									       msg,
+									       &req1->source_dsa_guid,
+									       &dsa);
+			}
 		}
 		if (!W_ERROR_IS_OK(werr)) {
 			REPLICA_SYNC_FAIL("Failed to locate source DSA for given NC",

@@ -405,6 +405,48 @@ WERROR dreplsrv_partition_source_dsa_by_dns(const struct dreplsrv_partition *p,
 }
 
 
+/*
+  create a temporary dsa structure for a replication. This is needed
+  for the initial replication of a new partition, such as when a new
+  domain NC is created and we are a global catalog server
+ */
+WERROR dreplsrv_partition_source_dsa_temporary(struct dreplsrv_partition *p,
+					       TALLOC_CTX *mem_ctx,
+					       const struct GUID *dsa_guid,
+					       struct dreplsrv_partition_source_dsa **_dsa)
+{
+	struct dreplsrv_partition_source_dsa *dsa;
+	WERROR werr;
+
+	dsa = talloc_zero(mem_ctx, struct dreplsrv_partition_source_dsa);
+	W_ERROR_HAVE_NO_MEMORY(dsa);
+
+	dsa->partition = p;
+	dsa->repsFrom1 = &dsa->_repsFromBlob.ctr.ctr1;
+	dsa->repsFrom1->replica_flags = 0;
+	dsa->repsFrom1->source_dsa_obj_guid = *dsa_guid;
+
+	dsa->repsFrom1->other_info = talloc_zero(dsa, struct repsFromTo1OtherInfo);
+	W_ERROR_HAVE_NO_MEMORY(dsa->repsFrom1->other_info);
+
+	dsa->repsFrom1->other_info->dns_name = samdb_ntds_msdcs_dns_name(p->service->samdb,
+									 dsa->repsFrom1->other_info, dsa_guid);
+	W_ERROR_HAVE_NO_MEMORY(dsa->repsFrom1->other_info->dns_name);
+
+	werr = dreplsrv_out_connection_attach(p->service, dsa->repsFrom1, &dsa->conn);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,(__location__ ": Failed to attach connection to %s\n",
+			 ldb_dn_get_linearized(p->dn)));
+		talloc_free(dsa);
+		return werr;
+	}
+
+	*_dsa = dsa;
+
+	return WERR_OK;
+}
+
+
 static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 					 struct dreplsrv_partition *p)
 {
