@@ -1464,8 +1464,8 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_sesssetup_blob_recv(subreq, talloc_tos(), NULL, &inbuf);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -1475,11 +1475,10 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 	if (cli_simple_set_signing(state->cli, state->session_key_krb5,
 				   data_blob_null)
 	    && !cli_check_sign_mac(state->cli, inbuf, 1)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
-	TALLOC_FREE(subreq);
+
 	tevent_req_done(req);
 }
 
