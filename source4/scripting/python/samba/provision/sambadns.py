@@ -25,10 +25,11 @@ import uuid
 import shutil
 import time
 import ldb
+from base64 import b64encode
 import samba
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import read_and_sub_file, setup_file
-from samba.dcerpc import dnsp, misc
+from samba.dcerpc import dnsp, misc, security
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2003,
@@ -47,6 +48,13 @@ def modify_ldif(ldb, ldif_file, subst_vars, controls=["relax:0"]):
     ldif_file_path = os.path.join(samba.param.setup_dir(), ldif_file)
     data = read_and_sub_file(ldif_file_path, subst_vars)
     ldb.modify_ldif(data, controls)
+
+def set_security_descriptor(samdb, dn_str, descriptor):
+    msg = ldb.Message()
+    msg.dn = ldb.Dn(samdb, dn_str)
+    msg["nTSecurityDescriptor"] = ldb.MessageElement(descriptor,
+            ldb.FLAG_MOD_REPLACE, "nTSecurityDescriptor")
+    samdb.modify(msg, controls=["relax:0"])
 
 def setup_ldb(ldb, ldif_path, subst_vars):
     """Import a LDIF a file into a LDB handle, optionally substituting
@@ -90,6 +98,60 @@ def get_ntdsguid(samdb, domaindn):
     ntdsguid = str(ndr_unpack(misc.GUID, res3[0]["objectGUID"][0]))
     return ntdsguid
 
+def get_dns_partition_descriptor(domainsid):
+    sddl = "O:SYG:BAD:AI" \
+    "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
+    "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
+    "(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
+    "(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
+    "(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
+    "(OA;CIIO;RP;bc0ac240-79a9-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
+    "(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
+    "(OA;CIIO;RP;59ba2f42-79a2-11d0-9020-00c04fc2d3cf;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
+    "(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
+    "(OA;CIIO;RP;037088f8-0ae1-11d2-b422-00a0c968f939;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
+    "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ER)" \
+    "(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0de6-11d0-a285-00aa003049e2;ED)" \
+    "(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a9c-0de6-11d0-a285-00aa003049e2;ED)" \
+    "(OA;CIIO;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967aba-0de6-11d0-a285-00aa003049e2;ED)" \
+    "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;BA)" \
+    "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+    "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+    "(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+    "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+    "(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;BA)" \
+    "(OA;;CR;e2a36dc9-ae17-47c3-b58b-be34c55ba633;;IF)" \
+    "(OA;;RP;c7407360-20bf-11d0-a768-00aa006e0529;;RU)" \
+    "(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;RU)" \
+    "(OA;CIIO;RPLCLORC;;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
+    "(OA;CIIO;RPLCLORC;;bf967a9c-0de6-11d0-a285-00aa003049e2;RU)" \
+    "(OA;CIIO;RPLCLORC;;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
+    "(OA;;CR;05c74c5e-4deb-43b4-bd9f-86664c2a7fd5;;AU)" \
+    "(OA;;CR;89e95b76-444d-4c62-991a-0facbeda640c;;ED)" \
+    "(OA;;CR;ccc2dc7d-a6ad-4a7a-8846-c04e3cc53501;;AU)" \
+    "(OA;;CR;280f369c-67c7-438e-ae98-1d46f3c6f541;;AU)" \
+    "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+    "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+    "(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+    "(OA;;CR;1131f6ad-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+    "(OA;;CR;1131f6ae-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
+    "(OA;;RP;b8119fd0-04f6-4762-ab7a-4986c76b3f9a;;AU)" \
+    "(OA;CIIO;RPWPCR;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)" \
+    "(A;;RPWPCRCCLCLORCWOWDSW;;;DA)" \
+    "(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
+    "(A;;RPRC;;;RU)" \
+    "(A;CI;LC;;;RU)" \
+    "(A;CI;RPWPCRCCLCLORCWOWDSDSW;;;BA)" \
+    "(A;;RP;;;WD)" \
+    "(A;;RPLCLORC;;;ED)" \
+    "(A;;RPLCLORC;;;AU)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "S:AI" \
+    "(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
+    "(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
+    "(AU;SA;CR;;;DU)(AU;SA;CR;;;BA)(AU;SA;WPWOWD;;;WD)"
+    sec = security.descriptor.from_sddl(sddl, domainsid)
+    return ndr_pack(sec)
 
 class ARecord(dnsp.DnssrvRpcRecord):
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
@@ -159,12 +221,7 @@ class SRVRecord(dnsp.DnssrvRpcRecord):
         srv.wWeight = weight
         self.data = srv
 
-
-def setup_dns_partitions(samdb, domaindn, forestdn, configdn, serverdn):
-
-    # FIXME: Default security descriptor for Domain-DNS objectCategory is different in
-    #        our documentation from windows
-
+def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn, serverdn):
     domainzone_dn = "DC=DomainDnsZones,%s" % domaindn
     forestzone_dn = "DC=ForestDnsZones,%s" % forestdn
 
@@ -172,6 +229,10 @@ def setup_dns_partitions(samdb, domaindn, forestdn, configdn, serverdn):
         "DOMAINZONE_DN": domainzone_dn,
         "FORESTZONE_DN": forestzone_dn,
         })
+
+    descriptor = get_dns_partition_descriptor(domainsid)
+    set_security_descriptor(samdb, domainzone_dn, descriptor)
+    set_security_descriptor(samdb, forestzone_dn, descriptor)
 
     domainzone_guid = get_domainguid(samdb, domainzone_dn)
     forestzone_guid = get_domainguid(samdb, forestzone_dn)
@@ -206,13 +267,20 @@ def add_dns_accounts(samdb, domaindn):
         "DOMAINDN": domaindn,
         })
 
-def add_dns_container(samdb, domaindn, prefix):
+def add_dns_container(samdb, domaindn, prefix, domainsid):
     # CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
+    sddl = "O:SYG:SYD:AI" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
+    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;S-1-5-21-3468611895-2137509179-3280132445-1101)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
+    "S:AI"
+    sec = security.descriptor.from_sddl(sddl, domainsid)
     msg = ldb.Message(ldb.Dn(samdb, "CN=MicrosoftDNS,%s,%s" % (prefix, domaindn)))
     msg["objectClass"] = ["top", "container"]
     msg["displayName"] = ldb.MessageElement("DNS Servers", ldb.FLAG_MOD_ADD, "displayName")
+    msg["nTSecurityDescriptor"] = ndr_pack(sec)
     samdb.add(msg)
-
 
 def add_rootservers(samdb, domaindn, prefix):
     rootservers = {}
@@ -337,10 +405,26 @@ def add_host_record(samdb, container_dn, prefix, hostip, hostip6):
         msg["dnsRecord"] = ldb.MessageElement(host_records, ldb.FLAG_MOD_ADD, "dnsRecord")
         samdb.add(msg)
 
-def add_domain_record(samdb, domaindn, prefix, dnsdomain):
+def add_domain_record(samdb, domaindn, prefix, dnsdomain, domainsid):
     # DC=<DNSDOMAIN>,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
+    sddl = "O:SYG:BAD:AI" \
+    "(D;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;S-1-5-21-3468611895-2137509179-3280132445-1103)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
+    "(A;;CC;;;AU)" \
+    "(A;;RPLCLORC;;;WD)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
+    "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;S-1-5-21-3468611895-2137509179-3280132445-1101)" \
+    "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
+    "(OA;CIID;RPWPCR;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)" \
+    "(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
+    "(A;CIID;LC;;;RU)" \
+    "(A;CIID;RPWPCRCCLCLORCWOWDSDSW;;;BA)" \
+    "S:AI"
+    sec = security.descriptor.from_sddl(sddl, domainsid)
     msg = ldb.Message(ldb.Dn(samdb, "DC=%s,CN=MicrosoftDNS,%s,%s" % (dnsdomain, prefix, domaindn)))
     msg["objectClass"] = ["top", "dnsZone"]
+    msg["ntSecurityDescriptor"] = ndr_pack(sec)
     samdb.add(msg)
 
 def add_msdcs_record(samdb, forestdn, prefix, dnsforest):
@@ -667,7 +751,7 @@ def is_valid_os_level(os_level):
     return DS_DOMAIN_FUNCTION_2000 <= os_level <= DS_DOMAIN_FUNCTION_2008_R2
 
 
-def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger, dns_backend,
+def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_backend,
                  os_level, site, dnspass=None, hostip=None, hostip6=None,
                  targetdir=None):
     """Provision DNS information (assuming GC role)
@@ -731,7 +815,7 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger, dns_backend,
     logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % domaindn)
 
     # Set up MicrosoftDNS container
-    add_dns_container(samdb, domaindn, "CN=System")
+    add_dns_container(samdb, domaindn, "CN=System", domainsid)
 
     # Add root servers
     add_rootservers(samdb, domaindn, "CN=System")
@@ -739,7 +823,7 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger, dns_backend,
     if os_level == DS_DOMAIN_FUNCTION_2000:
 
         # Add domain record
-        add_domain_record(samdb, domaindn, "CN=System", dnsdomain)
+        add_domain_record(samdb, domaindn, "CN=System", dnsdomain, domainsid)
 
         # Add DNS records for a DC in domain
         add_dc_domain_records(samdb, domaindn, "CN=System", site, dnsdomain,
@@ -750,19 +834,20 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger, dns_backend,
 
         # Set up additional partitions (DomainDnsZones, ForstDnsZones)
         logger.info("Creating DomainDnsZones and ForestDnsZones partitions")
-        setup_dns_partitions(samdb, domaindn, forestdn, names.configdn, names.serverdn)
+        setup_dns_partitions(samdb, domainsid, domaindn, forestdn,
+                            names.configdn, names.serverdn)
 
         ##### Set up DC=DomainDnsZones,<DOMAINDN>
         logger.info("Populating DomainDnsZones partition")
 
         # Set up MicrosoftDNS container
-        add_dns_container(samdb, domaindn, "DC=DomainDnsZones")
+        add_dns_container(samdb, domaindn, "DC=DomainDnsZones", domainsid)
 
         # Add rootserver records
         add_rootservers(samdb, domaindn, "DC=DomainDnsZones")
 
         # Add domain record
-        add_domain_record(samdb, domaindn, "DC=DomainDnsZones", dnsdomain)
+        add_domain_record(samdb, domaindn, "DC=DomainDnsZones", dnsdomain, domainsid)
 
         # Add DNS records for a DC in domain
         add_dc_domain_records(samdb, domaindn, "DC=DomainDnsZones", site, dnsdomain,
@@ -772,7 +857,7 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger, dns_backend,
         logger.info("Populating ForestDnsZones partition")
 
         # Set up MicrosoftDNS container
-        add_dns_container(samdb, forestdn, "DC=ForestDnsZones")
+        add_dns_container(samdb, forestdn, "DC=ForestDnsZones", domainsid)
 
         # Add _msdcs record
         add_msdcs_record(samdb, forestdn, "DC=ForestDnsZones", dnsforest)
