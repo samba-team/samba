@@ -110,6 +110,7 @@ struct dreplsrv_partition {
 	struct dreplsrv_partition_source_dsa *notifies;
 
 	bool incoming_only;
+	bool partial_replica;
 };
 
 typedef void (*dreplsrv_extended_callback_t)(struct dreplsrv_service *,

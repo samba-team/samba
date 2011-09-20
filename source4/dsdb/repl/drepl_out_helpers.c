@@ -262,7 +262,7 @@ static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq)
 static void dreplsrv_op_pull_source_get_changes_done(struct tevent_req *subreq);
 
 /*
-  get a partial attribute set for a replication call
+  get a RODC partial attribute set for a replication call
  */
 static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service *service,
 							TALLOC_CTX *mem_ctx,
@@ -294,6 +294,47 @@ static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service 
 		pas->attids[pas->num_attids] = dsdb_attribute_get_attid(a, for_schema);
 		pas->num_attids++;
 	}
+
+	pas->attids = talloc_realloc(pas, pas->attids, enum drsuapi_DsAttributeId, pas->num_attids);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(pas->attids, pas);
+
+	*_pas = pas;
+	return NT_STATUS_OK;
+}
+
+
+/*
+  get a GC partial attribute set for a replication call
+ */
+static NTSTATUS dreplsrv_get_gc_partial_attribute_set(struct dreplsrv_service *service,
+						      TALLOC_CTX *mem_ctx,
+						      struct drsuapi_DsPartialAttributeSet **_pas)
+{
+	struct drsuapi_DsPartialAttributeSet *pas;
+	struct dsdb_schema *schema;
+	uint32_t i;
+
+	pas = talloc_zero(mem_ctx, struct drsuapi_DsPartialAttributeSet);
+	NT_STATUS_HAVE_NO_MEMORY(pas);
+
+	schema = dsdb_get_schema(service->samdb, NULL);
+
+	pas->version = 1;
+	pas->attids = talloc_array(pas, enum drsuapi_DsAttributeId, schema->num_attributes);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(pas->attids, pas);
+
+	for (i=0; i<schema->num_attributes; i++) {
+		struct dsdb_attribute *a;
+		a = schema->attributes_by_attributeID_id[i];
+                if (a->isMemberOfPartialAttributeSet) {
+			pas->attids[pas->num_attids] = dsdb_attribute_get_attid(a, false);
+			pas->num_attids++;
+		}
+	}
+
+	pas->attids = talloc_realloc(pas, pas->attids, enum drsuapi_DsAttributeId, pas->num_attids);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(pas->attids, pas);
+
 	*_pas = pas;
 	return NT_STATUS_OK;
 }
@@ -374,7 +415,13 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 
 	replica_flags = rf1->replica_flags;
 
-	if (service->am_rodc) {
+	if (partition->partial_replica) {
+		status = dreplsrv_get_gc_partial_attribute_set(service, r, &pas);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,(__location__ ": Failed to construct GC partial attribute set : %s\n", nt_errstr(status)));
+			return;
+		}
+	} else if (service->am_rodc) {
 		bool for_schema = false;
 		if (ldb_dn_compare_base(ldb_get_schema_basedn(service->samdb), partition->dn) == 0) {
 			for_schema = true;
@@ -382,7 +429,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 
 		status = dreplsrv_get_rodc_partial_attribute_set(service, r, &pas, for_schema);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,(__location__ ": Failed to construct partial attribute set : %s\n", nt_errstr(status)));
+			DEBUG(0,(__location__ ": Failed to construct RODC partial attribute set : %s\n", nt_errstr(status)));
 			return;
 		}
 		if (state->op->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
