@@ -30,7 +30,7 @@
 
 /* Note: lib/util/ is currently GPL */
 #include "lib/util/tevent_unix.h"
-#include "lib/util/util.h"
+#include "lib/util/samba_util.h"
 
 #ifndef TALLOC_FREE
 #define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)

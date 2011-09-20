@@ -34,7 +34,7 @@
 #include <ldb_errors.h>
 #include <ldb_module.h>
 #include "dsdb/samdb/samdb.h"
-#include "util.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 /*
   TODO: if relax is not set then we need to reject the fancy RMD_* and

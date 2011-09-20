@@ -42,7 +42,7 @@
 #include "dsdb/samdb/ldb_modules/schema.h"
 #include "auth/auth.h"
 #include "param/param.h"
-#include "util.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 struct descriptor_data {
 	int _dummy;

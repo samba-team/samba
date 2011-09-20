@@ -27,7 +27,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/samdb.h"
-#include "util.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 #define LDAP_DIRSYNC_OBJECT_SECURITY		0x01
 #define LDAP_DIRSYNC_ANCESTORS_FIRST_ORDER	0x800

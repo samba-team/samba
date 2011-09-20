@@ -25,7 +25,7 @@
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
-#include "util.h"
+#include "dsdb/common/util.h"
 #include "libcli/security/security.h"
 #include "dsdb/samdb/ldb_modules/schema.h"
 

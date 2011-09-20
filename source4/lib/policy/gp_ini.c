@@ -18,7 +18,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 #include "includes.h"
-#include "lib/util/util.h"
+#include "lib/util/samba_util.h"
 #include "lib/policy/policy.h"
 
 struct gp_parse_context {

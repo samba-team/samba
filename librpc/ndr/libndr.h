@@ -27,7 +27,7 @@
 
 #include <talloc.h>
 #include <sys/time.h>
-#include "../lib/util/util.h" /* for discard_const */
+#include "../lib/util/samba_util.h" /* for discard_const */
 #include "../lib/util/charset/charset.h"
 
 /*

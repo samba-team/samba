@@ -498,7 +498,7 @@ typedef char fstring[FSTRING_LEN];
 #endif
 
 /* Lists, trees, caching, database... */
-#include "../lib/util/util.h"
+#include "../lib/util/samba_util.h"
 #include "../lib/util/util_net.h"
 #include "../lib/util/xfile.h"
 #include "../lib/util/memory.h"

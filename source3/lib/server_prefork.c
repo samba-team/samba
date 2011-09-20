@@ -25,7 +25,7 @@
 #include "system/shmem.h"
 #include "system/filesys.h"
 #include "server_prefork.h"
-#include "../lib/util/util.h"
+#include "../lib/util/samba_util.h"
 #include "../lib/util/tevent_unix.h"
 
 struct prefork_pool {

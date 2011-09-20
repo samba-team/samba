@@ -46,7 +46,7 @@
 #include "param/param.h"
 #include "../libds/common/flags.h"
 #include "dsdb/samdb/ldb_modules/schema.h"
-#include "util.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 struct oc_context {
 
