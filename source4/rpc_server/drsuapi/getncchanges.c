@@ -1162,20 +1162,90 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 		}
 	}
 
-	/* check the attributes they asked for */
-	for (i=0; i<req10->partial_attribute_set_ex->num_attids; i++) {
-		const struct dsdb_attribute *sa;
-		sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set_ex->attids[i]);
-		if (sa == NULL) {
-			return WERR_DS_DRA_SCHEMA_MISMATCH;
-		}
-		if (!dsdb_attr_in_rodc_fas(sa)) {
-			*is_secret_request = true;
-			return WERR_OK;
+	if (req10->partial_attribute_set_ex) {
+		/* check the extended attributes they asked for */
+		for (i=0; i<req10->partial_attribute_set_ex->num_attids; i++) {
+			const struct dsdb_attribute *sa;
+			sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set_ex->attids[i]);
+			if (sa == NULL) {
+				return WERR_DS_DRA_SCHEMA_MISMATCH;
+			}
+			if (!dsdb_attr_in_rodc_fas(sa)) {
+				*is_secret_request = true;
+				return WERR_OK;
+			}
 		}
 	}
 
 	*is_secret_request = false;
+	return WERR_OK;
+}
+
+/*
+  see if this getncchanges request is only for attributes in the GC
+  partial attribute set
+ */
+static WERROR dcesrv_drsuapi_is_gc_pas_request(struct drsuapi_bind_state *b_state,
+					       struct drsuapi_DsGetNCChangesRequest10 *req10,
+					       bool *is_gc_pas_request)
+{
+	enum drsuapi_DsExtendedOperation exop;
+	uint32_t i;
+	struct dsdb_schema *schema;
+
+	exop = req10->extended_op;
+
+	switch (exop) {
+	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
+	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
+	case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
+	case DRSUAPI_EXOP_FSMO_REQ_PDC:
+	case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
+	case DRSUAPI_EXOP_REPL_SECRET:
+		*is_gc_pas_request = false;
+		return WERR_OK;
+	case DRSUAPI_EXOP_REPL_OBJ:
+	case DRSUAPI_EXOP_NONE:
+		break;
+	}
+
+	if (req10->partial_attribute_set == NULL) {
+		/* they want it all */
+		*is_gc_pas_request = false;
+		return WERR_OK;
+	}
+
+	schema = dsdb_get_schema(b_state->sam_ctx, NULL);
+
+	/* check the attributes they asked for */
+	for (i=0; i<req10->partial_attribute_set->num_attids; i++) {
+		const struct dsdb_attribute *sa;
+		sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set->attids[i]);
+		if (sa == NULL) {
+			return WERR_DS_DRA_SCHEMA_MISMATCH;
+		}
+		if (!sa->isMemberOfPartialAttributeSet) {
+			*is_gc_pas_request = false;
+			return WERR_OK;
+		}
+	}
+
+	if (req10->partial_attribute_set_ex) {
+		/* check the extended attributes they asked for */
+		for (i=0; i<req10->partial_attribute_set_ex->num_attids; i++) {
+			const struct dsdb_attribute *sa;
+			sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set_ex->attids[i]);
+			if (sa == NULL) {
+				return WERR_DS_DRA_SCHEMA_MISMATCH;
+			}
+			if (!sa->isMemberOfPartialAttributeSet) {
+				*is_gc_pas_request = false;
+				return WERR_OK;
+			}
+		}
+	}
+
+	*is_gc_pas_request = true;
 	return WERR_OK;
 }
 
@@ -1329,6 +1399,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct ldb_context *sam_ctx;
 	struct dom_sid *user_sid;
 	bool is_secret_request;
+	bool is_gc_pas_request;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -1391,6 +1462,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
+	/* all clients must have GUID_DRS_GET_CHANGES */
 	werr = drs_security_access_check_nc_root(b_state->sam_ctx,
 						 mem_ctx,
 						 dce_call->conn->auth_state.session_info->security_token,
@@ -1398,6 +1470,23 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						 GUID_DRS_GET_CHANGES);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
+	}
+
+	/* allowed if the GC PAS and client has
+	   GUID_DRS_GET_FILTERED_ATTRIBUTES */
+	werr = dcesrv_drsuapi_is_gc_pas_request(b_state, req10, &is_gc_pas_request);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+	if (is_gc_pas_request) {
+		werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+							 mem_ctx,
+							 dce_call->conn->auth_state.session_info->security_token,
+							 req10->naming_context,
+							 GUID_DRS_GET_FILTERED_ATTRIBUTES);
+		if (W_ERROR_IS_OK(werr)) {
+			goto allowed;
+		}
 	}
 
 	werr = dcesrv_drsuapi_is_reveal_secrets_request(b_state, req10, &is_secret_request);
@@ -1415,6 +1504,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 	}
 
+allowed:
 	/* for non-administrator replications, check that they have
 	   given the correct source_dsa_invocation_id */
 	security_level = security_session_user_level(dce_call->conn->auth_state.session_info,
