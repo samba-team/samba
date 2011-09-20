@@ -32,57 +32,93 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "dsdb/common/util.h"
 
 WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 {
 	WERROR status;
-	static const char *attrs[] = { "namingContexts", NULL };
+	static const char *attrs[] = { "hasMasterNCs", "hasPartialReplicaNCs", NULL };
 	unsigned int i;
 	int ret;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
 	struct ldb_message_element *el;
+	struct ldb_dn *ntds_dn;
 
 	tmp_ctx = talloc_new(s);
 	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-	ret = ldb_search(s->samdb, tmp_ctx, &res,
-			 ldb_dn_new(tmp_ctx, s->samdb, ""), LDB_SCOPE_BASE, attrs, NULL);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1,("Searching for namingContexts in rootDSE failed: %s\n", ldb_errstring(s->samdb)));
+	ntds_dn = samdb_ntds_settings_dn(s->samdb);
+	if (!ntds_dn) {
+		DEBUG(1,(__location__ ": Unable to find ntds_dn: %s\n", ldb_errstring(s->samdb)));
 		talloc_free(tmp_ctx);
 		return WERR_DS_DRA_INTERNAL_ERROR;
-       }
+	}
 
-       el = ldb_msg_find_element(res->msgs[0], "namingContexts");
-       if (!el) {
-               DEBUG(1,("Finding namingContexts element in root_res failed: %s\n",
-			ldb_errstring(s->samdb)));
-	       talloc_free(tmp_ctx);
-	       return WERR_DS_DRA_INTERNAL_ERROR;
-       }
+	ret = dsdb_search_dn(s->samdb, tmp_ctx, &res, ntds_dn, attrs, DSDB_SEARCH_SHOW_EXTENDED_DN);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1,("Searching for hasMasterNCs in NTDS DN failed: %s\n", ldb_errstring(s->samdb)));
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
 
-       for (i=0; i<el->num_values; i++) {
-	       struct ldb_dn *pdn;
-	       struct dreplsrv_partition *p;
+	el = ldb_msg_find_element(res->msgs[0], "hasMasterNCs");
+	if (!el) {
+		DEBUG(1,("Finding hasMasterNCs element in root_res failed: %s\n",
+			 ldb_errstring(s->samdb)));
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
 
-	       pdn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
-	       if (pdn == NULL) {
-		       talloc_free(tmp_ctx);
-		       return WERR_DS_DRA_INTERNAL_ERROR;
-	       }
-	       if (!ldb_dn_validate(pdn)) {
-		       return WERR_DS_DRA_INTERNAL_ERROR;
-	       }
+	for (i=0; i<el->num_values; i++) {
+		struct ldb_dn *pdn;
+		struct dreplsrv_partition *p;
 
-	       p = talloc_zero(s, struct dreplsrv_partition);
-	       W_ERROR_HAVE_NO_MEMORY(p);
+		pdn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
+		if (pdn == NULL) {
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		if (!ldb_dn_validate(pdn)) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
 
-	       p->dn = talloc_steal(p, pdn);
+		p = talloc_zero(s, struct dreplsrv_partition);
+		W_ERROR_HAVE_NO_MEMORY(p);
 
-	       DLIST_ADD(s->partitions, p);
+		p->dn = talloc_steal(p, pdn);
+		p->service = s;
 
-	       DEBUG(2, ("dreplsrv_partition[%s] loaded\n", ldb_dn_get_linearized(p->dn)));
+		DLIST_ADD(s->partitions, p);
+
+		DEBUG(2, ("dreplsrv_partition[%s] loaded\n", ldb_dn_get_linearized(p->dn)));
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], "hasPartialReplicaNCs");
+
+	for (i=0; el && i<el->num_values; i++) {
+		struct ldb_dn *pdn;
+		struct dreplsrv_partition *p;
+
+		pdn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
+		if (pdn == NULL) {
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		if (!ldb_dn_validate(pdn)) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		p = talloc_zero(s, struct dreplsrv_partition);
+		W_ERROR_HAVE_NO_MEMORY(p);
+
+		p->dn = talloc_steal(p, pdn);
+		p->partial_replica = true;
+		p->service = s;
+
+		DLIST_ADD(s->partitions, p);
+
+		DEBUG(2, ("dreplsrv_partition[%s] loaded (partial replica)\n", ldb_dn_get_linearized(p->dn)));
 	}
 
 	talloc_free(tmp_ctx);
