@@ -1261,11 +1261,25 @@ static int traverse_persistent_callback(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DAT
 	struct db_record *rec;
 	TALLOC_CTX *tmp_ctx = talloc_new(state->db);
 	int ret = 0;
+
+	/*
+	 * Skip the __db_sequence_number__ key:
+	 * This is used for persistent transactions internally.
+	 */
+	if (kbuf.dsize == strlen(CTDB_DB_SEQNUM_KEY) + 1 &&
+	    strncmp((const char*)kbuf.dptr, CTDB_DB_SEQNUM_KEY,
+		    strlen(CTDB_DB_SEQNUM_KEY)) == 0)
+	{
+		goto done;
+	}
+
 	/* we have to give them a locked record to prevent races */
 	rec = db_ctdb_fetch_locked(state->db, tmp_ctx, kbuf);
 	if (rec && rec->value.dsize > 0) {
 		ret = state->fn(rec, state->private_data);
 	}
+
+done:
 	talloc_free(tmp_ctx);
 	return ret;
 }
@@ -1321,6 +1335,18 @@ static int traverse_persistent_callback_read(TDB_CONTEXT *tdb, TDB_DATA kbuf, TD
 {
 	struct traverse_state *state = (struct traverse_state *)private_data;
 	struct db_record rec;
+
+	/*
+	 * Skip the __db_sequence_number__ key:
+	 * This is used for persistent transactions internally.
+	 */
+	if (kbuf.dsize == strlen(CTDB_DB_SEQNUM_KEY) + 1 &&
+	    strncmp((const char*)kbuf.dptr, CTDB_DB_SEQNUM_KEY,
+		    strlen(CTDB_DB_SEQNUM_KEY)) == 0)
+	{
+		return 0;
+	}
+
 	rec.key = kbuf;
 	rec.value = dbuf;
 	rec.store = db_ctdb_store_deny;
