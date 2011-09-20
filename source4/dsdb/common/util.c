@@ -2667,13 +2667,18 @@ WERROR dsdb_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	unsigned int i;
 	struct ldb_message_element *el;
+	int ret;
 
 	*r = NULL;
 	*count = 0;
 
-	if (ldb_search(sam_ctx, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, NULL) != LDB_SUCCESS ||
-	    res->count < 1) {
-		DEBUG(0,("dsdb_loadreps: failed to read partition object\n"));
+	ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs, 0);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* partition hasn't been replicated yet */
+		return WERR_OK;
+	}
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("dsdb_loadreps: failed to read partition object: %s\n", ldb_errstring(sam_ctx)));
 		talloc_free(tmp_ctx);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
