@@ -64,6 +64,8 @@ struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_tcon_andx_recv(struct tevent_req *req);
 NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		       const char *dev, const char *pass, int passlen);
+NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
+			  const char *dev, const char *pass, int passlen);
 struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
                                  struct tevent_context *ev,
                                  struct cli_state *cli);

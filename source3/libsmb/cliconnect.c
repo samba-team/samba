@@ -2520,6 +2520,21 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 	return status;
 }
 
+NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
+			  const char *dev, const char *pass, int passlen)
+{
+	cli->share = talloc_strdup(cli, share);
+	if (!cli->share) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (cli_state_protocol(cli) >= PROTOCOL_SMB2_02) {
+		return smb2cli_tcon(cli, share);
+	}
+
+	return cli_tcon_andx(cli, share, dev, pass, passlen);
+}
+
 /****************************************************************************
  Send a tree disconnect.
 ****************************************************************************/
