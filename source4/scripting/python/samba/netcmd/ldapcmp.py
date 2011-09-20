@@ -73,6 +73,7 @@ class LDAPBase(object):
         self.verbose = verbose
         self.host = host
         self.base_dn = str(self.ldb.get_default_basedn())
+        self.root_dn = str(self.ldb.get_root_basedn())
         self.config_dn = str(self.ldb.get_config_basedn())
         self.schema_dn = str(self.ldb.get_schema_basedn())
         self.domain_netbios = self.find_netbios()
@@ -685,7 +686,7 @@ class LDAPBundel(object):
         self.filter_list = filter_list
         if dn_list:
             self.dn_list = dn_list
-        elif context.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]:
+        elif context.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA", "DNSDOMAIN", "DNSFOREST"]:
             self.context = context.upper()
             self.dn_list = self.get_dn_list(context)
         else:
@@ -809,6 +810,10 @@ class LDAPBundel(object):
             search_base = self.con.config_dn
         elif context.upper() == "SCHEMA":
             search_base = self.con.schema_dn
+        elif context.upper() == "DNSDOMAIN":
+            search_base = "DC=DomainDnsZones,%s" % self.con.base_dn
+        elif context.upper() == "DNSFOREST":
+            search_base = "DC=ForestDnsZones,%s" % self.con.root_dn
 
         dn_list = []
         if not self.search_base:
@@ -850,7 +855,7 @@ class LDAPBundel(object):
 
 class cmd_ldapcmp(Command):
     """compare two ldap databases"""
-    synopsis = "%prog <URL1> <URL2> (domain|configuration|schema) [options]"
+    synopsis = "%prog ldapcmp <URL1> <URL2> (domain|configuration|schema|dnsdomain|dnsforest) [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -920,7 +925,7 @@ class cmd_ldapcmp(Command):
             for c in [context1, context2, context3]:
                 if c is None:
                     continue
-                if not c.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]:
+                if not c.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA", "DNSDOMAIN", "DNSFOREST"]:
                     raise CommandError("Incorrect argument: %s" % c)
                 contexts.append(c.upper())
 
