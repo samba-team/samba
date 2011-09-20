@@ -57,4 +57,3 @@ struct opendb_oplock_break {
 
 void odb_set_ops(const struct opendb_ops *new_ops);
 void odb_tdb_init_ops(void);
-void odb_ctdb_init_ops(void);

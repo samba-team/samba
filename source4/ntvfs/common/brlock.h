@@ -51,8 +51,5 @@ struct brlock_ops {
 			      int *count);
 };
 
-
 void brlock_set_ops(const struct brlock_ops *new_ops);
 void brl_tdb_init_ops(void);
-void brl_ctdb_init_ops(void);
-
