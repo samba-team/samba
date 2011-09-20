@@ -474,7 +474,7 @@ default_shared_modules="$default_shared_modules idmap_autorid"
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho pdb_ads"
    default_static_modules="$default_static_modules auth_netlogond"
-   default_shared_modules="$default_shared_modules charset_weird perfcount_test"
+   default_shared_modules="$default_shared_modules perfcount_test"
 fi
 
 #
@@ -683,7 +683,7 @@ main() {
 	AC_DEFINE(BROKEN_UNICODE_COMPOSE_CHARACTERS, 1, [Does this system use unicode compose characters])
 
 # Add a system specific charset module.
-	default_shared_modules="$default_shared_modules charset_macosxfs"
+	default_shared_modules="$default_shared_modules"
 
 	;;
     *hurd*)
@@ -6877,8 +6877,6 @@ SMB_SUBSYSTEM(IDMAP, winbindd/idmap.o)
 SMB_MODULE(nss_info_template, winbindd/nss_info_template.o, "bin/template.$SHLIBEXT", NSS_INFO)
 SMB_SUBSYSTEM(NSS_INFO, winbindd/nss_info.o)
 
-SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)
-SMB_MODULE(charset_macosxfs, modules/charset_macosxfs.o,"bin/macosxfs.$SHLIBEXT", CHARSET)
 SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 
 SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)

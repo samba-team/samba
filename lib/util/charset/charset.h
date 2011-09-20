@@ -59,7 +59,7 @@ struct charset_functions {
 				   char **outbuf, size_t *outbytesleft);
 	size_t (*push)(void *, const char **inbuf, size_t *inbytesleft,
 				   char **outbuf, size_t *outbytesleft);
-	struct charset_functions *prev, *next;
+	bool samba_internal_charset;
 };
 
 /* this type is used for manipulating unicode codepoints */
@@ -171,7 +171,7 @@ struct smb_iconv_handle *get_iconv_handle(void);
 struct smb_iconv_handle *get_iconv_testing_handle(TALLOC_CTX *mem_ctx, 
 						  const char *dos_charset, 
 						  const char *unix_charset,
-						  bool native_iconv);
+						  bool use_builtin_handlers);
 smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 			    charset_t from, charset_t to);
 const char *charset_name(struct smb_iconv_handle *ic, charset_t ch);
@@ -200,7 +200,7 @@ int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
 struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 							   const char *dos_charset,
 							   const char *unix_charset,
-							   bool native_iconv,
+							   bool use_builtin_handlers,
 							   struct smb_iconv_handle *old_ic);
 
 bool convert_string_handle(struct smb_iconv_handle *ic,
@@ -225,11 +225,10 @@ size_t smb_iconv(smb_iconv_t cd,
 		 const char **inbuf, size_t *inbytesleft,
 		 char **outbuf, size_t *outbytesleft);
 smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
-			      const char *fromcode, bool native_iconv);
+			      const char *fromcode, bool use_builtin_handlers);
 
 void load_case_tables(void);
 void load_case_tables_library(void);
-bool smb_register_charset(const struct charset_functions *funcs_in);
 
 /* The following definitions come from util_unistr_w.c  */
 

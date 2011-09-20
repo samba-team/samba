@@ -460,7 +460,8 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  lib/ms_fnmatch.o ../lib/util/ms_fnmatch.o lib/errmap_unix.o ../libcli/util/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o \
 	  libsmb/smb_signing.o \
-	  ../lib/util/charset/iconv.o intl/lang_tdb.o \
+	  ../lib/util/charset/iconv.o ../lib/util/charset/weird.o \
+	  ../lib/util/charset/charset_macosxfs.o intl/lang_tdb.o \
 	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \
 	  lib/sessionid_tdb.o \
 	  lib/module.o lib/events.o @LIBTEVENT_OBJ0@ \
@@ -2904,14 +2905,6 @@ bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o $(IDMAP_RW_OBJ)
 bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ldap.o $(IDMAP_RW_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_ldap.o $(IDMAP_RW_OBJ)
-
-bin/weird.@SHLIBEXT@: $(BINARY_PREREQS) $(DEVEL_HELP_WEIRD_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(DEVEL_HELP_WEIRD_OBJ)
-
-bin/macosxfs.@SHLIBEXT@: $(BINARY_PREREQS) $(CHARSET_MACOSXFS_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(CHARSET_MACOSXFS_OBJ) -framework CoreFoundation
 
 # NOTE, there is no build rule for a dynamic default VFS module because
 # this one MUST MUST MUST be built statically.

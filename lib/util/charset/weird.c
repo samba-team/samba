@@ -19,6 +19,9 @@
 */
 
 #include "includes.h"
+#include "charset_proto.h"
+
+#ifdef DEVELOPER
 
 static struct {
 	char from;
@@ -30,8 +33,8 @@ static struct {
 	{0, NULL}
 };
 
-static size_t weird_pull(void *cd, const char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft)
+size_t weird_pull(void *cd, const char **inbuf, size_t *inbytesleft,
+		  char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
 		int i;
@@ -73,8 +76,8 @@ static size_t weird_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t weird_push(void *cd, const char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft)
+size_t weird_push(void *cd, const char **inbuf, size_t *inbytesleft,
+		  char **outbuf, size_t *outbytesleft)
 {
 	int ir_count=0;
 
@@ -122,13 +125,11 @@ static size_t weird_push(void *cd, const char **inbuf, size_t *inbytesleft,
 	return ir_count;
 }
 
-struct charset_functions weird_functions = {"WEIRD", weird_pull, weird_push};
-
-NTSTATUS charset_weird_init(void);
-NTSTATUS charset_weird_init(void)
+#else
+void charset_weird_dummy(void);
+void charset_weird_dummy(void)
 {
-	if (!smb_register_charset(&weird_functions)) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	return NT_STATUS_OK;
+	return;
 }
+
+#endif

@@ -6,27 +6,6 @@ bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
 
 bld.SAMBA_SUBSYSTEM('charset',
                     public_headers='charset.h',
-                    source='codepoints.c convert_string.c util_str.c util_unistr_w.c charcnv.c pull_push.c util_unistr.c',
+                    source='codepoints.c convert_string.c util_str.c util_unistr_w.c charcnv.c pull_push.c util_unistr.c weird.c charset_macosxfs.c',
                     deps='DYNCONFIG ICONV_WRAPPER',
                     public_deps='talloc')
-
-# In the WAF builds, all charset modules are linked in at compile
-# time, as we have shared libs.  Using run-time loading as well will
-# cause dependency loops
-
-bld.SAMBA_MODULE('charset_weird',
-                 subsystem='charset',
-                 source='weird.c',
-                 init_function='charset_weird_init',
-                 deps='samba-util',
-                 internal_module=True,
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_weird'))
-
-bld.SAMBA_MODULE('charset_macosxfs',
-                 subsystem='charset',
-                 source='charset_macosxfs.c',
-                 init_function='charset_macosxfs_init',
-                 internal_module=True,
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('charset_macosxfs'))
-
-

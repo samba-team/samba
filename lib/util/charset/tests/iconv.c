@@ -35,9 +35,6 @@ static bool iconv_untestable(struct torture_context *tctx)
 {
 	iconv_t cd;
 
-	if (!lpcfg_parm_bool(tctx->lp_ctx, NULL, "iconv", "native", true))
-		torture_skip(tctx, "system iconv disabled - skipping test");
-
 	cd = iconv_open("UTF-16LE", "UCS-4LE");
 	if (cd == (iconv_t)-1)
 		torture_skip(tctx, "unable to test - system iconv library does not support UTF-16LE -> UCS-4LE");
@@ -158,14 +155,14 @@ static bool test_buffer(struct torture_context *test,
 						     "failed to open %s to UTF-16LE",
 						     charset));
 		}
-		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", false);
+		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "use_builtin_handlers", true));
 		if (cd2 == (iconv_t)-1) {
 			torture_fail(test, 
 				     talloc_asprintf(test, 
 						     "failed to open %s to UTF-16LE via smb_iconv_open_ex",
 						     charset));
 		}
-		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, false);
+		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "use_builtin_handlers", true));
 		if (cd3 == (iconv_t)-1) {
 			torture_fail(test, 
 				     talloc_asprintf(test, 

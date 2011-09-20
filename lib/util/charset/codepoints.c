@@ -158,7 +158,7 @@ struct smb_iconv_handle {
 	const char *unix_charset;
 	const char *dos_charset;
 	const char *display_charset;
-	bool native_iconv;
+	bool use_builtin_handlers;
 	smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 };
 
@@ -175,10 +175,10 @@ struct smb_iconv_handle *get_iconv_handle(void)
 struct smb_iconv_handle *get_iconv_testing_handle(TALLOC_CTX *mem_ctx, 
 						  const char *dos_charset, 
 						  const char *unix_charset,
-						  bool native_iconv)
+						  bool use_builtin_handlers)
 {
 	return smb_iconv_handle_reinit(mem_ctx,
-				       dos_charset, unix_charset, native_iconv, NULL);
+				       dos_charset, unix_charset, use_builtin_handlers, NULL);
 }
 
 /**
@@ -229,7 +229,7 @@ static int close_iconv_handle(struct smb_iconv_handle *data)
 _PUBLIC_ struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 								    const char *dos_charset,
 								    const char *unix_charset,
-								    bool native_iconv,
+								    bool use_builtin_handlers,
 								    struct smb_iconv_handle *old_ic)
 {
 	struct smb_iconv_handle *ret;
@@ -262,7 +262,7 @@ _PUBLIC_ struct smb_iconv_handle *smb_iconv_handle_reinit(TALLOC_CTX *mem_ctx,
 
 	ret->dos_charset = talloc_strdup(ret->child_ctx, dos_charset);
 	ret->unix_charset = talloc_strdup(ret->child_ctx, unix_charset);
-	ret->native_iconv = native_iconv;
+	ret->use_builtin_handlers = use_builtin_handlers;
 
 	return ret;
 }
@@ -283,7 +283,7 @@ smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 	n2 = charset_name(ic, to);
 
 	ic->conv_handles[from][to] = smb_iconv_open_ex(ic, n2, n1,
-						       ic->native_iconv);
+						       ic->use_builtin_handlers);
 
 	if (ic->conv_handles[from][to] == (smb_iconv_t)-1) {
 		if ((from == CH_DOS || to == CH_DOS) &&
@@ -296,7 +296,7 @@ smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 			n2 = charset_name(ic, to);
 
 			ic->conv_handles[from][to] =
-				smb_iconv_open_ex(ic, n2, n1, ic->native_iconv);
+				smb_iconv_open_ex(ic, n2, n1, ic->use_builtin_handlers);
 		}
 	}
 

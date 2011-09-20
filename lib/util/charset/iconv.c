@@ -22,13 +22,10 @@
 #include "../lib/util/dlinklist.h"
 #include "system/iconv.h"
 #include "system/filesys.h"
+#include "charset_proto.h"
 
 #ifdef strcasecmp
 #undef strcasecmp
-#endif
-
-#ifdef static_decl_charset
-static_decl_charset;
 #endif
 
 /**
@@ -78,65 +75,20 @@ static const struct charset_functions builtin_functions[] = {
 	{"UTF-8",   utf8_pull,  utf8_push},
 
 	/* this handles the munging needed for String2Key */
-	{"UTF16_MUNGED",   utf16_munged_pull,  iconv_copy},
+	{"UTF16_MUNGED",   utf16_munged_pull,  iconv_copy, true},
 
 	{"ASCII", ascii_pull, ascii_push},
 	{"646", ascii_pull, ascii_push},
 	{"ISO-8859-1", latin1_pull, latin1_push},
-	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push}
-};
-
-static struct charset_functions *charsets = NULL;
-
-static struct charset_functions *find_charset_functions(const char *name)
-{
-	struct charset_functions *c;
-
-	/* Check whether we already have this charset... */
-	for (c = charsets; c != NULL; c = c->next) {
-		if(strcasecmp(c->name, name) == 0) { 
-			return c;
-		}
-	}
-
-	return NULL;
-}
-
-bool smb_register_charset(const struct charset_functions *funcs_in)
-{
-	struct charset_functions *funcs;
-
-	DEBUG(5, ("Attempting to register new charset %s\n", funcs_in->name));
-	/* Check whether we already have this charset... */
-	if (find_charset_functions(funcs_in->name)) {
-		DEBUG(0, ("Duplicate charset %s, not registering\n", funcs_in->name));
-		return false;
-	}
-
-	funcs = talloc(NULL, struct charset_functions);
-	if (!funcs) {
-		DEBUG(0, ("Out of memory duplicating charset %s\n", funcs_in->name));
-		return false;
-	}
-	*funcs = *funcs_in;
-
-	funcs->next = funcs->prev = NULL;
-	DEBUG(5, ("Registered charset %s\n", funcs->name));
-	DLIST_ADD(charsets, funcs);
-	return true;
-}
-
-static void lazy_initialize_iconv(void)
-{
-#ifdef static_init_charset
-	static bool initialized = false;
-
-	if (!initialized) {
-		static_init_charset;
-		initialized = true;
-	}
+#ifdef DEVELOPER	
+	{"WEIRD", weird_pull, weird_push, true},
 #endif
-}
+#ifdef DARWINOS
+	{"MACOSXFS", macosxfs_encoding_pull, macosxfs_encoding_push, true},
+#endif
+	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push, true}
+
+};
 
 #ifdef HAVE_NATIVE_ICONV
 /* if there was an error then reset the internal state,
@@ -244,13 +196,11 @@ static int smb_iconv_t_destructor(smb_iconv_t hwd)
 }
 
 _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
-			      const char *fromcode, bool allow_native_iconv)
+			      const char *fromcode, bool use_builtin_handlers)
 {
 	smb_iconv_t ret;
 	const struct charset_functions *from=NULL, *to=NULL;
 	int i;
-
-	lazy_initialize_iconv();
 
 	ret = (smb_iconv_t)talloc_named(mem_ctx,
 					sizeof(*ret), 
@@ -271,10 +221,14 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 	/* check if we have a builtin function for this conversion */
 	for (i=0;i<ARRAY_SIZE(builtin_functions);i++) {
 		if (strcasecmp(fromcode, builtin_functions[i].name) == 0) {
-			from = &builtin_functions[i];
+			if (use_builtin_handlers || builtin_functions[i].samba_internal_charset) {
+				from = &builtin_functions[i];
+			}
 		}
-		if (strcasecmp(tocode, builtin_functions[i].name) == 0) {
-			to = &builtin_functions[i];
+		if (strcasecmp(tocode, builtin_functions[i].name) == 0) { 
+			if (use_builtin_handlers || builtin_functions[i].samba_internal_charset) {
+				to = &builtin_functions[i];
+			}
 		}
 	}
 
@@ -284,7 +238,7 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 	 * initialised only in this block for iconv based
 	 * conversions */
 
-	if (allow_native_iconv && from == NULL) {
+	if (from == NULL) {
 		ret->cd_pull = iconv_open("UTF-16LE", fromcode);
 		if (ret->cd_pull == (iconv_t)-1)
 			ret->cd_pull = iconv_open("UCS-2LE", fromcode);
@@ -293,41 +247,12 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 		}
 	}
 	
-	if (allow_native_iconv && to == NULL) {
+	if (to == NULL) {
 		ret->cd_push = iconv_open(tocode, "UTF-16LE");
 		if (ret->cd_push == (iconv_t)-1)
 			ret->cd_push = iconv_open(tocode, "UCS-2LE");
 		if (ret->cd_push != (iconv_t)-1) {
 			ret->push = sys_iconv;
-		}
-	}
-#endif
-
-	/* If iconv was unable to provide the conversion, or if use of
-	 * it was disabled, and it wasn't a builtin charset, try a
-	 * module */
-	if (ret->pull == NULL && from == NULL) {
-		from = find_charset_functions(fromcode);
-	}
-	
-	if (ret->push == NULL && to == NULL) {
-		to = find_charset_functions(tocode);
-	}
-
-	/* In the WAF builds, all charset modules are linked in at compile
-	 * time, as we have shared libs.  Using run-time loading as well will
-	 * cause dependency loops.  For the autoconf build, try loading from a module */
-#ifndef _SAMBA_WAF_BUILD_
-	/* check if there is a module available that can do this conversion */
-	if (from == NULL && ret->pull == NULL && NT_STATUS_IS_OK(smb_probe_module("charset", fromcode))) {
-		if (!(from = find_charset_functions(fromcode))) {
-			DEBUG(0, ("Module %s doesn't provide charset %s!\n", fromcode, fromcode));
-		}
-	}
-	
-	if (to == NULL && ret->push == NULL && NT_STATUS_IS_OK(smb_probe_module("charset", tocode))) {
-		if (!(to = find_charset_functions(tocode))) {
-			DEBUG(0, ("Module %s doesn't provide charset %s!\n", tocode, tocode));
 		}
 	}
 #endif

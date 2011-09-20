@@ -5,9 +5,11 @@
 # a successful run for any of these tests an error.
 ^samba4.local.resolve.*.async
 ^samba4.local.iconv.*.next_codepoint()
-^samba4.local.iconv.5M random UTF-16LE sequences # Fails because our CP850 module returns the wrong error codes
-^samba4.local.convert_string_handle.iconv.modules.plato_cp850_utf8
-^samba4.local.convert_string.iconv.modules.plato
+# these show that we still have some differences between our system
+# with our internal iconv because it passes except when we bypass our
+# internal iconv modules
+^samba4.local.convert_string_handle.system.iconv.gd_ascii
+^samba4.local.convert_string_handle.system.iconv.gd_iso8859_cp850
 ^samba4..*base.delete.*.deltest17
 ^samba4..*base.delete.*.deltest20a
 ^samba4..*base.delete.*.deltest20b
