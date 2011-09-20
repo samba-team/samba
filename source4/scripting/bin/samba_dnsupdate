@@ -137,6 +137,8 @@ class dnsobj(object):
             self.ip   = list[2] # usually $IP, which gets replaced
         elif self.type == 'CNAME':
             self.dest = list[2].lower()
+        elif self.type == 'NS':
+            self.dest = list[2].lower()
         else:
             print "Received unexpected DNS reply of type %s" % self.type
             raise
@@ -146,6 +148,7 @@ class dnsobj(object):
         if d.type == "AAAA":  return "%s %s %s" % (self.type, self.name, self.ip)
         if d.type == "SRV":   return "%s %s %s %s" % (self.type, self.name, self.dest, self.port)
         if d.type == "CNAME": return "%s %s %s" % (self.type, self.name, self.dest)
+        if d.type == "NS":    return "%s %s %s" % (self.type, self.name, self.dest)
 
 
 ################################################
@@ -184,8 +187,31 @@ def check_dns_name(d):
                 return True
         return False
 
+    resolver = dns.resolver.Resolver()
+    if d.type == "NS":
+        # we need to lookup the nameserver for the parent domain,
+        # and use that to check the NS record
+        parent_domain = '.'.join(normalised_name.split('.')[1:])
+        try:
+            ans = resolver.query(parent_domain, 'NS')
+        except dns.exception.DNSException:
+            if opts.verbose:
+                print "Failed to find parent NS for %s" % d
+            return False
+        nameservers = set()
+        for i in range(len(ans)):
+            try:
+                ns = resolver.query(str(ans[i]), 'A')
+            except dns.exception.DNSException:
+                continue
+            for j in range(len(ns)):
+                nameservers.add(str(ns[j]))
+        d.nameservers = list(nameservers)
+
     try:
-        ans = dns.resolver.query(normalised_name, d.type)
+        if getattr(d, 'nameservers', None):
+            resolver.nameservers = list(d.nameservers)
+        ans = resolver.query(normalised_name, d.type)
     except dns.exception.DNSException:
         if opts.verbose:
             print "Failed to find DNS entry %s" % d
@@ -196,6 +222,10 @@ def check_dns_name(d):
             if str(rdata) == str(d.ip):
                 return True
     if d.type == 'CNAME':
+        for i in range(len(ans)):
+            if hostname_match(ans[i].target, d.dest):
+                return True
+    if d.type == 'NS':
         for i in range(len(ans)):
             if hostname_match(ans[i].target, d.dest):
                 return True
@@ -257,6 +287,8 @@ def call_nsupdate(d):
 
     (tmp_fd, tmpfile) = tempfile.mkstemp()
     f = os.fdopen(tmp_fd, 'w')
+    if getattr(d, 'nameservers', None):
+        f.write('server %s\n' % d.nameservers[0])
     if d.type == "A":
         f.write("update add %s %u A %s\n" % (normalised_name, default_ttl, d.ip))
     if d.type == "AAAA":
@@ -268,6 +300,8 @@ def call_nsupdate(d):
         f.write("update add %s %u SRV 0 100 %s %s\n" % (normalised_name, default_ttl, d.port, d.dest))
     if d.type == "CNAME":
         f.write("update add %s %u CNAME %s\n" % (normalised_name, default_ttl, d.dest))
+    if d.type == "NS":
+        f.write("update add %s %u NS %s\n" % (normalised_name, default_ttl, d.dest))
     if opts.verbose:
         f.write("show\n")
     f.write("send\n")
@@ -281,6 +315,8 @@ def call_nsupdate(d):
         ret = subprocess.call(cmd, shell=False, env={"KRB5CCNAME": ccachename})
         if ret != 0:
             if opts.fail_immediately:
+                if opts.verbose:
+                    print("Failed update with %s" % tmpfile)
                 sys.exit(1)
             error_count = error_count + 1
             if opts.verbose:
