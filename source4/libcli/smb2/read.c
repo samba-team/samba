@@ -44,6 +44,8 @@ struct smb2_request *smb2_read_send(struct smb2_tree *tree, struct smb2_read *io
 	SSVAL(req->out.body, 0x2C, io->in.channel_offset);
 	SSVAL(req->out.body, 0x2E, io->in.channel_length);
 
+	req->credit_charge = (MAX(io->in.length, 1) - 1)/ 65536 + 1;
+
 	smb2_transport_send(req);
 
 	return req;

@@ -35,8 +35,6 @@ struct smb2_request *smb2_logoff_send(struct smb2_session *session)
 
 	req->session = session;
 
-	SBVAL(req->out.hdr,  SMB2_HDR_SESSION_ID, session->uid);
-
 	SSVAL(req->out.body, 0x02, 0);
 
 	smb2_transport_send(req);

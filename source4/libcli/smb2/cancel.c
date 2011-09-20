@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
@@ -29,50 +30,16 @@
 */
 NTSTATUS smb2_cancel(struct smb2_request *r)
 {
-	NTSTATUS status;
-	struct smb2_request *c;
-	uint32_t old_timeout;
-	uint64_t old_seqnum;
+	bool ok;
 
-	/* 
-	 * if we don't get a pending id yet, we just
-	 * mark the request for pending, so that we directly
-	 * send the cancel after getting the pending id
-	 */
-	if (!r->cancel.can_cancel) {
-		r->cancel.do_cancel++;
+	if (r->subreq == NULL) {
 		return NT_STATUS_OK;
 	}
 
-	/* we don't want a seqmun for a SMB2 Cancel */
-	old_seqnum = r->transport->seqnum;
-	c = smb2_request_init(r->transport, SMB2_OP_CANCEL, 0x04, false, 0);
-	r->transport->seqnum = old_seqnum;
-	NT_STATUS_HAVE_NO_MEMORY(c);
-	c->seqnum = 0;
-
-	SIVAL(c->out.hdr, SMB2_HDR_FLAGS,	0x00000002);
-	SSVAL(c->out.hdr, SMB2_HDR_CREDIT,	0x0030);
-	SBVAL(c->out.hdr, SMB2_HDR_ASYNC_ID,	r->cancel.async_id);
-	SBVAL(c->out.hdr, SMB2_HDR_MESSAGE_ID,	c->seqnum);
-	if (r->session) {
-		SBVAL(c->out.hdr, SMB2_HDR_SESSION_ID,	r->session->uid);
-		c->session = r->session;
+	ok = tevent_req_cancel(r->subreq);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	SSVAL(c->out.body, 0x02, 0);
-
-	old_timeout = c->transport->options.request_timeout;
-	c->transport->options.request_timeout = 0;
-	smb2_transport_send(c);
-	c->transport->options.request_timeout = old_timeout;
-
-	if (c->state == SMB2_REQUEST_ERROR) {
-		status = c->status;
-	} else {
-		status = NT_STATUS_OK;
-	}
-
-	talloc_free(c);
-	return status;
+	return NT_STATUS_OK;
 }

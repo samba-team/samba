@@ -28,6 +28,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "librpc/rpc/rpc_common.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /* transport private information used by SMB2 pipe transport */
 struct smb2_private {
@@ -377,7 +378,7 @@ static const char *smb2_target_hostname(struct dcecli_connection *c)
 {
 	struct smb2_private *smb = talloc_get_type(c->transport.private_data, 
 						   struct smb2_private);
-	return smb->tree->session->transport->socket->hostname;
+	return smbXcli_conn_remote_name(smb->tree->session->transport->conn);
 }
 
 /*
@@ -488,7 +489,7 @@ static void pipe_open_recv(struct smb2_request *req)
 	smb->handle	= io.out.file.handle;
 	smb->tree	= talloc_reference(smb, tree);
 	smb->server_name= strupper_talloc(smb, 
-					  tree->session->transport->socket->hostname);
+					  smbXcli_conn_remote_name(tree->session->transport->conn));
 	if (composite_nomem(smb->server_name, ctx)) return;
 	smb->dead	= false;
 

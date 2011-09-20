@@ -82,7 +82,7 @@ struct composite_context *smb2_composite_unlink_send(struct smb2_tree *tree,
 	struct smb2_create create_parm;
 	struct smb2_request *req;
 
-	ctx = composite_create(tree, tree->session->transport->socket->event.ctx);
+	ctx = composite_create(tree, tree->session->transport->ev);
 	if (ctx == NULL) return NULL;
 
 	/* check for wildcards - we could support these with a
@@ -161,7 +161,7 @@ struct composite_context *smb2_composite_mkdir_send(struct smb2_tree *tree,
 	struct smb2_create create_parm;
 	struct smb2_request *req;
 
-	ctx = composite_create(tree, tree->session->transport->socket->event.ctx);
+	ctx = composite_create(tree, tree->session->transport->ev);
 	if (ctx == NULL) return NULL;
 
 	ZERO_STRUCT(create_parm);
@@ -232,7 +232,7 @@ struct composite_context *smb2_composite_rmdir_send(struct smb2_tree *tree,
 	struct smb2_create create_parm;
 	struct smb2_request *req;
 
-	ctx = composite_create(tree, tree->session->transport->socket->event.ctx);
+	ctx = composite_create(tree, tree->session->transport->ev);
 	if (ctx == NULL) return NULL;
 
 	ZERO_STRUCT(create_parm);
@@ -416,7 +416,7 @@ NTSTATUS smb2_composite_setpathinfo(struct smb2_tree *tree, union smb_setfileinf
 	NTSTATUS status;
 	bool ok;
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev = tree->session->transport->socket->event.ctx;
+	struct tevent_context *ev = tree->session->transport->ev;
 
 	if (frame == NULL) {
 		return NT_STATUS_NO_MEMORY;

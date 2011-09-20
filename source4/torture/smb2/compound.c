@@ -24,6 +24,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -47,7 +48,7 @@ static bool test_compound_related1(struct torture_context *tctx,
 	bool ret = true;
 	struct smb2_request *req[2];
 	uint32_t saved_tid = tree->tid;
-	uint64_t saved_uid = tree->session->uid;
+	uint64_t saved_uid = smb2cli_session_current_id(tree->session->smbXcli);
 
 	smb2_transport_credits_ask_num(tree->session->transport, 2);
 
@@ -86,7 +87,7 @@ static bool test_compound_related1(struct torture_context *tctx,
 	cl.in.file.handle = hd;
 
 	tree->tid = 0xFFFFFFFF;
-	tree->session->uid = UINT64_MAX;
+	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
 
@@ -96,7 +97,7 @@ static bool test_compound_related1(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	tree->tid = saved_tid;
-	tree->session->uid = saved_uid;
+	smb2cli_session_set_id_and_flags(tree->session->smbXcli, saved_uid, 0);
 
 	smb2_util_unlink(tree, fname);
 done:
@@ -114,7 +115,7 @@ static bool test_compound_related2(struct torture_context *tctx,
 	bool ret = true;
 	struct smb2_request *req[5];
 	uint32_t saved_tid = tree->tid;
-	uint64_t saved_uid = tree->session->uid;
+	uint64_t saved_uid = smb2cli_session_current_id(tree->session->smbXcli);
 
 	smb2_transport_credits_ask_num(tree->session->transport, 5);
 
@@ -152,7 +153,7 @@ static bool test_compound_related2(struct torture_context *tctx,
 	ZERO_STRUCT(cl);
 	cl.in.file.handle = hd;
 	tree->tid = 0xFFFFFFFF;
-	tree->session->uid = UINT64_MAX;
+	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
 	req[2] = smb2_close_send(tree, &cl);
@@ -171,7 +172,7 @@ static bool test_compound_related2(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	tree->tid = saved_tid;
-	tree->session->uid = saved_uid;
+	smb2cli_session_set_id_and_flags(tree->session->smbXcli, saved_uid, 0);
 
 	smb2_util_unlink(tree, fname);
 done:
@@ -314,7 +315,7 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 	bool ret = true;
 	struct smb2_request *req[5];
 	uint32_t saved_tid = tree->tid;
-	uint64_t saved_uid = tree->session->uid;
+	uint64_t saved_uid = smb2cli_session_current_id(tree->session->smbXcli);
 
 	smb2_transport_credits_ask_num(tree->session->transport, 5);
 
@@ -352,7 +353,7 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 	ZERO_STRUCT(cl);
 	cl.in.file.handle = hd;
 	tree->tid = 0xFFFFFFFF;
-	tree->session->uid = UINT64_MAX;
+	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
 	/* strange that this is not generating invalid parameter */
@@ -374,7 +375,7 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	tree->tid = saved_tid;
-	tree->session->uid = saved_uid;
+	smb2cli_session_set_id_and_flags(tree->session->smbXcli, saved_uid, 0);
 
 	smb2_util_unlink(tree, fname);
 done:
