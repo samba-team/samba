@@ -234,6 +234,8 @@ static bool cli_bad_session_request(int fd,
 	bool ret = false;
 	uint8_t message_type;
 	uint8_t error;
+	struct event_context *ev;
+	struct tevent_req *req;
 
 	frame = talloc_stackframe();
 
@@ -279,11 +281,24 @@ static bool cli_bad_session_request(int fd,
 	if (len == -1) {
 		goto fail;
 	}
-	len = read_smb(fd, talloc_tos(), &inbuf, &err);
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = read_smb_send(frame, ev, fd);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		goto fail;
+	}
+	len = read_smb_recv(req, talloc_tos(), &inbuf, &err);
 	if (len == -1) {
 		errno = err;
 		goto fail;
 	}
+	TALLOC_FREE(ev);
 
 	message_type = CVAL(inbuf, 0);
 	if (message_type != 0x83) {
