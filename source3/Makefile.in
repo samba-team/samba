@@ -1549,7 +1549,8 @@ RPC_OPEN_TCP_OBJ = torture/rpc_open_tcp.o \
 DBWRAP_TOOL_OBJ = utils/dbwrap_tool.o \
 		  $(PARAM_OBJ) \
 		  $(LIB_NONSMBD_OBJ) \
-		  $(LIBSMB_ERR_OBJ)
+		  $(LIBSMB_ERR_OBJ) \
+		  $(POPT_LIB_OBJ)
 
 DBWRAP_TORTURE_OBJ = utils/dbwrap_torture.o \
 		     $(PARAM_OBJ) \
@@ -3204,6 +3205,7 @@ bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@$(CC) -o $@ $(DBWRAP_TOOL_OBJ)\
 		$(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) \
+		$(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
 install-dbwrap_tool:: bin/dbwrap_tool@EXEEXT@

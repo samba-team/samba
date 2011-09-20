@@ -1393,7 +1393,8 @@ bld.SAMBA3_BINARY('test_lp_load',
 
 bld.SAMBA3_BINARY('dbwrap_tool',
                  source=DBWRAP_TOOL_SRC,
-                 deps='''talloc tdb_compat tevent cap param smbd_shim LIBSMB_ERR''',
+                 deps='''talloc tdb_compat tevent cap param smbd_shim LIBSMB_ERR
+		 popt_samba3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('dbwrap_torture',

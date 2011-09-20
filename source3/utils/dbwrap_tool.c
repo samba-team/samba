@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "popt_common.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "messages.h"
@@ -214,12 +215,41 @@ int main(int argc, const char **argv)
 
 	int ret = 1;
 
+	struct poptOption popt_options[] = {
+		POPT_AUTOHELP
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
+	};
+	int opt;
+	const char **extra_argv;
+	int extra_argc = 0;
+	poptContext pc;
+
 	load_case_tables();
 	lp_set_cmdline("log level", "0");
 	setup_logging(argv[0], DEBUG_STDERR);
+
+	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
+
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		default:
+			fprintf(stderr, "Invalid option %s: %s\n",
+				poptBadOption(pc, 0), poptStrerror(opt));
+			goto done;
+		}
+	}
+
+	/* setup the remaining options for the main program to use */
+	extra_argv = poptGetArgs(pc);
+	if (extra_argv) {
+		extra_argv++;
+		while (extra_argv[extra_argc]) extra_argc++;
+	}
+
 	lp_load_global(get_dyn_CONFIGFILE());
 
-	if ((argc < 3) || (argc > 6)) {
+	if ((extra_argc < 2) || (extra_argc > 5)) {
 		d_fprintf(stderr,
 			  "USAGE: %s <database> <op> [<key> [<type> [<value>]]]\n"
 			  "       ops: fetch, store, delete, erase, listkeys\n"
@@ -228,45 +258,45 @@ int main(int argc, const char **argv)
 		goto done;
 	}
 
-	dbname = argv[1];
-	opname = argv[2];
+	dbname = extra_argv[0];
+	opname = extra_argv[1];
 
 	if (strcmp(opname, "store") == 0) {
-		if (argc != 6) {
+		if (extra_argc != 5) {
 			d_fprintf(stderr, "ERROR: operation 'store' requires "
 				  "value argument\n");
 			goto done;
 		}
-		valuestr = argv[5];
-		keytype = argv[4];
-		keyname = argv[3];
+		valuestr = extra_argv[4];
+		keytype = extra_argv[3];
+		keyname = extra_argv[2];
 		op = OP_STORE;
 	} else if (strcmp(opname, "fetch") == 0) {
-		if (argc != 5) {
+		if (extra_argc != 4) {
 			d_fprintf(stderr, "ERROR: operation 'fetch' requires "
 				  "type but not value argument\n");
 			goto done;
 		}
 		op = OP_FETCH;
-		keytype = argv[4];
-		keyname = argv[3];
+		keytype = extra_argv[3];
+		keyname = extra_argv[2];
 	} else if (strcmp(opname, "delete") == 0) {
-		if (argc != 4) {
+		if (extra_argc != 3) {
 			d_fprintf(stderr, "ERROR: operation 'delete' does "
 				  "not allow type nor value argument\n");
 			goto done;
 		}
-		keyname = argv[3];
+		keyname = extra_argv[2];
 		op = OP_DELETE;
 	} else if (strcmp(opname, "erase") == 0) {
-		if (argc != 3) {
+		if (extra_argc != 2) {
 			d_fprintf(stderr, "ERROR: operation 'erase' does "
 				  "not take a key argument\n");
 			goto done;
 		}
 		op = OP_ERASE;
 	} else if (strcmp(opname, "listkeys") == 0) {
-		if (argc != 3) {
+		if (extra_argc != 2) {
 			d_fprintf(stderr, "ERROR: operation 'listkeys' does "
 				  "not take a key argument\n");
 			goto done;
