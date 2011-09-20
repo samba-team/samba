@@ -1637,7 +1637,6 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 			state->cli->server_domain = talloc_strdup(state->cli,
 						state->ntlmssp_state->server.netbios_domain);
 			if (state->cli->server_domain == NULL) {
-				TALLOC_FREE(subreq);
 				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
@@ -1649,11 +1648,9 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 			    state->cli, state->ntlmssp_state->session_key,
 			    data_blob_null)
 		    && !cli_check_sign_mac(state->cli, inbuf, 1)) {
-			TALLOC_FREE(subreq);
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
-		TALLOC_FREE(subreq);
 		TALLOC_FREE(state->ntlmssp_state);
 		tevent_req_done(req);
 		return;
@@ -1696,14 +1693,12 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 
 	if (!NT_STATUS_IS_OK(status)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		TALLOC_FREE(subreq);
 		TALLOC_FREE(state->ntlmssp_state);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	state->blob_out = spnego_gen_auth(state, blob_out);
-	TALLOC_FREE(subreq);
 	if (tevent_req_nomem(state->blob_out.data, req)) {
 		return;
 	}
