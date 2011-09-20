@@ -24,9 +24,8 @@ systemFlags: -1946157056
 dn: CN=NTDS Quotas,${DOMAINZONE_DN}
 objectClass: top
 objectClass: msDS-QuotaContainer
-description: Quota specifications container
 isCriticalSystemObject: TRUE
-msDS-TombstoneQuotaFactor: 100
+systemFlags: -1946157056
 
 
 dn: CN=Deleted Objects,${FORESTZONE_DN}
@@ -52,9 +51,8 @@ systemFlags: -1946157056
 dn: CN=NTDS Quotas,${FORESTZONE_DN}
 objectClass: top
 objectClass: msDS-QuotaContainer
-description: Quota specifications container
 isCriticalSystemObject: TRUE
-msDS-TombstoneQuotaFactor: 100
+systemFlags: -1946157056
 
 #################################
 # Configure partitions

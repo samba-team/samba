@@ -278,7 +278,6 @@ def add_dns_container(samdb, domaindn, prefix, domainsid):
     sec = security.descriptor.from_sddl(sddl, domainsid)
     msg = ldb.Message(ldb.Dn(samdb, "CN=MicrosoftDNS,%s,%s" % (prefix, domaindn)))
     msg["objectClass"] = ["top", "container"]
-    msg["displayName"] = ldb.MessageElement("DNS Servers", ldb.FLAG_MOD_ADD, "displayName")
     msg["nTSecurityDescriptor"] = ndr_pack(sec)
     samdb.add(msg)
 
@@ -311,6 +310,7 @@ def add_rootservers(samdb, domaindn, prefix):
     # Add DC=RootDNSServers,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     msg = ldb.Message(ldb.Dn(samdb, container_dn))
     msg["objectClass"] = ["top", "dnsZone"]
+    msg["cn"] = ldb.MessageElement("Zone", ldb.FLAG_MOD_ADD, "cn")
     samdb.add(msg)
 
     # Add DC=@,DC=RootDNSServers,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
