@@ -1297,7 +1297,9 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb,
 					  mem_ctx,
 					  msg, user_dn, LDB_SCOPE_BASE,
-					  attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "(objectClass=*)");
+					  attrs,
+					  DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
+					  "(objectClass=*)");
 		if (ldb_ret != LDB_SUCCESS) {
 			return HDB_ERR_NOENTRY;
 		}
@@ -1311,7 +1313,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		*realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 		realm = krb5_principal_get_realm(context, principal);
 
-		/* TODO: Check if it is our realm, otherwise give referall */
+		/* TODO: Check if it is our realm, otherwise give referral */
 
 		ret = krb5_unparse_name_flags(context, principal,  KRB5_PRINCIPAL_UNPARSE_NO_REALM, &short_princ);
 
@@ -1324,7 +1326,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx, msg,
 				       *realm_dn, LDB_SCOPE_SUBTREE,
 				       attrs,
-				       DSDB_SEARCH_SHOW_EXTENDED_DN,
+				       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
 				       "(&(objectClass=user)(samAccountName=%s))",
 				       ldb_binary_encode_string(mem_ctx, short_princ));
 		free(short_princ);
