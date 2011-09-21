@@ -65,6 +65,23 @@ interface dnsp
 		DNS_TYPE_WINSR = 0xFF02
 	} dns_record_type;
 
+	typedef [bitmap32bit] bitmap {
+		DNS_RPC_FLAG_SUPPRESS_NOTIFY	= 0x00010000,
+		DNS_RPC_FLAG_AGING_ON			= 0x00020000,
+		DNS_RPC_FLAG_OPEN_ACL			= 0x00040000,
+		DNS_RPC_FLAG_NODE_COMPLETE		= 0x00800000,
+		DNS_RPC_FLAG_NODE_STICKY		= 0x01000000,
+		DNS_RPC_FLAG_RECORD_CREATE_PTR	= 0x02000000,
+		DNS_RPC_FLAG_RECORD_TTL_CHANGE	= 0x04000000,
+		DNS_RPC_FLAG_RECORD_DEFAULT_TTL	= 0x08000000,
+		DNS_RPC_FLAG_ZONE_DELEGATION	= 0x10000000,
+		DNS_RPC_FLAG_AUTH_ZONE_ROOT		= 0x20000000,
+		DNS_RPC_FLAG_ZONE_ROOT			= 0x40000000,
+		DNS_RPC_FLAG_CACHE_DATA			= 0x80000000
+	}
+	dns_rpc_node_flags;
+
+
 	typedef [enum8bit] enum {
 		DNS_RANK_NONE		        = 0x00,
 		DNS_RANK_CACHE_BIT              = 0x01,
@@ -80,6 +97,48 @@ interface dnsp
 		DNS_RANK_CACHE_A_ANSWER         = 0xc1,
 		DNS_RANK_ZONE                   = 0xf0
 	} dns_record_rank;
+
+	typedef [v1_enum] enum {
+		DNS_ZONE_TYPE_CACHE             = 0x00,
+		DNS_ZONE_TYPE_PRIMARY           = 0x01,
+		DNS_ZONE_TYPE_SECONDARY         = 0x02,
+		DNS_ZONE_TYPE_STUB              = 0x03,
+		DNS_ZONE_TYPE_FORWARDER         = 0x04,
+		DNS_ZONE_TYPE_SECONDARY_CACHE   = 0x05
+	} dns_zone_type;
+
+	typedef [public,enum8bit] enum {
+		DNS_ZONE_UPDATE_OFF         = 0x00,
+		DNS_ZONE_UPDATE_UNSECURE    = 0x01,
+		DNS_ZONE_UPDATE_SECURE      = 0x02
+	} dns_zone_update;
+
+	typedef [v1_enum] enum {
+		DSPROPERTY_ZONE_EMPTY                   = 0x00,
+		DSPROPERTY_ZONE_TYPE                    = 0x01,
+		DSPROPERTY_ZONE_ALLOW_UPDATE            = 0x02,
+		DSPROPERTY_ZONE_SECURE_TIME             = 0x08,
+		DSPROPERTY_ZONE_NOREFRESH_INTERVAL      = 0x10,
+		DSPROPERTY_ZONE_SCAVENGING_SERVERS      = 0x11,
+		DSPROPERTY_ZONE_AGING_ENABLED_TIME      = 0x12,
+		DSPROPERTY_ZONE_REFRESH_INTERVAL        = 0x20,
+		DSPROPERTY_ZONE_AGING_STATE             = 0x40,
+		DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME   = 0x80,
+		DSPROPERTY_ZONE_MASTER_SERVERS          = 0x81,
+		DSPROPERTY_ZONE_AUTO_NS_SERVERS         = 0x82,
+		DSPROPERTY_ZONE_DCPROMO_CONVERT         = 0x83,
+		DSPROPERTY_ZONE_SCAVENGING_SERVERS_DA   = 0x90,
+		DSPROPERTY_ZONE_MASTER_SERVERS_DA       = 0x91,
+		DSPROPERTY_ZONE_NS_SERVERS_DA           = 0x92,
+		DSPROPERTY_ZONE_NODE_DBFLAGS			= 0x100
+
+	} dns_property_id;
+
+	typedef [enum8bit] enum {
+		DCPROMO_CONVERT_NONE    = 0x00,
+		DCPROMO_CONVERT_DOMAIN  = 0x01,
+		DCPROMO_CONVERT_FOREST  = 0x02
+	} dns_dcpromo_flag;
 
 	typedef [public] struct {
 		uint32		serial;
@@ -108,7 +167,33 @@ interface dnsp
 		dnsp_name       nameTarget;
 	} dnsp_srv;
 
-	typedef [nodiscriminant,gensize,public] union {
+	typedef struct {
+		uint32  addrCount;
+		[size_is(addrCount)] uint32 *addr;
+	} dnsp_ip4_array;
+
+	typedef struct {
+		uint16 	family;
+		uint16	port;
+		ipv4address ipv4;
+		ipv6address ipv6;
+		uint8	pad[8];
+		uint32	unused[8];
+	} dnsp_dns_addr;
+
+	typedef [public] struct {
+		uint32	MaxCount;
+		uint32	AddrCount;
+		uint32	Tag;
+		uint16	Family;
+		uint16	Reserved0;
+		uint32	MatchFlag;
+		uint32	Reserved1;
+		uint32	Reserved2;
+		dnsp_dns_addr AddrArray[AddrCount];
+	} dnsp_dns_addr_array;
+
+	typedef [nodiscriminant,gensize] union {
 		[case(DNS_TYPE_TOMBSTONE)] 		    NTTIME timestamp;
 		[case(DNS_TYPE_A)] [flag(NDR_BIG_ENDIAN)]   ipv4address ipv4;
 		[case(DNS_TYPE_NS)]                         dnsp_name ns;
@@ -132,17 +217,52 @@ interface dnsp
 		dns_record_rank 	rank;
 		uint16			flags;
 		uint32          	dwSerial;
-	        [flag(NDR_BIG_ENDIAN)]  uint32   dwTtlSeconds;
+		[flag(NDR_BIG_ENDIAN)]  uint32   dwTtlSeconds;
 		uint32          	dwReserved;
 		uint32			dwTimeStamp;
 		[switch_is(wType)] dnsRecordData data;
 	} dnsp_DnssrvRpcRecord;
 
+	typedef [nodiscriminant,gensize] union {
+		[case(DSPROPERTY_ZONE_EMPTY)]					;
+		[case(DSPROPERTY_ZONE_TYPE)]                    dns_zone_type zone_type;
+		[case(DSPROPERTY_ZONE_ALLOW_UPDATE)]            dns_zone_update allow_update_flag;
+		[case(DSPROPERTY_ZONE_SECURE_TIME)]             NTTIME zone_secure_time;
+		[case(DSPROPERTY_ZONE_NOREFRESH_INTERVAL)]      uint32 norefresh_hours;
+		[case(DSPROPERTY_ZONE_REFRESH_INTERVAL)]        uint32 refresh_hours;
+		[case(DSPROPERTY_ZONE_AGING_STATE)]             uint32 aging_enabled;
+		[case(DSPROPERTY_ZONE_SCAVENGING_SERVERS)]      dnsp_ip4_array servers;
+		[case(DSPROPERTY_ZONE_AGING_ENABLED_TIME)]      uint32 next_scavenging_cycle_hours;
+		[case(DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME)]   utf8string deleted_by_hostname;
+		[case(DSPROPERTY_ZONE_MASTER_SERVERS)]          dnsp_ip4_array master_servers;
+		[case(DSPROPERTY_ZONE_AUTO_NS_SERVERS)]         dnsp_ip4_array ns_servers;
+		[case(DSPROPERTY_ZONE_DCPROMO_CONVERT)]         dns_dcpromo_flag dcpromo_flag;
+		[case(DSPROPERTY_ZONE_SCAVENGING_SERVERS_DA)]	dnsp_dns_addr_array s_ns_servers;
+		[case(DSPROPERTY_ZONE_MASTER_SERVERS_DA)]		dnsp_dns_addr_array z_master_servers;
+		[case(DSPROPERTY_ZONE_NS_SERVERS_DA)]			dnsp_dns_addr_array d_ns_servers;
+		[case(DSPROPERTY_ZONE_NODE_DBFLAGS)]			dns_rpc_node_flags flags;
+	} dnsPropertyData;
+
+	/* this is the format for the dnsProperty attribute in the DNS
+	   partitions in AD */
+	typedef [flag(NDR_NOALIGN),public] struct {
+		[value(ndr_size_dnsPropertyData(&data,id,ndr->flags))] uint32 wDataLength;
+		uint32   			namelength;
+		[value(0)] uint32   flag;
+		[value(1)] uint32   version;
+		dns_property_id     id;
+		[switch_is(wDataLength?id:DSPROPERTY_ZONE_EMPTY)]     dnsPropertyData data;
+		uint32              name;
+	} dnsp_DnsProperty;
 
 	/*
-	  this is a convenience hook for ndrdump
+	  these are convenience hooks for ndrdump
 	 */
 	void decode_DnssrvRpcRecord(
 		[in] dnsp_DnssrvRpcRecord blob
+		);
+
+	void decode_DnsProperty(
+		[in] dnsp_DnsProperty blob
 		);
 }
