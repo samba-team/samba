@@ -386,8 +386,9 @@ struct ncList {
 static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 			     const char *ntds_guid_str, struct ncList **master_nc_list)
 {
-	const char *post_2003_attrs[] = { "msDs-hasMasterNCs", NULL };
-	const char *pre_2003_attrs[] = { "hasMasterNCs", NULL };
+	const char *post_2003_attrs[] = { "msDs-hasMasterNCs", "hasPartialReplicaNCs", NULL };
+	const char *pre_2003_attrs[] = { "hasMasterNCs", "hasPartialReplicaNCs", NULL };
+	const char **attrs = post_2003_attrs;
 	struct ldb_result *res;
 	struct ncList *nc_list = NULL;
 	struct ncList *nc_list_elem;
@@ -405,6 +406,7 @@ static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 		DEBUG(0,(__location__ ": Failed objectguid search - %s\n", ldb_errstring(samdb)));
 
 		is_level_post_2003 = 0;
+		attrs = post_2003_attrs;
 		ret = ldb_search(samdb, mem_ctx, &res, ldb_get_config_basedn(samdb),
 			LDB_SCOPE_DEFAULT, pre_2003_attrs, "(objectguid=%s)", ntds_guid_str);
 	}
@@ -421,32 +423,26 @@ static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 
 	for (i = 0; i < res->count; i++) {
 		struct ldb_message_element *msg_elem;
-		unsigned int k;
+		unsigned int k, a;
 
-		if (is_level_post_2003) {
-			msg_elem = ldb_msg_find_element(res->msgs[i], "msDs-hasMasterNCs");
-		} else {
-			msg_elem = ldb_msg_find_element(res->msgs[i], "hasMasterNCs");
+		for (a=0; attrs[a]; a++) {
+			msg_elem = ldb_msg_find_element(res->msgs[i], attrs[a]);
+			if (!msg_elem || msg_elem->num_values == 0) {
+				continue;
+			}
+
+			for (k = 0; k < msg_elem->num_values; k++) {
+				/* copy the string on msg_elem->values[k]->data to nc_str */
+				nc_str = talloc_strndup(mem_ctx, (char *)msg_elem->values[k].data, msg_elem->values[k].length);
+				W_ERROR_HAVE_NO_MEMORY(nc_str);
+
+				nc_list_elem = talloc_zero(mem_ctx, struct ncList);
+				W_ERROR_HAVE_NO_MEMORY(nc_list_elem);
+				nc_list_elem->dn = ldb_dn_new(mem_ctx, samdb, nc_str);
+				W_ERROR_HAVE_NO_MEMORY(nc_list_elem);
+				DLIST_ADD(nc_list, nc_list_elem);
+			}
 		}
-
-		if (!msg_elem || msg_elem->num_values == 0) {
-			DEBUG(0,(__location__ ": Failed: Attribute hasMasterNCs not found - %s\n",
-			      ldb_errstring(samdb)));
-			return WERR_INTERNAL_ERROR;
-		}
-
-		for (k = 0; k < msg_elem->num_values; k++) {
-			/* copy the string on msg_elem->values[k]->data to nc_str */
-			nc_str = talloc_strndup(mem_ctx, (char *)msg_elem->values[k].data, msg_elem->values[k].length);
-			W_ERROR_HAVE_NO_MEMORY(nc_str);
-
-			nc_list_elem = talloc_zero(mem_ctx, struct ncList);
-			W_ERROR_HAVE_NO_MEMORY(nc_list_elem);
-			nc_list_elem->dn = ldb_dn_new(mem_ctx, samdb, nc_str);
-			W_ERROR_HAVE_NO_MEMORY(nc_list_elem);
-			DLIST_ADD(nc_list, nc_list_elem);
-		}
-
 	}
 
 	*master_nc_list = nc_list;
