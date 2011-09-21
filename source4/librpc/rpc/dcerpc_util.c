@@ -656,7 +656,8 @@ NTSTATUS dcerpc_pipe_auth_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 	status = composite_wait(c);
 	if (!NT_STATUS_IS_OK(status)) {
 		char *uuid_str = GUID_string(s->pipe, &s->table->syntax_id.uuid);
-		DEBUG(0, ("Failed to bind to uuid %s - %s\n", uuid_str, nt_errstr(status)));
+		DEBUG(0, ("Failed to bind to uuid %s for %s %s\n", uuid_str,
+			  dcerpc_binding_string(uuid_str, s->binding), nt_errstr(status)));
 		talloc_free(uuid_str);
 	} else {
 		talloc_steal(mem_ctx, s->pipe);
