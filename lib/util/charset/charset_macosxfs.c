@@ -33,7 +33,7 @@
 #include "charset_proto.h"
 #undef realloc
 
-#ifdef DARWIN
+#ifdef DARWINOS
 
 /*
  * Include OS frameworks.  These are only needed in this module.

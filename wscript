@@ -77,6 +77,10 @@ def configure(conf):
             conf.ADD_CFLAGS('-fno-common')
         if not conf.CHECK_SHLIB_W_PYTHON("Checking if -undefined dynamic_lookup is not need"):
             conf.env.append_value('shlib_LINKFLAGS', ['-undefined', 'dynamic_lookup'])
+
+    if sys.platform == 'darwin':
+        conf.ADD_LDFLAGS('-framework CoreFoundation')
+
     if int(conf.env['PYTHON_VERSION'][0]) >= 3:
         raise Utils.WafError('Python version 3.x is not supported by Samba yet')
 

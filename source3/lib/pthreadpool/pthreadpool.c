@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -26,7 +27,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <fcntl.h>
-#include <sys/time.h>
+#include "system/time.h"
 
 #include "pthreadpool.h"
 #include "lib/util/dlinklist.h"
