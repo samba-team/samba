@@ -11,9 +11,8 @@ case "$1" in
         for fs in $CTDB_CHECK_FS_USE
         do
             # parse fs_mount and fs_threshold
-            fs_config=(`echo $fs | tr ':' '\n'`)
-            fs_mount=${fs_config[0])}
-            fs_threshold=${fs_config[1])}
+            fs_mount=`echo "$fs" | awk -F : '{print $1}'`
+            fs_threshold=`echo "$fs" | awk -F : '{print $2}'`
 
             # check if given fs_mount is existing directory
             if [ ! -d "$fs_mount" ]; then
@@ -22,22 +21,22 @@ case "$1" in
             fi
 
             # check if given fs_threshold is number
-            if ! [[ "$fs_threshold" =~ ^[0-9]+$ ]] ; then
+            if ! (echo "$fs_threshold" | egrep -q '^[0-9]+$')  ; then
                 echo "$0: Threshold $fs_threshold is invalid number"
                 exit 1
             fi
 
             # get utilization of given fs from df
-            fs_usage=`df -k $fs_mount | grep % | awk {'print $5'} | sed 's/%//g' | tail -n 1`
+            fs_usage=`df -kP $fs_mount | grep '%' | awk {'print $5'} | sed 's/%//g' | tail -n 1`
 
             # check if fs_usage is number
-            if ! [[ "$fs_usage" =~ ^[0-9]+$ ]] ; then
+            if ! (echo "$fs_usage" | egrep -q '^[0-9]+$') ; then
                 echo "$0: FS utilization $fs_usage is invalid number"
                 exit 1
             fi
 
             # check if fs_usage is higher than or equal to fs_threshold
-            if [[ "$fs_usage" -ge "$fs_threshold" ]] ; then
+            if [ "$fs_usage" -ge "$fs_threshold" ] ; then
                 echo "ERROR: Utilization of $fs_mount ($fs_usage%) is higher than threshold ($fs_threshold%)"
                 exit 1
             fi
