@@ -868,6 +868,12 @@ NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 
 	/* Ensure we have at least one thing set. */
 	if ((security_info_sent & (SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL|SECINFO_SACL)) == 0) {
+		if (security_info_sent & SECINFO_LABEL) {
+			/* Only consider SECINFO_LABEL if no other
+			   bits are set. Just like W2K3 we don't
+			   store this. */
+			return NT_STATUS_OK;
+		}
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1868,7 +1874,17 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	if (security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|
+			SECINFO_GROUP|SECINFO_SACL)) {
+		/* Don't return SECINFO_LABEL if anything else was
+		   requested. See bug #8458. */
+		security_info_wanted &= ~SECINFO_LABEL;
+	}
+
 	if (!lp_nt_acl_support(SNUM(conn))) {
+		status = get_null_nt_acl(mem_ctx, &psd);
+	} else if (security_info_wanted & SECINFO_LABEL) {
+		/* Like W2K3 return a null object. */
 		status = get_null_nt_acl(mem_ctx, &psd);
 	} else {
 		status = SMB_VFS_FGET_NT_ACL(
@@ -1899,6 +1915,15 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	if (psd->dacl == NULL &&
 	    security_info_wanted & SECINFO_DACL)
 		psd->type |= SEC_DESC_DACL_PRESENT;
+
+	if (security_info_wanted & SECINFO_LABEL) {
+		/* Like W2K3 return a null object. */
+		psd->owner_sid = NULL;
+		psd->group_sid = NULL;
+		psd->dacl = NULL;
+		psd->sacl = NULL;
+		psd->type &= ~(SEC_DESC_DACL_PRESENT|SEC_DESC_SACL_PRESENT);
+	}
 
 	*psd_size = ndr_size_security_descriptor(psd, 0);
 
