@@ -578,25 +578,41 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	int ret;
 
 	if (!handle) {
-		return LDB_ERR_UNAVAILABLE;
+		return ldb_error(handle->ldb, LDB_ERR_UNAVAILABLE, NULL);
 	}
 
 	if (handle->state == LDB_ASYNC_DONE) {
+		if ((handle->status != LDB_SUCCESS) &&
+		    (handle->ldb->err_string == NULL)) {
+			/* if no error string was setup by the backend */
+			ldb_asprintf_errstring(handle->ldb, "ldb_wait: %s (%d)",
+					       ldb_strerror(handle->status),
+					       handle->status);
+		}
 		return handle->status;
 	}
 
 	ev = ldb_get_event_context(handle->ldb);
 	if (NULL == ev) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_oom(handle->ldb);
 	}
 
 	switch (type) {
 	case LDB_WAIT_NONE:
 		ret = tevent_loop_once(ev);
 		if (ret != 0) {
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_operr(handle->ldb);
 		}
 		if (handle->status != LDB_SUCCESS) {
+			if (handle->ldb->err_string == NULL) {
+				/*
+				 * if no error string was setup by the backend
+				 */
+				ldb_asprintf_errstring(handle->ldb,
+						       "ldb_wait: %s (%d)",
+						       ldb_strerror(handle->status),
+						       handle->status);
+			}
 			return handle->status;
 		}
 		break;
@@ -605,13 +621,32 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 		while (handle->state != LDB_ASYNC_DONE) {
 			ret = tevent_loop_once(ev);
 			if (ret != 0) {
-				return LDB_ERR_OPERATIONS_ERROR;
+				return ldb_operr(handle->ldb);
 			}
 			if (handle->status != LDB_SUCCESS) {
+				if  (handle->ldb->err_string == NULL) {
+					/*
+					 * if no error string was setup by the
+					 * backend
+					 */
+					ldb_asprintf_errstring(handle->ldb,
+							       "ldb_wait: %s (%d)",
+							       ldb_strerror(handle->status),
+							       handle->status);
+				}
 				return handle->status;
 			}
 		}
 		if (handle->status != LDB_SUCCESS) {
+			if (handle->ldb->err_string == NULL) {
+				/*
+				 * if no error string was setup by the backend
+				 */
+				ldb_asprintf_errstring(handle->ldb,
+						       "ldb_wait: %s (%d)",
+						       ldb_strerror(handle->status),
+						       handle->status);
+			}
 			return handle->status;
 		}
 		break;
