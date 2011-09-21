@@ -57,8 +57,17 @@ static bool test_read_eof(struct torture_context *torture, struct smb2_tree *tre
 
 	ZERO_STRUCT(buf);
 
+	smb2_util_unlink(tree, FNAME);
+
 	status = torture_smb2_testfile(tree, FNAME, &h);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = h;
+	rd.in.length      = 5;
+	rd.in.offset      = 0;
+	status = smb2_read(tree, tree, &rd);
+	CHECK_STATUS(status, NT_STATUS_END_OF_FILE);
 
 	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
 	CHECK_STATUS(status, NT_STATUS_OK);

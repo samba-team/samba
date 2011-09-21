@@ -298,7 +298,6 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 			       struct smb2_handle *handle)
 {
 	struct smb2_create io;
-	struct smb2_read r;
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
@@ -317,14 +316,6 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*handle = io.out.file.handle;
-
-	ZERO_STRUCT(r);
-	r.in.file.handle = *handle;
-	r.in.length      = 5;
-	r.in.offset      = 0;
-
-	// What is the purpose of this? Server returns EOF.
-	smb2_read(tree, tree, &r);
 
 	return NT_STATUS_OK;
 }
