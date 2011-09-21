@@ -880,15 +880,15 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	int i;
 	int ret;
 
-	tmp = talloc_strdup(vnn, ifaces);
+	tmp = strdup(ifaces);
 	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
 		if (!ctdb_sys_check_iface_exists(iface)) {
 			DEBUG(DEBUG_CRIT,("Interface %s does not exist. Can not add public-address : %s\n", iface, ctdb_addr_to_str(addr)));
-			talloc_free(tmp);
+			free(tmp);
 			return -1;
 		}
 	}
-	talloc_free(tmp);
+	free(tmp);
 
 	/* Verify that we dont have an entry for this ip yet */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
