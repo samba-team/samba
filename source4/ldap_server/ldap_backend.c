@@ -169,12 +169,8 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 	}
 
 	*errstring = talloc_asprintf(mem_ctx, "%08X: %s", W_ERROR_V(err),
-		ldb_strerror(ldb_err));
-	if (add_err_string != NULL) {
-		*errstring = talloc_asprintf(mem_ctx, "%s - %s", *errstring,
-					     add_err_string);
-	}
-	
+		add_err_string != NULL ? add_err_string : ldb_strerror(ldb_err));
+
 	/* result is 1:1 for now */
 	return ldb_err;
 }
