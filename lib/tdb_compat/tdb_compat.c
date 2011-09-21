@@ -94,7 +94,7 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 				void *data),
 		 void *log_data)
 {
-	union tdb_attribute cif, log, hash, *attr = NULL;
+	union tdb_attribute cif, log, hash, max_dead, *attr = NULL;
 
 	if (log_fn) {
 		log.log.base.attr = TDB_ATTRIBUTE_LOG;
@@ -120,6 +120,16 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 			attr = &hash;
 		}
 		tdb_flags &= ~TDB_INCOMPATIBLE_HASH;
+	}
+
+	if (tdb_flags & TDB_VOLATILE) {
+		if (tdb_flags & TDB_VERSION1) {
+			max_dead.base.attr = TDB_ATTRIBUTE_TDB1_MAX_DEAD;
+			max_dead.base.next = attr;
+			max_dead.tdb1_max_dead.max_dead = 5;
+			attr = &max_dead;
+		}
+		tdb_flags &= ~TDB_VOLATILE;
 	}
 
 	/* Testsuite uses this to speed things up. */
