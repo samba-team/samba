@@ -848,11 +848,15 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		                        discard_const(&req->op.add.message));
 		if (ret != LDB_SUCCESS) {
 			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 		FIRST_OP(ldb, add);
 		ret = ldb_msg_check_element_flags(ldb, req->op.add.message);
 		if (ret != LDB_SUCCESS) {
+			/*
+			 * "ldb_msg_check_element_flags" generates an error
+			 * string
+			 */
 			return ret;
 		}
 		ret = module->ops->add(module, req);
@@ -866,6 +870,10 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		FIRST_OP(ldb, modify);
 		ret = ldb_msg_check_element_flags(ldb, req->op.mod.message);
 		if (ret != LDB_SUCCESS) {
+			/*
+			 * "ldb_msg_check_element_flags" generates an error
+			 * string
+			 */
 			return ret;
 		}
 		ret = module->ops->modify(module, req);
@@ -901,6 +909,12 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 		FIRST_OP(ldb, request);
 		ret = module->ops->request(module, req);
 		break;
+	}
+
+	if ((ret != LDB_SUCCESS) && (ldb->err_string == NULL)) {
+		/* if no error string was setup by the backend */
+		ldb_asprintf_errstring(ldb, "ldb_request: %s (%d)",
+				       ldb_strerror(ret), ret);
 	}
 
 	return ret;
