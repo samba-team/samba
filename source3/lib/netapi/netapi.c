@@ -55,7 +55,6 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
-	char *krb5_cc_env = NULL;
 
 	if (stat_ctx && libnetapi_initialized) {
 		*context = stat_ctx;
@@ -100,12 +99,6 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 	reopen_logs();
 
 	BlockSignals(True, SIGPIPE);
-
-	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (!krb5_cc_env || (strlen(krb5_cc_env) == 0)) {
-		ctx->krb5_cc_env = talloc_strdup(frame, "MEMORY:libnetapi");
-		setenv(KRB5_ENV_CCNAME, ctx->krb5_cc_env, 1);
-	}
 
 	if (getenv("USER")) {
 		ctx->username = talloc_strdup(frame, getenv("USER"));
@@ -249,6 +242,23 @@ NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
 	ctx->use_kerberos = true;
 	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
+
+NET_API_STATUS libnetapi_set_use_memory_krb5_ccache(struct libnetapi_ctx *ctx)
+{
+	ctx->krb5_cc_env = talloc_strdup(ctx, "MEMORY:libnetapi");
+	if (!ctx->krb5_cc_env) {
+		return W_ERROR_V(WERR_NOMEM);
+	}
+	setenv(KRB5_ENV_CCNAME, ctx->krb5_cc_env, 1);
+	ctx->use_memory_krb5_ccache = 1;
+	return NET_API_STATUS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
 {
