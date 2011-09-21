@@ -546,7 +546,7 @@ int ldb_transaction_cancel_noerr(struct ldb_context *ldb)
 }
 
 
-/* autostarts a transacion if none active */
+/* autostarts a transaction if none active */
 static int ldb_autotransaction_request(struct ldb_context *ldb,
 				       struct ldb_request *req)
 {
