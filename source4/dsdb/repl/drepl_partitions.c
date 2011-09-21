@@ -333,8 +333,8 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 }
 
 WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
-				      const struct GUID *nc_guid,
-				      const struct dom_sid *nc_sid,
+				      struct GUID *nc_guid,
+				      struct dom_sid *nc_sid,
 				      const char *nc_dn_str,
 				      struct dreplsrv_partition **_p)
 {
@@ -357,6 +357,13 @@ WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
 		    || strequal(p->nc.dn, nc_dn_str)
 		    || (valid_sid && dom_sid_equal(&p->nc.sid, nc_sid)))
 		{
+			/* fill in he right guid and sid if possible */
+			if (nc_guid && !valid_guid) {
+				dsdb_get_extended_dn_guid(p->dn, nc_guid, "GUID");
+			}
+			if (nc_sid && !valid_sid) {
+				dsdb_get_extended_dn_sid(p->dn, nc_sid, "SID");
+			}
 			*_p = p;
 			return WERR_OK;
 		}
