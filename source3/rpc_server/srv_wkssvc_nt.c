@@ -845,7 +845,9 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 	j->in.msg_ctx		= smbd_messaging_context();
 
 	become_root();
+	setenv(KRB5_ENV_CCNAME, "MEMORY:_wkssvc_NetrJoinDomain2", 1);
 	werr = libnet_Join(p->mem_ctx, j);
+	unsetenv(KRB5_ENV_CCNAME);
 	unbecome_root();
 
 	if (!W_ERROR_IS_OK(werr)) {
@@ -911,7 +913,9 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 	u->in.msg_ctx		= smbd_messaging_context();
 
 	become_root();
+	setenv(KRB5_ENV_CCNAME, "MEMORY:_wkssvc_NetrUnjoinDomain2", 1);
 	werr = libnet_Unjoin(p->mem_ctx, u);
+	unsetenv(KRB5_ENV_CCNAME);
 	unbecome_root();
 
 	if (!W_ERROR_IS_OK(werr)) {
