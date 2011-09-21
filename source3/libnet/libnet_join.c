@@ -35,7 +35,6 @@
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
 #include "rpc_client/cli_pipe.h"
-#include "krb5_env.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
 #include "libsmb/libsmb.h"
@@ -1764,15 +1763,8 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 
 static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
 {
-	const char *krb5_cc_env = NULL;
-
 	if (r->in.ads) {
 		ads_destroy(&r->in.ads);
-	}
-
-	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (krb5_cc_env && StrCaseCmp(krb5_cc_env, "MEMORY:libnetjoin")) {
-		unsetenv(KRB5_ENV_CCNAME);
 	}
 
 	return 0;
@@ -1783,15 +1775,8 @@ static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
 
 static int libnet_destroy_UnjoinCtx(struct libnet_UnjoinCtx *r)
 {
-	const char *krb5_cc_env = NULL;
-
 	if (r->in.ads) {
 		ads_destroy(&r->in.ads);
-	}
-
-	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (krb5_cc_env && StrCaseCmp(krb5_cc_env, "MEMORY:libnetjoin")) {
-		unsetenv(KRB5_ENV_CCNAME);
 	}
 
 	return 0;
@@ -1804,7 +1789,6 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 			   struct libnet_JoinCtx **r)
 {
 	struct libnet_JoinCtx *ctx;
-	const char *krb5_cc_env = NULL;
 
 	ctx = talloc_zero(mem_ctx, struct libnet_JoinCtx);
 	if (!ctx) {
@@ -1815,13 +1799,6 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 
 	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
-
-	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (!krb5_cc_env || (strlen(krb5_cc_env) == 0)) {
-		krb5_cc_env = talloc_strdup(mem_ctx, "MEMORY:libnetjoin");
-		W_ERROR_HAVE_NO_MEMORY(krb5_cc_env);
-		setenv(KRB5_ENV_CCNAME, krb5_cc_env, 1);
-	}
 
 	ctx->in.secure_channel_type = SEC_CHAN_WKSTA;
 
@@ -1837,7 +1814,6 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 			     struct libnet_UnjoinCtx **r)
 {
 	struct libnet_UnjoinCtx *ctx;
-	const char *krb5_cc_env = NULL;
 
 	ctx = talloc_zero(mem_ctx, struct libnet_UnjoinCtx);
 	if (!ctx) {
@@ -1848,13 +1824,6 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 
 	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
-
-	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
-	if (!krb5_cc_env || (strlen(krb5_cc_env) == 0)) {
-		krb5_cc_env = talloc_strdup(mem_ctx, "MEMORY:libnetjoin");
-		W_ERROR_HAVE_NO_MEMORY(krb5_cc_env);
-		setenv(KRB5_ENV_CCNAME, krb5_cc_env, 1);
-	}
 
 	*r = ctx;
 
