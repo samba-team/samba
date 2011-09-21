@@ -94,8 +94,11 @@ class cmd_dbcheck(Command):
         else:
             attrs = attrs.split()
 
+        started_transaction = False
+
         if yes and fix:
             samdb.transaction_start()
+            started_transaction = True
         try:
             chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose,
                     fix=fix, yes=yes, quiet=quiet)
@@ -109,10 +112,11 @@ class cmd_dbcheck(Command):
                 error_count = chk.check_database(DN=DN, scope=search_scope,
                         controls=controls, attrs=attrs)
         except:
-            samdb.transaction_cancel()
+            if started_transaction:
+                samdb.transaction_cancel()
             raise
 
-        if yes and fix:
+        if started_transaction:
             samdb.transaction_commit()
 
         if error_count != 0:
