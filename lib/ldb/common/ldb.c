@@ -596,8 +596,7 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 		if (ret != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		if (handle->state == LDB_ASYNC_DONE ||
-		    handle->status != LDB_SUCCESS) {
+		if (handle->status != LDB_SUCCESS) {
 			return handle->status;
 		}
 		break;
@@ -612,7 +611,10 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 				return handle->status;
 			}
 		}
-		return handle->status;
+		if (handle->status != LDB_SUCCESS) {
+			return handle->status;
+		}
+		break;
 	}
 
 	return LDB_SUCCESS;
