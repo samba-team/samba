@@ -89,9 +89,6 @@ NTSTATUS smb2_create_blob_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffer,
 		data += next;
 
 		if (remaining < 16) {
-			DEBUG(0,("smb2_create_blob_parse: remaining1 = %d, next = %d\n",
-				(int)remaining,
-				(int)next));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
