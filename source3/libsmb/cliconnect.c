@@ -2767,6 +2767,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			server_signing = "supported";
 			server_allowed = true;
 		}
+
+		server_mandatory = false;
 		if (server_security_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
 			server_signing = "required";
 			server_mandatory = true;
