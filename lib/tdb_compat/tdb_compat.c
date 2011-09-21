@@ -94,7 +94,7 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 				void *data),
 		 void *log_data)
 {
-	union tdb_attribute cif, log, *attr = NULL;
+	union tdb_attribute cif, log, hash, *attr = NULL;
 
 	if (log_fn) {
 		log.log.base.attr = TDB_ATTRIBUTE_LOG;
@@ -110,6 +110,16 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 		cif.openhook.fn = clear_if_first;
 		attr = &cif;
 		tdb_flags &= ~TDB_CLEAR_IF_FIRST;
+	}
+
+	if (tdb_flags & TDB_INCOMPATIBLE_HASH) {
+		if (tdb_flags & TDB_VERSION1) {
+			hash.hash.base.attr = TDB_ATTRIBUTE_HASH;
+			hash.hash.base.next = attr;
+			hash.hash.fn = tdb1_incompatible_hash;
+			attr = &hash;
+		}
+		tdb_flags &= ~TDB_INCOMPATIBLE_HASH;
 	}
 
 	/* Testsuite uses this to speed things up. */

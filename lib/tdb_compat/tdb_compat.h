@@ -82,7 +82,7 @@ int tdb_reopen_all(int parent_longlived);
 
 /* These no longer exist in tdb2. */
 #define TDB_CLEAR_IF_FIRST 1048576
-#define TDB_INCOMPATIBLE_HASH 0
+#define TDB_INCOMPATIBLE_HASH 2097152
 #define TDB_VOLATILE 0
 
 /* tdb2 does nonblocking functions via attibutes. */
