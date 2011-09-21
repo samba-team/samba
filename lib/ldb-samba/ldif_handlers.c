@@ -915,6 +915,19 @@ static int ldif_write_dnsRecord(struct ldb_context *ldb, void *mem_ctx,
 }
 
 /*
+  convert a NDR formatted blob to a ldif formatted dnsProperty
+*/
+static int ldif_write_dnsProperty(struct ldb_context *ldb, void *mem_ctx,
+				const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out,
+			      sizeof(struct dnsp_DnsProperty),
+			      (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnsProperty,
+			      (ndr_print_fn_t)ndr_print_dnsp_DnsProperty,
+			      true);
+}
+
+/*
   convert a NDR formatted blob of a supplementalCredentials into text
 */
 static int ldif_write_supplementalCredentialsBlob(struct ldb_context *ldb, void *mem_ctx,
@@ -1348,6 +1361,13 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.comparison_fn	  = ldb_comparison_binary,
 		.operator_fn      = samba_syntax_operator_fn
 	},{
+		.name		  = LDB_SYNTAX_SAMBA_DNSPROPERTY,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_dnsProperty,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
+	},{
 		.name		  = LDB_SYNTAX_SAMBA_SUPPLEMENTALCREDENTIALS,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldif_write_supplementalCredentialsBlob,
@@ -1480,6 +1500,7 @@ static const struct {
 
 	/* These NDR encoded things we want to be able to read with --show-binary */
 	{ "dnsRecord",				LDB_SYNTAX_SAMBA_DNSRECORD },
+	{ "dnsProperty",			LDB_SYNTAX_SAMBA_DNSPROPERTY },
 	{ "supplementalCredentials",		LDB_SYNTAX_SAMBA_SUPPLEMENTALCREDENTIALS},
 	{ "partialAttributeSet",		LDB_SYNTAX_SAMBA_PARTIALATTRIBUTESET}
 };
