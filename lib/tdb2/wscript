@@ -21,8 +21,8 @@ def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.PRIVATE_EXTENSION_DEFAULT('tdb2', noextension='tdb2')
     opt.RECURSE('lib/replace')
-    opt.add_option('--enable-tdb2-breaks-compat',
-                   help=("Build tdb2 instead of tdb1 (BREAKS TDB1!) [False]"),
+    opt.add_option('--enable-tdb2',
+                   help=("Use tdb2 API instead of tdb1 [False]"),
                    action="store_true", dest='BUILD_TDB2', default=False)
     if opt.IN_LAUNCH_DIR():
         opt.add_option('--disable-python',
