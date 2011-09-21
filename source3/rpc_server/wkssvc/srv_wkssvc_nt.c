@@ -32,6 +32,7 @@
 #include "session.h"
 #include "smbd/smbd.h"
 #include "auth.h"
+#include "krb5_env.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -867,7 +868,9 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 	j->in.msg_ctx		= p->msg_ctx;
 
 	become_root();
+	setenv(KRB5_ENV_CCNAME, "MEMORY:_wkssvc_NetrJoinDomain2", 1);
 	werr = libnet_Join(p->mem_ctx, j);
+	unsetenv(KRB5_ENV_CCNAME);
 	unbecome_root();
 
 	if (!W_ERROR_IS_OK(werr)) {
@@ -933,7 +936,9 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 	u->in.msg_ctx		= p->msg_ctx;
 
 	become_root();
+	setenv(KRB5_ENV_CCNAME, "MEMORY:_wkssvc_NetrUnjoinDomain2", 1);
 	werr = libnet_Unjoin(p->mem_ctx, u);
+	unsetenv(KRB5_ENV_CCNAME);
 	unbecome_root();
 
 	if (!W_ERROR_IS_OK(werr)) {
