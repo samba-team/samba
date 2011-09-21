@@ -187,6 +187,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	fstring tmp;
 	bool username_was_mapped = false;
 	bool map_domainuser_to_guest = false;
+	bool guest = false;
 
 	if (!spnego_parse_krb5_wrap(talloc_tos(), *secblob, &ticket, tok_id)) {
 		status = NT_STATUS_LOGON_FAILURE;
@@ -263,6 +264,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
 		/* force no signing */
 		session->do_signing = false;
+		guest = true;
 	}
 
 	data_blob_free(&session->session_info->user_session_key);
@@ -315,7 +317,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	 * so that the response can be signed
 	 */
 	smb2req->session = session;
-	if (session->do_signing) {
+	if (guest) {
 		smb2req->do_signing = true;
 	}
 
@@ -469,6 +471,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 					uint64_t *out_session_id)
 {
 	fstring tmp;
+	bool guest = false;
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == Required) {
@@ -481,6 +484,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
 		/* force no signing */
 		session->do_signing = false;
+		guest = true;
 	}
 
 	session->session_key = session->session_info->user_session_key;
@@ -528,7 +532,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 	 * so that the response can be signed
 	 */
 	smb2req->session = session;
-	if (session->do_signing) {
+	if (!guest) {
 		smb2req->do_signing = true;
 	}
 
