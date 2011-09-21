@@ -564,11 +564,6 @@ static int ldb_autotransaction_request(struct ldb_context *ldb,
 	}
 	ldb_transaction_cancel(ldb);
 
-	if (ldb->err_string == NULL) {
-		/* no error string was setup by the backend */
-		ldb_asprintf_errstring(ldb, "%s (%d)", ldb_strerror(ret), ret);
-	}
-
 	return ret;
 }
 
