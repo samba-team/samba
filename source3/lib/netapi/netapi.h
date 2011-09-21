@@ -1356,6 +1356,7 @@ struct libnetapi_ctx {
 	char *krb5_cc_env;
 	int use_kerberos;
 	int use_ccache;
+	int use_memory_krb5_ccache;
 	int disable_policy_handle_cache;
 
 	void *private_data;
@@ -1409,6 +1410,11 @@ NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx);
 ****************************************************************/
 
 NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx);
+
+/****************************************************************
+****************************************************************/
+
+NET_API_STATUS libnetapi_set_use_memory_krb5_ccache(struct libnetapi_ctx *ctx);
 
 /****************************************************************
 Return a specific libnetapi error as a string, caller must free with NetApiBufferFree
