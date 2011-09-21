@@ -31,6 +31,7 @@ struct dsdb_partition {
 	struct dsdb_control_current_partition *ctrl;
 	const char *backend_url;
 	DATA_BLOB orig_record;
+	bool partial_replica; /* a GC partition */
 };
 
 struct partition_module {

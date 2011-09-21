@@ -543,6 +543,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 	struct ldb_control *search_control = ldb_request_get_control(req, LDB_CONTROL_SEARCH_OPTIONS_OID);
 	struct ldb_control *domain_scope_control = ldb_request_get_control(req, LDB_CONTROL_DOMAIN_SCOPE_OID);
+	struct ldb_control *no_gc_control = ldb_request_get_control(req, DSDB_CONTROL_NO_GLOBAL_CATALOG);
 	
 	struct ldb_search_options_control *search_options = NULL;
 	struct dsdb_partition *p;
@@ -617,6 +618,17 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 	for (i=0; data->partitions[i]; i++) {
 		bool match = false, stop = false;
+
+		if (data->partitions[i]->partial_replica && no_gc_control != NULL) {
+			if (ldb_dn_compare_base(data->partitions[i]->ctrl->dn,
+						req->op.search.base) == 0) {
+				/* base DN is in a partial replica
+				   with the NO_GLOBAL_CATALOG
+				   control. This partition is invisible */
+				/* DEBUG(0,("DENYING NON-GC OP: %s\n", ldb_module_call_chain(req, req))); */
+				continue;
+			}
+		}
 
 		if (phantom_root) {
 			/* Phantom root: Find all partitions under the

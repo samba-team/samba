@@ -138,7 +138,8 @@ static int partition_reload_metadata(struct ldb_module *module, struct partition
 	struct ldb_message *msg, *module_msg;
 	struct ldb_result *res;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	const char *attrs[] = { "partition", "replicateEntries", "modules", "ldapBackend", NULL };
+	const char *attrs[] = { "partition", "replicateEntries", "modules", "ldapBackend",
+				"partialReplica", NULL };
 	/* perform search for @PARTITION, looking for module, replicateEntries and ldapBackend */
 	ret = dsdb_module_search_dn(module, mem_ctx, &res, 
 				    ldb_dn_new(mem_ctx, ldb, DSDB_PARTITION_DN),
@@ -208,7 +209,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	const char **modules;
 	int ret;
 
-	(*partition) = talloc(mem_ctx, struct dsdb_partition);
+	(*partition) = talloc_zero(mem_ctx, struct dsdb_partition);
 	if (!*partition) {
 		return ldb_oom(ldb);
 	}
@@ -383,6 +384,7 @@ int partition_reload_if_required(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *msg;
 	struct ldb_message_element *partition_attributes;
+	struct ldb_message_element *partial_replicas;
 	TALLOC_CTX *mem_ctx;
 
 	if (!data) {
@@ -414,6 +416,7 @@ int partition_reload_if_required(struct ldb_module *module,
 	data->metadata_seq = seq;
 
 	partition_attributes = ldb_msg_find_element(msg, "partition");
+	partial_replicas     = ldb_msg_find_element(msg, "partialReplica");
 
 	for (i=0; partition_attributes && i < partition_attributes->num_values; i++) {
 		unsigned int j;
@@ -521,6 +524,15 @@ int partition_reload_if_required(struct ldb_module *module,
 					       ldb_errstring(ldb));
 			talloc_free(mem_ctx);
 			return ret;
+		}
+
+		/* see if it is a partial replica */
+		for (j=0; partial_replicas && j<partial_replicas->num_values; j++) {
+			struct ldb_dn *pa_dn = ldb_dn_from_ldb_val(mem_ctx, ldb, &partial_replicas->values[j]);
+			if (pa_dn != NULL && ldb_dn_compare(pa_dn, partition->ctrl->dn) == 0) {
+				partition->partial_replica = true;
+			}
+			talloc_free(pa_dn);
 		}
 
 		ret = add_partition_to_data(ldb, data, partition);
