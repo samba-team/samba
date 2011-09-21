@@ -159,7 +159,7 @@ class dbcheck(object):
         m = ldb.Message()
         m.dn = dn
         m[attrname] = ldb.MessageElement('', ldb.FLAG_MOD_DELETE, attrname)
-        if self.do_modify(m, ["relax:0", "show_deleted:1"],
+        if self.do_modify(m, ["relax:0", "show_recycled:1"],
                           "Failed to remove empty attribute %s" % attrname, validate=False):
             self.report("Removed empty attribute %s" % attrname)
 
@@ -190,7 +190,7 @@ class dbcheck(object):
             if nval != '':
                 m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD, attrname)
 
-        if self.do_modify(m, ["relax:0", "show_deleted:1"],
+        if self.do_modify(m, ["relax:0", "show_recycled:1"],
                           "Failed to normalise attribute %s" % attrname,
                           validate=False):
             self.report("Normalised attribute %s" % attrname)
@@ -204,12 +204,15 @@ class dbcheck(object):
     # handle a missing GUID extended DN component
     def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
         self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
-        controls=["extended_dn:1:1", "show_deleted:1"]
+        controls=["extended_dn:1:1", "show_recycled:1"]
         try:
             res = self.samdb.search(base=str(dsdb_dn.dn), scope=ldb.SCOPE_BASE,
                                     attrs=[], controls=controls)
         except ldb.LdbError, (enum, estr):
             self.report("unable to find object for DN %s - cannot fix (%s)" % (dsdb_dn.dn, estr))
+            return
+        if len(res) == 0:
+            self.report("unable to find object for DN %s - cannot fix" % dsdb_dn.dn)
             return
         dsdb_dn.dn = res[0].dn
 
@@ -221,7 +224,7 @@ class dbcheck(object):
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
 
-        if self.do_modify(m, ["show_deleted:1"],
+        if self.do_modify(m, ["show_recycled:1"],
                           "Failed to fix %s on attribute %s" % (errstr, attrname)):
             self.report("Fixed %s on attribute %s" % (errstr, attrname))
 
@@ -237,7 +240,7 @@ class dbcheck(object):
         m = ldb.Message()
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
-        if self.do_modify(m, ["show_deleted:1"],
+        if self.do_modify(m, ["show_recycled:1"],
                           "Failed to remove deleted DN attribute %s" % attrname):
             self.report("Removed deleted DN on attribute %s" % attrname)
 
@@ -255,7 +258,7 @@ class dbcheck(object):
         m.dn = dn
         m['old_value'] = ldb.MessageElement(str(ldb.Dn(self.samdb, val)), ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
-        if self.do_modify(m, ["show_deleted:1"],
+        if self.do_modify(m, ["show_recycled:1"],
                           "Failed to fix incorrect DN string on attribute %s" % attrname):
             self.report("Fixed incorrect DN string on attribute %s" % (attrname))
 
@@ -270,7 +273,7 @@ class dbcheck(object):
         m = ldb.Message()
         m.dn = obj.dn
         m['old_value'] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, attrname)
-        if self.do_modify(m, ["relax:0", "show_deleted:1"],
+        if self.do_modify(m, ["relax:0", "show_recycled:1"],
                           "Failed to remove unknown attribute %s" % attrname):
             self.report("Removed unknown attribute %s" % (attrname))
 
@@ -287,7 +290,7 @@ class dbcheck(object):
         m.dn = obj.dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         m['new_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_ADD, attrname)
-        if self.do_modify(m, ["show_deleted:1"],
+        if self.do_modify(m, ["show_recycled:1"],
                           "Failed to fix missing backlink %s" % backlink_name):
             self.report("Fixed missing backlink %s" % (backlink_name))
 
@@ -303,7 +306,7 @@ class dbcheck(object):
         m = ldb.Message()
         m.dn = obj.dn
         m['value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
-        if self.do_modify(m, ["show_deleted:1", "relax:0"],
+        if self.do_modify(m, ["show_recycled:1", "relax:0"],
                           "Failed to fix orphaned backlink %s" % link_name):
             self.report("Fixed orphaned backlink %s" % (link_name))
 
@@ -334,7 +337,7 @@ class dbcheck(object):
             # check its the right GUID
             try:
                 res = self.samdb.search(base="<GUID=%s>" % guidstr, scope=ldb.SCOPE_BASE,
-                                        attrs=attrs, controls=["extended_dn:1:1", "show_deleted:1"])
+                                        attrs=attrs, controls=["extended_dn:1:1", "show_recycled:1"])
             except ldb.LdbError, (enum, estr):
                 error_count += 1
                 self.err_incorrect_dn_GUID(obj.dn, attrname, val, dsdb_dn, "incorrect GUID")
@@ -395,12 +398,12 @@ class dbcheck(object):
         '''re-write replPropertyMetaData elements for a single attribute for a
         object. This is used to fix missing replPropertyMetaData elements'''
         res = self.samdb.search(base = dn, scope=ldb.SCOPE_BASE, attrs = [attr],
-                                controls = ["search_options:1:2", "show_deleted:1"])
+                                controls = ["search_options:1:2", "show_recycled:1"])
         msg = res[0]
         nmsg = ldb.Message()
         nmsg.dn = dn
         nmsg[attr] = ldb.MessageElement(msg[attr], ldb.FLAG_MOD_REPLACE, attr)
-        if self.do_modify(nmsg, ["relax:0", "provision:0", "show_deleted:1"],
+        if self.do_modify(nmsg, ["relax:0", "provision:0", "show_recycled:1"],
                           "Failed to fix metadata for attribute %s" % attr):
             self.report("Fixed metadata for attribute %s" % attr)
 
@@ -415,7 +418,7 @@ class dbcheck(object):
             attrs.append("replPropertyMetaData")
 
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
-                                controls=["extended_dn:1:1", "show_deleted:1"],
+                                controls=["extended_dn:1:1", "show_recycled:1"],
                                 attrs=attrs)
         if len(res) != 1:
             self.report("Object %s disappeared during check" % dn)
