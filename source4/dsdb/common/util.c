@@ -2752,7 +2752,7 @@ WERROR dsdb_savereps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 		el->values[i] = v;
 	}
 
-	if (ldb_modify(sam_ctx, msg) != LDB_SUCCESS) {
+	if (dsdb_modify(sam_ctx, msg, 0) != LDB_SUCCESS) {
 		DEBUG(0,("Failed to store %s - %s\n", attr, ldb_errstring(sam_ctx)));
 		goto failed;
 	}
@@ -3653,6 +3653,15 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		ret = ldb_request_add_control(req,
 					      LDB_CONTROL_SEARCH_OPTIONS_OID,
 					      true, options);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	if (dsdb_flags & DSDB_SEARCH_NO_GLOBAL_CATALOG) {
+		ret = ldb_request_add_control(req,
+					      DSDB_CONTROL_NO_GLOBAL_CATALOG,
+					      false, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

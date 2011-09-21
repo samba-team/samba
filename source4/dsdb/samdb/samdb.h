@@ -82,6 +82,9 @@ struct dsdb_control_password_change_status {
 
 #define DSDB_CONTROL_PASSWORD_CHANGE_OID "1.3.6.1.4.1.7165.4.3.10"
 
+/* passed when we want to get the behaviour of the non-global catalog port */
+#define DSDB_CONTROL_NO_GLOBAL_CATALOG "1.3.6.1.4.1.7165.4.3.17"
+
 struct dsdb_control_password_change {
 	const struct samr_Password *old_nt_pwd_hash;
 	const struct samr_Password *old_lm_pwd_hash;
