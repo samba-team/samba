@@ -100,7 +100,7 @@ enum TDB_ERROR tdb_transaction_start_nonblock(struct tdb_context *tdb);
 			 (log_data))
 
 struct tdb_context *
-tdb_open_compat_(const char *name, int hash_size_unused,
+tdb_open_compat_(const char *name, int hash_size,
 		 int tdb_flags, int open_flags, mode_t mode,
 		 void (*log_fn)(struct tdb_context *,
 				enum tdb_log_level,

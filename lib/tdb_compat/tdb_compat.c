@@ -85,7 +85,7 @@ static enum TDB_ERROR clear_if_first(int fd, void *unused)
 }
 
 struct tdb_context *
-tdb_open_compat_(const char *name, int hash_size_unused,
+tdb_open_compat_(const char *name, int hash_size,
 		 int tdb_flags, int open_flags, mode_t mode,
 		 void (*log_fn)(struct tdb_context *,
 				enum tdb_log_level,
@@ -94,7 +94,7 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 				void *data),
 		 void *log_data)
 {
-	union tdb_attribute cif, log, hash, max_dead, *attr = NULL;
+	union tdb_attribute cif, log, hash, max_dead, hsize, *attr = NULL;
 
 	if (log_fn) {
 		log.log.base.attr = TDB_ATTRIBUTE_LOG;
@@ -130,6 +130,13 @@ tdb_open_compat_(const char *name, int hash_size_unused,
 			attr = &max_dead;
 		}
 		tdb_flags &= ~TDB_VOLATILE;
+	}
+
+	if (hash_size && (tdb_flags & TDB_VERSION1)) {
+		hsize.base.attr = TDB_ATTRIBUTE_TDB1_HASHSIZE;
+		hsize.base.next = attr;
+		hsize.tdb1_hashsize.hsize = hash_size;
+		attr = &hsize;
 	}
 
 	/* Testsuite uses this to speed things up. */
