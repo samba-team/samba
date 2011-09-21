@@ -651,7 +651,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 					talloc_free(ifaces);
 				}
 			}
-			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", nodemap->nodes[i].pnn,
 				ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
@@ -660,7 +660,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE),
 			       partially_online,
-			       (nodemap->nodes[i].pnn == mypnn));
+			       (nodemap->nodes[i].pnn == mypnn)?'Y':'N');
 		}
 		return 0;
 	}
