@@ -582,6 +582,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			search_options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
 			ldb_request_add_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID, false, search_options);
 		}
+	} else {
+		ldb_request_add_control(lreq, DSDB_CONTROL_NO_GLOBAL_CATALOG, false, NULL);
 	}
 
 	extended_dn_control = ldb_request_get_control(lreq, LDB_CONTROL_EXTENDED_DN_OID);
