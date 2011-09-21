@@ -96,6 +96,10 @@ tdb_open_compat_(const char *name, int hash_size,
 {
 	union tdb_attribute cif, log, hash, max_dead, hsize, *attr = NULL;
 
+	if (!getenv("TDB_COMPAT_USE_TDB2")) {
+		tdb_flags |= TDB_VERSION1;
+	}
+
 	if (log_fn) {
 		log.log.base.attr = TDB_ATTRIBUTE_LOG;
 		log.log.base.next = NULL;
