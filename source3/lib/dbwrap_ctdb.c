@@ -1246,6 +1246,13 @@ static int traverse_persistent_callback(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DAT
 	return ret;
 }
 
+/* wrapper to use traverse_persistent_callback with dbwrap */
+static int traverse_persistent_callback_dbwrap(struct db_record *rec, void* data)
+{
+	return traverse_persistent_callback(NULL, rec->key, rec->value, data);
+}
+
+
 static int db_ctdb_traverse(struct db_context *db,
 			    int (*fn)(struct db_record *rec,
 				      void *private_data),
@@ -1260,9 +1267,40 @@ static int db_ctdb_traverse(struct db_context *db,
 	state.private_data = private_data;
 
 	if (db->persistent) {
+		struct tdb_context *ltdb = ctx->wtdb->tdb;
+		int ret;
+
 		/* for persistent databases we don't need to do a ctdb traverse,
 		   we can do a faster local traverse */
-		return tdb_traverse(ctx->wtdb->tdb, traverse_persistent_callback, &state);
+		ret = tdb_traverse(ltdb, traverse_persistent_callback, &state);
+		if (ret < 0) {
+			return ret;
+		}
+		if (ctx->transaction && ctx->transaction->m_write) {
+			/* we now have to handle keys not yet present at transaction start */
+			struct db_context *newkeys = db_open_rbt(talloc_tos());
+			struct ctdb_marshall_buffer *mbuf = ctx->transaction->m_write;
+			struct ctdb_rec_data *rec=NULL;
+			NTSTATUS status;
+			int i;
+			for (i=0; i<mbuf->count; i++) {
+				TDB_DATA key;
+				rec =db_ctdb_marshall_loop_next(mbuf, rec,
+								NULL, NULL,
+								&key, NULL);
+				SMB_ASSERT(rec != NULL);
+
+				if (!tdb_exists(ltdb, key)) {
+					dbwrap_store(newkeys, key, tdb_null, 0);
+				}
+			}
+			status = dbwrap_traverse(newkeys,
+						 traverse_persistent_callback_dbwrap,
+						 &state);
+			ret = NT_STATUS_IS_OK(status) ? 0 : -1;
+			talloc_free(newkeys);
+		}
+		return ret;
 	}
 
 
