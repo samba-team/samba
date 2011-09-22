@@ -1665,6 +1665,15 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	case SMB2_OP_CANCEL:
 		state->one_way = true;
 		break;
+	case SMB2_OP_BREAK:
+		/*
+		 * If this is a dummy request, it will have
+		 * UINT64_MAX as message id.
+		 * If we send on break acknowledgement,
+		 * this gets overwritten later.
+		 */
+		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, UINT64_MAX);
+		break;
 	}
 
 	if (timeout_msec > 0) {
