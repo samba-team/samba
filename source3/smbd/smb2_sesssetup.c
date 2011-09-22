@@ -57,7 +57,7 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 	uint16_t out_session_flags;
 	uint64_t out_session_id;
 	uint16_t out_security_offset;
-	DATA_BLOB out_security_buffer;
+	DATA_BLOB out_security_buffer = data_blob_null;
 	NTSTATUS status;
 
 	inhdr = (const uint8_t *)smb2req->in.vector[i+0].iov_base;
@@ -678,6 +678,8 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 {
 	NTSTATUS status;
 	DATA_BLOB secblob_out = data_blob_null;
+
+	*out_security_buffer = data_blob_null;
 
 	if (session->auth_ntlmssp_state == NULL) {
 		status = auth_ntlmssp_start(&session->auth_ntlmssp_state);
