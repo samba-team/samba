@@ -58,7 +58,7 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 	uint16_t out_session_flags;
 	uint64_t out_session_id;
 	uint16_t out_security_offset;
-	DATA_BLOB out_security_buffer;
+	DATA_BLOB out_security_buffer = data_blob_null;
 	NTSTATUS status;
 
 	status = smbd_smb2_request_verify_sizes(smb2req, 0x19);
@@ -636,6 +636,8 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 					uint64_t *out_session_id)
 {
 	NTSTATUS status;
+
+	*out_security_buffer = data_blob_null;
 
 	if (session->auth_ntlmssp_state == NULL) {
 		status = auth_ntlmssp_prepare(session->sconn->remote_address,
