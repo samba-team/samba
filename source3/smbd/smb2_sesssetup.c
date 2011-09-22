@@ -317,7 +317,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	 * so that the response can be signed
 	 */
 	smb2req->session = session;
-	if (guest) {
+	if (!guest) {
 		smb2req->do_signing = true;
 	}
 
