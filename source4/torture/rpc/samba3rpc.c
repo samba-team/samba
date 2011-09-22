@@ -91,7 +91,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx, cli->transport->socket->event.ctx);
+	lsa_pipe = dcerpc_pipe_init(mem_ctx, torture->ev);
 	if (lsa_pipe == NULL) {
 		torture_comment(torture, "dcerpc_pipe_init failed\n");
 		goto done;
@@ -221,8 +221,7 @@ static bool bindtest(struct torture_context *tctx,
 		return false;
 	}
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx); 
+	lsa_pipe = dcerpc_pipe_init(mem_ctx, tctx->ev);
 	if (lsa_pipe == NULL) {
 		torture_comment(tctx, "dcerpc_pipe_init failed\n");
 		goto done;
@@ -392,8 +391,7 @@ static bool get_usr_handle(struct torture_context *tctx,
 	struct samr_CreateUser2 c;
 	uint32_t user_rid,access_granted;
 
-	samr_pipe = dcerpc_pipe_init(mem_ctx,
-				     cli->transport->socket->event.ctx);
+	samr_pipe = dcerpc_pipe_init(mem_ctx, tctx->ev);
 	torture_assert(tctx, samr_pipe, "dcerpc_pipe_init failed");
 
 	samr_handle = samr_pipe->binding_handle;
@@ -947,8 +945,7 @@ static bool auth2(struct torture_context *tctx,
 		return false;
 	}
 
-	net_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx);
+	net_pipe = dcerpc_pipe_init(mem_ctx, tctx->ev);
 	if (net_pipe == NULL) {
 		torture_comment(tctx, "dcerpc_pipe_init failed\n");
 		goto done;
@@ -1063,8 +1060,7 @@ static bool schan(struct torture_context *tctx,
 		return false;
 	}
 
-	net_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx);
+	net_pipe = dcerpc_pipe_init(mem_ctx, tctx->ev);
 	if (net_pipe == NULL) {
 		torture_comment(tctx, "dcerpc_pipe_init failed\n");
 		goto done;
@@ -1508,8 +1504,7 @@ static NTSTATUS pipe_bind_smb(struct torture_context *tctx,
 	struct dcerpc_pipe *result;
 	NTSTATUS status;
 
-	if (!(result = dcerpc_pipe_init(
-		      mem_ctx, tree->session->transport->socket->event.ctx))) {
+	if (!(result = dcerpc_pipe_init(mem_ctx, tctx->ev))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2078,8 +2073,7 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!(net_pipe = dcerpc_pipe_init(
-		      mem_ctx, cli->transport->socket->event.ctx))) {
+	if (!(net_pipe = dcerpc_pipe_init(mem_ctx, torture->ev))) {
 		torture_comment(torture, "dcerpc_pipe_init failed\n");
 		goto done;
 	}

@@ -839,7 +839,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	req->async.fn = receive_lock_result;
 	req->async.private_data = &lock_result;
 
-	te = tevent_add_timer(req->transport->socket->event.ctx,
+	te = tevent_add_timer(tctx->ev,
 			      tctx, timeval_current_ofs(1, 0),
 			      close_locked_file, &fd);
 	if (te == NULL) {
@@ -849,8 +849,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	}
 
 	while ((fd != -1) || (!lock_result.done)) {
-		if (tevent_loop_once(req->transport->socket->event.ctx)
-		    == -1) {
+		if (tevent_loop_once(tctx->ev) == -1) {
 			torture_warning(tctx, "tevent_loop_once failed: %s\n",
 					strerror(errno));
 			ret = false;

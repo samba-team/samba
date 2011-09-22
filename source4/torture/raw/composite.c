@@ -88,7 +88,7 @@ static bool test_loadfile(struct smbcli_state *cli, struct torture_context *tctx
 
 	printf("waiting for completion\n");
 	while (*count != num_ops) {
-		tevent_loop_once(cli->transport->socket->event.ctx);
+		tevent_loop_once(tctx->ev);
 		if (torture_setting_bool(tctx, "progress", true)) {
 			printf("(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
@@ -170,7 +170,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 
 	printf("Testing parallel fetchfile with %d ops\n", torture_numops);
 
-	event_ctx = cli->transport->socket->event.ctx;
+	event_ctx = tctx->ev;
 	c = talloc_array(tctx, struct composite_context *, torture_numops);
 
 	for (i=0; i<torture_numops; i++) {

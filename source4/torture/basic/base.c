@@ -362,7 +362,7 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 	for (i=0;i<100;i++) {
 		struct smbcli_request *req;
 		req = smb_raw_negotiate_send(cli->transport, lpcfg_unicode(tctx->lp_ctx), PROTOCOL_NT1);
-		tevent_loop_once(cli->transport->socket->event.ctx);
+		tevent_loop_once(tctx->ev);
 		if (req->state == SMBCLI_REQUEST_ERROR) {
 			if (i > 0) {
 				torture_comment(tctx, "Failed to fill pipe packet[%d] - %s (ignored)\n", i+1, nt_errstr(req->status));
