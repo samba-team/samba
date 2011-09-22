@@ -300,4 +300,14 @@ struct timespec convert_time_t_to_timespec(time_t t);
 
 bool null_timespec(struct timespec ts);
 
+struct timespec convert_timeval_to_timespec(const struct timeval tv);
+struct timeval convert_timespec_to_timeval(const struct timespec ts);
+struct timespec timespec_current(void);
+struct timespec timespec_min(const struct timespec *ts1,
+			     const struct timespec *ts2);
+int timespec_compare(const struct timespec *ts1, const struct timespec *ts2);
+void round_timespec_to_sec(struct timespec *ts);
+void round_timespec_to_usec(struct timespec *ts);
+void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts);
+
 #endif /* _SAMBA_TIME_H_ */
