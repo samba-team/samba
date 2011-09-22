@@ -22,6 +22,7 @@
 
 struct smbXcli_conn;
 struct smbXcli_session;
+struct cli_state;
 
 NTSTATUS smb2cli_negprot(struct cli_state *cli);
 
