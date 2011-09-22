@@ -3582,8 +3582,7 @@ bool test_smb2_hold_oplock(struct torture_context *tctx,
 			   struct smb2_tree *tree)
 {
 	struct torture_context *mem_ctx = talloc_new(tctx);
-	struct tevent_context *ev =
-		(struct tevent_context *)tree->session->transport->socket->event.ctx;
+	struct tevent_context *ev = tctx->ev;
 	int i;
 	struct smb2_handle h;
 	NTSTATUS status;
