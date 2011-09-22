@@ -24,6 +24,7 @@
 #include "../libcli/smb/smb_signing.h"
 #include "../libcli/smb/smb_seal.h"
 #include "async_smb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /*******************************************************************
  Setup the word count and byte count for a client smb message.
@@ -57,43 +58,7 @@ unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout)
 
 bool cli_ucs2(struct cli_state *cli)
 {
-	return ((cli_state_capabilities(cli) & CAP_UNICODE) != 0);
-}
-
-/****************************************************************************
- Setup basics in a outgoing packet.
-****************************************************************************/
-
-void cli_setup_packet_buf(struct cli_state *cli, char *buf)
-{
-	uint16 flags2;
-	cli->rap_error = 0;
-	SIVAL(buf,smb_rcls,0);
-	SSVAL(buf,smb_pid,cli->smb1.pid);
-	memset(buf+smb_pidhigh, 0, 12);
-	SSVAL(buf,smb_uid, cli_state_get_uid(cli));
-	SSVAL(buf,smb_mid, 0);
-
-	if (cli_state_protocol(cli) <= PROTOCOL_CORE) {
-		return;
-	}
-
-	if (cli->case_sensitive) {
-		SCVAL(buf,smb_flg,0x0);
-	} else {
-		/* Default setting, case insensitive. */
-		SCVAL(buf,smb_flg,0x8);
-	}
-	flags2 = FLAGS2_LONG_PATH_COMPONENTS;
-	if (cli_state_capabilities(cli) & CAP_UNICODE)
-		flags2 |= FLAGS2_UNICODE_STRINGS;
-	if ((cli_state_capabilities(cli) & CAP_DFS) && cli->dfsroot)
-		flags2 |= FLAGS2_DFS_PATHNAMES;
-	if (cli_state_capabilities(cli) & CAP_STATUS32)
-		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-	if (cli_state_capabilities(cli) & CAP_EXTENDED_SECURITY)
-		flags2 |= FLAGS2_EXTENDED_SECURITY;
-	SSVAL(buf,smb_flg2, flags2);
+	return smbXcli_conn_use_unicode(cli->conn);
 }
 
 /****************************************************************************
@@ -169,15 +134,11 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 				   int signing_state, int flags)
 {
 	struct cli_state *cli = NULL;
-	bool allow_smb_signing;
-	bool desire_smb_signing;
-	bool mandatory_signing;
-	socklen_t ss_length;
-	int ret;
 	bool use_spnego = lp_client_use_spnego();
 	bool force_dos_errors = false;
 	bool force_ascii = false;
 	bool use_level_II_oplocks = false;
+	uint32_t smb1_capabilities = 0;
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -254,100 +215,42 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		signing_state = lp_client_signing();
 	}
 
-	switch (signing_state) {
-	case SMB_SIGNING_OFF:
-		/* never */
-		allow_smb_signing = false;
-		desire_smb_signing = false;
-		mandatory_signing = false;
-		break;
-	default:
-	case SMB_SIGNING_DEFAULT:
-	case SMB_SIGNING_IF_REQUIRED:
-		allow_smb_signing = true;
-		desire_smb_signing = false;
-		mandatory_signing = false;
-		break;
-	case SMB_SIGNING_REQUIRED:
-		/* always */
-		allow_smb_signing = true;
-		desire_smb_signing = true;
-		mandatory_signing = true;
-		break;
-	}
-
-	/* initialise signing */
-	cli->signing_state = smb_signing_init(cli,
-					      allow_smb_signing,
-					      desire_smb_signing,
-					      mandatory_signing);
-	if (!cli->signing_state) {
-		goto error;
-	}
-
-	cli->conn.smb1.client.capabilities = 0;
-	cli->conn.smb1.client.capabilities |= CAP_LARGE_FILES;
-	cli->conn.smb1.client.capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
-	cli->conn.smb1.client.capabilities |= CAP_LOCK_AND_READ | CAP_NT_FIND;
-	cli->conn.smb1.client.capabilities |= CAP_DFS | CAP_W2K_SMBS;
-	cli->conn.smb1.client.capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX;
-	cli->conn.smb1.client.capabilities |= CAP_LWIO;
+	smb1_capabilities = 0;
+	smb1_capabilities |= CAP_LARGE_FILES;
+	smb1_capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
+	smb1_capabilities |= CAP_LOCK_AND_READ | CAP_NT_FIND;
+	smb1_capabilities |= CAP_DFS | CAP_W2K_SMBS;
+	smb1_capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX;
+	smb1_capabilities |= CAP_LWIO;
 
 	if (!force_dos_errors) {
-		cli->conn.smb1.client.capabilities |= CAP_STATUS32;
+		smb1_capabilities |= CAP_STATUS32;
 	}
 
 	if (!force_ascii) {
-		cli->conn.smb1.client.capabilities |= CAP_UNICODE;
+		smb1_capabilities |= CAP_UNICODE;
 	}
 
 	if (use_spnego) {
-		cli->conn.smb1.client.capabilities |= CAP_EXTENDED_SECURITY;
+		smb1_capabilities |= CAP_EXTENDED_SECURITY;
 	}
 
 	if (use_level_II_oplocks) {
-		cli->conn.smb1.client.capabilities |= CAP_LEVEL_II_OPLOCKS;
-	}
-
-	cli->conn.smb1.client.max_xmit = CLI_BUFFER_SIZE;
-
-	cli->conn.smb1.capabilities = cli->conn.smb1.client.capabilities;
-	cli->conn.smb1.max_xmit = 1024;
-
-	cli->conn.smb1.mid = 1;
-
-	cli->conn.outgoing = tevent_queue_create(cli, "cli_outgoing");
-	if (cli->conn.outgoing == NULL) {
-		goto error;
-	}
-	cli->conn.pending = NULL;
-
-	cli->conn.remote_name = talloc_strdup(cli, remote_name);
-	if (cli->conn.remote_name == NULL) {
-		goto error;
+		smb1_capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
 
 	if (remote_realm) {
-		cli->conn.remote_realm = talloc_strdup(cli, remote_realm);
-		if (cli->conn.remote_realm == NULL) {
+		cli->remote_realm = talloc_strdup(cli, remote_realm);
+		if (cli->remote_realm == NULL) {
 			goto error;
 		}
 	}
 
-	cli->conn.fd = fd;
-
-	ss_length = sizeof(cli->conn.local_ss);
-	ret = getsockname(fd,
-			  (struct sockaddr *)(void *)&cli->conn.local_ss,
-			  &ss_length);
-	if (ret == -1) {
-		goto error;
-	}
-	ss_length = sizeof(cli->conn.remote_ss);
-	ret = getpeername(fd,
-			  (struct sockaddr *)(void *)&cli->conn.remote_ss,
-			  &ss_length);
-	if (ret == -1) {
+	cli->conn = smbXcli_conn_create(cli, fd, remote_name,
+					signing_state,
+					smb1_capabilities,
+					NULL); /* client_guid */
+	if (cli->conn == NULL) {
 		goto error;
 	}
 
@@ -369,7 +272,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 bool cli_state_encryption_on(struct cli_state *cli)
 {
-	return common_encryption_on(cli->trans_enc_state);
+	return smb1cli_conn_encryption_on(cli->conn);
 }
 
 
@@ -411,12 +314,6 @@ static void _cli_shutdown(struct cli_state *cli)
 
 	cli_state_disconnect(cli);
 
-	/*
-	 * Need to free pending first, they remove themselves
-	 */
-	while (cli->conn.pending) {
-		talloc_free(cli->conn.pending[0]);
-	}
 	TALLOC_FREE(cli);
 }
 
@@ -452,27 +349,27 @@ void cli_shutdown(struct cli_state *cli)
 
 void cli_sockopt(struct cli_state *cli, const char *options)
 {
-	set_socket_options(cli->conn.fd, options);
+	smbXcli_conn_set_sockopt(cli->conn, options);
 }
 
 const struct sockaddr_storage *cli_state_local_sockaddr(struct cli_state *cli)
 {
-	return &cli->conn.local_ss;
+	return smbXcli_conn_local_sockaddr(cli->conn);
 }
 
 const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli)
 {
-	return &cli->conn.remote_ss;
+	return smbXcli_conn_remote_sockaddr(cli->conn);
 }
 
 const char *cli_state_remote_name(struct cli_state *cli)
 {
-	return cli->conn.remote_name;
+	return smbXcli_conn_remote_name(cli->conn);
 }
 
 const char *cli_state_remote_realm(struct cli_state *cli)
 {
-	return cli->conn.remote_realm;
+	return cli->remote_realm;
 }
 
 uint16_t cli_state_get_vc_num(struct cli_state *cli)
@@ -482,7 +379,7 @@ uint16_t cli_state_get_vc_num(struct cli_state *cli)
 
 uint32_t cli_state_server_session_key(struct cli_state *cli)
 {
-	return cli->conn.smb1.server.session_key;
+	return smb1cli_conn_server_session_key(cli->conn);
 }
 
 /****************************************************************************
@@ -547,17 +444,17 @@ bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 
 enum protocol_types cli_state_protocol(struct cli_state *cli)
 {
-	return cli->conn.protocol;
+	return smbXcli_conn_protocol(cli->conn);
 }
 
 uint32_t cli_state_capabilities(struct cli_state *cli)
 {
-	return cli->conn.smb1.capabilities;
+	return smb1cli_conn_capabilities(cli->conn);
 }
 
 uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
 {
-	uint32_t ret = cli->conn.smb1.max_xmit;
+	uint32_t ret = smb1cli_conn_max_xmit(cli->conn);
 
 	if (ofs >= ret) {
 		return 0;
@@ -570,32 +467,38 @@ uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
 
 uint16_t cli_state_max_requests(struct cli_state *cli)
 {
-	return cli->conn.smb1.server.max_mux;
+	return smbXcli_conn_max_requests(cli->conn);
 }
 
 const uint8_t *cli_state_server_challenge(struct cli_state *cli)
 {
-	return cli->conn.smb1.server.challenge;
+	return smb1cli_conn_server_challenge(cli->conn);
 }
 
 const DATA_BLOB *cli_state_server_gss_blob(struct cli_state *cli)
 {
-	return &cli->conn.smb1.server.gss_blob;
+	return smbXcli_conn_server_gss_blob(cli->conn);
 }
 
 uint16_t cli_state_security_mode(struct cli_state *cli)
 {
-	return cli->conn.smb1.server.security_mode;
+	return smb1cli_conn_server_security_mode(cli->conn);
 }
 
 int cli_state_server_time_zone(struct cli_state *cli)
 {
-	return cli->conn.smb1.server.time_zone;
+	return smb1cli_conn_server_time_zone(cli->conn);
 }
 
 time_t cli_state_server_time(struct cli_state *cli)
 {
-	return cli->conn.smb1.server.system_time;
+	NTTIME nt;
+	time_t t;
+
+	nt = smbXcli_conn_server_system_time(cli->conn);
+	t = nt_time_to_unix(nt);
+
+	return t;
 }
 
 struct cli_echo_state {

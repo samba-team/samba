@@ -24,19 +24,7 @@
 
 NTSTATUS smb2cli_negprot(struct cli_state *cli)
 {
-	if (cli->smb2.conn == NULL) {
-		cli->smb2.conn = smbXcli_conn_create(cli,
-						     cli->conn.fd,
-						     cli->conn.remote_name,
-						     0,  /* signing state */
-						     0,  /* smb1_capabilities */
-						     NULL); /* client guid */
-		if (cli->smb2.conn == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	return smbXcli_negprot(cli->smb2.conn, cli->timeout,
+	return smbXcli_negprot(cli->conn, cli->timeout,
 			       PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
 }
 

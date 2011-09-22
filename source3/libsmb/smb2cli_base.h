@@ -37,20 +37,8 @@ static inline struct tevent_req *cli_state_smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    const uint8_t *dyn,
 				    uint32_t dyn_len)
 {
-	if (cli->smb2.conn == NULL) {
-		cli->smb2.conn = smbXcli_conn_create(cli,
-						     cli->conn.fd,
-						     cli->conn.remote_name,
-						     SMB_SIGNING_OFF,
-						     0,  /* smb1_capabilities */
-						     NULL); /* client guid */
-		if (cli->smb2.conn == NULL) {
-			return NULL;
-		}
-	}
-
 	return smb2cli_req_send(mem_ctx, ev,
-				cli->smb2.conn, cmd,
+				cli->conn, cmd,
 				additional_flags, clear_flags,
 				timeout_msec,
 				pid, tid, session,

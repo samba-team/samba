@@ -28,6 +28,7 @@
 #include "trans2.h"
 #include "ntlmssp_wrap.h"
 #include "auth/gensec/gensec.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /****************************************************************************
  Get UNIX extensions version info.
@@ -664,17 +665,14 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	data_blob_free(&blob_in);
 
 	if (NT_STATUS_IS_OK(status)) {
+		es->enc_on = true;
 		/* Replace the old state, if any. */
-		if (cli->trans_enc_state) {
-			common_free_encryption_state(&cli->trans_enc_state);
-		}
 		/* We only need the gensec_security part from here.
 		 * es is a malloc()ed pointer, so we cannot make
 		 * gensec_security a talloc child */
 		es->s.gensec_security = talloc_move(NULL,
 					&auth_ntlmssp_state->gensec_security);
-		cli->trans_enc_state = es;
-		cli->trans_enc_state->enc_on = True;
+		smb1cli_conn_set_encryption(cli->conn, es);
 		es = NULL;
 	}
 
@@ -837,12 +835,9 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	data_blob_free(&blob_recv);
 
 	if (NT_STATUS_IS_OK(status)) {
+		es->enc_on = true;
 		/* Replace the old state, if any. */
-		if (cli->trans_enc_state) {
-			common_free_encryption_state(&cli->trans_enc_state);
-		}
-		cli->trans_enc_state = es;
-		cli->trans_enc_state->enc_on = True;
+		smb1cli_conn_set_encryption(cli->conn, es);
 		es = NULL;
 	}
 

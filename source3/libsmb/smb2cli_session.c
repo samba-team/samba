@@ -305,13 +305,13 @@ struct tevent_req *smb2cli_sesssetup_ntlmssp_send(TALLOC_CTX *mem_ctx,
 	blob_out = spnego_gen_negTokenInit(state, OIDs_ntlm, &blob_out, NULL);
 	state->turn = 1;
 
-	state->cli->smb2.session = smbXcli_session_create(cli, cli->smb2.conn);
+	state->cli->smb2.session = smbXcli_session_create(cli, cli->conn);
 	if (tevent_req_nomem(state->cli->smb2.session, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	subreq = smb2cli_session_setup_send(state, state->ev,
-					    state->cli->smb2.conn,
+					    state->cli->conn,
 					    state->cli->timeout,
 					    state->cli->smb2.session,
 					    0, /* in_flags */
@@ -392,7 +392,7 @@ static void smb2cli_sesssetup_ntlmssp_done(struct tevent_req *subreq)
 	}
 
 	subreq = smb2cli_session_setup_send(state, state->ev,
-					    state->cli->smb2.conn,
+					    state->cli->conn,
 					    state->cli->timeout,
 					    state->cli->smb2.session,
 					    0, /* in_flags */
@@ -464,7 +464,7 @@ struct tevent_req *smb2cli_logoff_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->fixed, 0, 4);
 
 	subreq = smb2cli_req_send(state, ev,
-				  cli->smb2.conn, SMB2_OP_LOGOFF,
+				  cli->conn, SMB2_OP_LOGOFF,
 				  0, 0, /* flags */
 				  cli->timeout,
 				  cli->smb2.pid,

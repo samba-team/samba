@@ -76,10 +76,6 @@ struct cli_state {
 	uint32_t requested_posix_capabilities;
 	bool dfsroot;
 
-	struct smb_signing_state *signing_state;
-
-	struct smb_trans_enc_state *trans_enc_state; /* Setup if we're encrypting SMB's. */
-
 	/* the session key for this CLI, outside
 	   any per-pipe authenticaion */
 	DATA_BLOB user_session_key;
@@ -99,60 +95,8 @@ struct cli_state {
 	/* Where (if anywhere) this is mounted under DFS. */
 	char *dfs_mountpoint;
 
-	struct {
-		int fd;
-		struct sockaddr_storage local_ss;
-		struct sockaddr_storage remote_ss;
-		const char *remote_name;
-		const char *remote_realm;
-		struct tevent_req *read_smb_req;
-		struct tevent_queue *outgoing;
-		struct tevent_req **pending;
-		/*
-		 * The incoming dispatch function should return:
-		 * - NT_STATUS_RETRY, if more incoming PDUs are expected.
-		 * - NT_STATUS_OK, if no more processing is desired, e.g.
-		 *                 the dispatch function called
-		 *                 tevent_req_done().
-		 * - All other return values disconnect the connection.
-		 */
-		NTSTATUS (*dispatch_incoming)(struct cli_state *cli,
-					      TALLOC_CTX *frame,
-					      uint8_t *inbuf);
-
-		enum protocol_types protocol;
-
-		struct {
-			struct {
-				uint32_t capabilities;
-				uint32_t max_xmit;
-			} client;
-
-			struct {
-				uint32_t capabilities;
-				uint32_t max_xmit;
-				uint16_t max_mux;
-				uint16_t security_mode;
-				bool readbraw;
-				bool writebraw;
-				bool lockread;
-				bool writeunlock;
-				uint32_t session_key;
-				struct GUID guid;
-				DATA_BLOB gss_blob;
-				uint8_t challenge[8];
-				const char *workgroup;
-				const char *name;
-				int time_zone;
-				time_t system_time;
-			} server;
-
-			uint32_t capabilities;
-			uint32_t max_xmit;
-
-			uint16_t mid;
-		} smb1;
-	} conn;
+	struct smbXcli_conn *conn;
+	const char *remote_realm;
 
 	struct {
 		uint16_t pid;
@@ -162,8 +106,6 @@ struct cli_state {
 	} smb1;
 
 	struct {
-		struct smbXcli_conn *conn;
-
 		uint32_t pid;
 		uint32_t tid;
 		struct smbXcli_session *session;

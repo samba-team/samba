@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /***************************************************************************
  Return an error message - either an NT error, SMB error or a RAP error.
@@ -187,17 +188,14 @@ bool cli_state_is_connected(struct cli_state *cli)
 		return false;
 	}
 
-	if (cli->conn.fd == -1) {
-		return false;
-	}
-
-	return true;
+	return smbXcli_conn_is_connected(cli->conn);
 }
 
 void cli_state_disconnect(struct cli_state *cli)
 {
-	if (cli->conn.fd != -1) {
-		close(cli->conn.fd);
-	}
-	cli->conn.fd = -1;
+	/*
+	 * passing NT_STATUS_OK means the caller will not
+	 * be notified, which matches the old behavior
+	 */
+	smbXcli_conn_disconnect(cli->conn, NT_STATUS_OK);
 }
