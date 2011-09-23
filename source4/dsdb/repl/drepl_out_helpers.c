@@ -378,6 +378,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	struct drsuapi_DsPartialAttributeSet *pas = NULL;
 	NTSTATUS status;
 	uint32_t replica_flags;
+	struct drsuapi_DsReplicaHighWaterMark highwatermark;
 
 	r = talloc(state, struct drsuapi_DsGetNCChanges);
 	if (tevent_req_nomem(r, req)) {
@@ -414,6 +415,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	}
 
 	replica_flags = rf1->replica_flags;
+	highwatermark = rf1->highwatermark;
 
 	if (partition->partial_replica) {
 		status = dreplsrv_get_gc_partial_attribute_set(service, r, &pas);
@@ -421,6 +423,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 			DEBUG(0,(__location__ ": Failed to construct GC partial attribute set : %s\n", nt_errstr(status)));
 			return;
 		}
+		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	} else if (service->am_rodc) {
 		bool for_schema = false;
 		if (ldb_dn_compare_base(ldb_get_schema_basedn(service->samdb), partition->dn) == 0) {
@@ -437,13 +440,26 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		}
 	}
 
+	/* is this a full resync of all objects? */
+	if (state->op->options & DRSUAPI_DRS_FULL_SYNC_NOW) {
+		ZERO_STRUCT(highwatermark);
+		/* clear the FULL_SYNC_NOW option for subsequent
+		   stages of the replication cycle */
+		state->op->options &= ~DRSUAPI_DRS_FULL_SYNC_NOW;
+		state->op->options |= DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS;
+		replica_flags |= DRSUAPI_DRS_NEVER_SYNCED;
+	}
+	if (state->op->options & DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS) {
+		uptodateness_vector = NULL;
+	}
+
 	r->in.bind_handle	= &drsuapi->bind_handle;
 	if (drsuapi->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
 		r->in.level				= 8;
 		r->in.req->req8.destination_dsa_guid	= service->ntds_guid;
 		r->in.req->req8.source_dsa_invocation_id= rf1->source_dsa_invocation_id;
 		r->in.req->req8.naming_context		= &partition->nc;
-		r->in.req->req8.highwatermark		= rf1->highwatermark;
+		r->in.req->req8.highwatermark		= highwatermark;
 		r->in.req->req8.uptodateness_vector	= uptodateness_vector;
 		r->in.req->req8.replica_flags		= replica_flags;
 		r->in.req->req8.max_object_count	= 133;
@@ -459,7 +475,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		r->in.req->req5.destination_dsa_guid	= service->ntds_guid;
 		r->in.req->req5.source_dsa_invocation_id= rf1->source_dsa_invocation_id;
 		r->in.req->req5.naming_context		= &partition->nc;
-		r->in.req->req5.highwatermark		= rf1->highwatermark;
+		r->in.req->req5.highwatermark		= highwatermark;
 		r->in.req->req5.uptodateness_vector	= uptodateness_vector;
 		r->in.req->req5.replica_flags		= replica_flags;
 		r->in.req->req5.max_object_count	= 133;
@@ -602,6 +618,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	bool more_data = false;
 	WERROR status;
 	NTSTATUS nt_status;
+	uint32_t dsdb_repl_flags = 0;
 
 	switch (ctr_level) {
 	case 1:
@@ -658,6 +675,13 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		}
 	}
 
+	if (partition->partial_replica) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_PARTIAL_REPLICA;
+	}
+	if (state->op->options & DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_PRIORITISE_INCOMING;
+	}
+
 	status = dsdb_replicated_objects_convert(service->samdb,
 						 working_schema ? working_schema : schema,
 						 partition->nc.dn,
@@ -669,6 +693,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 						 &rf1,
 						 uptodateness_vector,
 						 &drsuapi->gensec_skey,
+						 dsdb_repl_flags,
 						 state, &objects);
 	if (!W_ERROR_IS_OK(status)) {
 		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
@@ -695,9 +720,6 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		/* if it applied fine, we need to update the highwatermark */
 		*state->op->source_dsa->repsFrom1 = rf1;
 	}
-	/*
-	 * TODO: update our uptodatevector!
-	 */
 
 	/* we don't need this maybe very large structure anymore */
 	TALLOC_FREE(r);
