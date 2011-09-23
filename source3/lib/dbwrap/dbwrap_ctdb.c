@@ -54,11 +54,8 @@
 struct db_ctdb_transaction_handle {
 	struct db_ctdb_ctx *ctx;
 	/*
-	 * we store the reads and writes done under a transaction:
-	 * - one list stores both reads and writes (m_all),
-	 * - the other just writes (m_write)
+	 * we store the writes done under a transaction:
 	 */
-	struct ctdb_marshall_buffer *m_all;
 	struct ctdb_marshall_buffer *m_write;
 	uint32_t nesting;
 	bool nested_cancel;
@@ -490,16 +487,6 @@ static int db_ctdb_transaction_fetch(struct db_ctdb_ctx *db,
 		return -1;
 	}
 
-	h->m_all = db_ctdb_marshall_add(h, h->m_all, h->ctx->db_id, 1, key,
-					NULL, *data);
-	if (h->m_all == NULL) {
-		DEBUG(0,(__location__ " Failed to add to marshalling "
-			 "record\n"));
-		data->dsize = 0;
-		talloc_free(data->dptr);
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -675,15 +662,6 @@ static NTSTATUS db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 
 	header.dmaster = get_my_vnn();
 	header.rsn++;
-
-	h->m_all = db_ctdb_marshall_add(h, h->m_all, h->ctx->db_id, 0, key,
-					NULL, data);
-	if (h->m_all == NULL) {
-		DEBUG(0,(__location__ " Failed to add to marshalling "
-			 "record\n"));
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	h->m_write = db_ctdb_marshall_add(h, h->m_write, h->ctx->db_id, 0, key, &header, data);
 	if (h->m_write == NULL) {
