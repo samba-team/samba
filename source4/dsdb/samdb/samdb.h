@@ -53,8 +53,18 @@ struct dsdb_control_current_partition {
 	struct ldb_dn *dn;
 };
 
+
+/*
+  flags in dsdb_repl_flags to control replication logic
+ */
+#define DSDB_REPL_FLAG_PRIORITISE_INCOMING 1
+#define DSDB_REPL_FLAG_PARTIAL_REPLICA     2
+
+
 #define DSDB_CONTROL_REPLICATED_UPDATE_OID "1.3.6.1.4.1.7165.4.3.3"
-/* DSDB_CONTROL_REPLICATED_UPDATE_OID has NULL data */
+struct dsdb_control_replicated_update {
+	uint32_t dsdb_repl_flags;
+};
 
 #define DSDB_CONTROL_DN_STORAGE_FORMAT_OID "1.3.6.1.4.1.7165.4.3.4"
 /* DSDB_CONTROL_DN_STORAGE_FORMAT_OID has NULL data and behaves very
@@ -119,8 +129,11 @@ struct dsdb_extended_replicated_objects {
 	 * this is the version of the dsdb_extended_replicated_objects
 	 * version 0: initial implementation
 	 */
-#define DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION 1
+#define DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION 2
 	uint32_t version;
+
+	/* DSDB_REPL_FLAG_* flags */
+	uint32_t dsdb_repl_flags;
 
 	struct ldb_dn *partition_dn;
 
