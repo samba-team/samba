@@ -39,6 +39,7 @@
 struct test_join {
 	struct dcerpc_pipe *p;
 	struct policy_handle user_handle;
+	struct policy_handle domain_handle;
 	struct libnet_JoinDomain *libnet_r;
 	struct dom_sid *dom_sid;
 	const char *dom_netbios_name;
@@ -132,7 +133,6 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	struct policy_handle handle;
-	struct policy_handle domain_handle;
 	uint32_t access_granted;
 	uint32_t rid;
 	DATA_BLOB session_key;
@@ -266,7 +266,7 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	o.in.sid = *l.out.sid;
-	o.out.domain_handle = &domain_handle;
+	o.out.domain_handle = &join->domain_handle;
 
 	status = dcerpc_samr_OpenDomain_r(b, join, &o);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -282,7 +282,7 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 
 again:
 	name.string = username;
-	r.in.domain_handle = &domain_handle;
+	r.in.domain_handle = &join->domain_handle;
 	r.in.account_name = &name;
 	r.in.acct_flags = acct_type;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -297,7 +297,7 @@ again:
 	}
 
 	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_USER_EXISTS)) {
-		status = DeleteUser_byname(b, join, &domain_handle, name.string);
+		status = DeleteUser_byname(b, join, &join->domain_handle, name.string);
 		if (NT_STATUS_IS_OK(status)) {
 			goto again;
 		}
