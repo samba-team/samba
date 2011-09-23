@@ -1162,7 +1162,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	int ret;
 	const char * const *attrs = NULL;
 	const char * const attrs1[] = { "replPropertyMetaData", "*", NULL };
-	const char * const attrs2[] = { "uSNChanged", "objectClass", NULL };
+	const char * const attrs2[] = { "uSNChanged", "objectClass", "instanceType", NULL };
 	struct ldb_result *res;
 	struct ldb_context *ldb;
 	struct ldb_message_element *objectclass_el;
@@ -1333,12 +1333,20 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 		/*if we are RODC and this is a DRSR update then its ok*/
 		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+			unsigned instanceType;
+
 			ret = samdb_rodc(ldb, &rodc);
 			if (ret != LDB_SUCCESS) {
 				DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
 			} else if (rodc) {
 				ldb_asprintf_errstring(ldb, "RODC modify is forbidden\n");
 				return LDB_ERR_REFERRAL;
+			}
+
+			instanceType = ldb_msg_find_attr_as_uint(res->msgs[0], "instanceType", INSTANCE_TYPE_WRITE);
+			if (!(instanceType & INSTANCE_TYPE_WRITE)) {
+				return ldb_error(ldb, LDB_ERR_UNWILLING_TO_PERFORM,
+						 "cannot change replicated attribute on partial replica");
 			}
 		}
 
@@ -2420,7 +2428,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	const struct dsdb_attribute *rdn_attr;
 	const char *rdn_name;
 	const struct ldb_val *rdn_val;
-	const char *attrs[4] = { NULL, };
+	const char *attrs[5] = { NULL, };
 	time_t t = time(NULL);
 	int ret;
 	bool is_urgent = false;
@@ -2533,8 +2541,9 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	 */
 	attrs[0] = "replPropertyMetaData";
 	attrs[1] = "objectClass";
-	attrs[2] = rdn_name;
-	attrs[3] = NULL;
+	attrs[2] = "instanceType";
+	attrs[3] = rdn_name;
+	attrs[4] = NULL;
 
 	ret = replmd_update_rpmd(ac->module, ac->schema, req, attrs,
 				 msg, &ac->seq_num, t, &is_urgent);
