@@ -940,6 +940,19 @@ static int ldif_write_trustAuthInOutBlob(struct ldb_context *ldb, void *mem_ctx,
 			      true);
 }
 
+/*
+  convert a NDR formatted blob of a partialAttributeSet into text
+*/
+static int ldif_write_partialAttributeSet(struct ldb_context *ldb, void *mem_ctx,
+					  const struct ldb_val *in, struct ldb_val *out)
+{
+	return ldif_write_NDR(ldb, mem_ctx, in, out,
+			      sizeof(struct partialAttributeSetBlob),
+			      (ndr_pull_flags_fn_t)ndr_pull_partialAttributeSetBlob,
+			      (ndr_print_fn_t)ndr_print_partialAttributeSetBlob,
+			      true);
+}
+
 
 static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
@@ -1341,6 +1354,13 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.canonicalise_fn  = ldb_handler_copy,
 		.comparison_fn	  = ldb_comparison_binary,
 		.operator_fn      = samba_syntax_operator_fn
+	},{
+		.name		  = LDB_SYNTAX_SAMBA_PARTIALATTRIBUTESET,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldif_write_partialAttributeSet,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
 	}
 };
 
@@ -1460,7 +1480,8 @@ static const struct {
 
 	/* These NDR encoded things we want to be able to read with --show-binary */
 	{ "dnsRecord",				LDB_SYNTAX_SAMBA_DNSRECORD },
-	{ "supplementalCredentials",		LDB_SYNTAX_SAMBA_SUPPLEMENTALCREDENTIALS}
+	{ "supplementalCredentials",		LDB_SYNTAX_SAMBA_SUPPLEMENTALCREDENTIALS},
+	{ "partialAttributeSet",		LDB_SYNTAX_SAMBA_PARTIALATTRIBUTESET}
 };
 
 const struct ldb_schema_syntax *ldb_samba_syntax_by_name(struct ldb_context *ldb, const char *name)
