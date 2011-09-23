@@ -120,6 +120,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 			werr = dsdb_convert_object_ex(ldb, working_schema, pfm_remote,
 						      cur, gensec_skey,
 						      ignore_attids,
+						      0,
 						      tmp_ctx, &object);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(4,("debug: Failed to convert schema object %s into ldb msg, will try during next loop\n",
@@ -192,6 +193,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			      const struct drsuapi_DsReplicaObjectListItemEx *in,
 			      const DATA_BLOB *gensec_skey,
 			      const uint32_t *ignore_attids,
+			      uint32_t dsdb_repl_flags,
 			      TALLOC_CTX *mem_ctx,
 			      struct dsdb_extended_replicated_object *out)
 {
@@ -349,6 +351,21 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	}
 
+	if (dsdb_repl_flags & DSDB_REPL_FLAG_PARTIAL_REPLICA) {
+		/* the instanceType type for partial_replica
+		   replication is sent via DRS with TYPE_WRITE set, but
+		   must be used on the client with TYPE_WRITE removed
+		*/
+		int instanceType = ldb_msg_find_attr_as_int(msg, "instanceType", 0);
+		if (instanceType & INSTANCE_TYPE_WRITE) {
+			instanceType &= ~INSTANCE_TYPE_WRITE;
+			ldb_msg_remove_attr(msg, "instanceType");
+			if (ldb_msg_add_fmt(msg, "instanceType", "%d", instanceType) != LDB_SUCCESS) {
+				return WERR_INTERNAL_ERROR;
+			}
+		}
+	}
+
 	whenChanged_t = nt_time_to_unix(whenChanged);
 	whenChanged_s = ldb_timestring(msg, whenChanged_t);
 	W_ERROR_HAVE_NO_MEMORY(whenChanged_s);
@@ -376,6 +393,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 				       const struct repsFromTo1 *source_dsa,
 				       const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
 				       const DATA_BLOB *gensec_skey,
+				       uint32_t dsdb_repl_flags,
 				       TALLOC_CTX *mem_ctx,
 				       struct dsdb_extended_replicated_objects **objects)
 {
@@ -389,6 +407,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	out = talloc_zero(mem_ctx, struct dsdb_extended_replicated_objects);
 	W_ERROR_HAVE_NO_MEMORY(out);
 	out->version		= DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION;
+	out->dsdb_repl_flags    = dsdb_repl_flags;
 
 	/*
 	 * Ensure schema is kept valid for as long as 'out'
@@ -448,6 +467,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		status = dsdb_convert_object_ex(ldb, schema, pfm_remote,
 						cur, gensec_skey,
 						NULL,
+						dsdb_repl_flags,
 						out->objects, &out->objects[i]);
 		if (!W_ERROR_IS_OK(status)) {
 			talloc_free(out);
