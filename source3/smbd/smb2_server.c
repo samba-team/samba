@@ -1333,6 +1333,26 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		smb2_opcode_name(opcode),
 		(unsigned long long)mid));
 
+	if (get_Protocol() >= PROTOCOL_SMB2_02) {
+		/*
+		 * once the protocol is negotiated
+		 * SMB2_OP_NEGPROT is not allowed anymore
+		 */
+		if (opcode == SMB2_OP_NEGPROT) {
+			/* drop the connection */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	} else {
+		/*
+		 * if the protocol is not negotiated yet
+		 * only SMB2_OP_NEGPROT is allowed.
+		 */
+		if (opcode != SMB2_OP_NEGPROT) {
+			/* drop the connection */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
 	allowed_flags = SMB2_HDR_FLAG_CHAINED |
 			SMB2_HDR_FLAG_SIGNED |
 			SMB2_HDR_FLAG_DFS;

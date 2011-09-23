@@ -101,7 +101,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint32_t max_read = lp_smb2_max_read();
 	uint32_t max_write = lp_smb2_max_write();
 
-/* TODO: drop the connection with INVALID_PARAMETER */
 
 	status = smbd_smb2_request_verify_sizes(req, 0x24);
 	if (!NT_STATUS_IS_OK(status)) {
