@@ -358,6 +358,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 			status = dsdb_convert_object_ex(s->ldb, working_schema, pfm_remote,
 							cur, c->gensec_skey,
 							ignore_attids,
+							0,
 							tmp_ctx, &object);
 			if (!W_ERROR_IS_OK(status)) {
 				DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n",
@@ -438,6 +439,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 						 s_dsa,
 						 uptodateness_vector,
 						 c->gensec_skey,
+						 0,
 						 s, &schema_objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects when trying to import over DRS (2nd pass, to store remote schema): %s\n", win_errstr(status)));
@@ -743,6 +745,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 						 s_dsa,
 						 uptodateness_vector,
 						 c->gensec_skey,
+						 0,
 						 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));

@@ -347,6 +347,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 						 0, NULL,
 						 NULL, NULL,
 						 gensec_skey,
+						 0,
 						 ctx, &objs);
 	torture_assert_werr_ok(tctx, status, "dsdb_extended_replicated_objects_convert() failed!");
 
