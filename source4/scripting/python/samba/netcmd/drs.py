@@ -276,12 +276,14 @@ class cmd_drs_replicate(Command):
     takes_options = [
         Option("--add-ref", help="use ADD_REF to add to repsTo on source", action="store_true"),
         Option("--sync-forced", help="use SYNC_FORCED to force inbound replication", action="store_true"),
+        Option("--sync-all", help="use SYNC_ALL to replicate from all DCs", action="store_true"),
+        Option("--full-sync", help="resync all objects", action="store_true"),
         Option("--local", help="pull changes directly into the local database (destination DC is ignored)", action="store_true"),
         ]
 
-    def run(self, DEST_DC, SOURCE_DC, NC, add_ref=False, sync_forced=False, local=False,
-            sambaopts=None,
-            credopts=None, versionopts=None, server=None):
+    def run(self, DEST_DC, SOURCE_DC, NC,
+            add_ref=False, sync_forced=False, sync_all=False, full_sync=False,
+            local=False, sambaopts=None, credopts=None, versionopts=None, server=None):
 
         self.server = DEST_DC
         self.lp = sambaopts.get_loadparm()
@@ -325,6 +327,10 @@ class cmd_drs_replicate(Command):
             req1.options |= drsuapi.DRSUAPI_DRS_ADD_REF
         if sync_forced:
             req1.options |= drsuapi.DRSUAPI_DRS_SYNC_FORCED
+        if sync_all:
+            req1.options |= drsuapi.DRSUAPI_DRS_SYNC_ALL
+        if full_sync:
+            req1.options |= drsuapi.DRSUAPI_DRS_FULL_SYNC_NOW
         req1.source_dsa_guid = misc.GUID(source_dsa_guid)
 
         try:
