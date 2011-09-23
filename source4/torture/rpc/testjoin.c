@@ -404,6 +404,20 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	return torture_create_testuser_max_pwlen(torture, username, domain, acct_type, random_password, 255);
 }
 
+NTSTATUS torture_delete_testuser(struct torture_context *torture,
+				 struct test_join *join,
+				 const char *username)
+{
+	NTSTATUS status;
+
+	status = DeleteUser_byname(join->p->binding_handle,
+				   torture,
+				   &join->domain_handle,
+				   username);
+
+	return status;
+}
+
 _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 					       const char *machine_name, 
 				      uint32_t acct_flags,
