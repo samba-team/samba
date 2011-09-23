@@ -73,7 +73,7 @@ NTSTATUS smbd_smb2_request_process_notify(struct smbd_smb2_request *req)
 	 * 0x00010000 is what Windows 7 uses,
 	 * Windows 2008 uses 0x00080000
 	 */
-	if (in_output_buffer_length > lp_smb2_max_trans()) {
+	if (in_output_buffer_length > req->sconn->smb2.max_trans) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 

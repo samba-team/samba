@@ -74,9 +74,9 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 	in_remaining_bytes	= IVAL(inbody, 0x28);
 
 	/* check the max read size */
-	if (in_length > lp_smb2_max_read()) {
+	if (in_length > req->sconn->smb2.max_read) {
 		DEBUG(0,("here:%s: 0x%08X: 0x%08X\n",
-			__location__, in_length, lp_smb2_max_read()));
+			__location__, in_length, req->sconn->smb2.max_read));
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
