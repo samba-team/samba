@@ -323,8 +323,9 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 	}
 
 	if (sconn->smb2.credits_granted == 0) {
-		smbd_server_connection_terminate(sconn, "smb2_validate_message_id: "
-			"terminating connection: client used more credits than granted\n");
+		DEBUG(0,("smb2_validate_message_id: client used more "
+			 "credits than granted message_id (%llu)\n",
+			 (unsigned long long)message_id));
 		return false;
 	}
 
