@@ -305,6 +305,11 @@ static int ldapsrv_add_with_controls(struct ldapsrv_call *call,
 
 	if (ret != LDB_SUCCESS) return ret;
 
+	if (call->conn->global_catalog) {
+		return ldb_error(ldb, LDB_ERR_UNWILLING_TO_PERFORM, "modify forbidden on global catalog port");
+	}
+	ldb_request_add_control(req, DSDB_CONTROL_NO_GLOBAL_CATALOG, false, NULL);
+
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -358,6 +363,11 @@ static int ldapsrv_mod_with_controls(struct ldapsrv_call *call,
 		return ret;
 	}
 
+	if (call->conn->global_catalog) {
+		return ldb_error(ldb, LDB_ERR_UNWILLING_TO_PERFORM, "modify forbidden on global catalog port");
+	}
+	ldb_request_add_control(req, DSDB_CONTROL_NO_GLOBAL_CATALOG, false, NULL);
+
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -403,6 +413,11 @@ static int ldapsrv_del_with_controls(struct ldapsrv_call *call,
 					NULL);
 
 	if (ret != LDB_SUCCESS) return ret;
+
+	if (call->conn->global_catalog) {
+		return ldb_error(ldb, LDB_ERR_UNWILLING_TO_PERFORM, "modify forbidden on global catalog port");
+	}
+	ldb_request_add_control(req, DSDB_CONTROL_NO_GLOBAL_CATALOG, false, NULL);
 
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
@@ -450,6 +465,11 @@ static int ldapsrv_rename_with_controls(struct ldapsrv_call *call,
 					NULL);
 
 	if (ret != LDB_SUCCESS) return ret;
+
+	if (call->conn->global_catalog) {
+		return ldb_error(ldb, LDB_ERR_UNWILLING_TO_PERFORM, "modify forbidden on global catalog port");
+	}
+	ldb_request_add_control(req, DSDB_CONTROL_NO_GLOBAL_CATALOG, false, NULL);
 
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
