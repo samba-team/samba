@@ -817,9 +817,11 @@ class LDAPBundel(object):
             self.search_scope = SCOPE_ONELEVEL
         else:
             raise StandardError("Wrong 'scope' given. Choose from: SUB, ONE, BASE")
-        if not self.search_base.upper().endswith(search_base.upper()):
-            raise StandardError("Invalid search base specified: %s" % self.search_base)
-        res = self.con.ldb.search(base=self.search_base, scope=self.search_scope, attrs=["dn"])
+        try:
+            res = self.con.ldb.search(base=self.search_base, scope=self.search_scope, attrs=["dn"])
+        except LdbError, (enum, estr):
+            print("Failed search of base=%s" % self.search_base)
+            raise
         for x in res:
            dn_list.append(x["dn"].get_linearized())
         #
