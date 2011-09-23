@@ -81,7 +81,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint32_t max_read = lp_smb2_max_read();
 	uint32_t max_write = lp_smb2_max_write();
 
-
 	status = smbd_smb2_request_verify_sizes(req, 0x24);
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
@@ -185,6 +184,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	outdyn = security_buffer;
 
 	req->sconn->using_smb2 = true;
+	req->sconn->smb2.max_trans = max_trans;
+	req->sconn->smb2.max_read  = max_read;
+	req->sconn->smb2.max_write = max_write;
 
 	return smbd_smb2_request_done(req, outbody, &outdyn);
 }
