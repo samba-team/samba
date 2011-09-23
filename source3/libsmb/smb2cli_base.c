@@ -690,9 +690,8 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	bool found_size = false;
 	size_t i;
 
-	if (num_expected == 0) {
-		found_status = true;
-		found_size = true;
+	if (piov != NULL) {
+		*piov = NULL;
 	}
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -708,6 +707,11 @@ NTSTATUS smb2cli_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		}
 
 		return status;
+	}
+
+	if (num_expected == 0) {
+		found_status = true;
+		found_size = true;
 	}
 
 	status = NT_STATUS(IVAL(state->recv_iov[0].iov_base, SMB2_HDR_STATUS));
