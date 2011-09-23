@@ -34,6 +34,7 @@
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 struct cvfs_file {
 	struct cvfs_file *prev, *next;
@@ -66,7 +67,7 @@ struct async_info {
 NTSTATUS ntvfs_cifs_init(void);
 
 #define CHECK_UPSTREAM_OPEN do { \
-	if (! p->transport->socket->sock) { \
+	if (!smbXcli_conn_is_connected(p->transport->conn)) { \
 		req->async_states->state|=NTVFS_ASYNC_STATE_CLOSE; \
 		return NT_STATUS_CONNECTION_DISCONNECTED; \
 	} \

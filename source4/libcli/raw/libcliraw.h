@@ -25,6 +25,7 @@
 #include "../libcli/smb/smb_common.h"
 #include "libcli/raw/request.h"
 #include "librpc/gen_ndr/nbt.h"
+#include "libcli/raw/interfaces.h"
 
 struct smbcli_tree;  /* forward declare */
 struct smbcli_request;  /* forward declare */
@@ -52,23 +53,18 @@ struct smbcli_negotiate {
 	enum protocol_types protocol;
 
 	uint8_t sec_mode;		/* security mode returned by negprot */
-	uint8_t key_len;
-	DATA_BLOB server_guid;      /* server_guid */
 	DATA_BLOB secblob;      /* cryptkey or negTokenInit blob */
 	uint32_t sesskey;
-	
-	struct smb_signing_context sign_info;
 
 	/* capabilities that the server reported */
 	uint32_t capabilities;
 	
 	int server_zone;
 	time_t server_time;
+
 	unsigned int readbraw_supported:1;
 	unsigned int writebraw_supported:1;
 	unsigned int lockread_supported:1;
-
-	char *server_domain;
 };
 	
 /* this is the context for a SMB socket associated with the socket itself */
@@ -109,24 +105,14 @@ struct smbcli_options {
 /* this is the context for the client transport layer */
 struct smbcli_transport {
 	struct tevent_context *ev; /* TODO: remove this !!! */
+	struct smbXcli_conn *conn;
 
-	/* socket level info */
-	struct smbcli_socket *socket;
-
-	/* the next mid to be allocated - needed for signing and
-	   request matching */
-	uint16_t next_mid;
-	
 	/* negotiated protocol information */
 	struct smbcli_negotiate negotiate;
 
 	/* options to control the behaviour of the client code */
 	struct smbcli_options options;
 
-	/* is a readbraw pending? we need to handle that case
-	   specially on receiving packets */
-	unsigned int readbraw_pending:1;
-	
 	/* an idle function - if this is defined then it will be
 	   called once every period microseconds while we are waiting
 	   for a packet */
@@ -134,6 +120,7 @@ struct smbcli_transport {
 		void (*func)(struct smbcli_transport *, void *);
 		void *private_data;
 		unsigned int period;
+		struct tevent_timer *te;
 	} idle;
 
 	/* the error fields from the last message */
@@ -157,16 +144,7 @@ struct smbcli_transport {
 		/* private data passed to the oplock handler */
 		void *private_data;
 	} oplock;
-
-	/* a list of async requests that are pending for receive on this connection */
-	struct smbcli_request *pending_recv;
-
-	/* remember the called name - some sub-protocols require us to
-	   know the server name */
-	struct nbt_name called;
-
-	/* context of the stream -> packet parser */
-	struct packet_context *packet;
+	struct tevent_req *break_subreq;
 };
 
 /* this is the context for the user */
@@ -227,8 +205,8 @@ enum smbcli_request_state {SMBCLI_REQUEST_INIT, /* we are creating the request *
  * functions (similar to context.h, the server version).
  * This will allow requests to be multi-threaded. */
 struct smbcli_request {
-	/* allow a request to be part of a list of requests */
-	struct smbcli_request *next, *prev;
+	/* smbXcli_req */
+	struct tevent_req *subreqs[2];
 
 	/* each request is in one of 4 possible states */
 	enum smbcli_request_state state;
@@ -239,14 +217,6 @@ struct smbcli_request {
 	struct smbcli_session *session;
 	struct smbcli_tree *tree;
 
-	/* a receive helper, smbcli_transport_finish_recv will not call
-	   req->async.fn callback handler unless the recv_helper returns
-	   a value > SMBCLI_REQUEST_RECV. */
-	struct {
-		enum smbcli_request_state (*fn)(struct smbcli_request *);
-		void *private_data;
-	} recv_helper;
-
 	/* the flags2 from the SMB request, in raw form (host byte
 	   order). Used to parse strings */
 	uint16_t flags2;
@@ -254,20 +224,6 @@ struct smbcli_request {
 	/* the NT status for this request. Set by packet receive code
 	   or code detecting error. */
 	NTSTATUS status;
-	
-	/* the sequence number of this packet - used for signing */
-	unsigned int seq_num;
-
-	/* list of ntcancel request for this requests */
-	struct smbcli_request *ntcancel;
-
-	/* set if this is a one-way request, meaning we are not
-	   expecting a reply from the server. */
-	unsigned int one_way_request:1;
-
-	/* set this when the request should only increment the signing
-	   counter by one */
-	unsigned int sign_single_increment:1;
 
 	/* the caller wants to do the signing check */
 	bool sign_caller_checks;
@@ -275,11 +231,11 @@ struct smbcli_request {
 	/* give the caller a chance to prevent the talloc_free() in the _recv() function */
 	bool do_not_free;
 
-	/* the mid of this packet - used to match replies */
-	uint16_t mid;
-
 	struct smb_request_buffer in;
 	struct smb_request_buffer out;
+
+	struct smb_trans2 trans2;
+	struct smb_nttrans nttrans;
 
 	/* information on what to do with a reply when it is received
 	   asyncronously. If this is not setup when a reply is received then
@@ -306,8 +262,6 @@ struct smbcli_request {
       req->status = NT_STATUS_INVALID_PARAMETER; \
       goto failed; \
 }
-
-#include "libcli/raw/interfaces.h"
 
 NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms);
 struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms);
@@ -378,7 +332,5 @@ NTSTATUS smb_raw_flush(struct smbcli_tree *tree, union smb_flush *parms);
 NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 		       TALLOC_CTX *mem_ctx,
 		       struct smb_trans2 *parms);
-
-void smbcli_sock_dead(struct smbcli_socket *sock);
 
 #endif /* __LIBCLI_RAW__H__ */

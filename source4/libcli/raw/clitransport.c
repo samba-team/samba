@@ -20,33 +20,17 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
+#include "../lib/async_req/async_sock.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "lib/socket/socket.h"
-#include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
-#include "lib/stream/packet.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "../libcli/nbt/libnbt.h"
-
-
-/*
-  an event has happened on the socket
-*/
-static void smbcli_transport_event_handler(struct tevent_context *ev, 
-					   struct tevent_fd *fde, 
-					   uint16_t flags, void *private_data)
-{
-	struct smbcli_transport *transport = talloc_get_type(private_data,
-							     struct smbcli_transport);
-	if (flags & TEVENT_FD_READ) {
-		packet_recv(transport->packet);
-		return;
-	}
-	if (flags & TEVENT_FD_WRITE) {
-		packet_queue_run(transport->packet);
-	}
-}
+#include "../libcli/smb/smbXcli_base.h"
+#include "../libcli/smb/read_smb.h"
 
 /*
   destroy a transport
@@ -57,18 +41,6 @@ static int transport_destructor(struct smbcli_transport *transport)
 	return 0;
 }
 
-
-/*
-  handle receive errors
-*/
-static void smbcli_transport_error(void *private_data, NTSTATUS status)
-{
-	struct smbcli_transport *transport = talloc_get_type(private_data, struct smbcli_transport);
-	smbcli_transport_dead(transport, status);
-}
-
-static NTSTATUS smbcli_transport_finish_recv(void *private_data, DATA_BLOB blob);
-
 /*
   create a transport structure based on an established socket
 */
@@ -78,51 +50,55 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 					       struct smbcli_options *options)
 {
 	struct smbcli_transport *transport;
+	uint32_t smb1_capabilities;
 
 	transport = talloc_zero(parent_ctx, struct smbcli_transport);
 	if (!transport) return NULL;
 
-	if (primary) {
-		transport->socket = talloc_steal(transport, sock);
-	} else {
-		transport->socket = talloc_reference(transport, sock);
-	}
-	transport->negotiate.protocol = PROTOCOL_NT1;
 	transport->ev = sock->event.ctx;
 	transport->options = *options;
-	transport->negotiate.max_xmit = transport->options.max_xmit;
 
-	/* setup the stream -> packet parser */
-	transport->packet = packet_init(transport);
-	if (transport->packet == NULL) {
-		talloc_free(transport);
+	TALLOC_FREE(sock->event.fde);
+	TALLOC_FREE(sock->event.te);
+
+	smb1_capabilities = 0;
+	smb1_capabilities |= CAP_LARGE_FILES;
+	smb1_capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
+	smb1_capabilities |= CAP_LOCK_AND_READ | CAP_NT_FIND;
+	smb1_capabilities |= CAP_DFS | CAP_W2K_SMBS;
+	smb1_capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX;
+	smb1_capabilities |= CAP_LWIO;
+
+	if (options->ntstatus_support) {
+		smb1_capabilities |= CAP_STATUS32;
+	}
+
+	if (options->unicode) {
+		smb1_capabilities |= CAP_UNICODE;
+	}
+
+	if (options->use_spnego) {
+		smb1_capabilities |= CAP_EXTENDED_SECURITY;
+	}
+
+	if (options->use_level2_oplocks) {
+		smb1_capabilities |= CAP_LEVEL_II_OPLOCKS;
+	}
+
+	transport->conn = smbXcli_conn_create(transport,
+					      sock->sock->fd,
+					      sock->hostname,
+					      options->signing,
+					      smb1_capabilities,
+					      NULL); /* client_guid */
+	if (transport->conn == NULL) {
+		TALLOC_FREE(sock);
+		TALLOC_FREE(transport);
 		return NULL;
 	}
-	packet_set_private(transport->packet, transport);
-	packet_set_socket(transport->packet, transport->socket->sock);
-	packet_set_callback(transport->packet, smbcli_transport_finish_recv);
-	packet_set_full_request(transport->packet, packet_full_request_nbt);
-	packet_set_error_handler(transport->packet, smbcli_transport_error);
-	packet_set_event_context(transport->packet, transport->socket->event.ctx);
-	packet_set_nofree(transport->packet);
-	packet_set_initial_read(transport->packet, 4);
+	sock->sock->fd = -1;
+	TALLOC_FREE(sock);
 
-	smbcli_init_signing(transport);
-
-	ZERO_STRUCT(transport->called);
-
-	/* take over event handling from the socket layer - it only
-	   handles events up until we are connected */
-	talloc_free(transport->socket->event.fde);
-	transport->socket->event.fde = tevent_add_fd(transport->socket->event.ctx,
-						    transport->socket->sock,
-						    socket_get_fd(transport->socket->sock),
-						    TEVENT_FD_READ,
-						    smbcli_transport_event_handler,
-						    transport);
-
-	packet_set_fde(transport->packet, transport->socket->event.fde);
-	packet_set_serialise(transport->packet);
 	talloc_set_destructor(transport, transport_destructor);
 
 	return transport;
@@ -133,54 +109,14 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 */
 void smbcli_transport_dead(struct smbcli_transport *transport, NTSTATUS status)
 {
-	smbcli_sock_dead(transport->socket);
-
 	if (NT_STATUS_EQUAL(NT_STATUS_UNSUCCESSFUL, status)) {
 		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
-
-	/* kill only the first pending receive - this is so that if
-	 that async function frees the connection we don't die trying
-	 to use old memory. The caller has to cope with only one
-	 network error */
-	if (transport->pending_recv) {
-		struct smbcli_request *req = transport->pending_recv;
-		req->state = SMBCLI_REQUEST_ERROR;
-		req->status = status;
-		DLIST_REMOVE(transport->pending_recv, req);
-		if (req->async.fn) {
-			req->async.fn(req);
-		}
-	}
-}
-
-/****************************************************************************
-get next mid in sequence
-****************************************************************************/
-uint16_t smbcli_transport_next_mid(struct smbcli_transport *transport)
-{
-	uint16_t mid;
-	struct smbcli_request *req;
-
-	mid = transport->next_mid;
-
-again:
-	/* now check to see if this mid is being used by one of the 
-	   pending requests. This is quite efficient because the list is
-	   usually very short */
-
-	/* the zero mid is reserved for requests that don't have a mid */
-	if (mid == 0) mid = 1;
-
-	for (req=transport->pending_recv; req; req=req->next) {
-		if (req->mid == mid) {
-			mid++;
-			goto again;
-		}
+	if (NT_STATUS_IS_OK(status)) {
+		status = NT_STATUS_LOCAL_DISCONNECT;
 	}
 
-	transport->next_mid = mid+1;
-	return mid;
+	smbXcli_conn_disconnect(transport->conn, status);
 }
 
 static void idle_handler(struct tevent_context *ev, 
@@ -188,12 +124,17 @@ static void idle_handler(struct tevent_context *ev,
 {
 	struct smbcli_transport *transport = talloc_get_type(private_data,
 							     struct smbcli_transport);
-	struct timeval next = timeval_add(&t, 0, transport->idle.period);
-	transport->socket->event.te = tevent_add_timer(transport->socket->event.ctx, 
-						      transport,
-						      next,
-						      idle_handler, transport);
+	struct timeval next;
+
 	transport->idle.func(transport, transport->idle.private_data);
+
+	next = timeval_current_ofs_usec(transport->idle.period);
+
+	transport->idle.te = tevent_add_timer(transport->ev,
+					      transport,
+					      next,
+					      idle_handler,
+					      transport);
 }
 
 /*
@@ -205,189 +146,17 @@ _PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 				   uint64_t period,
 				   void *private_data)
 {
+	TALLOC_FREE(transport->idle.te);
+
 	transport->idle.func = idle_func;
 	transport->idle.private_data = private_data;
 	transport->idle.period = period;
 
-	if (transport->socket->event.te != NULL) {
-		talloc_free(transport->socket->event.te);
-	}
-
-	transport->socket->event.te = tevent_add_timer(transport->socket->event.ctx, 
-						      transport,
-						      timeval_current_ofs_usec(period),
-						      idle_handler, transport);
-}
-
-/*
-  we have a full request in our receive buffer - match it to a pending request
-  and process
- */
-static NTSTATUS smbcli_transport_finish_recv(void *private_data, DATA_BLOB blob)
-{
-	struct smbcli_transport *transport = talloc_get_type(private_data,
-							     struct smbcli_transport);
-	uint8_t *buffer, *hdr, *vwv;
-	int len;
-	uint16_t wct=0, mid = 0, op = 0;
-	struct smbcli_request *req = NULL;
-
-	buffer = blob.data;
-	len = blob.length;
-
-	hdr = buffer+NBT_HDR_SIZE;
-	vwv = hdr + HDR_VWV;
-
-	/* see if it could be an oplock break request */
-	if (smbcli_handle_oplock_break(transport, len, hdr, vwv)) {
-		talloc_free(buffer);
-		return NT_STATUS_OK;
-	}
-
-	/* at this point we need to check for a readbraw reply, as
-	   these can be any length */
-	if (transport->readbraw_pending) {
-		transport->readbraw_pending = 0;
-
-		/* it must match the first entry in the pending queue
-		   as the client is not allowed to have outstanding
-		   readbraw requests */
-		req = transport->pending_recv;
-		if (!req) goto error;
-
-		req->in.buffer = buffer;
-		talloc_steal(req, buffer);
-		req->in.size = len;
-		req->in.allocated = req->in.size;
-		goto async;
-	}
-
-	if (len >= MIN_SMB_SIZE) {
-		/* extract the mid for matching to pending requests */
-		mid = SVAL(hdr, HDR_MID);
-		wct = CVAL(hdr, HDR_WCT);
-		op  = CVAL(hdr, HDR_COM);
-	}
-
-	/* match the incoming request against the list of pending requests */
-	for (req=transport->pending_recv; req; req=req->next) {
-		if (req->mid == mid) break;
-	}
-
-	/* see if it's a ntcancel reply for the current MID */
-	req = smbcli_handle_ntcancel_reply(req, len, hdr);
-
-	if (!req) {
-		DEBUG(1,("Discarding unmatched reply with mid %d op %d\n", mid, op));
-		goto error;
-	}
-
-	/* fill in the 'in' portion of the matching request */
-	req->in.buffer = buffer;
-	talloc_steal(req, buffer);
-	req->in.size = len;
-	req->in.allocated = req->in.size;
-
-	/* handle NBT session replies */
-	if (req->in.size >= 4 && req->in.buffer[0] != 0) {
-		req->status = NT_STATUS_OK;
-		goto async;
-	}
-
-	/* handle non-SMB replies */
-	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE) {
-		req->state = SMBCLI_REQUEST_ERROR;
-		goto error;
-	}
-
-	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct)) {
-		DEBUG(2,("bad reply size for mid %d\n", mid));
-		req->status = NT_STATUS_UNSUCCESSFUL;
-		req->state = SMBCLI_REQUEST_ERROR;
-		goto error;
-	}
-
-	req->in.hdr = hdr;
-	req->in.vwv = vwv;
-	req->in.wct = wct;
-	if (req->in.size >= NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct)) {
-		req->in.data = req->in.vwv + VWV(wct) + 2;
-		req->in.data_size = SVAL(req->in.vwv, VWV(wct));
-		if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct) + req->in.data_size) {
-			DEBUG(3,("bad data size for mid %d\n", mid));
-			/* blergh - w2k3 gives a bogus data size values in some
-			   openX replies */
-			req->in.data_size = req->in.size - (NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct));
-		}
-	}
-	req->in.ptr = req->in.data;
-	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
-
-	smb_setup_bufinfo(req);
-
-	if (!(req->flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
-		int eclass = CVAL(req->in.hdr,HDR_RCLS);
-		int code = SVAL(req->in.hdr,HDR_ERR);
-		if (eclass == 0 && code == 0) {
-			transport->error.e.nt_status = NT_STATUS_OK;
-		} else {
-			transport->error.e.nt_status = NT_STATUS_DOS(eclass, code);
-		}
-	} else {
-		transport->error.e.nt_status = NT_STATUS(IVAL(req->in.hdr, HDR_RCLS));
-	}
-
-	req->status = transport->error.e.nt_status;
-	if (NT_STATUS_IS_OK(req->status)) {
-		transport->error.etype = ETYPE_NONE;
-	} else {
-		transport->error.etype = ETYPE_SMB;
-	}
-
-	if (!smbcli_request_check_sign_mac(req)) {
-		transport->error.etype = ETYPE_SOCKET;
-		transport->error.e.socket_error = SOCKET_READ_BAD_SIG;
-		req->state = SMBCLI_REQUEST_ERROR;
-		req->status = NT_STATUS_ACCESS_DENIED;
-		goto error;
-	};
-
-async:
-	/* if this request has an async handler then call that to
-	   notify that the reply has been received. This might destroy
-	   the request so it must happen last */
-
-	req->state = SMBCLI_REQUEST_DONE;
-
-	if (req->recv_helper.fn) {
-		/*
-		 * let the recv helper decide in
-		 * what state the request really is
-		 */
-		req->state = req->recv_helper.fn(req);
-
-		/* if more parts are needed, wait for them */
-		if (req->state <= SMBCLI_REQUEST_RECV) {
-			return NT_STATUS_OK;
-		}
-	}
-	DLIST_REMOVE(transport->pending_recv, req);
-	if (req->async.fn) {
-		req->async.fn(req);
-	}
-	return NT_STATUS_OK;
-
-error:
-	if (req) {
-		DLIST_REMOVE(transport->pending_recv, req);
-		req->state = SMBCLI_REQUEST_ERROR;
-		if (req->async.fn) {
-			req->async.fn(req);
-		}
-	} else {
-		talloc_free(buffer);
-	}
-	return NT_STATUS_OK;
+	transport->idle.te = tevent_add_timer(transport->ev,
+					      transport,
+					      timeval_current_ofs_usec(period),
+					      idle_handler,
+					      transport);
 }
 
 /*
@@ -396,102 +165,364 @@ error:
 */
 _PUBLIC_ bool smbcli_transport_process(struct smbcli_transport *transport)
 {
-	NTSTATUS status;
-	size_t npending;
+	struct tevent_req *subreq = NULL;
+	int ret;
 
-	packet_queue_run(transport->packet);
-	if (transport->socket->sock == NULL) {
+	if (!smbXcli_conn_is_connected(transport->conn)) {
 		return false;
 	}
 
-	status = socket_pending(transport->socket->sock, &npending);
-	if (NT_STATUS_IS_OK(status) && npending > 0) {
-		packet_recv(transport->packet);
+	if (!smbXcli_conn_has_async_calls(transport->conn)) {
+		return true;
 	}
-	if (transport->socket->sock == NULL) {
+
+	/*
+	 * do not block for more than 500 micro seconds
+	 */
+	subreq = tevent_wakeup_send(transport,
+				    transport->ev,
+				    timeval_current_ofs_usec(500));
+	if (subreq == NULL) {
 		return false;
 	}
+
+	ret = tevent_loop_once(transport->ev);
+	if (ret != 0) {
+		return false;
+	}
+
+	TALLOC_FREE(subreq);
+
+	if (!smbXcli_conn_is_connected(transport->conn)) {
+		return false;
+	}
+
 	return true;
 }
 
-/*
-  handle timeouts of individual smb requests
-*/
-static void smbcli_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
-				   struct timeval t, void *private_data)
+static void smbcli_transport_break_handler(struct tevent_req *subreq);
+static void smbcli_request_done(struct tevent_req *subreq);
+
+struct tevent_req *smbcli_transport_setup_subreq(struct smbcli_request *req)
 {
-	struct smbcli_request *req = talloc_get_type(private_data, struct smbcli_request);
+	struct smbcli_transport *transport = req->transport;
+	uint8_t smb_command;
+	uint8_t additional_flags;
+	uint8_t clear_flags;
+	uint16_t additional_flags2;
+	uint16_t clear_flags2;
+	uint32_t pid;
+	uint16_t tid;
+	uint16_t uid;
+	uint32_t timeout_msec = transport->options.request_timeout * 1000;
+	struct iovec *bytes_iov = NULL;
+	struct tevent_req *subreq = NULL;
 
-	if (req->state == SMBCLI_REQUEST_RECV) {
-		DLIST_REMOVE(req->transport->pending_recv, req);
+	smb_command = SVAL(req->out.hdr, HDR_COM);
+	additional_flags = CVAL(req->out.hdr, HDR_FLG);
+	additional_flags2 = SVAL(req->out.hdr, HDR_FLG2);
+	pid  = SVAL(req->out.hdr, HDR_PID);
+	pid |= SVAL(req->out.hdr, HDR_PIDHIGH)<<16;
+	tid = SVAL(req->out.hdr, HDR_TID);
+	uid = SVAL(req->out.hdr, HDR_UID);
+
+	clear_flags = ~additional_flags;
+	clear_flags2 = ~additional_flags2;
+
+	bytes_iov = talloc(req, struct iovec);
+	if (bytes_iov == NULL) {
+		return NULL;
 	}
-	req->status = NT_STATUS_IO_TIMEOUT;
-	req->state = SMBCLI_REQUEST_ERROR;
-	if (req->async.fn) {
-		req->async.fn(req);
+	bytes_iov->iov_base = (void *)req->out.data;
+	bytes_iov->iov_len = req->out.data_size;
+
+	subreq = smb1cli_req_create(req,
+				    transport->ev,
+				    transport->conn,
+				    smb_command,
+				    additional_flags,
+				    clear_flags,
+				    additional_flags2,
+				    clear_flags2,
+				    timeout_msec,
+				    pid,
+				    tid,
+				    uid,
+				    req->out.wct,
+				    (uint16_t *)req->out.vwv,
+				    1, bytes_iov);
+	if (subreq == NULL) {
+		return NULL;
 	}
+
+	ZERO_STRUCT(req->out);
+
+	return subreq;
 }
-
-
-/*
-  destroy a request
-*/
-static int smbcli_request_destructor(struct smbcli_request *req)
-{
-	if (req->state == SMBCLI_REQUEST_RECV) {
-		DLIST_REMOVE(req->transport->pending_recv, req);
-	}
-	return 0;
-}
-
 
 /*
   put a request into the send queue
 */
 void smbcli_transport_send(struct smbcli_request *req)
 {
-	DATA_BLOB blob;
+	struct smbcli_transport *transport = req->transport;
 	NTSTATUS status;
+	bool need_pending_break = false;
+	struct tevent_req *subreq = NULL;
+	size_t i;
+	size_t num_subreqs = 0;
 
-	/* check if the transport is dead */
-	if (req->transport->socket->sock == NULL) {
+	if (transport->oplock.handler) {
+		need_pending_break = true;
+	}
+
+	if (transport->break_subreq) {
+		need_pending_break = false;
+	}
+
+	if (need_pending_break) {
+		subreq = smb1cli_req_create(transport,
+					    transport->ev,
+					    transport->conn,
+					    0, /* smb_command */
+					    0, /* additional_flags */
+					    0, /* clear_flags */
+					    0, /* additional_flags2 */
+					    0, /* clear_flags2 */
+					    0, /* timeout_msec */
+					    0, /* pid */
+					    0, /* tid */
+					    0, /* uid */
+					    0, /* wct */
+					    NULL, /* vwv */
+					    0, /* iov_count */
+					    NULL); /* bytes_iov */
+		if (subreq != NULL) {
+			smb1cli_req_set_mid(subreq, 0xFFFF);
+			smbXcli_req_set_pending(subreq);
+			tevent_req_set_callback(subreq,
+						smbcli_transport_break_handler,
+						transport);
+			transport->break_subreq = subreq;
+			subreq = NULL;
+		}
+	}
+
+	subreq = smbcli_transport_setup_subreq(req);
+	if (subreq == NULL) {
 		req->state = SMBCLI_REQUEST_ERROR;
-		req->status = NT_STATUS_NET_WRITE_FAULT;
+		req->status = NT_STATUS_NO_MEMORY;
 		return;
 	}
 
-	blob = data_blob_const(req->out.buffer, req->out.size);
-	status = packet_send(req->transport->packet, blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		req->state = SMBCLI_REQUEST_ERROR;
-		req->status = status;
-		return;
-	}
+	for (i = 0; i < ARRAY_SIZE(req->subreqs); i++) {
+		if (req->subreqs[i] == NULL) {
+			req->subreqs[i] = subreq;
+			subreq = NULL;
+		}
+		if (req->subreqs[i] == NULL) {
+			break;
+		}
 
-	packet_queue_run(req->transport->packet);
-	if (req->transport->socket->sock == NULL) {
-		req->state = SMBCLI_REQUEST_ERROR;
-		req->status = NT_STATUS_NET_WRITE_FAULT;
-		return;
+		if (!tevent_req_is_in_progress(req->subreqs[i])) {
+			req->state = SMBCLI_REQUEST_ERROR;
+			req->status = NT_STATUS_INTERNAL_ERROR;
+			return;
+		}
 	}
-
-	if (req->one_way_request) {
-		req->state = SMBCLI_REQUEST_DONE;
-		smbcli_request_destroy(req);
-		return;
-	}
+	num_subreqs = i;
 
 	req->state = SMBCLI_REQUEST_RECV;
-	DLIST_ADD(req->transport->pending_recv, req);
+	tevent_req_set_callback(req->subreqs[0], smbcli_request_done, req);
 
-	/* add a timeout */
-	if (req->transport->options.request_timeout) {
-		tevent_add_timer(req->transport->socket->event.ctx, req,
-				timeval_current_ofs(req->transport->options.request_timeout, 0), 
-				smbcli_timeout_handler, req);
+	status = smb1cli_req_chain_submit(req->subreqs, num_subreqs);
+	if (!NT_STATUS_IS_OK(status)) {
+		smbXcli_conn_disconnect(transport->conn, status);
+	}
+}
+
+static void smbcli_request_done(struct tevent_req *subreq)
+{
+	struct smbcli_request *req =
+		tevent_req_callback_data(subreq,
+		struct smbcli_request);
+	struct smbcli_transport *transport = req->transport;
+	ssize_t len;
+	size_t i;
+	uint8_t *hdr = NULL;
+	uint8_t wct = 0;
+	uint16_t *vwv = NULL;
+	uint32_t num_bytes = 0;
+	uint8_t *bytes = NULL;
+	struct iovec *recv_iov = NULL;
+	uint8_t *inbuf = NULL;
+
+	req->status = smb1cli_req_recv(req->subreqs[0], req,
+				       &recv_iov,
+				       &hdr,
+				       &wct,
+				       &vwv,
+				       NULL, /* pvwv_offset */
+				       &num_bytes,
+				       &bytes,
+				       NULL, /* pbytes_offset */
+				       &inbuf,
+				       NULL, 0); /* expected */
+	TALLOC_FREE(req->subreqs[0]);
+	if (!NT_STATUS_IS_OK(req->status)) {
+		if (recv_iov == NULL) {
+			req->state = SMBCLI_REQUEST_ERROR;
+			transport->error.e.nt_status = req->status;
+			transport->error.etype = ETYPE_SOCKET;
+			if (req->async.fn) {
+				req->async.fn(req);
+			}
+			return;
+		}
 	}
 
-	talloc_set_destructor(req, smbcli_request_destructor);
+	/*
+	 * For SMBreadBraw hdr is NULL
+	 */
+	len = recv_iov[0].iov_len;
+	for (i=1; hdr != NULL && i < 3; i++) {
+		uint8_t *p = recv_iov[i-1].iov_base;
+		uint8_t *c1 = recv_iov[i].iov_base;
+		uint8_t *c2 = p + recv_iov[i-1].iov_len;
+
+		len += recv_iov[i].iov_len;
+
+		c2 += i;
+		len += i;
+
+		if (recv_iov[i].iov_len == 0) {
+			continue;
+		}
+
+		if (c1 != c2) {
+			req->state = SMBCLI_REQUEST_ERROR;
+			req->status = NT_STATUS_INTERNAL_ERROR;
+			transport->error.e.nt_status = req->status;
+			transport->error.etype = ETYPE_SMB;
+			if (req->async.fn) {
+				req->async.fn(req);
+			}
+			return;
+		}
+	}
+
+	/* fill in the 'in' portion of the matching request */
+	req->in.buffer = inbuf;
+	req->in.size = NBT_HDR_SIZE + len;
+	req->in.allocated = req->in.size;
+
+	req->in.hdr = hdr;
+	req->in.vwv = (uint8_t *)vwv;
+	req->in.wct = wct;
+	req->in.data = bytes;
+	req->in.data_size = num_bytes;
+	req->in.ptr = req->in.data;
+	if (hdr != NULL) {
+		req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
+	}
+
+	smb_setup_bufinfo(req);
+
+	transport->error.e.nt_status = req->status;
+	if (NT_STATUS_IS_OK(req->status)) {
+		transport->error.etype = ETYPE_NONE;
+	} else {
+		transport->error.etype = ETYPE_SMB;
+	}
+
+	req->state = SMBCLI_REQUEST_DONE;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
+}
+
+static void smbcli_transport_break_handler(struct tevent_req *subreq)
+{
+	struct smbcli_transport *transport =
+		tevent_req_callback_data(subreq,
+		struct smbcli_transport);
+	NTSTATUS status;
+	struct iovec *recv_iov = NULL;
+	uint8_t *hdr = NULL;
+	uint16_t *vwv = NULL;
+	const struct smb1cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.wct = 8,
+	}
+	};
+	uint16_t tid;
+	uint16_t fnum;
+	uint8_t level;
+
+	transport->break_subreq = NULL;
+
+	status = smb1cli_req_recv(subreq, transport,
+				  &recv_iov,
+				  &hdr,
+				  NULL, /* pwct */
+				  &vwv,
+				  NULL, /* pvwv_offset */
+				  NULL, /* pnum_bytes */
+				  NULL, /* pbytes */
+				  NULL, /* pbytes_offset */
+				  NULL, /* pinbuf */
+				  expected,
+				  ARRAY_SIZE(expected));
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(recv_iov);
+		smbcli_transport_dead(transport, status);
+		return;
+	}
+
+	/*
+	 * Setup the subreq to handle the
+	 * next incoming SMB2 Break.
+	 */
+	subreq = smb1cli_req_create(transport,
+				    transport->ev,
+				    transport->conn,
+				    0, /* smb_command */
+				    0, /* additional_flags */
+				    0, /* clear_flags */
+				    0, /* additional_flags2 */
+				    0, /* clear_flags2 */
+				    0, /* timeout_msec */
+				    0, /* pid */
+				    0, /* tid */
+				    0, /* uid */
+				    0, /* wct */
+				    NULL, /* vwv */
+				    0, /* iov_count */
+				    NULL); /* bytes_iov */
+	if (subreq != NULL) {
+		smb1cli_req_set_mid(subreq, 0xFFFF);
+		smbXcli_req_set_pending(subreq);
+		tevent_req_set_callback(subreq,
+					smbcli_transport_break_handler,
+					transport);
+		transport->break_subreq = subreq;
+	}
+
+	tid = SVAL(hdr, HDR_TID);
+	fnum = SVAL(vwv+2, 0);
+	level = CVAL(vwv+3, 1);
+
+	TALLOC_FREE(recv_iov);
+
+	if (transport->oplock.handler) {
+		transport->oplock.handler(transport, tid, fnum, level,
+					  transport->oplock.private_data);
+	} else {
+		DEBUG(5,("Got SMB oplock break with no handler\n"));
+	}
+
 }
 
 

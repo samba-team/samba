@@ -22,6 +22,7 @@
 #define __LIBCLI_H__
 
 #include "librpc/gen_ndr/nbt.h"
+#include "libcli/raw/libcliraw.h"
 
 struct substitute_context;
 
@@ -30,6 +31,8 @@ struct substitute_context;
    i.e. a single session on a single socket. 
  */
 struct smbcli_state {
+	struct smbcli_options options;
+	struct smbcli_socket *sock; /* NULL if connected */
 	struct smbcli_transport *transport;
 	struct smbcli_session *session;
 	struct smbcli_tree *tree;

@@ -33,6 +33,8 @@
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "torture/raw/proto.h"
+#include "libcli/smb/smbXcli_base.h"
+#include "../lib/util/util_net.h"
 
 #define BASEDIR "\\benchlock"
 #define FNAME BASEDIR "\\lock.dat"
@@ -336,6 +338,11 @@ bool torture_bench_lock(struct torture_context *torture)
 
 	printf("Opening %d connections\n", nprocs);
 	for (i=0;i<nprocs;i++) {
+		const struct sockaddr_storage *dest_ss;
+		char addrstr[INET6_ADDRSTRLEN];
+		const char *dest_str;
+		uint16_t dest_port;
+
 		state[i].tctx = torture;
 		state[i].mem_ctx = talloc_new(state);
 		state[i].client_num = i;
@@ -343,20 +350,23 @@ bool torture_bench_lock(struct torture_context *torture)
 		if (!torture_open_connection_ev(&cli, i, torture, torture->ev)) {
 			return false;
 		}
-		talloc_steal(mem_ctx, state);
+		talloc_steal(state[i].mem_ctx, cli);
 		state[i].tree = cli->tree;
-		state[i].dest_host = talloc_strdup(state[i].mem_ctx, 
-						   cli->tree->session->transport->socket->hostname);
+
+		dest_ss = smbXcli_conn_remote_sockaddr(
+				state[i].tree->session->transport->conn);
+		dest_str = print_sockaddr(addrstr, sizeof(addrstr), dest_ss);
+		dest_port = get_sockaddr_port(dest_ss);
+
+		state[i].dest_host = talloc_strdup(state[i].mem_ctx, dest_str);
 		state[i].dest_ports = talloc_array(state[i].mem_ctx, 
 						   const char *, 2);
 		state[i].dest_ports[0] = talloc_asprintf(state[i].dest_ports, 
-							 "%u", 
-							 cli->tree->session->transport->socket->port);
+							 "%u", dest_port);
 		state[i].dest_ports[1] = NULL;
 		state[i].called_name  = talloc_strdup(state[i].mem_ctx,
-						      cli->tree->session->transport->called.name);
-		state[i].service_type = talloc_strdup(state[i].mem_ctx,
-						      cli->tree->device);
+				smbXcli_conn_remote_name(cli->tree->session->transport->conn));
+		state[i].service_type = talloc_strdup(state[i].mem_ctx, "?????");
 	}
 
 	num_connected = i;

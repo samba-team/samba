@@ -26,6 +26,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "librpc/rpc/rpc_common.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /* transport private information used by SMB pipe transport */
 struct smb_private {
@@ -417,7 +418,7 @@ static const char *smb_target_hostname(struct dcecli_connection *c)
 {
 	struct smb_private *smb = talloc_get_type(c->transport.private_data, struct smb_private);
 	if (smb == NULL) return "";
-	return smb->tree->session->transport->socket->hostname;
+	return smbXcli_conn_remote_name(smb->tree->session->transport->conn);
 }
 
 /*
@@ -456,9 +457,10 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_pipe *p,
 	/* if we don't have a binding on this pipe yet, then create one */
 	if (p->binding == NULL) {
 		NTSTATUS status;
+		const char *r = smbXcli_conn_remote_name(tree->session->transport->conn);
 		char *s;
-		SMB_ASSERT(tree->session->transport->socket->hostname != NULL);
-		s = talloc_asprintf(p, "ncacn_np:%s", tree->session->transport->socket->hostname);
+		SMB_ASSERT(r != NULL);
+		s = talloc_asprintf(p, "ncacn_np:%s", r);
 		if (s == NULL) return NULL;
 		status = dcerpc_parse_binding(p, s, &p->binding);
 		talloc_free(s);
@@ -549,7 +551,7 @@ static void pipe_open_recv(struct smbcli_request *req)
 	smb->fnum	= state->open->ntcreatex.out.file.fnum;
 	smb->tree	= talloc_reference(smb, state->tree);
 	smb->server_name= strupper_talloc(smb,
-			  state->tree->session->transport->called.name);
+		smbXcli_conn_remote_name(state->tree->session->transport->conn));
 	if (composite_nomem(smb->server_name, ctx)) return;
 	smb->dead	= false;
 

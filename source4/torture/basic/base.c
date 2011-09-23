@@ -65,6 +65,14 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 		goto failed;
 	}
 
+	cli->transport = smbcli_transport_init(cli->sock, cli,
+					       true, &cli->options);
+	cli->sock = NULL;
+	if (!cli->transport) {
+		torture_comment(tctx, "smbcli_transport_init failed\n");
+		goto failed;
+	}
+
 	return cli;
 
 failed:
@@ -360,15 +368,23 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 	torture_comment(tctx, "Filling send buffer\n");
 
 	for (i=0;i<100;i++) {
-		struct smbcli_request *req;
-		req = smb_raw_negotiate_send(cli->transport, lpcfg_unicode(tctx->lp_ctx), PROTOCOL_NT1);
+		struct tevent_req *req;
+		req = smb_raw_negotiate_send(cli, tctx->ev,
+					     cli->transport,
+					     PROTOCOL_NT1);
 		tevent_loop_once(tctx->ev);
-		if (req->state == SMBCLI_REQUEST_ERROR) {
+		if (!tevent_req_is_in_progress(req)) {
+			NTSTATUS status;
+
+			status = smb_raw_negotiate_recv(req);
+			TALLOC_FREE(req);
 			if (i > 0) {
-				torture_comment(tctx, "Failed to fill pipe packet[%d] - %s (ignored)\n", i+1, nt_errstr(req->status));
+				torture_comment(tctx, "Failed to fill pipe packet[%d] - %s (ignored)\n",
+						i+1, nt_errstr(status));
 				break;
 			} else {
-				torture_comment(tctx, "Failed to fill pipe - %s \n", nt_errstr(req->status));
+				torture_comment(tctx, "Failed to fill pipe - %s \n",
+						nt_errstr(status));
 				torture_close_connection(cli);
 				return false;
 			}

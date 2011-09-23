@@ -232,7 +232,8 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 	NTSTATUS status;
 
-	status = smb_raw_negotiate_recv(state->req);
+	status = smb_raw_negotiate_recv(state->subreq);
+	TALLOC_FREE(state->subreq);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a session setup */
@@ -283,13 +284,19 @@ static NTSTATUS connect_send_negprot(struct composite_context *c,
 {
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 
-	state->req = smb_raw_negotiate_send(state->transport, io->in.options.unicode, io->in.options.max_protocol);
-	NT_STATUS_HAVE_NO_MEMORY(state->req);
+	/* the socket is up - we can initialise the smbcli transport layer */
+	state->transport = smbcli_transport_init(state->sock, state, true,
+						 &io->in.options);
+	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
-	state->req->async.fn = request_handler;
-	state->req->async.private_data = c;
+	state->subreq = smb_raw_negotiate_send(state,
+					       state->transport->ev,
+					       state->transport,
+					       io->in.options.max_protocol);
+	NT_STATUS_HAVE_NO_MEMORY(state->subreq);
+	tevent_req_set_callback(state->subreq, subreq_handler, c);
 	state->stage = CONNECT_NEGPROT;
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -305,11 +312,6 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	status = smbcli_sock_connect_recv(state->creq, state, &state->sock);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	/* the socket is up - we can initialise the smbcli transport layer */
-	state->transport = smbcli_transport_init(state->sock, state, true, 
-						 &io->in.options);
-	NT_STATUS_HAVE_NO_MEMORY(state->transport);
-
 	if (is_ipaddress(state->sock->hostname) &&
 	    (state->io->in.called_name != NULL)) {
 		/* If connecting to an IP address, we might want the real name
@@ -319,10 +321,6 @@ static NTSTATUS connect_socket(struct composite_context *c,
 			talloc_strdup(state->sock, io->in.called_name);
 		NT_STATUS_HAVE_NO_MEMORY(state->sock->hostname);
 	}
-
-	status = nbt_name_dup(state->transport, &state->called,
-			      &state->transport->called);
-	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a negprot */
 	return connect_send_negprot(c, io);

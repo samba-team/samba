@@ -18,9 +18,9 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
-#include "../lib/util/dlinklist.h"
 
 /****************************************************************************
 change notify (async send)
@@ -101,68 +101,22 @@ _PUBLIC_ NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req,
 }
 
 /****************************************************************************
-  handle ntcancel replies from the server,
-  as the MID of the real reply and the ntcancel reply is the same
-  we need to do find out to what request the reply belongs
-****************************************************************************/
-struct smbcli_request *smbcli_handle_ntcancel_reply(struct smbcli_request *req,
-						    size_t len, const uint8_t *hdr)
-{
-	struct smbcli_request *ntcancel;
-
-	if (!req) return req;
-
-	if (!req->ntcancel) return req;
-
-	if (len >= MIN_SMB_SIZE + NBT_HDR_SIZE &&
-	    (CVAL(hdr, HDR_FLG) & FLAG_REPLY) &&
-	     CVAL(hdr,HDR_COM) == SMBntcancel) {
-		ntcancel = req->ntcancel;
-		DLIST_REMOVE(req->ntcancel, ntcancel);
-
-		/*
-		 * TODO: untill we understand how the 
-		 *       smb_signing works for this case we 
-		 *       return NULL, to just ignore the packet
-		 */
-		/*return ntcancel;*/
-		return NULL;
-	}
-
-	return req;
-}
-
-/****************************************************************************
  Send a NT Cancel request - used to hurry along a pending request. Usually
  used to cancel a pending change notify request
  note that this request does not expect a response!
 ****************************************************************************/
 NTSTATUS smb_raw_ntcancel(struct smbcli_request *oldreq)
 {
-	struct smbcli_request *req;
+	bool ok;
 
-	req = smbcli_request_setup_transport(oldreq->transport, SMBntcancel, 0, 0);
+	if (oldreq->subreqs[0] == NULL) {
+		return NT_STATUS_OK;
+	}
 
-	SSVAL(req->out.hdr, HDR_MID, SVAL(oldreq->out.hdr, HDR_MID));	
-	SSVAL(req->out.hdr, HDR_PID, SVAL(oldreq->out.hdr, HDR_PID));	
-	SSVAL(req->out.hdr, HDR_TID, SVAL(oldreq->out.hdr, HDR_TID));	
-	SSVAL(req->out.hdr, HDR_UID, SVAL(oldreq->out.hdr, HDR_UID));	
-
-	/* this request does not expect a reply, so tell the signing
-	   subsystem not to allocate an id for a reply */
-	req->sign_single_increment = 1;
-	req->one_way_request = 1;
-
-	/* 
-	 * smbcli_request_send() free's oneway requests
-	 * but we want to keep it under oldreq->ntcancel
-	 */
-	req->do_not_free = true;
-	talloc_steal(oldreq, req);
-
-	smbcli_request_send(req);
-
-	DLIST_ADD_END(oldreq->ntcancel, req, struct smbcli_request *);
+	ok = tevent_req_cancel(oldreq->subreqs[0]);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	return NT_STATUS_OK;
 }

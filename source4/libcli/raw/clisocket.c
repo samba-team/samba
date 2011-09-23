@@ -432,16 +432,3 @@ NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 					 calling, called);
 	return smbcli_sock_connect_recv(c, mem_ctx, result);
 }
-
-
-/****************************************************************************
- mark the socket as dead
-****************************************************************************/
-_PUBLIC_ void smbcli_sock_dead(struct smbcli_socket *sock)
-{
-	talloc_free(sock->event.fde);
-	sock->event.fde = NULL;
-	talloc_free(sock->sock);
-	sock->sock = NULL;
-}
-

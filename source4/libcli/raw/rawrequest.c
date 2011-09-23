@@ -25,10 +25,10 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
-#include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /* we over allocate the data buffer to prevent too many realloc calls */
 #define REQ_OVER_ALLOCATION 0
@@ -59,12 +59,6 @@ _PUBLIC_ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 	   _send() call fails completely */
 	if (!req) return NT_STATUS_UNSUCCESSFUL;
 
-	if (req->transport) {
-		/* remove it from the list of pending requests (a null op if
-		   its not in the list) */
-		DLIST_REMOVE(req->transport->pending_recv, req);
-	}
-
 	if (req->state == SMBCLI_REQUEST_ERROR &&
 	    NT_STATUS_IS_OK(req->status)) {
 		req->status = NT_STATUS_INTERNAL_ERROR;
@@ -81,52 +75,34 @@ _PUBLIC_ NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 
 
 /*
-  low-level function to setup a request buffer for a non-SMB packet 
-  at the transport level
-*/
-struct smbcli_request *smbcli_request_setup_nonsmb(struct smbcli_transport *transport, size_t size)
-{
-	struct smbcli_request *req;
-
-	req = talloc(transport, struct smbcli_request);
-	if (!req) {
-		return NULL;
-	}
-	ZERO_STRUCTP(req);
-
-	/* setup the request context */
-	req->state = SMBCLI_REQUEST_INIT;
-	req->transport = transport;
-	req->session = NULL;
-	req->tree = NULL;
-	req->out.size = size;
-
-	/* over allocate by a small amount */
-	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
-
-	req->out.buffer = talloc_array(req, uint8_t, req->out.allocated);
-	if (!req->out.buffer) {
-		return NULL;
-	}
-
-	SIVAL(req->out.buffer, 0, 0);
-
-	return req;
-}
-
-
-/*
   setup a SMB packet at transport level
 */
 struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *transport,
 						      uint8_t command, unsigned int wct, unsigned int buflen)
 {
 	struct smbcli_request *req;
+	size_t size;
 
-	req = smbcli_request_setup_nonsmb(transport, NBT_HDR_SIZE + MIN_SMB_SIZE + wct*2 + buflen);
+	size = NBT_HDR_SIZE + MIN_SMB_SIZE + wct*2 + buflen;
 
-	if (!req) return NULL;
-	
+	req = talloc_zero(transport, struct smbcli_request);
+	if (!req) {
+		return NULL;
+	}
+
+	/* setup the request context */
+	req->state = SMBCLI_REQUEST_INIT;
+	req->transport = transport;
+	req->out.size = size;
+
+	/* over allocate by a small amount */
+	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
+
+	req->out.buffer = talloc_zero_array(req, uint8_t, req->out.allocated);
+	if (!req->out.buffer) {
+		return NULL;
+	}
+
 	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
 	req->out.vwv = req->out.hdr + HDR_VWV;
 	req->out.wct = wct;
@@ -143,15 +119,10 @@ struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *t
 	SCVAL(req->out.hdr,HDR_FLG, FLAG_CASELESS_PATHNAMES);
 	SSVAL(req->out.hdr,HDR_FLG2, 0);
 
-	if (command != SMBtranss && command != SMBtranss2) {
-		/* assign a mid */
-		req->mid = smbcli_transport_next_mid(transport);
-	}
-
 	/* copy the pid, uid and mid to the request */
 	SSVAL(req->out.hdr, HDR_PID, 0);
 	SSVAL(req->out.hdr, HDR_UID, 0);
-	SSVAL(req->out.hdr, HDR_MID, req->mid);
+	SSVAL(req->out.hdr, HDR_MID, 0);
 	SSVAL(req->out.hdr, HDR_TID,0);
 	SSVAL(req->out.hdr, HDR_PIDHIGH,0);
 	SIVAL(req->out.hdr, HDR_RCLS, 0);
@@ -276,55 +247,142 @@ NTSTATUS smbcli_chained_request_setup(struct smbcli_request *req,
 				      uint8_t command, 
 				      unsigned int wct, size_t buflen)
 {
-	unsigned int new_size = 1 + (wct*2) + 2 + buflen;
+	size_t wct_ofs;
+	size_t size;
 
-	SSVAL(req->out.vwv, VWV(0), command);
-	SSVAL(req->out.vwv, VWV(1), req->out.size - NBT_HDR_SIZE);
+	/*
+	 * here we only support one chained command
+	 * If someone needs longer chains, the low
+	 * level code should be used directly.
+	 */
+	if (req->subreqs[0] != NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	if (req->subreqs[1] != NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
-	smbcli_req_grow_allocation(req, req->out.data_size + new_size);
+	req->subreqs[0] = smbcli_transport_setup_subreq(req);
+	if (req->subreqs[0] == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	req->out.vwv = req->out.buffer + req->out.size + 1;
-	SCVAL(req->out.vwv, -1, wct);
+	wct_ofs = smb1cli_req_wct_ofs(req->subreqs, 1);
+
+	size = NBT_HDR_SIZE + wct_ofs + 1 + VWV(wct) + 2 + buflen;
+
+	req->out.size = size;
+
+	/* over allocate by a small amount */
+	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION;
+
+	req->out.buffer = talloc_zero_array(req, uint8_t, req->out.allocated);
+	if (!req->out.buffer) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	req->out.hdr = req->out.buffer + NBT_HDR_SIZE;
+	req->out.vwv = req->out.hdr + wct_ofs;
+	req->out.wct = wct;
+	req->out.data = req->out.vwv + VWV(wct) + 2;
+	req->out.data_size = buflen;
+	req->out.ptr = req->out.data;
+
+	SCVAL(req->out.hdr, HDR_WCT, wct);
 	SSVAL(req->out.vwv, VWV(wct), buflen);
 
-	req->out.size += new_size;
-	req->out.data_size += new_size;
+	memcpy(req->out.hdr, "\377SMB", 4);
+	SCVAL(req->out.hdr,HDR_COM,command);
+
+	SCVAL(req->out.hdr,HDR_FLG, FLAG_CASELESS_PATHNAMES);
+	SSVAL(req->out.hdr,HDR_FLG2, 0);
+
+	/* copy the pid, uid and mid to the request */
+	SSVAL(req->out.hdr, HDR_PID, 0);
+	SSVAL(req->out.hdr, HDR_UID, 0);
+	SSVAL(req->out.hdr, HDR_MID, 0);
+	SSVAL(req->out.hdr, HDR_TID,0);
+	SSVAL(req->out.hdr, HDR_PIDHIGH,0);
+	SIVAL(req->out.hdr, HDR_RCLS, 0);
+	memset(req->out.hdr+HDR_SS_FIELD, 0, 10);
+
+	if (req->session != NULL) {
+		SSVAL(req->out.hdr, HDR_FLG2, req->session->flags2);
+		SSVAL(req->out.hdr, HDR_PID, req->session->pid & 0xFFFF);
+		SSVAL(req->out.hdr, HDR_PIDHIGH, req->session->pid >> 16);
+		SSVAL(req->out.hdr, HDR_UID, req->session->vuid);
+	}
+
+	if (req->tree != NULL) {
+		SSVAL(req->out.hdr, HDR_TID, req->tree->tid);
+	}
 
 	return NT_STATUS_OK;
 }
 
 /*
-  aadvance to the next chained reply in a request
+  advance to the next chained reply in a request
 */
 NTSTATUS smbcli_chained_advance(struct smbcli_request *req)
 {
-	uint8_t *buffer;
+	struct smbcli_transport *transport = req->transport;
+	uint8_t *hdr = NULL;
+	uint8_t wct = 0;
+	uint16_t *vwv = NULL;
+	uint32_t num_bytes = 0;
+	uint8_t *bytes = NULL;
+	struct iovec *recv_iov = NULL;
+	uint8_t *inbuf = NULL;
 
-	if (CVAL(req->in.vwv, VWV(0)) == SMB_CHAIN_NONE) {
-		return NT_STATUS_NOT_FOUND;
+	if (req->subreqs[0] != NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	if (req->subreqs[1] == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	buffer = req->in.hdr + SVAL(req->in.vwv, VWV(1));
-
-	if (buffer + 3 > req->in.buffer + req->in.size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	req->status = smb1cli_req_recv(req->subreqs[1], req,
+				       &recv_iov,
+				       &hdr,
+				       &wct,
+				       &vwv,
+				       NULL, /* pvwv_offset */
+				       &num_bytes,
+				       &bytes,
+				       NULL, /* pbytes_offset */
+				       &inbuf,
+				       NULL, 0); /* expected */
+	TALLOC_FREE(req->subreqs[1]);
+	if (!NT_STATUS_IS_OK(req->status)) {
+		if (recv_iov == NULL) {
+			req->state = SMBCLI_REQUEST_ERROR;
+			return req->status;
+		}
 	}
 
-	req->in.vwv = buffer + 1;
-	req->in.wct = CVAL(buffer, 0);
-	if (buffer + 3 + req->in.wct*2 > req->in.buffer + req->in.size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-	req->in.data = req->in.vwv + 2 + req->in.wct * 2;
-	req->in.data_size = SVAL(req->in.vwv, VWV(req->in.wct));
+	/* fill in the 'in' portion of the matching request */
+	req->in.buffer = inbuf;
+	req->in.size = NBT_HDR_SIZE + PTR_DIFF(bytes, hdr) + num_bytes;
+	req->in.allocated = req->in.size;
 
-	/* fix the bufinfo */
+	req->in.hdr = hdr;
+	req->in.vwv = (uint8_t *)vwv;
+	req->in.wct = wct;
+	req->in.data = bytes;
+	req->in.data_size = num_bytes;
+	req->in.ptr = req->in.data;
+	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
+
 	smb_setup_bufinfo(req);
 
-	if (buffer + 3 + req->in.wct*2 + req->in.data_size > 
-	    req->in.buffer + req->in.size) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
+	transport->error.e.nt_status = req->status;
+	if (NT_STATUS_IS_OK(req->status)) {
+		transport->error.etype = ETYPE_NONE;
+	} else {
+		transport->error.etype = ETYPE_SMB;
 	}
+
+	req->state = SMBCLI_REQUEST_DONE;
 
 	return NT_STATUS_OK;
 }
@@ -335,14 +393,7 @@ NTSTATUS smbcli_chained_advance(struct smbcli_request *req)
 */
 bool smbcli_request_send(struct smbcli_request *req)
 {
-	if (IVAL(req->out.buffer, 0) == 0) {
-		_smb_setlen_nbt(req->out.buffer, req->out.size - NBT_HDR_SIZE);
-	}
-
-	smbcli_request_calculate_sign_mac(req);
-
 	smbcli_transport_send(req);
-
 	return true;
 }
 
@@ -364,34 +415,6 @@ bool smbcli_request_receive(struct smbcli_request *req)
 	}
 
 	return req->state == SMBCLI_REQUEST_DONE;
-}
-
-
-/*
-  handle oplock break requests from the server - return true if the request was
-  an oplock break
-*/
-bool smbcli_handle_oplock_break(struct smbcli_transport *transport, unsigned int len, const uint8_t *hdr, const uint8_t *vwv)
-{
-	/* we must be very fussy about what we consider an oplock break to avoid
-	   matching readbraw replies */
-	if (len != MIN_SMB_SIZE + VWV(8) + NBT_HDR_SIZE ||
-	    (CVAL(hdr, HDR_FLG) & FLAG_REPLY) ||
-	    CVAL(hdr,HDR_COM) != SMBlockingX ||
-	    SVAL(hdr, HDR_MID) != 0xFFFF ||
-	    SVAL(vwv,VWV(6)) != 0 ||
-	    SVAL(vwv,VWV(7)) != 0) {
-		return false;
-	}
-
-	if (transport->oplock.handler) {
-		uint16_t tid = SVAL(hdr, HDR_TID);
-		uint16_t fnum = SVAL(vwv,VWV(2));
-		uint8_t level = CVAL(vwv,VWV(3)+1);
-		transport->oplock.handler(transport, tid, fnum, level, transport->oplock.private_data);
-	}
-
-	return true;
 }
 
 /*

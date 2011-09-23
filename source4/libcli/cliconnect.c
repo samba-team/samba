@@ -39,8 +39,9 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 			   struct nbt_name *calling,
 			   struct nbt_name *called)
 {
-	struct smbcli_socket *sock = NULL;
 	NTSTATUS status;
+
+	cli->options = *options;
 
 	status = smbcli_sock_connect(cli,
 				     NULL, /* host_addr */
@@ -51,13 +52,8 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 				     socket_options,
 				     calling,
 				     called,
-				     &sock);
+				     &cli->sock);
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-
-	cli->transport = smbcli_transport_init(sock, cli, true, options);
-	if (!cli->transport) {
 		return false;
 	}
 
@@ -67,6 +63,19 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 /* wrapper around smb_raw_negotiate() */
 NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol)
 {
+	if (unicode) {
+		cli->options.unicode = 1;
+	} else {
+		cli->options.unicode = 0;
+	}
+
+	cli->transport = smbcli_transport_init(cli->sock, cli,
+					       true, &cli->options);
+	cli->sock = NULL;
+	if (!cli->transport) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	return smb_raw_negotiate(cli->transport, unicode, maxprotocol);
 }
 

@@ -104,12 +104,6 @@ _PUBLIC_ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, unio
 		return NULL;
 	}
 
-	/* the transport layer needs to know that a readbraw is pending
-	   and handle receives a little differently */
-	if (parms->generic.level == RAW_READ_READBRAW) {
-		tree->session->transport->readbraw_pending = 1;
-	}
-
 	return req;
 }
 
