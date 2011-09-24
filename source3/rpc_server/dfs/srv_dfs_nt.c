@@ -75,8 +75,8 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	}
 
 	/* The following call can change the cwd. */
-	status = get_referred_path(ctx, r->in.path, jn,
-			&consumedcnt, &self_ref);
+	status = get_referred_path(ctx, r->in.path, smbd_server_conn, jn,
+				   &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
 	}
@@ -118,6 +118,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 	bool found = False;
 	TALLOC_CTX *ctx = talloc_tos();
 	char *altpath = NULL;
+	NTSTATUS status;
 
 	if (p->session_info->unix_token->uid != sec_initial_uid()) {
 		DEBUG(10,("_dfs_remove: uid != 0. Access denied.\n"));
@@ -141,8 +142,9 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 			r->in.dfs_entry_path, r->in.servername, r->in.sharename));
 	}
 
-	if(!NT_STATUS_IS_OK(get_referred_path(ctx, r->in.dfs_entry_path, jn,
-				&consumedcnt, &self_ref))) {
+	status = get_referred_path(ctx, r->in.dfs_entry_path, smbd_server_conn,
+				   jn, &consumedcnt, &self_ref);
+	if(!NT_STATUS_IS_OK(status)) {
 		return WERR_DFS_NO_SUCH_VOL;
 	}
 
@@ -353,6 +355,7 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	bool self_ref = False;
 	TALLOC_CTX *ctx = talloc_tos();
 	bool ret;
+	NTSTATUS status;
 
 	jn = talloc_zero(ctx, struct junction_map);
 	if (!jn) {
@@ -364,8 +367,9 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	}
 
 	/* The following call can change the cwd. */
-	if(!NT_STATUS_IS_OK(get_referred_path(ctx, r->in.dfs_entry_path,
-					jn, &consumedcnt, &self_ref)) ||
+	status = get_referred_path(ctx, r->in.dfs_entry_path, smbd_server_conn,
+				   jn, &consumedcnt, &self_ref);
+	if(!NT_STATUS_IS_OK(status) ||
 			consumedcnt < strlen(r->in.dfs_entry_path)) {
 		return WERR_DFS_NO_SUCH_VOL;
 	}

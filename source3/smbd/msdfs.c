@@ -850,6 +850,7 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			const char *dfs_path,
+			struct smbd_server_connection *sconn,
 			struct junction_map *jucn,
 			int *consumedcntp,
 			bool *self_referralp)
@@ -868,8 +869,8 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	*self_referralp = False;
 
-	status = parse_dfs_path(NULL, dfs_path, False,
-				!smbd_server_conn->using_smb2, pdp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False, !sconn->using_smb2,
+				pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -972,7 +973,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct(ctx, smbd_server_conn, &conn, snum,
+	status = create_conn_struct(ctx, sconn, &conn, snum,
 				    lp_pathname(snum), NULL, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
@@ -1276,8 +1277,8 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	}
 
 	/* The following call can change cwd. */
-	*pstatus = get_referred_path(ctx, pathnamep, junction,
-			&consumedcnt, &self_referral);
+	*pstatus = get_referred_path(ctx, pathnamep, smbd_server_conn,
+				     junction, &consumedcnt, &self_referral);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
 		vfs_ChDir(orig_conn,orig_conn->connectpath);
 		talloc_destroy(ctx);
