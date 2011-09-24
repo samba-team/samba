@@ -61,26 +61,13 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 		body_dynamic_size = 0;
 	}
 
-	req = talloc(transport, struct smb2_request);
+	req = talloc_zero(transport, struct smb2_request);
 	if (req == NULL) return NULL;
 
 	req->state     = SMB2_REQUEST_INIT;
 	req->transport = transport;
-	req->session   = NULL;
-	req->tree      = NULL;
-	req->recv_iov  = NULL;
-	req->status    = NT_STATUS_OK;
-	req->async.fn  = NULL;
 
-	ZERO_STRUCT(req->cancel);
-	ZERO_STRUCT(req->in);
-	ZERO_STRUCT(req->out);
-
-	if (req->out.size > 0) {
-		hdr_offset = req->out.size;
-	} else {
-		hdr_offset = NBT_HDR_SIZE;
-	}
+	hdr_offset = NBT_HDR_SIZE;
 
 	req->out.size      = hdr_offset + SMB2_HDR_BODY + body_fixed_size;
 	req->out.allocated = req->out.size + body_dynamic_size;
