@@ -1426,65 +1426,6 @@ sub setup_env($$$)
 		return $target3->setup_admember("$path/s3member", $self->{vars}->{dc}, 29);
 	} elsif ($envname eq "plugin_s4_dc") {
 		return $self->setup_plugin_s4_dc("$path/plugin_s4_dc");
-	} elsif ($envname eq "all") {
-		if (not defined($self->{vars}->{dc})) {
-			$ENV{ENVNAME} = "dc";
-			$self->setup_dc("$path/dc");
-		}
-		my $ret = $self->setup_member("$path/s4member", $self->{vars}->{dc});
-		if (not defined($self->{vars}->{rpc_proxy})) {
-			$ENV{ENVNAME} = "rpc_proxy";
-			my $rpc_proxy_ret = $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{dc});
-			
-			$ret->{RPC_PROXY_SERVER} = $rpc_proxy_ret->{SERVER};
-			$ret->{RPC_PROXY_SERVER_IP} = $rpc_proxy_ret->{SERVER_IP};
-			$ret->{RPC_PROXY_NETBIOSNAME} = $rpc_proxy_ret->{NETBIOSNAME};
-			$ret->{RPC_PROXY_USERNAME} = $rpc_proxy_ret->{USERNAME};
-			$ret->{RPC_PROXY_PASSWORD} = $rpc_proxy_ret->{PASSWORD};
-		}
-		if (not defined($self->{vars}->{fl2000dc})) {
-			$ENV{ENVNAME} = "fl2000dc";
-			my $fl2000dc_ret = $self->setup_fl2000dc("$path/fl2000dc", $self->{vars}->{dc});
-			
-			$ret->{FL2000DC_SERVER} = $fl2000dc_ret->{SERVER};
-			$ret->{FL2000DC_SERVER_IP} = $fl2000dc_ret->{SERVER_IP};
-			$ret->{FL2000DC_NETBIOSNAME} = $fl2000dc_ret->{NETBIOSNAME};
-			$ret->{FL2000DC_USERNAME} = $fl2000dc_ret->{USERNAME};
-			$ret->{FL2000DC_PASSWORD} = $fl2000dc_ret->{PASSWORD};
-		}
-		if (not defined($self->{vars}->{fl2003dc})) {
-			$ENV{ENVNAME} = "fl2003dc";
-			my $fl2003dc_ret = $self->setup_fl2003dc("$path/fl2003dc", $self->{vars}->{dc});
-
-			$ret->{FL2003DC_SERVER} = $fl2003dc_ret->{SERVER};
-			$ret->{FL2003DC_SERVER_IP} = $fl2003dc_ret->{SERVER_IP};
-			$ret->{FL2003DC_NETBIOSNAME} = $fl2003dc_ret->{NETBIOSNAME};
-			$ret->{FL2003DC_USERNAME} = $fl2003dc_ret->{USERNAME};
-			$ret->{FL2003DC_PASSWORD} = $fl2003dc_ret->{PASSWORD};
-		}
-		if (not defined($self->{vars}->{fl2008r2dc})) {
-			$ENV{ENVNAME} = "fl2008r2dc";
-			my $fl2008r2dc_ret = $self->setup_fl2008r2dc("$path/fl2008r2dc", $self->{vars}->{dc});
-
-			$ret->{FL2008R2DC_SERVER} = $fl2008r2dc_ret->{SERVER};
-			$ret->{FL2008R2DC_SERVER_IP} = $fl2008r2dc_ret->{SERVER_IP};
-			$ret->{FL2008R2DC_NETBIOSNAME} = $fl2008r2dc_ret->{NETBIOSNAME};
-			$ret->{FL2008R2DC_USERNAME} = $fl2008r2dc_ret->{USERNAME};
-			$ret->{FL2008R2DC_PASSWORD} = $fl2008r2dc_ret->{PASSWORD};
-		}
-		if (not defined($self->{vars}->{s3member})) {
-			$ENV{ENVNAME} = "s3member";
-			my $s3member_ret = $target3->setup_admember("$path/s3member", $self->{vars}->{dc}, 29);
-			$self->{vars}->{s3member} = $s3member_ret;
-
-			$ret->{S3MEMBER_SERVER} = $s3member_ret->{SERVER};
-			$ret->{S3MEMBER_SERVER_IP} = $s3member_ret->{SERVER_IP};
-			$ret->{S3MEMBER_NETBIOSNAME} = $s3member_ret->{NETBIOSNAME};
-			$ret->{S3MEMBER_NETBIOSALIAS} = $s3member_ret->{NETBIOSALIAS};
-			$ret->{S3MEMBER_USERNAME} = $s3member_ret->{USERNAME};
-			$ret->{S3MEMBER_PASSWORD} = $s3member_ret->{PASSWORD};
-		}
-		return $ret;
 	} else {
 		return undef;
 	}
