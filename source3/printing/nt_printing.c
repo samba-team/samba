@@ -29,6 +29,7 @@
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "auth.h"
 #include "messages.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
@@ -615,7 +616,8 @@ static uint32 get_correct_cversion(struct auth_session_info *session_info,
 		return -1;
 	}
 
-	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
+	nt_status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+				       printdollar_snum,
 				       lp_pathname(printdollar_snum),
 				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -998,7 +1000,8 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 		return WERR_NO_SUCH_SHARE;
 	}
 
-	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
+	nt_status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+				       printdollar_snum,
 				       lp_pathname(printdollar_snum),
 				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1522,7 +1525,8 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 		return false;
 	}
 
-	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
+	nt_status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+				       printdollar_snum,
 				       lp_pathname(printdollar_snum),
 				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {

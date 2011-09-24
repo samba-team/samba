@@ -222,6 +222,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 *********************************************************/
 
 NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
+				struct smbd_server_connection *sconn,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
@@ -262,7 +263,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 
 	conn->params->service = snum;
 
-	conn->sconn = smbd_server_conn;
+	conn->sconn = sconn;
 	conn->sconn->num_tcons_open++;
 
 	if (session_info != NULL) {
@@ -970,8 +971,8 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct(ctx, &conn, snum, lp_pathname(snum),
-				    NULL, &oldpath);
+	status = create_conn_struct(ctx, smbd_server_conn, &conn, snum,
+				    lp_pathname(snum), NULL, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -1409,8 +1410,8 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 	if(snum < 0) {
 		return False;
 	}
-	status = create_conn_struct(talloc_tos(), conn_out, snum,
-				    lp_pathname(snum), NULL, oldpath);
+	status = create_conn_struct(talloc_tos(), smbd_server_conn, conn_out,
+				    snum, lp_pathname(snum), NULL, oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -1571,8 +1572,8 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct(talloc_tos(), &conn, snum, connect_path,
-				    NULL, &cwd);
+	status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+				    snum, connect_path, NULL, &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
@@ -1644,7 +1645,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct(ctx, &conn, snum, connect_path, NULL,
+	status = create_conn_struct(ctx, smbd_server_conn, &conn, snum, connect_path, NULL,
 				    &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",

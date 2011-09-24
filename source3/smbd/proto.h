@@ -475,6 +475,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				char **pp_name_out,
 				bool *ppath_contains_wcard);
 NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
+				struct smbd_server_connection *sconn,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
