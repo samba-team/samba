@@ -53,10 +53,10 @@
 static NTSTATUS parse_dfs_path(connection_struct *conn,
 				const char *pathname,
 				bool allow_wcards,
+				bool allow_broken_path,
 				struct dfs_path *pdp, /* MUST BE TALLOCED */
 				bool *ppath_contains_wcard)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	char *pathname_local;
 	char *p,*temp;
 	char *servicename;
@@ -84,7 +84,7 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 
 	sepchar = pdp->posix_path ? '/' : '\\';
 
-	if (!sconn->using_smb2 && (*pathname != sepchar)) {
+	if (allow_broken_path && (*pathname != sepchar)) {
 		DEBUG(10,("parse_dfs_path: path %s doesn't start with %c\n",
 			pathname, sepchar ));
 		/*
@@ -729,7 +729,8 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = parse_dfs_path(conn, path_in, search_wcard_flag, pdp,
+	status = parse_dfs_path(conn, path_in, search_wcard_flag,
+				!smbd_server_conn->using_smb2, pdp,
 			ppath_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
@@ -865,7 +866,8 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	*self_referralp = False;
 
-	status = parse_dfs_path(NULL, dfs_path, False, pdp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False,
+				!smbd_server_conn->using_smb2, pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1355,7 +1357,8 @@ bool create_junction(TALLOC_CTX *ctx,
 	if (!pdp) {
 		return False;
 	}
-	status = parse_dfs_path(NULL, dfs_path, False, pdp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False,
+				!smbd_server_conn->using_smb2, pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
