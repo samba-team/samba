@@ -1277,7 +1277,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	}
 
 	/* The following call can change cwd. */
-	*pstatus = get_referred_path(ctx, pathnamep, smbd_server_conn,
+	*pstatus = get_referred_path(ctx, pathnamep, orig_conn->sconn,
 				     junction, &consumedcnt, &self_referral);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
 		vfs_ChDir(orig_conn,orig_conn->connectpath);
