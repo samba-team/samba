@@ -720,6 +720,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *path_in,
 			bool search_wcard_flag,
+			bool allow_broken_path,
 			char **pp_path_out,
 			bool *ppath_contains_wcard)
 {
@@ -731,7 +732,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	}
 
 	status = parse_dfs_path(conn, path_in, search_wcard_flag,
-				!smbd_server_conn->using_smb2, pdp,
+				allow_broken_path, pdp,
 			ppath_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
@@ -1810,6 +1811,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 					conn,
 					name_in,
 					allow_wcards,
+					!smbd_server_conn->using_smb2,
 					pp_name_out,
 					&path_contains_wcard);
 
