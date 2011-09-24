@@ -618,6 +618,30 @@ static int smbXcli_req_destructor(struct tevent_req *req)
 	return 0;
 }
 
+static bool smb1cli_req_cancel(struct tevent_req *req);
+static bool smb2cli_req_cancel(struct tevent_req *req);
+
+static bool smbXcli_req_cancel(struct tevent_req *req)
+{
+	struct smbXcli_req_state *state =
+		tevent_req_data(req,
+		struct smbXcli_req_state);
+
+	if (!smbXcli_conn_is_connected(state->conn)) {
+		return false;
+	}
+
+	if (state->conn->protocol == PROTOCOL_NONE) {
+		return false;
+	}
+
+	if (state->conn->protocol >= PROTOCOL_SMB2_02) {
+		return smb2cli_req_cancel(req);
+	}
+
+	return smb1cli_req_cancel(req);
+}
+
 static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn);
 
 bool smbXcli_req_set_pending(struct tevent_req *req)
@@ -645,6 +669,7 @@ bool smbXcli_req_set_pending(struct tevent_req *req)
 	pending[num_pending] = req;
 	conn->pending = pending;
 	talloc_set_destructor(req, smbXcli_req_destructor);
+	tevent_req_set_cancel_fn(req, smbXcli_req_cancel);
 
 	if (!smbXcli_conn_receive_next(conn)) {
 		/*
@@ -900,6 +925,62 @@ static void smb1cli_req_flags(enum protocol_types protocol,
 	*_flags2 = flags2;
 }
 
+static void smb1cli_req_cancel_done(struct tevent_req *subreq);
+
+static bool smb1cli_req_cancel(struct tevent_req *req)
+{
+	struct smbXcli_req_state *state =
+		tevent_req_data(req,
+		struct smbXcli_req_state);
+	uint8_t flags;
+	uint16_t flags2;
+	uint32_t pid;
+	uint16_t tid;
+	uint16_t uid;
+	uint16_t mid;
+	struct tevent_req *subreq;
+	NTSTATUS status;
+
+	flags = CVAL(state->smb1.hdr, HDR_FLG);
+	flags2 = SVAL(state->smb1.hdr, HDR_FLG2);
+	pid  = SVAL(state->smb1.hdr, HDR_PID);
+	pid |= SVAL(state->smb1.hdr, HDR_PIDHIGH)<<16;
+	tid = SVAL(state->smb1.hdr, HDR_TID);
+	uid = SVAL(state->smb1.hdr, HDR_UID);
+	mid = SVAL(state->smb1.hdr, HDR_MID);
+
+	subreq = smb1cli_req_create(state, state->ev,
+				    state->conn,
+				    SMBntcancel,
+				    flags, 0,
+				    flags2, 0,
+				    0, /* timeout */
+				    pid, tid, uid,
+				    0, NULL, /* vwv */
+				    0, NULL); /* bytes */
+	if (subreq == NULL) {
+		return false;
+	}
+	smb1cli_req_set_mid(subreq, mid);
+
+	status = smb1cli_req_chain_submit(&subreq, 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		return false;
+	}
+	smb1cli_req_set_mid(subreq, 0);
+
+	tevent_req_set_callback(subreq, smb1cli_req_cancel_done, NULL);
+
+	return true;
+}
+
+static void smb1cli_req_cancel_done(struct tevent_req *subreq)
+{
+	/* we do not care about the result */
+	TALLOC_FREE(subreq);
+}
+
 struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct smbXcli_conn *conn,
@@ -1144,6 +1225,8 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	if (state->conn->dispatch_incoming == NULL) {
 		state->conn->dispatch_incoming = smb1cli_conn_dispatch_incoming;
 	}
+
+	tevent_req_set_cancel_fn(req, smbXcli_req_cancel);
 
 	subreq = writev_send(state, state->ev, state->conn->outgoing,
 			     state->conn->fd, false, iov, iov_count);
@@ -2007,6 +2090,68 @@ void smb2cli_conn_set_max_credits(struct smbXcli_conn *conn,
 	conn->smb2.max_credits = max_credits;
 }
 
+static void smb2cli_req_cancel_done(struct tevent_req *subreq);
+
+static bool smb2cli_req_cancel(struct tevent_req *req)
+{
+	struct smbXcli_req_state *state =
+		tevent_req_data(req,
+		struct smbXcli_req_state);
+	uint32_t flags = IVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
+	uint32_t pid = IVAL(state->smb2.hdr, SMB2_HDR_PID);
+	uint32_t tid = IVAL(state->smb2.hdr, SMB2_HDR_TID);
+	uint64_t mid = BVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID);
+	uint64_t aid = BVAL(state->smb2.hdr, SMB2_HDR_ASYNC_ID);
+	struct smbXcli_session *session = state->session;
+	uint8_t *fixed = state->smb2.pad;
+	uint16_t fixed_len = 4;
+	struct tevent_req *subreq;
+	struct smbXcli_req_state *substate;
+	NTSTATUS status;
+
+	SSVAL(fixed, 0, 0x04);
+	SSVAL(fixed, 2, 0);
+
+	subreq = smb2cli_req_create(state, state->ev,
+				    state->conn,
+				    SMB2_OP_CANCEL,
+				    flags, 0,
+				    0, /* timeout */
+				    pid, tid, session,
+				    fixed, fixed_len,
+				    NULL, 0);
+	if (subreq == NULL) {
+		return false;
+	}
+	substate = tevent_req_data(subreq, struct smbXcli_req_state);
+
+	if (flags & SMB2_HDR_FLAG_ASYNC) {
+		mid = 0;
+	}
+
+	SIVAL(substate->smb2.hdr, SMB2_HDR_FLAGS, flags);
+	SIVAL(substate->smb2.hdr, SMB2_HDR_PID, pid);
+	SIVAL(substate->smb2.hdr, SMB2_HDR_TID, tid);
+	SBVAL(substate->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
+	SBVAL(substate->smb2.hdr, SMB2_HDR_ASYNC_ID, aid);
+
+	status = smb2cli_req_compound_submit(&subreq, 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		return false;
+	}
+
+	tevent_req_set_callback(subreq, smb2cli_req_cancel_done, NULL);
+
+	return true;
+}
+
+static void smb2cli_req_cancel_done(struct tevent_req *subreq)
+{
+	/* we do not care about the result */
+	TALLOC_FREE(subreq);
+}
+
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct smbXcli_conn *conn,
@@ -2121,6 +2266,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		int hdr_iov;
 		size_t reqlen;
 		bool ret;
+		uint16_t opcode;
 		uint64_t avail;
 		uint16_t charge;
 		uint16_t credits;
@@ -2140,6 +2286,11 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		if ((state->conn->protocol != PROTOCOL_NONE) &&
 		    (state->conn->protocol < PROTOCOL_SMB2_02)) {
 			return NT_STATUS_REVISION_MISMATCH;
+		}
+
+		opcode = SVAL(state->smb2.hdr, SMB2_HDR_OPCODE);
+		if (opcode == SMB2_OP_CANCEL) {
+			goto skip_credits;
 		}
 
 		avail = UINT64_MAX - state->conn->smb2.mid;
@@ -2179,6 +2330,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		SSVAL(state->smb2.hdr, SMB2_HDR_CREDIT, credits);
 		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 
+skip_credits:
 		hdr_iov = num_iov;
 		iov[num_iov].iov_base = state->smb2.hdr;
 		iov[num_iov].iov_len  = sizeof(state->smb2.hdr);
