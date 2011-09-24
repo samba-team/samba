@@ -1350,6 +1350,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 
 bool create_junction(TALLOC_CTX *ctx,
 		const char *dfs_path,
+		bool allow_broken_path,
 		struct junction_map *jucn)
 {
 	int snum;
@@ -1360,8 +1361,8 @@ bool create_junction(TALLOC_CTX *ctx,
 	if (!pdp) {
 		return False;
 	}
-	status = parse_dfs_path(NULL, dfs_path, False,
-				!smbd_server_conn->using_smb2, pdp, &dummy);
+	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path,
+				pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

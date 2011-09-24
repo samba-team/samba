@@ -458,6 +458,7 @@ int setup_dfs_referral(connection_struct *orig_conn,
 			char **ppdata, NTSTATUS *pstatus);
 bool create_junction(TALLOC_CTX *ctx,
 		const char *dfs_path,
+		bool allow_broken_path,
 		struct junction_map *jucn);
 bool create_msdfs_link(const struct junction_map *jucn);
 bool remove_msdfs_link(const struct junction_map *jucn);
