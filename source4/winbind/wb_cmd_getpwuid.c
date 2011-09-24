@@ -129,6 +129,7 @@ static void cmd_getpwuid_recv_user_info(struct composite_context *ctx)
 				struct cmd_getpwuid_state);
 	struct libnet_UserInfo *user_info;
 	struct winbindd_pw *pw;
+	char *username_with_domain;
 
 	DEBUG(5, ("cmd_getpwuid_recv_user_info called\n"));
 
@@ -141,7 +142,13 @@ static void cmd_getpwuid_recv_user_info(struct composite_context *ctx)
 	state->ctx->status = libnet_UserInfo_recv(ctx, state, user_info);
 	if (!composite_is_ok(state->ctx)) return;
 
-	WBSRV_SAMBA3_SET_STRING(pw->pw_name, user_info->out.account_name);
+	username_with_domain = talloc_asprintf(pw, "%s%s%s",
+		state->workgroup,
+		lpcfg_winbind_separator(state->service->task->lp_ctx),
+		user_info->out.account_name);
+	if(composite_nomem(username_with_domain, state->ctx)) return;
+
+	WBSRV_SAMBA3_SET_STRING(pw->pw_name, username_with_domain);
 	WBSRV_SAMBA3_SET_STRING(pw->pw_passwd, "*");
 	WBSRV_SAMBA3_SET_STRING(pw->pw_gecos, user_info->out.full_name);
 	WBSRV_SAMBA3_SET_STRING(pw->pw_dir, 
