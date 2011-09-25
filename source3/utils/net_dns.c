@@ -170,6 +170,11 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 			continue;
 		}
 
+		/* Don't register link-local addresses */
+		if (is_linklocal_addr(nic_sa_storage)) {
+			continue;
+		}
+
 		memcpy(&list[count++], nic_sa_storage, sizeof(struct sockaddr_storage));
 	}
 	*pp_ss = list;

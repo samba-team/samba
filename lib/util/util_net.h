@@ -74,6 +74,7 @@ bool is_loopback_ip_v4(struct in_addr ip);
 bool is_loopback_addr(const struct sockaddr *pss);
 bool is_zero_addr(const struct sockaddr_storage *pss);
 void zero_ip_v4(struct in_addr *ip);
+bool is_linklocal_addr(const struct sockaddr_storage *pss);
 /**
  Interpret an internet address or name into an IP address in 4 byte form.
 **/
