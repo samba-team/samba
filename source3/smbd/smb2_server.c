@@ -1283,6 +1283,7 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 	opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
 
 	switch (opcode) {
+	case SMB2_OP_IOCTL:
 	case SMB2_OP_GETINFO:
 		min_dyn_size = 0;
 		break;
