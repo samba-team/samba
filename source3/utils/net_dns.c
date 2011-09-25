@@ -166,7 +166,7 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 			continue;
 
 		/* Don't register loopback addresses */
-		if (is_loopback_addr((struct sockaddr *)nic_sa_storage)) {
+		if (is_loopback_addr((const struct sockaddr *)nic_sa_storage)) {
 			continue;
 		}
 
