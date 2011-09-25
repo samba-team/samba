@@ -37,7 +37,8 @@ struct smbXcli_req;
 struct smbXcli_session;
 
 struct smbXcli_conn {
-	int fd;
+	int read_fd;
+	int write_fd;
 	struct sockaddr_storage local_ss;
 	struct sockaddr_storage remote_ss;
 	const char *remote_name;
@@ -235,12 +236,17 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	conn->read_fd = fd;
+	conn->write_fd = dup(fd);
+	if (conn->write_fd == -1) {
+		goto error;
+	}
+
 	conn->remote_name = talloc_strdup(conn, remote_name);
 	if (conn->remote_name == NULL) {
 		goto error;
 	}
 
-	conn->fd = fd;
 
 	ss = (void *)&conn->local_ss;
 	sa = (struct sockaddr *)ss;
@@ -319,6 +325,9 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 	return conn;
 
  error:
+	if (conn->write_fd != -1) {
+		close(conn->write_fd);
+	}
 	TALLOC_FREE(conn);
 	return NULL;
 }
@@ -329,7 +338,7 @@ bool smbXcli_conn_is_connected(struct smbXcli_conn *conn)
 		return false;
 	}
 
-	if (conn->fd == -1) {
+	if (conn->read_fd == -1) {
 		return false;
 	}
 
@@ -356,7 +365,7 @@ bool smbXcli_conn_use_unicode(struct smbXcli_conn *conn)
 
 void smbXcli_conn_set_sockopt(struct smbXcli_conn *conn, const char *options)
 {
-	set_socket_options(conn->fd, options);
+	set_socket_options(conn->read_fd, options);
 }
 
 const struct sockaddr_storage *smbXcli_conn_local_sockaddr(struct smbXcli_conn *conn)
@@ -722,7 +731,9 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 	 * We're the first ones, add the read_smb request that waits for the
 	 * answer from the server
 	 */
-	conn->read_smb_req = read_smb_send(conn->pending, state->ev, conn->fd);
+	conn->read_smb_req = read_smb_send(conn->pending,
+					   state->ev,
+					   conn->read_fd);
 	if (conn->read_smb_req == NULL) {
 		return false;
 	}
@@ -732,10 +743,14 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 
 void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 {
-	if (conn->fd != -1) {
-		close(conn->fd);
+	if (conn->read_fd != -1) {
+		close(conn->read_fd);
 	}
-	conn->fd = -1;
+	if (conn->write_fd != -1) {
+		close(conn->write_fd);
+	}
+	conn->read_fd = -1;
+	conn->write_fd = -1;
 
 	/*
 	 * Cancel all pending requests. We do not do a for-loop walking
@@ -1231,7 +1246,7 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	tevent_req_set_cancel_fn(req, smbXcli_req_cancel);
 
 	subreq = writev_send(state, state->ev, state->conn->outgoing,
-			     state->conn->fd, false, iov, iov_count);
+			     state->conn->write_fd, false, iov, iov_count);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2406,7 +2421,7 @@ skip_credits:
 	}
 
 	subreq = writev_send(state, state->ev, state->conn->outgoing,
-			     state->conn->fd, false, iov, num_iov);
+			     state->conn->write_fd, false, iov, num_iov);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
