@@ -23,7 +23,7 @@ import "misc.idl";
 
 interface dnsp
 {
-	typedef [enum16bit] enum {
+	typedef [enum16bit,public] enum {
 		DNS_TYPE_TOMBSTONE  = 0x0,
 		DNS_TYPE_A     = 0x1,
 		DNS_TYPE_NS    = 0x2,
@@ -108,7 +108,7 @@ interface dnsp
 		dnsp_name       nameTarget;
 	} dnsp_srv;
 
-	typedef [nodiscriminant,gensize] union {
+	typedef [nodiscriminant,gensize,public] union {
 		[case(DNS_TYPE_TOMBSTONE)] 		    NTTIME timestamp;
 		[case(DNS_TYPE_A)] [flag(NDR_BIG_ENDIAN)]   ipv4address ipv4;
 		[case(DNS_TYPE_NS)]                         dnsp_name ns;
