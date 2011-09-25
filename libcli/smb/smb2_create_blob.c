@@ -41,7 +41,7 @@ NTSTATUS smb2_create_blob_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffer,
 	while (remaining > 0) {
 		uint32_t next;
 		uint32_t name_offset, name_length;
-		uint32_t reserved, data_offset;
+		uint32_t data_offset;
 		uint32_t data_length;
 		char *tag;
 		DATA_BLOB b;
@@ -53,7 +53,9 @@ NTSTATUS smb2_create_blob_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffer,
 		next        = IVAL(data, 0);
 		name_offset = SVAL(data, 4);
 		name_length = SVAL(data, 6);
+#if 0
 		reserved    = SVAL(data, 8);
+#endif
 		data_offset = SVAL(data, 10);
 		data_length = IVAL(data, 12);
 
