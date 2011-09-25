@@ -558,6 +558,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DNSP',
 	public_deps='dcerpc-binding NDR_DNSP'
 	)
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DNSSERVER',
+	source='gen_ndr/ndr_dnsserver_c.c',
+	public_deps='dcerpc-binding ndr-standard'
+	)
+
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
 	source=[],

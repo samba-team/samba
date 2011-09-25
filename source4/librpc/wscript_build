@@ -340,6 +340,12 @@ bld.SAMBA_PYTHON('python_netlogon',
 	realname='samba/dcerpc/netlogon.so'
 	)
 
+bld.SAMBA_PYTHON('python_dnsserver',
+	source='../../librpc/gen_ndr/py_dnsserver.c',
+	deps='RPC_NDR_DNSSERVER pytalloc-util pyrpc_util',
+	realname='samba/dcerpc/dnsserver.so'
+	)
+
 bld.SAMBA_SCRIPT('python_dcerpc_init',
                  pattern='rpc/dcerpc.py',
                  installdir='python/samba/dcerpc',
