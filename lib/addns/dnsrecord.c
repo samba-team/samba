@@ -127,8 +127,7 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 	struct in_addr ip;
 
 	if (pss->ss_family != AF_INET) {
-		/* Silently ignore this. */
-		return ERROR_DNS_SUCCESS;
+		return ERROR_DNS_INVALID_PARAMETER;
 	}
 
 	ip = ((const struct sockaddr_in *)pss)->sin_addr;
@@ -147,13 +146,54 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 	return err;
 }
 
+DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
+				 uint32 ttl, const struct sockaddr_storage *pss,
+				 struct dns_rrec **prec)
+{
+#ifdef HAVE_IPV6
+	uint8 *data;
+	DNS_ERROR err;
+	struct in6_addr ip6;
+
+	if (pss->ss_family != AF_INET6) {
+		return ERROR_DNS_INVALID_PARAMETER;
+	}
+
+	ip6 = ((const struct sockaddr_in6 *)pss)->sin6_addr;
+	if (!(data = (uint8 *)talloc_memdup(mem_ctx, (const void *)&ip6.s6_addr,
+					    sizeof(ip6.s6_addr)))) {
+		return ERROR_DNS_NO_MEMORY;
+	}
+
+	err = dns_create_rrec(mem_ctx, host, QTYPE_AAAA, DNS_CLASS_IN, ttl,
+			      sizeof(ip6.s6_addr), data, prec);
+
+	if (!ERR_DNS_IS_OK(err)) {
+		TALLOC_FREE(data);
+	}
+
+	return err;
+#else
+	return ERROR_DNS_INVALID_PARAMETER;
+#endif
+}
+
 DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 					const char *name,
 					const struct sockaddr_storage *ss,
 					struct dns_rrec **prec)
 {
 	if (ss != NULL) {
-		return dns_create_a_record(mem_ctx, name, 0, ss, prec);
+		switch (ss->ss_family) {
+		case AF_INET:
+			return dns_create_a_record(mem_ctx, name, 0, ss, prec);
+#ifdef HAVE_IPV6
+		case AF_INET6:
+			return dns_create_aaaa_record(mem_ctx, name, 0, ss, prec);
+#endif
+		default:
+			return ERROR_DNS_INVALID_PARAMETER;
+		}
 	}
 
 	return dns_create_rrec(mem_ctx, name, QTYPE_ANY, DNS_CLASS_IN, 0, 0,
@@ -404,7 +444,19 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 	 */
 
 	for ( i=0; i<num_addrs; i++ ) {
-		err = dns_create_a_record(req, hostname, 3600, &ss_addrs[i], &rec);
+
+		switch(ss_addrs[i].ss_family) {
+		case AF_INET:
+			err = dns_create_a_record(req, hostname, 3600, &ss_addrs[i], &rec);
+			break;
+#ifdef HAVE_IPV6
+		case AF_INET6:
+			err = dns_create_aaaa_record(req, hostname, 3600, &ss_addrs[i], &rec);
+			break;
+#endif
+		default:
+			continue;
+		}
 		if (!ERR_DNS_IS_OK(err))
 			goto error;
 
