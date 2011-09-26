@@ -76,7 +76,6 @@ static struct pdb_domain_info *pdb_samba4_get_domain_info(
 	const char *dom_attrs[] = {
 		"objectSid", 
 		"objectGUID", 
-		"nTMixedDomain",
 		"fSMORoleOwner",
 		NULL
 	};
