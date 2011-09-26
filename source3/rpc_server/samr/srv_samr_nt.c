@@ -1834,14 +1834,16 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 	NTSTATUS status;
 	char *user_name = NULL;
 	char *rhost;
-	fstring wks;
+	const char *wks = NULL;
 
 	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
 	if (!r->in.account->string) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	fstrcpy(wks, r->in.server->string);
+	if (r->in.server && r->in.server->string) {
+		wks = r->in.server->string;
+	}
 
 	DEBUG(5,("_samr_ChangePasswordUser2: user: %s wks: %s\n", user_name, wks));
 
@@ -6146,7 +6148,7 @@ NTSTATUS _samr_SetAliasInfo(struct pipes_struct *p,
 	switch (r->in.level) {
 		case ALIASINFONAME:
 		{
-			fstring group_name;
+			char *group_name;
 
 			/* We currently do not support renaming groups in the
 			   the BUILTIN domain.  Refer to util_builtin.c to understand
@@ -6178,9 +6180,16 @@ NTSTATUS _samr_SetAliasInfo(struct pipes_struct *p,
 			/* make sure the name doesn't already exist as a user
 			   or local group */
 
-			fstr_sprintf(group_name, "%s\\%s",
-				     lp_netbios_name(), info->acct_name);
+			group_name = talloc_asprintf(p->mem_ctx,
+						     "%s\\%s",
+						     lp_netbios_name(),
+						     info->acct_name);
+			if (group_name == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
 			status = can_create( p->mem_ctx, group_name );
+			talloc_free(group_name);
 			if ( !NT_STATUS_IS_OK( status ) )
 				return status;
 			break;
