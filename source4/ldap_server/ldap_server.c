@@ -334,6 +334,8 @@ static void ldapsrv_accept(struct stream_connection *c,
 
 	conn->session_info = session_info;
 
+	conn->sockets.active = conn->sockets.raw;
+
 	if (!NT_STATUS_IS_OK(ldapsrv_backend_Init(conn))) {
 		ldapsrv_terminate_connection(conn, "backend Init failed");
 		return;
@@ -344,8 +346,6 @@ static void ldapsrv_accept(struct stream_connection *c,
 
 	/* register the server */	
 	irpc_add_name(c->msg_ctx, "ldap_server");
-
-	conn->sockets.active = conn->sockets.raw;
 
 	if (port != 636 && port != 3269) {
 		ldapsrv_call_read_next(conn);
