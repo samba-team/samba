@@ -668,7 +668,6 @@ static char *print_kdc_line(char *mem_ctx,
 			const struct sockaddr_storage *pss,
 			const char *kdc_name)
 {
-	char *kdc_str = NULL;
 	char addr[INET6_ADDRSTRLEN];
 	uint16_t port = get_sockaddr_port(pss);
 
@@ -717,16 +716,15 @@ static char *print_kdc_line(char *mem_ctx,
 	 * ipv6 address - gd */
 
 	if (kdc_name) {
-		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-					  prev_line, kdc_name);
-	} else {
-		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-					  prev_line,
-					  print_sockaddr(addr,
-							 sizeof(addr),
-							 pss));
+		return talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+				       prev_line, kdc_name);
 	}
-	return kdc_str;
+
+	return talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+			       prev_line,
+			       print_sockaddr(addr,
+					      sizeof(addr),
+					      pss));
 }
 
 /************************************************************************
