@@ -91,8 +91,6 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 					   enum lsa_SidType sid_name_use,
 					   GROUP_MAP **rmap, size_t *num_entries,
 					   bool unix_only);
-bool pdb_get_dom_grp_info(const struct dom_sid *sid, struct acct_info *info);
-bool pdb_set_dom_grp_info(const struct dom_sid *sid, const struct acct_info *info);
 NTSTATUS pdb_create_builtin_alias(uint32 rid);
 
 /* The following definitions come from groupdb/mapping_tdb.c  */

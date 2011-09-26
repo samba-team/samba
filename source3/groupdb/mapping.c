@@ -699,40 +699,6 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-/****************************************************************************
- These need to be redirected through pdb_interface.c
-****************************************************************************/
-bool pdb_get_dom_grp_info(const struct dom_sid *sid, struct acct_info *info)
-{
-	GROUP_MAP map;
-	bool res;
-
-	become_root();
-	res = get_domain_group_from_sid(*sid, &map);
-	unbecome_root();
-
-	if (!res)
-		return False;
-
-	fstrcpy(info->acct_name, map.nt_name);
-	fstrcpy(info->acct_desc, map.comment);
-	sid_peek_rid(sid, &info->rid);
-	return True;
-}
-
-bool pdb_set_dom_grp_info(const struct dom_sid *sid, const struct acct_info *info)
-{
-	GROUP_MAP map;
-
-	if (!get_domain_group_from_sid(*sid, &map))
-		return False;
-
-	fstrcpy(map.nt_name, info->acct_name);
-	fstrcpy(map.comment, info->acct_desc);
-
-	return NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map));
-}
-
 /********************************************************************
  Really just intended to be called by smbd
 ********************************************************************/
