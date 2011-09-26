@@ -218,8 +218,8 @@ struct samu {
 };
 
 struct acct_info {
-	fstring acct_name; /* account name */
-	fstring acct_desc; /* account name */
+	char *acct_name; /* account name */
+	char *acct_desc; /* account name */
 	uint32_t rid; /* domain-relative RID */
 };
 

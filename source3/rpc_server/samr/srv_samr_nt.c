@@ -1564,7 +1564,7 @@ NTSTATUS _samr_QueryAliasInfo(struct pipes_struct *p,
 			      struct samr_QueryAliasInfo *r)
 {
 	struct samr_alias_info *ainfo;
-	struct acct_info info;
+	struct acct_info *info;
 	NTSTATUS status;
 	union samr_AliasInfo *alias_info = NULL;
 	const char *alias_name = NULL;
@@ -1584,16 +1584,23 @@ NTSTATUS _samr_QueryAliasInfo(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	info = talloc_zero(p->mem_ctx, struct acct_info);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	become_root();
-	status = pdb_get_aliasinfo(&ainfo->sid, &info);
+	status = pdb_get_aliasinfo(&ainfo->sid, info);
 	unbecome_root();
 
-	if ( !NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info);
 		return status;
+	}
 
-	/* FIXME: info contains fstrings */
-	alias_name = talloc_strdup(r, info.acct_name);
-	alias_description = talloc_strdup(r, info.acct_desc);
+	alias_name = talloc_steal(r, info->acct_name);
+	alias_description = talloc_steal(r, info->acct_desc);
+	TALLOC_FREE(info);
 
 	switch (r->in.level) {
 	case ALIASINFOALL:
@@ -6112,7 +6119,7 @@ NTSTATUS _samr_SetAliasInfo(struct pipes_struct *p,
 			    struct samr_SetAliasInfo *r)
 {
 	struct samr_alias_info *ainfo;
-	struct acct_info info;
+	struct acct_info *info;
 	NTSTATUS status;
 
 	ainfo = policy_handle_find(p, r->in.alias_handle,
@@ -6122,10 +6129,15 @@ NTSTATUS _samr_SetAliasInfo(struct pipes_struct *p,
 		return status;
 	}
 
+	info = talloc_zero(p->mem_ctx, struct acct_info);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* get the current group information */
 
 	become_root();
-	status = pdb_get_aliasinfo( &ainfo->sid, &info );
+	status = pdb_get_aliasinfo(&ainfo->sid, info);
 	unbecome_root();
 
 	if ( !NT_STATUS_IS_OK(status))
@@ -6153,26 +6165,36 @@ NTSTATUS _samr_SetAliasInfo(struct pipes_struct *p,
 			/* If the name is the same just reply "ok".  Yes this
 			   doesn't allow you to change the case of a group name. */
 
-			if ( strequal( r->in.info->name.string, info.acct_name ) )
+			if (strequal(r->in.info->name.string, info->acct_name)) {
 				return NT_STATUS_OK;
+			}
 
-			fstrcpy( info.acct_name, r->in.info->name.string);
+			talloc_free(info->acct_name);
+			info->acct_name = talloc_strdup(info, r->in.info->name.string);
+			if (!info->acct_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
 
 			/* make sure the name doesn't already exist as a user
 			   or local group */
 
-			fstr_sprintf( group_name, "%s\\%s", lp_netbios_name(), info.acct_name );
+			fstr_sprintf(group_name, "%s\\%s",
+				     lp_netbios_name(), info->acct_name);
 			status = can_create( p->mem_ctx, group_name );
 			if ( !NT_STATUS_IS_OK( status ) )
 				return status;
 			break;
 		}
 		case ALIASINFODESCRIPTION:
+			TALLOC_FREE(info->acct_desc);
 			if (r->in.info->description.string) {
-				fstrcpy(info.acct_desc,
-					r->in.info->description.string);
+				info->acct_desc = talloc_strdup(info,
+								r->in.info->description.string);
 			} else {
-				fstrcpy( info.acct_desc, "" );
+				info->acct_desc = talloc_strdup(info, "");
+			}
+			if (!info->acct_desc) {
+				return NT_STATUS_NO_MEMORY;
 			}
 			break;
 		default:
@@ -6182,7 +6204,7 @@ NTSTATUS _samr_SetAliasInfo(struct pipes_struct *p,
         /******** BEGIN SeAddUsers BLOCK *********/
 
 	become_root();
-        status = pdb_set_aliasinfo( &ainfo->sid, &info );
+        status = pdb_set_aliasinfo(&ainfo->sid, info);
 	unbecome_root();
 
         /******** End SeAddUsers BLOCK *********/

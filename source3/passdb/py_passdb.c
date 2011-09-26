@@ -2062,7 +2062,7 @@ static PyObject *py_pdb_get_aliasinfo(pytalloc_Object *self, PyObject *args)
 	TALLOC_CTX *tframe;
 	PyObject *py_alias_sid;
 	struct dom_sid *alias_sid;
-	struct acct_info alias_info;
+	struct acct_info *alias_info;
 	PyObject *py_alias_info;
 
 	if (!PyArg_ParseTuple(args, "O!:get_aliasinfo", dom_sid_Type, &py_alias_sid)) {
@@ -2078,7 +2078,13 @@ static PyObject *py_pdb_get_aliasinfo(pytalloc_Object *self, PyObject *args)
 
 	alias_sid = pytalloc_get_ptr(py_alias_sid);
 
-	status = methods->get_aliasinfo(methods, alias_sid, &alias_info);
+	alias_info = talloc_zero(tframe, struct acct_info);
+	if (!alias_info) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = methods->get_aliasinfo(methods, alias_sid, alias_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_Format(py_pdb_error, "Unable to get alias information, (%d,%s)",
 				NT_STATUS_V(status),
@@ -2094,9 +2100,12 @@ static PyObject *py_pdb_get_aliasinfo(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	PyDict_SetItemString(py_alias_info, "acct_name", PyString_FromString(alias_info.acct_name));
-	PyDict_SetItemString(py_alias_info, "acct_desc", PyString_FromString(alias_info.acct_desc));
-	PyDict_SetItemString(py_alias_info, "rid", PyInt_FromLong(alias_info.rid));
+	PyDict_SetItemString(py_alias_info, "acct_name",
+			     PyString_FromString(alias_info->acct_name));
+	PyDict_SetItemString(py_alias_info, "acct_desc",
+			     PyString_FromString(alias_info->acct_desc));
+	PyDict_SetItemString(py_alias_info, "rid",
+			     PyInt_FromLong(alias_info->rid));
 
 	talloc_free(tframe);
 

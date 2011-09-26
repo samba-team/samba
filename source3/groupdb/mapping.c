@@ -549,8 +549,14 @@ NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
-	fstrcpy(info->acct_name, map.nt_name);
-	fstrcpy(info->acct_desc, map.comment);
+	info->acct_name = talloc_strdup(info, map.nt_name);
+	if (!info->acct_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	info->acct_desc = talloc_strdup(info, map.comment);
+	if (!info->acct_desc) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	sid_peek_rid(&map.sid, &info->rid);
 	return NT_STATUS_OK;
 }
