@@ -58,13 +58,13 @@ static bool test_ioctl_get_shadow_copy(struct torture_context *torture,
 	ZERO_STRUCT(ioctl);
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = h;
-	ioctl.smb2.in.function = 0x144064;	/* FSCTL_GET_SHADOW_COPY_DATA 0x144064 */
+	ioctl.smb2.in.function = SMB2_FSCTL_SRV_ENUM_SNAPS;
 	ioctl.smb2.in.max_response_size = 16;
-	ioctl.smb2.in.flags = 1;		/* Is FSCTL */
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("FSCTL_GET_SHADOW_COPY_DATA failed\n");
+		printf("SMB2_FSCTL_SRV_ENUM_SNAPS failed\n");
 		return false;
 	}
 

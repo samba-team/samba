@@ -78,3 +78,4 @@ bench # don't run benchmarks in our selftest
 ^samba4.blackbox.ktpass # this test isn't portable ...
 ^samba4.drs.repl_schema.python # flakey test
 ^samba4.nbt.winsreplication # flakey test
+^samba4.smb2.ioctl # snapshots not supported by default
