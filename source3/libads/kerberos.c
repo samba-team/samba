@@ -704,28 +704,27 @@ static char *print_kdc_line(char *mem_ctx,
 			return NULL;
 		}
 		/* Success, use host:port */
-		kdc_str = talloc_asprintf(mem_ctx,
-					  "%s\tkdc = %s:%u\n",
-					  prev_line,
-					  hostname,
-					  (unsigned int)port);
+		return talloc_asprintf(mem_ctx,
+				       "%s\tkdc = %s:%u\n",
+				       prev_line,
+				       hostname,
+				       (unsigned int)port);
+	}
+
+	/* no krb5 lib currently supports "kdc = ipv6 address"
+	 * at all, so just fill in just the kdc_name if we have
+	 * it and let the krb5 lib figure out the appropriate
+	 * ipv6 address - gd */
+
+	if (kdc_name) {
+		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+					  prev_line, kdc_name);
 	} else {
-
-		/* no krb5 lib currently supports "kdc = ipv6 address"
-		 * at all, so just fill in just the kdc_name if we have
-		 * it and let the krb5 lib figure out the appropriate
-		 * ipv6 address - gd */
-
-		if (kdc_name) {
-			kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-						  prev_line, kdc_name);
-		} else {
-			kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-						  prev_line,
-						  print_sockaddr(addr,
-								 sizeof(addr),
-								 pss));
-		}
+		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+					  prev_line,
+					  print_sockaddr(addr,
+							 sizeof(addr),
+							 pss));
 	}
 	return kdc_str;
 }
