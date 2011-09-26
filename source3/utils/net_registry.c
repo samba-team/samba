@@ -1446,8 +1446,13 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 	{ NULL, NULL, 0, NULL, NULL }
 	};
 
-	if (!W_ERROR_IS_OK(registry_init_basic())) {
-		return -1;
+	if (!c->display_usage
+	    && (strcasecmp_m(argv[0], "convert") != 0)
+	    && (strcasecmp_m(argv[0], "check") != 0))
+	{
+		if (!W_ERROR_IS_OK(registry_init_basic())) {
+			return -1;
+		}
 	}
 
 	ret = net_run_function(c, argc, argv, "net registry", func);
