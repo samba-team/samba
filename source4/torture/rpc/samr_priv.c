@@ -23,9 +23,25 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/rpc/dcerpc_proto.h"
+#include "libcli/security/security.h"
 #include "torture/rpc/torture_rpc.h"
 
 #define TEST_ACCOUNT_NAME "guru"
+
+struct torture_user {
+	const char *username;
+	const char *password;
+	const char *domain;
+	uint32_t *builtin_memberships;
+	uint32_t num_builtin_memberships;
+	bool admin_rights;
+};
+
+struct torture_access_context {
+	struct dcerpc_pipe *pipe;
+	struct torture_user user;
+	struct test_join *join;
+};
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {
@@ -84,6 +100,35 @@ static bool test_LookupName(struct dcerpc_binding_handle *b,
 	}
 
 	*rid = n.out.rids->ids[0];
+	return true;
+}
+
+static bool test_samr_CreateUser(struct torture_context *tctx,
+			         struct dcerpc_binding_handle *b,
+			         struct policy_handle *domain_handle,
+			         const char *name,
+			         struct policy_handle *user_handle)
+{
+	struct lsa_String username;
+	struct samr_CreateUser r;
+	uint32_t rid = 0;
+	NTSTATUS status;
+
+	init_lsa_String(&username, name);
+
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.in.domain_handle = domain_handle;
+	r.in.account_name = &username;
+	r.out.user_handle = user_handle;
+	r.out.rid = &rid;
+
+	status = dcerpc_samr_CreateUser_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "CreateUser failed");
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		torture_comment(tctx, "CreateUser failed");
+		return false;
+	}
+
 	return true;
 }
 
@@ -180,6 +225,44 @@ static bool test_samr_Connect(struct torture_context *tctx,
 	}
 
 	return true;
+}
+
+static bool test_samr_create_user(struct torture_context *tctx,
+				  struct torture_access_context *t,
+				  const char *name)
+{
+	struct dcerpc_binding_handle *b = t->pipe->binding_handle;
+	struct policy_handle connect_handle;
+	struct policy_handle domain_handle;
+	struct policy_handle user_handle;
+	bool ok = false;
+
+	torture_comment(tctx, "Connecting to SAMR\n");
+	ZERO_STRUCT(connect_handle);
+	ok = test_samr_Connect(tctx, b, &connect_handle);
+	torture_assert(tctx, ok, "Unable to connect to domain");
+
+	torture_comment(tctx, "Opening domain %s\n", t->user.domain);
+	ZERO_STRUCT(domain_handle);
+	ok = test_samr_openDomain(tctx,
+				  b,
+				  &connect_handle,
+				  t->user.domain,
+				  &domain_handle);
+	torture_assert(tctx, ok, "Unable to open to domain");
+
+	torture_comment(tctx, "Creating account %s\n", name);
+	ZERO_STRUCT(user_handle);
+	ok = test_samr_CreateUser(tctx,
+				  b,
+				  &domain_handle,
+				  name,
+				  &user_handle);
+
+	test_samr_handle_Close(b, tctx, &domain_handle);
+	test_samr_handle_Close(b, tctx, &connect_handle);
+
+	return ok;
 }
 
 static bool test_samr_userinfo_getinfo(struct torture_context *tctx,
@@ -309,6 +392,207 @@ static bool torture_rpc_samr_caching(struct torture_context *tctx,
 }
 #undef NUM_RUNS
 
+static bool torture_rpc_samr_access_setup_membership(struct torture_context *tctx,
+						     struct dcerpc_pipe *p,
+						     uint32_t num_members,
+						     uint32_t *members,
+						     struct dom_sid *user_sid)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct policy_handle connect_handle, domain_handle;
+	int i;
+
+	torture_comment(tctx,
+		"Setting up BUILTIN membership for %s\n",
+		dom_sid_string(tctx, user_sid));
+
+	for (i=0; i < num_members; i++) {
+		torture_comment(tctx, "adding user to S-1-5-32-%d\n", members[i]);
+	}
+
+	/* connect */
+	{
+		struct samr_Connect2 r;
+		r.in.system_name = "";
+		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		ZERO_STRUCT(connect_handle);
+		r.out.connect_handle = &connect_handle;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_Connect2_r(b, tctx, &r),
+			"samr_Connect2 failed");
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+			"samr_Connect2 failed");
+	}
+
+	/* open domain */
+	{
+		struct samr_OpenDomain r;
+		r.in.connect_handle = &connect_handle;
+		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+		r.in.sid = dom_sid_parse_talloc(tctx, "S-1-5-32");
+		ZERO_STRUCT(domain_handle);
+		r.out.domain_handle = &domain_handle;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_samr_OpenDomain_r(b, tctx, &r),
+			"samr_OpenDomain failed");
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+			"samr_OpenDomain failed");
+	}
+
+	for (i = 0; i < num_members; i++) {
+
+		struct policy_handle alias_handle;
+
+		/* open alias */
+		{
+			struct samr_OpenAlias r;
+			r.in.domain_handle = &domain_handle;
+			r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+			r.in.rid = members[i];
+			ZERO_STRUCT(alias_handle);
+			r.out.alias_handle = &alias_handle;
+
+			torture_assert_ntstatus_ok(tctx,
+					dcerpc_samr_OpenAlias_r(b, tctx, &r),
+					"samr_OpenAlias failed");
+			torture_assert_ntstatus_ok(tctx, r.out.result,
+					"samr_OpenAlias failed");
+		}
+
+		/* add alias member */
+		{
+			struct samr_AddAliasMember r;
+			ZERO_STRUCT(alias_handle);
+			r.in.alias_handle = &alias_handle;
+			r.in.sid = user_sid;
+
+			torture_assert_ntstatus_ok(tctx,
+					dcerpc_samr_AddAliasMember_r(b, tctx, &r),
+					"samr_AddAliasMember failed");
+			torture_assert_ntstatus_ok(tctx, r.out.result,
+					"samr_AddAliasMember failed");
+		}
+
+		test_samr_handle_Close(b, tctx, &alias_handle);
+	}
+
+	test_samr_handle_Close(b, tctx, &domain_handle);
+	test_samr_handle_Close(b, tctx, &connect_handle);
+
+	return true;
+}
+
+static bool torture_rpc_samr_access_setup(struct torture_context *tctx,
+					  struct dcerpc_pipe *p,
+					  struct torture_access_context *t)
+{
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	struct cli_credentials *test_credentials;
+	struct test_join *join;
+	struct dom_sid *test_sid;
+	struct dcerpc_pipe *samr_pipe;
+
+	t->user.domain = torture_setting_string(tctx, "workgroup",
+						lpcfg_workgroup(tctx->lp_ctx)),
+
+	join = torture_create_testuser(tctx,
+				       t->user.username,
+				       t->user.domain,
+				       ACB_NORMAL,
+				       &t->user.password);
+	if (join == NULL) {
+		return false;
+	}
+	t->join = join;
+
+	test_credentials = cli_credentials_init(tctx);
+
+	cli_credentials_set_workstation(test_credentials,
+					"localhost",
+					CRED_SPECIFIED);
+	cli_credentials_set_domain(test_credentials,
+				   torture_setting_string(tctx, "workgroup",
+							  lpcfg_workgroup(tctx->lp_ctx)),
+				   CRED_SPECIFIED);
+	cli_credentials_set_username(test_credentials,
+				     t->user.username,
+				     CRED_SPECIFIED);
+	cli_credentials_set_password(test_credentials,
+				     t->user.password,
+				     CRED_SPECIFIED);
+	test_sid = discard_const_p(struct dom_sid,
+				   torture_join_user_sid(t->join));
+
+	if (t->user.num_builtin_memberships) {
+		torture_assert(tctx,
+			torture_rpc_samr_access_setup_membership(tctx,
+								 p,
+								 t->user.num_builtin_memberships,
+								 t->user.builtin_memberships,
+								 test_sid),
+			"failed to setup membership");
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_pipe_connect(tctx,
+				    &samr_pipe,
+				    binding,
+				    &ndr_table_samr,
+				    test_credentials,
+				    tctx->ev,
+				    tctx->lp_ctx),
+		"Error connecting to server");
+
+	t->pipe = samr_pipe;
+
+	return true;
+}
+
+static bool torture_rpc_samr_access(struct torture_context *tctx,
+				    struct dcerpc_pipe *p)
+{
+	struct torture_access_context *t;
+	const char *testuser;
+	bool ok;
+
+	torture_comment(tctx, "Testing non-privileged user access\n");
+
+	t = talloc_zero(tctx, struct torture_access_context);
+	if (t == NULL) {
+		return false;
+	}
+
+	t->user.username = talloc_asprintf(t, "%s%04d", TEST_ACCOUNT_NAME, 100);
+
+	torture_comment(tctx, "*** Setting up non-privleged user\n"
+			      "***\n");
+
+	ok = torture_rpc_samr_access_setup(tctx, p, t);
+	if (!ok) {
+		return false;
+	}
+
+	testuser = talloc_asprintf(t, "%s%04d", TEST_ACCOUNT_NAME, 200);
+
+	torture_comment(tctx, "*** Try to create user (%s) as non-privileged "
+			      "user - should fail\n"
+			      "***\n", testuser);
+
+	ok = test_samr_create_user(tctx, t, testuser);
+	if (!ok) {
+		torture_comment(tctx, "*** Creating user (%s) failed, which is "
+				      "correct!\n", testuser);
+		return true;
+	}
+
+	torture_comment(tctx, "*** Creating user (%s) was successful, but "
+			      "should fail!\n", testuser);
+
+	return false;
+}
+
 struct torture_suite *torture_rpc_samr_priv(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -322,6 +606,10 @@ struct torture_suite *torture_rpc_samr_priv(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase,
 				   "caching",
 				   torture_rpc_samr_caching);
+
+	torture_rpc_tcase_add_test(tcase,
+				   "access",
+				   torture_rpc_samr_access);
 
 	return suite;
 }
