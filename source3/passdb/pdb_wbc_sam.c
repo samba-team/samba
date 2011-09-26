@@ -228,8 +228,11 @@ static NTSTATUS pdb_wbc_sam_enum_trusteddoms(struct pdb_methods *methods,
 
 static bool _make_group_map(struct pdb_methods *methods, const char *domain, const char *name, enum lsa_SidType name_type, gid_t gid, struct dom_sid *sid, GROUP_MAP *map)
 {
-	snprintf(map->nt_name, sizeof(map->nt_name), "%s%c%s",
+	map->nt_name = talloc_asprintf(map, "%s%c%s",
 	        domain, *lp_winbind_separator(), name);
+	if (!map->nt_name) {
+		return false;
+	}
 	map->sid_name_use = name_type;
 	map->sid = *sid;
 	map->gid = gid;
@@ -354,7 +357,7 @@ done:
 
 static NTSTATUS pdb_wbc_sam_enum_group_mapping(struct pdb_methods *methods,
 					   const struct dom_sid *sid, enum lsa_SidType sid_name_use,
-					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
+					   GROUP_MAP ***pp_rmap, size_t *p_num_entries,
 					   bool unix_only)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;

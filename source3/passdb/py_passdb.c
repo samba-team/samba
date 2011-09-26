@@ -1805,7 +1805,7 @@ static PyObject *py_pdb_enum_group_mapping(pytalloc_Object *self, PyObject *args
 	int unix_only = 0;
 	PyObject *py_domain_sid;
 	struct dom_sid *domain_sid = NULL;
-	GROUP_MAP *gmap, *group_map;
+	GROUP_MAP **gmap, *group_map;
 	size_t num_entries;
 	PyObject *py_gmap_list, *py_group_map;
 	int i;
@@ -1852,13 +1852,15 @@ static PyObject *py_pdb_enum_group_mapping(pytalloc_Object *self, PyObject *args
 		py_group_map = py_groupmap_new(&PyGroupmap, NULL, NULL);
 		if (py_group_map) {
 			group_map = pytalloc_get_ptr(py_group_map);
-			*group_map = gmap[i];
+			*group_map = *gmap[i];
+			talloc_steal(group_map, gmap[i]->nt_name);
+			talloc_steal(group_map, gmap[i]->comment);
 
 			PyList_Append(py_gmap_list, py_group_map);
 		}
 	}
 
-	free(gmap);
+	talloc_free(gmap);
 	talloc_free(tframe);
 
 	return py_gmap_list;

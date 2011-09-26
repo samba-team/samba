@@ -777,31 +777,38 @@ static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
 					     uint32_t rid)
 {
 	struct dom_sid group_sid;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	NTSTATUS status;
 	struct group *grp;
 	const char *grp_name;
 
+	map = talloc_zero(mem_ctx, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* coverity */
-	map.gid = (gid_t) -1;
+	map->gid = (gid_t) -1;
 
 	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map)) {
+	if (!get_domain_group_from_sid(group_sid, map)) {
 		DEBUG(10, ("Could not find group for rid %d\n", rid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
 	/* We need the group name for the smb_delete_group later on */
 
-	if (map.gid == (gid_t)-1) {
+	if (map->gid == (gid_t)-1) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
-	grp = getgrgid(map.gid);
+	grp = getgrgid(map->gid);
 	if (grp == NULL) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
+
+	TALLOC_FREE(map);
 
 	/* Copy the name, no idea what pdb_delete_group_mapping_entry does.. */
 
@@ -847,8 +854,11 @@ NTSTATUS pdb_delete_group_mapping_entry(struct dom_sid sid)
 	return pdb->delete_group_mapping_entry(pdb, sid);
 }
 
-bool pdb_enum_group_mapping(const struct dom_sid *sid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
-			    size_t *p_num_entries, bool unix_only)
+bool pdb_enum_group_mapping(const struct dom_sid *sid,
+			    enum lsa_SidType sid_name_use,
+			    GROUP_MAP ***pp_rmap,
+			    size_t *p_num_entries,
+			    bool unix_only)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return NT_STATUS_IS_OK(pdb-> enum_group_mapping(pdb, sid, sid_name_use,
@@ -954,23 +964,30 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 {
 	struct dom_sid group_sid, member_sid;
 	struct samu *account = NULL;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	struct group *grp;
 	struct passwd *pwd;
 	const char *group_name;
 	uid_t uid;
 
+	map = talloc_zero(mem_ctx, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* coverity */
-	map.gid = (gid_t) -1;
+	map->gid = (gid_t) -1;
 
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map) ||
-	    (map.gid == (gid_t)-1) ||
-	    ((grp = getgrgid(map.gid)) == NULL)) {
+	if (!get_domain_group_from_sid(group_sid, map) ||
+	    (map->gid == (gid_t)-1) ||
+	    ((grp = getgrgid(map->gid)) == NULL)) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
+
+	TALLOC_FREE(map);
 
 	group_name = talloc_strdup(mem_ctx, grp->gr_name);
 	if (group_name == NULL) {
@@ -1019,20 +1036,27 @@ static NTSTATUS pdb_default_del_groupmem(struct pdb_methods *methods,
 {
 	struct dom_sid group_sid, member_sid;
 	struct samu *account = NULL;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	struct group *grp;
 	struct passwd *pwd;
 	const char *group_name;
 	uid_t uid;
 
+	map = talloc_zero(mem_ctx, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);
 
-	if (!get_domain_group_from_sid(group_sid, &map) ||
-	    (map.gid == (gid_t)-1) ||
-	    ((grp = getgrgid(map.gid)) == NULL)) {
+	if (!get_domain_group_from_sid(group_sid, map) ||
+	    (map->gid == (gid_t)-1) ||
+	    ((grp = getgrgid(map->gid)) == NULL)) {
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
+
+	TALLOC_FREE(map);
 
 	group_name = talloc_strdup(mem_ctx, grp->gr_name);
 	if (group_name == NULL) {
@@ -1397,14 +1421,21 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 static bool pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 				   struct dom_sid *sid)
 {
-	GROUP_MAP map;
+	GROUP_MAP *map;
 
-	if (!NT_STATUS_IS_OK(methods->getgrgid(methods, &map, gid))) {
-		return False;
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		return false;
 	}
 
-	sid_copy(sid, &map.sid);
-	return True;
+	if (!NT_STATUS_IS_OK(methods->getgrgid(methods, map, gid))) {
+		TALLOC_FREE(map);
+		return false;
+	}
+
+	sid_copy(sid, &map->sid);
+	TALLOC_FREE(map);
+	return true;
 }
 
 static bool pdb_default_sid_to_id(struct pdb_methods *methods,
@@ -1452,21 +1483,28 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	if (sid_check_is_in_builtin(sid) ||
 	    sid_check_is_in_wellknown_domain(sid)) {
 		/* Here we only have aliases */
-		GROUP_MAP map;
-		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, &map, *sid))) {
+		GROUP_MAP *map;
+
+		map = talloc_zero(mem_ctx, GROUP_MAP);
+		if (!map) {
+			ret = false;
+			goto done;
+		}
+
+		if (!NT_STATUS_IS_OK(methods->getgrsid(methods, map, *sid))) {
 			DEBUG(10, ("Could not find map for sid %s\n",
 				   sid_string_dbg(sid)));
 			goto done;
 		}
-		if ((map.sid_name_use != SID_NAME_ALIAS) &&
-		    (map.sid_name_use != SID_NAME_WKN_GRP)) {
+		if ((map->sid_name_use != SID_NAME_ALIAS) &&
+		    (map->sid_name_use != SID_NAME_WKN_GRP)) {
 			DEBUG(10, ("Map for sid %s is a %s, expected an "
 				   "alias\n", sid_string_dbg(sid),
-				   sid_type_lookup(map.sid_name_use)));
+				   sid_type_lookup(map->sid_name_use)));
 			goto done;
 		}
 
-		id->gid = map.gid;
+		id->gid = map->gid;
 		*type = SID_NAME_ALIAS;
 		ret = True;
 		goto done;
@@ -1634,7 +1672,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 				  union unid_t *unix_id)
 {
 	struct samu *sam_account = NULL;
-	GROUP_MAP map;
+	GROUP_MAP *map = NULL;
 	bool ret;
 	struct dom_sid sid;
 
@@ -1651,12 +1689,28 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 		return False;
 	}
 
+	map = talloc_zero(mem_ctx, GROUP_MAP);
+	if (!map) {
+		return false;
+	}
+
 	/* BEING ROOT BLOCK */
 	become_root();
-	if (pdb_getsampwsid(sam_account, &sid)) {
+	ret = pdb_getsampwsid(sam_account, &sid);
+	if (!ret) {
+		TALLOC_FREE(sam_account);
+		ret = pdb_getgrsid(map, sid);
+	}
+	unbecome_root();
+	/* END BECOME_ROOT BLOCK */
+
+	if (sam_account || !ret) {
+		TALLOC_FREE(map);
+	}
+
+	if (sam_account) {
 		struct passwd *pw;
 
-		unbecome_root();		/* -----> EXIT BECOME_ROOT() */
 		*name = talloc_strdup(mem_ctx, pdb_get_username(sam_account));
 		if (!*name) {
 			TALLOC_FREE(sam_account);
@@ -1678,26 +1732,24 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 		unix_id->uid = pw->pw_uid;
 		TALLOC_FREE(pw);
 		return True;
-	}
-	TALLOC_FREE(sam_account);
 
-	ret = pdb_getgrsid(&map, sid);
-	unbecome_root();
-	/* END BECOME_ROOT BLOCK */
+	} else if (map && (map->gid != (gid_t)-1)) {
 
-	/* do not resolve SIDs to a name unless there is a valid 
-	   gid associated with it */
+		/* do not resolve SIDs to a name unless there is a valid
+		   gid associated with it */
 
-	if ( ret && (map.gid != (gid_t)-1) ) {
-		*name = talloc_strdup(mem_ctx, map.nt_name);
-		*psid_name_use = map.sid_name_use;
+		*name = talloc_steal(mem_ctx, map->nt_name);
+		*psid_name_use = map->sid_name_use;
 
 		if ( unix_id ) {
-			unix_id->gid = map.gid;
+			unix_id->gid = map->gid;
 		}
 
+		TALLOC_FREE(map);
 		return True;
 	}
+
+	TALLOC_FREE(map);
 
 	/* Windows will always map RID 513 to something.  On a non-domain 
 	   controller, this gets mapped to SERVER\None. */
@@ -1901,7 +1953,7 @@ static void fill_displayentry(TALLOC_CTX *mem_ctx, uint32_t rid,
 }
 
 struct group_search {
-	GROUP_MAP *groups;
+	GROUP_MAP **groups;
 	size_t num_groups, current_group;
 };
 
@@ -1910,10 +1962,12 @@ static bool next_entry_groups(struct pdb_search *s,
 {
 	struct group_search *state = (struct group_search *)s->private_data;
 	uint32_t rid;
-	GROUP_MAP *map = &state->groups[state->current_group];
+	GROUP_MAP *map;
 
 	if (state->current_group == state->num_groups)
 		return False;
+
+	map = state->groups[state->current_group];
 
 	sid_peek_rid(&map->sid, &rid);
 
@@ -1927,7 +1981,7 @@ static void search_end_groups(struct pdb_search *search)
 {
 	struct group_search *state =
 		(struct group_search *)search->private_data;
-	SAFE_FREE(state->groups);
+	TALLOC_FREE(state->groups);
 }
 
 static bool pdb_search_grouptype(struct pdb_methods *methods,
@@ -1936,7 +1990,7 @@ static bool pdb_search_grouptype(struct pdb_methods *methods,
 {
 	struct group_search *state;
 
-	state = talloc(search, struct group_search);
+	state = talloc_zero(search, struct group_search);
 	if (state == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return False;

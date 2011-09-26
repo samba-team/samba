@@ -45,7 +45,7 @@ struct mapping_backend {
 	bool (*get_group_map_from_ntname)(const char *name, GROUP_MAP *map);
 	bool (*group_map_remove)(const struct dom_sid *sid);
 	bool (*enum_group_mapping)(const struct dom_sid *domsid, enum lsa_SidType sid_name_use,
-				   GROUP_MAP **pp_rmap,
+				   GROUP_MAP ***pp_rmap,
 				   size_t *p_num_entries, bool unix_only);
 	NTSTATUS (*one_alias_membership)(const struct dom_sid *member,
 					 struct dom_sid **sids, size_t *num);

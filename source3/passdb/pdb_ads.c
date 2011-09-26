@@ -798,16 +798,14 @@ static NTSTATUS pdb_ads_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	if (str == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	fstrcpy(map->nt_name, str);
-	TALLOC_FREE(str);
+	map->nt_name = talloc_move(map, &str);
 
 	str = tldap_talloc_single_attribute(group[0], "description",
 					    talloc_tos());
 	if (str != NULL) {
-		fstrcpy(map->comment, str);
-		TALLOC_FREE(str);
+		map->comment = talloc_move(map, &str);
 	} else {
-		map->comment[0] = '\0';
+		map->comment = talloc_strdup(map, "");
 	}
 
 	if (pmsg != NULL) {
@@ -1017,7 +1015,7 @@ static NTSTATUS pdb_ads_update_group_mapping_entry(struct pdb_methods *m,
 	char *filter;
 	struct tldap_message *existing;
 	char *dn;
-	GROUP_MAP existing_map;
+	GROUP_MAP *existing_map;
 	int rc, num_mods = 0;
 	bool ret;
 	NTSTATUS status;
@@ -1033,8 +1031,15 @@ static NTSTATUS pdb_ads_update_group_mapping_entry(struct pdb_methods *m,
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = pdb_ads_getgrfilter(m, &existing_map, filter,
+
+	existing_map = talloc_zero(talloc_tos(), GROUP_MAP);
+	if (!existing_map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = pdb_ads_getgrfilter(m, existing_map, filter,
 				     talloc_tos(), &existing);
+	TALLOC_FREE(existing_map);
 	TALLOC_FREE(filter);
 
 	if (!tldap_entry_dn(existing, &dn)) {
@@ -1079,7 +1084,7 @@ static NTSTATUS pdb_ads_delete_group_mapping_entry(struct pdb_methods *m,
 static NTSTATUS pdb_ads_enum_group_mapping(struct pdb_methods *m,
 					   const struct dom_sid *sid,
 					   enum lsa_SidType sid_name_use,
-					   GROUP_MAP **pp_rmap,
+					   GROUP_MAP ***pp_rmap,
 					   size_t *p_num_entries,
 					   bool unix_only)
 {

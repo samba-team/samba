@@ -46,9 +46,11 @@ NTSTATUS pdb_default_update_group_mapping_entry(struct pdb_methods *methods,
 NTSTATUS pdb_default_delete_group_mapping_entry(struct pdb_methods *methods,
 						   struct dom_sid sid);
 NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
-					   const struct dom_sid *sid, enum lsa_SidType sid_name_use,
-					   GROUP_MAP **pp_rmap, size_t *p_num_entries,
-					   bool unix_only);
+					const struct dom_sid *sid,
+					enum lsa_SidType sid_name_use,
+					GROUP_MAP ***pp_rmap,
+					size_t *p_num_entries,
+					bool unix_only);
 NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 				  const char *name, uint32 *rid);
 NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,

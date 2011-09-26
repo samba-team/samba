@@ -34,7 +34,7 @@ static struct db_context *db; /* used for driver files */
 
 static bool enum_group_mapping(const struct dom_sid *domsid,
 			       enum lsa_SidType sid_name_use,
-			       GROUP_MAP **pp_rmap,
+			       GROUP_MAP ***pp_rmap,
 			       size_t *p_num_entries,
 			       bool unix_only);
 static bool group_map_remove(const struct dom_sid *sid);
@@ -175,6 +175,8 @@ static bool get_group_map_from_sid(struct dom_sid sid, GROUP_MAP *map)
 	char *key;
 	int ret = 0;
 	NTSTATUS status;
+	fstring nt_name;
+	fstring comment;
 
 	/* the key is the SID, retrieving is direct */
 
@@ -191,7 +193,7 @@ static bool get_group_map_from_sid(struct dom_sid sid, GROUP_MAP *map)
 
 	ret = tdb_unpack(dbuf.dptr, dbuf.dsize, "ddff",
 			&map->gid, &map->sid_name_use,
-			&map->nt_name, &map->comment);
+			&nt_name, &comment);
 
 	TALLOC_FREE(key);
 
@@ -202,6 +204,15 @@ static bool get_group_map_from_sid(struct dom_sid sid, GROUP_MAP *map)
 
 	sid_copy(&map->sid, &sid);
 
+	map->nt_name = talloc_strdup(map, nt_name);
+	if (!map->nt_name) {
+		return false;
+	}
+	map->comment = talloc_strdup(map, comment);
+	if (!map->comment) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -209,6 +220,9 @@ static bool dbrec2map(const struct db_record *rec, GROUP_MAP *map)
 {
 	TDB_DATA key = dbwrap_record_get_key(rec);
 	TDB_DATA value = dbwrap_record_get_value(rec);
+	int ret = 0;
+	fstring nt_name;
+	fstring comment;
 
 	if ((key.dsize < strlen(GROUP_PREFIX))
 	    || (strncmp((char *)key.dptr, GROUP_PREFIX,
@@ -221,9 +235,25 @@ static bool dbrec2map(const struct db_record *rec, GROUP_MAP *map)
 		return False;
 	}
 
-	return tdb_unpack(value.dptr, value.dsize, "ddff",
-			  &map->gid, &map->sid_name_use, &map->nt_name,
-			  &map->comment) != -1;
+	ret = tdb_unpack(value.dptr, value.dsize, "ddff",
+			  &map->gid, &map->sid_name_use,
+			  &nt_name, &comment);
+
+	if (ret == -1) {
+		DEBUG(3, ("dbrec2map: tdb_unpack failure\n"));
+		return false;
+	}
+
+	map->nt_name = talloc_strdup(map, nt_name);
+	if (!map->nt_name) {
+		return false;
+	}
+	map->comment = talloc_strdup(map, comment);
+	if (!map->comment) {
+		return false;
+	}
+
+	return true;
 }
 
 struct find_map_state {
@@ -323,55 +353,67 @@ struct enum_map_state {
 	bool unix_only;
 
 	size_t num_maps;
-	GROUP_MAP *maps;
+	GROUP_MAP **maps;
 };
 
 static int collect_map(struct db_record *rec, void *private_data)
 {
 	struct enum_map_state *state = (struct enum_map_state *)private_data;
-	GROUP_MAP map;
-	GROUP_MAP *tmp;
+	GROUP_MAP *map;
+	GROUP_MAP **tmp;
 
-	if (!dbrec2map(rec, &map)) {
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		DEBUG(0, ("Unable to allocate group map!\n"));
+		return 1;
+	}
+
+	if (!dbrec2map(rec, map)) {
+		TALLOC_FREE(map);
 		return 0;
 	}
 	/* list only the type or everything if UNKNOWN */
 	if (state->sid_name_use != SID_NAME_UNKNOWN
-	    && state->sid_name_use != map.sid_name_use) {
+	    && state->sid_name_use != map->sid_name_use) {
 		DEBUG(11,("enum_group_mapping: group %s is not of the "
-			  "requested type\n", map.nt_name));
+			  "requested type\n", map->nt_name));
+		TALLOC_FREE(map);
 		return 0;
 	}
 
-	if ((state->unix_only == ENUM_ONLY_MAPPED) && (map.gid == -1)) {
+	if ((state->unix_only == ENUM_ONLY_MAPPED) && (map->gid == -1)) {
 		DEBUG(11,("enum_group_mapping: group %s is non mapped\n",
-			  map.nt_name));
+			  map->nt_name));
+		TALLOC_FREE(map);
 		return 0;
 	}
 
 	if ((state->domsid != NULL) &&
-	    (dom_sid_compare_domain(state->domsid, &map.sid) != 0)) {
+	    (dom_sid_compare_domain(state->domsid, &map->sid) != 0)) {
 		DEBUG(11,("enum_group_mapping: group %s is not in domain\n",
-			  sid_string_dbg(&map.sid)));
+			  sid_string_dbg(&map->sid)));
+		TALLOC_FREE(map);
 		return 0;
 	}
 
-	if (!(tmp = SMB_REALLOC_ARRAY(state->maps, GROUP_MAP,
-				      state->num_maps+1))) {
+	tmp = talloc_realloc(NULL, state->maps, GROUP_MAP *,
+					state->num_maps + 1);
+	if (!tmp) {
 		DEBUG(0,("enum_group_mapping: Unable to enlarge group "
 			 "map!\n"));
+		TALLOC_FREE(map);
 		return 1;
 	}
 
 	state->maps = tmp;
-	state->maps[state->num_maps] = map;
+	state->maps[state->num_maps] = talloc_move(state->maps, &map);
 	state->num_maps++;
 	return 0;
 }
 
 static bool enum_group_mapping(const struct dom_sid *domsid,
 			       enum lsa_SidType sid_name_use,
-			       GROUP_MAP **pp_rmap,
+			       GROUP_MAP ***pp_rmap,
 			       size_t *p_num_entries, bool unix_only)
 {
 	struct enum_map_state state;
@@ -385,6 +427,7 @@ static bool enum_group_mapping(const struct dom_sid *domsid,
 
 	status = dbwrap_traverse_read(db, collect_map, (void *)&state, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(state.maps);
 		return false;
 	}
 
@@ -479,7 +522,7 @@ static bool is_aliasmem(const struct dom_sid *alias, const struct dom_sid *membe
 
 static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *member)
 {
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	char *key;
 	fstring string_sid;
 	char *new_memberstring;
@@ -487,12 +530,23 @@ static NTSTATUS add_aliasmem(const struct dom_sid *alias, const struct dom_sid *
 	NTSTATUS status;
 	TDB_DATA value;
 
-	if (!get_group_map_from_sid(*alias, &map))
-		return NT_STATUS_NO_SUCH_ALIAS;
+	map = talloc_zero(talloc_tos(), GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	if ( (map.sid_name_use != SID_NAME_ALIAS) &&
-	     (map.sid_name_use != SID_NAME_WKN_GRP) )
+	if (!get_group_map_from_sid(*alias, map)) {
+		TALLOC_FREE(map);
 		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	if ((map->sid_name_use != SID_NAME_ALIAS) &&
+	    (map->sid_name_use != SID_NAME_WKN_GRP)) {
+		TALLOC_FREE(map);
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	TALLOC_FREE(map);
 
 	if (is_aliasmem(alias, member))
 		return NT_STATUS_MEMBER_IN_ALIAS;
@@ -629,15 +683,26 @@ static int collect_aliasmem(struct db_record *rec, void *priv)
 static NTSTATUS enum_aliasmem(const struct dom_sid *alias, TALLOC_CTX *mem_ctx,
 			      struct dom_sid **sids, size_t *num)
 {
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	struct aliasmem_state state;
 
-	if (!get_group_map_from_sid(*alias, &map))
-		return NT_STATUS_NO_SUCH_ALIAS;
+	map = talloc_zero(talloc_tos(), GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	if ( (map.sid_name_use != SID_NAME_ALIAS) &&
-	     (map.sid_name_use != SID_NAME_WKN_GRP) )
+	if (!get_group_map_from_sid(*alias, map)) {
+		TALLOC_FREE(map);
 		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	if ((map->sid_name_use != SID_NAME_ALIAS) &&
+	    (map->sid_name_use != SID_NAME_WKN_GRP)) {
+		TALLOC_FREE(map);
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	TALLOC_FREE(map);
 
 	*sids = NULL;
 	*num = 0;
@@ -774,7 +839,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 			      TDB_DATA data, void *ptr)
 {
 	TALLOC_CTX *tmp_ctx = talloc_tos();
-	GROUP_MAP map;
+	GROUP_MAP *map = NULL;
 	uint8_t *p;
 	uint32_t format;
 	uint32_t num_el;
@@ -839,7 +904,11 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 		goto failed;
 	}
 
-	ZERO_STRUCT(map);
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		errno = ENOMEM;
+		goto failed;
+	}
 
 	for (i = 0; i < num_el; i++) {
 		uint32_t num_vals;
@@ -896,28 +965,34 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 			/* we ignore unknown or uninteresting attributes
 			 * (objectclass, etc.) */
 			if (strcasecmp_m(name, "gidNumber") == 0) {
-				map.gid = strtoul(val, &q, 10);
+				map->gid = strtoul(val, &q, 10);
 				if (*q) {
 					errno = EIO;
 					goto failed;
 				}
 			} else if (strcasecmp_m(name, "sid") == 0) {
-				if (!string_to_sid(&map.sid, val)) {
+				if (!string_to_sid(&map->sid, val)) {
 					errno = EIO;
 					goto failed;
 				}
 			} else if (strcasecmp_m(name, "sidNameUse") == 0) {
-				map.sid_name_use = strtoul(val, &q, 10);
+				map->sid_name_use = strtoul(val, &q, 10);
 				if (*q) {
 					errno = EIO;
 					goto failed;
 				}
 			} else if (strcasecmp_m(name, "ntname") == 0) {
-				strlcpy(map.nt_name, val,
-					sizeof(map.nt_name));
+				map->nt_name = talloc_strdup(map, val);
+				if (!map->nt_name) {
+					errno = ENOMEM;
+					goto failed;
+				}
 			} else if (strcasecmp_m(name, "comment") == 0) {
-				strlcpy(map.comment, val,
-					sizeof(map.comment));
+				map->comment = talloc_strdup(map, val);
+				if (!map->comment) {
+					errno = ENOMEM;
+					goto failed;
+				}
 			} else if (strcasecmp_m(name, "member") == 0) {
 				if (!string_to_sid(&members[j], val)) {
 					errno = EIO;
@@ -931,7 +1006,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 		TALLOC_FREE(name);
 	}
 
-	if (!add_mapping_entry(&map, 0)) {
+	if (!add_mapping_entry(map, 0)) {
 		errno = EIO;
 		goto failed;
 	}
@@ -939,7 +1014,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 	if (num_mem) {
 		for (j = 0; j < num_mem; j++) {
 			NTSTATUS status;
-			status = add_aliasmem(&map.sid, &members[j]);
+			status = add_aliasmem(&map->sid, &members[j]);
 			if (!NT_STATUS_IS_OK(status)) {
 				errno = EIO;
 				goto failed;
@@ -952,9 +1027,11 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 			  remaining));
 	}
 
+	TALLOC_FREE(map);
 	return 0;
 
 failed:
+	TALLOC_FREE(map);
 	return -1;
 }
 

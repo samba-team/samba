@@ -3023,7 +3023,8 @@ NTSTATUS _lsa_SetSystemAccessAccount(struct pipes_struct *p,
 				     struct lsa_SetSystemAccessAccount *r)
 {
 	struct lsa_info *info=NULL;
-	GROUP_MAP map;
+	NTSTATUS status;
+	GROUP_MAP *map;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
@@ -3037,10 +3038,19 @@ NTSTATUS _lsa_SetSystemAccessAccount(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!pdb_getgrsid(&map, info->sid))
-		return NT_STATUS_NO_SUCH_GROUP;
+	map = talloc_zero(p->mem_ctx, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	return pdb_update_group_mapping_entry(&map);
+	if (!pdb_getgrsid(map, info->sid)) {
+		TALLOC_FREE(map);
+		return NT_STATUS_NO_SUCH_GROUP;
+	}
+
+	status = pdb_update_group_mapping_entry(map);
+	TALLOC_FREE(map);
+	return status;
 }
 
 /***************************************************************************

@@ -901,14 +901,22 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	fstrcpy(map->nt_name, str);
+	map->nt_name = talloc_strdup(map, str);
+	if (!map->nt_name) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	str = ldb_msg_find_attr_as_string(msg, "description",
 					    NULL);
 	if (str != NULL) {
-		fstrcpy(map->comment, str);
+		map->comment = talloc_strdup(map, str);
 	} else {
-		map->comment[0] = '\0';
+		map->comment = talloc_strdup(map, "");
+	}
+	if (!map->comment) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	talloc_free(tmp_ctx);
@@ -1071,7 +1079,7 @@ static NTSTATUS pdb_samba4_delete_group_mapping_entry(struct pdb_methods *m,
 static NTSTATUS pdb_samba4_enum_group_mapping(struct pdb_methods *m,
 					   const struct dom_sid *sid,
 					   enum lsa_SidType sid_name_use,
-					   GROUP_MAP **pp_rmap,
+					   GROUP_MAP ***pp_rmap,
 					   size_t *p_num_entries,
 					   bool unix_only)
 {

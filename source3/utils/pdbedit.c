@@ -175,7 +175,7 @@ static int export_database (struct pdb_methods *in,
 
 static int export_groups (struct pdb_methods *in, struct pdb_methods *out)
 {
-	GROUP_MAP *maps = NULL;
+	GROUP_MAP **maps = NULL;
 	size_t i, entries = 0;
 	NTSTATUS status;
 
@@ -188,10 +188,10 @@ static int export_groups (struct pdb_methods *in, struct pdb_methods *out)
 	}
 
 	for (i=0; i<entries; i++) {
-		out->add_group_mapping_entry(out, &(maps[i]));
+		out->add_group_mapping_entry(out, maps[i]);
 	}
 
-	SAFE_FREE( maps );
+	TALLOC_FREE(maps);
 
 	return 0;
 }

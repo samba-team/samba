@@ -1233,20 +1233,25 @@ done:
 
 static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 {
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	union unid_t id;
 	enum lsa_SidType type;
+
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		return false;
+	}
 
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
 		bool ret;
 
 		become_root();
-		ret = pdb_getgrsid(&map, *psid);
+		ret = pdb_getgrsid(map, *psid);
 		unbecome_root();
 
 		if (ret) {
-			*pgid = map.gid;
+			*pgid = map->gid;
 			goto done;
 		}
 		DEBUG(10,("LEGACY: mapping failed for sid %s\n",
@@ -1286,6 +1291,7 @@ static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 
 	store_gid_sid_cache(psid, *pgid);
 
+	TALLOC_FREE(map);
 	return true;
 }
 

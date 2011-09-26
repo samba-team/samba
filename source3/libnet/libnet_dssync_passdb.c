@@ -452,7 +452,7 @@ static int dssync_passdb_traverse_gmembers(struct db_record *rec,
 	struct dom_sid member_sid;
 	struct samu *member = NULL;
 	const char *member_dn = NULL;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	struct group *grp;
 	uint32_t rid;
 	bool is_unix_member = false;
@@ -508,18 +508,28 @@ static int dssync_passdb_traverse_gmembers(struct db_record *rec,
 		break;
 	}
 
-	if (!get_domain_group_from_sid(group_sid, &map)) {
-		DEBUG(0, ("Could not find global group %s\n",
-			  sid_string_dbg(&group_sid)));
-		//return NT_STATUS_NO_SUCH_GROUP;
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
 		return -1;
 	}
 
-	if (!(grp = getgrgid(map.gid))) {
-		DEBUG(0, ("Could not find unix group %lu\n", (unsigned long)map.gid));
+	if (!get_domain_group_from_sid(group_sid, map)) {
+		DEBUG(0, ("Could not find global group %s\n",
+			  sid_string_dbg(&group_sid)));
 		//return NT_STATUS_NO_SUCH_GROUP;
+		TALLOC_FREE(map);
 		return -1;
 	}
+
+	if (!(grp = getgrgid(map->gid))) {
+		DEBUG(0, ("Could not find unix group %lu\n",
+						(unsigned long)map->gid));
+		//return NT_STATUS_NO_SUCH_GROUP;
+		TALLOC_FREE(map);
+		return -1;
+	}
+
+	TALLOC_FREE(map);
 
 	DEBUG(0,("Group members of %s: ", grp->gr_name));
 
@@ -1348,7 +1358,7 @@ static NTSTATUS handle_account_object(struct dssync_passdb *pctx,
 	NTSTATUS status;
 	fstring account;
 	struct samu *sam_account=NULL;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	struct group *grp;
 	struct dom_sid user_sid;
 	struct dom_sid group_sid;
@@ -1430,20 +1440,27 @@ static NTSTATUS handle_account_object(struct dssync_passdb *pctx,
 
 	group_sid = *pdb_get_group_sid(sam_account);
 
-	if (!pdb_getgrsid(&map, group_sid)) {
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!pdb_getgrsid(map, group_sid)) {
 		DEBUG(0, ("Primary group of %s has no mapping!\n",
 			  pdb_get_username(sam_account)));
 	} else {
-		if (map.gid != passwd->pw_gid) {
-			if (!(grp = getgrgid(map.gid))) {
+		if (map->gid != passwd->pw_gid) {
+			if (!(grp = getgrgid(map->gid))) {
 				DEBUG(0, ("Could not find unix group %lu for user %s (group SID=%s)\n",
-					  (unsigned long)map.gid, pdb_get_username(sam_account),
+					  (unsigned long)map->gid, pdb_get_username(sam_account),
 					  sid_string_dbg(&group_sid)));
 			} else {
 				smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
 			}
 		}
 	}
+
+	TALLOC_FREE(map);
 
 	if ( !passwd ) {
 		DEBUG(1, ("No unix user for this account (%s), cannot adjust mappings\n",
@@ -1463,14 +1480,12 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 {
 	struct drsuapi_DsReplicaObjectListItemEx *cur = obj->cur;
 	NTSTATUS status;
-	fstring name;
-	fstring comment;
 	struct group *grp = NULL;
 	struct dom_sid group_sid;
 	uint32_t rid = 0;
 	struct dom_sid *dom_sid = NULL;
 	fstring sid_string;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	bool insert = true;
 
 	const char *sAMAccountName;
@@ -1496,23 +1511,43 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 		return status;
 	}
 
-	fstrcpy(name, sAMAccountName);
-	fstrcpy(comment, description);
-
 	dom_sid_split_rid(mem_ctx, &group_sid, &dom_sid, &rid);
+
+	map = talloc_zero(mem_ctx, GROUP_MAP);
+	if (map == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	map->nt_name = talloc_strdup(map, sAMAccountName);
+	if (map->nt_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (description) {
+		map->comment = talloc_strdup(map, description);
+	} else {
+		map->comment = talloc_strdup(map, "");
+	}
+	if (map->comment == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	sid_to_fstring(sid_string, &group_sid);
 	DEBUG(0,("Creating alias[%s] - %s members[%u]\n",
-		  name, sid_string, num_members));
+		  map->nt_name, sid_string, num_members));
 
 	status = dssync_insert_obj(pctx, pctx->aliases, obj);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto done;
 	}
 
-	if (pdb_getgrsid(&map, group_sid)) {
-		if ( map.gid != -1 )
-			grp = getgrgid(map.gid);
+	if (pdb_getgrsid(map, group_sid)) {
+		if (map->gid != -1) {
+			grp = getgrgid(map->gid);
+		}
 		insert = false;
 	}
 
@@ -1520,22 +1555,27 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 		gid_t gid;
 
 		/* No group found from mapping, find it from its name. */
-		if ((grp = getgrnam(name)) == NULL) {
+		if ((grp = getgrnam(map->nt_name)) == NULL) {
 
 			/* No appropriate group found, create one */
 
-			DEBUG(0,("Creating unix group: '%s'\n", name));
+			DEBUG(0, ("Creating unix group: '%s'\n",
+							map->nt_name));
 
-			if (smb_create_group(name, &gid) != 0)
-				return NT_STATUS_ACCESS_DENIED;
+			if (smb_create_group(map->nt_name, &gid) != 0) {
+				status = NT_STATUS_ACCESS_DENIED;
+				goto done;
+			}
 
-			if ((grp = getgrgid(gid)) == NULL)
-				return NT_STATUS_ACCESS_DENIED;
+			if ((grp = getgrgid(gid)) == NULL) {
+				status = NT_STATUS_ACCESS_DENIED;
+				goto done;
+			}
 		}
 	}
 
-	map.gid = grp->gr_gid;
-	map.sid = group_sid;
+	map->gid = grp->gr_gid;
+	map->sid = group_sid;
 
 	if (dom_sid_equal(dom_sid, &global_sid_Builtin)) {
 		/*
@@ -1543,22 +1583,16 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 		 *
 		 * map.sid_name_use = SID_NAME_WKN_GRP;
 		 */
-		map.sid_name_use = SID_NAME_ALIAS;
+		map->sid_name_use = SID_NAME_ALIAS;
 	} else {
-		map.sid_name_use = SID_NAME_ALIAS;
+		map->sid_name_use = SID_NAME_ALIAS;
 	}
 
-	strlcpy(map.nt_name, name, sizeof(map.nt_name));
-	if (description) {
-		strlcpy(map.comment, comment, sizeof(map.comment));
+	if (insert) {
+		pdb_add_group_mapping_entry(map);
 	} else {
-		strlcpy(map.comment, "", sizeof(map.comment));
+		pdb_update_group_mapping_entry(map);
 	}
-
-	if (insert)
-		pdb_add_group_mapping_entry(&map);
-	else
-		pdb_update_group_mapping_entry(&map);
 
 	for (i=0; i < num_members; i++) {
 		struct dssync_passdb_mem *mem;
@@ -1567,11 +1601,15 @@ static NTSTATUS handle_alias_object(struct dssync_passdb *pctx,
 					   true /* active */,
 					   &members[i], &mem);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 	}
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+
+done:
+	TALLOC_FREE(map);
+	return status;
 }
 
 /****************************************************************
@@ -1583,12 +1621,10 @@ static NTSTATUS handle_group_object(struct dssync_passdb *pctx,
 {
 	struct drsuapi_DsReplicaObjectListItemEx *cur = obj->cur;
 	NTSTATUS status;
-	fstring name;
-	fstring comment;
 	struct group *grp = NULL;
 	struct dom_sid group_sid;
 	fstring sid_string;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	bool insert = true;
 
 	const char *sAMAccountName;
@@ -1614,21 +1650,39 @@ static NTSTATUS handle_group_object(struct dssync_passdb *pctx,
 		return status;
 	}
 
-	fstrcpy(name, sAMAccountName);
-	fstrcpy(comment, description);
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	map->nt_name = talloc_strdup(map, sAMAccountName);
+	if (!map->nt_name) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	if (description) {
+		map->comment = talloc_strdup(map, description);
+	} else {
+		map->comment = talloc_strdup(map, "");
+	}
+	if (!map->comment) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	sid_to_fstring(sid_string, &group_sid);
 	DEBUG(0,("Creating group[%s] - %s members [%u]\n",
-		  name, sid_string, num_members));
+		  map->nt_name, sid_string, num_members));
 
 	status = dssync_insert_obj(pctx, pctx->groups, obj);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto done;
 	}
 
-	if (pdb_getgrsid(&map, group_sid)) {
-		if ( map.gid != -1 )
-			grp = getgrgid(map.gid);
+	if (pdb_getgrsid(map, group_sid)) {
+		if (map->gid != -1) {
+			grp = getgrgid(map->gid);
+		}
 		insert = false;
 	}
 
@@ -1636,34 +1690,34 @@ static NTSTATUS handle_group_object(struct dssync_passdb *pctx,
 		gid_t gid;
 
 		/* No group found from mapping, find it from its name. */
-		if ((grp = getgrnam(name)) == NULL) {
+		if ((grp = getgrnam(map->nt_name)) == NULL) {
 
 			/* No appropriate group found, create one */
 
-			DEBUG(0,("Creating unix group: '%s'\n", name));
+			DEBUG(0, ("Creating unix group: '%s'\n",
+							map->nt_name));
 
-			if (smb_create_group(name, &gid) != 0)
-				return NT_STATUS_ACCESS_DENIED;
+			if (smb_create_group(map->nt_name, &gid) != 0) {
+				status = NT_STATUS_ACCESS_DENIED;
+				goto done;
+			}
 
-			if ((grp = getgrnam(name)) == NULL)
-				return NT_STATUS_ACCESS_DENIED;
+			if ((grp = getgrnam(map->nt_name)) == NULL) {
+				status = NT_STATUS_ACCESS_DENIED;
+				goto done;
+			}
 		}
 	}
 
-	map.gid = grp->gr_gid;
-	map.sid = group_sid;
-	map.sid_name_use = SID_NAME_DOM_GRP;
-	strlcpy(map.nt_name, name, sizeof(map.nt_name));
-	if (description) {
-		strlcpy(map.comment, comment, sizeof(map.comment));
-	} else {
-		strlcpy(map.comment, "", sizeof(map.comment));
-	}
+	map->gid = grp->gr_gid;
+	map->sid = group_sid;
+	map->sid_name_use = SID_NAME_DOM_GRP;
 
-	if (insert)
-		pdb_add_group_mapping_entry(&map);
-	else
-		pdb_update_group_mapping_entry(&map);
+	if (insert) {
+		pdb_add_group_mapping_entry(map);
+	} else {
+		pdb_update_group_mapping_entry(map);
+	}
 
 	for (i=0; i < num_members; i++) {
 		struct dssync_passdb_mem *mem;
@@ -1672,11 +1726,15 @@ static NTSTATUS handle_group_object(struct dssync_passdb *pctx,
 					   true /* active */,
 					   &members[i], &mem);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 	}
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+
+done:
+	TALLOC_FREE(map);
+	return status;
 }
 
 /****************************************************************

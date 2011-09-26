@@ -229,8 +229,11 @@ NTSTATUS pdb_delete_dom_group(TALLOC_CTX *mem_ctx, uint32_t rid);
 NTSTATUS pdb_add_group_mapping_entry(GROUP_MAP *map);
 NTSTATUS pdb_update_group_mapping_entry(GROUP_MAP *map);
 NTSTATUS pdb_delete_group_mapping_entry(struct dom_sid sid);
-bool pdb_enum_group_mapping(const struct dom_sid *sid, enum lsa_SidType sid_name_use, GROUP_MAP **pp_rmap,
-			    size_t *p_num_entries, bool unix_only);
+bool pdb_enum_group_mapping(const struct dom_sid *sid,
+			    enum lsa_SidType sid_name_use,
+			    GROUP_MAP ***pp_rmap,
+			    size_t *p_num_entries,
+			    bool unix_only);
 NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 				const struct dom_sid *sid,
 				uint32_t **pp_member_rids,

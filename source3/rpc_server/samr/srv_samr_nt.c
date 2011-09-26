@@ -5966,7 +5966,7 @@ NTSTATUS _samr_QueryGroupInfo(struct pipes_struct *p,
 {
 	struct samr_group_info *ginfo;
 	NTSTATUS status;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	union samr_GroupInfo *info = NULL;
 	bool ret;
 	uint32_t attributes = SE_GROUP_MANDATORY |
@@ -5982,15 +5982,21 @@ NTSTATUS _samr_QueryGroupInfo(struct pipes_struct *p,
 		return status;
 	}
 
+	map = talloc_zero(p->mem_ctx, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	become_root();
-	ret = get_domain_group_from_sid(ginfo->sid, &map);
+	ret = get_domain_group_from_sid(ginfo->sid, map);
 	unbecome_root();
 	if (!ret)
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* FIXME: map contains fstrings */
-	group_name = talloc_strdup(r, map.nt_name);
-	group_description = talloc_strdup(r, map.comment);
+	group_name = talloc_move(r, &map->nt_name);
+	group_description = talloc_move(r, &map->comment);
+
+	TALLOC_FREE(map);
 
 	info = talloc_zero(p->mem_ctx, union samr_GroupInfo);
 	if (!info) {
@@ -6068,7 +6074,7 @@ NTSTATUS _samr_SetGroupInfo(struct pipes_struct *p,
 			    struct samr_SetGroupInfo *r)
 {
 	struct samr_group_info *ginfo;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	NTSTATUS status;
 	bool ret;
 
@@ -6079,20 +6085,33 @@ NTSTATUS _samr_SetGroupInfo(struct pipes_struct *p,
 		return status;
 	}
 
+	map = talloc_zero(p->mem_ctx, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	become_root();
-	ret = get_domain_group_from_sid(ginfo->sid, &map);
+	ret = get_domain_group_from_sid(ginfo->sid, map);
 	unbecome_root();
 	if (!ret)
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	switch (r->in.level) {
 		case 2:
-			fstrcpy(map.nt_name, r->in.info->name.string);
+			map->nt_name = talloc_strdup(map,
+						     r->in.info->name.string);
+			if (!map->nt_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			break;
 		case 3:
 			break;
 		case 4:
-			fstrcpy(map.comment, r->in.info->description.string);
+			map->comment = talloc_strdup(map,
+						r->in.info->description.string);
+			if (!map->comment) {
+				return NT_STATUS_NO_MEMORY;
+			}
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -6101,10 +6120,12 @@ NTSTATUS _samr_SetGroupInfo(struct pipes_struct *p,
 	/******** BEGIN SeAddUsers BLOCK *********/
 
 	become_root();
-	status = pdb_update_group_mapping_entry(&map);
+	status = pdb_update_group_mapping_entry(map);
 	unbecome_root();
 
 	/******** End SeAddUsers BLOCK *********/
+
+	TALLOC_FREE(map);
 
 	if (NT_STATUS_IS_OK(status)) {
 		force_flush_samr_cache(&ginfo->sid);
@@ -6269,7 +6290,7 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 
 {
 	struct dom_sid info_sid;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	struct samr_domain_info *dinfo;
 	struct samr_group_info *ginfo;
 	struct security_descriptor         *psd = NULL;
@@ -6312,12 +6333,19 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 	DEBUG(10, ("_samr_OpenGroup:Opening SID: %s\n",
 		   sid_string_dbg(&info_sid)));
 
+	map = talloc_zero(p->mem_ctx, GROUP_MAP);
+	if (!map) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* check if that group really exists */
 	become_root();
-	ret = get_domain_group_from_sid(info_sid, &map);
+	ret = get_domain_group_from_sid(info_sid, map);
 	unbecome_root();
 	if (!ret)
 		return NT_STATUS_NO_SUCH_GROUP;
+
+	TALLOC_FREE(map);
 
 	ginfo = policy_handle_create(p, r->out.group_handle,
 				     acc_granted,

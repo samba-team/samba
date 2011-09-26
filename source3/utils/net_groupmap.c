@@ -33,24 +33,32 @@
 **********************************************************/
 static bool get_sid_from_input(struct dom_sid *sid, char *input)
 {
-	GROUP_MAP map;
+	GROUP_MAP *map;
+
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		return false;
+	}
 
 	if (strncasecmp_m( input, "S-", 2)) {
 		/* Perhaps its the NT group name? */
-		if (!pdb_getgrnam(&map, input)) {
+		if (!pdb_getgrnam(map, input)) {
 			printf(_("NT Group %s doesn't exist in mapping DB\n"),
 			       input);
+			TALLOC_FREE(map);
 			return false;
 		} else {
-			*sid = map.sid;
+			*sid = map->sid;
 		}
 	} else {
 		if (!string_to_sid(sid, input)) {
 			printf(_("converting sid %s from a string failed!\n"),
 			       input);
+			TALLOC_FREE(map);
 			return false;
 		}
 	}
+	TALLOC_FREE(map);
 	return true;
 }
 
@@ -127,7 +135,7 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 	/* list a single group is given a name */
 	if ( ntgroup[0] || sid_string[0] ) {
 		struct dom_sid sid;
-		GROUP_MAP map;
+		GROUP_MAP *map;
 
 		if ( sid_string[0] )
 			strlcpy(ntgroup, sid_string, sizeof(ntgroup));
@@ -136,27 +144,39 @@ static int net_groupmap_list(struct net_context *c, int argc, const char **argv)
 			return -1;
 		}
 
+		map = talloc_zero(NULL, GROUP_MAP);
+		if (!map) {
+			return -1;
+		}
+
 		/* Get the current mapping from the database */
-		if(!pdb_getgrsid(&map, sid)) {
+		if(!pdb_getgrsid(map, sid)) {
 			d_fprintf(stderr,
 				  _("Failure to local group SID in the "
 				    "database\n"));
+			TALLOC_FREE(map);
 			return -1;
 		}
 
-		print_map_entry(&map, long_list );
+		print_map_entry(map, long_list );
+		TALLOC_FREE(map);
 	}
 	else {
-		GROUP_MAP *map=NULL;
+		GROUP_MAP **maps = NULL;
+		bool ok = false;
 		/* enumerate all group mappings */
-		if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries, ENUM_ALL_MAPPED))
+		ok = pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN,
+					    &maps, &entries,
+					    ENUM_ALL_MAPPED);
+		if (!ok) {
 			return -1;
-
-		for (i=0; i<entries; i++) {
-			print_map_entry(&map[i], long_list);
 		}
 
-		SAFE_FREE(map);
+		for (i=0; i<entries; i++) {
+			print_map_entry(maps[i], long_list);
+		}
+
+		TALLOC_FREE(maps);
 	}
 
 	return 0;
@@ -178,7 +198,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 	uint32 rid = 0;
 	gid_t gid;
 	int i;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 
 	const char *name_type;
 	const char add_usage_str[] = N_("net groupmap add "
@@ -188,10 +208,6 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 					"[ntgroup=<string>] "
 					"[comment=<string>]");
 
-	ZERO_STRUCT(map);
-
-	/* Default is domain group. */
-	map.sid_name_use = SID_NAME_DOM_GRP;
 	name_type = "domain group";
 
 	if (c->display_usage) {
@@ -280,13 +296,19 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	{
-		if (pdb_getgrgid(&map, gid)) {
-			d_printf(_("Unix group %s already mapped to SID %s\n"),
-				 unixgrp, sid_string_tos(&map.sid));
-			return -1;
-		}
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		return -1;
 	}
+	/* Default is domain group. */
+	map->sid_name_use = SID_NAME_DOM_GRP;
+	if (pdb_getgrgid(map, gid)) {
+		d_printf(_("Unix group %s already mapped to SID %s\n"),
+			 unixgrp, sid_string_tos(&map->sid));
+		TALLOC_FREE(map);
+		return -1;
+	}
+	TALLOC_FREE(map);
 
 	if ( (rid == 0) && (string_sid[0] == '\0') ) {
 		d_printf(_("No rid or sid specified, choosing a RID\n"));
@@ -339,7 +361,7 @@ static int net_groupmap_add(struct net_context *c, int argc, const char **argv)
 static int net_groupmap_modify(struct net_context *c, int argc, const char **argv)
 {
 	struct dom_sid sid;
-	GROUP_MAP map;
+	GROUP_MAP *map = NULL;
 	fstring ntcomment = "";
 	fstring type = "";
 	fstring ntgroup = "";
@@ -430,10 +452,16 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 		}
 	}
 
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		return -1;
+	}
+
 	/* Get the current mapping from the database */
-	if(!pdb_getgrsid(&map, sid)) {
+	if(!pdb_getgrsid(map, sid)) {
 		d_fprintf(stderr,
 			 _("Failed to find local group SID in the database\n"));
+		TALLOC_FREE(map);
 		return -1;
 	}
 
@@ -443,24 +471,36 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 	 */
 	if (sid_type == SID_NAME_UNKNOWN) {
 		d_fprintf(stderr, _("Can't map to an unknown group type.\n"));
+		TALLOC_FREE(map);
 		return -1;
         }
 
-	if (map.sid_name_use == SID_NAME_WKN_GRP) {
+	if (map->sid_name_use == SID_NAME_WKN_GRP) {
 		d_fprintf(stderr,
 			  _("You can only change between domain and local "
 			    "groups.\n"));
+		TALLOC_FREE(map);
 		return -1;
 	}
 
-	map.sid_name_use=sid_type;
+	map->sid_name_use = sid_type;
 
 	/* Change comment if new one */
-	if ( ntcomment[0] )
-		strlcpy(map.comment, ntcomment, sizeof(map.comment));
+	if (ntcomment[0]) {
+		map->comment = talloc_strdup(map, ntcomment);
+		if (!map->comment) {
+			d_fprintf(stderr, _("Out of memory!\n"));
+			return -1;
+		}
+	}
 
-	if ( ntgroup[0] )
-		strlcpy(map.nt_name, ntgroup, sizeof(map.nt_name));
+	if (ntgroup[0]) {
+		map->nt_name = talloc_strdup(map, ntgroup);
+		if (!map->nt_name) {
+			d_fprintf(stderr, _("Out of memory!\n"));
+			return -1;
+		}
+	}
 
 	if ( unixgrp[0] ) {
 		gid = nametogid( unixgrp );
@@ -468,19 +508,22 @@ static int net_groupmap_modify(struct net_context *c, int argc, const char **arg
 			d_fprintf(stderr, _("Unable to lookup UNIX group %s.  "
 					    "Make sure the group exists.\n"),
 				unixgrp);
+			TALLOC_FREE(map);
 			return -1;
 		}
 
-		map.gid = gid;
+		map->gid = gid;
 	}
 
-	if ( !NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map)) ) {
+	if (!NT_STATUS_IS_OK(pdb_update_group_mapping_entry(map))) {
 		d_fprintf(stderr, _("Could not update group database\n"));
+		TALLOC_FREE(map);
 		return -1;
 	}
 
-	d_printf(_("Updated mapping entry for %s\n"), map.nt_name);
+	d_printf(_("Updated mapping entry for %s\n"), map->nt_name);
 
+	TALLOC_FREE(map);
 	return 0;
 }
 
@@ -552,7 +595,7 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 {
 	const char *ntgroup = NULL;
 	struct group *grp = NULL;
-	GROUP_MAP map;
+	GROUP_MAP *map;
 	bool have_map = false;
 
 	if ((argc < 1) || (argc > 2) || c->display_usage) {
@@ -580,13 +623,19 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 		}
 	}
 
-	have_map = pdb_getgrnam(&map, ntgroup);
+	map = talloc_zero(NULL, GROUP_MAP);
+	if (!map) {
+		d_printf(_("Out of memory!\n"));
+		return -1;
+	}
+
+	have_map = pdb_getgrnam(map, ntgroup);
 
 	if (!have_map) {
 		struct dom_sid sid;
 		have_map = ( (strncmp(ntgroup, "S-", 2) == 0) &&
 			     string_to_sid(&sid, ntgroup) &&
-			     pdb_getgrsid(&map, sid) );
+			     pdb_getgrsid(map, sid) );
 	}
 
 	if (!have_map) {
@@ -597,33 +646,41 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 			d_fprintf(stderr,
 				  _("Could not find group mapping for %s\n"),
 				  ntgroup);
+			TALLOC_FREE(map);
 			return -1;
 		}
 
-		map.gid = grp->gr_gid;
+		map->gid = grp->gr_gid;
 
 		if (c->opt_rid == 0) {
 			if ( pdb_capabilities() & PDB_CAP_STORE_RIDS ) {
 				if ( !pdb_new_rid((uint32*)&c->opt_rid) ) {
 					d_fprintf( stderr,
 					    _("Could not allocate new RID\n"));
+					TALLOC_FREE(map);
 					return -1;
 				}
 			} else {
-				c->opt_rid = algorithmic_pdb_gid_to_group_rid(map.gid);
+				c->opt_rid = algorithmic_pdb_gid_to_group_rid(map->gid);
 			}
 		}
 
-		sid_compose(&map.sid, get_global_sam_sid(), c->opt_rid);
+		sid_compose(&map->sid, get_global_sam_sid(), c->opt_rid);
 
-		map.sid_name_use = SID_NAME_DOM_GRP;
-		fstrcpy(map.nt_name, ntgroup);
-		fstrcpy(map.comment, "");
+		map->sid_name_use = SID_NAME_DOM_GRP;
+		map->nt_name = talloc_strdup(map, ntgroup);
+		map->comment = talloc_strdup(map, "");
+		if (!map->nt_name || !map->comment) {
+			d_printf(_("Out of memory!\n"));
+			TALLOC_FREE(map);
+			return -1;
+		}
 
-		if (!NT_STATUS_IS_OK(pdb_add_group_mapping_entry(&map))) {
+		if (!NT_STATUS_IS_OK(pdb_add_group_mapping_entry(map))) {
 			d_fprintf(stderr,
 				  _("Could not add mapping entry for %s\n"),
 				  ntgroup);
+			TALLOC_FREE(map);
 			return -1;
 		}
 	}
@@ -631,46 +688,59 @@ static int net_groupmap_set(struct net_context *c, int argc, const char **argv)
 	/* Now we have a mapping entry, update that stuff */
 
 	if ( c->opt_localgroup || c->opt_domaingroup ) {
-		if (map.sid_name_use == SID_NAME_WKN_GRP) {
+		if (map->sid_name_use == SID_NAME_WKN_GRP) {
 			d_fprintf(stderr,
 				  _("Can't change type of the BUILTIN "
 				    "group %s\n"),
-				  map.nt_name);
+				  map->nt_name);
+			TALLOC_FREE(map);
 			return -1;
 		}
 	}
 
 	if (c->opt_localgroup)
-		map.sid_name_use = SID_NAME_ALIAS;
+		map->sid_name_use = SID_NAME_ALIAS;
 
 	if (c->opt_domaingroup)
-		map.sid_name_use = SID_NAME_DOM_GRP;
+		map->sid_name_use = SID_NAME_DOM_GRP;
 
 	/* The case (opt_domaingroup && opt_localgroup) was tested for above */
 
 	if ((c->opt_comment != NULL) && (strlen(c->opt_comment) > 0)) {
-		fstrcpy(map.comment, c->opt_comment);
+		map->comment = talloc_strdup(map, c->opt_comment);
+		if (!map->comment) {
+			d_printf(_("Out of memory!\n"));
+			TALLOC_FREE(map);
+			return -1;
+		}
 	}
 
 	if ((c->opt_newntname != NULL) && (strlen(c->opt_newntname) > 0)) {
-		fstrcpy(map.nt_name, c->opt_newntname);
+		map->nt_name = talloc_strdup(map, c->opt_newntname);
+		if (!map->nt_name) {
+			d_printf(_("Out of memory!\n"));
+			TALLOC_FREE(map);
+			return -1;
+		}
 	}
 
 	if (grp != NULL)
-		map.gid = grp->gr_gid;
+		map->gid = grp->gr_gid;
 
-	if (!NT_STATUS_IS_OK(pdb_update_group_mapping_entry(&map))) {
+	if (!NT_STATUS_IS_OK(pdb_update_group_mapping_entry(map))) {
 		d_fprintf(stderr, _("Could not update group mapping for %s\n"),
 			  ntgroup);
+		TALLOC_FREE(map);
 		return -1;
 	}
 
+	TALLOC_FREE(map);
 	return 0;
 }
 
 static int net_groupmap_cleanup(struct net_context *c, int argc, const char **argv)
 {
-	GROUP_MAP *map = NULL;
+	GROUP_MAP **maps = NULL;
 	size_t i, entries;
 
 	if (c->display_usage) {
@@ -682,7 +752,7 @@ static int net_groupmap_cleanup(struct net_context *c, int argc, const char **ar
 		return 0;
 	}
 
-	if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &map, &entries,
+	if (!pdb_enum_group_mapping(NULL, SID_NAME_UNKNOWN, &maps, &entries,
 				    ENUM_ALL_MAPPED)) {
 		d_fprintf(stderr, _("Could not list group mappings\n"));
 		return -1;
@@ -690,19 +760,19 @@ static int net_groupmap_cleanup(struct net_context *c, int argc, const char **ar
 
 	for (i=0; i<entries; i++) {
 
-		if (map[i].gid == -1)
-			printf(_("Group %s is not mapped\n"), map[i].nt_name);
+		if (maps[i]->gid == -1)
+			printf(_("Group %s is not mapped\n"),
+				maps[i]->nt_name);
 
-		if (!sid_check_is_in_our_domain(&map[i].sid)) {
+		if (!sid_check_is_in_our_domain(&maps[i]->sid)) {
 			printf(_("Deleting mapping for NT Group %s, sid %s\n"),
-			       map[i].nt_name,
-			       sid_string_tos(&map[i].sid));
-			pdb_delete_group_mapping_entry(map[i].sid);
+				maps[i]->nt_name,
+				sid_string_tos(&maps[i]->sid));
+			pdb_delete_group_mapping_entry(maps[i]->sid);
 		}
 	}
 
-	SAFE_FREE(map);
-
+	TALLOC_FREE(maps);
 	return 0;
 }
 

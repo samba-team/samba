@@ -26,8 +26,8 @@ typedef struct _GROUP_MAP {
 	gid_t gid;
 	struct dom_sid sid;
 	enum lsa_SidType sid_name_use;
-	fstring nt_name;
-	fstring comment;
+	char *nt_name;
+	char *comment;
 } GROUP_MAP;
 
 #include "groupdb/proto.h"

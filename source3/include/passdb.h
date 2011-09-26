@@ -375,7 +375,7 @@ struct pdb_methods
 
 	NTSTATUS (*enum_group_mapping)(struct pdb_methods *methods,
 				       const struct dom_sid *sid, enum lsa_SidType sid_name_use,
-				       GROUP_MAP **pp_rmap, size_t *p_num_entries,
+				       GROUP_MAP ***pp_rmap, size_t *p_num_entries,
 				       bool unix_only);
 
 	NTSTATUS (*enum_group_members)(struct pdb_methods *methods,

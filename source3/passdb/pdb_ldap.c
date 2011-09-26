@@ -2471,7 +2471,11 @@ for gidNumber(%lu)\n",(unsigned long)map->gid));
 			return false;
 		}
 	}
-	fstrcpy(map->nt_name, temp);
+	map->nt_name = talloc_strdup(map, temp);
+	if (!map->nt_name) {
+		TALLOC_FREE(ctx);
+		return false;
+	}
 
 	TALLOC_FREE(temp);
 	temp = smbldap_talloc_single_attribute(
@@ -2487,7 +2491,11 @@ for gidNumber(%lu)\n",(unsigned long)map->gid));
 			return false;
 		}
 	}
-	fstrcpy(map->comment, temp);
+	map->comment = talloc_strdup(map, temp);
+	if (!map->comment) {
+		TALLOC_FREE(ctx);
+		return false;
+	}
 
 	if (lp_parm_bool(-1, "ldapsam", "trusted", false)) {
 		store_gid_sid_cache(&map->sid, map->gid);
@@ -3470,15 +3478,15 @@ static NTSTATUS ldapsam_getsamgrent(struct pdb_methods *my_methods,
 
 static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 					   const struct dom_sid *domsid, enum lsa_SidType sid_name_use,
-					   GROUP_MAP **pp_rmap,
+					   GROUP_MAP ***pp_rmap,
 					   size_t *p_num_entries,
 					   bool unix_only)
 {
-	GROUP_MAP map = { 0, };
+	GROUP_MAP *map = NULL;
 	size_t entries = 0;
 
 	*p_num_entries = 0;
-	*pp_rmap = NULL;
+	**pp_rmap = NULL;
 
 	if (!NT_STATUS_IS_OK(ldapsam_setsamgrent(methods, False))) {
 		DEBUG(0, ("ldapsam_enum_group_mapping: Unable to open "
@@ -3486,31 +3494,44 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	while (NT_STATUS_IS_OK(ldapsam_getsamgrent(methods, &map))) {
+	while (true) {
+
+		map = talloc_zero(NULL, GROUP_MAP);
+		if (!map) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (!NT_STATUS_IS_OK(ldapsam_getsamgrent(methods, map))) {
+			TALLOC_FREE(map);
+			break;
+		}
+
 		if (sid_name_use != SID_NAME_UNKNOWN &&
-		    sid_name_use != map.sid_name_use) {
+		    sid_name_use != map->sid_name_use) {
 			DEBUG(11,("ldapsam_enum_group_mapping: group %s is "
-				  "not of the requested type\n", map.nt_name));
+				  "not of the requested type\n",
+				  map->nt_name));
 			continue;
 		}
-		if (unix_only==ENUM_ONLY_MAPPED && map.gid==-1) {
+		if (unix_only == ENUM_ONLY_MAPPED && map->gid == -1) {
 			DEBUG(11,("ldapsam_enum_group_mapping: group %s is "
-				  "non mapped\n", map.nt_name));
+				  "non mapped\n", map->nt_name));
 			continue;
 		}
 
-		(*pp_rmap)=SMB_REALLOC_ARRAY((*pp_rmap), GROUP_MAP, entries+1);
+		*pp_rmap = talloc_realloc(NULL, *pp_rmap,
+						GROUP_MAP *, entries + 1);
 		if (!(*pp_rmap)) {
 			DEBUG(0,("ldapsam_enum_group_mapping: Unable to "
 				 "enlarge group map!\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		(*pp_rmap)[entries] = map;
+		(*pp_rmap)[entries] = talloc_move((*pp_rmap), &map);
 
 		entries += 1;
-
 	}
+
 	ldapsam_endsamgrent(methods);
 
 	*p_num_entries = entries;
