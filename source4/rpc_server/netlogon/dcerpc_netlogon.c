@@ -1840,7 +1840,9 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 
 	info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
-	info->dc_unc           = talloc_asprintf(mem_ctx, "\\\\%s", dc_name);
+	info->dc_unc = talloc_asprintf(mem_ctx, "%s%s",
+			dc_name[0] == '\\'? "\\\\":"",
+			talloc_strdup(mem_ctx, dc_name));
 	W_ERROR_HAVE_NO_MEMORY(info->dc_unc);
 
 	load_interface_list(mem_ctx, lp_ctx, &ifaces);
