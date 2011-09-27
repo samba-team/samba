@@ -196,6 +196,7 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 						    mem_ctx,
 						    first_object,
 						    &num,
+						    DSDB_REPL_FLAG_ADD_NCNAME,
 						    &ids);
 		if (!W_ERROR_IS_OK(status)) {
 			r->out.ctr->ctr3.err_data->v1.status = status;
