@@ -23,6 +23,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "libsmb/smb2cli.h"
 #include "libcli/security/security.h"
+#include "libsmb/proto.h"
 
 extern fstring host, workgroup, share, password, username, myname;
 
@@ -51,9 +52,12 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_sesssetup_ntlmssp(cli, username, workgroup, password);
+	status = cli_session_setup(cli, username,
+				   password, strlen(password),
+				   password, strlen(password),
+				   workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smb2cli_sesssetup returned %s\n", nt_errstr(status));
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
 		return false;
 	}
 
