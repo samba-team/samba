@@ -716,6 +716,12 @@ bld.SAMBA3_LIBRARY('pdb',
                    source=PASSDB_SRC,
                    deps='SECRETS3 SMBLDAP GROUPDB wbclient LIBCLI_AUTH flag_mapping',
                    private_library=True,
+                   public_headers='''
+				include/passdb.h
+				passdb/machine_sid.h
+				passdb/lookup_sid.h''',
+                   pc_files=[],
+                   vnum='0',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
