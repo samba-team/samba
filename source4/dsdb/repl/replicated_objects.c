@@ -686,10 +686,69 @@ static WERROR dsdb_origin_object_convert(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+/*
+  create a new naming context via a DsAddEntry() with a nCName in a
+  crossRef object
+ */
+static WERROR dsdb_origin_create_NC(struct ldb_context *ldb,
+				    struct ldb_dn *dn)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct ldb_message *msg;
+	int ret;
+
+	msg = ldb_msg_new(tmp_ctx);
+	W_ERROR_HAVE_NO_MEMORY_AND_FREE(msg, tmp_ctx);
+
+	msg->dn = dn;
+	ret = ldb_msg_add_string(msg, "objectClass", "top");
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	/* [MS-DRSR] implies that we should only add the 'top'
+	 * objectclass, but that would cause lots of problems with our
+	 * objectclass code as top is not structural, so we add
+	 * 'domainDNS' as well to keep things sane. We're expecting
+	 * this new NC to be of objectclass domainDNS after
+	 * replication anyway
+	 */
+	ret = ldb_msg_add_string(msg, "objectClass", "domainDNS");
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	ret = ldb_msg_add_fmt(msg, "instanceType", "%u",
+			INSTANCE_TYPE_IS_NC_HEAD|
+			INSTANCE_TYPE_NC_ABOVE|
+			INSTANCE_TYPE_UNINSTANT);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	ret = dsdb_add(ldb, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to create new NC for %s - %s\n",
+			 ldb_dn_get_linearized(dn), ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return WERR_NOMEM;
+	}
+
+	DEBUG(1,("Created new NC for %s\n", ldb_dn_get_linearized(dn)));
+
+	talloc_free(tmp_ctx);
+	return WERR_OK;
+}
+
+
 WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 				  TALLOC_CTX *mem_ctx,
 				  const struct drsuapi_DsReplicaObjectListItem *first_object,
 				  uint32_t *_num,
+				  uint32_t dsdb_repl_flags,
 				  struct drsuapi_DsReplicaObjectIdentifier2 **_ids)
 {
 	WERROR status;
@@ -746,6 +805,31 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 	if (ids == NULL) {
 		status = WERR_NOMEM;
 		goto cancel;
+	}
+
+	if (dsdb_repl_flags & DSDB_REPL_FLAG_ADD_NCNAME) {
+		/* check for possible NC creation */
+		for (i=0; i < num_objects; i++) {
+			struct ldb_message *msg = objects[i];
+			struct ldb_message_element *el;
+			struct ldb_dn *nc_dn;
+
+			if (ldb_msg_check_string_attribute(msg, "objectClass", "crossRef") == 0) {
+				continue;
+			}
+			el = ldb_msg_find_element(msg, "nCName");
+			if (el == NULL || el->num_values != 1) {
+				continue;
+			}
+			nc_dn = ldb_dn_from_ldb_val(objects, ldb, &el->values[0]);
+			if (!ldb_dn_validate(nc_dn)) {
+				continue;
+			}
+			status = dsdb_origin_create_NC(ldb, nc_dn);
+			if (!W_ERROR_IS_OK(status)) {
+				goto cancel;
+			}
+		}
 	}
 
 	for (i=0; i < num_objects; i++) {
