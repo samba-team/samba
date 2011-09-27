@@ -818,7 +818,7 @@ class dc_join(object):
             ctx.join_finalise()
         except Exception:
             print "Join failed - cleaning up"
-            #ctx.cleanup_old_join()
+            ctx.cleanup_old_join()
             raise
 
 
