@@ -200,7 +200,7 @@ static NTSTATUS messaging_tdb_fetch(TDB_CONTEXT *msg_tdb,
 
 	blob = data_blob_const(data.dptr, data.dsize);
 
-	ndr_err = ndr_pull_struct_blob(
+	ndr_err = ndr_pull_struct_blob_all(
 		&blob, result, result,
 		(ndr_pull_flags_fn_t)ndr_pull_messaging_array);
 
