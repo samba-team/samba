@@ -378,6 +378,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_AUDIOSRV',
 	public_deps='NDR_AUDIOSRV dcerpc-binding'
 	)
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DNS',
+	source='gen_ndr/ndr_dns_c.c',
+	public_deps='dcerpc-binding NDR_DNS'
+	)
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_ECHO',
 	source='gen_ndr/ndr_echo_c.c',
 	public_deps='dcerpc-binding NDR_ECHO'
@@ -583,7 +588,7 @@ bld.SAMBA_LIBRARY('dcerpc-samba',
                   source='',
                   deps='''RPC_NDR_LSA RPC_NDR_SAMR RPC_NDR_NETLOGON RPC_NDR_EVENTLOG RPC_NDR_DFS
 	          RPC_NDR_NTSVCS RPC_NDR_SVCCTL RPC_NDR_INITSHUTDOWN RPC_NDR_WKSSVC RPC_NDR_SRVSVC RPC_NDR_WINREG
-	          RPC_NDR_ECHO RPC_NDR_EPMAPPER RPC_NDR_ATSVC RPC_NDR_SPOOLSS''',
+	          RPC_NDR_ECHO RPC_NDR_EPMAPPER RPC_NDR_ATSVC RPC_NDR_SPOOLSS RPC_NDR_DNS''',
                   public_deps='ndr-standard',
                   private_library=True,
                   grouping_library=True
