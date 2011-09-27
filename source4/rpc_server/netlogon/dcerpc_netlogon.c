@@ -1056,7 +1056,7 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 	domain_dn = samdb_domain_to_dn(sam_ctx, mem_ctx,
 				       r->in.domainname);
 	if (domain_dn == NULL) {
-		return WERR_DS_UNAVAILABLE;
+		return WERR_NO_SUCH_DOMAIN;
 	}
 
 	ret = gendb_search_dn(sam_ctx, mem_ctx,
