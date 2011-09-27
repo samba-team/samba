@@ -26,7 +26,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NAMED_PIPE_AUTH',
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_DNSSERVER',
-	source='gen_ndr/ndr_dnsserver.c',
+	source='gen_ndr/ndr_dnsserver.c ndr/ndr_dnsserver.c',
 	public_deps='ndr'
 	)
 
