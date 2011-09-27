@@ -1,0 +1,33 @@
+#include "idl_types.h"
+[
+	pointer_default(unique)
+]
+interface copychunk
+{
+	typedef [public] struct {
+		uint8 resume_key[24];
+		uint32 context_len;
+		/* <56> Windows sends 4 bytes of zero for the context field. */
+		uint8 context[4];
+	} req_resume_key_rsp;
+
+	typedef struct {
+		hyper source_off;
+		hyper target_off;
+		uint32 length;
+		uint32 reserved;
+	} srv_copychunk;
+
+	typedef [public] struct {
+		uint8 source_key[24];
+		uint32 chunk_count;
+		uint32 reserved;
+		srv_copychunk chunks[chunk_count];
+	} srv_copychunk_copy;
+
+	typedef [public] struct {
+		uint32 chunks_written;
+		uint32 chunk_bytes_written;
+		uint32 total_bytes_written;
+	} srv_copychunk_rsp;
+}
