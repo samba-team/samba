@@ -103,7 +103,7 @@ static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb,
 
 	ret = samdb_reference_dn(ldb, tmp_ctx, server_dn, "serverReference", &machine_dn);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find serverReference in %s - %s",
+		DEBUG(0,(__location__ ": Failed to find serverReference in %s - %s\n",
 			 ldb_dn_get_linearized(server_dn), ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
 		return ret;
@@ -117,7 +117,7 @@ static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb,
 		return LDB_SUCCESS;
 	}
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find rIDSetReferences in %s - %s",
+		DEBUG(0,(__location__ ": Failed to find rIDSetReferences in %s - %s\n",
 			 ldb_dn_get_linearized(machine_dn), ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
 		return ret;
@@ -125,7 +125,7 @@ static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb,
 
 	ret = ldb_search(ldb, tmp_ctx, &res, rid_set_dn, LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to load RID Set attrs from %s - %s",
+		DEBUG(0,(__location__ ": Failed to load RID Set attrs from %s - %s\n",
 			 ldb_dn_get_linearized(rid_set_dn), ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
 		return ret;
@@ -194,7 +194,7 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 	/* work out who is the RID Manager */
 	ret = samdb_rid_manager_dn(ldb, tmp_ctx, &rid_manager_dn);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, (__location__ ": Failed to find RID Manager object - %s", ldb_errstring(ldb)));
+		DEBUG(0, (__location__ ": Failed to find RID Manager object - %s\n", ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -202,7 +202,7 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 	/* find the DN of the RID Manager */
 	ret = samdb_reference_dn(ldb, tmp_ctx, rid_manager_dn, "fSMORoleOwner", &fsmo_role_dn);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s",
+		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s\n",
 			 ldb_errstring(ldb)));
 		talloc_free(tmp_ctx);
 		return WERR_DS_DRA_INTERNAL_ERROR;
