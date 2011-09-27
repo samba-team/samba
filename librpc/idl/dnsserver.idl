@@ -23,18 +23,155 @@ import "misc.idl", "dnsp.idl";
 #define DWORD uint32
 #define PDWORD uint32 *
 
+	/* */
+	/*   DNS RPC data types */
+	/* */
+
+	typedef [v1_enum] enum {
+		DNS_RPC_USE_TCPIP			= 0x00000001,
+		DNS_RPC_USE_NAMED_PIPE		= 0x00000002,
+		DNS_RPC_USE_LPC				= 0x00000004,
+		DNS_RPC_USE_ALL_PROTOCOLS	= 0xFFFFFFFF
+	}
+	DNS_RPC_PROTOCOLS;
+
+	typedef [v1_enum] enum {
+		DNS_CLIENT_VERSION_W2K		= 0x00000000,
+		DNS_CLIENT_VERSION_DOTNET	= 0x00060000,
+		DNS_CLIENT_VERSION_LONGHORN = 0x00070000
+	}
+	DNS_RPC_CLIENT_VERSION;
+
+	/* Return buffer */
 	typedef struct {
-		DWORD       StatId;
-		WORD        wLength;
-		BOOLEAN     fClear;
-		UCHAR       fReserved;
-	} DNSSRV_STAT_HEADER;
+		DWORD                       dwLength;
+		[size_is(dwLength)] BYTE    Buffer[];
+	} DNS_RPC_BUFFER;
+
+	/* String Array */
+	typedef struct {
+		[range(0,10000)]        DWORD       dwCount;
+		[size_is(dwCount),string,charset(UTF8)]      char *       pszStrings[];
+	} DNS_RPC_UTF8_STRING_LIST;
+
+	/* Name and parameter value */
+	typedef struct {
+		DWORD       dwParam;
+		[string, charset(UTF8)] char *       pszNodeName;
+	}
+	DNS_RPC_NAME_AND_PARAM;
 
 
+	/* */
+	/*   DNS Resource Record data types */
+	/* */
+
+	/* DNS_RECORD_TYPE is defined in dnsp.idl as dns_record_type */
+	/* DNS_RPC_NODE_FLAGS is defined in dnsp.idl as dns_rpc_node_flags */
+
+	typedef [gensize] struct {
+		[value(strlen(str))] uint8 len;
+		[charset(UTF8)] uint8 str[len];
+	}
+	DNS_RPC_NAME;
+
 	typedef struct {
-		DNSSRV_STAT_HEADER Header;
-		BYTE                Buffer[1];
-	} DNSSRV_STAT;
+		uint16 wLength;
+		uint16 wRecordCount;
+		uint32 dwFlags;
+		uint32 dwChildCount;
+		DNS_RPC_NAME dnsNodeName;
+	}
+	DNS_RPC_NODE;
+
+	typedef struct {
+		uint32 dwSerialNo;
+		uint32 dwRefresh;
+		uint32 dwRetry;
+		uint32 dwExpire;
+		uint32 dwMinimumTtl;
+		DNS_RPC_NAME NamePrimaryServer;
+		DNS_RPC_NAME ZoneAdministratorEmail;
+	}
+	DNS_RPC_RECORD_SOA;
+
+	typedef struct {
+		uint16 wPreference;
+		DNS_RPC_NAME nameExchange;
+	}
+	DNS_RPC_RECORD_NAME_PREFERENCE;
+
+	typedef struct {
+		uint16 wPriority;
+		uint16 wWeight;
+		uint16 wPort;
+		DNS_RPC_NAME nameTarget;
+	}
+	DNS_RPC_RECORD_SRV;
+
+	typedef [nodiscriminant,gensize,flag(NDR_NOALIGN)] union {
+		[case(DNS_TYPE_TOMBSTONE)] 		    NTTIME timestamp;
+		[case(DNS_TYPE_A)] [flag(NDR_BIG_ENDIAN)]   ipv4address ipv4;
+		[case(DNS_TYPE_NS)]    				DNS_RPC_NAME name;
+		[case(DNS_TYPE_MD)]    				DNS_RPC_NAME name;
+		[case(DNS_TYPE_MF)]    				DNS_RPC_NAME name;
+		[case(DNS_TYPE_CNAME)] 				DNS_RPC_NAME name;
+		[case(DNS_TYPE_SOA)]   				DNS_RPC_RECORD_SOA soa;
+		[case(DNS_TYPE_MB)]    				DNS_RPC_NAME name;
+		[case(DNS_TYPE_MG)]    				DNS_RPC_NAME name;
+		[case(DNS_TYPE_MR)]    				DNS_RPC_NAME name;
+		[case(DNS_TYPE_PTR)]   				DNS_RPC_NAME ptr;
+		[case(DNS_TYPE_HINFO)]   			DNS_RPC_NAME hinfo;
+		[case(DNS_TYPE_MX)]   				DNS_RPC_RECORD_NAME_PREFERENCE mx;
+		[case(DNS_TYPE_TXT)]   				DNS_RPC_NAME name;
+		[case(DNS_TYPE_AAAA)]   			ipv6address ipv6;
+		[case(DNS_TYPE_SRV)]   				DNS_RPC_RECORD_SRV srv;
+		[case(DNS_TYPE_DNAME)] 				DNS_RPC_NAME name;
+	}
+	DNS_RPC_DATA;
+
+	typedef [public] struct {
+		[value(ndr_size_DNS_RPC_DATA(&data,wType,0))] uint16 wDataLength;
+		dns_record_type        wType;
+		DWORD       dwFlags;
+		DWORD       dwSerial;
+		DWORD       dwTtlSeconds;
+		DWORD       dwTimeStamp;
+		DWORD       dwReserved;
+		[subcontext(0),subcontext_size(wDataLength),switch_is(wType)] DNS_RPC_DATA data;
+	}
+	DNS_RPC_RECORD;
+
+	typedef struct {
+		[value(ndr_size_DNS_RPC_DATA(&rec.data,rec.wType,0))] uint3264 wContextLength;
+		DNS_RPC_RECORD rec;
+	}
+	DNS_RPC_RECORD_BUF;
+
+
+	/* */
+	/*   DNS Address Information data types */
+	/* */
+
+	typedef [v1_enum] enum {
+		DNS_IPVAL_DNS_SERVERS		= 0x00,
+		DNS_IPVAL_DNS_ROOTHINTS		= 0x01,
+		DNS_IPVAL_DNS_FORWARDERS	= 0x02,
+		DNS_IPVAL_DNS_ZONE_MASTERS	= 0x03,
+		DNS_IPVAL_DNS_DELEGATIONS	= 0x04
+	}
+	DNS_IPVAL_CONTEXT;
+
+	typedef [v1_enum] enum {
+		ERROR_SUCCESS				= 0x00,
+		DNS_IPVAL_INVALID_ADDR		= 0x01,
+		DNS_IPVAL_UNREACHABLE		= 0x02,
+		DNS_IPVAL_NO_RESPONSE		= 0x03,
+		DNS_IPVAL_NOT_AUTH_FOR_ZONE	= 0x04,
+		DNS_IPVAL_UNKNOWN_ERROR		= 0xFF,
+		DNS_IPVAL_NO_TCP			= 0x80000000
+	}
+	DNS_IP_VALIDATE_RETURN_FLAGS;
 
 	typedef struct {
 		DWORD           AddrCount;
@@ -61,48 +198,65 @@ import "misc.idl", "dnsp.idl";
 	} DNS_ADDR_ARRAY;
 #define PDNS_ADDR_ARRAY DNS_ADDR_ARRAY*
 
-	/* */
-	/*   RPC buffer type for returned data */
-	/* */
 	typedef struct {
-		DWORD                       dwLength;
-		[size_is(dwLength)] BYTE    Buffer[];
-	} DNS_RPC_BUFFER;
+		DWORD               dwRpcStructureVersion;
+		DWORD               dwReserved0;
+		DWORD               dwContext;
+		DWORD               dwReserved1;
+		[string, charset(UTF8)] char *                 pszContextName;
+		PDNS_ADDR_ARRAY     aipValidateAddrs;
+	}
+	DNS_RPC_IP_VALIDATE;
 
 
 	/* */
-	/* Server data types */
+	/*   DNS Server data types */
 	/* */
+
+	typedef [enum8bit] enum {
+		DNS_BOOT_METHOD_UNINITIALIZED	= 0x00,
+		DNS_BOOT_METHOD_FILE			= 0x01,
+		DNS_BOOT_METHOD_REGISTRY		= 0x02,
+		DNS_BOOT_METHOD_DIRECTORY		= 0x03
+	}
+	DNS_BOOT_METHOD;
+
+	typedef [v1_enum] enum {
+		DNS_ALLOW_RFC_NAMES_ONLY		= 0x00,
+		DNS_ALLOW_NONRFC_NAMES			= 0x01,
+		DNS_ALLOW_MULTIBYTE_NAMES		= 0x02,
+		DNS_ALLOW_ALL_NAMES				= 0x03
+	}
+	DNS_NAME_CHECK_FLAG;
+
 	typedef struct {
 		/* version */
 		/* basic configuration flags */
 
 		DWORD          dwVersion;
-		UCHAR          fBootMethod;
+		DNS_BOOT_METHOD fBootMethod;
 		BOOLEAN        fAdminConfigured;
 		BOOLEAN        fAllowUpdate;
 		BOOLEAN        fDsAvailable;
 
-		/* */
-		/*   pointer section */
-		/* */
+		/* pointer section */
 
 		[string, charset(UTF8)] char *           pszServerName;
 
-		/*   DS container */
+		/* DS container */
 
 		[string, charset(UTF16)] wchar_t *        pszDsContainer;
 
-		/*   IP interfaces */
+		/* IP interfaces */
 
 		PIP4_ARRAY     aipServerAddrs;
 		PIP4_ARRAY     aipListenAddrs;
 
-		/*   forwarders */
+		/* forwarders */
 
 		PIP4_ARRAY     aipForwarders;
 
-		/*   future extensions */
+		/* future extensions */
 
 		PDWORD         pExtension1;
 		PDWORD         pExtension2;
@@ -110,26 +264,25 @@ import "misc.idl", "dnsp.idl";
 		PDWORD         pExtension4;
 		PDWORD         pExtension5;
 
-		/* */
-		/*   DWORD section */
-		/* */
+		/* DWORD section */
 
-		/*   logging */
+		/* logging */
 
 		DWORD          dwLogLevel;
 		DWORD          dwDebugLevel;
-		/*   configuration DWORDs */
+
+		/* configuration DWORDs */
 
 		DWORD         dwForwardTimeout;
 		DWORD         dwRpcProtocol;
-		DWORD         dwNameCheckFlag;
+		DNS_NAME_CHECK_FLAG         dwNameCheckFlag;
 		DWORD         cAddressAnswerLimit;
 		DWORD         dwRecursionRetry;
 		DWORD         dwRecursionTimeout;
 		DWORD         dwMaxCacheTtl;
 		DWORD         dwDsPollingInterval;
 
-		/*   aging / scavenging */
+		/* aging / scavenging */
 
 		DWORD         dwScavengingInterval;
 		DWORD         dwDefaultRefreshInterval;
@@ -137,32 +290,31 @@ import "misc.idl", "dnsp.idl";
 
 		DWORD         dwReserveArray[10];
 
-		/* */
-		/*   BYTE section */
-		/* */
-		/*   configuration flags */
+		/* BYTE section */
+
+		/* configuration flags */
 
 		BOOLEAN       fAutoReverseZones;
 		BOOLEAN       fAutoCacheUpdate;
 
-		/*   recursion control */
+		/* recursion control */
 
 		BOOLEAN       fRecurseAfterForwarding;
 		BOOLEAN       fForwardDelegations;
 		BOOLEAN       fNoRecursion;
 		BOOLEAN       fSecureResponses;
 
-		/*   lookup control */
+		/* lookup control */
 
 		BOOLEAN       fRoundRobin;
 		BOOLEAN       fLocalNetPriority;
 
-		/*   BIND compatibility and mimicking */
+		/* BIND compatibility and mimicking */
 
 		BOOLEAN       fBindSecondaries;
 		BOOLEAN       fWriteAuthorityNs;
 
-		/*   Bells and whistles */
+		/* Bells and whistles */
 
 		BOOLEAN       fStrictFileParsing;
 		BOOLEAN       fLooseWildcarding;
@@ -182,64 +334,61 @@ import "misc.idl", "dnsp.idl";
 		DWORD          dwRpcStructureVersion;
 		DWORD          dwReserved0;
 
-		/*   basic configuration flags */
+		/* basic configuration flags */
 
 		DWORD          dwVersion;
-		UCHAR          fBootMethod;
+		DNS_BOOT_METHOD fBootMethod;
 		BOOLEAN        fAdminConfigured;
 		BOOLEAN        fAllowUpdate;
 		BOOLEAN        fDsAvailable;
 
-		/* */
-		/*   pointer section */
-		/* */
+		/* pointer section */
 
 		[string, charset(UTF8)] char *        pszServerName;
 
-		/*   DS container */
+		/* DS container */
 
 		[string, charset(UTF16)] wchar_t *     pszDsContainer;
 
-		/*   IP interfaces */
+		/* IP interfaces */
 
 		PIP4_ARRAY     aipServerAddrs;
 		PIP4_ARRAY     aipListenAddrs;
 
-		/*   forwarders */
+		/* forwarders */
 
 		PIP4_ARRAY     aipForwarders;
 
-		/*   logging */
+		/* logging */
 
 		PIP4_ARRAY aipLogFilter;
 		[string, charset(UTF16)] wchar_t *  pwszLogFilePath;
 
-		/*   Server domain/forest */
+		/* Server domain/forest */
 
 		[string, charset(UTF8)] char *            pszDomainName;         /*   UTF-8 FQDN */
 		[string, charset(UTF8)] char *            pszForestName;         /*   UTF-8 FQDN */
 
-		/*   Built-in directory partitions */
+		/* Built-in directory partitions */
 
 		[string, charset(UTF8)] char *            pszDomainDirectoryPartition;    /*   UTF-8 FQDN */
 		[string, charset(UTF8)] char *            pszForestDirectoryPartition;    /*   UTF-8 FQDN */
 
-		/*   future extensions */
+		/* future extensions */
 		DNS_EXTENSION       pExtensions[6];
 
-		/* */
-		/*   DWORD section */
-		/* */
+		/* DWORD section */
 
-		/*   logging */
+		/* logging */
 
 		DWORD          dwLogLevel;
 		DWORD          dwDebugLevel;
 
-		/*   configuration DWORDs */
+		/* configuration DWORDs */
+
 		DWORD         dwForwardTimeout;
 		DWORD         dwRpcProtocol;
-		DWORD         dwNameCheckFlag;
+		DNS_NAME_CHECK_FLAG         dwNameCheckFlag;
 		DWORD         cAddressAnswerLimit;
 		DWORD         dwRecursionRetry;
 		DWORD         dwRecursionTimeout;
@@ -247,19 +396,19 @@ import "misc.idl", "dnsp.idl";
 		DWORD         dwDsPollingInterval;
 		DWORD         dwLocalNetPriorityNetMask;
 
-		/*   aging and scavenging */
+		/* aging and scavenging */
 
 		DWORD         dwScavengingInterval;
 		DWORD         dwDefaultRefreshInterval;
 		DWORD         dwDefaultNoRefreshInterval;
 		DWORD         dwLastScavengeTime;
 
-		/*   more logging */
+		/* more logging */
 
 		DWORD         dwEventLogLevel;
 		DWORD         dwLogFileMaxSize;
 
-		/*   Active Directory information */
+		/* Active Directory information */
 
 		DWORD         dwDsForestVersion;
 		DWORD         dwDsDomainVersion;
@@ -267,37 +416,36 @@ import "misc.idl", "dnsp.idl";
 
 		DWORD         dwReserveArray[ 4 ];
 
-		/* */
-		/*   BYTE section */
-		/* */
-		/*   configuration flags */
+		/* BYTE section */
+
+		/* configuration flags */
 
 		BOOLEAN       fAutoReverseZones;
 		BOOLEAN       fAutoCacheUpdate;
 
-		/*   recursion control */
+		/* recursion control */
 
 		BOOLEAN       fRecurseAfterForwarding;
 		BOOLEAN       fForwardDelegations;
 		BOOLEAN       fNoRecursion;
 		BOOLEAN       fSecureResponses;
 
-		/*   lookup control */
+		/* lookup control */
 
 		BOOLEAN       fRoundRobin;
 		BOOLEAN       fLocalNetPriority;
 
-		/*   BIND compatibility and mimicking */
+		/* BIND compatibility and mimicking */
 
 		BOOLEAN       fBindSecondaries;
 		BOOLEAN       fWriteAuthorityNs;
 
-		/*   Bells and whistles */
+		/* Bells and whistles */
 
 		BOOLEAN       fStrictFileParsing;
 		BOOLEAN        fLooseWildcarding;
 
-		/*   aging \ scavenging */
+		/* aging \ scavenging */
 
 		BOOLEAN        fDefaultAgingState;
 
@@ -305,69 +453,65 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_SERVER_INFO_DOTNET;
 
-	typedef struct {
+	typedef [public] struct {
 		DWORD               dwRpcStructureVersion;
 		DWORD               dwReserved0;
 
-		/*   basic configuration flags */
+		/* basic configuration flags */
 
 		DWORD                  dwVersion;
-		UCHAR                  fBootMethod;
+		DNS_BOOT_METHOD        fBootMethod;
 		BOOLEAN                fAdminConfigured;
 		BOOLEAN                fAllowUpdate;
 		BOOLEAN                fDsAvailable;
 
-		/* */
-		/*   pointer section */
-		/* */
+		/* pointer section */
 
 		[string, charset(UTF8)] char *                     pszServerName;
 
-		/*   DS container */
+		/* DS container */
 
 		[string, charset(UTF16)] wchar_t *                  pszDsContainer;
 
-		/*   IP interfaces */
+		/* IP interfaces */
 
 		PDNS_ADDR_ARRAY        aipServerAddrs;
 		PDNS_ADDR_ARRAY        aipListenAddrs;
 
-		/*   forwarders */
+		/* forwarders */
 
 		PDNS_ADDR_ARRAY        aipForwarders;
 
-		/*   logging */
+		/* logging */
 
 		PDNS_ADDR_ARRAY        aipLogFilter;
 		[string, charset(UTF16)] wchar_t *              pwszLogFilePath;
 
-		/*   Server domain/forest */
+		/* Server domain/forest */
 
 		[string, charset(UTF8)] char *                     pszDomainName;         /*   UTF-8 FQDN */
 		[string, charset(UTF8)] char *                     pszForestName;         /*   UTF-8 FQDN */
 
-		/*   Built-in directory partitions */
+		/* Built-in directory partitions */
 
 		[string, charset(UTF8)] char *            pszDomainDirectoryPartition;    /*   UTF-8 FQDN */
 		[string, charset(UTF8)] char *            pszForestDirectoryPartition;    /*   UTF-8 FQDN */
 
-		/*   future extensions */
+		/* future extensions */
 		DNS_EXTENSION       pExtensions[6];
 
-		/* */
-		/*   DWORD section */
-		/* */
+		/* DWORD section */
 
-		/*   logging */
+		/* logging */
 
 		DWORD          dwLogLevel;
 		DWORD          dwDebugLevel;
 
-		/*   configuration DWORDs */
+		/* configuration DWORDs */
 
 		DWORD          dwForwardTimeout;
 		DWORD          dwRpcProtocol;
-		DWORD          dwNameCheckFlag;
+		DNS_NAME_CHECK_FLAG          dwNameCheckFlag;
 		DWORD          cAddressAnswerLimit;
 		DWORD          dwRecursionRetry;
 		DWORD          dwRecursionTimeout;
@@ -375,19 +519,19 @@ import "misc.idl", "dnsp.idl";
 		DWORD          dwDsPollingInterval;
 		DWORD          dwLocalNetPriorityNetMask;
 
-		/*   aging and scavenging */
+		/* aging and scavenging */
 
 		DWORD          dwScavengingInterval;
 		DWORD          dwDefaultRefreshInterval;
 		DWORD          dwDefaultNoRefreshInterval;
 		DWORD          dwLastScavengeTime;
 
-		/*   more logging */
+		/* more logging */
 
 		DWORD          dwEventLogLevel;
 		DWORD          dwLogFileMaxSize;
 
-		/*   Active Directory information */
+		/* Active Directory information */
 
 		DWORD          dwDsForestVersion;
 		DWORD          dwDsDomainVersion;
@@ -396,36 +540,36 @@ import "misc.idl", "dnsp.idl";
 
 		DWORD          dwReserveArray[ 3 ];
 
-		/* */
-		/*   BYTE section */
-		/* */
-		/*   configuration flags */
+		/* BYTE section */
+
+		/* configuration flags */
 
 		BOOLEAN        fAutoReverseZones;
 		BOOLEAN        fAutoCacheUpdate;
 
-		/*   recursion control */
+		/* recursion control */
 
 		BOOLEAN        fRecurseAfterForwarding;
 		BOOLEAN        fForwardDelegations;
 		BOOLEAN        fNoRecursion;
 		BOOLEAN        fSecureResponses;
-		/*   lookup control */
+
+		/* lookup control */
 
 		BOOLEAN      fRoundRobin;
 		BOOLEAN      fLocalNetPriority;
 
-		/*   BIND compatibility and mimicking */
+		/* BIND compatibility and mimicking */
 
 		BOOLEAN      fBindSecondaries;
 		BOOLEAN      fWriteAuthorityNs;
 
-		/*   Bells and whistles */
+		/* Bells and whistles */
 
 		BOOLEAN      fStrictFileParsing;
 		BOOLEAN      fLooseWildcarding;
 
-		/*   aging \ scavenging */
+		/* aging \ scavenging */
 
 		BOOLEAN      fDefaultAgingState;
 
@@ -434,116 +578,20 @@ import "misc.idl", "dnsp.idl";
 	DNS_RPC_SERVER_INFO_LONGHORN;
 #define DNS_RPC_SERVER_INFO DNS_RPC_SERVER_INFO_LONGHORN
 
-	typedef struct {
-		DWORD       fRecurseAfterForwarding;
-		DWORD       dwForwardTimeout;
-		PIP4_ARRAY aipForwarders;
-	}
-	DNS_RPC_FORWARDERS_W2K;
-
-	typedef struct {
-		DWORD       dwRpcStructureVersion;
-		DWORD       dwReserved0;
-		DWORD       fRecurseAfterForwarding;
-		DWORD       dwForwardTimeout;
-		PIP4_ARRAY aipForwarders;
-	}
-	DNS_RPC_FORWARDERS_DOTNET;
-
-	typedef struct {
-		DWORD               dwRpcStructureVersion;
-		DWORD               dwReserved0;
-		DWORD               fRecurseAfterForwarding;
-		DWORD               dwForwardTimeout;
-		PDNS_ADDR_ARRAY     aipForwarders;
-	}
-	DNS_RPC_FORWARDERS_LONGHORN;
-#define DNS_RPC_FORWARDERS DNS_RPC_FORWARDERS_LONGHORN
-
 
 	/* */
-	/*   Basic zone data */
+	/*   DNS Application directory partition data types */
 	/* */
 
 	typedef [bitmap32bit] bitmap {
-		RPC_ZONE_PAUSED        = 0x001,
-			RPC_ZONE_SHUTDOWN      = 0x002,
-			RPC_ZONE_REVERSE       = 0x004,
-			RPC_ZONE_AUTOCREATED   = 0x008,
-			RPC_ZONE_DSINTEGRATED  = 0x010,
-			RPC_ZONE_AGING         = 0x020,
-			RPC_ZONE_UPDATE        = 0x0C0, /* two bits */
-			RPC_ZONE_READONLY      = 0x100
-			} DNS_RPC_ZONE_FLAGS;
-
-	typedef struct {
-		[string, charset(UTF16)] uint16 *      pszZoneName;
-		DNS_RPC_ZONE_FLAGS      Flags;
-		UCHAR                   ZoneType;
-		UCHAR                   Version;
+		DNS_DP_AUTOCREATED		= 0x00000001,
+		DNS_DP_LEGACY			= 0x00000002,
+		DNS_DP_DOMAIN_DEFAULT	= 0x00000004,
+		DNS_DP_FOREST_DEFAULT	= 0x00000008,
+		DNS_DP_ENLISTED			= 0x00000010,
+		DNS_DP_DELETED			= 0x00000020
 	}
-	DNS_RPC_ZONE_W2K;
-#define PDNS_RPC_ZONE_W2K DNS_RPC_ZONE_W2K*
-
-	typedef struct {
-		DWORD                   dwRpcStructureVersion;
-		DWORD                   dwReserved0;
-		[string, charset(UTF16)] wchar_t *      pszZoneName;
-		DNS_RPC_ZONE_FLAGS      Flags;
-		UCHAR                   ZoneType;
-		UCHAR                   Version;
-		DWORD                   dwDpFlags;
-		[string, charset(UTF8)] char *         pszDpFqdn;
-	}
-	DNS_RPC_ZONE_DOTNET;
-#define DNS_RPC_ZONE DNS_RPC_ZONE_DOTNET
-#define PDNS_RPC_ZONE_DOTNET DNS_RPC_ZONE_DOTNET*
-
-
-	/* */
-	/*   Zone enumeration */
-	/* */
-
-	typedef struct {
-		[range(0,500000)]       DWORD               dwZoneCount;
-		[size_is(dwZoneCount)] PDNS_RPC_ZONE_W2K    ZoneArray[];
-	}
-	DNS_RPC_ZONE_LIST_W2K;
-
-
-	typedef struct {
-		DWORD                   dwRpcStructureVersion;
-		DWORD                   dwReserved0;
-		[range(0,500000)]       DWORD                   dwZoneCount;
-		[size_is(dwZoneCount)] PDNS_RPC_ZONE_DOTNET     ZoneArray[];
-	}
-	DNS_RPC_ZONE_LIST_DOTNET;
-#define DNS_RPC_ZONE_LIST DNS_RPC_ZONE_LIST_DOTNET
-
-
-	/* */
-	/*   Directory partition enumeration and info */
-	/* */
-
-	typedef struct {
-		DWORD           dwRpcStructureVersion;
-		DWORD           dwReserved0;
-
-		[string, charset(UTF8)] char * pszDpFqdn;
-		DWORD           dwFlags;
-		DWORD           dwZoneCount;
-	}
-	DNS_RPC_DP_ENUM;
-#define PDNS_RPC_DP_ENUM DNS_RPC_DP_ENUM*
-
-	typedef struct {
-		DWORD                   dwRpcStructureVersion;
-		DWORD                   dwReserved0;
-		[range(0,5000)]         DWORD               dwDpCount;
-		[size_is(dwDpCount)]    PDNS_RPC_DP_ENUM    DpArray[];
-	}
-	DNS_RPC_DP_LIST;
-
+	DNS_RPC_DP_FLAGS;
 
 	typedef struct {
 		[string, charset(UTF16)] wchar_t *      pszReplicaDn;
@@ -569,10 +617,24 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_DP_INFO;
 
+	typedef struct {
+		DWORD           dwRpcStructureVersion;
+		DWORD           dwReserved0;
 
-	/* */
-	/*   Enlist (or create) directory partition */
-	/* */
+		[string, charset(UTF8)] char * pszDpFqdn;
+		DWORD           dwFlags;
+		DWORD           dwZoneCount;
+	}
+	DNS_RPC_DP_ENUM;
+#define PDNS_RPC_DP_ENUM DNS_RPC_DP_ENUM*
+
+	typedef struct {
+		DWORD                   dwRpcStructureVersion;
+		DWORD                   dwReserved0;
+		[range(0,5000)]         DWORD               dwDpCount;
+		[size_is(dwDpCount)]    PDNS_RPC_DP_ENUM    DpArray[];
+	}
+	DNS_RPC_DP_LIST;
 
 	typedef struct {
 		DWORD       dwRpcStructureVersion;
@@ -582,69 +644,6 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_ENLIST_DP;
 
-	/* */
-	/*   Zone export */
-	/* */
-
-	typedef struct {
-		DWORD       dwRpcStructureVersion;
-		DWORD       dwReserved0;
-
-		[string, charset(UTF8)] char * pszZoneExportFile;
-	}
-	DNS_RPC_ZONE_EXPORT_INFO;
-
-	/* */
-	/*   Zone property data */
-	/* */
-
-	typedef struct {
-		DWORD       fSecureSecondaries;
-		DWORD       fNotifyLevel;
-		PIP4_ARRAY aipSecondaries;
-		PIP4_ARRAY aipNotify;
-	}
-	DNS_RPC_ZONE_SECONDARIES_W2K;
-
-	typedef struct {
-		DWORD       dwRpcStructureVersion;
-		DWORD       dwReserved0;
-
-		DWORD         fSecureSecondaries;
-		DWORD         fNotifyLevel;
-		PIP4_ARRAY    aipSecondaries;
-		PIP4_ARRAY    aipNotify;
-	}
-	DNS_RPC_ZONE_SECONDARIES_DOTNET;
-
-	typedef struct {
-		DWORD               dwRpcStructureVersion;
-		DWORD               dwReserved0;
-
-		DWORD                 fSecureSecondaries;
-		DWORD                 fNotifyLevel;
-		PDNS_ADDR_ARRAY       aipSecondaries;
-		PDNS_ADDR_ARRAY       aipNotify;
-	}
-	DNS_RPC_ZONE_SECONDARIES_LONGHORN;
-#define DNS_RPC_ZONE_SECONDARIES DNS_RPC_ZONE_SECONDARIES_LONGHORN
-
-	typedef struct {
-		DWORD       fDsIntegrated;
-		[string, charset(UTF8)] char * pszFileName;
-	}
-	DNS_RPC_ZONE_DATABASE_W2K;
-
-	typedef struct {
-		DWORD       dwRpcStructureVersion;
-		DWORD       dwReserved0;
-
-		DWORD       fDsIntegrated;
-		[string, charset(UTF8)] char * pszFileName;
-	}
-	DNS_RPC_ZONE_DATABASE_DOTNET;
-#define DNS_RPC_ZONE_DATABASE DNS_RPC_ZONE_DATABASE_DOTNET
-
 	typedef struct {
 		DWORD       dwRpcStructureVersion;
 		DWORD       dwReserved0;
@@ -652,11 +651,103 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_ZONE_CHANGE_DP;
 
+
+	/* */
+	/*   DNS Zone data types */
+	/* */
+
+	/* DNS_ZONE_TYPE defined in dnsp as dns_zone_type */
+
+	typedef [v1_enum] enum {
+		DNS_ZONE_SECSECURE_NO_SECURITY	= 0x00,
+		DNS_ZONE_SECSECURE_NS_ONLY		= 0x01,
+		DNS_ZONE_SECSECURE_LIST_ONLY	= 0x02,
+		DNS_ZONE_SECSECURE_NO_XFER		= 0x03
+	}
+	DNS_ZONE_SECONDARY_SECURITY;
+
+	typedef [v1_enum] enum {
+		DNS_ZONE_NOTIFY_OFF				= 0x00,
+		DNS_ZONE_NOTIFY_ALL_SECONDARIES	= 0x01,
+		DNS_ZONE_NOTIFY_LIST_ONLY		= 0x02
+	}
+	DNS_ZONE_NOTIFY_LEVEL;
+
+	typedef [v1_enum] enum {
+		DNS_ZONE_REQUEST_PRIMARY		= 0x00000001,
+		DNS_ZONE_REQUEST_SECONDARY		= 0x00000002,
+		DNS_ZONE_REQUEST_CACHE			= 0x00000004,
+		DNS_ZONE_REQUEST_AUTO			= 0x00000008,
+		DNS_ZONE_REQUEST_FORWARD		= 0x00000010,
+		DNS_ZONE_REQUEST_REVERSE		= 0x00000020,
+		DNS_ZONE_REQUEST_FORWARDER		= 0x00000040,
+		DNS_ZONE_REQUEST_STUB			= 0x00000080,
+		DNS_ZONE_REQUEST_DS				= 0x00000100,
+		DNS_ZONE_REQUEST_NON_DS			= 0x00000200,
+		DNS_ZONE_REQUEST_DOMAIN_DP		= 0x00000400,
+		DNS_ZONE_REQUEST_FOREST_DP		= 0x00000800,
+		DNS_ZONE_REQUEST_CUSTOM_DP		= 0x00001000,
+		DNS_ZONE_REQUEST_LEGACY_DP		= 0x00002000
+	}
+	DNS_ZONE_REQUEST_FILTERS;
+
+	typedef [bitmap32bit] bitmap {
+		DNS_RPC_ZONE_PAUSED				= 0x0001,
+		DNS_RPC_ZONE_SHUTDOWN			= 0x0002,
+		DNS_RPC_ZONE_REVERSE			= 0x0004,
+		DNS_RPC_ZONE_AUTOCREATED		= 0x0008,
+		DNS_RPC_ZONE_DSINTEGRATED		= 0x0010,
+		DNS_RPC_ZONE_AGING				= 0x0020,
+		DNS_RPC_ZONE_UPDATE_UNSECURE	= 0x0040,
+		DNS_RPC_ZONE_UPDATE_SECURE		= 0x0080,
+		DNS_RPC_ZONE_READONLY			= 0x0100
+	} DNS_RPC_ZONE_FLAGS;
+
+	typedef struct {
+		[string, charset(UTF16)] uint16 *      pszZoneName;
+		DNS_RPC_ZONE_FLAGS      Flags;
+		UCHAR                   ZoneType;
+		UCHAR                   Version;
+	}
+	DNS_RPC_ZONE_W2K;
+#define PDNS_RPC_ZONE_W2K DNS_RPC_ZONE_W2K*
+
+	typedef struct {
+		DWORD                   dwRpcStructureVersion;
+		DWORD                   dwReserved0;
+		[string, charset(UTF16)] wchar_t *      pszZoneName;
+		DNS_RPC_ZONE_FLAGS      Flags;
+		UCHAR                   ZoneType;
+		UCHAR                   Version;
+		DNS_RPC_DP_FLAGS        dwDpFlags;
+		[string, charset(UTF8)] char *         pszDpFqdn;
+	}
+	DNS_RPC_ZONE_DOTNET;
+#define DNS_RPC_ZONE DNS_RPC_ZONE_DOTNET
+#define PDNS_RPC_ZONE_DOTNET DNS_RPC_ZONE_DOTNET*
+
+	/* Zone enumeration */
+	typedef struct {
+		[range(0,500000)]       DWORD               dwZoneCount;
+		[size_is(dwZoneCount)] PDNS_RPC_ZONE_W2K    ZoneArray[];
+	}
+	DNS_RPC_ZONE_LIST_W2K;
+
+	typedef struct {
+		DWORD                   dwRpcStructureVersion;
+		DWORD                   dwReserved0;
+		[range(0,500000)]       DWORD                   dwZoneCount;
+		[size_is(dwZoneCount)] PDNS_RPC_ZONE_DOTNET     ZoneArray[];
+	}
+	DNS_RPC_ZONE_LIST_DOTNET;
+#define DNS_RPC_ZONE_LIST DNS_RPC_ZONE_LIST_DOTNET
+
+	/* Zone information */
 	typedef struct {
 		[string, charset(UTF8)] char * pszZoneName;
 		DWORD       dwZoneType;
-		DWORD       fReverse;
-		DWORD       fAllowUpdate;
+		BOOL       fReverse;
+		dns_zone_update       fAllowUpdate;
 		DWORD       fPaused;
 		DWORD       fShutdown;
 		DWORD       fAutoCreated;
@@ -669,17 +760,17 @@ import "misc.idl", "dnsp.idl";
 		PIP4_ARRAY aipMasters;
 
 		/* Secondaries */
-		DWORD      fSecureSecondaries;
-		DWORD      fNotifyLevel;
+		DNS_ZONE_SECONDARY_SECURITY      fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL      fNotifyLevel;
 		PIP4_ARRAY aipSecondaries;
 		PIP4_ARRAY aipNotify;
 
 		/* WINS or NetBIOS lookup */
-		DWORD      fUseWins;
-		DWORD      fUseNbstat;
+		BOOL      fUseWins;
+		BOOL      fUseNbstat;
 
 		/* Aging */
-		DWORD         fAging;
+		BOOL         fAging;
 		DWORD         dwNoRefreshInterval;
 		DWORD         dwRefreshInterval;
 		DWORD         dwAvailForScavengeTime;
@@ -700,8 +791,8 @@ import "misc.idl", "dnsp.idl";
 
 		[string, charset(UTF8)] char * pszZoneName;
 		DWORD       dwZoneType;
-		DWORD       fReverse;
-		DWORD       fAllowUpdate;
+		BOOL       fReverse;
+		dns_zone_update       fAllowUpdate;
 		DWORD       fPaused;
 		DWORD       fShutdown;
 		DWORD       fAutoCreated;
@@ -714,17 +805,17 @@ import "misc.idl", "dnsp.idl";
 		PIP4_ARRAY aipMasters;
 
 		/* Secondaries */
-		DWORD      fSecureSecondaries;
-		DWORD      fNotifyLevel;
+		DNS_ZONE_SECONDARY_SECURITY      fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL      fNotifyLevel;
 		PIP4_ARRAY aipSecondaries;
 		PIP4_ARRAY aipNotify;
 
 		/* WINS or NetBIOS lookup */
-		DWORD      fUseWins;
-		DWORD      fUseNbstat;
+		BOOL      fUseWins;
+		BOOL      fUseNbstat;
 
 		/* Aging */
-		DWORD         fAging;
+		BOOL         fAging;
 		DWORD         dwNoRefreshInterval;
 		DWORD         dwRefreshInterval;
 		DWORD         dwAvailForScavengeTime;
@@ -765,8 +856,8 @@ import "misc.idl", "dnsp.idl";
 
 		[string, charset(UTF8)] char *                  pszZoneName;
 		DWORD                  dwZoneType;
-		DWORD                  fReverse;
-		DWORD                  fAllowUpdate;
+		BOOL                  fReverse;
+		dns_zone_update        fAllowUpdate;
 		DWORD                  fPaused;
 		DWORD                  fShutdown;
 		DWORD                  fAutoCreated;
@@ -779,17 +870,17 @@ import "misc.idl", "dnsp.idl";
 		PDNS_ADDR_ARRAY        aipMasters;
 
 		/* Secondaries */
-		DWORD                  fSecureSecondaries;
-		DWORD                  fNotifyLevel;
+		DNS_ZONE_SECONDARY_SECURITY                  fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL                  fNotifyLevel;
 		PDNS_ADDR_ARRAY        aipSecondaries;
 		PDNS_ADDR_ARRAY        aipNotify;
 
 		/* WINS or NetBIOS lookup */
-		DWORD              fUseWins;
-		DWORD              fUseNbstat;
+		BOOL              fUseWins;
+		BOOL              fUseNbstat;
 
 		/* Aging */
-		DWORD                  fAging;
+		BOOL                  fAging;
 		DWORD                  dwNoRefreshInterval;
 		DWORD                  dwRefreshInterval;
 		DWORD                  dwAvailForScavengeTime;
@@ -821,15 +912,61 @@ import "misc.idl", "dnsp.idl";
 	DNS_RPC_ZONE_INFO_LONGHORN;
 #define DNS_RPC_ZONE_INFO DNS_RPC_ZONE_INFO_LONGHORN
 
-	/* */
-	/*   Zone create data */
-	/* */
+	/* Zone property data */
+	typedef struct {
+		DNS_ZONE_SECONDARY_SECURITY       fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL       fNotifyLevel;
+		PIP4_ARRAY aipSecondaries;
+		PIP4_ARRAY aipNotify;
+	}
+	DNS_RPC_ZONE_SECONDARIES_W2K;
 
+	typedef struct {
+		DWORD       dwRpcStructureVersion;
+		DWORD       dwReserved0;
+
+		DNS_ZONE_SECONDARY_SECURITY         fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL         fNotifyLevel;
+		PIP4_ARRAY    aipSecondaries;
+		PIP4_ARRAY    aipNotify;
+	}
+	DNS_RPC_ZONE_SECONDARIES_DOTNET;
+
+	typedef struct {
+		DWORD               dwRpcStructureVersion;
+		DWORD               dwReserved0;
+
+		DNS_ZONE_SECONDARY_SECURITY                 fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL                 fNotifyLevel;
+		PDNS_ADDR_ARRAY       aipSecondaries;
+		PDNS_ADDR_ARRAY       aipNotify;
+	}
+	DNS_RPC_ZONE_SECONDARIES_LONGHORN;
+#define DNS_RPC_ZONE_SECONDARIES DNS_RPC_ZONE_SECONDARIES_LONGHORN
+
+	/* Zone database */
+	typedef struct {
+		DWORD       fDsIntegrated;
+		[string, charset(UTF8)] char * pszFileName;
+	}
+	DNS_RPC_ZONE_DATABASE_W2K;
+
+	typedef struct {
+		DWORD       dwRpcStructureVersion;
+		DWORD       dwReserved0;
+
+		DWORD       fDsIntegrated;
+		[string, charset(UTF8)] char * pszFileName;
+	}
+	DNS_RPC_ZONE_DATABASE_DOTNET;
+#define DNS_RPC_ZONE_DATABASE DNS_RPC_ZONE_DATABASE_DOTNET
+
+	/* Zone create data */
 	typedef struct {
 		[string, charset(UTF8)] char *       pszZoneName;
 		DWORD       dwZoneType;
-		DWORD       fAllowUpdate;
-		DWORD       fAging;
+		dns_zone_update       fAllowUpdate;
+		BOOL       fAging;
 		DWORD       dwFlags;
 
 		/*   Database info */
@@ -849,8 +986,8 @@ import "misc.idl", "dnsp.idl";
 		/*   Secondaries */
 
 		PIP4_ARRAY   aipSecondaries;
-		DWORD        fSecureSecondaries;
-		DWORD        fNotifyLevel;
+		DNS_ZONE_SECONDARY_SECURITY        fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL        fNotifyLevel;
 
 		/*   Reserve some space to avoid versioning issues */
 
@@ -879,8 +1016,8 @@ import "misc.idl", "dnsp.idl";
 
 		[string, charset(UTF8)] char *       pszZoneName;
 		DWORD       dwZoneType;
-		DWORD       fAllowUpdate;
-		DWORD       fAging;
+		dns_zone_update       fAllowUpdate;
+		BOOL       fAging;
 		DWORD       dwFlags;
 
 		/*   Database info */
@@ -900,8 +1037,8 @@ import "misc.idl", "dnsp.idl";
 		/*   Secondaries */
 
 		PIP4_ARRAY    aipSecondaries;
-		DWORD         fSecureSecondaries;
-		DWORD         fNotifyLevel;
+		DNS_ZONE_SECONDARY_SECURITY         fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL         fNotifyLevel;
 
 		/*   Forwarder zones */
 
@@ -917,15 +1054,14 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_ZONE_CREATE_INFO_DOTNET;
 
-
 	typedef struct {
 		DWORD                  dwRpcStructureVersion;
 		DWORD                  dwReserved0;
 
 		[string, charset(UTF8)] char *                  pszZoneName;
 		DWORD                  dwZoneType;
-		DWORD                  fAllowUpdate;
-		DWORD                  fAging;
+		dns_zone_update                  fAllowUpdate;
+		BOOL                  fAging;
 		DWORD                  dwFlags;
 
 		/*   Database info */
@@ -945,8 +1081,8 @@ import "misc.idl", "dnsp.idl";
 		/*   Secondaries */
 
 		PDNS_ADDR_ARRAY        aipSecondaries;
-		DWORD                  fSecureSecondaries;
-		DWORD                  fNotifyLevel;
+		DNS_ZONE_SECONDARY_SECURITY                  fSecureSecondaries;
+		DNS_ZONE_NOTIFY_LEVEL                  fNotifyLevel;
 
 		/*   Forwarder zones */
 
@@ -963,19 +1099,15 @@ import "misc.idl", "dnsp.idl";
 	DNS_RPC_ZONE_CREATE_INFO_LONGHORN;
 #define DNS_RPC_ZONE_CREATE_INFO DNS_RPC_ZONE_CREATE_INFO_LONGHORN
 
+	//   Zone export
 	typedef struct {
-		DWORD               dwRpcStructureVersion;
-		DWORD               dwReserved0;
+		DWORD       dwRpcStructureVersion;
+		DWORD       dwReserved0;
 
-		DWORD                  dwAutoConfigFlags;
-		DWORD                  dwReserved1;
-		[string, charset(UTF8)] char *                  pszNewDomainName;
+		[string, charset(UTF8)] char * pszZoneExportFile;
 	}
-	DNS_RPC_AUTOCONFIGURE;
+	DNS_RPC_ZONE_EXPORT_INFO;
 
-	/* */
-	/*   EnumZones2 filter specification */
-	/* */
 	typedef struct {
 		DWORD       dwRpcStructureVersion;
 		DWORD       dwReserved0;
@@ -988,77 +1120,107 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_ENUM_ZONES_FILTER;
 
-	/* */
-	/*   RPC record structure */
-	/* */
-
+	/* Forwarders information */
 	typedef struct {
-		[value(strlen(str))] uint8 len;
-		[charset(UTF8)] uint8 str[len];
-	} DNS_RPC_NAME;
-
-	typedef [nodiscriminant,gensize,flag(NDR_NOALIGN)] union {
-		[case(DNS_TYPE_PTR)]   DNS_RPC_NAME name;
-		[case(DNS_TYPE_NS)]    DNS_RPC_NAME name;
-		[case(DNS_TYPE_CNAME)] DNS_RPC_NAME name;
-		[case(DNS_TYPE_DNAME)] DNS_RPC_NAME name;
-		[case(DNS_TYPE_MB)]    DNS_RPC_NAME name;
-		[case(DNS_TYPE_MR)]    DNS_RPC_NAME name;
-		[case(DNS_TYPE_MG)]    DNS_RPC_NAME name;
-		[case(DNS_TYPE_MD)]    DNS_RPC_NAME name;
-		[case(DNS_TYPE_MF)]    DNS_RPC_NAME name;
-	} DNS_RPC_DATA;
-
-	typedef struct {
-		[value(ndr_size_DNS_RPC_DATA(&data,wType,ndr->flags))] uint16 wDataLength;
-		dns_record_type        wType;
-		DWORD       dwFlags;
-		DWORD       dwSerial;
-		DWORD       dwTtlSeconds;
-		DWORD       dwTimeStamp;
-		DWORD       dwReserved;
-		[subcontext(0),subcontext_size(wDataLength),switch_is(wType)] DNS_RPC_DATA data;
-	} DNS_RPC_RECORD;
-
-	typedef struct {
-		[value(ndr_size_DNS_RPC_DATA(&rec.data,rec.wType,ndr->flags))] uint3264 wContextLength;
-		DNS_RPC_RECORD rec;
-	} DNS_RPC_RECORD_BUF;
-
-
-	/* */
-	/*   These RPC structures have no version because they are simple */
-	/*   are they are explicitly defined by their names. */
-	/* */
-
-	typedef struct {
-		DWORD       dwParam;
-		[string, charset(UTF8)] char *       pszNodeName;
+		DWORD       fRecurseAfterForwarding;
+		DWORD       dwForwardTimeout;
+		PIP4_ARRAY aipForwarders;
 	}
-	DNS_RPC_NAME_AND_PARAM;
+	DNS_RPC_FORWARDERS_W2K;
+
+	typedef struct {
+		DWORD       dwRpcStructureVersion;
+		DWORD       dwReserved0;
+		DWORD       fRecurseAfterForwarding;
+		DWORD       dwForwardTimeout;
+		PIP4_ARRAY aipForwarders;
+	}
+	DNS_RPC_FORWARDERS_DOTNET;
 
 	typedef struct {
 		DWORD               dwRpcStructureVersion;
 		DWORD               dwReserved0;
-
-		DWORD                 dwContext;
-		DWORD                 dwReserved1;
-		[string, charset(UTF8)] char *                 pszContextName;
-		PDNS_ADDR_ARRAY       aipValidateAddrs;
+		DWORD               fRecurseAfterForwarding;
+		DWORD               dwForwardTimeout;
+		PDNS_ADDR_ARRAY     aipForwarders;
 	}
-	DNS_RPC_IP_VALIDATE;
+	DNS_RPC_FORWARDERS_LONGHORN;
+#define DNS_RPC_FORWARDERS DNS_RPC_FORWARDERS_LONGHORN
+
 
 	/* */
-	/*   String array */
+	/*   DNS autoconfig data types */
 	/* */
+
+	typedef [v1_enum] enum {
+		DNS_RPC_AUTOCONFIG_INTERNAL_ROOTHINTS			= 0x00000001,
+		DNS_RPC_AUTOCONFIG_INTERNAL_FORWARDERS			= 0x00000002,
+		DNS_RPC_AUTOCONFIG_INTERNAL_ZONES				= 0x00000004,
+		DNS_RPC_AUTOCONFIG_INTERNAL_SELFPOINT			= 0x00000010,
+		DNS_RPC_AUTOCONFIG_INTERNAL_SELFPOINT_PREPEND	= 0x00000020,
+		DNS_RPC_AUTOCONFIG_INTERNAL_SELFPOINT_APPEND	= 0x00000040,
+		DNS_RPC_AUTOCONFIG_INTERNAL_RETURN_ERROR		= 0x00008000,
+		DNS_RPC_AUTOCONFIG_ALL							= 0xFFFFFFFF
+	}
+	DNS_RPC_AUTOCONFIG;
+
 	typedef struct {
-		[range(0,10000)]        DWORD       dwCount;
-		[size_is(dwCount),string,charset(UTF8)]      char *       pszStrings[];
-	} DNS_RPC_UTF8_STRING_LIST;
+		DWORD                  dwRpcStructureVersion;
+		DWORD                  dwReserved0;
+		DNS_RPC_AUTOCONFIG     dwAutoConfigFlags;
+		DWORD                  dwReserved1;
+		[string, charset(UTF8)] char * pszNewDomainName;
+	}
+	DNS_RPC_AUTOCONFIGURE;
+
 
 	/* */
-	/*   Union of RPC types */
+	/*   DNS logging data types */
 	/* */
+
+	typedef [bitmap32bit] bitmap {
+		DNS_EVENT_LOG_SUCCESS			= 0x00000000,
+		DNS_EVENT_LOG_ERROR_TYPE		= 0x00000001,
+		DNS_EVENT_LOG_WARNING_TYPE		= 0x00000002,
+		DNS_EVENT_LOG_INFORMATION_TYPE	= 0x00000004
+	}
+	DNS_EVENT_LOG_TYPES;
+
+	typedef [bitmap32bit] bitmap {
+		DNS_RPC_VIEW_AUTHORITY_DATA		= 0x00000001,
+		DNS_RPC_VIEW_CACHE_DATA			= 0x00000002,
+		DNS_RPC_VIEW_GLUE_DATA			= 0x00000004,
+		DNS_RPC_VIEW_ROOT_HINT_DATA		= 0x00000008,
+		DNS_RPC_VIEW_ADDITIONAL_DATA	= 0x00000010,
+		DNS_RPC_VIEW_NO_CHILDREN		= 0x00010000,
+		DNS_RPC_VIEW_ONLY_CHILDREN		= 0x00020000
+	}
+	DNS_SELECT_FLAGS;
+
+
+	/* */
+	/*   DNS statistics data types */
+	/* */
+
+	typedef struct {
+		DWORD       StatId;
+		WORD        wLength;
+		BOOLEAN     fClear;
+		UCHAR       fReserved;
+	}
+	DNSSRV_STAT_HEADER;
+
+	typedef struct {
+		DNSSRV_STAT_HEADER Header;
+		BYTE                Buffer[1];
+	}
+	DNSSRV_STAT;
+
+
+	/* */
+	/*   DNS Typid and Union of all RPC data types */
+	/* */
+
 	typedef [v1_enum] enum {
 		DNSSRV_TYPEID_NULL                      = 0,
 		DNSSRV_TYPEID_DWORD                     = 1,
@@ -1105,8 +1267,8 @@ import "misc.idl", "dnsp.idl";
 		DNSSRV_TYPEID_AUTOCONFIGURE             = 42,
 		DNSSRV_TYPEID_UTF8_STRING_LIST          = 43,
 		DNSSRV_TYPEID_UNICODE_STRING_LIST       = 44
-	} DNS_RPC_TYPEID;
-
+	}
+	DNS_RPC_TYPEID;
 
 	typedef [switch_type(uint3264)] union {
 		[case(DNSSRV_TYPEID_NULL)]      PBYTE       Null;
@@ -1226,7 +1388,25 @@ import "misc.idl", "dnsp.idl";
 	} DNSSRV_RPC_UNION;
 
 
-	NTSTATUS DnssrvOperation(
+	/* */
+	/*   DNS RPC interface */
+	/* */
+
+	typedef [public,gensize] struct {
+		[value((12+ndr_size_DNS_RPC_NAME(&dnsNodeName,0)+3) & ~3)]  uint16 wLength;
+		uint16 wRecordCount;
+		uint32 dwFlags;
+		uint32 dwChildCount;
+		DNS_RPC_NAME dnsNodeName;
+		DNS_RPC_RECORD records[wRecordCount];
+	} DNS_RPC_RECORDS;
+
+	typedef [public,nopull,nopush,gensize] struct {
+		uint32 count;
+		DNS_RPC_RECORDS rec[count];
+	} DNS_RPC_RECORDS_ARRAY;
+
+	WERROR DnssrvOperation(
 		[in,unique,string,charset(UTF16)] uint16        *pwszServerName,
 		[in,unique,string,charset(UTF8)] uint8          *pszZone,
 		[in]                      DWORD                  dwContext,
@@ -1235,7 +1415,7 @@ import "misc.idl", "dnsp.idl";
 		[in, switch_is(dwTypeId)] DNSSRV_RPC_UNION       pData
 	);
 
-	NTSTATUS DnssrvQuery(
+	WERROR DnssrvQuery(
 		[in,unique,string,charset(UTF16)] uint16       *pwszServerName,
 		[in,unique,string,charset(UTF8)] uint8         *pszZone,
 		[in,unique,string,charset(UTF8)] uint8         *pszOperation,
@@ -1243,7 +1423,7 @@ import "misc.idl", "dnsp.idl";
 		[out, switch_is(*pdwTypeId)]  DNSSRV_RPC_UNION *ppData
         );
 
-	NTSTATUS DnssrvComplexOperation(
+	WERROR DnssrvComplexOperation(
 		[in,unique,string,charset(UTF16)] uint16       *pwszServerName,
 		[in,unique,string,charset(UTF8)] uint8         *pszZone,
 		[in,unique,string,charset(UTF8)] uint8         *pszOperation,
@@ -1253,29 +1433,29 @@ import "misc.idl", "dnsp.idl";
 		[out, switch_is(*pdwTypeOut)] DNSSRV_RPC_UNION *ppDataOut
         );
 
-	NTSTATUS DnssrvEnumRecords(
+	WERROR DnssrvEnumRecords(
 		[in,unique,string,charset(UTF16)] uint16       *pwszServerName,
 		[in,unique,string,charset(UTF8)] uint8         *pszZone,
 		[in,unique,string,charset(UTF8)]  uint8        *pszNodeName,
 		[in,unique,string,charset(UTF8)]  uint8        *pszStartChild,
 		[in]                           dns_record_type          wRecordType,
-		[in]                           DWORD                   fSelectFlag,
+		[in]                           DNS_SELECT_FLAGS        fSelectFlag,
 		[in,unique,string,charset(UTF8)]  uint8        *pszFilterStart,
 		[in,unique,string,charset(UTF8)]  uint8        *pszFilterStop,
 		[out]                          DWORD           *pdwBufferLength,
-		[out, size_is(, *pdwBufferLength)]  PBYTE *     ppBuffer
+		[out,ref,subcontext(4),subcontext_size(*pdwBufferLength)] DNS_RPC_RECORDS_ARRAY **pBuffer
         );
 
-	NTSTATUS DnssrvUpdateRecord(
+	WERROR DnssrvUpdateRecord(
 		[in,unique,string,charset(UTF16)] uint16     *pwszServerName,
 		[in,unique,string,charset(UTF8)]  uint8      *pszZone,
 		[in,unique,string,charset(UTF8)]  uint8      *pszNodeName,
 		[in, unique]    DNS_RPC_RECORD_BUF           *pAddRecord,
-		[in, unique]    DNS_RPC_RECORD_BUF           *DeleteRecord
+		[in, unique]    DNS_RPC_RECORD_BUF           *pDeleteRecord
         );
 
-	NTSTATUS DnssrvOperation2(
-		[in]            uint32                     dwClientVersion,
+	WERROR DnssrvOperation2(
+		[in]            DNS_RPC_CLIENT_VERSION     dwClientVersion,
 		[in]            uint32                     dwSettingFlags,
 		[in,unique,string,charset(UTF16)] uint16  *pwszServerName,
 		[in,unique,string,charset(UTF8)] uint8    *pszZone,
@@ -1285,8 +1465,8 @@ import "misc.idl", "dnsp.idl";
 		[in, switch_is(dwTypeId)] DNSSRV_RPC_UNION pData
 	);
 
-	NTSTATUS DnssrvQuery2(
-		[in]            uint32                   dwClientVersion,
+	WERROR DnssrvQuery2(
+		[in]            DNS_RPC_CLIENT_VERSION   dwClientVersion,
 		[in]            uint32                   dwSettingFlags,
 		[in,unique,string,charset(UTF16)] uint16        *pwszServerName,
 		[in,unique,string,charset(UTF8)] uint8         *pszZone,
@@ -1295,8 +1475,8 @@ import "misc.idl", "dnsp.idl";
 		[out, switch_is(*pdwTypeId)]  DNSSRV_RPC_UNION        *ppData
         );
 
-	NTSTATUS DnssrvComplexOperation2(
-		[in]            uint32                          dwClientVersion,
+	WERROR DnssrvComplexOperation2(
+		[in]            DNS_RPC_CLIENT_VERSION          dwClientVersion,
 		[in]            uint32                          dwSettingFlags,
 		[in,unique,string,charset(UTF16)] uint16       *pwszServerName,
 		[in,unique,string,charset(UTF8)] uint8         *pszZone,
@@ -1307,37 +1487,28 @@ import "misc.idl", "dnsp.idl";
 		[out, switch_is(*pdwTypeOut)] DNSSRV_RPC_UNION *ppDataOut
         );
 
-	typedef struct {
-		uint16 wLength;
-		uint16 wRecordCount;
-		uint32 dwFlags;
-		uint32 dwChildCount;
-		DNS_RPC_NAME dnsNodeName;
-		DNS_RPC_RECORD records[wRecordCount];
-	} DNS_RPC_RECORDS;
-
-	NTSTATUS DnssrvEnumRecords2(
-		[in]                           DWORD                    dwClientVersion,
+	WERROR DnssrvEnumRecords2(
+		[in]                           DNS_RPC_CLIENT_VERSION   dwClientVersion,
 		[in]                           DWORD                    dwSettingFlags,
 		[in,unique,string,charset(UTF16)] uint16               *pwszServerName,
 		[in,unique,string,charset(UTF8)]  uint8                *pszZone,
 		[in,unique,string,charset(UTF8)]  uint8                *pszNodeName,
 		[in,unique,string,charset(UTF8)]  uint8                *pszStartChild,
 		[in]                           dns_record_type          wRecordType,
-		[in]                           DWORD                    fSelectFlag,
+		[in]                           DNS_SELECT_FLAGS         fSelectFlag,
 		[in,unique,string,charset(UTF8)]  uint8                *pszFilterStart,
 		[in,unique,string,charset(UTF8)]  uint8                *pszFilterStop,
 		[out]                             uint32               *pdwBufferLength,
 		[out,unique,subcontext(4),subcontext_size(*pdwBufferLength)] DNS_RPC_RECORDS *pBuffer
         );
 
-	NTSTATUS DnssrvUpdateRecord2(
-		[in]            uint32                    dwClientVersion,
+	WERROR DnssrvUpdateRecord2(
+		[in]            DNS_RPC_CLIENT_VERSION    dwClientVersion,
 		[in]            uint32                    dwSettingFlags,
 		[in,unique,string,charset(UTF16)] uint16 *pwszServerName,
 		[in,unique,string,charset(UTF8)]  uint8  *pszZone,
 		[in,string,charset(UTF8)]         uint8  *pszNodeName,
 		[in, unique]    DNS_RPC_RECORD_BUF       *pAddRecord,
-		[in, unique]    DNS_RPC_RECORD_BUF       *DeleteRecord
+		[in, unique]    DNS_RPC_RECORD_BUF       *pDeleteRecord
 	);
 }
