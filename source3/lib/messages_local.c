@@ -282,6 +282,9 @@ static NTSTATUS message_notify(struct server_id procid)
 	 */
 
 	SMB_ASSERT(pid > 0);
+	if (pid <= 0) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	if (euid != 0) {
 		/* If we're not root become so to send the message. */
