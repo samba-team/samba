@@ -392,6 +392,7 @@ interface drsuapi
 		DRSUAPI_ATTID_possSuperiors			= 0x00020008,
 		DRSUAPI_ATTID_displayName			= 0x0002000d,
 		DRSUAPI_ATTID_hasMasterNCs			= 0x0002000e,
+		DRSUAPI_ATTID_nCName				= 0x00020010,
 		DRSUAPI_ATTID_subClassOf			= 0x00020015,
 		DRSUAPI_ATTID_governsID				= 0x00020016,
 		DRSUAPI_ATTID_mustContain			= 0x00020018,
