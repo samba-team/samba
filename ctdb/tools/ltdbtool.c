@@ -101,7 +101,7 @@ static int usage(const char* cmd)
 static int
 ltdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT*, TDB_DATA, TDB_DATA,
 					  struct ctdb_ltdb_header*, void *),
-	      void *state, int hsize);
+	      void *state, int hsize, bool skip_empty);
 
 struct write_record_ctx {
 	TDB_CONTEXT* tdb;
@@ -130,7 +130,8 @@ static void dump_header_nop(struct dump_record_ctx* c,
 			    struct ctdb_ltdb_header* h)
 {}
 
-static int dump_db(const char* iname, FILE* ofile, int hsize, bool dump_header)
+static int dump_db(const char* iname, FILE* ofile, int hsize, bool dump_header,
+		   bool empty)
 {
 	int ret = -1;
 	TDB_CONTEXT* idb = tdb_open(iname, 0, TDB_DEFAULT, O_RDONLY, 0);
@@ -143,13 +144,14 @@ static int dump_db(const char* iname, FILE* ofile, int hsize, bool dump_header)
 			.dump_header = dump_header ? &dump_header_full
 			                           : &dump_header_nop,
 		};
-		ret = ltdb_traverse(idb, &dump_record, &dump_ctx, hsize);
+		ret = ltdb_traverse(idb, &dump_record, &dump_ctx, hsize, !empty);
 		tdb_close(idb);
 	}
 	return ret;
 }
 
-static int conv_db(const char* iname, const char* oname, size_t isize, size_t osize)
+static int conv_db(const char* iname, const char* oname, size_t isize,
+		   size_t osize, bool keep_empty)
 {
 	int ret = -1;
 	TDB_CONTEXT* idb = tdb_open(iname, 0, TDB_DEFAULT, O_RDONLY, 0);
@@ -165,7 +167,7 @@ static int conv_db(const char* iname, const char* oname, size_t isize, size_t os
 				.hsize = osize,
 				.tdb_store_flags = TDB_REPLACE,
 			};
-			ret = ltdb_traverse(idb, &write_record, &ctx, isize);
+			ret = ltdb_traverse(idb, &write_record, &ctx, isize, !keep_empty);
 			tdb_close(odb);
 		}
 		tdb_close(idb);
@@ -204,10 +206,11 @@ int main(int argc, char* argv[])
 	size_t isize = sizeof(struct ctdb_ltdb_header);
 	size_t osize = sizeof(struct ctdb_ltdb_header);
 	bool print_header = false;
+	bool keep_empty = false;
 	int opt;
 	const char *cmd, *idb, *odb;
 
-	while ((opt = getopt(argc, argv, "s:o:S:O:ph")) != -1) {
+	while ((opt = getopt(argc, argv, "s:o:S:O:ph:e")) != -1) {
 		switch (opt) {
 		case 's':
 		case 'S':
@@ -224,6 +227,8 @@ int main(int argc, char* argv[])
 		case 'p':
 			print_header = true;
 			break;
+		case 'e':
+			keep_empty = true;
 		case 'h':
 			return help(argv[0]);
 		default:
@@ -246,7 +251,7 @@ int main(int argc, char* argv[])
 			return usage(argv[0]);
 		}
 		idb = argv[optind+1];
-		ret = dump_db(idb, stdout, isize, print_header);
+		ret = dump_db(idb, stdout, isize, print_header, keep_empty);
 		return (ret >= 0) ? 0 : ret;
 	}
 	else if (strcmp(cmd, "convert") == 0) {
@@ -256,7 +261,7 @@ int main(int argc, char* argv[])
 		}
 		idb = argv[optind+1];
 		odb = argv[optind+2];
-		ret = conv_db(idb, odb, isize, osize);
+		ret = conv_db(idb, odb, isize, osize, keep_empty);
 		return (ret >= 0) ? 0 : ret;
 	}
 
@@ -267,6 +272,8 @@ struct ltdb_traverse_ctx {
 	int (*fn)(TDB_CONTEXT*,TDB_DATA,TDB_DATA,struct ctdb_ltdb_header*,void *);
 	void* state;
 	size_t hsize;
+	bool skip_empty;
+	unsigned nempty;
 };
 
 static int
@@ -286,6 +293,10 @@ ltdb_traverse_fn(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 		fputc('\n', stderr);
 		return -1;
 	}
+	if (val.dsize == hsize && ctx->skip_empty) {
+		ctx->nempty++;
+		return 0;
+	}
 
 	memcpy(&hdr, val.dptr, hsize);
 
@@ -299,14 +310,18 @@ ltdb_traverse_fn(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 
 int ltdb_traverse(TDB_CONTEXT *tdb,
 		  int (*fn)(TDB_CONTEXT *,TDB_DATA,TDB_DATA,struct ctdb_ltdb_header*,void *),
-		  void *state, int hsize)
+		  void *state, int hsize, bool skip_empty)
 {
 	struct ltdb_traverse_ctx ctx = {
 		.fn = fn,
 		.state = state,
 		.hsize = hsize < 0 ? sizeof(struct ctdb_ltdb_header) : hsize,
+		.skip_empty = skip_empty,
+		.nempty = 0,
 	};
-	return tdb_traverse(tdb, &ltdb_traverse_fn, &ctx);
+	int ret = tdb_traverse(tdb, &ltdb_traverse_fn, &ctx);
+
+	return (ret < 0) ? ret : (ret - ctx.nempty);
 }
 
 int write_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
