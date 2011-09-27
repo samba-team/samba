@@ -1857,6 +1857,15 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	info->domain_name      = domain_name;
 	info->forest_name      = response.data.nt5_ex.forest;
 	info->dc_flags         = response.data.nt5_ex.server_type;
+	if (r->in.flags & DS_RETURN_DNS_NAME) {
+		/* As MS-NRPC.pdf in 2.2.1.2.1 the DS_DNS_CONTROLLER flag should be
+		 * returned if we are returning info->dc_unc containing a FQDN.
+		 * This attribute is called DomainControllerName in the specs,
+		 * it seems that we decide to return FQDN or netbios depending on
+		 * DS_RETURN_DNS_NAME.
+		 */
+		info->dc_flags |= DS_DNS_CONTROLLER;
+	}
 	info->dc_site_name     = response.data.nt5_ex.server_site;
 	info->client_site_name = response.data.nt5_ex.client_site;
 
