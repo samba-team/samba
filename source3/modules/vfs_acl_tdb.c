@@ -18,8 +18,6 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/* NOTE: This is an experimental module, not yet finished. JRA. */
-
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "system/filesys.h"
