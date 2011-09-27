@@ -563,6 +563,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DNSSERVER',
 	public_deps='dcerpc-binding ndr-standard'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_IOCTL',
+	source='gen_ndr/ndr_ioctl.c',
+	public_deps='ndr'
+	)
+
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
 	source=[],
