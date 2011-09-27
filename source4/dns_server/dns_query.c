@@ -86,7 +86,7 @@ static WERROR handle_question(struct dns_server *dns,
 			ZERO_STRUCT(ans[ai]);
 			ans[ai].name = talloc_strdup(ans, question->name);
 			ans[ai].rr_type = DNS_QTYPE_CNAME;
-			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].rr_class = DNS_QCLASS_IN;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
 			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.cname_record = talloc_strdup(ans, recs[ri].data.cname);
@@ -104,7 +104,7 @@ static WERROR handle_question(struct dns_server *dns,
 			ZERO_STRUCT(ans[ai]);
 			ans[ai].name = talloc_strdup(ans, question->name);
 			ans[ai].rr_type = DNS_QTYPE_A;
-			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].rr_class = DNS_QCLASS_IN;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
 			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.ipv4_record = talloc_strdup(ans, recs[ri].data.ipv4);
@@ -120,7 +120,7 @@ static WERROR handle_question(struct dns_server *dns,
 			ZERO_STRUCT(ans[ai]);
 			ans[ai].name = talloc_strdup(ans, question->name);
 			ans[ai].rr_type = DNS_QTYPE_AAAA;
-			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].rr_class = DNS_QCLASS_IN;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
 			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.ipv6_record = recs[ri].data.ipv6;
@@ -136,7 +136,7 @@ static WERROR handle_question(struct dns_server *dns,
 			ZERO_STRUCT(ans[ai]);
 			ans[ai].name = question->name;
 			ans[ai].rr_type = DNS_QTYPE_NS;
-			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].rr_class = DNS_QCLASS_IN;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
 			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.ns_record = recs[ri].data.ns;
@@ -152,7 +152,7 @@ static WERROR handle_question(struct dns_server *dns,
 			ZERO_STRUCT(ans[ai]);
 			ans[ai].name = question->name;
 			ans[ai].rr_type = DNS_QTYPE_SRV;
-			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].rr_class = DNS_QCLASS_IN;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
 			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.srv_record.priority = recs[ri].data.srv.wPriority;
@@ -171,7 +171,7 @@ static WERROR handle_question(struct dns_server *dns,
 			ZERO_STRUCT(ans[ai]);
 			ans[ai].name = question->name;
 			ans[ai].rr_type = DNS_QTYPE_SOA;
-			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].rr_class = DNS_QCLASS_IN;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
 			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.soa_record.mname	= recs[ri].data.soa.mname;

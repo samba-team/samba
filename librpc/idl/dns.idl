@@ -60,7 +60,7 @@ interface dns
 	} dns_rcode;
 
 	typedef [public,enum16bit] enum {
-		DNS_QCLASS_IP   = 0x0001,
+		DNS_QCLASS_IN   = 0x0001,
 		DNS_QCLASS_NONE = 0x00FE,
 		DNS_QCLASS_ANY  = 0x00FF
 	} dns_qclass;
