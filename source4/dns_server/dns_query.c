@@ -206,17 +206,19 @@ WERROR dns_server_process_query(struct dns_server *dns,
 				struct dns_res_rec **nsrecs,     uint16_t *nscount,
 				struct dns_res_rec **additional, uint16_t *arcount)
 {
-	uint16_t i, num_answers=0;
+	uint16_t num_answers=0;
 	struct dns_res_rec *ans=NULL;
 	WERROR werror;
+
+	if (in->qdcount != 1) {
+		return DNS_ERR(FORMAT_ERROR);
+	}
 
 	ans = talloc_array(mem_ctx, struct dns_res_rec, 0);
 	W_ERROR_HAVE_NO_MEMORY(ans);
 
-	for (i = 0; i < in->qdcount; ++i) {
-		werror = handle_question(dns, mem_ctx, &in->questions[i], &ans, &num_answers);
-		W_ERROR_NOT_OK_RETURN(werror);
-	}
+	werror = handle_question(dns, mem_ctx, &in->questions[0], &ans, &num_answers);
+	W_ERROR_NOT_OK_GOTO(werror, query_failed);
 
 	*answers = ans;
 	*ancount = num_answers;
@@ -229,4 +231,8 @@ WERROR dns_server_process_query(struct dns_server *dns,
 	*arcount    = 0;
 
 	return WERR_OK;
+
+query_failed:
+	/*FIXME: add our SOA record to nsrecs */
+	return werror;
 }
