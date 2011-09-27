@@ -1,0 +1,795 @@
+/*
+   Unix SMB/CIFS implementation.
+
+   DNS Server
+
+   Copyright (C) Amitay Isaacs 2011
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "dnsserver.h"
+#include "lib/replace/system/network.h"
+#include "librpc/gen_ndr/ndr_dnsp.h"
+#include "librpc/gen_ndr/ndr_dnsserver.h"
+
+
+struct IP4_ARRAY *ip4_array_copy(TALLOC_CTX *mem_ctx, struct IP4_ARRAY *ip4)
+{
+	struct IP4_ARRAY *ret;
+
+	if (!ip4) {
+		return NULL;
+	}
+
+	ret = talloc_zero(mem_ctx, struct IP4_ARRAY);
+	if (!ret) {
+		return ret;
+	}
+
+	ret->AddrCount = ip4->AddrCount;
+	if (ip4->AddrCount > 0) {
+		ret->AddrArray = talloc_zero_array(mem_ctx, unsigned int, ip4->AddrCount);
+		if (ret->AddrArray) {
+			memcpy(ret->AddrArray, ip4->AddrArray,
+				sizeof(unsigned int) * ip4->AddrCount);
+		} else {
+			talloc_free(ret);
+			return NULL;
+		}
+	}
+	return ret;
+}
+
+
+struct DNS_ADDR_ARRAY *ip4_array_to_dns_addr_array(TALLOC_CTX *mem_ctx,
+							struct IP4_ARRAY *ip4)
+{
+	struct DNS_ADDR_ARRAY *ret;
+	int i;
+
+	if (!ip4) {
+		return NULL;
+	}
+
+	ret = talloc_zero(mem_ctx, struct DNS_ADDR_ARRAY);
+	if (!ret) {
+		return ret;
+	}
+
+	ret->MaxCount = ip4->AddrCount;
+	ret->AddrCount = ip4->AddrCount;
+	ret->Family = AF_INET;
+	if (ip4->AddrCount > 0) {
+		ret->AddrArray = talloc_zero_array(mem_ctx, struct DNS_ADDR, ip4->AddrCount);
+		if (ret->AddrArray) {
+			for (i=0; i<ip4->AddrCount; i++) {
+				ret->AddrArray[i].MaxSa[0] = 0x02;
+				ret->AddrArray[i].MaxSa[3] = 53;
+				memcpy(&ret->AddrArray[i].MaxSa[4], ip4->AddrArray,
+					sizeof(unsigned int));
+				ret->AddrArray[i].DnsAddrUserDword[0] = 6;
+			}
+
+		} else {
+			talloc_free(ret);
+			return NULL;
+		}
+	}
+	return ret;
+}
+
+
+struct DNS_ADDR_ARRAY *dns_addr_array_copy(TALLOC_CTX *mem_ctx,
+						struct DNS_ADDR_ARRAY *addr)
+{
+	struct DNS_ADDR_ARRAY *ret;
+
+	if (!addr) {
+		return NULL;
+	}
+
+	ret = talloc_zero(mem_ctx, struct DNS_ADDR_ARRAY);
+	if (!ret) {
+		return ret;
+	}
+
+	ret->MaxCount = addr->MaxCount;
+	ret->AddrCount = addr->AddrCount;
+	ret->Family = addr->Family;
+	if (addr->AddrCount > 0) {
+		ret->AddrArray = talloc_zero_array(mem_ctx, struct DNS_ADDR, addr->AddrCount);
+		if (ret->AddrArray) {
+			memcpy(ret->AddrArray, addr->AddrArray,
+				sizeof(struct DNS_ADDR) * addr->AddrCount);
+		} else {
+			talloc_free(ret);
+			return NULL;
+		}
+	}
+	return ret;
+}
+
+
+int dns_split_name_components(TALLOC_CTX *tmp_ctx, const char *name, char ***components)
+{
+	char *str = NULL, *ptr, **list;
+	int count = 0;
+
+	str = talloc_strdup(tmp_ctx, name);
+	if (!str) {
+		goto failed;
+	}
+
+	list = talloc_zero_array(tmp_ctx, char *, 0);
+	if (!list) {
+		goto failed;
+	}
+
+	ptr = strtok(str, ".");
+	while (ptr != NULL) {
+		count++;
+		list = talloc_realloc(tmp_ctx, list, char *, count);
+		if (!list) {
+			goto failed;
+		}
+		list[count-1] = talloc_strdup(tmp_ctx, ptr);
+		if (list[count-1] == NULL) {
+			goto failed;
+		}
+		ptr = strtok(NULL, ".");
+	}
+
+	talloc_free(str);
+
+	*components = list;
+	return count;
+
+failed:
+	if (str) {
+		talloc_free(str);
+	}
+	return -1;
+}
+
+
+char *dns_split_node_name(TALLOC_CTX *tmp_ctx, const char *node_name, const char *zone_name)
+{
+	char **nlist, **zlist;
+	char *prefix;
+	int ncount, zcount, i, match;
+
+	/*
+	 * If node_name is "@", return the zone_name
+	 * If node_name is ".", return NULL
+	 * If there is no '.' in node_name, return the node_name as is.
+	 *
+	 * If node_name does not have zone_name in it, return the node_name as is.
+	 *
+	 * If node_name has additional components as compared to zone_name
+	 *  return only the additional components as a prefix.
+	 *
+	 */
+	if (strcmp(node_name, "@") == 0) {
+		prefix = talloc_strdup(tmp_ctx, zone_name);
+	} else if (strcmp(node_name, ".") == 0) {
+		prefix = NULL;
+	} else if (strchr(node_name, '.') == NULL) {
+		prefix = talloc_strdup(tmp_ctx, node_name);
+	} else {
+		zcount = dns_split_name_components(tmp_ctx, zone_name, &zlist);
+		ncount = dns_split_name_components(tmp_ctx, node_name, &nlist);
+		if (zcount < 0 || ncount < 0) {
+			return NULL;
+		}
+
+		if (ncount < zcount) {
+			prefix = talloc_strdup(tmp_ctx, node_name);
+		} else {
+			match = 0;
+			for (i=1; i<=zcount; i++) {
+				if (strcmp(nlist[ncount-i], zlist[zcount-i]) != 0) {
+					break;
+				}
+				match++;
+			}
+
+			if (match == ncount) {
+				prefix = talloc_strdup(tmp_ctx, zone_name);
+			} else {
+				prefix = talloc_strdup(tmp_ctx, nlist[0]);
+				if (prefix != NULL) {
+					for (i=1; i<ncount-match; i++) {
+						prefix = talloc_asprintf_append(prefix, ".%s", nlist[i]);
+						if (prefix == NULL) {
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		talloc_free(zlist);
+		talloc_free(nlist);
+	}
+
+	return prefix;
+}
+
+
+void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
+				struct DNS_RPC_RECORD *dns)
+{
+	int len;
+
+	ZERO_STRUCTP(dns);
+
+	dns->wDataLength = dnsp->wDataLength;
+	dns->wType = dnsp->wType;
+	dns->dwFlags = dnsp->rank;
+	dns->dwSerial = dnsp->dwSerial;
+	dns->dwTtlSeconds = dnsp->dwTtlSeconds;
+	dns->dwTimeStamp = dnsp->dwTimeStamp;
+
+	switch (dnsp->wType) {
+
+	case DNS_TYPE_TOMBSTONE:
+		dns->data.timestamp = dnsp->data.timestamp;
+		break;
+
+	case DNS_TYPE_A:
+		dns->data.ipv4 = talloc_strdup(mem_ctx, dnsp->data.ipv4);
+		break;
+
+	case DNS_TYPE_NS:
+		len = strlen(dnsp->data.ns);
+		if (dnsp->data.ns[len-1] == '.') {
+			dns->data.name.len = len;
+			dns->data.name.str = talloc_strdup(mem_ctx, dnsp->data.ns);
+		} else {
+			dns->data.name.len = len+1;
+			dns->data.name.str = talloc_asprintf(mem_ctx, "%s.", dnsp->data.ns);
+		}
+		break;
+
+	case DNS_TYPE_CNAME:
+		len = strlen(dnsp->data.cname);
+		if (dnsp->data.cname[len-1] == '.') {
+			dns->data.name.len = len;
+			dns->data.name.str = talloc_strdup(mem_ctx, dnsp->data.cname);
+		} else {
+			dns->data.name.len = len+1;
+			dns->data.name.str = talloc_asprintf(mem_ctx, "%s.", dnsp->data.cname);
+		}
+		break;
+
+	case DNS_TYPE_SOA:
+		dns->data.soa.dwSerialNo = dnsp->data.soa.serial;
+		dns->data.soa.dwRefresh = dnsp->data.soa.refresh;
+		dns->data.soa.dwRetry = dnsp->data.soa.retry;
+		dns->data.soa.dwExpire = dnsp->data.soa.expire;
+		dns->data.soa.dwMinimumTtl = dnsp->data.soa.minimum;
+
+		len = strlen(dnsp->data.soa.mname);
+		if (dnsp->data.soa.mname[len-1] == '.') {
+			dns->data.soa.NamePrimaryServer.len = len;
+			dns->data.soa.NamePrimaryServer.str = talloc_strdup(mem_ctx, dnsp->data.soa.mname);
+		} else {
+			dns->data.soa.NamePrimaryServer.len = len+1;
+			dns->data.soa.NamePrimaryServer.str = talloc_asprintf(mem_ctx, "%s.", dnsp->data.soa.mname);
+		}
+
+		len = strlen(dnsp->data.soa.rname);
+		if (dnsp->data.soa.rname[len-1] == '.') {
+			dns->data.soa.ZoneAdministratorEmail.len = len;
+			dns->data.soa.ZoneAdministratorEmail.str = talloc_strdup(mem_ctx, dnsp->data.soa.rname);
+		} else {
+			dns->data.soa.ZoneAdministratorEmail.len = len+1;
+			dns->data.soa.ZoneAdministratorEmail.str = talloc_asprintf(mem_ctx, "%s.", dnsp->data.soa.rname);
+		}
+		break;
+
+	case DNS_TYPE_PTR:
+		dns->data.ptr.len = strlen(dnsp->data.ptr);
+		dns->data.ptr.str = talloc_strdup(mem_ctx, dnsp->data.ptr);
+		break;
+
+	case DNS_TYPE_MX:
+		dns->data.mx.wPreference = dnsp->data.mx.wPriority;
+		len = strlen(dnsp->data.mx.nameTarget);
+		if (dnsp->data.mx.nameTarget[len-1] == '.') {
+			dns->data.mx.nameExchange.len = len;
+			dns->data.mx.nameExchange.str = talloc_strdup(mem_ctx, dnsp->data.mx.nameTarget);
+		} else {
+			dns->data.mx.nameExchange.len = len+1;
+			dns->data.mx.nameExchange.str = talloc_asprintf(mem_ctx, "%s.", dnsp->data.mx.nameTarget);
+		}
+		break;
+
+	case DNS_TYPE_TXT:
+		dns->data.name.len = strlen(dnsp->data.txt);
+		dns->data.name.str = talloc_strdup(mem_ctx, dnsp->data.txt);
+		break;
+
+	case DNS_TYPE_AAAA:
+		dns->data.ipv6 = talloc_strdup(mem_ctx, dnsp->data.ipv6);
+		break;
+
+	case DNS_TYPE_SRV:
+		dns->data.srv.wPriority = dnsp->data.srv.wPriority;
+		dns->data.srv.wWeight = dnsp->data.srv.wWeight;
+		dns->data.srv.wPort = dnsp->data.srv.wPort;
+		len = strlen(dnsp->data.srv.nameTarget);
+		if (dnsp->data.srv.nameTarget[len-1] == '.') {
+			dns->data.srv.nameTarget.len = len;
+			dns->data.srv.nameTarget.str = talloc_strdup(mem_ctx, dnsp->data.srv.nameTarget);
+		} else {
+			dns->data.srv.nameTarget.len = len+1;
+			dns->data.srv.nameTarget.str = talloc_asprintf(mem_ctx, "%s.", dnsp->data.srv.nameTarget);
+		}
+		break;
+
+	default:
+		memcpy(&dns->data, &dnsp->data, sizeof(union DNS_RPC_DATA));
+		DEBUG(0, ("dnsserver: Found Unhandled DNS record type=%d", dnsp->wType));
+	}
+
+}
+
+
+struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns)
+{
+	int len;
+	struct dnsp_DnssrvRpcRecord *dnsp;
+
+	dnsp = talloc_zero(mem_ctx, struct dnsp_DnssrvRpcRecord);
+	if (dnsp == NULL) {
+		return NULL;
+	}
+
+	dnsp->wDataLength = dns->wDataLength;
+	dnsp->wType = dns->wType;
+	dnsp->version = 5;
+	dnsp->rank = dns->dwFlags & 0x000000FF;
+	dnsp->dwSerial = dns->dwSerial;
+	dnsp->dwTtlSeconds = dns->dwTtlSeconds;
+	dnsp->dwTimeStamp = dns->dwTimeStamp;
+
+	switch (dns->wType) {
+
+	case DNS_TYPE_TOMBSTONE:
+		dnsp->data.timestamp = dns->data.timestamp;
+		break;
+
+	case DNS_TYPE_A:
+		dnsp->data.ipv4 = talloc_strdup(mem_ctx, dns->data.ipv4);
+		break;
+
+	case DNS_TYPE_NS:
+		len = dns->data.name.len;
+		if (dns->data.name.str[len-1] == '.') {
+			dnsp->data.ns = talloc_strndup(mem_ctx, dns->data.name.str, len-1);
+		} else {
+			dnsp->data.ns = talloc_strdup(mem_ctx, dns->data.name.str);
+		}
+		break;
+
+	case DNS_TYPE_CNAME:
+		len = dns->data.name.len;
+		if (dns->data.name.str[len-1] == '.') {
+			dnsp->data.cname = talloc_strndup(mem_ctx, dns->data.name.str, len-1);
+		} else {
+			dnsp->data.cname = talloc_strdup(mem_ctx, dns->data.name.str);
+		}
+		break;
+
+	case DNS_TYPE_SOA:
+		dnsp->data.soa.serial = dns->data.soa.dwSerialNo;
+		dnsp->data.soa.refresh = dns->data.soa.dwRefresh;
+		dnsp->data.soa.retry = dns->data.soa.dwRetry;
+		dnsp->data.soa.expire = dns->data.soa.dwExpire;
+		dnsp->data.soa.minimum = dns->data.soa.dwMinimumTtl;
+
+		len = dns->data.soa.NamePrimaryServer.len;
+		if (dns->data.soa.NamePrimaryServer.str[len-1] == '.') {
+			dnsp->data.soa.mname = talloc_strdup(mem_ctx, dns->data.soa.NamePrimaryServer.str);
+		} else {
+			dnsp->data.soa.mname = talloc_strndup(mem_ctx, dns->data.soa.NamePrimaryServer.str, len-1);
+		}
+
+		len = dns->data.soa.ZoneAdministratorEmail.len;
+		if (dns->data.soa.ZoneAdministratorEmail.str[len-1] == '.') {
+			dnsp->data.soa.rname = talloc_strndup(mem_ctx, dns->data.soa.ZoneAdministratorEmail.str, len-1);
+		} else {
+			dnsp->data.soa.rname = talloc_strdup(mem_ctx, dns->data.soa.ZoneAdministratorEmail.str);
+		}
+		break;
+
+	case DNS_TYPE_PTR:
+		dnsp->data.ptr = talloc_strdup(mem_ctx, dns->data.ptr.str);
+		break;
+
+	case DNS_TYPE_MX:
+		dnsp->data.mx.wPriority = dns->data.mx.wPreference;
+		len = dns->data.mx.nameExchange.len;
+		if (dns->data.mx.nameExchange.str[len-1] == '.') {
+			dnsp->data.mx.nameTarget = talloc_strndup(mem_ctx, dns->data.mx.nameExchange.str, len-1);
+		} else {
+			dnsp->data.mx.nameTarget = talloc_strdup(mem_ctx, dns->data.mx.nameExchange.str);
+		}
+		break;
+
+	case DNS_TYPE_TXT:
+		dnsp->data.txt = talloc_strdup(mem_ctx, dns->data.name.str);
+		break;
+
+	case DNS_TYPE_AAAA:
+		dnsp->data.ipv6 = talloc_strdup(mem_ctx, dns->data.ipv6);
+		break;
+
+	case DNS_TYPE_SRV:
+		dnsp->data.srv.wPriority = dns->data.srv.wPriority;
+		dnsp->data.srv.wWeight = dns->data.srv.wWeight;
+		dnsp->data.srv.wPort = dns->data.srv.wPort;
+
+		len = dns->data.srv.nameTarget.len;
+		if (dns->data.srv.nameTarget.str[len-1] == '.') {
+			dnsp->data.srv.nameTarget = talloc_strndup(mem_ctx, dns->data.srv.nameTarget.str, len-1);
+		} else {
+			dnsp->data.srv.nameTarget = talloc_strdup(mem_ctx, dns->data.srv.nameTarget.str);
+		}
+		break;
+
+	default:
+		memcpy(&dnsp->data, &dns->data, sizeof(union dnsRecordData));
+		DEBUG(0, ("dnsserver: Found Unhandled DNS record type=%d", dns->wType));
+
+	}
+
+	return dnsp;
+}
+
+
+static void _dns_add_name(TALLOC_CTX *mem_ctx, const char *name, char ***add_names, int *add_count)
+{
+	int i;
+	char **ptr = *add_names;
+	int count = *add_count;
+
+	for (i=0; i<count; i++) {
+		if (strcmp(ptr[i], name) == 0) {
+			return;
+		}
+	}
+
+	ptr = talloc_realloc(mem_ctx, ptr, char *, count+1);
+	if (ptr == NULL) {
+		return;
+	}
+
+	ptr[count] = talloc_strdup(mem_ctx, name);
+	if (ptr[count] == NULL) {
+		return;
+	}
+
+	*add_names = ptr;
+	*add_count = count+1;
+}
+
+
+static void dns_find_additional_names(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *rec, char ***add_names, int *add_count)
+{
+	if (add_names == NULL) {
+		return;
+	}
+
+	switch (rec->wType) {
+
+	case DNS_TYPE_NS:
+		_dns_add_name(mem_ctx, rec->data.ns, add_names, add_count);
+		break;
+
+	case DNS_TYPE_CNAME:
+		_dns_add_name(mem_ctx, rec->data.cname, add_names, add_count);
+		break;
+
+	case DNS_TYPE_SOA:
+		_dns_add_name(mem_ctx, rec->data.soa.mname, add_names, add_count);
+		break;
+
+	case DNS_TYPE_MX:
+		_dns_add_name(mem_ctx, rec->data.mx.nameTarget, add_names, add_count);
+		break;
+
+	case DNS_TYPE_SRV:
+		_dns_add_name(mem_ctx, rec->data.srv.nameTarget, add_names, add_count);
+		break;
+
+	default:
+		break;
+	}
+}
+
+
+WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
+				struct dnsserver_zone *z,
+				enum dns_record_type record_type,
+				unsigned int select_flag,
+				const char *branch_name,
+				struct ldb_message *msg,
+				struct DNS_RPC_RECORDS_ARRAY *recs,
+				char ***add_names,
+				int *add_count)
+{
+	const char *nodename;
+	struct ldb_message_element *el;
+	int i, j;
+	bool found, node_is_rootzone;
+
+	/* Check if we already have created record for the branch */
+	found = false;
+	if (branch_name == NULL) {
+		i = 0;
+		if (recs->count > 0) {
+			found = true;
+		}
+	} else {
+		for (i=0; i<recs->count; i++) {
+			if (strcmp(branch_name, recs->rec[i].dnsNodeName.str) == 0) {
+				found = true;
+				break;
+			}
+		}
+	}
+
+	/* If not, add empty record */
+	if (!found) {
+		if (recs->count == 0) {
+			recs->rec = talloc_zero(recs, struct DNS_RPC_RECORDS);
+		} else {
+			recs->rec = talloc_realloc(recs, recs->rec, struct DNS_RPC_RECORDS, recs->count+1);
+		}
+		if (recs->rec == NULL) {
+			return WERR_NOMEM;
+		}
+		i = recs->count;
+		recs->rec[i].wLength = 0;
+		recs->rec[i].wRecordCount = 0;
+		recs->rec[i].dwChildCount = 0;
+
+		/* The base records returned with empty name */
+		/* Children records returned with names */
+		if (branch_name == NULL) {
+			recs->rec[i].dnsNodeName.str = talloc_strdup(recs, "");
+			recs->rec[i].dnsNodeName.len = 0;
+		} else {
+			recs->rec[i].dnsNodeName.str = talloc_strdup(recs, branch_name);
+			recs->rec[i].dnsNodeName.len = strlen(branch_name);
+		}
+		recs->rec[i].records = talloc_zero_array(recs, struct DNS_RPC_RECORD, 0);
+		recs->count++;
+	}
+
+	/* Allow empty records */
+	if (msg == NULL) {
+		return WERR_OK;
+	}
+
+	nodename = ldb_msg_find_attr_as_string(msg, "name", NULL);
+
+	if (strcmp(nodename, "@") == 0) {
+		node_is_rootzone = true;
+	} else {
+		node_is_rootzone = false;
+
+		/* child record */
+		if (branch_name != NULL) {
+			if (branch_name[strlen(branch_name)-1] != '.'
+				&& strcmp(nodename, branch_name) != 0) {
+				recs->rec[i].dwChildCount++;
+				return WERR_OK;
+			}
+		}
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	if (el == NULL || el->values == 0) {
+		DEBUG(0, ("dnsserver: Missing dnsRecord for %s\n", ldb_dn_get_linearized(msg->dn)));
+		return WERR_OK;
+	}
+
+	/* branch level record */
+	for (j=0; j<el->num_values; j++) {
+		struct dnsp_DnssrvRpcRecord dnsp_rec;
+		struct DNS_RPC_RECORD *dns_rec;
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_pull_struct_blob(&el->values[j], mem_ctx, &dnsp_rec,
+					(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("dnsserver: Unable to parse dns record (%s)", ldb_dn_get_linearized(msg->dn)));
+			return WERR_INTERNAL_DB_ERROR;
+		}
+
+		/* Match the records based on search criteria */
+		if (record_type == DNS_TYPE_ALL || dnsp_rec.wType == record_type) {
+			found = false;
+
+			if (select_flag & DNS_RPC_VIEW_AUTHORITY_DATA) {
+				if (dnsp_rec.rank == DNS_RANK_ZONE) {
+					found = true;
+				}
+			}
+			if (select_flag & DNS_RPC_VIEW_CACHE_DATA) {
+				if (dnsp_rec.rank == DNS_RANK_ZONE) {
+					found = true;
+				}
+			}
+			if (select_flag & DNS_RPC_VIEW_GLUE_DATA) {
+				if (dnsp_rec.rank == DNS_RANK_NS_GLUE) {
+					found = true;
+				}
+			}
+			if (select_flag & DNS_RPC_VIEW_ROOT_HINT_DATA) {
+				if (dnsp_rec.rank == DNS_RANK_ROOT_HINT) {
+					found = true;
+				}
+			}
+
+			if (found) {
+				recs->rec[i].records = talloc_realloc(recs,
+							recs->rec[i].records,
+							struct DNS_RPC_RECORD,
+							recs->rec[i].wRecordCount+1);
+				if (recs->rec[i].records == NULL) {
+					return WERR_NOMEM;
+				}
+
+				dns_rec = &recs->rec[i].records[recs->rec[i].wRecordCount];
+				dnsp_to_dns_copy(recs, &dnsp_rec, dns_rec);
+
+				/* Fix record flags */
+				if (node_is_rootzone) {
+					dns_rec->dwFlags |= (DNS_RPC_FLAG_ZONE_ROOT | DNS_RPC_FLAG_AUTH_ZONE_ROOT);
+				}
+
+				if (dns_rec->dwFlags == DNS_RANK_NS_GLUE) {
+					dns_rec->dwFlags |= DNS_RPC_FLAG_ZONE_ROOT;
+				}
+
+				recs->rec[i].wRecordCount++;
+
+				dns_find_additional_names(mem_ctx, &dnsp_rec, add_names, add_count);
+			}
+		}
+	}
+
+	return WERR_OK;
+}
+
+
+int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m2,
+				char *search_name)
+{
+	const char *name1, *name2;
+	const char *ptr1, *ptr2;
+
+	name1 = ldb_msg_find_attr_as_string(*m1, "name", NULL);
+	name2 = ldb_msg_find_attr_as_string(*m2, "name", NULL);
+	if (name1 == NULL || name2 == NULL) {
+		return 0;
+	}
+
+	/* '@' record and the search_name record gets preference */
+	if (name1[0] == '@') {
+		return -1;
+	}
+	if (search_name && strcmp(name1, search_name) == 0) {
+		return -1;
+	}
+
+	if (name2[0] == '@') {
+		return 1;
+	}
+	if (search_name && strcmp(name2, search_name) == 0) {
+		return 1;
+	}
+
+	ptr1 = strrchr(name1, '.');
+	if (ptr1 == NULL) {
+		ptr1 = name1;
+	} else {
+		ptr1 = &ptr1[1];
+	}
+
+	ptr2 = strrchr(name2, '.');
+	if (ptr2 == NULL) {
+		ptr2 = name2;
+	} else {
+		ptr2 = &ptr2[1];
+	}
+
+	return strcasecmp(ptr1, ptr2);
+}
+
+
+bool dns_name_equal(const char *name1, const char *name2)
+{
+	size_t len1 = strlen(name1);
+	size_t len2 = strlen(name2);
+
+	if (name1[len1-1] == '.') len1--;
+	if (name2[len2-1] == '.') len2--;
+	if (len1 != len2) {
+		return false;
+	}
+	return strncasecmp(name1, name2, len1) == 0;
+}
+
+
+bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRecord *rec2)
+{
+	if (rec1->wType != rec2->wType) {
+		return false;
+	}
+
+	switch(rec1->wType) {
+	case DNS_TYPE_TOMBSTONE:
+		return true;
+
+	case DNS_TYPE_A:
+		return strcmp(rec1->data.ipv4, rec2->data.ipv4) == 0;
+
+	case DNS_TYPE_NS:
+		return dns_name_equal(rec1->data.ns, rec1->data.ns);
+
+	case DNS_TYPE_CNAME:
+		return dns_name_equal(rec1->data.cname, rec1->data.cname);
+
+	case DNS_TYPE_SOA:
+		return dns_name_equal(rec1->data.soa.mname, rec2->data.soa.mname) == 0 &&
+			dns_name_equal(rec1->data.soa.rname, rec2->data.soa.rname) == 0 &&
+			rec1->data.soa.serial == rec2->data.soa.serial &&
+			rec1->data.soa.refresh == rec2->data.soa.refresh &&
+			rec1->data.soa.retry == rec2->data.soa.retry &&
+			rec1->data.soa.expire == rec2->data.soa.expire &&
+			rec1->data.soa.minimum == rec2->data.soa.minimum;
+
+	case DNS_TYPE_PTR:
+		return strcmp(rec1->data.ptr, rec2->data.ptr) == 0;
+
+	case DNS_TYPE_MX:
+		return rec1->data.mx.wPriority == rec2->data.srv.wPriority &&
+			dns_name_equal(rec1->data.mx.nameTarget, rec2->data.srv.nameTarget);
+
+	case DNS_TYPE_TXT:
+		return strcmp(rec1->data.txt, rec2->data.txt) == 0;
+
+	case DNS_TYPE_AAAA:
+		return strcmp(rec1->data.ipv6, rec2->data.ipv6) == 0;
+
+	case DNS_TYPE_SRV:
+		return rec1->data.srv.wPriority == rec2->data.srv.wPriority &&
+			rec1->data.srv.wWeight == rec2->data.srv.wWeight &&
+			rec1->data.srv.wPort == rec2->data.srv.wPort &&
+			dns_name_equal(rec1->data.srv.nameTarget, rec2->data.srv.nameTarget);
+
+	default:
+		DEBUG(0, ("dnsserver: unhandled record type %u", rec1->wType));
+		break;
+	}
+
+	return false;
+}

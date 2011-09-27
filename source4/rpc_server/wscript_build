@@ -137,6 +137,13 @@ bld.SAMBA_MODULE('dcerpc_eventlog',
 	deps='DCERPC_COMMON'
 	)
 
+bld.SAMBA_MODULE('dcerpc_dnsserver',
+    source='dnsserver/dcerpc_dnsserver.c dnsserver/dnsutils.c dnsserver/dnsdata.c dnsserver/dnsdb.c',
+    subsystem='dcerpc_server',
+    init_function='dcerpc_server_dnsserver_init',
+    deps='DCERPC_COMMON'
+    )
+
 bld.SAMBA_LIBRARY('dcerpc_server',
 	source='dcerpc_server.c dcesrv_mgmt.c handles.c',
 	pc_files='dcerpc_server.pc',
