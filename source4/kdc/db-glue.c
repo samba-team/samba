@@ -1042,9 +1042,11 @@ static krb5_error_code samba_kdc_lookup_trust(krb5_context context, struct ldb_c
 		return ret;
 	}
 
-	lret = ldb_search(ldb_ctx, mem_ctx, &res,
-			  ldb_get_default_basedn(ldb_ctx),
-			  LDB_SCOPE_SUBTREE, attrs, "%s", filter);
+	lret = dsdb_search(ldb_ctx, mem_ctx, &res,
+			   ldb_get_default_basedn(ldb_ctx),
+			   LDB_SCOPE_SUBTREE, attrs,
+			   DSDB_SEARCH_NO_GLOBAL_CATALOG,
+			   "%s", filter);
 	if (lret != LDB_SUCCESS) {
 		DEBUG(3, ("Failed to search for %s: %s\n", filter, ldb_errstring(ldb_ctx)));
 		return HDB_ERR_NOENTRY;
@@ -1149,7 +1151,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		if (krbtgt_number == kdc_db_ctx->my_krbtgt_number) {
 			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
 					       &msg, kdc_db_ctx->krbtgt_dn, LDB_SCOPE_BASE,
-					       krbtgt_attrs, 0,
+					       krbtgt_attrs, DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					       "(objectClass=user)");
 		} else {
 			/* We need to look up an RODC krbtgt (perhaps
@@ -1158,7 +1160,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
 					       &msg, realm_dn, LDB_SCOPE_SUBTREE,
 					       krbtgt_attrs,
-					       DSDB_SEARCH_SHOW_EXTENDED_DN,
+					       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					       "(&(objectClass=user)(msDS-SecondaryKrbTgtNumber=%u))", (unsigned)(krbtgt_number));
 		}
 
@@ -1517,9 +1519,10 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 		return ret;
 	}
 
-	lret = ldb_search(ldb_ctx, priv, &res,
-			  priv->realm_dn, LDB_SCOPE_SUBTREE, user_attrs,
-			  "(objectClass=user)");
+	lret = dsdb_search(ldb_ctx, priv, &res,
+			   priv->realm_dn, LDB_SCOPE_SUBTREE, user_attrs,
+			   DSDB_SEARCH_NO_GLOBAL_CATALOG,
+			   "(objectClass=user)");
 
 	if (lret != LDB_SUCCESS) {
 		TALLOC_FREE(priv);
@@ -1873,7 +1876,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb, kdc_db_ctx,
 					  &msg, kdc_db_ctx->krbtgt_dn, LDB_SCOPE_BASE,
 					  secondary_keytab,
-					  0,
+					  DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					  "(&(objectClass=user)(msDS-SecondaryKrbTgtNumber=*))");
 		if (ldb_ret != LDB_SUCCESS) {
 			DEBUG(1, ("hdb_samba4_create: Cannot read krbtgt account %s in KDC backend to get msDS-SecondaryKrbTgtNumber: %s: %s\n",
@@ -1900,7 +1903,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					  ldb_get_default_basedn(kdc_db_ctx->samdb),
 					  LDB_SCOPE_SUBTREE,
 					  krbtgt_attrs,
-					  0,
+					  DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					  "(&(objectClass=user)(samAccountName=krbtgt))");
 
 		if (ldb_ret != LDB_SUCCESS) {
