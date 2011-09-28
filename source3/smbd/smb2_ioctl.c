@@ -68,7 +68,16 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	in_max_output_length	= IVAL(inbody, 0x2C);
 	in_flags		= IVAL(inbody, 0x30);
 
-	if (in_input_offset != (SMB2_HDR_BODY + req->in.vector[i+1].iov_len)) {
+	/*
+	 * InputOffset (4 bytes): The offset, in bytes, from the beginning of
+	 * the SMB2 header to the input data buffer. If no input data is
+	 * required for the FSCTL/IOCTL command being issued, the client SHOULD
+	 * set this value to 0.<49>
+	 * <49> If no input data is required for the FSCTL/IOCTL command being
+	 * issued, Windows-based clients set this field to any value.
+	 */
+	if ((in_input_length > 0)
+	 && (in_input_offset != (SMB2_HDR_BODY + req->in.vector[i+1].iov_len))) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
