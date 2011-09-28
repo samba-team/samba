@@ -1382,7 +1382,10 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 	krb5_error_code ret = HDB_ERR_NOENTRY;
 	TALLOC_CTX *mem_ctx;
 	unsigned int krbtgt_number;
-	if (flags & HDB_F_KVNO_SPECIFIED) {
+	/* w2k8r2 sometimes gives us a kvno of 255 for inter-domain
+	   trust tickets. We don't yet know what this means, but we do
+	   seem to need to treat it as unspecified */
+	if ((flags & HDB_F_KVNO_SPECIFIED) && kvno != 255) {
 		krbtgt_number = SAMBA_KVNO_GET_KRBTGT(kvno);
 		if (kdc_db_ctx->rodc) {
 			if (krbtgt_number != kdc_db_ctx->my_krbtgt_number) {
