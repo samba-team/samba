@@ -29,6 +29,60 @@
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 
+static WERROR create_response_rr(const struct dns_name_question *question,
+				 const struct dnsp_DnssrvRpcRecord *rec,
+				 struct dns_res_rec **answers, uint16_t *ancount)
+{
+	struct dns_res_rec *ans = *answers;
+	uint16_t ai = *ancount;
+
+	ZERO_STRUCT(ans[ai]);
+
+	switch (rec->wType) {
+	case DNS_QTYPE_CNAME:
+		ans[ai].rdata.cname_record = talloc_strdup(ans, rec->data.cname);
+		break;
+	case DNS_QTYPE_A:
+		ans[ai].rdata.ipv4_record = talloc_strdup(ans, rec->data.ipv4);
+		break;
+	case DNS_QTYPE_AAAA:
+		ans[ai].rdata.ipv6_record = rec->data.ipv6;
+		break;
+	case DNS_TYPE_NS:
+		ans[ai].rdata.ns_record = rec->data.ns;
+		break;
+	case DNS_QTYPE_SRV:
+		ans[ai].rdata.srv_record.priority = rec->data.srv.wPriority;
+		ans[ai].rdata.srv_record.weight   = rec->data.srv.wWeight;
+		ans[ai].rdata.srv_record.port     = rec->data.srv.wPort;
+		ans[ai].rdata.srv_record.target   = rec->data.srv.nameTarget;
+		break;
+	case DNS_QTYPE_SOA:
+		ans[ai].rdata.soa_record.mname	 = rec->data.soa.mname;
+		ans[ai].rdata.soa_record.rname	 = rec->data.soa.rname;
+		ans[ai].rdata.soa_record.serial	 = rec->data.soa.serial;
+		ans[ai].rdata.soa_record.refresh = rec->data.soa.refresh;
+		ans[ai].rdata.soa_record.retry	 = rec->data.soa.retry;
+		ans[ai].rdata.soa_record.expire	 = rec->data.soa.expire;
+		ans[ai].rdata.soa_record.minimum = rec->data.soa.minimum;
+		break;
+	default:
+		return DNS_ERR(NOT_IMPLEMENTED);
+	}
+
+	ans[ai].name = talloc_strdup(ans, question->name);
+	ans[ai].rr_type = rec->wType;
+	ans[ai].rr_class = DNS_QCLASS_IN;
+	ans[ai].ttl = rec->dwTtlSeconds;
+	ans[ai].length = UINT16_MAX;
+	ai++;
+
+	*answers = ans;
+	*ancount = ai;
+
+	return WERR_OK;
+}
+
 static WERROR handle_question(struct dns_server *dns,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dns_name_question *question,
@@ -76,116 +130,12 @@ static WERROR handle_question(struct dns_server *dns,
 			     ai + el->num_values);
 	W_ERROR_HAVE_NO_MEMORY(ans);
 
-	switch (question->question_type) {
-	case DNS_QTYPE_CNAME:
-		for (ri = 0; ri < el->num_values; ri++) {
-			if (recs[ri].wType != question->question_type) {
-				continue;
-			}
-
-			ZERO_STRUCT(ans[ai]);
-			ans[ai].name = talloc_strdup(ans, question->name);
-			ans[ai].rr_type = DNS_QTYPE_CNAME;
-			ans[ai].rr_class = DNS_QCLASS_IN;
-			ans[ai].ttl = recs[ri].dwTtlSeconds;
-			ans[ai].length = UINT16_MAX;
-			ans[ai].rdata.cname_record = talloc_strdup(ans, recs[ri].data.cname);
-			ai++;
+	for (ri = 0; ri < el->num_values; ri++) {
+		if ((question->question_type != DNS_QTYPE_ALL) &&
+		    (recs[ri].wType != question->question_type)) {
+			continue;
 		}
-		break;
-	case DNS_QTYPE_A:
-		for (ri = 0; ri < el->num_values; ri++) {
-			if (recs[ri].wType != question->question_type) {
-				continue;
-			}
-
-			/* TODO: if the record actually is a DNS_QTYPE_A */
-
-			ZERO_STRUCT(ans[ai]);
-			ans[ai].name = talloc_strdup(ans, question->name);
-			ans[ai].rr_type = DNS_QTYPE_A;
-			ans[ai].rr_class = DNS_QCLASS_IN;
-			ans[ai].ttl = recs[ri].dwTtlSeconds;
-			ans[ai].length = UINT16_MAX;
-			ans[ai].rdata.ipv4_record = talloc_strdup(ans, recs[ri].data.ipv4);
-			ai++;
-		}
-		break;
-	case DNS_QTYPE_AAAA:
-		for (ri = 0; ri < el->num_values; ri++) {
-			if (recs[ri].wType != question->question_type) {
-				continue;
-			}
-
-			ZERO_STRUCT(ans[ai]);
-			ans[ai].name = talloc_strdup(ans, question->name);
-			ans[ai].rr_type = DNS_QTYPE_AAAA;
-			ans[ai].rr_class = DNS_QCLASS_IN;
-			ans[ai].ttl = recs[ri].dwTtlSeconds;
-			ans[ai].length = UINT16_MAX;
-			ans[ai].rdata.ipv6_record = recs[ri].data.ipv6;
-			ai++;
-		}
-		break;
-	case DNS_QTYPE_NS:
-		for (ri = 0; ri < el->num_values; ri++) {
-			if (recs[ri].wType != question->question_type) {
-				continue;
-			}
-
-			ZERO_STRUCT(ans[ai]);
-			ans[ai].name = question->name;
-			ans[ai].rr_type = DNS_QTYPE_NS;
-			ans[ai].rr_class = DNS_QCLASS_IN;
-			ans[ai].ttl = recs[ri].dwTtlSeconds;
-			ans[ai].length = UINT16_MAX;
-			ans[ai].rdata.ns_record = recs[ri].data.ns;
-			ai++;
-		}
-		break;
-	case DNS_QTYPE_SRV:
-		for (ri = 0; ri < el->num_values; ri++) {
-			if (recs[ri].wType != question->question_type) {
-				continue;
-			}
-
-			ZERO_STRUCT(ans[ai]);
-			ans[ai].name = question->name;
-			ans[ai].rr_type = DNS_QTYPE_SRV;
-			ans[ai].rr_class = DNS_QCLASS_IN;
-			ans[ai].ttl = recs[ri].dwTtlSeconds;
-			ans[ai].length = UINT16_MAX;
-			ans[ai].rdata.srv_record.priority = recs[ri].data.srv.wPriority;
-			ans[ai].rdata.srv_record.weight = recs[ri].data.srv.wWeight;
-			ans[ai].rdata.srv_record.port = recs[ri].data.srv.wPort;
-			ans[ai].rdata.srv_record.target = recs[ri].data.srv.nameTarget;
-			ai++;
-		}
-		break;
-	case DNS_QTYPE_SOA:
-		for (ri = 0; ri < el->num_values; ri++) {
-			if (recs[ri].wType != question->question_type) {
-				continue;
-			}
-
-			ZERO_STRUCT(ans[ai]);
-			ans[ai].name = question->name;
-			ans[ai].rr_type = DNS_QTYPE_SOA;
-			ans[ai].rr_class = DNS_QCLASS_IN;
-			ans[ai].ttl = recs[ri].dwTtlSeconds;
-			ans[ai].length = UINT16_MAX;
-			ans[ai].rdata.soa_record.mname	= recs[ri].data.soa.mname;
-			ans[ai].rdata.soa_record.rname	= recs[ri].data.soa.rname;
-			ans[ai].rdata.soa_record.serial	= recs[ri].data.soa.serial;
-			ans[ai].rdata.soa_record.refresh= recs[ri].data.soa.refresh;
-			ans[ai].rdata.soa_record.retry	= recs[ri].data.soa.retry;
-			ans[ai].rdata.soa_record.expire	= recs[ri].data.soa.expire;
-			ans[ai].rdata.soa_record.minimum= recs[ri].data.soa.minimum;
-			ai++;
-		}
-		break;
-	default:
-		return DNS_ERR(NOT_IMPLEMENTED);
+		create_response_rr(question, &recs[ri], &ans, &ai);
 	}
 
 	if (*ancount == ai) {
