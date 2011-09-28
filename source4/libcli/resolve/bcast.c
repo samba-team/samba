@@ -53,8 +53,18 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	if (address_list == NULL) return NULL;
 
 	for (i=0;i<num_interfaces;i++) {
-		const char *bcast = iface_list_n_bcast(data->ifaces, i);
-		if (bcast == NULL) continue;
+		bool ipv4 = iface_list_n_is_v4(data->ifaces, i);
+		const char *bcast;
+
+		if (!ipv4) {
+			continue;
+		}
+
+		bcast = iface_list_n_bcast(data->ifaces, i);
+		if (bcast == NULL) {
+			continue;
+		}
+
 		address_list[count] = talloc_strdup(address_list, bcast);
 		if (address_list[count] == NULL) {
 			talloc_free(address_list);
