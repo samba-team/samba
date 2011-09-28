@@ -1180,6 +1180,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
+	} else if (opcode == SMB2_OP_CANCEL) {
+		/* Cancel requests are allowed to skip the signing */
 	} else if (req->session && req->session->do_signing) {
 		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
 	}
