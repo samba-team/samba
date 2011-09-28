@@ -277,6 +277,16 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 		return smb2_handle_oplock_break(transport, &blob);
 	}
 
+	if (opcode == SMB2_OP_CANCEL) {
+		/*
+		 * ignore responses to cancel requests,
+		 * this can happen if signing was wrong or
+		 * we specified the wrong session id
+		 */
+		talloc_free(buffer);
+		return NT_STATUS_OK;
+	}
+
 	/* match the incoming request against the list of pending requests */
 	for (req=transport->pending_recv; req; req=req->next) {
 		if (req->seqnum == seqnum) break;
