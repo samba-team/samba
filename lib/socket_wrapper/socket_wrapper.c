@@ -1594,7 +1594,7 @@ static int autobind_start;
    assign it here.
    Note: this might change the family from ipv6 to ipv4
 */
-static int swrap_auto_bind(struct socket_info *si, int family)
+static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 {
 	struct sockaddr_un un_addr;
 	int i;
@@ -1683,7 +1683,7 @@ static int swrap_auto_bind(struct socket_info *si, int family)
 			 type, socket_wrapper_default_iface(), port);
 		if (stat(un_addr.sun_path, &st) == 0) continue;
 
-		ret = real_bind(si->fd, (struct sockaddr *)(void *)&un_addr,
+		ret = real_bind(fd, (struct sockaddr *)(void *)&un_addr,
 				sizeof(un_addr));
 		if (ret == -1) return ret;
 
@@ -1716,7 +1716,7 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	}
 
 	if (si->bound == 0) {
-		ret = swrap_auto_bind(si, serv_addr->sa_family);
+		ret = swrap_auto_bind(s, si, serv_addr->sa_family);
 		if (ret == -1) return -1;
 	}
 
@@ -1906,7 +1906,8 @@ _PUBLIC_ int swrap_ioctl(int s, int r, void *p)
 	return ret;
 }
 
-static ssize_t swrap_sendmsg_before(struct socket_info *si,
+static ssize_t swrap_sendmsg_before(int fd,
+				    struct socket_info *si,
 				    struct msghdr *msg,
 				    struct iovec *tmp_iov,
 				    struct sockaddr_un *tmp_un,
@@ -1991,7 +1992,7 @@ static ssize_t swrap_sendmsg_before(struct socket_info *si,
 		}
 
 		if (si->bound == 0) {
-			ret = swrap_auto_bind(si, si->family);
+			ret = swrap_auto_bind(fd, si, si->family);
 			if (ret == -1) return -1;
 		}
 
@@ -2003,7 +2004,7 @@ static ssize_t swrap_sendmsg_before(struct socket_info *si,
 					     tmp_un, 0, NULL);
 		if (ret == -1) return -1;
 
-		ret = real_connect(si->fd, (struct sockaddr *)(void *)tmp_un,
+		ret = real_connect(fd, (struct sockaddr *)(void *)tmp_un,
 				   sizeof(*tmp_un));
 
 		/* to give better errors */
@@ -2168,7 +2169,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 	msg.msg_flags = 0;             /* flags on received message */
 #endif
 
-	ret = swrap_sendmsg_before(si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
+	ret = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
 	if (ret == -1) return -1;
 
 	buf = msg.msg_iov[0].iov_base;
@@ -2289,7 +2290,7 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 	msg.msg_flags = 0;             /* flags on received message */
 #endif
 
-	ret = swrap_sendmsg_before(si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
+	ret = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
 	if (ret == -1) return -1;
 
 	buf = msg.msg_iov[0].iov_base;
@@ -2332,7 +2333,7 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 	msg.msg_flags = omsg->msg_flags;           /* flags on received message */
 #endif
 
-	ret = swrap_sendmsg_before(si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
+	ret = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
 	if (ret == -1) return -1;
 
 	if (bcast) {
@@ -2493,7 +2494,7 @@ int swrap_writev(int s, const struct iovec *vector, size_t count)
 	msg.msg_flags = 0;             /* flags on received message */
 #endif
 
-	ret = swrap_sendmsg_before(si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
+	ret = swrap_sendmsg_before(s, si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
 	if (ret == -1) return -1;
 
 	ret = real_writev(s, msg.msg_iov, msg.msg_iovlen);
