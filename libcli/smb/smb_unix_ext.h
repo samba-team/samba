@@ -21,6 +21,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __SMB_UNIX_EXT_H__
+#define __SMB_UNIX_EXT_H__
+
 /* UNIX CIFS Extensions - created by HP */
 /*
  * UNIX CIFS Extensions have the range 0x200 - 0x2FF reserved.
@@ -450,3 +453,4 @@ enum smb_whoami_flags {
 #define SMB_POSIX_UNLINK_FILE_TARGET 0
 #define SMB_POSIX_UNLINK_DIRECTORY_TARGET 1
 
+#endif /* __SMB_UNIX_EXT_H__ */
