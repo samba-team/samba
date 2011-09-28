@@ -41,6 +41,7 @@ from samba.netcmd import (
     SuperCommand,
     Option
     )
+from samba.netcmd.common import netcmd_get_domain_infos_via_cldap
 from samba.samba3 import Samba3
 from samba.samba3 import param as s3param
 from samba.upgrade import upgrade_from_samba3
@@ -73,6 +74,28 @@ class cmd_domain_export_keytab(Command):
         lp = sambaopts.get_loadparm()
         net = Net(None, lp, server=credopts.ipaddress)
         net.export_keytab(keytab=keytab)
+
+class cmd_domain_info(Command):
+    """Print basic info about a domain and the DC passed as parameter"""
+
+    synopsis = "%prog domain info <ip_address> [options]"
+
+    takes_options = [
+        ]
+
+    takes_args = ["address"]
+
+    def run(self, address, credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        res = netcmd_get_domain_infos_via_cldap(lp, None, address)
+        if res:
+            print "Forest           : %s" % res.forest
+            print "Domain           : %s" % res.dns_domain
+            print "Netbios domain   : %s" % res.domain_name
+            print "DC name          : %s" % res.pdc_dns_name
+            print "DC netbios name  : %s" % res.pdc_name
+            print "Server site      : %s" % res.server_site
+            print "Client site      : %s" % res.client_site
 
 
 
@@ -614,12 +637,12 @@ class cmd_domain_samba3upgrade(Command):
         upgrade_from_samba3(samba3, logger, targetdir, session_info=system_session(), 
                             useeadb=eadb)
 
-
 class cmd_domain(SuperCommand):
     """Domain management"""
 
     subcommands = {}
     subcommands["exportkeytab"] = cmd_domain_export_keytab()
+    subcommands["info"] = cmd_domain_info()
     subcommands["join"] = cmd_domain_join()
     subcommands["level"] = cmd_domain_level()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
