@@ -1860,37 +1860,11 @@ failed:
 */
 bool samdb_is_gc(struct ldb_context *ldb)
 {
-	const char *attrs[] = { "options", NULL };
 	uint32_t options;
-	int ret;
-	struct ldb_result *res;
-	TALLOC_CTX *tmp_ctx;
-
-	tmp_ctx = talloc_new(ldb);
-	if (tmp_ctx == NULL) {
-		DEBUG(1, ("talloc_new failed in samdb_is_pdc"));
+	if (samdb_ntds_options(ldb, &options) != LDB_SUCCESS) {
 		return false;
 	}
-
-	/* Query cn=ntds settings,.... */
-	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return false;
-	}
-	if (res->count != 1) {
-		talloc_free(tmp_ctx);
-		return false;
-	}
-
-	options = ldb_msg_find_attr_as_uint(res->msgs[0], "options", 0);
-	talloc_free(tmp_ctx);
-
-	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */
-	if (options & DS_NTDSDSA_OPT_IS_GC) {
-		return true;
-	}
-	return false;
+	return (options & DS_NTDSDSA_OPT_IS_GC) != 0;
 }
 
 /* Find a domain object in the parents of a particular DN.  */
