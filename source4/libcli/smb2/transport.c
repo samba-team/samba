@@ -322,7 +322,8 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 		req->in.body_size = req->in.size - (SMB2_HDR_BODY+NBT_HDR_SIZE);
 	}
 
-	if (req->session && req->session->signing_active) {
+	if (req->session && req->session->signing_active &&
+	    !NT_STATUS_EQUAL(req->status, NT_STATUS_USER_SESSION_DELETED)) {
 		status = smb2_check_signature(&req->in, 
 					      req->session->session_key);
 		if (!NT_STATUS_IS_OK(status)) {
