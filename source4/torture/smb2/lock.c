@@ -1056,12 +1056,13 @@ static bool test_cancel_tdis(struct torture_context *torture,
 	lck.in.file.handle	= h;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
-	if (torture_setting_bool(torture, "samba4", false)) {
-		/* checking if the tcon supplied are still valid
-		 * should happen before you validate a file handle,
-		 * so we should return USER_SESSION_DELETED */
-		CHECK_STATUS(status, NT_STATUS_NETWORK_NAME_DELETED);
-	} else {
+	/*
+	 * Most Windows versions have a strange order to
+	 * verify the session id, tree id and file id.
+	 * (They should be checked in that order, but windows
+	 *  seems to check the file id before the others).
+	 */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
 		CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 	}
 
@@ -1141,12 +1142,13 @@ static bool test_cancel_logoff(struct torture_context *torture,
 	lck.in.file.handle	= h;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
-	if (torture_setting_bool(torture, "samba4", false)) {
-		/* checking if the credential supplied are still valid
-		 * should happen before you validate a file handle,
-		 * so we should return USER_SESSION_DELETED */
-		CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
-	} else {
+	/*
+	 * Most Windows versions have a strange order to
+	 * verify the session id, tree id and file id.
+	 * (They should be checked in that order, but windows
+	 *  seems to check the file id before the others).
+	 */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 	}
 
