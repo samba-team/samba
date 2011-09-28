@@ -7,7 +7,7 @@ bld.SAMBA_LIBRARY('cli_smb_common',
 	deps='LIBCRYPTO',
 	public_deps='talloc samba-util',
 	private_library=True,
-	public_headers='''smb_common.h smb2_constants.h
-			smb2_create_blob.h smb2_signing.h
+	public_headers='''smb_common.h smb2_constants.h smb_constants.h
+			smb2_create_blob.h smb2_signing.h smb_util.h smb_unix_ext.h
 	''',
 	)
