@@ -146,7 +146,7 @@ def ctags(ctx):
     "build 'tags' file using ctags"
     import Utils
     source_root = os.path.dirname(Utils.g_module.root_path)
-    cmd = 'ctags $(find %s -name "*.[ch]" | grep -v "*_proto\.h" | egrep -v \.inst\.)' % source_root
+    cmd = 'ctags --python-kinds=-i $(find %s -name "*.[ch]" | grep -v "*_proto\.h" | egrep -v \.inst\.) $(find %s -name "*.py")' % (source_root, source_root)
     print("Running: %s" % cmd)
     os.system(cmd)
 
