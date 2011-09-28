@@ -36,6 +36,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
 #include "../libds/common/flags.h"
+#include "dsdb/common/util.h"
 
 struct np_context {
 	struct ldb_module *module;
@@ -122,6 +123,17 @@ static int np_part_search_callback(struct ldb_request *req, struct ldb_reply *ar
 	ret = ldb_build_extended_req(&ac->part_add, 
 				     ldb, ac, DSDB_EXTENDED_CREATE_PARTITION_OID, ex_op, 
 				     NULL, ac, np_part_mod_callback, req);
+
+	/* if the parent was asking for a partial replica, then we
+	 * need the extended operation to also ask for a partial
+	 * replica */
+	if (ldb_request_get_control(req, DSDB_CONTROL_PARTIAL_REPLICA)) {
+		ret = dsdb_request_add_controls(ac->part_add, DSDB_MODIFY_PARTIAL_REPLICA);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	
 	LDB_REQ_SET_LOCATION(ac->part_add);
 	if (ret != LDB_SUCCESS) {

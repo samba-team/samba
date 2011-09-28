@@ -686,64 +686,6 @@ static WERROR dsdb_origin_object_convert(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-/*
-  create a new naming context via a DsAddEntry() with a nCName in a
-  crossRef object
- */
-static WERROR dsdb_origin_create_NC(struct ldb_context *ldb,
-				    struct ldb_dn *dn)
-{
-	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
-	struct ldb_message *msg;
-	int ret;
-
-	msg = ldb_msg_new(tmp_ctx);
-	W_ERROR_HAVE_NO_MEMORY_AND_FREE(msg, tmp_ctx);
-
-	msg->dn = dn;
-	ret = ldb_msg_add_string(msg, "objectClass", "top");
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return WERR_NOMEM;
-	}
-
-	/* [MS-DRSR] implies that we should only add the 'top'
-	 * objectclass, but that would cause lots of problems with our
-	 * objectclass code as top is not structural, so we add
-	 * 'domainDNS' as well to keep things sane. We're expecting
-	 * this new NC to be of objectclass domainDNS after
-	 * replication anyway
-	 */
-	ret = ldb_msg_add_string(msg, "objectClass", "domainDNS");
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return WERR_NOMEM;
-	}
-
-	ret = ldb_msg_add_fmt(msg, "instanceType", "%u",
-			INSTANCE_TYPE_IS_NC_HEAD|
-			INSTANCE_TYPE_NC_ABOVE|
-			INSTANCE_TYPE_UNINSTANT);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return WERR_NOMEM;
-	}
-
-	ret = dsdb_add(ldb, msg, 0);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to create new NC for %s - %s\n",
-			 ldb_dn_get_linearized(dn), ldb_errstring(ldb)));
-		talloc_free(tmp_ctx);
-		return WERR_NOMEM;
-	}
-
-	DEBUG(1,("Created new NC for %s\n", ldb_dn_get_linearized(dn)));
-
-	talloc_free(tmp_ctx);
-	return WERR_OK;
-}
-
-
 WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 				  TALLOC_CTX *mem_ctx,
 				  const struct drsuapi_DsReplicaObjectListItem *first_object,
@@ -825,8 +767,9 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 			if (!ldb_dn_validate(nc_dn)) {
 				continue;
 			}
-			status = dsdb_origin_create_NC(ldb, nc_dn);
-			if (!W_ERROR_IS_OK(status)) {
+			ret = dsdb_create_partial_replica_NC(ldb, nc_dn);
+			if (ret != LDB_SUCCESS) {
+				status = WERR_DS_INTERNAL_FAILURE;
 				goto cancel;
 			}
 		}

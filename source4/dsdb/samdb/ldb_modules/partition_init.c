@@ -770,6 +770,18 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+
+		if (ldb_request_get_control(req, DSDB_CONTROL_PARTIAL_REPLICA)) {
+			/* this new partition is a partial replica */
+			ret = ldb_msg_add_empty(mod_msg, "partialReplica", LDB_FLAG_MOD_ADD, NULL);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			ret = ldb_msg_add_fmt(mod_msg, "partialReplica", "%s", ldb_dn_get_linearized(dn));
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
 		
 		/* Perform modify on @PARTITION record */
 		ret = ldb_build_mod_req(&mod_req, ldb, req, mod_msg, NULL, NULL, 

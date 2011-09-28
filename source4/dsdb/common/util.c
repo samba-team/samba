@@ -3751,6 +3751,13 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		}
 	}
 
+	if (dsdb_flags & DSDB_MODIFY_PARTIAL_REPLICA) {
+		ret = ldb_request_add_control(req, DSDB_CONTROL_PARTIAL_REPLICA, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -4466,4 +4473,63 @@ NTSTATUS dsdb_ldb_err_to_ntstatus(int err)
 		break;
 	}
 	return NT_STATUS_UNSUCCESSFUL;
+}
+
+
+/*
+  create a new naming context that will hold a partial replica
+ */
+int dsdb_create_partial_replica_NC(struct ldb_context *ldb,  struct ldb_dn *dn)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct ldb_message *msg;
+	int ret;
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	msg->dn = dn;
+	ret = ldb_msg_add_string(msg, "objectClass", "top");
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	/* [MS-DRSR] implies that we should only add the 'top'
+	 * objectclass, but that would cause lots of problems with our
+	 * objectclass code as top is not structural, so we add
+	 * 'domainDNS' as well to keep things sane. We're expecting
+	 * this new NC to be of objectclass domainDNS after
+	 * replication anyway
+	 */
+	ret = ldb_msg_add_string(msg, "objectClass", "domainDNS");
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	ret = ldb_msg_add_fmt(msg, "instanceType", "%u",
+			      INSTANCE_TYPE_IS_NC_HEAD|
+			      INSTANCE_TYPE_NC_ABOVE|
+			      INSTANCE_TYPE_UNINSTANT);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	ret = dsdb_add(ldb, msg, DSDB_MODIFY_PARTIAL_REPLICA);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to create new NC for %s - %s\n",
+			 ldb_dn_get_linearized(dn), ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	DEBUG(1,("Created new NC for %s\n", ldb_dn_get_linearized(dn)));
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
 }
