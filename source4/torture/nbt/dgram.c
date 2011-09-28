@@ -481,11 +481,11 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	join_ctx = torture_join_domain(tctx, TEST_NAME, 
 				       ACB_WSTRUST, &machine_credentials);
-	dom_sid = torture_join_sid(join_ctx);
 
 	torture_assert(tctx, join_ctx != NULL,
 		       talloc_asprintf(tctx, "Failed to join domain %s as %s\n",
 				       lpcfg_workgroup(tctx->lp_ctx), TEST_NAME));
+	dom_sid = torture_join_sid(join_ctx);
 
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
