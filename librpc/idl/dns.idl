@@ -36,7 +36,7 @@ interface dns
 		DNS_OPCODE_QUERY          =  (0x0<<11),
 		DNS_OPCODE_IQUERY         =  (0x1<<11),
 		DNS_OPCODE_STATUS         =  (0x2<<11),
-		DNS_OPCODE_REGISTER       =  (0x5<<11),
+		DNS_OPCODE_UPDATE         =  (0x5<<11),
 		DNS_OPCODE_RELEASE        =  (0x6<<11),
 		DNS_OPCODE_WACK           =  (0x7<<11),
 		DNS_OPCODE_REFRESH        =  (0x8<<11),
