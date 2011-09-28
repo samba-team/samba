@@ -139,51 +139,43 @@ NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 {
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
-	const char *attrs[] = { "dNSHostName", NULL };
+	const char *attrs_server[] = { "dNSHostName", NULL };
+	const char *attrs_ntds[] = { "msDS-HasDomainNCs", "hasMasterNCs", NULL };
 	int ret;
-	const char *hostname;
-	struct ldb_dn *dn;
-	struct ldb_dn *forest_dn;
+	const char *hostname, *dnsdomain=NULL;
+	struct ldb_dn *ntds_dn, *server_dn;
+	struct ldb_dn *forest_dn, *nc_dn;
 
 	*target_principal = NULL;
 
 	tmp_ctx = talloc_new(mem_ctx);
 
 	/* we need to find their hostname */
-	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, &rft->source_dsa_obj_guid, &dn);
+	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, &rft->source_dsa_obj_guid, &ntds_dn);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		/* its OK for their NTDSDSA DN not to be in our database */
 		return NT_STATUS_OK;
 	}
 
-	/* strip off the NTDS Settings */
-	if (!ldb_dn_remove_child_components(dn, 1)) {
+	server_dn = ldb_dn_copy(tmp_ctx, ntds_dn);
+	if (server_dn == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
 
-	ret = dsdb_search_dn(s->samdb, tmp_ctx, &res, dn, attrs, 0);
+	/* strip off the NTDS Settings */
+	if (!ldb_dn_remove_child_components(server_dn, 1)) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	ret = dsdb_search_dn(s->samdb, tmp_ctx, &res, server_dn, attrs_server, 0);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		/* its OK for their account DN not to be in our database */
+		/* its OK for their server DN not to be in our database */
 		return NT_STATUS_OK;
 	}
-
-	hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
-	if (hostname == NULL) {
-		talloc_free(tmp_ctx);
-		/* its OK to not have a dnshostname */
-		return NT_STATUS_OK;
-	}
-
-	/* All DCs have the GC/hostname/realm name, but if some of the
-	 * preconditions are not satisfied, then we will fall back to
-	 * the
-	 * E3514235-4B06-11D1-AB04-00C04FC2DCD2/${NTDSGUID}/${DNSDOMAIN}
-	 * name.  This means that if a AD server has a dnsHostName set
-	 * on it's record, it must also have GC/hostname/realm
-	 * servicePrincipalName */
 
 	forest_dn = ldb_get_root_basedn(s->samdb);
 	if (forest_dn == NULL) {
@@ -191,9 +183,66 @@ NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 		return NT_STATUS_OK;
 	}
 
-	*target_principal = talloc_asprintf(mem_ctx, "GC/%s/%s",
-					    hostname,
-					    samdb_dn_to_dns_domain(tmp_ctx, forest_dn));
+	hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
+	if (hostname != NULL) {
+		/*
+		  if we have the dNSHostName attribute then we can use
+		  the GC/hostname/realm SPN. All DCs should have this SPN
+		 */
+		*target_principal = talloc_asprintf(mem_ctx, "GC/%s/%s",
+						    hostname,
+						    samdb_dn_to_dns_domain(tmp_ctx, forest_dn));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	/*
+	   if we can't find the dNSHostName then we will try for the
+	   E3514235-4B06-11D1-AB04-00C04FC2DCD2/${NTDSGUID}/${DNSDOMAIN}
+	   SPN. To use that we need the DNS domain name of the target
+	   DC. We find that by first looking for the msDS-HasDomainNCs
+	   in the NTDSDSA object of the DC, and if we don't find that,
+	   then we look for the hasMasterNCs attribute, and eliminate
+	   the known schema and configuruation DNs. Despite how
+	   bizarre this seems, Hongwei tells us that this is in fact
+	   what windows does to find the SPN!!
+	*/
+	ret = dsdb_search_dn(s->samdb, tmp_ctx, &res, ntds_dn, attrs_ntds, 0);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	nc_dn = ldb_msg_find_attr_as_dn(s->samdb, tmp_ctx, res->msgs[0], "msDS-HasDomainNCs");
+	if (nc_dn != NULL) {
+		dnsdomain = samdb_dn_to_dns_domain(tmp_ctx, nc_dn);
+	}
+
+	if (dnsdomain == NULL) {
+		struct ldb_message_element *el;
+		int i;
+		el = ldb_msg_find_element(res->msgs[0], "hasMasterNCs");
+		for (i=0; el && i<el->num_values; i++) {
+			nc_dn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
+			if (nc_dn == NULL ||
+			    ldb_dn_compare(ldb_get_config_basedn(s->samdb), nc_dn) == 0 ||
+			    ldb_dn_compare(ldb_get_schema_basedn(s->samdb), nc_dn) == 0) {
+				continue;
+			}
+			/* it must be a domain DN, get the equivalent
+			   DNS domain name */
+			dnsdomain = samdb_dn_to_dns_domain(tmp_ctx, nc_dn);
+			break;
+		}
+	}
+
+	if (dnsdomain != NULL) {
+		*target_principal = talloc_asprintf(mem_ctx,
+						    "E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s",
+						    GUID_string(tmp_ctx, &rft->source_dsa_obj_guid),
+						    dnsdomain);
+	}
+
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
