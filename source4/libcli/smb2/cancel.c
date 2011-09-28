@@ -57,6 +57,7 @@ NTSTATUS smb2_cancel(struct smb2_request *r)
 	SBVAL(c->out.hdr, SMB2_HDR_MESSAGE_ID,	c->seqnum);
 	if (r->session) {
 		SBVAL(c->out.hdr, SMB2_HDR_SESSION_ID,	r->session->uid);
+		c->session = r->session;
 	}
 
 	SSVAL(c->out.body, 0x02, 0);
