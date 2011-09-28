@@ -3558,6 +3558,15 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 				      false, NULL);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
+	if (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PARTIAL_REPLICA) {
+		/* this tells the partition module to make it a
+		   partial replica if creating an NC */
+		ret = ldb_request_add_control(change_req,
+					      DSDB_CONTROL_PARTIAL_REPLICA,
+					      false, NULL);
+		if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
+	}
+
 	return ldb_next_request(ar->module, change_req);
 }
 
