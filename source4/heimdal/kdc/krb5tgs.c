@@ -1121,7 +1121,24 @@ need_referral(krb5_context context, krb5_kdc_configuration *config,
 
     if (server->name.name_string.len == 1)
 	name = server->name.name_string.val[0];
-    else if (server->name.name_string.len > 1)
+    else if (server->name.name_string.len == 3 &&
+	     strcasecmp("E3514235-4B06-11D1-AB04-00C04FC2DCD2", server->name.name_string.val[0]) == 0) {
+	/*
+	  This is used to give referrals for the
+	  E3514235-4B06-11D1-AB04-00C04FC2DCD2/NTDSGUID/DNSDOMAIN
+	  SPN form, which is used for inter-domain communication in AD
+	 */
+	name = server->name.name_string.val[2];
+	kdc_log(context, config, 0, "Giving 3 part DRSUAPI referral for %s", name);
+	*realms = malloc(sizeof(char *)*2);
+	if (*realms == NULL) {
+	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
+	    return FALSE;
+	}
+	(*realms)[0] = strdup(name);
+	(*realms)[1] = NULL;
+	return TRUE;
+    } else if (server->name.name_string.len > 1)
 	name = server->name.name_string.val[1];
     else
 	return FALSE;
