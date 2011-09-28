@@ -795,7 +795,7 @@ bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
 
 bld.SAMBA3_SUBSYSTEM('REG_FULL',
                     source=REG_FULL_SRC,
-                    deps='REG_SMBCONF',
+                    deps='REG_SMBCONF tdb-wrap3',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('popt_samba3',
