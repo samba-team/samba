@@ -1382,18 +1382,29 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 				  nt_resp,
 				  &my_info3);
 
-		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
-		    && contact_domain->can_do_samlogon_ex) {
-			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
-				  "retrying with NetSamLogon\n"));
-			contact_domain->can_do_samlogon_ex = false;
+		if (NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR) {
+
 			/*
 			 * It's likely that the server also does not support
 			 * validation level 6
 			 */
 			domain->can_do_validation6 = false;
-			retry = true;
-			continue;
+
+			if (contact_domain->can_do_samlogon_ex) {
+				DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
+					  "retrying with NetSamLogon\n"));
+				contact_domain->can_do_samlogon_ex = false;
+				retry = true;
+				continue;
+			}
+
+			/* Got DCERPC_FAULT_OP_RNG_ERROR for SamLogon
+			 * (no Ex). This happens against old Samba
+			 * DCs. Drop the connection.
+			 */
+			invalidate_cm_connection(&contact_domain->conn);
+			result = NT_STATUS_LOGON_FAILURE;
+			break;
 		}
 
 		if (domain->can_do_validation6 &&
@@ -1996,18 +2007,29 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				  nt_resp,
 				  &info3);
 
-		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
-		    && contact_domain->can_do_samlogon_ex) {
-			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
-				  "retrying with NetSamLogon\n"));
-			contact_domain->can_do_samlogon_ex = false;
+		if (NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR) {
+
 			/*
 			 * It's likely that the server also does not support
 			 * validation level 6
 			 */
 			domain->can_do_validation6 = false;
-			retry = true;
-			continue;
+
+			if (contact_domain->can_do_samlogon_ex) {
+				DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
+					  "retrying with NetSamLogon\n"));
+				contact_domain->can_do_samlogon_ex = false;
+				retry = true;
+				continue;
+			}
+
+			/* Got DCERPC_FAULT_OP_RNG_ERROR for SamLogon
+			 * (no Ex). This happens against old Samba
+			 * DCs. Drop the connection.
+			 */
+			invalidate_cm_connection(&contact_domain->conn);
+			result = NT_STATUS_LOGON_FAILURE;
+			break;
 		}
 
 		if (domain->can_do_validation6 &&
