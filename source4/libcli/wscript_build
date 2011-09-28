@@ -74,7 +74,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_FINDDCS',
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_SMB',
 	source='clireadwrite.c cliconnect.c clifile.c clilist.c clitrans2.c climessage.c clideltree.c',
-	autoproto='libcli_proto.h',
+	public_headers='libcli.h:smb_cli.h',
 	public_deps='smbclient-raw errors LIBCLI_AUTH LIBCLI_SMB_COMPOSITE cli-nbt security LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
 	)
 
