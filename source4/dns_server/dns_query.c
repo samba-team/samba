@@ -164,6 +164,11 @@ WERROR dns_server_process_query(struct dns_server *dns,
 		return DNS_ERR(FORMAT_ERROR);
 	}
 
+	/* Windows returns NOT_IMPLEMENTED on this as well */
+	if (in->questions[0].question_class == DNS_QCLASS_NONE) {
+		return DNS_ERR(NOT_IMPLEMENTED);
+	}
+
 	ans = talloc_array(mem_ctx, struct dns_res_rec, 0);
 	W_ERROR_HAVE_NO_MEMORY(ans);
 
