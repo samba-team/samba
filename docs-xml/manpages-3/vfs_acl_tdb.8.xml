@@ -40,10 +40,6 @@
 	<filename>$LOCKDIR/file_ntacls.tdb</filename>.
 	</para>
 
-	<para>Please note that this module is
-	<emphasis>experimental</emphasis>!
-	</para>
-
 	<para>This module is stackable.</para>
 </refsect1>
 
