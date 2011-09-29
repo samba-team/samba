@@ -35,6 +35,7 @@
 #include "lib/messaging/irpc.h"
 #include "param/param.h"
 #include "system/filesys.h"
+#include "dsdb/common/util.h"
 #include "libcli/composite/composite.h"
 #include "libcli/security/dom_sid.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
@@ -99,26 +100,71 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 {
 	int ret;
 	size_t size;
-	struct ldb_result *res;
+	struct ldb_result *res1, *res2;
 	const char *tmp_path, *path, *path_static;
 	char *static_policies;
 	int fd;
 	unsigned int i;
-	const char *attrs[] = { "sAMAccountName", NULL };
+	const char *attrs1[] = { "msDS-HasDomainNCs", NULL };
+	const char *attrs2[] = { "name", NULL };
 	const char *realm = lpcfg_realm(service->task->lp_ctx);
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
 	const char * const *rndc_command = lpcfg_rndc_command(service->task->lp_ctx);
+	const char **dc_list;
+	int dc_count=0;
 
 	/* abort any pending script run */
 	TALLOC_FREE(service->confupdate.subreq);
 
-	ret = ldb_search(service->samdb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-			 attrs, "(|(samaccountname=administrator)(&(primaryGroupID=%u)(objectClass=computer)))",
-			 DOMAIN_RID_DCS);
+	/* find the DNs for all the non-RODC DCs in the forest */
+	ret = dsdb_search(service->samdb, tmp_ctx, &res1, ldb_get_config_basedn(service->samdb),
+			  LDB_SCOPE_SUBTREE,
+			  attrs1,
+			  0,
+			  "(&(objectclass=NTDSDSA)(!(msDS-isRODC=TRUE)))");
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Unable to find DCs list - %s", ldb_errstring(service->samdb)));
 		talloc_free(tmp_ctx);
 		return;
+	}
+
+	dc_list = talloc_array(tmp_ctx, const char *, 0);
+	for (i=0; i<res1->count; i++) {
+		struct ldb_dn *server_dn = res1->msgs[i]->dn;
+		struct ldb_dn *domain_dn;
+		const char *acct_name, *full_account, *dns_domain;
+
+		/* this is a nasty hack to form the account name of
+		 * this DC. We do it this way as we don't necessarily
+		 * have access to the domain NC, so all we have to go
+		 * on is what is in the configuration partition
+		 */
+
+		domain_dn = ldb_msg_find_attr_as_dn(service->samdb, tmp_ctx, res1->msgs[i], "msDS-HasDomainNCs");
+		if (domain_dn == NULL) continue;
+
+		ldb_dn_remove_child_components(server_dn, 1);
+		ret = dsdb_search_dn(service->samdb, tmp_ctx, &res2, server_dn, attrs2, 0);
+		if (ret != LDB_SUCCESS) {
+			continue;
+		}
+
+		acct_name = ldb_msg_find_attr_as_string(res2->msgs[0], "name", NULL);
+		if (acct_name == NULL) continue;
+
+		dns_domain = samdb_dn_to_dns_domain(tmp_ctx, domain_dn);
+		if (dns_domain == NULL) {
+			continue;
+		}
+
+		full_account = talloc_asprintf(tmp_ctx, "%s$@%s", acct_name, dns_domain);
+		if (full_account == NULL) continue;
+
+		dc_list = talloc_realloc(tmp_ctx, dc_list, const char *, dc_count+1);
+		if (dc_list == NULL) {
+			continue;
+		}
+		dc_list[dc_count++] = full_account;
 	}
 
 	path = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "path");
@@ -156,14 +202,10 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 		dprintf(fd, "/* End of static entries */\n");
 	}
 	dprintf(fd, "\tgrant %s ms-self * A AAAA;\n", realm);
+	dprintf(fd, "\tgrant Administrator@%s wildcard * A AAAA SRV CNAME;\n", realm);
 
-	for (i=0; i<res->count; i++) {
-		const char *acctname;
-		acctname = ldb_msg_find_attr_as_string(res->msgs[i],
-						       "sAMAccountName", NULL);
-		if (!acctname) continue;
-		dprintf(fd, "\tgrant %s@%s wildcard * A AAAA SRV CNAME;\n",
-			acctname, realm);
+	for (i=0; i<dc_count; i++) {
+		dprintf(fd, "\tgrant %s wildcard * A AAAA SRV CNAME;\n", dc_list[i]);
 	}
 	dprintf(fd, "};\n");
 	close(fd);
