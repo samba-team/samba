@@ -1736,7 +1736,6 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	if (info_ex) {
 		uint32_t origattrs;
 		uint32_t origdir;
-		uint32_t tmp;
 		int origtype;
 
 		nt_status = update_uint32_t_value(mem_ctx, p_state->sam_ldb,
@@ -1748,20 +1747,20 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 			return nt_status;
 		}
 
-		tmp = info_ex->trust_direction ^ origdir;
-		if (tmp & LSA_TRUST_DIRECTION_INBOUND) {
-			if (origdir & LSA_TRUST_DIRECTION_INBOUND) {
-				del_incoming = true;
-			} else {
-				add_incoming = true;
-			}
+		if (info_ex->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
+			add_incoming = true;
 		}
-		if (tmp & LSA_TRUST_DIRECTION_OUTBOUND) {
-			if (origdir & LSA_TRUST_DIRECTION_OUTBOUND) {
-				del_outgoing = true;
-			} else {
-				add_outgoing = true;
-			}
+		if (info_ex->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
+			add_outgoing = true;
+		}
+
+		if ((origdir & LSA_TRUST_DIRECTION_INBOUND) &&
+		    !(info_ex->trust_direction & LSA_TRUST_DIRECTION_INBOUND)) {
+			del_incoming = true;
+		}
+		if ((origdir & LSA_TRUST_DIRECTION_OUTBOUND) &&
+		    !(info_ex->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND)) {
+			del_outgoing = true;
 		}
 
 		origtype = ldb_msg_find_attr_as_int(dom_msg, "trustType", -1);
