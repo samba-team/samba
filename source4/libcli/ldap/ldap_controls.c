@@ -1159,40 +1159,29 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ LDB_CONTROL_RELAX_OID, decode_flag_request, encode_flag_request },
 	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference },
 
-/* DSDB_CONTROL_CURRENT_PARTITION_OID is internal only, and has no network representation */
-	{ DSDB_CONTROL_CURRENT_PARTITION_OID, NULL, NULL },
-/* DSDB_CONTROL_REPLICATED_UPDATE_OID is internal only, and has no network representation */
-	{ DSDB_CONTROL_REPLICATED_UPDATE_OID, NULL, NULL },
-/* DSDB_CONTROL_DN_STORAGE_FORMAT_OID is internal only, and has no network representation */
-	{ DSDB_CONTROL_DN_STORAGE_FORMAT_OID, NULL, NULL },
-/* LDB_CONTROL_RECALCULATE_SD_OID is internal only, and has no network representation */
-	{ LDB_CONTROL_RECALCULATE_SD_OID, NULL, NULL },
-/* LDB_CONTROL_REVEAL_INTERNALS is internal only, and has no network representation */
-	{ LDB_CONTROL_REVEAL_INTERNALS, NULL, NULL },
-/* LDB_CONTROL_AS_SYSTEM_OID is internal only, and has no network representation */
-	{ LDB_CONTROL_AS_SYSTEM_OID, NULL, NULL },
-/* DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID is internal only, and has no network representation */
-	{ DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID, NULL, NULL },
-/* DSDB_CONTROL_PASSWORD_HASH_VALUES_OID is internal only, and has no network representation */
-	{ DSDB_CONTROL_PASSWORD_HASH_VALUES_OID, NULL, NULL },
-/* DSDB_CONTROL_PASSWORD_CHANGE_OID is internal only, and has no network representation */
-	{ DSDB_CONTROL_PASSWORD_CHANGE_OID, NULL, NULL },
-/* DSDB_CONTROL_APPLY_LINKS is internal only, and has no network representation */
-	{ DSDB_CONTROL_APPLY_LINKS, NULL, NULL },
-/* DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID is internal only, and has an empty network representation */
+	/* the following are internal only, with a network
+	   representation */
 	{ DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID, decode_flag_request, encode_flag_request },
-/* LDB_CONTROL_BYPASS_OPERATIONAL_OID is internal only, and has no network representation */
+
+	/* all the ones below are internal only, and have no network
+	 * representation */
+	{ DSDB_CONTROL_CURRENT_PARTITION_OID, NULL, NULL },
+	{ DSDB_CONTROL_REPLICATED_UPDATE_OID, NULL, NULL },
+	{ DSDB_CONTROL_DN_STORAGE_FORMAT_OID, NULL, NULL },
+	{ LDB_CONTROL_RECALCULATE_SD_OID, NULL, NULL },
+	{ LDB_CONTROL_REVEAL_INTERNALS, NULL, NULL },
+	{ LDB_CONTROL_AS_SYSTEM_OID, NULL, NULL },
+	{ DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID, NULL, NULL },
+	{ DSDB_CONTROL_PASSWORD_HASH_VALUES_OID, NULL, NULL },
+	{ DSDB_CONTROL_PASSWORD_CHANGE_OID, NULL, NULL },
+	{ DSDB_CONTROL_APPLY_LINKS, NULL, NULL },
 	{ LDB_CONTROL_BYPASS_OPERATIONAL_OID, NULL, NULL },
-/* DSDB_CONTROL_CHANGEREPLMETADATA_OID is internal only, and has no network representation */
 	{ DSDB_CONTROL_CHANGEREPLMETADATA_OID, NULL, NULL },
-/* LDB_CONTROL_PROVISION_OID is internal only, and has no network representation */
 	{ LDB_CONTROL_PROVISION_OID, NULL, NULL },
-/* DSDB_EXTENDED_REPLICATED_OBJECTS_OID is internal only, and has no network representation */
 	{ DSDB_EXTENDED_REPLICATED_OBJECTS_OID, NULL, NULL },
-/* DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID is internal only, and has no network representation */
 	{ DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID, NULL, NULL },
-/* DSDB_EXTENDED_ALLOCATE_RID_POOL is internal only, and has no network representation */
 	{ DSDB_EXTENDED_ALLOCATE_RID_POOL, NULL, NULL },
+	{ DSDB_CONTROL_NO_GLOBAL_CATALOG, NULL, NULL },
 	{ NULL, NULL, NULL }
 };
 
