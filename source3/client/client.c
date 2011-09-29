@@ -1701,7 +1701,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 
 	if (f == x_stdin) {
 		cli_shutdown(cli);
-		exit(0);
+		exit(rc);
 	}
 
 	return rc;
