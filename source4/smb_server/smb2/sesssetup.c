@@ -67,6 +67,7 @@ static void smb2srv_sesssetup_callback(struct tevent_req *subreq)
 	union smb_sesssetup *io = ctx->io;
 	struct smbsrv_session *smb_sess = ctx->smb_sess;
 	struct auth_session_info *session_info = NULL;
+	enum security_user_level user_level;
 	NTSTATUS status;
 
 	packet_recv_enable(req->smb_conn->packet);
@@ -92,10 +93,16 @@ static void smb2srv_sesssetup_callback(struct tevent_req *subreq)
 	}
 	req->session = smb_sess;
 
-	if (smb_sess->smb2_signing.required) {
-		/* activate smb2 signing on the session */
-		smb_sess->smb2_signing.active = true;
+	user_level = security_session_user_level(smb_sess->session_info, NULL);
+	if (user_level >= SECURITY_USER) {
+		if (smb_sess->smb2_signing.required) {
+			/* activate smb2 signing on the session */
+			smb_sess->smb2_signing.active = true;
+		}
+		/* we need to sign the session setup response */
+		req->is_signed = true;
 	}
+
 done:
 	io->smb2.out.uid = smb_sess->vuid;
 failed:
