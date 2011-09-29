@@ -964,7 +964,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNET',
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                     source=LIBNET_DSSYNC_SRC,
-                    deps='LIBNET LIBCLI_DRSUAPI',
+                    deps='LIBNET LIBCLI_DRSUAPI tdb-wrap3',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
