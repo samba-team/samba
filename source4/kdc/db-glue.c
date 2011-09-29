@@ -823,12 +823,15 @@ out:
 
 /*
  * Construct an hdb_entry from a directory entry.
+ * The kvno is what the remote client asked for
  */
 static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					       struct samba_kdc_db_context *kdc_db_ctx,
 					       TALLOC_CTX *mem_ctx, krb5_const_principal principal,
 					       enum trust_direction direction,
 					       struct ldb_dn *realm_dn,
+					       unsigned flags,
+					       uint32_t kvno,
 					       struct ldb_message *msg,
 					       hdb_entry_ex *entry_ex)
 {
@@ -840,10 +843,12 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	const struct ldb_val *password_val;
 	struct trustAuthInOutBlob password_blob;
 	struct samba_kdc_entry *p;
-
+	bool use_previous;
+	uint32_t current_kvno;
 	enum ndr_err_code ndr_err;
 	int ret, trust_direction_flags;
 	unsigned int i;
+	struct AuthenticationInformationArray *auth_array;
 
 	p = talloc(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
@@ -896,25 +901,58 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	entry_ex->entry.kvno = 0;
-	/*
-	  we usually don't have a TRUST_AUTH_TYPE_VERSION field, as
-	  windows doesn't create one, so we rely on the fact that both
-	  windows and Samba don't actually check the kvno and instead
-	  just check against the latest password blob. If we do have a
-	  TRUST_AUTH_TYPE_VERSION field then we do use it, otherwise
-	  we just use 0.
+
+	/* we need to work out if we are going to use the current or
+	 * the previous password hash.
+	 * We base this on the kvno the client passes in. If the kvno
+	 * passed in is equal to the current kvno in our database then
+	 * we use the current structure. If it is the current kvno-1,
+	 * then we use the previous substrucure.
 	 */
+
+	/* first work out the current kvno */
+	current_kvno = 0;
 	for (i=0; i < password_blob.count; i++) {
 		if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_VERSION) {
-			entry_ex->entry.kvno = password_blob.current.array[i].AuthInfo.version.version;
+			current_kvno = password_blob.current.array[i].AuthInfo.version.version;
 		}
 	}
 
-	for (i=0; i < password_blob.count; i++) {
-		if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
-			password_utf16 = data_blob_const(password_blob.current.array[i].AuthInfo.clear.password,
-							 password_blob.current.array[i].AuthInfo.clear.size);
+	/* work out whether we will use the previous or current
+	   password */
+	if (password_blob.previous.count == 0) {
+		/* there is no previous password */
+		use_previous = false;
+	} else if (!(flags & HDB_F_KVNO_SPECIFIED) ||
+	    kvno == current_kvno) {
+		use_previous = false;
+	} else if ((kvno+1 == current_kvno) ||
+		   (kvno == 255 && current_kvno == 0)) {
+		use_previous = true;
+	} else {
+		DEBUG(1,(__location__ ": Request for unknown kvno %u - current kvno is %u\n",
+			 kvno, current_kvno));
+		ret = ENOENT;
+		goto out;
+	}
+
+	if (use_previous) {
+		auth_array = &password_blob.previous;
+	} else {
+		auth_array = &password_blob.current;
+	}
+
+	/* use the kvno the client specified, if available */
+	if (flags & HDB_F_KVNO_SPECIFIED) {
+		entry_ex->entry.kvno = kvno;
+	} else {
+		entry_ex->entry.kvno = current_kvno;
+	}
+
+	for (i=0; i < auth_array->count; i++) {
+		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+			password_utf16 = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
+							 auth_array->array[i].AuthInfo.clear.size);
 			/* In the future, generate all sorts of
 			 * hashes, but for now we can't safely convert
 			 * the random strings windows uses into
@@ -923,13 +961,13 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			/* but as it is utf16 already, we can get the NT password/arcfour-hmac-md5 key */
 			mdfour(password_hash.hash, password_utf16.data, password_utf16.length);
 			break;
-		} else if (password_blob.current.array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-			password_hash = password_blob.current.array[i].AuthInfo.nt4owf.password;
+		} else if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
+			password_hash = auth_array->array[i].AuthInfo.nt4owf.password;
 			break;
 		}
 	}
 
-	if (i < password_blob.count) {
+	if (i < auth_array->count) {
 		Key key;
 		/* Must have found a cleartext or MD4 password */
 		entry_ex->entry.keys.val = calloc(1, sizeof(Key));
@@ -946,6 +984,9 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					 ENCTYPE_ARCFOUR_HMAC,
 					 password_hash.hash, sizeof(password_hash.hash),
 					 &key.key);
+		if (ret != 0) {
+			goto out;
+		}
 
 		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
 		entry_ex->entry.keys.len++;
@@ -1122,7 +1163,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					      TALLOC_CTX *mem_ctx,
 					      krb5_const_principal principal,
 					      unsigned flags,
-					      uint32_t krbtgt_number,
+					      uint32_t kvno,
 					      hdb_entry_ex *entry_ex)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
@@ -1147,6 +1188,20 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
  		 * krbtgt */
 
 		int lret;
+		unsigned int krbtgt_number;
+		/* w2k8r2 sometimes gives us a kvno of 255 for inter-domain
+		   trust tickets. We don't yet know what this means, but we do
+		   seem to need to treat it as unspecified */
+		if (flags & HDB_F_KVNO_SPECIFIED) {
+			krbtgt_number = SAMBA_KVNO_GET_KRBTGT(kvno);
+			if (kdc_db_ctx->rodc) {
+				if (krbtgt_number != kdc_db_ctx->my_krbtgt_number) {
+					return HDB_ERR_NOT_FOUND_HERE;
+				}
+			}
+		} else {
+			krbtgt_number = kdc_db_ctx->my_krbtgt_number;
+		}
 
 		if (krbtgt_number == kdc_db_ctx->my_krbtgt_number) {
 			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
@@ -1251,8 +1306,8 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		}
 
 		ret = samba_kdc_trust_message2entry(context, kdc_db_ctx, mem_ctx,
-					      principal, direction,
-					      realm_dn, msg, entry_ex);
+						    principal, direction,
+						    realm_dn, flags, kvno, msg, entry_ex);
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: trust_message2entry failed");
 		}
@@ -1383,20 +1438,6 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 {
 	krb5_error_code ret = HDB_ERR_NOENTRY;
 	TALLOC_CTX *mem_ctx;
-	unsigned int krbtgt_number;
-	/* w2k8r2 sometimes gives us a kvno of 255 for inter-domain
-	   trust tickets. We don't yet know what this means, but we do
-	   seem to need to treat it as unspecified */
-	if ((flags & HDB_F_KVNO_SPECIFIED) && kvno != 255) {
-		krbtgt_number = SAMBA_KVNO_GET_KRBTGT(kvno);
-		if (kdc_db_ctx->rodc) {
-			if (krbtgt_number != kdc_db_ctx->my_krbtgt_number) {
-				return HDB_ERR_NOT_FOUND_HERE;
-			}
-		}
-	} else {
-		krbtgt_number = kdc_db_ctx->my_krbtgt_number;
-	}
 
 	mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_fetch context");
 	if (!mem_ctx) {
@@ -1411,7 +1452,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 	}
 	if (flags & HDB_F_GET_SERVER) {
 		/* krbtgt fits into this situation for trusted realms, and for resolving different versions of our own realm name */
-		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, krbtgt_number, entry_ex);
+		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
@@ -1419,7 +1460,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_KRBTGT) {
-		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, krbtgt_number, entry_ex);
+		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 
