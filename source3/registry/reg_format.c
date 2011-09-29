@@ -329,7 +329,16 @@ done:
 static bool is_zero_terminated_ucs2(const uint8_t* data, size_t len) {
 	const size_t idx = len/sizeof(smb_ucs2_t);
 	const smb_ucs2_t *str = (const smb_ucs2_t*)data;
-	return (idx > 0) && (str[idx] == 0);
+
+	if ((len % sizeof(smb_ucs2_t)) != 0) {
+		return false;
+	}
+
+	if (idx == 0) {
+		return false;
+	}
+
+	return (str[idx-1] == 0);
 }
 
 int reg_format_value(struct reg_format* f, const char* name, uint32_t type,
