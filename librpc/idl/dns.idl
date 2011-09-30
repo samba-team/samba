@@ -143,6 +143,11 @@ interface dns
 		dns_string exchange;
 	} dns_mx_record;
 
+	typedef [public] struct {
+		[value(strlen(txt))] uint8 length;
+		[charset(DOS)] uint8 txt[length];
+	} dns_txt_record;
+
 	typedef [nodiscriminant,public,flag(NDR_NOALIGN)] union {
 		[case(DNS_QTYPE_A)]     ipv4address	 ipv4_record;
 		[case(DNS_QTYPE_NS)]    dns_string       ns_record;
@@ -150,6 +155,7 @@ interface dns
 		[case(DNS_QTYPE_SOA)]   dns_soa_record   soa_record;
 		[case(DNS_QTYPE_PTR)]   dns_string       ptr_record;
 		[case(DNS_QTYPE_MX)]    dns_mx_record    mx_record;
+		[case(DNS_QTYPE_TXT)]	dns_txt_record   txt_record;
 		[case(DNS_QTYPE_AAAA)]	ipv6address	 ipv6_record;
 		[case(DNS_QTYPE_SRV)]	dns_srv_record	 srv_record;
 		[default];
