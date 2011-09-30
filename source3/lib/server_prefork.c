@@ -159,7 +159,8 @@ int prefork_expand_pool(struct prefork_pool *pfp, int new_max)
 	old_size = sizeof(struct pf_worker_data) * pfp->pool_size;
 	new_size = sizeof(struct pf_worker_data) * new_max;
 
-	pool = anonymous_shared_resize(&pfp->pool, new_size, false);
+	pool = (struct prefork_pool *)anonymous_shared_resize(
+		&pfp->pool, new_size, false);
 	if (pool == NULL) {
 		ret = errno;
 		DEBUG(3, ("Failed to mremap memory (%d: %s)!\n",
