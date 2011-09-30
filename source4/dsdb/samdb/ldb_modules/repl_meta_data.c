@@ -2931,14 +2931,14 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		}
 		msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 
-		ret = ldb_msg_add_empty(msg, "objectCategory", LDB_FLAG_MOD_DELETE, NULL);
+		ret = ldb_msg_add_empty(msg, "objectCategory", LDB_FLAG_MOD_REPLACE, NULL);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			ldb_module_oom(module);
 			return ret;
 		}
 
-		ret = ldb_msg_add_empty(msg, "sAMAccountType", LDB_FLAG_MOD_DELETE, NULL);
+		ret = ldb_msg_add_empty(msg, "sAMAccountType", LDB_FLAG_MOD_REPLACE, NULL);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			ldb_module_oom(module);
