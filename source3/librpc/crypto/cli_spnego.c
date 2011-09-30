@@ -326,8 +326,6 @@ NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 				 struct spnego_context *sp_ctx)
 {
-	DATA_BLOB sk;
-
 	switch (sp_ctx->mech) {
 	case SPNEGO_KRB5:
 		return gse_get_session_key(mem_ctx,
