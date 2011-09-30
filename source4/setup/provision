@@ -198,6 +198,9 @@ elif opts.server_role == "member":
 else:
     server_role = opts.server_role
 
+if server_role is None:
+    server_role = "domain controller"
+
 if opts.function_level is None:
     dom_for_fun_level = None
 elif opts.function_level == "2000":
