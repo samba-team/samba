@@ -1640,7 +1640,7 @@ static bool vfswrap_is_offline(struct vfs_handle_struct *handle,
                 return false;
         }
 
-	offline = dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE != 0;
+	offline = (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
 
 	TALLOC_FREE(path);
 
