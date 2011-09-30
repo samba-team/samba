@@ -519,7 +519,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		struct cli_state);
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_req *req;
-	struct smb2cli_req_state *state;
+	struct smb2cli_req_state *state = NULL;
 	struct iovec *iov;
 	int i, num_iov;
 	NTSTATUS status;
