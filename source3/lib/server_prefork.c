@@ -92,7 +92,8 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 	pfp->pool_size = max_children;
 	data_size = sizeof(struct pf_worker_data) * max_children;
 
-	pfp->pool = anonymous_shared_allocate(data_size);
+	pfp->pool = (struct pf_worker_data *)anonymous_shared_allocate(
+		data_size);
 	if (pfp->pool == NULL) {
 		DEBUG(1, ("Failed to mmap memory for prefork pool!\n"));
 		talloc_free(pfp);
