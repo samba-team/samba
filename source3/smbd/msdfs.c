@@ -575,15 +575,10 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		conn->connectpath, pdp->reqpath));
 
 	/*
- 	 * Note the unix path conversion here we're doing we can
+	 * Note the unix path conversion here we're doing we
 	 * throw away. We're looking for a symlink for a dfs
 	 * resolution, if we don't find it we'll do another
 	 * unix_convert later in the codepath.
-	 * If we needed to remember what we'd resolved in
-	 * dp->reqpath (as the original code did) we'd
-	 * copy (localhost, dp->reqpath) on any code
-	 * path below that returns True - but I don't
-	 * think this is needed. JRA.
 	 */
 
 	status = unix_convert(ctx, conn, pdp->reqpath, &smb_fname,
@@ -594,11 +589,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 				     NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
 			return status;
 		}
-
-		/* Create an smb_fname to use below. */
-		status = create_synthetic_smb_fname(ctx, pdp->reqpath, NULL,
-						    NULL, &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (smb_fname == NULL || smb_fname->base_name == NULL) {
 			return status;
 		}
 	}
