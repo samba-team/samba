@@ -2560,7 +2560,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 					   lpcfg_dnsdomain(lp_ctx),
 					   ldb_dn_get_linearized(olddn));
 		ret = ldb_module_send_referral(req, referral);
-		talloc_free(ac);
+		talloc_free(ares);
 		return ldb_module_done(req, NULL, NULL, ret);
 	}
 
