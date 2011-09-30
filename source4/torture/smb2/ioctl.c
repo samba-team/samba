@@ -127,79 +127,145 @@ static bool test_ioctl_req_resume_key(struct torture_context *torture,
 	return true;
 }
 
-static bool test_ioctl_copy_chunk(struct torture_context *torture,
-				  struct smb2_tree *tree)
+static bool test_setup_copy_chunk(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+				  uint32_t nchunks,
+				  struct smb2_handle *src_h,
+				  uint64_t src_size,
+				  struct smb2_handle *dest_h,
+				  uint64_t dest_size,
+				  struct srv_copychunk_copy *cc_copy,
+				  union smb_ioctl *ioctl)
 {
-	struct smb2_handle h;
-	struct smb2_handle h2;
-	uint8_t buf[100];
-	NTSTATUS status;
-	union smb_ioctl ioctl;
-	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	struct req_resume_key_rsp res_key;
-	struct srv_copychunk chunk;
-	struct srv_copychunk_copy cc_copy;
-	struct srv_copychunk_rsp cc_rsp;
+	NTSTATUS status;
 	enum ndr_err_code ndr_ret;
+	uint8_t *buf = talloc_zero_size(mem_ctx, MAX(src_size, dest_size));
+	if (buf == NULL) {
+		printf("no mem for file data buffer\n");
+		return false;
+	}
 
 	smb2_util_unlink(tree, FNAME);
 	smb2_util_unlink(tree, FNAME2);
 
-	status = torture_smb2_testfile(tree, FNAME, &h);
+	status = torture_smb2_testfile(tree, FNAME, src_h);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("create write\n");
 		return false;
 	}
 
-	ZERO_ARRAY(buf);
-	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	if (src_size > 0) {
+		status = smb2_util_write(tree, *src_h, buf, 0, src_size);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("failed src write\n");
+			return false;
+		}
+	}
+
+	status = torture_smb2_testfile(tree, FNAME2, dest_h);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed write\n");
+		printf("create write\n");
 		return false;
 	}
 
-	ZERO_STRUCT(ioctl);
-	ioctl.smb2.level = RAW_IOCTL_SMB2;
-	ioctl.smb2.in.file.handle = h;
-	ioctl.smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
-	/* Allow for Key + ContextLength + Context */
-	ioctl.smb2.in.max_response_size = 32;
-	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+	if (dest_size > 0) {
+		status = smb2_util_write(tree, *dest_h, buf, 0, dest_size);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("failed dest write\n");
+			return false;
+		}
+	}
 
-	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	ZERO_STRUCTPN(ioctl);
+	ioctl->smb2.level = RAW_IOCTL_SMB2;
+	ioctl->smb2.in.file.handle = *src_h;
+	ioctl->smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
+	/* Allow for Key + ContextLength + Context */
+	ioctl->smb2.in.max_response_size = 32;
+	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, mem_ctx, &ioctl->smb2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("FSCTL_SRV_REQUEST_RESUME_KEY failed\n");
 		return false;
 	}
 
-	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx, &res_key,
+	ndr_ret = ndr_pull_struct_blob(&ioctl->smb2.out.out, mem_ctx, &res_key,
 			(ndr_pull_flags_fn_t)ndr_pull_req_resume_key_rsp);
 	if (ndr_ret != NDR_ERR_SUCCESS) {
 		return false;
 	}
 
-	status = torture_smb2_testfile(tree, FNAME2, &h2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("create write\n");
+	ZERO_STRUCTPN(ioctl);
+	ioctl->smb2.level = RAW_IOCTL_SMB2;
+	ioctl->smb2.in.file.handle = *dest_h;
+	ioctl->smb2.in.function = FSCTL_SRV_COPYCHUNK;
+	ioctl->smb2.in.max_response_size = sizeof(struct srv_copychunk_rsp);
+	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	ZERO_STRUCTPN(cc_copy);
+	memcpy(cc_copy->source_key, res_key.resume_key, ARRAY_SIZE(cc_copy->source_key));
+	cc_copy->chunk_count = nchunks;
+	cc_copy->chunks = talloc_zero_array(mem_ctx, struct srv_copychunk, nchunks);
+	if (cc_copy->chunks == NULL) {
+		printf("not enough memory to allocate %u chunks\n", nchunks);
 		return false;
 	}
 
-	ZERO_STRUCT(ioctl);
-	ioctl.smb2.level = RAW_IOCTL_SMB2;
-	ioctl.smb2.in.file.handle = h2;
-	ioctl.smb2.in.function = FSCTL_SRV_COPYCHUNK;
-	ioctl.smb2.in.max_response_size = 12;	/* FIXME */
-	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+	return true;
+}
 
-	ZERO_STRUCT(chunk);
-	chunk.source_off = 0;
-	chunk.target_off = 0;
-	chunk.length = 100;
 
-	ZERO_STRUCT(cc_copy);
-	memcpy(cc_copy.source_key, res_key.resume_key, ARRAY_SIZE(cc_copy.source_key));
-	cc_copy.chunk_count = 1;
-	cc_copy.chunks = &chunk;
+static bool check_copy_chunk_rsp(struct srv_copychunk_rsp *cc_rsp,
+				 uint32_t ex_chunks_written,
+				 uint32_t ex_chunk_bytes_written,
+				 uint32_t ex_total_bytes_written)
+{
+	if (cc_rsp->chunks_written != ex_chunks_written) {
+		printf("expected %u chunks, got %u\n",
+		       ex_chunks_written, cc_rsp->chunks_written);
+		return false;
+	}
+	if (cc_rsp->chunk_bytes_written != ex_chunk_bytes_written) {
+		printf("expected %u chunk bytes remaining, got %u\n",
+		       ex_chunk_bytes_written, cc_rsp->chunk_bytes_written);
+		return false;
+	}
+	if (cc_rsp->total_bytes_written != ex_total_bytes_written) {
+		printf("expected %u total bytes, got %u\n",
+		       ex_total_bytes_written, cc_rsp->total_bytes_written);
+		return false;
+	}
+	return true;
+}
+
+static bool test_ioctl_copy_chunk(struct torture_context *torture,
+				  struct smb2_tree *tree)
+{
+	struct smb2_handle src_h;
+	struct smb2_handle dest_h;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct srv_copychunk_copy cc_copy;
+	struct srv_copychunk_rsp cc_rsp;
+	enum ndr_err_code ndr_ret;
+	bool ok;
+
+	ok = test_setup_copy_chunk(tree, tmp_ctx,
+				   1, /* 1 chunk */
+				   &src_h, 100,	/* fill 100 byte src file */
+				   &dest_h, 0,	/* 0 byte dest file */
+				   &cc_copy,
+				   &ioctl);
+	if (!ok) {
+		return false;
+	}
+
+	/* copy all src file data (via a single chunk desc) */
+	cc_copy.chunks[0].source_off = 0;
+	cc_copy.chunks[0].target_off = 0;
+	cc_copy.chunks[0].length = 100;
 
 	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
 				       &cc_copy,
@@ -208,7 +274,6 @@ static bool test_ioctl_copy_chunk(struct torture_context *torture,
 		return false;
 	}
 
-	/* request a copy of all src file data (via a single chunk desc) */
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("FSCTL_SRV_COPYCHUNK failed\n");
@@ -221,18 +286,12 @@ static bool test_ioctl_copy_chunk(struct torture_context *torture,
 	if (ndr_ret != NDR_ERR_SUCCESS) {
 		return false;
 	}
-	if (cc_rsp.chunks_written != 1) {
-		printf("fail, expected 1 chunk, got %u\n", cc_rsp.chunks_written);
-		return false;
-	}
-	if (cc_rsp.chunk_bytes_written != 0) {
-		printf("fail, expected 0 chunk bytes remaining, got %u\n",
-		       cc_rsp.chunk_bytes_written);
-		return false;
-	}
-	if (cc_rsp.total_bytes_written != 100) {
-		printf("fail, expected 100 total bytes, got %u\n",
-		       cc_rsp.total_bytes_written);
+
+	ok = check_copy_chunk_rsp(&cc_rsp,
+				  1,	/* chunks written */
+				  0,	/* chunk bytes unsuccessfully written */
+				  100);	/* total bytes written */
+	if (!ok) {
 		return false;
 	}
 
