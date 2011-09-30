@@ -1298,8 +1298,18 @@ static WERROR regdb_create_subkey_internal(struct db_context *db,
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	if (regsubkey_ctr_key_exists(subkeys, subkey)) {
-		werr = WERR_OK;
-		goto done;
+		char *newkey;
+
+		newkey = talloc_asprintf(mem_ctx, "%s\\%s", key, subkey);
+		if (newkey == NULL) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+
+		if (regdb_key_exists(db, newkey)) {
+			werr = WERR_OK;
+			goto done;
+		}
 	}
 
 	talloc_free(subkeys);
