@@ -3286,7 +3286,7 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 	const struct ldb_val *rmd_value, *omd_value;
 	struct replPropertyMetaDataBlob omd, rmd;
 	enum ndr_err_code ndr_err;
-	bool rename_incoming_record;
+	bool rename_incoming_record, rodc;
 	struct replPropertyMetaData1 *rmd_name, *omd_name;
 
 	if (ares->error != LDB_ERR_ENTRY_ALREADY_EXISTS) {
@@ -3295,7 +3295,31 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 		return replmd_op_callback(req, ares);
 	}
 
-	/*
+	ret = samdb_rodc(ldb_module_get_ctx(ar->module), &rodc);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+ 	/*
+	 * we have a conflict, and need to decide if we will keep the
+	 * new record or the old record
+	 */
+	conflict_dn = req->op.add.message->dn;
+
+	if (rodc) {
+		/*
+		 * We are on an RODC, or were a GC for this
+		 * partition, so we have to fail this until
+		 * someone who owns the partition sorts it
+		 * out 
+		 */
+		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module), 
+				       "Conflict adding object '%s' from incoming replication as we are read only for the partition.  \n"
+				       " - We must fail the operation until a master for this partition resolves the conflict",
+				       ldb_dn_get_linearized(conflict_dn));
+		goto failed;
+	}
+
+ 	/*
 	 * we have a conflict, and need to decide if we will keep the
 	 * new record or the old record
 	 */
