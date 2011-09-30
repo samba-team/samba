@@ -132,13 +132,6 @@ interface dns
 	} dns_soa_record;
 
 	typedef [public] struct {
-		uint16     priority;
-		uint16     weight;
-		uint16     port;
-		dns_string target;
-	} dns_srv_record;
-
-	typedef [public] struct {
 		uint16     preference;
 		dns_string exchange;
 	} dns_mx_record;
@@ -147,6 +140,13 @@ interface dns
 		[value(strlen(txt))] uint8 length;
 		[charset(DOS)] uint8 txt[length];
 	} dns_txt_record;
+
+	typedef [public] struct {
+		uint16     priority;
+		uint16     weight;
+		uint16     port;
+		dns_string target;
+	} dns_srv_record;
 
 	typedef [nodiscriminant,public,flag(NDR_NOALIGN)] union {
 		[case(DNS_QTYPE_A)]     ipv4address	 ipv4_record;
