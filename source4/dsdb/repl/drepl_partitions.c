@@ -63,14 +63,8 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	}
 
 	el = ldb_msg_find_element(res->msgs[0], "hasMasterNCs");
-	if (!el) {
-		DEBUG(1,("Finding hasMasterNCs element in root_res failed: %s\n",
-			 ldb_errstring(s->samdb)));
-		talloc_free(tmp_ctx);
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
 
-	for (i=0; i<el->num_values; i++) {
+	for (i=0; el && i<el->num_values; i++) {
 		struct ldb_dn *pdn;
 		struct dreplsrv_partition *p;
 
