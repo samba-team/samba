@@ -29,6 +29,7 @@
 #include "auth.h"
 #include "lib/param/loadparm.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/ndr_dfsblobs.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form \hostname\service\reqpath
@@ -1223,110 +1224,55 @@ int setup_dfs_referral(connection_struct *orig_conn,
 			int max_referral_level,
 			char **ppdata, NTSTATUS *pstatus)
 {
-	struct junction_map *junction = NULL;
-	int consumedcnt = 0;
-	bool self_referral = False;
+	char *pdata = *ppdata;
 	int reply_size = 0;
-	char *pathnamep = NULL;
-	char *local_dfs_path = NULL;
-	TALLOC_CTX *ctx;
+	struct dfs_GetDFSReferral *r;
+	DATA_BLOB blob = data_blob_null;
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
-	if (!(ctx=talloc_init("setup_dfs_referral"))) {
+	r = talloc_zero(talloc_tos(), struct dfs_GetDFSReferral);
+	if (r == NULL) {
 		*pstatus = NT_STATUS_NO_MEMORY;
 		return -1;
 	}
 
-	/* get the junction entry */
-	if (!dfs_path) {
-		talloc_destroy(ctx);
-		*pstatus = NT_STATUS_NOT_FOUND;
-		return -1;
-	}
-
-	/*
-	 * Trim pathname sent by client so it begins with only one backslash.
-	 * Two backslashes confuse some dfs clients
-	 */
-
-	local_dfs_path = talloc_strdup(ctx,dfs_path);
-	if (!local_dfs_path) {
+	r->in.req.max_referral_level = max_referral_level;
+	r->in.req.servername = talloc_strdup(r, dfs_path);
+	if (r->in.req.servername == NULL) {
+		talloc_free(r);
 		*pstatus = NT_STATUS_NO_MEMORY;
-		talloc_destroy(ctx);
-		return -1;
-	}
-	pathnamep = local_dfs_path;
-	while (IS_DIRECTORY_SEP(pathnamep[0]) &&
-			IS_DIRECTORY_SEP(pathnamep[1])) {
-		pathnamep++;
-	}
-
-	junction = talloc_zero(ctx, struct junction_map);
-	if (!junction) {
-		*pstatus = NT_STATUS_NO_MEMORY;
-		talloc_destroy(ctx);
 		return -1;
 	}
 
-	/* The following call can change cwd. */
-	*pstatus = get_referred_path(ctx, pathnamep, orig_conn->sconn,
-				     junction, &consumedcnt, &self_referral);
-	if (!NT_STATUS_IS_OK(*pstatus)) {
-		vfs_ChDir(orig_conn,orig_conn->connectpath);
-		talloc_destroy(ctx);
-		return -1;
-	}
-	vfs_ChDir(orig_conn,orig_conn->connectpath);
-
-	if (!self_referral) {
-		pathnamep[consumedcnt] = '\0';
-
-		if( DEBUGLVL( 3 ) ) {
-			int i=0;
-			dbgtext("setup_dfs_referral: Path %s to "
-				"alternate path(s):",
-				pathnamep);
-			for(i=0;i<junction->referral_count;i++)
-				dbgtext(" %s",
-				junction->referral_list[i].alternate_path);
-			dbgtext(".\n");
-		}
-	}
-
-	/* create the referral depeding on version */
-	DEBUG(10,("max_referral_level :%d\n",max_referral_level));
-
-	if (max_referral_level < 2) {
-		max_referral_level = 2;
-	}
-	if (max_referral_level > 3) {
-		max_referral_level = 3;
-	}
-
-	switch(max_referral_level) {
-	case 2:
-		reply_size = setup_ver2_dfs_referral(pathnamep,
-					ppdata, junction,
-					self_referral);
-		break;
-	case 3:
-		reply_size = setup_ver3_dfs_referral(pathnamep, ppdata,
-					junction, self_referral);
-		break;
-	default:
-		DEBUG(0,("setup_dfs_referral: Invalid dfs referral "
-			"version: %d\n",
-			max_referral_level));
-		talloc_destroy(ctx);
-		*pstatus = NT_STATUS_INVALID_LEVEL;
+	status = SMB_VFS_GET_DFS_REFERRALS(orig_conn, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(r);
+		*pstatus = status;
 		return -1;
 	}
 
-	if (DEBUGLVL(10)) {
-		DEBUGADD(0,("DFS Referral pdata:\n"));
-		dump_data(0,(uint8 *)*ppdata,reply_size);
+	ndr_err = ndr_push_struct_blob(&blob, r,
+				r->out.resp,
+				(ndr_push_flags_fn_t)ndr_push_dfs_referral_resp);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(r);
+		*pstatus = NT_STATUS_INVALID_PARAMETER;
+		return -1;
 	}
 
-	talloc_destroy(ctx);
+	pdata = (char *)SMB_REALLOC(pdata, blob.length);
+	if(pdata == NULL) {
+		TALLOC_FREE(r);
+		DEBUG(0,("referral setup:"
+			 "malloc failed for Realloc!\n"));
+		return -1;
+	}
+	*ppdata = pdata;
+	reply_size = blob.length;
+	memcpy(pdata, blob.data, blob.length);
+	TALLOC_FREE(r);
+
 	*pstatus = NT_STATUS_OK;
 	return reply_size;
 }

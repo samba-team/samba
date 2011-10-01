@@ -894,7 +894,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
                     cli_smb_common RPC_SERVER smbd_conn param_service
-                    smbd_shim uid_wrapper
+                    smbd_shim uid_wrapper NDR_DFSBLOBS
                     ''',
                     private_library=True,
                     vars=locals())
