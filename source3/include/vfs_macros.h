@@ -68,6 +68,15 @@
 #define SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res) \
 	smb_vfs_call_fs_capabilities((handle)->next, (p_ts_res))
 
+/*
+ * Note: that "struct dfs_GetDFSReferral *r"
+ * needs to be a valid TALLOC_CTX
+ */
+#define SMB_VFS_GET_DFS_REFERRALS(conn, r) \
+	smb_vfs_call_get_dfs_referrals((conn)->vfs_handles, (r))
+#define SMB_VFS_NEXT_GET_DFS_REFERRALS(handle, r) \
+	smb_vfs_call_get_dfs_referrals((handle)->next, (r))
+
 /* Directory operations */
 #define SMB_VFS_OPENDIR(conn, fname, mask, attr) \
 	smb_vfs_call_opendir((conn)->vfs_handles, (fname), (mask), (attr))

@@ -1196,6 +1196,13 @@ uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
 	return handle->fns->fs_capabilities(handle, p_ts_res);
 }
 
+NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
+					struct dfs_GetDFSReferral *r)
+{
+	VFS_FIND(get_dfs_referrals);
+	return handle->fns->get_dfs_referrals(handle, r);
+}
+
 SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
 				     uint32 attributes)

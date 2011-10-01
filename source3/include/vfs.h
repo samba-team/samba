@@ -137,6 +137,7 @@
 /* Leave at 28 - not yet released. Make getwd function always return malloced memory. JRA. */
 /* Bump to version 29 - Samba 3.6.0 will ship with interface version 28. */
 /* Leave at 29 - not yet releases. Add fsctl. Richard Sharpe */
+/* Leave at 29 - not yet released. add SMB_VFS_GET_DFS_REFERRAL() - metze */
 #define SMB_VFS_INTERFACE_VERSION 29
 
 /*
@@ -157,6 +158,7 @@ struct ea_list;
 struct smb_file_time;
 struct blocking_lock_record;
 struct smb_filename;
+struct dfs_GetDFSReferral;
 
 #define VFS_FIND(__fn__) while (handle->fns->__fn__==NULL) { \
 				handle = handle->next; \
@@ -192,6 +194,13 @@ struct vfs_fn_pointers {
 	int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, struct shadow_copy_data *shadow_copy_data, bool labels);
 	int (*statvfs)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
 	uint32_t (*fs_capabilities)(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res);
+
+	/*
+	 * Note: that "struct dfs_GetDFSReferral *r"
+	 * needs to be a valid TALLOC_CTX
+	 */
+	NTSTATUS (*get_dfs_referrals)(struct vfs_handle_struct *handle,
+				      struct dfs_GetDFSReferral *r);
 
 	/* Directory operations */
 
@@ -536,6 +545,11 @@ int smb_vfs_call_statvfs(struct vfs_handle_struct *handle, const char *path,
 			 struct vfs_statvfs_struct *statbuf);
 uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
 			enum timestamp_set_resolution *p_ts_res);
+/*
+ * Note: that "struct dfs_GetDFSReferral *r" needs to be a valid TALLOC_CTX
+ */
+NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
+					struct dfs_GetDFSReferral *r);
 SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
 				     uint32 attributes);

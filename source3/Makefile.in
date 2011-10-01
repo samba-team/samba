@@ -385,6 +385,7 @@ LIBCLI_EPMAPPER_OBJ = librpc/gen_ndr/ndr_epmapper_c.o
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 librpc/gen_ndr/ndr_dfs.o \
+		 librpc/gen_ndr/ndr_dfsblobs.o \
 		 librpc/gen_ndr/ndr_echo.o \
 		 librpc/gen_ndr/ndr_winreg.o \
 		 librpc/gen_ndr/ndr_initshutdown.o \
