@@ -84,6 +84,7 @@ class dc_join(object):
         ctx.config_dn = str(ctx.samdb.get_config_basedn())
         ctx.domsid = ctx.samdb.get_domain_sid()
         ctx.domain_name = ctx.get_domain_name()
+        ctx.forest_domain_name = ctx.get_forest_domain_name()
         ctx.invocation_id = misc.GUID(str(uuid.uuid4()))
 
         ctx.dc_ntds_dn = ctx.get_dsServiceName()
@@ -185,7 +186,7 @@ class dc_join(object):
                 lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
 
                 name = lsa.String()
-                name.string = ctx.domain_name
+                name.string = ctx.forest_domain_name
                 info = lsaconn.QueryTrustedDomainInfoByName(pol_handle, name, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
 
                 lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
@@ -226,12 +227,29 @@ class dc_join(object):
                                expression='ncName=%s' % ctx.samdb.get_default_basedn())
         return res[0]["nETBIOSName"][0]
 
+    def get_forest_domain_name(ctx):
+        '''get netbios name of the domain from the partitions record'''
+        partitions_dn = ctx.samdb.get_partitions_dn()
+        res = ctx.samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
+                               expression='ncName=%s' % ctx.samdb.get_root_basedn())
+        return res[0]["nETBIOSName"][0]
+
     def get_parent_partition_dn(ctx):
         '''get the parent domain partition DN from parent DNS name'''
         res = ctx.samdb.search(base=ctx.config_dn, attrs=[],
                                expression='(&(objectclass=crossRef)(dnsRoot=%s)(systemFlags:%s:=%u))' %
                                (ctx.parent_dnsdomain, ldb.OID_COMPARATOR_AND, samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN))
         return str(res[0].dn)
+
+    def get_naming_master(ctx):
+        '''get the parent domain partition DN from parent DNS name'''
+        res = ctx.samdb.search(base='CN=Partitions,%s' % ctx.config_dn, attrs=['fSMORoleOwner'],
+                               scope=ldb.SCOPE_BASE, controls=["extended_dn:1:1"])
+        if not 'fSMORoleOwner' in res[0]:
+            raise DCJoinException("Can't find naming master on partition DN %s" % ctx.partition_dn)
+        master_guid = str(misc.GUID(ldb.Dn(ctx.samdb, res[0]['fSMORoleOwner'][0]).get_extended_component('GUID')))
+        master_host = '%s._msdcs.%s' % (master_guid, ctx.dnsforest)
+        return master_host
 
     def get_mysid(ctx):
         '''get the SID of the connected user. Only works with w2k8 and later,
@@ -280,9 +298,9 @@ class dc_join(object):
         ctx.samdb.rename(ctx.krbtgt_dn, ctx.new_krbtgt_dn)
 
     def drsuapi_connect(ctx):
-        '''make a DRSUAPI connection to the server'''
+        '''make a DRSUAPI connection to the naming master'''
         binding_options = "seal"
-        if int(ctx.lp.get("log level")) >= 5:
+        if int(ctx.lp.get("log level")) >= 4:
             binding_options += ",print"
         binding_string = "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options)
         ctx.drsuapi = drsuapi.drsuapi(binding_string, ctx.lp, ctx.creds)
@@ -784,20 +802,20 @@ class dc_join(object):
                                                          security.SEC_STD_DELETE)
 
         rec = {
-            "dn" : "cn=%s,cn=system,%s" % (ctx.parent_dnsdomain, ctx.base_dn),
+            "dn" : "cn=%s,cn=system,%s" % (ctx.dnsforest, ctx.base_dn),
             "objectclass" : "trustedDomain",
             "trustType" : str(info.trust_type),
             "trustAttributes" : str(info.trust_attributes),
             "trustDirection" : str(info.trust_direction),
-            "flatname" : ctx.parent_domain_name,
-            "trustPartner" : ctx.parent_dnsdomain,
+            "flatname" : ctx.forest_domain_name,
+            "trustPartner" : ctx.dnsforest,
             "trustAuthIncoming" : ndr_pack(outgoing),
             "trustAuthOutgoing" : ndr_pack(outgoing)
             }
         ctx.local_samdb.add(rec)
 
         rec = {
-            "dn" : "cn=%s$,cn=users,%s" % (ctx.parent_domain_name, ctx.base_dn),
+            "dn" : "cn=%s$,cn=users,%s" % (ctx.forest_domain_name, ctx.base_dn),
             "objectclass" : "user",
             "userAccountControl" : str(samba.dsdb.UF_INTERDOMAIN_TRUST_ACCOUNT),
             "clearTextPassword" : ctx.trustdom_pass.encode('utf-16-le')
@@ -914,6 +932,14 @@ def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=Non
     ctx.parent_partition_dn = ctx.get_parent_partition_dn()
     ctx.dnsdomain = dnsdomain
     ctx.partition_dn = "CN=%s,CN=Partitions,%s" % (ctx.domain_name, ctx.config_dn)
+    ctx.naming_master = ctx.get_naming_master()
+    if ctx.naming_master != ctx.server:
+        print("Reconnecting to naming master %s" % ctx.naming_master)
+        ctx.server = ctx.naming_master
+        ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
+                          session_info=system_session(),
+                          credentials=ctx.creds, lp=ctx.lp)
+
     ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
     ctx.domsid = str(security.random_sid())
     ctx.acct_dn = None
