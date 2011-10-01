@@ -4495,9 +4495,10 @@ int dsdb_create_partial_replica_NC(struct ldb_context *ldb,  struct ldb_dn *dn)
 	}
 
 	ret = dsdb_add(ldb, msg, DSDB_MODIFY_PARTIAL_REPLICA);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to create new NC for %s - %s\n",
-			 ldb_dn_get_linearized(dn), ldb_errstring(ldb)));
+	if (ret != LDB_SUCCESS && ret != LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		DEBUG(0,("Failed to create new NC for %s - %s (%s)\n",
+			 ldb_dn_get_linearized(dn),
+			 ldb_errstring(ldb), ldb_strerror(ret)));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
