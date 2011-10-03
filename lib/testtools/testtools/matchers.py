@@ -49,7 +49,10 @@ from testtools.compat import (
     classtypes,
     _error_repr,
     isbaseexception,
+    _isbytes,
     istext,
+    str_is_unicode,
+    text_repr
     )
 
 
@@ -102,6 +105,8 @@ class Mismatch(object):
         """Describe the mismatch.
 
         This should be either a human-readable string or castable to a string.
+        In particular, is should either be plain ascii or unicode on Python 2,
+        and care should be taken to escape control characters.
         """
         try:
             return self._description
@@ -129,6 +134,46 @@ class Mismatch(object):
     def __repr__(self):
         return  "<testtools.matchers.Mismatch object at %x attributes=%r>" % (
             id(self), self.__dict__)
+
+
+class MismatchError(AssertionError):
+    """Raised when a mismatch occurs."""
+
+    # This class exists to work around
+    # <https://bugs.launchpad.net/testtools/+bug/804127>.  It provides a
+    # guaranteed way of getting a readable exception, no matter what crazy
+    # characters are in the matchee, matcher or mismatch.
+
+    def __init__(self, matchee, matcher, mismatch, verbose=False):
+        # Have to use old-style upcalling for Python 2.4 and 2.5
+        # compatibility.
+        AssertionError.__init__(self)
+        self.matchee = matchee
+        self.matcher = matcher
+        self.mismatch = mismatch
+        self.verbose = verbose
+
+    def __str__(self):
+        difference = self.mismatch.describe()
+        if self.verbose:
+            # GZ 2011-08-24: Smelly API? Better to take any object and special
+            #                case text inside?
+            if istext(self.matchee) or _isbytes(self.matchee):
+                matchee = text_repr(self.matchee, multiline=False)
+            else:
+                matchee = repr(self.matchee)
+            return (
+                'Match failed. Matchee: %s\nMatcher: %s\nDifference: %s\n'
+                % (matchee, self.matcher, difference))
+        else:
+            return difference
+
+    if not str_is_unicode:
+
+        __unicode__ = __str__
+
+        def __str__(self):
+            return self.__unicode__().encode("ascii", "backslashreplace")
 
 
 class MismatchDecorator(object):
@@ -241,7 +286,12 @@ class DocTestMismatch(Mismatch):
         self.with_nl = with_nl
 
     def describe(self):
-        return self.matcher._describe_difference(self.with_nl)
+        s = self.matcher._describe_difference(self.with_nl)
+        if str_is_unicode or isinstance(s, unicode):
+            return s
+        # GZ 2011-08-24: This is actually pretty bogus, most C0 codes should
+        #                be escaped, in addition to non-ascii bytes.
+        return s.decode("latin1").encode("ascii", "backslashreplace")
 
 
 class DoesNotContain(Mismatch):
@@ -271,8 +321,8 @@ class DoesNotStartWith(Mismatch):
         self.expected = expected
 
     def describe(self):
-        return "'%s' does not start with '%s'." % (
-            self.matchee, self.expected)
+        return "%s does not start with %s." % (
+            text_repr(self.matchee), text_repr(self.expected))
 
 
 class DoesNotEndWith(Mismatch):
@@ -287,8 +337,8 @@ class DoesNotEndWith(Mismatch):
         self.expected = expected
 
     def describe(self):
-        return "'%s' does not end with '%s'." % (
-            self.matchee, self.expected)
+        return "%s does not end with %s." % (
+            text_repr(self.matchee), text_repr(self.expected))
 
 
 class _BinaryComparison(object):
@@ -320,8 +370,8 @@ class _BinaryMismatch(Mismatch):
     def _format(self, thing):
         # Blocks of text with newlines are formatted as triple-quote
         # strings. Everything else is pretty-printed.
-        if istext(thing) and '\n' in thing:
-            return '"""\\\n%s"""' % (thing,)
+        if istext(thing) or _isbytes(thing):
+            return text_repr(thing)
         return pformat(thing)
 
     def describe(self):
@@ -332,7 +382,7 @@ class _BinaryMismatch(Mismatch):
                 self._mismatch_string, self._format(self.expected),
                 self._format(self.other))
         else:
-            return "%s %s %s" % (left, self._mismatch_string,right)
+            return "%s %s %s" % (left, self._mismatch_string, right)
 
 
 class Equals(_BinaryComparison):
@@ -572,7 +622,7 @@ class StartsWith(Matcher):
         self.expected = expected
 
     def __str__(self):
-        return "Starts with '%s'." % self.expected
+        return "StartsWith(%r)" % (self.expected,)
 
     def match(self, matchee):
         if not matchee.startswith(self.expected):
@@ -591,7 +641,7 @@ class EndsWith(Matcher):
         self.expected = expected
 
     def __str__(self):
-        return "Ends with '%s'." % self.expected
+        return "EndsWith(%r)" % (self.expected,)
 
     def match(self, matchee):
         if not matchee.endswith(self.expected):
@@ -848,8 +898,12 @@ class MatchesRegex(object):
 
     def match(self, value):
         if not re.match(self.pattern, value, self.flags):
+            pattern = self.pattern
+            if not isinstance(pattern, str_is_unicode and str or unicode):
+                pattern = pattern.decode("latin1")
+            pattern = pattern.encode("unicode_escape").decode("ascii")
             return Mismatch("%r does not match /%s/" % (
-                    value, self.pattern))
+                    value, pattern.replace("\\\\", "\\")))
 
 
 class MatchesSetwise(object):

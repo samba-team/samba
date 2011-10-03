@@ -6,6 +6,22 @@ Changes and improvements to testtools_, grouped by release.
 NEXT
 ~~~~
 
+
+0.9.12
+~~~~~~
+
+This is a very big release.  We've made huge improvements on three fronts:
+ 1. Test failures are way nicer and easier to read
+ 2. Matchers and ``assertThat`` are much more convenient to use
+ 3. Correct handling of extended unicode characters
+
+We've trimmed off the fat from the stack trace you get when tests fail, we've
+cut out the bits of error messages that just didn't help, we've made it easier
+to annotate mismatch failures, to compare complex objects and to match raised
+exceptions.
+
+Testing code was never this fun.
+
 Changes
 -------
 
@@ -13,6 +29,12 @@ Changes
   correct spelling.  Old name preserved for backwards compatibility, but is
   now deprecated.  Please stop using it.
   (Jonathan Lange, #813460)
+
+* ``assertThat`` raises ``MismatchError`` instead of
+  ``TestCase.failureException``.  ``MismatchError`` is a subclass of
+  ``AssertionError``, so in most cases this change will not matter. However,
+  if ``self.failureException`` has been set to a non-default value, then
+  mismatches will become test errors rather than test failures.
 
 * ``gather_details`` takes two dicts, rather than two detailed objects.
   (Jonathan Lange, #801027)
@@ -30,12 +52,16 @@ Improvements
 * All public matchers are now in ``testtools.matchers.__all__``.
   (Jonathan Lange, #784859)
 
-* assertThat output is much less verbose, displaying only what the mismatch
+* ``assertThat`` can actually display mismatches and matchers that contain
+  extended unicode characters. (Jonathan Lange, Martin [gz], #804127)
+
+* ``assertThat`` output is much less verbose, displaying only what the mismatch
   tells us to display. Old-style verbose output can be had by passing
   ``verbose=True`` to assertThat. (Jonathan Lange, #675323, #593190)
 
-* assertThat accepts a message which will be used to annotate the matcher. This
-  can be given as a third parameter or as a keyword parameter. (Robert Collins)
+* ``assertThat`` accepts a message which will be used to annotate the matcher.
+  This can be given as a third parameter or as a keyword parameter.
+  (Robert Collins)
 
 * Automated the Launchpad part of the release process.
   (Jonathan Lange, #623486)

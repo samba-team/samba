@@ -717,7 +717,7 @@ generates.  Here's an example mismatch::
           self.remainder = remainder
 
       def describe(self):
-          return "%s is not divisible by %s, %s remains" % (
+          return "%r is not divisible by %r, %r remains" % (
               self.number, self.divider, self.remainder)
 
       def get_details(self):
@@ -738,10 +738,18 @@ in the Matcher itself like this::
       remainder = actual % self.divider
       if remainder != 0:
           return Mismatch(
-              "%s is not divisible by %s, %s remains" % (
+              "%r is not divisible by %r, %r remains" % (
                   actual, self.divider, remainder))
       else:
           return None
+
+When writing a ``describe`` method or constructing a ``Mismatch`` object the
+code should ensure it only emits printable unicode.  As this output must be
+combined with other text and forwarded for presentation, letting through
+non-ascii bytes of ambiguous encoding or control characters could throw an
+exception or mangle the display.  In most cases simply avoiding the ``%s``
+format specifier and using ``%r`` instead will be enough.  For examples of
+more complex formatting see the ``testtools.matchers`` implementatons.
 
 
 Details

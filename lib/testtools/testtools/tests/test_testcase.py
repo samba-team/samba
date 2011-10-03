@@ -19,7 +19,10 @@ from testtools import (
     skipUnless,
     testcase,
     )
-from testtools.compat import _b
+from testtools.compat import (
+    _b,
+    _u,
+    )
 from testtools.matchers import (
     Annotate,
     DocTestMatches,
@@ -32,6 +35,7 @@ from testtools.testresult.doubles import (
     Python27TestResult,
     ExtendedTestResult,
     )
+from testtools.testresult.real import TestResult
 from testtools.tests.helpers import (
     an_exc_info,
     FullStackRunTest,
@@ -484,7 +488,7 @@ class TestAssertions(TestCase):
         matchee = 'foo'
         matcher = Equals('bar')
         expected = (
-            'Match failed. Matchee: "%s"\n'
+            'Match failed. Matchee: %r\n'
             'Matcher: %s\n'
             'Difference: %s\n' % (
                 matchee,
@@ -493,6 +497,48 @@ class TestAssertions(TestCase):
                 ))
         self.assertFails(
             expected, self.assertThat, matchee, matcher, verbose=True)
+
+    def get_error_string(self, e):
+        """Get the string showing how 'e' would be formatted in test output.
+
+        This is a little bit hacky, since it's designed to give consistent
+        output regardless of Python version.
+
+        In testtools, TestResult._exc_info_to_unicode is the point of dispatch
+        between various different implementations of methods that format
+        exceptions, so that's what we have to call. However, that method cares
+        about stack traces and formats the exception class. We don't care
+        about either of these, so we take its output and parse it a little.
+        """
+        error = TestResult()._exc_info_to_unicode((e.__class__, e, None), self)
+        # We aren't at all interested in the traceback.
+        if error.startswith('Traceback (most recent call last):\n'):
+            lines = error.splitlines(True)[1:]
+            for i, line in enumerate(lines):
+                if not line.startswith(' '):
+                    break
+            error = ''.join(lines[i:])
+        # We aren't interested in how the exception type is formatted.
+        exc_class, error = error.split(': ', 1)
+        return error
+
+    def test_assertThat_verbose_unicode(self):
+        # When assertThat is given matchees or matchers that contain non-ASCII
+        # unicode strings, we can still provide a meaningful error.
+        matchee = _u('\xa7')
+        matcher = Equals(_u('a'))
+        expected = (
+            'Match failed. Matchee: %s\n'
+            'Matcher: %s\n'
+            'Difference: %s\n\n' % (
+                repr(matchee).replace("\\xa7", matchee),
+                matcher,
+                matcher.match(matchee).describe(),
+                ))
+        e = self.assertRaises(
+            self.failureException, self.assertThat, matchee, matcher,
+            verbose=True)
+        self.assertEqual(expected, self.get_error_string(e))
 
     def test_assertEqual_nice_formatting(self):
         message = "These things ought not be equal."
@@ -518,6 +564,21 @@ class TestAssertions(TestCase):
         self.assertFails(expected_error, self.assertEqual, a, b)
         self.assertFails(expected_error, self.assertEquals, a, b)
         self.assertFails(expected_error, self.failUnlessEqual, a, b)
+
+    def test_assertEqual_non_ascii_str_with_newlines(self):
+        message = _u("Be careful mixing unicode and bytes")
+        a = "a\n\xa7\n"
+        b = "Just a longish string so the more verbose output form is used."
+        expected_error = '\n'.join([
+            '!=:',
+            "reference = '''\\",
+            'a',
+            repr('\xa7')[1:-1],
+            "'''",
+            'actual = %r' % (b,),
+            ': ' + message,
+            ])
+        self.assertFails(expected_error, self.assertEqual, a, b, message)
 
     def test_assertIsNone(self):
         self.assertIsNone(None)

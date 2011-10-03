@@ -34,6 +34,7 @@ from testtools.matchers import (
     Equals,
     MatchesAll,
     MatchesException,
+    MismatchError,
     Is,
     IsInstance,
     Not,
@@ -393,7 +394,7 @@ class TestCase(unittest.TestCase):
 
         :param matchee: An object to match with matcher.
         :param matcher: An object meeting the testtools.Matcher protocol.
-        :raises self.failureException: When matcher does not match thing.
+        :raises MismatchError: When matcher does not match thing.
         """
         matcher = Annotate.if_message(message, matcher)
         mismatch = matcher.match(matchee)
@@ -407,13 +408,7 @@ class TestCase(unittest.TestCase):
                 full_name = "%s-%d" % (name, suffix)
                 suffix += 1
             self.addDetail(full_name, content)
-        if verbose:
-            message = (
-                'Match failed. Matchee: "%s"\nMatcher: %s\nDifference: %s\n'
-                % (matchee, matcher, mismatch.describe()))
-        else:
-            message = mismatch.describe()
-        self.fail(message)
+        raise MismatchError(matchee, matcher, mismatch, verbose)
 
     def defaultTestResult(self):
         return TestResult()

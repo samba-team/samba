@@ -12,6 +12,9 @@ from testtools import (
     )
 from testtools.compat import (
     StringIO,
+    str_is_unicode,
+    text_repr,
+    _b,
     _u,
     )
 from testtools.matchers import (
@@ -19,6 +22,7 @@ from testtools.matchers import (
     AllMatch,
     Annotate,
     AnnotatedMismatch,
+    _BinaryMismatch,
     Contains,
     Equals,
     DocTestMatches,
@@ -39,6 +43,7 @@ from testtools.matchers import (
     MatchesStructure,
     Mismatch,
     MismatchDecorator,
+    MismatchError,
     Not,
     NotEquals,
     Raises,
@@ -65,6 +70,125 @@ class TestMismatch(TestCase):
         self.assertThat(mismatch.describe,
             Raises(MatchesException(NotImplementedError)))
         self.assertEqual({}, mismatch.get_details())
+
+
+class TestMismatchError(TestCase):
+
+    def test_is_assertion_error(self):
+        # MismatchError is an AssertionError, so that most of the time, it
+        # looks like a test failure, rather than an error.
+        def raise_mismatch_error():
+            raise MismatchError(2, Equals(3), Equals(3).match(2))
+        self.assertRaises(AssertionError, raise_mismatch_error)
+
+    def test_default_description_is_mismatch(self):
+        mismatch = Equals(3).match(2)
+        e = MismatchError(2, Equals(3), mismatch)
+        self.assertEqual(mismatch.describe(), str(e))
+
+    def test_default_description_unicode(self):
+        matchee = _u('\xa7')
+        matcher = Equals(_u('a'))
+        mismatch = matcher.match(matchee)
+        e = MismatchError(matchee, matcher, mismatch)
+        self.assertEqual(mismatch.describe(), str(e))
+
+    def test_verbose_description(self):
+        matchee = 2
+        matcher = Equals(3)
+        mismatch = matcher.match(2)
+        e = MismatchError(matchee, matcher, mismatch, True)
+        expected = (
+            'Match failed. Matchee: %r\n'
+            'Matcher: %s\n'
+            'Difference: %s\n' % (
+                matchee,
+                matcher,
+                matcher.match(matchee).describe(),
+                ))
+        self.assertEqual(expected, str(e))
+
+    def test_verbose_unicode(self):
+        # When assertThat is given matchees or matchers that contain non-ASCII
+        # unicode strings, we can still provide a meaningful error.
+        matchee = _u('\xa7')
+        matcher = Equals(_u('a'))
+        mismatch = matcher.match(matchee)
+        expected = (
+            'Match failed. Matchee: %s\n'
+            'Matcher: %s\n'
+            'Difference: %s\n' % (
+                text_repr(matchee),
+                matcher,
+                mismatch.describe(),
+                ))
+        e = MismatchError(matchee, matcher, mismatch, True)
+        if str_is_unicode:
+            actual = str(e)
+        else:
+            actual = unicode(e)
+            # Using str() should still work, and return ascii only
+            self.assertEqual(
+                expected.replace(matchee, matchee.encode("unicode-escape")),
+                str(e).decode("ascii"))
+        self.assertEqual(expected, actual)
+
+
+class Test_BinaryMismatch(TestCase):
+    """Mismatches from binary comparisons need useful describe output"""
+
+    _long_string = "This is a longish multiline non-ascii string\n\xa7"
+    _long_b = _b(_long_string)
+    _long_u = _u(_long_string)
+
+    def test_short_objects(self):
+        o1, o2 = object(), object()
+        mismatch = _BinaryMismatch(o1, "!~", o2)
+        self.assertEqual(mismatch.describe(), "%r !~ %r" % (o1, o2))
+
+    def test_short_mixed_strings(self):
+        b, u = _b("\xa7"), _u("\xa7")
+        mismatch = _BinaryMismatch(b, "!~", u)
+        self.assertEqual(mismatch.describe(), "%r !~ %r" % (b, u))
+
+    def test_long_bytes(self):
+        one_line_b = self._long_b.replace(_b("\n"), _b(" "))
+        mismatch = _BinaryMismatch(one_line_b, "!~", self._long_b)
+        self.assertEqual(mismatch.describe(),
+            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+                text_repr(one_line_b),
+                text_repr(self._long_b, multiline=True)))
+
+    def test_long_unicode(self):
+        one_line_u = self._long_u.replace("\n", " ")
+        mismatch = _BinaryMismatch(one_line_u, "!~", self._long_u)
+        self.assertEqual(mismatch.describe(),
+            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+                text_repr(one_line_u),
+                text_repr(self._long_u, multiline=True)))
+
+    def test_long_mixed_strings(self):
+        mismatch = _BinaryMismatch(self._long_b, "!~", self._long_u)
+        self.assertEqual(mismatch.describe(),
+            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+                text_repr(self._long_b, multiline=True),
+                text_repr(self._long_u, multiline=True)))
+
+    def test_long_bytes_and_object(self):
+        obj = object()
+        mismatch = _BinaryMismatch(self._long_b, "!~", obj)
+        self.assertEqual(mismatch.describe(),
+            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+                text_repr(self._long_b, multiline=True),
+                repr(obj)))
+
+    def test_long_unicode_and_object(self):
+        obj = object()
+        mismatch = _BinaryMismatch(self._long_u, "!~", obj)
+        self.assertEqual(mismatch.describe(),
+            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+                text_repr(self._long_u, multiline=True),
+                repr(obj)))
 
 
 class TestMatchersInterface(object):
@@ -149,6 +273,23 @@ class TestDocTestMatchesSpecific(TestCase):
         matcher = DocTestMatches("bar\n", doctest.ELLIPSIS)
         self.assertEqual("bar\n", matcher.want)
         self.assertEqual(doctest.ELLIPSIS, matcher.flags)
+
+    def test_describe_non_ascii_bytes(self):
+        """Even with bytestrings, the mismatch should be coercible to unicode
+
+        DocTestMatches is intended for text, but the Python 2 str type also
+        permits arbitrary binary inputs. This is a slightly bogus thing to do,
+        and under Python 3 using bytes objects will reasonably raise an error.
+        """
+        header = _b("\x89PNG\r\n\x1a\n...")
+        if str_is_unicode:
+            self.assertRaises(TypeError,
+                DocTestMatches, header, doctest.ELLIPSIS)
+            return
+        matcher = DocTestMatches(header, doctest.ELLIPSIS)
+        mismatch = matcher.match(_b("GIF89a\1\0\1\0\0\0\0;"))
+        # Must be treatable as unicode text, the exact output matters less
+        self.assertTrue(unicode(mismatch.describe()))
 
 
 class TestEqualsInterface(TestCase, TestMatchersInterface):
@@ -552,6 +693,21 @@ class DoesNotStartWithTests(TestCase):
         mismatch = DoesNotStartWith("fo", "bo")
         self.assertEqual("'fo' does not start with 'bo'.", mismatch.describe())
 
+    def test_describe_non_ascii_unicode(self):
+        string = _u("A\xA7")
+        suffix = _u("B\xA7")
+        mismatch = DoesNotStartWith(string, suffix)
+        self.assertEqual("%s does not start with %s." % (
+            text_repr(string), text_repr(suffix)),
+            mismatch.describe())
+
+    def test_describe_non_ascii_bytes(self):
+        string = _b("A\xA7")
+        suffix = _b("B\xA7")
+        mismatch = DoesNotStartWith(string, suffix)
+        self.assertEqual("%r does not start with %r." % (string, suffix),
+            mismatch.describe())
+
 
 class StartsWithTests(TestCase):
 
@@ -559,7 +715,17 @@ class StartsWithTests(TestCase):
 
     def test_str(self):
         matcher = StartsWith("bar")
-        self.assertEqual("Starts with 'bar'.", str(matcher))
+        self.assertEqual("StartsWith('bar')", str(matcher))
+
+    def test_str_with_bytes(self):
+        b = _b("\xA7")
+        matcher = StartsWith(b)
+        self.assertEqual("StartsWith(%r)" % (b,), str(matcher))
+
+    def test_str_with_unicode(self):
+        u = _u("\xA7")
+        matcher = StartsWith(u)
+        self.assertEqual("StartsWith(%r)" % (u,), str(matcher))
 
     def test_match(self):
         matcher = StartsWith("bar")
@@ -588,6 +754,21 @@ class DoesNotEndWithTests(TestCase):
         mismatch = DoesNotEndWith("fo", "bo")
         self.assertEqual("'fo' does not end with 'bo'.", mismatch.describe())
 
+    def test_describe_non_ascii_unicode(self):
+        string = _u("A\xA7")
+        suffix = _u("B\xA7")
+        mismatch = DoesNotEndWith(string, suffix)
+        self.assertEqual("%s does not end with %s." % (
+            text_repr(string), text_repr(suffix)),
+            mismatch.describe())
+
+    def test_describe_non_ascii_bytes(self):
+        string = _b("A\xA7")
+        suffix = _b("B\xA7")
+        mismatch = DoesNotEndWith(string, suffix)
+        self.assertEqual("%r does not end with %r." % (string, suffix),
+            mismatch.describe())
+
 
 class EndsWithTests(TestCase):
 
@@ -595,7 +776,17 @@ class EndsWithTests(TestCase):
 
     def test_str(self):
         matcher = EndsWith("bar")
-        self.assertEqual("Ends with 'bar'.", str(matcher))
+        self.assertEqual("EndsWith('bar')", str(matcher))
+
+    def test_str_with_bytes(self):
+        b = _b("\xA7")
+        matcher = EndsWith(b)
+        self.assertEqual("EndsWith(%r)" % (b,), str(matcher))
+
+    def test_str_with_unicode(self):
+        u = _u("\xA7")
+        matcher = EndsWith(u)
+        self.assertEqual("EndsWith(%r)" % (u,), str(matcher))
 
     def test_match(self):
         matcher = EndsWith("arf")
@@ -712,11 +903,17 @@ class TestMatchesRegex(TestCase, TestMatchersInterface):
         ("MatchesRegex('a|b')", MatchesRegex('a|b')),
         ("MatchesRegex('a|b', re.M)", MatchesRegex('a|b', re.M)),
         ("MatchesRegex('a|b', re.I|re.M)", MatchesRegex('a|b', re.I|re.M)),
+        ("MatchesRegex(%r)" % (_b("\xA7"),), MatchesRegex(_b("\xA7"))),
+        ("MatchesRegex(%r)" % (_u("\xA7"),), MatchesRegex(_u("\xA7"))),
         ]
 
     describe_examples = [
         ("'c' does not match /a|b/", 'c', MatchesRegex('a|b')),
         ("'c' does not match /a\d/", 'c', MatchesRegex(r'a\d')),
+        ("%r does not match /\\s+\\xa7/" % (_b('c'),),
+            _b('c'), MatchesRegex(_b("\\s+\xA7"))),
+        ("%r does not match /\\s+\\xa7/" % (_u('c'),),
+            _u('c'), MatchesRegex(_u("\\s+\xA7"))),
         ]
 
 
