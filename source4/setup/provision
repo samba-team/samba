@@ -109,7 +109,7 @@ parser.add_option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TY
 parser.add_option("--ldap-backend-nosync", help="Configure LDAP backend not to call fsync() (for performance in test environments)", action="store_true")
 parser.add_option("--server-role", type="choice", metavar="ROLE",
           choices=["domain controller", "dc", "member server", "member", "standalone"],
-        help="The server role (domain controller | dc | member server | member | standalone). Default is standalone.")
+        help="The server role (domain controller | dc | member server | member | standalone). Default is dc.")
 parser.add_option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
           choices=["2000", "2003", "2008", "2008_R2"],
         help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2003 Native.")
