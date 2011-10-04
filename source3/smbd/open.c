@@ -1540,12 +1540,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	ZERO_STRUCT(id);
 
-	/* Windows allows a new file to be created and
-	   silently removes a FILE_ATTRIBUTE_DIRECTORY
-	   sent by the client. Do the same. */
-
-	new_dos_attributes &= ~FILE_ATTRIBUTE_DIRECTORY;
-
 	if (conn->printer) {
 		/*
 		 * Printers are handled completely differently.
@@ -1579,6 +1573,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		unx_mode = (mode_t)(new_dos_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 		new_dos_attributes = 0;
 	} else {
+		/* Windows allows a new file to be created and
+		   silently removes a FILE_ATTRIBUTE_DIRECTORY
+		   sent by the client. Do the same. */
+
+		new_dos_attributes &= ~FILE_ATTRIBUTE_DIRECTORY;
+
 		/* We add FILE_ATTRIBUTE_ARCHIVE to this as this mode is only used if the file is
 		 * created new. */
 		unx_mode = unix_mode(conn, new_dos_attributes | FILE_ATTRIBUTE_ARCHIVE,
