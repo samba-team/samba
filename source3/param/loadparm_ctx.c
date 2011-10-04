@@ -102,7 +102,9 @@ static const struct loadparm_s3_context s3_fns =
 	.ncalrpc_dir = lp_ncalrpc_dir,
 	.lockdir = lp_lockdir,
 
-	.passdb_backend = lp_passdb_backend
+	.passdb_backend = lp_passdb_backend,
+
+	.host_msdfs = lp_host_msdfs,
 };
 
 const struct loadparm_s3_context *loadparm_s3_context(void)
