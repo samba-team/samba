@@ -31,6 +31,10 @@
 #include <ccan/hash/hash.h>
 #include "libcli/security/security.h"
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 /* Max allowable allococation - 256mb - 0x10000000 */
 #define MAX_ALLOC_SIZE (1024*1024*256)
 
@@ -777,6 +781,13 @@ void smb_panic_s3(const char *why)
 	DEBUG(0,("PANIC (pid %llu): %s\n",
 		    (unsigned long long)sys_getpid(), why));
 	log_stack_trace();
+
+#if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
+	/*
+	 * Make sure all children can attach a debugger.
+	 */
+	prctl(PR_SET_PTRACER, getpid(), 0, 0, 0);
+#endif
 
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {
