@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+bld.SAMBA_LIBRARY('dfs_server_ad',
+                  source='dfs_server_ad.c',
+                  deps='talloc samdb samba-util LIBTSOCKET',
+                  private_library=True
+                  )

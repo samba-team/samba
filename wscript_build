@@ -117,6 +117,7 @@ bld.RECURSE('pidl')
 bld.RECURSE('lib')
 bld.RECURSE('libds/common')
 bld.RECURSE('source3')
+bld.RECURSE('dfs_server')
 
 bld.RECURSE('testsuite/headers')
 
