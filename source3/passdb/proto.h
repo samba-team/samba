@@ -344,10 +344,6 @@ NTSTATUS pdb_ipa_init(void);
 
 NTSTATUS pdb_smbpasswd_init(void) ;
 
-/* The following definitions come from passdb/pdb_wbc_sam.c  */
-
-NTSTATUS pdb_wbc_sam_init(void);
-
 /* The following definitions come from passdb/pdb_util.c  */
 
 NTSTATUS create_builtin_users(const struct dom_sid *sid);

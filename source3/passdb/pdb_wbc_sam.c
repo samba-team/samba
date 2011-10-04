@@ -39,6 +39,7 @@
 #include "includes.h"
 #include "passdb.h"
 #include "lib/winbind_util.h"
+#include "passdb/pdb_wbc_sam.h"
 
 /***************************************************************************
   Default implementations of some functions.
