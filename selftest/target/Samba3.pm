@@ -292,6 +292,9 @@ sub setup_plugin_s4_dc($$$$)
         rpc_server:netlogon = external
         rpc_server:samr = external
 	server signing = on
+
+[IPC\$]
+	vfs objects = dfs_samba4
 ";
 
 	my $ret = $self->provision($prefix,
