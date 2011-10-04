@@ -26,6 +26,7 @@
 #include "system/filesys.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../libcli/security/security.h"
+#include "passdb/pdb_smbpasswd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
