@@ -79,7 +79,7 @@ void set_server_role(void)
 			break;
 		case SEC_ADS:
 			if (lp_domain_logons()) {
-				server_role = ROLE_DOMAIN_PDC;
+				server_role = ROLE_DOMAIN_CONTROLLER;
 				break;
 			}
 			server_role = ROLE_DOMAIN_MEMBER;
