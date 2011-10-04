@@ -116,6 +116,13 @@ static void smb_panic_default(const char *why)
 {
 	int result;
 
+#if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
+	/*
+	 * Make sure all children can attach a debugger.
+	 */
+	prctl(PR_SET_PTRACER, getpid(), 0, 0, 0);
+#endif
+
 	if (panic_action && *panic_action) {
 		char pidstr[20];
 		char cmdstring[200];
