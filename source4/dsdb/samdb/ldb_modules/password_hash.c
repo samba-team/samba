@@ -95,6 +95,7 @@ struct ph_context {
 	bool change_status;
 	bool hash_values;
 	bool userPassword;
+	bool pwd_last_set_bypass;
 };
 
 
@@ -1663,6 +1664,33 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 static int setup_last_set_field(struct setup_password_fields_io *io)
 {
+	const struct ldb_message *msg = NULL;
+
+	switch (io->ac->req->operation) {
+	case LDB_ADD:
+		msg = io->ac->req->op.add.message;
+		break;
+	case LDB_MODIFY:
+		msg = io->ac->req->op.mod.message;
+		break;
+	}
+
+	if (io->ac->pwd_last_set_bypass) {
+		struct ldb_message_element *el;
+
+		if (msg == NULL) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
+		el = ldb_msg_find_element(msg, "pwdLastSet");
+		if (el == NULL) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
+		io->g.last_set = samdb_result_nttime(msg, "pwdLastSet", 0);
+		return LDB_SUCCESS;
+	}
+
 	/* set it as now */
 	unix_to_nt_time(&io->g.last_set, time(NULL));
 
@@ -2482,6 +2510,16 @@ static void ph_apply_controls(struct ph_context *ac)
 		ac->change = (struct dsdb_control_password_change *) ctrl->data;
 
 		/* Mark the "change" control as uncritical (done) */
+		ctrl->critical = false;
+	}
+
+	ac->pwd_last_set_bypass = false;
+	ctrl = ldb_request_get_control(ac->req,
+				DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID);
+	if (ctrl != NULL) {
+		ac->pwd_last_set_bypass = true;
+
+		/* Mark the "bypass pwdLastSet" control as uncritical (done) */
 		ctrl->critical = false;
 	}
 }
