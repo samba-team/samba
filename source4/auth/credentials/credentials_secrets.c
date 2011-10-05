@@ -209,7 +209,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 					     SECRETS_PRIMARY_DOMAIN_DN,
 					     filter, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not find machine account in secrets database: %s: %s", nt_errstr(status), error_string));
+		DEBUG(1, ("Could not find machine account in secrets database: %s: %s\n", nt_errstr(status), error_string));
 		talloc_free(error_string);
 	}
 	return status;
@@ -238,7 +238,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
 					     SECRETS_PRINCIPALS_DN,
 					     filter, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not find krbtgt (master Kerberos) account in secrets database: %s: %s", nt_errstr(status), error_string));
+		DEBUG(1, ("Could not find krbtgt (master Kerberos) account in secrets database: %s: %s\n", nt_errstr(status), error_string));
 		talloc_free(error_string);
 	}
 	return status;
@@ -269,7 +269,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 					     SECRETS_PRINCIPALS_DN, filter,
 					     &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not find %s principal in secrets database: %s: %s", serviceprincipal, nt_errstr(status), error_string));
+		DEBUG(1, ("Could not find %s principal in secrets database: %s: %s\n", serviceprincipal, nt_errstr(status), error_string));
 	}
 	return status;
 }
