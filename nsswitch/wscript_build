@@ -33,7 +33,7 @@ if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
 if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
 	bld.SAMBA_LIBRARY('winbind_krb5_locator',
 		source='winbind_krb5_locator.c',
-		deps='wbclient krb5',
+		deps='wbclient krb5 com_err',
 		realname='winbind_krb5_locator.so')
 
 bld.SAMBA_SUBSYSTEM('WB_REQTRANS',
