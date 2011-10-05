@@ -366,14 +366,31 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 
 		v = ldb_msg_find_attr_as_string(msg, "isDeleted", "false");
 		if (strncasecmp(v, "true", 4) == 0) {
-			v = ldb_msg_find_attr_as_string(msg, "isRecycled", "false");
 			/*
-			 * Do not skip link when the object is just deleted (isRecycled not present)
-			 * Do it for tomstones or recycled ones
-			 */
-			if (strncasecmp(v, "true", 4) == 0) {
-				DEBUG(2, (" object %s is deleted, not returning linked attribute !\n",
-							ldb_dn_get_linearized(msg->dn)));
+			  * Note: we skip the transmition of the deleted link even if the other part used to
+			  * know about it because when we transmit the deletion of the object, the link will
+			  * be deleted too due to deletion of object where link points and Windows do so.
+			  */
+			if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008_R2) {
+				v = ldb_msg_find_attr_as_string(msg, "isRecycled", "true");
+				/*
+				 * On Windows 2008R2 isRecycled is always present even if FL or DL are < FL 2K8R2
+				 * if it join an existing domain with deleted objets, it firsts impose to have a
+				 * schema with the is-Recycled object and for all deleted objects it adds the isRecycled
+				 * either during initial replication or after the getNCChanges.
+				 * Behavior of samba has been changed to always have this attribute if it's present in the schema.
+				 *
+				 * So if FL <2K8R2 isRecycled might be here or not but we don't care, it's meaning less.
+				 * If FL >=2K8R2 we are sure that this attribute will be here.
+				 * For this kind of forest level we do not return the link if the object is recycled
+				 * (isRecycled = true).
+				 */
+				if (strncasecmp(v, "true", 4) == 0) {
+					DEBUG(2, (" object %s is recycled, not returning linked attribute !\n",
+								ldb_dn_get_linearized(msg->dn)));
+					return WERR_OK;
+				}
+			} else {
 				return WERR_OK;
 			}
 		}
