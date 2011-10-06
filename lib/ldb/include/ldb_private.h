@@ -40,6 +40,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/time.h"
+#include "system/locale.h"
 #include "ldb.h"
 #include "ldb_module.h"
 
