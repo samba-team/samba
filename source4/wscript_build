@@ -2,11 +2,11 @@
 
 bld.SAMBA_BINARY('client/smbclient',
 	source='client/client.c',
-	deps='samba-hostconfig SMBREADLINE samba-util LIBCLI_SMB RPC_NDR_SRVSVC LIBCLI_LSA popt POPT_SAMBA POPT_CREDENTIALS smbclient-raw'
+	deps='samba-hostconfig SMBREADLINE samba-util LIBCLI_SMB RPC_NDR_SRVSVC LIBCLI_LSA popt POPT_SAMBA POPT_CREDENTIALS smbclient-raw param_options'
 	)
 
 
 bld.SAMBA_BINARY('client/cifsdd',
 	source='client/cifsdd.c client/cifsddio.c',
-	deps='samba-hostconfig LIBCLI_SMB popt POPT_SAMBA POPT_CREDENTIALS'
+	deps='samba-hostconfig LIBCLI_SMB popt POPT_SAMBA POPT_CREDENTIALS param_options'
 	)

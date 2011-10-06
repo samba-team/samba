@@ -46,6 +46,10 @@ enum protocol_types {
 	PROTOCOL_SMB2_22
 };
 
+enum smb_signing_setting {
+	SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, 
+	SMB_SIGNING_REQUIRED, SMB_SIGNING_AUTO};
+
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
 #define FLAGS2_LONG_PATH_COMPONENTS    0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES     0x0002

@@ -27,7 +27,7 @@
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
 #include "source4/lib/events/events.h"
 #include "source4/auth/session.h"
-#include "source4/param/param.h"
+#include "lib/param/param.h"
 #include "source4/dsdb/samdb/samdb.h"
 #include "dfs_server/dfs_server_ad.h"
 

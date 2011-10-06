@@ -23,7 +23,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "source3/lib/netapi/netapi.h"
 #include "source3/lib/netapi/netapi_private.h"
-#include "source4/param/param.h"
+#include "lib/param/param.h"
 #include "torture/libnetapi/proto.h"
 
 bool torture_libnetapi_init_context(struct torture_context *tctx,

@@ -32,7 +32,7 @@
 #include "source4/lib/events/events.h"
 #include "source4/auth/session.h"
 #include "source4/auth/system_session_proto.h"
-#include "source4/param/param.h"
+#include "lib/param/param.h"
 #include "source4/dsdb/common/util.h"
 
 struct pdb_samba4_state {

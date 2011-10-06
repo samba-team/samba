@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "../source4/param/s3_param.h"
+#include "lib/param/s3_param.h"
 
 static struct loadparm_service *lp_service_for_s4_ctx(const char *servicename)
 {
