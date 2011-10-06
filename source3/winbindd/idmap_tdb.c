@@ -241,16 +241,17 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	bool update_uid = false;
 	bool update_gid = false;
 	struct idmap_tdb_context *ctx;
+	bool status;
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
-	low_uid = dbwrap_fetch_int32(ctx->db, HWM_USER);
-	if (low_uid == -1 || low_uid < dom->low_id) {
+	status = dbwrap_fetch_uint32(ctx->db, HWM_USER, &low_uid);
+	if (!status || low_uid < dom->low_id) {
 		update_uid = true;
 	}
 
-	low_gid = dbwrap_fetch_int32(ctx->db, HWM_GROUP);
-	if (low_gid == -1 || low_gid < dom->low_id) {
+	status = dbwrap_fetch_uint32(ctx->db, HWM_GROUP, &low_gid);
+	if (!status || low_gid < dom->low_id) {
 		update_gid = true;
 	}
 
@@ -264,7 +265,7 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	}
 
 	if (update_uid) {
-		ret = dbwrap_store_int32(ctx->db, HWM_USER, dom->low_id);
+		ret = dbwrap_store_uint32(ctx->db, HWM_USER, dom->low_id);
 		if (ret == -1) {
 			dbwrap_transaction_cancel(ctx->db);
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
@@ -274,7 +275,7 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	}
 
 	if (update_gid) {
-		ret = dbwrap_store_int32(ctx->db, HWM_GROUP, dom->low_id);
+		ret = dbwrap_store_uint32(ctx->db, HWM_GROUP, dom->low_id);
 		if (ret == -1) {
 			dbwrap_transaction_cancel(ctx->db);
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
@@ -389,11 +390,12 @@ static NTSTATUS idmap_tdb_allocate_id_action(struct db_context *db,
 	NTSTATUS ret;
 	struct idmap_tdb_allocate_id_context *state;
 	uint32_t hwm;
+	bool ret2;
 
 	state = (struct idmap_tdb_allocate_id_context *)private_data;
 
-	hwm = dbwrap_fetch_int32(db, state->hwmkey);
-	if (hwm == -1) {
+	ret2 = dbwrap_fetch_uint32(db, state->hwmkey, &hwm);
+	if (!ret2) {
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 		goto done;
 	}
