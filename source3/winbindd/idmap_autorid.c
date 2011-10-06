@@ -371,7 +371,7 @@ static NTSTATUS idmap_autorid_db_init(void)
 		status = dbwrap_trans_store_int32(autorid_db, ALLOC_HWM, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,
-			      ("Unable to initialise HWM in autorid "
+			      ("Unable to initialise alloc HWM in autorid "
 			       "database: %s\n", nt_errstr(status)));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
