@@ -258,6 +258,7 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 		char line[128], sid_string[128];
 		int len;
 		unsigned long idval;
+		NTSTATUS status;
 
 		if (fgets(line, 127, input) == NULL)
 			break;
@@ -282,16 +283,19 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 				break;
 			}
 		} else if (sscanf(line, "USER HWM %lu", &idval) == 1) {
-			ret = dbwrap_store_int32(db, "USER HWM", idval);
-			if (ret != 0) {
-				d_fprintf(stderr, _("Could not store USER HWM.\n"));
+			status = dbwrap_store_int32(db, "USER HWM", idval);
+			if (!NT_STATUS_IS_OK(status)) {
+				d_fprintf(stderr,
+					  _("Could not store USER HWM: %s\n"),
+					  nt_errstr(status));
 				break;
 			}
 		} else if (sscanf(line, "GROUP HWM %lu", &idval) == 1) {
-			ret = dbwrap_store_int32(db, "GROUP HWM", idval);
-			if (ret != 0) {
+			status = dbwrap_store_int32(db, "GROUP HWM", idval);
+			if (!NT_STATUS_IS_OK(status)) {
 				d_fprintf(stderr,
-					  _("Could not store GROUP HWM.\n"));
+					  _("Could not store GROUP HWM: %s\n"),
+					  nt_errstr(status));
 				break;
 			}
 		} else {

@@ -72,7 +72,8 @@ NTSTATUS dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
 
 NTSTATUS dbwrap_fetch_int32(struct db_context *db, const char *keystr,
 			    int32_t *result);
-int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v);
+NTSTATUS dbwrap_store_int32(struct db_context *db, const char *keystr,
+			    int32_t v);
 NTSTATUS dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
 			     uint32_t *val);
 int dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v);

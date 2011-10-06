@@ -389,15 +389,19 @@ static bool tdbsam_convert(struct db_context **pp_db, const char *name, int32 fr
 		goto cancel;
 	}
 
-	if (dbwrap_store_int32(db, TDBSAM_VERSION_STRING,
-			       TDBSAM_VERSION) != 0) {
-		DEBUG(0, ("tdbsam_convert: Could not store tdbsam version\n"));
+	status = dbwrap_store_int32(db, TDBSAM_VERSION_STRING,
+				    TDBSAM_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("tdbsam_convert: Could not store tdbsam version: "
+			  "%s\n", nt_errstr(status)));
 		goto cancel;
 	}
 
-	if (dbwrap_store_int32(db, TDBSAM_MINOR_VERSION_STRING,
-			       TDBSAM_MINOR_VERSION) != 0) {
-		DEBUG(0, ("tdbsam_convert: Could not store tdbsam minor version\n"));
+	status = dbwrap_store_int32(db, TDBSAM_MINOR_VERSION_STRING,
+				    TDBSAM_MINOR_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("tdbsam_convert: Could not store tdbsam minor "
+			  "version: %s\n", nt_errstr(status)));
 		goto cancel;
 	}
 

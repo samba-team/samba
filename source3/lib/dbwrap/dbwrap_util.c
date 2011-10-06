@@ -51,7 +51,8 @@ NTSTATUS dbwrap_fetch_int32(struct db_context *db, const char *keystr,
 	return NT_STATUS_OK;
 }
 
-int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v)
+NTSTATUS dbwrap_store_int32(struct db_context *db, const char *keystr,
+			    int32_t v)
 {
 	struct db_record *rec;
 	int32 v_store;
@@ -59,7 +60,7 @@ int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v)
 
 	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(keystr));
 	if (rec == NULL) {
-		return -1;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	SIVAL(&v_store, 0, v);
@@ -69,7 +70,7 @@ int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v)
 						   sizeof(v_store)),
 				     TDB_REPLACE);
 	TALLOC_FREE(rec);
-	return NT_STATUS_IS_OK(status) ? 0 : -1;
+	return status;
 }
 
 NTSTATUS dbwrap_fetch_uint32(struct db_context *db, const char *keystr,

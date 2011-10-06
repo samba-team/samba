@@ -191,9 +191,11 @@ bool share_info_db_init(void)
 	if ((vers_id == SHARE_DATABASE_VERSION_V1) || (IREV(vers_id) == SHARE_DATABASE_VERSION_V1)) {
 		/* Written on a bigendian machine with old fetch_int code. Save as le. */
 
-		if (dbwrap_store_int32(share_db, vstring,
-				       SHARE_DATABASE_VERSION_V2) != 0) {
-			DEBUG(0, ("dbwrap_store_int32 failed\n"));
+		status = dbwrap_store_int32(share_db, vstring,
+					    SHARE_DATABASE_VERSION_V2);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("dbwrap_store_int32 failed: %s\n",
+				  nt_errstr(status)));
 			goto cancel;
 		}
 		vers_id = SHARE_DATABASE_VERSION_V2;
@@ -205,9 +207,11 @@ bool share_info_db_init(void)
 			DEBUG(0, ("traverse failed\n"));
 			goto cancel;
 		}
-		if (dbwrap_store_int32(share_db, vstring,
-				       SHARE_DATABASE_VERSION_V2) != 0) {
-			DEBUG(0, ("dbwrap_store_int32 failed\n"));
+		status = dbwrap_store_int32(share_db, vstring,
+					    SHARE_DATABASE_VERSION_V2);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("dbwrap_store_int32 failed: %s\n",
+				  nt_errstr(status)));
 			goto cancel;
 		}
 	}
@@ -219,9 +223,11 @@ bool share_info_db_init(void)
 		DEBUG(0, ("traverse failed\n"));
 		goto cancel;
 	}
-	if (dbwrap_store_int32(share_db, vstring,
-			       SHARE_DATABASE_VERSION_V3) != 0) {
-		DEBUG(0, ("dbwrap_store_int32 failed\n"));
+	status = dbwrap_store_int32(share_db, vstring,
+				    SHARE_DATABASE_VERSION_V3);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dbwrap_store_int32 failed: %s\n",
+			  nt_errstr(status)));
 		goto cancel;
 	}
 
