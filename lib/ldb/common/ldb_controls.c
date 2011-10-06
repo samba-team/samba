@@ -428,6 +428,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, s = string, o = b64 binary blob");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 		ctrl->oid = LDB_CONTROL_VLV_REQ_OID;
@@ -435,6 +436,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		if (!(control = talloc(ctrl,
 					struct ldb_vlv_req_control))) {
 			ldb_oom(ldb);
+			talloc_free(ctrl);
 			return NULL;
 		}
 		control->beforeCount = bc;
@@ -477,6 +479,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, o = b64 binary blob");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -519,6 +522,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, s = string");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -551,6 +555,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 				error_string = talloc_asprintf_append(error_string, "                     1 - normal string representation");
 				ldb_set_errstring(ldb, error_string);
 				talloc_free(error_string);
+				talloc_free(ctrl);
 				return NULL;
 			}
 			control = NULL;
@@ -580,6 +585,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -606,6 +612,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -630,6 +637,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -652,6 +660,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -674,6 +683,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -696,6 +706,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -719,6 +730,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -750,6 +762,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, s = string");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 		ctrl->oid = LDB_CONTROL_SERVER_SORT_OID;
@@ -780,6 +793,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -802,6 +816,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -824,6 +839,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -846,6 +862,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -868,6 +885,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -890,6 +908,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -912,6 +931,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -937,12 +957,14 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, s = string");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
 		ctrl->oid = talloc_strdup(ctrl, oid);
 		if (!ctrl->oid) {
 			ldb_oom(ldb);
+			talloc_free(ctrl);
 			return NULL;
 		}
 		ctrl->critical = crit;
@@ -963,6 +985,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
@@ -985,6 +1008,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
+			talloc_free(ctrl);
 			return NULL;
 		}
 
