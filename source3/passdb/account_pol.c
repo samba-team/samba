@@ -211,8 +211,9 @@ bool init_account_policy(void)
 {
 
 	const char *vstring = "INFO/version";
-	uint32 version;
+	uint32_t version = 0;
 	int i;
+	bool ret;
 
 	if (db != NULL) {
 		return True;
@@ -231,7 +232,11 @@ bool init_account_policy(void)
 		}
 	}
 
-	version = dbwrap_fetch_int32(db, vstring);
+	ret = dbwrap_fetch_uint32(db, vstring, &version);
+	if (!ret) {
+		version = 0;
+	}
+
 	if (version == DATABASE_VERSION) {
 		return true;
 	}
@@ -244,7 +249,11 @@ bool init_account_policy(void)
 		return false;
 	}
 
-	version = dbwrap_fetch_int32(db, vstring);
+	ret = dbwrap_fetch_uint32(db, vstring, &version);
+	if (!ret) {
+		version = 0;
+	}
+
 	if (version == DATABASE_VERSION) {
 		/*
 		 * Race condition
