@@ -29,4 +29,6 @@ struct id_cache_ref {
 
 bool id_cache_ref_parse(const char* str, struct id_cache_ref* id);
 
+void id_cache_delete_from_cache(const struct id_cache_ref* id);
+
 void id_cache_register_msgs(struct messaging_context *ctx);

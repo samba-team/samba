@@ -132,6 +132,7 @@ static void id_cache_kill(struct messaging_context *msg_ctx,
 	if (id_in_use(validated_users, &id)) {
 		exit_server_cleanly(msg);
 	}
+	id_cache_delete_from_cache(&id);
 }
 
 void id_cache_register_kill_msg(struct messaging_context *ctx)

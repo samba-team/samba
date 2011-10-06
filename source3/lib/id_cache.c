@@ -138,7 +138,7 @@ static void flush_uid_cache(void)
 	memcache_flush(NULL, SID_UID_CACHE);
 	memcache_flush(NULL, UID_SID_CACHE);
 }
-static void delete_from_cache(const struct id_cache_ref* id)
+void id_cache_delete_from_cache(const struct id_cache_ref* id)
 {
 	switch(id->type) {
 	case UID:
@@ -195,7 +195,7 @@ static void id_cache_delete(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	delete_from_cache(&id);
+	id_cache_delete_from_cache(&id);
 }
 
 void id_cache_register_msgs(struct messaging_context *ctx)
