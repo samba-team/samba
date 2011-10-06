@@ -7616,9 +7616,12 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_OCTAL: {
-			char *o = octal_string(*(int *)ptr);
-			fprintf(f, "%s", o);
-			TALLOC_FREE(o);
+			int val = *(int *)ptr; 
+			if (val == -1) {
+				fprintf(f, "-1");
+			} else {
+				fprintf(f, "0%o", val);
+			}
 			break;
 		}
 
