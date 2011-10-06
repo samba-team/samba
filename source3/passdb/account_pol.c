@@ -265,8 +265,10 @@ bool init_account_policy(void)
 	}
 
 	if (version != DATABASE_VERSION) {
-		if (dbwrap_store_uint32(db, vstring, DATABASE_VERSION) != 0) {
-			DEBUG(0, ("dbwrap_store_uint32 failed\n"));
+		status = dbwrap_store_uint32(db, vstring, DATABASE_VERSION);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("dbwrap_store_uint32 failed: %s\n",
+				  nt_errstr(status)));
 			goto cancel;
 		}
 

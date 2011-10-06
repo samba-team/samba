@@ -345,7 +345,8 @@ static bool tdbsam_upgrade_next_rid(struct db_context *db)
 		rid = BASE_RID;
 	}
 
-	if (dbwrap_store_uint32(db, NEXT_RID_STRING, rid) != 0) {
+	status = dbwrap_store_uint32(db, NEXT_RID_STRING, rid);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
