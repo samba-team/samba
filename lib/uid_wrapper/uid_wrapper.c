@@ -104,6 +104,17 @@ _PUBLIC_ int uwrap_setegid(gid_t egid)
 	return 0;
 }
 
+_PUBLIC_ int uwrap_setregid(gid_t rgid, gid_t egid)
+{
+	uwrap_init();
+	if (!uwrap.enabled) {
+		return setregid(rgid, egid);
+	}
+	/* assume for now that the ruid stays as root */
+	uwrap.egid = egid;
+	return 0;
+}
+
 _PUBLIC_ uid_t uwrap_getegid(void)
 {
 	uwrap_init();

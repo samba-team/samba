@@ -24,6 +24,7 @@ int uwrap_seteuid(uid_t euid);
 int uwrap_setreuid(uid_t reuid, uid_t euid);
 uid_t uwrap_geteuid(void);
 int uwrap_setegid(gid_t egid);
+int uwrap_setregid(gid_t egid);
 uid_t uwrap_getegid(void);
 int uwrap_setgroups(size_t size, const gid_t *list);
 int uwrap_getgroups(int size, gid_t *list);
@@ -44,6 +45,11 @@ gid_t uwrap_getgid(void);
 #undef setegid
 #endif
 #define setegid	uwrap_setegid
+
+#ifdef setregid
+#undef setregid
+#endif
+#define setregid	uwrap_setegid
 
 #ifdef geteuid
 #undef geteuid
