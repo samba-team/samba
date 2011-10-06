@@ -21,6 +21,7 @@
 
 int uwrap_enabled(void);
 int uwrap_seteuid(uid_t euid);
+int uwrap_setreuid(uid_t reuid, uid_t euid);
 uid_t uwrap_geteuid(void);
 int uwrap_setegid(gid_t egid);
 uid_t uwrap_getegid(void);
@@ -33,6 +34,11 @@ gid_t uwrap_getgid(void);
 #undef seteuid
 #endif
 #define seteuid	uwrap_seteuid
+
+#ifdef setreuid
+#undef setreuid
+#endif
+#define setreuid	uwrap_setreuid
 
 #ifdef setegid
 #undef setegid

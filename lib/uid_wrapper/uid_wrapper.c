@@ -73,6 +73,17 @@ _PUBLIC_ int uwrap_seteuid(uid_t euid)
 	return 0;
 }
 
+_PUBLIC_ int uwrap_setreuid(uid_t ruid, uid_t euid)
+{
+	uwrap_init();
+	if (!uwrap.enabled) {
+		return setreuid(ruid, euid);
+	}
+	/* assume for now that the ruid stays as root */
+	uwrap.euid = euid;
+	return 0;
+}
+
 _PUBLIC_ uid_t uwrap_geteuid(void)
 {
 	uwrap_init();
