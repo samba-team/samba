@@ -424,7 +424,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 			return;
 		}
 		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
-	} else if (service->am_rodc) {
+	} else if (partition->rodc_replica) {
 		bool for_schema = false;
 		if (ldb_dn_compare_base(ldb_get_schema_basedn(service->samdb), partition->dn) == 0) {
 			for_schema = true;
@@ -675,7 +675,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		}
 	}
 
-	if (partition->partial_replica) {
+	if (partition->partial_replica || partition->rodc_replica) {
 		dsdb_repl_flags |= DSDB_REPL_FLAG_PARTIAL_REPLICA;
 	}
 	if (state->op->options & DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS) {
