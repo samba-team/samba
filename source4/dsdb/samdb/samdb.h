@@ -99,6 +99,9 @@ struct dsdb_control_password_change_status {
 /* passed when we want special behaviour for partial replicas */
 #define DSDB_CONTROL_PARTIAL_REPLICA "1.3.6.1.4.1.7165.4.3.18"
 
+/* passed when we want special behaviour for dbcheck */
+#define DSDB_CONTROL_DBCHECK "1.3.6.1.4.1.7165.4.3.19"
+
 struct dsdb_control_password_change {
 	const struct samr_Password *old_nt_pwd_hash;
 	const struct samr_Password *old_lm_pwd_hash;
