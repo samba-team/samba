@@ -201,6 +201,32 @@ class dbcheck(object):
 
 
     ################################################################
+    # handle a DN pointing to a deleted object
+    def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
+        self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
+        self.report("Target GUID points at deleted DN %s" % correct_dn)
+        if not self.confirm_all('Remove DN link?', 'remove_all_deleted_DN_links'):
+            self.report("Not removing")
+            return
+        m = ldb.Message()
+        m.dn = dn
+        m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+        if self.do_modify(m, ["show_recycled:1", "%s:0" % dsdb.DSDB_CONTROL_DBCHECK],
+                          "Failed to remove deleted DN attribute %s" % attrname):
+            self.report("Removed deleted DN on attribute %s" % attrname)
+
+    ################################################################
+    # handle a missing target DN (both GUID and DN string form are missing)
+    def err_missing_dn_GUID(self, dn, attrname, val, dsdb_dn):
+        # check if its a backlink
+        linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
+        if (linkID & 1 == 0) and str(dsdb_dn).find('DEL\\0A') == -1:
+            self.report("Not removing dangling forward link")
+            return
+        self.err_deleted_dn(dn, attrname, val, dsdb_dn, dsdb_dn)
+
+
+    ################################################################
     # handle a missing GUID extended DN component
     def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
         self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
@@ -209,10 +235,12 @@ class dbcheck(object):
             res = self.samdb.search(base=str(dsdb_dn.dn), scope=ldb.SCOPE_BASE,
                                     attrs=[], controls=controls)
         except ldb.LdbError, (enum, estr):
-            self.report("unable to find object for DN %s - cannot fix (%s)" % (dsdb_dn.dn, estr))
+            self.report("unable to find object for DN %s - (%s)" % (dsdb_dn.dn, estr))
+            self.err_missing_dn_GUID(dn, attrname, val, dsdb_dn)
             return
         if len(res) == 0:
-            self.report("unable to find object for DN %s - cannot fix" % dsdb_dn.dn)
+            self.report("unable to find object for DN %s" % dsdb_dn.dn)
+            self.err_missing_dn_GUID(dn, attrname, val, dsdb_dn)
             return
         dsdb_dn.dn = res[0].dn
 
@@ -227,22 +255,6 @@ class dbcheck(object):
         if self.do_modify(m, ["show_recycled:1"],
                           "Failed to fix %s on attribute %s" % (errstr, attrname)):
             self.report("Fixed %s on attribute %s" % (errstr, attrname))
-
-
-    ################################################################
-    # handle a DN pointing to a deleted object
-    def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
-        self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
-        self.report("Target GUID points at deleted DN %s" % correct_dn)
-        if not self.confirm_all('Remove DN?', 'remove_all_deleted_DN_links'):
-            self.report("Not removing")
-            return
-        m = ldb.Message()
-        m.dn = dn
-        m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
-        if self.do_modify(m, ["show_recycled:1"],
-                          "Failed to remove deleted DN attribute %s" % attrname):
-            self.report("Removed deleted DN on attribute %s" % attrname)
 
 
     ################################################################
@@ -329,7 +341,7 @@ class dbcheck(object):
             guidstr = str(misc.GUID(guid))
 
             attrs=['isDeleted']
-            linkkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
+            linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
             reverse_link_name = self.samdb_schema.get_backlink_from_lDAPDisplayName(attrname)
             if reverse_link_name is not None:
                 attrs.append(reverse_link_name)
@@ -370,7 +382,7 @@ class dbcheck(object):
                             match_count += 1
                 if match_count != 1:
                     error_count += 1
-                    if linkkID & 1:
+                    if linkID & 1:
                         self.err_orphaned_backlink(obj, attrname, val, reverse_link_name, dsdb_dn.dn)
                     else:
                         self.err_missing_backlink(obj, attrname, val, reverse_link_name, dsdb_dn.dn)
