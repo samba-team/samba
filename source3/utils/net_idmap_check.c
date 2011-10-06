@@ -400,10 +400,12 @@ static void edit_record(struct record* r) {
 static bool check_version(struct check_ctx* ctx) {
 	static const char* key = "IDMAP_VERSION";
 	uint32_t version;
-	bool no_version = !dbwrap_fetch_uint32(ctx->db, key, &version);
+	NTSTATUS status;
 	char action = 's';
 	struct check_actions* act = &ctx->action;
-	if (no_version) {
+
+	status = dbwrap_fetch_uint32(ctx->db, key, &version);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("No version number, assume 2\n");
 		action = get_action(&act->no_version, NULL, NULL);
 	} else if (version != 2) {
@@ -429,9 +431,11 @@ static bool check_version(struct check_ctx* ctx) {
 static void check_hwm(struct check_ctx* ctx, const char* key, uint32_t target) {
 	uint32_t hwm;
 	char action = 's';
-	bool found = dbwrap_fetch_uint32(ctx->db, key, &hwm);
+	NTSTATUS status;
 	struct check_actions* act = &ctx->action;
-	if (!found) {
+
+	status = dbwrap_fetch_uint32(ctx->db, key, &hwm);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("No %s should be %d\n", key, target);
 		action = get_action(&act->invalid_hwm, NULL, NULL);
 	} else if (target < hwm) {

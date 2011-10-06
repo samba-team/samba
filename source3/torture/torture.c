@@ -8595,8 +8595,10 @@ static bool run_local_dbtrans(int dummy)
 			break;
 		}
 
-		if (!dbwrap_fetch_uint32(db, "transtest", &val)) {
-			printf(__location__ "dbwrap_fetch_uint32 failed\n");
+		status = dbwrap_fetch_uint32(db, "transtest", &val);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf(__location__ "dbwrap_fetch_uint32 failed: %s\n",
+			       nt_errstr(status));
 			break;
 		}
 
@@ -8606,8 +8608,10 @@ static bool run_local_dbtrans(int dummy)
 			}
 		}
 
-		if (!dbwrap_fetch_uint32(db, "transtest", &val2)) {
-			printf(__location__ "dbwrap_fetch_uint32 failed\n");
+		status = dbwrap_fetch_uint32(db, "transtest", &val2);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf(__location__ "dbwrap_fetch_uint32 failed: %s\n",
+			       nt_errstr(status));
 			break;
 		}
 

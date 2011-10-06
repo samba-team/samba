@@ -53,15 +53,15 @@ static int dbwrap_tool_fetch_uint32(struct db_context *db,
 				    void *data)
 {
 	uint32_t value;
-	bool ret;
+	NTSTATUS ret;
 
 	ret = dbwrap_fetch_uint32(db, keyname, &value);
-	if (ret) {
+	if (NT_STATUS_IS_OK(ret)) {
 		d_printf("%u\n", value);
 		return 0;
 	} else {
-		d_fprintf(stderr, "ERROR: could not fetch uint32 key '%s'\n",
-			  keyname);
+		d_fprintf(stderr, "ERROR: could not fetch uint32 key '%s': "
+			  "%s\n", nt_errstr(ret), keyname);
 		return -1;
 	}
 }

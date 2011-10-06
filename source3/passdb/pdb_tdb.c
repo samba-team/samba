@@ -325,9 +325,10 @@ static bool tdbsam_upgrade_next_rid(struct db_context *db)
 	TDB_CONTEXT *tdb;
 	uint32 rid;
 	bool ok = false;
+	NTSTATUS status;
 
-	ok = dbwrap_fetch_uint32(db, NEXT_RID_STRING, &rid);
-	if (ok) {
+	status = dbwrap_fetch_uint32(db, NEXT_RID_STRING, &rid);
+	if (NT_STATUS_IS_OK(status)) {
 		return true;
 	}
 

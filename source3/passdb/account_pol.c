@@ -213,7 +213,7 @@ bool init_account_policy(void)
 	const char *vstring = "INFO/version";
 	uint32_t version = 0;
 	int i;
-	bool ret;
+	NTSTATUS status;
 
 	if (db != NULL) {
 		return True;
@@ -232,8 +232,8 @@ bool init_account_policy(void)
 		}
 	}
 
-	ret = dbwrap_fetch_uint32(db, vstring, &version);
-	if (!ret) {
+	status = dbwrap_fetch_uint32(db, vstring, &version);
+	if (!NT_STATUS_IS_OK(status)) {
 		version = 0;
 	}
 
@@ -249,8 +249,8 @@ bool init_account_policy(void)
 		return false;
 	}
 
-	ret = dbwrap_fetch_uint32(db, vstring, &version);
-	if (!ret) {
+	status = dbwrap_fetch_uint32(db, vstring, &version);
+	if (!NT_STATUS_IS_OK(status)) {
 		version = 0;
 	}
 
@@ -321,6 +321,7 @@ bool account_policy_get(enum pdb_policy_type type, uint32_t *value)
 {
 	const char *name;
 	uint32 regval;
+	NTSTATUS status;
 
 	if (!init_account_policy()) {
 		return False;
@@ -336,7 +337,8 @@ bool account_policy_get(enum pdb_policy_type type, uint32_t *value)
 		return False;
 	}
 
-	if (!dbwrap_fetch_uint32(db, name, &regval)) {
+	status = dbwrap_fetch_uint32(db, name, &regval);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for type %d (%s), returning 0\n", type, name));
 		return False;
 	}

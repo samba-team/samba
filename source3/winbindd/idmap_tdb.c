@@ -251,17 +251,17 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	bool update_uid = false;
 	bool update_gid = false;
 	struct idmap_tdb_context *ctx;
-	bool status;
+	NTSTATUS status;
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	status = dbwrap_fetch_uint32(ctx->db, HWM_USER, &low_uid);
-	if (!status || low_uid < dom->low_id) {
+	if (!NT_STATUS_IS_OK(status) || low_uid < dom->low_id) {
 		update_uid = true;
 	}
 
 	status = dbwrap_fetch_uint32(ctx->db, HWM_GROUP, &low_gid);
-	if (!status || low_gid < dom->low_id) {
+	if (!NT_STATUS_IS_OK(status) || low_gid < dom->low_id) {
 		update_gid = true;
 	}
 
@@ -404,12 +404,11 @@ static NTSTATUS idmap_tdb_allocate_id_action(struct db_context *db,
 	NTSTATUS ret;
 	struct idmap_tdb_allocate_id_context *state;
 	uint32_t hwm;
-	bool ret2;
 
 	state = (struct idmap_tdb_allocate_id_context *)private_data;
 
-	ret2 = dbwrap_fetch_uint32(db, state->hwmkey, &hwm);
-	if (!ret2) {
+	ret = dbwrap_fetch_uint32(db, state->hwmkey, &hwm);
+	if (!NT_STATUS_IS_OK(ret)) {
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 		goto done;
 	}

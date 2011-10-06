@@ -66,13 +66,15 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 	cfg = (struct autorid_domain_config *)private_data;
 	dom_sid_string_buf(&(cfg->sid), sidstr, sizeof(sidstr));
 
-	if (!dbwrap_fetch_uint32(db, sidstr, &domainnum)) {
+	ret = dbwrap_fetch_uint32(db, sidstr, &domainnum);
+	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("Acquiring new range for domain %s\n", sidstr));
 
 		/* fetch the current HWM */
-		if (!dbwrap_fetch_uint32(db, HWM, &hwm)) {
+		ret = dbwrap_fetch_uint32(db, HWM, &hwm);
+		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(1, ("Fatal error while fetching current "
-				  "HWM value!\n"));
+				  "HWM value: %s\n", nt_errstr(ret)));
 			ret = NT_STATUS_INTERNAL_ERROR;
 			goto error;
 		}
@@ -519,9 +521,10 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	/* read previously stored config and current HWM */
 	storedconfig = idmap_autorid_loadconfig(talloc_tos());
 
-	if (!dbwrap_fetch_uint32(autorid_db, HWM, &hwm)) {
+	status = dbwrap_fetch_uint32(autorid_db, HWM, &hwm);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Fatal error while fetching current "
-			  "HWM value!\n"));
+			  "HWM value: %s\n", nt_errstr(status)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto error;
 	}
@@ -590,8 +593,10 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 	globalcfg = talloc_get_type(dom->private_data,
 				    struct autorid_global_config);
 
-	if (!dbwrap_fetch_uint32(autorid_db, ALLOC_HWM, &hwm)) {
-		DEBUG(1, ("Failed to fetch current allocation HWM value!\n"));
+	ret = dbwrap_fetch_uint32(autorid_db, ALLOC_HWM, &hwm);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(1, ("Failed to fetch current allocation HWM value: %s\n",
+			  nt_errstr(ret)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

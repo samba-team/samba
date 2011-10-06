@@ -72,25 +72,29 @@ int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v)
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
 
-bool dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
-			 uint32_t *val)
+NTSTATUS dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
+			     uint32_t *val)
 {
 	TDB_DATA dbuf;
 	NTSTATUS status;
 
+	if (val == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	status = dbwrap_fetch_bystring(db, NULL, keystr, &dbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		return status;
 	}
 
 	if ((dbuf.dptr == NULL) || (dbuf.dsize != sizeof(uint32_t))) {
 		TALLOC_FREE(dbuf.dptr);
-		return false;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	*val = IVAL(dbuf.dptr, 0);
 	TALLOC_FREE(dbuf.dptr);
-	return true;
+	return NT_STATUS_OK;
 }
 
 int dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
