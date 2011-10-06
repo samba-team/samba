@@ -173,7 +173,8 @@ static int attr_handler(struct oc_context *ac)
 		}
 
 		if ((attr->linkID & 1) == 1 &&
-		    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
+		    !ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK)) {
 			/* Odd is for the target.  Illegal to modify */
 			ldb_asprintf_errstring(ldb, 
 					       "objectclass_attrs: attribute '%s' on entry '%s' must not be modified directly, it is a linked attribute", 

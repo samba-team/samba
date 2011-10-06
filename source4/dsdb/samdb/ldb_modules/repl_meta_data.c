@@ -2179,6 +2179,9 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 			continue;
 		}
 		if ((schema_attr->linkID & 1) == 1) {
+			if (parent && ldb_request_get_control(parent, DSDB_CONTROL_DBCHECK)) {
+				continue;
+			}
 			/* Odd is for the target.  Illegal to modify */
 			ldb_asprintf_errstring(ldb,
 					       "attribute %s must not be modified directly, it is a linked attribute", el->name);
