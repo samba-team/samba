@@ -5924,7 +5924,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
 	if (i < 0)
-		return (false);
+		return false;
 
 	if (!(*(ServicePtrs[iDefaultService]->szPath))
 	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(GLOBAL_SECTION_SNUM))) {
@@ -5950,7 +5950,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", pszHomename, 
 	       user, ServicePtrs[i]->szPath ));
 
-	return (true);
+	return true;
 }
 
 /***************************************************************************
@@ -5976,11 +5976,11 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	int i = add_a_service(&sDefault, ipc_name);
 
 	if (i < 0)
-		return (false);
+		return false;
 
 	if (asprintf(&comment, "IPC Service (%s)",
 				Globals.szServerString) < 0) {
-		return (false);
+		return false;
 	}
 
 	string_set(&ServicePtrs[i]->szPath, tmpdir());
@@ -5999,7 +5999,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	DEBUG(3, ("adding IPC service\n"));
 
 	SAFE_FREE(comment);
-	return (true);
+	return true;
 }
 
 /***************************************************************************
@@ -6012,7 +6012,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
 
 	if (i < 0)
-		return (false);
+		return false;
 
 	/* note that we do NOT default the availability flag to true - */
 	/* we take it from the default service passed. This allows all */
@@ -6037,7 +6037,7 @@ bool lp_add_printer(const char *pszPrintername, int iDefaultService)
 
 	DEBUG(3, ("adding printer service %s\n", pszPrintername));
 
-	return (true);
+	return true;
 }
 
 
@@ -6929,7 +6929,7 @@ bool lp_file_list_changed(void)
 		}
 		f = f->next;
 	}
-	return (false);
+	return false;
 }
 
 
@@ -7348,7 +7348,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		if (strchr(pszParmName, ':') == NULL) {
 			DEBUG(0, ("Ignoring unknown parameter \"%s\"\n",
 				  pszParmName));
-			return (true);
+			return true;
 		}
 
 		/*
@@ -7359,7 +7359,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			? &Globals.param_opt : &ServicePtrs[snum]->param_opt;
 		set_param_opt(opt_list, pszParmName, pszParmValue, 0);
 
-		return (true);
+		return true;
 	}
 
 	/* if it's already been set by the command line, then we don't
@@ -7381,7 +7381,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			DEBUG(0,
 			      ("Global parameter %s found in service section!\n",
 			       pszParmName));
-			return (true);
+			return true;
 		}
 		parm_ptr = lp_local_ptr_by_snum(snum, &parm_table[parmnum]);
 	}
@@ -7473,7 +7473,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 	}
 
-	return (true);
+	return true;
 }
 
 /***************************************************************************
@@ -7538,7 +7538,7 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata)
 {
 	if (!bInGlobalSection && bGlobalOnly)
-		return (true);
+		return true;
 
 	DEBUGADD(4, ("doing parameter %s = %s\n", pszParmName, pszParmValue));
 
@@ -7694,7 +7694,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 		case P_SEP:
 			break;
 	}
-	return (false);
+	return false;
 }
 
 /***************************************************************************
@@ -7729,11 +7729,11 @@ static bool do_section(const char *pszSectionName, void *userdata)
 	/* check for multiple global sections */
 	if (bInGlobalSection) {
 		DEBUG(3, ("Processing section \"[%s]\"\n", pszSectionName));
-		return (true);
+		return true;
 	}
 
 	if (!bInGlobalSection && bGlobalOnly)
-		return (true);
+		return true;
 
 	/* if we have a current service, tidy it up before moving on */
 	bRetval = true;
@@ -7750,14 +7750,14 @@ static bool do_section(const char *pszSectionName, void *userdata)
 		iServiceIndex = add_a_service(&sDefault, pszSectionName);
 		if (iServiceIndex < 0) {
 			DEBUG(0, ("Failed to add a new service\n"));
-			return (false);
+			return false;
 		}
 		/* Clean all parametric options for service */
 		/* They will be added during parsing again */
 		free_param_opts(&ServicePtrs[iServiceIndex]->param_opt);
 	}
 
-	return (bRetval);
+	return bRetval;
 }
 
 
