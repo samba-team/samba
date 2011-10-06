@@ -4834,7 +4834,7 @@ static void init_globals(bool reinit_globals)
 	Globals.max_wins_ttl = 60 * 60 * 24 * 6;	/* 6 days default. */
 	Globals.min_wins_ttl = 60 * 60 * 6;	/* 6 hours default. */
 	Globals.machine_password_timeout = 60 * 60 * 24 * 7;	/* 7 days default. */
-	Globals.lm_announce = 2;	/* = Auto: send only if LM clients found */
+	Globals.lm_announce = Auto;	/* = Auto: send only if LM clients found */
 	Globals.lm_interval = 60;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 	Globals.bNISHomeMap = false;
