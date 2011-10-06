@@ -2822,8 +2822,9 @@ bool lpcfg_set_option(struct loadparm_context *lp_ctx, const char *option)
 
 static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 {
+	/* For the seperation of lists values that we print below */
+	const char *list_sep = ", ";
 	int i;
-	const char *list_sep = ", "; /* For the seperation of lists values that we print below */
 	switch (p->type)
 	{
 		case P_ENUM:
@@ -2853,9 +2854,15 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			fprintf(f, "%c", *(char *)ptr);
 			break;
 
-		case P_OCTAL:
-			fprintf(f, "0%o", *(int *)ptr);
+		case P_OCTAL: {
+			int val = *(int *)ptr; 
+			if (val == -1) {
+				fprintf(f, "-1");
+			} else {
+				fprintf(f, "0%o", val);
+			}
 			break;
+		}
 
 		case P_CMDLIST:
 			list_sep = " ";
@@ -2863,13 +2870,17 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 		case P_LIST:
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
-
 				for (; *list; list++) {
+					/* surround strings with whitespace in double quotes */
 					if (*(list+1) == NULL) {
-						/* last item, print no extra seperator after */
+						/* last item, no extra separator */
 						list_sep = "";
 					}
-					fprintf(f, "%s%s", *list, list_sep);
+					if ( strchr_m( *list, ' ' ) ) {
+						fprintf(f, "\"%s\"%s", *list, list_sep);
+					} else {
+						fprintf(f, "%s%s", *list, list_sep);
+					}
 				}
 			}
 			break;
@@ -2879,6 +2890,8 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			if (*(char **)ptr) {
 				fprintf(f, "%s", *(char **)ptr);
 			}
+			break;
+		case P_SEP:
 			break;
 	}
 }
@@ -2895,18 +2908,17 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			return (*((bool *)ptr1) == *((bool *)ptr2));
 
 		case P_INTEGER:
+		case P_ENUM:
 		case P_OCTAL:
 		case P_BYTES:
-		case P_ENUM:
 			return (*((int *)ptr1) == *((int *)ptr2));
 
 		case P_CHAR:
 			return (*((char *)ptr1) == *((char *)ptr2));
 
-		case P_CMDLIST:
 		case P_LIST:
-			return str_list_equal((const char **)(*(char ***)ptr1),
-					      (const char **)(*(char ***)ptr2));
+		case P_CMDLIST:
+			return str_list_equal(*(const char ***)ptr1, *(const char ***)ptr2);
 
 		case P_STRING:
 		case P_USTRING:
@@ -2918,6 +2930,8 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 				p2 = NULL;
 			return (p1 == p2 || strequal(p1, p2));
 		}
+		case P_SEP:
+			break;
 	}
 	return false;
 }
