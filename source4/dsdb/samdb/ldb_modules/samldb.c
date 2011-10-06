@@ -1458,7 +1458,8 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	talloc_free(tmp_msg);
 
 	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
-				    DSDB_FLAG_NEXT_MODULE, ac->req);
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_SEARCH_SHOW_DELETED, ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
