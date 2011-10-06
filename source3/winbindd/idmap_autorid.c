@@ -336,6 +336,7 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 static NTSTATUS idmap_autorid_db_init(void)
 {
 	int32_t hwm;
+	NTSTATUS status;
 
 	if (autorid_db) {
 		/* its already open */
@@ -355,11 +356,11 @@ static NTSTATUS idmap_autorid_db_init(void)
 	/* Initialize high water mark for the currently used range to 0 */
 	hwm = dbwrap_fetch_int32(autorid_db, HWM);
 	if ((hwm < 0)) {
-		if (!NT_STATUS_IS_OK
-		    (dbwrap_trans_store_int32(autorid_db, HWM, 0))) {
+		status = dbwrap_trans_store_int32(autorid_db, HWM, 0);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,
 			      ("Unable to initialise HWM in autorid "
-			       "database\n"));
+			       "database: %s\n", nt_errstr(status)));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
 	}
@@ -367,11 +368,11 @@ static NTSTATUS idmap_autorid_db_init(void)
 	/* Initialize high water mark for alloc pool to 0 */
 	hwm = dbwrap_fetch_int32(autorid_db, ALLOC_HWM);
 	if ((hwm < 0)) {
-		if (!NT_STATUS_IS_OK
-		    (dbwrap_trans_store_int32(autorid_db, ALLOC_HWM, 0))) {
+		status = dbwrap_trans_store_int32(autorid_db, ALLOC_HWM, 0);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,
 			      ("Unable to initialise HWM in autorid "
-			       "database\n"));
+			       "database: %s\n", nt_errstr(status)));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
 	}
