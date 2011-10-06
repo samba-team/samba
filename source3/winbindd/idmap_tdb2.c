@@ -63,15 +63,16 @@ static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 	NTSTATUS status;
 	uint32 low_id;
 	struct idmap_tdb2_context *ctx;
+	bool ret;
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb2_context);
 
 	/* Create high water marks for group and user id */
 
-	low_id = dbwrap_fetch_int32(ctx->db, HWM_USER);
-	if ((low_id == -1) || (low_id < dom->low_id)) {
-		status = dbwrap_trans_store_int32(ctx->db, HWM_USER,
-						  dom->low_id);
+	ret = dbwrap_fetch_uint32(ctx->db, HWM_USER, &low_id);
+	if (!ret || (low_id < dom->low_id)) {
+		status = dbwrap_trans_store_uint32(ctx->db, HWM_USER,
+						   dom->low_id);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
 				  "database: %s\n", nt_errstr(status)));
@@ -79,10 +80,10 @@ static NTSTATUS idmap_tdb2_init_hwm(struct idmap_domain *dom)
 		}
 	}
 
-	low_id = dbwrap_fetch_int32(ctx->db, HWM_GROUP);
-	if ((low_id == -1) || (low_id < dom->low_id)) {
-		status = dbwrap_trans_store_int32(ctx->db, HWM_GROUP,
-						  dom->low_id);
+	ret = dbwrap_fetch_uint32(ctx->db, HWM_GROUP, &low_id);
+	if (!ret || (low_id < dom->low_id)) {
+		status = dbwrap_trans_store_uint32(ctx->db, HWM_GROUP,
+						   dom->low_id);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to initialise group hwm in idmap "
 				  "database: %s\n", nt_errstr(status)));
@@ -143,11 +144,12 @@ static NTSTATUS idmap_tdb2_allocate_id_action(struct db_context *db,
 	NTSTATUS ret;
 	struct idmap_tdb2_allocate_id_context *state;
 	uint32_t hwm;
+	bool ret2;
 
 	state = (struct idmap_tdb2_allocate_id_context *)private_data;
 
-	hwm = dbwrap_fetch_int32(db, state->hwmkey);
-	if (hwm == -1) {
+	ret2 = dbwrap_fetch_uint32(db, state->hwmkey, &hwm);
+	if (!ret2) {
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 		goto done;
 	}
