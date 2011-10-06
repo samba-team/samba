@@ -34,11 +34,15 @@
 #include "param/param.h"
 #include "dsdb/common/util.h"
 
+/*
+  load the partitions list based on replicated NC attributes in our
+  NTDSDSA object
+ */
 WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 {
 	WERROR status;
-	static const char *attrs[] = { "hasMasterNCs", "hasPartialReplicaNCs", NULL };
-	unsigned int i;
+	static const char *attrs[] = { "hasMasterNCs", "hasPartialReplicaNCs", "msDS-HasFullReplicaNCs", NULL };
+	unsigned int a;
 	int ret;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res;
@@ -62,57 +66,42 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	el = ldb_msg_find_element(res->msgs[0], "hasMasterNCs");
+	for (a=0; attrs[a]; a++) {
+		int i;
 
-	for (i=0; el && i<el->num_values; i++) {
-		struct ldb_dn *pdn;
-		struct dreplsrv_partition *p;
-
-		pdn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
-		if (pdn == NULL) {
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
+		el = ldb_msg_find_element(res->msgs[0], attrs[a]);
+		if (el == NULL) {
+			continue;
 		}
-		if (!ldb_dn_validate(pdn)) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
+		for (i=0; i<el->num_values; i++) {
+			struct ldb_dn *pdn;
+			struct dreplsrv_partition *p;
+
+			pdn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
+			if (pdn == NULL) {
+				talloc_free(tmp_ctx);
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+			if (!ldb_dn_validate(pdn)) {
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+
+			p = talloc_zero(s, struct dreplsrv_partition);
+			W_ERROR_HAVE_NO_MEMORY(p);
+
+			p->dn = talloc_steal(p, pdn);
+			p->service = s;
+
+			if (strcasecmp(attrs[a], "hasPartialReplicaNCs") == 0) {
+				p->partial_replica = true;
+			} else if (strcasecmp(attrs[a], "msDS-HasFullReplicaNCs") == 0) {
+				p->rodc_replica = true;
+			}
+
+			DLIST_ADD(s->partitions, p);
+
+			DEBUG(2, ("dreplsrv_partition[%s] loaded\n", ldb_dn_get_linearized(p->dn)));
 		}
-
-		p = talloc_zero(s, struct dreplsrv_partition);
-		W_ERROR_HAVE_NO_MEMORY(p);
-
-		p->dn = talloc_steal(p, pdn);
-		p->service = s;
-
-		DLIST_ADD(s->partitions, p);
-
-		DEBUG(2, ("dreplsrv_partition[%s] loaded\n", ldb_dn_get_linearized(p->dn)));
-	}
-
-	el = ldb_msg_find_element(res->msgs[0], "hasPartialReplicaNCs");
-
-	for (i=0; el && i<el->num_values; i++) {
-		struct ldb_dn *pdn;
-		struct dreplsrv_partition *p;
-
-		pdn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
-		if (pdn == NULL) {
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-		if (!ldb_dn_validate(pdn)) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		p = talloc_zero(s, struct dreplsrv_partition);
-		W_ERROR_HAVE_NO_MEMORY(p);
-
-		p->dn = talloc_steal(p, pdn);
-		p->partial_replica = true;
-		p->service = s;
-
-		DLIST_ADD(s->partitions, p);
-
-		DEBUG(2, ("dreplsrv_partition[%s] loaded (partial replica)\n", ldb_dn_get_linearized(p->dn)));
 	}
 
 	talloc_free(tmp_ctx);
