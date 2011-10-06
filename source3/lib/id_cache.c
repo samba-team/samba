@@ -161,11 +161,11 @@ void id_cache_delete_from_cache(const struct id_cache_ref* id)
 }
 
 
-static void id_cache_flush(struct messaging_context *msg_ctx,
-			   void* private_data,
-			   uint32_t msg_type,
-			   struct server_id server_id,
-			   DATA_BLOB* data)
+void id_cache_flush_message(struct messaging_context *msg_ctx,
+			    void* private_data,
+			    uint32_t msg_type,
+			    struct server_id server_id,
+			    DATA_BLOB* data)
 {
 	const char *msg = data ? (const char *)data->data : NULL;
 
@@ -181,11 +181,11 @@ static void id_cache_flush(struct messaging_context *msg_ctx,
 	}
 }
 
-static void id_cache_delete(struct messaging_context *msg_ctx,
-			    void *private_data,
-			    uint32_t msg_type,
-			    struct server_id server_id,
-			    DATA_BLOB* data)
+void id_cache_delete_message(struct messaging_context *msg_ctx,
+			     void *private_data,
+			     uint32_t msg_type,
+			     struct server_id server_id,
+			     DATA_BLOB* data)
 {
 	const char *msg = (data && data->data) ? (const char *)data->data : "<NULL>";
 	struct id_cache_ref id;
@@ -200,6 +200,6 @@ static void id_cache_delete(struct messaging_context *msg_ctx,
 
 void id_cache_register_msgs(struct messaging_context *ctx)
 {
-	messaging_register(ctx, NULL, ID_CACHE_FLUSH,  id_cache_flush);
-	messaging_register(ctx, NULL, ID_CACHE_DELETE, id_cache_delete);
+	messaging_register(ctx, NULL, ID_CACHE_FLUSH,  id_cache_flush_message);
+	messaging_register(ctx, NULL, ID_CACHE_DELETE, id_cache_delete_message);
 }

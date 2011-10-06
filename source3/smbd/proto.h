@@ -1189,6 +1189,6 @@ void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 /* The following definitions come from smbd/msg_idmap.c */
 
-void id_cache_register_kill_msg(struct messaging_context *ctx);
+void msg_idmap_register_msg(struct messaging_context *ctx);
 
 #endif /* _SMBD_PROTO_H_ */

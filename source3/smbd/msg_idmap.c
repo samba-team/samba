@@ -129,13 +129,46 @@ static void id_cache_kill(struct messaging_context *msg_ctx,
 		return;
 	}
 
+	if (am_parent) {
+		messaging_send_to_children(msg_ctx, msg_type, data);
+	}
+
 	if (id_in_use(validated_users, &id)) {
 		exit_server_cleanly(msg);
 	}
 	id_cache_delete_from_cache(&id);
 }
 
-void id_cache_register_kill_msg(struct messaging_context *ctx)
+static void id_cache_flush(struct messaging_context *ctx,
+			   void* data,
+			   uint32_t msg_type,
+			   struct server_id srv_id,
+			   DATA_BLOB* msg_data)
 {
+	id_cache_flush_message(ctx, data, msg_type, srv_id, msg_data);
+
+	if (am_parent) {
+		messaging_send_to_children(ctx, msg_type, msg_data);
+	}
+}
+
+static void id_cache_delete(struct messaging_context *ctx,
+			    void* data,
+			    uint32_t msg_type,
+			    struct server_id srv_id,
+			    DATA_BLOB* msg_data)
+{
+	id_cache_delete_message(ctx, data, msg_type, srv_id, msg_data);
+
+	if (am_parent) {
+		messaging_send_to_children(ctx, msg_type, msg_data);
+	}
+}
+
+
+void msg_idmap_register_msg(struct messaging_context *ctx)
+{
+	messaging_register(ctx, NULL, ID_CACHE_FLUSH,  id_cache_flush);
+	messaging_register(ctx, NULL, ID_CACHE_DELETE, id_cache_delete);
 	messaging_register(ctx, NULL, ID_CACHE_KILL, id_cache_kill);
 }
