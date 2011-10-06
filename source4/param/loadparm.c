@@ -2132,7 +2132,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 
 			switch (parm_table[i].type) {
 				case P_BOOL:
-					*(int *)dest_ptr = *(int *)src_ptr;
+					*(bool *)dest_ptr = *(bool *)src_ptr;
 					break;
 
 				case P_INTEGER:
@@ -2506,7 +2506,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 				DEBUG(0,("lp_do_parameter(%s): value is not boolean!\n", pszParmValue));
 				return false;
 			}
-			*(int *)parm_ptr = b;
+			*(bool *)parm_ptr = b;
 			}
 			break;
 
@@ -2516,7 +2516,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 				DEBUG(0,("lp_do_parameter(%s): value is not boolean!\n", pszParmValue));
 				return false;
 			}
-			*(int *)parm_ptr = !b;
+			*(bool *)parm_ptr = !b;
 			}
 			break;
 
@@ -2837,11 +2837,11 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			break;
 
 		case P_BOOL:
-			fprintf(f, "%s", BOOLSTR((bool)*(int *)ptr));
+			fprintf(f, "%s", BOOLSTR(*(bool *)ptr));
 			break;
 
 		case P_BOOLREV:
-			fprintf(f, "%s", BOOLSTR(!(bool)*(int *)ptr));
+			fprintf(f, "%s", BOOLSTR(!*(bool *)ptr));
 			break;
 
 		case P_INTEGER:
@@ -2892,7 +2892,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 	switch (type) {
 		case P_BOOL:
 		case P_BOOLREV:
-			return (*((int *)ptr1) == *((int *)ptr2));
+			return (*((bool *)ptr1) == *((bool *)ptr2));
 
 		case P_INTEGER:
 		case P_OCTAL:
@@ -2992,7 +2992,7 @@ static bool is_default(struct loadparm_service *sDefault, int i)
 		case P_BOOL:
 		case P_BOOLREV:
 			return parm_table[i].def.bvalue ==
-				*(int *)def_ptr;
+				*(bool *)def_ptr;
 		case P_INTEGER:
 		case P_CHAR:
 		case P_OCTAL:

@@ -130,7 +130,7 @@ sub handle_loadparm($$$)
 	        return;
 	}
 	my %tmap = (
-	    "BOOL" => "int ",
+	    "BOOL" => "bool ",
 	    "CONST_STRING" => "char *",
 	    "STRING" => "char *",
 	    "INTEGER" => "int ",
