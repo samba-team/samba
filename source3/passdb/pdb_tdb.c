@@ -424,6 +424,7 @@ static bool tdbsam_open( const char *name )
 {
 	int32	version;
 	int32	minor_version;
+	NTSTATUS status;
 
 	/* check if we are already open */
 
@@ -441,14 +442,15 @@ static bool tdbsam_open( const char *name )
 	}
 
 	/* Check the version */
-	version = dbwrap_fetch_int32(db_sam, TDBSAM_VERSION_STRING);
-	if (version == -1) {
+	status = dbwrap_fetch_int32(db_sam, TDBSAM_VERSION_STRING, &version);
+	if (!NT_STATUS_IS_OK(status)) {
 		version = 0;	/* Version not found, assume version 0 */
 	}
 
 	/* Get the minor version */
-	minor_version = dbwrap_fetch_int32(db_sam, TDBSAM_MINOR_VERSION_STRING);
-	if (minor_version == -1) {
+	status = dbwrap_fetch_int32(db_sam, TDBSAM_MINOR_VERSION_STRING,
+				    &minor_version);
+	if (!NT_STATUS_IS_OK(status)) {
 		minor_version = 0; /* Minor version not found, assume 0 */
 	}
 
@@ -482,14 +484,16 @@ static bool tdbsam_open( const char *name )
 		}
 
 		/* Re-check the version */
-		version = dbwrap_fetch_int32(db_sam, TDBSAM_VERSION_STRING);
-		if (version == -1) {
+		status = dbwrap_fetch_int32(db_sam, TDBSAM_VERSION_STRING,
+					    &version);
+		if (!NT_STATUS_IS_OK(status)) {
 			version = 0;	/* Version not found, assume version 0 */
 		}
 
 		/* Re-check the minor version */
-		minor_version = dbwrap_fetch_int32(db_sam, TDBSAM_MINOR_VERSION_STRING);
-		if (minor_version == -1) {
+		status = dbwrap_fetch_int32(db_sam, TDBSAM_MINOR_VERSION_STRING,
+					    &minor_version);
+		if (!NT_STATUS_IS_OK(status)) {
 			minor_version = 0; /* Minor version not found, assume 0 */
 		}
 

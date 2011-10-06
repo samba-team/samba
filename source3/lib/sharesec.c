@@ -139,7 +139,7 @@ static int upgrade_v2_to_v3(struct db_record *rec, void *priv)
 bool share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
-	int32 vers_id;
+	int32 vers_id = 0;
 	bool upgrade_ok = true;
 	NTSTATUS status;
 
@@ -155,7 +155,11 @@ bool share_info_db_init(void)
 		return False;
 	}
 
-	vers_id = dbwrap_fetch_int32(share_db, vstring);
+	status = dbwrap_fetch_int32(share_db, vstring, &vers_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		vers_id = 0;
+	}
+
 	if (vers_id == SHARE_DATABASE_VERSION_V3) {
 		return true;
 	}
@@ -166,7 +170,11 @@ bool share_info_db_init(void)
 		return false;
 	}
 
-	vers_id = dbwrap_fetch_int32(share_db, vstring);
+	status = dbwrap_fetch_int32(share_db, vstring, &vers_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		vers_id = 0;
+	}
+
 	if (vers_id == SHARE_DATABASE_VERSION_V3) {
 		/*
 		 * Race condition

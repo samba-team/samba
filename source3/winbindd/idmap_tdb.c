@@ -172,7 +172,10 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 #endif
 	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
 
-	vers = dbwrap_fetch_int32(db, "IDMAP_VERSION");
+	status = dbwrap_fetch_int32(db, "IDMAP_VERSION", &vers);
+	if (!NT_STATUS_IS_OK(status)) {
+		vers = -1;
+	}
 
 	if (((vers == -1) && bigendianheader) || (IREV(vers) == IDMAP_VERSION)) {
 		/* Arrggghh ! Bytereversed or old big-endian - make order independent ! */
@@ -183,7 +186,10 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 
 		int32 wm;
 
-		wm = dbwrap_fetch_int32(db, HWM_USER);
+		status = dbwrap_fetch_int32(db, HWM_USER, &wm);
+		if (!NT_STATUS_IS_OK(status)) {
+			wm = -1;
+		}
 
 		if (wm != -1) {
 			wm = IREV(wm);
@@ -196,7 +202,11 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 			return False;
 		}
 
-		wm = dbwrap_fetch_int32(db, HWM_GROUP);
+		status = dbwrap_fetch_int32(db, HWM_GROUP, &wm);
+		if (!NT_STATUS_IS_OK(status)) {
+			wm = -1;
+		}
+
 		if (wm != -1) {
 			wm = IREV(wm);
 		} else {
@@ -331,7 +341,11 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 	}
 
 	/* check against earlier versions */
-	version = dbwrap_fetch_int32(db, "IDMAP_VERSION");
+	ret = dbwrap_fetch_int32(db, "IDMAP_VERSION", &version);
+	if (!NT_STATUS_IS_OK(ret)) {
+		version = -1;
+	}
+
 	if (version != IDMAP_VERSION) {
 		if (config_error) {
 			DEBUG(0,("Upgrade of IDMAP_VERSION from %d to %d is not "

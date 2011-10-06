@@ -26,25 +26,29 @@
 #include "dbwrap.h"
 #include "util_tdb.h"
 
-int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr)
+NTSTATUS dbwrap_fetch_int32(struct db_context *db, const char *keystr,
+			    int32_t *result)
 {
 	TDB_DATA dbuf;
-	int32 ret;
 	NTSTATUS status;
+
+	if (result == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	status = dbwrap_fetch_bystring(db, NULL, keystr, &dbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
+		return status;
 	}
 
 	if ((dbuf.dptr == NULL) || (dbuf.dsize != sizeof(int32_t))) {
 		TALLOC_FREE(dbuf.dptr);
-		return -1;
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	ret = IVAL(dbuf.dptr, 0);
+	*result = IVAL(dbuf.dptr, 0);
 	TALLOC_FREE(dbuf.dptr);
-	return ret;
+	return NT_STATUS_OK;
 }
 
 int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v)

@@ -71,7 +71,13 @@ static NTSTATUS regdb_trans_do_action(struct db_context *db, void *private_data)
 	int32_t version_id;
 	struct regdb_trans_ctx *ctx = (struct regdb_trans_ctx *)private_data;
 
-	version_id = dbwrap_fetch_int32(db, REGDB_VERSION_KEYNAME);
+	status = dbwrap_fetch_int32(db, REGDB_VERSION_KEYNAME, &version_id);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("ERROR: could not fetch registry db version: %s. "
+			  "Denying access.\n", nt_errstr(status)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if (version_id != REGDB_CODE_VERSION) {
 		DEBUG(0, ("ERROR: changed registry version %d found while "
@@ -627,8 +633,9 @@ done:
 
 WERROR regdb_init(void)
 {
-	uint32 vers_id;
+	int32_t vers_id;
 	WERROR werr;
+	NTSTATUS status;
 
 	if (regdb) {
 		DEBUG(10, ("regdb_init: incrementing refcount (%d->%d)\n",
@@ -656,8 +663,8 @@ WERROR regdb_init(void)
 	DEBUG(10, ("regdb_init: registry db openend. refcount reset (%d)\n",
 		   regdb_refcount));
 
-	vers_id = dbwrap_fetch_int32(regdb, REGDB_VERSION_KEYNAME);
-	if (vers_id == -1) {
+	status = dbwrap_fetch_int32(regdb, REGDB_VERSION_KEYNAME, &vers_id);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("regdb_init: registry version uninitialized "
 			   "(got %d), initializing to version %d\n",
 			   vers_id, REGDB_CODE_VERSION));

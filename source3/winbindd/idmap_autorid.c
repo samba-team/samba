@@ -354,8 +354,10 @@ static NTSTATUS idmap_autorid_db_init(void)
 	}
 
 	/* Initialize high water mark for the currently used range to 0 */
-	hwm = dbwrap_fetch_int32(autorid_db, HWM);
-	if ((hwm < 0)) {
+	status = dbwrap_fetch_int32(autorid_db, HWM, &hwm);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ||
+	    (NT_STATUS_IS_OK(status) && (hwm < 0)))
+	{
 		status = dbwrap_trans_store_int32(autorid_db, HWM, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,
@@ -363,11 +365,17 @@ static NTSTATUS idmap_autorid_db_init(void)
 			       "database: %s\n", nt_errstr(status)));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("unable to fetch HWM from autorid database: %s\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
 	/* Initialize high water mark for alloc pool to 0 */
-	hwm = dbwrap_fetch_int32(autorid_db, ALLOC_HWM);
-	if ((hwm < 0)) {
+	status = dbwrap_fetch_int32(autorid_db, ALLOC_HWM, &hwm);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ||
+	    (NT_STATUS_IS_OK(status) && (hwm < 0)))
+	{
 		status = dbwrap_trans_store_int32(autorid_db, ALLOC_HWM, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,
@@ -375,7 +383,12 @@ static NTSTATUS idmap_autorid_db_init(void)
 			       "database: %s\n", nt_errstr(status)));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("unable to fetch alloc HWM from autorid database: "
+			  "%s\n", nt_errstr(status)));
+		return status;
 	}
+
 	return NT_STATUS_OK;
 }
 
