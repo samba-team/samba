@@ -975,6 +975,8 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 void exit_server(const char *const explanation);
 void exit_server_cleanly(const char *const explanation);
 void exit_server_fault(void);
+NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
+				    uint32_t msg_type, DATA_BLOB* data);
 
 /* The following definitions come from smbd/service.c  */
 

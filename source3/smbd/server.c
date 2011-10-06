@@ -173,6 +173,22 @@ static void msg_inject_fault(struct messaging_context *msg,
 }
 #endif /* DEVELOPER */
 
+NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
+				    uint32_t msg_type, DATA_BLOB* data)
+{
+	NTSTATUS status;
+	struct child_pid *child;
+
+	for (child = children; child != NULL; child = child->next) {
+		status = messaging_send(msg_ctx, pid_to_procid(child->pid),
+					msg_type, data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 /*
  * Parent smbd process sets its own debug level first and then
  * sends a message to all the smbd children to adjust their debug
@@ -185,16 +201,9 @@ static void smbd_msg_debug(struct messaging_context *msg_ctx,
 			   struct server_id server_id,
 			   DATA_BLOB *data)
 {
-	struct child_pid *child;
-
 	debug_message(msg_ctx, private_data, MSG_DEBUG, server_id, data);
 
-	for (child = children; child != NULL; child = child->next) {
-		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
-				   MSG_DEBUG,
-				   data->data,
-				   strlen((char *) data->data) + 1);
-	}
+	messaging_send_to_children(msg_ctx, MSG_DEBUG, data);
 }
 
 static void add_child_pid(pid_t pid)

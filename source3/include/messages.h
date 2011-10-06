@@ -133,6 +133,7 @@ void messaging_deregister(struct messaging_context *ctx, uint32_t msg_type,
 NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, 
 			uint32_t msg_type, const DATA_BLOB *data);
+
 NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const uint8 *buf, size_t len);
