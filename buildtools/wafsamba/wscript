@@ -162,6 +162,9 @@ def set_options(opt):
     opt.add_option('--disable-dependency-tracking',
 		   help=SUPPRESS_HELP,
 		   action='store_true', dest='AUTOCONF_DISABLE_DEPENDENCY_TRACKING', default=False)
+    opt.add_option('--disable-silent-rules',
+		   help=SUPPRESS_HELP,
+		   action='store_true', dest='AUTOCONF_DISABLE_SILENT_RULES', default=False)
 
     gr = opt.option_group('dist options')
     gr.add_option('--sign-release',
