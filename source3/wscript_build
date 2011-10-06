@@ -80,7 +80,7 @@ LIB_SRC = '''
           intl/lang_tdb.c
           lib/conn_tdb.c lib/gencache.c
           lib/sessionid_tdb.c
-          lib/module.c lib/events.c
+          lib/events.c
           lib/server_contexts.c
           lib/server_prefork.c
           lib/server_prefork_util.c
