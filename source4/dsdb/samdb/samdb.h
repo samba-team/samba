@@ -92,16 +92,6 @@ struct dsdb_control_password_change_status {
 #define DSDB_CONTROL_PASSWORD_HASH_VALUES_OID "1.3.6.1.4.1.7165.4.3.9"
 
 #define DSDB_CONTROL_PASSWORD_CHANGE_OID "1.3.6.1.4.1.7165.4.3.10"
-
-/* passed when we want to get the behaviour of the non-global catalog port */
-#define DSDB_CONTROL_NO_GLOBAL_CATALOG "1.3.6.1.4.1.7165.4.3.17"
-
-/* passed when we want special behaviour for partial replicas */
-#define DSDB_CONTROL_PARTIAL_REPLICA "1.3.6.1.4.1.7165.4.3.18"
-
-/* passed when we want special behaviour for dbcheck */
-#define DSDB_CONTROL_DBCHECK "1.3.6.1.4.1.7165.4.3.19"
-
 struct dsdb_control_password_change {
 	const struct samr_Password *old_nt_pwd_hash;
 	const struct samr_Password *old_lm_pwd_hash;
@@ -122,6 +112,16 @@ struct dsdb_control_password_change {
   It is used when the current replmetadata needs to be edited.
 */
 #define DSDB_CONTROL_CHANGEREPLMETADATA_OID "1.3.6.1.4.1.7165.4.3.14"
+
+
+/* passed when we want to get the behaviour of the non-global catalog port */
+#define DSDB_CONTROL_NO_GLOBAL_CATALOG "1.3.6.1.4.1.7165.4.3.17"
+
+/* passed when we want special behaviour for partial replicas */
+#define DSDB_CONTROL_PARTIAL_REPLICA "1.3.6.1.4.1.7165.4.3.18"
+
+/* passed when we want special behaviour for dbcheck */
+#define DSDB_CONTROL_DBCHECK "1.3.6.1.4.1.7165.4.3.19"
 
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
