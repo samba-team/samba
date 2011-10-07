@@ -652,8 +652,16 @@ int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
 	return LDB_SUCCESS;
 }
 
-int dsdb_check_optional_feature(struct ldb_module *module, struct ldb_dn *scope,
-					struct GUID op_feature_guid, bool *feature_enabled)
+/*
+  check if an optional feature is enabled on our own NTDS DN
+
+  Note that features can be marked as enabled in more than one
+  place. For example, the recyclebin feature is marked as enabled both
+  on the CN=Partitions,CN=Configurration object and on the NTDS DN of
+  each DC in the forest. It seems likely that it is the job of the KCC
+  to propogate between the two
+ */
+int dsdb_check_optional_feature(struct ldb_module *module, struct GUID op_feature_guid, bool *feature_enabled)
 {
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -664,33 +672,35 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct ldb_dn *scope,
 	int ret;
 	unsigned int i;
 	struct ldb_message_element *el;
+	struct ldb_dn *feature_dn;
+
+	feature_dn = samdb_ntds_settings_dn(ldb_module_get_ctx(module));
+	if (feature_dn == NULL) {
+		return ldb_operr(ldb_module_get_ctx(module));
+	}
 
 	*feature_enabled = false;
 
 	tmp_ctx = talloc_new(ldb);
 
-	ret = ldb_search(ldb, tmp_ctx, &res,
-					scope, LDB_SCOPE_BASE, attrs,
-					NULL);
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, feature_dn, attrs, DSDB_FLAG_NEXT_MODULE, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
-				"Could no find the scope object - dn: %s\n",
-				ldb_dn_get_linearized(scope));
+				"Could not find the feature object - dn: %s\n",
+				ldb_dn_get_linearized(feature_dn));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	if (res->msgs[0]->num_elements > 0) {
+		const char *attrs2[] = {"msDS-OptionalFeatureGUID", NULL};
 
 		el = ldb_msg_find_element(res->msgs[0],"msDS-EnabledFeature");
-
-		attrs[0] = "msDS-OptionalFeatureGUID";
 
 		for (i=0; i<el->num_values; i++) {
 			search_dn = ldb_dn_from_ldb_val(tmp_ctx, ldb, &el->values[i]);
 
-			ret = ldb_search(ldb, tmp_ctx, &res,
-							search_dn, LDB_SCOPE_BASE, attrs,
-							NULL);
+			ret = dsdb_module_search_dn(module, tmp_ctx, &res,
+						    search_dn, attrs2, DSDB_FLAG_NEXT_MODULE, NULL);
 			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb,
 						"Could no find object dn: %s\n",
@@ -701,7 +711,7 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct ldb_dn *scope,
 
 			search_guid = samdb_result_guid(res->msgs[0], "msDS-OptionalFeatureGUID");
 
-			if (GUID_compare(&search_guid, &op_feature_guid) == 0){
+			if (GUID_compare(&search_guid, &op_feature_guid) == 0) {
 				*feature_enabled = true;
 				break;
 			}
@@ -1007,22 +1017,17 @@ bool dsdb_module_am_administrator(struct ldb_module *module)
 int dsdb_recyclebin_enabled(struct ldb_module *module, bool *enabled)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_dn *partitions_dn;
 	struct GUID recyclebin_guid;
 	int ret;
 
-	partitions_dn = samdb_partitions_dn(ldb, module);
-
 	GUID_from_string(DS_GUID_FEATURE_RECYCLE_BIN, &recyclebin_guid);
 
-	ret = dsdb_check_optional_feature(module, partitions_dn, recyclebin_guid, enabled);
+	ret = dsdb_check_optional_feature(module, recyclebin_guid, enabled);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Could not verify if Recycle Bin is enabled \n");
-		talloc_free(partitions_dn);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	talloc_free(partitions_dn);
 	return LDB_SUCCESS;
 }
 
