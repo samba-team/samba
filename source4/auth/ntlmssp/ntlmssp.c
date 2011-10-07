@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
+#include "auth/gensec/gensec_toplevel_proto.h"
 
 /**
  * Callbacks for NTLMSSP - for both client and server operating modes

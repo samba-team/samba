@@ -825,39 +825,6 @@ _PUBLIC_ NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security
 	return NT_STATUS_OK;
 }
 
-NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
-				      struct gensec_security *gensec_security,
-				      struct auth_user_info_dc *user_info_dc,
-				      struct auth_session_info **session_info)
-{
-	NTSTATUS nt_status;
-	uint32_t session_info_flags = 0;
-
-	if (gensec_security->want_features & GENSEC_FEATURE_UNIX_TOKEN) {
-		session_info_flags |= AUTH_SESSION_INFO_UNIX_TOKEN;
-	}
-
-	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
-	if (user_info_dc->info->authenticated) {
-		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
-	}
-
-	if (gensec_security->auth_context) {
-		nt_status = gensec_security->auth_context->generate_session_info(mem_ctx, gensec_security->auth_context,
-										 user_info_dc,
-										 session_info_flags,
-										 session_info);
-	} else {
-		session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
-		nt_status = auth_generate_session_info(mem_ctx,
-						       NULL,
-						       NULL,
-						       user_info_dc, session_info_flags,
-						       session_info);
-	}
-	return nt_status;
-}
-
 /*
   register a GENSEC backend.
 

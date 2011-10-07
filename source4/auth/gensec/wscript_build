@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('gensec',
-	source='gensec_start.c socket.c gensec_tstream.c',
-	pc_files='gensec.pc',
-	autoproto='gensec_proto.h',
-	public_deps='tevent-util samba-util errors LIBPACKET auth_system_session gensec_runtime samba-modules',
-	public_headers='',
-	deps='com_err',
-	vnum='0.0.1'
-	)
+bld.SAMBA_SUBSYSTEM('gensec_util',
+                    source='socket.c gensec_tstream.c gensec_util.c',
+                    deps='tevent-util tevent samba-util LIBTSOCKET',
+                    autoproto='gensec_proto.h')
 
 bld.SAMBA_MODULE('gensec_krb5',
 	source='gensec_krb5.c',

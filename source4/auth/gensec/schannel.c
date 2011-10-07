@@ -30,6 +30,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
 #include "auth/gensec/schannel.h"
+#include "auth/gensec/gensec_toplevel_proto.h"
 
 _PUBLIC_ NTSTATUS gensec_schannel_init(void);
 

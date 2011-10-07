@@ -24,6 +24,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
+#include "auth/gensec/gensec_toplevel_proto.h"
 #include <sasl/sasl.h>
 
 NTSTATUS gensec_sasl_init(void);
