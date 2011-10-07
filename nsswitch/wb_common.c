@@ -22,6 +22,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define UID_WRAPPER_NOT_REPLACE
+
 #include "replace.h"
 #include "system/select.h"
 #include "winbind_client.h"

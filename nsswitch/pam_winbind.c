@@ -10,6 +10,8 @@
    <sopwith@redhat.com> (see copyright below for full details)
 */
 
+#define UID_WRAPPER_NOT_REPLACE
+
 #include "pam_winbind.h"
 
 static int wbc_error_to_pam_error(wbcErr status)

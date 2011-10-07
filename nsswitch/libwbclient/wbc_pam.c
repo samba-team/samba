@@ -23,6 +23,7 @@
 
 /* Required Headers */
 
+#define UID_WRAPPER_NOT_REPLACE
 #include "replace.h"
 #include "libwbclient.h"
 #include "../winbind_client.h"
