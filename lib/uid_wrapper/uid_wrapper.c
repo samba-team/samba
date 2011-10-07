@@ -38,7 +38,9 @@
 static struct {
 	bool initialised;
 	bool enabled;
+	uid_t myuid;
 	uid_t euid;
+	uid_t mygid;
 	gid_t egid;
 	gid_t *groups;
 } uwrap;
@@ -50,8 +52,8 @@ static void uwrap_init(void)
 	if (getenv("UID_WRAPPER")) {
 		uwrap.enabled = true;
 		/* put us in one group */
-		uwrap.euid = geteuid();
-		uwrap.egid = getegid();
+		uwrap.myuid = uwrap.euid = geteuid();
+		uwrap.mygid = uwrap.egid = getegid();
 		uwrap.groups = talloc_array(NULL, gid_t, 1);
 		uwrap.groups[0] = 0;
 	}
@@ -71,7 +73,11 @@ _PUBLIC_ int uwrap_seteuid(uid_t euid)
 		return seteuid(euid);
 	}
 	/* assume for now that the ruid stays as root */
-	uwrap.euid = euid;
+	if (euid == 0) {
+		uwrap.euid = uwrap.myuid;
+	} else {
+		uwrap.euid = euid;
+	}
 	return 0;
 }
 
@@ -82,7 +88,11 @@ _PUBLIC_ int uwrap_setreuid(uid_t ruid, uid_t euid)
 		return setreuid(ruid, euid);
 	}
 	/* assume for now that the ruid stays as root */
-	uwrap.euid = euid;
+	if (euid == 0) {
+		uwrap.euid = uwrap.myuid;
+	} else {
+		uwrap.euid = euid;
+	}
 	return 0;
 }
 
@@ -93,7 +103,11 @@ _PUBLIC_ int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 		return setresuid(ruid, euid, suid);
 	}
 	/* assume for now that the ruid stays as root */
-	uwrap.euid = euid;
+	if (euid == 0) {
+		uwrap.euid = uwrap.myuid;
+	} else {
+		uwrap.euid = euid;
+	}
 	return 0;
 }
 
@@ -113,7 +127,11 @@ _PUBLIC_ int uwrap_setegid(gid_t egid)
 		return setegid(egid);
 	}
 	/* assume for now that the ruid stays as root */
-	uwrap.egid = egid;
+	if (egid == 0) {
+		uwrap.egid = uwrap.mygid;
+	} else {
+		uwrap.egid = egid;
+	}
 	return 0;
 }
 
@@ -124,7 +142,11 @@ _PUBLIC_ int uwrap_setregid(gid_t rgid, gid_t egid)
 		return setregid(rgid, egid);
 	}
 	/* assume for now that the ruid stays as root */
-	uwrap.egid = egid;
+	if (egid == 0) {
+		uwrap.egid = uwrap.mygid;
+	} else {
+		uwrap.egid = egid;
+	}
 	return 0;
 }
 
