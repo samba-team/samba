@@ -26,7 +26,7 @@
 #include "source4/lib/events/events.h"
 #include "source4/lib/messaging/messaging.h"
 #include "auth/gensec/gensec.h"
-#include "source4/auth/credentials/credentials.h"
+#include "auth/credentials/credentials.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

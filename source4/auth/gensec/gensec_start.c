@@ -928,8 +928,12 @@ _PUBLIC_ NTSTATUS gensec_init(void)
 {
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
+#if _SAMBA_BUILD_ == 4
 	STATIC_gensec_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_gensec_MODULES };
+#else
+	init_module_fn *static_init = NULL;
+#endif
 	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
