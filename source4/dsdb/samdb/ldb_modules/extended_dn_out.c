@@ -353,30 +353,50 @@ struct extended_search_context {
    fix one-way links to have the right string DN, to cope with
    renames of the target
 */
-static int fix_one_way_link(struct extended_search_context *ac, struct ldb_dn *dn)
+static int fix_one_way_link(struct extended_search_context *ac, struct ldb_dn *dn,
+			    bool *remove_value)
 {
 	struct GUID guid;
 	NTSTATUS status;
 	int ret;
 	struct ldb_dn *real_dn;
+	uint32_t search_flags;
+	TALLOC_CTX *tmp_ctx = talloc_new(ac);
+	const char *attrs[] = { NULL };
+	struct ldb_result *res;
+
+	(*remove_value) = false;
 
 	status = dsdb_get_extended_dn_guid(dn, &guid, "GUID");
 	if (!NT_STATUS_IS_OK(status)) {
 		/* this is a strange DN that doesn't have a GUID! just
 		   return the current DN string?? */
+		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
 
-	ret = dsdb_module_dn_by_guid(ac->module, dn, &guid, &real_dn, ac->req);
-	if (ret != LDB_SUCCESS) {
-		/* it could be on another server, we need to leave the
-		   string DN alone */
+	search_flags = DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SEARCH_ALL_PARTITIONS | DSDB_SEARCH_ONE_ONLY;
+
+	if (ldb_request_get_control(ac->req, LDB_CONTROL_SHOW_DEACTIVATED_LINK_OID)) {
+		search_flags |= DSDB_SEARCH_SHOW_DELETED;
+	}
+
+	ret = dsdb_module_search(ac->module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
+				 search_flags, ac->req, "objectguid=%s", GUID_string(tmp_ctx, &guid));
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		/* if we can't resolve this GUID, then we don't
+		   display the link. This could be a link to a NC that we don't
+		   have, or it could be a link to a deleted object
+		*/
+		(*remove_value) = true;
+		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
+	real_dn = res->msgs[0]->dn;
 
 	if (strcmp(ldb_dn_get_linearized(dn), ldb_dn_get_linearized(real_dn)) == 0) {
 		/* its already correct */
-		talloc_free(real_dn);
+		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
 
@@ -384,10 +404,10 @@ static int fix_one_way_link(struct extended_search_context *ac, struct ldb_dn *d
 	 * real DN
 	 */
 	if (!ldb_dn_replace_components(dn, real_dn)) {
-		talloc_free(real_dn);
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb_module_get_ctx(ac->module));
 	}
-	talloc_free(real_dn);
+	talloc_free(tmp_ctx);
 
 	return LDB_SUCCESS;
 }
@@ -598,10 +618,23 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			   objectCategory elements in the schema */
 			if (attribute->one_way_link &&
 			    strcasecmp(attribute->lDAPDisplayName, "objectCategory") != 0) {
-				ret = fix_one_way_link(ac, dn);
+				bool remove_value;
+				ret = fix_one_way_link(ac, dn, &remove_value);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(dsdb_dn);
 					return ldb_module_done(ac->req, NULL, NULL, ret);
+				}
+				if (remove_value &&
+				    !ldb_request_get_control(req, LDB_CONTROL_REVEAL_INTERNALS)) {
+					/* we show these with REVEAL
+					   to allow dbcheck to find and
+					   cleanup these orphaned links */
+					memmove(&msg->elements[i].values[j],
+						&msg->elements[i].values[j+1],
+						(msg->elements[i].num_values-(j+1))*sizeof(struct ldb_val));
+					msg->elements[i].num_values--;
+					j--;
+					continue;
 				}
 			}
 			
