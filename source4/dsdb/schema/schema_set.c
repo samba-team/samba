@@ -241,7 +241,8 @@ static void dsdb_setup_attribute_shortcuts(struct ldb_context *ldb, struct dsdb_
 			continue;
 		}
 		/* handle attributes with a linkID but no backlink */
-		if (dsdb_attribute_by_linkID(schema, attribute->linkID) == NULL) {
+		if ((attribute->linkID & 1) == 0 &&
+		    dsdb_attribute_by_linkID(schema, attribute->linkID + 1) == NULL) {
 			attribute->one_way_link = true;
 			continue;
 		}
