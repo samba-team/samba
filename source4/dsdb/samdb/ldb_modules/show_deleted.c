@@ -36,29 +36,83 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+struct show_deleted_state {
+	bool need_refresh;
+	bool recycle_bin_enabled;
+};
+
 static int show_deleted_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct ldb_control *show_del, *show_rec;
 	struct ldb_request *down_req;
 	struct ldb_parse_tree *new_tree = req->op.search.tree;
+	struct show_deleted_state *state;
 	int ret;
+	const char *attr_filter = NULL;
 
 	ldb = ldb_module_get_ctx(module);
+
+	state = talloc_get_type(ldb_module_get_private(module), struct show_deleted_state);
+
+	/* note that state may be NULL during initialisation */
+	if (state != NULL && state->need_refresh) {
+		state->need_refresh = false;
+		ret = dsdb_recyclebin_enabled(module, &state->recycle_bin_enabled);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	/* This is the logic from MS-ADTS 3.1.1.3.4.1.14 that
+	   determines if objects are visible
+
+	   Extended control name                     Deleted-objects      Tombstones        Recycled-objects
+	   LDAP_SERVER_SHOW_DELETED_OID              Visible              Visible           Not Visible
+	   LDAP_SERVER_SHOW_RECYCLED_OID             Visible              Visible           Visible
+
+	   Note that if the recycle bin is disabled, then the
+	   isRecycled attribute is ignored, and objects are either
+	   "normal" or "tombstone".
+
+	   When the recycle bin is enabled, then objects are in one of
+	   3 states, "normal", "deleted" or "recycled"
+	*/
 
 	/* check if there's a show deleted control */
 	show_del = ldb_request_get_control(req, LDB_CONTROL_SHOW_DELETED_OID);
 	/* check if there's a show recycled control */
 	show_rec = ldb_request_get_control(req, LDB_CONTROL_SHOW_RECYCLED_OID);
 
-	if ((show_del == NULL) && (show_rec == NULL)) {
-		/* Here we have to suppress all deleted objects:
-		 * MS-ADTS 3.1.1.3.4.1
-		 *
-		 * Filter: (&(!(isDeleted=TRUE))(...))
+
+	if (state == NULL || !state->recycle_bin_enabled) {
+		/* when recycle bin is not enabled, then all we look
+		   at is the isDeleted attribute. We hide objects with this
+		   attribute set to TRUE when the client has not specified either
+		   SHOW_DELETED or SHOW_RECYCLED
+		*/
+		if (show_del != NULL || show_rec != NULL) {
+			attr_filter = NULL;
+		} else {
+			attr_filter = "isDeleted";
+		}
+	} else {
+		/* the recycle bin is enabled
 		 */
-		/* FIXME: we could use a constant tree here once we are sure
-		 * that no ldb modules modify trees in-site */
+		if (show_rec != NULL) {
+			attr_filter = NULL;
+		} else if (show_del != NULL) {
+			/* we want deleted but not recycled objects */
+			attr_filter = "isRecycled";
+		} else {
+			/* we don't want deleted or recycled objects,
+			 * which we get by filtering on isDeleted */
+			attr_filter = "isDeleted";
+		}
+	}
+
+
+	if (attr_filter != NULL) {
 		new_tree = talloc(req, struct ldb_parse_tree);
 		if (!new_tree) {
 			return ldb_oom(ldb);
@@ -78,40 +132,8 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 			return ldb_oom(ldb);
 		}
 		new_tree->u.list.elements[0]->u.isnot.child->operation = LDB_OP_EQUALITY;
-		new_tree->u.list.elements[0]->u.isnot.child->u.equality.attr = "isDeleted";
+		new_tree->u.list.elements[0]->u.isnot.child->u.equality.attr = attr_filter;
 		new_tree->u.list.elements[0]->u.isnot.child->u.equality.value = data_blob_string_const("TRUE");
-
-		new_tree->u.list.elements[1] = req->op.search.tree;
-	} else if ((show_del != NULL) && (show_rec == NULL)) {
-		/* Here we need to suppress all recycled objects:
-		 * MS-ADTS 3.1.1.3.4.1
-		 *
-		 * Filter: (&(!(isRecycled=TRUE))(...))
-		 */
-		/* FIXME: we could use a constant tree here once we are sure
-		 * that no ldb modules modify trees in-site */
-		new_tree = talloc(req, struct ldb_parse_tree);
-		if (!new_tree) {
-			return ldb_oom(ldb);
-		}
-		new_tree->operation = LDB_OP_AND;
-		new_tree->u.list.num_elements = 2;
-		new_tree->u.list.elements = talloc_array(new_tree, struct ldb_parse_tree *, 2);
-		if (!new_tree->u.list.elements) {
-			return ldb_oom(ldb);
-		}
-
-		new_tree->u.list.elements[0] = talloc(new_tree->u.list.elements, struct ldb_parse_tree);
-		new_tree->u.list.elements[0]->operation = LDB_OP_NOT;
-		new_tree->u.list.elements[0]->u.isnot.child =
-			talloc(new_tree->u.list.elements, struct ldb_parse_tree);
-		if (!new_tree->u.list.elements[0]->u.isnot.child) {
-			return ldb_oom(ldb);
-		}
-		new_tree->u.list.elements[0]->u.isnot.child->operation = LDB_OP_EQUALITY;
-		new_tree->u.list.elements[0]->u.isnot.child->u.equality.attr = "isRecycled";
-		new_tree->u.list.elements[0]->u.isnot.child->u.equality.value = data_blob_string_const("TRUE");
-
 		new_tree->u.list.elements[1] = req->op.search.tree;
 	}
 
@@ -144,6 +166,13 @@ static int show_deleted_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	int ret;
+	struct show_deleted_state *state;
+
+	state = talloc_zero(module, struct show_deleted_state);
+	if (state == NULL) {
+		return ldb_module_oom(module);
+	}
+	state->need_refresh = true;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -161,7 +190,11 @@ static int show_deleted_init(struct ldb_module *module)
 		return ldb_operr(ldb);
 	}
 
-	return ldb_next_init(module);
+	ret = ldb_next_init(module);
+
+	ldb_module_set_private(module, state);
+
+	return ret;
 }
 
 static const struct ldb_module_ops ldb_show_deleted_module_ops = {
