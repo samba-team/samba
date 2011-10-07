@@ -10,7 +10,7 @@ modules.
 Please look at skel_opaque.c when you want your module to provide
 final functions, like a database filesystem.
 
-Please look at skel_transport.c when you want your module to provide
+Please look at skel_transparent.c when you want your module to provide
 passthrough functions, like audit modules. 
 
 Please read the VFS chapter in the HOWTO collection for general help 
