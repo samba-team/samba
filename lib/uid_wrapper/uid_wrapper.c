@@ -50,6 +50,8 @@ static void uwrap_init(void)
 	if (getenv("UID_WRAPPER")) {
 		uwrap.enabled = true;
 		/* put us in one group */
+		uwrap.euid = geteuid();
+		uwrap.egid = getegid();
 		uwrap.groups = talloc_array(NULL, gid_t, 1);
 		uwrap.groups[0] = 0;
 	}
