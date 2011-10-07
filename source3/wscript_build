@@ -798,7 +798,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
-                   deps='LIBTSOCKET LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray dbwrap util_sec util_malloc memcache ccan errors3 samba-modules uid_wrapper',
+                   deps='LIBTSOCKET LIBCRYPTO ndr security NDR_SECURITY samba-util NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray dbwrap util_sec util_malloc memcache ccan errors3 samba-modules',
                    vars=locals())
 
 bld.SAMBA3_LIBRARY('smbd_shim',
@@ -894,7 +894,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
                     RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
                     cli_smb_common RPC_SERVER smbd_conn param_service
-                    smbd_shim uid_wrapper NDR_DFSBLOBS
+                    smbd_shim NDR_DFSBLOBS
                     ''',
                     private_library=True,
                     vars=locals())
