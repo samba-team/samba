@@ -949,7 +949,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 
 		oid[0] = '\0';
 		p = &(control_strings[10]);
-		ret = sscanf(p, "%64[^:]:%d", oid, &crit);
+		ret = sscanf(p, "%255[^:]:%d", oid, &crit);
 
 		if ((ret != 2) || strlen(oid) == 0 || (crit < 0) || (crit > 1)) {
 			error_string = talloc_asprintf(mem_ctx, "invalid local_oid control syntax\n");
