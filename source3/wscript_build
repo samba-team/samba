@@ -6,9 +6,6 @@ import samba_version, samba3
 # enable building of public headers in the build tree
 bld.env.build_public_headers = 'include/public'
 
-# s3 public headers refer to non-public headers
-bld.env.public_headers_allow_broken = True
-
 TDB_LIB_SRC = '''
 	  lib/dbwrap/dbwrap_open.c
 	  lib/dbwrap/dbwrap_tdb.c
