@@ -65,51 +65,47 @@ def get_ntdsguid(samdb, domaindn):
 
 
 class ARecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, ip_addr, serial=1, ttl=900):
+    def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
         super(ARecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_A
+        self.rank = rank
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         self.data = ip_addr
 
 class AAAARecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, ip6_addr, serial=1, ttl=900):
+    def __init__(self, ip6_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
         super(AAAARecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_AAAA
+        self.rank = rank
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         self.data = ip6_addr
 
 class CNameRecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, cname, serial=1, ttl=900):
+    def __init__(self, cname, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
         super(CNameRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_CNAME
+        self.rank = rank
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         self.data = cname
 
 class NSRecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, dns_server, serial=1, ttl=900):
+    def __init__(self, dns_server, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
         super(NSRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_NS
+        self.rank = rank
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         self.data = dns_server
-
-class RootNSRecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, dns_server, serial=1, ttl=3600):
-        super(RootNSRecord, self).__init__()
-        self.wType = dnsp.DNS_TYPE_NS
-        self.dwSerial = serial
-        self.dwTtlSeconds = ttl
-        self.data = dns_server
-        self.rank = dnsp.DNS_RANK_ROOT_HINT
 
 class SOARecord(dnsp.DnssrvRpcRecord):
     def __init__(self, mname, rname, serial=1, refresh=900, retry=600,
-                 expire=86400, minimum=3600, ttl=3600):
+                 expire=86400, minimum=3600, ttl=3600, rank=dnsp.DNS_RANK_ZONE):
         super(SOARecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_SOA
+        self.rank = rank
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         soa = dnsp.soa()
@@ -122,9 +118,11 @@ class SOARecord(dnsp.DnssrvRpcRecord):
         self.data = soa
 
 class SRVRecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, target, port, priority=0, weight=100, serial=1, ttl=900):
+    def __init__(self, target, port, priority=0, weight=100, serial=1, ttl=900,
+                rank=dnsp.DNS_RANK_ZONE):
         super(SRVRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_SRV
+        self.rank = rank
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         srv = dnsp.srv()
@@ -223,7 +221,7 @@ def add_rootservers(samdb, domaindn, prefix):
     # Add DC=@,DC=RootDNSServers,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     record = []
     for rserver in rootservers:
-        record.append(ndr_pack(RootNSRecord(rserver, serial=0, ttl=0)))
+        record.append(ndr_pack(NSRecord(rserver, serial=0, ttl=0, rank=dnsp.DNS_RANK_ROOT_HINT)))
 
     msg = ldb.Message(ldb.Dn(samdb, "DC=@,%s" % container_dn))
     msg["objectClass"] = ["top", "dnsNode"]
@@ -232,7 +230,7 @@ def add_rootservers(samdb, domaindn, prefix):
 
     # Add DC=<rootserver>,DC=RootDNSServers,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     for rserver in rootservers:
-        record = [ndr_pack(ARecord(rootservers[rserver], serial=0, ttl=0))]
+        record = [ndr_pack(ARecord(rootservers[rserver], serial=0, ttl=0, rank=dnsp.DNS_RANK_ROOT_HINT))]
         # Add AAAA record as well (How does W2K* add IPv6 records?)
         #if rserver in rootservers_v6:
         #    record.append(ndr_pack(AAAARecord(rootservers_v6[rserver], serial=0, ttl=0)))
@@ -279,6 +277,13 @@ def add_srv_record(samdb, container_dn, prefix, host, port):
 
 def add_ns_record(samdb, container_dn, prefix, host):
     ns_record = NSRecord(host)
+    msg = ldb.Message(ldb.Dn(samdb, "%s,%s" % (prefix, container_dn)))
+    msg["objectClass"] = ["top", "dnsNode"]
+    msg["dnsRecord"] = ldb.MessageElement(ndr_pack(ns_record), ldb.FLAG_MOD_ADD, "dnsRecord")
+    samdb.add(msg)
+
+def add_ns_glue_record(samdb, container_dn, prefix, host):
+    ns_record = NSRecord(host, rank=dnsp.DNS_RANK_NS_GLUE)
     msg = ldb.Message(ldb.Dn(samdb, "%s,%s" % (prefix, container_dn)))
     msg["objectClass"] = ["top", "dnsNode"]
     msg["dnsRecord"] = ldb.MessageElement(ndr_pack(ns_record), ldb.FLAG_MOD_ADD, "dnsRecord")
@@ -368,7 +373,7 @@ def add_dc_domain_records(samdb, domaindn, prefix, site, dnsdomain, hostname, ho
     add_srv_record(samdb, domain_container_dn, "DC=_gc._tcp.%s._sites" % site, fqdn_hostname, 3268)
 
     # DC=_msdcs record
-    add_ns_record(samdb, domain_container_dn, "DC=_msdcs", fqdn_hostname)
+    add_ns_glue_record(samdb, domain_container_dn, "DC=_msdcs", fqdn_hostname)
 
     # FIXME: Following entries are added only if DomainDnsZones and ForestDnsZones partitions
     #        are created
