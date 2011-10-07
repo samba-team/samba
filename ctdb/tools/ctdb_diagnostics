@@ -18,6 +18,7 @@ EOF
 }
 
 nodes=$(ctdb listnodes -Y | cut -d: -f2)
+bad_nodes=""
 diff_opts=
 no_ads=false
 
@@ -44,6 +45,25 @@ parse_options ()
 }
 
 parse_options "$@"
+
+# Use 5s ssh timeout if EXTRA_SSH_OPTS doesn't set a timeout.
+case "$EXTRA_SSH_OPTS" in
+    *ConnectTimeout=*) : ;;
+    *)
+	export EXTRA_SSH_OPTS="${EXTRA_SSH_OPTS} -o ConnectTimeout=5"
+esac
+
+# Filter nodes.  Remove any nodes we can't contact from $node and add
+# them to $bad_nodes.
+_nodes=""
+for _i in $nodes ; do
+    if onnode $_i true >/dev/null 2>&1 ; then
+	_nodes="${_nodes}${_nodes:+ }${_i}"
+    else
+	bad_nodes="${bad_nodes}${bad_nodes:+,}${_i}"
+    fi
+done
+nodes="$_nodes"
 
 nodes_comma=$(echo $nodes | sed -e 's@[[:space:]]@,@g')
 
@@ -138,11 +158,23 @@ NUM_ERRORS=0
 cat <<EOF
 Diagnosis started on these nodes:
 $nodes_comma
+EOF
+
+if [ -n "$bad_nodes" ] ; then
+    cat <<EOF
+
+NOT RUNNING DIAGNOSTICS on these uncontactable nodes:
+$bad_nodes
+EOF
+
+fi
+
+cat <<EOF
 
 For reference, here is the nodes file on the current node...
 EOF
-show_file /etc/ctdb/nodes
 
+show_file /etc/ctdb/nodes
 
 cat <<EOF
 --------------------------------------------------------------------
