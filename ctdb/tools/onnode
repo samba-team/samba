@@ -339,6 +339,7 @@ $current && command="cd $PWD && $command"
 ssh_opts=
 if [ -n "$CTDB_NODES_SOCKETS" ] ; then
     SSH=fakessh
+    EXTRA_SSH_OPTS=""
 else 
     # Could "2>/dev/null || true" but want to see errors from typos in file.
     [ -r "${ctdb_base}/onnode.conf" ] && . "${ctdb_base}/onnode.conf"
