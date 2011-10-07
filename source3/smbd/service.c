@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/passwd.h" /* uid_wrapper */
 #include "../lib/tsocket/tsocket.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"

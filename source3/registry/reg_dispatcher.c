@@ -24,6 +24,7 @@
  */
 
 #include "includes.h"
+#include "system/passwd.h" /* uid_wrapper */
 #include "registry.h"
 #include "reg_dispatcher.h"
 #include "../libcli/security/security.h"

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h" /* uid_wrapper */
 #include "system/filesys.h"
 #include "printing.h"
 #include "util_tdb.h"

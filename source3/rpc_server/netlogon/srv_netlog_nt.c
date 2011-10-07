@@ -25,6 +25,7 @@
 /* This is the implementation of the netlogon pipe. */
 
 #include "includes.h"
+#include "system/passwd.h" /* uid_wrapper */
 #include "ntdomain.h"
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/srv_netlogon.h"
