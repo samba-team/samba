@@ -354,7 +354,7 @@ struct extended_search_context {
    renames of the target
 */
 static int fix_one_way_link(struct extended_search_context *ac, struct ldb_dn *dn,
-			    bool *remove_value)
+			    bool is_deleted_objects, bool *remove_value)
 {
 	struct GUID guid;
 	NTSTATUS status;
@@ -377,7 +377,8 @@ static int fix_one_way_link(struct extended_search_context *ac, struct ldb_dn *d
 
 	search_flags = DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SEARCH_ALL_PARTITIONS | DSDB_SEARCH_ONE_ONLY;
 
-	if (ldb_request_get_control(ac->req, LDB_CONTROL_SHOW_DEACTIVATED_LINK_OID)) {
+	if (ldb_request_get_control(ac->req, LDB_CONTROL_SHOW_DEACTIVATED_LINK_OID) ||
+	    is_deleted_objects) {
 		search_flags |= DSDB_SEARCH_SHOW_DELETED;
 	}
 
@@ -544,6 +545,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			struct ldb_dn *dn;
 			struct dsdb_dn *dsdb_dn = NULL;
 			struct ldb_val *plain_dn = &msg->elements[i].values[j];		
+			bool is_deleted_objects = false;
 
 			if (!checked_reveal_control) {
 				have_reveal_control =
@@ -579,10 +581,21 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			}
 			dn = dsdb_dn->dn;
 
+			/* we need to know if this is a link to the
+			   deleted objects container for fixing one way
+			   links */
+			if (dsdb_dn->extra_part.length == 16) {
+				char *hex_string = data_blob_hex_string_upper(req, &dsdb_dn->extra_part);
+				if (hex_string && strcmp(hex_string, DS_GUID_DELETED_OBJECTS_CONTAINER) == 0) {
+					is_deleted_objects = true;
+				}
+				talloc_free(hex_string);
+			}
+
 			/* don't let users see the internal extended
 			   GUID components */
 			if (!have_reveal_control) {
-				const char *accept[] = { "GUID", "SID", "WKGUID", NULL };
+				const char *accept[] = { "GUID", "SID", NULL };
 				ldb_dn_extended_filter(dn, accept);
 			}
 
@@ -619,7 +632,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			if (attribute->one_way_link &&
 			    strcasecmp(attribute->lDAPDisplayName, "objectCategory") != 0) {
 				bool remove_value;
-				ret = fix_one_way_link(ac, dn, &remove_value);
+				ret = fix_one_way_link(ac, dn, is_deleted_objects, &remove_value);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(dsdb_dn);
 					return ldb_module_done(ac->req, NULL, NULL, ret);
