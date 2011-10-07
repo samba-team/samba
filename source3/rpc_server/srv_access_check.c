@@ -52,6 +52,7 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 {
 	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 	uint32 saved_mask = 0;
+	bool priv_granted = false;
 
 	/* check privileges; certain SAM access bits should be overridden
 	   by privileges (mostly having to do with creating/modifying/deleting
@@ -59,6 +60,7 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 
 	if ((needed_priv_1 != SEC_PRIV_INVALID && security_token_has_privilege(token, needed_priv_1)) ||
 	    (needed_priv_2 != SEC_PRIV_INVALID && security_token_has_privilege(token, needed_priv_2))) {
+		priv_granted = true;
 		saved_mask = (des_access & rights_mask);
 		des_access &= ~saved_mask;
 
@@ -81,6 +83,7 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 		DEBUG(4,("%s: ACCESS should be DENIED  (requested: %#010x)\n", debug, des_access));
 		DEBUGADD(4,("but overritten by euid == sec_initial_uid()\n"));
 
+		priv_granted = true;
 		*acc_granted = des_access;
 
 		status = NT_STATUS_OK;
@@ -89,10 +92,12 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 
 
 done:
-	/* add in any bits saved during the privilege check (only
-	   matters is status is ok) */
+	if (priv_granted) {
+		/* add in any bits saved during the privilege check (only
+		   matters if status is ok) */
 
-	*acc_granted |= rights_mask;
+		*acc_granted |= rights_mask;
+	}
 
 	DEBUG(4,("%s: access %s (requested: 0x%08x, granted: 0x%08x)\n",
 		debug, NT_STATUS_IS_OK(status) ? "GRANTED" : "DENIED",
