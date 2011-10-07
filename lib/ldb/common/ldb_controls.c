@@ -1018,27 +1018,9 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 
 		return ctrl;
 	}
-
-	/* support a raw OID */
-	if (isdigit(control_strings[0])) {
-		const char *p = strchr(control_strings, ':');
-		if (p == NULL) {
-			goto failed;
-		}
-		if (strspn(control_strings, "0123456789.") != (p-control_strings)) {
-			goto failed;
-		}
-		ctrl->oid = talloc_strndup(ctrl, control_strings, p-control_strings);
-		ctrl->critical = (p[1]=='1'?1:0);
-		ctrl->data = NULL;
-		return ctrl;
-	}
-
 	/*
 	 * When no matching control has been found.
 	 */
-failed:
-	talloc_free(ctrl);
 	return NULL;
 }
 
