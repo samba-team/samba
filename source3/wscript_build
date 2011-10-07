@@ -3,9 +3,6 @@
 from samba_utils import *
 import samba_version, samba3
 
-# enable building of public headers in the build tree
-bld.env.build_public_headers = 'include/public'
-
 TDB_LIB_SRC = '''
 	  lib/dbwrap/dbwrap_open.c
 	  lib/dbwrap/dbwrap_tdb.c
