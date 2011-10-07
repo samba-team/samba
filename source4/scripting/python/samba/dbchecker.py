@@ -211,7 +211,7 @@ class dbcheck(object):
         m = ldb.Message()
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
-        if self.do_modify(m, ["show_recycled:1", "%s:0" % dsdb.DSDB_CONTROL_DBCHECK],
+        if self.do_modify(m, ["show_recycled:1", "local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK],
                           "Failed to remove deleted DN attribute %s" % attrname):
             self.report("Removed deleted DN on attribute %s" % attrname)
 
