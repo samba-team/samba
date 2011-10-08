@@ -2658,10 +2658,7 @@ nTSecurityDescriptor:: """ + desc_base64
                               controls=["paged_results:1:10"])
         self.assertEquals(len(res.controls), 1)
         self.assertEquals(res.controls[0].oid, "1.2.840.113556.1.4.319")
-        try:
-            s = str(res.controls[0])
-        except:
-            self.assertFalse(True)
+        s = str(res.controls[0])
 
     def test_operational(self):
         """Tests operational attributes"""

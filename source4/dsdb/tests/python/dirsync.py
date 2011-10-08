@@ -165,12 +165,9 @@ class SimpleDirsyncTests(DirsyncBaseTests):
 
     def test_ok_not_rootdc(self):
         """Test if it's ok to do dirsync on another NC that is not the root DC"""
-        try:
-            res = self.ldb_admin.search(self.ldb_admin.get_config_basedn(),
-                                        expression="samaccountname=*",
-                                        controls=["dirsync:1:0:1"])
-        except:
-            self.assertTrue(False)
+        self.ldb_admin.search(self.ldb_admin.get_config_basedn(),
+                                    expression="samaccountname=*",
+                                    controls=["dirsync:1:0:1"])
 
     def test_dirsync_errors(self):
         """Test if dirsync returns the correct LDAP errors in case of pb"""
