@@ -58,7 +58,7 @@
 
 		<varlistentry>
 		<term>-c SID1 -n SID2</term>
-		<listitem><para>Change all occurences of SID1 in <filename>file</filename> by SID2.
+		<listitem><para>Change all occurrences of SID1 in <filename>file</filename> by SID2.
 		</para></listitem>
 		</varlistentry>
 
