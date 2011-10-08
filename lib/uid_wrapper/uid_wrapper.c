@@ -1,5 +1,6 @@
 /*
    Copyright (C) Andrew Tridgell 2009
+   Copyright (c) 2011      Andreas Schneider <asn@samba.org>
  
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -149,6 +150,23 @@ _PUBLIC_ int uwrap_setregid(gid_t rgid, gid_t egid)
 	uwrap_init();
 	if (!uwrap.enabled) {
 		return setregid(rgid, egid);
+	}
+	/* assume for now that the ruid stays as root */
+	if (egid == 0) {
+		uwrap.egid = uwrap.mygid;
+	} else {
+		uwrap.egid = egid;
+	}
+	return 0;
+}
+#endif
+
+#ifdef HAVE_SETRESGID
+_PUBLIC_ int uwrap_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
+{
+	uwrap_init();
+	if (!uwrap.enabled) {
+		return setresgid(rgid, egid, sgid);
 	}
 	/* assume for now that the ruid stays as root */
 	if (egid == 0) {

@@ -1,5 +1,6 @@
 /*
    Copyright (C) Andrew Tridgell 2009
+   Copyright (c) 2011      Andreas Schneider <asn@samba.org>
  
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,6 +57,11 @@ gid_t uwrap_getgid(void);
 #undef setregid
 #endif
 #define setregid	uwrap_setregid
+
+#ifdef setresgid
+#undef setresgid
+#endif
+#define setresgid	uwrap_setresgid
 
 #ifdef geteuid
 #undef geteuid
