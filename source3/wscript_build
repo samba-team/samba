@@ -606,8 +606,6 @@ SMBFILTER_SRC = '''utils/smbfilter.c'''
 
 WINBIND_WINS_NSS_SRC = '''../nsswitch/wins.c'''
 
-WBINFO_SRC = '''../nsswitch/wbinfo.c'''
-
 NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
 
 NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}'''
@@ -1336,13 +1334,6 @@ bld.SAMBA3_BINARY('smbfilter',
 bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
                  deps='SAMBA_VERSION samba3core param',
-                 vars=locals())
-
-bld.SAMBA3_BINARY('wbinfo' + bld.env.suffix3,
-                 source=WBINFO_SRC,
-                 deps='''talloc wbclient tevent cap
-                 asn1util LIBTSOCKET pdb ldap param smbd_shim
-                 LIBNTLMSSP popt_samba3 LIBAFS_SETTOKEN''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,

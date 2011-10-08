@@ -40,3 +40,8 @@ bld.SAMBA_SUBSYSTEM('WB_REQTRANS',
 	source='wb_reqtrans.c',
 	deps='talloc tevent LIBASYNC_REQ'
 	)
+
+bld.SAMBA_BINARY('wbinfo',
+	source='wbinfo.c',
+	deps='samba-util LIBCLI_AUTH popt POPT_SAMBA wbclient LIBAFS_SETTOKEN'
+	)

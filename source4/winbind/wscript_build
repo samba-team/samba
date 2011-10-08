@@ -24,7 +24,3 @@ bld.SAMBA_SUBSYSTEM('IDMAP',
 	public_deps='samdb-common ldbsamba'
 	)
 
-bld.SAMBA_BINARY('wbinfo',
-	source='../../nsswitch/wbinfo.c',
-	deps='samba-util LIBCLI_AUTH popt POPT_SAMBA winbind-client wbclient tevent tevent-util LIBASYNC_REQ security ndr NDR_SECURITY'
-	)
