@@ -30,7 +30,7 @@ import tempfile
 import logging
 from samba import Ldb
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
-from samba.dcerpc.misc import SEC_CHAN_WKSTA
+import samba.ntacls
 from samba.join import join_RODC, join_DC, join_subdomain
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -44,7 +44,6 @@ from samba.netcmd import (
 from samba.samba3 import Samba3
 from samba.samba3 import param as s3param
 from samba.upgrade import upgrade_from_samba3
-from samba.provision import ProvisioningError
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -58,6 +57,7 @@ def get_testparm_var(testparm, smbconf, varname):
     cmd = "%s -s -l --parameter-name='%s' %s 2>/dev/null" % (testparm, varname, smbconf)
     output = os.popen(cmd, 'r').readline()
     return output.strip()
+
 
 class cmd_domain_export_keytab(Command):
     """Dumps kerberos keys of the domain into a keytab"""
