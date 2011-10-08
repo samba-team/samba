@@ -578,7 +578,7 @@ static bool test_compound_interim2(struct torture_context *tctx,
     ZERO_STRUCT(gf);
     gf.in.file.handle = hd;
     gf.in.info_type   = SMB2_GETINFO_FILE;
-    gf.in.info_class  = 0x04; // FILE_BASIC_INFORMATION
+    gf.in.info_class  = 0x04; /* FILE_BASIC_INFORMATION */
     gf.in.output_buffer_length = 0x1000;
     gf.in.input_buffer_length = 0;
 
