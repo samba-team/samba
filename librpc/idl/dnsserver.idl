@@ -61,21 +61,21 @@ import "misc.idl", "dnsp.idl";
 	} DNS_ADDR_ARRAY;
 #define PDNS_ADDR_ARRAY DNS_ADDR_ARRAY*
 
-	//
-	//   RPC buffer type for returned data
-	//
+	/* */
+	/*   RPC buffer type for returned data */
+	/* */
 	typedef struct {
 		DWORD                       dwLength;
 		[size_is(dwLength)] BYTE    Buffer[];
 	} DNS_RPC_BUFFER;
 
 
-	//
-	// Server data types
-	//
+	/* */
+	/* Server data types */
+	/* */
 	typedef struct {
-		// version
-		// basic configuration flags
+		/* version */
+		/* basic configuration flags */
 
 		DWORD          dwVersion;
 		UCHAR          fBootMethod;
@@ -83,26 +83,26 @@ import "misc.idl", "dnsp.idl";
 		BOOLEAN        fAllowUpdate;
 		BOOLEAN        fDsAvailable;
 
-		//
-		//   pointer section
-		//
+		/* */
+		/*   pointer section */
+		/* */
 
 		[string, charset(UTF8)] char *           pszServerName;
 
-		//   DS container
+		/*   DS container */
 
 		[string, charset(UTF16)] wchar_t *        pszDsContainer;
 
-		//   IP interfaces
+		/*   IP interfaces */
 
 		PIP4_ARRAY     aipServerAddrs;
 		PIP4_ARRAY     aipListenAddrs;
 
-		//   forwarders
+		/*   forwarders */
 
 		PIP4_ARRAY     aipForwarders;
 
-		//   future extensions
+		/*   future extensions */
 
 		PDWORD         pExtension1;
 		PDWORD         pExtension2;
@@ -110,15 +110,15 @@ import "misc.idl", "dnsp.idl";
 		PDWORD         pExtension4;
 		PDWORD         pExtension5;
 
-		//
-		//   DWORD section
-		//
+		/* */
+		/*   DWORD section */
+		/* */
 
-		//   logging
+		/*   logging */
 
 		DWORD          dwLogLevel;
 		DWORD          dwDebugLevel;
-		//   configuration DWORDs
+		/*   configuration DWORDs */
 
 		DWORD         dwForwardTimeout;
 		DWORD         dwRpcProtocol;
@@ -129,7 +129,7 @@ import "misc.idl", "dnsp.idl";
 		DWORD         dwMaxCacheTtl;
 		DWORD         dwDsPollingInterval;
 
-		//   aging / scavenging
+		/*   aging / scavenging */
 
 		DWORD         dwScavengingInterval;
 		DWORD         dwDefaultRefreshInterval;
@@ -137,37 +137,37 @@ import "misc.idl", "dnsp.idl";
 
 		DWORD         dwReserveArray[10];
 
-		//
-		//   BYTE section
-		//
-		//   configuration flags
+		/* */
+		/*   BYTE section */
+		/* */
+		/*   configuration flags */
 
 		BOOLEAN       fAutoReverseZones;
 		BOOLEAN       fAutoCacheUpdate;
 
-		//   recursion control
+		/*   recursion control */
 
 		BOOLEAN       fRecurseAfterForwarding;
 		BOOLEAN       fForwardDelegations;
 		BOOLEAN       fNoRecursion;
 		BOOLEAN       fSecureResponses;
 
-		//   lookup control
+		/*   lookup control */
 
 		BOOLEAN       fRoundRobin;
 		BOOLEAN       fLocalNetPriority;
 
-		//   BIND compatibility and mimicking
+		/*   BIND compatibility and mimicking */
 
 		BOOLEAN       fBindSecondaries;
 		BOOLEAN       fWriteAuthorityNs;
 
-		//   Bells and whistles
+		/*   Bells and whistles */
 
 		BOOLEAN       fStrictFileParsing;
 		BOOLEAN       fLooseWildcarding;
 
-		//   aging / scavenging
+		/*   aging / scavenging */
 
 		BOOLEAN       fDefaultAgingState;
 		BOOLEAN       fReserveArray[15];
@@ -182,7 +182,7 @@ import "misc.idl", "dnsp.idl";
 		DWORD          dwRpcStructureVersion;
 		DWORD          dwReserved0;
 
-		//   basic configuration flags
+		/*   basic configuration flags */
 
 		DWORD          dwVersion;
 		UCHAR          fBootMethod;
@@ -190,53 +190,53 @@ import "misc.idl", "dnsp.idl";
 		BOOLEAN        fAllowUpdate;
 		BOOLEAN        fDsAvailable;
 
-		//
-		//   pointer section
-		//
+		/* */
+		/*   pointer section */
+		/* */
 
 		[string, charset(UTF8)] char *        pszServerName;
 
-		//   DS container
+		/*   DS container */
 
 		[string, charset(UTF16)] wchar_t *     pszDsContainer;
 
-		//   IP interfaces
+		/*   IP interfaces */
 
 		PIP4_ARRAY     aipServerAddrs;
 		PIP4_ARRAY     aipListenAddrs;
 
-		//   forwarders
+		/*   forwarders */
 
 		PIP4_ARRAY     aipForwarders;
 
-		//   logging
+		/*   logging */
 
 		PIP4_ARRAY aipLogFilter;
 		[string, charset(UTF16)] wchar_t *  pwszLogFilePath;
 
-		//   Server domain/forest
+		/*   Server domain/forest */
 
-		[string, charset(UTF8)] char *            pszDomainName;         //   UTF-8 FQDN
-		[string, charset(UTF8)] char *            pszForestName;         //   UTF-8 FQDN
+		[string, charset(UTF8)] char *            pszDomainName;         /*   UTF-8 FQDN */
+		[string, charset(UTF8)] char *            pszForestName;         /*   UTF-8 FQDN */
 
-		//   Built-in directory partitions
+		/*   Built-in directory partitions */
 
-		[string, charset(UTF8)] char *            pszDomainDirectoryPartition;    //   UTF-8 FQDN
-		[string, charset(UTF8)] char *            pszForestDirectoryPartition;    //   UTF-8 FQDN
+		[string, charset(UTF8)] char *            pszDomainDirectoryPartition;    /*   UTF-8 FQDN */
+		[string, charset(UTF8)] char *            pszForestDirectoryPartition;    /*   UTF-8 FQDN */
 
-		//   future extensions
+		/*   future extensions */
 		DNS_EXTENSION       pExtensions[6];
 
-		//
-		//   DWORD section
-		//
+		/* */
+		/*   DWORD section */
+		/* */
 
-		//   logging
+		/*   logging */
 
 		DWORD          dwLogLevel;
 		DWORD          dwDebugLevel;
 
-		//   configuration DWORDs
+		/*   configuration DWORDs */
 		DWORD         dwForwardTimeout;
 		DWORD         dwRpcProtocol;
 		DWORD         dwNameCheckFlag;
@@ -247,19 +247,19 @@ import "misc.idl", "dnsp.idl";
 		DWORD         dwDsPollingInterval;
 		DWORD         dwLocalNetPriorityNetMask;
 
-		//   aging and scavenging
+		/*   aging and scavenging */
 
 		DWORD         dwScavengingInterval;
 		DWORD         dwDefaultRefreshInterval;
 		DWORD         dwDefaultNoRefreshInterval;
 		DWORD         dwLastScavengeTime;
 
-		//   more logging
+		/*   more logging */
 
 		DWORD         dwEventLogLevel;
 		DWORD         dwLogFileMaxSize;
 
-		//   Active Directory information
+		/*   Active Directory information */
 
 		DWORD         dwDsForestVersion;
 		DWORD         dwDsDomainVersion;
@@ -267,37 +267,37 @@ import "misc.idl", "dnsp.idl";
 
 		DWORD         dwReserveArray[ 4 ];
 
-		//
-		//   BYTE section
-		//
-		//   configuration flags
+		/* */
+		/*   BYTE section */
+		/* */
+		/*   configuration flags */
 
 		BOOLEAN       fAutoReverseZones;
 		BOOLEAN       fAutoCacheUpdate;
 
-		//   recursion control
+		/*   recursion control */
 
 		BOOLEAN       fRecurseAfterForwarding;
 		BOOLEAN       fForwardDelegations;
 		BOOLEAN       fNoRecursion;
 		BOOLEAN       fSecureResponses;
 
-		//   lookup control
+		/*   lookup control */
 
 		BOOLEAN       fRoundRobin;
 		BOOLEAN       fLocalNetPriority;
 
-		//   BIND compatibility and mimicking
+		/*   BIND compatibility and mimicking */
 
 		BOOLEAN       fBindSecondaries;
 		BOOLEAN       fWriteAuthorityNs;
 
-		//   Bells and whistles
+		/*   Bells and whistles */
 
 		BOOLEAN       fStrictFileParsing;
 		BOOLEAN        fLooseWildcarding;
 
-		//   aging \ scavenging
+		/*   aging \ scavenging */
 
 		BOOLEAN        fDefaultAgingState;
 
@@ -309,7 +309,7 @@ import "misc.idl", "dnsp.idl";
 		DWORD               dwRpcStructureVersion;
 		DWORD               dwReserved0;
 
-		//   basic configuration flags
+		/*   basic configuration flags */
 
 		DWORD                  dwVersion;
 		UCHAR                  fBootMethod;
@@ -317,53 +317,53 @@ import "misc.idl", "dnsp.idl";
 		BOOLEAN                fAllowUpdate;
 		BOOLEAN                fDsAvailable;
 
-		//
-		//   pointer section
-		//
+		/* */
+		/*   pointer section */
+		/* */
 
 		[string, charset(UTF8)] char *                     pszServerName;
 
-		//   DS container
+		/*   DS container */
 
 		[string, charset(UTF16)] wchar_t *                  pszDsContainer;
 
-		//   IP interfaces
+		/*   IP interfaces */
 
 		PDNS_ADDR_ARRAY        aipServerAddrs;
 		PDNS_ADDR_ARRAY        aipListenAddrs;
 
-		//   forwarders
+		/*   forwarders */
 
 		PDNS_ADDR_ARRAY        aipForwarders;
 
-		//   logging
+		/*   logging */
 
 		PDNS_ADDR_ARRAY        aipLogFilter;
 		[string, charset(UTF16)] wchar_t *              pwszLogFilePath;
 
-		//   Server domain/forest
+		/*   Server domain/forest */
 
-		[string, charset(UTF8)] char *                     pszDomainName;         //   UTF-8 FQDN
-		[string, charset(UTF8)] char *                     pszForestName;         //   UTF-8 FQDN
+		[string, charset(UTF8)] char *                     pszDomainName;         /*   UTF-8 FQDN */
+		[string, charset(UTF8)] char *                     pszForestName;         /*   UTF-8 FQDN */
 
-		//   Built-in directory partitions
+		/*   Built-in directory partitions */
 
-		[string, charset(UTF8)] char *            pszDomainDirectoryPartition;    //   UTF-8 FQDN
-		[string, charset(UTF8)] char *            pszForestDirectoryPartition;    //   UTF-8 FQDN
+		[string, charset(UTF8)] char *            pszDomainDirectoryPartition;    /*   UTF-8 FQDN */
+		[string, charset(UTF8)] char *            pszForestDirectoryPartition;    /*   UTF-8 FQDN */
 
-		//   future extensions
+		/*   future extensions */
 		DNS_EXTENSION       pExtensions[6];
 
-		//
-		//   DWORD section
-		//
+		/* */
+		/*   DWORD section */
+		/* */
 
-		//   logging
+		/*   logging */
 
 		DWORD          dwLogLevel;
 		DWORD          dwDebugLevel;
 
-		//   configuration DWORDs
+		/*   configuration DWORDs */
 
 		DWORD          dwForwardTimeout;
 		DWORD          dwRpcProtocol;
@@ -375,19 +375,19 @@ import "misc.idl", "dnsp.idl";
 		DWORD          dwDsPollingInterval;
 		DWORD          dwLocalNetPriorityNetMask;
 
-		//   aging and scavenging
+		/*   aging and scavenging */
 
 		DWORD          dwScavengingInterval;
 		DWORD          dwDefaultRefreshInterval;
 		DWORD          dwDefaultNoRefreshInterval;
 		DWORD          dwLastScavengeTime;
 
-		//   more logging
+		/*   more logging */
 
 		DWORD          dwEventLogLevel;
 		DWORD          dwLogFileMaxSize;
 
-		//   Active Directory information
+		/*   Active Directory information */
 
 		DWORD          dwDsForestVersion;
 		DWORD          dwDsDomainVersion;
@@ -396,36 +396,36 @@ import "misc.idl", "dnsp.idl";
 
 		DWORD          dwReserveArray[ 3 ];
 
-		//
-		//   BYTE section
-		//
-		//   configuration flags
+		/* */
+		/*   BYTE section */
+		/* */
+		/*   configuration flags */
 
 		BOOLEAN        fAutoReverseZones;
 		BOOLEAN        fAutoCacheUpdate;
 
-		//   recursion control
+		/*   recursion control */
 
 		BOOLEAN        fRecurseAfterForwarding;
 		BOOLEAN        fForwardDelegations;
 		BOOLEAN        fNoRecursion;
 		BOOLEAN        fSecureResponses;
-		//   lookup control
+		/*   lookup control */
 
 		BOOLEAN      fRoundRobin;
 		BOOLEAN      fLocalNetPriority;
 
-		//   BIND compatibility and mimicking
+		/*   BIND compatibility and mimicking */
 
 		BOOLEAN      fBindSecondaries;
 		BOOLEAN      fWriteAuthorityNs;
 
-		//   Bells and whistles
+		/*   Bells and whistles */
 
 		BOOLEAN      fStrictFileParsing;
 		BOOLEAN      fLooseWildcarding;
 
-		//   aging \ scavenging
+		/*   aging \ scavenging */
 
 		BOOLEAN      fDefaultAgingState;
 
@@ -461,9 +461,9 @@ import "misc.idl", "dnsp.idl";
 #define DNS_RPC_FORWARDERS DNS_RPC_FORWARDERS_LONGHORN
 
 
-	//
-	//   Basic zone data
-	//
+	/* */
+	/*   Basic zone data */
+	/* */
 
 	typedef [bitmap32bit] bitmap {
 		RPC_ZONE_PAUSED        = 0x001,
@@ -500,9 +500,9 @@ import "misc.idl", "dnsp.idl";
 #define PDNS_RPC_ZONE_DOTNET DNS_RPC_ZONE_DOTNET*
 
 
-	//
-	//   Zone enumeration
-	//
+	/* */
+	/*   Zone enumeration */
+	/* */
 
 	typedef struct {
 		[range(0,500000)]       DWORD               dwZoneCount;
@@ -521,9 +521,9 @@ import "misc.idl", "dnsp.idl";
 #define DNS_RPC_ZONE_LIST DNS_RPC_ZONE_LIST_DOTNET
 
 
-	//
-	//   Directory partition enumeration and info
-	//
+	/* */
+	/*   Directory partition enumeration and info */
+	/* */
 
 	typedef struct {
 		DWORD           dwRpcStructureVersion;
@@ -570,21 +570,21 @@ import "misc.idl", "dnsp.idl";
 	DNS_RPC_DP_INFO;
 
 
-	//
-	//   Enlist (or create) directory partition
-	//
+	/* */
+	/*   Enlist (or create) directory partition */
+	/* */
 
 	typedef struct {
 		DWORD       dwRpcStructureVersion;
 		DWORD       dwReserved0;
-		[string, charset(UTF8)] char * pszDpFqdn;       //      UTF8
+		[string, charset(UTF8)] char * pszDpFqdn;       /*      UTF8 */
 		DWORD       dwOperation;
 	}
 	DNS_RPC_ENLIST_DP;
 
-	//
-	//   Zone export
-	//
+	/* */
+	/*   Zone export */
+	/* */
 
 	typedef struct {
 		DWORD       dwRpcStructureVersion;
@@ -594,9 +594,9 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_ZONE_EXPORT_INFO;
 
-	//
-	//   Zone property data
-	//
+	/* */
+	/*   Zone property data */
+	/* */
 
 	typedef struct {
 		DWORD       fSecureSecondaries;
@@ -661,32 +661,32 @@ import "misc.idl", "dnsp.idl";
 		DWORD       fShutdown;
 		DWORD       fAutoCreated;
 
-		// Database info
+		/* Database info */
 		DWORD       fUseDatabase;
 		[string, charset(UTF8)] char * pszDataFile;
 
-		// Masters
+		/* Masters */
 		PIP4_ARRAY aipMasters;
 
-		// Secondaries
+		/* Secondaries */
 		DWORD      fSecureSecondaries;
 		DWORD      fNotifyLevel;
 		PIP4_ARRAY aipSecondaries;
 		PIP4_ARRAY aipNotify;
 
-		// WINS or NetBIOS lookup
+		/* WINS or NetBIOS lookup */
 		DWORD      fUseWins;
 		DWORD      fUseNbstat;
 
-		// Aging
+		/* Aging */
 		DWORD         fAging;
 		DWORD         dwNoRefreshInterval;
 		DWORD         dwRefreshInterval;
 		DWORD         dwAvailForScavengeTime;
 		PIP4_ARRAY    aipScavengeServers;
 
-		// save some space, just in case
-		// avoid versioning issues if possible
+		/* save some space, just in case */
+		/* avoid versioning issues if possible */
 		DWORD      pvReserved1;
 		DWORD      pvReserved2;
 		DWORD      pvReserved3;
@@ -706,47 +706,47 @@ import "misc.idl", "dnsp.idl";
 		DWORD       fShutdown;
 		DWORD       fAutoCreated;
 
-		// Database info
+		/* Database info */
 		DWORD       fUseDatabase;
 		[string, charset(UTF8)] char * pszDataFile;
 
-		// Masters
+		/* Masters */
 		PIP4_ARRAY aipMasters;
 
-		// Secondaries
+		/* Secondaries */
 		DWORD      fSecureSecondaries;
 		DWORD      fNotifyLevel;
 		PIP4_ARRAY aipSecondaries;
 		PIP4_ARRAY aipNotify;
 
-		// WINS or NetBIOS lookup
+		/* WINS or NetBIOS lookup */
 		DWORD      fUseWins;
 		DWORD      fUseNbstat;
 
-		// Aging
+		/* Aging */
 		DWORD         fAging;
 		DWORD         dwNoRefreshInterval;
 		DWORD         dwRefreshInterval;
 		DWORD         dwAvailForScavengeTime;
 		PIP4_ARRAY    aipScavengeServers;
 
-		// Forwarder zones
+		/* Forwarder zones */
 		DWORD      dwForwarderTimeout;
 		DWORD      fForwarderSlave;
 
-		// Stub zones
+		/* Stub zones */
 		PIP4_ARRAY aipLocalMasters;
 
-		// Directory partition
+		/* Directory partition */
 		DWORD       dwDpFlags;
 		[string, charset(UTF8)] char *      pszDpFqdn;
 		[string, charset(UTF16)] wchar_t *   pwszZoneDn;
 
-		// Xfr time information
+		/* Xfr time information */
 		DWORD      dwLastSuccessfulSoaCheck;
 		DWORD      dwLastSuccessfulXfr;
 
-		// save some space, just in case
+		/* save some space, just in case */
 		DWORD      dwReserved1;
 		DWORD         dwReserved2;
 		DWORD         dwReserved3;
@@ -771,42 +771,42 @@ import "misc.idl", "dnsp.idl";
 		DWORD                  fShutdown;
 		DWORD                  fAutoCreated;
 
-		// Database info
+		/* Database info */
 		DWORD                  fUseDatabase;
 		[string, charset(UTF8)] char *                  pszDataFile;
 
-		// Masters
+		/* Masters */
 		PDNS_ADDR_ARRAY        aipMasters;
 
-		// Secondaries
+		/* Secondaries */
 		DWORD                  fSecureSecondaries;
 		DWORD                  fNotifyLevel;
 		PDNS_ADDR_ARRAY        aipSecondaries;
 		PDNS_ADDR_ARRAY        aipNotify;
 
-		// WINS or NetBIOS lookup
+		/* WINS or NetBIOS lookup */
 		DWORD              fUseWins;
 		DWORD              fUseNbstat;
 
-		// Aging
+		/* Aging */
 		DWORD                  fAging;
 		DWORD                  dwNoRefreshInterval;
 		DWORD                  dwRefreshInterval;
 		DWORD                  dwAvailForScavengeTime;
 		PDNS_ADDR_ARRAY        aipScavengeServers;
 
-		// Forwarder zones
+		/* Forwarder zones */
 		DWORD              dwForwarderTimeout;
 		DWORD              fForwarderSlave;
 
-		// Stub zones
+		/* Stub zones */
 		PDNS_ADDR_ARRAY        aipLocalMasters;
 
-		// Directory partition
+		/* Directory partition */
 		DWORD              dwDpFlags;
 		[string, charset(UTF8)] char *              pszDpFqdn;
 		[string, charset(UTF16)] wchar_t *             pwszZoneDn;
-		// Xfr time information
+		/* Xfr time information */
 		DWORD              dwLastSuccessfulSoaCheck;
 		DWORD              dwLastSuccessfulXfr;
 
@@ -814,16 +814,16 @@ import "misc.idl", "dnsp.idl";
 		DWORD                 fBackgroundLoadInProgress;
 		BOOL                  fReadOnlyZone;
 
-		// Additional zone transfer information
+		/* Additional zone transfer information */
 		DWORD              dwLastXfrAttempt;
 		DWORD              dwLastXfrResult;
 	}
 	DNS_RPC_ZONE_INFO_LONGHORN;
 #define DNS_RPC_ZONE_INFO DNS_RPC_ZONE_INFO_LONGHORN
 
-	//
-	//   Zone create data
-	//
+	/* */
+	/*   Zone create data */
+	/* */
 
 	typedef struct {
 		[string, charset(UTF8)] char *       pszZoneName;
@@ -832,27 +832,27 @@ import "misc.idl", "dnsp.idl";
 		DWORD       fAging;
 		DWORD       dwFlags;
 
-		//   Database info
+		/*   Database info */
 
 		[string, charset(UTF8)] char *       pszDataFile;
 		DWORD       fDsIntegrated;
 		DWORD       fLoadExisting;
 
-		//   Admin name (if auto-create SOA)
+		/*   Admin name (if auto-create SOA) */
 
 		[string, charset(UTF8)] char *           pszAdmin;
 
-		//   Masters (if secondary)
+		/*   Masters (if secondary) */
 
 		PIP4_ARRAY   aipMasters;
 
-		//   Secondaries
+		/*   Secondaries */
 
 		PIP4_ARRAY   aipSecondaries;
 		DWORD        fSecureSecondaries;
 		DWORD        fNotifyLevel;
 
-		//   Reserve some space to avoid versioning issues
+		/*   Reserve some space to avoid versioning issues */
 
 		[string, charset(UTF8)]   char   *       pvReserved1;
 		[string, charset(UTF8)]   char   *       pvReserved2;
@@ -883,35 +883,35 @@ import "misc.idl", "dnsp.idl";
 		DWORD       fAging;
 		DWORD       dwFlags;
 
-		//   Database info
+		/*   Database info */
 
 		[string, charset(UTF8)] char *       pszDataFile;
 		DWORD       fDsIntegrated;
 		DWORD       fLoadExisting;
 
-		//   Admin name (if auto-create SOA)
+		/*   Admin name (if auto-create SOA) */
 
 		[string, charset(UTF8)] char *            pszAdmin;
 
-		//   Masters (if secondary)
+		/*   Masters (if secondary) */
 
 		PIP4_ARRAY    aipMasters;
 
-		//   Secondaries
+		/*   Secondaries */
 
 		PIP4_ARRAY    aipSecondaries;
 		DWORD         fSecureSecondaries;
 		DWORD         fNotifyLevel;
 
-		//   Forwarder zones
+		/*   Forwarder zones */
 
 		DWORD         dwTimeout;
 		DWORD         fRecurseAfterForwarding;
 
-		//   Directory partition
+		/*   Directory partition */
 
-		DWORD       dwDpFlags;      // specify built-in DP or
-		[string, charset(UTF8)] char *       pszDpFqdn;     //      UTF8 FQDN of partition
+		DWORD       dwDpFlags;      /* specify built-in DP or */
+		[string, charset(UTF8)] char *       pszDpFqdn;     /*      UTF8 FQDN of partition */
 
 		DWORD       dwReserved[ 32 ];
 	}
@@ -928,35 +928,35 @@ import "misc.idl", "dnsp.idl";
 		DWORD                  fAging;
 		DWORD                  dwFlags;
 
-		//   Database info
+		/*   Database info */
 
 		[string, charset(UTF8)] char *                  pszDataFile;
 		DWORD                  fDsIntegrated;
 		DWORD                  fLoadExisting;
 
-		//   Admin name (if auto-create SOA)
+		/*   Admin name (if auto-create SOA) */
 
 		[string, charset(UTF8)] char *                    pszAdmin;
 
-		//   Masters (if secondary)
+		/*   Masters (if secondary) */
 
 		PDNS_ADDR_ARRAY        aipMasters;
 
-		//   Secondaries
+		/*   Secondaries */
 
 		PDNS_ADDR_ARRAY        aipSecondaries;
 		DWORD                  fSecureSecondaries;
 		DWORD                  fNotifyLevel;
 
-		//   Forwarder zones
+		/*   Forwarder zones */
 
 		DWORD                  dwTimeout;
 		DWORD                  fRecurseAfterForwarding;
 
-		//   Directory partition
+		/*   Directory partition */
 
-		DWORD                  dwDpFlags;      // specify built-in DP or
-		[string, charset(UTF8)] char *                  pszDpFqdn;     //      UTF8 FQDN of partition
+		DWORD                  dwDpFlags;      /* specify built-in DP or */
+		[string, charset(UTF8)] char *                  pszDpFqdn;     /*      UTF8 FQDN of partition */
 
 		DWORD               dwReserved[ 32 ];
 	}
@@ -973,9 +973,9 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_AUTOCONFIGURE;
 
-	//
-	//   EnumZones2 filter specification
-	//
+	/* */
+	/*   EnumZones2 filter specification */
+	/* */
 	typedef struct {
 		DWORD       dwRpcStructureVersion;
 		DWORD       dwReserved0;
@@ -988,9 +988,9 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_ENUM_ZONES_FILTER;
 
-	//
-	//   RPC record structure
-	//
+	/* */
+	/*   RPC record structure */
+	/* */
 
 	typedef struct {
 		[value(strlen(str))] uint8 len;
@@ -1026,10 +1026,10 @@ import "misc.idl", "dnsp.idl";
 	} DNS_RPC_RECORD_BUF;
 
 
-	//
-	//   These RPC structures have no version because they are simple
-	//   are they are explicitly defined by their names.
-	//
+	/* */
+	/*   These RPC structures have no version because they are simple */
+	/*   are they are explicitly defined by their names. */
+	/* */
 
 	typedef struct {
 		DWORD       dwParam;
@@ -1048,17 +1048,17 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_IP_VALIDATE;
 
-	//
-	//   String array
-	//
+	/* */
+	/*   String array */
+	/* */
 	typedef struct {
 		[range(0,10000)]        DWORD       dwCount;
 		[size_is(dwCount),string,charset(UTF8)]      char *       pszStrings[];
 	} DNS_RPC_UTF8_STRING_LIST;
 
-	//
-	//   Union of RPC types
-	//
+	/* */
+	/*   Union of RPC types */
+	/* */
 	typedef [v1_enum] enum {
 		DNSSRV_TYPEID_NULL                      = 0,
 		DNSSRV_TYPEID_DWORD                     = 1,
