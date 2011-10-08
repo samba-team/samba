@@ -161,8 +161,8 @@ def configure(conf):
 
     conf.CHECK_FUNCS('shl_load shl_unload shl_findsym')
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
-    conf.CHECK_FUNCS('lstat getpgrp utime utimes seteuid setresuid setegid')
-    conf.CHECK_FUNCS('setresgid chroot strerror vsyslog setlinebuf mktime')
+    conf.CHECK_FUNCS('lstat getpgrp utime utimes seteuid setreuid setresuid setegid')
+    conf.CHECK_FUNCS('setregid setresgid chroot strerror vsyslog setlinebuf mktime')
     conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4 strlcpy strlcat')
     conf.CHECK_FUNCS('initgroups pread pwrite strndup strcasestr')
     conf.CHECK_FUNCS('strtok_r mkdtemp dup2 dprintf vdprintf isatty chown lchown')
