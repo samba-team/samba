@@ -775,7 +775,7 @@ static int skel_set_offline(struct vfs_handle_struct *handle, const struct smb_f
 
 /* VFS operations structure */
 
-struct vfs_fn_pointers skel_transparent_fns = {
+struct vfs_fn_pointers skel_opaque_fns = {
 	/* Disk operations */
 
 	.connect_fn = skel_connect,
@@ -915,7 +915,7 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.set_offline = skel_set_offline
 };
 
-NTSTATUS vfs_skel_transparent_init(void)
+NTSTATUS vfs_skel_opaque_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_transparent", &skel_transparent_fns);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_opaque", &skel_opaque_fns);
 }
