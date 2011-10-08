@@ -20,14 +20,13 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 #include <tevent.h>
 #include "lib/util/tevent_ntstatus.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "auth/gensec/gensec.h"
-
-#include <unistd.h>
 
 /**
   initialise a smb2_session structure

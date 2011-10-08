@@ -20,7 +20,6 @@
 #include "config.h"
 #include <errno.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -28,6 +27,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include "system/time.h"
+#include "system/filesys.h"
 
 #include "pthreadpool.h"
 #include "lib/util/dlinklist.h"

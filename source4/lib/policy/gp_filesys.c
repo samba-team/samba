@@ -17,15 +17,13 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 #include "includes.h"
+#include "system/filesys.h"
 #include "lib/policy/policy.h"
 #include "libcli/raw/smb.h"
 #include "libcli/libcli.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/raw/libcliraw.h"
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
 

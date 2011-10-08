@@ -24,6 +24,7 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#define UID_WRAPPER_NOT_REPLACE
 #include "includes.h"
 #include "system/filesys.h"
 #include "smb_share_modes.h"

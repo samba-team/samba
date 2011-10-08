@@ -24,6 +24,7 @@
 #include "torture/torture.h"
 #include <tevent.h>
 #include "system/time.h"
+#include "system/network.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
@@ -38,8 +39,6 @@
 #include "auth/gensec/schannel.h"
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
-
-#include <unistd.h>
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ACCOUNT_NAME_PWD "samrpwdlastset"

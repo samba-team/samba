@@ -34,12 +34,10 @@
 #include "reg_format.h"
 
 #include <stdio.h>
-#include <unistd.h>
 #include <wchar.h>
 #include <talloc.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/types.h>
 #include <regex.h>
 #include <assert.h>
 #include <stdint.h>
