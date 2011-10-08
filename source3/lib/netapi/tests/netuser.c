@@ -57,7 +57,7 @@ static NET_API_STATUS test_netuserenum(const char *hostname,
 				     level,
 				     FILTER_NORMAL_ACCOUNT,
 				     &buffer,
-				     120, //(uint32_t)-1,
+				     120, /*(uint32_t)-1, */
 				     &entries_read,
 				     &total_entries,
 				     &resume_handle);
@@ -275,7 +275,7 @@ static NET_API_STATUS test_netusergetgroups(const char *hostname,
 					  username,
 					  level,
 					  &buffer,
-					  120, //(uint32_t)-1,
+					  120, /*(uint32_t)-1, */
 					  &entries_read,
 					  &total_entries);
 		if (status == 0 || status == ERROR_MORE_DATA) {

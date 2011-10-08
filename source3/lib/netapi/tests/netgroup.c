@@ -51,7 +51,7 @@ static NET_API_STATUS test_netgroupenum(const char *hostname,
 		status = NetGroupEnum(hostname,
 				      level,
 				      &buffer,
-				      120, //(uint32_t)-1,
+				      120, /*(uint32_t)-1, */
 				      &entries_read,
 				      &total_entries,
 				      &resume_handle);
