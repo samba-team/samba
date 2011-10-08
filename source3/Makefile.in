@@ -494,7 +494,7 @@ READLINE_OBJ = ../libcli/smbreadline/smbreadline.o
 # Be sure to include them into your application
 POPT_LIB_OBJ = lib/popt_common.o
 
-PARAM_WITHOUT_REG_OBJ = ../dynconfig/dynconfig.o param/loadparm.o param/loadparm_server_role.o param/util.o lib/sharesec.o lib/ldap_debug_handler.o
+PARAM_WITHOUT_REG_OBJ = ../dynconfig/dynconfig.o param/loadparm.o param/loadparm_ctx.o param/loadparm_server_role.o param/util.o lib/sharesec.o lib/ldap_debug_handler.o ../lib/param/loadparm.o ../lib/param/util.o
 PARAM_REG_ADD_OBJ = $(REG_SMBCONF_OBJ) $(LIBSMBCONF_OBJ) $(PRIVILEGES_BASIC_OBJ)
 PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 
@@ -1656,7 +1656,11 @@ idl_full::
 
 mkparam:
 	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/../lib/param/param_functions.c --file ../lib/param/param_local.h --generate-scope=LOCAL
+	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/../lib/param/loadparm.c --file ../lib/param/param_global.h --generate-scope=GLOBAL
 	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/param/loadparm.c --file param/param_global.h --generate-scope=GLOBAL
+	 $(PERL) ../source4/script/mkproto.pl $(srcdir)/../lib/param/loadparm.c --public ../lib/param/param_proto.h  --private ../lib/param/param_proto.h
+	 $(PERL) ../script/mks3param.pl $(srcdir)/../lib/param/loadparm.c --file ../lib/param/s3_param.h
+
 
 #####################################################################
 
