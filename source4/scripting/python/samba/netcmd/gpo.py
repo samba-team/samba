@@ -34,8 +34,7 @@ from samba.netcmd import (
     SuperCommand,
     )
 from samba.samdb import SamDB
-from samba import drs_utils, nttime2string, dsdb, dcerpc
-from samba.dcerpc import misc
+from samba import dsdb, dcerpc
 from samba.ndr import ndr_unpack
 import samba.security
 import samba.auth
@@ -170,14 +169,14 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None):
 def parse_unc(unc):
     '''Parse UNC string into a hostname, a service, and a filepath'''
     if unc.startswith('\\\\') and unc.startswith('//'):
-        return []
+        raise ValueError("UNC doesn't start with \\\\ or //")
     tmp = unc[2:].split('/', 2)
     if len(tmp) == 3:
         return tmp
     tmp = unc[2:].split('\\', 2)
     if len(tmp) == 3:
-        return tmp;
-    return []
+        return tmp
+    raise ValueError("Invalid UNC string: %s" % unc)
 
 
 def copy_directory_remote_to_local(conn, remotedir, localdir):
@@ -602,7 +601,7 @@ class cmd_dellink(Command):
                     gplist.remove(g)
                     break
         else:
-            raise CommandError("Specified GPO is not linked to this container");
+            raise CommandError("Specified GPO is not linked to this container")
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, container_dn)
@@ -658,7 +657,7 @@ class cmd_getinheritance(Command):
 
         inheritance = 0
         if 'gPOptions' in msg:
-            inheritance = int(msg['gPOptions'][0]);
+            inheritance = int(msg['gPOptions'][0])
 
         if inheritance == dsdb.GPO_BLOCK_INHERITANCE:
             print("Container has GPO_BLOCK_INHERITANCE")
@@ -713,7 +712,7 @@ class cmd_setinheritance(Command):
         if 'gPOptions' in msg:
             m['new_value'] = ldb.MessageElement(str(inheritance), ldb.FLAG_MOD_REPLACE, 'gPOptions')
         else:
-            m['new_value'] = ldb.MessageElement(str(inheritance), ldb.FLAG_MOD_ADD, 'gPOptions');
+            m['new_value'] = ldb.MessageElement(str(inheritance), ldb.FLAG_MOD_ADD, 'gPOptions')
 
         try:
             self.samdb.modify(m)
@@ -757,7 +756,7 @@ class cmd_fetch(Command):
         unc = msg['gPCFileSysPath'][0]
         try:
             [dom_name, service, sharepath] = parse_unc(unc)
-        except:
+        except ValueError:
             raise CommandError("Invalid GPO path (%s)" % unc)
 
         # SMB connect to DC
