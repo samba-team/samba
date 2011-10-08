@@ -19,7 +19,6 @@
 
 __docformat__ = "restructuredText"
 
-import grp
 import ldb
 import time
 import pwd
@@ -486,15 +485,12 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
                     realm)
 
     # Find machine account and password
-    machinepass = None
-    machinerid = None
-    machinesid = None
     next_rid = 1000
 
     try:
         machinepass = secrets_db.get_machine_password(netbiosname)
-    except:
-        pass
+    except KeyError:
+        machinepass = None
 
     # We must close the direct pytdb database before the C code loads it
     secrets_db.close()
@@ -512,9 +508,11 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
     # Get machine account, sid, rid
     try:
         machineacct = s3db.getsampwnam('%s$' % netbiosname)
+    except passdb.error:
+        machinerid = None
+        machinesid = None
+    else:
         machinesid, machinerid = machineacct.user_sid.split()
-    except:
-        pass
 
     # Export account policy
     logger.info("Exporting account policy")
@@ -536,7 +534,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
         elif group.sid_name_use == lsa.SID_NAME_DOM_GRP:
             try:
                 members = s3db.enum_group_members(group.sid)
-            except:
+            except passdb.error:
                 continue
             groupmembers[group.nt_name] = members
         elif group.sid_name_use == lsa.SID_NAME_WKN_GRP:
@@ -590,10 +588,10 @@ Please fix this account before attempting to upgrade again
         userdata[username] = user
         try:
             uids[username] = s3db.sid_to_id(user.user_sid)[0]
-        except:
+        except passdb.error:
             try:
                 uids[username] = pwd.getpwnam(username).pw_uid
-            except:
+            except passdb.error:
                 pass
 
         if not admin_user and username.lower() == 'root':
