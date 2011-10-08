@@ -186,18 +186,18 @@
    In old swig versions, you usually write code as:
 
      if (SWIG_ConvertPtr(obj,vptr,ty.flags) != -1) {
-       // success code
+       /* success code */
      } else {
-       //fail code
+       /*fail code */
      }
 
    Now you can be more explicit as:
 
     int res = SWIG_ConvertPtr(obj,vptr,ty.flags);
     if (SWIG_IsOK(res)) {
-      // success code
+      /* success code */
     } else {
-      // fail code
+      /* fail code */
     }
 
    that seems to be the same, but now you can also do
@@ -205,7 +205,7 @@
     Type *ptr;
     int res = SWIG_ConvertPtr(obj,(void **)(&ptr),ty.flags);
     if (SWIG_IsOK(res)) {
-      // success code
+      /* success code */
       if (SWIG_IsNewObj(res) {
         ...
 	delete *ptr;
@@ -213,7 +213,7 @@
         ...
       }
     } else {
-      // fail code
+      /* fail code */
     }
     
    I.e., now SWIG_ConvertPtr can return new objects and you can
@@ -246,8 +246,8 @@
 
    and you call
  
-      food(1)   // cast rank '1'  (1 -> 1.0)
-      fooi(1)   // cast rank '0'
+      food(1)   /* cast rank '1'  (1 -> 1.0) */
+      fooi(1)   /* cast rank '0' */
 
    just use the SWIG_AddCast()/SWIG_CheckState()
 
