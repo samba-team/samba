@@ -66,6 +66,7 @@ _PUBLIC_ int uwrap_enabled(void)
 	return uwrap.enabled?1:0;
 }
 
+#ifdef HAVE_SETEUID
 _PUBLIC_ int uwrap_seteuid(uid_t euid)
 {
 	uwrap_init();
@@ -80,7 +81,9 @@ _PUBLIC_ int uwrap_seteuid(uid_t euid)
 	}
 	return 0;
 }
+#endif
 
+#ifdef HAVE_SETREUID
 _PUBLIC_ int uwrap_setreuid(uid_t ruid, uid_t euid)
 {
 	uwrap_init();
@@ -95,7 +98,9 @@ _PUBLIC_ int uwrap_setreuid(uid_t ruid, uid_t euid)
 	}
 	return 0;
 }
+#endif
 
+#ifdef HAVE_SETRESUID
 _PUBLIC_ int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
 	uwrap_init();
@@ -110,6 +115,7 @@ _PUBLIC_ int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 	}
 	return 0;
 }
+#endif
 
 _PUBLIC_ uid_t uwrap_geteuid(void)
 {
@@ -120,6 +126,7 @@ _PUBLIC_ uid_t uwrap_geteuid(void)
 	return uwrap.euid;
 }
 
+#ifdef HAVE_SETEGID
 _PUBLIC_ int uwrap_setegid(gid_t egid)
 {
 	uwrap_init();
@@ -134,7 +141,9 @@ _PUBLIC_ int uwrap_setegid(gid_t egid)
 	}
 	return 0;
 }
+#endif
 
+#ifdef HAVE_SETREGID
 _PUBLIC_ int uwrap_setregid(gid_t rgid, gid_t egid)
 {
 	uwrap_init();
@@ -149,6 +158,7 @@ _PUBLIC_ int uwrap_setregid(gid_t rgid, gid_t egid)
 	}
 	return 0;
 }
+#endif
 
 _PUBLIC_ uid_t uwrap_getegid(void)
 {
