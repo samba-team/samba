@@ -509,7 +509,7 @@ static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
 			goto error;
 		}
 
-		assert(value_length<=data_size); //???
+		assert(value_length<=data_size); /*??? */
 
 		values[i] = regval_compose(values,
 					   name_buf.name,

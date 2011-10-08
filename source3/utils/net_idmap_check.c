@@ -970,7 +970,7 @@ static bool check_commit(struct check_ctx* ctx)
 		check_transaction_cancel(ctx);
 		return false;
 	}
-	if (ctx->opts.test) { //get_action?
+	if (ctx->opts.test) { /*get_action? */
 		return check_transaction_cancel(ctx);
 	} else {
 		return check_transaction_commit(ctx);
