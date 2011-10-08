@@ -83,6 +83,12 @@ static uint32_t skel_fs_capabilities(struct vfs_handle_struct *handle, enum time
 	return 0;
 }
 
+static NTSTATUS skel_get_dfs_referrals(struct vfs_handle_struct *handle,
+				       struct dfs_GetDFSReferral *r)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
 {
 	return NULL;
@@ -786,6 +792,7 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.get_shadow_copy_data = skel_get_shadow_copy_data,
 	.statvfs = skel_statvfs,
 	.fs_capabilities = skel_fs_capabilities,
+	.get_dfs_referrals = skel_get_dfs_referrals,
 
 	/* Directory operations */
 
