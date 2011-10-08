@@ -1668,6 +1668,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 			  &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "cli_push returned %s\n", nt_errstr(status));
+		rc = 1;
 	}
 
 	if (!NT_STATUS_IS_OK(cli_close(targetcli, fnum))) {
