@@ -216,7 +216,7 @@
 		<term><citerefentry><refentrytitle>profiles</refentrytitle>
 		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para><command>profiles</command> is a command-line
-		utility that can be used to replace all occurences of 
+		utility that can be used to replace all occurrences of
 		a certain SID with another SID.
 		</para></listitem>
 		</varlistentry>
