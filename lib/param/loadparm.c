@@ -1834,7 +1834,7 @@ static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx, struct loadpar
  * Set a string value, deallocating any existing space, and allocing the space
  * for the string
  */
-static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
+static bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
 	talloc_free(*dest);
 
@@ -1854,7 +1854,7 @@ static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
  * Set a string value, deallocating any existing space, and allocing the space
  * for the string
  */
-static bool string_set_upper(TALLOC_CTX *mem_ctx, char **dest, const char *src)
+static bool lpcfg_string_set_upper(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
 	talloc_free(*dest);
 
@@ -1939,7 +1939,7 @@ struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
 	}
 	copy_service(lp_ctx->services[i], &tservice, NULL);
 	if (name != NULL)
-		string_set(lp_ctx->services[i], &lp_ctx->services[i]->szService, name);
+		lpcfg_string_set(lp_ctx->services[i], &lp_ctx->services[i]->szService, name);
 	return lp_ctx->services[i];
 }
 
@@ -2000,8 +2000,8 @@ bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
 	/* entry (if/when the 'available' keyword is implemented!).    */
 
 	/* the printer name is set to the service name. */
-	string_set(service, &service->szPrintername, pszPrintername);
-	string_set(service, &service->comment, comment);
+	lpcfg_string_set(service, &service->szPrintername, pszPrintername);
+	lpcfg_string_set(service, &service->comment, comment);
 	service->bBrowseable = default_service->bBrowseable;
 	/* Printers cannot be read_only. */
 	service->bRead_only = false;
@@ -2132,13 +2132,13 @@ static void copy_service(struct loadparm_service *pserviceDest,
 					break;
 
 				case P_STRING:
-					string_set(pserviceDest,
+					lpcfg_string_set(pserviceDest,
 						   (char **)dest_ptr,
 						   *(char **)src_ptr);
 					break;
 
 				case P_USTRING:
-					string_set_upper(pserviceDest,
+					lpcfg_string_set_upper(pserviceDest,
 							 (char **)dest_ptr,
 							 *(char **)src_ptr);
 					break;
@@ -2301,7 +2301,7 @@ bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx)
 static bool handle_realm(struct loadparm_context *lp_ctx, int unused,
 			 const char *pszParmValue, char **ptr)
 {
-	string_set(lp_ctx, ptr, pszParmValue);
+	lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 
 	talloc_free(lp_ctx->globals->szRealm_upper);
 	talloc_free(lp_ctx->globals->szRealm_lower);
@@ -2323,7 +2323,7 @@ static bool handle_include(struct loadparm_context *lp_ctx, int unused,
 
 	add_to_file_list(lp_ctx, pszParmValue, fname);
 
-	string_set(lp_ctx, ptr, fname);
+	lpcfg_string_set(lp_ctx, ptr, fname);
 
 	if (file_exist(fname))
 		return pm_process(fname, do_section, do_parameter, lp_ctx);
@@ -2343,7 +2343,7 @@ static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 	bool bRetval;
 	struct loadparm_service *serviceTemp;
 
-	string_set(lp_ctx, ptr, pszParmValue);
+	lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 
 	bRetval = false;
 
@@ -2371,7 +2371,7 @@ static bool handle_debuglevel(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr)
 {
 
-	string_set(lp_ctx, ptr, pszParmValue);
+	lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 	if (lp_ctx->global) {
 		return debug_parse_levels(pszParmValue);
 	}
@@ -2383,7 +2383,7 @@ static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 {
 	debug_set_logfile(pszParmValue);
 	if (lp_ctx->global) {
-		string_set(lp_ctx, ptr, pszParmValue);
+		lpcfg_string_set(lp_ctx, ptr, pszParmValue);
 	}
 	return true;
 }
@@ -2578,11 +2578,11 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			break;
 		}
 		case P_STRING:
-			string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
+			lpcfg_string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
 
 		case P_USTRING:
-			string_set_upper(mem_ctx, (char **)parm_ptr, pszParmValue);
+			lpcfg_string_set_upper(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
 
 		case P_ENUM:
