@@ -24,9 +24,8 @@
 #include "includes.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "auth/credentials/credentials.h"
-#include "auth/credentials/credentials_proto.h"
 #include "libcli/auth/libcli_auth.h"
-#include "lib/events/events.h"
+#include "tevent.h"
 #include "param/param.h"
 #include "system/filesys.h"
 
@@ -200,7 +199,7 @@ _PUBLIC_ bool cli_credentials_set_username(struct cli_credentials *cred,
 	return false;
 }
 
-bool cli_credentials_set_username_callback(struct cli_credentials *cred,
+_PUBLIC_ bool cli_credentials_set_username_callback(struct cli_credentials *cred,
 				  const char *(*username_cb) (struct cli_credentials *))
 {
 	if (cred->username_obtained < CRED_CALLBACK) {
@@ -237,7 +236,7 @@ _PUBLIC_ const char *cli_credentials_get_bind_dn(struct cli_credentials *cred)
  * @retval The username set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
-const char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained)
+_PUBLIC_ const char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained)
 {
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred,
@@ -283,7 +282,7 @@ _PUBLIC_ const char *cli_credentials_get_principal(struct cli_credentials *cred,
 	return cli_credentials_get_principal_and_obtained(cred, mem_ctx, &obtained);
 }
 
-bool cli_credentials_set_principal(struct cli_credentials *cred, 
+_PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred, 
 				   const char *val, 
 				   enum credentials_obtained obtained)
 {
@@ -299,7 +298,7 @@ bool cli_credentials_set_principal(struct cli_credentials *cred,
 
 /* Set a callback to get the principal.  This could be a popup dialog,
  * a terminal prompt or similar.  */
-bool cli_credentials_set_principal_callback(struct cli_credentials *cred,
+_PUBLIC_ bool cli_credentials_set_principal_callback(struct cli_credentials *cred,
 				  const char *(*principal_cb) (struct cli_credentials *))
 {
 	if (cred->principal_obtained < CRED_CALLBACK) {
@@ -402,7 +401,7 @@ _PUBLIC_ bool cli_credentials_set_password_callback(struct cli_credentials *cred
  * @param cred credentials context
  * @retval If set, the cleartext password, otherwise NULL
  */
-const char *cli_credentials_get_old_password(struct cli_credentials *cred)
+_PUBLIC_ const char *cli_credentials_get_old_password(struct cli_credentials *cred)
 {
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred,
@@ -412,7 +411,7 @@ const char *cli_credentials_get_old_password(struct cli_credentials *cred)
 	return cred->old_password;
 }
 
-bool cli_credentials_set_old_password(struct cli_credentials *cred, 
+_PUBLIC_ bool cli_credentials_set_old_password(struct cli_credentials *cred, 
 				      const char *val, 
 				      enum credentials_obtained obtained)
 {
@@ -748,7 +747,7 @@ _PUBLIC_ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred,
  * Return attached NETLOGON credentials 
  */
 
-struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred)
+_PUBLIC_ struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred)
 {
 	return cred->netlogon_creds;
 }

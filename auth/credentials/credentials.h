@@ -27,6 +27,7 @@
 
 struct ccache_container;
 struct tevent_context;
+struct netlogon_creds_CredentialState;
 
 /* In order of priority */
 enum credentials_obtained { 
@@ -296,5 +297,41 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 				     char **error_string);
  int cli_credentials_get_kvno(struct cli_credentials *cred);
 
+bool cli_credentials_set_username_callback(struct cli_credentials *cred,
+				  const char *(*username_cb) (struct cli_credentials *));
+
+/**
+ * Obtain the client principal for this credentials context.
+ * @param cred credentials context
+ * @retval The username set on this context.
+ * @note Return value will never be NULL except by programmer error.
+ */
+const char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained);
+bool cli_credentials_set_principal(struct cli_credentials *cred, 
+				   const char *val, 
+				   enum credentials_obtained obtained);
+bool cli_credentials_set_principal_callback(struct cli_credentials *cred,
+				  const char *(*principal_cb) (struct cli_credentials *));
+
+/**
+ * Obtain the 'old' password for this credentials context (used for join accounts).
+ * @param cred credentials context
+ * @retval If set, the cleartext password, otherwise NULL
+ */
+const char *cli_credentials_get_old_password(struct cli_credentials *cred);
+bool cli_credentials_set_old_password(struct cli_credentials *cred, 
+				      const char *val, 
+				      enum credentials_obtained obtained);
+bool cli_credentials_set_domain_callback(struct cli_credentials *cred,
+					 const char *(*domain_cb) (struct cli_credentials *));
+bool cli_credentials_set_realm_callback(struct cli_credentials *cred,
+					const char *(*realm_cb) (struct cli_credentials *));
+bool cli_credentials_set_workstation_callback(struct cli_credentials *cred,
+					      const char *(*workstation_cb) (struct cli_credentials *));
+
+/**
+ * Return attached NETLOGON credentials 
+ */
+struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
 
 #endif /* __CREDENTIALS_H__ */
