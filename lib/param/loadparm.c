@@ -1574,7 +1574,7 @@ static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx
 static void copy_service(struct loadparm_service *pserviceDest,
 			 struct loadparm_service *pserviceSource,
 			 struct bitmap *pcopymapDest);
-static bool service_ok(struct loadparm_service *service);
+static bool lpcfg_service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
 static void init_copymap(struct loadparm_service *pservice);
 
@@ -2190,7 +2190,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
  * Check a service for consistency. Return False if the service is in any way
  * incomplete or faulty, else True.
  */
-static bool service_ok(struct loadparm_service *service)
+static bool lpcfg_service_ok(struct loadparm_service *service)
 {
 	bool bRetval;
 
@@ -2955,7 +2955,7 @@ static bool do_section(const char *pszSectionName, void *userdata)
 	bRetval = true;
 
 	if (lp_ctx->currentService != NULL)
-		bRetval = service_ok(lp_ctx->currentService);
+		bRetval = lpcfg_service_ok(lp_ctx->currentService);
 
 	/* if all is still well, move to the next record in the services array */
 	if (bRetval) {
@@ -3550,7 +3550,7 @@ bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
 	if (bRetval)
 		if (lp_ctx->currentService != NULL)
-			bRetval = service_ok(lp_ctx->currentService);
+			bRetval = lpcfg_service_ok(lp_ctx->currentService);
 
 	bRetval = bRetval && lpcfg_update(lp_ctx);
 
