@@ -2785,21 +2785,21 @@ bool lpcfg_set_option(struct loadparm_context *lp_ctx, const char *option)
 	char *p, *s;
 	bool ret;
 
-	s = strdup(option);
+	s = talloc_strdup(NULL, option);
 	if (!s) {
 		return false;
 	}
 
 	p = strchr(s, '=');
 	if (!p) {
-		free(s);
+		talloc_free(s);
 		return false;
 	}
 
 	*p = 0;
 
 	ret = lpcfg_set_cmdline(lp_ctx, s, p+1);
-	free(s);
+	talloc_free(s);
 	return ret;
 }
 
