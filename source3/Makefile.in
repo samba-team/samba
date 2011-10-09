@@ -559,6 +559,9 @@ LIBSMB_OBJ0 = \
 	       libsmb/ntlmssp.o \
 	       libsmb/ntlmssp_wrap.o \
 	       ../auth/gensec/gensec.o \
+	       ../auth/gensec/gensec_start.o \
+	       ../auth/credentials/credentials.o \
+	       ../auth/credentials/credentials_samba3.o \
 	       ../libcli/auth/ntlmssp.o \
 	       ../libcli/auth/ntlmssp_sign.o \
 	       $(LIBNDR_NTLMSSP_OBJ) \
