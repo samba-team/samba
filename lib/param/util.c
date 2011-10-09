@@ -57,13 +57,13 @@ bool lpcfg_is_myname(struct loadparm_context *lp_ctx, const char *name)
 	const char **aliases;
 	int i;
 
-	if (strcasecmp(name, lpcfg_netbios_name(lp_ctx)) == 0) {
+	if (strcasecmp_m(name, lpcfg_netbios_name(lp_ctx)) == 0) {
 		return true;
 	}
 
 	aliases = lpcfg_netbios_aliases(lp_ctx);
 	for (i=0; aliases && aliases[i]; i++) {
-		if (strcasecmp(name, aliases[i]) == 0) {
+		if (strcasecmp_m(name, aliases[i]) == 0) {
 			return true;
 		}
 	}
