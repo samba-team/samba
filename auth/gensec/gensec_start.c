@@ -22,19 +22,13 @@
 
 #include "includes.h"
 #include "system/network.h"
-#include "lib/events/events.h"
-#include "lib/socket/socket.h"
-#include "lib/tsocket/tsocket.h"
+#include "tevent.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_proto.h"
-#include "auth/auth.h"
-#include "auth/system_session_proto.h"
-#include "param/param.h"
+#include "lib/param/param.h"
 #include "lib/util/tsort.h"
-#include "auth/gensec/gensec_toplevel_proto.h"
 #include "lib/util/samba_modules.h"
 
 /* the list of currently registered GENSEC backends */
