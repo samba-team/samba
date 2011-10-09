@@ -61,7 +61,6 @@
 #include "../lib/util/dlinklist.h"
 #include "lib/param/param.h"
 #include "lib/param/loadparm.h"
-#include "lib/socket/socket.h"
 #include "auth/gensec/gensec.h"
 #include "s3_param.h"
 #include "lib/util/bitmap.h"
