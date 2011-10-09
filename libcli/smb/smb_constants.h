@@ -50,6 +50,14 @@ enum smb_signing_setting {
 	SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, 
 	SMB_SIGNING_REQUIRED, SMB_SIGNING_AUTO};
 
+/* Client-side offline caching policy types */
+enum csc_policy {
+	CSC_POLICY_MANUAL=0,
+	CSC_POLICY_DOCUMENTS=1,
+	CSC_POLICY_PROGRAMS=2,
+	CSC_POLICY_DISABLE=3
+};
+
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
 #define FLAGS2_LONG_PATH_COMPONENTS    0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES     0x0002

@@ -1650,12 +1650,6 @@ struct child_pid {
 /* Used to keep track of deferred opens. */
 struct deferred_open_record;
 
-/* Client-side offline caching policy types */
-#define CSC_POLICY_MANUAL 0
-#define CSC_POLICY_DOCUMENTS 1
-#define CSC_POLICY_PROGRAMS 2
-#define CSC_POLICY_DISABLE 3
-
 /* Used inside aio code. */
 struct aio_extra;
 
