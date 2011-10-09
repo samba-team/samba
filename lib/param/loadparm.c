@@ -3369,7 +3369,12 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "winbind separator", "\\");
 	lpcfg_do_global_parameter(lp_ctx, "winbind sealed pipes", "True");
 	lpcfg_do_global_parameter(lp_ctx, "winbindd socket directory", dyn_WINBINDD_SOCKET_DIR);
+#if _SAMBA_BUILD >= 4
 	lpcfg_do_global_parameter(lp_ctx, "winbindd privileged socket directory", dyn_WINBINDD_PRIVILEGED_SOCKET_DIR);
+	lpcfg_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
+	lpcfg_do_global_parameter_var(lp_ctx, "dns update command", "%s/samba_dnsupdate", dyn_SCRIPTSBINDIR);
+	lpcfg_do_global_parameter_var(lp_ctx, "spn update command", "%s/samba_spnupdate", dyn_SCRIPTSBINDIR);
+#endif
 	lpcfg_do_global_parameter(lp_ctx, "template shell", "/bin/false");
 	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
 	lpcfg_do_global_parameter(lp_ctx, "idmap trusted only", "False");
@@ -3398,10 +3403,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
 	lpcfg_do_global_parameter(lp_ctx, "prefork children:smb", "4");
 
-	lpcfg_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
 	lpcfg_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
-	lpcfg_do_global_parameter_var(lp_ctx, "dns update command", "%s/samba_dnsupdate", dyn_SCRIPTSBINDIR);
-	lpcfg_do_global_parameter_var(lp_ctx, "spn update command", "%s/samba_spnupdate", dyn_SCRIPTSBINDIR);
 	lpcfg_do_global_parameter(lp_ctx, "nsupdate command", "/usr/bin/nsupdate -g");
 
 	for (i = 0; parm_table[i].label; i++) {
