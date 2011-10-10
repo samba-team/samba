@@ -841,8 +841,9 @@ static void cldap_netlogon_state_done(struct tevent_req *subreq);
   queue a cldap netlogon for send
 */
 struct tevent_req *cldap_netlogon_send(TALLOC_CTX *mem_ctx,
-				      struct cldap_socket *cldap,
-				      const struct cldap_netlogon *io)
+				       struct tevent_context *ev,
+				       struct cldap_socket *cldap,
+				       const struct cldap_netlogon *io)
 {
 	struct tevent_req *req, *subreq;
 	struct cldap_netlogon_state *state;
@@ -1023,7 +1024,7 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 		return NT_STATUS_PIPE_BUSY;
 	}
 
-	req = cldap_netlogon_send(mem_ctx, cldap, io);
+	req = cldap_netlogon_send(mem_ctx, cldap->event.ctx, cldap, io);
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	if (!tevent_req_poll(req, cldap->event.ctx)) {

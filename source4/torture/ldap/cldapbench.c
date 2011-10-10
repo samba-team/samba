@@ -87,7 +87,8 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 	while (timeval_elapsed(&tv) < timelimit) {
 		while (num_sent - (state->pass_count+state->fail_count) < 10) {
 			struct tevent_req *req;
-			req = cldap_netlogon_send(state, cldap, &search);
+			req = cldap_netlogon_send(state, tctx->ev,
+						  cldap, &search);
 
 			tevent_req_set_callback(req, request_netlogon_handler, state);
 

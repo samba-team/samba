@@ -234,7 +234,8 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 
 	DEBUG(4,("finddcs: performing CLDAP query on %s\n", state->netlogon->in.dest_address));
 
-	subreq = cldap_netlogon_send(state, state->cldap, state->netlogon);
+	subreq = cldap_netlogon_send(state, state->ev,
+				     state->cldap, state->netlogon);
 	if (tevent_req_nomem(subreq, state->req)) {
 		return;
 	}

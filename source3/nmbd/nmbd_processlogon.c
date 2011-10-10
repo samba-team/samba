@@ -249,7 +249,7 @@ static void nmbd_proxy_logon(struct nmbd_proxy_logon_context *ctx,
 	state->io.in.version		= nt_version;
 	state->io.in.map_response	= false;
 
-	subreq = cldap_netlogon_send(state,
+	subreq = cldap_netlogon_send(state, nmbd_event_context(),
 				     ctx->cldap_sock,
 				     &state->io);
 	if (!subreq) {

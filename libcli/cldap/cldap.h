@@ -114,6 +114,7 @@ struct cldap_netlogon {
 };
 
 struct tevent_req *cldap_netlogon_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
 				       struct cldap_socket *cldap,
 				       const struct cldap_netlogon *io);
 NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
