@@ -225,25 +225,6 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
                                   const char **attr);
 NTSTATUS pdb_init_ldapsam( struct pdb_methods **pdb_method, const char *location);
 const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver );
-
-char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
-				       const char *attribute,
-				       TALLOC_CTX *mem_ctx);
-char * smbldap_talloc_first_attribute(LDAP *ldap_struct, LDAPMessage *entry,
-				      const char *attribute,
-				      TALLOC_CTX *mem_ctx);
-char * smbldap_talloc_smallest_attribute(LDAP *ldap_struct, LDAPMessage *entry,
-					 const char *attribute,
-					 TALLOC_CTX *mem_ctx);
-bool smbldap_talloc_single_blob(TALLOC_CTX *mem_ctx, LDAP *ld,
-				LDAPMessage *msg, const char *attrib,
-				DATA_BLOB *blob);
-bool smbldap_pull_sid(LDAP *ld, LDAPMessage *msg, const char *attrib,
-		      struct dom_sid *sid);
-void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
-void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
-char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
-			      LDAPMessage *entry);
 LDAP *priv2ld(struct ldapsam_privates *priv);
 
 /* The following definitions come from lib/smbldap.c  */
@@ -276,6 +257,24 @@ bool smbldap_has_control(LDAP *ld, const char *control);
 bool smbldap_has_extension(LDAP *ld, const char *extension);
 bool smbldap_has_naming_context(LDAP *ld, const char *naming_context);
 bool smbldap_set_creds(struct smbldap_state *ldap_state, bool anon, const char *dn, const char *secret);
+char * smbldap_talloc_single_attribute(LDAP *ldap_struct, LDAPMessage *entry,
+				       const char *attribute,
+				       TALLOC_CTX *mem_ctx);
+char * smbldap_talloc_first_attribute(LDAP *ldap_struct, LDAPMessage *entry,
+				      const char *attribute,
+				      TALLOC_CTX *mem_ctx);
+char * smbldap_talloc_smallest_attribute(LDAP *ldap_struct, LDAPMessage *entry,
+					 const char *attribute,
+					 TALLOC_CTX *mem_ctx);
+bool smbldap_talloc_single_blob(TALLOC_CTX *mem_ctx, LDAP *ld,
+				LDAPMessage *msg, const char *attrib,
+				DATA_BLOB *blob);
+bool smbldap_pull_sid(LDAP *ld, LDAPMessage *msg, const char *attrib,
+		      struct dom_sid *sid);
+void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
+void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
+char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
+			      LDAPMessage *entry);
 
 /* The following definitions come from lib/smbldap_util.c  */
 
