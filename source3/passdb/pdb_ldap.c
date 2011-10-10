@@ -62,6 +62,7 @@
 #include "smbldap.h"
 #include "passdb/pdb_ldap.h"
 #include "passdb/pdb_nds.h"
+#include "passdb/pdb_ipa.h"
 
 /**********************************************************************
  Simple helper function to make stuff better readable

@@ -314,10 +314,6 @@ NTSTATUS pdb_set_secret(const char *secret_name,
 			struct security_descriptor *sd);
 NTSTATUS pdb_delete_secret(const char *secret_name);
 
-/* The following definitions come from passdb/pdb_nds.c  */
-
-NTSTATUS pdb_ipa_init(void);
-
 /* The following definitions come from passdb/pdb_util.c  */
 
 NTSTATUS create_builtin_users(const struct dom_sid *sid);
