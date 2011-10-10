@@ -58,6 +58,7 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 			   struct cldap_socket **_cldap);
 
 NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
+				    struct tevent_context *ev,
 				    void (*handler)(struct cldap_socket *,
 						    void *private_data,
 						    struct cldap_incoming *),

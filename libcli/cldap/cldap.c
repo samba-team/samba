@@ -86,6 +86,7 @@ struct cldap_socket {
 
 	/* what to do with incoming request packets */
 	struct {
+		struct tevent_context *ev;
 		void (*handler)(struct cldap_socket *,
 				void *private_data,
 				struct cldap_incoming *);
@@ -381,6 +382,7 @@ nterror:
   setup a handler for incoming requests
 */
 NTSTATUS cldap_set_incoming_handler(struct cldap_socket *c,
+				    struct tevent_context *ev,
 				    void (*handler)(struct cldap_socket *,
 						    void *private_data,
 						    struct cldap_incoming *),
@@ -394,7 +396,7 @@ NTSTATUS cldap_set_incoming_handler(struct cldap_socket *c,
 	if (c->event.allow_poll) {
 		return NT_STATUS_INVALID_PIPE_STATE;
 	}
-
+	c->incoming.ev = ev;
 	c->incoming.handler = handler;
 	c->incoming.private_data = private_data;
 

@@ -138,7 +138,8 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 	}
 	talloc_free(socket_address);
 
-	cldap_set_incoming_handler(cldapsock, cldapd_request_handler, cldapd);
+	cldap_set_incoming_handler(cldapsock, cldapd->task->event_ctx,
+				   cldapd_request_handler, cldapd);
 
 	return NT_STATUS_OK;
 }
