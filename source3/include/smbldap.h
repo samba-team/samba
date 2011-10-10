@@ -216,17 +216,6 @@ struct ldapsam_privates {
 	} search_cache;
 };
 
-/* Functions shared between pdb_ldap.c and pdb_nds.c. */
-struct pdb_methods;
-NTSTATUS pdb_init_ldapsam_compat( struct pdb_methods **pdb_method, const char *location);
-int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
-                                  const char *user,
-                                  LDAPMessage ** result,
-                                  const char **attr);
-NTSTATUS pdb_init_ldapsam( struct pdb_methods **pdb_method, const char *location);
-const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver );
-LDAP *priv2ld(struct ldapsam_privates *priv);
-
 /* The following definitions come from lib/smbldap.c  */
 
 int smb_ldap_start_tls(LDAP *ldap_struct, int version);

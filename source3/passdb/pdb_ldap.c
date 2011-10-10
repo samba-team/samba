@@ -60,6 +60,7 @@
 
 
 #include "smbldap.h"
+#include "passdb/pdb_ldap.h"
 
 /**********************************************************************
  Simple helper function to make stuff better readable

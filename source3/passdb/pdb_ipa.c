@@ -26,6 +26,7 @@
 #include "secrets.h"
 
 #include "smbldap.h"
+#include "passdb/pdb_ldap.h"
 
 #define IPA_KEYTAB_SET_OID "2.16.840.1.113730.3.8.3.1"
 #define IPA_MAGIC_ID_STR "999"

@@ -314,13 +314,6 @@ NTSTATUS pdb_set_secret(const char *secret_name,
 			struct security_descriptor *sd);
 NTSTATUS pdb_delete_secret(const char *secret_name);
 
-/* The following definitions come from passdb/pdb_ldap.c  */
-
-const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver );
-NTSTATUS pdb_init_ldapsam_compat(struct pdb_methods **pdb_method, const char *location);
-NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location);
-NTSTATUS pdb_ldap_init(void);
-
 /* The following definitions come from passdb/pdb_nds.c  */
 
 struct smbldap_state;
