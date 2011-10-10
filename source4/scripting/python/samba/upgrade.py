@@ -591,7 +591,7 @@ Please fix this account before attempting to upgrade again
         except passdb.error:
             try:
                 uids[username] = pwd.getpwnam(username).pw_uid
-            except passdb.error:
+            except KeyError:
                 pass
 
         if not admin_user and username.lower() == 'root':
