@@ -1200,6 +1200,8 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 
 	for (i=0; i < ns_count; i++) {
 
+		status = NT_STATUS_UNSUCCESSFUL;
+
 		/* Now perform the dns update - we'll try non-secure and if we fail,
 		   we'll follow it up with a secure update */
 
