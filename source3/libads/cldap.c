@@ -59,7 +59,7 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	/*
 	 * as we use a connected udp socket
 	 */
-	status = cldap_socket_init(mem_ctx, NULL, NULL, dest_addr, &cldap);
+	status = cldap_socket_init(mem_ctx, NULL, dest_addr, &cldap);
 	TALLOC_FREE(dest_addr);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Failed to create cldap socket to %s: %s\n",

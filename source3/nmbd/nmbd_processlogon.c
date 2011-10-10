@@ -120,8 +120,7 @@ bool initialize_nmbd_proxy_logon(void)
 	}
 
 	/* we create a connected udp socket */
-	status = cldap_socket_init(ctx, nmbd_event_context(), NULL,
-				   server_addr, &ctx->cldap_sock);
+	status = cldap_socket_init(ctx, NULL, server_addr, &ctx->cldap_sock);
 	TALLOC_FREE(server_addr);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(ctx);

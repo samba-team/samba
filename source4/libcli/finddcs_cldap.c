@@ -131,7 +131,7 @@ static bool finddcs_cldap_ipaddress(struct finddcs_cldap_state *state, struct fi
 	}
 	state->srv_addresses[1] = NULL;
 	state->srv_address_index = 0;
-	status = cldap_socket_init(state, state->ev, NULL, NULL, &state->cldap);
+	status = cldap_socket_init(state, NULL, NULL, &state->cldap);
 	if (tevent_req_nterror(state->req, status)) {
 		return false;
 	}
@@ -307,7 +307,7 @@ static void finddcs_cldap_name_resolved(struct composite_context *ctx)
 
 	state->srv_address_index = 0;
 
-	status = cldap_socket_init(state, state->ev, NULL, NULL, &state->cldap);
+	status = cldap_socket_init(state, NULL, NULL, &state->cldap);
 	if (tevent_req_nterror(state->req, status)) {
 		return;
 	}
@@ -338,7 +338,7 @@ static void finddcs_cldap_srv_resolved(struct composite_context *ctx)
 
 	state->srv_address_index = 0;
 
-	status = cldap_socket_init(state, state->ev, NULL, NULL, &state->cldap);
+	status = cldap_socket_init(state, NULL, NULL, &state->cldap);
 	if (tevent_req_nterror(state->req, status)) {
 		return;
 	}

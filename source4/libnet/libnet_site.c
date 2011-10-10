@@ -69,7 +69,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	}
 
 	/* we want to use non async calls, so we're not passing an event context */
-	status = cldap_socket_init(tmp_ctx, NULL, NULL, dest_address, &cldap);
+	status = cldap_socket_init(tmp_ctx, NULL, dest_address, &cldap);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		r->out.error_string = NULL;

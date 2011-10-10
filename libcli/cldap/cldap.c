@@ -304,7 +304,6 @@ done:
   initialise a cldap_sock
 */
 NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
-			   struct tevent_context *ev,
 			   const struct tsocket_address *local_addr,
 			   const struct tsocket_address *remote_addr,
 			   struct cldap_socket **_cldap)

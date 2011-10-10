@@ -71,7 +71,7 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 						&dest_addr);
 	CHECK_VAL(ret, 0);
 
-	status = cldap_socket_init(tctx, tctx->ev, NULL, dest_addr, &cldap);
+	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
 	torture_assert_ntstatus_ok(tctx, status, "cldap_socket_init");
 
 	state = talloc_zero(tctx, struct bench_state);
@@ -156,7 +156,7 @@ static bool bench_cldap_rootdse(struct torture_context *tctx, const char *addres
 	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, tctx->ev, NULL, dest_addr, &cldap);
+	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
 	torture_assert_ntstatus_ok(tctx, status, "cldap_socket_init");
 
 	state = talloc_zero(tctx, struct bench_state);

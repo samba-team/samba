@@ -54,7 +54,7 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 						&dest_addr);
 	CHECK_VAL(ret, 0);
 
-	status = cldap_socket_init(tctx, NULL, NULL, dest_addr, &cldap);
+	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(search);
@@ -288,7 +288,7 @@ static bool test_cldap_netlogon_flags(struct torture_context *tctx,
 	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, NULL, NULL, dest_addr, &cldap);
+	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Printing out netlogon server type flags: %s\n", dest);
@@ -408,7 +408,7 @@ static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
 	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, NULL, NULL, dest_addr, &cldap);
+	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Testing netlogon server type flag NBT_SERVER_FOREST_ROOT: ");
@@ -490,7 +490,7 @@ static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, NULL, NULL, dest_addr, &cldap);
+	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(search);

@@ -773,8 +773,7 @@ static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 		if (!composite_is_ok(c)) return;
 	}
 
-	c->status = cldap_socket_init(s, s->libnet->event_ctx,
-				      NULL, dest_address, &s->cldap.sock);
+	c->status = cldap_socket_init(s, NULL, dest_address, &s->cldap.sock);
 	if (!composite_is_ok(c)) return;
 
 	req = cldap_netlogon_send(s, s->libnet->event_ctx,

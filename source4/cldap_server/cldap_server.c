@@ -125,7 +125,6 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 
 	/* listen for unicasts on the CLDAP port (389) */
 	status = cldap_socket_init(cldapd,
-				   cldapd->task->event_ctx,
 				   socket_address,
 				   NULL,
 				   &cldapsock);
