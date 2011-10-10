@@ -820,8 +820,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			get_change_timespec(smb1req->conn, result,
 					result->fsp_name));
 	state->out_allocation_size =
-			result->fsp_name->st.st_ex_blksize *
-			result->fsp_name->st.st_ex_blocks;
+			SMB_VFS_GET_ALLOC_SIZE(smb1req->conn, result,
+					       &(result->fsp_name->st));
 	state->out_end_of_file = result->fsp_name->st.st_ex_size;
 	if (state->out_file_attributes == 0) {
 		state->out_file_attributes = FILE_ATTRIBUTE_NORMAL;
