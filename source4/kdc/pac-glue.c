@@ -51,7 +51,7 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 	}
 
 	pac_info.logon_info.info = talloc_zero(mem_ctx, struct PAC_LOGON_INFO);
-	if (!mem_ctx) {
+	if (!pac_info.logon_info.info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
