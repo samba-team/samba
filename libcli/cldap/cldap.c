@@ -98,6 +98,7 @@ struct cldap_search_state {
 	struct cldap_search_state *prev, *next;
 
 	struct {
+		struct tevent_context *ev;
 		struct cldap_socket *cldap;
 	} caller;
 
@@ -535,8 +536,9 @@ static void cldap_search_state_wakeup_done(struct tevent_req *subreq);
   queue a cldap reply for send
 */
 struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
-				    struct cldap_socket *cldap,
-				    const struct cldap_search *io)
+				     struct tevent_context *ev,
+				     struct cldap_socket *cldap,
+				     const struct cldap_search *io)
 {
 	struct tevent_req *req, *subreq;
 	struct cldap_search_state *state = NULL;
@@ -553,6 +555,7 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	ZERO_STRUCTP(state);
+	state->caller.ev = ev;
 	state->req = req;
 	state->caller.cldap = cldap;
 	state->message_id = -1;
@@ -818,7 +821,7 @@ NTSTATUS cldap_search(struct cldap_socket *cldap,
 		return NT_STATUS_PIPE_BUSY;
 	}
 
-	req = cldap_search_send(mem_ctx, cldap, io);
+	req = cldap_search_send(mem_ctx, cldap->event.ctx, cldap, io);
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	if (!tevent_req_poll(req, cldap->event.ctx)) {
@@ -931,7 +934,7 @@ struct tevent_req *cldap_netlogon_send(TALLOC_CTX *mem_ctx,
 	state->search.in.timeout	= 2;
 	state->search.in.retries	= 2;
 
-	subreq = cldap_search_send(state, cldap, &state->search);
+	subreq = cldap_search_send(state, ev, cldap, &state->search);
 	if (tevent_req_nomem(subreq, req)) {
 		goto post;
 	}

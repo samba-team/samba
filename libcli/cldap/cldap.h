@@ -64,6 +64,7 @@ NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
 						    struct cldap_incoming *),
 				    void *private_data);
 struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
 				     struct cldap_socket *cldap,
 				     const struct cldap_search *io);
 NTSTATUS cldap_search_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,

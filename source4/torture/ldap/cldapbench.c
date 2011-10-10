@@ -172,7 +172,7 @@ static bool bench_cldap_rootdse(struct torture_context *tctx, const char *addres
 	while (timeval_elapsed(&tv) < timelimit) {
 		while (num_sent - (state->pass_count+state->fail_count) < 10) {
 			struct tevent_req *req;
-			req = cldap_search_send(state, cldap, &search);
+			req = cldap_search_send(state, tctx->ev, cldap, &search);
 
 			tevent_req_set_callback(req, request_rootdse_handler, state);
 
