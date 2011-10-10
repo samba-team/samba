@@ -316,21 +316,6 @@ NTSTATUS pdb_delete_secret(const char *secret_name);
 
 /* The following definitions come from passdb/pdb_nds.c  */
 
-struct smbldap_state;
-
-int pdb_nds_get_password(
-	struct smbldap_state *ldap_state,
-	char *object_dn,
-	size_t *pwd_len,
-	char *pwd );
-int pdb_nds_set_password(
-	struct smbldap_state *ldap_state,
-	char *object_dn,
-	const char *pwd );
-NTSTATUS pdb_nds_init(void);
-
-/* The following definitions come from passdb/pdb_nds.c  */
-
 NTSTATUS pdb_ipa_init(void);
 
 /* The following definitions come from passdb/pdb_util.c  */
