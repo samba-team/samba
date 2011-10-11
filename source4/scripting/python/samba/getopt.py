@@ -25,6 +25,7 @@ import optparse
 import os
 from samba.credentials import (
     Credentials,
+    AUTO_USE_KERBEROS,
     DONT_USE_KERBEROS,
     MUST_USE_KERBEROS,
     )
@@ -150,8 +151,10 @@ class CredentialsOptions(optparse.OptionGroup):
             self.creds.set_kerberos_state(MUST_USE_KERBEROS)
         elif arg.lower() in ["no", 'false', '0']:
             self.creds.set_kerberos_state(DONT_USE_KERBEROS)
+        elif arg.lower() in ["auto"]:
+            self.creds.set_kerberos_state(AUTO_USE_KERBEROS)
         else:
-            raise optparse.BadOptionErr("invalid kerberos option: %s" % arg)
+            raise optparse.BadOptionError("invalid kerberos option: %s" % arg)
 
     def _set_simple_bind_dn(self, option, opt_str, arg, parser):
         self.creds.set_bind_dn(arg)
