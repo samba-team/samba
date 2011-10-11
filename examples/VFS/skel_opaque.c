@@ -483,6 +483,20 @@ static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS skel_fsctl(struct vfs_handle_struct *handle,
+			struct files_struct *fsp,
+			TALLOC_CTX *ctx,
+			uint32_t function,
+			uint16_t req_flags,  /* Needed for UNICODE ... */
+			const uint8_t *_in_data,
+			uint32_t in_len,
+			uint8_t **_out_data,
+			uint32_t max_out_len,
+			uint32_t *out_len)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	uint32 security_info, struct security_descriptor **ppdesc)
 {
@@ -858,6 +872,7 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.strict_lock = skel_strict_lock,
 	.strict_unlock = skel_strict_unlock,
 	.translate_name = skel_translate_name,
+	.fsctl = skel_fsctl,
 
 	/* NT ACL operations. */
 
