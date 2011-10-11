@@ -1078,14 +1078,11 @@ exit(1);
 				define='HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC')
 
     conf.CHECK_CODE('''
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <fcntl.h>],
 ssize_t err = posix_fadvise(0,0,0x80000,POSIX_FADV_WILLNEED);
 ''',
 		'HAVE_POSIX_FADVISE',
-		msg='Checking whether posix_fadvise is available')
+		msg='Checking whether posix_fadvise is available',
+		headers='unistd.h fcntl.h')
 
     for v in ['_SC_NGROUPS_MAX', '_SC_NPROC_ONLN', '_SC_NPROCESSORS_ONLN', '_SC_PAGESIZE' ]:
         conf.CHECK_CODE('''
