@@ -348,13 +348,10 @@ return acl_get_perm_np(permset_d, perm);
 		msg="Checking whether the Linux 'fallocate64' function is available",
 		headers='unistd.h sys/types.h fcntl.h linux/falloc.h')
     conf.CHECK_CODE('''
-		#if defined(HAVE_UNISTD_H)
-		#include <unistd.h>
-		#endif
-		#include <fcntl.h>
 		ssize_t err = readahead(0,0,0x80000);''',
 		'HAVE_LINUX_READAHEAD',
-		msg="Checking whether Linux readahead is available")
+		msg="Checking whether Linux readahead is available",
+		headers='unistd.h fcntl.h')
     conf.CHECK_DECLS('readahead', headers='fcntl.h', always=True)
 
     conf.CHECK_CODE('''
