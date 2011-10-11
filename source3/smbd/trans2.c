@@ -3684,9 +3684,11 @@ static void call_trans2setfsinfo(connection_struct *conn,
 					 * encryption is now *on*. */
 					status = srv_encryption_start(conn);
 					if (!NT_STATUS_IS_OK(status)) {
-						exit_server_cleanly(
-							"Failure in setting "
-							"up encrypted transport");
+						char *reason = talloc_asprintf(talloc_tos(),
+									       "Failure in setting "
+									       "up encrypted transport: %s",
+									       nt_errstr(status));
+						exit_server_cleanly(reason);
 					}
 				}
 				return;
