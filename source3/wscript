@@ -343,18 +343,10 @@ return acl_get_perm_np(permset_d, perm);
 		headers='unistd.h sys/types.h fcntl.h linux/falloc.h')
     if conf.CONFIG_SET('HAVE_FALLOCATE64'):
         conf.CHECK_CODE('''
-		#if defined(HAVE_UNISTD_H)
-		#include <unistd.h>
-		#endif
-		#include <sys/types.h>
-		#define _GNU_SOURCE
-		#include <fcntl.h>
-		#if defined(HAVE_LINUX_FALLOC_H)
-		#include <linux/falloc.h>
-		#endif
 		int ret = fallocate64(0, FALLOC_FL_KEEP_SIZE, 0, 10);''',
 		'HAVE_LINUX_FALLOCATE64',
-		msg="Checking whether the Linux 'fallocate64' function is available")
+		msg="Checking whether the Linux 'fallocate64' function is available",
+		headers='unistd.h sys/types.h fcntl.h linux/falloc.h')
     conf.CHECK_CODE('''
 		#if defined(HAVE_UNISTD_H)
 		#include <unistd.h>
