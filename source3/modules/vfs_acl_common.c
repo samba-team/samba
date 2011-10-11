@@ -93,6 +93,18 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 	}
 
 	switch (xacl.version) {
+		case 1:
+			*ppdesc = make_sec_desc(ctx, SD_REVISION,
+					xacl.info.sd->type | SEC_DESC_SELF_RELATIVE,
+					xacl.info.sd->owner_sid,
+					xacl.info.sd->group_sid,
+					xacl.info.sd->sacl,
+					xacl.info.sd->dacl,
+					&sd_size);
+			/* No hash - null out. */
+			*p_hash_type = XATTR_SD_HASH_TYPE_NONE;
+			memset(hash, '\0', XATTR_SD_HASH_SIZE);
+			break;
 		case 2:
 			*ppdesc = make_sec_desc(ctx, SD_REVISION,
 					xacl.info.sd_hs2->sd->type | SEC_DESC_SELF_RELATIVE,
