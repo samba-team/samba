@@ -127,6 +127,46 @@ static bool test_ioctl_req_resume_key(struct torture_context *torture,
 	return true;
 }
 
+static uint64_t patt_hash(uint64_t off)
+{
+	return off;
+}
+
+static bool check_pattern(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
+			  struct smb2_handle h, uint64_t off, uint64_t len,
+			  uint64_t patt_off)
+{
+	uint64_t i;
+	struct smb2_read r;
+	NTSTATUS status;
+
+	ZERO_STRUCT(r);
+	r.in.file.handle = h;
+	r.in.length      = len;
+	r.in.offset      = off;
+	status = smb2_read(tree, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("read failed - %s\n", nt_errstr(status));
+		return false;
+	} else if (len != r.out.data.length) {
+		printf("read data len mismatch got %zd, expected %lu\n",
+		       r.out.data.length, len);
+		return false;
+	}
+
+	for (i = 0; i <= len - 8; i += 8, patt_off += 8) {
+		if (BVAL(r.out.data.data, i) != patt_hash(patt_off)) {
+			printf("pattern bad at %lu, got %lx, expected %lx\n",
+			       i, BVAL(r.out.data.data, i),
+			       patt_hash(patt_off));
+			return false;
+		}
+	}
+
+	talloc_free(r.out.data.data);
+	return true;
+}
+
 static bool test_setup_copy_chunk(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 				  uint32_t nchunks,
 				  struct smb2_handle *src_h,
@@ -139,6 +179,7 @@ static bool test_setup_copy_chunk(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 	struct req_resume_key_rsp res_key;
 	NTSTATUS status;
 	enum ndr_err_code ndr_ret;
+	uint64_t i;
 	uint8_t *buf = talloc_zero_size(mem_ctx, MAX(src_size, dest_size));
 	if (buf == NULL) {
 		printf("no mem for file data buffer\n");
@@ -155,6 +196,9 @@ static bool test_setup_copy_chunk(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 	}
 
 	if (src_size > 0) {
+		for (i = 0; i <= src_size - 8; i += 8) {
+			SBVAL(buf, i, patt_hash(i));
+		}
 		status = smb2_util_write(tree, *src_h, buf, 0, src_size);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("failed src write\n");
@@ -169,6 +213,9 @@ static bool test_setup_copy_chunk(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 	}
 
 	if (dest_size > 0) {
+		for (i = 0; i <= src_size - 8; i += 8) {
+			SBVAL(buf, i, patt_hash(i));
+		}
 		status = smb2_util_write(tree, *dest_h, buf, 0, dest_size);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("failed dest write\n");
@@ -291,6 +338,11 @@ static bool test_ioctl_copy_chunk_simple(struct torture_context *torture,
 				  1,	/* chunks written */
 				  0,	/* chunk bytes unsuccessfully written */
 				  4096); /* total bytes written */
+	if (!ok) {
+		return false;
+	}
+
+	ok = check_pattern(tree, tmp_ctx, dest_h, 0, 4096, 0);
 	if (!ok) {
 		return false;
 	}
@@ -427,6 +479,11 @@ static bool test_ioctl_copy_chunk_tiny(struct torture_context *torture,
 		return false;
 	}
 
+	ok = check_pattern(tree, tmp_ctx, dest_h, 0, 100, 0);
+	if (!ok) {
+		return false;
+	}
+
 	smb2_util_close(tree, src_h);
 	smb2_util_close(tree, dest_h);
 	talloc_free(tmp_ctx);
@@ -494,6 +551,11 @@ static bool test_ioctl_copy_chunk_over(struct torture_context *torture,
 		return false;
 	}
 
+	ok = check_pattern(tree, tmp_ctx, dest_h, 0, 4096, 4096);
+	if (!ok) {
+		return false;
+	}
+
 	smb2_util_close(tree, src_h);
 	smb2_util_close(tree, dest_h);
 	talloc_free(tmp_ctx);
@@ -556,6 +618,16 @@ static bool test_ioctl_copy_chunk_append(struct torture_context *torture,
 				  2,	/* chunks written */
 				  0,	/* chunk bytes unsuccessfully written */
 				  8192); /* total bytes written */
+	if (!ok) {
+		return false;
+	}
+
+	ok = check_pattern(tree, tmp_ctx, dest_h, 0, 4096, 0);
+	if (!ok) {
+		return false;
+	}
+
+	ok = check_pattern(tree, tmp_ctx, dest_h, 4096, 4096, 0);
 	if (!ok) {
 		return false;
 	}
