@@ -1274,6 +1274,7 @@ sub provision_plugin_s4_dc($$)
 
 	my $extra_smbconf_options = "
 server services = -smb
+dcerpc endpoint servers = -unixinfo -rpcecho -spoolss -winreg -wkssvc -srvsvc
 ";
 
 	print "PROVISIONING PLUGIN S4 DC...";

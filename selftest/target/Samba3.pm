@@ -280,18 +280,36 @@ sub setup_plugin_s4_dc($$$$)
 	my $plugin_s4_dc_options = "
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
-        security=ads
+
+        security = ads
+        domain logons = yes
         passdb backend = samba4
         auth methods = guest samba4
-        domain logons = yes
-        rpc_server:epmapper = external
-        rpc_daemon:epmd = disabled
-        rpc_daemon:lsasd = disabled
-        rpc_server:tcpip = no
+        server signing = on
+
+        rpc_server:epmapper = disabled
+        rpc_server:rpcecho = disabled
+        rpc_server:dssetup = disabled
+        rpc_server:svctl = disabled
+        rpc_server:ntsvcs = disabled
+        rpc_server:eventlog = disabled
+        rpc_server:initshutdown = disabled
+
+        rpc_server:winreg = embedded
+        rpc_server:srvsvc = embedded
+        rpc_server:netdfs = embedded
+        rpc_server:wkssvc = embedded
+        rpc_server:spoolss = embedded
+
         rpc_server:lsarpc = external
         rpc_server:netlogon = external
         rpc_server:samr = external
-	server signing = on
+
+        rpc_daemon:epmd = disabled
+        rpc_daemon:lsasd = disabled
+        rpc_daemon:spoolssd = disabled
+
+        rpc_server:tcpip = no
 
 [IPC\$]
 	vfs objects = dfs_samba4
