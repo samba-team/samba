@@ -148,7 +148,12 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
-        # We cannot instanciate from an abstract objectclass
+        # We cannot instanciate from an abstract object class ("connectionPoint"
+        # or "leaf"). In the first case we use "connectionPoint" (subclass of
+        # "leaf") to prevent a naming violation - this returns us a
+        # "ERR_UNWILLING_TO_PERFORM" since it is not structural. In the second
+        # case however we get "ERR_OBJECT_CLASS_VIOLATION" since an abstract
+        # class is also not allowed to be auxiliary.
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -156,6 +161,30 @@ class BasicTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectClass": ["person", "leaf"] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # Objects instanciated using "satisfied" abstract classes (concrete
+        # subclasses) are allowed
+        self.ldb.add({
+             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+             "objectClass": ["top", "leaf", "connectionPoint", "serviceConnectionPoint"] })
+
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        # Two disjoint top-most structural object classes aren't allowed
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectClass": ["person", "container"] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
 
         # Test allowed system flags
         self.ldb.add({
@@ -221,8 +250,9 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
-        # The top-most structural class cannot be changed by adding another
-        # structural one
+        # We cannot add a the new top-most structural class "user" here since
+        # we are missing at least one new mandatory attribute (in this case
+        # "sAMAccountName")
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("user", FLAG_MOD_ADD,
@@ -251,8 +281,19 @@ class BasicTests(unittest.TestCase):
           "objectClass")
         ldb.modify(m)
 
-        # It's only possible to replace with the same objectclass combination.
-        # So the replace action on "objectClass" attributes is really useless.
+        # This does not work since object class "leaf" is not auxiliary nor it
+        # stands in direct relation to "person" (and it is abstract too!)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("leaf", FLAG_MOD_ADD,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # Objectclass replace operations can be performed as well
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement(["top", "person", "bootableDevice"],
@@ -265,10 +306,12 @@ class BasicTests(unittest.TestCase):
           FLAG_MOD_REPLACE, "objectClass")
         ldb.modify(m)
 
+        # This does not work since object class "leaf" is not auxiliary nor it
+        # stands in direct relation to "person" (and it is abstract too!)
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement(["top", "person", "bootableDevice",
-          "connectionPoint"], FLAG_MOD_REPLACE, "objectClass")
+          "leaf"], FLAG_MOD_REPLACE, "objectClass")
         try:
             ldb.modify(m)
             self.fail()
@@ -350,6 +393,52 @@ class BasicTests(unittest.TestCase):
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_DELETE,
+          "objectClass")
+        ldb.modify(m)
+
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        self.ldb.add({
+             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+             "objectClass": "user" })
+
+        # Add a new top-most structural class "container". This does not work
+        # since it stands in no direct relation to the current one.
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("container", FLAG_MOD_ADD,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # Add a new top-most structural class "inetOrgPerson" and remove it
+        # afterwards
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_ADD,
+          "objectClass")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_DELETE,
+          "objectClass")
+        ldb.modify(m)
+
+        # Replace top-most structural class to "inetOrgPerson" and reset it
+        # back to "user"
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("inetOrgPerson", FLAG_MOD_REPLACE,
+          "objectClass")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("user", FLAG_MOD_REPLACE,
           "objectClass")
         ldb.modify(m)
 
