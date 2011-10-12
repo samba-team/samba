@@ -53,7 +53,7 @@ class cmd_delegation_show(Command):
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
-        print "Searching for: %s" % (cleanedaccount)
+        self.outf.write("Searching for: %s\n" % (cleanedaccount))
         res = sam.search(expression="sAMAccountName=%s" % ldb.binary_encode(cleanedaccount),
                             scope=ldb.SCOPE_SUBTREE,
                             attrs=["userAccountControl", "msDS-AllowedToDelegateTo"])
@@ -63,21 +63,15 @@ class cmd_delegation_show(Command):
         uac = int(res[0].get("userAccountControl")[0])
         allowed = res[0].get("msDS-AllowedToDelegateTo")
 
-        print "Account-DN: %s" %  str(res[0].dn)
+        self.outf.write("Account-DN: %s\n" %  str(res[0].dn))
+        self.outf.write("UF_TRUSTED_FOR_DELEGATION: %s\n"
+            % bool(uac & dsdb.UF_TRUSTED_FOR_DELEGATION))
+        self.outf.write("UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION: %s\n" %
+              bool(uac & dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION))
 
-        if uac & dsdb.UF_TRUSTED_FOR_DELEGATION:
-            print "UF_TRUSTED_FOR_DELEGATION: 1"
-        else:
-            print "UF_TRUSTED_FOR_DELEGATION: 0"
-
-        if uac & dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION:
-            print "UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION: 1"
-        else:
-            print "UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION: 0"
-
-        if allowed != None:
+        if allowed is not None:
             for a in allowed:
-                print "msDS-AllowedToDelegateTo: %s" % (str(a))
+                self.outf.write("msDS-AllowedToDelegateTo: %s\n" % a)
 
 
 
