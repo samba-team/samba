@@ -555,7 +555,8 @@ static int objectclass_do_add(struct oc_context *ac)
 
 		/* We must completely replace the existing objectClass entry,
 		 * because we need it sorted. */
-		ret = ldb_msg_add_empty(msg, "objectClass", 0, NULL);
+		ret = ldb_msg_add_empty(msg, "objectClass", 0,
+					&objectclass_element);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -576,9 +577,6 @@ static int objectclass_do_add(struct oc_context *ac)
 		}
 
 		talloc_free(mem_ctx);
-
-		/* Retrive the message again so get_last_structural_class works */
-		objectclass_element = ldb_msg_find_element(msg, "objectClass");
 
 		/* Make sure its valid to add an object of this type */
 		objectclass = get_last_structural_class(ac->schema,
