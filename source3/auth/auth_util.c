@@ -604,9 +604,11 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Start at index 1, where the groups start. */
+	for (i=0; i<t->num_sids; i++) {
 
-	for (i=1; i<t->num_sids; i++) {
+		if (i == 0 && ids[i].type != WBC_ID_TYPE_BOTH) {
+			continue;
+		}
 
 		if (ids[i].type != WBC_ID_TYPE_GID &&
 		    ids[i].type != WBC_ID_TYPE_BOTH) {
