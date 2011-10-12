@@ -659,8 +659,10 @@ bld.SAMBA3_LIBRARY('smbclient',
                     public_deps='''talloc tdb_compat wbclient cap param  smbd_shim libsmb KRBCLIENT pdb
                     LIBMSRPC_GEN msrpc3 libcli_lsa3 RPC_NDR_SRVSVC popt_samba3''',
                     public_headers='include/libsmbclient.h',
-                    vnum='0',
-                    pc_files=[],
+                    abi_directory='libsmb/ABI',
+                    abi_match='smbc_*',
+                    vnum='0.1.0',
+                    pc_files='libsmb/smbclient.pc',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('smbsharemodes',
