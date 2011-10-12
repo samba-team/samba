@@ -1665,17 +1665,14 @@ server_lookup:
 	} else {
 	    Key *skey;
 
-	    ret = _kdc_find_etype(context,
-				  config->tgs_use_strongest_session_key, FALSE,
-				  server, b->etype.val, b->etype.len, NULL,
-				  &skey);
+	    ret = _kdc_get_preferred_key(context, config, server, spn,
+					 &etype, &skey);
 	    if(ret) {
 		kdc_log(context, config, 0,
 			"Server (%s) has no support for etypes", spn);
 		goto out;
 	    }
 	    ekey = &skey->key;
-	    etype = skey->key.keytype;
 	    kvno = server->entry.kvno;
 	}
 
