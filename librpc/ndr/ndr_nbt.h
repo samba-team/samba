@@ -1,10 +1,11 @@
 #/*
    Unix SMB/CIFS implementation.
 
-   CLDAP server structures
+   routines for marshalling/unmarshalling special netlogon types
 
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
+   Copyright (C) Guenther Deschner 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,4 +46,7 @@ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_REQUEST(struct ndr_pull *ndr, int 
 enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(struct ndr_push *ndr, int ndr_flags, const struct NETLOGON_SAM_LOGON_RESPONSE_EX *r);
 enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(struct ndr_pull *ndr, int ndr_flags, struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
 								     uint32_t nt_version_flags);
+enum ndr_err_code ndr_push_netlogon_samlogon_response(struct ndr_push *ndr, int ndr_flags, const struct netlogon_samlogon_response *r);
+enum ndr_err_code ndr_pull_netlogon_samlogon_response(struct ndr_pull *ndr, int ndr_flags, struct netlogon_samlogon_response *r);
+
 #endif /* _LIBRPC_NDR_NDR_NBT_H */

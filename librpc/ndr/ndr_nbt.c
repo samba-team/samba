@@ -389,3 +389,59 @@ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(struct ndr_
 	}
 	return NDR_ERR_SUCCESS;
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_netlogon_samlogon_response(struct ndr_push *ndr, int ndr_flags, const struct netlogon_samlogon_response *r)
+{
+	if (r->ntver == NETLOGON_NT_VERSION_1) {
+		NDR_CHECK(ndr_push_NETLOGON_SAM_LOGON_RESPONSE_NT40(
+			ndr, ndr_flags, &r->data.nt4));
+	} else if (r->ntver & NETLOGON_NT_VERSION_5EX) {
+		NDR_CHECK(ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(
+			ndr, ndr_flags, &r->data.nt5_ex));
+	} else if (r->ntver & NETLOGON_NT_VERSION_5) {
+		NDR_CHECK(ndr_push_NETLOGON_SAM_LOGON_RESPONSE(
+			ndr, ndr_flags, &r->data.nt5));
+	} else {
+		return NDR_ERR_BAD_SWITCH;
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_netlogon_samlogon_response(struct ndr_pull *ndr, int ndr_flags, struct netlogon_samlogon_response *r)
+{
+	if (ndr->data_size < 8) {
+		return NDR_ERR_BUFSIZE;
+	}
+
+	/* lmnttoken */
+	if (SVAL(ndr->data, ndr->data_size - 4) != 0xffff) {
+		return NDR_ERR_TOKEN;
+	}
+	/* lm20token */
+	if (SVAL(ndr->data, ndr->data_size - 2) != 0xffff) {
+		return NDR_ERR_TOKEN;
+	}
+
+	r->ntver = IVAL(ndr->data, ndr->data_size - 8);
+
+	if (r->ntver == NETLOGON_NT_VERSION_1) {
+		NDR_CHECK(ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_NT40(
+			ndr, ndr_flags, &r->data.nt4));
+	} else if (r->ntver & NETLOGON_NT_VERSION_5EX) {
+		NDR_CHECK(ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(
+			ndr, ndr_flags, &r->data.nt5_ex, r->ntver));
+		if (ndr->offset < ndr->data_size) {
+			return ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
+						 "not all bytes consumed ofs[%u] size[%u]",
+						 ndr->offset, ndr->data_size);
+		}
+	} else if (r->ntver & NETLOGON_NT_VERSION_5) {
+		NDR_CHECK(ndr_pull_NETLOGON_SAM_LOGON_RESPONSE(
+			ndr, ndr_flags, &r->data.nt5));
+	} else {
+		return NDR_ERR_BAD_SWITCH;
+	}
+
+	return NDR_ERR_SUCCESS;
+}
