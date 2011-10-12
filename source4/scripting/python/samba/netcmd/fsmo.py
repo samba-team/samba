@@ -95,7 +95,7 @@ all=all of the above"""),
             samdb.modify(m)
         except LdbError, (num, msg):
             raise CommandError("Failed to initiate role seize of '%s' role: %s" % (role, msg))
-        print("FSMO transfer of '%s' role successful" % role)
+        self.outf.write("FSMO transfer of '%s' role successful\n" % role)
 
     def run(self, force=None, H=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
@@ -231,7 +231,7 @@ all=all of the above"""),
             samdb.modify(m)
         except LdbError, (num, msg):
             raise CommandError("Failed to initiate transfer of '%s' role: %s" % (role, msg))
-        print("FSMO transfer of '%s' role successful" % role)    
+        self.outf.write("FSMO transfer of '%s' role successful\n" % role)
 
     def run(self, force=None, H=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):

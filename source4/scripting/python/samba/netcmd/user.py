@@ -101,8 +101,7 @@ class cmd_user_add(Command):
         except Exception, e:
             raise CommandError("Failed to add user '%s': " % username, e)
 
-        print("User '%s' created successfully" % username)
-
+        self.outf.write("User '%s' created successfully\n" % username)
 
 
 class cmd_user_delete(Command):
@@ -128,8 +127,7 @@ class cmd_user_delete(Command):
             samdb.deleteuser(username)
         except Exception, e:
             raise CommandError('Failed to remove user "%s"' % username, e)
-        print("Deleted user %s" % username)
-
+        self.outf.write("Deleted user %s\n" % username)
 
 
 class cmd_user_enable(Command):
@@ -162,8 +160,7 @@ class cmd_user_enable(Command):
             samdb.enable_account(filter)
         except Exception, msg:
             raise CommandError("Failed to enable user '%s': %s" % (username or filter, msg))
-        print("Enabled user '%s'" % (username or filter))
-
+        self.outf.write("Enabled user '%s'\n" % (username or filter))
 
 
 class cmd_user_setexpiry(Command):
@@ -198,9 +195,11 @@ class cmd_user_setexpiry(Command):
         try:
             samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
         except Exception, msg:
-            raise CommandError("Failed to set expiry for user '%s': %s" % (username or filter, msg))
-        print("Set expiry for user '%s' to %u days" % (username or filter, days))
-
+            # FIXME: Catch more specific exception
+            raise CommandError("Failed to set expiry for user '%s': %s" % (
+                username or filter, msg))
+        self.outf.write("Set expiry for user '%s' to %u days\n" % (
+            username or filter, days))
 
 
 class cmd_user_password(Command):
@@ -232,9 +231,9 @@ class cmd_user_password(Command):
         try:
             net.change_password(password)
         except Exception, msg:
+            # FIXME: catch more specific exception
             raise CommandError("Failed to change password : %s" % msg)
-        print "Changed password OK"
-
+        self.outf.write("Changed password OK\n")
 
 
 class cmd_user_setpassword(Command):
@@ -282,8 +281,9 @@ class cmd_user_setpassword(Command):
                               force_change_at_next_login=must_change_at_next_login,
                               username=username)
         except Exception, msg:
+            # FIXME: catch more specific exception
             raise CommandError("Failed to set password for user '%s': %s" % (username or filter, msg))
-        print "Changed password OK"
+        self.outf.write("Changed password OK\n")
 
 
 

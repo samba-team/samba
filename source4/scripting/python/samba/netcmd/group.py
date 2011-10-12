@@ -80,8 +80,9 @@ class cmd_group_add(Command):
             samdb.newgroup(groupname, groupou=groupou, grouptype = gtype,
                           description=description, mailaddress=mail_address, notes=notes)
         except Exception, e:
+            # FIXME: catch more specific exception
             raise CommandError('Failed to create group "%s"' % groupname, e)
-        print("Added group %s" % groupname)
+        self.outf.write("Added group %s\n" % groupname)
 
 
 class cmd_group_delete(Command):
@@ -106,8 +107,9 @@ class cmd_group_delete(Command):
                           credentials=creds, lp=lp)
             samdb.deletegroup(groupname)
         except Exception, e:
+            # FIXME: catch more specific exception
             raise CommandError('Failed to remove group "%s"' % groupname, e)
-        print("Deleted group %s" % groupname)
+        self.outf.write("Deleted group %s\n" % groupname)
 
 
 class cmd_group_add_members(Command):
@@ -133,8 +135,10 @@ class cmd_group_add_members(Command):
                           credentials=creds, lp=lp)
             samdb.add_remove_group_members(groupname, listofmembers, add_members_operation=True)
         except Exception, e:
-            raise CommandError('Failed to add members "%s" to group "%s"' % (listofmembers, groupname), e)
-        print("Added members to group %s" % groupname)
+            # FIXME: catch more specific exception
+            raise CommandError('Failed to add members "%s" to group "%s"' % (
+                listofmembers, groupname), e)
+        self.outf.write("Added members to group %s\n" % groupname)
 
 
 class cmd_group_remove_members(Command):
@@ -160,8 +164,9 @@ class cmd_group_remove_members(Command):
                           credentials=creds, lp=lp)
             samdb.add_remove_group_members(groupname, listofmembers, add_members_operation=False)
         except Exception, e:
+            # FIXME: Catch more specific exception
             raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
-        print("Removed members from group %s" % groupname)
+        self.outf.write("Removed members from group %s\n" % groupname)
 
 
 class cmd_group(SuperCommand):

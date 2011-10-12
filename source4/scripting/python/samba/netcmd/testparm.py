@@ -106,10 +106,10 @@ class cmd_testparm(Command):
                 if parameter_name is None:
                     lp[section_name].dump(sys.stdout, lp.default_service, verbose)
                 else:
-                    print lp.get(parameter_name, section_name)
+                    self.outf.write(lp.get(parameter_name, section_name)+"\n")
             else:
                 if not suppress_prompt:
-                    print "Press enter to see a dump of your service definitions"
+                    self.outf.write("Press enter to see a dump of your service definitions\n")
                     sys.stdin.readline()
                 lp.dump(sys.stdout, verbose)
         if valid:

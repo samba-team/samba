@@ -129,8 +129,8 @@ class cmd_dsacl_set(Command):
     def print_new_acl(self, samdb, object_dn):
         desc = self.read_descriptor(samdb, object_dn)
         desc_sddl = desc.as_sddl(self.get_domain_sid(samdb))
-        print "new descriptor for %s:" % object_dn
-        print desc_sddl
+        self.outf.write("new descriptor for %s:\n" % object_dn)
+        self.outf.write(desc_sddl + "\n")
 
     def run(self, car, action, objectdn, trusteedn, sddl,
             H=None, credopts=None, sambaopts=None, versionopts=None):

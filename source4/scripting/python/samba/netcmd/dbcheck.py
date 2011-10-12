@@ -56,8 +56,10 @@ class cmd_dbcheck(Command):
                type=str, metavar="URL", dest="H"),
         ]
 
-    def run(self, DN=None, H=None, verbose=False, fix=False, yes=False, cross_ncs=False, quiet=False,
-            scope="SUB", credopts=None, sambaopts=None, versionopts=None, attrs=None, reindex=False):
+    def run(self, DN=None, H=None, verbose=False, fix=False, yes=False,
+            cross_ncs=False, quiet=False,
+            scope="SUB", credopts=None, sambaopts=None, versionopts=None,
+            attrs=None, reindex=False):
 
         lp = sambaopts.get_loadparm()
 
@@ -77,7 +79,7 @@ class cmd_dbcheck(Command):
             samdb_schema = SamDB(session_info=system_session(), url=None,
                                  credentials=creds, lp=lp)
 
-        scope_map = { "SUB": ldb.SCOPE_SUBTREE, "BASE":ldb.SCOPE_BASE, "ONE":ldb.SCOPE_ONELEVEL }
+        scope_map = { "SUB": ldb.SCOPE_SUBTREE, "BASE": ldb.SCOPE_BASE, "ONE":ldb.SCOPE_ONELEVEL }
         scope = scope.upper()
         if not scope in scope_map:
             raise CommandError("Unknown scope %s" % scope)
@@ -95,7 +97,6 @@ class cmd_dbcheck(Command):
             attrs = attrs.split()
 
         started_transaction = False
-
         if yes and fix:
             samdb.transaction_start()
             started_transaction = True
@@ -104,10 +105,10 @@ class cmd_dbcheck(Command):
                     fix=fix, yes=yes, quiet=quiet)
 
             if reindex:
-                print("Re-indexing...")
+                self.outf.write("Re-indexing...\n")
                 error_count = 0
                 if chk.reindex_database():
-                    print("completed re-index OK")
+                    self.outf.write("completed re-index OK\n")
             else:
                 error_count = chk.check_database(DN=DN, scope=search_scope,
                         controls=controls, attrs=attrs)

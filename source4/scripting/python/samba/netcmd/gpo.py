@@ -256,13 +256,13 @@ class cmd_listall(Command):
         msg = get_gpo_info(self.samdb, None)
 
         for m in msg:
-            print("GPO          : %s" % m['name'][0])
-            print("display name : %s" % m['displayName'][0])
-            print("path         : %s" % m['gPCFileSysPath'][0])
-            print("dn           : %s" % m.dn)
-            print("version      : %s" % attr_default(m, 'versionNumber', '0'))
-            print("flags        : %s" % gpo_flags_string(int(attr_default(m, 'flags', 0))))
-            print("")
+            self.outf.write("GPO          : %s\n" % m['name'][0])
+            self.outf.write("display name : %s\n" % m['displayName'][0])
+            self.outf.write("path         : %s\n" % m['gPCFileSysPath'][0])
+            self.outf.write("dn           : %s\n" % m.dn)
+            self.outf.write("version      : %s\n" % attr_default(m, 'versionNumber', '0'))
+            self.outf.write("flags        : %s\n" % gpo_flags_string(int(attr_default(m, 'flags', 0))))
+            self.outf.write("\n")
 
 
 class cmd_list(Command):
@@ -331,7 +331,8 @@ class cmd_list(Command):
                                                  attrs=['name', 'displayName', 'flags',
                                                         'ntSecurityDescriptor'])
                     except Exception:
-                        print("Failed to fetch gpo object %s" % g['dn'])
+                        self.outf.write("Failed to fetch gpo object %s\n" %
+                            g['dn'])
                         continue
 
                     secdesc_ndr = gmsg[0]['ntSecurityDescriptor'][0]
@@ -343,7 +344,7 @@ class cmd_list(Command):
                                                     dcerpc.security.SEC_ADS_LIST |
                                                     dcerpc.security.SEC_ADS_READ_PROP)
                     except RuntimeError:
-                        print("Failed access check on %s" % msg.dn)
+                        self.outf.write("Failed access check on %s\n" % msg.dn)
                         continue
 
                     # check the flags on the GPO
@@ -368,9 +369,9 @@ class cmd_list(Command):
         else:
             msg_str = 'user'
 
-        print("GPOs for %s %s" % (msg_str, username))
+        self.outf.write("GPOs for %s %s\n" % (msg_str, username))
         for g in gpos:
-            print("    %s %s" % (g[0], g[1]))
+            self.outf.write("    %s %s\n" % (g[0], g[1]))
 
 
 class cmd_show(Command):
@@ -407,14 +408,14 @@ class cmd_show(Command):
         secdesc_ndr = msg['ntSecurityDescriptor'][0]
         secdesc = ndr_unpack(dcerpc.security.descriptor, secdesc_ndr)
 
-        print("GPO          : %s" % msg['name'][0])
-        print("display name : %s" % msg['displayName'][0])
-        print("path         : %s" % msg['gPCFileSysPath'][0])
-        print("dn           : %s" % msg.dn)
-        print("version      : %s" % attr_default(msg, 'versionNumber', '0'))
-        print("flags        : %s" % gpo_flags_string(int(attr_default(msg, 'flags', 0))))
-        print("ACL          : %s" % secdesc.as_sddl())
-        print("")
+        self.outf.write("GPO          : %s\n" % msg['name'][0])
+        self.outf.write("display name : %s\n" % msg['displayName'][0])
+        self.outf.write("path         : %s\n" % msg['gPCFileSysPath'][0])
+        self.outf.write("dn           : %s\n" % msg.dn)
+        self.outf.write("version      : %s\n" % attr_default(msg, 'versionNumber', '0'))
+        self.outf.write("flags        : %s\n" % gpo_flags_string(int(attr_default(msg, 'flags', 0))))
+        self.outf.write("ACL          : %s\n" % secdesc.as_sddl())
+        self.outf.write("\n")
 
 
 class cmd_getlink(Command):
@@ -452,16 +453,16 @@ class cmd_getlink(Command):
             raise CommandError("Could not find Container DN %s (%s)" % container_dn, e)
 
         if 'gPLink' in msg:
-            print("GPO(s) linked to DN %s" % container_dn)
+            self.outf.write("GPO(s) linked to DN %s\n" % container_dn)
             gplist = parse_gplink(msg['gPLink'][0])
             for g in gplist:
                 msg = get_gpo_info(self.samdb, dn=g['dn'])
-                print("    GPO     : %s" % msg[0]['name'][0])
-                print("    Name    : %s" % msg[0]['displayName'][0])
-                print("    Options : %s" % gplink_options_string(g['options']))
-                print("")
+                self.outf.write("    GPO     : %s\n" % msg[0]['name'][0])
+                self.outf.write("    Name    : %s\n" % msg[0]['displayName'][0])
+                self.outf.write("    Options : %s\n" % gplink_options_string(g['options']))
+                self.outf.write("\n")
         else:
-            print("No GPO(s) linked to DN=%s" % container_dn)
+            self.outf.write("No GPO(s) linked to DN=%s\n" % container_dn)
 
 
 class cmd_setlink(Command):
@@ -548,7 +549,7 @@ class cmd_setlink(Command):
         except Exception, e:
             raise CommandError("Error adding GPO Link", e)
 
-        print("Added/Updated GPO link")
+        self.outf.write("Added/Updated GPO link\n")
         cmd_getlink().run(container_dn, H, sambaopts, credopts, versionopts)
 
 
@@ -617,7 +618,7 @@ class cmd_dellink(Command):
         except Exception, e:
             raise CommandError("Error Removing GPO Link (%s)" % e)
 
-        print("Deleted GPO link.")
+        self.outf.write("Deleted GPO link.\n")
         cmd_getlink().run(container_dn, H, sambaopts, credopts, versionopts)
 
 
@@ -660,9 +661,9 @@ class cmd_getinheritance(Command):
             inheritance = int(msg['gPOptions'][0])
 
         if inheritance == dsdb.GPO_BLOCK_INHERITANCE:
-            print("Container has GPO_BLOCK_INHERITANCE")
+            self.outf.write("Container has GPO_BLOCK_INHERITANCE\n")
         else:
-            print("Container has GPO_INHERIT")
+            self.outf.write("Container has GPO_INHERIT\n")
 
 
 class cmd_setinheritance(Command):
@@ -783,8 +784,9 @@ class cmd_fetch(Command):
             os.mkdir(gpodir)
             copy_directory_remote_to_local(conn, sharepath, gpodir)
         except Exception, e:
+            # FIXME: Catch more specific exception
             raise CommandError("Error copying GPO from DC", e)
-        print('GPO copied to %s' % gpodir)
+        self.outf.write('GPO copied to %s\n' % gpodir)
 
 
 class cmd_create(Command):
@@ -951,7 +953,7 @@ class cmd_create(Command):
         except Exception, e:
             raise CommandError("Error setting ACL on GPT", e)
 
-        print "GPO '%s' created as %s" % (displayname, gpo)
+        self.outf.write("GPO '%s' created as %s\n" % (displayname, gpo))
 
 
 class cmd_gpo(SuperCommand):

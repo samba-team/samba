@@ -90,7 +90,7 @@ class cmd_rodc_preload(Command):
         source_dsa_invocation_id = misc.GUID(local_samdb.schema_format_value("objectGUID", res[0]["invocationId"][0]))
 
         dn = self.get_dn(samdb, account)
-        print "Replicating DN %s" % dn
+        self.outf.write("Replicating DN %s\n" % dn)
 
         destination_dsa_guid = misc.GUID(local_samdb.get_ntds_GUID())
 

@@ -65,7 +65,6 @@ class cmd_ntacl_set(Command):
         except Exception, e:
             raise CommandError("Unable to read domain SID from configuration files", e)
         attrs = ["objectSid"]
-        print lp.get("realm")
         res = ldb.search(expression="(objectClass=*)",
             base="flatname=%s,cn=Primary Domains" % lp.get("workgroup"),
             scope=SCOPE_BASE, attrs=attrs)
@@ -97,10 +96,9 @@ class cmd_ntacl_get(Command):
         acl = getntacl(lp, file, xattr_backend, eadb_file)
         if as_sddl:
             anysid = security.dom_sid(security.SID_NT_SELF)
-            print acl.info.as_sddl(anysid)
+            self.outf.write(acl.info.as_sddl(anysid)+"\n")
         else:
             acl.dump()
-
 
 
 class cmd_ntacl(SuperCommand):

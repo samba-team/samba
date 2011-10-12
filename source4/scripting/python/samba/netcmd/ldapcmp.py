@@ -85,11 +85,15 @@ class LDAPBase(object):
         # Log some domain controller specific place-holers that are being used
         # when compare content of two DCs. Uncomment for DEBUG purposes.
         if self.two_domains and not self.quiet:
-            print "\n* Place-holders for %s:" % self.host
-            print 4*" " + "${DOMAIN_DN}      => %s" % self.base_dn
-            print 4*" " + "${DOMAIN_NETBIOS} => %s" % self.domain_netbios
-            print 4*" " + "${SERVER_NAME}     => %s" % self.server_names
-            print 4*" " + "${DOMAIN_NAME}    => %s" % self.domain_name
+            self.outf.write("\n* Place-holders for %s:\n" % self.host)
+            self.outf.write(4*" " + "${DOMAIN_DN}      => %s\n" %
+                self.base_dn)
+            self.outf.write(4*" " + "${DOMAIN_NETBIOS} => %s\n" %
+                self.domain_netbios)
+            self.outf.write(4*" " + "${SERVER_NAME}     => %s\n" %
+                self.server_names)
+            self.outf.write(4*" " + "${DOMAIN_NAME}    => %s\n" %
+                self.domain_name)
 
     def find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
@@ -493,7 +497,7 @@ class LDAPObject(object):
         Log on the screen if there is no --quiet oprion set
         """
         if not self.quiet:
-            print msg
+            self.outf.write(msg+"\n")
 
     def fix_dn(self, s):
         res = "%s" % s
@@ -665,6 +669,7 @@ class LDAPObject(object):
 
 
 class LDAPBundel(object):
+
     def __init__(self, connection, context, dn_list=None, filter_list=None):
         self.con = connection
         self.two_domains = self.con.two_domains
@@ -705,7 +710,7 @@ class LDAPBundel(object):
         Log on the screen if there is no --quiet oprion set
         """
         if not self.quiet:
-            print msg
+            self.outf.write(msg+"\n")
 
     def update_size(self):
         self.size = len(self.dn_list)
@@ -820,7 +825,7 @@ class LDAPBundel(object):
         try:
             res = self.con.ldb.search(base=self.search_base, scope=self.search_scope, attrs=["dn"])
         except LdbError, (enum, estr):
-            print("Failed search of base=%s" % self.search_base)
+            self.outf.write("Failed search of base=%s\n" % self.search_base)
             raise
         for x in res:
            dn_list.append(x["dn"].get_linearized())
@@ -841,6 +846,7 @@ class LDAPBundel(object):
             self.log( "\nAttributes with different values:" )
             self.log( "".join([str("\n" + 4*" " + x) for x in self.summary["df_value_attrs"]]) )
             self.summary["df_value_attrs"] = []
+
 
 class cmd_ldapcmp(Command):
     """compare two ldap databases"""
@@ -942,22 +948,23 @@ class cmd_ldapcmp(Command):
         status = 0
         for context in contexts:
             if not quiet:
-                print "\n* Comparing [%s] context..." % context
+                self.outf.write("\n* Comparing [%s] context...\n" % context)
 
             b1 = LDAPBundel(con1, context=context, filter_list=filter_list)
             b2 = LDAPBundel(con2, context=context, filter_list=filter_list)
 
             if b1 == b2:
                 if not quiet:
-                    print "\n* Result for [%s]: SUCCESS" % context
+                    self.outf.write("\n* Result for [%s]: SUCCESS\n" %
+                        context)
             else:
                 if not quiet:
-                    print "\n* Result for [%s]: FAILURE" % context
+                    self.outf.write("\n* Result for [%s]: FAILURE\n" % context)
                     if not descriptor:
                         assert len(b1.summary["df_value_attrs"]) == len(b2.summary["df_value_attrs"])
                         b2.summary["df_value_attrs"] = []
-                        print "\nSUMMARY"
-                        print "---------"
+                        self.outf.write("\nSUMMARY\n")
+                        self.outf.write("---------\n")
                         b1.print_summary()
                         b2.print_summary()
                 # mark exit status as FAILURE if a least one comparison failed

@@ -100,7 +100,7 @@ class Command(object):
         return parser, optiongroups
 
     def message(self, text):
-        print text
+        self.outf.write(text+"\n")
 
     def _run(self, *argv):
         parser, optiongroups = self._create_parser()
@@ -162,17 +162,17 @@ class SuperCommand(Command):
             usage = "samba-tool <subcommand>"
         else:
             usage = "samba-tool %s <subcommand>" % myname
-        print "Usage: %s [options]" %usage        
-        print "Available subcommands:"
+        self.outf.write("Usage: %s [options]\n" % usage)
+        self.outf.write("Available subcommands:\n")
         subcmds = self.subcommands.keys()
         subcmds.sort()
-        max_length = max(map(lambda c: len(c), subcmds))
+        max_length = max([len(c) for c in subcmds])
         for cmd in subcmds:
-            print "  %*s  - %s" % (-max_length, cmd, self.subcommands[cmd].description)
+            self.outf.write("  %*s  - %s\n" % (-max_length, cmd, self.subcommands[cmd].description))
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:
-            print "For more help on a specific subcommand, please type: %s (-h|--help)" % usage
+            self.outf.write("For more help on a specific subcommand, please type: %s (-h|--help)\n" % usage)
             return 0
         raise CommandError("No such subcommand '%s'" % subcommand)
 

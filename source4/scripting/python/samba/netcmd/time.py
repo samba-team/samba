@@ -39,4 +39,4 @@ class cmd_time(Command):
         net = Net(creds, lp, server=credopts.ipaddress)
         if server_name is None:
             server_name = common.netcmd_dnsname(lp)
-        print net.time(server_name)
+        self.outf.write(net.time(server_name)+"\n")

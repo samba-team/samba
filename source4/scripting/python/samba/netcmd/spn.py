@@ -50,7 +50,7 @@ class cmd_spn_list(Command):
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
         (cleaneduser, realm, domain) = _get_user_realm_domain(user)
-        print cleaneduser
+        self.outf.write(cleaneduser+"\n")
         res = sam.search(expression="samaccountname=%s" % ldb.binary_encode(cleaneduser),
                             scope=ldb.SCOPE_SUBTREE,
                             attrs=["servicePrincipalName"])
@@ -59,11 +59,14 @@ class cmd_spn_list(Command):
             found = False
             flag = ldb.FLAG_MOD_ADD
             if spns != None:
-                print "User %s has the following servicePrincipalName: " %  str(res[0].dn)
+                self.outf.write(
+                    "User %s has the following servicePrincipalName: \n" %
+                    res[0].dn)
                 for e in spns:
-                    print "\t %s" % (str(e))
+                    self.outf.write("\t %s\n" % e)
             else:
-                print "User %s has no servicePrincipalName" % str(res[0].dn)
+                self.outf.write("User %s has no servicePrincipalName" %
+                    res[0].dn)
         else:
             raise CommandError("User %s not found" % user)
 
