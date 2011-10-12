@@ -219,6 +219,60 @@ static int objectclass_sort(struct ldb_module *module,
 	return LDB_ERR_OBJECT_CLASS_VIOLATION;
 }
 
+/*
+ * This checks if we have unrelated object classes in our entry's "objectClass"
+ * attribute. That means "unsatisfied" abstract classes (no concrete subclass)
+ * or two or more disjunct structural ones.
+ * If one of these conditions are true, blame.
+ */
+static int check_unrelated_objectclasses(struct ldb_module *module,
+					const struct dsdb_schema *schema,
+					const struct dsdb_class *struct_objectclass,
+					struct ldb_message_element *objectclass_element)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	unsigned int i;
+	bool found;
+
+	if (schema == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	for (i = 0; i < objectclass_element->num_values; i++) {
+		const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema,
+											   &objectclass_element->values[i]);
+		const struct dsdb_class *tmp_class2 = struct_objectclass;
+
+		/* Pointer comparison can be used due to the same schema str. */
+		if (tmp_class == NULL ||
+		    tmp_class == struct_objectclass ||
+		    tmp_class->objectClassCategory > 2 ||
+		    ldb_attr_cmp(tmp_class->lDAPDisplayName, "top") == 0) {
+			continue;
+		}
+
+		found = false;
+		while (!found &&
+		       ldb_attr_cmp(tmp_class2->lDAPDisplayName, "top") != 0) {
+			tmp_class2 = dsdb_class_by_lDAPDisplayName(schema,
+								   tmp_class2->subClassOf);
+			if (tmp_class2 == tmp_class) {
+				found = true;
+			}
+		}
+		if (found) {
+			continue;
+		}
+
+		ldb_asprintf_errstring(ldb,
+				       "objectclass: the objectclass '%s' seems to be unrelated to the entry!",
+				       tmp_class->lDAPDisplayName);
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
+
+	return LDB_SUCCESS;
+}
+
 static int get_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
@@ -586,6 +640,13 @@ static int objectclass_do_add(struct oc_context *ac)
 					       "Failed to find a structural class for %s",
 					       ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		ret = check_unrelated_objectclasses(ac->module, ac->schema,
+						    objectclass,
+						    objectclass_element);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 
 		rdn_name = ldb_dn_get_rdn_name(msg->dn);
