@@ -105,8 +105,20 @@ class VersionOptions(optparse.OptionGroup):
         sys.exit(0)
 
 
+def parse_kerberos_arg(arg):
+    if arg.lower() in ["yes", 'true', '1']:
+        return MUST_USE_KERBEROS
+    elif arg.lower() in ["no", 'false', '0']:
+        return DONT_USE_KERBEROS
+    elif arg.lower() in ["auto"]:
+        return AUTO_USE_KERBEROS
+    else:
+        raise optparse.BadOptionError("invalid kerberos option: %s" % arg)
+
+
 class CredentialsOptions(optparse.OptionGroup):
     """Command line options for specifying credentials."""
+
     def __init__(self, parser):
         self.no_pass = True
         self.ipaddress = None
@@ -147,14 +159,7 @@ class CredentialsOptions(optparse.OptionGroup):
         self.ipaddress = arg
 
     def _set_kerberos(self, option, opt_str, arg, parser):
-        if arg.lower() in ["yes", 'true', '1']:
-            self.creds.set_kerberos_state(MUST_USE_KERBEROS)
-        elif arg.lower() in ["no", 'false', '0']:
-            self.creds.set_kerberos_state(DONT_USE_KERBEROS)
-        elif arg.lower() in ["auto"]:
-            self.creds.set_kerberos_state(AUTO_USE_KERBEROS)
-        else:
-            raise optparse.BadOptionError("invalid kerberos option: %s" % arg)
+        self.creds.set_kerberos_state(parse_kerberos_arg(arg))
 
     def _set_simple_bind_dn(self, option, opt_str, arg, parser):
         self.creds.set_bind_dn(arg)
@@ -182,6 +187,7 @@ class CredentialsOptions(optparse.OptionGroup):
 
 class CredentialsOptionsDouble(CredentialsOptions):
     """Command line options for specifying credentials of two servers."""
+
     def __init__(self, parser):
         CredentialsOptions.__init__(self, parser)
         self.no_pass2 = True
@@ -217,10 +223,7 @@ class CredentialsOptionsDouble(CredentialsOptions):
         self.no_pass2 = False
 
     def _set_kerberos2(self, option, opt_str, arg, parser):
-        if bool(arg) or arg.lower() == "yes":
-            self.creds2.set_kerberos_state(MUST_USE_KERBEROS)
-        else:
-            self.creds2.set_kerberos_state(DONT_USE_KERBEROS)
+        self.creds2.set_kerberos_state(parse_kerberos_arg(arg))
 
     def _set_simple_bind_dn2(self, option, opt_str, arg, parser):
         self.creds2.set_bind_dn(arg)
@@ -235,7 +238,7 @@ class CredentialsOptionsDouble(CredentialsOptions):
         if guess:
             self.creds2.guess(lp)
         elif not self.creds2.get_username():
-                self.creds2.set_anonymous()
+            self.creds2.set_anonymous()
 
         if self.no_pass2:
             self.creds2.set_cmdline_callbacks()
