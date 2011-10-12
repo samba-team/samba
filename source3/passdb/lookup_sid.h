@@ -56,7 +56,7 @@ struct lsa_dom_info {
 };
 
 struct lsa_name_info {
-	uint32 rid;
+	uint32_t rid;
 	enum lsa_SidType type;
 	const char *name;
 	int dom_idx;

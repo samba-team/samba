@@ -67,7 +67,7 @@ NTSTATUS pdb_default_enum_group_mapping(struct pdb_methods *methods,
 					size_t *p_num_entries,
 					bool unix_only);
 NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
-				  const char *name, uint32 *rid);
+				  const char *name, uint32_t *rid);
 NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,
 				  const struct dom_sid *sid);
 struct acct_info;
@@ -90,7 +90,7 @@ NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
 				       const struct dom_sid *domain_sid,
 				       const struct dom_sid *members,
 				       size_t num_members,
-				       uint32 **pp_alias_rids,
+				       uint32_t **pp_alias_rids,
 				       size_t *p_num_alias_rids);
 NTSTATUS pdb_nop_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
 				 struct dom_sid sid);
@@ -108,7 +108,7 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 					   enum lsa_SidType sid_name_use,
 					   GROUP_MAP **rmap, size_t *num_entries,
 					   bool unix_only);
-NTSTATUS pdb_create_builtin_alias(uint32 rid);
+NTSTATUS pdb_create_builtin_alias(uint32_t rid);
 
 
 /* passdb headers */
@@ -774,7 +774,7 @@ bool pdb_set_country_code(struct samu *sampass, uint16_t country_code,
 bool pdb_set_code_page(struct samu *sampass, uint16_t code_page,
 		       enum pdb_value_state flag);
 bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state flag);
-bool pdb_set_hours(struct samu *sampass, const uint8 *hours, int hours_len,
+bool pdb_set_hours(struct samu *sampass, const uint8_t *hours, int hours_len,
 		   enum pdb_value_state flag);
 bool pdb_set_backend_private_data(struct samu *sampass, void *private_data,
 				   void (*free_fn)(void **),
