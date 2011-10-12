@@ -487,7 +487,7 @@ msg.msg_acctrightslen = sizeof(fd);
             # gssapi_krb5 and other libraries to its --libs output. That breaks the use
             # of an in-tree heimdal kerberos
 	    conf.check_cfg(path=conf.env.CUPS_CONFIG, args="--cflags --ldflags",
-                           package="", uselib_store="cups")
+                           package="", uselib_store="CUPS")
         conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='cups')
         conf.CHECK_FUNCS_IN('httpConnect httpConnectEncrypt', 'cups')
         if conf.CONFIG_SET('HAVE_CUPS_CUPS_H') and conf.CONFIG_SET('HAVE_CUPS_LANGUAGE_H'):
@@ -554,7 +554,7 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.find_program('krb5-config', var='KRB5_CONFIG')
         if conf.env.KRB5_CONFIG:
             conf.check_cfg(path="krb5-config", args="--cflags --libs",
-                       package="gssapi", uselib_store="krb5")
+                       package="gssapi", uselib_store="KRB5")
         conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
         conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h com_err.h', lib='krb5')
 
