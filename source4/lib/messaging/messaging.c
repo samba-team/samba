@@ -56,6 +56,7 @@ struct imessaging_context {
 	struct socket_context *sock;
 	const char *base_path;
 	const char *path;
+	struct loadparm_context *lp_ctx;
 	struct dispatch_fn **dispatch;
 	uint32_t num_types;
 	struct idr_context *dispatch_tree;
@@ -594,6 +595,12 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	/* create the messaging directory if needed */
 
+	msg->lp_ctx = talloc_reference(msg, lp_ctx);
+	if (!msg->lp_ctx) {
+		talloc_free(msg);
+		return NULL;
+	}
+
 	msg->base_path     = lpcfg_imessaging_path(msg, lp_ctx);
 
 	mkdir(msg->base_path, 0700);
@@ -881,7 +888,7 @@ static struct tdb_wrap *irpc_namedb_open(struct imessaging_context *msg_ctx)
 	if (path == NULL) {
 		return NULL;
 	}
-	t = tdb_wrap_open(msg_ctx, path, 0, 0, O_RDWR|O_CREAT, 0660);
+	t = tdb_wrap_open(msg_ctx, path, 0, 0, O_RDWR|O_CREAT, 0660, msg_ctx->lp_ctx);
 	talloc_free(path);
 	return t;
 }

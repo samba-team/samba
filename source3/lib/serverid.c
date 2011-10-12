@@ -24,6 +24,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "lib/util/tdb_wrap.h"
+#include "lib/param/param.h"
 
 struct serverid_key {
 	pid_t pid;
@@ -39,6 +40,13 @@ struct serverid_data {
 bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 {
 	struct tdb_wrap *db;
+	struct loadparm_context *lp_ctx;
+
+	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return false;
+	}
 
 	/*
 	 * Open the tdb in the parent process (smbd) so that our
@@ -48,7 +56,8 @@ bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 
 	db = tdb_wrap_open(mem_ctx, lock_path("serverid.tdb"),
 			   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT,
-			   0644);
+			   0644, lp_ctx);
+	talloc_unlink(mem_ctx, lp_ctx);
 	if (db == NULL) {
 		DEBUG(1, ("could not open serverid.tdb: %s\n",
 			  strerror(errno)));

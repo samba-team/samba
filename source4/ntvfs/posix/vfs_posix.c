@@ -120,7 +120,8 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 	eadb = share_string_option(scfg, PVFS_EADB, NULL);
 	if (eadb != NULL) {
 		pvfs->ea_db = tdb_wrap_open(pvfs, eadb, 50000,  
-					    TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+					    TDB_DEFAULT, O_RDWR|O_CREAT, 0600, 
+					    pvfs->ntvfs->ctx->lp_ctx);
 		if (pvfs->ea_db != NULL) {
 			pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
 		} else {

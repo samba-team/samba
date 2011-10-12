@@ -22,6 +22,7 @@
 #include "dbwrap/dbwrap_private.h"
 #include "dbwrap/dbwrap_tdb.h"
 #include "lib/util/tdb_wrap.h"
+#include "lib/param/param.h"
 
 struct db_tdb_ctx {
 	struct tdb_wrap *wtdb;
@@ -359,12 +360,14 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 {
 	struct db_context *result = NULL;
 	struct db_tdb_ctx *db_tdb;
-
+	struct loadparm_context *lp_ctx;
+	
 	result = talloc_zero(mem_ctx, struct db_context);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
+	lp_ctx = loadparm_init_s3(result, loadparm_s3_context());
 
 	result->private_data = db_tdb = talloc(result, struct db_tdb_ctx);
 	if (db_tdb == NULL) {
@@ -373,7 +376,8 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	}
 
 	db_tdb->wtdb = tdb_wrap_open(db_tdb, name, hash_size, tdb_flags,
-				     open_flags, mode);
+				     open_flags, mode, lp_ctx);
+	talloc_unlink(result, lp_ctx);
 	if (db_tdb->wtdb == NULL) {
 		DEBUG(3, ("Could not open tdb: %s\n", strerror(errno)));
 		goto fail;

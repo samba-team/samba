@@ -59,7 +59,7 @@ bool randseed_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 
 	fname = lpcfg_private_path(mem_ctx, lp_ctx, "randseed.tdb");
 
-	tdb = tdb_wrap_open(mem_ctx, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	tdb = tdb_wrap_open(mem_ctx, fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600, lp_ctx);
 
 	if (!tdb) {
 		DEBUG(0,("Failed to open %s\n", fname));

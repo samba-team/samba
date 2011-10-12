@@ -35,8 +35,11 @@ struct tdb_wrap {
 	struct tdb_context *tdb;
 };
 
+struct loadparm_context;
+
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 			       const char *name, int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode);
+			       int open_flags, mode_t mode,
+			       struct loadparm_context *lp_ctx);
 
 #endif /* _TDB_WRAP_H_ */

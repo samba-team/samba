@@ -65,7 +65,7 @@ static bool test_tdb_speed(struct torture_context *torture, const void *_data)
 	torture_comment(torture, "Testing tdb speed for sidmap\n");
 
 	tdbw = tdb_wrap_open(tmp_ctx, "test.tdb", 
-			     10000, 0, O_RDWR|O_CREAT|O_TRUNC, 0600);
+			     10000, 0, O_RDWR|O_CREAT|O_TRUNC, 0600, torture->lp_ctx);
 	if (!tdbw) {
 		torture_result(torture, TORTURE_FAIL, "Failed to open test.tdb");
 		goto failed;

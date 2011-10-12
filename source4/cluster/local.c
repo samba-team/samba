@@ -53,7 +53,7 @@ static struct tdb_wrap *local_tdb_tmp_open(struct cluster_ops *ops,
 	char *path = smbd_tmp_path(mem_ctx, lp_ctx, dbname);
 	struct tdb_wrap *w;
 	w = tdb_wrap_open(mem_ctx, path, 0, flags,
-			  O_RDWR|O_CREAT, 0600);
+			  O_RDWR|O_CREAT, 0600, lp_ctx);
 	talloc_free(path);
 	return w;
 }

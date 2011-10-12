@@ -26,6 +26,7 @@
 #include "lib/util/wrap_xattr.h"
 #include "ntvfs/posix/vfs_posix.h"
 #include "libcli/util/pyerrors.h"
+#include "param/pyparam.h"
 
 void initxattr_tdb(void);
 
@@ -50,7 +51,8 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 	blob.length = blobsize;
 	mem_ctx = talloc_new(NULL);
 	eadb = tdb_wrap_open(mem_ctx, tdbname, 50000,
-				TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+			     TDB_DEFAULT, O_RDWR|O_CREAT, 0600,
+			     py_default_loadparm_context(mem_ctx));
 
 	if (eadb == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);
@@ -82,7 +84,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 
 	mem_ctx = talloc_new(NULL);
 	eadb = tdb_wrap_open(mem_ctx, tdbname, 50000,
-				TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+			     TDB_DEFAULT, O_RDWR|O_CREAT, 0600, py_default_loadparm_context(mem_ctx));
 	if (eadb == NULL) {
 		PyErr_SetFromErrno(PyExc_IOError);
 		talloc_free(mem_ctx);

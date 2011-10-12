@@ -46,6 +46,7 @@
 #include "system/filesys.h"
 #include "messages.h"
 #include "lib/util/tdb_wrap.h"
+#include "lib/param/param.h"
 
 struct messaging_tdb_context {
 	struct messaging_context *msg_ctx;
@@ -86,10 +87,17 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 {
 	struct messaging_backend *result;
 	struct messaging_tdb_context *ctx;
+	struct loadparm_context *lp_ctx;
 
 	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	lp_ctx = loadparm_init_s3(result, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	ctx = talloc_zero(result, struct messaging_tdb_context);
@@ -105,7 +113,8 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 
 	ctx->tdb = tdb_wrap_open(ctx, lock_path("messages.tdb"), 0,
 				 TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_VOLATILE|TDB_INCOMPATIBLE_HASH,
-				 O_RDWR|O_CREAT,0600);
+				 O_RDWR|O_CREAT,0600, lp_ctx);
+	talloc_unlink(result, lp_ctx);
 
 	if (!ctx->tdb) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
@@ -137,6 +146,13 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 bool messaging_tdb_parent_init(TALLOC_CTX *mem_ctx)
 {
 	struct tdb_wrap *db;
+	struct loadparm_context *lp_ctx;
+
+	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return false;
+	}
 
 	/*
 	 * Open the tdb in the parent process (smbd) so that our
@@ -146,7 +162,8 @@ bool messaging_tdb_parent_init(TALLOC_CTX *mem_ctx)
 
 	db = tdb_wrap_open(mem_ctx, lock_path("messages.tdb"), 0,
 			   TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_VOLATILE|TDB_INCOMPATIBLE_HASH,
-			   O_RDWR|O_CREAT,0600);
+			   O_RDWR|O_CREAT,0600, lp_ctx);
+	talloc_unlink(mem_ctx, lp_ctx);
 	if (db == NULL) {
 		DEBUG(1, ("could not open messaging.tdb: %s\n",
 			  strerror(errno)));

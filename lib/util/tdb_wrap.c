@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/tdb_wrap.h"
+#include "lib/param/param.h"
 
 /* FIXME: TDB2 does this internally, so no need to wrap multiple opens! */
 #if BUILD_TDB2
@@ -114,7 +115,8 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 						      int hash_size,
 						      int tdb_flags,
 						      int open_flags,
-						      mode_t mode)
+						      mode_t mode,
+						      struct loadparm_context *lp_ctx)
 {
 	struct tdb_wrap_private *result;
 
@@ -127,14 +129,7 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-#if _SAMBA_BUILD_ == 3	
-	/* This #if _SAMBA_BUILD == 3 is very unfortunate, as it means
-	 * that in the top level build, these options are not
-	 * available for these databases.  However, having two
-	 * different tdb_wrap lists is a worse fate, so this will do
-	 * for now */
-
-	if (!lp_use_mmap()) {
+	if (!lpcfg_use_mmap(lp_ctx)) {
 		tdb_flags |= TDB_NOMMAP;
 	}
 
@@ -147,9 +142,8 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 		} else {
 			base = name;
 		}
-		hash_size = lp_parm_int(-1, "tdb_hashsize", base, 0);
+		hash_size = lpcfg_parm_int(lp_ctx, NULL, "tdb_hashsize", base, 0);
 	}
-#endif
 
 	result->tdb = tdb_open_compat(name, hash_size, tdb_flags,
 				      open_flags, mode, tdb_wrap_log, NULL);
@@ -171,7 +165,8 @@ fail:
  */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 			       const char *name, int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode)
+			       int open_flags, mode_t mode,
+			       struct loadparm_context *lp_ctx)
 {
 	struct tdb_wrap *result;
 	struct tdb_wrap_private *w;
@@ -189,7 +184,7 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 
 	if (w == NULL) {
 		w = tdb_wrap_private_open(result, name, hash_size, tdb_flags,
-					  open_flags, mode);
+					  open_flags, mode, lp_ctx);
 	} else {
 		/*
 		 * Correctly use talloc_reference: The tdb will be

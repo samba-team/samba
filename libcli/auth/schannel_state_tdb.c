@@ -47,7 +47,7 @@ struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	tdb_sc = tdb_wrap_open(mem_ctx, fname, 0, TDB_CLEAR_IF_FIRST|TDB_NOSYNC, O_RDWR|O_CREAT, 0600);
+	tdb_sc = tdb_wrap_open(mem_ctx, fname, 0, TDB_CLEAR_IF_FIRST|TDB_NOSYNC, O_RDWR|O_CREAT, 0600, lp_ctx);
 
 	if (!tdb_sc) {
 		DEBUG(0,("open_schannel_session_store: Failed to open %s - %s\n",

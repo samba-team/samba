@@ -32,6 +32,7 @@
 #include "messages.h"
 #include "lib/util/tdb_wrap.h"
 #include "util_tdb.h"
+#include "lib/param/param.h"
 
 struct notify_context {
 	struct db_context *db_recursive;
@@ -137,11 +138,17 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 bool notify_internal_parent_init(TALLOC_CTX *mem_ctx)
 {
 	struct tdb_wrap *db1, *db2;
+	struct loadparm_context *lp_ctx;
 
 	if (lp_clustering()) {
 		return true;
 	}
 
+	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return false;
+	}
 	/*
 	 * Open the tdbs in the parent process (smbd) so that our
 	 * CLEAR_IF_FIRST optimization in tdb_reopen_all can properly
@@ -150,13 +157,15 @@ bool notify_internal_parent_init(TALLOC_CTX *mem_ctx)
 
 	db1 = tdb_wrap_open(mem_ctx, lock_path("notify.tdb"),
 			    0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-			   O_RDWR|O_CREAT, 0644);
+			    O_RDWR|O_CREAT, 0644, lp_ctx);
 	if (db1 == NULL) {
+		talloc_unlink(mem_ctx, lp_ctx);
 		DEBUG(1, ("could not open notify.tdb: %s\n", strerror(errno)));
 		return false;
 	}
 	db2 = tdb_wrap_open(mem_ctx, lock_path("notify_onelevel.tdb"),
-			    0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT, 0644);
+			    0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT, 0644, lp_ctx);
+	talloc_unlink(mem_ctx, lp_ctx);
 	if (db2 == NULL) {
 		DEBUG(1, ("could not open notify_onelevel.tdb: %s\n",
 			  strerror(errno)));

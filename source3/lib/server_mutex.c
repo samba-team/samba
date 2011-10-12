@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "lib/util/tdb_wrap.h"
 #include "util_tdb.h"
+#include "lib/param/param.h"
 
 /* For reasons known only to MS, many of their NT/Win2k versions
    need serialised access only.  Two connections at the same time
@@ -46,10 +47,17 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 				     int timeout)
 {
 	struct named_mutex *result;
-
+	struct loadparm_context *lp_ctx;
 	result = talloc(mem_ctx, struct named_mutex);
 	if (result == NULL) {
 		DEBUG(0, ("talloc failed\n"));
+		return NULL;
+	}
+
+	lp_ctx = loadparm_init_s3(result, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		talloc_free(result);
 		return NULL;
 	}
 
@@ -61,7 +69,8 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 	}
 
 	result->tdb = tdb_wrap_open(result, lock_path("mutex.tdb"), 0,
-				    TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+				    TDB_DEFAULT, O_RDWR|O_CREAT, 0600, lp_ctx);
+	talloc_unlink(result, lp_ctx);
 	if (result->tdb == NULL) {
 		DEBUG(1, ("Could not open mutex.tdb: %s\n",
 			  strerror(errno)));
