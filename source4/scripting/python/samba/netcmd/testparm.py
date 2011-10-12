@@ -102,7 +102,7 @@ class cmd_testparm(Command):
         valid = self.do_global_checks(lp, logger)
         valid = valid and self.do_share_checks(lp, logger)
         if client_name is not None and client_ip is not None:
-            self.check_client_access(lp, client_name, client_ip)
+            self.check_client_access(lp, logger, client_name, client_ip)
         else:
             if section_name is not None or parameter_name is not None:
                 if parameter_name is None:
@@ -191,7 +191,7 @@ class cmd_testparm(Command):
                         valid = False
         return valid
 
-    def check_client_access(self, lp, cname, caddr):
+    def check_client_access(self, lp, logger, cname, caddr):
         # this is totally ugly, a real `quick' hack
         for s in lp.services():
             if (self.allow_access(lp.get("hosts deny"), lp.get("hosts allow"), cname,
