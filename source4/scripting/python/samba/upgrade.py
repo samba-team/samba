@@ -602,8 +602,8 @@ Please fix this account before attempting to upgrade again
     logger.info("Next rid = %d", next_rid)
 
     # Check for same username/groupname
-    group_names = set(map(lambda g: g.nt_name, grouplist))
-    user_names = set(map(lambda u: u['account_name'], userlist))
+    group_names = set([g.nt_name for g in grouplist])
+    user_names = set([u['account_name'] for u in userlist])
     common_names = group_names.intersection(user_names)
     if common_names:
         logger.error("Following names are both user names and group names:")
@@ -612,8 +612,8 @@ Please fix this account before attempting to upgrade again
         raise ProvisioningError("Please remove common user/group names before upgrade.")
 
     # Check for same user sid/group sid
-    group_sids = set(map(lambda g: str(g.sid), grouplist))
-    user_sids = set(map(lambda u: "%s-%u" % (domainsid, u['rid']), userlist))
+    group_sids = set([str(g.sid) for g in grouplist])
+    user_sids = set(["%s-%u" % (domainsid, u['rid']) for u in userlist])
     common_sids = group_sids.intersection(user_sids)
     if common_sids:
         logger.error("Following sids are both user and group sids:")
