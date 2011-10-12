@@ -11,5 +11,5 @@ parameter for SMB1. You should never need to set this parameter.
 <para>The default is 8192 credits, which is the same as a Windows 2008R2 SMB2 server.</para>
 </description>
 
-<value type="default">128</value>
+<value type="default">8192</value>
 </samba:parameter>
