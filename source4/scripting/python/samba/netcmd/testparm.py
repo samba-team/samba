@@ -3,13 +3,14 @@
 #
 #   Unix SMB/CIFS implementation.
 #   Test validity of smb.conf
-#   Copyright (C) Karl Auer 1993, 1994-1998
-#   Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
+#   Copyright (C) 2010-2011 Jelmer Vernooij <jelmer@samba.org>
+#   Copyright (C) Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
+# Based on the original in C:
+#   Copyright (C) Karl Auer 1993, 1994-1998
 #   Extensively modified by Andrew Tridgell, 1995
 #   Converted to popt by Jelmer Vernooij (jelmer@nl.linux.org), 2002
 #   Updated for Samba4 by Andrew Bartlett <abartlet@samba.org> 2006
-#   Converted to Python by Jelmer Vernooij <jelmer@samba.org> 2010
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,11 +45,11 @@ from samba.netcmd import Command, CommandError, Option
 class cmd_testparm(Command):
     """Syntax check the configuration file"""
 
-    synopsis = "%prog testparm [<hostname>] [<hostip>] [options]"
+    synopsis = "%prog testparm [options]"
 
     takes_optiongroups = {
         "sambaopts" : options.SambaOptions,
-        "versionops" : options.VersionOptions
+        "versionopts": options.VersionOptions
     }
 
     takes_options = [
@@ -72,15 +73,22 @@ class cmd_testparm(Command):
                help="Show the parameters, type, possible values")
         ]
 
-    takes_args = ["hostname?", "hostip?"]
+    takes_args = []
 
-    def run(self, *args, **kwargs):
-        if kwargs.get('hostname', None) is not None and \
-           kwargs.get('hostip', None) is None:
-            raise CommandError("Both a DNS name and an IP address are " \
+    def run(self, sambaopts, versionopts, 
+            section_name=None, parameter_name=None,
+            client_ip=None, client_name=None, verbose=False,
+            suppress_prompt=None,
+            show_all_parameters=False, server=None):
+        if server:
+            raise NotImplementedError("--server not yet implemented")
+        if show_all_parameters:
+            raise NotImplementedError("--show-all-parameters not yet implemented")
+        if client_name is not None and client_ip is None:
+            raise CommandError("Both a DNS name and an IP address are "
                                "required for the host access check")
 
-        lp = kwargs['sambaopts'].get_loadparm()
+        lp = sambaopts.get_loadparm()
 
         # We need this to force the output
         samba.set_debug_level(2)
@@ -93,22 +101,19 @@ class cmd_testparm(Command):
 
         valid = self.do_global_checks(lp, logger)
         valid = valid and self.do_share_checks(lp, logger)
-        if kwargs.get('hostname', None) is not None and \
-           kwargs.get('hostip', None) is not None:
-            self.check_client_access(lp, kwargs['hostname'], kwargs['hostip'])
+        if client_name is not None and client_ip is not None:
+            self.check_client_access(lp, client_name, client_ip)
         else:
-            if kwargs.get('section_name', None) is not None or \
-               kwargs.get('parameter_name', None) is not None:
-                if kwargs.get('parameter_name', None) is None:
-                    lp[kwargs['section_name']].dump(sys.stdout, lp.default_service,
-                                               kwargs['verbose'])
+            if section_name is not None or parameter_name is not None:
+                if parameter_name is None:
+                    lp[section_name].dump(sys.stdout, lp.default_service, verbose)
                 else:
-                    print lp.get(kwargs['parameter_name'], kwargs['section_name'])
+                    print lp.get(parameter_name, section_name)
             else:
-                if not kwargs['suppress_prompt']:
-                    print "Press enter to see a dump of your service definitions\n"
+                if not suppress_prompt:
+                    print "Press enter to see a dump of your service definitions"
                     sys.stdin.readline()
-                lp.dump(sys.stdout, kwargs['verbose'])
+                lp.dump(sys.stdout, verbose)
         if valid:
             return
         else:
@@ -155,10 +160,8 @@ class cmd_testparm(Command):
 
         return valid
 
-
     def allow_access(self, deny_list, allow_list, cname, caddr):
         raise NotImplementedError(self.allow_access)
-
 
     def do_share_checks(self, lp, logger):
         valid = True
