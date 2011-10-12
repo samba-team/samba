@@ -93,8 +93,4 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 					   bool unix_only);
 NTSTATUS pdb_create_builtin_alias(uint32 rid);
 
-/* The following definitions come from groupdb/mapping_tdb.c  */
-
-const struct mapping_backend *groupdb_tdb_init(void);
-
 #endif /* _GROUPDB_PROTO_H_ */

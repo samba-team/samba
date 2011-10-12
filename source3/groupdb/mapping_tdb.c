@@ -28,6 +28,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "util_tdb.h"
 #include "../libcli/security/security.h"
+#include "groupdb/mapping_tdb.h"
 
 static struct db_context *db; /* used for driver files */
 
