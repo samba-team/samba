@@ -45,7 +45,7 @@ from samba.netcmd.vampire import cmd_vampire
 
 class cmd_sambatool(SuperCommand):
     """samba-tool SuperCommand"""
-    
+
     subcommands = {}
     subcommands["dbcheck"] =  cmd_dbcheck()
     subcommands["delegation"] = cmd_delegation()
@@ -81,4 +81,5 @@ if __name__ == '__main__':
         retval = -1
     except Exception, e:
         cmd.show_command_error(e)
+        retval = 1
     sys.exit(retval)

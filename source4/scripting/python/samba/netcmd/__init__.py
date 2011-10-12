@@ -50,6 +50,7 @@ class Command(object):
         "versionopts": options.VersionOptions,
         }
     outf = sys.stdout
+    errf = sys.stderr
 
     def usage(self, *args):
         parser, _ = self._create_parser()
@@ -70,24 +71,23 @@ class Command(object):
 
         if isinstance(inner_exception, LdbError):
             (ldb_ecode, ldb_emsg) = inner_exception
-            print >>sys.stderr, "ERROR(ldb): %s - %s" % (message, ldb_emsg)
+            self.errf.write("ERROR(ldb): %s - %s\n" % (message, ldb_emsg))
         elif isinstance(inner_exception, AssertionError):
-            print >>sys.stderr, "ERROR(assert): %s" % message
+            self.errf.write("ERROR(assert): %s\n" % message)
             force_traceback = True
         elif isinstance(inner_exception, RuntimeError):
-            print >>sys.stderr, "ERROR(runtime): %s - %s" % (message, evalue)
+            self.errf.write("ERROR(runtime): %s - %s\n" % (message, evalue))
         elif type(inner_exception) is Exception:
-            print >>sys.stderr, "ERROR(exception): %s - %s" % (message, evalue)
+            self.errf.write("ERROR(exception): %s - %s\n" % (message, evalue))
             force_traceback = True
         elif inner_exception is None:
-            print >>sys.stderr, "ERROR: %s" % (message)
+            self.errf.write("ERROR: %s\n" % (message))
         else:
-            print >>sys.stderr, "ERROR(%s): %s - %s" % (str(etype), message, evalue)
+            self.errf.write("ERROR(%s): %s - %s\n" % (str(etype), message, evalue))
             force_traceback = True
 
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback)
-        sys.exit(1)
 
     def _create_parser(self):
         parser = optparse.OptionParser(usage=self.synopsis, 
