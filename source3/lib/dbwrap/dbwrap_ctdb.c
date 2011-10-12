@@ -1249,7 +1249,7 @@ static int traverse_persistent_callback(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DAT
 	 * This is used for persistent transactions internally.
 	 */
 	if (kbuf.dsize == strlen(CTDB_DB_SEQNUM_KEY) + 1 &&
-	    strcmp((const char*)kbuf.dptr, CTDB_DB_SEQNUM_KEY))
+	    strcmp((const char*)kbuf.dptr, CTDB_DB_SEQNUM_KEY) == 0)
 	{
 		goto done;
 	}
