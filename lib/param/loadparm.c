@@ -866,6 +866,15 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 	{
+		.label		= "use mmap",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bUseMmap),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "case insensitive filesystem",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
@@ -1549,6 +1558,7 @@ FN_GLOBAL_BOOL(client_use_spnego_principal, client_use_spnego_principal)
 FN_GLOBAL_BOOL(host_msdfs, bHostMSDfs)
 FN_GLOBAL_BOOL(unix_extensions, bUnixExtensions)
 FN_GLOBAL_BOOL(use_spnego, bUseSpnego)
+FN_GLOBAL_BOOL(use_mmap, bUseMmap)
 FN_GLOBAL_BOOL(rpc_big_endian, bRpcBigEndian)
 FN_GLOBAL_INTEGER(max_wins_ttl, max_wins_ttl)
 FN_GLOBAL_INTEGER(min_wins_ttl, min_wins_ttl)
@@ -3383,6 +3393,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "server signing", "auto");
 
 	lpcfg_do_global_parameter(lp_ctx, "use spnego", "True");
+
+	lpcfg_do_global_parameter(lp_ctx, "use mmap", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "smb ports", "445 139");
 	lpcfg_do_global_parameter(lp_ctx, "nbt port", "137");

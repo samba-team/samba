@@ -105,6 +105,9 @@ static const struct loadparm_s3_context s3_fns =
 	.passdb_backend = lp_passdb_backend,
 
 	.host_msdfs = lp_host_msdfs,
+	.unix_extensions = lp_unix_extensions,
+	.use_spnego = lp_use_spnego,
+	.use_mmap = lp_use_mmap,
 };
 
 const struct loadparm_s3_context *loadparm_s3_context(void)
