@@ -154,7 +154,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		}
 
 		status = schannel_get_creds_state(out_mem_ctx,
-						  lpcfg_private_dir(gensec_security->settings->lp_ctx),
+						  gensec_security->settings->lp_ctx,
 						  workstation, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",

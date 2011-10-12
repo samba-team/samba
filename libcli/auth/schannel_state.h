@@ -24,16 +24,16 @@
 #define _LIBCLI_AUTH_SCHANNEL_STATE_H__
 
 NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
-				  const char *db_priv_dir,
+				  struct loadparm_context *lp_ctx,
 				  const char *computer_name,
 				  struct netlogon_creds_CredentialState **creds);
 
 NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
-				   const char *db_priv_dir,
+				   struct loadparm_context *lp_ctx,
 				   struct netlogon_creds_CredentialState *creds);
 
 NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
-				    const char *db_priv_dir,
+				    struct loadparm_context *lp_ctx,
 				    const char *computer_name,
 				    struct netr_Authenticator *received_authenticator,
 				    struct netr_Authenticator *return_authenticator,

@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "../lib/tdb_compat/tdb_compat.h"
 #include "../lib/util/util_tdb.h"
+#include "../lib/param/param.h"
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "lib/util/tdb_wrap.h"
@@ -37,10 +38,10 @@
 *******************************************************************************/
 
 struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
-					     const char *private_dir)
+					     struct loadparm_context *lp_ctx)
 {
 	struct tdb_wrap *tdb_sc = NULL;
-	char *fname = talloc_asprintf(mem_ctx, "%s/schannel_store.tdb", private_dir);
+	char *fname = lpcfg_private_path(mem_ctx, lp_ctx, "schannel_store.tdb");
 
 	if (!fname) {
 		return NULL;
@@ -201,7 +202,7 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
 *******************************************************************************/
 
 NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
-				  const char *db_priv_dir,
+				  struct loadparm_context *lp_ctx,
 				  const char *computer_name,
 				  struct netlogon_creds_CredentialState **_creds)
 {
@@ -215,7 +216,7 @@ NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	tdb_sc = open_schannel_session_store(tmpctx, db_priv_dir);
+	tdb_sc = open_schannel_session_store(tmpctx, lp_ctx);
 	if (!tdb_sc) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -239,7 +240,7 @@ NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
 *******************************************************************************/
 
 NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
-				   const char *db_priv_dir,
+				   struct loadparm_context *lp_ctx,
 				   struct netlogon_creds_CredentialState *creds)
 {
 	TALLOC_CTX *tmpctx;
@@ -251,7 +252,7 @@ NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	tdb_sc = open_schannel_session_store(tmpctx, db_priv_dir);
+	tdb_sc = open_schannel_session_store(tmpctx, lp_ctx);
 	if (!tdb_sc) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -273,7 +274,7 @@ NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
-				    const char *db_priv_dir,
+				    struct loadparm_context *lp_ctx,
 				    const char *computer_name,
 				    struct netr_Authenticator *received_authenticator,
 				    struct netr_Authenticator *return_authenticator,
@@ -290,7 +291,7 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	tdb_sc = open_schannel_session_store(tmpctx, db_priv_dir);
+	tdb_sc = open_schannel_session_store(tmpctx, lp_ctx);
 	if (!tdb_sc) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto done;

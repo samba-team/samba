@@ -43,6 +43,7 @@
 #include "ntdomain.h"
 #include "rpc_server/srv_pipe.h"
 #include "rpc_server/rpc_contexts.h"
+#include "lib/param/param.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -477,6 +478,7 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 	struct netlogon_creds_CredentialState *creds;
 	enum ndr_err_code ndr_err;
 	struct schannel_state *schannel_auth;
+	struct loadparm_context *lp_ctx;
 
 	ndr_err = ndr_pull_struct_blob(
 			&auth_info->credentials, mem_ctx, &neg,
@@ -495,6 +497,12 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 		return false;
 	}
 
+	lp_ctx = loadparm_init_s3(p, loadparm_s3_context());
+	if (!lp_ctx) {
+		DEBUG(0,("pipe_schannel_auth_bind: loadparm_init_s3() failed!\n"));
+		return false;
+	}
+
 	/*
 	 * The neg.oem_netbios_computer.a key here must match the remote computer name
 	 * given in the DOM_CLNT_SRV.uni_comp_name used on all netlogon pipe
@@ -502,10 +510,11 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 	 */
 
 	become_root();
-	status = schannel_get_creds_state(p, lp_private_dir(),
+	status = schannel_get_creds_state(p, lp_ctx,
 					    neg.oem_netbios_computer.a, &creds);
 	unbecome_root();
-
+	
+	talloc_unlink(p, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("pipe_schannel_auth_bind: Attempt to bind using schannel without successful serverauth2\n"));
 		return False;

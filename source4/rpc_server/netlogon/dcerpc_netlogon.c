@@ -270,7 +270,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	creds->sid = samdb_result_dom_sid(creds, msgs[0], "objectSid");
 
 	nt_status = schannel_save_creds_state(mem_ctx,
-					      lpcfg_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					      dce_call->conn->dce_ctx->lp_ctx,
 					      creds);
 
 	return nt_status;
@@ -382,7 +382,7 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 	}
 
 	nt_status = schannel_check_creds_state(mem_ctx,
-					       lpcfg_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					       dce_call->conn->dce_ctx->lp_ctx,
 					       computer_name,
 					       received_authenticator,
 					       return_authenticator,
@@ -839,7 +839,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 	}
 
 	nt_status = schannel_get_creds_state(mem_ctx,
-					     lpcfg_private_dir(dce_call->conn->dce_ctx->lp_ctx),
+					     dce_call->conn->dce_ctx->lp_ctx,
 					     r->in.computer_name, &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;

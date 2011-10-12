@@ -44,6 +44,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/param/param.h"
 
 extern userdom_struct current_user_info;
 
@@ -882,6 +883,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	 * so use a copy to avoid destroying the client values. */
 	uint32_t in_neg_flags = *r->in.negotiate_flags;
 	const char *fn;
+	struct loadparm_context *lp_ctx;
 	struct dom_sid sid;
 	struct samr_Password mach_pwd;
 	struct netlogon_creds_CredentialState *creds;
@@ -993,10 +995,19 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		goto out;
 	}
 
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(10, ("loadparm_init_s3 failed\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
+
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
-	status = schannel_save_creds_state(p->mem_ctx, lp_private_dir(), creds);
+	status = schannel_save_creds_state(p->mem_ctx, lp_ctx, creds);
 	unbecome_root();
+
+	talloc_unlink(p->mem_ctx, lp_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -1078,6 +1089,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	bool schannel_global_required = (lp_server_schannel() == true) ? true:false;
+	struct loadparm_context *lp_ctx;
 
 	if (schannel_global_required) {
 		status = schannel_check_required(&p->auth,
@@ -1088,10 +1100,16 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 		}
 	}
 
-	status = schannel_check_creds_state(mem_ctx, lp_private_dir(),
+	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = schannel_check_creds_state(mem_ctx, lp_ctx,
 					    computer_name, received_authenticator,
 					    return_authenticator, creds_out);
-
+	talloc_unlink(mem_ctx, lp_ctx);
 	return status;
 }
 
@@ -1731,6 +1749,7 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds = NULL;
+	struct loadparm_context *lp_ctx;
 
 	*r->out.authoritative = true;
 
@@ -1746,10 +1765,18 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
         }
 
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	become_root();
-	status = schannel_get_creds_state(p->mem_ctx, lp_private_dir(),
+	status = schannel_get_creds_state(p->mem_ctx, lp_ctx,
 					  r->in.computer_name, &creds);
 	unbecome_root();
+	talloc_unlink(p->mem_ctx, lp_ctx);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2267,14 +2294,22 @@ NTSTATUS _netr_GetForestTrustInformation(struct pipes_struct *p,
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds;
 	struct lsa_ForestTrustInformation *info, **info_ptr;
+	struct loadparm_context *lp_ctx;
 
 	/* TODO: check server name */
 
-	status = schannel_check_creds_state(p->mem_ctx, lp_private_dir(),
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = schannel_check_creds_state(p->mem_ctx, lp_ctx,
 					    r->in.computer_name,
 					    r->in.credential,
 					    r->out.return_authenticator,
 					    &creds);
+	talloc_unlink(p->mem_ctx, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2367,14 +2402,22 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	struct samr_Password *new_owf_enc;
 	struct samr_Password *old_owf_enc;
 	DATA_BLOB session_key;
+	struct loadparm_context *lp_ctx;
+
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("loadparm_init_s3 failed\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	/* TODO: check server name */
 
-	status = schannel_check_creds_state(p->mem_ctx, lp_private_dir(),
+	status = schannel_check_creds_state(p->mem_ctx, lp_ctx,
 					    r->in.computer_name,
 					    r->in.credential,
 					    r->out.return_authenticator,
 					    &creds);
+	talloc_unlink(p->mem_ctx, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

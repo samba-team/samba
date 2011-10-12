@@ -40,6 +40,7 @@
 #include "messages.h"
 #include "smbprofile.h"
 #include "lib/id_cache.h"
+#include "lib/param/param.h"
 
 extern void start_epmd(struct tevent_context *ev_ctx,
 		       struct messaging_context *msg_ctx);
@@ -1150,10 +1151,12 @@ extern void build_options(bool screen);
 	}
 
 	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
-		if (!open_schannel_session_store(NULL, lp_private_dir())) {
+		struct loadparm_context *lp_ctx = loadparm_init_s3(NULL, loadparm_s3_context());
+		if (!open_schannel_session_store(NULL, lp_ctx)) {
 			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
 			exit(1);
 		}
+		TALLOC_FREE(lp_ctx);
 	}
 
 	if(!get_global_sam_sid()) {
