@@ -83,6 +83,10 @@ o   Björn Jacke <bj@sernet.de>
     * BUG 8363: Fix build of vfs_prealloc on SLES8.
 
 
+o   Volodymyr Khomenko <Volodymyr_Khomenko@dell.com>
+    * BUG 8515: Disallow "." in can_set_delete_on_close().
+
+
 o   Volker Lendecke <vl@samba.org>
     * BUG 7864: Fix usage of cli_errstr().
     * BUG 8334: smb2: smbd logs "Invalid SMB packet: first request: 0x0008" and crashes.
