@@ -794,7 +794,7 @@ bld.SAMBA3_LIBRARY('util_cmdline',
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     source=KRBCLIENT_SRC,
-                    public_deps='KRB5_WRAP k5crypto',
+                    public_deps='KRB5_WRAP k5crypto LIBTSOCKET CLDAP',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('samba3core',

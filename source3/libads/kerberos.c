@@ -26,7 +26,9 @@
 #include "smb_krb5.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
 #include "libads/kerberos_proto.h"
+#include "libads/cldap.h"
 #include "secrets.h"
+#include "../lib/tsocket/tsocket.h"
 
 #ifdef HAVE_KRB5
 
@@ -735,17 +737,40 @@ static char *print_kdc_line(char *mem_ctx,
 
 ************************************************************************/
 
+static void add_sockaddr_unique(struct sockaddr_storage *addrs, int *num_addrs,
+				const struct sockaddr_storage *addr)
+{
+	int i;
+
+	for (i=0; i<*num_addrs; i++) {
+		if (sockaddr_equal((const struct sockaddr *)&addrs[i],
+				   (const struct sockaddr *)addr)) {
+			return;
+		}
+	}
+	addrs[i] = *addr;
+	*num_addrs += 1;
+}
+
 static char *get_kdc_ip_string(char *mem_ctx,
 		const char *realm,
 		const char *sitename,
 		const struct sockaddr_storage *pss,
 		const char *kdc_name)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int i;
 	struct ip_service *ip_srv_site = NULL;
 	struct ip_service *ip_srv_nonsite = NULL;
 	int count_site = 0;
 	int count_nonsite;
+	int num_dcs;
+	struct sockaddr_storage *dc_addrs;
+	struct tsocket_address **dc_addrs2 = NULL;
+	const struct tsocket_address * const *dc_addrs3 = NULL;
+	char *result = NULL;
+	struct netlogon_samlogon_response **responses = NULL;
+	NTSTATUS status;
 	char *kdc_str = print_kdc_line(mem_ctx, "", pss, kdc_name);
 
 	if (kdc_str == NULL) {
@@ -758,73 +783,102 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	 */
 
 	if (sitename) {
-
 		get_kdc_list(realm, sitename, &ip_srv_site, &count_site);
-
-		for (i = 0; i < count_site; i++) {
-			if (sockaddr_equal((struct sockaddr *)&ip_srv_site[i].ss,
-						   (struct sockaddr *)pss)) {
-				continue;
-			}
-			/* Append to the string - inefficient
-			 * but not done often. */
-			kdc_str = print_kdc_line(mem_ctx,
-						kdc_str,
-						&ip_srv_site[i].ss,
-						NULL);
-			if (!kdc_str) {
-				SAFE_FREE(ip_srv_site);
-				return NULL;
-			}
-		}
 	}
 
 	/* Get all KDC's. */
 
 	get_kdc_list(realm, NULL, &ip_srv_nonsite, &count_nonsite);
 
-	for (i = 0; i < count_nonsite; i++) {
-		int j;
+	dc_addrs = talloc_array(talloc_tos(), struct sockaddr_storage,
+				1 + count_site + count_nonsite);
+	if (dc_addrs == NULL) {
+		goto fail;
+	}
 
-		if (sockaddr_equal((struct sockaddr *)&ip_srv_nonsite[i].ss, (struct sockaddr *)pss)) {
-			continue;
-		}
+	dc_addrs[0] = *pss;
+	num_dcs = 1;
 
-		/* Ensure this isn't an IP already seen (YUK! this is n*n....) */
-		for (j = 0; j < count_site; j++) {
-			if (sockaddr_equal((struct sockaddr *)&ip_srv_nonsite[i].ss,
-						(struct sockaddr *)&ip_srv_site[j].ss)) {
-				break;
-			}
-			/* As the lists are sorted we can break early if nonsite > site. */
-			if (ip_service_compare(&ip_srv_nonsite[i], &ip_srv_site[j]) > 0) {
-				break;
-			}
+	for (i=0; i<count_site; i++) {
+		add_sockaddr_unique(dc_addrs, &num_dcs, &ip_srv_site[i].ss);
+	}
+
+	for (i=0; i<count_nonsite; i++) {
+		add_sockaddr_unique(dc_addrs, &num_dcs, &ip_srv_nonsite[i].ss);
+	}
+
+	dc_addrs2 = talloc_zero_array(talloc_tos(),
+				      struct tsocket_address *,
+				      num_dcs);
+	if (dc_addrs2 == NULL) {
+		goto fail;
+	}
+
+	for (i=0; i<num_dcs; i++) {
+		char addr[INET6_ADDRSTRLEN];
+		int ret;
+
+		print_sockaddr(addr, sizeof(addr), &dc_addrs[i]);
+
+		ret = tsocket_address_inet_from_strings(dc_addrs2, "ip",
+							addr, LDAP_PORT,
+							&dc_addrs2[i]);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			DEBUG(2,("Failed to create tsocket_address for %s - %s\n",
+				 addr, nt_errstr(status)));
+			goto fail;
 		}
-		if (j != i) {
+	}
+
+	dc_addrs3 = (const struct tsocket_address * const *)dc_addrs2;
+
+	status = cldap_multi_netlogon(talloc_tos(),
+			dc_addrs3, num_dcs,
+			realm, lp_netbios_name(),
+			NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX,
+			MIN(num_dcs, 3), timeval_current_ofs(3, 0), &responses);
+	TALLOC_FREE(dc_addrs2);
+	dc_addrs3 = NULL;
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("get_kdc_ip_string: cldap_multi_netlogon failed: "
+			  "%s\n", nt_errstr(status)));
+		goto fail;
+	}
+
+	kdc_str = talloc_strdup(mem_ctx, "");
+	if (kdc_str == NULL) {
+		goto fail;
+	}
+
+	for (i=0; i<num_dcs; i++) {
+		char *new_kdc_str;
+
+		if (responses[i] == NULL) {
 			continue;
 		}
 
 		/* Append to the string - inefficient but not done often. */
-		kdc_str = print_kdc_line(mem_ctx,
-				kdc_str,
-				&ip_srv_nonsite[i].ss,
-				NULL);
-		if (!kdc_str) {
-			SAFE_FREE(ip_srv_site);
-			SAFE_FREE(ip_srv_nonsite);
-			return NULL;
+		new_kdc_str = print_kdc_line(mem_ctx, kdc_str,
+					     &dc_addrs[i],
+					     kdc_name);
+		if (new_kdc_str == NULL) {
+			goto fail;
 		}
+		TALLOC_FREE(kdc_str);
+		kdc_str = new_kdc_str;
 	}
-
-
-	SAFE_FREE(ip_srv_site);
-	SAFE_FREE(ip_srv_nonsite);
 
 	DEBUG(10,("get_kdc_ip_string: Returning %s\n",
 		kdc_str ));
 
-	return kdc_str;
+	result = kdc_str;
+fail:
+	SAFE_FREE(ip_srv_site);
+	SAFE_FREE(ip_srv_nonsite);
+	TALLOC_FREE(frame);
+	return result;
 }
 
 /************************************************************************
