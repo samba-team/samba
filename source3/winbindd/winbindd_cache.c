@@ -4803,7 +4803,7 @@ bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 			goto fail;
 		}
 		entry_timeout = BVAL(data.dptr, 4);
-		if (entry_timeout > time(NULL)) {
+		if (time(NULL) > entry_timeout) {
 			DEBUG(10, ("Entry has timed out\n"));
 			goto fail;
 		}
