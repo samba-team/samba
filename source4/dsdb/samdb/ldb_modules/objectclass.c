@@ -3,7 +3,7 @@
 
    Copyright (C) Simo Sorce  2006-2008
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2009
-   Copyright (C) Matthias Dieter Wallnöfer 2010
+   Copyright (C) Matthias Dieter Wallnöfer 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
