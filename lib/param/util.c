@@ -90,7 +90,9 @@ char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 	trim_string(dname,"","/");
 	
 	if (!directory_exist(dname)) {
-		mkdir(dname,0755);
+		if (!mkdir(dname,0755))
+			DEBUG(1, ("Unable to create directory %s for file %s. "
+			      "Error was %s\n", dname, name, strerror(errno)));
 	}
 	
 	fname = talloc_asprintf(mem_ctx, "%s/%s", dname, name);
