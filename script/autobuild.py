@@ -16,6 +16,7 @@ os.environ['TDB_NO_FSYNC'] = '1'
 cleanup_list = []
 
 builddirs = {
+    "ctdb"    : "ctdb",
     "samba"  : ".",
     "samba-ctdb" : ".",
     "samba-libs"  : ".",
@@ -31,9 +32,17 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb", "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
+    "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
+               ("autogen", "./autogen.sh", "text/plain"),
+               ("configure", "./configure ${PREFIX}", "text/plain"),
+               ("make", "make all", "text/plain"),
+               ("install", "make install", "text/plain"),
+               ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+               ("clean", "make clean", "text/plain") ],
+
     # We have 'test' before 'install' because, 'test' should work without 'install'
     "samba" : [ ("configure", "./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab", "text/plain"),
                 ("make", "make -j", "text/plain"),
