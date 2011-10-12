@@ -82,7 +82,7 @@ def configure(conf):
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
     conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf stat64 fstat64')
     conf.CHECK_FUNCS('lstat64 fopen64 atexit grantpt lseek64 ftruncate64 fallocate fallocate64 posix_fallocate posix_fallocate64')
-    conf.CHECK_FUNCS('fseek64 fseeko64 ftell64 ftello64 setluid')
+    conf.CHECK_FUNCS('fseeko fseek64 fseeko64 ftell64 ftello64 setluid')
     conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
     conf.CHECK_FUNCS('opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64')
     conf.CHECK_FUNCS('fdopendir fdopendir64')
@@ -234,7 +234,7 @@ extattr_get_link extattr_list_fd extattr_list_file extattr_list_link
 extattr_set_fd extattr_set_file extattr_set_link _facl __facl _fchdir
 __fchdir fchmod fchown _fcntl __fcntl fcvt fcvtl fdatasync
 fdelproplist fgetea fgetproplist fgetxattr flistea flistxattr fopen64
-_fork __fork fremoveea fremovexattr fseek64 fseeko64 fsetea
+_fork __fork fremoveea fremovexattr fseeko fseek64 fseeko64 fsetea
 fsetproplist fsetxattr _fstat __fstat fstat64 _fstat64 __fstat64 fsync
 ftell64 ftello64 ftruncate64 futimens futimes __fxstat getauthuid
 getcwd _getcwd __getcwd getdents __getdents getdents64 getdirentries
