@@ -1459,6 +1459,14 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode)
 	/* Don't allow delete on close for non-empty directories. */
 	if (fsp->is_directory) {
 		SMB_ASSERT(!is_ntfs_stream_smb_fname(fsp->fsp_name));
+
+		/* Or the root of a share. */
+		if (ISDOT(fsp->fsp_name->base_name)) {
+			DEBUG(10,("can_set_delete_on_close: can't set delete on "
+				  "close for the root of a share.\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
 		return can_delete_directory(fsp->conn,
 					    fsp->fsp_name->base_name);
 	}
