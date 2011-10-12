@@ -71,14 +71,14 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 	NTSTATUS status;
 	DATA_BLOB data;
 	int i;
+	uint32_t size = torture_setting_int(tctx, "smb2maxwrite", 64*1024);
 	
-	if (torture_setting_bool(tctx, "dangerous", false)) {
-		data = data_blob_talloc(tree, NULL, 160000);
-	} else if (torture_setting_bool(tctx, "samba4", false)) {
-		data = data_blob_talloc(tree, NULL, UINT16_MAX);
-	} else {
-		data = data_blob_talloc(tree, NULL, torture_setting_int(tctx, "smb2maxwrite", 120000));
+	data = data_blob_talloc(tree, NULL, size);
+	if (size != data.length) {
+		printf("data_blob_talloc(%s) failed\n", size);
+		return NT_STATUS_NO_MEMORY;
 	}
+
 	for (i=0;i<data.length;i++) {
 		data.data[i] = i;
 	}
