@@ -573,8 +573,7 @@ samba3 testparm utility (with --testparm)."""
             self.outf.write("warning: both libdir and testparm specified, ignoring libdir.\n")
             libdir = None
 
-        logger = logging.getLogger("upgrade")
-        logger.addHandler(logging.StreamHandler(sys.stdout))
+        logger = self.get_logger()
         if quiet:
             logger.setLevel(logging.WARNING)
         else:

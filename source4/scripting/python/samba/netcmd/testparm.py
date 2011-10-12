@@ -36,7 +36,6 @@
 
 import os
 import sys
-import logging
 
 import samba
 import samba.getopt as options
@@ -93,8 +92,7 @@ class cmd_testparm(Command):
         # We need this to force the output
         samba.set_debug_level(2)
 
-        logger = logging.getLogger("testparm")
-        logger.addHandler(logging.StreamHandler(sys.stdout))
+        logger = self.get_logger("testparm")
 
         logger.info("Loaded smb config files from %s", lp.configfile)
         logger.info("Loaded services file OK.")

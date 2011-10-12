@@ -141,6 +141,12 @@ class Command(object):
         """Run the command. This should be overriden by all subclasses."""
         raise NotImplementedError(self.run)
 
+    def get_logger(self, name="netcmd"):
+        """Get a logger object."""
+        import logging
+        logger = logging.getLogger(name)
+        logger.addHandler(logging.StreamHandler(self.outf))
+        return logger
 
 
 class SuperCommand(Command):
