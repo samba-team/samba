@@ -449,7 +449,7 @@ static bool check_rodc_ntdsdsa_add(struct oc_context *ac,
 {
 	struct ldb_control *rodc_control;
 
-	if (strcasecmp(objectclass->lDAPDisplayName, "nTDSDSA") != 0) {
+	if (ldb_attr_cmp(objectclass->lDAPDisplayName, "nTDSDSA") != 0) {
 		return false;
 	}
 	rodc_control = ldb_request_get_control(ac->req, LDB_CONTROL_RODC_DCPROMO_OID);
