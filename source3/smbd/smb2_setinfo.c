@@ -81,6 +81,10 @@ NTSTATUS smbd_smb2_request_process_setinfo(struct smbd_smb2_request *req)
 	in_input_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_input_buffer.length = in_input_buffer_length;
 
+	if (in_input_buffer.length > req->sconn->smb2.max_trans) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
 	if (req->compat_chain_fsp) {
 		/* skip check */
 	} else if (in_file_id_persistent != in_file_id_volatile) {
