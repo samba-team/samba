@@ -985,7 +985,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
 	struct ldb_request *mod_req;
-	char *value;
 	struct ldb_message_element *oc_el_entry, *oc_el_change;
 	struct ldb_val *vals;
 	struct ldb_message *msg;
@@ -1146,13 +1145,10 @@ static int objectclass_do_mod(struct oc_context *ac)
 
 		/* Move from the linked list back into an ldb msg */
 		for (current = sorted; current; current = current->next) {
-			value = talloc_strdup(msg,
-					      current->objectclass->lDAPDisplayName);
-			if (value == NULL) {
-				talloc_free(mem_ctx);
-				return ldb_module_oom(ac->module);
-			}
-			ret = ldb_msg_add_string(msg, "objectClass", value);
+			const char *objectclass_name = current->objectclass->lDAPDisplayName;
+
+			ret = ldb_msg_add_string(msg, "objectClass",
+						 objectclass_name);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(ldb,
 						  "objectclass: could not re-add sorted objectclasses!");
