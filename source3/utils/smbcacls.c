@@ -223,7 +223,7 @@ done:
 	return status;
 }
 
-struct dom_sid* get_domain_sid(struct cli_state *cli) {
+static struct dom_sid* get_domain_sid(struct cli_state *cli) {
 	NTSTATUS status;
 
 	struct dom_sid *sid = talloc(talloc_tos(), struct dom_sid);
