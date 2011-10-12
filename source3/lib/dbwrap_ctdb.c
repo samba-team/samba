@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "lib/util/tdb_wrap.h"
 #include "util_tdb.h"
+
 #ifdef CLUSTER_SUPPORT
 #include "ctdb.h"
 #include "ctdb_private.h"
@@ -1296,7 +1297,8 @@ static int db_ctdb_traverse(struct db_context *db,
 			}
 			status = dbwrap_traverse(newkeys,
 						 traverse_persistent_callback_dbwrap,
-						 &state);
+						 &state,
+						 NULL);
 			ret = NT_STATUS_IS_OK(status) ? 0 : -1;
 			talloc_free(newkeys);
 		}
