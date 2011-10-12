@@ -23,6 +23,14 @@
 #ifndef _PASSDB_H
 #define _PASSDB_H
 
+#ifndef NT_HASH_LEN
+#define NT_HASH_LEN 16
+#endif
+
+#ifndef LM_HASH_LEN
+#define LM_HASH_LEN 16
+#endif
+
 #include "../librpc/gen_ndr/lsa.h"
 
 /* group mapping headers */
