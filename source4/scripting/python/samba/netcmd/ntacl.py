@@ -41,6 +41,7 @@ from samba.netcmd import (
 
 class cmd_ntacl_set(Command):
     """Set ACLs on a file"""
+
     synopsis = "%prog <acl> <file> [options]"
 
     takes_options = [

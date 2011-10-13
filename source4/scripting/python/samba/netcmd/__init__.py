@@ -168,6 +168,8 @@ class Command(object):
 class SuperCommand(Command):
     """A samba-tool command with subcommands."""
 
+    synopsis = "%prog <subcommand>"
+
     subcommands = {}
 
     def _run(self, myname, subcommand=None, *args):
