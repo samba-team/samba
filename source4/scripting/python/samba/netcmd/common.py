@@ -24,7 +24,6 @@ from samba.dcerpc import nbt
 from samba.net import Net
 
 
-
 def _get_user_realm_domain(user):
     """ get the realm or the domain and the base user
         from user like:
@@ -47,12 +46,10 @@ def _get_user_realm_domain(user):
     return (baseuser.lower(), domain, realm.upper())
 
 
-
 def netcmd_dnsname(lp):
     '''return the full DNS name of our own host. Used as a default
        for hostname when running status queries'''
     return lp.get('netbios name').lower() + "." + lp.get('realm').lower()
-
 
 
 def netcmd_finddc(lp, creds):
