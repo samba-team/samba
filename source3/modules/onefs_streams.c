@@ -736,23 +736,12 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	state.streams = NULL;
-	state.num_streams = 0;
+	state.streams = *pstreams;
+	state.num_streams = *pnum_streams;
 
 	if (lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
 		PARM_IGNORE_STREAMS, PARM_IGNORE_STREAMS_DEFAULT)) {
 		goto out;
-	}
-
-	/* Add the default stream. */
-	if (S_ISREG(sbuf.st_ex_mode)) {
-		if (!add_one_stream(mem_ctx,
-				    &state.num_streams, &state.streams,
-				    "", sbuf.st_ex_size,
-				    SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp,
-							   &sbuf))) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	state.mem_ctx = mem_ctx;
@@ -778,5 +767,5 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
  out:
 	*num_streams = state.num_streams;
 	*streams = state.streams;
-	return NT_STATUS_OK;
+	return SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, pnum_streams, pstreams);
 }

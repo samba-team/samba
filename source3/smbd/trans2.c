@@ -4671,8 +4671,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		 */
 		case SMB_QUERY_FILE_STREAM_INFO:
 		case SMB_FILE_STREAM_INFORMATION: {
-			unsigned int num_streams;
-			struct stream_struct *streams;
+			unsigned int num_streams = 0;
+			struct stream_struct *streams = NULL;
 
 			DEBUG(10,("smbd_do_qfilepathinfo: "
 				  "SMB_FILE_STREAM_INFORMATION\n"));

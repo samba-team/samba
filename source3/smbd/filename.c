@@ -1169,7 +1169,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
-	unsigned int i, num_streams;
+	unsigned int i, num_streams = 0;
 	struct stream_struct *streams = NULL;
 
 	if (SMB_VFS_STAT(conn, smb_fname) == 0) {

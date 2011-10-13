@@ -206,9 +206,9 @@ static void notify_deferred_opens(struct messaging_context *msg_ctx,
 
 NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
 {
-	struct stream_struct *stream_info;
+	struct stream_struct *stream_info = NULL;
 	int i;
-	unsigned int num_streams;
+	unsigned int num_streams = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
