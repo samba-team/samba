@@ -644,7 +644,6 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 void dump_core(void) _NORETURN_;
 void exit_server(const char *const reason) _NORETURN_;
 void exit_server_cleanly(const char *const reason) _NORETURN_;
-void exit_server_fault(void) _NORETURN_;
 
 /* samba3 doesn't use uwrap yet */
 #define uwrap_enabled() 0

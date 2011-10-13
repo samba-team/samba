@@ -965,7 +965,6 @@ void init_sec_ctx(void);
 
 /* The following definitions come from smbd/server.c  */
 
-struct event_context *smbd_event_context(void);
 struct messaging_context *smbd_messaging_context(void);
 struct memcache *smbd_memcache(void);
 void delete_and_reload_printers(struct tevent_context *ev,
@@ -974,7 +973,6 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 		     bool test);
 void exit_server(const char *const explanation);
 void exit_server_cleanly(const char *const explanation);
-void exit_server_fault(void);
 NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
 				    uint32_t msg_type, DATA_BLOB* data);
 
