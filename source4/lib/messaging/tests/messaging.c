@@ -72,7 +72,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 	ev = tctx->ev;
 
 	msg_server_ctx = imessaging_init(tctx,
-					 lpcfg_imessaging_path(tctx, tctx->lp_ctx), cluster_id(0, 1),
+					 tctx->lp_ctx, cluster_id(0, 1),
 					 ev, true);
 	
 	torture_assert(tctx, msg_server_ctx != NULL, "Failed to init ping messaging context");
@@ -81,7 +81,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 	imessaging_register_tmp(msg_server_ctx, tctx, exit_message, &msg_exit);
 
 	msg_client_ctx = imessaging_init(tctx,
-					 lpcfg_imessaging_path(tctx, tctx->lp_ctx),
+					 tctx->lp_ctx,
 					 cluster_id(0, 2),
 					 ev, true);
 

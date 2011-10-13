@@ -1299,7 +1299,7 @@ static int rootdse_become_master(struct ldb_module *module,
 				 "RODC cannot become a role master.");
 	}
 
-	msg = imessaging_client_init(tmp_ctx, lpcfg_imessaging_path(tmp_ctx, lp_ctx),
+	msg = imessaging_client_init(tmp_ctx, lp_ctx,
 				    ldb_get_event_context(ldb));
 	if (!msg) {
 		ldb_asprintf_errstring(ldb, "Failed to generate client messaging context in %s", lpcfg_imessaging_path(tmp_ctx, lp_ctx));

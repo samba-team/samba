@@ -463,7 +463,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			const char *winbind_method[] = { "winbind", NULL };
 			struct auth4_context *auth_context;
 
-			msg = imessaging_client_init(state, lpcfg_imessaging_path(state, lp_ctx), ev);
+			msg = imessaging_client_init(state, lp_ctx, ev);
 			if (!msg) {
 				talloc_free(mem_ctx);
 				exit(1);

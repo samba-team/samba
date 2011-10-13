@@ -34,6 +34,7 @@
 #include "../lib/util/util_tdb.h"
 #include "cluster/cluster.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/param/param.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define IMESSAGING_VERSION 1
@@ -566,7 +567,7 @@ int imessaging_cleanup(struct imessaging_context *msg)
   memory
 */
 struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
-					   const char *dir,
+					   struct loadparm_context *lp_ctx,
 					   struct server_id server_id,
 					   struct tevent_context *ev,
 					   bool auto_remove)
@@ -592,9 +593,11 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	}
 
 	/* create the messaging directory if needed */
-	mkdir(dir, 0700);
 
-	msg->base_path     = talloc_reference(msg, dir);
+	msg->base_path     = lpcfg_imessaging_path(msg, lp_ctx);
+
+	mkdir(msg->base_path, 0700);
+
 	msg->path          = imessaging_path(msg, server_id);
 	msg->server_id     = server_id;
 	msg->idr           = idr_init(msg);
@@ -648,13 +651,13 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
    A hack, for the short term until we get 'client only' messaging in place 
 */
 struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
-						const char *dir,
+						  struct loadparm_context *lp_ctx,
 						struct tevent_context *ev)
 {
 	struct server_id id;
 	ZERO_STRUCT(id);
 	id.pid = random() % 0x10000000;
-	return imessaging_init(mem_ctx, dir, id, ev, true);
+	return imessaging_init(mem_ctx, lp_ctx, id, ev, true);
 }
 /*
   a list of registered irpc server functions

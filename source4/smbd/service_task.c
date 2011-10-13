@@ -79,7 +79,7 @@ static void task_server_callback(struct tevent_context *event_ctx,
 	task->lp_ctx = lp_ctx;
 
 	task->msg_ctx = imessaging_init(task,
-					lpcfg_imessaging_path(task, task->lp_ctx),
+					task->lp_ctx,
 					task->server_id,
 					task->event_ctx, false);
 	if (!task->msg_ctx) {

@@ -122,7 +122,7 @@ static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
 	}
 
 	msg_ctx = imessaging_client_init(frame,
-					 lpcfg_imessaging_path(frame, lp_ctx),
+					 lp_ctx,
 					 event_ctx);
 	if (msg_ctx == NULL) {
 		DEBUG(1, ("imessaging_init failed\n"));

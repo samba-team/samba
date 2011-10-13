@@ -74,7 +74,7 @@ static NTSTATUS pyrpc_irpc_connect(TALLOC_CTX *mem_ctx, const char *irpc_server,
 {
 	struct imessaging_context *msg;
 
-	msg = imessaging_client_init(mem_ctx, lpcfg_imessaging_path(mem_ctx, lp_ctx), event_ctx);
+	msg = imessaging_client_init(mem_ctx, lp_ctx, event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	*binding_handle = irpc_binding_handle_by_name(mem_ctx, msg, irpc_server, table);

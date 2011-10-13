@@ -221,7 +221,7 @@ static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 	NTSTATUS status;
 
 	msg = imessaging_init(talloc_autofree_context(),
-			      lpcfg_imessaging_path(event_ctx, lp_ctx),
+			      lp_ctx,
 			      cluster_id(0, SAMBA_PARENT_TASKID), event_ctx, false);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
