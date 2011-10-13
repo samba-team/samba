@@ -135,7 +135,7 @@ sub fail_test($;$)
 {
 	my $name = shift;
 	my $reason = shift;
-	end_test($name, "fail", $reason);
+	end_test($name, "failure", $reason);
 }
 
 sub success_test($;$)

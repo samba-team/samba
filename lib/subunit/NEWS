@@ -26,8 +26,12 @@ IMPROVEMENTS
 * Force flush of writes to stdout in c/tests/test_child.
   (Jelmer Vernooij, #687611)
 
+* Perl module now correctly outputs "failure" instead of "fail".  (Stewart Smith)
+
 * Provisional Python 3.x support.
   (Robert Collins, Tres Seaver, Martin[gz], #666819)
+
+* Shell functions now output timestamps. (Stewart Smith)
 
 * ``subunit.chunked.Decoder`` Python class takes a new ``strict`` option,
   which defaults to ``True``. When ``False``, the ``Decoder`` will accept
