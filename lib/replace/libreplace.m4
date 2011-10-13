@@ -71,6 +71,8 @@ AC_CHECK_HEADERS(setjmp.h utime.h)
 LIBREPLACE_PROVIDE_HEADER([stdint.h])
 LIBREPLACE_PROVIDE_HEADER([stdbool.h])
 
+AC_DEFINE(HAVE_LIBREPLACE, 1, [We have libreplace])
+
 AC_CHECK_TYPE(bool, 
 [AC_DEFINE(HAVE_BOOL, 1, [Whether the bool type is available])],,
 [
