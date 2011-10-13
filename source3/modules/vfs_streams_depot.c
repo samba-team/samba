@@ -827,20 +827,8 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	state.streams = NULL;
-	state.num_streams = 0;
-
-	if (!S_ISDIR(smb_fname_base->st.st_ex_mode)) {
-		if (!add_one_stream(mem_ctx,
-				    &state.num_streams, &state.streams,
-				    "::$DATA", smb_fname_base->st.st_ex_size,
-				    SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp,
-						       &smb_fname_base->st))) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-	}
-
+	state.streams = *pstreams;
+	state.num_streams = *pnum_streams;
 	state.mem_ctx = mem_ctx;
 	state.handle = handle;
 	state.status = NT_STATUS_OK;
@@ -861,7 +849,7 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 
 	*pnum_streams = state.num_streams;
 	*pstreams = state.streams;
-	status = NT_STATUS_OK;
+	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, pnum_streams, pstreams);
 
  out:
 	TALLOC_FREE(smb_fname_base);

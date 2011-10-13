@@ -1182,8 +1182,7 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 				   struct stream_struct **pstreams)
 {
 	SMB_STRUCT_STAT sbuf;
-	unsigned int num_streams = 0;
-	struct stream_struct *streams = NULL;
+	struct stream_struct *tmp_streams = NULL;
 	int ret;
 
 	if ((fsp != NULL) && (fsp->is_directory)) {
@@ -1218,25 +1217,21 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	streams = talloc(mem_ctx, struct stream_struct);
-
-	if (streams == NULL) {
+	tmp_streams = talloc_realloc(mem_ctx, *pstreams, struct stream_struct,
+					(*pnum_streams) + 1);
+	if (tmp_streams == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	streams->size = sbuf.st_ex_size;
-	streams->alloc_size = SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp, &sbuf);
-
-	streams->name = talloc_strdup(streams, "::$DATA");
-	if (streams->name == NULL) {
-		TALLOC_FREE(streams);
+	tmp_streams[*pnum_streams].name = talloc_strdup(tmp_streams, "::$DATA");
+	if (tmp_streams[*pnum_streams].name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	tmp_streams[*pnum_streams].size = sbuf.st_ex_size;
+	tmp_streams[*pnum_streams].alloc_size = SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp, &sbuf);
 
-	num_streams = 1;
+	*pnum_streams += 1;
+	*pstreams = tmp_streams;
  done:
-	*pnum_streams = num_streams;
-	*pstreams = streams;
 	return NT_STATUS_OK;
 }
 

@@ -2967,10 +2967,10 @@ void msg_file_was_renamed(struct messaging_context *msg,
 NTSTATUS open_streams_for_delete(connection_struct *conn,
 					const char *fname)
 {
-	struct stream_struct *stream_info;
-	files_struct **streams;
+	struct stream_struct *stream_info = NULL;
+	files_struct **streams = NULL;
 	int i;
-	unsigned int num_streams;
+	unsigned int num_streams = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
