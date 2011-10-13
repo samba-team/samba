@@ -23,63 +23,21 @@ import sys
 # Find right direction when running from source tree
 sys.path.insert(0, "bin/python")
 
-from samba import netcmd
-from samba.netcmd import SuperCommand
-from samba.netcmd.dbcheck import cmd_dbcheck
-from samba.netcmd.delegation import cmd_delegation
-from samba.netcmd.domain import cmd_domain
-from samba.netcmd.drs import cmd_drs
-from samba.netcmd.dsacl import cmd_dsacl
-from samba.netcmd.fsmo import cmd_fsmo
-from samba.netcmd.gpo import cmd_gpo
-from samba.netcmd.group import cmd_group
-from samba.netcmd.ldapcmp import cmd_ldapcmp
-from samba.netcmd.ntacl import cmd_ntacl
-from samba.netcmd.rodc import cmd_rodc
-from samba.netcmd.spn import cmd_spn
-from samba.netcmd.testparm import cmd_testparm
-from samba.netcmd.time import cmd_time
-from samba.netcmd.user import cmd_user
-from samba.netcmd.vampire import cmd_vampire
+from samba.netcmd.main import cmd_sambatool
+cmd = cmd_sambatool()
+subcommand = None
+args = ()
 
+if len(sys.argv) > 1:
+    subcommand = sys.argv[1]
+    if len(sys.argv) > 2:
+        args = sys.argv[2:]
 
-class cmd_sambatool(SuperCommand):
-    """samba-tool SuperCommand"""
-
-    subcommands = {}
-    subcommands["dbcheck"] =  cmd_dbcheck()
-    subcommands["delegation"] = cmd_delegation()
-    subcommands["domain"] = cmd_domain()
-    subcommands["drs"] = cmd_drs()
-    subcommands["dsacl"] = cmd_dsacl()
-    subcommands["fsmo"] = cmd_fsmo()
-    subcommands["gpo"] = cmd_gpo()
-    subcommands["group"] = cmd_group()
-    subcommands["ldapcmp"] = cmd_ldapcmp()
-    subcommands["ntacl"] = cmd_ntacl()
-    subcommands["rodc"] = cmd_rodc()
-    subcommands["spn"] = cmd_spn() 
-    subcommands["testparm"] =  cmd_testparm()
-    subcommands["time"] = cmd_time()
-    subcommands["user"] = cmd_user()
-    subcommands["vampire"] = cmd_vampire()
-
-
-if __name__ == '__main__':
-    cmd = cmd_sambatool()
-    subcommand = None
-    args = ()
-
-    if len(sys.argv) > 1:
-        subcommand = sys.argv[1]
-        if len(sys.argv) > 2:
-            args = sys.argv[2:]
-
-    try:
-        retval = cmd._run("samba-tool", subcommand, *args)
-    except SystemExit, e:
-        retval = -1
-    except Exception, e:
-        cmd.show_command_error(e)
-        retval = 1
-    sys.exit(retval)
+try:
+    retval = cmd._run("samba-tool", subcommand, *args)
+except SystemExit, e:
+    retval = -1
+except Exception, e:
+    cmd.show_command_error(e)
+    retval = 1
+sys.exit(retval)

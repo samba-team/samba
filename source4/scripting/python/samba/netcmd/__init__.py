@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009-2011
 # Copyright (C) Theresa Halloran <theresahalloran@gmail.com> 2011
 # Copyright (C) Giampaolo Lauria <lauria2@yahoo.com> 2011
 #
