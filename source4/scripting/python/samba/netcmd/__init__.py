@@ -45,6 +45,14 @@ class Command(object):
 
     full_description = property(_get_full_description)
 
+    def _get_name(self):
+        name = self.__class__.__name__
+        if name.startswith("cmd_"):
+            return name[4:]
+        return name
+
+    name = property(_get_name)
+
     # synopsis must be defined in all subclasses in order to provide the
     # command usage
     synopsis = None

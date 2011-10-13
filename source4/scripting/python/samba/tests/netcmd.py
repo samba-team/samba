@@ -56,3 +56,8 @@ class CommandTests(samba.tests.TestCase):
         class cmd_foo(Command):
             """Mydescription"""
         self.assertEquals("Mydescription", cmd_foo().description)
+
+    def test_name(self):
+        class cmd_foo(Command):
+            pass
+        self.assertEquals("foo", cmd_foo().name)
