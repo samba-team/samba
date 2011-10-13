@@ -693,7 +693,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint16_t file_status = (NO_EAS|NO_SUBSTREAMS|NO_REPARSETAG);
 		size_t num_names = 0;
-		unsigned int num_streams;
+		unsigned int num_streams = 0;
 		struct stream_struct *streams = NULL;
 
 		/* Do we have any EA's ? */
@@ -1274,7 +1274,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint16_t file_status = (NO_EAS|NO_SUBSTREAMS|NO_REPARSETAG);
 		size_t num_names = 0;
-		unsigned int num_streams;
+		unsigned int num_streams = 0;
 		struct stream_struct *streams = NULL;
 
 		/* Do we have any EA's ? */
