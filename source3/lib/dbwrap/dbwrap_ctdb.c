@@ -23,6 +23,7 @@
 #include "lib/util/tdb_wrap.h"
 #include "util_tdb.h"
 #include "dbwrap/dbwrap_rbt.h"
+#include "lib/param/param.h"
 
 #ifdef CLUSTER_SUPPORT
 
@@ -1428,6 +1429,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct db_ctdb_ctx *db_ctdb;
 	char *db_path;
 	struct ctdbd_connection *conn;
+	struct loadparm_context *lp_ctx;
 
 	if (!lp_clustering()) {
 		DEBUG(10, ("Clustering disabled -- no ctdb\n"));
@@ -1474,7 +1476,11 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		chmod(db_path, mode);
 	}
 
-	db_ctdb->wtdb = tdb_wrap_open(db_ctdb, db_path, hash_size, tdb_flags, O_RDWR, 0);
+	lp_ctx = loadparm_init_s3(db_path, loadparm_s3_context());
+
+	db_ctdb->wtdb = tdb_wrap_open(db_ctdb, db_path, hash_size, tdb_flags,
+				      O_RDWR, 0, lp_ctx);
+	talloc_unlink(db_path, lp_ctx);
 	if (db_ctdb->wtdb == NULL) {
 		DEBUG(0, ("Could not open tdb %s: %s\n", db_path, strerror(errno)));
 		TALLOC_FREE(result);
