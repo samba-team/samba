@@ -94,6 +94,10 @@ source3/smbd/build_options.c
 source3/param/param_global.h
 source3/param/param_local.h
 source3/setup
+lib/param/param_global.h
+lib/param/param_local.h
+lib/param/param_proto.h
+lib/param/s3_param.h
 pidl/blib
 pidl/cover_db
 pidl/Makefile
