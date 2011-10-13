@@ -66,8 +66,8 @@ class Command(object):
     outf = sys.stdout
     errf = sys.stderr
 
-    def usage(self, *args):
-        parser, _ = self._create_parser()
+    def usage(self, prog, *args):
+        parser, _ = self._create_parser(prog)
         parser.print_usage()
 
     def show_command_error(self, e):
@@ -103,9 +103,11 @@ class Command(object):
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback)
 
-    def _create_parser(self):
-        parser = optparse.OptionParser(usage=self.synopsis, 
-                                       description=self.full_description)
+    def _create_parser(self, prog):
+        parser = optparse.OptionParser(
+            usage=self.synopsis,
+            description=self.full_description,
+            prog=prog)
         parser.add_options(self.takes_options)
         optiongroups = {}
         for name, optiongroup in self.takes_optiongroups.iteritems():
@@ -117,7 +119,7 @@ class Command(object):
         self.outf.write(text+"\n")
 
     def _run(self, *argv):
-        parser, optiongroups = self._create_parser()
+        parser, optiongroups = self._create_parser(argv[0])
         opts, args = parser.parse_args(list(argv))
         # Filter out options from option groups
         args = args[1:]
@@ -170,13 +172,10 @@ class SuperCommand(Command):
 
     def _run(self, myname, subcommand=None, *args):
         if subcommand in self.subcommands:
-            return self.subcommands[subcommand]._run(subcommand, *args)
+            return self.subcommands[subcommand]._run(
+                "%s %s" % (myname, subcommand), *args)
 
-        if myname == "samba-tool":
-            usage = "samba-tool <subcommand>"
-        else:
-            usage = "samba-tool %s <subcommand>" % myname
-        self.outf.write("Usage: %s [options]\n" % usage)
+        self.usage(myname)
         self.outf.write("Available subcommands:\n")
         subcmds = self.subcommands.keys()
         subcmds.sort()
@@ -187,14 +186,15 @@ class SuperCommand(Command):
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:
-            self.outf.write("For more help on a specific subcommand, please type: %s (-h|--help)\n" % usage)
+            self.outf.write("For more help on a specific subcommand, please type: %s (-h|--help)\n" % myname)
             return 0
         raise CommandError("No such subcommand '%s'" % subcommand)
 
 
 
 class CommandError(Exception):
-    '''an exception class for samba-tool cmd errors'''
+    """An exception class for samba-tool Command errors."""
+
     def __init__(self, message, inner_exception=None):
         self.message = message
         self.inner_exception = inner_exception

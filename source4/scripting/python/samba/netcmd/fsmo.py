@@ -34,11 +34,10 @@ from samba.netcmd import (
 from samba.samdb import SamDB
 
 
-
 class cmd_fsmo_seize(Command):
     """Seize the role"""
-     
-    synopsis = "%prog fsmo seize [options]"
+
+    synopsis = "%prog [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -99,7 +98,7 @@ all=all of the above"""),
 
     def run(self, force=None, H=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
-            
+
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -116,11 +115,10 @@ all=all of the above"""),
             self.seize_role(role, samdb, force)
 
 
-
 class cmd_fsmo_show(Command):
     """Show the roles"""
 
-    synopsis = "%prog fsmo show [options]"
+    synopsis = "%prog [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -129,8 +127,7 @@ class cmd_fsmo_show(Command):
 
     takes_args = []
 
-    def run(self, H=None, 
-            credopts=None, sambaopts=None, versionopts=None):
+    def run(self, H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -173,13 +170,12 @@ class cmd_fsmo_show(Command):
         self.message("PdcEmulationMasterRole owner: " + self.pdcEmulator)
         self.message("DomainNamingMasterRole owner: " + self.namingMaster)
         self.message("SchemaMasterRole owner: " + self.schemaMaster)
-    
 
 
 class cmd_fsmo_transfer(Command):
     """Transfer the role"""
 
-    synopsis = "%prog fsmo transfer [options]"
+    synopsis = "%prog [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -250,7 +246,6 @@ all=all of the above"""),
             self.transfer_role("schema", samdb)
         else:
             self.transfer_role(role, samdb)
-
 
 
 class cmd_fsmo(SuperCommand):

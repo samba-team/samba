@@ -237,7 +237,7 @@ def create_directory_hier(conn, remotedir):
 class cmd_listall(Command):
     """list all GPOs"""
 
-    synopsis = "%prog gpo listall [options]"
+    synopsis = "%prog [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -268,13 +268,13 @@ class cmd_listall(Command):
 class cmd_list(Command):
     """list GPOs for an account"""
 
-    synopsis = "%prog gpo list <username> [options]"
+    synopsis = "%prog <username> [options]"
 
-    takes_args = [ 'username' ]
+    takes_args = ['username']
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
-               metavar="URL", dest="H")
+        Option("-H", "--URL", help="LDB URL for database or target server",
+            type=str, metavar="URL", dest="H")
         ]
 
     def run(self, username, H=None, sambaopts=None, credopts=None, versionopts=None):
@@ -377,7 +377,7 @@ class cmd_list(Command):
 class cmd_show(Command):
     """Show information for a GPO"""
 
-    synopsis = "%prog gpo show <gpo> [options]"
+    synopsis = "%prog <gpo> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -385,7 +385,7 @@ class cmd_show(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'gpo' ]
+    takes_args = ['gpo']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
@@ -421,7 +421,7 @@ class cmd_show(Command):
 class cmd_getlink(Command):
     """List GPO Links for a container"""
 
-    synopsis = "%prog gpo getlink <container_dn> [options]"
+    synopsis = "%prog <container_dn> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -429,7 +429,7 @@ class cmd_getlink(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'container_dn' ]
+    takes_args = ['container_dn']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
@@ -468,7 +468,7 @@ class cmd_getlink(Command):
 class cmd_setlink(Command):
     """Add or Update a GPO link to a container"""
 
-    synopsis = "%prog gpo setlink <container_dn> <gpo> [options]"
+    synopsis = "%prog <container_dn> <gpo> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -476,7 +476,7 @@ class cmd_setlink(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'container_dn', 'gpo' ]
+    takes_args = ['container_dn', 'gpo']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -556,7 +556,7 @@ class cmd_setlink(Command):
 class cmd_dellink(Command):
     """Delete GPO link from a container"""
 
-    synopsis = "%prog gpo dellink <container_dn> <gpo> [options]"
+    synopsis = "%prog <container_dn> <gpo> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -564,7 +564,7 @@ class cmd_dellink(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'container_dn', 'gpo' ]
+    takes_args = ['container_dn', 'gpo']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -625,7 +625,7 @@ class cmd_dellink(Command):
 class cmd_getinheritance(Command):
     """Get inheritance flag for a container"""
 
-    synopsis = "%prog gpo getinheritance <container_dn> [options]"
+    synopsis = "%prog <container_dn> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -633,7 +633,7 @@ class cmd_getinheritance(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'container_dn' ]
+    takes_args = ['container_dn']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str)
@@ -669,7 +669,7 @@ class cmd_getinheritance(Command):
 class cmd_setinheritance(Command):
     """Set inheritance flag on a container"""
 
-    synopsis = "%prog gpo setinheritance <container_dn> <block|inherit> [options]"
+    synopsis = "%prog <container_dn> <block|inherit> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -724,7 +724,7 @@ class cmd_setinheritance(Command):
 class cmd_fetch(Command):
     """Download a GPO"""
 
-    synopsis = "%prog gpo fetch <gpo> [options]"
+    synopsis = "%prog <gpo> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -732,7 +732,7 @@ class cmd_fetch(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'gpo' ]
+    takes_args = ['gpo']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
@@ -792,7 +792,7 @@ class cmd_fetch(Command):
 class cmd_create(Command):
     """Create an empty GPO"""
 
-    synopsis = "%prog gpo create <displayname> [options]"
+    synopsis = "%prog <displayname> [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -800,7 +800,7 @@ class cmd_create(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = [ 'displayname' ]
+    takes_args = ['displayname']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),

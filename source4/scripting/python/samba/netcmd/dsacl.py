@@ -50,7 +50,7 @@ from samba.netcmd import (
 class cmd_dsacl_set(Command):
     """Modify access list on a directory object"""
 
-    synopsis = "%prog dsacl set [options]"
+    synopsis = "%prog [options]"
     car_help = """ The access control right to allow or deny """
 
     takes_options = [

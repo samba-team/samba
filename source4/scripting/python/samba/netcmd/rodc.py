@@ -25,15 +25,13 @@ from samba.samdb import SamDB
 from samba.auth import system_session
 import ldb
 from samba.dcerpc import misc, drsuapi
-from samba.credentials import Credentials
 from samba.drs_utils import drs_Replicate
-
 
 
 class cmd_rodc_preload(Command):
     """Preload one account for an RODC"""
 
-    synopsis = "%prog rodc preload (<SID>|<DN>|<accountname>) [options]"
+    synopsis = "%prog (<SID>|<DN>|<accountname>) [options]"
 
     takes_options = [
         Option("--server", help="DC to use", type=str),

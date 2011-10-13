@@ -33,11 +33,10 @@ from samba.netcmd import (
     )
 
 
-
 class cmd_spn_list(Command):
     """List spns of a given user."""
 
-    synopsis = "%prog spn list <user> [options]"
+    synopsis = "%prog <user> [options]"
 
     takes_args = ["user"]
 
@@ -71,11 +70,10 @@ class cmd_spn_list(Command):
             raise CommandError("User %s not found" % user)
 
 
-
 class cmd_spn_add(Command):
     """Create a new spn."""
 
-    synopsis = "%prog spn add <name> <user> [options]"
+    synopsis = "%prog <name> <user> [options]"
 
     takes_options = [
         Option("--force", help="Force the addition of the spn"\
@@ -126,11 +124,10 @@ class cmd_spn_add(Command):
             raise CommandError("User %s not found" % user)
 
 
-
 class cmd_spn_delete(Command):
     """Delete a spn."""
 
-    synopsis = "%prog spn delete <name> [user] [options]"
+    synopsis = "%prog <name> [user] [options]"
 
     takes_args = ["name", "user?"]
 
@@ -179,7 +176,6 @@ class cmd_spn_delete(Command):
             sam.modify(msg)
         else:
             raise CommandError("Service principal %s not affected" % name)
-
 
 
 class cmd_spn(SuperCommand):

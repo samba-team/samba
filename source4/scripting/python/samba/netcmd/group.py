@@ -43,7 +43,7 @@ distribution_group = dict({"Domain": GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP, "Glo
 class cmd_group_add(Command):
     """Creates a new group"""
 
-    synopsis = "%prog group add <groupname> [options]"
+    synopsis = "%prog <groupname> [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -88,7 +88,7 @@ class cmd_group_add(Command):
 class cmd_group_delete(Command):
     """Delete a group"""
 
-    synopsis = "%prog group delete <groupname> [options]"
+    synopsis = "%prog <groupname> [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -115,7 +115,7 @@ class cmd_group_delete(Command):
 class cmd_group_add_members(Command):
     """Add (comma-separated list of) group members"""
 
-    synopsis = "%prog group addmembers <groupname> <listofmembers> [options]"
+    synopsis = "%prog <groupname> <listofmembers> [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -144,7 +144,7 @@ class cmd_group_add_members(Command):
 class cmd_group_remove_members(Command):
     """Remove (comma-separated list of) group members"""
 
-    synopsis = "%prog group removemembers <groupname> <listofmembers> [options]"
+    synopsis = "%prog <groupname> <listofmembers> [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,

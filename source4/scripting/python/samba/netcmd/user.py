@@ -36,11 +36,10 @@ from samba.netcmd import (
     )
 
 
-
 class cmd_user_add(Command):
     """Creates a new user"""
 
-    synopsis = "%prog user add <username> [<password>] [options]"
+    synopsis = "%prog <username> [<password>] [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -107,7 +106,7 @@ class cmd_user_add(Command):
 class cmd_user_delete(Command):
     """Delete a user"""
 
-    synopsis = "%prog user delete <username> [options]"
+    synopsis = "%prog <username> [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -133,7 +132,7 @@ class cmd_user_delete(Command):
 class cmd_user_enable(Command):
     """Enables a user"""
 
-    synopsis = "%prog user enable (<username>|--filter <filter>) [options]"
+    synopsis = "%prog (<username>|--filter <filter>) [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -166,7 +165,7 @@ class cmd_user_enable(Command):
 class cmd_user_setexpiry(Command):
     """Sets the expiration of a user account"""
 
-    synopsis = "%prog user setexpiry (<username>|--filter <filter>) [options]"
+    synopsis = "%prog (<username>|--filter <filter>) [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -205,7 +204,7 @@ class cmd_user_setexpiry(Command):
 class cmd_user_password(Command):
     """Change password for a user account (the one provided in authentication)"""
 
-    synopsis = "%prog user password [options]"
+    synopsis = "%prog [options]"
 
     takes_options = [
         Option("--newpassword", help="New password", type=str),
@@ -239,7 +238,7 @@ class cmd_user_password(Command):
 class cmd_user_setpassword(Command):
     """(Re)sets the password of a user account"""
 
-    synopsis = "%prog user setpassword (<username>|--filter <filter>) [options]"
+    synopsis = "%prog (<username>|--filter <filter>) [options]"
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -284,7 +283,6 @@ class cmd_user_setpassword(Command):
             # FIXME: catch more specific exception
             raise CommandError("Failed to set password for user '%s': %s" % (username or filter, msg))
         self.outf.write("Changed password OK\n")
-
 
 
 class cmd_user(SuperCommand):

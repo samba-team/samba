@@ -30,9 +30,10 @@ from samba.netcmd import (
     CommandError
     )
 
+
 class cmd_vampire(Command):
     """Join and synchronise a remote AD domain to the local server"""
-    synopsis = "%prog vampire [options] <domain>"
+    synopsis = "%prog [options] <domain>"
 
     takes_options = [
         Option("--target-dir", help="Target directory.", type=str),

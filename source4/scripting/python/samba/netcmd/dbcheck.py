@@ -33,7 +33,7 @@ from samba.dbchecker import dbcheck
 
 class cmd_dbcheck(Command):
     """check local AD database for errors"""
-    synopsis = "%prog dbcheck [<DN>] [options]"
+    synopsis = "%prog [<DN>] [options]"
 
     takes_args = ["DN?"]
 

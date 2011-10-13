@@ -36,11 +36,10 @@ from samba.netcmd import (
     )
 
 
-
 class cmd_delegation_show(Command):
     """Show the delegation setting of an account."""
-    
-    synopsis = "%prog delegation show <accountname> [options]"
+
+    synopsis = "%prog show <accountname> [options]"
 
     takes_args = ["accountname"]
 
@@ -74,11 +73,10 @@ class cmd_delegation_show(Command):
                 self.outf.write("msDS-AllowedToDelegateTo: %s\n" % a)
 
 
-
 class cmd_delegation_for_any_service(Command):
     """Set/unset UF_TRUSTED_FOR_DELEGATION for an account."""
 
-    synopsis = "%prog delegation for-any-service <accountname> [(on|off)] [options]"
+    synopsis = "%prog <accountname> [(on|off)] [options]"
 
     takes_args = ["accountname", "onoff"]
 
@@ -109,11 +107,10 @@ class cmd_delegation_for_any_service(Command):
             raise CommandError(err)
 
 
-
 class cmd_delegation_for_any_protocol(Command):
     """Set/unset UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION (S4U2Proxy) for an account."""
 
-    synopsis = "%prog delegation for-any-protocol <accountname> [(on|off)] [options]"
+    synopsis = "%prog <accountname> [(on|off)] [options]"
 
     takes_args = ["accountname", "onoff"]
 
@@ -144,11 +141,10 @@ class cmd_delegation_for_any_protocol(Command):
             raise CommandError(err)
 
 
-
 class cmd_delegation_add_service(Command):
     """Add a service principal as msDS-AllowedToDelegateTo"""
 
-    synopsis = "%prog delegation add-service <accountname> <principal> [options]"
+    synopsis = "%prog <accountname> <principal> [options]"
 
     takes_args = ["accountname", "principal"]
 
@@ -180,11 +176,10 @@ class cmd_delegation_add_service(Command):
             raise CommandError(err)
 
 
-
 class cmd_delegation_del_service(Command):
     """Delete a service principal as msDS-AllowedToDelegateTo"""
 
-    synopsis = "%prog delegation del-service <accountname> <principal> [options]"
+    synopsis = "%prog <accountname> <principal> [options]"
 
     takes_args = ["accountname", "principal"]
 
@@ -214,7 +209,6 @@ class cmd_delegation_del_service(Command):
             sam.modify(msg)
         except Exception, err:
             raise CommandError(err)
-
 
 
 class cmd_delegation(SuperCommand):
