@@ -5,7 +5,11 @@
 PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
 
 [ -z "$CTDB_VARDIR" ] && {
-    export CTDB_VARDIR="/var/ctdb"
+    if [ -d "/var/lib/ctdb" ] ; then
+	export CTDB_VARDIR="/var/lib/ctdb"
+    else
+	export CTDB_VARDIR="/var/ctdb"
+    fi
 }
 [ -z "$CTDB_ETCDIR" ] && {
     export CTDB_ETCDIR="/etc"
