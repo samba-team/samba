@@ -757,7 +757,7 @@ bool pdb_set_hours_len(struct samu *sampass, uint32_t len, enum pdb_value_state 
 bool pdb_set_logon_divs(struct samu *sampass, uint16_t hours, enum pdb_value_state flag);
 bool pdb_set_init_flags(struct samu *sampass, enum pdb_elements element, enum pdb_value_state value_flag);
 bool pdb_set_user_sid(struct samu *sampass, const struct dom_sid *u_sid, enum pdb_value_state flag);
-bool pdb_set_user_sid_from_string(struct samu *sampass, fstring u_sid, enum pdb_value_state flag);
+bool pdb_set_user_sid_from_string(struct samu *sampass, const char *u_sid, enum pdb_value_state flag);
 bool pdb_set_group_sid(struct samu *sampass, const struct dom_sid *g_sid, enum pdb_value_state flag);
 bool pdb_set_username(struct samu *sampass, const char *username, enum pdb_value_state flag);
 bool pdb_set_domain(struct samu *sampass, const char *domain, enum pdb_value_state flag);

@@ -473,7 +473,7 @@ bool pdb_set_user_sid(struct samu *sampass, const struct dom_sid *u_sid, enum pd
 	return pdb_set_init_flags(sampass, PDB_USERSID, flag);
 }
 
-bool pdb_set_user_sid_from_string(struct samu *sampass, fstring u_sid, enum pdb_value_state flag)
+bool pdb_set_user_sid_from_string(struct samu *sampass, const char *u_sid, enum pdb_value_state flag)
 {
 	struct dom_sid new_sid;
 
