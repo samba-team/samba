@@ -81,3 +81,14 @@ class CommandTests(NetCmdTestCase):
         if missing:
             self.fail("The following commands do not have a synopsis set: %r" %
                     missing)
+
+    def test_short_description_everywhere(self):
+        missing = []
+        for path, cmd in self.iter_all_subcommands():
+            if cmd.short_description is None:
+                missing.append(path)
+        if not missing:
+            return
+        self.fail(
+            "The following commands do not have a short description set: %r" %
+                missing)
