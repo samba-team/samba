@@ -55,7 +55,6 @@ class cmd_ntacl_set(Command):
     def run(self, acl, file, quiet=False,xattr_backend=None,eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
         path = os.path.join(lp.get("private dir"), lp.get("secrets database") or "secrets.ldb")
         creds = credopts.get_credentials(lp)
         creds.set_kerberos_state(DONT_USE_KERBEROS)
@@ -92,7 +91,6 @@ class cmd_ntacl_get(Command):
     def run(self, file, as_sddl=False, xattr_backend=None, eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
         acl = getntacl(lp, file, xattr_backend, eadb_file)
         if as_sddl:
             anysid = security.dom_sid(security.SID_NT_SELF)
