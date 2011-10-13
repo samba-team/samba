@@ -79,3 +79,4 @@ bench # don't run benchmarks in our selftest
 ^samba4.drs.repl_schema.python # flakey test
 ^samba4.nbt.winsreplication # flakey test
 ^samba4.smb2.ioctl # snapshots not supported by default
+^samba4.drs.delete_object.python # flakey test
