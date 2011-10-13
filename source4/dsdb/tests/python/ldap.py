@@ -2716,21 +2716,33 @@ nTSecurityDescriptor:: """ + desc_base64
 
         # Get the current value to restore it later
         dsheuristics = self.ldb.get_dsheuristics()
-        # Should not be longer than 18 chars?
+        # Perform the length checks: for each decade (except the 0th) we need
+        # the first index to be the number. This goes till the 9th one, beyond
+        # there does not seem to be another limitation.
         try:
-            self.ldb.set_dsheuristics("123ABC-+!1asdfg@#^12")
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
-        # If it is >= 10 chars, tenthChar should be 1
-        try:
-            self.ldb.set_dsheuristics("00020000000002")
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
-        # apart from the above, all char values are accepted
-        self.ldb.set_dsheuristics("123ABC-+!1asdfg@#^")
-        self.assertEquals(self.ldb.get_dsheuristics(), "123ABC-+!1asdfg@#^")
-        # restore old value
-        self.ldb.set_dsheuristics(dsheuristics)
+            dshstr = ""
+            for i in range(1,11):
+                # This is in the range
+                self.ldb.set_dsheuristics(dshstr + "x")
+                self.ldb.set_dsheuristics(dshstr + "xxxxx")
+                dshstr = dshstr + "xxxxxxxxx"
+                if i < 10:
+                    # Not anymore in the range, new decade specifier needed
+                    try:
+                        self.ldb.set_dsheuristics(dshstr + "x")
+                        self.fail()
+                    except LdbError, (num, _):
+                        self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+                    dshstr = dshstr + str(i)
+                else:
+                    # There does not seem to be an upper limit
+                    self.ldb.set_dsheuristics(dshstr + "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+            # apart from the above, all char values are accepted
+            self.ldb.set_dsheuristics("123ABC-+!1asdfg@#^")
+            self.assertEquals(self.ldb.get_dsheuristics(), "123ABC-+!1asdfg@#^")
+        finally:
+            # restore old value
+            self.ldb.set_dsheuristics(dsheuristics)
 
     def test_ldapControlReturn(self):
         """Testing that if we request a control that return a control it
