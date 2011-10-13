@@ -239,7 +239,15 @@
 #define DS_HR_COMPUTE_ANR_STATS                   0x0000000F
 #define DS_HR_ADMINSDEXMASK                       0x00000010
 #define DS_HR_KVNOEMUW2K                          0x00000011
-#define DS_HR_LDAP_BYPASS_UPPER_LIMIT_BOUNDS      0x00000012
+
+#define DS_HR_TWENTIETH_CHAR                      0x00000014
+#define DS_HR_THIRTIETH_CHAR                      0x0000001E
+#define DS_HR_FOURTIETH_CHAR                      0x00000028
+#define DS_HR_FIFTIETH_CHAR                       0x00000032
+#define DS_HR_SIXTIETH_CHAR                       0x0000003C
+#define DS_HR_SEVENTIETH_CHAR                     0x00000046
+#define DS_HR_EIGHTIETH_CHAR                      0x00000050
+#define DS_HR_NINETIETH_CHAR                      0x0000005A
 
 /* mS-DS-ReplicatesNCReason */
 #define NTDSCONN_KCC_GC_TOPOLOGY		     0x00000001

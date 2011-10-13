@@ -72,15 +72,47 @@ static struct oc_context *oc_init_context(struct ldb_module *module,
 
 static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares);
 
-/* checks correctness of dSHeuristics attribute
- * as described in MS-ADTS 7.1.1.2.4.1.2 dSHeuristics */
+/*
+ * Checks the correctness of the "dSHeuristics" attribute as described in both
+ * MS-ADTS 7.1.1.2.4.1.2 dSHeuristics and MS-ADTS 3.1.1.5.3.2 Constraints
+ */
 static int oc_validate_dsheuristics(struct ldb_message_element *el)
 {
 	if (el->num_values > 0) {
-		if (el->values[0].length > DS_HR_LDAP_BYPASS_UPPER_LIMIT_BOUNDS) {
+		if ((el->values[0].length >= DS_HR_NINETIETH_CHAR) &&
+		    (el->values[0].data[DS_HR_NINETIETH_CHAR-1] != '9')) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
-		} else if (el->values[0].length >= DS_HR_TENTH_CHAR
-			   && el->values[0].data[DS_HR_TENTH_CHAR-1] != '1') {
+		}
+		if ((el->values[0].length >= DS_HR_EIGHTIETH_CHAR) &&
+		    (el->values[0].data[DS_HR_EIGHTIETH_CHAR-1] != '8')) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if ((el->values[0].length >= DS_HR_SEVENTIETH_CHAR) &&
+		    (el->values[0].data[DS_HR_SEVENTIETH_CHAR-1] != '7')) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if ((el->values[0].length >= DS_HR_SIXTIETH_CHAR) &&
+		    (el->values[0].data[DS_HR_SIXTIETH_CHAR-1] != '6')) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if ((el->values[0].length >= DS_HR_FIFTIETH_CHAR) &&
+		    (el->values[0].data[DS_HR_FIFTIETH_CHAR-1] != '5')) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if ((el->values[0].length >= DS_HR_FOURTIETH_CHAR) &&
+		    (el->values[0].data[DS_HR_FOURTIETH_CHAR-1] != '4')) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if ((el->values[0].length >= DS_HR_THIRTIETH_CHAR) &&
+		    (el->values[0].data[DS_HR_THIRTIETH_CHAR-1] != '3')) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if ((el->values[0].length >= DS_HR_TWENTIETH_CHAR) &&
+		    (el->values[0].data[DS_HR_TWENTIETH_CHAR-1] != '2')) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if ((el->values[0].length >= DS_HR_TENTH_CHAR) &&
+		    (el->values[0].data[DS_HR_TENTH_CHAR-1] != '1')) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 	}
