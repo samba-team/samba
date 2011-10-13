@@ -1015,10 +1015,14 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 		for (j=0; j<res->count; j++) {
 			isc_result_t result;
 			const char *zone = ldb_msg_find_attr_as_string(res->msgs[j], "name", NULL);
+			struct ldb_dn *zone_dn;
+
 			if (zone == NULL) {
 				continue;
 			}
-			if (!b9_has_soa(state, dn, zone)) {
+			zone_dn = ldb_dn_copy(tmp_ctx, dn);
+
+			if (!b9_has_soa(state, zone_dn, zone)) {
 				continue;
 			}
 			result = state->writeable_zone(view, zone);
