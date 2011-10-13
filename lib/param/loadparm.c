@@ -3458,7 +3458,7 @@ struct loadparm_context *loadparm_init_global(bool load_default)
 struct loadparm_context *loadparm_init_s3(TALLOC_CTX *mem_ctx, 
 					  const struct loadparm_s3_context *s3_fns)
 {
-	struct loadparm_context *loadparm_context = loadparm_init(mem_ctx);
+	struct loadparm_context *loadparm_context = talloc_zero(mem_ctx, struct loadparm_context);
 	if (!loadparm_context) {
 		return NULL;
 	}
