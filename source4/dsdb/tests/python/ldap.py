@@ -101,15 +101,6 @@ class BasicTests(unittest.TestCase):
         """Test objectClass behaviour"""
         print "Test objectClass behaviour"""
 
-        # We cannot create LSA-specific objects (oc "secret" or "trustedDomain")
-        try:
-            self.ldb.add({
-                "dn": "cn=Test Secret,cn=system," + self.base_dn,
-                "objectClass": "secret" })
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-
         # Invalid objectclass specified
         try:
             self.ldb.add({
