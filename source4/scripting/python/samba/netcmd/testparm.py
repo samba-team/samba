@@ -42,7 +42,7 @@ import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option
 
 class cmd_testparm(Command):
-    """Syntax check the configuration file"""
+    """Syntax check the configuration file."""
 
     synopsis = "%prog testparm [options]"
 

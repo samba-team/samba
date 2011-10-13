@@ -23,6 +23,7 @@ import optparse, samba
 from samba import getopt as options
 from ldb import LdbError
 import sys, traceback
+import textwrap
 
 
 class Option(optparse.Option):
@@ -32,16 +33,21 @@ class Option(optparse.Option):
 
 class Command(object):
     """A samba-tool command."""
-   
-    def _get_description(self):
+
+    def _get_short_description(self):
         return self.__doc__.splitlines()[0].rstrip("\n")
 
-    description = property(_get_description)
+    short_description = property(_get_short_description)
 
-    # synopsis must be defined in all subclasses in order to provide the command usage
-    synopsis = "Please provide synopsis for this command."
-    # long_description is a string describing the command in details
-    long_description = ""
+    def _get_full_description(self):
+        lines = self.__doc__.split("\n")
+        return lines[0] + "\n" + textwrap.dedent("\n".join(lines[1:]))
+
+    full_description = property(_get_full_description)
+
+    # synopsis must be defined in all subclasses in order to provide the
+    # command usage
+    synopsis = None
     takes_args = []
     takes_options = []
     takes_optiongroups = {
@@ -91,7 +97,7 @@ class Command(object):
 
     def _create_parser(self):
         parser = optparse.OptionParser(usage=self.synopsis, 
-                                       description=self.long_description)
+                                       description=self.full_description)
         parser.add_options(self.takes_options)
         optiongroups = {}
         for name, optiongroup in self.takes_optiongroups.iteritems():
@@ -157,8 +163,8 @@ class SuperCommand(Command):
     def _run(self, myname, subcommand=None, *args):
         if subcommand in self.subcommands:
             return self.subcommands[subcommand]._run(subcommand, *args)
-        
-        if (myname == "samba-tool"):
+
+        if myname == "samba-tool":
             usage = "samba-tool <subcommand>"
         else:
             usage = "samba-tool %s <subcommand>" % myname
@@ -168,7 +174,8 @@ class SuperCommand(Command):
         subcmds.sort()
         max_length = max([len(c) for c in subcmds])
         for cmd in subcmds:
-            self.outf.write("  %*s  - %s\n" % (-max_length, cmd, self.subcommands[cmd].description))
+            self.outf.write("  %*s  - %s\n" % (
+                -max_length, cmd, self.subcommands[cmd].short_description))
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:

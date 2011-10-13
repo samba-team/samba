@@ -25,7 +25,7 @@
 
 import samba.getopt as options
 import ldb
-import sys, os
+import os
 import tempfile
 import logging
 from samba import Ldb
@@ -528,12 +528,13 @@ class cmd_domain_passwordsettings(Command):
 
 
 class cmd_domain_samba3upgrade(Command):
-    """Upgrade from Samba3 database to Samba4 AD database"""
+    """Upgrade from Samba3 database to Samba4 AD database.
+
+    Specify either samba3 database directory (with --libdir) or
+    samba3 testparm utility (with --testparm).
+    """
 
     synopsis = "%prog domain samba3upgrade [options] <samba3_smb_conf>"
-
-    long_description = """Specify either samba3 database directory (with --libdir) or
-samba3 testparm utility (with --testparm)."""
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
