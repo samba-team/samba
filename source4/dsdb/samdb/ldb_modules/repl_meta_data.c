@@ -2567,9 +2567,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ares);
-		return ldb_module_done(ac->req, NULL, NULL,
-				       ldb_error(ldb, ret,
-					"failed to call replmd_update_rpmd()"));
+		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
 
 	if (ac->seq_num == 0) {
