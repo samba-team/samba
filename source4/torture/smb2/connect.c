@@ -75,7 +75,7 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 	
 	data = data_blob_talloc(tree, NULL, size);
 	if (size != data.length) {
-		printf("data_blob_talloc(%s) failed\n", size);
+		printf("data_blob_talloc(%u) failed\n", (unsigned int)size);
 		return NT_STATUS_NO_MEMORY;
 	}
 
