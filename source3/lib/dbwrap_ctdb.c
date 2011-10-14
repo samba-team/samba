@@ -1278,12 +1278,21 @@ static int db_ctdb_traverse(struct db_context *db,
 			return ret;
 		}
 		if (ctx->transaction && ctx->transaction->m_write) {
-			/* we now have to handle keys not yet present at transaction start */
+			/*
+			 * we now have to handle keys not yet
+			 * present at transaction start
+			 */
 			struct db_context *newkeys = db_open_rbt(talloc_tos());
 			struct ctdb_marshall_buffer *mbuf = ctx->transaction->m_write;
 			struct ctdb_rec_data *rec=NULL;
 			NTSTATUS status;
 			int i;
+			int count = 0;
+
+			if (newkeys == NULL) {
+				return -1;
+			}
+
 			for (i=0; i<mbuf->count; i++) {
 				TDB_DATA key;
 				rec =db_ctdb_marshall_loop_next(mbuf, rec,
@@ -1298,9 +1307,12 @@ static int db_ctdb_traverse(struct db_context *db,
 			status = dbwrap_traverse(newkeys,
 						 traverse_persistent_callback_dbwrap,
 						 &state,
-						 NULL);
-			ret = NT_STATUS_IS_OK(status) ? 0 : -1;
+						 &count);
 			talloc_free(newkeys);
+			if (!NT_STATUS_IS_OK(status)) {
+				return -1;
+			}
+			ret += count;
 		}
 		return ret;
 	}
