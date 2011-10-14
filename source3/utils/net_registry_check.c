@@ -253,24 +253,6 @@ static void remove_all(char *str, char c)
 	*out = '\0';
 }
 
-static void remove_runs(char *str, char c)
-{
-	char *out=str;
-	while (*str) {
-		*out = *str;
-		if (*str == c) {
-			while (*str == c) {
-				str++;
-			}
-		} else {
-			str++;
-		}
-		out++;
-	}
-	*out = '\0';
-}
-
-
 static char* parent_path(const char *path, char sep)
 {
 	const char *p = strrchr(path, sep);
