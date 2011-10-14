@@ -1447,6 +1447,7 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 	};
 
 	if (!c->display_usage
+	    && argc > 0
 	    && (strcasecmp_m(argv[0], "convert") != 0)
 	    && (strcasecmp_m(argv[0], "check") != 0))
 	{
