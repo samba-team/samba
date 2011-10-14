@@ -591,7 +591,10 @@ class cmd_domain_samba3upgrade(Command):
         if use_xattrs == "yes":
             eadb = False
         elif use_xattrs == "auto" and not s3conf.get("posix:eadb"):
-            tmpfile = tempfile.NamedTemporaryFile()
+            if targetdir:
+                tmpfile = tempfile.NamedTemporaryFile(prefix=os.path.abspath(targetdir))
+            else:
+                tmpfile = tempfile.NamedTemporaryFile(prefix=os.path.abspath(os.path.dirname(lp.get("private dir"))))
             try:
                 samba.ntacls.setntacl(lp, tmpfile.name,
                             "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
