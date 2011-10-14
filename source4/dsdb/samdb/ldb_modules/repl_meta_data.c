@@ -2362,12 +2362,14 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		ret = add_time_element(msg, "whenChanged", t);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
+			ldb_operr(ldb);
 			return ret;
 		}
 
 		ret = add_uint64_element(ldb, msg, "uSNChanged", ac->seq_num);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
+			ldb_operr(ldb);
 			return ret;
 		}
 	}
@@ -2609,12 +2611,14 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	ret = add_time_element(msg, "whenChanged", t);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
+		ldb_operr(ldb);
 		return ret;
 	}
 
 	ret = add_uint64_element(ldb, msg, "uSNChanged", ac->seq_num);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
+		ldb_operr(ldb);
 		return ret;
 	}
 
@@ -4725,15 +4729,18 @@ linked_attributes[0]:
 
 	/* we only change whenChanged and uSNChanged if the seq_num
 	   has changed */
-	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
+	ret = add_time_element(msg, "whenChanged", t);
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
+		ldb_operr(ldb);
+		return ret;
 	}
 
-	if (add_uint64_element(ldb, msg, "uSNChanged",
-			       seq_num) != LDB_SUCCESS) {
+	ret = add_uint64_element(ldb, msg, "uSNChanged", seq_num);
+	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
+		ldb_operr(ldb);
+		return ret;
 	}
 
 	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
