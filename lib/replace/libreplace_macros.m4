@@ -298,7 +298,7 @@ AC_DEFUN(AC_VERIFY_C_PROTOTYPE,
 		eval AS_TR_SH([ac_cv_c_prototype_$1])=no
 	])
 )
-AS_IF([test $AS_TR_SH([ac_cv_c_prototype_$1]) = yes],[$3],[$4])
+AS_IF([eval test $AS_TR_SH([ac_cv_c_prototype_$1]) = yes],[$3],[$4])
 ])
 
 AC_DEFUN(LIBREPLACE_PROVIDE_HEADER, 
