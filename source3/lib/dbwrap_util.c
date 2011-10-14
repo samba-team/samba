@@ -446,14 +446,21 @@ NTSTATUS dbwrap_trans_traverse(struct db_context *db,
 
 NTSTATUS dbwrap_traverse(struct db_context *db,
 			 int (*f)(struct db_record*, void*),
-			 void *private_data)
+			 void *private_data,
+			 int *count)
 {
 	int ret = db->traverse(db, f, private_data);
-	return (ret == -1) ? NT_STATUS_INTERNAL_DB_CORRUPTION : NT_STATUS_OK;
+
+	if (ret < 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (count != NULL) {
+		*count = ret;
+	}
+
+	return NT_STATUS_OK;
 }
-
-
-
 
 NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key)
 {
