@@ -1146,7 +1146,7 @@ static NTSTATUS rpc_conf_import_internal(struct net_context *c,
 	struct smbconf_service *service = NULL;
 	struct smbconf_service **services = NULL;
 	uint32_t num_shares, i;
-	sbcErr err;
+	sbcErr err = SBC_ERR_UNKNOWN_FAILURE;
 
 	WERROR werr = WERR_OK;
 	NTSTATUS status = NT_STATUS_OK;
