@@ -4,6 +4,7 @@
    low level TDB/CTDB tool using the dbwrap interface
 
    Copyright (C) 2009 Michael Adam <obnox@samba.org>
+   Copyright (C) 2011 Bjoern Baumbach <bb@sernet.de>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,14 +26,15 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 typedef enum { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS } dbwrap_op;
 
-typedef enum { TYPE_INT32, TYPE_UINT32 } dbwrap_type;
+typedef enum { TYPE_INT32, TYPE_UINT32, TYPE_STRING } dbwrap_type;
 
 static int dbwrap_tool_fetch_int32(struct db_context *db,
 				   const char *keyname,
-				   void *data)
+				   const char *data)
 {
 	int32_t value;
 	NTSTATUS status;
@@ -50,7 +52,7 @@ static int dbwrap_tool_fetch_int32(struct db_context *db,
 
 static int dbwrap_tool_fetch_uint32(struct db_context *db,
 				    const char *keyname,
-				    void *data)
+				    const char *data)
 {
 	uint32_t value;
 	NTSTATUS ret;
@@ -68,10 +70,10 @@ static int dbwrap_tool_fetch_uint32(struct db_context *db,
 
 static int dbwrap_tool_store_int32(struct db_context *db,
 				   const char *keyname,
-				   void *data)
+				   const char *data)
 {
 	NTSTATUS status;
-	int32_t value = *((int32_t *)data);
+	int32_t value = (int32_t)strtol(data, NULL, 10);
 
 	status = dbwrap_trans_store_int32(db, keyname, value);
 
@@ -86,10 +88,10 @@ static int dbwrap_tool_store_int32(struct db_context *db,
 
 static int dbwrap_tool_store_uint32(struct db_context *db,
 				    const char *keyname,
-				    void *data)
+				    const char *data)
 {
 	NTSTATUS status;
-	uint32_t value = *((uint32_t *)data);
+	uint32_t value = (uint32_t)strtol(data, NULL, 10);
 
 	status = dbwrap_trans_store_uint32(db, keyname, value);
 
@@ -103,9 +105,28 @@ static int dbwrap_tool_store_uint32(struct db_context *db,
 	return 0;
 }
 
+static int dbwrap_tool_store_string(struct db_context *db,
+				    const char *keyname,
+				    const char *data)
+{
+	NTSTATUS status;
+
+	status = dbwrap_trans_store_bystring(db, keyname,
+			   string_term_tdb_data(data), TDB_REPLACE);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "ERROR: could not store string key '%s': %s\n",
+			  keyname, nt_errstr(status));
+		return -1;
+	}
+
+	return 0;
+}
+
 static int dbwrap_tool_delete(struct db_context *db,
 			      const char *keyname,
-			      void *data)
+			      const char *data)
 {
 	NTSTATUS status;
 
@@ -132,7 +153,7 @@ static int delete_fn(struct db_record *rec, void *priv)
  */
 static int dbwrap_tool_erase(struct db_context *db,
 			     const char *keyname,
-			     void *data)
+			     const char *data)
 {
 	NTSTATUS status;
 
@@ -167,7 +188,7 @@ static int listkey_fn(struct db_record *rec, void *private_data)
 
 static int dbwrap_tool_listkeys(struct db_context *db,
 				const char *keyname,
-				void *data)
+				const char *data)
 {
 	NTSTATUS status;
 
@@ -186,7 +207,7 @@ struct dbwrap_op_dispatch_table {
 	dbwrap_type type;
 	int (*cmd)(struct db_context *db,
 		   const char *keyname,
-		   void *data);
+		   const char *data);
 };
 
 struct dbwrap_op_dispatch_table dispatch_table[] = {
@@ -194,6 +215,7 @@ struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_FETCH,  TYPE_UINT32, dbwrap_tool_fetch_uint32 },
 	{ OP_STORE,  TYPE_INT32,  dbwrap_tool_store_int32 },
 	{ OP_STORE,  TYPE_UINT32, dbwrap_tool_store_uint32 },
+	{ OP_STORE,  TYPE_STRING, dbwrap_tool_store_string },
 	{ OP_DELETE, TYPE_INT32,  dbwrap_tool_delete },
 	{ OP_ERASE,  TYPE_INT32,  dbwrap_tool_erase },
 	{ OP_LISTKEYS, TYPE_INT32, dbwrap_tool_listkeys },
@@ -215,7 +237,6 @@ int main(int argc, const char **argv)
 	const char *keytype = "int32";
 	dbwrap_type type;
 	const char *valuestr = "0";
-	int32_t value = 0;
 
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
@@ -259,7 +280,7 @@ int main(int argc, const char **argv)
 		d_fprintf(stderr,
 			  "USAGE: %s <database> <op> [<key> [<type> [<value>]]]\n"
 			  "       ops: fetch, store, delete, erase, listkeys\n"
-			  "       types: int32, uint32\n",
+			  "       types: int32, uint32, string\n",
 			 argv[0]);
 		goto done;
 	}
@@ -318,13 +339,13 @@ int main(int argc, const char **argv)
 
 	if (strcmp(keytype, "int32") == 0) {
 		type = TYPE_INT32;
-		value = (int32_t)strtol(valuestr, NULL, 10);
 	} else if (strcmp(keytype, "uint32") == 0) {
 		type = TYPE_UINT32;
-		value = (int32_t)strtoul(valuestr, NULL, 10);
+	} else if (strcmp(keytype, "string") == 0) {
+		type = TYPE_STRING;
 	} else {
 		d_fprintf(stderr, "ERROR: invalid type '%s' specified.\n"
-				  "       supported types: int32, uint32\n",
+				  "       supported types: int32, uint32, string\n",
 				  keytype);
 		goto done;
 	}
@@ -351,7 +372,7 @@ int main(int argc, const char **argv)
 		if ((op == dispatch_table[count].op) &&
 		    (type == dispatch_table[count].type))
 		{
-			ret = dispatch_table[count].cmd(db, keyname, &value);
+			ret = dispatch_table[count].cmd(db, keyname, valuestr);
 			break;
 		}
 	}
