@@ -1243,10 +1243,10 @@ static int replmd_update_rpmd(struct ldb_module *module,
 					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 					    DSDB_SEARCH_REVEAL_INTERNALS, req);
 
-		if (ret != LDB_SUCCESS || res->count != 1) {
+		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Object %s failed to find uSNChanged\n",
 				 ldb_dn_get_linearized(msg->dn)));
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 
 		objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
@@ -1275,10 +1275,10 @@ static int replmd_update_rpmd(struct ldb_module *module,
 					    DSDB_SEARCH_SHOW_EXTENDED_DN |
 					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 					    DSDB_SEARCH_REVEAL_INTERNALS, req);
-		if (ret != LDB_SUCCESS || res->count != 1) {
+		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Object %s failed to find replPropertyMetaData\n",
 				 ldb_dn_get_linearized(msg->dn)));
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 
 		objectclass_el = ldb_msg_find_element(res->msgs[0], "objectClass");
