@@ -26,6 +26,7 @@
 #include "registry.h"
 #include "reg_db.h"
 #include "reg_util_internal.h"
+#include "reg_parse_internal.h"
 #include "reg_backend_db.h"
 #include "reg_objects.h"
 #include "nt_printing.h"
@@ -516,22 +517,104 @@ done:
 	return werr;
 }
 
+static bool tdb_data_read_uint32(TDB_DATA *buf, uint32_t *result)
+{
+	const size_t len = sizeof(uint32_t);
+	if (buf->dsize >= len) {
+		*result = IVAL(buf->dptr, 0);
+		buf->dptr += len;
+		buf->dsize -= len;
+		return true;
+	}
+	return false;
+}
+
+static bool tdb_data_read_cstr(TDB_DATA *buf, char **result)
+{
+	const size_t len = strnlen((char*)buf->dptr, buf->dsize) + 1;
+	if (buf->dsize >= len) {
+		*result = (char*)buf->dptr;
+		buf->dptr += len;
+		buf->dsize -= len;
+		return true;
+	}
+	return false;
+}
+
+static bool tdb_data_is_empty(TDB_DATA d) {
+	return (d.dptr == NULL) || (d.dsize == 0);
+}
+
+static bool tdb_data_is_cstr(TDB_DATA d) {
+	if (tdb_data_is_empty(d) || (d.dptr[d.dsize-1] != '\0')) {
+		return false;
+	}
+	return rawmemchr(d.dptr, '\0') == &d.dptr[d.dsize-1];
+}
+
+static bool upgrade_v2_to_v3_check_subkeylist(struct db_context *db,
+					      const char *key,
+					      const char *subkey)
+{
+	static uint32_t zero = 0;
+	static TDB_DATA empty_subkey_list = {
+		.dptr = (unsigned char*)&zero,
+		.dsize = sizeof(uint32_t),
+	};
+	bool success = false;
+	char *path = talloc_asprintf(talloc_tos(), "%s\\%s", key, subkey);
+	strupper_m(path);
+
+	if (!dbwrap_exists(db, string_term_tdb_data(path))) {
+		NTSTATUS status;
+
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: writing subkey list [%s]\n",
+			   path));
+
+		status = dbwrap_store_bystring(db, path, empty_subkey_list,
+					       TDB_INSERT);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("regdb_upgrade_v2_to_v3: writing subkey list "
+				  "[%s] failed\n", path));
+			goto done;
+		}
+	}
+	success = true;
+done:
+	talloc_free(path);
+	return success;
+}
+
+static bool upgrade_v2_to_v3_check_parent(struct db_context *db,
+					  const char *key)
+{
+	const char *sep = strrchr_m(key, '\\');
+	if (sep != NULL) {
+		char *pkey = talloc_strndup(talloc_tos(), key, sep-key);
+		if (!dbwrap_exists(db, string_term_tdb_data(pkey))) {
+			DEBUG(0, ("regdb_upgrade_v2_to_v3: missing subkey list "
+				  "[%s]\nrun \"net registry check\"\n", pkey));
+		}
+		talloc_free(pkey);
+	}
+	return true;
+}
+
+
+#define IS_EQUAL(d,s) (((d).dsize == strlen(s)+1) &&	\
+		       (strcmp((char*)(d).dptr, (s)) == 0))
+#define STARTS_WITH(d,s) (((d).dsize > strlen(s)) &&			\
+			  (strncmp((char*)(d).dptr, (s), strlen(s)) == 0))
+#define SSTR(d) (int)(d).dsize , (char*)(d).dptr
+
+
 static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 {
-	const char *keyname;
-	fstring subkeyname;
-	NTSTATUS status;
-	WERROR werr;
-	uint8_t *buf;
-	uint32_t buflen, len;
-	uint32_t num_items;
-	uint32_t i;
-	TDB_DATA key;
-	TDB_DATA value;
 	struct db_context *db = (struct db_context *)private_data;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	TDB_DATA val = dbwrap_record_get_value(rec);
 
-	key = dbwrap_record_get_key(rec);
-	if (key.dptr == NULL || key.dsize == 0) {
+	if (tdb_data_is_empty(key)) {
 		return 0;
 	}
 
@@ -541,70 +624,73 @@ static int regdb_upgrade_v2_to_v3_fn(struct db_record *rec, void *private_data)
 		return 1;
 	}
 
-	keyname = (const char *)key.dptr;
-
-	if (strncmp(keyname, REGDB_VERSION_KEYNAME,
-		    strlen(REGDB_VERSION_KEYNAME)) == 0)
+	if (IS_EQUAL(key, REGDB_VERSION_KEYNAME) ||
+	    STARTS_WITH(key, REG_VALUE_PREFIX) ||
+	    STARTS_WITH(key, REG_SECDESC_PREFIX))
 	{
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: skipping [%.*s]\n",
+			   SSTR(key)));
 		return 0;
 	}
 
-	if (strncmp(keyname, REG_SORTED_SUBKEYS_PREFIX,
-		    strlen(REG_SORTED_SUBKEYS_PREFIX)) == 0)
-	{
+	if (STARTS_WITH(key, REG_SORTED_SUBKEYS_PREFIX)) {
+		NTSTATUS status;
 		/* Delete the deprecated sorted subkeys cache. */
 
-		DEBUG(10, ("regdb_upgrade_v2_to_v3: deleting [%s]\n", keyname));
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: deleting [%.*s]\n",
+			   SSTR(key)));
 
 		status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("regdb_upgrade_v2_to_v3: tdb_delete for [%s] "
-				  "failed!\n", keyname));
+			DEBUG(0, ("regdb_upgrade_v2_to_v3: deleting [%.*s] "
+				  "failed!\n", SSTR(key)));
 			return 1;
 		}
 
 		return 0;
 	}
 
-	if (strncmp(keyname, REG_VALUE_PREFIX, strlen(REG_VALUE_PREFIX)) == 0) {
-		DEBUG(10, ("regdb_upgrade_v2_to_v3: skipping [%s]\n", keyname));
-		return 0;
-	}
-
-	if (strncmp(keyname, REG_SECDESC_PREFIX,
-		    strlen(REG_SECDESC_PREFIX)) == 0)
+	if ( tdb_data_is_cstr(key) &&
+	     hive_info((char*)key.dptr) != NULL )
 	{
-		DEBUG(10, ("regdb_upgrade_v2_to_v3: skipping [%s]\n", keyname));
-		return 0;
-	}
+		/*
+		 * Found a regular subkey list record.
+		 * Walk the list and create the list record for those
+		 * subkeys that don't already have one.
+		 */
+		TDB_DATA pos = val;
+		char *subkey, *path = (char*)key.dptr;
+		uint32_t num_items, found_items = 0;
 
-	/*
-	 * Found a regular subkey list record.
-	 * Walk the list and create the list record for those
-	 * subkeys that don't already have one.
-	 */
-	DEBUG(10, ("regdb_upgrade_v2_to_v3: scanning subkey list of [%s]\n",
-		   keyname));
 
-	value = dbwrap_record_get_value(rec);
-	buf = value.dptr;
-	buflen = value.dsize;
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: scanning subkeylist of "
+			   "[%s]\n", path));
 
-	len = tdb_unpack(buf, buflen, "d", &num_items);
-	if (len == (uint32_t)-1) {
-		/* invalid or empty - skip */
-		return 0;
-	}
-
-	for (i=0; i<num_items; i++) {
-		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
-		DEBUG(10, ("regdb_upgrade_v2_to_v3: "
-			   "writing subkey list for [%s\\%s]\n",
-			   keyname, subkeyname));
-		werr = regdb_store_subkey_list(db, keyname, subkeyname);
-		if (!W_ERROR_IS_OK(werr)) {
-			return 1;
+		if (!tdb_data_read_uint32(&pos, &num_items)) {
+			/* invalid or empty - skip */
+			return 0;
 		}
+
+		while (tdb_data_read_cstr(&pos, &subkey)) {
+			found_items++;
+
+			if (!upgrade_v2_to_v3_check_subkeylist(db, path, subkey))
+			{
+				return 1;
+			}
+
+			if (!upgrade_v2_to_v3_check_parent(db, path)) {
+				return 1;
+			}
+		}
+		if (found_items != num_items) {
+			DEBUG(0, ("regdb_upgrade_v2_to_v3: inconsistent subkey "
+				  "list [%s]\nrun \"net registry check\"\n",
+				  path));
+		}
+	} else {
+		DEBUG(10, ("regdb_upgrade_v2_to_v3: skipping invalid [%.*s]\n"
+			   "run \"net registry check\"\n", SSTR(key)));
 	}
 
 	return 0;

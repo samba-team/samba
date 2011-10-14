@@ -186,6 +186,9 @@ REG_BASE_SRC = '''registry/reg_api.c
                registry/reg_util_internal.c
                lib/util_nttoken.c
                ${REG_BACKENDS_BASE_SRC}
+               registry/reg_parse_internal.c
+	       lib/cbuf.c
+               lib/srprs.c
                ${REG_INIT_BASIC_SRC}'''
 
 REG_SMBCONF_SRC = '''
@@ -543,8 +546,8 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_rpc_trust.c
 	      utils/net_rpc_conf.c
               registry/reg_parse.c registry/reg_format.c
-              registry/reg_parse_internal.c registry/reg_import.c
-              lib/cbuf.c lib/srprs.c'''
+              registry/reg_import.c
+              '''
 
 NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 
