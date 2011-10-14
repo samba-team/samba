@@ -130,7 +130,7 @@ smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n)
 		}
 
 		if (!n) {
-			return (smb_ucs2_t *)p;
+			return discard_const_p(smb_ucs2_t, p);
 		}
 	} while (p-- != s);
 	return NULL;
@@ -142,7 +142,7 @@ smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n)
 
 smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
 {
-	smb_ucs2_t *r;
+	const smb_ucs2_t *r;
 	size_t inslen;
 
 	if (!s || !*s || !ins || !*ins) {
@@ -150,11 +150,11 @@ smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
 	}
 
 	inslen = strlen_w(ins);
-	r = (smb_ucs2_t *)s;
+	r = s;
 
 	while ((r = strchr_w(r, *ins))) {
 		if (strncmp_w(r, ins, inslen) == 0) {
-			return r;
+			return discard_const_p(smb_ucs2_t, r);
 		}
 		r++;
 	}
