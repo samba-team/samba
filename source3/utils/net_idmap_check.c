@@ -890,7 +890,7 @@ static bool check_do_checks(struct check_ctx* ctx)
 		return false;
 	}
 
-	status = dbwrap_traverse(ctx->db, traverse_check, ctx);
+	status = dbwrap_traverse(ctx->db, traverse_check, ctx, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("failed to traverse %s\n", ctx->name));
@@ -927,7 +927,7 @@ static bool check_transaction_cancel(struct check_ctx* ctx) {
 
 
 static void check_diff_list(struct check_ctx* ctx) {
-	NTSTATUS status = dbwrap_traverse(ctx->diff, traverse_print_diff, ctx);
+	NTSTATUS status = dbwrap_traverse(ctx->diff, traverse_print_diff, ctx, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("failed to traverse diff\n"));
@@ -963,7 +963,7 @@ static bool check_commit(struct check_ctx* ctx)
 		return false;
 	}
 
-	status = dbwrap_traverse(ctx->diff, traverse_commit, ctx);
+	status = dbwrap_traverse(ctx->diff, traverse_commit, ctx, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		check_transaction_cancel(ctx);

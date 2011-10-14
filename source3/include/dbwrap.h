@@ -134,7 +134,8 @@ NTSTATUS dbwrap_trans_traverse(struct db_context *db,
 			       void *private_data);
 NTSTATUS dbwrap_traverse(struct db_context *db,
 			 int (*f)(struct db_record*, void*),
-			 void *private_data);
+			 void *private_data,
+			 int *count);
 
 NTSTATUS dbwrap_delete_bystring_upper(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
