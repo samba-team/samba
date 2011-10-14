@@ -77,7 +77,7 @@ static void make_bcast_or_net(struct sockaddr_storage *pss_out,
 			bool make_bcast_p)
 {
 	unsigned int i = 0, len = 0;
-	char *pmask = NULL;
+	const char *pmask = NULL;
 	char *p = NULL;
 	*pss_out = *pss_in;
 
@@ -85,13 +85,13 @@ static void make_bcast_or_net(struct sockaddr_storage *pss_out,
 #if defined(HAVE_IPV6)
 	if (pss_in->ss_family == AF_INET6) {
 		p = (char *)&((struct sockaddr_in6 *)pss_out)->sin6_addr;
-		pmask = discard_const_p(char, &((struct sockaddr_in6 *)nmask)->sin6_addr);
+		pmask = (const char *)&((const struct sockaddr_in6 *)nmask)->sin6_addr;
 		len = 16;
 	}
 #endif
 	if (pss_in->ss_family == AF_INET) {
 		p = (char *)&((struct sockaddr_in *)pss_out)->sin_addr;
-		pmask = discard_const_p(char, &((struct sockaddr_in *)nmask)->sin_addr);
+		pmask = (const char *)&((const struct sockaddr_in *)nmask)->sin_addr;
 		len = 4;
 	}
 
