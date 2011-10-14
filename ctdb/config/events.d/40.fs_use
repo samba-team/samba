@@ -16,13 +16,13 @@ case "$1" in
 
             # check if given fs_mount is existing directory
             if [ ! -d "$fs_mount" ]; then
-                echo "$0: Directory $fs_mount does not exist"
+                echo "Directory $fs_mount does not exist"
                 exit 1
             fi
 
             # check if given fs_threshold is number
             if ! (echo "$fs_threshold" | egrep -q '^[0-9]+$')  ; then
-                echo "$0: Threshold $fs_threshold is invalid number"
+                echo "Threshold $fs_threshold is invalid number"
                 exit 1
             fi
 
@@ -31,7 +31,7 @@ case "$1" in
 
             # check if fs_usage is number
             if [ -z "$fs_usage" ] ; then
-                echo "$0: Unable to get FS utilization for $fs_mount"
+                echo "Unable to get FS utilization for $fs_mount"
                 exit 1
             fi
 
