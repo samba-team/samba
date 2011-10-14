@@ -1769,7 +1769,7 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
-	DATA_BLOB *server_blob;
+	const DATA_BLOB *server_blob;
 	DATA_BLOB blob = data_blob_null;
 	const char *p = NULL;
 	char *account = NULL;
