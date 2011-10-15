@@ -48,6 +48,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 8507: smbd doesn't correctly honor the "force create mode" bits from a
       cifsfs create.
     * BUG 8509: Read-only handles on SAMR allow SAMR_DOMAIN_ACCESS_CREATE_USER.
+    * BUG 8521: Winbind cache timeout expiry test was reversed.
 
 
 o   Christian Ambach <ambi@samba.org>
@@ -96,6 +97,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 8409: Fix a Winbind race leading to 100% CPU load.
     * BUG 8420: Fix 'getent group' if trusted domains are not reachable.
     * BUG 8433: Fix segfault in iconv.c.
+    * BUG 8455: Samba PDC is looking up only primary user group.
 
 
 o   Herb Lewis <hlewis@panasas.com>
@@ -106,6 +108,8 @@ o   Stefan Metzmacher <metze@samba.org>
     * BUG 8407: SMB2 server can return requests out-of-order when processing
       a compound request.
     * BUG 8452: Check the wct of the incoming SMBnegprot responses.
+    * BUG 8473: smb2_find uses a hard coded max reply size of 0x10000 instead of
+      smb2_max_trans.
     * BUG 8476: Don't call smbd_terminate_connection in
       smb2_validate_message_id().
     * BUG 8503: SMB2_OP_CANCEL requests don't have to be signed.
