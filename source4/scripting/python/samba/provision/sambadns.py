@@ -445,22 +445,29 @@ def add_dc_msdcs_records(samdb, forestdn, prefix, site, dnsforest, hostname,
     add_cname_record(samdb, forest_container_dn, "DC=%s" % ntdsguid, fqdn_hostname)
 
 
-def setup_ad_dns(samdb, names, logger, hostip=None, hostip6=None, dns_backend=None,
+def is_valid_dns_backend(dns_backend):
+        return dns_backend in ("BIND9_FLATFILE", "BIND9_DLZ", "SAMBA_INTERNAL", "NONE")
+
+
+def setup_ad_dns(samdb, names, logger, dns_backend, hostip=None, hostip6=None,
                 os_level=None):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
     :param names: Names shortcut
     :param logger: Logger object
+    :param dns_backend: Type of DNS backend
     :param hostip: IPv4 address
     :param hostip6: IPv6 address
-    :param dns_backend: Type of DNS backend
     :param os_level: Functional level (treated as os level)
     """
 
-    if dns_backend is None:
-        dns_backend = "BIND9_FLATFILE"
-        logger.info("Assuming bind9 DNS server backend")
+    if not is_valid_dns_backend(dns_backend):
+        raise Exception("Invalid dns backend: %r" % dns_backend)
+
+    if dns_backend is "NONE":
+        logger.info("No DNS backend set, not configuring DNS")
+        return
 
     # If dns_backend is BIND9_FLATFILE
     #   Populate only CN=MicrosoftDNS,CN=System,<DOMAINDN>
@@ -514,7 +521,7 @@ def setup_ad_dns(samdb, names, logger, hostip=None, hostip6=None, dns_backend=No
         add_dc_domain_records(samdb, domaindn, "CN=System", site, dnsdomain,
                                 hostname, hostip, hostip6)
 
-    elif (dns_backend == "SAMBA_INTERNAL" or dns_backend == "BIND9_DLZ") and (
+    elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and (
             os_level == DS_DOMAIN_FUNCTION_2003 or
             os_level == DS_DOMAIN_FUNCTION_2008 or
             os_level == DS_DOMAIN_FUNCTION_2008_R2):
