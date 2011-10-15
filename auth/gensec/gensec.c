@@ -76,6 +76,9 @@ _PUBLIC_ NTSTATUS gensec_seal_packet(struct gensec_security *gensec_security,
 	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	return gensec_security->ops->seal_packet(gensec_security, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
