@@ -449,21 +449,28 @@ def is_valid_dns_backend(dns_backend):
         return dns_backend in ("BIND9_FLATFILE", "BIND9_DLZ", "SAMBA_INTERNAL", "NONE")
 
 
-def setup_ad_dns(samdb, names, logger, dns_backend, hostip=None, hostip6=None,
-                os_level=None):
+def is_valid_os_level(os_level):
+    return DS_DOMAIN_FUNCTION_2000 <= os_level <= DS_DOMAIN_FUNCTION_2008_R2
+
+
+def setup_ad_dns(samdb, names, logger, dns_backend, os_level, hostip=None,
+                 hostip6=None,):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
     :param names: Names shortcut
     :param logger: Logger object
     :param dns_backend: Type of DNS backend
+    :param os_level: Functional level (treated as os level)
     :param hostip: IPv4 address
     :param hostip6: IPv6 address
-    :param os_level: Functional level (treated as os level)
     """
 
     if not is_valid_dns_backend(dns_backend):
         raise Exception("Invalid dns backend: %r" % dns_backend)
+
+    if not is_valid_os_level(os_level):
+        raise Exception("Invalid os level: %r" % os_level)
 
     if dns_backend is "NONE":
         logger.info("No DNS backend set, not configuring DNS")
@@ -474,9 +481,6 @@ def setup_ad_dns(samdb, names, logger, dns_backend, hostip=None, hostip6=None,
     #
     # If dns_backend is SAMBA_INTERNAL or BIND9_DLZ
     #   Populate DNS partitions
-
-    if os_level is None:
-        os_level = DS_DOMAIN_FUNCTION_2003
 
     # If os_level < 2003 (DS_DOMAIN_FUNCTION_2000)
     #   All dns records are in CN=MicrosoftDNS,CN=System,<DOMAINDN>
@@ -521,10 +525,8 @@ def setup_ad_dns(samdb, names, logger, dns_backend, hostip=None, hostip6=None,
         add_dc_domain_records(samdb, domaindn, "CN=System", site, dnsdomain,
                                 hostname, hostip, hostip6)
 
-    elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and (
-            os_level == DS_DOMAIN_FUNCTION_2003 or
-            os_level == DS_DOMAIN_FUNCTION_2008 or
-            os_level == DS_DOMAIN_FUNCTION_2008_R2):
+    elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and \
+            os_level >= DS_DOMAIN_FUNCTION_2003:
 
         # Set up additional partitions (DomainDnsZones, ForstDnsZones)
         logger.info("Creating DomainDnsZones and ForestDnsZones partitions")
