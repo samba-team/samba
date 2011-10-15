@@ -83,7 +83,13 @@ sleep_for "${out#*= }"
 
 if try_command_on_node any "test -r /etc/ctdb/events.d/61.nfstickle" ; then
     echo "Trying to determine NFS_TICKLE_SHARED_DIRECTORY..."
-    f="/etc/sysconfig/nfs"
+    if [ -f /etc/sysconfig/nfs ]; then
+	f="/etc/sysconfig/nfs"
+    elif [ -f /etc/default/nfs ]; then
+	f="/etc/default/nfs"
+    elif [ -f /etc/ctdb/sysconfig/nfs ]; then
+	f="/etc/ctdb/sysconfig/nfs"
+    fi
     try_command_on_node -v any "[ -r $f ] &&  sed -n -e s@^NFS_TICKLE_SHARED_DIRECTORY=@@p $f" || true
 
     nfs_tickle_shared_directory="${out:-/gpfs/.ctdb/nfs-tickles}"
