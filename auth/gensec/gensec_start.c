@@ -511,11 +511,6 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 			     struct auth4_context *auth_context,
 			     struct gensec_security **gensec_security)
 {
-	if (ev == NULL) {
-		DEBUG(0, ("No event context available!\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	(*gensec_security) = talloc_zero(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
@@ -602,11 +597,6 @@ _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 				      struct gensec_security **gensec_security)
 {
 	NTSTATUS status;
-
-	if (!ev) {
-		DEBUG(0,("gensec_server_start: no event context given!\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	if (!settings) {
 		DEBUG(0,("gensec_server_start: no settings given!\n"));
