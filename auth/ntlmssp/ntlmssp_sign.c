@@ -274,6 +274,11 @@ NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (!(ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+		DEBUG(3, ("NTLMSSP Sealing not negotiated - cannot seal packet!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (!ntlmssp_state->session_key.length) {
 		DEBUG(3, ("NO session key, cannot seal packet\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
