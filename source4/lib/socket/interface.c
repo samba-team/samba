@@ -87,7 +87,8 @@ static void add_interface(TALLOC_CTX *mem_ctx, const struct iface_struct *ifs, s
 		return;
 	}
 
-	if (!(ifs->flags & (IFF_BROADCAST|IFF_LOOPBACK))) {
+	if (ifs->ip.ss_family == AF_INET &&
+		!(ifs->flags & (IFF_BROADCAST|IFF_LOOPBACK))) {
 		DEBUG(3,("not adding non-broadcast interface %s\n",
 					ifs->name ));
 		return;
