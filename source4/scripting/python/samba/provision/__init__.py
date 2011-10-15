@@ -1625,9 +1625,9 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                             dnsdomain=names.dnsdomain,
                             dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
 
-        # Default DNS backend is BIND9 using txt files for zone information
+        # Default DNS backend is BIND9_FLATFILE using txt files for zone information
         if not dns_backend:
-            dns_backend = "BIND9"
+            dns_backend = "BIND9_FLATFILE"
 
         setup_ad_dns(samdb, names, logger, hostip=hostip, hostip6=hostip6,
                      dns_backend=dns_backend, os_level=dom_for_fun_level)
@@ -1640,7 +1640,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
 
         # Only make a zone file on the first DC, it should be
         # replicated with DNS replication
-        if dns_backend == "BIND9":
+        if dns_backend == "BIND9_FLATFILE":
             create_zone_file(lp, logger, paths, targetdir,
                              dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
                              hostname=names.hostname, realm=names.realm,
@@ -2127,7 +2127,7 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend):
     :param keytab_name: File name of DNS keytab file
     """
 
-    if dns_backend == "BIND9":
+    if dns_backend == "BIND9_FLATFILE":
         setup_file(setup_path("named.conf"), paths.namedconf, {
                     "DNSDOMAIN": dnsdomain,
                     "REALM": realm,

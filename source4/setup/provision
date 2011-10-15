@@ -82,8 +82,8 @@ parser.add_option("--krbtgtpass", type="string", metavar="PASSWORD",
 parser.add_option("--machinepass", type="string", metavar="PASSWORD",
         help="choose machine password (otherwise random)")
 parser.add_option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
-          choices=["SAMBA", "BIND9", "BIND9_DLZ"],
-        help="The DNS server backend. SAMBA is the builtin name server (experimental), BIND9 uses bind9 text database to store zone information (default), BIND9_DLZ uses samba4 AD to store zone information (recommended)")
+          choices=["SAMBA", "BIND9_FLATFILE", "BIND9_DLZ"],
+        help="The DNS server backend. SAMBA is the builtin name server (experimental), BIND9_FLATFILE uses bind9 text database to store zone information (default), BIND9_DLZ uses samba4 AD to store zone information (recommended)")
 parser.add_option("--dnspass", type="string", metavar="PASSWORD",
         help="choose dns password (otherwise random)")
 parser.add_option("--ldapadminpass", type="string", metavar="PASSWORD",

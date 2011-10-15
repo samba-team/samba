@@ -459,10 +459,10 @@ def setup_ad_dns(samdb, names, logger, hostip=None, hostip6=None, dns_backend=No
     """
 
     if dns_backend is None:
-        dns_backend = "BIND9"
+        dns_backend = "BIND9_FLATFILE"
         logger.info("Assuming bind9 DNS server backend")
 
-    # If dns_backend is BIND9
+    # If dns_backend is BIND9_FLATFILE
     #   Populate only CN=MicrosoftDNS,CN=System,<DOMAINDN>
     #
     # If dns_backend is SAMBA or BIND9_DLZ 
