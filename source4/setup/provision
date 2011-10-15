@@ -206,7 +206,7 @@ if server_role is None:
     server_role = "domain controller"
 
 if opts.function_level is None:
-    dom_for_fun_level = None
+    dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
 elif opts.function_level == "2000":
     dom_for_fun_level = DS_DOMAIN_FUNCTION_2000
 elif opts.function_level == "2003":
