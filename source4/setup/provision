@@ -82,8 +82,11 @@ parser.add_option("--krbtgtpass", type="string", metavar="PASSWORD",
 parser.add_option("--machinepass", type="string", metavar="PASSWORD",
         help="choose machine password (otherwise random)")
 parser.add_option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
-          choices=["SAMBA", "BIND9_FLATFILE", "BIND9_DLZ"],
-        help="The DNS server backend. SAMBA is the builtin name server (experimental), BIND9_FLATFILE uses bind9 text database to store zone information (default), BIND9_DLZ uses samba4 AD to store zone information (recommended)")
+          choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
+        help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
+             "BIND9_FLATFILE uses bind9 text database to store zone information (default), " \
+             "BIND9_DLZ uses samba4 AD to store zone information, " \
+             "NONE skips the DNS setup entirely (not recommended)")
 parser.add_option("--dnspass", type="string", metavar="PASSWORD",
         help="choose dns password (otherwise random)")
 parser.add_option("--ldapadminpass", type="string", metavar="PASSWORD",
@@ -213,6 +216,11 @@ elif opts.function_level == "2008":
 elif opts.function_level == "2008_R2":
     dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
 
+if opts.dns_backend is None:
+    dns_backend = "BIND9_FLATFILE"
+else:
+    dns_backend = opts.dns_backend
+
 creds = credopts.get_credentials(lp)
 
 creds.set_kerberos_state(DONT_USE_KERBEROS)
@@ -261,7 +269,7 @@ try:
           ntdsguid=opts.ntds_guid,
           invocationid=opts.invocationid, adminpass=opts.adminpass,
           krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
-          dns_backend=opts.dns_backend,
+          dns_backend=dns_backend,
           dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
           wheel=opts.wheel, users=opts.users,
           serverrole=server_role, dom_for_fun_level=dom_for_fun_level,

@@ -465,7 +465,7 @@ def setup_ad_dns(samdb, names, logger, hostip=None, hostip6=None, dns_backend=No
     # If dns_backend is BIND9_FLATFILE
     #   Populate only CN=MicrosoftDNS,CN=System,<DOMAINDN>
     #
-    # If dns_backend is SAMBA or BIND9_DLZ 
+    # If dns_backend is SAMBA_INTERNAL or BIND9_DLZ
     #   Populate DNS partitions
 
     if os_level is None:
@@ -514,7 +514,7 @@ def setup_ad_dns(samdb, names, logger, hostip=None, hostip6=None, dns_backend=No
         add_dc_domain_records(samdb, domaindn, "CN=System", site, dnsdomain,
                                 hostname, hostip, hostip6)
 
-    elif (dns_backend == "SAMBA" or dns_backend == "BIND9_DLZ") and (
+    elif (dns_backend == "SAMBA_INTERNAL" or dns_backend == "BIND9_DLZ") and (
             os_level == DS_DOMAIN_FUNCTION_2003 or
             os_level == DS_DOMAIN_FUNCTION_2008 or
             os_level == DS_DOMAIN_FUNCTION_2008_R2):
