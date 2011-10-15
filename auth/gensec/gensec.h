@@ -160,6 +160,7 @@ struct gensec_security {
 	enum gensec_role gensec_role;
 	bool subcontext;
 	uint32_t want_features;
+	uint8_t dcerpc_auth_level;
 	struct tevent_context *event_ctx;
 	struct tsocket_address *local_addr, *remote_addr;
 	struct gensec_settings *settings;

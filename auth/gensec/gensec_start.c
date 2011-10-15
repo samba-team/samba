@@ -547,6 +547,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 
 	(*gensec_security)->subcontext = true;
 	(*gensec_security)->want_features = parent->want_features;
+	(*gensec_security)->dcerpc_auth_level = parent->dcerpc_auth_level;
 	(*gensec_security)->event_ctx = parent->event_ctx;
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
@@ -671,6 +672,7 @@ _PUBLIC_ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_s
 		DEBUG(3, ("Could not find GENSEC backend for auth_type=%d\n", (int)auth_type));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	gensec_security->dcerpc_auth_level = auth_level;
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE);
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_ASYNC_REPLIES);
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {

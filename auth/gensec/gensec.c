@@ -26,6 +26,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "auth/gensec/gensec.h"
+#include "librpc/rpc/dcerpc.h"
 
 /*
   wrappers for the gensec function pointers
@@ -195,7 +196,50 @@ _PUBLIC_ NTSTATUS gensec_session_info(struct gensec_security *gensec_security,
 _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
 		       const DATA_BLOB in, DATA_BLOB *out)
 {
-	return gensec_security->ops->update(gensec_security, out_mem_ctx, in, out);
+	NTSTATUS status;
+
+	status = gensec_security->ops->update(gensec_security, out_mem_ctx,
+					      in, out);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Because callers using the
+	 * gensec_start_mech_by_auth_type() never call
+	 * gensec_want_feature(), it isn't sensible for them
+	 * to have to call gensec_have_feature() manually, and
+	 * these are not points of negotiation, but are
+	 * asserted by the client
+	 */
+	switch (gensec_security->dcerpc_auth_level) {
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+			DEBUG(0,("Did not manage to negotiate mandetory feature "
+				 "SIGN for dcerpc auth_level %u\n",
+				 gensec_security->dcerpc_auth_level));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		break;
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+			DEBUG(0,("Did not manage to negotiate mandetory feature "
+				 "SIGN for dcerpc auth_level %u\n",
+				 gensec_security->dcerpc_auth_level));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
+			DEBUG(0,("Did not manage to negotiate mandetory feature "
+				 "SEAL for dcerpc auth_level %u\n",
+				 gensec_security->dcerpc_auth_level));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return NT_STATUS_OK;
 }
 
 struct gensec_update_state {
