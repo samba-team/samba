@@ -584,7 +584,8 @@ class dc_join(object):
                             serverdn=ctx.server_dn, domain=ctx.domain_name,
                             hostname=ctx.myname, domainsid=ctx.domsid,
                             machinepass=ctx.acct_pass, serverrole="domain controller",
-                            sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid)
+                            sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
+                            dns_backend="NONE")
         print "Provision OK for domain DN %s" % presult.domaindn
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
@@ -622,7 +623,8 @@ class dc_join(object):
                                  domainguid=domguid,
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="domain controller",
-                                 lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6)
+                                 lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
+                                 dns_backend="BIND9_FLATFILE")
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
 

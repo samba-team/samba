@@ -1625,10 +1625,6 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                             dnsdomain=names.dnsdomain,
                             dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
 
-        # Default DNS backend is BIND9_FLATFILE using txt files for zone information
-        if not dns_backend:
-            dns_backend = "BIND9_FLATFILE"
-
         setup_ad_dns(samdb, names, logger, hostip=hostip, hostip6=hostip6,
                      dns_backend=dns_backend, os_level=dom_for_fun_level)
 

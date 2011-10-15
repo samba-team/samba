@@ -621,14 +621,20 @@ Please fix this account before attempting to upgrade again
             logger.error("   %s" % str(sid))
         raise ProvisioningError("Please remove duplicate sid entries before upgrade.")
 
+    if serverrole == "domain controller":
+        dns_backend = "BIND9_FLATFILE"
+    else:
+        dns_backend = "NONE"
+
     # Do full provision
     result = provision(logger, session_info, None,
                        targetdir=targetdir, realm=realm, domain=domainname,
                        domainsid=str(domainsid), next_rid=next_rid,
                        dc_rid=machinerid,
+                       dom_for_fun_level=dsdb.DS_DOMAIN_FUNCTION_2003,
                        hostname=netbiosname, machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL,
-                       useeadb=useeadb)
+                       useeadb=useeadb, dns_backend=dns_backend)
 
     # Import WINS database
     logger.info("Importing WINS database")
