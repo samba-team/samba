@@ -71,7 +71,11 @@ PATH="$PATH:/sbin:/usr/sbin:/usr/lpp/mmfs/bin"
 
 # list of config files that must exist and that we check are the same 
 # on the nodes
-CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+if [ -d /etc/sysconfig ] ; then
+    CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/sysconfig/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+else
+    CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /etc/ctdb/nodes /etc/default/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/default/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+fi
 
 # list of config files that may exist and should be checked that they
 # are the same on the nodes
@@ -115,7 +119,6 @@ show_and_compare_files () {
     fmt="$1" ; shift
 
     for f ; do
-
 	first=true
 
 	for n in $nodes ; do
