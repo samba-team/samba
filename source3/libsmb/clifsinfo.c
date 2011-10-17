@@ -613,11 +613,8 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = auth_ntlmssp_client_start(NULL,
-				      lp_netbios_name(),
-				      lp_workgroup(),
-				      lp_client_ntlmv2_auth(),
-				      &es->s.auth_ntlmssp_state);
+	status = auth_ntlmssp_client_prepare(NULL,
+					     &es->s.auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -632,6 +629,10 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 		goto fail;
 	}
 	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_password(es->s.auth_ntlmssp_state, pass))) {
+		goto fail;
+	}
+
+	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_client_start(es->s.auth_ntlmssp_state))) {
 		goto fail;
 	}
 

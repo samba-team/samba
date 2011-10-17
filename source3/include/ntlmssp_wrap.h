@@ -74,9 +74,8 @@ NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
 			     TALLOC_CTX *mem_ctx,
 			     const DATA_BLOB request, DATA_BLOB *reply);
 
-NTSTATUS auth_ntlmssp_client_start(TALLOC_CTX *mem_ctx,
-				   const char *netbios_name,
-				   const char *netbios_domain,
-				   bool use_ntlmv2,
-				   struct auth_ntlmssp_state **_ans);
+NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx,
+				     struct auth_ntlmssp_state **_ans);
+NTSTATUS auth_ntlmssp_client_start(struct auth_ntlmssp_state *ans);
+
 #endif /* _NTLMSSP_WRAP_ */

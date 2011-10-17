@@ -176,10 +176,7 @@ NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
 	return status;
 }
 
-NTSTATUS auth_ntlmssp_client_start(TALLOC_CTX *mem_ctx,
-				   const char *netbios_name,
-				   const char *netbios_domain,
-				   bool use_ntlmv2,
+NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx,
 				   struct auth_ntlmssp_state **_ans)
 {
 	struct auth_ntlmssp_state *ans;
@@ -188,12 +185,19 @@ NTSTATUS auth_ntlmssp_client_start(TALLOC_CTX *mem_ctx,
 	ans = talloc_zero(mem_ctx, struct auth_ntlmssp_state);
 
 	status = ntlmssp_client_start(ans,
-					netbios_name, netbios_domain,
-					use_ntlmv2, &ans->ntlmssp_state);
+				      lp_netbios_name(), lp_workgroup(),
+				      lp_client_ntlmv2_auth(), &ans->ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	*_ans = ans;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS auth_ntlmssp_client_start(struct auth_ntlmssp_state *ans)
+{
+	NTSTATUS status;
+
 	return NT_STATUS_OK;
 }

@@ -99,10 +99,7 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	}
 	sp_ctx->mech = SPNEGO_NTLMSSP;
 
-	status = auth_ntlmssp_client_start(sp_ctx,
-					lp_netbios_name(),
-					lp_workgroup(),
-					lp_client_ntlmv2_auth(),
+	status = auth_ntlmssp_client_prepare(sp_ctx,
 					&sp_ctx->mech_ctx.ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
@@ -136,6 +133,12 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	} else if (do_seal) {
 		auth_ntlmssp_want_feature(sp_ctx->mech_ctx.ntlmssp_state,
 					  NTLMSSP_FEATURE_SEAL);
+	}
+
+	status = auth_ntlmssp_client_start(sp_ctx->mech_ctx.ntlmssp_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(sp_ctx);
+		return status;
 	}
 
 	*spnego_ctx = sp_ctx;
