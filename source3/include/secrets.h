@@ -116,9 +116,6 @@ char *secrets_fetch_machine_password(const char *domain,
 bool trusted_domain_password_delete(const char *domain);
 bool secrets_store_ldap_pw(const char* dn, char* pw);
 bool fetch_ldap_pw(char **dn, char** pw);
-struct trustdom_info;
-NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
-				 struct trustdom_info ***domains);
 bool secrets_store_afs_keyfile(const char *cell, const struct afs_keyfile *keyfile);
 bool secrets_fetch_afs_key(const char *cell, struct afs_key *result);
 void secrets_fetch_ipc_userpass(char **username, char **domain, char **password);

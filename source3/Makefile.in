@@ -808,7 +808,8 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/login_cache.o @PDB_STATIC@ \
 		passdb/account_pol.o $(PRIVILEGES_OBJ) \
 		lib/util_nscd.o lib/winbind_util.o $(SERVER_MUTEX_OBJ) \
-		passdb/pdb_util.o passdb/pdb_ldap_schema.o
+		passdb/pdb_util.o passdb/pdb_ldap_schema.o \
+		passdb/pdb_secrets.o
 
 DEVEL_HELP_WEIRD_OBJ = ../lib/util/charset/weird.o
 CHARSET_MACOSXFS_OBJ = ../lib/util/charset/charset_macosxfs.o
