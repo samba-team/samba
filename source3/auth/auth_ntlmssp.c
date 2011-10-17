@@ -4,7 +4,7 @@
    handle NLTMSSP, server side
 
    Copyright (C) Andrew Tridgell      2001
-   Copyright (C) Andrew Bartlett 2001-2003
+   Copyright (C) Andrew Bartlett 2001-2003,2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
