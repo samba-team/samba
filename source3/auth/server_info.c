@@ -269,8 +269,8 @@ static NTSTATUS group_sids_to_info3(struct netr_SamInfo3 *info3,
 			if (info3->base.primary_gid == rid) continue;
 
 			/* store domain group rid */
-			groups->rids[i].rid = rid;
-			groups->rids[i].attributes = attributes;
+			groups->rids[groups->count].rid = rid;
+			groups->rids[groups->count].attributes = attributes;
 			groups->count++;
 			continue;
 		}
