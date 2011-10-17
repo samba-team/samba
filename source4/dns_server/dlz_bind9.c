@@ -1021,6 +1021,10 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 				continue;
 			}
 			zone_dn = ldb_dn_copy(tmp_ctx, dn);
+			if (zone_dn == NULL) {
+				talloc_free(tmp_ctx);
+				return ISC_R_NOMEMORY;
+			}
 
 			if (!b9_has_soa(state, zone_dn, zone)) {
 				continue;
