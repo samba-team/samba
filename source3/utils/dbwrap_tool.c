@@ -30,7 +30,7 @@
 
 typedef enum { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS } dbwrap_op;
 
-typedef enum { TYPE_INT32, TYPE_UINT32, TYPE_STRING } dbwrap_type;
+typedef enum { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX } dbwrap_type;
 
 static int dbwrap_tool_fetch_int32(struct db_context *db,
 				   const char *keyname,
@@ -121,6 +121,42 @@ static int dbwrap_tool_store_string(struct db_context *db,
 		return -1;
 	}
 
+	return 0;
+}
+
+static int dbwrap_tool_store_hex(struct db_context *db,
+				    const char *keyname,
+				    const char *data)
+{
+	NTSTATUS status;
+	DATA_BLOB datablob;
+	TDB_DATA tdbdata;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	datablob = strhex_to_data_blob(tmp_ctx, data);
+	if(strlen(data) > 0 && datablob.length == 0) {
+		d_fprintf(stderr,
+			  "ERROR: could not convert hex string to data blob\n"
+			  "       Not a valid hex string?\n");
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	tdbdata.dptr = (unsigned char *)datablob.data;
+	tdbdata.dsize = datablob.length;
+
+	status = dbwrap_trans_store_bystring(db, keyname,
+					     tdbdata,
+					     TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "ERROR: could not store string key '%s': %s\n",
+			  keyname, nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -216,6 +252,7 @@ struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_STORE,  TYPE_INT32,  dbwrap_tool_store_int32 },
 	{ OP_STORE,  TYPE_UINT32, dbwrap_tool_store_uint32 },
 	{ OP_STORE,  TYPE_STRING, dbwrap_tool_store_string },
+	{ OP_STORE,  TYPE_HEX,    dbwrap_tool_store_hex },
 	{ OP_DELETE, TYPE_INT32,  dbwrap_tool_delete },
 	{ OP_ERASE,  TYPE_INT32,  dbwrap_tool_erase },
 	{ OP_LISTKEYS, TYPE_INT32, dbwrap_tool_listkeys },
@@ -280,7 +317,7 @@ int main(int argc, const char **argv)
 		d_fprintf(stderr,
 			  "USAGE: %s <database> <op> [<key> [<type> [<value>]]]\n"
 			  "       ops: fetch, store, delete, erase, listkeys\n"
-			  "       types: int32, uint32, string\n",
+			  "       types: int32, uint32, string, hex\n",
 			 argv[0]);
 		goto done;
 	}
@@ -343,9 +380,12 @@ int main(int argc, const char **argv)
 		type = TYPE_UINT32;
 	} else if (strcmp(keytype, "string") == 0) {
 		type = TYPE_STRING;
+	} else if (strcmp(keytype, "hex") == 0) {
+		type = TYPE_HEX;
 	} else {
 		d_fprintf(stderr, "ERROR: invalid type '%s' specified.\n"
-				  "       supported types: int32, uint32, string\n",
+				  "       supported types: int32, uint32, "
+				  "string, hex\n",
 				  keytype);
 		goto done;
 	}
