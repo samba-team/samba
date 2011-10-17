@@ -2087,6 +2087,27 @@ void *lpcfg_parm_ptr(struct loadparm_context *lp_ctx,
 }
 
 /**
+  return the parameter pointer for a parameter
+*/
+bool lpcfg_parm_is_cmdline(struct loadparm_context *lp_ctx, const char *name)
+{
+	int parmnum;
+
+	if (lp_ctx->s3_fns) {
+		struct parm_struct *parm = lp_ctx->s3_fns->get_parm_struct(name);
+		if (parm) {
+			return parm->flags & FLAG_CMDLINE;
+		}
+		return false;
+	}
+
+	parmnum = map_parameter(name);
+	if (parmnum == -1) return false;
+
+	return lp_ctx->flags[parmnum] & FLAG_CMDLINE;
+}
+
+/**
  * Find a service by name. Otherwise works like get_service.
  */
 

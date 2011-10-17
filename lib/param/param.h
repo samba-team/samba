@@ -111,6 +111,7 @@ bool lpcfg_add_printer(struct loadparm_context *lp_ctx,
 struct parm_struct *lpcfg_parm_struct(struct loadparm_context *lp_ctx, const char *name);
 void *lpcfg_parm_ptr(struct loadparm_context *lp_ctx,
 		  struct loadparm_service *service, struct parm_struct *parm);
+bool lpcfg_parm_is_cmdline(struct loadparm_context *lp_ctx, const char *name);
 bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx);
 
 bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
