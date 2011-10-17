@@ -2,12 +2,12 @@
 .\"     Title: ctdb
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 05/12/2011
+.\"      Date: 10/12/2011
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDB" "1" "05/12/2011" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDB" "1" "10/12/2011" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -906,6 +906,9 @@ HEALTH: NO\-HEALTHY\-NODES \- ERROR \- Backup of corrupted TDB in \*(Aq/var/ctdb
 .SS "catdb <dbname>"
 .PP
 This command will dump a clustered TDB database to the screen\&. This is a debugging command\&.
+.SS "cattdb <dbname>"
+.PP
+This command will dump the content of the local TDB database to the screen\&. This is a debugging command\&.
 .SS "dumpdbbackup <backup\-file>"
 .PP
 This command will dump the content of database backup to the screen (similar to ctdb catdb)\&. This is a debugging command\&.
@@ -941,6 +944,8 @@ Administratively ban a node for bantime seconds\&. A bantime of 0 means that the
 A banned node does not participate in the cluster and does not host any records for the clustered TDB\&. Its ip address has been taken over by another node and no services are hosted\&.
 .PP
 Nodes are automatically banned if they are the cause of too many cluster recoveries\&.
+.PP
+This is primarily a testing command\&. Note that the recovery daemon controls the overall ban state and it may automatically unban nodes at will\&. Meaning that a node that has been banned by the administrator can and ofter are unbanned before the admin specifid timeout triggers\&. If wanting to "drop" a node out from the cluster for mainentance or other reasons, use the "stop" / "continue" commands instad of "ban" / "unban"\&.
 .SS "unban"
 .PP
 This command is used to unban a node that has either been administratively banned using the ban command or has been automatically banned by the recovery daemon\&.
