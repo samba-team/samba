@@ -33,28 +33,27 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 				      struct security_token *token,
 				      struct security_unix_token **sec)
 {
-	int i;
+	uint32_t s, g;
 	NTSTATUS status;
 	struct id_map *ids;
 	struct composite_context *ctx;
-	*sec = talloc(mem_ctx, struct security_unix_token);
 
 	/* we can't do unix security without a user and group */
 	if (token->num_sids < 2) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	ids = talloc_array(mem_ctx, struct id_map, token->num_sids);
+	*sec = talloc_zero(mem_ctx, struct security_unix_token);
+	if (*sec == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ids = talloc_zero_array(mem_ctx, struct id_map, token->num_sids);
 	NT_STATUS_HAVE_NO_MEMORY(ids);
 
-	(*sec)->ngroups = token->num_sids - 2;
-	(*sec)->groups = talloc_array(*sec, gid_t, (*sec)->ngroups);
-	NT_STATUS_HAVE_NO_MEMORY((*sec)->groups);
-
-	for (i=0;i<token->num_sids;i++) {
-		ZERO_STRUCT(ids[i].xid);
-		ids[i].sid = &token->sids[i];
-		ids[i].status = ID_UNKNOWN;
+	for (s=0; s < token->num_sids; s++) {
+		ids[s].sid = &token->sids[s];
+		ids[s].status = ID_UNKNOWN;
 	}
 
 	ctx = wbc_sids_to_xids_send(wbc_ctx, ids, token->num_sids, ids);
@@ -63,8 +62,20 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 	status = wbc_sids_to_xids_recv(ctx, &ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (ids[0].xid.type == ID_TYPE_BOTH ||
-	    ids[0].xid.type == ID_TYPE_UID) {
+	g = token->num_sids;
+	if (ids[0].xid.type != ID_TYPE_BOTH) {
+		g--;
+	}
+	(*sec)->ngroups = g;
+	(*sec)->groups = talloc_array(*sec, gid_t, (*sec)->ngroups);
+	NT_STATUS_HAVE_NO_MEMORY((*sec)->groups);
+
+	g=0;
+	if (ids[0].xid.type == ID_TYPE_BOTH) {
+		(*sec)->uid = ids[0].xid.id;
+		(*sec)->groups[g] = ids[0].xid.id;
+		g++;
+	} else if (ids[0].xid.type == ID_TYPE_UID) {
 		(*sec)->uid = ids[0].xid.id;
 	} else {
 		return NT_STATUS_INVALID_SID;
@@ -73,14 +84,17 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 	if (ids[1].xid.type == ID_TYPE_BOTH ||
 	    ids[1].xid.type == ID_TYPE_GID) {
 		(*sec)->gid = ids[1].xid.id;
+		(*sec)->groups[g] = ids[1].xid.id;
+		g++;
 	} else {
 		return NT_STATUS_INVALID_SID;
 	}
 
-	for (i=0;i<(*sec)->ngroups;i++) {
-		if (ids[i+2].xid.type == ID_TYPE_BOTH ||
-		    ids[i+2].xid.type == ID_TYPE_GID) {
-			(*sec)->groups[i] = ids[i+2].xid.id;
+	for (s=2; s < token->num_sids; s++) {
+		if (ids[s].xid.type == ID_TYPE_BOTH ||
+		    ids[s].xid.type == ID_TYPE_GID) {
+			(*sec)->groups[g] = ids[s].xid.id;
+			g++;
 		} else {
 			return NT_STATUS_INVALID_SID;
 		}
