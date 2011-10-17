@@ -199,7 +199,6 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const struct wbcAuthUserInfo *info,
 					  struct auth_serversupplied_info **server_info);
 void free_user_info(struct auth_usersupplied_info **user_info);
-bool make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) ;
 bool is_trusted_domain(const char* dom_name);
 
 /* The following definitions come from auth/user_info.c  */
