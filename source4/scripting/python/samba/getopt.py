@@ -77,7 +77,11 @@ class SambaOptions(optparse.OptionGroup):
         if arg.find('=') == -1:
             raise optparse.OptionValueError("--option option takes a 'a=b' argument")
         a = arg.split('=')
-        self._lp.set(a[0], a[1])
+        try:
+            self._lp.set(a[0], a[1])
+        except Exception:
+            raise optparse.OptionValueError("invalid --option option value: %s"
+                                            % arg)
 
     def get_loadparm(self):
         """Return loadparm object with data specified on the command line."""
