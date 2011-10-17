@@ -1639,7 +1639,7 @@ main() {
         default_static_modules.extend(TO_LIST('pdb_ads auth_netlogond charset_weird'))
         default_shared_modules.extend(TO_LIST('perfcount_test'))
         default_shared_modules.extend(TO_LIST('vfs_skel_opaque vfs_skel_transparent vfs_shadow_copy_test'))
-        default_shared_modules.extend(TO_LIST('auth_skel'))
+        default_shared_modules.extend(TO_LIST('auth_skel pdb_test'))
 
     default_static_modules.extend(TO_LIST('pdb_samba4 auth_samba4 vfs_dfs_samba4'))
 

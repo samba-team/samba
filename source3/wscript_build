@@ -1407,6 +1407,7 @@ bld.RECURSE('passdb')
 bld.RECURSE('rpc_server')
 bld.RECURSE('winbindd')
 bld.RECURSE('../examples/auth')
+bld.RECURSE('../examples/pdb')
 bld.RECURSE('../examples/VFS')
 
 
