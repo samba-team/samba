@@ -1179,6 +1179,12 @@ int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 			SMB_STRUCT_STAT *psbuf);
 NTSTATUS vfs_stat_fsp(files_struct *fsp);
 NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid);
+NTSTATUS vfs_streaminfo(connection_struct *conn,
+			struct files_struct *fsp,
+			const char *fname,
+			TALLOC_CTX *mem_ctx,
+			unsigned int *num_streams,
+			struct stream_struct **streams);
 
 /* The following definitions come from smbd/avahi_register.c */
 
