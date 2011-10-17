@@ -1406,6 +1406,7 @@ bld.RECURSE('pam_smbpass')
 bld.RECURSE('passdb')
 bld.RECURSE('rpc_server')
 bld.RECURSE('winbindd')
+bld.RECURSE('../examples/auth')
 bld.RECURSE('../examples/VFS')
 
 
