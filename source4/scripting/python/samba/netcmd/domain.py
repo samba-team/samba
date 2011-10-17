@@ -545,7 +545,7 @@ class cmd_domain_samba3upgrade(Command):
         Option("--libdir", type="string", metavar="DIR",
                   help="Path to samba3 database directory"),
         Option("--testparm", type="string", metavar="PATH",
-                  help="Path to samba3 testparm utility"),
+                  help="Path to samba3 testparm utility from the previous installation.  This allows the default paths of the previous installation to be followed"),
         Option("--targetdir", type="string", metavar="DIR",
                   help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
         Option("--quiet", help="Be quiet"),
