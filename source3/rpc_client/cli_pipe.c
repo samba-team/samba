@@ -2256,12 +2256,6 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static int cli_auth_ntlmssp_data_destructor(struct pipe_auth_data *auth)
-{
-	TALLOC_FREE(auth->auth_ctx);
-	return 0;
-}
-
 static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 				  enum dcerpc_AuthType auth_type,
 				  enum dcerpc_AuthLevel auth_level,
@@ -2289,7 +2283,7 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	status = auth_ntlmssp_client_start(NULL,
+	status = auth_ntlmssp_client_start(result,
 				      lp_netbios_name(),
 				      lp_workgroup(),
 				      lp_client_ntlmv2_auth(),
@@ -2297,8 +2291,6 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
-
-	talloc_set_destructor(result, cli_auth_ntlmssp_data_destructor);
 
 	status = auth_ntlmssp_set_username(ntlmssp_ctx, username);
 	if (!NT_STATUS_IS_OK(status)) {
