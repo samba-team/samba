@@ -111,7 +111,7 @@ class VersionOptions(optparse.OptionGroup):
         sys.exit(0)
 
 
-def parse_kerberos_arg(arg):
+def parse_kerberos_arg(arg, opt_str):
     if arg.lower() in ["yes", 'true', '1']:
         return MUST_USE_KERBEROS
     elif arg.lower() in ["no", 'false', '0']:
@@ -119,7 +119,8 @@ def parse_kerberos_arg(arg):
     elif arg.lower() in ["auto"]:
         return AUTO_USE_KERBEROS
     else:
-        raise optparse.BadOptionError("invalid kerberos option: %s" % arg)
+        raise optparse.OptionValueError("invalid %s option value: %s" %
+                                        (opt_str, arg))
 
 
 class CredentialsOptions(optparse.OptionGroup):
@@ -165,7 +166,7 @@ class CredentialsOptions(optparse.OptionGroup):
         self.ipaddress = arg
 
     def _set_kerberos(self, option, opt_str, arg, parser):
-        self.creds.set_kerberos_state(parse_kerberos_arg(arg))
+        self.creds.set_kerberos_state(parse_kerberos_arg(arg, opt_str))
 
     def _set_simple_bind_dn(self, option, opt_str, arg, parser):
         self.creds.set_bind_dn(arg)
@@ -229,7 +230,7 @@ class CredentialsOptionsDouble(CredentialsOptions):
         self.no_pass2 = False
 
     def _set_kerberos2(self, option, opt_str, arg, parser):
-        self.creds2.set_kerberos_state(parse_kerberos_arg(arg))
+        self.creds2.set_kerberos_state(parse_kerberos_arg(arg, opt_str))
 
     def _set_simple_bind_dn2(self, option, opt_str, arg, parser):
         self.creds2.set_bind_dn(arg)
