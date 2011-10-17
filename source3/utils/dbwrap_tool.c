@@ -68,6 +68,65 @@ static int dbwrap_tool_fetch_uint32(struct db_context *db,
 	}
 }
 
+static int dbwrap_tool_fetch_string(struct db_context *db,
+				    const char *keyname,
+				    const char *data)
+{
+	TDB_DATA tdbdata;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	int ret;
+
+	status = dbwrap_fetch_bystring(db, tmp_ctx, keyname, &tdbdata);
+	if (NT_STATUS_IS_OK(status)) {
+		d_printf("%*.*s\n", (int)tdbdata.dsize-1, (int)tdbdata.dsize-1,
+			 tdbdata.dptr);
+		ret = 0;
+	} else {
+		d_fprintf(stderr, "ERROR: could not fetch string key '%s': "
+			  "%s\n", nt_errstr(status), keyname);
+		ret = -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+static int dbwrap_tool_fetch_hex(struct db_context *db,
+				 const char *keyname,
+				 const char *data)
+{
+	TDB_DATA tdbdata;
+	DATA_BLOB datablob;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	char *hex_string;
+	int ret;
+
+	status = dbwrap_fetch_bystring(db, tmp_ctx, keyname, &tdbdata);
+	if (NT_STATUS_IS_OK(status)) {
+	        datablob.data = tdbdata.dptr;
+		datablob.length = tdbdata.dsize;
+
+		hex_string = data_blob_hex_string_upper(tmp_ctx, &datablob);
+		if (hex_string == NULL) {
+			d_fprintf(stderr, "ERROR: could not get hex string "
+				  "from data blob\n");
+			ret = -1;
+		} else {
+			d_printf("%s\n", hex_string);
+			ret =  0;
+		}
+	} else {
+		d_fprintf(stderr, "ERROR: could not fetch hex key '%s': "
+			  "%s\n", nt_errstr(status), keyname);
+		ret = -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 static int dbwrap_tool_store_int32(struct db_context *db,
 				   const char *keyname,
 				   const char *data)
@@ -249,6 +308,8 @@ struct dbwrap_op_dispatch_table {
 struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_FETCH,  TYPE_INT32,  dbwrap_tool_fetch_int32 },
 	{ OP_FETCH,  TYPE_UINT32, dbwrap_tool_fetch_uint32 },
+	{ OP_FETCH,  TYPE_STRING, dbwrap_tool_fetch_string },
+	{ OP_FETCH,  TYPE_HEX,    dbwrap_tool_fetch_hex },
 	{ OP_STORE,  TYPE_INT32,  dbwrap_tool_store_int32 },
 	{ OP_STORE,  TYPE_UINT32, dbwrap_tool_store_uint32 },
 	{ OP_STORE,  TYPE_STRING, dbwrap_tool_store_string },
