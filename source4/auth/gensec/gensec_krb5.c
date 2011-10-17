@@ -232,16 +232,9 @@ static NTSTATUS gensec_fake_gssapi_krb5_server_start(struct gensec_security *gen
 
 static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_security, bool gssapi)
 {
-	struct gensec_krb5_state *gensec_krb5_state;
-	krb5_error_code ret;
-	NTSTATUS nt_status;
-	struct ccache_container *ccache_container;
 	const char *hostname;
-	const char *error_string;
-	const char *principal;
-	krb5_data in_data;
-	struct tevent_context *previous_ev;
-
+	struct gensec_krb5_state *gensec_krb5_state;
+	NTSTATUS nt_status;
 	hostname = gensec_get_target_hostname(gensec_security);
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
@@ -276,8 +269,24 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 			gensec_krb5_state->ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
 		}
 	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_security, bool gssapi)
+{
+	struct gensec_krb5_state *gensec_krb5_state;
+	krb5_error_code ret;
+	struct ccache_container *ccache_container;
+	const char *error_string;
+	const char *principal;
+	const char *hostname;
+	krb5_data in_data;
+	struct tevent_context *previous_ev;
+
+	gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 
 	principal = gensec_get_target_principal(gensec_security);
+	hostname = gensec_get_target_hostname(gensec_security);
 
 	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), 
 				         gensec_security->event_ctx, 
@@ -425,6 +434,11 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 	{
 		DATA_BLOB unwrapped_out;
 		
+		nt_status = gensec_krb5_common_client_creds(gensec_security, gensec_krb5_state->gssapi);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
 		if (gensec_krb5_state->gssapi) {
 			unwrapped_out = data_blob_talloc(out_mem_ctx, gensec_krb5_state->enc_ticket.data, gensec_krb5_state->enc_ticket.length);
 			

@@ -267,18 +267,63 @@ static NTSTATUS gensec_gssapi_sasl_server_start(struct gensec_security *gensec_s
 	return nt_status;
 }
 
+static NTSTATUS gensec_gssapi_client_creds(struct gensec_security *gensec_security)
+{
+	struct gensec_gssapi_state *gensec_gssapi_state;
+	struct gssapi_creds_container *gcc;
+	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
+	const char *error_string;
+	int ret;
+
+	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
+
+	/* Only run this the first time the update() call is made */
+	if (gensec_gssapi_state->client_cred) {
+		return NT_STATUS_OK;
+	}
+
+	ret = cli_credentials_get_client_gss_creds(creds,
+						       gensec_security->event_ctx,
+						       gensec_security->settings->lp_ctx, &gcc, &error_string);
+	switch (ret) {
+	case 0:
+		break;
+	case EINVAL:
+		DEBUG(3, ("Cannot obtain client GSS credentials we need to contact %s : %s\n", gensec_gssapi_state->target_principal, error_string));
+		return NT_STATUS_INVALID_PARAMETER;
+	case KRB5KDC_ERR_PREAUTH_FAILED:
+	case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+		DEBUG(1, ("Wrong username or password: %s\n", error_string));
+		return NT_STATUS_LOGON_FAILURE;
+	case KRB5_KDC_UNREACH:
+		DEBUG(3, ("Cannot reach a KDC we require to contact %s : %s\n", gensec_gssapi_state->target_principal, error_string));
+		return NT_STATUS_NO_LOGON_SERVERS;
+	case KRB5_CC_NOTFOUND:
+	case KRB5_CC_END:
+		DEBUG(2, ("Error obtaining ticket we require to contact %s: (possibly due to clock skew between us and the KDC) %s\n", gensec_gssapi_state->target_principal, error_string));
+		return NT_STATUS_TIME_DIFFERENCE_AT_DC;
+	default:
+		DEBUG(1, ("Aquiring initiator credentials failed: %s\n", error_string));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	gensec_gssapi_state->client_cred = gcc;
+	if (!talloc_reference(gensec_gssapi_state, gcc)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_security)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
-	krb5_error_code ret;
 	NTSTATUS nt_status;
 	gss_buffer_desc name_token;
 	gss_OID name_type;
 	OM_uint32 maj_stat, min_stat;
 	const char *hostname = gensec_get_target_hostname(gensec_security);
-	struct gssapi_creds_container *gcc;
-	const char *error_string;
 
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
@@ -329,33 +374,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ret = cli_credentials_get_client_gss_creds(creds, 
-						   gensec_security->event_ctx, 
-						   gensec_security->settings->lp_ctx, &gcc, &error_string);
-	switch (ret) {
-	case 0:
-		break;
-	case KRB5KDC_ERR_PREAUTH_FAILED:
-	case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
-		DEBUG(1, ("Wrong username or password: %s\n", error_string));
-		return NT_STATUS_LOGON_FAILURE;
-	case KRB5_KDC_UNREACH:
-		DEBUG(3, ("Cannot reach a KDC we require to contact %s : %s\n", gensec_gssapi_state->target_principal, error_string));
-		return NT_STATUS_NO_LOGON_SERVERS;
-	case KRB5_CC_NOTFOUND:
-	case KRB5_CC_END:
-		DEBUG(2, ("Error obtaining ticket we require to contact %s: (possibly due to clock skew between us and the KDC) %s\n", gensec_gssapi_state->target_principal, error_string));
-		return NT_STATUS_TIME_DIFFERENCE_AT_DC;
-	default:
-		DEBUG(1, ("Aquiring initiator credentials failed: %s\n", error_string));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	gensec_gssapi_state->client_cred = gcc;
-	if (!talloc_reference(gensec_gssapi_state, gcc)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
 	return NT_STATUS_OK;
 }
 
@@ -426,6 +444,12 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		{
 			struct gsskrb5_send_to_kdc send_to_kdc;
 			krb5_error_code ret;
+
+			nt_status = gensec_gssapi_client_creds(gensec_security);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
+
 			send_to_kdc.func = smb_krb5_send_and_recv_func;
 			send_to_kdc.ptr = gensec_security->event_ctx;
 
