@@ -23,7 +23,7 @@
 
 struct smbldap_state;
 
-#include "smb_ldap.h"
+#include "include/smb_ldap.h"
 
 #ifdef HAVE_LDAP
 
