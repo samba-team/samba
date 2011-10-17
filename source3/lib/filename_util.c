@@ -47,7 +47,7 @@ NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx,
 
 /**
  * There are actually legitimate callers of this such as functions that
- * enumerate streams using the SMB_VFS_STREAMINFO interface and then want to
+ * enumerate streams using the vfs_streaminfo interface and then want to
  * operate on each stream.
  */
 NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,

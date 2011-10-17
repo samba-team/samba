@@ -1125,6 +1125,21 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 	return NT_STATUS_OK;
 }
 
+/**
+ * Initialize num_streams and streams, then call VFS op streaminfo
+ */
+NTSTATUS vfs_streaminfo(connection_struct *conn,
+			struct files_struct *fsp,
+			const char *fname,
+			TALLOC_CTX *mem_ctx,
+			unsigned int *num_streams,
+			struct stream_struct **streams)
+{
+	*num_streams = 0;
+	*streams = NULL;
+	return SMB_VFS_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams);
+}
+
 /*
   generate a file_id from a stat structure
  */

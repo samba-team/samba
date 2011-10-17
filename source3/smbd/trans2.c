@@ -4683,9 +4683,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 
-			status = SMB_VFS_STREAMINFO(
-				conn, fsp, smb_fname->base_name, talloc_tos(),
-				&num_streams, &streams);
+			status = vfs_streaminfo(conn, fsp, smb_fname->base_name,
+						talloc_tos(), &num_streams, &streams);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(10, ("could not get stream info: %s\n",
