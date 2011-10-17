@@ -37,6 +37,7 @@
 #include <ldap.h>
 
 #include "smbldap.h"
+#include "passdb/pdb_ldap_schema.h"
 
 static char *idmap_fetch_secret(const char *backend,
 				const char *domain, const char *identity)

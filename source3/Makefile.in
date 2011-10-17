@@ -2842,10 +2842,11 @@ bin/sam.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SAM_OBJ)
 	@$(SHLD_MODULE) $(AUTH_SAM_OBJ)
 
 bin/ldapsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ldap.o passdb/pdb_nds.o \
-			passdb/pdb_ipa.o passdb/pdb_ldap_util.o
+			passdb/pdb_ipa.o passdb/pdb_ldap_util.o \
+	passdb/pdb_ldap_schema.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) passdb/pdb_ldap.o passdb/pdb_nds.o passdb/pdb_ipa.o \
-			passdb/pdb_ldap_util.o $(LDAP_LIBS)
+			passdb/pdb_ldap_util.o passdb/pdb_ldap_schema.o $(LDAP_LIBS)
 
 bin/ads.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ads.o
 	@echo "Building plugin $@"

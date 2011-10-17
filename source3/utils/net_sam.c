@@ -27,6 +27,7 @@
 #include "lib/winbind_util.h"
 #include "passdb.h"
 #include "passdb/pdb_ldap_util.h"
+#include "passdb/pdb_ldap_schema.h"
 #include "lib/privileges.h"
 
 /*
