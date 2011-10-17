@@ -714,7 +714,7 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
 
 bld.SAMBA3_LIBRARY('pdb',
                    source=PASSDB_SRC,
-                   deps='SECRETS3 SMBLDAP GROUPDB wbclient LIBCLI_AUTH flag_mapping',
+                   deps='SECRETS3 GROUPDB wbclient LIBCLI_AUTH flag_mapping',
                    private_library=True,
                    public_headers='''
 				include/passdb.h
@@ -837,15 +837,17 @@ bld.SAMBA3_SUBSYSTEM('SECRETS3',
                    deps='NDR_SECRETS param samba3core pdb',
                    vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('SMBLDAP',
+bld.SAMBA3_LIBRARY('smbldap',
                     source=SMBLDAP_SRC,
-                    deps='ldap lber',
+                    deps='ldap lber samba-util param',
                     vars=locals(),
-                    enabled=bld.env.HAVE_LDAP)
+                    enabled=bld.env.HAVE_LDAP,
+                    private_library=True,
+                    public_headers='include/smbldap.h include/smb_ldap.h')
 
 bld.SAMBA3_LIBRARY('ads',
                    source=LIBADS_SRC,
-                   deps='cli-ldap-common KRB5_WRAP ldap lber KRBCLIENT param LIBNMB libsmb DCUTIL',
+                   deps='cli-ldap-common KRB5_WRAP ldap lber KRBCLIENT param LIBNMB libsmb DCUTIL smbldap',
                    private_library=True,
                    vars=locals())
 

@@ -16,6 +16,7 @@ bld.SAMBA3_MODULE('pdb_tdbsam',
 
 bld.SAMBA3_MODULE('pdb_ldap',
                  subsystem='pdb',
+                 deps='smbldap',
                  source=PDB_LDAP_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_ldap'),
