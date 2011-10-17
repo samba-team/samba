@@ -22,6 +22,7 @@
 from samba.netcmd import SuperCommand
 from samba.netcmd.dbcheck import cmd_dbcheck
 from samba.netcmd.delegation import cmd_delegation
+from samba.netcmd.dns import cmd_dns
 from samba.netcmd.domain import cmd_domain
 from samba.netcmd.drs import cmd_drs
 from samba.netcmd.dsacl import cmd_dsacl
@@ -44,6 +45,7 @@ class cmd_sambatool(SuperCommand):
     subcommands = {}
     subcommands["dbcheck"] =  cmd_dbcheck()
     subcommands["delegation"] = cmd_delegation()
+    subcommands["dns"] = cmd_dns()
     subcommands["domain"] = cmd_domain()
     subcommands["drs"] = cmd_drs()
     subcommands["dsacl"] = cmd_dsacl()
