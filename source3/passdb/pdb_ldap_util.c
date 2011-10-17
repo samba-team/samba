@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS mplementation.
    LDAP protocol helper functions for SAMBA
    Copyright (C) Jean François Micouleau	1998
@@ -6,20 +6,20 @@
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
    Copyright (C) Stefan (metze) Metzmacher	2002-2003
-    
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -27,11 +27,11 @@
 #include "passdb.h"
 
 /**********************************************************************
- Add the account-policies below the sambaDomain object to LDAP, 
+ Add the account-policies below the sambaDomain object to LDAP,
 *********************************************************************/
 
 static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state,
-					 	const char *domain_name)
+						const char *domain_name)
 {
 	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
 	int i, rc;
@@ -307,24 +307,24 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 
 		status = add_new_domain_info(ldap_state, domain_name);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("smbldap_search_domain_info: Adding domain info for %s failed with %s\n", 
+			DEBUG(0, ("smbldap_search_domain_info: Adding domain info for %s failed with %s\n",
 				domain_name, nt_errstr(status)));
 			goto failed;
 		}
 
 		status = add_new_domain_account_policies(ldap_state, domain_name);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("smbldap_search_domain_info: Adding domain account policies for %s failed with %s\n", 
+			DEBUG(0, ("smbldap_search_domain_info: Adding domain account policies for %s failed with %s\n",
 				domain_name, nt_errstr(status)));
 			goto failed;
 		}
 
 		return smbldap_search_domain_info(ldap_state, result, domain_name, False);
 
-	} 
-	
+	}
+
 	if (count > 1 ) {
-	
+
 		DEBUG(0, ("smbldap_search_domain_info: Got too many (%d) domain info entries for domain %s\n",
 			  count, domain_name));
 		goto failed;

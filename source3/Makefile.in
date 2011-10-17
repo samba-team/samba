@@ -271,7 +271,7 @@ TDB_LIB_OBJ = lib/util_tdb.o ../lib/util/util_tdb.o \
 
 TDB_VALIDATE_OBJ = lib/tdb_validate.o
 
-SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
+SMBLDAP_OBJ = @SMBLDAP@
 
 VERSION_OBJ = lib/version.o
 
@@ -2842,10 +2842,10 @@ bin/sam.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SAM_OBJ)
 	@$(SHLD_MODULE) $(AUTH_SAM_OBJ)
 
 bin/ldapsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ldap.o passdb/pdb_nds.o \
-			passdb/pdb_ipa.o
+			passdb/pdb_ipa.o passdb/pdb_ldap_util.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) passdb/pdb_ldap.o passdb/pdb_nds.o passdb/pdb_ipa.o \
-			$(LDAP_LIBS)
+			passdb/pdb_ldap_util.o $(LDAP_LIBS)
 
 bin/ads.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_ads.o
 	@echo "Building plugin $@"

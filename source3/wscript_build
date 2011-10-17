@@ -11,7 +11,7 @@ TDB_LIB_SRC = '''
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
 
-SMBLDAP_SRC = '''lib/smbldap.c lib/smbldap_util.c'''
+SMBLDAP_SRC = '''lib/smbldap.c'''
 
 VERSION_SRC = '''lib/version.c'''
 

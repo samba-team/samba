@@ -3433,8 +3433,6 @@ AC_MSG_RESULT($with_ldap_support)
 
 SMBLDAP=""
 AC_SUBST(SMBLDAP)
-SMBLDAPUTIL=""
-AC_SUBST(SMBLDAPUTIL)
 
 if test x"$with_ldap_support" != x"no"; then
 
@@ -3545,7 +3543,6 @@ if test x"$with_ldap_support" != x"no"; then
     default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
     default_shared_modules="$default_shared_modules";
     SMBLDAP="lib/smbldap.o"
-    SMBLDAPUTIL="lib/smbldap_util.o"
     with_ldap_support=yes
     AC_MSG_CHECKING(whether LDAP support is used)
     AC_MSG_RESULT(yes)
@@ -6856,7 +6853,7 @@ if test x"$MODULE_DEFAULT_vfs_notify_fam" = xSTATIC -o \
 	AC_SUBST(SMBD_FAM_LIBS)
 fi
 
-SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o passdb/pdb_ipa.o,
+SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o passdb/pdb_ipa.o passdb/pdb_ldap_util.o,
 		   "bin/ldapsam.$SHLIBEXT", PDB,
 		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_ads, passdb/pdb_ads.o \$(TLDAP_OBJ), "bin/ads.$SHLIBEXT", PDB)
