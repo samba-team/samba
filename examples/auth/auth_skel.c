@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -26,8 +27,8 @@
 static NTSTATUS check_skel_security(const struct auth_context *auth_context,
 					 void *my_private_data, 
 					 TALLOC_CTX *mem_ctx,
-					 const auth_usersupplied_info *user_info, 
-					 auth_serversupplied_info **server_info)
+					 const struct auth_usersupplied_info *user_info,
+					 struct auth_serversupplied_info **server_info)
 {
 	if (!user_info || !auth_context) {
 		return NT_STATUS_LOGON_FAILURE;
@@ -43,12 +44,26 @@ static NTSTATUS check_skel_security(const struct auth_context *auth_context,
 /* module initialisation */
 NTSTATUS auth_init_skel(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
-	if (!make_auth_methods(auth_context, auth_method)) {
+	struct auth_methods *result;
+
+	result = talloc_zero(auth_context, struct auth_methods);
+	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	result->name = "skel";
+	result->auth = check_skel_security;
 
-	(*auth_method)->auth = check_skel_security;
-	(*auth_method)->name = "skel";
+	if (param && *param) {
+		/* we load the 'fallback' module - if skel isn't here, call this
+		   module */
+		auth_methods *priv;
+		if (!load_auth_module(auth_context, param, &priv)) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		result->private_data = (void *)priv;
+	}
+
+        *auth_method = result;
 	return NT_STATUS_OK;
 }
 
