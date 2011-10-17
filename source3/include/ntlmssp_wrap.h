@@ -28,7 +28,7 @@ struct auth_ntlmssp_state {
 	struct auth_context *auth_context;
 	struct gensec_security *gensec_security;
 
-	/* used by both client and server implementation */
+	/* used only by the client implementation */
 	struct ntlmssp_state *ntlmssp_state;
 };
 
