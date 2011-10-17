@@ -142,6 +142,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
 
 static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, 
 				      TALLOC_CTX *out_mem_ctx, 
+				      struct tevent_context *ev,
 				      const DATA_BLOB input, DATA_BLOB *out)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =

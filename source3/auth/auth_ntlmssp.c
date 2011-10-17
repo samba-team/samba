@@ -67,6 +67,7 @@ static NTSTATUS gensec_ntlmssp3_server_session_info(struct gensec_security *gens
 
 static NTSTATUS gensec_ntlmssp3_server_update(struct gensec_security *gensec_security,
 					      TALLOC_CTX *out_mem_ctx,
+					      struct tevent_context *ev,
 					      const DATA_BLOB request,
 					      DATA_BLOB *reply)
 {
@@ -268,7 +269,7 @@ NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		nt_status = gensec_server_start(ans, NULL, gensec_settings,
+		nt_status = gensec_server_start(ans, gensec_settings,
 						NULL, &ans->gensec_security);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {

@@ -132,6 +132,7 @@ static void bind_auth_next_step(struct composite_context *c)
 	 */
 
 	c->status = gensec_update(sec->generic_state, state,
+				  state->pipe->conn->event_ctx,
 				  sec->auth_info->credentials,
 				  &state->credentials);
 	data_blob_free(&sec->auth_info->credentials);
@@ -255,7 +256,6 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	sec = &p->conn->security_state;
 
 	c->status = gensec_client_start(p, &sec->generic_state,
-					p->conn->event_ctx,
 					gensec_settings);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n",
@@ -334,6 +334,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	 */
 
 	c->status = gensec_update(sec->generic_state, state,
+				  p->conn->event_ctx,
 				  sec->auth_info->credentials,
 				  &state->credentials);
 	if (!NT_STATUS_IS_OK(c->status) &&

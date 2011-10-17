@@ -113,7 +113,7 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 	}
 
 	status = gensec_update(dce_conn->auth_state.gensec_security,
-			       call,
+			       call, call->event_ctx,
 			       dce_conn->auth_state.auth_info->credentials, 
 			       &dce_conn->auth_state.auth_info->credentials);
 	
@@ -171,7 +171,7 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 
 	/* Pass the extra data we got from the client down to gensec for processing */
 	status = gensec_update(dce_conn->auth_state.gensec_security,
-			       call,
+			       call, call->event_ctx,
 			       dce_conn->auth_state.auth_info->credentials, 
 			       &dce_conn->auth_state.auth_info->credentials);
 	if (NT_STATUS_IS_OK(status)) {
@@ -250,7 +250,7 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 	}
 
 	status = gensec_update(dce_conn->auth_state.gensec_security,
-			       call,
+			       call, call->event_ctx,
 			       dce_conn->auth_state.auth_info->credentials, 
 			       &dce_conn->auth_state.auth_info->credentials);
 

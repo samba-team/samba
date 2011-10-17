@@ -92,6 +92,7 @@ struct gensec_security_ops {
 	NTSTATUS (*magic)(struct gensec_security *gensec_security,
 			  const DATA_BLOB *first_packet);
 	NTSTATUS (*update)(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
+			   struct tevent_context *ev,
 			   const DATA_BLOB in, DATA_BLOB *out);
 	NTSTATUS (*seal_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
 				uint8_t *data, size_t length,
@@ -161,7 +162,6 @@ struct gensec_security {
 	bool subcontext;
 	uint32_t want_features;
 	uint8_t dcerpc_auth_level;
-	struct tevent_context *event_ctx;
 	struct tsocket_address *local_addr, *remote_addr;
 	struct gensec_settings *settings;
 
@@ -212,13 +212,13 @@ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 				 struct gensec_security **gensec_security);
 NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 			     struct gensec_security **gensec_security,
-			     struct tevent_context *ev,
 			     struct gensec_settings *settings);
 NTSTATUS gensec_start_mech_by_ops(struct gensec_security *gensec_security,
 				  const struct gensec_security_ops *ops);
 NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security,
 						 const char **sasl_names);
 NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
+		       struct tevent_context *ev,
 		       const DATA_BLOB in, DATA_BLOB *out);
 struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
@@ -267,7 +267,6 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 				       uint8_t auth_type, uint8_t auth_level);
 const char *gensec_get_name_by_authtype(struct gensec_security *gensec_security, uint8_t authtype);
 NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
-			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
 			     struct auth4_context *auth_context,
 			     struct gensec_security **gensec_security);

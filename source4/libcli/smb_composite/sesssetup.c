@@ -181,7 +181,7 @@ static void request_handler(struct smbcli_request *req)
 			 * host/attacker might avoid mutal authentication
 			 * requirements */
 			
-			state->gensec_status = gensec_update(session->gensec, state,
+			state->gensec_status = gensec_update(session->gensec, state, c->event_ctx,
 							 state->setup.spnego.out.secblob,
 							 &state->setup.spnego.in.secblob);
 			c->status = state->gensec_status;
@@ -443,7 +443,7 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 
 	smbcli_temp_set_signing(session->transport);
 
-	status = gensec_client_start(session, &session->gensec, c->event_ctx,
+	status = gensec_client_start(session, &session->gensec,
 				     io->in.gensec_settings);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
@@ -500,10 +500,12 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 
 	if ((const void *)chosen_oid == (const void *)GENSEC_OID_SPNEGO) {
 		status = gensec_update(session->gensec, state,
+				       c->event_ctx,
 				       session->transport->negotiate.secblob,
 				       &state->setup.spnego.in.secblob);
 	} else {
 		status = gensec_update(session->gensec, state,
+				       c->event_ctx,
 				       data_blob(NULL, 0),
 				       &state->setup.spnego.in.secblob);
 

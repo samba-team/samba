@@ -197,12 +197,13 @@ _PUBLIC_ NTSTATUS gensec_session_info(struct gensec_security *gensec_security,
  */
 
 _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
-		       const DATA_BLOB in, DATA_BLOB *out)
+				struct tevent_context *ev,
+				const DATA_BLOB in, DATA_BLOB *out)
 {
 	NTSTATUS status;
 
 	status = gensec_security->ops->update(gensec_security, out_mem_ctx,
-					      in, out);
+					      ev, in, out);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -305,7 +306,7 @@ static void gensec_update_async_trigger(struct tevent_context *ctx,
 		tevent_req_data(req, struct gensec_update_state);
 	NTSTATUS status;
 
-	status = gensec_update(state->gensec_security, state,
+	status = gensec_update(state->gensec_security, state, ctx,
 			       state->in, &state->out);
 	if (tevent_req_nterror(req, status)) {
 		return;

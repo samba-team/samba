@@ -506,7 +506,6 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
   @ gensec_security return
 */
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
-			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
 			     struct auth4_context *auth_context,
 			     struct gensec_security **gensec_security)
@@ -514,7 +513,6 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security) = talloc_zero(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
-	(*gensec_security)->event_ctx = ev;
 	SMB_ASSERT(settings->lp_ctx != NULL);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, settings);
 
@@ -548,7 +546,6 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->subcontext = true;
 	(*gensec_security)->want_features = parent->want_features;
 	(*gensec_security)->dcerpc_auth_level = parent->dcerpc_auth_level;
-	(*gensec_security)->event_ctx = parent->event_ctx;
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
@@ -564,7 +561,6 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 			     struct gensec_security **gensec_security,
-			     struct tevent_context *ev,
 			     struct gensec_settings *settings)
 {
 	NTSTATUS status;
@@ -574,7 +570,7 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = gensec_start(mem_ctx, ev, settings, NULL, gensec_security);
+	status = gensec_start(mem_ctx, settings, NULL, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -592,7 +588,6 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
   @note  The mem_ctx is only a parent and may be NULL.
 */
 _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
 				      struct gensec_settings *settings,
 				      struct auth4_context *auth_context,
 				      struct gensec_security **gensec_security)
@@ -604,7 +599,7 @@ _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = gensec_start(mem_ctx, ev, settings, auth_context, gensec_security);
+	status = gensec_start(mem_ctx, settings, auth_context, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

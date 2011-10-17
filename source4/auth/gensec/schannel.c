@@ -52,7 +52,8 @@ static NTSTATUS schannel_session_key(struct gensec_security *gensec_security,
 }
 
 static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
-				       const DATA_BLOB in, DATA_BLOB *out)
+				struct tevent_context *ev,
+				const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct schannel_state *state = (struct schannel_state *)gensec_security->private_data;
 	NTSTATUS status;

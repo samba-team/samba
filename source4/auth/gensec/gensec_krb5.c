@@ -272,7 +272,9 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_security, bool gssapi)
+static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_security,
+						struct tevent_context *ev,
+						bool gssapi)
 {
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret;
@@ -289,7 +291,7 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 	hostname = gensec_get_target_hostname(gensec_security);
 
 	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), 
-				         gensec_security->event_ctx, 
+				         ev,
 					 gensec_security->settings->lp_ctx, &ccache_container, &error_string);
 	switch (ret) {
 	case 0:
@@ -311,7 +313,7 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 	in_data.length = 0;
 	
 	/* Do this every time, in case we have weird recursive issues here */
-	ret = smb_krb5_context_set_event_ctx(gensec_krb5_state->smb_krb5_context, gensec_security->event_ctx, &previous_ev);
+	ret = smb_krb5_context_set_event_ctx(gensec_krb5_state->smb_krb5_context, ev, &previous_ev);
 	if (ret != 0) {
 		DEBUG(1, ("gensec_krb5_start: Setting event context failed\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -340,7 +342,7 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 				  &gensec_krb5_state->enc_ticket);
 	}
 
-	smb_krb5_context_remove_event_ctx(gensec_krb5_state->smb_krb5_context, previous_ev, gensec_security->event_ctx);
+	smb_krb5_context_remove_event_ctx(gensec_krb5_state->smb_krb5_context, previous_ev, ev);
 
 	switch (ret) {
 	case 0:
@@ -423,6 +425,7 @@ static NTSTATUS gensec_fake_gssapi_krb5_magic(struct gensec_security *gensec_sec
 
 static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, 
 				   TALLOC_CTX *out_mem_ctx, 
+				   struct tevent_context *ev,
 				   const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
@@ -434,7 +437,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 	{
 		DATA_BLOB unwrapped_out;
 		
-		nt_status = gensec_krb5_common_client_creds(gensec_security, gensec_krb5_state->gssapi);
+		nt_status = gensec_krb5_common_client_creds(gensec_security, ev, gensec_krb5_state->gssapi);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}

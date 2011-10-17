@@ -449,7 +449,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case NTLMSSP_CLIENT_1:
 			/* setup the client side */
 
-			nt_status = gensec_client_start(NULL, &state->gensec_state, ev, 
+			nt_status = gensec_client_start(NULL, &state->gensec_state,
 							lpcfg_gensec_settings(NULL, lp_ctx));
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				talloc_free(mem_ctx);
@@ -481,7 +481,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 				exit(1);
 			}
 			
-			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, 
+			if (!NT_STATUS_IS_OK(gensec_server_start(state,
 								 lpcfg_gensec_settings(state, lp_ctx),
 								 auth_context, &state->gensec_state))) {
 				talloc_free(mem_ctx);
@@ -632,7 +632,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		return;
 	}
 
-	nt_status = gensec_update(state->gensec_state, mem_ctx, in, &out);
+	nt_status = gensec_update(state->gensec_state, mem_ctx, ev, in, &out);
 	
 	/* don't leak 'bad password'/'no such user' info to the network client */
 	nt_status = nt_status_squash(nt_status);

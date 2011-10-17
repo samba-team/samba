@@ -166,7 +166,7 @@ NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
 {
 	NTSTATUS status;
 	if (ans->gensec_security) {
-		return gensec_update(ans->gensec_security, mem_ctx, request, reply);
+		return gensec_update(ans->gensec_security, mem_ctx, NULL, request, reply);
 	}
 	status = ntlmssp_update(ans->ntlmssp_state, request, reply);
 	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {

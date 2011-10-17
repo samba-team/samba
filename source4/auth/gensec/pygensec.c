@@ -82,7 +82,6 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 	struct gensec_settings *settings;
 	const char *kwnames[] = { "settings", NULL };
 	PyObject *py_settings;
-	struct tevent_context *ev;
 	struct gensec_security *gensec;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", discard_const_p(char *, kwnames), &py_settings))
@@ -120,13 +119,6 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 		}
 	}
 
-	ev = tevent_context_init(self->talloc_ctx);
-	if (ev == NULL) {
-		PyErr_NoMemory();
-		PyObject_Del(self);
-		return NULL;
-	}
-
 	status = gensec_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
@@ -134,7 +126,7 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 		return NULL;
 	}
 
-	status = gensec_client_start(self->talloc_ctx, &gensec, ev, settings);
+	status = gensec_client_start(self->talloc_ctx, &gensec, settings);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		PyObject_DEL(self);
@@ -154,7 +146,6 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 	const char *kwnames[] = { "settings", "auth_context", NULL };
 	PyObject *py_settings = Py_None;
 	PyObject *py_auth_context = Py_None;
-	struct tevent_context *ev;
 	struct gensec_security *gensec;
 	struct auth4_context *auth_context = NULL;
 
@@ -193,13 +184,6 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 		}
 	}
 
-	ev = tevent_context_init(self->talloc_ctx);
-	if (ev == NULL) {
-		PyErr_NoMemory();
-		PyObject_Del(self);
-		return NULL;
-	}
-
 	if (py_auth_context != Py_None) {
 		auth_context = pytalloc_get_type(py_auth_context, struct auth4_context);
 		if (!auth_context) {
@@ -217,7 +201,7 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 		return NULL;
 	}
 
-	status = gensec_server_start(self->talloc_ctx, ev, settings, auth_context, &gensec);
+	status = gensec_server_start(self->talloc_ctx, settings, auth_context, &gensec);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		PyObject_DEL(self);
@@ -368,6 +352,7 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	PyObject *ret, *py_in;
 	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	PyObject *finished_processing;
+	struct tevent_context *ev;
 
 	if (!PyArg_ParseTuple(args, "O", &py_in))
 		return NULL;
@@ -382,7 +367,14 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	in.data = (uint8_t *)PyString_AsString(py_in);
 	in.length = PyString_Size(py_in);
 
-	status = gensec_update(security, mem_ctx, in, &out);
+	ev = tevent_context_init(mem_ctx);
+	if (ev == NULL) {
+		PyErr_NoMemory();
+		PyObject_Del(self);
+		return NULL;
+	}
+
+	status = gensec_update(security, mem_ctx, ev, in, &out);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)
 	    && !NT_STATUS_IS_OK(status)) {

@@ -267,7 +267,8 @@ static NTSTATUS gensec_gssapi_sasl_server_start(struct gensec_security *gensec_s
 	return nt_status;
 }
 
-static NTSTATUS gensec_gssapi_client_creds(struct gensec_security *gensec_security)
+static NTSTATUS gensec_gssapi_client_creds(struct gensec_security *gensec_security,
+					   struct tevent_context *ev)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct gssapi_creds_container *gcc;
@@ -283,8 +284,8 @@ static NTSTATUS gensec_gssapi_client_creds(struct gensec_security *gensec_securi
 	}
 
 	ret = cli_credentials_get_client_gss_creds(creds,
-						       gensec_security->event_ctx,
-						       gensec_security->settings->lp_ctx, &gcc, &error_string);
+						   ev,
+						   gensec_security->settings->lp_ctx, &gcc, &error_string);
 	switch (ret) {
 	case 0:
 		break;
@@ -423,8 +424,9 @@ static NTSTATUS gensec_gssapi_magic(struct gensec_security *gensec_security,
  */
 
 static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security, 
-				   TALLOC_CTX *out_mem_ctx, 
-				   const DATA_BLOB in, DATA_BLOB *out) 
+				     TALLOC_CTX *out_mem_ctx,
+				     struct tevent_context *ev,
+				     const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
@@ -445,13 +447,13 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			struct gsskrb5_send_to_kdc send_to_kdc;
 			krb5_error_code ret;
 
-			nt_status = gensec_gssapi_client_creds(gensec_security);
+			nt_status = gensec_gssapi_client_creds(gensec_security, ev);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				return nt_status;
 			}
 
 			send_to_kdc.func = smb_krb5_send_and_recv_func;
-			send_to_kdc.ptr = gensec_security->event_ctx;
+			send_to_kdc.ptr = ev;
 
 			min_stat = gsskrb5_set_send_to_kdc(&send_to_kdc);
 			if (min_stat) {

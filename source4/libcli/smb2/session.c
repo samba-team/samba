@@ -53,7 +53,6 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 
 	/* prepare a gensec context for later use */
 	status = gensec_client_start(session, &session->gensec, 
-				     session->transport->socket->event.ctx, 
 				     settings);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(session);
@@ -203,6 +202,7 @@ struct tevent_req *smb2_session_setup_spnego_send(TALLOC_CTX *mem_ctx,
 	}
 
 	status = gensec_update(session->gensec, state,
+			       session->transport->socket->event.ctx,
 			       session->transport->negotiate.secblob,
 			       &state->io.in.secblob);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -242,6 +242,7 @@ static void smb2_session_setup_spnego_handler(struct smb2_request *subreq)
 	    (NT_STATUS_IS_OK(peer_status) &&
 	     NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED))) {
 		status = gensec_update(session->gensec, state,
+				       session->transport->socket->event.ctx,
 				       state->io.out.secblob,
 				       &state->io.in.secblob);
 		state->gensec_status = status;

@@ -85,7 +85,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 		return false;
 	}
 
-	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev, 
+	status = gensec_client_start(tctx, &gensec_client_context,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
@@ -97,7 +97,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
 	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
 
-	status = gensec_server_start(tctx, tctx->ev, 
+	status = gensec_server_start(tctx,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				     NULL, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
@@ -112,12 +112,12 @@ static bool test_PACVerify(struct torture_context *tctx,
 	
 	do {
 		/* Do a client-server update dance */
-		status = gensec_update(gensec_client_context, tmp_ctx, server_to_client, &client_to_server);
+		status = gensec_update(gensec_client_context, tmp_ctx, tctx->ev, server_to_client, &client_to_server);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 		}
 
-		status = gensec_update(gensec_server_context, tmp_ctx, client_to_server, &server_to_client);
+		status = gensec_update(gensec_server_context, tmp_ctx, tctx->ev, client_to_server, &server_to_client);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
 		}
@@ -424,7 +424,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	/* First, do a normal Kerberos connection */
 
-	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev,
+	status = gensec_client_start(tctx, &gensec_client_context,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
@@ -436,7 +436,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
 	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
 
-	status = gensec_server_start(tctx, tctx->ev,
+	status = gensec_server_start(tctx,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				     NULL, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
@@ -451,12 +451,12 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	do {
 		/* Do a client-server update dance */
-		status = gensec_update(gensec_client_context, tmp_ctx, server_to_client, &client_to_server);
+		status = gensec_update(gensec_client_context, tmp_ctx, tctx->ev, server_to_client, &client_to_server);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 		}
 
-		status = gensec_update(gensec_server_context, tmp_ctx, client_to_server, &server_to_client);
+		status = gensec_update(gensec_server_context, tmp_ctx, tctx->ev, client_to_server, &server_to_client);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
 		}
@@ -480,7 +480,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 			cli_credentials_get_principal(cmdline_credentials, tmp_ctx),
 			talloc_asprintf(tmp_ctx, "host/%s", test_machine_name));
 
-	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev,
+	status = gensec_client_start(tctx, &gensec_client_context,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
@@ -493,7 +493,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
 	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
 
-	status = gensec_server_start(tctx, tctx->ev,
+	status = gensec_server_start(tctx,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				     NULL, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
@@ -508,12 +508,12 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	do {
 		/* Do a client-server update dance */
-		status = gensec_update(gensec_client_context, tmp_ctx, server_to_client, &client_to_server);
+		status = gensec_update(gensec_client_context, tmp_ctx, tctx->ev, server_to_client, &client_to_server);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 		}
 
-		status = gensec_update(gensec_server_context, tmp_ctx, client_to_server, &server_to_client);
+		status = gensec_update(gensec_server_context, tmp_ctx, tctx->ev, client_to_server, &server_to_client);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
 			torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
 		}
