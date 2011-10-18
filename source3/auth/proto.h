@@ -69,9 +69,6 @@ NTSTATUS auth_netlogond_init(void);
 
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
-NTSTATUS auth_ntlmssp_session_info(TALLOC_CTX *mem_ctx,
-				   struct auth_ntlmssp_state *auth_ntlmssp_state,
-				   struct auth_session_info **session_info);
 NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
 			      struct auth_ntlmssp_state **auth_ntlmssp_state);
 NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state *auth_ntlmssp_state);

@@ -431,8 +431,9 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	struct smbd_server_connection *sconn = req->sconn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = auth_ntlmssp_session_info(talloc_tos(),
-					(*auth_ntlmssp_state), &session_info);
+		nt_status = gensec_session_info((*auth_ntlmssp_state)->gensec_security,
+						talloc_tos(),
+						&session_info);
 	}
 
 	reply_outbuf(req, 4, 0);

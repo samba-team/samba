@@ -31,17 +31,6 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/param/param.h"
 
-NTSTATUS auth_ntlmssp_session_info(TALLOC_CTX *mem_ctx,
-				   struct auth_ntlmssp_state *auth_ntlmssp_state,
-				   struct auth_session_info **session_info)
-{
-	NTSTATUS nt_status;
-	nt_status = gensec_session_info(auth_ntlmssp_state->gensec_security,
-					mem_ctx,
-					session_info);
-	return nt_status;
-}
-
 static NTSTATUS gensec_ntlmssp3_server_session_info(struct gensec_security *gensec_security,
 					TALLOC_CTX *mem_ctx,
 					struct auth_session_info **session_info)

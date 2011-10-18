@@ -23,6 +23,7 @@
 #include "../auth/ntlmssp/ntlmssp.h"
 #include "ntlmssp_wrap.h"
 #include "auth.h"
+#include "auth/gensec/gensec.h"
 
 NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 				   bool do_sign,
@@ -117,7 +118,7 @@ NTSTATUS ntlmssp_server_get_user_info(struct auth_ntlmssp_state *ctx,
 {
 	NTSTATUS status;
 
-	status = auth_ntlmssp_session_info(mem_ctx, ctx, session_info);
+	status = gensec_session_info(ctx->gensec_security, mem_ctx, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, (__location__ ": Failed to get authenticated user "
 			  "info: %s\n", nt_errstr(status)));
