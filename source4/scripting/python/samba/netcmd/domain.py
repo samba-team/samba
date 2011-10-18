@@ -530,7 +530,7 @@ class cmd_domain_passwordsettings(Command):
 class cmd_domain_samba3upgrade(Command):
     """Upgrade from Samba3 database to Samba4 AD database.
 
-    Specify either samba3 database directory (with --libdir) or
+    Specify either a directory with all samba3 databases and state files (with --dbdir) or
     samba3 testparm utility (with --testparm).
     """
 
@@ -542,7 +542,7 @@ class cmd_domain_samba3upgrade(Command):
     }
 
     takes_options = [
-        Option("--libdir", type="string", metavar="DIR",
+        Option("--dbdir", type="string", metavar="DIR",
                   help="Path to samba3 database directory"),
         Option("--testparm", type="string", metavar="PATH",
                   help="Path to samba3 testparm utility from the previous installation.  This allows the default paths of the previous installation to be followed"),
@@ -555,7 +555,7 @@ class cmd_domain_samba3upgrade(Command):
 
     takes_args = ["smbconf"]
 
-    def run(self, smbconf=None, targetdir=None, libdir=None, testparm=None, 
+    def run(self, smbconf=None, targetdir=None, dbdir=None, testparm=None, 
             quiet=None, use_xattrs=None, sambaopts=None, versionopts=None):
 
         if not os.path.exists(smbconf):
@@ -564,15 +564,15 @@ class cmd_domain_samba3upgrade(Command):
         if testparm and not os.path.exists(testparm):
             raise CommandError("Testparm utility %s does not exist" % testparm)
 
-        if libdir and not os.path.exists(libdir):
-            raise CommandError("Directory %s does not exist" % libdir)
+        if dbdir and not os.path.exists(dbdir):
+            raise CommandError("Directory %s does not exist" % dbdir)
 
-        if not libdir and not testparm:
-            raise CommandError("Please specify either libdir or testparm")
+        if not dbdir and not testparm:
+            raise CommandError("Please specify either dbdir or testparm")
 
-        if libdir and testparm:
-            self.outf.write("warning: both libdir and testparm specified, ignoring libdir.\n")
-            libdir = None
+        if dbdir and testparm:
+            self.outf.write("warning: both dbdir and testparm specified, ignoring dbdir.\n")
+            dbdir = None
 
         logger = self.get_logger()
         if quiet:
@@ -605,12 +605,12 @@ class cmd_domain_samba3upgrade(Command):
                             "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
             tmpfile.close()
 
-        # Set correct default values from libdir or testparm
+        # Set correct default values from dbdir or testparm
         paths = {}
-        if libdir:
-            paths["state directory"] = libdir
-            paths["private dir"] = libdir
-            paths["lock directory"] = libdir
+        if dbdir:
+            paths["state directory"] = dbdir
+            paths["private dir"] = dbdir
+            paths["lock directory"] = dbdir
         else:
             paths["state directory"] = get_testparm_var(testparm, smbconf, "state directory")
             paths["private dir"] = get_testparm_var(testparm, smbconf, "private dir")

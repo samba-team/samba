@@ -38,7 +38,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb1.conf <<EOF
    debug level = 0
 EOF
 
-testit "samba3-upgrade-member" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb1.conf --targetdir=$PREFIX/samba3-upgrade/s4_1 --libdir=$PREFIX/samba3-upgrade/samba3
+testit "samba3-upgrade-member" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb1.conf --targetdir=$PREFIX/samba3-upgrade/s4_1 --dbdir=$PREFIX/samba3-upgrade/samba3
 
 # Test 2 (s3 dc)
 cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
@@ -59,7 +59,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
    domain logons = yes
 EOF
 
-testit "samba3-upgrade-dc" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --libdir=$PREFIX/samba3-upgrade/samba3
+testit "samba3-upgrade-dc" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --dbdir=$PREFIX/samba3-upgrade/samba3
 
 #Run final test without a wins.dat
 rm -f $PREFIX/samba3-upgrade/samba3/wins.dat
