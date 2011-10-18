@@ -383,10 +383,6 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		}
 		req->smb_conn->negotiate.server_credentials = talloc_reparent(req, req->smb_conn, server_credentials);
 
-		gensec_set_target_service(gensec_security, "cifs");
-
-		gensec_set_credentials(gensec_security, server_credentials);
-
 		oid = GENSEC_OID_SPNEGO;
 		nt_status = gensec_start_mech_by_oid(gensec_security, oid);
 		
