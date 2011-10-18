@@ -34,32 +34,6 @@ struct auth_ntlmssp_state {
 	struct gensec_security *gensec_security;
 };
 
-NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *ans,
-				  TALLOC_CTX *sig_mem_ctx,
-				  const uint8_t *data,
-				  size_t length,
-				  const uint8_t *whole_pdu,
-				  size_t pdu_length,
-				  DATA_BLOB *sig);
-NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *ans,
-				   const uint8_t *data,
-				   size_t length,
-				   const uint8_t *whole_pdu,
-				   size_t pdu_length,
-				   const DATA_BLOB *sig);
-NTSTATUS auth_ntlmssp_seal_packet(struct auth_ntlmssp_state *ans,
-				  TALLOC_CTX *sig_mem_ctx,
-				  uint8_t *data,
-				  size_t length,
-				  const uint8_t *whole_pdu,
-				  size_t pdu_length,
-				  DATA_BLOB *sig);
-NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *ans,
-				    uint8_t *data,
-				    size_t length,
-				    const uint8_t *whole_pdu,
-				    size_t pdu_length,
-				    const DATA_BLOB *sig);
 NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
 				   const char *user);
 NTSTATUS auth_ntlmssp_set_domain(struct auth_ntlmssp_state *ans,

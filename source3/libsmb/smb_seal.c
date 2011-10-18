@@ -23,6 +23,7 @@
 #include "libsmb/libsmb.h"
 #include "ntlmssp_wrap.h"
 #include "libcli/auth/krb5_wrap.h"
+#include "auth/gensec/gensec.h"
 
 #undef malloc
 
@@ -99,7 +100,7 @@ static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 	/* Point at the signature. */
 	sig = data_blob_const(inbuf+8, NTLMSSP_SIG_SIZE);
 
-	status = auth_ntlmssp_unseal_packet(auth_ntlmssp_state,
+	status = gensec_unseal_packet(auth_ntlmssp_state->gensec_security,
 		(unsigned char *)inbuf + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'E' <enc> <ctx> */
 		data_len,
 		(unsigned char *)inbuf + 8 + NTLMSSP_SIG_SIZE,
@@ -163,8 +164,8 @@ static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 
 	ZERO_STRUCT(sig);
 
-	status = auth_ntlmssp_seal_packet(auth_ntlmssp_state,
-				     frame,
+	status = gensec_seal_packet(auth_ntlmssp_state->gensec_security,
+				    frame,
 		(unsigned char *)buf_out + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
 		data_len,
 		(unsigned char *)buf_out + 8 + NTLMSSP_SIG_SIZE,

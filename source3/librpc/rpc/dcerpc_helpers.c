@@ -28,6 +28,7 @@
 #include "ntlmssp_wrap.h"
 #include "librpc/crypto/gse.h"
 #include "librpc/crypto/spnego.h"
+#include "auth/gensec/gensec.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
@@ -395,14 +396,14 @@ static NTSTATUS add_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
 	switch (auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
-		status = auth_ntlmssp_seal_packet(auth_state,
-					     rpc_out->data,
-					     rpc_out->data
-						+ DCERPC_RESPONSE_LENGTH,
-					     data_and_pad_len,
-					     rpc_out->data,
-					     rpc_out->length,
-					     &auth_blob);
+		status = gensec_seal_packet(auth_state->gensec_security,
+					    rpc_out->data,
+					    rpc_out->data
+					    + DCERPC_RESPONSE_LENGTH,
+					    data_and_pad_len,
+					    rpc_out->data,
+					    rpc_out->length,
+					    &auth_blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -410,14 +411,14 @@ static NTSTATUS add_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* Data is signed. */
-		status = auth_ntlmssp_sign_packet(auth_state,
-					     rpc_out->data,
-					     rpc_out->data
-						+ DCERPC_RESPONSE_LENGTH,
-					     data_and_pad_len,
-					     rpc_out->data,
-					     rpc_out->length,
-					     &auth_blob);
+		status = gensec_sign_packet(auth_state->gensec_security,
+					    rpc_out->data,
+					    rpc_out->data
+					    + DCERPC_RESPONSE_LENGTH,
+					    data_and_pad_len,
+					    rpc_out->data,
+					    rpc_out->length,
+					    &auth_blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -454,21 +455,21 @@ static NTSTATUS get_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
 	switch (auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
-		return auth_ntlmssp_unseal_packet(auth_state,
-						  data->data,
-						  data->length,
-						  full_pkt->data,
-						  full_pkt->length,
-						  auth_token);
+		return gensec_unseal_packet(auth_state->gensec_security,
+					    data->data,
+					    data->length,
+					    full_pkt->data,
+					    full_pkt->length,
+					    auth_token);
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* Data is signed. */
-		return auth_ntlmssp_check_packet(auth_state,
-						 data->data,
-						 data->length,
-						 full_pkt->data,
-						 full_pkt->length,
-						 auth_token);
+		return gensec_check_packet(auth_state->gensec_security,
+					   data->data,
+					   data->length,
+					   full_pkt->data,
+					   full_pkt->length,
+					   auth_token);
 
 	default:
 		return NT_STATUS_INVALID_PARAMETER;

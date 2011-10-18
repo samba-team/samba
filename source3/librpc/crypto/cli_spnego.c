@@ -354,12 +354,12 @@ NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
 				sp_ctx->mech_ctx.gssapi_state,
 				data, signature);
 	case SPNEGO_NTLMSSP:
-		return auth_ntlmssp_sign_packet(
-					sp_ctx->mech_ctx.ntlmssp_state,
-					mem_ctx,
-					data->data, data->length,
-					full_data->data, full_data->length,
-					signature);
+		return gensec_sign_packet(
+			sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+			mem_ctx,
+			data->data, data->length,
+			full_data->data, full_data->length,
+			signature);
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -376,11 +376,11 @@ NTSTATUS spnego_sigcheck(TALLOC_CTX *mem_ctx,
 				    sp_ctx->mech_ctx.gssapi_state,
 				    data, signature);
 	case SPNEGO_NTLMSSP:
-		return auth_ntlmssp_check_packet(
-					sp_ctx->mech_ctx.ntlmssp_state,
-					data->data, data->length,
-					full_data->data, full_data->length,
-					signature);
+		return gensec_check_packet(
+			sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+			data->data, data->length,
+			full_data->data, full_data->length,
+			signature);
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -397,12 +397,12 @@ NTSTATUS spnego_seal(TALLOC_CTX *mem_ctx,
 				sp_ctx->mech_ctx.gssapi_state,
 				data, signature);
 	case SPNEGO_NTLMSSP:
-		return auth_ntlmssp_seal_packet(
-					sp_ctx->mech_ctx.ntlmssp_state,
-					mem_ctx,
-					data->data, data->length,
-					full_data->data, full_data->length,
-					signature);
+		return gensec_seal_packet(
+			sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+			mem_ctx,
+			data->data, data->length,
+			full_data->data, full_data->length,
+			signature);
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -419,11 +419,11 @@ NTSTATUS spnego_unseal(TALLOC_CTX *mem_ctx,
 				    sp_ctx->mech_ctx.gssapi_state,
 				    data, signature);
 	case SPNEGO_NTLMSSP:
-		return auth_ntlmssp_unseal_packet(
-					sp_ctx->mech_ctx.ntlmssp_state,
-					data->data, data->length,
-					full_data->data, full_data->length,
-					signature);
+		return gensec_unseal_packet(
+			sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+			data->data, data->length,
+			full_data->data, full_data->length,
+			signature);
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}

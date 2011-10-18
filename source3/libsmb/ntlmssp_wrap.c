@@ -26,52 +26,6 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/param/param.h"
 
-NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *ans,
-				  TALLOC_CTX *sig_mem_ctx,
-				  const uint8_t *data,
-				  size_t length,
-				  const uint8_t *whole_pdu,
-				  size_t pdu_length,
-				  DATA_BLOB *sig)
-{
-	return gensec_sign_packet(ans->gensec_security,
-				  sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
-}
-
-NTSTATUS auth_ntlmssp_check_packet(struct auth_ntlmssp_state *ans,
-				   const uint8_t *data,
-				   size_t length,
-				   const uint8_t *whole_pdu,
-				   size_t pdu_length,
-				   const DATA_BLOB *sig)
-{
-	return gensec_check_packet(ans->gensec_security,
-				   data, length, whole_pdu, pdu_length, sig);
-}
-
-NTSTATUS auth_ntlmssp_seal_packet(struct auth_ntlmssp_state *ans,
-				  TALLOC_CTX *sig_mem_ctx,
-				  uint8_t *data,
-				  size_t length,
-				  const uint8_t *whole_pdu,
-				  size_t pdu_length,
-				  DATA_BLOB *sig)
-{
-	return gensec_seal_packet(ans->gensec_security,
-				  sig_mem_ctx, data, length, whole_pdu, pdu_length, sig);
-}
-
-NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *ans,
-				    uint8_t *data,
-				    size_t length,
-				    const uint8_t *whole_pdu,
-				    size_t pdu_length,
-				    const DATA_BLOB *sig)
-{
-	return gensec_unseal_packet(ans->gensec_security,
-				    data, length, whole_pdu, pdu_length, sig);
-}
-
 NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
 				   const char *user)
 {
