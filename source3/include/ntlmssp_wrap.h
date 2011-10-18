@@ -40,9 +40,6 @@ NTSTATUS auth_ntlmssp_set_domain(struct auth_ntlmssp_state *ans,
 				 const char *domain);
 NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
 				   const char *password);
-DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans, 
-				       TALLOC_CTX *mem_ctx);
-
 NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx,
 				     struct auth_ntlmssp_state **_ans);
 NTSTATUS auth_ntlmssp_client_start(struct auth_ntlmssp_state *ans);

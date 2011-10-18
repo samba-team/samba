@@ -47,17 +47,6 @@ NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
 	return NT_STATUS_OK;
 }
 
-DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans, TALLOC_CTX *mem_ctx)
-{
-	DATA_BLOB session_key;
-	NTSTATUS status = gensec_session_key(ans->gensec_security, mem_ctx, &session_key);
-	if (NT_STATUS_IS_OK(status)) {
-		return session_key;
-	} else {
-		return data_blob_null;
-	}
-}
-
 static NTSTATUS gensec_ntlmssp3_client_update(struct gensec_security *gensec_security,
 					      TALLOC_CTX *out_mem_ctx,
 					      struct tevent_context *ev,

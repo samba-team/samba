@@ -3201,6 +3201,7 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key)
 {
+	NTSTATUS status;
 	struct pipe_auth_data *a;
 	struct schannel_state *schannel_auth;
 	struct auth_ntlmssp_state *ntlmssp_ctx;
@@ -3235,7 +3236,10 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		ntlmssp_ctx = talloc_get_type_abort(a->auth_ctx,
 						    struct auth_ntlmssp_state);
-		sk = auth_ntlmssp_get_session_key(ntlmssp_ctx, mem_ctx);
+		status = gensec_session_key(ntlmssp_ctx->gensec_security, mem_ctx, &sk);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		make_dup = false;
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
