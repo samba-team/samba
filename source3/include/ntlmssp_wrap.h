@@ -26,10 +26,12 @@ struct gensec_security;
 struct auth_ntlmssp_state {
 	/* used only by server implementation */
 	struct auth_context *auth_context;
-	struct gensec_security *gensec_security;
-
+	
 	/* used only by the client implementation */
-	struct ntlmssp_state *ntlmssp_state;
+	struct cli_credentials *credentials;
+
+	/* used by both */
+	struct gensec_security *gensec_security;
 };
 
 NTSTATUS auth_ntlmssp_sign_packet(struct auth_ntlmssp_state *ans,
