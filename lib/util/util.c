@@ -694,6 +694,7 @@ _PUBLIC_ _PURE_ size_t count_chars(const char *s, char c)
  * -  "0xnn" or "0Xnn" is specially catered for.
  * - The first non-hex-digit character (apart from possibly leading "0x"
  *   finishes the conversion and skips the rest of the input.
+ * - A single hex-digit character at the end of the string is skipped.
  *
  * valid examples: "0A5D15"; "0x123456"
  */
@@ -710,7 +711,7 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t 
 		i += 2; /* skip two chars */
 	}
 
-	for (; i < strhex_len && strhex[i] != 0; i++) {
+	for (; i+1 < strhex_len && strhex[i] != 0 && strhex[i+1] != 0; i++) {
 		p1 = strchr(hexchars, toupper((unsigned char)strhex[i]));
 		if (p1 == NULL) {
 			break;
