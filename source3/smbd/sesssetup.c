@@ -634,7 +634,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		return;
 	}
 
-	auth_ntlmssp_want_feature(*auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+	gensec_want_feature((*auth_ntlmssp_state)->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
 	status = auth_ntlmssp_start(*auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -746,7 +746,7 @@ static void reply_spnego_auth(struct smb_request *req,
 			return;
 		}
 
-		auth_ntlmssp_want_feature(*auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+		gensec_want_feature((*auth_ntlmssp_state)->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
 		status = auth_ntlmssp_start(*auth_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1155,7 +1155,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				return;
 			}
 
-			auth_ntlmssp_want_feature(vuser->auth_ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+			gensec_want_feature(vuser->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
 			if (sconn->use_gensec_hook) {
 				status = auth_generic_start(vuser->auth_ntlmssp_state, GENSEC_OID_SPNEGO);

@@ -129,11 +129,11 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_sign) {
-		auth_ntlmssp_want_feature(sp_ctx->mech_ctx.ntlmssp_state,
-					  NTLMSSP_FEATURE_SIGN);
+		gensec_want_feature(sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+					  GENSEC_FEATURE_SIGN);
 	} else if (do_seal) {
-		auth_ntlmssp_want_feature(sp_ctx->mech_ctx.ntlmssp_state,
-					  NTLMSSP_FEATURE_SEAL);
+		gensec_want_feature(sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+					  GENSEC_FEATURE_SEAL);
 	}
 
 	status = auth_ntlmssp_client_start(sp_ctx->mech_ctx.ntlmssp_state);

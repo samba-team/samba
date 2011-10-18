@@ -45,11 +45,11 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_sign) {
-		auth_ntlmssp_want_feature(a, NTLMSSP_FEATURE_SIGN);
+		gensec_want_feature(a->gensec_security, GENSEC_FEATURE_SIGN);
 	}
 	if (do_seal) {
 		/* Always implies both sign and seal for ntlmssp */
-		auth_ntlmssp_want_feature(a, NTLMSSP_FEATURE_SEAL);
+		gensec_want_feature(a->gensec_security, GENSEC_FEATURE_SEAL);
 	}
 
 	status = auth_ntlmssp_start(a);

@@ -47,19 +47,6 @@ NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
 	return NT_STATUS_OK;
 }
 
-void auth_ntlmssp_want_feature(struct auth_ntlmssp_state *ans, uint32_t feature)
-{
-	if (feature & NTLMSSP_FEATURE_SESSION_KEY) {
-		gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SESSION_KEY);
-	}
-	if (feature & NTLMSSP_FEATURE_SIGN) {
-		gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SIGN);
-	}
-	if (feature & NTLMSSP_FEATURE_SEAL) {
-		gensec_want_feature(ans->gensec_security, GENSEC_FEATURE_SEAL);
-	}
-}
-
 DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans, TALLOC_CTX *mem_ctx)
 {
 	DATA_BLOB session_key;

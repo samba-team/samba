@@ -94,7 +94,7 @@ static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 		return nt_status_squash(status);
 	}
 
-	auth_ntlmssp_want_feature(ec->auth_ntlmssp_state, NTLMSSP_FEATURE_SEAL);
+	gensec_want_feature(ec->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL);
 
 	status = auth_ntlmssp_start(ec->auth_ntlmssp_state);
 

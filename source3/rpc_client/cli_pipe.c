@@ -2306,9 +2306,9 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-		auth_ntlmssp_want_feature(ntlmssp_ctx, NTLMSSP_FEATURE_SIGN);
+		gensec_want_feature(ntlmssp_ctx->gensec_security, GENSEC_FEATURE_SIGN);
 	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-		auth_ntlmssp_want_feature(ntlmssp_ctx, NTLMSSP_FEATURE_SEAL);
+		gensec_want_feature(ntlmssp_ctx->gensec_security, GENSEC_FEATURE_SEAL);
 	}
 
 	status = auth_ntlmssp_client_start(ntlmssp_ctx);
