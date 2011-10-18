@@ -80,7 +80,12 @@ o   David Disseldorp <ddiss@suse.de>
     * BUG 8520: Fix SMB2 SMB2_OP_GETINFO and SMB2_OP_IOCTL parsing requirements.
 
 
+o   Wilco Baan Hofman <wilco@baanhofman.nl>
+    * BUG 8455: Fix uninitialized memory problem in group_sids_to_info3.
+
+
 o   Björn Jacke <bj@sernet.de>
+    * BUG 8256: Add man vfs_aio_fork.
     * BUG 8363: Fix build of vfs_prealloc on SLES8.
 
 
