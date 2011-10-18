@@ -176,8 +176,6 @@ sub pipe_handler {
 
 $SIG{PIPE} = \&pipe_handler;
 
-$SIG{CHILD} = 'IGNORE';
-
 sub find_in_list($$)
 {
 	my ($list, $fullname) = @_;
