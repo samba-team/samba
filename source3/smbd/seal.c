@@ -28,6 +28,7 @@
 #include "auth.h"
 #include "libsmb/libsmb.h"
 #include "../lib/tsocket/tsocket.h"
+#include "auth/gensec/gensec.h"
 
 /******************************************************************************
  Server side encryption.
@@ -488,9 +489,9 @@ static NTSTATUS srv_enc_ntlm_negotiate(const struct tsocket_address *remote_addr
 		return status;
 	}
 
-	status = auth_ntlmssp_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state,
-				     talloc_tos(),
-				     secblob, &chal);
+	status = gensec_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state->gensec_security,
+			       talloc_tos(), NULL,
+			       secblob, &chal);
 
 	/* status here should be NT_STATUS_MORE_PROCESSING_REQUIRED
 	 * for success ... */
@@ -613,7 +614,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = auth_ntlmssp_update(ec->auth_ntlmssp_state, talloc_tos(), auth, &auth_reply);
+	status = gensec_update(ec->auth_ntlmssp_state->gensec_security, talloc_tos(), NULL, auth, &auth_reply);
 	data_blob_free(&auth);
 
 	/* From RFC4178.
@@ -683,9 +684,9 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 	}
 
 	/* Second step. */
-	status = auth_ntlmssp_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state,
-				     talloc_tos(),
-				     blob, &response);
+	status = gensec_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state->gensec_security,
+			       talloc_tos(), NULL,
+			       blob, &response);
 
 	if (NT_STATUS_IS_OK(status)) {
 		/* Return the context we're using for this encryption state. */

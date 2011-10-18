@@ -127,13 +127,6 @@ DATA_BLOB auth_ntlmssp_get_session_key(struct auth_ntlmssp_state *ans, TALLOC_CT
 	}
 }
 
-NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *ans,
-			     TALLOC_CTX *mem_ctx,
-			     const DATA_BLOB request, DATA_BLOB *reply)
-{
-	return gensec_update(ans->gensec_security, mem_ctx, NULL, request, reply);
-}
-
 static NTSTATUS gensec_ntlmssp3_client_update(struct gensec_security *gensec_security,
 					      TALLOC_CTX *out_mem_ctx,
 					      struct tevent_context *ev,

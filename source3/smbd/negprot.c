@@ -208,8 +208,8 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 	if (NT_STATUS_IS_OK(status)) {
 		status = auth_generic_start(auth_ntlmssp_state, GENSEC_OID_SPNEGO);
 		if (NT_STATUS_IS_OK(status)) {
-			status = auth_ntlmssp_update(auth_ntlmssp_state, ctx,
-						     data_blob_null, &blob);
+			status = gensec_update(auth_ntlmssp_state->gensec_security, ctx,
+					       NULL, data_blob_null, &blob);
 			/* If we get the list of OIDs, the 'OK' answer
 			 * is NT_STATUS_MORE_PROCESSING_REQUIRED */
 			if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {

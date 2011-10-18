@@ -34,6 +34,7 @@
 #include "rpc_dce.h"
 #include "cli_pipe.h"
 #include "libsmb/libsmb.h"
+#include "auth/gensec/gensec.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -1048,7 +1049,7 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 					    struct auth_ntlmssp_state);
 
 	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
-	status = auth_ntlmssp_update(ntlmssp_ctx, mem_ctx, null_blob, auth_token);
+	status = gensec_update(ntlmssp_ctx->gensec_security, mem_ctx, NULL, null_blob, auth_token);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		data_blob_free(auth_token);
@@ -1773,8 +1774,8 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		ntlmssp_ctx = talloc_get_type_abort(pauth->auth_ctx,
 						    struct auth_ntlmssp_state);
-		status = auth_ntlmssp_update(ntlmssp_ctx, state,
-					     auth.credentials, &auth_token);
+		status = gensec_update(ntlmssp_ctx->gensec_security, state, NULL,
+				       auth.credentials, &auth_token);
 		if (NT_STATUS_EQUAL(status,
 				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			status = rpc_bind_next_send(req, state,

@@ -59,7 +59,7 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = auth_ntlmssp_update(a, mem_ctx, *token_in, token_out);
+	status = gensec_update(a->gensec_security, mem_ctx, NULL, *token_in, token_out);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		DEBUG(0, (__location__ ": auth_ntlmssp_update failed: %s\n",
 			  nt_errstr(status)));
@@ -88,7 +88,7 @@ NTSTATUS ntlmssp_server_step(struct auth_ntlmssp_state *ctx,
 
 	/* this has to be done as root in order to verify the password */
 	become_root();
-	status = auth_ntlmssp_update(ctx, mem_ctx, *token_in, token_out);
+	status = gensec_update(ctx->gensec_security, mem_ctx, NULL, *token_in, token_out);
 	unbecome_root();
 
 	return status;

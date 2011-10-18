@@ -24,6 +24,7 @@
 #include "auth/ntlmssp/ntlmssp.h"
 #include "librpc/crypto/gse.h"
 #include "librpc/crypto/spnego.h"
+#include "auth/gensec/gensec.h"
 
 static NTSTATUS spnego_context_init(TALLOC_CTX *mem_ctx,
 				    bool do_sign, bool do_seal,
@@ -213,8 +214,8 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	case SPNEGO_NTLMSSP:
 
 		ntlmssp_ctx = sp_ctx->mech_ctx.ntlmssp_state;
-		status = auth_ntlmssp_update(ntlmssp_ctx, mem_ctx,
-					     token_in, &token_out);
+		status = gensec_update(ntlmssp_ctx->gensec_security, mem_ctx, NULL,
+				       token_in, &token_out);
 		if (NT_STATUS_EQUAL(status,
 				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			mech_wants_more = true;

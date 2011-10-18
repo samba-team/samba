@@ -388,10 +388,10 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 			goto out;
 		}
 
-		status = auth_ntlmssp_update(session->auth_ntlmssp_state,
-					     talloc_tos(),
-					     secblob_in,
-					     &chal_out);
+		status = gensec_update(session->auth_ntlmssp_state->gensec_security,
+				       talloc_tos(), NULL,
+				       secblob_in,
+				       &chal_out);
 	}
 
 	if (!NT_STATUS_IS_OK(status) &&
@@ -582,9 +582,10 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 		}
 	}
 
-	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
-				     talloc_tos(), auth,
-				     &auth_out);
+	status = gensec_update(session->auth_ntlmssp_state->gensec_security,
+			       talloc_tos(), NULL,
+			       auth,
+			       &auth_out);
 	/* If status is NT_STATUS_OK then we need to get the token.
 	 * Map to guest is now internal to auth_ntlmssp */
 	if (NT_STATUS_IS_OK(status)) {
@@ -661,10 +662,10 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 	}
 
 	/* RAW NTLMSSP */
-	status = auth_ntlmssp_update(session->auth_ntlmssp_state,
-				     smb2req,
-				     in_security_buffer,
-				     out_security_buffer);
+	status = gensec_update(session->auth_ntlmssp_state->gensec_security,
+			       smb2req, NULL,
+			       in_security_buffer,
+			       out_security_buffer);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		*out_session_id = session->vuid;
