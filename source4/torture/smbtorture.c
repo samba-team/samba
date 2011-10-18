@@ -350,69 +350,6 @@ _NORETURN_ static void max_runtime_handler(int sig)
 	exit(1);
 }
 
-struct timeval last_suite_started;
-
-static void simple_suite_start(struct torture_context *ctx,
-			       struct torture_suite *suite)
-{
-	last_suite_started = timeval_current();
-	printf("Running %s\n", suite->name);
-}
-
-static void simple_suite_finish(struct torture_context *ctx,
-			        struct torture_suite *suite)
-{
-
-	printf("%s took %g secs\n\n", suite->name, 
-		   timeval_elapsed(&last_suite_started));
-}
-
-static void simple_test_result(struct torture_context *context, 
-			       enum torture_result res, const char *reason)
-{
-	switch (res) {
-	case TORTURE_OK:
-		if (reason)
-			printf("OK: %s\n", reason);
-		break;
-	case TORTURE_FAIL:
-		printf("TEST %s FAILED! - %s\n", context->active_test->name, reason);
-		break;
-	case TORTURE_ERROR:
-		printf("ERROR IN TEST %s! - %s\n", context->active_test->name, reason); 
-		break;
-	case TORTURE_SKIP:
-		printf("SKIP: %s - %s\n", context->active_test->name, reason);
-		break;
-	}
-}
-
-static void simple_comment(struct torture_context *test, 
-			   const char *comment)
-{
-	printf("%s", comment);
-}
-
-static void simple_warning(struct torture_context *test, 
-			   const char *comment)
-{
-	fprintf(stderr, "WARNING: %s\n", comment);
-}
-
-static void simple_progress(struct torture_context *test,
-	int offset, enum torture_progress_whence whence)
-{
-}
-
-const static struct torture_ui_ops std_ui_ops = {
-	.comment = simple_comment,
-	.warning = simple_warning,
-	.suite_start = simple_suite_start,
-	.suite_finish = simple_suite_finish,
-	.test_result = simple_test_result,
-	.progress = simple_progress,
-};
-
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -653,7 +590,7 @@ int main(int argc,char *argv[])
 	srandom(torture_seed);
 
 	if (!strcmp(ui_ops_name, "simple")) {
-		ui_ops = &std_ui_ops;
+		ui_ops = &torture_simple_ui_ops;
 	} else if (!strcmp(ui_ops_name, "subunit")) {
 		ui_ops = &torture_subunit_ui_ops;
 	} else {

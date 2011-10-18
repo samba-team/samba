@@ -546,5 +546,6 @@ struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct t
 struct torture_context *torture_context_child(struct torture_context *tctx);
 
 extern const struct torture_ui_ops torture_subunit_ui_ops;
+extern const struct torture_ui_ops torture_simple_ui_ops;
 
 #endif /* __TORTURE_UI_H__ */
