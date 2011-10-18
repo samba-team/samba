@@ -1193,11 +1193,12 @@ static bool legacy_sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 	enum lsa_SidType type;
 
 	if (sid_check_is_in_our_domain(psid)) {
-		union unid_t id;
+		uid_t uid;
+		gid_t gid;
 		bool ret;
 
 		become_root();
-		ret = pdb_sid_to_id(psid, &id, &type);
+		ret = pdb_sid_to_id(psid, &uid, &gid, &type);
 		unbecome_root();
 
 		if (ret) {
@@ -1207,7 +1208,7 @@ static bool legacy_sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 					  sid_type_lookup(type)));
 				return false;
 			}
-			*puid = id.uid;
+			*puid = uid;
 			goto done;
 		}
 
@@ -1234,7 +1235,6 @@ done:
 static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 {
 	GROUP_MAP *map;
-	union unid_t id;
 	enum lsa_SidType type;
 
 	map = talloc_zero(NULL, GROUP_MAP);
@@ -1260,10 +1260,12 @@ static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 	}
 
 	if (sid_check_is_in_our_domain(psid)) {
+		uid_t uid;
+		gid_t gid;
 		bool ret;
 
 		become_root();
-		ret = pdb_sid_to_id(psid, &id, &type);
+		ret = pdb_sid_to_id(psid, &uid, &gid, &type);
 		unbecome_root();
 
 		if (ret) {
@@ -1274,7 +1276,7 @@ static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 					  sid_type_lookup(type)));
 				return false;
 			}
-			*pgid = id.gid;
+			*pgid = gid;
 			goto done;
 		}
 

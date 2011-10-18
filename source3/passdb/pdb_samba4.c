@@ -50,7 +50,7 @@ static NTSTATUS pdb_samba4_getsamupriv(struct pdb_samba4_state *state,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **pmsg);
 static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
-				 union unid_t *id, enum lsa_SidType *type);
+				 uid_t *uid, gid_t *gid, enum lsa_SidType *type);
 
 static bool pdb_samba4_pull_time(struct ldb_message *msg, const char *attr,
 			      time_t *ptime)
@@ -852,7 +852,7 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	struct dom_sid *sid;
 	const char *str;
 	int rc;
-	union unid_t id;
+	uid_t uid;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 	
@@ -885,7 +885,7 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	
 	map->sid = *sid;
 	
-	if (!pdb_samba4_sid_to_id(m, sid, &id, &map->sid_name_use)) {
+	if (!pdb_samba4_sid_to_id(m, sid, &uid, &map->gid, &map->sid_name_use)) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
@@ -893,7 +893,6 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 		DEBUG(1, (__location__ "Got SID_NAME_USER when searching for a group with %s", expression));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	map->gid = id.gid;
 
 	str = ldb_msg_find_attr_as_string(msg, "samAccountName",
 					  NULL);
@@ -2001,7 +2000,7 @@ static bool pdb_samba4_gid_to_sid(struct pdb_methods *m, gid_t gid,
 }
 
 static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
-				 union unid_t *id, enum lsa_SidType *type)
+				 uid_t *uid, gid_t *gid, enum lsa_SidType *type)
 {
 	struct pdb_samba4_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba4_state);
@@ -2059,7 +2058,7 @@ static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *si
 			return false;
 		}
 		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
-			id->gid = id_map.xid.id;
+			*gid = id_map.xid.id;
 			return true;
 		}
 		return false;
@@ -2076,7 +2075,7 @@ static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *si
 			return false;
 		}
 		if (id_map.xid.type == ID_TYPE_UID || id_map.xid.type == ID_TYPE_BOTH) {
-			id->uid = id_map.xid.id;
+			*uid = id_map.xid.id;
 			return true;
 		}
 		return false;

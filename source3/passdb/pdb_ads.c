@@ -2204,7 +2204,7 @@ static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
 }
 
 static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
-			      union unid_t *id, enum lsa_SidType *type)
+			      uid_t *uid, gid_t *gid, enum lsa_SidType *type)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
@@ -2215,6 +2215,9 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 	uint32_t atype;
 	int rc;
 	bool ret = false;
+
+	*uid = -1;
+	*gid = -1;
 
 	sidstr = sid_binstring_hex(sid);
 	if (sidstr == NULL) {
@@ -2244,21 +2247,17 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 		goto fail;
 	}
 	if (atype == ATYPE_ACCOUNT) {
-		uint32_t uid;
 		*type = SID_NAME_USER;
-		if (!tldap_pull_uint32(msg[0], "uidNumber", &uid)) {
+		if (!tldap_pull_uint32(msg[0], "uidNumber", uid)) {
 			DEBUG(10, ("Did not find uidNumber\n"));
 			goto fail;
 		}
-		id->uid = uid;
 	} else {
-		uint32_t gid;
 		*type = SID_NAME_DOM_GRP;
-		if (!tldap_pull_uint32(msg[0], "gidNumber", &gid)) {
+		if (!tldap_pull_uint32(msg[0], "gidNumber", gid)) {
 			DEBUG(10, ("Did not find gidNumber\n"));
 			goto fail;
 		}
-		id->gid = gid;
 	}
 	ret = true;
 fail:

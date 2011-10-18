@@ -53,7 +53,7 @@ static void lazy_initialize_passdb(void)
 static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 				  const char **name,
 				  enum lsa_SidType *psid_name_use,
-				  union unid_t *unix_id);
+				  uid_t *uid, gid_t *gid);
 
 NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init) 
 {
@@ -1231,11 +1231,11 @@ bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid)
 	return pdb->gid_to_sid(pdb, gid, sid);
 }
 
-bool pdb_sid_to_id(const struct dom_sid *sid, union unid_t *id,
+bool pdb_sid_to_id(const struct dom_sid *sid, uid_t *uid, gid_t *gid,
 		   enum lsa_SidType *type)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->sid_to_id(pdb, sid, id, type);
+	return pdb->sid_to_id(pdb, sid, uid, gid, type);
 }
 
 uint32_t pdb_capabilities(void)
@@ -1292,7 +1292,7 @@ bool pdb_new_rid(uint32_t *rid)
 
 		/* validate that the RID is not in use */
 
-		if ( lookup_global_sam_rid( ctx, allocated_rid, &name, &type, NULL ) ) {
+		if (lookup_global_sam_rid(ctx, allocated_rid, &name, &type, NULL, NULL)) {
 			allocated_rid = 0;
 		}
 	}
@@ -1440,12 +1440,16 @@ static bool pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 
 static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 				  const struct dom_sid *sid,
-				  union unid_t *id, enum lsa_SidType *type)
+				  uid_t *uid, gid_t *gid,
+				  enum lsa_SidType *type)
 {
 	TALLOC_CTX *mem_ctx;
 	bool ret = False;
 	const char *name;
 	uint32_t rid;
+
+	*uid = -1;
+	*gid = -1;
 
 	mem_ctx = talloc_new(NULL);
 
@@ -1456,14 +1460,14 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 
 	if (sid_peek_check_rid(get_global_sam_sid(), sid, &rid)) {
 		/* Here we might have users as well as groups and aliases */
-		ret = lookup_global_sam_rid(mem_ctx, rid, &name, type, id);
+		ret = lookup_global_sam_rid(mem_ctx, rid, &name, type, uid, gid);
 		goto done;
 	}
 
 	/* check for "Unix User" */
 
 	if ( sid_peek_check_rid(&global_sid_Unix_Users, sid, &rid) ) {
-		id->uid = rid;
+		*uid = rid;
 		*type = SID_NAME_USER;
 		ret = True;		
 		goto done;		
@@ -1472,7 +1476,7 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	/* check for "Unix Group" */
 
 	if ( sid_peek_check_rid(&global_sid_Unix_Groups, sid, &rid) ) {
-		id->gid = rid;
+		*gid = rid;
 		*type = SID_NAME_ALIAS;
 		ret = True;		
 		goto done;		
@@ -1504,7 +1508,7 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 			goto done;
 		}
 
-		id->gid = map->gid;
+		*gid = map->gid;
 		*type = SID_NAME_ALIAS;
 		ret = True;
 		goto done;
@@ -1669,7 +1673,7 @@ static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 				  const char **name,
 				  enum lsa_SidType *psid_name_use,
-				  union unid_t *unix_id)
+				  uid_t *uid, gid_t *gid)
 {
 	struct samu *sam_account = NULL;
 	GROUP_MAP *map = NULL;
@@ -1721,7 +1725,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 
 		TALLOC_FREE(sam_account);
 
-		if (unix_id == NULL) {
+		if (uid == NULL) {
 			return True;
 		}
 
@@ -1729,7 +1733,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 		if (pw == NULL) {
 			return False;
 		}
-		unix_id->uid = pw->pw_uid;
+		*uid = pw->pw_uid;
 		TALLOC_FREE(pw);
 		return True;
 
@@ -1741,8 +1745,8 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 		*name = talloc_steal(mem_ctx, map->nt_name);
 		*psid_name_use = map->sid_name_use;
 
-		if ( unix_id ) {
-			unix_id->gid = map->gid;
+		if (gid) {
+			*gid = map->gid;
 		}
 
 		TALLOC_FREE(map);
@@ -1754,7 +1758,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 	/* Windows will always map RID 513 to something.  On a non-domain 
 	   controller, this gets mapped to SERVER\None. */
 
-	if ( unix_id ) {
+	if (uid || gid) {
 		DEBUG(5, ("Can't find a unix id for an unmapped group\n"));
 		return False;
 	}
@@ -1809,7 +1813,7 @@ static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 		const char *name;
 
 		if (lookup_global_sam_rid(names, rids[i], &name, &attrs[i],
-					  NULL)) {
+					  NULL, NULL)) {
 			if (name == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}

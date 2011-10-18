@@ -563,7 +563,7 @@ struct pdb_methods
 	bool (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
 			   struct dom_sid *sid);
 	bool (*sid_to_id)(struct pdb_methods *methods, const struct dom_sid *sid,
-			  union unid_t *id, enum lsa_SidType *type);
+			  uid_t *uid, gid_t *gid, enum lsa_SidType *type);
 
 	uint32_t (*capabilities)(struct pdb_methods *methods);
 	bool (*new_rid)(struct pdb_methods *methods, uint32_t *rid);
@@ -868,7 +868,7 @@ bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
 bool pdb_uid_to_sid(uid_t uid, struct dom_sid *sid);
 bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid);
-bool pdb_sid_to_id(const struct dom_sid *sid, union unid_t *id,
+bool pdb_sid_to_id(const struct dom_sid *sid, uid_t *uid, gid_t *gid,
 		   enum lsa_SidType *type);
 uint32_t pdb_capabilities(void);
 bool pdb_new_rid(uint32_t *rid);

@@ -4993,7 +4993,8 @@ static bool ldapsam_new_rid(struct pdb_methods *methods, uint32_t *rid)
 
 static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 			      const struct dom_sid *sid,
-			      union unid_t *id, enum lsa_SidType *type)
+			      uid_t *uid, gid_t *gid,
+			      enum lsa_SidType *type)
 {
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
@@ -5055,10 +5056,10 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 			goto done;
 		}
 
-		id->gid = strtoul(gid_str, NULL, 10);
+		*gid = strtoul(gid_str, NULL, 10);
 		*type = (enum lsa_SidType)strtoul(value, NULL, 10);
-		store_gid_sid_cache(sid, id->gid);
-		idmap_cache_set_sid2gid(sid, id->gid);
+		store_gid_sid_cache(sid, *gid);
+		idmap_cache_set_sid2gid(sid, *gid);
 		ret = True;
 		goto done;
 	}
@@ -5073,10 +5074,10 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 		goto done;
 	}
 
-	id->uid = strtoul(value, NULL, 10);
+	*uid = strtoul(value, NULL, 10);
 	*type = SID_NAME_USER;
-	store_uid_sid_cache(sid, id->uid);
-	idmap_cache_set_sid2uid(sid, id->uid);
+	store_uid_sid_cache(sid, *uid);
+	idmap_cache_set_sid2uid(sid, *uid);
 
 	ret = True;
  done:
