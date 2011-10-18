@@ -104,6 +104,67 @@ failed:
 }
 
 
+static unsigned int dnsserver_update_soa(TALLOC_CTX *mem_ctx,
+				struct ldb_context *samdb,
+				struct dnsserver_zone *z)
+{
+	const char * const attrs[] = { "dnsRecord", NULL };
+	struct ldb_result *res;
+	struct dnsp_DnssrvRpcRecord rec;
+	struct ldb_message_element *el;
+	enum ndr_err_code ndr_err;
+	int ret, i, serial = -1;
+	NTTIME t;
+
+	unix_to_nt_time(&t, time(NULL));
+	t /= 10*1000*1000; /* convert to seconds (NT time is in 100ns units) */
+	t /= 3600;         /* convert to hours */
+
+	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
+			"(&(objectClass=dnsNode)(name=@))");
+	if (ret != LDB_SUCCESS || res->count == 0) {
+		return -1;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
+	if (el == NULL) {
+		return -1;
+	}
+
+	for (i=0; i<el->num_values; i++) {
+		ndr_err = ndr_pull_struct_blob(&el->values[i], mem_ctx, &rec,
+					(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			continue;
+		}
+
+		if (rec.wType == DNS_TYPE_SOA) {
+			serial = rec.data.soa.serial + 1;
+			rec.dwSerial = serial;
+			rec.dwTimeStamp = (uint32_t)t;
+			rec.data.soa.serial = serial;
+
+			ndr_err = ndr_push_struct_blob(&el->values[i], mem_ctx, &rec,
+					(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return -1;
+			}
+			break;
+		}
+	}
+
+	if (serial != -1) {
+		el->flags = LDB_FLAG_MOD_REPLACE;
+		ret = ldb_modify(samdb, res->msgs[0]);
+		if (ret != LDB_SUCCESS) {
+			return -1;
+		}
+	}
+
+	return serial;
+}
+
+
 static WERROR dnsserver_db_do_add_rec(TALLOC_CTX *mem_ctx,
 				struct ldb_context *samdb,
 				struct ldb_dn *dn,
@@ -191,14 +252,21 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	NTTIME t;
 	int ret, i;
+	int serial;
 
 	rec = dns_to_dnsp_copy(mem_ctx, add_record);
 	W_ERROR_HAVE_NO_MEMORY(rec);
 
-	unix_to_nt_time(&t, time(NULL));
-	t /= 10*1000*1000;
+	serial = dnsserver_update_soa(mem_ctx, samdb, z);
+	if (serial < 0) {
+		return WERR_INTERNAL_DB_ERROR;
+	}
 
-	rec->dwSerial = 0; /* FIXME: put soa serial value */
+	unix_to_nt_time(&t, time(NULL));
+	t /= 10*1000*1000; /* convert to seconds (NT time is in 100ns units) */
+	t /= 3600;         /* convert to hours */
+
+	rec->dwSerial = serial;
 	rec->dwTimeStamp = t;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
@@ -274,6 +342,12 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	NTTIME t;
 	int ret, i;
+	int serial;
+
+	serial = dnsserver_update_soa(mem_ctx, samdb, z);
+	if (serial < 0) {
+		return WERR_INTERNAL_DB_ERROR;
+	}
 
 	arec = dns_to_dnsp_copy(mem_ctx, add_record);
 	W_ERROR_HAVE_NO_MEMORY(arec);
@@ -284,7 +358,7 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&t, time(NULL));
 	t /= 10*1000*1000;
 
-	arec->dwSerial = 0; /* FIXME: put soa serial value */
+	arec->dwSerial = serial;
 	arec->dwTimeStamp = t;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
@@ -364,6 +438,12 @@ WERROR dnsserver_db_delete_record(TALLOC_CTX *mem_ctx,
 	struct ldb_message_element *el;
 	enum ndr_err_code ndr_err;
 	int ret, i;
+	int serial;
+
+	serial = dnsserver_update_soa(mem_ctx, samdb, z);
+	if (serial < 0) {
+		return WERR_INTERNAL_DB_ERROR;
+	}
 
 	rec = dns_to_dnsp_copy(mem_ctx, del_record);
 	W_ERROR_HAVE_NO_MEMORY(rec);
