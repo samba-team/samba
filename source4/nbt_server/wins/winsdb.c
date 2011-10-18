@@ -929,7 +929,8 @@ failed:
 }
 
 static bool winsdb_check_or_add_module_list(struct tevent_context *ev_ctx, 
-					    struct loadparm_context *lp_ctx, struct winsdb_handle *h)
+					    struct loadparm_context *lp_ctx, struct winsdb_handle *h,
+					    const char *wins_path)
 {
 	int trans;
 	int ret;
@@ -975,7 +976,7 @@ static bool winsdb_check_or_add_module_list(struct tevent_context *ev_ctx,
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lpcfg_state_path(h, lp_ctx, lpcfg_wins_url(lp_ctx)),
+	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, wins_path,
 				  NULL, NULL, flags);
 	if (!h->ldb) goto failed;
 
@@ -1003,15 +1004,18 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 	unsigned int flags = 0;
 	bool ret;
 	int ldb_err;
+	char *wins_path;
 
 	h = talloc_zero(mem_ctx, struct winsdb_handle);
 	if (!h) return NULL;
+
+	wins_path = lpcfg_state_path(h, lp_ctx, "wins.ldb");
 
 	if (lpcfg_parm_bool(lp_ctx, NULL,"winsdb", "nosync", false)) {
 		flags |= LDB_FLG_NOSYNC;
 	}
 
-	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lpcfg_lock_path(h, lp_ctx, lpcfg_wins_url(lp_ctx)),
+	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, wins_path,
 				  NULL, NULL, flags);
 	if (!h->ldb) goto failed;
 
@@ -1022,7 +1026,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 	if (!h->local_owner) goto failed;
 
 	/* make sure the module list is available and used */
-	ret = winsdb_check_or_add_module_list(ev_ctx, lp_ctx, h);
+	ret = winsdb_check_or_add_module_list(ev_ctx, lp_ctx, h, wins_path);
 	if (!ret) goto failed;
 
 	ldb_err = ldb_set_opaque(h->ldb, "winsdb_handle", h);
