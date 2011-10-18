@@ -183,11 +183,23 @@ void ctdb_test_init(const char nodestates[],
 	struct ctdb_public_ip_list *t;
 	struct ctdb_all_public_ips *available_public_ips;
 	int i, numips, numnodes;
-
-	numnodes = strlen(nodestates);
+	/* This is test code and this is unreasonably big... :-) */
+	uint32_t nodeflags[256];
+	char *tok, *ns;
 
 	*ctdb = talloc_zero(NULL, struct ctdb_context);
 
+	/* Avoid that const */
+	ns = talloc_strdup(*ctdb, nodestates);
+
+	numnodes = 0;
+	tok = strtok(ns, ",");
+	while (tok != NULL) {
+		nodeflags[numnodes] = (uint32_t) strtol(tok, NULL, 16);
+		numnodes++;
+		tok = strtok(NULL, ",");
+	}
+	
 	/* Fake things up... */
 	(*ctdb)->num_nodes = numnodes;
 
@@ -205,12 +217,6 @@ void ctdb_test_init(const char nodestates[],
 
 	*nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
 	(*nodemap)->num = numnodes;
-
-	for (i=0; i < numnodes; i++) {
-		(*nodemap)->nodes[i].pnn = i;
-		(*nodemap)->nodes[i].flags = nodestates[i] - '0';
-		/* *nodemap->nodes[i].sockaddr is uninitialised */
-	}
 
 	*all_ips = read_ctdb_public_ip_list(*ctdb);
 	numips = 0;
@@ -230,14 +236,13 @@ void ctdb_test_init(const char nodestates[],
 	/* Setup both nodemap and ctdb->nodes.  Mark all nodes as
 	 * healthy - change this later. */
 	for (i=0; i < numnodes; i++) {
-		uint32_t flags = nodestates[i] - '0' ? NODE_FLAGS_UNHEALTHY : 0;
 		(*nodemap)->nodes[i].pnn = i;
-		(*nodemap)->nodes[i].flags = flags;
+		(*nodemap)->nodes[i].flags = nodeflags[i];
 		/* nodemap->nodes[i].sockaddr is uninitialised */
 
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
 		(*ctdb)->nodes[i]->pnn = i;
-		(*ctdb)->nodes[i]->flags = flags;
+		(*ctdb)->nodes[i]->flags = nodeflags[i];
 		(*ctdb)->nodes[i]->available_public_ips = available_public_ips;
 		(*ctdb)->nodes[i]->known_public_ips = available_public_ips;
 	}
