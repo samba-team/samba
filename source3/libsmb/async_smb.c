@@ -287,6 +287,14 @@ static void cli_state_notify_pending(struct cli_state *cli, NTSTATUS status)
 		req = cli->conn.pending[0];
 		state = tevent_req_data(req, struct cli_smb_state);
 
+		if (NT_STATUS_EQUAL(status, NT_STATUS_PIPE_BROKEN)) {
+			/*
+			 * We're dead. No point waiting for trans2
+			 * replies.
+			 */
+			state->mid = 0;
+		}
+
 		cli_smb_req_unset_pending(req);
 
 		/*
