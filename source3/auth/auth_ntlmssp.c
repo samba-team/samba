@@ -406,7 +406,7 @@ NTSTATUS auth_generic_start(struct auth_ntlmssp_state *auth_ntlmssp_state, const
 		talloc_get_type_abort(auth_ntlmssp_state->gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 
-	gensec_ntlmssp->auth_context = auth_ntlmssp_state->auth_context;
+	gensec_ntlmssp->auth_context = talloc_move(gensec_ntlmssp, &auth_ntlmssp_state->auth_context);
 
 	return NT_STATUS_OK;
 }
@@ -464,7 +464,7 @@ NTSTATUS auth_generic_authtype_start(struct auth_ntlmssp_state *auth_ntlmssp_sta
 		talloc_get_type_abort(auth_ntlmssp_state->gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 
-	gensec_ntlmssp->auth_context = auth_ntlmssp_state->auth_context;
+	gensec_ntlmssp->auth_context = talloc_move(gensec_ntlmssp, &auth_ntlmssp_state->auth_context);
 
 	return NT_STATUS_OK;
 }
