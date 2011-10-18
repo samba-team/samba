@@ -646,7 +646,7 @@ sub check_or_start($$$$) {
 			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
 		}
 
-		print "Starting winbindd with config $env_vars->{SERVERCONFFILE})\n";
+		print "Starting winbindd with config $env_vars->{SERVERCONFFILE}\n";
 
 		exec(@preargs, Samba::bindir_path($self, "winbindd"), "-F", "--no-process-group", "--stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 	}
