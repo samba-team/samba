@@ -27,7 +27,6 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
-#include "ntioctl.h"
 #include "smbprofile.h"
 #include "libsmb/libsmb.h"
 

@@ -22,7 +22,6 @@
 #include "torture/proto.h"
 #include "libsmb/libsmb.h"
 #include "libcli/security/security.h"
-#include "ntioctl.h"
 
 bool run_nttrans_fsctl(int dummy)
 {

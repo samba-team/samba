@@ -24,7 +24,6 @@
 #include "async_smb.h"
 #include "libsmb/clirap.h"
 #include "trans2.h"
-#include "ntioctl.h"
 #include "libcli/security/secdesc.h"
 #include "libcli/security/security.h"
 
