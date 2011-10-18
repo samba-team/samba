@@ -689,15 +689,14 @@ _PUBLIC_ _PURE_ size_t count_chars(const char *s, char c)
 }
 
 /**
- Routine to get hex characters and turn them into a 16 byte array.
- the array can be variable length, and any non-hex-numeric
- characters are skipped.  "0xnn" or "0Xnn" is specially catered
- for.
-
- valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
-
-
-**/
+ * Routine to get hex characters and turn them into a byte array.
+ * the array can be variable length.
+ * -  "0xnn" or "0Xnn" is specially catered for.
+ * - The first non-hex-digit character (apart from possibly leading "0x"
+ *   finishes the conversion and skips the rest of the input.
+ *
+ * valid examples: "0A5D15"; "0x123456"
+ */
 _PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t strhex_len)
 {
 	size_t i = 0;
