@@ -557,6 +557,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	push (@provision_options, "--root=$ctx->{unix_name}");
 	push (@provision_options, "--server-role=\"$ctx->{server_role}\"");
 	push (@provision_options, "--function-level=\"$ctx->{functional_level}\"");
+	push (@provision_options, "--dns-backend=BIND9_DLZ");
 
 	@{$ctx->{provision_options}} = @provision_options;
 
