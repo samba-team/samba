@@ -243,6 +243,7 @@ def import_wins(samba4_winsdb, samba3_winsdb):
     :param samba4_winsdb: WINS database to import to
     :param samba3_winsdb: WINS database to import from
     """
+
     version_id = 0
 
     for (name, (ttl, ips, nb_flags)) in samba3_winsdb.items():
@@ -641,7 +642,15 @@ Please fix this account before attempting to upgrade again
 
     # Import WINS database
     logger.info("Importing WINS database")
-    import_wins(Ldb(result.paths.winsdb), samba3.get_wins_db())
+
+    samba3_winsdb = None
+    try:
+        samba3_winsdb = samba3.get_wins_db()
+    except IOError, e:
+        logger.warn('Cannot open wins database, Ignoring: %s', str(e))
+
+    if samba3_winsdb:
+        import_wins(Ldb(result.paths.winsdb), samba3_winsdb)
 
     # Set Account policy
     logger.info("Importing Account policy")
