@@ -308,9 +308,17 @@ int ltdb_cache_load(struct ldb_module *module)
 	
 	/* possibly initialise the baseinfo */
 	if (r == LDB_ERR_NO_SUCH_OBJECT) {
-		if (ltdb_baseinfo_init(module) != LDB_SUCCESS) {
+
+		if (tdb_transaction_start(ltdb->tdb) != 0) {
 			goto failed;
 		}
+
+		/* error handling for ltdb_baseinfo_init() is by
+		   looking for the record again. */
+		ltdb_baseinfo_init(module);
+
+		tdb_transaction_commit(ltdb->tdb);
+
 		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) != LDB_SUCCESS) {
 			goto failed;
 		}
