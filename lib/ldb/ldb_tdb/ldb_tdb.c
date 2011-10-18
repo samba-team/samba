@@ -1499,6 +1499,8 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 				   tdb_flags, open_flags,
 				   ldb_get_create_perms(ldb), ldb);
 	if (!ltdb->tdb) {
+		ldb_asprintf_errstring(ldb,
+				       "Unable to open tdb '%s'", path);
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Unable to open tdb '%s'", path);
 		talloc_free(ltdb);
@@ -1513,6 +1515,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	module = ldb_module_new(ldb, ldb, "ldb_tdb backend", &ltdb_ops);
 	if (!module) {
+		ldb_oom(ldb);
 		talloc_free(ltdb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1520,6 +1523,8 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	talloc_steal(module, ltdb);
 
 	if (ltdb_cache_load(module) != 0) {
+		ldb_asprintf_errstring(ldb,
+				       "Unable to load ltdb cache records of tdb '%s'", path);
 		talloc_free(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

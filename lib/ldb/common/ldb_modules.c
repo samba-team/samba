@@ -218,7 +218,7 @@ int ldb_module_connect_backend(struct ldb_context *ldb,
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Failed to connect to '%s' with backend '%s'", url, be->ops->name);
+			  "Failed to connect to '%s' with backend '%s': %s", url, be->ops->name, ldb_errstring(ret));
 		return ret;
 	}
 	return ret;
