@@ -712,13 +712,17 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t 
 	}
 
 	for (; i < strhex_len && strhex[i] != 0; i++) {
-		if (!(p1 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
+		p1 = strchr(hexchars, toupper((unsigned char)strhex[i]));
+		if (p1 == NULL) {
 			break;
+		}
 
 		i++; /* next hex digit */
 
-		if (!(p2 = strchr(hexchars, toupper((unsigned char)strhex[i]))))
+		p2 = strchr(hexchars, toupper((unsigned char)strhex[i]));
+		if (p2 == NULL) {
 			break;
+		}
 
 		/* get the two nybbles */
 		hinybble = PTR_DIFF(p1, hexchars);
