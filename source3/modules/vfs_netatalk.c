@@ -73,7 +73,7 @@ static int atalk_build_paths(TALLOC_CTX *ctx, const char *path,
 #if 0
 	DEBUG(3, ("ATALK: PATH: %s[%s]\n", path, fname));
 #endif
-	if (strstr(path, APPLEDOUBLE) || strstr(fname, APPLEDOUBLE)) {
+	if (strstr_m(path, APPLEDOUBLE) || strstr_m(fname, APPLEDOUBLE)) {
 		DEBUG(3, ("ATALK: path %s[%s] already contains %s\n", path, fname, APPLEDOUBLE));
 		return -1;
 	}
@@ -126,7 +126,7 @@ static void atalk_add_to_list(name_compare_entry **list)
 
 	if (cur_list) {
 		for (i = 0, count = 0; cur_list[i].name; i ++, count ++) {
-			if (strstr(cur_list[i].name, APPLEDOUBLE))
+			if (strstr_m(cur_list[i].name, APPLEDOUBLE))
 				return;
 		}
 	}
@@ -235,7 +235,7 @@ static int atalk_rmdir(struct vfs_handle_struct *handle, const char *path)
 	 * from this module, gotta use talloc stuff..
 	 */
 
-	strstr(path, APPLEDOUBLE) ? (add = False) : (add = True);
+	strstr_m(path, APPLEDOUBLE) ? (add = False) : (add = True);
 
 	if (!(ctx = talloc_init("remove_directory")))
 		goto exit_rmdir;
@@ -317,13 +317,13 @@ static int atalk_unlink(struct vfs_handle_struct *handle,
 	if (!handle->conn->hide_list) return ret;
 
 	for (i = 0; handle->conn->veto_list[i].name; i ++) {
-		if (strstr(handle->conn->veto_list[i].name, APPLEDOUBLE))
+		if (strstr_m(handle->conn->veto_list[i].name, APPLEDOUBLE))
 			break;
 	}
 
 	if (!handle->conn->veto_list[i].name) {
 		for (i = 0; handle->conn->hide_list[i].name; i ++) {
-			if (strstr(handle->conn->hide_list[i].name, APPLEDOUBLE))
+			if (strstr_m(handle->conn->hide_list[i].name, APPLEDOUBLE))
 				break;
 			else {
 				DEBUG(3, ("ATALK: %s is not hidden, skipped..\n",
