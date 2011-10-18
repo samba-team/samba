@@ -26,7 +26,8 @@
 			"sfu", if you use SFU 2.0 please choose "sfu20". Note that
 			retrieving UID and GID from your ADS-Server requires to
 			use <parameter moreinfo="none">idmap config DOMAIN:backend</parameter> = ad
-			as well.
+			as well. The primary group membership is currently
+			always calculated via the "primaryGroupID" LDAP attribute.
 			</para>
 		</listitem>
 	</itemizedlist>

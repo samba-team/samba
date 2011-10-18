@@ -68,6 +68,9 @@
 			in Windows 2003 R2 or the Service for Unix (SFU) schema.
 			For SFU 3.0 or 3.5 please choose "sfu", for SFU 2.0
 			please choose "sfu20".
+
+			Please note that primary group membership is currently always calculated
+			via the "primaryGroupID" LDAP attribute.
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
