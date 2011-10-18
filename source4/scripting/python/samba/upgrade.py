@@ -473,7 +473,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
     try:
         secrets_db = samba3.get_secrets_db()
     except IOError, e:
-        raise ProvisioningError("Could not open '%s', the Samba3 secrets database: %s.  Perhaps you specified the incorrect smb.conf, --testparm or --libdir option?" % samba3.privatedir_path("secrets.tdb"), str(e))
+        raise ProvisioningError("Could not open '%s', the Samba3 secrets database: %s.  Perhaps you specified the incorrect smb.conf, --testparm or --libdir option?" % (samba3.privatedir_path("secrets.tdb"), str(e)))
 
     if not domainname:
         domainname = secrets_db.domains()[0]
