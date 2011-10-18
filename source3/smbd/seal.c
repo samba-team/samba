@@ -761,11 +761,11 @@ static NTSTATUS check_enc_good(struct smb_srv_trans_enc_ctx *ec)
 	}
 
 	if (ec->es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if (!auth_ntlmssp_negotiated_sign((ec->auth_ntlmssp_state))) {
+		if (!gensec_have_feature(ec->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SIGN)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (!auth_ntlmssp_negotiated_seal((ec->auth_ntlmssp_state))) {
+		if (!gensec_have_feature(ec->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}

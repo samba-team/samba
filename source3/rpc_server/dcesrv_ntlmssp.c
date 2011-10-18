@@ -97,13 +97,13 @@ NTSTATUS ntlmssp_server_step(struct auth_ntlmssp_state *ctx,
 NTSTATUS ntlmssp_server_check_flags(struct auth_ntlmssp_state *ctx,
 				    bool do_sign, bool do_seal)
 {
-	if (do_sign && !auth_ntlmssp_negotiated_sign(ctx)) {
+	if (do_sign && !gensec_have_feature(ctx->gensec_security, GENSEC_FEATURE_SIGN)) {
 		DEBUG(1, (__location__ "Integrity was requested but client "
 			  "failed to negotiate signing.\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (do_seal && !auth_ntlmssp_negotiated_seal(ctx)) {
+	if (do_seal && !gensec_have_feature(ctx->gensec_security, GENSEC_FEATURE_SEAL)) {
 		DEBUG(1, (__location__ "Privacy was requested but client "
 			  "failed to negotiate sealing.\n"));
 		return NT_STATUS_ACCESS_DENIED;

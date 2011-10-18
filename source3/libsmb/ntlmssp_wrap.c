@@ -72,16 +72,6 @@ NTSTATUS auth_ntlmssp_unseal_packet(struct auth_ntlmssp_state *ans,
 				    data, length, whole_pdu, pdu_length, sig);
 }
 
-bool auth_ntlmssp_negotiated_sign(struct auth_ntlmssp_state *ans)
-{
-	return gensec_have_feature(ans->gensec_security, GENSEC_FEATURE_SIGN);
-}
-
-bool auth_ntlmssp_negotiated_seal(struct auth_ntlmssp_state *ans)
-{
-	return gensec_have_feature(ans->gensec_security, GENSEC_FEATURE_SEAL);
-}
-
 NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
 				   const char *user)
 {
