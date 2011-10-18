@@ -556,7 +556,7 @@ sub read_pid($$)
 	return $pid;
 }
 
-sub check_or_start($$$$) {
+sub check_or_start($$$$$) {
 	my ($self, $env_vars, $nmbd, $winbindd, $smbd) = @_;
 
 	unlink($env_vars->{NMBD_TEST_LOG});
