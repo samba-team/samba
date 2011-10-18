@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "libcli/raw/ioctl.h"
+#include "../libcli/smb/smb_constants.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 

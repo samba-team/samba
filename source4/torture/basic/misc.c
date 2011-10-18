@@ -24,7 +24,7 @@
 #include "system/time.h"
 #include "system/wait.h"
 #include "system/filesys.h"
-#include "libcli/raw/ioctl.h"
+#include "../libcli/smb/smb_constants.h"
 #include "libcli/libcli.h"
 #include "lib/events/events.h"
 #include "libcli/resolve/resolve.h"

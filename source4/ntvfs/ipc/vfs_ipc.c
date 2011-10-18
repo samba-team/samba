@@ -29,7 +29,7 @@
 #include "ntvfs/ntvfs.h"
 #include "../librpc/gen_ndr/rap.h"
 #include "ntvfs/ipc/proto.h"
-#include "libcli/raw/ioctl.h"
+#include "../libcli/smb/smb_constants.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/named_pipe_auth/npa_tstream.h"
