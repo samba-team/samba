@@ -79,7 +79,7 @@ static int dbwrap_tool_fetch_string(struct db_context *db,
 
 	status = dbwrap_fetch_bystring(db, tmp_ctx, keyname, &tdbdata);
 	if (NT_STATUS_IS_OK(status)) {
-		d_printf("%*.*s\n", (int)tdbdata.dsize-1, (int)tdbdata.dsize-1,
+		d_printf("%-*.*s\n", (int)tdbdata.dsize, (int)tdbdata.dsize,
 			 tdbdata.dptr);
 		ret = 0;
 	} else {
