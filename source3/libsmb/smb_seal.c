@@ -47,6 +47,19 @@ NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16_t *p_enc_ctx_num)
 	return NT_STATUS_INVALID_NETWORK_RESPONSE;
 }
 
+/*******************************************************************
+ Set the length and marker of an encrypted smb packet.
+********************************************************************/
+
+static void smb_set_enclen(char *buf,int len,uint16_t enc_ctx_num)
+{
+	_smb_setlen(buf,len);
+
+	SCVAL(buf,4,0xFF);
+	SCVAL(buf,5,'E');
+	SSVAL(buf,6,enc_ctx_num);
+}
+
 /******************************************************************************
  Generic code for client and server.
  Is encryption turned on ?
