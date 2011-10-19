@@ -61,6 +61,9 @@ EOF
 
 testit "samba3-upgrade-dc" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --libdir=$PREFIX/samba3-upgrade/samba3
 
+#Run final test without a wins.dat
+rm -f $PREFIX/samba3-upgrade/samba3/wins.dat
+
 # Test 3 (s3 dc using testparm hook)
 cat - > $PREFIX/samba3-upgrade/samba3/smb3.conf <<EOF
 [global]
