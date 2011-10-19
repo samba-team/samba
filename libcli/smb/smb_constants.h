@@ -32,6 +32,12 @@
 #define NBSSretarget    0x84   /* retarget session response */
 #define NBSSkeepalive   0x85   /* keepalive */
 
+#define smb_len_nbt(buf) (RIVAL(buf, 0) & 0x1FFFF)
+#define _smb_setlen_nbt(buf,len) RSIVAL(buf, 0, (len) & 0x1FFFF)
+
+#define smb_len_tcp(buf) (RIVAL(buf, 0) & 0xFFFFFF)
+#define _smb_setlen_tcp(buf,len) RSIVAL(buf, 0, (len) & 0xFFFFFF)
+
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets. */
 enum protocol_types {
