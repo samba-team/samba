@@ -3983,7 +3983,7 @@ static int replmd_replicated_uptodate_modify_callback(struct ldb_request *req,
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ldb, "Invalid reply type\n!");
+		ldb_asprintf_errstring(ldb, "Invalid LDB reply type %d", ares->type);
 		return ldb_module_done(ar->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}

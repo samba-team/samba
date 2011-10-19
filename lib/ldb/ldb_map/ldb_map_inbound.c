@@ -309,7 +309,7 @@ static int map_op_local_callback(struct ldb_request *req,
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ldb, "Invalid reply type!");
+		ldb_asprintf_errstring(ldb, "Invalid LDB reply type %d", ares->type);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
@@ -343,7 +343,7 @@ static int map_op_remote_callback(struct ldb_request *req,
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ldb, "Invalid reply type!");
+		ldb_asprintf_errstring(ldb, "Invalid LDB reply type %d", ares->type);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
@@ -802,7 +802,7 @@ static int map_rename_local_callback(struct ldb_request *req,
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ldb, "Invalid reply type!");
+		ldb_asprintf_errstring(ldb, "Invalid LDB reply type %d", ares->type);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}

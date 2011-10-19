@@ -1069,7 +1069,7 @@ int ldb_modify_default_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_request_done(req, LDB_SUCCESS);
 	default:
 		talloc_free(ares);
-		ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+		ldb_asprintf_errstring(req->handle->ldb, "Invalid LDB reply type %d", ares->type);
 		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 	}
 
@@ -1093,7 +1093,7 @@ int ldb_op_default_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	if (ares->type != LDB_REPLY_DONE) {
 		talloc_free(ares);
-		ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+		ldb_asprintf_errstring(req->handle->ldb, "Invalid LDB reply type %d", ares->type);
 		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 	}
 
@@ -1399,7 +1399,7 @@ int ldb_extended_default_callback(struct ldb_request *req,
 	}
 
 	talloc_free(ares);
-	ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+	ldb_asprintf_errstring(req->handle->ldb, "Invalid LDB reply type %d", ares->type);
 	return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 }
 
