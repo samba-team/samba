@@ -402,6 +402,7 @@ plantestsuite_idlist("samba.tests.gensec", "dc:local", [subunitrun, "$LISTOPT", 
 planpythontestsuite("none", "samba.tests.registry")
 plansambapythontestsuite("tdb.python", "none", "%s/lib/tdb/python/tests" % srcdir(), 'simple')
 planpythontestsuite("none", "samba.tests.auth")
+planpythontestsuite("none", "samba.tests.getopt")
 planpythontestsuite("none", "samba.tests.security")
 planpythontestsuite("none", "samba.tests.dcerpc.misc")
 planpythontestsuite("none", "samba.tests.param")
