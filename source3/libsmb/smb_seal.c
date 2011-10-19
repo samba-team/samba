@@ -28,7 +28,7 @@
  Pull out the encryption context for this packet. 0 means global context.
 ******************************************************************************/
 
-NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16 *p_enc_ctx_num)
+NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16_t *p_enc_ctx_num)
 {
 	if (smb_len(buf) < 8) {
 		return NT_STATUS_INVALID_BUFFER_SIZE;
@@ -113,7 +113,7 @@ static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 ******************************************************************************/
 
 static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				uint16 enc_ctx_num,
+				uint16_t enc_ctx_num,
 				char *buf,
 				char **ppbuf_out)
 {
@@ -224,7 +224,7 @@ static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 ******************************************************************************/
 
 static NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state,
-					uint16 enc_ctx_num,
+					uint16_t enc_ctx_num,
 		 			char *buf,
 					char **ppbuf_out)
 {

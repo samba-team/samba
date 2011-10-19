@@ -49,7 +49,7 @@ struct smb_tran_enc_state_gss {
 
 struct smb_trans_enc_state {
         enum smb_trans_enc_type smb_enc_type;
-        uint16 enc_ctx_num;
+        uint16_t enc_ctx_num;
         bool enc_on;
         union {
                 struct auth_ntlmssp_state *auth_ntlmssp_state;
@@ -61,7 +61,7 @@ struct smb_trans_enc_state {
 
 /* The following definitions come from libsmb/smb_seal.c  */
 
-NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16 *p_enc_ctx_num);
+NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16_t *p_enc_ctx_num);
 bool common_encryption_on(struct smb_trans_enc_state *es);
 NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, char **buf_out);
 NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf);
