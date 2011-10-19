@@ -852,11 +852,6 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16 *p_enc_ctx_num);
 bool common_encryption_on(struct smb_trans_enc_state *es);
-NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state, char *buf);
-NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				uint16 enc_ctx_num,
-				char *buf,
-				char **ppbuf_out);
 NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, char **buf_out);
 NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf);
 void common_free_encryption_state(struct smb_trans_enc_state **pp_es);

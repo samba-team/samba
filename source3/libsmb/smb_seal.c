@@ -64,7 +64,7 @@ bool common_encryption_on(struct smb_trans_enc_state *es)
  output, so cope with the same for compatibility.
 ******************************************************************************/
 
-NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state, char *buf)
+static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state, char *buf)
 {
 	NTSTATUS status;
 	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
@@ -112,7 +112,7 @@ NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_stat
  output, so do the same for compatibility.
 ******************************************************************************/
 
-NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state,
+static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state,
 				uint16 enc_ctx_num,
 				char *buf,
 				char **ppbuf_out)
