@@ -23,7 +23,7 @@
 #include "../libcli/auth/spnego.h"
 #include "../auth/ntlmssp/ntlmssp.h"
 #include "ntlmssp_wrap.h"
-#include "smb_crypt.h"
+#include "../libcli/smb/smb_seal.h"
 #include "../lib/util/asn1.h"
 #include "auth.h"
 #include "libsmb/libsmb.h"

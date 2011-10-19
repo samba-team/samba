@@ -24,7 +24,7 @@
 #include "../auth/ntlmssp/ntlmssp.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
-#include "smb_crypt.h"
+#include "../libcli/smb/smb_seal.h"
 #include "trans2.h"
 #include "ntlmssp_wrap.h"
 #include "auth/gensec/gensec.h"

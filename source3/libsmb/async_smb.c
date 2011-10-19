@@ -23,7 +23,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/tevent_unix.h"
 #include "async_smb.h"
-#include "smb_crypt.h"
+#include "../libcli/smb/smb_seal.h"
 #include "libsmb/nmblib.h"
 #include "read_smb.h"
 

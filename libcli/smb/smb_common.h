@@ -28,5 +28,6 @@
 #include "libcli/smb/smb_constants.h"
 #include "libcli/smb/smb_util.h"
 #include "libcli/smb/smb_unix_ext.h"
+#include "libcli/smb/smb_seal.h"
 
 #endif

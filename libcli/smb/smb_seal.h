@@ -59,7 +59,7 @@ struct smb_trans_enc_state {
         } s;
 };
 
-/* The following definitions come from libsmb/smb_seal.c  */
+/* The following definitions come from smb_seal.c  */
 
 NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16_t *p_enc_ctx_num);
 bool common_encryption_on(struct smb_trans_enc_state *es);

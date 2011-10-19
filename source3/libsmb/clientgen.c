@@ -22,7 +22,7 @@
 #include "libsmb/libsmb.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "smb_signing.h"
-#include "smb_crypt.h"
+#include "../libcli/smb/smb_seal.h"
 #include "async_smb.h"
 
 /*******************************************************************
