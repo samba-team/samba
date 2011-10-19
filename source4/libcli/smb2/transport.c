@@ -382,7 +382,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 			TALLOC_FREE(state);
 			goto error;
 		}
-		_smb2_setlen(state->blob.data, state->blob.length - NBT_HDR_SIZE);
+		_smb_setlen_tcp(state->blob.data, state->blob.length - NBT_HDR_SIZE);
 		memcpy(state->blob.data + NBT_HDR_SIZE,
 		       req->in.hdr + next_ofs,
 		       req->in.allocated - req->in.size);
@@ -456,7 +456,7 @@ static NTSTATUS smb2_transport_raw_send(struct smb2_transport *transport,
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	_smb2_setlen(buffer->buffer, buffer->size - NBT_HDR_SIZE);
+	_smb_setlen_tcp(buffer->buffer, buffer->size - NBT_HDR_SIZE);
 	blob = data_blob_const(buffer->buffer, buffer->size);
 	status = packet_send(transport->packet, blob);
 	if (!NT_STATUS_IS_OK(status)) {
