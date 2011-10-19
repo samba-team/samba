@@ -2441,9 +2441,12 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	NTSTATUS status;
 	bool posix_open = false;
 	bool need_re_stat = false;
+	struct security_descriptor *parent_sd = NULL;
+	uint32_t access_mask = SEC_DIR_ADD_SUBDIR;
+	uint32_t access_granted = 0;
 
-	if(!CAN_WRITE(conn)) {
-		DEBUG(5,("mkdir_internal: failing create on read-only share "
+	if(access_mask & ~(conn->share_access)) {
+		DEBUG(5,("mkdir_internal: failing share access "
 			 "%s\n", lp_servicename(SNUM(conn))));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -2463,6 +2466,34 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
 	} else {
 		mode = unix_mode(conn, FILE_ATTRIBUTE_DIRECTORY, smb_dname, parent_dir);
+	}
+
+	status = SMB_VFS_GET_NT_ACL(conn,
+				parent_dir,
+				SECINFO_DACL,
+				&parent_sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("mkdir_internal: SMB_VFS_GET_NT_ACL failed for "
+			"%s with error %s\n",
+			parent_dir,
+			nt_errstr(status)));
+		return status;
+	}
+
+	status = smb1_file_se_access_check(conn,
+					parent_sd,
+					get_current_nttok(conn),
+					access_mask,
+					&access_granted);
+	if(!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("mkdir_internal: access check "
+			"on directory %s for "
+			"path %s for mask 0x%x returned %s\n",
+			parent_dir,
+			smb_dname->base_name,
+			access_mask,
+			nt_errstr(status) ));
+		return status;
 	}
 
 	if (SMB_VFS_MKDIR(conn, smb_dname->base_name, mode) != 0) {
