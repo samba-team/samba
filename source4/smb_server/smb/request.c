@@ -311,7 +311,7 @@ void smbsrv_send_reply_nosign(struct smbsrv_request *req)
 	}
 
 	if (req->out.size > NBT_HDR_SIZE) {
-		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+		_smb_setlen_nbt(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
 	blob = data_blob_const(req->out.buffer, req->out.size);
