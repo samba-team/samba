@@ -2631,6 +2631,15 @@ static NTSTATUS open_directory(connection_struct *conn,
 			/* If directory exists error. If directory doesn't
 			 * exist create. */
 
+			if (dir_existed) {
+				status = NT_STATUS_OBJECT_NAME_COLLISION;
+				DEBUG(2, ("open_directory: unable to create "
+					  "%s. Error was %s\n",
+					  smb_fname_str_dbg(smb_dname),
+					  nt_errstr(status)));
+				return status;
+			}
+
 			status = mkdir_internal(conn, smb_dname,
 						file_attributes);
 
@@ -2651,18 +2660,29 @@ static NTSTATUS open_directory(connection_struct *conn,
 			 * exist create.
 			 */
 
-			status = mkdir_internal(conn, smb_dname,
+			if (dir_existed) {
+				status = NT_STATUS_OK;
+				info = FILE_WAS_OPENED;
+			} else {
+				status = mkdir_internal(conn, smb_dname,
 						file_attributes);
 
-			if (NT_STATUS_IS_OK(status)) {
-				info = FILE_WAS_CREATED;
+				if (NT_STATUS_IS_OK(status)) {
+					info = FILE_WAS_CREATED;
+				} else {
+					/* Cope with create race. */
+					if (!NT_STATUS_EQUAL(status,
+							NT_STATUS_OBJECT_NAME_COLLISION)) {
+						DEBUG(2, ("open_directory: unable to create "
+							"%s. Error was %s\n",
+							smb_fname_str_dbg(smb_dname),
+							nt_errstr(status)));
+						return status;
+					}
+					info = FILE_WAS_OPENED;
+				}
 			}
 
-			if (NT_STATUS_EQUAL(status,
-					    NT_STATUS_OBJECT_NAME_COLLISION)) {
-				info = FILE_WAS_OPENED;
-				status = NT_STATUS_OK;
-			}
 			break;
 
 		case FILE_SUPERSEDE:
