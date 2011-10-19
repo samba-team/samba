@@ -251,7 +251,7 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 	}
 
 	if (req->out.size > NBT_HDR_SIZE) {
-		_smb2_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+		_smb_setlen_tcp(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
 	/* if signing is active on the session then sign the packet */
