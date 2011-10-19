@@ -2479,9 +2479,9 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	if (!S_ISDIR(smb_dname->st.st_ex_mode)) {
-		DEBUG(0, ("Directory just '%s' created is not a directory\n",
+		DEBUG(0, ("Directory '%s' just created is not a directory !\n",
 			  smb_fname_str_dbg(smb_dname)));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
 	if (lp_store_dos_attributes(SNUM(conn))) {
