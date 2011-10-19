@@ -68,8 +68,8 @@ pid_t background_lpq_updater_pid = -1;
 ****************************************************************************/
 uint32_t common_flags2 = FLAGS2_LONG_PATH_COMPONENTS|FLAGS2_32_BIT_ERROR_CODES|FLAGS2_EXTENDED_ATTRIBUTES;
 
-struct smb_srv_trans_enc_ctx *partial_srv_trans_enc_ctx = NULL;
-struct smb_srv_trans_enc_ctx *srv_trans_enc_ctx = NULL;
+struct smb_trans_enc_state *partial_srv_trans_enc_ctx = NULL;
+struct smb_trans_enc_state *srv_trans_enc_ctx = NULL;
 
 /* A stack of security contexts.  We include the current context as being
    the first one, so there is room for another MAX_SEC_CTX_DEPTH more. */

@@ -74,9 +74,8 @@ extern pid_t background_lpq_updater_pid;
 ****************************************************************************/
 extern uint32_t common_flags2;
 
-struct smb_srv_trans_enc_ctx;
-extern struct smb_srv_trans_enc_ctx *partial_srv_trans_enc_ctx;
-extern struct smb_srv_trans_enc_ctx *srv_trans_enc_ctx;
+extern struct smb_trans_enc_state *partial_srv_trans_enc_ctx;
+extern struct smb_trans_enc_state *srv_trans_enc_ctx;
 
 struct sec_ctx {
 	struct security_unix_token ut;
