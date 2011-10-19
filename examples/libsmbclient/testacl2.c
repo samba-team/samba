@@ -19,17 +19,11 @@ enum acl_mode
 
 int main(int argc, const char *argv[])
 {
-    int i;
-    int opt;
     int flags;
     int debug = 0;
-    int numeric = 0;
-    int full_time_names = 0;
-    enum acl_mode mode = SMB_ACL_GET;
     static char *the_acl = NULL;
     int ret;
-    char *p;
-    char *debugstr;
+    const char *debugstr;
     char value[1024];
 
     if (smbc_init(get_auth_data_fn, debug) != 0)

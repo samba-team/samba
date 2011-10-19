@@ -17,9 +17,6 @@ int main(int argc, char* argv[])
         int             fd;
         struct stat     st1;
         struct stat     st2;
-        char            mtime[32];
-        char            ctime[32];
-        char            atime[32];
         char *          pUrl = argv[1];
 
         if(argc != 2)

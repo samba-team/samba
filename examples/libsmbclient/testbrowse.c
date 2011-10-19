@@ -9,16 +9,6 @@
 #include <libsmbclient.h>
 #include "get_auth_data_fn.h"
 
-static void
-no_auth_data_fn(const char * pServer,
-                const char * pShare,
-                char * pWorkgroup,
-                int maxLenWorkgroup,
-                char * pUsername,
-                int maxLenUsername,
-                char * pPassword,
-                int maxLenPassword);
-
 static void browse(char * path,
                    int scan,
                    int indent);
@@ -44,10 +34,8 @@ main(int argc, char * argv[])
     int                         context_auth = 0;
     int                         scan = 0;
     int                         iterations = -1;
-    int                         again;
     int                         opt;
     char *                      p;
-    char *                      q;
     char                        buf[1024];
     poptContext                 pc;
     SMBCCTX *                   context;
@@ -112,7 +100,7 @@ main(int argc, char * argv[])
     if (context_auth) {
         smbc_setFunctionAuthDataWithContext(context,
                                             get_auth_data_with_context_fn);
-        smbc_setOptionUserData(context, "hello world");
+        smbc_setOptionUserData(context, (void *)"hello world");
     } else {
         smbc_setFunctionAuthData(context, get_auth_data_fn);
     }
@@ -171,21 +159,6 @@ main(int argc, char * argv[])
     exit(0);
 }
 
-
-static void
-no_auth_data_fn(const char * pServer,
-                const char * pShare,
-                char * pWorkgroup,
-                int maxLenWorkgroup,
-                char * pUsername,
-                int maxLenUsername,
-                char * pPassword,
-                int maxLenPassword)
-{
-    return;
-}
-
-
 static void
 get_auth_data_with_context_fn(SMBCCTX * context,
                               const char * pServer,
@@ -213,7 +186,7 @@ static void browse(char * path, int scan, int indent)
     char *                      p;
     char                        buf[1024];
     int                         dir;
-    struct stat                 stat;
+    struct stat                 st;
     struct smbc_dirent *        dirent;
 
     if (! scan)
@@ -268,14 +241,14 @@ static void browse(char * path, int scan, int indent)
             p = path + strlen(path);
             strcat(p, "/");
             strcat(p+1, dirent->name);
-            if (smbc_stat(path, &stat) < 0)
+            if (smbc_stat(path, &st) < 0)
             {
                 printf(" unknown size (reason %d: %s)",
                        errno, strerror(errno));
             }
             else
             {
-                printf(" size %lu", (unsigned long) stat.st_size);
+                printf(" size %lu", (unsigned long) st.st_size);
             }
             *p = '\0';
 

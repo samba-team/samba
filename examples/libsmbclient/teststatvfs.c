@@ -11,13 +11,10 @@
 
 int main(int argc, char * argv[]) 
 { 
-    int             i;
-    int             fd;
     int             ret;
     int             debug = 0;
     char *          p;
     char            path[2048];
-    struct stat     statbuf;
     struct statvfs  statvfsbuf;
     
     smbc_init(get_auth_data_fn, debug); 

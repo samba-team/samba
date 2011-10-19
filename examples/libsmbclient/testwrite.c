@@ -10,18 +10,13 @@
 
 int main(int argc, char * argv[]) 
 { 
-    int             i;
     int             fd;
     int             ret;
     int             debug = 0;
-    int             mode = 0666;
     int             savedErrno;
     char            buffer[2048]; 
     char            path[2048];
     char *          p;
-    time_t          t0;
-    time_t          t1;
-    struct stat     st; 
     
     smbc_init(get_auth_data_fn, debug); 
     

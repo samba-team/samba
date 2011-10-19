@@ -8,11 +8,9 @@
 
 int main(int argc, char * argv[]) 
 { 
-    int             ret;
     int             debug = 0;
     int             mode = 0666;
-    char            buffer[16384]; 
-    char *          pSmbPath = NULL;
+    const char *          pSmbPath = NULL;
     struct stat     st; 
     
     if (argc == 1)

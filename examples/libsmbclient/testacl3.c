@@ -10,19 +10,12 @@
 
 int main(int argc, char * argv[]) 
 { 
-    int             i;
-    int             fd;
     int             ret;
     int             debug = 0;
-    int             mode = 0666;
-    int             savedErrno;
     char            value[2048]; 
     char            path[2048];
     char *          the_acl;
     char *          p;
-    time_t          t0;
-    time_t          t1;
-    struct stat     st; 
     SMBCCTX *       context;
     
     smbc_init(get_auth_data_fn, debug); 

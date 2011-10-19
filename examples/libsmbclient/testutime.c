@@ -9,15 +9,12 @@
 
 int main(int argc, char * argv[]) 
 { 
-    int             ret;
     int             debug = 0;
-    char            buffer[16384]; 
-    char            mtime[32];
-    char            ctime[32];
-    char            atime[32];
-    char *          pSmbPath = NULL;
+    char            m_time[32];
+    char            c_time[32];
+    char            a_time[32];
+    const char *          pSmbPath = NULL;
     time_t          t = time(NULL);
-    struct tm       tm;
     struct stat     st;
     struct utimbuf  utimbuf;
     
@@ -51,9 +48,9 @@ int main(int argc, char * argv[])
     }
     
     printf("Before\n mtime:%lu/%s ctime:%lu/%s atime:%lu/%s\n",
-           st.st_mtime, ctime_r(&st.st_mtime, mtime),
-           st.st_ctime, ctime_r(&st.st_ctime, ctime),
-           st.st_atime, ctime_r(&st.st_atime, atime)); 
+           st.st_mtime, ctime_r(&st.st_mtime, m_time),
+           st.st_ctime, ctime_r(&st.st_ctime, c_time),
+           st.st_atime, ctime_r(&st.st_atime, a_time)); 
     
     utimbuf.actime = t;         /* unchangable (wont change) */
     utimbuf.modtime = t;        /* this one should succeed */
@@ -70,9 +67,9 @@ int main(int argc, char * argv[])
     }
     
     printf("After\n mtime:%lu/%s ctime:%lu/%s atime:%lu/%s\n",
-           st.st_mtime, ctime_r(&st.st_mtime, mtime),
-           st.st_ctime, ctime_r(&st.st_ctime, ctime),
-           st.st_atime, ctime_r(&st.st_atime, atime)); 
+           st.st_mtime, ctime_r(&st.st_mtime, m_time),
+           st.st_ctime, ctime_r(&st.st_ctime, c_time),
+           st.st_atime, ctime_r(&st.st_atime, a_time)); 
     
     return 0; 
 }

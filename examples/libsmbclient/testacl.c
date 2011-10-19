@@ -27,10 +27,10 @@ int main(int argc, const char *argv[])
     int stat_and_retry = 0;
     int full_time_names = 0;
     enum acl_mode mode = SMB_ACL_LIST;
-    static char *the_acl = NULL;
+    static const char *the_acl = NULL;
     int ret;
     char *p;
-    char *debugstr;
+    const char *debugstr;
     char path[1024];
     char value[1024];
     poptContext pc;
