@@ -20,7 +20,7 @@
 #ifndef _DCESRV_NTLMSSP_H_
 #define _DCESRV_NTLMSSP_H_
 
-struct auth_ntlmssp_state;
+struct gensec_security;
 
 NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 				   bool do_sign,
@@ -29,14 +29,14 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *token_in,
 				   DATA_BLOB *token_out,
 				   const struct tsocket_address *remote_address,
-				   struct auth_ntlmssp_state **ctx);
-NTSTATUS ntlmssp_server_step(struct auth_ntlmssp_state *ctx,
+				   struct gensec_security **ctx);
+NTSTATUS ntlmssp_server_step(struct gensec_security *ctx,
 			     TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *token_in,
 			     DATA_BLOB *token_out);
-NTSTATUS ntlmssp_server_check_flags(struct auth_ntlmssp_state *ctx,
+NTSTATUS ntlmssp_server_check_flags(struct gensec_security *ctx,
 				    bool do_sign, bool do_seal);
-NTSTATUS ntlmssp_server_get_user_info(struct auth_ntlmssp_state *ctx,
+NTSTATUS ntlmssp_server_get_user_info(struct gensec_security *ctx,
 				      TALLOC_CTX *mem_ctx,
 				      struct auth_session_info **session_info);
 

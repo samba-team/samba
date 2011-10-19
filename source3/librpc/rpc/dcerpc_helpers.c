@@ -379,7 +379,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
  Create and add the NTLMSSP sign/seal auth data.
  ********************************************************************/
 
-static NTSTATUS add_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
+static NTSTATUS add_ntlmssp_auth_footer(struct gensec_security *gensec_security,
 					enum dcerpc_AuthLevel auth_level,
 					DATA_BLOB *rpc_out)
 {
@@ -389,14 +389,14 @@ static NTSTATUS add_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
 	DATA_BLOB auth_blob;
 	NTSTATUS status;
 
-	if (!auth_state) {
+	if (!gensec_security) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	switch (auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
-		status = gensec_seal_packet(auth_state->gensec_security,
+		status = gensec_seal_packet(gensec_security,
 					    rpc_out->data,
 					    rpc_out->data
 					    + DCERPC_RESPONSE_LENGTH,
@@ -411,7 +411,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* Data is signed. */
-		status = gensec_sign_packet(auth_state->gensec_security,
+		status = gensec_sign_packet(gensec_security,
 					    rpc_out->data,
 					    rpc_out->data
 					    + DCERPC_RESPONSE_LENGTH,
@@ -447,7 +447,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
  Check/unseal the NTLMSSP auth data. (Unseal in place).
  ********************************************************************/
 
-static NTSTATUS get_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
+static NTSTATUS get_ntlmssp_auth_footer(struct gensec_security *gensec_security,
 					enum dcerpc_AuthLevel auth_level,
 					DATA_BLOB *data, DATA_BLOB *full_pkt,
 					DATA_BLOB *auth_token)
@@ -455,7 +455,7 @@ static NTSTATUS get_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
 	switch (auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		/* Data portion is encrypted. */
-		return gensec_unseal_packet(auth_state->gensec_security,
+		return gensec_unseal_packet(gensec_security,
 					    data->data,
 					    data->length,
 					    full_pkt->data,
@@ -464,7 +464,7 @@ static NTSTATUS get_ntlmssp_auth_footer(struct auth_ntlmssp_state *auth_state,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* Data is signed. */
-		return gensec_check_packet(auth_state->gensec_security,
+		return gensec_check_packet(gensec_security,
 					   data->data,
 					   data->length,
 					   full_pkt->data,
@@ -747,7 +747,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 				size_t pad_len, DATA_BLOB *rpc_out)
 {
 	struct schannel_state *schannel_auth;
-	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
 	char pad[CLIENT_NDR_PADDING_SIZE] = { 0, };
@@ -804,9 +804,9 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 						auth->auth_level, rpc_out);
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		ntlmssp_ctx = talloc_get_type_abort(auth->auth_ctx,
-						struct auth_ntlmssp_state);
-		status = add_ntlmssp_auth_footer(ntlmssp_ctx,
+		gensec_security = talloc_get_type_abort(auth->auth_ctx,
+						struct gensec_security);
+		status = add_ntlmssp_auth_footer(gensec_security,
 						 auth->auth_level,
 						 rpc_out);
 		break;
@@ -852,7 +852,7 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 			   size_t *pad_len)
 {
 	struct schannel_state *schannel_auth;
-	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
 	NTSTATUS status;
@@ -936,9 +936,9 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 		DEBUG(10, ("NTLMSSP auth\n"));
 
-		ntlmssp_ctx = talloc_get_type_abort(auth->auth_ctx,
-						struct auth_ntlmssp_state);
-		status = get_ntlmssp_auth_footer(ntlmssp_ctx,
+		gensec_security = talloc_get_type_abort(auth->auth_ctx,
+						struct gensec_security);
+		status = get_ntlmssp_auth_footer(gensec_security,
 						 auth->auth_level,
 						 &data, &full_pkt,
 						 &auth_info.credentials);

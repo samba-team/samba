@@ -589,7 +589,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 				   struct dcerpc_auth *auth_info,
 				   DATA_BLOB *response)
 {
-	struct auth_ntlmssp_state *ntlmssp_state = NULL;
+	struct gensec_security *gensec_security = NULL;
         NTSTATUS status;
 
 	if (strncmp((char *)auth_info->credentials.data, "NTLMSSP", 7) != 0) {
@@ -607,7 +607,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 					   &auth_info->credentials,
 					   response,
 					   p->remote_address,
-					   &ntlmssp_state);
+					   &gensec_security);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		DEBUG(0, (__location__ ": auth_ntlmssp_start failed: %s\n",
 			  nt_errstr(status)));
@@ -617,7 +617,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 	/* Make sure data is bound to the memctx, to be freed the caller */
 	talloc_steal(mem_ctx, response->data);
 
-	p->auth.auth_ctx = ntlmssp_state;
+	p->auth.auth_ctx = gensec_security;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 
 	DEBUG(10, (__location__ ": NTLMSSP auth started\n"));
@@ -633,7 +633,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 *******************************************************************/
 
 static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
-				struct auth_ntlmssp_state *ntlmssp_ctx,
+				struct gensec_security *gensec_security,
 				enum dcerpc_AuthLevel auth_level,
 				struct auth_session_info **session_info)
 {
@@ -646,7 +646,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 	   ensure the underlying NTLMSSP flags are also set. If not we should
 	   refuse the bind. */
 
-	status = ntlmssp_server_check_flags(ntlmssp_ctx,
+	status = ntlmssp_server_check_flags(gensec_security,
 					    (auth_level ==
 						DCERPC_AUTH_LEVEL_INTEGRITY),
 					    (auth_level ==
@@ -659,7 +659,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(*session_info);
 
-	status = ntlmssp_server_get_user_info(ntlmssp_ctx,
+	status = ntlmssp_server_get_user_info(gensec_security,
 						mem_ctx, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": failed to obtain the server info "
@@ -772,7 +772,7 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 {
 	enum spnego_mech auth_type;
-	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
 	void *mech_ctx;
@@ -780,9 +780,9 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 
 	switch (p->auth.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		ntlmssp_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-						    struct auth_ntlmssp_state);
-		if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
+		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
+							struct gensec_security);
+		if (!pipe_ntlmssp_verify_final(p, gensec_security,
 						p->auth.auth_level,
 						&p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
@@ -824,9 +824,9 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 			}
 			break;
 		case SPNEGO_NTLMSSP:
-			ntlmssp_ctx = talloc_get_type_abort(mech_ctx,
-						struct auth_ntlmssp_state);
-			if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
+			gensec_security = talloc_get_type_abort(mech_ctx,
+						struct gensec_security);
+			if (!pipe_ntlmssp_verify_final(p, gensec_security,
 							p->auth.auth_level,
 							&p->session_info)) {
 				return NT_STATUS_ACCESS_DENIED;
@@ -1163,7 +1163,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 {
 	struct dcerpc_auth auth_info;
 	DATA_BLOB response = data_blob_null;
-	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
 	NTSTATUS status;
@@ -1211,9 +1211,9 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 	switch (auth_info.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		ntlmssp_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-						    struct auth_ntlmssp_state);
-		status = ntlmssp_server_step(ntlmssp_ctx,
+		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
+						    struct gensec_security);
+		status = ntlmssp_server_step(gensec_security,
 					     pkt, &auth_info.credentials,
 					     &response);
 		break;
@@ -1282,7 +1282,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
 	int pad_len = 0;
-	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
 
@@ -1379,9 +1379,9 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 						    &auth_resp);
 			break;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
-			ntlmssp_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-						    struct auth_ntlmssp_state);
-			status = ntlmssp_server_step(ntlmssp_ctx,
+			gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
+						    struct gensec_security);
+			status = ntlmssp_server_step(gensec_security,
 						     pkt,
 						     &auth_info.credentials,
 						     &auth_resp);

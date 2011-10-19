@@ -30,7 +30,7 @@ struct spnego_context {
 	enum spnego_mech mech;
 
 	union {
-		struct auth_ntlmssp_state *ntlmssp_state;
+		struct gensec_security *gensec_security;
 		struct gse_context *gssapi_state;
 	} mech_ctx;
 

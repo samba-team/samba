@@ -92,6 +92,7 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 				    struct spnego_context **spnego_ctx)
 {
 	struct spnego_context *sp_ctx = NULL;
+	struct auth_ntlmssp_state *auth_ntlmssp_state;
 	NTSTATUS status;
 
 	status = spnego_context_init(mem_ctx, do_sign, do_seal, &sp_ctx);
@@ -101,27 +102,27 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	sp_ctx->mech = SPNEGO_NTLMSSP;
 
 	status = auth_ntlmssp_client_prepare(sp_ctx,
-					&sp_ctx->mech_ctx.ntlmssp_state);
+					&auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
 	}
 
-	status = auth_ntlmssp_set_username(sp_ctx->mech_ctx.ntlmssp_state,
+	status = auth_ntlmssp_set_username(auth_ntlmssp_state,
 					   username);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
 	}
 
-	status = auth_ntlmssp_set_domain(sp_ctx->mech_ctx.ntlmssp_state,
+	status = auth_ntlmssp_set_domain(auth_ntlmssp_state,
 					 domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
 	}
 
-	status = auth_ntlmssp_set_password(sp_ctx->mech_ctx.ntlmssp_state,
+	status = auth_ntlmssp_set_password(auth_ntlmssp_state,
 					   password);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
@@ -129,19 +130,21 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_sign) {
-		gensec_want_feature(sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+		gensec_want_feature(auth_ntlmssp_state->gensec_security,
 					  GENSEC_FEATURE_SIGN);
 	} else if (do_seal) {
-		gensec_want_feature(sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+		gensec_want_feature(auth_ntlmssp_state->gensec_security,
 					  GENSEC_FEATURE_SEAL);
 	}
 
-	status = auth_ntlmssp_client_start(sp_ctx->mech_ctx.ntlmssp_state);
+	status = auth_ntlmssp_client_start(auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
 	}
 
+	sp_ctx->mech_ctx.gensec_security = talloc_move(sp_ctx, &auth_ntlmssp_state->gensec_security);
+	TALLOC_FREE(auth_ntlmssp_state);
 	*spnego_ctx = sp_ctx;
 	return NT_STATUS_OK;
 }
@@ -152,7 +155,7 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB *spnego_out)
 {
 	struct gse_context *gse_ctx;
-	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gensec_security *gensec_security;
 	struct spnego_data sp_in, sp_out;
 	DATA_BLOB token_in = data_blob_null;
 	DATA_BLOB token_out = data_blob_null;
@@ -213,8 +216,8 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 
 	case SPNEGO_NTLMSSP:
 
-		ntlmssp_ctx = sp_ctx->mech_ctx.ntlmssp_state;
-		status = gensec_update(ntlmssp_ctx->gensec_security, mem_ctx, NULL,
+		gensec_security = sp_ctx->mech_ctx.gensec_security;
+		status = gensec_update(gensec_security, mem_ctx, NULL,
 				       token_in, &token_out);
 		if (NT_STATUS_EQUAL(status,
 				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -317,7 +320,7 @@ NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 		*auth_context = sp_ctx->mech_ctx.gssapi_state;
 		break;
 	case SPNEGO_NTLMSSP:
-		*auth_context = sp_ctx->mech_ctx.ntlmssp_state;
+		*auth_context = sp_ctx->mech_ctx.gensec_security;
 		break;
 	default:
 		return NT_STATUS_INTERNAL_ERROR;
@@ -337,7 +340,7 @@ DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 		return gse_get_session_key(mem_ctx,
 					   sp_ctx->mech_ctx.gssapi_state);
 	case SPNEGO_NTLMSSP:
-		status = gensec_session_key(sp_ctx->mech_ctx.ntlmssp_state->gensec_security, mem_ctx, &sk);
+		status = gensec_session_key(sp_ctx->mech_ctx.gensec_security, mem_ctx, &sk);
 		if (!NT_STATUS_IS_OK(status)) {
 			return data_blob_null;
 		}
@@ -360,7 +363,7 @@ NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
 				data, signature);
 	case SPNEGO_NTLMSSP:
 		return gensec_sign_packet(
-			sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+			sp_ctx->mech_ctx.gensec_security,
 			mem_ctx,
 			data->data, data->length,
 			full_data->data, full_data->length,
@@ -382,7 +385,7 @@ NTSTATUS spnego_sigcheck(TALLOC_CTX *mem_ctx,
 				    data, signature);
 	case SPNEGO_NTLMSSP:
 		return gensec_check_packet(
-			sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+			sp_ctx->mech_ctx.gensec_security,
 			data->data, data->length,
 			full_data->data, full_data->length,
 			signature);
@@ -403,7 +406,7 @@ NTSTATUS spnego_seal(TALLOC_CTX *mem_ctx,
 				data, signature);
 	case SPNEGO_NTLMSSP:
 		return gensec_seal_packet(
-			sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+			sp_ctx->mech_ctx.gensec_security,
 			mem_ctx,
 			data->data, data->length,
 			full_data->data, full_data->length,
@@ -425,7 +428,7 @@ NTSTATUS spnego_unseal(TALLOC_CTX *mem_ctx,
 				    data, signature);
 	case SPNEGO_NTLMSSP:
 		return gensec_unseal_packet(
-			sp_ctx->mech_ctx.ntlmssp_state->gensec_security,
+			sp_ctx->mech_ctx.gensec_security,
 			data->data, data->length,
 			full_data->data, full_data->length,
 			signature);

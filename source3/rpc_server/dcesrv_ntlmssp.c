@@ -32,7 +32,7 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *token_in,
 				   DATA_BLOB *token_out,
 				   const struct tsocket_address *remote_address,
-				   struct auth_ntlmssp_state **ctx)
+				   struct gensec_security **ctx)
 {
 	struct auth_ntlmssp_state *a = NULL;
 	NTSTATUS status;
@@ -67,19 +67,17 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 	}
 
 	/* steal ntlmssp context too */
-	*ctx = talloc_move(mem_ctx, &a);
+	*ctx = talloc_move(mem_ctx, &a->gensec_security);
 
 	status = NT_STATUS_OK;
 
 done:
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(a);
-	}
+	TALLOC_FREE(a);
 
 	return status;
 }
 
-NTSTATUS ntlmssp_server_step(struct auth_ntlmssp_state *ctx,
+NTSTATUS ntlmssp_server_step(struct gensec_security *gensec_security,
 			     TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *token_in,
 			     DATA_BLOB *token_out)
@@ -88,22 +86,22 @@ NTSTATUS ntlmssp_server_step(struct auth_ntlmssp_state *ctx,
 
 	/* this has to be done as root in order to verify the password */
 	become_root();
-	status = gensec_update(ctx->gensec_security, mem_ctx, NULL, *token_in, token_out);
+	status = gensec_update(gensec_security, mem_ctx, NULL, *token_in, token_out);
 	unbecome_root();
 
 	return status;
 }
 
-NTSTATUS ntlmssp_server_check_flags(struct auth_ntlmssp_state *ctx,
+NTSTATUS ntlmssp_server_check_flags(struct gensec_security *gensec_security,
 				    bool do_sign, bool do_seal)
 {
-	if (do_sign && !gensec_have_feature(ctx->gensec_security, GENSEC_FEATURE_SIGN)) {
+	if (do_sign && !gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		DEBUG(1, (__location__ "Integrity was requested but client "
 			  "failed to negotiate signing.\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (do_seal && !gensec_have_feature(ctx->gensec_security, GENSEC_FEATURE_SEAL)) {
+	if (do_seal && !gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
 		DEBUG(1, (__location__ "Privacy was requested but client "
 			  "failed to negotiate sealing.\n"));
 		return NT_STATUS_ACCESS_DENIED;
@@ -112,13 +110,13 @@ NTSTATUS ntlmssp_server_check_flags(struct auth_ntlmssp_state *ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ntlmssp_server_get_user_info(struct auth_ntlmssp_state *ctx,
+NTSTATUS ntlmssp_server_get_user_info(struct gensec_security *gensec_security,
 				      TALLOC_CTX *mem_ctx,
 				      struct auth_session_info **session_info)
 {
 	NTSTATUS status;
 
-	status = gensec_session_info(ctx->gensec_security, mem_ctx, session_info);
+	status = gensec_session_info(gensec_security, mem_ctx, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, (__location__ ": Failed to get authenticated user "
 			  "info: %s\n", nt_errstr(status)));

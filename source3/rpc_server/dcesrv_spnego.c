@@ -54,7 +54,7 @@ static NTSTATUS spnego_server_mech_init(struct spnego_context *sp_ctx,
 					DATA_BLOB *token_in,
 					DATA_BLOB *token_out)
 {
-	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct gensec_security *gensec_security;
 	struct gse_context *gse_ctx;
 	NTSTATUS status;
 
@@ -84,14 +84,14 @@ static NTSTATUS spnego_server_mech_init(struct spnego_context *sp_ctx,
 						   token_in,
 						   token_out,
 						   sp_ctx->remote_address,
-						   &ntlmssp_ctx);
+						   &gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to init ntlmssp server "
 				  "(%s)\n", nt_errstr(status)));
 			return status;
 		}
 
-		sp_ctx->mech_ctx.ntlmssp_state = ntlmssp_ctx;
+		sp_ctx->mech_ctx.gensec_security = gensec_security;
 		break;
 
 	default:
@@ -155,7 +155,7 @@ NTSTATUS spnego_server_step(struct spnego_context *sp_ctx,
 			break;
 		case SPNEGO_NTLMSSP:
 			status = ntlmssp_server_step(
-					sp_ctx->mech_ctx.ntlmssp_state,
+					sp_ctx->mech_ctx.gensec_security,
 					mem_ctx, &token_in, &token_out);
 			break;
 		default:
