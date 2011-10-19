@@ -848,15 +848,6 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		   uint8_t **rparam, uint32_t min_rparam, uint32_t *num_rparam,
 		   uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata);
 
-/* The following definitions come from libsmb/smb_seal.c  */
-
-NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16 *p_enc_ctx_num);
-bool common_encryption_on(struct smb_trans_enc_state *es);
-NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, char **buf_out);
-NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf);
-void common_free_encryption_state(struct smb_trans_enc_state **pp_es);
-void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf);
-
 /* The following definitions come from libsmb/clisigning.c  */
 
 bool cli_simple_set_signing(struct cli_state *cli,
