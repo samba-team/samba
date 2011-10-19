@@ -583,7 +583,13 @@ _PUBLIC_ NTSTATUS packet_full_request_nbt(void *private_data, DATA_BLOB blob, si
 	if (blob.length < 4) {
 		return STATUS_MORE_ENTRIES;
 	}
-	*size = 4 + smb_len(blob.data);
+	/*
+	 * Note: that we use smb_len_tcp() instead
+	 *       of smb_len_nbt() as this function is not
+	 *       used for nbt and the source4 copy
+	 *       of smb_len() was smb_len_tcp()
+	 */
+	*size = 4 + smb_len_tcp(blob.data);
 	if (*size > blob.length) {
 		return STATUS_MORE_ENTRIES;
 	}
