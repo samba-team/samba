@@ -190,7 +190,7 @@ struct smbcli_request *smbcli_transport_connect_send(struct smbcli_transport *tr
 	memcpy(p, calling_blob.data, calling_blob.length);
 	p += calling_blob.length;
 
-	_smb_setlen(req->out.buffer, PTR_DIFF(p, req->out.buffer) - NBT_HDR_SIZE);
+	_smb_setlen_nbt(req->out.buffer, PTR_DIFF(p, req->out.buffer) - NBT_HDR_SIZE);
 	SCVAL(req->out.buffer,0,0x81);
 
 	if (!smbcli_request_send(req)) {

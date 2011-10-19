@@ -336,7 +336,7 @@ NTSTATUS smbcli_chained_advance(struct smbcli_request *req)
 bool smbcli_request_send(struct smbcli_request *req)
 {
 	if (IVAL(req->out.buffer, 0) == 0) {
-		_smb_setlen(req->out.buffer, req->out.size - NBT_HDR_SIZE);
+		_smb_setlen_nbt(req->out.buffer, req->out.size - NBT_HDR_SIZE);
 	}
 
 	smbcli_request_calculate_sign_mac(req);
