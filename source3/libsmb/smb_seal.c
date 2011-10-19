@@ -18,10 +18,8 @@
 */
 
 #include "includes.h"
-#include "../auth/ntlmssp/ntlmssp.h"
 #include "smb_crypt.h"
 #include "libsmb/libsmb.h"
-#include "ntlmssp_wrap.h"
 #include "libcli/auth/krb5_wrap.h"
 #include "auth/gensec/gensec.h"
 
@@ -75,14 +73,12 @@ bool common_encryption_on(struct smb_trans_enc_state *es)
 
 /******************************************************************************
  Generic code for client and server.
- NTLM decrypt an incoming buffer.
- Abartlett tells me that SSPI puts the signature first before the encrypted
- output, so cope with the same for compatibility.
+ GENSEC decrypt an incoming buffer.
 ******************************************************************************/
 
-static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state, char *buf)
+static NTSTATUS common_gensec_decrypt_buffer(struct gensec_security *gensec,
+					     char *buf)
 {
-	struct gensec_security *gensec = auth_ntlmssp_state->gensec_security;
 	NTSTATUS status;
 	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
 	DATA_BLOB in_buf, out_buf;
@@ -99,14 +95,14 @@ static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 	status = gensec_unwrap(gensec, frame, &in_buf, &out_buf);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("common_ntlm_decrypt_buffer: gensec_unwrap failed. Error %s\n",
+		DEBUG(0,("common_gensec_decrypt_buffer: gensec_unwrap failed. Error %s\n",
 			 nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
 	}
 
 	if (out_buf.length > in_buf.length) {
-		DEBUG(0,("common_ntlm_decrypt_buffer: gensec_unwrap size (%u) too large (%u) !\n",
+		DEBUG(0,("common_gensec_decrypt_buffer: gensec_unwrap size (%u) too large (%u) !\n",
 			(unsigned int)out_buf.length,
 			(unsigned int)in_buf.length ));
 		TALLOC_FREE(frame);
@@ -126,16 +122,13 @@ static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 /******************************************************************************
  Generic code for client and server.
  NTLM encrypt an outgoing buffer. Return the encrypted pointer in ppbuf_out.
- Abartlett tells me that SSPI puts the signature first before the encrypted
- output, so do the same for compatibility.
 ******************************************************************************/
 
-static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state,
-				uint16_t enc_ctx_num,
-				char *buf,
-				char **ppbuf_out)
+static NTSTATUS common_gensec_encrypt_buffer(struct gensec_security *gensec,
+				      uint16_t enc_ctx_num,
+				      char *buf,
+				      char **ppbuf_out)
 {
-	struct gensec_security *gensec = auth_ntlmssp_state->gensec_security;
 	NTSTATUS status;
 	DATA_BLOB in_buf, out_buf;
 	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
@@ -152,7 +145,7 @@ static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 
 	status = gensec_wrap(gensec, frame, &in_buf, &out_buf);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("common_ntlm_encrypt_buffer: gensec_wrap failed. Error %s\n",
+		DEBUG(0,("common_gensec_encrypt_buffer: gensec_wrap failed. Error %s\n",
 			 nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
@@ -331,7 +324,7 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 
 	switch (es->smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
-			return common_ntlm_encrypt_buffer(es->s.auth_ntlmssp_state, es->enc_ctx_num, buffer, buf_out);
+			return common_gensec_encrypt_buffer(es->s.gensec_security, es->enc_ctx_num, buffer, buf_out);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
 			return common_gss_encrypt_buffer(es->s.gss_state, es->enc_ctx_num, buffer, buf_out);
@@ -356,7 +349,7 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 
 	switch (es->smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
-			return common_ntlm_decrypt_buffer(es->s.auth_ntlmssp_state, buf);
+			return common_gensec_decrypt_buffer(es->s.gensec_security, buf);
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
 			return common_gss_decrypt_buffer(es->s.gss_state, buf);
@@ -399,8 +392,8 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 	}
 
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if (es->s.auth_ntlmssp_state) {
-			TALLOC_FREE(es->s.auth_ntlmssp_state);
+		if (es->s.gensec_security) {
+			TALLOC_FREE(es->s.gensec_security);
 		}
 	}
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)

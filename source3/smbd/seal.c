@@ -40,7 +40,7 @@
 
 struct smb_srv_trans_enc_ctx {
 	struct smb_trans_enc_state *es;
-	struct auth_ntlmssp_state *auth_ntlmssp_state; /* Must be kept in sync with pointer in ec->ntlmssp_state. */
+	struct gensec_security *gensec_security; /* Must be kept in sync with pointer in ec->ntlmssp_state. */
 };
 
 /******************************************************************************
@@ -88,17 +88,19 @@ bool is_encrypted_packet(struct smbd_server_connection *sconn,
 static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 				  struct smb_srv_trans_enc_ctx *ec)
 {
+	struct auth_ntlmssp_state *auth_ntlmssp_state;
 	NTSTATUS status = auth_ntlmssp_prepare(remote_address,
-					     &ec->auth_ntlmssp_state);
+					       &auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
 
-	gensec_want_feature(ec->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL);
+	gensec_want_feature(auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL);
 
-	status = auth_ntlmssp_start(ec->auth_ntlmssp_state);
+	status = auth_ntlmssp_start(auth_ntlmssp_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(auth_ntlmssp_state);
 		return nt_status_squash(status);
 	}
 
@@ -106,7 +108,14 @@ static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 	 * We must remember to update the pointer copy for the common
 	 * functions after any auth_ntlmssp_start/auth_ntlmssp_end.
 	 */
-	ec->es->s.auth_ntlmssp_state = ec->auth_ntlmssp_state;
+	ec->es->s.gensec_security = ec->gensec_security;
+
+	/* We do not need the auth_ntlmssp layer any more, which was
+	 * allocated on NULL, so promote gensec_security to the NULL
+	 * context */
+	ec->gensec_security = talloc_move(NULL, &auth_ntlmssp_state->gensec_security);
+	TALLOC_FREE(auth_ntlmssp_state);
+
 	return status;
 }
 
@@ -121,10 +130,10 @@ static void destroy_auth_ntlmssp(struct smb_srv_trans_enc_ctx *ec)
 	 * functions after any auth_ntlmssp_start/auth_ntlmssp_end.
 	 */
 
-	if (ec->auth_ntlmssp_state) {
-		TALLOC_FREE(ec->auth_ntlmssp_state);
+	if (ec->gensec_security) {
+		TALLOC_FREE(ec->gensec_security);
 		/* The auth_ntlmssp_end killed this already. */
-		ec->es->s.auth_ntlmssp_state = NULL;
+		ec->es->s.gensec_security = NULL;
 	}
 }
 
@@ -489,7 +498,7 @@ static NTSTATUS srv_enc_ntlm_negotiate(const struct tsocket_address *remote_addr
 		return status;
 	}
 
-	status = gensec_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state->gensec_security,
+	status = gensec_update(partial_srv_trans_enc_ctx->gensec_security,
 			       talloc_tos(), NULL,
 			       secblob, &chal);
 
@@ -603,7 +612,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 
 	/* We must have a partial context here. */
 
-	if (!ec || !ec->es || ec->auth_ntlmssp_state == NULL || ec->es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
+	if (!ec || !ec->es || ec->gensec_security == NULL || ec->es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
 		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -614,7 +623,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = gensec_update(ec->auth_ntlmssp_state->gensec_security, talloc_tos(), NULL, auth, &auth_reply);
+	status = gensec_update(ec->gensec_security, talloc_tos(), NULL, auth, &auth_reply);
 	data_blob_free(&auth);
 
 	/* From RFC4178.
@@ -678,13 +687,13 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 	}
 
 	ec = partial_srv_trans_enc_ctx;
-	if (!ec || !ec->es || ec->auth_ntlmssp_state == NULL || ec->es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
+	if (!ec || !ec->es || ec->gensec_security == NULL || ec->es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
 		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Second step. */
-	status = gensec_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state->gensec_security,
+	status = gensec_update(partial_srv_trans_enc_ctx->gensec_security,
 			       talloc_tos(), NULL,
 			       blob, &response);
 
@@ -761,11 +770,11 @@ static NTSTATUS check_enc_good(struct smb_srv_trans_enc_ctx *ec)
 	}
 
 	if (ec->es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if (!gensec_have_feature(ec->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SIGN)) {
+		if (!gensec_have_feature(ec->gensec_security, GENSEC_FEATURE_SIGN)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (!gensec_have_feature(ec->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL)) {
+		if (!gensec_have_feature(ec->gensec_security, GENSEC_FEATURE_SEAL)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}

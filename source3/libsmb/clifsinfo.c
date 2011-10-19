@@ -609,36 +609,37 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	DATA_BLOB blob_out = data_blob_null;
 	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	struct auth_ntlmssp_state *auth_ntlmssp_state;
 	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_NTLM);
 
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	status = auth_ntlmssp_client_prepare(NULL,
-					     &es->s.auth_ntlmssp_state);
+					     &auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	gensec_want_feature(es->s.auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
-	gensec_want_feature(es->s.auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL);
+	gensec_want_feature(auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+	gensec_want_feature(auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL);
 
-	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_username(es->s.auth_ntlmssp_state, user))) {
+	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_username(auth_ntlmssp_state, user))) {
 		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_domain(es->s.auth_ntlmssp_state, domain))) {
+	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_domain(auth_ntlmssp_state, domain))) {
 		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_password(es->s.auth_ntlmssp_state, pass))) {
+	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_password(auth_ntlmssp_state, pass))) {
 		goto fail;
 	}
 
-	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_client_start(es->s.auth_ntlmssp_state))) {
+	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_client_start(auth_ntlmssp_state))) {
 		goto fail;
 	}
 
 	do {
-		status = gensec_update(es->s.auth_ntlmssp_state->gensec_security, es->s.auth_ntlmssp_state,
+		status = gensec_update(auth_ntlmssp_state->gensec_security, auth_ntlmssp_state,
 				       NULL, blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		data_blob_free(&param_out);
@@ -667,13 +668,18 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 		if (cli->trans_enc_state) {
 			common_free_encryption_state(&cli->trans_enc_state);
 		}
+		/* We only need the gensec_security part from here.
+		 * es is a malloc()ed pointer, so we cannot make
+		 * gensec_security a talloc child */
+		es->s.gensec_security = talloc_move(NULL,
+					&auth_ntlmssp_state->gensec_security);
 		cli->trans_enc_state = es;
 		cli->trans_enc_state->enc_on = True;
 		es = NULL;
 	}
 
   fail:
-
+	TALLOC_FREE(auth_ntlmssp_state);
 	common_free_encryption_state(&es);
 	return status;
 }

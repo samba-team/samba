@@ -52,7 +52,7 @@ struct smb_trans_enc_state {
         uint16_t enc_ctx_num;
         bool enc_on;
         union {
-                struct auth_ntlmssp_state *auth_ntlmssp_state;
+                struct gensec_security *gensec_security;
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
                 struct smb_tran_enc_state_gss *gss_state;
 #endif
