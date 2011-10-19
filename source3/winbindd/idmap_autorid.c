@@ -35,8 +35,6 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 #define HWM "NEXT RANGE"
-#define ALLOC_HWM "NEXT ALLOC ID"
-#define ALLOC_POOL_SIZE 500
 #define CONFIGKEY "CONFIG"
 
 struct autorid_global_config {
@@ -373,24 +371,6 @@ static NTSTATUS idmap_autorid_db_init(void)
 		return status;
 	}
 
-	/* Initialize high water mark for alloc pool to 0 */
-	status = dbwrap_fetch_int32(autorid_db, ALLOC_HWM, &hwm);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ||
-	    (NT_STATUS_IS_OK(status) && (hwm < 0)))
-	{
-		status = dbwrap_trans_store_int32(autorid_db, ALLOC_HWM, 0);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,
-			      ("Unable to initialise alloc HWM in autorid "
-			       "database: %s\n", nt_errstr(status)));
-			return NT_STATUS_INTERNAL_DB_ERROR;
-		}
-	} else if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("unable to fetch alloc HWM from autorid database: "
-			  "%s\n", nt_errstr(status)));
-		return status;
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -574,46 +554,6 @@ done:
 	return status;
 }
 
-static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
-					  struct unixid *xid) {
-
-	struct autorid_global_config *globalcfg;
-	NTSTATUS ret;
-	uint32_t hwm;
-
-	if (!strequal(dom->name, "*")) {
-		DEBUG(3, ("idmap_autorid_allocate_id: "
-			  "Refusing creation of mapping for domain'%s'. "
-			  "Currently only supported for the default "
-			  "domain \"*\".\n",
-			   dom->name));
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	globalcfg = talloc_get_type(dom->private_data,
-				    struct autorid_global_config);
-
-	ret = dbwrap_fetch_uint32(autorid_db, ALLOC_HWM, &hwm);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1, ("Failed to fetch current allocation HWM value: %s\n",
-			  nt_errstr(ret)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	if (hwm > ALLOC_POOL_SIZE) {
-		DEBUG(1, ("allocation pool is depleted!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = dbwrap_change_uint32_atomic(autorid_db, ALLOC_HWM, &(xid->id), 1);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1, ("Fatal error while allocating new ID!\n"));
-	}
-	xid->id = (xid->id)+(globalcfg->minvalue);
-
-	return ret;
-}
-
 /*
   Close the idmap tdb instance
 */
@@ -621,7 +561,6 @@ static struct idmap_methods autorid_methods = {
 	.init = idmap_autorid_initialize,
 	.unixids_to_sids = idmap_autorid_unixids_to_sids,
 	.sids_to_unixids = idmap_autorid_sids_to_unixids,
-	.allocate_id	 = idmap_autorid_allocate_id
 };
 
 NTSTATUS idmap_autorid_init(void)
