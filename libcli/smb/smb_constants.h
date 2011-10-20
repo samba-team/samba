@@ -32,6 +32,33 @@
 #define NBSSretarget    0x84   /* retarget session response */
 #define NBSSkeepalive   0x85   /* keepalive */
 
+#define SMB_MAGIC 0x424D53FF /* 0xFF 'S' 'M' 'B' */
+
+/* the basic packet size, assuming no words or bytes. Does not include the NBT header */
+#define MIN_SMB_SIZE 35
+
+/* when using NBT encapsulation every packet has a 4 byte header */
+#define NBT_HDR_SIZE 4
+
+/* offsets into message header for common items - NOTE: These have
+   changed from being offsets from the base of the NBT packet to the base of the SMB packet.
+   this has reduced all these values by 4
+*/
+#define HDR_COM 4
+#define HDR_RCLS 5
+#define HDR_REH 6
+#define HDR_ERR 7
+#define HDR_FLG 9
+#define HDR_FLG2 10
+#define HDR_PIDHIGH 12
+#define HDR_SS_FIELD 14
+#define HDR_TID 24
+#define HDR_PID 26
+#define HDR_UID 28
+#define HDR_MID 30
+#define HDR_WCT 32
+#define HDR_VWV 33
+
 #define smb_len_nbt(buf) (RIVAL(buf, 0) & 0x1FFFF)
 #define _smb_setlen_nbt(buf,len) RSIVAL(buf, 0, (len) & 0x1FFFF)
 
