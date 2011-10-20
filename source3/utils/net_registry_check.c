@@ -336,7 +336,7 @@ static struct check_ctx* check_ctx_create(TALLOC_CTX *mem_ctx, const char *db,
 		}
 	}
 
-	ctx->default_action = opt->automatic ? 'd' : 'r';
+	ctx->default_action = 'r';
 	return ctx;
 fail:
 	talloc_free(ctx);
@@ -728,6 +728,7 @@ static int check_tdb_action(struct db_record *rec, void *check_ctx)
 	char *key;
 	bool invalid_path = false;
 	bool once_more;
+	bool first_iter = true;
 
 	if (!tdb_data_is_cstr(rec_key)) {
 		printf("Key is not zero terminated: \"%.*s\"\ntry to go on.\n",
@@ -791,9 +792,9 @@ static int check_tdb_action(struct db_record *rec, void *check_ctx)
 		if (invalid_path) {
 			int action;
 			if (ctx->opt.output == NULL) {
-				action = 's';
+				action = first_iter ? 'r' : 's';
 			} else if (ctx->opt.automatic) {
-				action = (ctx->default_action == 'r') ? 'd' : 'r';
+				action = first_iter ? 'r' : 'd';
 			} else if (ctx->auto_action != '\0') {
 				action = ctx->auto_action;
 			} else {
@@ -828,6 +829,7 @@ static int check_tdb_action(struct db_record *rec, void *check_ctx)
 				break;
 			}
 		}
+		first_iter = false;
 	} while (once_more);
 
 	if (invalid_path) {
