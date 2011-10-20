@@ -709,13 +709,14 @@ static bool normalize_path_internal(char* path, char sep) {
 static bool normalize_path(char* path, char sep) {
 	static const char* SEPS = "\\/";
 	char* firstsep = strpbrk(path, SEPS);
+	bool wrong_sep = (firstsep && (*firstsep != sep));
 
 	assert (strchr(SEPS, sep));
 
-	if (firstsep && (*firstsep != sep)) {
+	if (wrong_sep) {
 		string_replace(path, *firstsep, sep);
 	}
-	return normalize_path_internal(path, sep);
+	return normalize_path_internal(path, sep) || wrong_sep;
 }
 
 static int check_tdb_action(struct db_record *rec, void *check_ctx)
