@@ -51,7 +51,12 @@
 			for regular users. As the parameter cannot be changed later, please
 			plan accordingly for your expected number of users in a domain
 			with safety margins.
-		</para>
+			</para>
+			<para>One range will be used for local users and groups.
+			Thus the number of local users and groups that can be created is
+			limited by this option as well. If you plan to create a large amount
+			of local users or groups, you will need set this parameter accordingly.
+			</para>
 		<para>The default value is 100000.</para>
 		</listitem>
 		</varlistentry>
