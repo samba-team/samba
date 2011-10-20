@@ -326,12 +326,32 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 
 }
 
+/* initialize the given HWM to 0 if it does not exist yet */
+static NTSTATUS idmap_autorid_init_hwm(const char *hwm) {
+
+	NTSTATUS status;
+	int32_t hwmval;
+
+	hwmval = dbwrap_fetch_int32(autorid_db, hwm);
+	if ((hwmval < 0))  {
+		status = dbwrap_trans_store_int32(autorid_db, hwm, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,
+			      ("Unable to initialise HWM (%s) in autorid "
+			       "database: %s\n", hwm, nt_errstr(status)));
+			return NT_STATUS_INTERNAL_DB_ERROR;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
  * open and initialize the database which stores the ranges for the domains
  */
 static NTSTATUS idmap_autorid_db_init(void)
 {
-	int32_t hwm;
+	NTSTATUS status;
 
 	if (autorid_db) {
 		/* its already open */
@@ -349,16 +369,9 @@ static NTSTATUS idmap_autorid_db_init(void)
 	}
 
 	/* Initialize high water mark for the currently used range to 0 */
-	hwm = dbwrap_fetch_int32(autorid_db, HWM);
-	if ((hwm < 0)) {
-		if (!NT_STATUS_IS_OK
-		    (dbwrap_trans_store_int32(autorid_db, HWM, 0))) {
-			DEBUG(0,
-			      ("Unable to initialise HWM in autorid "
-			       "database\n"));
-			return NT_STATUS_INTERNAL_DB_ERROR;
-		}
-	}
+
+	status = idmap_autorid_init_hwm(HWM);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
 }
