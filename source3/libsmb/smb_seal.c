@@ -444,18 +444,5 @@ void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 		return;
 	}
 
-	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		SAFE_FREE(buf);
-		return;
-	}
-
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-	if (es->smb_enc_type == SMB_TRANS_ENC_GSS) {
-		OM_uint32 min;
-		gss_buffer_desc rel_buf;
-		rel_buf.value = buf;
-		rel_buf.length = smb_len_nbt(buf) + 4;
-		gss_release_buffer(&min, &rel_buf);
-	}
-#endif
+	SAFE_FREE(buf);
 }
