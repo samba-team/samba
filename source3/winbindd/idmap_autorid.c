@@ -44,7 +44,7 @@ struct autorid_global_config {
 };
 
 struct autorid_domain_config {
-	struct dom_sid sid;
+	fstring sid;
 	uint32_t domainnum;
 	struct autorid_global_config *globalcfg;
 };
@@ -57,16 +57,14 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 {
 	NTSTATUS ret;
 	uint32_t domainnum, hwm;
-	fstring sidstr;
 	char *numstr;
 	struct autorid_domain_config *cfg;
 
 	cfg = (struct autorid_domain_config *)private_data;
-	dom_sid_string_buf(&(cfg->sid), sidstr, sizeof(sidstr));
 
-	ret = dbwrap_fetch_uint32(db, sidstr, &domainnum);
+	ret = dbwrap_fetch_uint32(db, cfg->sid, &domainnum);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(10, ("Acquiring new range for domain %s\n", sidstr));
+		DEBUG(10, ("Acquiring new range for domain %s\n", cfg->sid));
 
 		/* fetch the current HWM */
 		ret = dbwrap_fetch_uint32(db, HWM, &hwm);
@@ -93,7 +91,7 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 		}
 
 		/* store away the new mapping in both directions */
-		ret = dbwrap_trans_store_uint32(db, sidstr, domainnum);
+		ret = dbwrap_trans_store_uint32(db, cfg->sid, domainnum);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(1, ("Fatal error while storing new "
 				  "domain->range assignment!\n"));
@@ -107,8 +105,8 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 		}
 
 		ret = dbwrap_trans_store_bystring(db, numstr,
-						  string_term_tdb_data(sidstr),
-						  TDB_INSERT);
+				string_term_tdb_data(cfg->sid), TDB_INSERT);
+
 		talloc_free(numstr);
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(1, ("Fatal error while storing "
@@ -116,10 +114,10 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 			goto error;
 		}
 		DEBUG(5, ("Acquired new range #%d for domain %s\n",
-			  domainnum, sidstr));
+			  domainnum, cfg->sid));
 	}
 
-	DEBUG(10, ("Using range #%d for domain %s\n", domainnum, sidstr));
+	DEBUG(10, ("Using range #%d for domain %s\n", domainnum, cfg->sid));
 	cfg->domainnum = domainnum;
 
 	return NT_STATUS_OK;
@@ -278,11 +276,12 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 		struct winbindd_tdc_domain *domain;
 		struct autorid_domain_config domaincfg;
 		uint32_t rid;
+		struct dom_sid domainsid;
 
 		ZERO_STRUCT(domaincfg);
 
-		sid_copy(&domaincfg.sid, ids[i]->sid);
-		if (!sid_split_rid(&domaincfg.sid, &rid)) {
+		sid_copy(&domainsid, ids[i]->sid);
+		if (!sid_split_rid(&domainsid, &rid)) {
 			DEBUG(4, ("Could not determine domain SID from %s, "
 				  "ignoring mapping request\n",
 				  sid_string_dbg(ids[i]->sid)));
@@ -293,15 +292,16 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 		 * Check if the domain is around
 		 */
 		domain = wcache_tdc_fetch_domainbysid(talloc_tos(),
-						      &domaincfg.sid);
+						      &domainsid);
 		if (domain == NULL) {
 			DEBUG(10, ("Ignoring unknown domain sid %s\n",
-				   sid_string_dbg(&domaincfg.sid)));
+				   sid_string_dbg(&domainsid)));
 			continue;
 		}
 		TALLOC_FREE(domain);
 
 		domaincfg.globalcfg = global;
+		sid_to_fstring(domaincfg.sid, &domainsid);
 
 		ret = dbwrap_trans_do(autorid_db,
 				      idmap_autorid_get_domainrange,
