@@ -1413,6 +1413,7 @@ bld.RECURSE('../examples/libsmbclient')
 bld.RECURSE('../examples/pdb')
 bld.RECURSE('../examples/VFS')
 bld.RECURSE('lib/netapi/tests')
+bld.RECURSE('lib/netapi/examples')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
