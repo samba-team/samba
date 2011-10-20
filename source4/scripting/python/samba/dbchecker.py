@@ -25,30 +25,7 @@ from samba import common
 from samba.dcerpc import misc
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
-
-
-class dsdb_DN(object):
-    '''a class to manipulate DN components'''
-
-    def __init__(self, samdb, dnstring, syntax_oid):
-        if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_STRING_DN ]:
-            colons = dnstring.split(':')
-            if len(colons) < 4:
-                raise Exception("invalid DN prefix")
-            prefix_len = 4 + len(colons[1]) + int(colons[1])
-            self.prefix = dnstring[0:prefix_len]
-            self.dnstring = dnstring[prefix_len:]
-        else:
-            self.dnstring = dnstring
-            self.prefix = ''
-        try:
-            self.dn = ldb.Dn(samdb, self.dnstring)
-        except Exception, msg:
-            print("ERROR: bad DN string '%s'" % self.dnstring)
-            raise
-
-    def __str__(self):
-        return self.prefix + str(self.dn.extended_str(mode=1))
+from samba.common import dsdb_Dn
 
 class dbcheck(object):
     """check a SAM database for errors"""
@@ -196,7 +173,7 @@ class dbcheck(object):
             self.report("Normalised attribute %s" % attrname)
 
     def is_deleted_objects_dn(self, dsdb_dn):
-        '''see if a dsdb_DN is the special Deleted Objects DN'''
+        '''see if a dsdb_Dn is the special Deleted Objects DN'''
         return dsdb_dn.prefix == "B:32:18E2EA80684F11D2B9AA00C04F79F805:"
 
 
@@ -329,7 +306,7 @@ class dbcheck(object):
         '''check a DN attribute for correctness'''
         error_count = 0
         for val in obj[attrname]:
-            dsdb_dn = dsdb_DN(self.samdb, val, syntax_oid)
+            dsdb_dn = dsdb_Dn(self.samdb, val, syntax_oid)
 
             # all DNs should have a GUID component
             guid = dsdb_dn.dn.get_extended_component("GUID")
