@@ -61,9 +61,17 @@
 
 #define smb_len_nbt(buf) (RIVAL(buf, 0) & 0x1FFFF)
 #define _smb_setlen_nbt(buf,len) RSIVAL(buf, 0, (len) & 0x1FFFF)
+#define smb_setlen_nbt(buf, len) do { \
+	_smb_setlen_nbt(buf, len); \
+	SIVAL(buf, 4, SMB_MAGIC); \
+} while (0)
 
 #define smb_len_tcp(buf) (RIVAL(buf, 0) & 0xFFFFFF)
 #define _smb_setlen_tcp(buf,len) RSIVAL(buf, 0, (len) & 0xFFFFFF)
+#define smb_setlen_tcp(buf, len) do { \
+	_smb_setlen_tcp(buf, len); \
+	SIVAL(buf, 4, SMB_MAGIC); \
+} while (0)
 
 /* protocol types. It assumes that higher protocols include lower protocols
    as subsets. */
