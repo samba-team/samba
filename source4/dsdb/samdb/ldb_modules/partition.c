@@ -585,6 +585,11 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	/* Special DNs without specified partition should go further */
+	if (ldb_dn_is_special(req->op.search.base)) {
+		return ldb_next_request(module, req);
+	}
+
 	/* Locate the options */
 	domain_scope = (search_options
 		&& (search_options->search_options & LDB_SEARCH_OPTION_DOMAIN_SCOPE))
