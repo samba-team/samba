@@ -723,7 +723,7 @@ int ldb_module_send_entry(struct ldb_request *req,
  *
  * params:
  *      req: the original request passed to your module
- *      ref: referral string (must be a talloc pointeri, steal)
+ *      ref: referral string (must be a talloc pointer, steal)
  */
 
 int ldb_module_send_referral(struct ldb_request *req,
