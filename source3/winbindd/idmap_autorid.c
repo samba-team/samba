@@ -35,6 +35,9 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 #define HWM "NEXT RANGE"
+#define ALLOC_HWM_UID "NEXT ALLOC UID"
+#define ALLOC_HWM_GID "NEXT ALLOC GID"
+#define ALLOC_RANGE "ALLOC"
 #define CONFIGKEY "CONFIG"
 
 struct autorid_global_config {
@@ -166,6 +169,18 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		DEBUG(4, ("id %d belongs to range %d which does not have "
 			  "domain mapping, ignoring mapping request\n",
 			  map->xid.id, range));
+		TALLOC_FREE(data.dptr);
+		map->status = ID_UNKNOWN;
+		return NT_STATUS_OK;
+	}
+
+	if (strncmp((const char *)data.dptr,
+		    ALLOC_RANGE,
+		    strlen(ALLOC_RANGE)) == 0) {
+		/* this is from the alloc range, there is no mapping back */
+		DEBUG(5, ("id %d belongs to alloc range, cannot map back\n",
+			  map->xid.id));
+		TALLOC_FREE(data.dptr);
 		map->status = ID_UNKNOWN;
 		return NT_STATUS_OK;
 	}
@@ -381,7 +396,12 @@ static NTSTATUS idmap_autorid_db_init(void)
 	status = idmap_autorid_init_hwm(HWM);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	return NT_STATUS_OK;
+	status = idmap_autorid_init_hwm(ALLOC_HWM_UID);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = idmap_autorid_init_hwm(ALLOC_HWM_GID);
+
+	return status;
 }
 
 static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
@@ -564,6 +584,80 @@ done:
 	return status;
 }
 
+static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
+					  struct unixid *xid) {
+
+	NTSTATUS ret;
+	struct autorid_global_config *globalcfg;
+	struct autorid_domain_config domaincfg;
+	uint32_t hwm;
+	const char *hwmkey;
+
+	if (!strequal(dom->name, "*")) {
+		DEBUG(3, ("idmap_autorid_allocate_id: "
+			  "Refusing creation of mapping for domain'%s'. "
+			  "Currently only supported for the default "
+			  "domain \"*\".\n",
+			   dom->name));
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if ((xid->type != ID_TYPE_UID) && (xid->type != ID_TYPE_GID)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+
+	globalcfg = talloc_get_type(dom->private_data,
+				    struct autorid_global_config);
+
+	/* fetch the range for the allocation pool */
+
+	ZERO_STRUCT(domaincfg);
+
+	domaincfg.globalcfg = globalcfg;
+	fstrcpy(domaincfg.sid, ALLOC_RANGE);
+
+	ret = dbwrap_trans_do(autorid_db,
+			      idmap_autorid_get_domainrange,
+			      &domaincfg);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(3, ("Could not determine range for allocation pool, "
+			  "check previous messages for reason\n"));
+		return ret;
+	}
+
+	/* fetch the current HWM */
+	hwmkey = (xid->type==ID_TYPE_UID)?ALLOC_HWM_UID:ALLOC_HWM_GID;
+
+	ret = dbwrap_fetch_uint32(autorid_db, hwmkey, &hwm);
+
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(1, ("Failed to fetch current allocation HWM value: %s\n",
+			  nt_errstr(ret)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (hwm >= globalcfg->rangesize) {
+		DEBUG(1, ("allocation range is depleted!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dbwrap_change_uint32_atomic(autorid_db, hwmkey, &(xid->id), 1);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(1, ("Fatal error while allocating new ID!\n"));
+		return ret;
+	}
+
+	xid->id = globalcfg->minvalue +
+		  globalcfg->rangesize * domaincfg.domainnum +
+		  xid->id;
+
+	DEBUG(10, ("Returned new %s %d from allocation range\n",
+		   (xid->type==ID_TYPE_UID)?"uid":"gid", xid->id));
+
+	return ret;
+}
+
 /*
   Close the idmap tdb instance
 */
@@ -571,6 +665,7 @@ static struct idmap_methods autorid_methods = {
 	.init = idmap_autorid_initialize,
 	.unixids_to_sids = idmap_autorid_unixids_to_sids,
 	.sids_to_unixids = idmap_autorid_sids_to_unixids,
+	.allocate_id	 = idmap_autorid_allocate_id
 };
 
 NTSTATUS samba_init_module(void)
