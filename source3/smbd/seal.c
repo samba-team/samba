@@ -489,7 +489,7 @@ static NTSTATUS srv_enc_ntlm_negotiate(const struct tsocket_address *remote_addr
 	}
 
 	status = auth_ntlmssp_update(partial_srv_trans_enc_ctx->auth_ntlmssp_state,
-				     partial_srv_trans_enc_ctx->auth_ntlmssp_state,
+				     talloc_tos(),
 				     secblob, &chal);
 
 	/* status here should be NT_STATUS_MORE_PROCESSING_REQUIRED
