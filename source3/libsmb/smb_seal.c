@@ -82,42 +82,44 @@ bool common_encryption_on(struct smb_trans_enc_state *es)
 
 static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state, char *buf)
 {
+	struct gensec_security *gensec = auth_ntlmssp_state->gensec_security;
 	NTSTATUS status;
 	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
-	size_t data_len;
-	char *inbuf;
-	DATA_BLOB sig;
+	DATA_BLOB in_buf, out_buf;
+	TALLOC_CTX *frame;
 
-	if (buf_len < 8 + NTLMSSP_SIG_SIZE) {
+	if (buf_len < 8) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	inbuf = (char *)smb_xmemdup(buf, buf_len);
+	frame = talloc_stackframe();
 
-	/* Adjust for the signature. */
-	data_len = buf_len - 8 - NTLMSSP_SIG_SIZE;
+	in_buf = data_blob_const(buf + 8, buf_len - 8);
 
-	/* Point at the signature. */
-	sig = data_blob_const(inbuf+8, NTLMSSP_SIG_SIZE);
-
-	status = gensec_unseal_packet(auth_ntlmssp_state->gensec_security,
-		(unsigned char *)inbuf + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'E' <enc> <ctx> */
-		data_len,
-		(unsigned char *)inbuf + 8 + NTLMSSP_SIG_SIZE,
-		data_len,
-		&sig);
+	status = gensec_unwrap(gensec, frame, &in_buf, &out_buf);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(inbuf);
+		DEBUG(0,("common_ntlm_decrypt_buffer: gensec_unwrap failed. Error %s\n",
+			 nt_errstr(status)));
+		TALLOC_FREE(frame);
 		return status;
 	}
 
-	memcpy(buf + 8, inbuf + 8 + NTLMSSP_SIG_SIZE, data_len);
+	if (out_buf.length > in_buf.length) {
+		DEBUG(0,("common_ntlm_decrypt_buffer: gensec_unwrap size (%u) too large (%u) !\n",
+			(unsigned int)out_buf.length,
+			(unsigned int)in_buf.length ));
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	memcpy(buf + 8, out_buf.data, out_buf.length);
 
 	/* Reset the length and overwrite the header. */
-	smb_setlen_nbt(buf,data_len + 4);
+	smb_setlen_nbt(buf, out_buf.length + 4);
 
-	SAFE_FREE(inbuf);
+	TALLOC_FREE(frame);
+
 	return NT_STATUS_OK;
 }
 
@@ -133,55 +135,40 @@ static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 				char *buf,
 				char **ppbuf_out)
 {
+	struct gensec_security *gensec = auth_ntlmssp_state->gensec_security;
 	NTSTATUS status;
-	char *buf_out;
-	size_t data_len = smb_len_nbt(buf) - 4; /* Ignore the 0xFF SMB bytes. */
-	DATA_BLOB sig;
+	DATA_BLOB in_buf, out_buf;
+	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
 	TALLOC_CTX *frame;
+
 	*ppbuf_out = NULL;
 
-	if (data_len == 0) {
+	if (buf_len < 8) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
+	in_buf = data_blob_const(buf + 8, buf_len - 8);
 
 	frame = talloc_stackframe();
-	/* 
-	 * We know smb_len_nbt can't return a value > 128k, so no int overflow
-	 * check needed.
-	 */
 
-	buf_out = (char *)malloc(8 + NTLMSSP_SIG_SIZE + data_len);
-	if (buf_out == NULL) {
+	status = gensec_wrap(gensec, frame, &in_buf, &out_buf);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("common_ntlm_encrypt_buffer: gensec_wrap failed. Error %s\n",
+			 nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	*ppbuf_out = (char *)malloc(out_buf.length + 8); /* We know this can't wrap. */
+	if (!*ppbuf_out) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Copy the data from the original buffer. */
+	memcpy(*ppbuf_out+8, out_buf.data, out_buf.length);
+	smb_set_enclen(*ppbuf_out, out_buf.length + 4, enc_ctx_num);
 
-	memcpy(buf_out + 8 + NTLMSSP_SIG_SIZE, buf + 8, data_len);
+	TALLOC_FREE(frame);
 
-	smb_set_enclen(buf_out, smb_len_nbt(buf) + NTLMSSP_SIG_SIZE, enc_ctx_num);
-
-	ZERO_STRUCT(sig);
-
-	status = gensec_seal_packet(auth_ntlmssp_state->gensec_security,
-				    frame,
-		(unsigned char *)buf_out + 8 + NTLMSSP_SIG_SIZE, /* 4 byte len + 0xFF 'S' <enc> <ctx> */
-		data_len,
-		(unsigned char *)buf_out + 8 + NTLMSSP_SIG_SIZE,
-		data_len,
-		&sig);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(frame);
-		SAFE_FREE(buf_out);
-		return status;
-	}
-
-	/* First 16 data bytes are signature for SSPI compatibility. */
-	memcpy(buf_out + 8, sig.data, NTLMSSP_SIG_SIZE);
-	talloc_free(frame);
-	*ppbuf_out = buf_out;
 	return NT_STATUS_OK;
 }
 
