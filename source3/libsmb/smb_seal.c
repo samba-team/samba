@@ -22,6 +22,7 @@
 #include "smb_crypt.h"
 #include "libsmb/libsmb.h"
 #include "ntlmssp_wrap.h"
+#include "libcli/auth/krb5_wrap.h"
 
 
 /******************************************************************************
@@ -209,14 +210,23 @@ static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 			(gss_qop_t *) NULL);	
 
 	if (ret != GSS_S_COMPLETE) {
-		ADS_STATUS adss = ADS_ERROR_GSS(ret, minor);
-		DEBUG(0,("common_gss_encrypt_buffer: gss_unwrap failed. Error %s\n",
-			ads_errstr(adss) ));
-		return map_nt_error_from_gss(ret, minor);
+		NTSTATUS status = NT_STATUS_ACCESS_DENIED;
+		char *gss_err;
+
+		gss_err = gssapi_error_string(talloc_tos(),
+					      ret, minor,
+					      GSS_C_NULL_OID);
+		DEBUG(0,("common_gss_decrypt_buffer: gss_unwrap failed. "
+			 "Error [%d/%d] - %s - %s\n",
+			 ret, minor, nt_errstr(status),
+			 gss_err ? gss_err : "<unknown>"));
+		talloc_free(gss_err);
+
+		return status;
 	}
 
 	if (out_buf.length > in_buf.length) {
-		DEBUG(0,("common_gss_encrypt_buffer: gss_unwrap size (%u) too large (%u) !\n",
+		DEBUG(0,("common_gss_decrypt_buffer: gss_unwrap size (%u) too large (%u) !\n",
 			(unsigned int)out_buf.length,
 			(unsigned int)in_buf.length ));
 		gss_release_buffer(&minor, &out_buf);
@@ -266,10 +276,19 @@ static NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 			&out_buf);
 
 	if (ret != GSS_S_COMPLETE) {
-		ADS_STATUS adss = ADS_ERROR_GSS(ret, minor);
-		DEBUG(0,("common_gss_encrypt_buffer: gss_wrap failed. Error %s\n",
-			ads_errstr(adss) ));
-		return map_nt_error_from_gss(ret, minor);
+		NTSTATUS status = NT_STATUS_ACCESS_DENIED;
+		char *gss_err;
+
+		gss_err = gssapi_error_string(talloc_tos(),
+					      ret, minor,
+					      GSS_C_NULL_OID);
+		DEBUG(0,("common_gss_encrypt_buffer: gss_unwrap failed. "
+			 "Error [%d/%d] - %s - %s\n",
+			 ret, minor, nt_errstr(status),
+			 gss_err ? gss_err : "<unknown>"));
+		talloc_free(gss_err);
+
+		return status;
 	}
 
 	if (!flags_got) {
