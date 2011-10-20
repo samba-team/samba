@@ -29,6 +29,8 @@ POPT_LIBS = @POPT_LIBS@
 POPT_CFLAGS = @POPT_CFLAGS@
 POPT_OBJ = @POPT_OBJ@
 
+SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
+
 PMDA_LIBS = -lpcp -lpcp_pmda
 PMDA_INSTALL = @CTDB_PMDA_INSTALL@
 PMDA_DEST_DIR = /var/lib/pcp/pmdas
@@ -52,13 +54,13 @@ CTDB_COMMON_OBJ =  common/ctdb_io.o common/ctdb_util.o \
 
 CTDB_LIB_OBJ = libctdb/ctdb.o libctdb/io_elem.o libctdb/local_tdb.o \
 	libctdb/messages.o libctdb/sync.o libctdb/control.o \
-	libctdb/logging.o
+	libctdb/logging.o $(SOCKET_WRAPPER_OBJ)
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
 CTDB_CLIENT_OBJ = client/ctdb_client.o \
 	$(CTDB_COMMON_OBJ) $(POPT_OBJ) $(UTIL_OBJ) @TALLOC_OBJ@ @TDB_OBJ@ \
-	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @TEVENT_OBJ@
+	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @TEVENT_OBJ@ $(SOCKET_WRAPPER_OBJ)
 
 CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	server/ctdb_recoverd.o server/ctdb_recover.o server/ctdb_freeze.o \

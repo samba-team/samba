@@ -63,6 +63,7 @@ m4_include(libtevent.m4)
 m4_include(ib/config.m4)
 m4_include(lib/util/signal.m4)
 m4_include(lib/util/fault.m4)
+m4_include(lib/socket_wrapper/config.m4)
 
 AC_CHECK_HEADERS(sched.h)
 AC_CHECK_HEADERS(pcp/pmapi.h pcp/impl.h pcp/pmda.h, [], [],
