@@ -1,86 +1,86 @@
 #!/usr/bin/env python
 
-bld.SAMBA3_BINARY('testsmbc',
+bld.SAMBA_BINARY('testsmbc',
                  source='testsmbc.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testacl',
+bld.SAMBA_BINARY('testacl',
                  source='testacl.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testacl2',
+bld.SAMBA_BINARY('testacl2',
                  source='testacl2.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testacl3',
+bld.SAMBA_BINARY('testacl3',
                  source='testacl3.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testbrowse',
+bld.SAMBA_BINARY('testbrowse',
                  source='testbrowse.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testbrowse2',
+bld.SAMBA_BINARY('testbrowse2',
                  source='testbrowse2.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('teststat',
+bld.SAMBA_BINARY('teststat',
                  source='teststat.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('teststat2',
+bld.SAMBA_BINARY('teststat2',
                  source='teststat2.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('teststat3',
+bld.SAMBA_BINARY('teststat3',
                  source='teststat3.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('teststatvfs',
+bld.SAMBA_BINARY('teststatvfs',
                  source='teststatvfs.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testfstatvfs',
+bld.SAMBA_BINARY('testfstatvfs',
                  source='testfstatvfs.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testtruncate',
+bld.SAMBA_BINARY('testtruncate',
                  source='testtruncate.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testchmod',
+bld.SAMBA_BINARY('testchmod',
                  source='testchmod.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testutime',
+bld.SAMBA_BINARY('testutime',
                  source='testutime.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testread',
+bld.SAMBA_BINARY('testread',
                  source='testread.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testwrite',
+bld.SAMBA_BINARY('testwrite',
                  source='testwrite.c',
                  deps='smbclient',
                  install=False)
 
-bld.SAMBA3_BINARY('testctx',
+bld.SAMBA_BINARY('testctx',
                  source='testctx.c',
                  deps='smbclient',
                  install=False)
