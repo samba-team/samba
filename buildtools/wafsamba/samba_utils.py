@@ -487,6 +487,13 @@ def CHECK_MAKEFLAGS(bld):
             if Logs.verbose > 2:
                 Logs.zones = ['*']
         elif opt[0].isupper() and opt.find('=') != -1:
+            # this allows us to set waf options on the make command line
+            # for example, if you do "make FOO=blah", then we set the
+            # option 'FOO' in Options.options, to blah. If you look in wafsamba/wscript
+            # you will see that the command line accessible options have their dest=
+            # set to uppercase, to allow for passing of options from make in this way
+            # this is also how "make test TESTS=testpattern" works, and
+            # "make VERBOSE=1" as well as things like "make SYMBOLCHECK=1"
             loc = opt.find('=')
             setattr(Options.options, opt[0:loc], opt[loc+1:])
         elif opt[0] != '-':
