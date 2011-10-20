@@ -25,6 +25,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "messages.h"
+#include "lib/util/util_tdb.h"
 
 #if 0
 #include "lib/events/events.h"
@@ -42,7 +43,7 @@ static int timelimit = 10;
 static int torture_delay = 0;
 static int verbose = 0;
 static int no_trans = 0;
-static char *db_name = (char *)discard_const(DEFAULT_DB_NAME);
+static const char *db_name = DEFAULT_DB_NAME;
 
 
 static unsigned int pnn;
@@ -129,8 +130,7 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct timeval start;
 
-	key.dptr = (unsigned char *)discard_const("testkey");
-	key.dsize = strlen((const char *)key.dptr)+1;
+	key = string_term_tdb_data("testkey");
 
 	start = timeval_current();
 	while ((timelimit == 0) || (timeval_elapsed(&start) < timelimit)) {
