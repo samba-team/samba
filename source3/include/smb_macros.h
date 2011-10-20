@@ -134,6 +134,7 @@
 
 #define smb_len(buf) smb_len_nbt(buf)
 #define _smb_setlen(buf, len) _smb_setlen_nbt(buf, len)
+#define smb_setlen(buf, len) smb_setlen_nbt(buf, len)
 
 #define smb_len_large(buf) smb_len_tcp(buf)
 #define _smb_setlen_large(buf, len) _smb_setlen_tcp(buf, len)

@@ -184,20 +184,6 @@ void show_msg(const char *buf)
 }
 
 /*******************************************************************
- Set the length and marker of an smb packet.
-********************************************************************/
-
-void smb_setlen(char *buf,int len)
-{
-	_smb_setlen(buf,len);
-
-	SCVAL(buf,4,0xFF);
-	SCVAL(buf,5,'S');
-	SCVAL(buf,6,'M');
-	SCVAL(buf,7,'B');
-}
-
-/*******************************************************************
  Setup only the byte count for a smb message.
 ********************************************************************/
 
