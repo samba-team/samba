@@ -30,7 +30,7 @@
 
 NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16_t *p_enc_ctx_num)
 {
-	if (smb_len(buf) < 8) {
+	if (smb_len_nbt(buf) < 8) {
 		return NT_STATUS_INVALID_BUFFER_SIZE;
 	}
 
@@ -53,7 +53,7 @@ NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16_t *p_enc_ctx_num)
 
 static void smb_set_enclen(char *buf,int len,uint16_t enc_ctx_num)
 {
-	_smb_setlen(buf,len);
+	_smb_setlen_nbt(buf,len);
 
 	SCVAL(buf,4,0xFF);
 	SCVAL(buf,5,'E');
@@ -80,7 +80,7 @@ bool common_encryption_on(struct smb_trans_enc_state *es)
 static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlmssp_state, char *buf)
 {
 	NTSTATUS status;
-	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
+	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
 	size_t data_len;
 	char *inbuf;
 	DATA_BLOB sig;
@@ -112,7 +112,7 @@ static NTSTATUS common_ntlm_decrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 	memcpy(buf + 8, inbuf + 8 + NTLMSSP_SIG_SIZE, data_len);
 
 	/* Reset the length and overwrite the header. */
-	smb_setlen(buf,data_len + 4);
+	smb_setlen_nbt(buf,data_len + 4);
 
 	SAFE_FREE(inbuf);
 	return NT_STATUS_OK;
@@ -132,7 +132,7 @@ static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 {
 	NTSTATUS status;
 	char *buf_out;
-	size_t data_len = smb_len(buf) - 4; /* Ignore the 0xFF SMB bytes. */
+	size_t data_len = smb_len_nbt(buf) - 4; /* Ignore the 0xFF SMB bytes. */
 	DATA_BLOB sig;
 	TALLOC_CTX *frame;
 	*ppbuf_out = NULL;
@@ -143,7 +143,7 @@ static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 
 	frame = talloc_stackframe();
 	/* 
-	 * We know smb_len can't return a value > 128k, so no int overflow
+	 * We know smb_len_nbt can't return a value > 128k, so no int overflow
 	 * check needed.
 	 */
 
@@ -153,7 +153,7 @@ static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 
 	memcpy(buf_out + 8 + NTLMSSP_SIG_SIZE, buf + 8, data_len);
 
-	smb_set_enclen(buf_out, smb_len(buf) + NTLMSSP_SIG_SIZE, enc_ctx_num);
+	smb_set_enclen(buf_out, smb_len_nbt(buf) + NTLMSSP_SIG_SIZE, enc_ctx_num);
 
 	ZERO_STRUCT(sig);
 
@@ -192,7 +192,7 @@ static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 	OM_uint32 minor = 0;
 	int flags_got = 0;
 	gss_buffer_desc in_buf, out_buf;
-	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
+	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
 
 	if (buf_len < 8) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -225,7 +225,7 @@ static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 
 	memcpy(buf + 8, out_buf.value, out_buf.length);
 	/* Reset the length and overwrite the header. */
-	smb_setlen(buf, out_buf.length + 4);
+	smb_setlen_nbt(buf, out_buf.length + 4);
 
 	gss_release_buffer(&minor, &out_buf);
 	return NT_STATUS_OK;
@@ -246,7 +246,7 @@ static NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 	OM_uint32 minor = 0;
 	int flags_got = 0;
 	gss_buffer_desc in_buf, out_buf;
-	size_t buf_len = smb_len(buf) + 4; /* Don't forget the 4 length bytes. */
+	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
 
 	*ppbuf_out = NULL;
 
@@ -430,7 +430,7 @@ void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 		OM_uint32 min;
 		gss_buffer_desc rel_buf;
 		rel_buf.value = buf;
-		rel_buf.length = smb_len(buf) + 4;
+		rel_buf.length = smb_len_nbt(buf) + 4;
 		gss_release_buffer(&min, &rel_buf);
 	}
 #endif
