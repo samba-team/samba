@@ -24,6 +24,7 @@
 #include "ntlmssp_wrap.h"
 #include "libcli/auth/krb5_wrap.h"
 
+#undef malloc
 
 /******************************************************************************
  Pull out the encryption context for this packet. 0 means global context.
@@ -148,7 +149,11 @@ static NTSTATUS common_ntlm_encrypt_buffer(struct auth_ntlmssp_state *auth_ntlms
 	 * check needed.
 	 */
 
-	buf_out = SMB_XMALLOC_ARRAY(char, 8 + NTLMSSP_SIG_SIZE + data_len);
+	buf_out = (char *)malloc(8 + NTLMSSP_SIG_SIZE + data_len);
+	if (buf_out == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Copy the data from the original buffer. */
 
@@ -309,7 +314,7 @@ static NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 	 * bother :-*(. JRA.
 	 */
 
-	*ppbuf_out = (char *)SMB_MALLOC(out_buf.length + 8); /* We know this can't wrap. */
+	*ppbuf_out = (char *)malloc(out_buf.length + 8); /* We know this can't wrap. */
 	if (!*ppbuf_out) {
 		gss_release_buffer(&minor, &out_buf);
 		return NT_STATUS_NO_MEMORY;
