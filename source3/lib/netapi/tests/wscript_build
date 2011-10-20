@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+bld.SAMBA_BINARY('netapitest',
+                 source='netapitest.c netlocalgroup.c netuser.c netgroup.c netdisplay.c netshare.c netfile.c netserver.c common.c',
+                 deps='netapi popt',
+                 install=False)
