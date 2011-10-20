@@ -874,7 +874,7 @@ static struct idmap_methods db_methods = {
 	.allocate_id     = idmap_tdb2_get_new_id
 };
 
-NTSTATUS idmap_tdb2_init(void)
+NTSTATUS samba_init_module(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "tdb2", &db_methods);
 }

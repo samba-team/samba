@@ -563,7 +563,7 @@ static struct idmap_methods autorid_methods = {
 	.sids_to_unixids = idmap_autorid_sids_to_unixids,
 };
 
-NTSTATUS idmap_autorid_init(void)
+NTSTATUS samba_init_module(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION,
 				  "autorid", &autorid_methods);
