@@ -57,15 +57,6 @@ static double timeval_elapsed(struct timeval *tv)
 		return false; \
 	}
 
-#if _SAMBA_BUILD_==3
-#ifdef malloc
-#undef malloc
-#endif
-#ifdef strdup
-#undef strdup
-#endif
-#endif
-
 #define CHECK_SIZE(test, ptr, tsize) do { \
 	if (talloc_total_size(ptr) != (tsize)) { \
 		printf("failed: %s [\n%s: wrong '%s' tree size: got %u  expected %u\n]\n", \
