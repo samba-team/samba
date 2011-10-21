@@ -28,10 +28,6 @@
 #include <gssapi.h>
 #endif
 
-#if HAVE_COM_ERR_H
-#include <com_err.h>
-#endif
-
 /* Transport encryption state. */
 enum smb_trans_enc_type {
 		SMB_TRANS_ENC_NTLM
