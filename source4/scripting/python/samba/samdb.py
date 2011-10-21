@@ -6,6 +6,7 @@
 #
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
+# Copyright (C) Giampaolo Lauria <lauria2@yahoo.com> 2011
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -89,7 +90,8 @@ class SamDB(samba.Ldb):
         flags = samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_PASSWD_NOTREQD
         self.toggle_userAccountFlags(search_filter, flags, on=False)
 
-    def toggle_userAccountFlags(self, search_filter, flags, on=True, strict=False):
+    def toggle_userAccountFlags(self, search_filter, flags, flags_str=None,
+                                on=True, strict=False):
         """toggle_userAccountFlags
 
         :param search_filter: LDAP filter to find the user (eg
@@ -102,20 +104,20 @@ class SamDB(samba.Ldb):
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                           expression=search_filter, attrs=["userAccountControl"])
         if len(res) == 0:
-                raise Exception('Unable to find user "%s"' % search_filter)
+                raise Exception("Unable to find account where '%s'" % search_filter)
         assert(len(res) == 1)
         account_dn = res[0].dn
 
         old_uac = int(res[0]["userAccountControl"][0])
         if on:
             if strict and (old_uac & flags):
-                error = 'userAccountFlags[%d:0x%08X] already contain 0x%X' % (old_uac, old_uac, flags)
+                error = "Account flag(s) '%s' already set" % flags_str
                 raise Exception(error)
 
             new_uac = old_uac | flags
         else:
             if strict and not (old_uac & flags):
-                error = 'userAccountFlags[%d:0x%08X] not contain 0x%X' % (old_uac, old_uac, flags)
+                error = "Account flag(s) '%s' already unset" % flags_str
                 raise Exception(error)
 
             new_uac = old_uac & ~flags

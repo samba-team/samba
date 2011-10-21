@@ -104,7 +104,9 @@ class cmd_delegation_for_any_service(Command):
         search_filter = "sAMAccountName=%s" % ldb.binary_encode(cleanedaccount)
         flag = dsdb.UF_TRUSTED_FOR_DELEGATION
         try:
-            sam.toggle_userAccountFlags(search_filter, flag, on=on, strict=True)
+            sam.toggle_userAccountFlags(search_filter, flag,
+                                        flags_str="Trusted-for-Delegation",
+                                        on=on, strict=True)
         except Exception, err:
             raise CommandError(err)
 
@@ -138,7 +140,9 @@ class cmd_delegation_for_any_protocol(Command):
         search_filter = "sAMAccountName=%s" % ldb.binary_encode(cleanedaccount)
         flag = dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION
         try:
-            sam.toggle_userAccountFlags(search_filter, flag, on=on, strict=True)
+            sam.toggle_userAccountFlags(search_filter, flag,
+                        flags_str="Trusted-to-Authenticate-for-Delegation",
+                        on=on, strict=True)
         except Exception, err:
             raise CommandError(err)
 
