@@ -876,7 +876,7 @@ _PUBLIC_ NTSTATUS gensec_init(void)
 {
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
-#if _SAMBA_BUILD_ == 4
+#ifdef STATIC_gensec_MODULES
 	STATIC_gensec_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_gensec_MODULES };
 #else
