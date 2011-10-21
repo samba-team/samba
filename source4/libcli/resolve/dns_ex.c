@@ -5,6 +5,7 @@
 
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Stefan Metzmacher 2008
+   Copyright (C) Matthieu Patou 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -76,23 +77,278 @@ static int dns_ex_destructor(struct dns_ex_state *state)
 	return 0;
 }
 
+static uint32_t count_dns_rr(struct rk_resource_record *head, unsigned record_type)
+{
+	uint32_t count = 0;
+	struct rk_resource_record *rr;
+
+	for (rr=head; rr; rr=rr->next) {
+
+		/* we are only interested in the IN class */
+		if (rr->class != rk_ns_c_in) {
+			continue;
+		}
+
+		/* we are only interested by requested record */
+		if (rr->type != record_type) {
+			continue;
+		}
+
+		switch(record_type) {
+			case rk_ns_t_srv:
+
+				/* verify we actually have a SRV record here */
+				if (!rr->u.srv) {
+					continue;
+				}
+
+				/* Verify we got a port */
+				if (rr->u.srv->port == 0) {
+					continue;
+				}
+				count++;
+				break;
+			case rk_ns_t_a:
+			case rk_ns_t_aaaa:
+				/* verify we actually have a record here */
+				if (!rr->u.data) {
+					continue;
+				}
+				count++;
+				break;
+			default:
+				count++;
+				break;
+		}
+	}
+
+	return count;
+}
+
+struct dns_records_container {
+	char **list;
+	uint32_t count;
+};
+
+static char* rr_to_string(TALLOC_CTX *mem_ctx,
+					struct rk_resource_record *rr,
+					uint16_t port)
+{
+	char addrstr[INET6_ADDRSTRLEN];
+	char *addr;
+
+	switch (rr->type) {
+		case rk_ns_t_a:
+			if (inet_ntop(AF_INET, rr->u.a,
+				      addrstr, sizeof(addrstr)) == NULL) {
+				return NULL;
+			}
+			break;
+#ifdef HAVE_IPV6
+		case rk_ns_t_aaaa:
+			if (inet_ntop(AF_INET6, (struct in6_addr *)rr->u.data,
+				      addrstr, sizeof(addrstr)) == NULL) {
+				return NULL;
+			}
+			break;
+#endif
+		default:
+			return NULL;
+	}
+
+	addr = talloc_asprintf(mem_ctx, "%s@%u/%s", addrstr,
+					 port, rr->domain);
+
+	return addr;
+}
+
+static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
+							const char* name,
+							int port)
+{
+	struct rk_dns_reply *reply, *reply2, *rep, *tmp[3];
+	struct rk_resource_record *rr;
+	struct dns_records_container ret;
+	char **addrs = NULL;
+	uint32_t count, count2, total;
+	uint32_t i;
+
+	memset(&ret, 0, sizeof(struct dns_records_container));
+	/* this is the blocking call we are going to lots of trouble
+	   to avoid them in the parent */
+	reply = rk_dns_lookup(name, "AAAA");
+
+	if (!reply) {
+		return ret;
+	}
+
+	count = count_dns_rr(reply->head, rk_ns_t_aaaa);
+	count2 = count_dns_rr(reply->head, rk_ns_t_a);
+
+	if (!count2) {
+		/*
+		 * DNS server didn't returned A when asked for AAAA records.
+		 * Most of the server do it, let's ask for A specificaly.
+		 */
+		reply2 = rk_dns_lookup(name, "A");
+
+		if (!reply2) {
+			return ret;
+		}
+
+		count2 = count_dns_rr(reply2->head, rk_ns_t_a);
+	} else {
+		reply2 = NULL;
+	}
+
+	count += count2;
+
+	if (count == 0) {
+		goto done;
+	}
+
+	addrs = talloc_zero_array(mem_ctx, char*, count);
+	total = 0;
+
+	tmp[0] = reply;
+	tmp[1] = reply2;
+	tmp[2] = NULL;
+
+	/* Loop over all returned records and pick the records */
+	for (i=0; tmp[i] != NULL; i++) {
+		rep = tmp[i];
+		for (rr=rep->head; rr; rr=rr->next) {
+			/* we are only interested in the IN class */
+			if (rr->class != rk_ns_c_in) {
+				continue;
+			}
+
+			/* we are only interested in A and AAAA records */
+			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
+				continue;
+			}
+
+			/* verify we actually have a record here */
+			if (!rr->u.data) {
+				continue;
+			}
+			rr_to_string(mem_ctx, rr, port);
+			addrs[total] = rr_to_string(mem_ctx, rr, port);
+			if (addrs[total]) {
+				total++;
+			}
+		}
+	}
+	if (total) {
+		ret.count = total;
+		ret.list = addrs;
+	}
+
+done:
+	if (reply != NULL)
+		rk_dns_free_data(reply);
+
+	if (reply2 != NULL)
+		rk_dns_free_data(reply2);
+
+	return ret;
+}
+
+static struct dns_records_container get_srv_records(TALLOC_CTX *mem_ctx,
+							const char* name)
+{
+	struct rk_dns_reply *reply;
+	struct rk_resource_record *rr;
+	struct dns_records_container ret;
+	char **addrs = NULL;
+	uint32_t count, total;
+
+	memset(&ret, 0, sizeof(struct dns_records_container));
+	/* this is the blocking call we are going to lots of trouble
+	   to avoid them in the parent */
+	reply = rk_dns_lookup(name, "SRV");
+
+	if (!reply) {
+		return ret;
+	}
+
+	rk_dns_srv_order(reply);
+	count = count_dns_rr(reply->head, rk_ns_t_srv);
+
+	total = 0;
+	if (count == 0) {
+		goto done;
+	}
+
+	/* Loop over all returned records and pick the records */
+	for (rr=reply->head; rr; rr=rr->next) {
+		struct dns_records_container c;
+		char* tmp_str;
+		/* we are only interested in the IN class */
+		if (rr->class != rk_ns_c_in) {
+			continue;
+		}
+
+		/* we are only interested in SRV records */
+		if (rr->type != rk_ns_t_srv) {
+			continue;
+		}
+
+		/* verify we actually have a srv record here */
+		if (!rr->u.srv) {
+			continue;
+		}
+
+		/* Verify we got a port */
+		if (rr->u.srv->port == 0) {
+			continue;
+		}
+
+		tmp_str = rr->u.srv->target;
+		if (strchr(tmp_str, '.') && tmp_str[strlen(tmp_str)-1] != '.') {
+			/* we are asking for a fully qualified name, but the
+			name doesn't end in a '.'. We need to prevent the
+			DNS library trying the search domains configured in
+			resolv.conf */
+			tmp_str = talloc_asprintf(mem_ctx, "%s.", tmp_str);
+		}
+
+		c = get_a_aaaa_records(mem_ctx, tmp_str, rr->u.srv->port);
+		total += c.count;
+		if (addrs == NULL) {
+			addrs = c.list;
+		} else {
+			unsigned j;
+
+			addrs = talloc_realloc(mem_ctx, addrs, char*, total);
+			for (j=0; j < c.count; j++) {
+				addrs[total - j] = talloc_steal(addrs, c.list[j]);
+			}
+		}
+	}
+
+	if (total) {
+		ret.count = total;
+		ret.list = addrs;
+	}
+
+
+done:
+	if (reply != NULL)
+		rk_dns_free_data(reply);
+
+	return ret;
+}
 /*
   the blocking child
 */
 static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 {
-	struct rk_dns_reply *reply;
-	struct rk_resource_record *rr;
-	uint32_t count = 0;
-	uint32_t srv_valid = 0;
-	struct rk_resource_record **srv_rr;
-	uint32_t addrs_valid = 0;
-	struct rk_resource_record **addrs_rr;
-	struct rk_dns_reply **srv_replies = NULL;
-	char *addrs;
 	bool first;
-	uint32_t i;
 	bool do_srv = (state->flags & RESOLVE_NAME_FLAG_DNS_SRV);
+	struct dns_records_container c;
+	char* addrs = NULL;
+	unsigned int i;
 
 	if (strchr(state->name.name, '.') && state->name.name[strlen(state->name.name)-1] != '.') {
 		/* we are asking for a fully qualified name, but the
@@ -103,148 +359,11 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 							".");
 	}
 
-	/* this is the blocking call we are going to lots of trouble
-	   to avoid in the parent */
-	reply = rk_dns_lookup(state->name.name, do_srv?"SRV":"A");
-	if (!reply) {
-		goto done;
-	}
 
 	if (do_srv) {
-		rk_dns_srv_order(reply);
-	}
-
-	/* Loop over all returned records and pick the "srv" records */
-	for (rr=reply->head; rr; rr=rr->next) {
-		/* we are only interested in the IN class */
-		if (rr->class != rk_ns_c_in) {
-			continue;
-		}
-
-		if (do_srv) {
-			/* we are only interested in SRV records */
-			if (rr->type != rk_ns_t_srv) {
-				continue;
-			}
-
-			/* verify we actually have a SRV record here */
-			if (!rr->u.srv) {
-				continue;
-			}
-
-			/* Verify we got a port */
-			if (rr->u.srv->port == 0) {
-				continue;
-			}
-		} else {
-			/* we are only interested in A or AAAA records */
-			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
-				continue;
-			}
-
-			/* verify we actually have a record here */
-			if (!rr->u.data) {
-				continue;
-			}
-		}
-		count++;
-	}
-
-	if (count == 0) {
-		goto done;
-	}
-
-	srv_rr = talloc_zero_array(state,
-				   struct rk_resource_record *,
-				   count);
-	if (!srv_rr) {
-		goto done;
-	}
-
-	addrs_rr = talloc_zero_array(state,
-				     struct rk_resource_record *,
-				     count);
-	if (!addrs_rr) {
-		goto done;
-	}
-
-	srv_replies = talloc_zero_array(state,
-					struct rk_dns_reply *,
-				     	count);
-	if (!srv_replies) {
-		goto done;
-	}
-
-	/* Loop over all returned records and pick the records */
-	for (rr=reply->head;rr;rr=rr->next) {
-		/* we are only interested in the IN class */
-		if (rr->class != rk_ns_c_in) {
-			continue;
-		}
-
-		if (do_srv) {
-			/* we are only interested in SRV records */
-			if (rr->type != rk_ns_t_srv) {
-				continue;
-			}
-
-			/* verify we actually have a srv record here */
-			if (!rr->u.srv) {
-				continue;
-			}
-
-			/* Verify we got a port */
-			if (rr->u.srv->port == 0) {
-				continue;
-			}
-
-			srv_rr[srv_valid] = rr;
-			srv_valid++;
-		} else {
-			/* we are only interested in A or AAAA records */
-			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
-				continue;
-			}
-
-			/* verify we actually have a record record here */
-			if (!rr->u.data) {
-				continue;
-			}
-
-			addrs_rr[addrs_valid] = rr;
-			addrs_valid++;
-		}
-	}
-
-	for (i=0; i < srv_valid; i++) {
-		srv_replies[i] = rk_dns_lookup(srv_rr[i]->u.srv->target, "A");
-		if (srv_replies[i] == NULL)
-			continue;
-
-		/* Add first A record to addrs_rr */
-		for (rr=srv_replies[i]->head;rr;rr=rr->next) {
-			if (rr->class != rk_ns_c_in) {
-				continue;
-			}
-
-			/* we are only interested in A or AAAA records */
-			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
-				continue;
-			}
-
-			/* verify we actually have a record here */
-			if (!rr->u.data) {
-				continue;
-			}
-
-			addrs_rr[i] = rr;
-			addrs_valid++;
-			break;
-		}
-	}
-
-	if (addrs_valid == 0) {
-		goto done;
+		c = get_srv_records(state, state->name.name);
+	} else {
+		c = get_a_aaaa_records(state, state->name.name, state->port);
 	}
 
 	addrs = talloc_strdup(state, "");
@@ -252,62 +371,20 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		goto done;
 	}
 	first = true;
-	for (i=0; i < addrs_valid; i++) {
-		uint16_t port;
-		char addrstr[INET6_ADDRSTRLEN];
 
-		if (!addrs_rr[i]) {
-			continue;
-		}
-
-		if (srv_rr[i] &&
-		    (state->flags & RESOLVE_NAME_FLAG_OVERWRITE_PORT)) {
-			port = srv_rr[i]->u.srv->port;
-		} else {
-			port = state->port;
-		}
-
-		switch (addrs_rr[i]->type) {
-		case rk_ns_t_a:
-			if (inet_ntop(AF_INET, addrs_rr[i]->u.a,
-				      addrstr, sizeof(addrstr)) == NULL) {
-				continue;
-			}
-			break;
-#ifdef HAVE_IPV6
-		case rk_ns_t_aaaa:
-			if (inet_ntop(AF_INET6, (struct in6_addr *)addrs_rr[i]->u.data,
-				      addrstr, sizeof(addrstr)) == NULL) {
-				continue;
-			}
-			break;
-#endif
-		default:
-			continue;
-		}
-
-		addrs = talloc_asprintf_append_buffer(addrs, "%s%s@%u/%s",
-						      first?"":",",
-						      addrstr,
-						      port,
-						      addrs_rr[i]->domain);
-		if (!addrs) {
-			goto done;
-		}
+	for (i=0; i < c.count; i++) {
+		addrs = talloc_asprintf_append_buffer(addrs, "%s%s",
+							first?"":",",
+							c.list[i]);
 		first = false;
 	}
 
 	if (addrs) {
+		DEBUG(11, ("Addrs = %s\n", addrs));
 		write(fd, addrs, talloc_get_size(addrs));
 	}
 
 done:
-	if (reply != NULL)
-		rk_dns_free_data(reply);
-	for (i=0; i < srv_valid; i++) {
-		if (srv_replies[i] != NULL)
-			rk_dns_free_data(srv_replies[i]);
-	}
 	close(fd);
 }
 
