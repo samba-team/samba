@@ -874,7 +874,7 @@ static bool get_version(struct check_ctx *ctx) {
 			       "version %d with %d\n", info_version, version);
 		} else {
 			printf("Warning: found registry format version %d but "
-			       "expected %d\n", info_version, version);
+			       "expected %d, use --force to proceed.\n", info_version, version);
 			return false;
 		}
 	}
@@ -1191,15 +1191,13 @@ static bool check_ctx_fix_inplace(struct check_ctx *ctx) {
 	NTSTATUS status;
 	status = dbwrap_traverse(ctx->reg, fix_tree_action, ctx, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("fix traverse failed: %s\n",
-			  nt_errstr(status)));
+		DEBUG(0, ("fix traverse failed: %s\n", nt_errstr(status)));
 		return false;
 	}
 
 	status = dbwrap_traverse(ctx->del, delete_invalid_action, ctx, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("delete traverse failed: %s\n",
-			  nt_errstr(status)));
+		DEBUG(0, ("delete traverse failed: %s\n", nt_errstr(status)));
 		return false;
 	}
 	return true;
@@ -1213,8 +1211,7 @@ static bool check_ctx_write_new_db(struct check_ctx *ctx) {
 	if (ctx->opt.wipe) {
 		int ret = dbwrap_wipe(ctx->odb);
 		if (ret != 0) {
-			DEBUG(0, ("wiping %s failed\n",
-				  ctx->opt.output));
+			DEBUG(0, ("wiping %s failed\n", ctx->opt.output));
 			return false;
 		}
 	}
