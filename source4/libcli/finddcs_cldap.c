@@ -27,6 +27,7 @@
 #include "libcli/finddc.h"
 #include "libcli/security/security.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/tsocket/tsocket.h"
 #include "libcli/composite/composite.h"
 
 struct finddcs_cldap_state {
@@ -131,10 +132,6 @@ static bool finddcs_cldap_ipaddress(struct finddcs_cldap_state *state, struct fi
 	}
 	state->srv_addresses[1] = NULL;
 	state->srv_address_index = 0;
-	status = cldap_socket_init(state, NULL, NULL, &state->cldap);
-	if (tevent_req_nterror(state->req, status)) {
-		return false;
-	}
 
 	finddcs_cldap_next_server(state);
 	return tevent_req_is_nterror(state->req, &status);
@@ -201,10 +198,27 @@ static bool finddcs_cldap_nbt_lookup(struct finddcs_cldap_state *state,
 static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 {
 	struct tevent_req *subreq;
+	struct tsocket_address *dest;
+	int ret;
+	NTSTATUS status;
 
 	if (state->srv_addresses[state->srv_address_index] == NULL) {
 		tevent_req_nterror(state->req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		DEBUG(2,("finddcs: No matching CLDAP server found\n"));
+		return;
+	}
+
+	/* we should get the port from the SRV response */
+	ret = tsocket_address_inet_from_strings(state, "ip",
+						state->srv_addresses[state->srv_address_index],
+						389,
+						&dest);
+	if (tevent_req_error(state->req, ret)) {
+		return;
+	}
+
+	status = cldap_socket_init(state, NULL, dest, &state->cldap);
+	if (tevent_req_nterror(state->req, status)) {
 		return;
 	}
 
@@ -213,9 +227,6 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 		return;
 	}
 
-	state->netlogon->in.dest_address = state->srv_addresses[state->srv_address_index];
-	/* we should get the port from the SRV response */
-	state->netlogon->in.dest_port = 389;
 	if (strchr(state->domain_name, '.')) {
 		state->netlogon->in.realm = state->domain_name;
 	}
@@ -307,11 +318,6 @@ static void finddcs_cldap_name_resolved(struct composite_context *ctx)
 
 	state->srv_address_index = 0;
 
-	status = cldap_socket_init(state, NULL, NULL, &state->cldap);
-	if (tevent_req_nterror(state->req, status)) {
-		return;
-	}
-
 	finddcs_cldap_next_server(state);
 }
 
@@ -337,11 +343,6 @@ static void finddcs_cldap_srv_resolved(struct composite_context *ctx)
 	}
 
 	state->srv_address_index = 0;
-
-	status = cldap_socket_init(state, NULL, NULL, &state->cldap);
-	if (tevent_req_nterror(state->req, status)) {
-		return;
-	}
 
 	finddcs_cldap_next_server(state);
 }
