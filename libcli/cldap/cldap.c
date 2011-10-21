@@ -341,8 +341,12 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 
 	if (!local_addr) {
 		/*
-		 * Here we the address family of the remote address.
+		 * Here we know the address family of the remote address.
 		 */
+		if (fam == NULL) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+
 		ret = tsocket_address_inet_from_strings(c, fam,
 							NULL, 0,
 							&any);
