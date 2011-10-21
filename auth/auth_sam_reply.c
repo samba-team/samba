@@ -59,9 +59,9 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 
 	info = user_info_dc->info;
 
-	sam->last_logon = info->last_logon;
-	sam->last_logoff =  info->last_logoff;
-	sam->acct_expiry = info->acct_expiry;
+	sam->logon_time = info->last_logon;
+	sam->logoff_time =  info->last_logoff;
+	sam->kickoff_time = info->acct_expiry;
 	sam->last_password_change = info->last_password_change;
 	sam->allow_password_change = info->allow_password_change;
 	sam->force_password_change = info->force_password_change;
@@ -107,9 +107,12 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 	}
 	sam->acct_flags = user_info_dc->info->acct_flags;
 	sam->logon_server.string = user_info_dc->info->logon_server;
-	sam->domain.string = user_info_dc->info->domain_name;
-
-	ZERO_STRUCT(sam->unknown);
+	sam->logon_domain.string = user_info_dc->info->domain_name;
+	sam->sub_auth_status = 0;
+	sam->last_successful_logon = 0;
+	sam->last_failed_logon = 0;
+	sam->failed_logon_count = 0;
+	sam->reserved = 0;
 
 	ZERO_STRUCT(sam->key);
 	if (user_info_dc->user_session_key.length == sizeof(sam->key.key)) {
@@ -198,8 +201,8 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 	}
 	NT_STATUS_HAVE_NO_MEMORY(info->account_name);
 
-	if (base->domain.string) {
-		info->domain_name = talloc_strdup(info, base->domain.string);
+	if (base->logon_domain.string) {
+		info->domain_name = talloc_strdup(info, base->logon_domain.string);
 		NT_STATUS_HAVE_NO_MEMORY(info->domain_name);
 	}
 
@@ -227,9 +230,9 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 		info->logon_server = talloc_strdup(info, base->logon_server.string);
 		NT_STATUS_HAVE_NO_MEMORY(info->logon_server);
 	}
-	info->last_logon = base->last_logon;
-	info->last_logoff = base->last_logoff;
-	info->acct_expiry = base->acct_expiry;
+	info->last_logon = base->logon_time;
+	info->last_logoff = base->logoff_time;
+	info->acct_expiry = base->kickoff_time;
 	info->last_password_change = base->last_password_change;
 	info->allow_password_change = base->allow_password_change;
 	info->force_password_change = base->force_password_change;

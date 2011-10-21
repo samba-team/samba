@@ -207,9 +207,9 @@ interface netlogon
 	} netr_UserFlags;
 
 	typedef struct {
-		NTTIME last_logon;
-		NTTIME last_logoff;
-		NTTIME acct_expiry;
+		NTTIME logon_time;
+		NTTIME logoff_time;
+		NTTIME kickoff_time;
 		NTTIME last_password_change;
 		NTTIME allow_password_change;
 		NTTIME force_password_change;
@@ -227,11 +227,15 @@ interface netlogon
 		netr_UserFlags user_flags;
 		netr_UserSessionKey key;
 		lsa_StringLarge logon_server;
-		lsa_StringLarge domain;
+		lsa_StringLarge logon_domain;
 		dom_sid2 *domain_sid;
 		netr_LMSessionKey LMSessKey;
 		samr_AcctFlags acct_flags;
-		uint32 unknown[7];
+		uint32 sub_auth_status;
+		NTTIME last_successful_logon;
+		NTTIME last_failed_logon;
+		uint32 failed_logon_count;
+		uint32 reserved;
 	} netr_SamBaseInfo;
 
 	typedef struct {

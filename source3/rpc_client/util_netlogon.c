@@ -52,7 +52,7 @@ NTSTATUS copy_netr_SamBaseInfo(TALLOC_CTX *mem_ctx,
 	}
 
 	COPY_LSA_STRING(mem_ctx, in, out, logon_server);
-	COPY_LSA_STRING(mem_ctx, in, out, domain);
+	COPY_LSA_STRING(mem_ctx, in, out, logon_domain);
 
 	if (in->domain_sid) {
 		out->domain_sid = dom_sid_dup(mem_ctx, in->domain_sid);

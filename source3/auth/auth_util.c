@@ -797,7 +797,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 	if (tmp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	init_lsa_StringLarge(&info3->base.domain, tmp);
+	init_lsa_StringLarge(&info3->base.logon_domain, tmp);
 
 	/* Domain sid */
 	sid_copy(&domain_sid, get_global_sam_sid());
@@ -1372,7 +1372,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		nt_username = sent_nt_username;
 	}
 
-	nt_domain = talloc_strdup(mem_ctx, info3->base.domain.string);
+	nt_domain = talloc_strdup(mem_ctx, info3->base.logon_domain.string);
 	if (!nt_domain) {
 		/* If the server didn't give us one, just use the one we sent
 		 * them */

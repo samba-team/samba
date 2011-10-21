@@ -52,11 +52,11 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	uint32_t i;
 
 	resp->data.auth.info3.logon_time =
-		nt_time_to_unix(info3->base.last_logon);
+		nt_time_to_unix(info3->base.logon_time);
 	resp->data.auth.info3.logoff_time =
-		nt_time_to_unix(info3->base.last_logoff);
+		nt_time_to_unix(info3->base.logoff_time);
 	resp->data.auth.info3.kickoff_time =
-		nt_time_to_unix(info3->base.acct_expiry);
+		nt_time_to_unix(info3->base.kickoff_time);
 	resp->data.auth.info3.pass_last_set_time =
 		nt_time_to_unix(info3->base.last_password_change);
 	resp->data.auth.info3.pass_can_change_time =
@@ -93,7 +93,7 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	fstrcpy(resp->data.auth.info3.logon_srv,
 		info3->base.logon_server.string);
 	fstrcpy(resp->data.auth.info3.logon_dom,
-		info3->base.domain.string);
+		info3->base.logon_domain.string);
 
 	ex = talloc_strdup(mem_ctx, "");
 	NT_STATUS_HAVE_NO_MEMORY(ex);
@@ -156,7 +156,7 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 
 	const char *nt_username, *nt_domain;
 
-	nt_domain = talloc_strdup(mem_ctx, info3->base.domain.string);
+	nt_domain = talloc_strdup(mem_ctx, info3->base.logon_domain.string);
 	if (!nt_domain) {
 		/* If the server didn't give us one, just use the one
 		 * we sent them */
@@ -895,7 +895,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
-		kickoff_time = nt_time_to_unix(my_info3->base.acct_expiry);
+		kickoff_time = nt_time_to_unix(my_info3->base.kickoff_time);
 		if (kickoff_time != 0 && time(NULL) > kickoff_time) {
 			return NT_STATUS_ACCOUNT_EXPIRED;
 		}
@@ -977,7 +977,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		/* FIXME: we possibly should handle logon hours as well (does xp when
 		 * offline?) see auth/auth_sam.c:sam_account_ok for details */
 
-		unix_to_nt_time(&my_info3->base.last_logon, time(NULL));
+		unix_to_nt_time(&my_info3->base.logon_time, time(NULL));
 		my_info3->base.bad_password_count = 0;
 
 		result = winbindd_update_creds_by_info3(domain,

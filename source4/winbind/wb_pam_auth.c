@@ -170,9 +170,9 @@ static void pam_auth_crap_recv_logon(struct composite_context *ctx)
 		state->user_name = base->account_name.string;
 		talloc_steal(state, base->account_name.string);
 	}
-	if (base->domain.string) {
-		state->domain_name = base->domain.string;
-		talloc_steal(state, base->domain.string);
+	if (base->logon_domain.string) {
+		state->domain_name = base->logon_domain.string;
+		talloc_steal(state, base->logon_domain.string);
 	}
 
 	state->unix_username = talloc_asprintf(state, "%s%s%s", 

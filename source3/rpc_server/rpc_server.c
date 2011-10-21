@@ -111,7 +111,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 
 		status = make_server_info_info3(p,
 						info3->base.account_name.string,
-						info3->base.domain.string,
+						info3->base.logon_domain.string,
 						&server_info, info3);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to init server info\n"));

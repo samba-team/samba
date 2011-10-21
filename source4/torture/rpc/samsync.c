@@ -684,8 +684,8 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		TEST_STRING_EQUAL(user->logon_script, info3->base.logon_script);
 
 
-		TEST_TIME_EQUAL(user->last_logon, info3->base.last_logon);
-		TEST_TIME_EQUAL(user->acct_expiry, info3->base.acct_expiry);
+		TEST_TIME_EQUAL(user->last_logon, info3->base.logon_time);
+		TEST_TIME_EQUAL(user->acct_expiry, info3->base.kickoff_time);
 		TEST_TIME_EQUAL(user->last_password_change, info3->base.last_password_change);
 		TEST_TIME_EQUAL(info->info21.force_password_change, info3->base.force_password_change);
 
@@ -696,8 +696,8 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		/* This copes with the two different versions of 0 I see */
 		/* with NT4 sp6 we have the || case */
 		if (!((user->last_logoff == 0)
-		      || (info3->base.last_logoff == 0x7fffffffffffffffLL))) {
-			TEST_TIME_EQUAL(user->last_logoff, info3->base.last_logoff);
+		      || (info3->base.logoff_time == 0x7fffffffffffffffLL))) {
+			TEST_TIME_EQUAL(user->last_logoff, info3->base.logoff_time);
 		}
 
 		TEST_INT_EQUAL(rids->count, info3->base.groups.count);

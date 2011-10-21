@@ -384,9 +384,9 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	unix_to_nt_time(&info3->base.last_logon, pdb_get_logon_time(samu));
-	unix_to_nt_time(&info3->base.last_logoff, get_time_t_max());
-	unix_to_nt_time(&info3->base.acct_expiry, get_time_t_max());
+	unix_to_nt_time(&info3->base.logon_time, pdb_get_logon_time(samu));
+	unix_to_nt_time(&info3->base.logoff_time, get_time_t_max());
+	unix_to_nt_time(&info3->base.kickoff_time, get_time_t_max());
 	unix_to_nt_time(&info3->base.last_password_change,
 			pdb_get_pass_last_set_time(samu));
 	unix_to_nt_time(&info3->base.allow_password_change,
@@ -428,9 +428,9 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	info3->base.logon_count	= pdb_get_logon_count(samu);
 	info3->base.bad_password_count = pdb_get_bad_password_count(samu);
 
-	info3->base.domain.string = talloc_strdup(info3,
+	info3->base.logon_domain.string = talloc_strdup(info3,
 						  pdb_get_domain(samu));
-	RET_NOMEM(info3->base.domain.string);
+	RET_NOMEM(info3->base.logon_domain.string);
 
 	info3->base.domain_sid = dom_sid_dup(info3, &domain_sid);
 	RET_NOMEM(info3->base.domain_sid);
@@ -560,9 +560,9 @@ struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	if (!info3) return NULL;
 
-	info3->base.last_logon = info->logon_time;
-	info3->base.last_logoff = info->logoff_time;
-	info3->base.acct_expiry = info->kickoff_time;
+	info3->base.logon_time = info->logon_time;
+	info3->base.logoff_time = info->logoff_time;
+	info3->base.kickoff_time = info->kickoff_time;
 	unix_to_nt_time(&info3->base.last_password_change, info->pass_last_set_time);
 	unix_to_nt_time(&info3->base.allow_password_change,
 			info->pass_can_change_time);
@@ -635,9 +635,9 @@ struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 		RET_NOMEM(info3->base.logon_server.string);
 	}
 	if (info->domain_name) {
-		info3->base.domain.string =
+		info3->base.logon_domain.string =
 				talloc_strdup(info3, info->domain_name);
-		RET_NOMEM(info3->base.domain.string);
+		RET_NOMEM(info3->base.logon_domain.string);
 	}
 
 	info3->base.domain_sid = dom_sid_dup(info3, &domain_sid);

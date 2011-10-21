@@ -73,9 +73,9 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (logon_info && logon_info->info3.base.domain.string) {
+	if (logon_info && logon_info->info3.base.logon_domain.string) {
 		domain = talloc_strdup(mem_ctx,
-					logon_info->info3.base.domain.string);
+					logon_info->info3.base.logon_domain.string);
 		if (!domain) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -259,7 +259,7 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 		 * %D. */
 
 		if (server_info->info3 != NULL) {
-			server_info->info3->base.domain.string =
+			server_info->info3->base.logon_domain.string =
 				talloc_strdup(server_info->info3, ntdomain);
 		}
 	}

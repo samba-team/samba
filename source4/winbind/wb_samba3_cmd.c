@@ -61,11 +61,11 @@ static NTSTATUS wb_samba3_append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	}
 
 	s3call->response->data.auth.info3.logon_time =
-		nt_time_to_unix(info3->base.last_logon);
+		nt_time_to_unix(info3->base.logon_time);
 	s3call->response->data.auth.info3.logoff_time =
-		nt_time_to_unix(info3->base.last_logoff);
+		nt_time_to_unix(info3->base.logoff_time);
 	s3call->response->data.auth.info3.kickoff_time =
-		nt_time_to_unix(info3->base.acct_expiry);
+		nt_time_to_unix(info3->base.kickoff_time);
 	s3call->response->data.auth.info3.pass_last_set_time =
 		nt_time_to_unix(info3->base.last_password_change);
 	s3call->response->data.auth.info3.pass_can_change_time =
@@ -102,7 +102,7 @@ static NTSTATUS wb_samba3_append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	fstrcpy(s3call->response->data.auth.info3.logon_srv,
 		info3->base.logon_server.string);
 	fstrcpy(s3call->response->data.auth.info3.logon_dom,
-		info3->base.domain.string);
+		info3->base.logon_domain.string);
 
 	ex = talloc_strdup(mem_ctx, "");
 	NT_STATUS_HAVE_NO_MEMORY(ex);
