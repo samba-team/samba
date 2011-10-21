@@ -922,29 +922,6 @@ def secretsdb_self_join(secretsdb, domain,
         secretsdb.add(msg)
 
 
-def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
-                        dnsdomain, dns_keytab_path, dnspass):
-    """Add DNS specific bits to a secrets database.
-
-    :param secretsdb: Ldb Handle to the secrets database
-    :param machinepass: Machine password
-    """
-    try:
-        os.unlink(os.path.join(private_dir, dns_keytab_path))
-    except OSError:
-        pass
-
-    setup_ldb(secretsdb, setup_path("secrets_dns.ldif"), {
-            "REALM": realm,
-            "DNSDOMAIN": dnsdomain,
-            "DNS_KEYTAB": dns_keytab_path,
-            "DNSPASS_B64": b64encode(dnspass),
-            "HOSTNAME": names.hostname,
-            "DNSNAME" : '%s.%s' % (
-                names.netbiosname.lower(), names.dnsdomain.lower())
-            })
-
-
 def setup_secretsdb(paths, session_info, backend_credentials, lp):
     """Setup the secrets database.
 
@@ -1616,13 +1593,9 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                 # It might be that this attribute does not exist in this schema
                 raise
 
-        secretsdb_setup_dns(secrets_ldb, names,
-                            paths.private_dir, realm=names.realm,
-                            dnsdomain=names.dnsdomain,
-                            dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
-
-        setup_ad_dns(samdb, names, logger, hostip=hostip, hostip6=hostip6,
-                     dns_backend=dns_backend, os_level=dom_for_fun_level)
+        setup_ad_dns(samdb, secrets_ldb, names, paths, logger, hostip=hostip,
+                     hostip6=hostip6, dns_backend=dns_backend,
+                     dnspass=dnspass, os_level=dom_for_fun_level)
 
         domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
                                      attribute="objectGUID")

@@ -33,6 +33,7 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2008,
     DS_DOMAIN_FUNCTION_2008_R2
     )
+from base64 import b64encode
 
 
 def add_ldif(ldb, ldif_file, subst_vars, controls=["relax:0"]):
@@ -44,6 +45,30 @@ def modify_ldif(ldb, ldif_file, subst_vars, controls=["relax:0"]):
     ldif_file_path = os.path.join(samba.param.setup_dir(), ldif_file)
     data = read_and_sub_file(ldif_file_path, subst_vars)
     ldb.modify_ldif(data, controls)
+
+def setup_ldb(ldb, ldif_path, subst_vars):
+    """Import a LDIF a file into a LDB handle, optionally substituting
+    variables.
+
+    :note: Either all LDIF data will be added or none (using transactions).
+
+    :param ldb: LDB file to import into.
+    :param ldif_path: Path to the LDIF file.
+    :param subst_vars: Dictionary with substitution variables.
+    """
+    assert ldb is not None
+    ldb.transaction_start()
+    try:
+        add_ldif(ldb, ldif_path, subst_vars)
+    except Exception:
+        ldb.transaction_cancel()
+        raise
+    else:
+        ldb.transaction_commit()
+
+def setup_path(file):
+    """Return an absolute path to the provision tempate file specified by file"""
+    return os.path.join(samba.param.setup_dir(), file)
 
 def get_domainguid(samdb, domaindn):
     res = samdb.search(base=domaindn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
@@ -450,6 +475,30 @@ def add_dc_msdcs_records(samdb, forestdn, prefix, site, dnsforest, hostname,
     add_cname_record(samdb, forest_container_dn, "DC=%s" % ntdsguid, fqdn_hostname)
 
 
+def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
+                        dnsdomain, dns_keytab_path, dnspass):
+    """Add DNS specific bits to a secrets database.
+
+    :param secretsdb: Ldb Handle to the secrets database
+    :param names: Names shortcut
+    :param machinepass: Machine password
+    """
+    try:
+        os.unlink(os.path.join(private_dir, dns_keytab_path))
+    except OSError:
+        pass
+
+    setup_ldb(secretsdb, setup_path("secrets_dns.ldif"), {
+            "REALM": realm,
+            "DNSDOMAIN": dnsdomain,
+            "DNS_KEYTAB": dns_keytab_path,
+            "DNSPASS_B64": b64encode(dnspass),
+            "HOSTNAME": names.hostname,
+            "DNSNAME" : '%s.%s' % (
+                names.netbiosname.lower(), names.dnsdomain.lower())
+            })
+
+
 def is_valid_dns_backend(dns_backend):
         return dns_backend in ("BIND9_FLATFILE", "BIND9_DLZ", "SAMBA_INTERNAL", "NONE")
 
@@ -458,15 +507,18 @@ def is_valid_os_level(os_level):
     return DS_DOMAIN_FUNCTION_2000 <= os_level <= DS_DOMAIN_FUNCTION_2008_R2
 
 
-def setup_ad_dns(samdb, names, logger, dns_backend, os_level, hostip=None,
-                 hostip6=None,):
+def setup_ad_dns(samdb, secretsdb, names, paths, logger, dns_backend, os_level,
+                 dnspass=None, hostip=None, hostip6=None):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
+    :param secretsdb: LDB object connected to secrets.ldb file
     :param names: Names shortcut
+    :param paths: Paths shortcut
     :param logger: Logger object
     :param dns_backend: Type of DNS backend
     :param os_level: Functional level (treated as os level)
+    :param dnspass: Password for bind's DNS account
     :param hostip: IPv4 address
     :param hostip6: IPv6 address
     """
@@ -565,3 +617,9 @@ def setup_ad_dns(samdb, names, logger, dns_backend, os_level, hostip=None,
         # Add DNS records for a DC in forest
         add_dc_msdcs_records(samdb, forestdn, "DC=ForestDnsZones", site, dnsforest,
                                 hostname, hostip, hostip6, domainguid, ntdsguid)
+
+    if dns_backend.startswith("BIND9_"):
+        secretsdb_setup_dns(secretsdb, names,
+                            paths.private_dir, realm=names.realm,
+                            dnsdomain=names.dnsdomain,
+                            dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
