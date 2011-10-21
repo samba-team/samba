@@ -313,6 +313,27 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 	struct tsocket_address *any = NULL;
 	NTSTATUS status;
 	int ret;
+	const char *fam = NULL;
+
+	if (local_addr == NULL && remote_addr == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (remote_addr) {
+		bool is_ipv4;
+		bool is_ipv6;
+
+		is_ipv4 = tsocket_address_is_inet(remote_addr, "ipv4");
+		is_ipv6 = tsocket_address_is_inet(remote_addr, "ipv6");
+
+		if (is_ipv4) {
+			fam = "ipv4";
+		} else if (is_ipv6) {
+			fam = "ipv6";
+		} else {
+			return NT_STATUS_INVALID_ADDRESS;
+		}
+	}
 
 	c = talloc_zero(mem_ctx, struct cldap_socket);
 	if (!c) {
@@ -329,11 +350,10 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 	c->event.ctx = ev;
 
 	if (!local_addr) {
-		/* we use ipv4 here instead of ip, as otherwise we end
-		   up with a PF_INET6 socket, and sendto() for ipv4
-		   addresses will fail. That breaks cldap name
-		   resolution for winbind to IPv4 hosts. */
-		ret = tsocket_address_inet_from_strings(c, "ipv4",
+		/*
+		 * Here we the address family of the remote address.
+		 */
+		ret = tsocket_address_inet_from_strings(c, fam,
 							NULL, 0,
 							&any);
 		if (ret != 0) {
