@@ -22,10 +22,12 @@
 
 import os
 import uuid
+import shutil
+import time
 import ldb
 import samba
 from samba.ndr import ndr_pack, ndr_unpack
-from samba import read_and_sub_file
+from samba import read_and_sub_file, setup_file
 from samba.dcerpc import dnsp, misc
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -499,6 +501,164 @@ def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
             })
 
 
+def create_dns_dir(logger, paths):
+    """Write out a DNS zone file, from the info in the current database.
+
+    :param logger: Logger object
+    :param paths: paths object
+    """
+    dns_dir = os.path.dirname(paths.dns)
+
+    try:
+        shutil.rmtree(dns_dir, True)
+    except OSError:
+        pass
+
+    os.mkdir(dns_dir, 0770)
+
+    if paths.bind_gid is not None:
+        try:
+            os.chown(dns_dir, -1, paths.bind_gid)
+            # chmod needed to cope with umask
+            os.chmod(dns_dir, 0770)
+        except OSError:
+            if not os.environ.has_key('SAMBA_SELFTEST'):
+                logger.error("Failed to chown %s to bind gid %u" % (
+                    dns_dir, paths.bind_gid))
+
+
+def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
+                     hostip, hostip6, hostname, realm, domainguid,
+                     ntdsguid, site):
+    """Write out a DNS zone file, from the info in the current database.
+
+    :param paths: paths object
+    :param dnsdomain: DNS Domain name
+    :param domaindn: DN of the Domain
+    :param hostip: Local IPv4 IP
+    :param hostip6: Local IPv6 IP
+    :param hostname: Local hostname
+    :param realm: Realm name
+    :param domainguid: GUID of the domain.
+    :param ntdsguid: GUID of the hosts nTDSDSA record.
+    """
+    assert isinstance(domainguid, str)
+
+    if hostip6 is not None:
+        hostip6_base_line = "            IN AAAA    " + hostip6
+        hostip6_host_line = hostname + "        IN AAAA    " + hostip6
+        gc_msdcs_ip6_line = "gc._msdcs               IN AAAA    " + hostip6
+    else:
+        hostip6_base_line = ""
+        hostip6_host_line = ""
+        gc_msdcs_ip6_line = ""
+
+    if hostip is not None:
+        hostip_base_line = "            IN A    " + hostip
+        hostip_host_line = hostname + "        IN A    " + hostip
+        gc_msdcs_ip_line = "gc._msdcs               IN A    " + hostip
+    else:
+        hostip_base_line = ""
+        hostip_host_line = ""
+        gc_msdcs_ip_line = ""
+
+    # we need to freeze the zone while we update the contents
+    if targetdir is None:
+        rndc = ' '.join(lp.get("rndc command"))
+        os.system(rndc + " freeze " + lp.get("realm"))
+
+    setup_file(setup_path("provision.zone"), paths.dns, {
+            "HOSTNAME": hostname,
+            "DNSDOMAIN": dnsdomain,
+            "REALM": realm,
+            "HOSTIP_BASE_LINE": hostip_base_line,
+            "HOSTIP_HOST_LINE": hostip_host_line,
+            "DOMAINGUID": domainguid,
+            "DATESTRING": time.strftime("%Y%m%d%H"),
+            "DEFAULTSITE": site,
+            "NTDSGUID": ntdsguid,
+            "HOSTIP6_BASE_LINE": hostip6_base_line,
+            "HOSTIP6_HOST_LINE": hostip6_host_line,
+            "GC_MSDCS_IP_LINE": gc_msdcs_ip_line,
+            "GC_MSDCS_IP6_LINE": gc_msdcs_ip6_line,
+        })
+
+    if paths.bind_gid is not None:
+        try:
+            os.chown(paths.dns, -1, paths.bind_gid)
+            # chmod needed to cope with umask
+            os.chmod(paths.dns, 0664)
+        except OSError:
+            if not os.environ.has_key('SAMBA_SELFTEST'):
+                logger.error("Failed to chown %s to bind gid %u" % (
+                    paths.dns, paths.bind_gid))
+
+    if targetdir is None:
+        os.system(rndc + " unfreeze " + lp.get("realm"))
+
+
+def create_dns_update_list(lp, logger, paths):
+    """Write out a dns_update_list file"""
+    # note that we use no variable substitution on this file
+    # the substitution is done at runtime by samba_dnsupdate, samba_spnupdate
+    setup_file(setup_path("dns_update_list"), paths.dns_update_list, None)
+    setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
+
+
+def create_named_conf(paths, realm, dnsdomain, dns_backend):
+    """Write out a file containing zone statements suitable for inclusion in a
+    named.conf file (including GSS-TSIG configuration).
+
+    :param paths: all paths
+    :param realm: Realm name
+    :param dnsdomain: DNS Domain name
+    :param dns_backend: DNS backend type
+    :param keytab_name: File name of DNS keytab file
+    """
+
+    if dns_backend == "BIND9_FLATFILE":
+        setup_file(setup_path("named.conf"), paths.namedconf, {
+                    "DNSDOMAIN": dnsdomain,
+                    "REALM": realm,
+                    "ZONE_FILE": paths.dns,
+                    "REALM_WC": "*." + ".".join(realm.split(".")[1:]),
+                    "NAMED_CONF": paths.namedconf,
+                    "NAMED_CONF_UPDATE": paths.namedconf_update
+                    })
+
+        setup_file(setup_path("named.conf.update"), paths.namedconf_update)
+
+    elif dns_backend == "BIND9_DLZ":
+        dlz_module_path = os.path.join(samba.param.modules_dir(),
+                                        "bind9/dlz_bind9.so")
+        setup_file(setup_path("named.conf.dlz"), paths.namedconf, {
+                    "NAMED_CONF": paths.namedconf,
+                    "BIND9_DLZ_MODULE": dlz_module_path,
+                    })
+
+
+
+def create_named_txt(path, realm, dnsdomain, dnsname, private_dir,
+    keytab_name):
+    """Write out a file containing zone statements suitable for inclusion in a
+    named.conf file (including GSS-TSIG configuration).
+
+    :param path: Path of the new named.conf file.
+    :param realm: Realm name
+    :param dnsdomain: DNS Domain name
+    :param private_dir: Path to private directory
+    :param keytab_name: File name of DNS keytab file
+    """
+    setup_file(setup_path("named.txt"), path, {
+            "DNSDOMAIN": dnsdomain,
+            "DNSNAME" : dnsname,
+            "REALM": realm,
+            "DNS_KEYTAB": keytab_name,
+            "DNS_KEYTAB_ABS": os.path.join(private_dir, keytab_name),
+            "PRIVATE_DIR": private_dir
+        })
+
+
 def is_valid_dns_backend(dns_backend):
         return dns_backend in ("BIND9_FLATFILE", "BIND9_DLZ", "SAMBA_INTERNAL", "NONE")
 
@@ -507,20 +667,24 @@ def is_valid_os_level(os_level):
     return DS_DOMAIN_FUNCTION_2000 <= os_level <= DS_DOMAIN_FUNCTION_2008_R2
 
 
-def setup_ad_dns(samdb, secretsdb, names, paths, logger, dns_backend, os_level,
-                 dnspass=None, hostip=None, hostip6=None):
+def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger, dns_backend,
+                 os_level, site, dnspass=None, hostip=None, hostip6=None,
+                 targetdir=None):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
     :param secretsdb: LDB object connected to secrets.ldb file
     :param names: Names shortcut
     :param paths: Paths shortcut
+    :param lp: Loadparm object
     :param logger: Logger object
     :param dns_backend: Type of DNS backend
     :param os_level: Functional level (treated as os level)
+    :param site: Site to create hostnames in
     :param dnspass: Password for bind's DNS account
     :param hostip: IPv4 address
     :param hostip6: IPv6 address
+    :param targetdir: Target directory for creating DNS-related files for BIND9
     """
 
     if not is_valid_dns_backend(dns_backend):
@@ -623,3 +787,25 @@ def setup_ad_dns(samdb, secretsdb, names, paths, logger, dns_backend, os_level,
                             paths.private_dir, realm=names.realm,
                             dnsdomain=names.dnsdomain,
                             dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+
+        create_dns_dir(logger, paths)
+
+        # Only make a zone file on the first DC, it should be
+        # replicated with DNS replication
+        if dns_backend == "BIND9_FLATFILE":
+            create_zone_file(lp, logger, paths, targetdir, site=site,
+                             dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
+                             hostname=names.hostname, realm=names.realm,
+                             domainguid=domainguid, ntdsguid=names.ntdsguid)
+
+        create_named_conf(paths, realm=names.realm,
+                          dnsdomain=names.dnsdomain, dns_backend=dns_backend)
+
+        create_named_txt(paths.namedtxt,
+                         realm=names.realm, dnsdomain=names.dnsdomain,
+                         dnsname = "%s.%s" % (names.hostname, names.dnsdomain),
+                         private_dir=paths.private_dir,
+                         keytab_name=paths.dns_keytab)
+        logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
+        logger.info("and %s for further documentation required for secure DNS "
+                    "updates", paths.namedtxt)
