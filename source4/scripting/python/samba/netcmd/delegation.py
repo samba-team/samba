@@ -90,7 +90,7 @@ class cmd_delegation_for_any_service(Command):
         elif onoff == "off":
             on = False
         else:
-            raise CommandError("Invalid argument [%s]" % onoff)
+            raise CommandError("invalid argument: '%s' (choose from 'on', 'off')" % onoff)
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
@@ -124,7 +124,7 @@ class cmd_delegation_for_any_protocol(Command):
         elif onoff == "off":
             on = False
         else:
-            raise CommandError("Invalid argument [%s]" % onoff)
+            raise CommandError("invalid argument: '%s' (choose from 'on', 'off')" % onoff)
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
