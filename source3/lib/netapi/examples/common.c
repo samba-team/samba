@@ -6,6 +6,8 @@
 #include <popt.h>
 #include <netapi.h>
 
+#include "common.h"
+
 void popt_common_callback(poptContext con,
 			 enum poptCallbackReason reason,
 			 const struct poptOption *opt,
