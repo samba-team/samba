@@ -977,6 +977,23 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
+ Ensure a path is not vetod.
+****************************************************************************/
+
+NTSTATUS check_veto_path(connection_struct *conn, const char *name)
+{
+	if (IS_VETO_PATH(conn, name))  {
+		/* Is it not dot or dot dot. */
+		if (!(ISDOT(name) || ISDOTDOT(name))) {
+			DEBUG(5,("check_veto_path: file path name %s vetoed\n",
+						name));
+			return map_nt_error_from_unix(ENOENT);
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
  Check a filename - possibly calling check_reduced_name.
  This is called by every routine before it allows an operation on a filename.
  It does any final confirmation necessary to ensure that the filename is
@@ -985,17 +1002,14 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 NTSTATUS check_name(connection_struct *conn, const char *name)
 {
-	if (IS_VETO_PATH(conn, name))  {
-		/* Is it not dot or dot dot. */
-		if (!(ISDOT(name) || ISDOTDOT(name))) {
-			DEBUG(5,("check_name: file path name %s vetoed\n",
-						name));
-			return map_nt_error_from_unix(ENOENT);
-		}
+	NTSTATUS status = check_veto_path(conn, name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (!lp_widelinks(SNUM(conn)) || !lp_symlinks(SNUM(conn))) {
-		NTSTATUS status = check_reduced_name(conn,name);
+		status = check_reduced_name(conn,name);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5,("check_name: name %s failed with %s\n",name,
 						nt_errstr(status)));
@@ -1311,6 +1325,12 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 			fname,
 			nt_errstr(status) ));
 		return status;
+	}
+
+	if ((ucf_flags & UCF_UNIX_NAME_LOOKUP) &&
+			VALID_STAT((*pp_smb_fname)->st) &&
+			S_ISLNK((*pp_smb_fname)->st.st_ex_mode)) {
+		return check_veto_path(conn, (*pp_smb_fname)->base_name);
 	}
 
 	status = check_name(conn, (*pp_smb_fname)->base_name);
