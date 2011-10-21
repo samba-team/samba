@@ -39,7 +39,7 @@ from samba.netcmd import (
 class cmd_delegation_show(Command):
     """Show the delegation setting of an account."""
 
-    synopsis = "%prog show <accountname> [options]"
+    synopsis = "%prog <accountname> [options]"
 
     takes_args = ["accountname"]
 
