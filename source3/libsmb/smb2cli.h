@@ -39,16 +39,6 @@ NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
 				    struct iovec **recv_iov,
 				    DATA_BLOB *out_security_buffer);
 
-struct tevent_req *smb2cli_sesssetup_ntlmssp_send(TALLOC_CTX *mem_ctx,
-					  struct tevent_context *ev,
-					  struct cli_state *cli,
-					  const char *user,
-					  const char *domain,
-					  const char *pass);
-NTSTATUS smb2cli_sesssetup_ntlmssp_recv(struct tevent_req *req);
-NTSTATUS smb2cli_sesssetup_ntlmssp(struct cli_state *cli, const char *user,
-			   const char *domain, const char *pass);
-
 struct tevent_req *smb2cli_logoff_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct cli_state *cli);
