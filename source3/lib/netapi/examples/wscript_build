@@ -56,9 +56,15 @@ names = [
     ("netlogon", "netlogon_control2"),
     ("netlogon", "nltest")]
 
+
+bld.SAMBA_SUBSYSTEM('LIBNETAPI_EXAMPLES_COMMON',
+                    source='common.c',
+                    deps='netapi popt',
+                    vars=locals())
+
 for pattern in names:
     (subdir, name) = pattern
     bld.SAMBA_BINARY('%s/%s' % (subdir, name),
-                     source='%s/%s.c common.c' % (subdir, name),
-                     deps='netapi popt',
+                     source='%s/%s.c' % (subdir, name),
+                     deps='netapi popt LIBNETAPI_EXAMPLES_COMMON',
                      install=False)
