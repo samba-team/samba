@@ -306,7 +306,7 @@ int cbuf_print_quoted(cbuf* ost, const char* s, size_t len)
 			if (isprint(*s) && ((*s == ' ') || !isspace(*s))) {
 				ret = cbuf_putc(ost, *s);
 			} else {
-				ret = cbuf_printf(ost, "\\%02x", *s);
+				ret = cbuf_printf(ost, "\\%02x", (uchar)*s);
 			}
 		}
 		s++;
