@@ -52,13 +52,15 @@ class cmd_delegation_show(Command):
         # TODO once I understand how, use the domain info to naildown
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
-        self.outf.write("Searching for: %s\n" % (cleanedaccount))
-        res = sam.search(expression="sAMAccountName=%s" % ldb.binary_encode(cleanedaccount),
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["userAccountControl", "msDS-AllowedToDelegateTo"])
-        if len(res) != 1:
-            raise CommandError("Account %s found %d times" % (accountname, len(res)))
-
+        
+        res = sam.search(expression="sAMAccountName=%s" % 
+                    ldb.binary_encode(cleanedaccount),
+                    scope=ldb.SCOPE_SUBTREE,
+                    attrs=["userAccountControl", "msDS-AllowedToDelegateTo"])
+        if len(res) == 0:
+            raise CommandError("Unable to find account name '%s'" % accountname)
+        assert(len(res) == 1)
+        
         uac = int(res[0].get("userAccountControl")[0])
         allowed = res[0].get("msDS-AllowedToDelegateTo")
 
@@ -159,17 +161,19 @@ class cmd_delegation_add_service(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-        res = sam.search(expression="sAMAccountName=%s" % ldb.binary_encode(cleanedaccount),
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["msDS-AllowedToDelegateTo"])
-        if len(res) != 1:
-            raise CommandError("Account %s found %d times" % (accountname, len(res)))
+        res = sam.search(expression="sAMAccountName=%s" % 
+                         ldb.binary_encode(cleanedaccount),
+                         scope=ldb.SCOPE_SUBTREE,
+                         attrs=["msDS-AllowedToDelegateTo"])
+        if len(res) == 0:
+            raise CommandError("Unable to find account name '%s'" % accountname)
+        assert(len(res) == 1)    
 
         msg = ldb.Message()
         msg.dn = res[0].dn
         msg["msDS-AllowedToDelegateTo"] = ldb.MessageElement([principal],
-                                              ldb.FLAG_MOD_ADD,
-                                              "msDS-AllowedToDelegateTo")
+                                          ldb.FLAG_MOD_ADD,
+                                          "msDS-AllowedToDelegateTo")
         try:
             sam.modify(msg)
         except Exception, err:
@@ -194,17 +198,19 @@ class cmd_delegation_del_service(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-        res = sam.search(expression="sAMAccountName=%s" % ldb.binary_encode(cleanedaccount),
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["msDS-AllowedToDelegateTo"])
-        if len(res) != 1:
-            raise CommandError("Account %s found %d times" % (accountname, len(res)))
+        res = sam.search(expression="sAMAccountName=%s" % 
+                         ldb.binary_encode(cleanedaccount),
+                         scope=ldb.SCOPE_SUBTREE,
+                         attrs=["msDS-AllowedToDelegateTo"])
+        if len(res) == 0:
+            raise CommandError("Unable to find account name '%s'" % accountname)
+        assert(len(res) == 1)       
 
         msg = ldb.Message()
         msg.dn = res[0].dn
         msg["msDS-AllowedToDelegateTo"] = ldb.MessageElement([principal],
-                                              ldb.FLAG_MOD_DELETE,
-                                              "msDS-AllowedToDelegateTo")
+                                          ldb.FLAG_MOD_DELETE,
+                                          "msDS-AllowedToDelegateTo")
         try:
             sam.modify(msg)
         except Exception, err:
