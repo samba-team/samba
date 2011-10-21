@@ -33,12 +33,9 @@
   and doesn't support O_RDWR. That keeps the code simple.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
-
-#if _SAMBA_BUILD_ == 3
-#undef malloc
-#endif
+#include "lib/util/samba_util.h"
 
 #define XBUFSIZE BUFSIZ
 
