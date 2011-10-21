@@ -4,6 +4,9 @@
                  advanced="1" wizard="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+    <para>Please note this parameter is now deprecated in Samba 3.6.2 and will be removed
+    in a future version of Samba.
+    </para>
     <para>This boolean parameter controls what <citerefentry><refentrytitle>smbd</refentrytitle> 
     <manvolnum>8</manvolnum></citerefentry>does on receiving a protocol request of "open for delete"
     from a Windows client. If a Windows client doesn't have permissions to delete a file then they
