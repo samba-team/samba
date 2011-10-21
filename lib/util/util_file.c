@@ -19,13 +19,12 @@
  * this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/shmem.h"
 #include "system/filesys.h"
-#if _SAMBA_BUILD_ == 3
-#undef malloc
-#undef realloc
-#endif
+#include <talloc.h>
+#include "lib/util/samba_util.h"
+#include "lib/util/debug.h"
 
 /**
  * @file
