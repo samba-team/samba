@@ -1359,15 +1359,15 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 
 	switch (client.ss_family) {
 	case AF_INET:
-		p4.dest = *(struct sockaddr_in *)(void *)&server;
-		p4.src = *(struct sockaddr_in *)(void *)&client;
+		memcpy(&p4.dest, &server, sizeof(p4.dest));
+		memcpy(&p4.src, &client, sizeof(p4.src));
 		data.dptr = (uint8_t *)&p4;
 		data.dsize = sizeof(p4);
 		break;
 #ifdef HAVE_STRUCT_CTDB_CONTROL_TCP_ADDR
 	case AF_INET6:
-		p.dest.ip6 = *(struct sockaddr_in6 *)(void *)&server;
-		p.src.ip6 = *(struct sockaddr_in6 *)(void *)&client;
+		memcpy(&p.dest.ip6, &server, sizeof(p.dest.ip6));
+		memcpy(&p.src.ip6, &client, sizeof(p.src.ip6));
 		data.dptr = (uint8_t *)&p;
 		data.dsize = sizeof(p);
 		break;
