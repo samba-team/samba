@@ -140,6 +140,8 @@ def dns_type_flag(rec_type):
     rtype = rec_type.upper()
     if rtype == 'A':
         record_type = dnsp.DNS_TYPE_A
+    elif rtype == 'AAAA':
+        record_type = dnsp.DNS_TYPE_AAAA
     elif rtype == 'NS':
         record_type = dnsp.DNS_TYPE_NS
     elif rtype == 'CNAME':
@@ -493,7 +495,8 @@ class cmd_serverinfo(Command):
     takes_args = [ 'server' ]
 
     takes_options = [
-        Option('--client-version', help='Client Version', default='longhorn',
+        Option('--client-version', help='Client Version',
+                default='longhorn', metavar='w2k|dotnet|longhorn',
                 choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
     ]
 
@@ -520,7 +523,8 @@ class cmd_zoneinfo(Command):
     takes_args = [ 'server', 'zone' ]
 
     takes_options = [
-        Option('--client-version', help='Client Version', default='longhorn',
+        Option('--client-version', help='Client Version',
+                default='longhorn', metavar='w2k|dotnet|longhorn',
                 choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
     ]
 
@@ -547,7 +551,8 @@ class cmd_zonelist(Command):
     takes_args = [ 'server' ]
 
     takes_options = [
-        Option('--client-version', help='Client Version', default='longhorn',
+        Option('--client-version', help='Client Version',
+                default='longhorn', metavar='w2k|dotnet|longhorn',
                 choices=['w2k','dotnet','longhorn'], dest='cli_ver'),
         Option('--primary', help='List primary zones (default)',
                 action='store_true', dest='primary'),
@@ -614,9 +619,9 @@ class cmd_zonelist(Command):
 
 
 class cmd_query(Command):
-    """Query a name"""
+    """Query a name."""
 
-    synopsis = '%prog <server> <zone> <name> <type> [options]'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|MX|NS|SOA|SRV|ALL> [options]'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype' ]
 
@@ -660,6 +665,11 @@ class cmd_query(Command):
 
         if select_flags == 0:
             select_flags = dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA
+
+        if select_flags == dnsserver.DNS_RPC_VIEW_ADDITIONAL_DATA:
+            self.outf.write('Specify either --authority or --root along with --additional.\n')
+            self.outf.write('Assuming --authority.\n')
+            select_flags |= dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
