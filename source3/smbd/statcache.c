@@ -150,6 +150,7 @@ void stat_cache_add( const char *full_orig_name,
  * Look through the stat cache for an entry
  *
  * @param conn    A connection struct to do the stat() with.
+ * @param posix_paths Whether to lookup using stat() or lstat()
  * @param name    The path we are attempting to cache, modified by this routine
  *                to be correct as far as the cache can tell us. We assume that
  *		  it is a talloc'ed string from top of stack, we free it if
@@ -166,6 +167,7 @@ void stat_cache_add( const char *full_orig_name,
  */
 
 bool stat_cache_lookup(connection_struct *conn,
+			bool posix_paths,
 			char **pp_name,
 			char **pp_dirpath,
 			char **pp_start,
@@ -181,6 +183,7 @@ bool stat_cache_lookup(connection_struct *conn,
 	char *name;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename smb_fname;
+	int ret;
 
 	*pp_dirpath = NULL;
 	*pp_start = *pp_name;
@@ -283,7 +286,13 @@ bool stat_cache_lookup(connection_struct *conn,
 	ZERO_STRUCT(smb_fname);
 	smb_fname.base_name = translated_path;
 
-	if (SMB_VFS_STAT(conn, &smb_fname) != 0) {
+	if (posix_paths) {
+		ret = SMB_VFS_LSTAT(conn, &smb_fname);
+	} else {
+		ret = SMB_VFS_STAT(conn, &smb_fname);
+	}
+
+	if (ret != 0) {
 		/* Discard this entry - it doesn't exist in the filesystem. */
 		memcache_delete(smbd_memcache(), STAT_CACHE,
 				data_blob_const(chk_name, strlen(chk_name)));
