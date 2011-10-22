@@ -84,6 +84,12 @@ def build(bld):
                           pc_files=[],
                           public_headers=[],
                           enabled=bld.env.TALLOC_COMPAT1)
+
+        bld.SAMBA_BINARY('talloc_testsuite',
+                         'testsuite_main.c testsuite.c',
+                         deps='talloc',
+                         install=False)
+
     else:
         private_library = True
 
@@ -120,14 +126,6 @@ def build(bld):
                          deps='talloc pytalloc-util',
                          enabled=True,
                          realname='talloc.so')
-
-    if not getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
-        # s4 already has the talloc testsuite builtin to smbtorture
-        bld.SAMBA_BINARY('talloc_testsuite',
-                         'testsuite_main.c testsuite.c',
-                         deps='talloc',
-                         install=False)
-
 
 def test(ctx):
     '''run talloc testsuite'''
