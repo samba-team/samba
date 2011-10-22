@@ -1989,11 +1989,11 @@ member: cn=ldaptestuser2,cn=users,""" + self.base_dn + """
 
         print "Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in cn=ldaptestcontainer2," + self.base_dn
         res = ldb.search(expression="(&(cn=ldaptestuser4)(objectClass=user))", base=("cn=ldaptestcontainer2," + self.base_dn), scope=SCOPE_ONELEVEL)
-        # FIXME: self.assertEquals(len(res), 0)
+        self.assertEquals(len(res), 1)
 
         print "Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in cn=ldaptestcontainer2," + self.base_dn
         res = ldb.search(expression="(&(cn=ldaptestuser4)(objectClass=user))", base=("cn=ldaptestcontainer2," + self.base_dn), scope=SCOPE_SUBTREE)
-        # FIXME: self.assertEquals(len(res), 0)
+        self.assertEquals(len(res), 1)
 
         print "Testing delete of subtree renamed "+("CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn)
         ldb.delete(("CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn))
