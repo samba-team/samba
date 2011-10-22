@@ -792,7 +792,7 @@ static bool test_referrals(struct torture_context *tctx, TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-static bool test_abandom_request(struct torture_context *tctx,
+static bool test_abandon_request(struct torture_context *tctx,
 	struct ldap_connection *conn, const char *basedn)
 {
 	struct ldap_message *msg;
@@ -882,7 +882,7 @@ bool torture_ldap_basic(struct torture_context *torture)
 		ret = false;
 	}
 
-	if (!test_abandom_request(torture, conn, basedn)) {
+	if (!test_abandon_request(torture, conn, basedn)) {
 		ret = false;
 	}
 
