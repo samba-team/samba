@@ -713,3 +713,259 @@ bool run_smb2_tcon_dependence(int dummy)
 
 	return true;
 }
+
+bool run_smb2_multi_channel(int dummy)
+{
+	struct cli_state *cli1;
+	struct cli_state *cli2;
+	NTSTATUS status;
+	bool ok;
+	uint64_t fid_persistent, fid_volatile;
+	struct tevent_context *ev;
+	struct tevent_req *subreq;
+	DATA_BLOB in_blob = data_blob_null;
+	DATA_BLOB out_blob;
+	struct ntlmssp_state *ntlmssp;
+	struct iovec *recv_iov;
+	const char *hello = "Hello, world\n";
+	uint8_t *result;
+	uint32_t nread;
+
+	printf("Starting SMB2-MULTI-CHANNEL\n");
+
+	if (!torture_init_connection(&cli1)) {
+		return false;
+	}
+	cli1->smb2.pid = 0xFEFF;
+
+	if (!torture_init_connection(&cli2)) {
+		return false;
+	}
+	cli2->smb2.pid = 0xFEFF;
+
+	status = smbXcli_negprot(cli1->conn, cli1->timeout,
+				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_22);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smbXcli_negprot(cli2->conn, cli2->timeout,
+				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_22);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup(cli1, username,
+				   password, strlen(password),
+				   password, strlen(password),
+				   workgroup);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_sesssetup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli1, share, "?????", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_session_create_channel(cli2,
+						cli1->smb2.session,
+						cli2->conn,
+						&cli2->smb2.session);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_session_create_channel returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = ntlmssp_client_start(talloc_tos(),
+				      lp_netbios_name(),
+				      lp_workgroup(),
+				      lp_client_ntlmv2_auth(),
+				      &ntlmssp);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ntlmssp_client_start returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	ntlmssp_want_feature(ntlmssp,
+			     NTLMSSP_FEATURE_SESSION_KEY);
+	status = ntlmssp_set_username(ntlmssp, username);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ntlmssp_set_username returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = ntlmssp_set_domain(ntlmssp, workgroup);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ntlmssp_set_domain returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = ntlmssp_set_password(ntlmssp, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ntlmssp_set_password returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = ntlmssp_update(ntlmssp, data_blob_null, &in_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("ntlmssp_update returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	ev = event_context_init(talloc_tos());
+	if (ev == NULL) {
+		printf("event_context_init() returned NULL\n");
+		return false;
+	}
+
+	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
+					    cli2->conn,
+					    cli2->timeout,
+					    cli2->smb2.session,
+					    0x01, /* in_flags */
+					    SMB2_CAP_DFS, /* in_capabilities */
+					    0, /* in_channel */
+					    NULL, /* in_previous_session */
+					    &in_blob); /* in_security_buffer */
+	if (subreq == NULL) {
+		printf("smb2cli_session_setup_send() returned NULL\n");
+		return false;
+	}
+
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		printf("tevent_req_poll() returned false\n");
+		return false;
+	}
+
+	status = smb2cli_session_setup_recv(subreq, talloc_tos(),
+					    NULL, &out_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("smb2cli_session_setup_recv returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = ntlmssp_update(ntlmssp, out_blob, &in_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ntlmssp_update returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
+					    cli2->conn,
+					    cli2->timeout,
+					    cli2->smb2.session,
+					    0x01, /* in_flags */
+					    SMB2_CAP_DFS, /* in_capabilities */
+					    0, /* in_channel */
+					    NULL, /* in_previous_session */
+					    &in_blob); /* in_security_buffer */
+	if (subreq == NULL) {
+		printf("smb2cli_session_setup_send() returned NULL\n");
+		return false;
+	}
+
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		printf("tevent_req_poll() returned false\n");
+		return false;
+	}
+
+	status = smb2cli_session_setup_recv(subreq, talloc_tos(),
+					    &recv_iov, &out_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_session_setup_recv returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_session_update_session_key(cli2->smb2.session,
+						    ntlmssp->session_key,
+						    recv_iov);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_session_update_session_key %s\n", nt_errstr(status));
+		return false;
+	}
+
+	cli2->smb2.tid = cli1->smb2.tid;
+
+	status = smb2cli_create(cli2, "multi-channel.txt",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
+			FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_DELETE_ON_CLOSE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_create on cli2 %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_write(cli1, strlen(hello), 0, fid_persistent,
+			       fid_volatile, 0, 0, (const uint8_t *)hello);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_write returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_flush(cli2, fid_persistent, fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_flush(cli1, fid_persistent, fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_read(cli2, 0x10000, 0, fid_persistent,
+			       fid_volatile, 2, 0,
+			       talloc_tos(), &result, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_read returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	if (nread != strlen(hello)) {
+		printf("smb2cli_read returned %d bytes, expected %d\n",
+		       (int)nread, (int)strlen(hello));
+		return false;
+	}
+
+	if (memcmp(hello, result, nread) != 0) {
+		printf("smb2cli_read returned '%s', expected '%s'\n",
+		       result, hello);
+		return false;
+	}
+
+	status = smb2cli_close(cli1, 0, fid_persistent, fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_close returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_flush(cli2, fid_persistent, fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+	}
+
+	status = smb2cli_flush(cli1, fid_persistent, fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+	}
+
+	return true;
+}
