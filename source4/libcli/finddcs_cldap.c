@@ -213,7 +213,12 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 						state->srv_addresses[state->srv_address_index],
 						389,
 						&dest);
-	if (tevent_req_error(state->req, ret)) {
+	if (ret == 0) {
+		status = NT_STATUS_OK;
+	} else {
+		status = map_nt_error_from_unix_common(errno);
+	}
+	if (tevent_req_nterror(state->req, status)) {
 		return;
 	}
 
