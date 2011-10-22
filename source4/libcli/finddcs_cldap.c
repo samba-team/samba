@@ -227,6 +227,7 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 		return;
 	}
 
+	TALLOC_FREE(state->netlogon);
 	state->netlogon = talloc_zero(state, struct cldap_netlogon);
 	if (tevent_req_nomem(state->netlogon, state->req)) {
 		return;
