@@ -2295,8 +2295,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	ntstatus = filename_convert(ctx, conn,
 				    req->flags2 & FLAGS2_DFS_PATHNAMES,
 				    directory,
-				    (UCF_SAVE_LCOMP |
-					UCF_ALWAYS_ALLOW_WCARD_LCOMP),
+				    ucf_flags,
 				    &mask_contains_wcard,
 				    &smb_dname);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
