@@ -2250,8 +2250,8 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         self.assertTrue("member" not in res[0])
 
         print "Testing ldb.search for (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))"
-# TODO UTF8 users don't seem to work fully anymore
-#        res = ldb.search(expression="(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
+        res = ldb.search(expression="(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
+        self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
         res = ldb.search(expression="(&(cn=ldaptestutf8user èùéìòà)(objectclass=user))")
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
 
@@ -2262,20 +2262,21 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
 
+        # delete "ldaptestutf8user"
         ldb.delete(res[0].dn)
 
         print "Testing ldb.search for (&(cn=ldaptestutf8user2*)(objectClass=user))"
         res = ldb.search(expression="(&(cn=ldaptestutf8user2*)(objectClass=user))")
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestutf8user2*)(objectClass=user))")
 
+        print "Testing ldb.search for (&(cn=ldaptestutf8user2  ÈÙÉÌÒÀ)(objectClass=user))"
+        res = ldb.search(expression="(&(cn=ldaptestutf8user2  ÈÙÉÌÒÀ)(objectClass=user))")
+        self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestutf8user2  ÈÙÉÌÒÀ)(objectClass=user))")
+
+        # delete "ldaptestutf8user2 "
         ldb.delete(res[0].dn)
 
         ldb.delete(("CN=ldaptestgroup2,CN=Users," + self.base_dn))
-
-        print "Testing ldb.search for (&(cn=ldaptestutf8user2 ÈÙÉÌÒÀ)(objectClass=user))"
-# TODO UTF8 users don't seem to work fully anymore
-#        res = ldb.search(expression="(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
-#        self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
 
         print "Testing that we can't get at the configuration DN from the main search base"
         res = ldb.search(self.base_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
