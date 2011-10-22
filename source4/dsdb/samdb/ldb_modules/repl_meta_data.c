@@ -1151,7 +1151,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			      const char * const *rename_attrs,
 			      struct ldb_message *msg, uint64_t *seq_num,
 			      time_t t,
-			      bool *is_urgent)
+			      bool *is_urgent, bool *rodc)
 {
 	const struct ldb_val *omd_value;
 	enum ndr_err_code ndr_err;
@@ -1167,7 +1167,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	struct ldb_context *ldb;
 	struct ldb_message_element *objectclass_el;
 	enum urgent_situation situation;
-	bool rodc, rmd_is_provided;
+	bool rmd_is_provided;
 
 	if (rename_attrs) {
 		attrs = rename_attrs;
@@ -1331,11 +1331,11 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
 			unsigned instanceType;
 
-			ret = samdb_rodc(ldb, &rodc);
+			ret = samdb_rodc(ldb, rodc);
 			if (ret != LDB_SUCCESS) {
 				DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
-			} else if (rodc) {
-				ldb_asprintf_errstring(ldb, "RODC modify is forbidden\n");
+			} else if (*rodc) {
+				ldb_set_errstring(ldb, "RODC modify is forbidden!");
 				return LDB_ERR_REFERRAL;
 			}
 
@@ -2245,9 +2245,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message *msg;
 	time_t t = time(NULL);
 	int ret;
-	bool is_urgent = false;
-	struct loadparm_context *lp_ctx;
-	char *referral;
+	bool is_urgent = false, rodc = false;
 	unsigned int functional_level;
 	const DATA_BLOB *guid_blob;
 
@@ -2274,9 +2272,6 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 
 	functional_level = dsdb_functional_level(ldb);
 
-	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-				 struct loadparm_context);
-
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
@@ -2289,15 +2284,21 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	ldb_msg_remove_attr(msg, "uSNChanged");
 
 	ret = replmd_update_rpmd(module, ac->schema, req, NULL,
-				 msg, &ac->seq_num, t, &is_urgent);
-	if (ret == LDB_ERR_REFERRAL) {
+				 msg, &ac->seq_num, t, &is_urgent, &rodc);
+	if (rodc && (ret == LDB_ERR_REFERRAL)) {
+		struct loadparm_context *lp_ctx;
+		char *referral;
+
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
+
 		referral = talloc_asprintf(req,
 					   "ldap://%s/%s",
 					   lpcfg_dnsdomain(lp_ctx),
 					   ldb_dn_get_linearized(msg->dn));
 		ret = ldb_module_send_referral(req, referral);
 		talloc_free(ac);
-		return ldb_module_done(req, NULL, NULL, ret);
+		return ret;
 	}
 
 	if (ret != LDB_SUCCESS) {
@@ -2432,7 +2433,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	const char *attrs[5] = { NULL, };
 	time_t t = time(NULL);
 	int ret;
-	bool is_urgent = false;
+	bool is_urgent = false, rodc = false;
 
 	ac = talloc_get_type(req->context, struct replmd_replicated_request);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -2547,8 +2548,8 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	attrs[4] = NULL;
 
 	ret = replmd_update_rpmd(ac->module, ac->schema, req, attrs,
-				 msg, &ac->seq_num, t, &is_urgent);
-	if (ret == LDB_ERR_REFERRAL) {
+				 msg, &ac->seq_num, t, &is_urgent, &rodc);
+	if (rodc && (ret == LDB_ERR_REFERRAL)) {
 		struct ldb_dn *olddn = ac->req->op.rename.olddn;
 		struct loadparm_context *lp_ctx;
 		char *referral;
