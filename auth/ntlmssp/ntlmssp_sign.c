@@ -402,6 +402,10 @@ NTSTATUS ntlmssp_wrap(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB sig;
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		if (in->length + NTLMSSP_SIG_SIZE < in->length) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		*out = data_blob_talloc(out_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
 		if (!out->data) {
 			return NT_STATUS_NO_MEMORY;
@@ -422,6 +426,9 @@ NTSTATUS ntlmssp_wrap(struct ntlmssp_state *ntlmssp_state,
 		return nt_status;
 
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+		if (in->length + NTLMSSP_SIG_SIZE < in->length) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 
 		*out = data_blob_talloc(out_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
 		if (!out->data) {
