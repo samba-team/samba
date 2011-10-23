@@ -36,11 +36,17 @@ from samba.netcmd import (
     )
 
 
-class cmd_user_add(Command):
+class cmd_user_create(Command):
     """Creates a new user"""
 
     synopsis = "%prog <username> [<password>] [options]"
 
+    # take this print out after the add subcommand is removed.
+    # the add subcommand is deprecated but left in for now to allow people to migrate to create
+    if (len(sys.argv) > 2):
+        if ((sys.argv[2]) == 'add'):
+            print "\nNote: samba-tool user add is deprecated.  Please use samba-tool user create for the same function.\n"
+    
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                 metavar="URL", dest="H"),
@@ -289,7 +295,8 @@ class cmd_user(SuperCommand):
     """User management"""
 
     subcommands = {}
-    subcommands["add"] = cmd_user_add()
+    subcommands["add"] = cmd_user_create()
+    subcommands["create"] = cmd_user_create()
     subcommands["delete"] = cmd_user_delete()
     subcommands["enable"] = cmd_user_enable()
     subcommands["setexpiry"] = cmd_user_setexpiry()

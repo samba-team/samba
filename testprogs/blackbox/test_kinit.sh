@@ -73,7 +73,7 @@ testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER $CON
 
 USERPASS=testPass@12%
 echo $USERPASS > $PREFIX/tmpuserpassfile
-testit "add user with kerberos ccache" $VALGRIND $samba_tool user add nettestuser $USERPASS $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
+testit "add user with kerberos ccache" $VALGRIND $samba_tool user create nettestuser $USERPASS $CONFIGURATION  -k yes $@ || failed=`expr $failed + 1`
 
 echo "Getting defaultNamingContext"
 BASEDN=`$ldbsearch $options --basedn='' -H ldap://$SERVER -s base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`

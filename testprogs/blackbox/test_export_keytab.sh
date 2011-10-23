@@ -22,7 +22,7 @@ samba4bindir="$BINDIR"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 samba_tool="$samba4bindir/samba-tool$EXEEXT"
-newuser="$samba_tool user add"
+newuser="$samba_tool user create"
 
 . `dirname $0`/subunit.sh
 

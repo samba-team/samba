@@ -25,7 +25,7 @@ samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 samba_tool="$samba4bindir/samba-tool$EXEEXT"
 rkpty="$samba4bindir/rkpty$EXEEXT"
 samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
-newuser="$samba_tool user add"
+newuser="$samba_tool user create"
 
 . `dirname $0`/subunit.sh
 
