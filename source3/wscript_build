@@ -584,8 +584,6 @@ PDBTEST_SRC = '''torture/pdbtest.c'''
 
 VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c'''
 
-SMBICONV_SRC = '''torture/smbiconv.c'''
-
 LOG2PCAP_SRC = '''utils/log2pcaphex.c'''
 
 LOCKTEST2_SRC = '''torture/locktest2.c'''
@@ -1312,11 +1310,6 @@ bld.SAMBA3_BINARY('pdbtest',
 bld.SAMBA3_BINARY('vfstest',
                  source=VFSTEST_SRC,
                  deps='smbd_base SMBREADLINE',
-                 vars=locals())
-
-bld.SAMBA3_BINARY('smbiconv',
-                 source=SMBICONV_SRC,
-                 deps='''talloc tdb_compat tevent cap param smbd_shim popt_samba3 LIBSMB_ERR''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('log2pcap',
