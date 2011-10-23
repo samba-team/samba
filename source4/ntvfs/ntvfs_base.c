@@ -230,8 +230,8 @@ NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_ntvfs_MODULES_PROTO;
-	init_module_fn static_init[] = { STATIC_ntvfs_MODULES };
-	init_module_fn *shared_init;
+	samba_init_module_fn static_init[] = { STATIC_ntvfs_MODULES };
+	samba_init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;

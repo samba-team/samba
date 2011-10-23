@@ -660,7 +660,7 @@ _PUBLIC_ NTSTATUS auth4_init(void)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_auth4_MODULES_PROTO;
-	init_module_fn static_init[] = { STATIC_auth4_MODULES };
+	samba_init_module_fn static_init[] = { STATIC_auth4_MODULES };
 	
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;

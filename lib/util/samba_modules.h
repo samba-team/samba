@@ -22,7 +22,7 @@
 #define _SAMBA_MODULES_H
 
 /* Module support */
-typedef NTSTATUS (*init_module_fn) (void);
+typedef NTSTATUS (*samba_init_module_fn) (void);
 
 NTSTATUS samba_init_module(void);
 
@@ -37,21 +37,21 @@ NTSTATUS samba_init_module(void);
  *
  * The handle to dlclose() in case of error is returns in *handle if handle is not NULL
  */
-init_module_fn load_module(const char *path, bool is_probe, void **handle);
+samba_init_module_fn load_module(const char *path, bool is_probe, void **handle);
 
 /**
  * Run the specified init functions.
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool run_init_functions(init_module_fn *fns);
+bool run_init_functions(samba_init_module_fn *fns);
 
 /**
  * Load the initialization functions from DSO files for a specific subsystem.
  *
  * Will return an array of function pointers to initialization functions
  */
-init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
+samba_init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
 
 int smb_load_modules(const char **modules);
 NTSTATUS smb_probe_module(const char *subsystem, const char *module);

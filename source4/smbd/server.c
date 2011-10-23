@@ -292,8 +292,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	poptContext pc;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_service_MODULES_PROTO;
-	init_module_fn static_init[] = { STATIC_service_MODULES };
-	init_module_fn *shared_init;
+	samba_init_module_fn static_init[] = { STATIC_service_MODULES };
+	samba_init_module_fn *shared_init;
 	struct tevent_context *event_ctx;
 	uint16_t stdin_event_flags;
 	NTSTATUS status;

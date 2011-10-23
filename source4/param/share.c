@@ -149,7 +149,7 @@ NTSTATUS share_init(void)
 {
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_share_MODULES_PROTO;
-	init_module_fn static_init[] = { STATIC_share_MODULES };
+	samba_init_module_fn static_init[] = { STATIC_share_MODULES };
 
 	run_init_functions(static_init);
 

@@ -28,7 +28,7 @@
 /**
  * Obtain the init function from a shared library file
  */
-init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
+samba_init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
 {
 	void *handle;
 	void *init_fn;
@@ -57,7 +57,7 @@ init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
 		return NULL;
 	}
 
-	init_fn = (init_module_fn)dlsym(handle, SAMBA_INIT_MODULE);
+	init_fn = (samba_init_module_fn)dlsym(handle, SAMBA_INIT_MODULE);
 
 	/* we could check dlerror() to determine if it worked, because
            dlsym() can validly return NULL, but what would we do with
@@ -75,20 +75,20 @@ init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
 		*handle_out = handle;
 	}
 
-	return (init_module_fn)init_fn;
+	return (samba_init_module_fn)init_fn;
 }
 
 /**
  * Obtain list of init functions from the modules in the specified
  * directory
  */
-static init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
+static samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
 	char *filename;
 	int success = 0;
-	init_module_fn *ret = talloc_array(mem_ctx, init_module_fn, 2);
+	samba_init_module_fn *ret = talloc_array(mem_ctx, samba_init_module_fn, 2);
 
 	ret[0] = NULL;
 
@@ -106,7 +106,7 @@ static init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 
 		ret[success] = load_module(filename, true, NULL);
 		if (ret[success]) {
-			ret = talloc_realloc(mem_ctx, ret, init_module_fn, success+2);
+			ret = talloc_realloc(mem_ctx, ret, samba_init_module_fn, success+2);
 			success++;
 			ret[success] = NULL;
 		}
@@ -124,7 +124,7 @@ static init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool run_init_functions(init_module_fn *fns)
+bool run_init_functions(samba_init_module_fn *fns)
 {
 	int i;
 	bool ret = true;
@@ -143,10 +143,10 @@ bool run_init_functions(init_module_fn *fns)
  * Will return an array of function pointers to initialization functions
  */
 
-init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
+samba_init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 {
 	char *path = modules_path(mem_ctx, subsystem);
-	init_module_fn *ret;
+	samba_init_module_fn *ret;
 
 	ret = load_modules(mem_ctx, path);
 
@@ -162,7 +162,7 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 {
 	void *handle;
-	init_module_fn init;
+	samba_init_module_fn init;
 	NTSTATUS status;
 
 	init = load_module(module_name, is_probe, &handle);

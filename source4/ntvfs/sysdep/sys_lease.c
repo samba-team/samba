@@ -113,7 +113,7 @@ _PUBLIC_ NTSTATUS sys_lease_init(void)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_sys_lease_MODULES_PROTO;
-	init_module_fn static_init[] = { STATIC_sys_lease_MODULES };
+	samba_init_module_fn static_init[] = { STATIC_sys_lease_MODULES };
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;

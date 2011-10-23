@@ -878,11 +878,11 @@ _PUBLIC_ NTSTATUS gensec_init(void)
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 #ifdef STATIC_gensec_MODULES
 	STATIC_gensec_MODULES_PROTO;
-	init_module_fn static_init[] = { STATIC_gensec_MODULES };
+	samba_init_module_fn static_init[] = { STATIC_gensec_MODULES };
 #else
-	init_module_fn *static_init = NULL;
+	samba_init_module_fn *static_init = NULL;
 #endif
-	init_module_fn *shared_init;
+	samba_init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;

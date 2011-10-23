@@ -602,7 +602,7 @@ int main(int argc,char *argv[])
 	}
 
 	if (extra_module != NULL) {
-		init_module_fn fn = load_module(poptGetOptArg(pc), false, NULL);
+		samba_init_module_fn fn = load_module(poptGetOptArg(pc), false, NULL);
 
 		if (fn == NULL) 
 			d_printf("Unable to load module from %s\n", poptGetOptArg(pc));
