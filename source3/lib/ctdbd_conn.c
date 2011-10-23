@@ -932,6 +932,104 @@ bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn, pid_t pid)
 	return cstatus == 0;
 }
 
+bool ctdb_processes_exist(struct ctdbd_connection *conn,
+			  const struct server_id *pids, int num_pids,
+			  bool *results)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int i, num_received;
+	NTSTATUS status;
+	uint32_t *reqids;
+	bool result = false;
+
+	reqids = talloc_array(talloc_tos(), uint32_t, num_pids);
+	if (reqids == NULL) {
+		goto fail;
+	}
+
+	for (i=0; i<num_pids; i++) {
+		struct ctdb_req_control req;
+
+		results[i] = false;
+		reqids[i] = ctdbd_next_reqid(conn);
+
+		ZERO_STRUCT(req);
+
+		req.hdr.length = offsetof(struct ctdb_req_control, data);
+		req.hdr.length += sizeof(pid_t);
+		req.hdr.ctdb_magic   = CTDB_MAGIC;
+		req.hdr.ctdb_version = CTDB_VERSION;
+		req.hdr.operation    = CTDB_REQ_CONTROL;
+		req.hdr.reqid        = reqids[i];
+		req.hdr.destnode     = pids[i].vnn;
+		req.opcode           = CTDB_CONTROL_PROCESS_EXISTS;
+		req.srvid            = 0;
+		req.datalen          = sizeof(pids[i].pid);
+		req.flags            = 0;
+
+		DEBUG(10, ("ctdbd_control: Sending ctdb packet\n"));
+		ctdb_packet_dump(&req.hdr);
+
+		status = ctdb_packet_send(
+			conn->pkt, 2,
+			data_blob_const(
+				&req, offsetof(struct ctdb_req_control, data)),
+			data_blob_const(&pids[i].pid, sizeof(pids[i].pid)));
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("ctdb_packet_send failed: %s\n",
+				   nt_errstr(status)));
+			goto fail;
+		}
+	}
+
+	status = ctdb_packet_flush(conn->pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("ctdb_packet_flush failed: %s\n",
+			   nt_errstr(status)));
+		goto fail;
+	}
+
+	num_received = 0;
+
+	while (num_received < num_pids) {
+		struct ctdb_reply_control *reply = NULL;
+		uint32_t reqid;
+
+		status = ctdb_read_req(conn, 0, talloc_tos(), (void *)&reply);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("ctdb_read_req failed: %s\n",
+				   nt_errstr(status)));
+			goto fail;
+		}
+
+		if (reply->hdr.operation != CTDB_REPLY_CONTROL) {
+			DEBUG(10, ("Received invalid reply\n"));
+			goto fail;
+		}
+
+		reqid = reply->hdr.reqid;
+
+		for (i=0; i<num_pids; i++) {
+			if (reqid == reqids[i]) {
+				break;
+			}
+		}
+		if (i == num_pids) {
+			DEBUG(10, ("Received unknown record number %u\n",
+				   (unsigned)reqid));
+			goto fail;
+		}
+		results[i] = ((reply->status) == 0);
+		TALLOC_FREE(reply);
+		num_received += 1;
+	}
+
+	result = true;
+fail:
+	TALLOC_FREE(frame);
+	return result;
+}
+
 /*
  * Get a db path
  */
