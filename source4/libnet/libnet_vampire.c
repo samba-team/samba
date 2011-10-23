@@ -519,6 +519,7 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t nc_object_count;
+	uint32_t nc_total_received = 0;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
@@ -549,13 +550,18 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (!s->schema_part.first_object) {
+		nc_total_received = object_count;
+	} else {
+		nc_total_received = s->schema_part.object_count + object_count;
+	}
 	if (nc_object_count) {
 		DEBUG(0,("Schema-DN[%s] objects[%u/%u] linked_values[%u/%u]\n",
-			c->partition->nc.dn, object_count, nc_object_count,
+			c->partition->nc.dn, nc_total_received, nc_object_count,
 			linked_attributes_count, nc_linked_attributes_count));
 	} else {
 		DEBUG(0,("Schema-DN[%s] objects[%u] linked_values[%u]\n",
-		c->partition->nc.dn, object_count, linked_attributes_count));
+		c->partition->nc.dn, nc_total_received, linked_attributes_count));
 	}
 
 	if (!s->self_made_schema) {
