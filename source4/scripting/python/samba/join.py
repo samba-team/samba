@@ -471,15 +471,6 @@ class dc_join(object):
                 "fromServer" : ctx.dc_ntds_dn}
             ctx.samdb.add(rec)
 
-        if ctx.topology_dn and ctx.acct_dn:
-            print "Adding %s" % ctx.topology_dn
-            rec = {
-                "dn" : ctx.topology_dn,
-                "objectclass" : "msDFSR-Member",
-                "msDFSR-ComputerReference" : ctx.acct_dn,
-                "serverReference" : ctx.ntds_dn}
-            ctx.samdb.add(rec)
-
         if ctx.acct_dn:
             print "Adding SPNs to %s" % ctx.acct_dn
             m = ldb.Message()
