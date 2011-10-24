@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.5.12
-			   , 2011
+			  October 26, 2011
                    ==============================
 
 
@@ -8,13 +8,65 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.12 include:
 
-o  
+o  Fix race condition in Winbind (bug 7844).
+o  The VFS ACL modules are no longer experimental but production-ready.
+
 
 Changes since 3.5.11:
 --------------------
 
 
-o  
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7509: smb_acl_to_posix: ACL is invalid for set (Invalid argument).
+    * BUG 7551: Return error of cli_push when 'put - /some/file' is used.
+    * BUG 8156: 'net ads join' fails to use the user's kerberos ticket.
+    * BUG 8370: Fix vfs_chown_fsp.
+    * BUG 8422: Fix infinite loop in ACL module code.
+    * BUG 8443: Be smarter about setting default permissions when a ACL_USER_OBJ
+      isn't given.
+    * BUG 8458: IE9 on Windows 7 cannot download files to samba 3.5.11 share.
+    * BUG 8493: DFS breaks zip file extracting unless "follow symlinks = no"
+      set.
+    * BUG 8507: Make smbd correctly honor the "force create mode" bits from a
+      cifsfs create.
+
+
+o   Pierre Carrier <pcarrier@redhat.com>
+    * BUG 8186: Allow changing the maximum number of simultaneous clients in
+      Winbind through an smb.conf option.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7465: Fix 'net ads join -k' when KRB5CCNAME is not set.
+    * BUG 7888: Deal with buggy 3.0 based PDCs.
+    * BUG 8491: Fix some coverity issues.
+
+
+o   David Disseldorp <ddiss@suse.de>
+    * BUG 8480: acl_xattr can free an invalid pointer if no blob is loaded.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8256: Add man vfs_aio_fork.
+    * BUG 8362: Fix SWAT build issue on old glibc systems.
+    * BUG 8531: Make DSO_EXPORTS_CMD more portable.
+
+
+o   Volodymyr Khomenko <Volodymyr_Khomenko@dell.com>
+    * BUG 8515: Disallow "." in can_set_delete_on_close().
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7844: Fix race condition in Winbind.
+    * BUG 8338: Add a fallback for missing open&x support in OS/X Lion.
+    * BUG 8420: Fix getent group if trusted domains are not reachable.
+
+
+o   Stefan Metzmacher <metze@samba.org
+    * BUG 8347: Fix regression on HP-UX, AIX and OSF introduced by the fix for
+      CVE-2011-2522.
+    * BUG 8452: Check the wct of the incoming SMBnegprot responses in libsmb.
+    * BUG 8491: Fix some coverity issues.
 
 
 ######################################################################
