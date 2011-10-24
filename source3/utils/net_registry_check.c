@@ -893,18 +893,21 @@ dbwrap_store_verbose(struct db_context *db, const char *key, TDB_DATA nval)
 	NTSTATUS status;
 
 	status = dbwrap_fetch_bystring(db, mem_ctx, key, &oval);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf ("store %s failed to fetch old value: %s\n", key,
+	if (NT_STATUS_IS_OK(status)) {
+		if (tdb_data_equal(nval, oval)) {
+			goto done;
+		}
+		printf("store %s:\n  overwrite: %s\n  with:      %s\n", key,
+		       tdb_data_print(mem_ctx, oval),
+		       tdb_data_print(mem_ctx, nval));
+
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		printf("store %s:\n  write: %s\n", key,
+		       tdb_data_print(mem_ctx, nval));
+	} else {
+		printf ("store %s:\n  failed to fetch old value: %s\n", key,
 			nt_errstr(status));
 		goto done;
-	}
-
-	if (!tdb_data_is_empty(oval) && !tdb_data_equal(nval, oval)) {
-		printf("store %s:\n"
-		       "  overwrite: %s\n"
-		       "  with:      %s\n",
-		       key, tdb_data_print(mem_ctx, oval),
-		       tdb_data_print(mem_ctx, nval));
 	}
 
 	status = dbwrap_store_bystring(db, key, nval, 0);
