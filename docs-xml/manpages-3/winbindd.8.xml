@@ -24,7 +24,6 @@
 		<arg choice="opt">-F</arg>
 		<arg choice="opt">-S</arg>
 		<arg choice="opt">-i</arg>
-		<arg choice="opt">-Y</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-n</arg>
@@ -190,15 +189,6 @@ hosts:		files wins
 		slower. The results will however be more accurate, since
 		results from the cache might not be up-to-date. This
 		might also temporarily hang winbindd if the DC doesn't respond.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-Y</term>
-		<listitem><para>Single daemon mode. This means winbindd will run
-		as a single process (the mode of operation in Samba 2.2).  Winbindd's
-		default behavior is to launch a child process that is responsible for
-		updating expired cache entries.
 		</para></listitem>
 		</varlistentry>
 
