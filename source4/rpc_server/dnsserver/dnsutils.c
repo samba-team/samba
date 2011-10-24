@@ -165,7 +165,7 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 		return NULL;
 	}
 
-	dp_flags = DNS_DP_ENLISTED;
+	dp_flags = DNS_DP_AUTOCREATED | DNS_DP_ENLISTED;
 	if (is_forest) {
 		dp_flags |= DNS_DP_FOREST_DEFAULT;
 	} else {
