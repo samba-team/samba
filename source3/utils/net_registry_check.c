@@ -917,6 +917,36 @@ done:
 	return NT_STATUS_IS_OK(status);
 }
 
+static bool
+dbwrap_store_uint32_verbose(struct db_context *db, const char *key, uint32_t nval)
+{
+	uint32_t oval;
+	NTSTATUS status;
+
+	status = dbwrap_fetch_uint32(db, key, &oval);
+	if (NT_STATUS_IS_OK(status)) {
+		if (nval == oval) {
+			goto done;
+		}
+		printf("store %s:\n overwrite: %d\n with:      %d\n", key,
+		       (int)oval, (int)nval);
+
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		printf("store %s:\n write: %d\n", key, (int)nval);
+	} else {
+		printf ("store %s:\n  failed to fetch old value: %s\n", key,
+			nt_errstr(status));
+		goto done;
+	}
+
+	status = dbwrap_store_uint32(db, key, nval);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf ("store %s failed: %s\n", key, nt_errstr(status));
+	}
+
+done:
+	return NT_STATUS_IS_OK(status);
+}
 
 static int cmp_keynames(char **p1, char **p2)
 {
@@ -1200,6 +1230,12 @@ static bool check_ctx_fix_inplace(struct check_ctx *ctx) {
 		DEBUG(0, ("delete traverse failed: %s\n", nt_errstr(status)));
 		return false;
 	}
+
+	if (!dbwrap_store_uint32_verbose(ctx->odb, "INFO/version", ctx->version)) {
+		DEBUG(0, ("storing version failed: %s\n", nt_errstr(status)));
+		return false;
+	}
+
 	return true;
 }
 
