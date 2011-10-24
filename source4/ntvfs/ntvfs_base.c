@@ -26,7 +26,7 @@
 #include "../lib/util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
-#include "lib/util/samba_modules.h"
+#include "lib/util/samba_module.h"
 
 /* the list of currently registered NTVFS backends, note that there
  * can be more than one backend with the same name, as long as they

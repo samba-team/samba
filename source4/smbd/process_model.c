@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "smbd/process_model.h"
 #include "param/param.h"
-#include "lib/util/samba_modules.h"
+#include "lib/util/samba_module.h"
 
 /* the list of currently registered process models */
 static struct process_model {

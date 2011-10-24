@@ -27,7 +27,7 @@
 #include "ntvfs/sysdep/sys_lease.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
-#include "lib/util/samba_modules.h"
+#include "lib/util/samba_module.h"
 
 /* list of registered backends */
 static struct sys_lease_ops *backends;

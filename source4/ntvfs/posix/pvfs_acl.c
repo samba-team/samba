@@ -27,7 +27,7 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 #include "../lib/util/unix_privs.h"
-#include "lib/util/samba_modules.h"
+#include "lib/util/samba_module.h"
 
 /* the list of currently registered ACL backends */
 static struct pvfs_acl_backend {

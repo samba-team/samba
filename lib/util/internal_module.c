@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "dynconfig/dynconfig.h"
-#include "lib/util/samba_modules.h"
+#include "lib/util/internal_module.h"
 #include "system/filesys.h"
 #include "system/dir.h"
 
@@ -82,7 +82,7 @@ samba_init_module_fn load_module(const char *path, bool is_probe, void **handle_
  * Obtain list of init functions from the modules in the specified
  * directory
  */
-static samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
+samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -118,43 +118,6 @@ static samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 
 	return ret;
 }
-
-/**
- * Run the specified init functions.
- *
- * @return true if all functions ran successfully, false otherwise
- */
-bool samba_init_module_fns_run(samba_init_module_fn *fns)
-{
-	int i;
-	bool ret = true;
-
-	if (fns == NULL)
-		return true;
-
-	for (i = 0; fns[i]; i++) { ret &= (bool)NT_STATUS_IS_OK(fns[i]()); }
-
-	return ret;
-}
-
-/**
- * Load the initialization functions from DSO files for a specific subsystem.
- *
- * Will return an array of function pointers to initialization functions
- */
-
-samba_init_module_fn *samba_modules_load(TALLOC_CTX *mem_ctx, const char *subsystem)
-{
-	char *path = modules_path(mem_ctx, subsystem);
-	samba_init_module_fn *ret;
-
-	ret = load_modules(mem_ctx, path);
-
-	talloc_free(path);
-
-	return ret;
-}
-
 
 /* Load a dynamic module.  Only log a level 0 error if we are not checking
    for the existence of a module (probling). */

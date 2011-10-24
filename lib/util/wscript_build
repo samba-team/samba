@@ -17,11 +17,19 @@ bld.SAMBA_LIBRARY('samba-util',
                   pc_files='samba-util.pc'
                   )
 
-bld.SAMBA_LIBRARY('samba-modules',
-		  source='modules.c',
+bld.SAMBA_LIBRARY('samba-module',
+		  source='samba_module.c',
+		  deps='errors samba-util samba-internal-module',
+		  local_include=False,
+                  public_headers='samba_module.h',
+                  vnum='0.0.1',
+                  pc_files='samba-module.pc')
+
+bld.SAMBA_LIBRARY('samba-internal-module',
+		  source='internal_module.c',
 		  deps='errors samba-util',
 		  local_include=False,
-		  private_library=True)
+                  private_library=True)
 
 bld.SAMBA_LIBRARY('asn1util',
                   source='asn1.c',

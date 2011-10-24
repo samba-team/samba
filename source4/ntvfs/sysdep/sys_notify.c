@@ -28,7 +28,7 @@
 #include <tevent.h>
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
-#include "lib/util/samba_modules.h"
+#include "lib/util/samba_module.h"
 
 /* list of registered backends */
 static struct sys_notify_backend *backends;
