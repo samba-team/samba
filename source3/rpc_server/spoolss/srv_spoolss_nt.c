@@ -138,7 +138,6 @@ struct notify_back_channel {
 
 	/* print notify back-channel pipe handle*/
 	struct rpc_pipe_client *cli_pipe;
-	struct dcerpc_binding_handle *binding_handle;
 	uint32_t active_connections;
 };
 
@@ -251,6 +250,8 @@ static void srv_spoolss_replycloseprinter(int snum,
 
 	/* weird if the test succeeds !!! */
 	if (prn_hnd->notify.cli_chan == NULL ||
+	    prn_hnd->notify.cli_chan->cli_pipe == NULL ||
+	    prn_hnd->notify.cli_chan->cli_pipe->binding_handle == NULL ||
 	    prn_hnd->notify.cli_chan->active_connections == 0) {
 		DEBUG(0, ("Trying to close unexisting backchannel!\n"));
 		DLIST_REMOVE(back_channels, prn_hnd->notify.cli_chan);
@@ -259,7 +260,7 @@ static void srv_spoolss_replycloseprinter(int snum,
 	}
 
 	status = dcerpc_spoolss_ReplyClosePrinter(
-					prn_hnd->notify.cli_chan->binding_handle,
+					prn_hnd->notify.cli_chan->cli_pipe->binding_handle,
 					talloc_tos(),
 					&prn_hnd->notify.cli_hnd,
 					&result);
@@ -275,7 +276,6 @@ static void srv_spoolss_replycloseprinter(int snum,
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (prn_hnd->notify.cli_chan->active_connections == 1) {
 
-		prn_hnd->notify.cli_chan->binding_handle = NULL;
 		cli_shutdown(rpc_pipe_np_smb_conn(prn_hnd->notify.cli_chan->cli_pipe));
 		DLIST_REMOVE(back_channels, prn_hnd->notify.cli_chan);
 		TALLOC_FREE(prn_hnd->notify.cli_chan);
@@ -1246,6 +1246,8 @@ static int send_notify2_printer(TALLOC_CTX *mem_ctx,
 
 	/* Is there notification on this handle? */
 	if (prn_hnd->notify.cli_chan == NULL ||
+	    prn_hnd->notify.cli_chan->cli_pipe == NULL ||
+	    prn_hnd->notify.cli_chan->cli_pipe->binding_handle == NULL ||
 	    prn_hnd->notify.cli_chan->active_connections == 0) {
 		return 0;
 	}
@@ -1278,7 +1280,7 @@ static int send_notify2_printer(TALLOC_CTX *mem_ctx,
 	info.info0 = &info0;
 
 	status = dcerpc_spoolss_RouterReplyPrinterEx(
-				prn_hnd->notify.cli_chan->binding_handle,
+				prn_hnd->notify.cli_chan->cli_pipe->binding_handle,
 				mem_ctx,
 				&prn_hnd->notify.cli_hnd,
 				prn_hnd->notify.change, /* color */
@@ -2621,12 +2623,21 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 			TALLOC_FREE(chan);
 			return false;
 		}
-		chan->binding_handle = chan->cli_pipe->binding_handle;
 
 		DLIST_ADD(back_channels, chan);
 
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_NOTIFY2,
 				   receive_notify2_message_list);
+	}
+
+	if (chan->cli_pipe == NULL ||
+	    chan->cli_pipe->binding_handle == NULL) {
+		DEBUG(0, ("srv_spoolss_replyopenprinter: error - "
+			"NULL %s for printer %s\n",
+			chan->cli_pipe == NULL ?
+			"chan->cli_pipe" : "chan->cli_pipe->binding_handle",
+			printer));
+		return false;
 	}
 
 	/*
@@ -2639,7 +2650,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 			  printer));
 	}
 
-	status = dcerpc_spoolss_ReplyOpenPrinter(chan->binding_handle,
+	status = dcerpc_spoolss_ReplyOpenPrinter(chan->cli_pipe->binding_handle,
 						 talloc_tos(),
 						 printer,
 						 localprinter,
