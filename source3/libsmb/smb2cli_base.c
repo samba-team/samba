@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "client.h"
-#include "read_smb.h"
+#include "libcli/smb/read_smb.h"
 #include "smb2cli_base.h"
 #include "libsmb/proto.h"
 #include "lib/async_req/async_sock.h"

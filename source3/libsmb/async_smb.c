@@ -25,7 +25,7 @@
 #include "async_smb.h"
 #include "../libcli/smb/smb_seal.h"
 #include "libsmb/nmblib.h"
-#include "read_smb.h"
+#include "../libcli/smb/read_smb.h"
 
 static NTSTATUS cli_pull_raw_error(const uint8_t *buf)
 {

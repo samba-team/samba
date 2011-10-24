@@ -23,7 +23,7 @@
 #include "../lib/util/tevent_unix.h"
 #include "client.h"
 #include "async_smb.h"
-#include "read_smb.h"
+#include "../libcli/smb/read_smb.h"
 #include "libsmb/nmblib.h"
 
 struct cli_session_request_state {

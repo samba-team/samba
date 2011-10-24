@@ -18,9 +18,11 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 #include "lib/async_req/async_sock.h"
 #include "read_smb.h"
 #include "lib/util/tevent_unix.h"
+#include "libcli/smb/smb_constants.h"
 
 /*
  * Read an smb packet asynchronously, discard keepalives

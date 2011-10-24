@@ -32,7 +32,6 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "libsmb/nmblib.h"
-#include "read_smb.h"
 #include "librpc/ndr/libndr.h"
 
 static const struct {

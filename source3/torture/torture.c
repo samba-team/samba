@@ -39,7 +39,7 @@
 #include "libsmb/nmblib.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "util_tdb.h"
-#include "libsmb/read_smb.h"
+#include "../libcli/smb/read_smb.h"
 
 extern char *optarg;
 extern int optind;
