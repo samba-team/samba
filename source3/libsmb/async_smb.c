@@ -499,7 +499,7 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 		SSVAL(iov[0].iov_base, smb_mid, mid);
 	}
 
-	smb_setlen((char *)iov[0].iov_base, iov_len(iov, iov_count) - 4);
+	smb_setlen_nbt((char *)iov[0].iov_base, iov_len(iov, iov_count) - 4);
 
 	status = cli_signv(state->cli, iov, iov_count, &state->seqnum);
 
@@ -523,7 +523,7 @@ static NTSTATUS cli_smb_req_iov_send(struct tevent_req *req,
 			return status;
 		}
 		buf = (char *)talloc_memdup(state, enc_buf,
-					    smb_len(enc_buf)+4);
+					    smb_len_nbt(enc_buf)+4);
 		SAFE_FREE(enc_buf);
 		if (buf == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -732,7 +732,7 @@ static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
 		/*
 		 * Paranoia checks that this is really an oplock break request.
 		 */
-		oplock_break = (smb_len(inbuf) == 51); /* hdr + 8 words */
+		oplock_break = (smb_len_nbt(inbuf) == 51); /* hdr + 8 words */
 		oplock_break &= ((CVAL(inbuf, smb_flg) & FLAG_REPLY) == 0);
 		oplock_break &= (CVAL(inbuf, smb_com) == SMBlockingX);
 		oplock_break &= (SVAL(inbuf, smb_vwv6) == 0);
