@@ -20,8 +20,8 @@
 #ifndef __LIBSMB_READ_SMB_H
 #define __LIBSMB_READ_SMB_H
 
-#include "lib/talloc/talloc.h"
-#include "lib/tevent/tevent.h"
+struct tevent_context;
+struct tevent_req;
 
 struct tevent_req *read_smb_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
