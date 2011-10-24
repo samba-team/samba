@@ -411,8 +411,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	shared_init = samba_modules_load(NULL, "service");
 
-	samba_init_module_fns_run(static_init);
-	samba_init_module_fns_run(shared_init);
+	samba_module_init_fns_run(static_init);
+	samba_module_init_fns_run(shared_init);
 
 	talloc_free(shared_init);
 	

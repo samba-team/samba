@@ -51,8 +51,8 @@ _PUBLIC_ int torture_init(void)
 	samba_module_init_fn static_init[] = { STATIC_smbtorture_MODULES };
 	samba_module_init_fn *shared_init = samba_modules_load(NULL, "smbtorture");
 
-	samba_init_module_fns_run(static_init);
-	samba_init_module_fns_run(shared_init);
+	samba_module_init_fns_run(static_init);
+	samba_module_init_fns_run(shared_init);
 
 	talloc_free(shared_init);
 

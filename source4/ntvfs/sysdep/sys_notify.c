@@ -142,7 +142,7 @@ _PUBLIC_ NTSTATUS sys_notify_init(void)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 
-	samba_init_module_fns_run(static_init);
+	samba_module_init_fns_run(static_init);
 	
 	return NT_STATUS_OK;
 }

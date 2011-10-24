@@ -238,8 +238,8 @@ NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 	
 	shared_init = samba_modules_load(NULL, "ntvfs");
 
-	samba_init_module_fns_run(static_init);
-	samba_init_module_fns_run(shared_init);
+	samba_module_init_fns_run(static_init);
+	samba_module_init_fns_run(shared_init);
 
 	talloc_free(shared_init);
 

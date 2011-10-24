@@ -30,7 +30,7 @@
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool samba_init_module_fns_run(samba_module_init_fn *fns)
+bool samba_module_init_fns_run(samba_module_init_fn *fns)
 {
 	int i;
 	bool ret = true;

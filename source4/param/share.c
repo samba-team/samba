@@ -151,7 +151,7 @@ NTSTATUS share_init(void)
 	STATIC_share_MODULES_PROTO;
 	samba_module_init_fn static_init[] = { STATIC_share_MODULES };
 
-	samba_init_module_fns_run(static_init);
+	samba_module_init_fns_run(static_init);
 
 	return NT_STATUS_OK;
 }
