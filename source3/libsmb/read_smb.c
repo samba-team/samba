@@ -65,7 +65,7 @@ static ssize_t read_smb_more(uint8_t *buf, size_t buflen, void *private_data)
 	if (buflen > 4) {
 		return 0;	/* We've been here, we're done */
 	}
-	return smb_len_large(buf);
+	return smb_len_tcp(buf);
 }
 
 static void read_smb_done(struct tevent_req *subreq)
