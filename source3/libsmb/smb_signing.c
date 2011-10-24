@@ -176,7 +176,7 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 
 	/* copy in the rest of the packet in, skipping the signature */
 	MD5Update(&md5_ctx, buf + offset_end_of_sig, 
-		  smb_len(buf) - (offset_end_of_sig - 4));
+		  smb_len_nbt(buf) - (offset_end_of_sig - 4));
 
 	/* calculate the MD5 sig */
 	MD5Final(calc_md5_mac, &md5_ctx);
@@ -227,10 +227,10 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 	}
 
 	/* JRA Paranioa test - we should be able to get rid of this... */
-	if (smb_len(outbuf) < (HDR_SS_FIELD + 8)) {
+	if (smb_len_nbt(outbuf) < (HDR_SS_FIELD + 8)) {
 		DEBUG(1,("smb_signing_sign_pdu: Logic error. "
 			 "Can't check signature on short packet! smb_len = %u\n",
-			 smb_len(outbuf)));
+			 smb_len_nbt(outbuf)));
 		abort();
 	}
 
@@ -285,11 +285,11 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 		return true;
 	}
 
-	if (smb_len(inbuf) < (HDR_SS_FIELD + 8)) {
+	if (smb_len_nbt(inbuf) < (HDR_SS_FIELD + 8)) {
 		DEBUG(1,("smb_signing_check_pdu: Can't check signature "
 			 "on short packet! smb_len = %u\n",
-			 smb_len(inbuf)));
-		return False;
+			 smb_len_nbt(inbuf)));
+		return false;
 	}
 
 	smb_signing_md5(&si->mac_key, inbuf,
