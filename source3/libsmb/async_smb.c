@@ -680,9 +680,10 @@ static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
 	int i;
 	uint16_t mid;
 	bool oplock_break;
+	const uint8_t *inhdr = inbuf + NBT_HDR_SIZE;
 
-	if ((IVAL(inbuf, 4) != 0x424d53ff) /* 0xFF"SMB" */
-	    && (SVAL(inbuf, 4) != 0x45ff)) /* 0xFF"E" */ {
+	if ((IVAL(inhdr, 0) != SMB_MAGIC) /* 0xFF"SMB" */
+	    && (SVAL(inhdr, 0) != 0x45ff)) /* 0xFF"E" */ {
 		DEBUG(10, ("Got non-SMB PDU\n"));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
@@ -713,7 +714,7 @@ static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
 		}
 	}
 
-	mid = SVAL(inbuf, smb_mid);
+	mid = SVAL(inhdr, HDR_MID);
 	num_pending = talloc_array_length(cli->conn.pending);
 
 	for (i=0; i<num_pending; i++) {
@@ -733,10 +734,10 @@ static NTSTATUS cli_state_dispatch_smb1(struct cli_state *cli,
 		 * Paranoia checks that this is really an oplock break request.
 		 */
 		oplock_break = (smb_len_nbt(inbuf) == 51); /* hdr + 8 words */
-		oplock_break &= ((CVAL(inbuf, smb_flg) & FLAG_REPLY) == 0);
-		oplock_break &= (CVAL(inbuf, smb_com) == SMBlockingX);
-		oplock_break &= (SVAL(inbuf, smb_vwv6) == 0);
-		oplock_break &= (SVAL(inbuf, smb_vwv7) == 0);
+		oplock_break &= ((CVAL(inhdr, HDR_FLG) & FLAG_REPLY) == 0);
+		oplock_break &= (CVAL(inhdr, HDR_COM) == SMBlockingX);
+		oplock_break &= (SVAL(inhdr, HDR_VWV+VWV(6)) == 0);
+		oplock_break &= (SVAL(inhdr, HDR_VWV+VWV(7)) == 0);
 
 		if (!oplock_break) {
 			/* Dump unexpected reply */
