@@ -28,7 +28,7 @@
 /**
  * Obtain the init function from a shared library file
  */
-samba_init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
+samba_module_init_fn load_module(const char *path, bool is_probe, void **handle_out)
 {
 	void *handle;
 	void *init_fn;
@@ -57,7 +57,7 @@ samba_init_module_fn load_module(const char *path, bool is_probe, void **handle_
 		return NULL;
 	}
 
-	init_fn = (samba_init_module_fn)dlsym(handle, SAMBA_INIT_MODULE);
+	init_fn = (samba_module_init_fn)dlsym(handle, SAMBA_INIT_MODULE);
 
 	/* we could check dlerror() to determine if it worked, because
            dlsym() can validly return NULL, but what would we do with
@@ -75,20 +75,20 @@ samba_init_module_fn load_module(const char *path, bool is_probe, void **handle_
 		*handle_out = handle;
 	}
 
-	return (samba_init_module_fn)init_fn;
+	return (samba_module_init_fn)init_fn;
 }
 
 /**
  * Obtain list of init functions from the modules in the specified
  * directory
  */
-samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
+samba_module_init_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
 	char *filename;
 	int success = 0;
-	samba_init_module_fn *ret = talloc_array(mem_ctx, samba_init_module_fn, 2);
+	samba_module_init_fn *ret = talloc_array(mem_ctx, samba_module_init_fn, 2);
 
 	ret[0] = NULL;
 
@@ -106,7 +106,7 @@ samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 
 		ret[success] = load_module(filename, true, NULL);
 		if (ret[success]) {
-			ret = talloc_realloc(mem_ctx, ret, samba_init_module_fn, success+2);
+			ret = talloc_realloc(mem_ctx, ret, samba_module_init_fn, success+2);
 			success++;
 			ret[success] = NULL;
 		}
@@ -125,7 +125,7 @@ samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 {
 	void *handle;
-	samba_init_module_fn init;
+	samba_module_init_fn init;
 	NTSTATUS status;
 
 	init = load_module(module_name, is_probe, &handle);

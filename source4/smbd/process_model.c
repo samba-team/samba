@@ -103,8 +103,8 @@ _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 {
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_process_model_MODULES_PROTO;
-	samba_init_module_fn static_init[] = { STATIC_process_model_MODULES };
-	samba_init_module_fn *shared_init;
+	samba_module_init_fn static_init[] = { STATIC_process_model_MODULES };
+	samba_module_init_fn *shared_init;
 	static bool initialised;
 
 	if (initialised) {

@@ -30,7 +30,7 @@
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool samba_init_module_fns_run(samba_init_module_fn *fns)
+bool samba_init_module_fns_run(samba_module_init_fn *fns)
 {
 	int i;
 	bool ret = true;
@@ -49,10 +49,10 @@ bool samba_init_module_fns_run(samba_init_module_fn *fns)
  * Will return an array of function pointers to initialization functions
  */
 
-samba_init_module_fn *samba_modules_load(TALLOC_CTX *mem_ctx, const char *subsystem)
+samba_module_init_fn *samba_modules_load(TALLOC_CTX *mem_ctx, const char *subsystem)
 {
 	char *path = modules_path(mem_ctx, subsystem);
-	samba_init_module_fn *ret;
+	samba_module_init_fn *ret;
 
 	ret = load_modules(mem_ctx, path);
 

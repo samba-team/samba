@@ -28,7 +28,7 @@
  *
  * The handle to dlclose() in case of error is returns in *handle if handle is not NULL
  */
-samba_init_module_fn load_module(const char *path, bool is_probe, void **handle);
+samba_module_init_fn load_module(const char *path, bool is_probe, void **handle);
 
 int smb_load_modules(const char **modules);
 NTSTATUS smb_probe_module(const char *subsystem, const char *module);
@@ -37,6 +37,6 @@ NTSTATUS smb_probe_module(const char *subsystem, const char *module);
  * Obtain list of init functions from the modules in the specified
  * directory
  */
-samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path);
+samba_module_init_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path);
 
 #endif /* _INTERNAL_MODULES_H */

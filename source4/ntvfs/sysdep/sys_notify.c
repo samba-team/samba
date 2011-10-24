@@ -137,7 +137,7 @@ _PUBLIC_ NTSTATUS sys_notify_init(void)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_sys_notify_MODULES_PROTO;
-	samba_init_module_fn static_init[] = { STATIC_sys_notify_MODULES };
+	samba_module_init_fn static_init[] = { STATIC_sys_notify_MODULES };
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;

@@ -87,8 +87,8 @@ NTSTATUS pvfs_acl_init(void)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_pvfs_acl_MODULES_PROTO;
-	samba_init_module_fn static_init[] = { STATIC_pvfs_acl_MODULES };
-	samba_init_module_fn *shared_init;
+	samba_module_init_fn static_init[] = { STATIC_pvfs_acl_MODULES };
+	samba_module_init_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;

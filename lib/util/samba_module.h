@@ -22,7 +22,7 @@
 #define _SAMBA_MODULES_H
 
 /* Module support */
-typedef NTSTATUS (*samba_init_module_fn) (void);
+typedef NTSTATUS (*samba_module_init_fn) (void);
 
 NTSTATUS samba_init_module(void);
 
@@ -37,13 +37,13 @@ NTSTATUS samba_init_module(void);
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool samba_init_module_fns_run(samba_init_module_fn *fns);
+bool samba_module_init_fns_run(samba_module_init_fn *fns);
 
 /**
  * Load the initialization functions from DSO files for a specific subsystem.
  *
  * Will return an array of function pointers to initialization functions
  */
-samba_init_module_fn *samba_modules_load(TALLOC_CTX *mem_ctx, const char *subsystem);
+samba_module_init_fn *samba_modules_load(TALLOC_CTX *mem_ctx, const char *subsystem);
 
 #endif /* _SAMBA_MODULES_H */
