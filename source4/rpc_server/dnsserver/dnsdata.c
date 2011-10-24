@@ -462,6 +462,187 @@ struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RP
 }
 
 
+/* Intialize tree with given name as the root */
+static struct dns_tree *dns_tree_init(TALLOC_CTX *mem_ctx, const char *name, void *data)
+{
+	struct dns_tree *tree;
+
+	tree = talloc_zero(mem_ctx, struct dns_tree);
+	if (tree == NULL) {
+		return NULL;
+	}
+
+	tree->name = talloc_strdup(tree, name);
+	if (tree->name == NULL) {
+		talloc_free(tree);
+		return NULL;
+	}
+
+	tree->data = data;
+
+	return tree;
+}
+
+
+/* Add a child one level below */
+static struct dns_tree *dns_tree_add(struct dns_tree *tree, const char *name, void *data)
+{
+	struct dns_tree *node;
+
+	node = talloc_zero(tree, struct dns_tree);
+	if (node == NULL) {
+		return NULL;
+	}
+
+	node->name = talloc_strdup(tree, name);
+	if (node->name == NULL) {
+		talloc_free(node);
+		return NULL;
+	}
+	node->level = tree->level + 1;
+	node->num_children = 0;
+	node->children = NULL;
+	node->data = data;
+
+	if (tree->num_children == 0) {
+		tree->children = talloc_zero(tree, struct dns_tree *);
+	} else {
+		tree->children = talloc_realloc(tree, tree->children, struct dns_tree *,
+						tree->num_children+1);
+	}
+	if (tree->children == NULL) {
+		talloc_free(node);
+		return NULL;
+	}
+	tree->children[tree->num_children] = node;
+	tree->num_children++;
+
+	return node;
+}
+
+/* Find a node that matches the name components */
+static struct dns_tree *dns_tree_find(struct dns_tree *tree, int ncount, char **nlist, int *match_count)
+{
+	struct dns_tree *node, *next;
+	int i, j, start;
+
+	*match_count = -1;
+
+	if (strcmp(tree->name, "@") == 0) {
+		start = 0;
+	} else {
+		if (strcmp(tree->name, nlist[ncount-1]) != 0) {
+			return NULL;
+		}
+		start = 1;
+		*match_count = 0;
+	}
+
+	node = tree;
+	for (i=start; i<ncount; i++) {
+		if (node->num_children == 0) {
+			break;
+		}
+		next = NULL;
+		for (j=0; j<node->num_children; j++) {
+			if (strcmp(nlist[(ncount-1)-i], node->children[j]->name) == 0) {
+				next = node->children[j];
+				*match_count = i;
+				break;
+			}
+		}
+		if (next == NULL) {
+			break;
+		} else {
+			node = next;
+		}
+	}
+
+	return node;
+}
+
+/* Build a 2-level tree for resulting dns names */
+struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ldb_result *res)
+{
+	struct dns_tree *root, *base, *tree, *node;
+	const char *ptr;
+	int rootcount, ncount;
+	char **nlist;
+	int i, level, match_count;
+
+	rootcount = dns_split_name_components(mem_ctx, name, &nlist);
+	if (rootcount <= 0) {
+		return NULL;
+	}
+
+	root = dns_tree_init(mem_ctx, nlist[rootcount-1], NULL);
+	if (root == NULL) {
+		return NULL;
+	}
+
+	tree = root;
+	for (i=rootcount-2; i>=0; i--) {
+		tree = dns_tree_add(tree, nlist[i], NULL);
+		if (tree == NULL) {
+			goto failed;
+		}
+	}
+
+	base = tree;
+
+	/* Add all names in the result in a tree */
+	for (i=0; i<res->count; i++) {
+		ptr = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
+
+		if (strcmp(ptr, "@") == 0) {
+			base->data = res->msgs[i];
+			continue;
+		} else if (strcmp(ptr, name) == 0) {
+			base->data = res->msgs[i];
+			continue;
+		}
+
+		ncount = dns_split_name_components(root, ptr, &nlist);
+		if (ncount < 0) {
+			goto failed;
+		}
+
+		/* Find matching node */
+		tree = dns_tree_find(root, ncount, nlist, &match_count);
+		if (tree == NULL) {
+			goto failed;
+		}
+
+		/* Add missing name components */
+		for (level=match_count+1; level<ncount; level++) {
+			if (tree->level == rootcount+1) {
+				break;
+			}
+			if (level == ncount-1) {
+				node = dns_tree_add(tree, nlist[(ncount-1)-level], res->msgs[i]);
+			} else {
+				node = dns_tree_add(tree, nlist[(ncount-1)-level], NULL);
+			}
+			if (node == NULL) {
+				goto failed;
+			}
+			tree = node;
+		}
+
+		talloc_free(nlist);
+	}
+
+	/* Mark the base record, so it can be found easily */
+	base->level = -1;
+
+	return root;
+
+failed:
+	talloc_free(root);
+	return NULL;
+}
+
+
 static void _dns_add_name(TALLOC_CTX *mem_ctx, const char *name, char ***add_names, int *add_count)
 {
 	int i;
@@ -529,88 +710,53 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 				unsigned int select_flag,
 				const char *branch_name,
 				struct ldb_message *msg,
+				int num_children,
 				struct DNS_RPC_RECORDS_ARRAY *recs,
 				char ***add_names,
 				int *add_count)
 {
-	const char *nodename;
 	struct ldb_message_element *el;
+	const char *ptr;
 	int i, j;
-	bool found, node_is_rootzone;
+	bool found;
 
-	/* Check if we already have created record for the branch */
-	found = false;
-	if (branch_name == NULL) {
-		i = 0;
-		if (recs->count > 0) {
-			found = true;
-		}
+	if (recs->count == 0) {
+		recs->rec = talloc_zero(recs, struct DNS_RPC_RECORDS);
 	} else {
-		for (i=0; i<recs->count; i++) {
-			if (strcmp(branch_name, recs->rec[i].dnsNodeName.str) == 0) {
-				found = true;
-				break;
-			}
-		}
+		recs->rec = talloc_realloc(recs, recs->rec, struct DNS_RPC_RECORDS, recs->count+1);
 	}
-
-	/* If not, add empty record */
-	if (!found) {
-		if (recs->count == 0) {
-			recs->rec = talloc_zero(recs, struct DNS_RPC_RECORDS);
-		} else {
-			recs->rec = talloc_realloc(recs, recs->rec, struct DNS_RPC_RECORDS, recs->count+1);
-		}
-		if (recs->rec == NULL) {
-			return WERR_NOMEM;
-		}
-		i = recs->count;
-		recs->rec[i].wLength = 0;
-		recs->rec[i].wRecordCount = 0;
-		recs->rec[i].dwChildCount = 0;
-
-		/* The base records returned with empty name */
-		/* Children records returned with names */
-		if (branch_name == NULL) {
-			recs->rec[i].dnsNodeName.str = talloc_strdup(recs, "");
-			recs->rec[i].dnsNodeName.len = 0;
-		} else {
-			recs->rec[i].dnsNodeName.str = talloc_strdup(recs, branch_name);
-			recs->rec[i].dnsNodeName.len = strlen(branch_name);
-		}
-		recs->rec[i].records = talloc_zero_array(recs, struct DNS_RPC_RECORD, 0);
-		recs->count++;
+	if (recs->rec == NULL) {
+		return WERR_NOMEM;
 	}
+	i = recs->count;
+	recs->rec[i].wLength = 0;
+	recs->rec[i].wRecordCount = 0;
+	recs->rec[i].dwChildCount = num_children;
+
+	/* The base records returned with empty name */
+	/* Children records returned with names */
+	if (branch_name == NULL) {
+		recs->rec[i].dnsNodeName.str = talloc_strdup(recs, "");
+		recs->rec[i].dnsNodeName.len = 0;
+	} else {
+		recs->rec[i].dnsNodeName.str = talloc_strdup(recs, branch_name);
+		recs->rec[i].dnsNodeName.len = strlen(branch_name);
+	}
+	recs->rec[i].records = talloc_zero_array(recs, struct DNS_RPC_RECORD, 0);
+	recs->count++;
 
 	/* Allow empty records */
 	if (msg == NULL) {
 		return WERR_OK;
 	}
 
-	nodename = ldb_msg_find_attr_as_string(msg, "name", NULL);
-
-	if (strcmp(nodename, "@") == 0) {
-		node_is_rootzone = true;
-	} else {
-		node_is_rootzone = false;
-
-		/* child record */
-		if (branch_name != NULL) {
-			if (branch_name[strlen(branch_name)-1] != '.'
-				&& strcmp(nodename, branch_name) != 0) {
-				recs->rec[i].dwChildCount++;
-				return WERR_OK;
-			}
-		}
-	}
-
+	ptr = ldb_msg_find_attr_as_string(msg, "name", NULL);
 	el = ldb_msg_find_element(msg, "dnsRecord");
 	if (el == NULL || el->values == 0) {
-		DEBUG(0, ("dnsserver: Missing dnsRecord for %s\n", ldb_dn_get_linearized(msg->dn)));
 		return WERR_OK;
 	}
 
-	/* branch level record */
+	/* Add RR records */
 	for (j=0; j<el->num_values; j++) {
 		struct dnsp_DnssrvRpcRecord dnsp_rec;
 		struct DNS_RPC_RECORD *dns_rec;
@@ -661,8 +807,12 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 				dnsp_to_dns_copy(recs, &dnsp_rec, dns_rec);
 
 				/* Fix record flags */
-				if (node_is_rootzone) {
-					dns_rec->dwFlags |= (DNS_RPC_FLAG_ZONE_ROOT | DNS_RPC_FLAG_AUTH_ZONE_ROOT);
+				if (strcmp(ptr, "@") == 0) {
+					dns_rec->dwFlags |= DNS_RPC_FLAG_ZONE_ROOT;
+
+					if (dnsp_rec.rank == DNS_RANK_ZONE) {
+						dns_rec->dwFlags |= DNS_RPC_FLAG_AUTH_ZONE_ROOT;
+					}
 				}
 
 				if (dns_rec->dwFlags == DNS_RANK_NS_GLUE) {

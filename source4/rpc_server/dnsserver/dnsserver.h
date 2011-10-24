@@ -151,6 +151,14 @@ struct dnsserver_zone {
 };
 
 
+struct dns_tree {
+	const char *name;
+	int level;
+	unsigned int num_children;
+	struct dns_tree **children;
+	void *data;
+};
+
 /* Data structure manipulation functions from dnsdata.c */
 
 struct IP4_ARRAY *ip4_array_copy(TALLOC_CTX *mem_ctx, struct IP4_ARRAY *ip4);
@@ -169,10 +177,12 @@ void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 			struct DNS_RPC_RECORD *dns);
 struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns);
 
+struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ldb_result *res);
 WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx, struct dnsserver_zone *z,
 			enum dns_record_type record_type,
 			unsigned int select_flag, const char *zone_name,
-			struct ldb_message *msg, struct DNS_RPC_RECORDS_ARRAY *recs,
+			struct ldb_message *msg, int num_children,
+			struct DNS_RPC_RECORDS_ARRAY *recs,
 			char ***add_names, int *add_count);
 
 
