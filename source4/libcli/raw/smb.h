@@ -350,40 +350,6 @@
 
 #define UID_FIELD_INVALID 0
 
-/* Lock types. */
-#define LOCKING_ANDX_EXCLUSIVE_LOCK  0x00
-#define LOCKING_ANDX_SHARED_LOCK     0x01
-#define LOCKING_ANDX_OPLOCK_RELEASE  0x02
-#define LOCKING_ANDX_CHANGE_LOCKTYPE 0x04
-#define LOCKING_ANDX_CANCEL_LOCK     0x08
-#define LOCKING_ANDX_LARGE_FILES     0x10
-
-/*
- * Bits we test with.
- */
-
-#define OPLOCK_NONE      0
-#define OPLOCK_EXCLUSIVE 1
-#define OPLOCK_BATCH     2
-#define OPLOCK_LEVEL_II  4
-
-#define CORE_OPLOCK_GRANTED (1<<5)
-#define EXTENDED_OPLOCK_GRANTED (1<<15)
-
-/*
- * Return values for oplock types.
- */
-
-#define NO_OPLOCK_RETURN 0
-#define EXCLUSIVE_OPLOCK_RETURN 1
-#define BATCH_OPLOCK_RETURN 2
-#define LEVEL_II_OPLOCK_RETURN 3
-
-/* oplock levels sent in oplock break */
-#define OPLOCK_BREAK_TO_NONE     0
-#define OPLOCK_BREAK_TO_LEVEL_II 1
-
-
 /* The maximum length of a trust account password.
    Used when we randomly create it, 15 char passwords
    exceed NT4's max password length */

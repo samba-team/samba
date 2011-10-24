@@ -1151,22 +1151,15 @@ enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
  */
 #define EXTENDED_OPLOCK_REQUEST(inbuf) ((SVAL(inbuf,smb_vwv2)&((1<<1)|(1<<2)))>>1)
 
-/* Lock types. */
-#define LOCKING_ANDX_SHARED_LOCK 0x1
-#define LOCKING_ANDX_OPLOCK_RELEASE 0x2
-#define LOCKING_ANDX_CHANGE_LOCKTYPE 0x4
-#define LOCKING_ANDX_CANCEL_LOCK 0x8
-#define LOCKING_ANDX_LARGE_FILES 0x10
-
 /*
  * Bits we test with.
  * Note these must fit into 16-bits.
  */
 
-#define NO_OPLOCK 			0x0
-#define EXCLUSIVE_OPLOCK 		0x1
-#define BATCH_OPLOCK 			0x2
-#define LEVEL_II_OPLOCK 		0x4
+#define NO_OPLOCK 			OPLOCK_NONE
+#define EXCLUSIVE_OPLOCK 		OPLOCK_EXCLUSIVE
+#define BATCH_OPLOCK 			OPLOCK_BATCH
+#define LEVEL_II_OPLOCK 		OPLOCK_LEVEL_II
 
 /* The following are Samba-private. */
 #define INTERNAL_OPEN_ONLY 		0x8
