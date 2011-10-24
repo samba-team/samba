@@ -142,7 +142,7 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 			    const uint8_t *buf, uint32_t seq_number,
 			    uint8_t calc_md5_mac[16])
 {
-	const size_t offset_end_of_sig = (smb_ss_field + 8);
+	const size_t offset_end_of_sig = (NBT_HDR_SIZE + HDR_SS_FIELD + 8);
 	uint8_t sequence_buf[8];
 	struct MD5Context md5_ctx;
 
@@ -169,7 +169,7 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 	MD5Update(&md5_ctx, mac_key->data, mac_key->length);
 
 	/* copy in the first bit of the SMB header */
-	MD5Update(&md5_ctx, buf + 4, smb_ss_field - 4);
+	MD5Update(&md5_ctx, buf + NBT_HDR_SIZE, HDR_SS_FIELD);
 
 	/* copy in the sequence number, instead of the signature */
 	MD5Update(&md5_ctx, sequence_buf, sizeof(sequence_buf));
@@ -227,7 +227,7 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 	}
 
 	/* JRA Paranioa test - we should be able to get rid of this... */
-	if (smb_len(outbuf) < (smb_ss_field + 8 - 4)) {
+	if (smb_len(outbuf) < (HDR_SS_FIELD + 8)) {
 		DEBUG(1,("smb_signing_sign_pdu: Logic error. "
 			 "Can't check signature on short packet! smb_len = %u\n",
 			 smb_len(outbuf)));
@@ -268,9 +268,9 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 	DEBUG(10, ("smb_signing_sign_pdu: sent SMB signature of\n"));
 	dump_data(10, calc_md5_mac, 8);
 
-	memcpy(&outbuf[smb_ss_field], calc_md5_mac, 8);
+	memcpy(&outbuf[NBT_HDR_SIZE+HDR_SS_FIELD], calc_md5_mac, 8);
 
-/*	outbuf[smb_ss_field+2]=0;
+/*	outbuf[NBT_HDR_SIZE+HDR_SS_FIELD+2]=0;
 	Uncomment this to test if the remote server actually verifies signatures...*/
 }
 
@@ -285,7 +285,7 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 		return true;
 	}
 
-	if (smb_len(inbuf) < (smb_ss_field + 8 - 4)) {
+	if (smb_len(inbuf) < (HDR_SS_FIELD + 8)) {
 		DEBUG(1,("smb_signing_check_pdu: Can't check signature "
 			 "on short packet! smb_len = %u\n",
 			 smb_len(inbuf)));
@@ -295,7 +295,7 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 	smb_signing_md5(&si->mac_key, inbuf,
 			seqnum, calc_md5_mac);
 
-	reply_sent_mac = &inbuf[smb_ss_field];
+	reply_sent_mac = &inbuf[NBT_HDR_SIZE+HDR_SS_FIELD];
 	good = (memcmp(reply_sent_mac, calc_md5_mac, 8) == 0);
 
 	if (!good) {
