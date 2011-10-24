@@ -234,11 +234,11 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 		abort();
 	}
 
-	com = SVAL(outbuf,smb_com);
-	flags = SVAL(outbuf,smb_flg);
+	com = SVAL(outbuf,NBT_HDR_SIZE+HDR_COM);
+	flags = SVAL(outbuf,NBT_HDR_SIZE+HDR_FLG);
 
 	if (!(flags & FLAG_REPLY)) {
-		uint16_t flags2 = SVAL(outbuf,smb_flg2);
+		uint16_t flags2 = SVAL(outbuf,NBT_HDR_SIZE+HDR_FLG2);
 		/*
 		 * If this is a request, specify what is
 		 * supported or required by the client
@@ -249,7 +249,7 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 		if (si->negotiated && si->mandatory) {
 			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED;
 		}
-		SSVAL(outbuf, smb_flg2, flags2);
+		SSVAL(outbuf, NBT_HDR_SIZE+HDR_FLG2, flags2);
 	}
 
 	if (si->mac_key.length == 0) {
