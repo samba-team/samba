@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 
+#include <fcntl.h>
 #include "libcli/security/security.h"
 #include "gpfs_fcntl.h"
 #include "gpfs_gpl.h"
