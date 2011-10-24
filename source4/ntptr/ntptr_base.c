@@ -74,7 +74,7 @@ NTSTATUS ntptr_init(void)
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_ntptr_MODULES_PROTO;
 	samba_module_init_fn static_init[] = { STATIC_ntptr_MODULES };
-	samba_module_init_fn *shared_init = samba_modules_load(NULL, "ntptr");
+	samba_module_init_fn *shared_init = samba_module_init_fns_for_subsystem(NULL, "ntptr");
 
 	samba_module_init_fns_run(static_init);
 	samba_module_init_fns_run(shared_init);
