@@ -6354,6 +6354,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      const char *orig_path,
 		      struct smb_filename **smb_fname,
 		      uint32_t ucf_flags);
+NTSTATUS check_veto_path(connection_struct *conn, const char *name);
 NTSTATUS check_name(connection_struct *conn, const char *name);
 int get_real_filename(connection_struct *conn, const char *path,
 		      const char *name, TALLOC_CTX *mem_ctx,
