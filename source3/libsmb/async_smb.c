@@ -29,8 +29,9 @@
 
 static NTSTATUS cli_pull_raw_error(const uint8_t *buf)
 {
-	uint32_t flags2 = SVAL(buf, smb_flg2);
-	NTSTATUS status = NT_STATUS(IVAL(buf, smb_rcls));
+	const uint8_t *hdr = buf + NBT_HDR_SIZE;
+	uint32_t flags2 = SVAL(hdr, HDR_FLG2);
+	NTSTATUS status = NT_STATUS(IVAL(hdr, HDR_RCLS));
 
 	if (NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OK;
@@ -40,7 +41,7 @@ static NTSTATUS cli_pull_raw_error(const uint8_t *buf)
 		return status;
 	}
 
-	return NT_STATUS_DOS(CVAL(buf, smb_rcls), SVAL(buf,smb_err));
+	return NT_STATUS_DOS(CVAL(hdr, HDR_RCLS), SVAL(hdr, HDR_ERR));
 }
 
 /**
