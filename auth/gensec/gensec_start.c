@@ -889,8 +889,8 @@ _PUBLIC_ NTSTATUS gensec_init(void)
 
 	shared_init = load_samba_modules(NULL, "gensec");
 
-	run_init_functions(static_init);
-	run_init_functions(shared_init);
+	samba_init_module_fns_run(static_init);
+	samba_init_module_fns_run(shared_init);
 
 	talloc_free(shared_init);
 

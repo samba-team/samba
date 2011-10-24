@@ -76,8 +76,8 @@ NTSTATUS ntptr_init(void)
 	samba_init_module_fn static_init[] = { STATIC_ntptr_MODULES };
 	samba_init_module_fn *shared_init = load_samba_modules(NULL, "ntptr");
 
-	run_init_functions(static_init);
-	run_init_functions(shared_init);
+	samba_init_module_fns_run(static_init);
+	samba_init_module_fns_run(shared_init);
 
 	talloc_free(shared_init);
 	

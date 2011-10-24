@@ -124,7 +124,7 @@ static samba_init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool run_init_functions(samba_init_module_fn *fns)
+bool samba_init_module_fns_run(samba_init_module_fn *fns)
 {
 	int i;
 	bool ret = true;

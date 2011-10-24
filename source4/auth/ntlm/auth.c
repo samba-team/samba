@@ -665,7 +665,7 @@ _PUBLIC_ NTSTATUS auth4_init(void)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	run_init_functions(static_init);
+	samba_init_module_fns_run(static_init);
 	
 	return NT_STATUS_OK;	
 }
