@@ -597,7 +597,7 @@ static void cli_smb_sent(struct tevent_req *subreq)
 	nwritten = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
-		NTSTATUS status = map_nt_error_from_unix(err);
+		NTSTATUS status = map_nt_error_from_unix_common(err);
 		cli_state_notify_pending(state->cli, status);
 		return;
 	}
@@ -637,7 +637,7 @@ static void cli_smb_received(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	cli->conn.read_smb_req = NULL;
 	if (received == -1) {
-		status = map_nt_error_from_unix(err);
+		status = map_nt_error_from_unix_common(err);
 		cli_state_notify_pending(cli, status);
 		TALLOC_FREE(frame);
 		return;
