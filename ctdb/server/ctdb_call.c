@@ -700,6 +700,60 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
+
+	/* read only delegation processing */
+	/* If we got a FETCH_WITH_HEADER we should check if this is a ro
+	 * delegation since we may need to update the record header
+	 */
+	if (state->c->callid == CTDB_FETCH_WITH_HEADER_FUNC) {
+		struct ctdb_db_context *ctdb_db = state->ctdb_db;
+		struct ctdb_ltdb_header *header = (struct ctdb_ltdb_header *)&c->data[0];
+		struct ctdb_ltdb_header oldheader;
+		TDB_DATA key, data, olddata;
+		int ret;
+
+		if (!(header->flags & CTDB_REC_RO_HAVE_READONLY)) {
+			goto finished_ro;
+			return;
+		}
+
+		key.dsize = state->c->keylen;
+		key.dptr  = state->c->data;
+		ret = ctdb_ltdb_lock_requeue(ctdb_db, key, hdr,
+				     ctdb_call_input_pkt, ctdb, False);
+		if (ret == -2) {
+			return;
+		}
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " Failed to get lock in ctdb_reply_call\n"));
+			return;
+		}
+
+		ret = ctdb_ltdb_fetch(ctdb_db, key, &oldheader, state, &olddata);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Failed to fetch old record in ctdb_reply_call\n"));
+			ctdb_ltdb_unlock(ctdb_db, key);
+			goto finished_ro;
+		}			
+
+		if (header->rsn <= oldheader.rsn) {
+			ctdb_ltdb_unlock(ctdb_db, key);
+			goto finished_ro;
+		}
+
+		data.dptr  = &c->data[sizeof(struct ctdb_ltdb_header)];
+		data.dsize = sizeof(struct ctdb_ltdb_header);
+		ret = ctdb_ltdb_store(ctdb_db, key, header, data);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Failed to store new record in ctdb_reply_call\n"));
+			ctdb_ltdb_unlock(ctdb_db, key);
+			goto finished_ro;
+		}			
+
+		ctdb_ltdb_unlock(ctdb_db, key);
+	}
+finished_ro:
+
 	state->call->reply_data.dptr = c->data;
 	state->call->reply_data.dsize = c->datalen;
 	state->call->status = c->status;
