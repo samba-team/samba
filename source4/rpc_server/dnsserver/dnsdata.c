@@ -128,6 +128,10 @@ int dns_split_name_components(TALLOC_CTX *tmp_ctx, const char *name, char ***com
 	char *str = NULL, *ptr, **list;
 	int count = 0;
 
+	if (name == NULL) {
+		return 0;
+	}
+
 	str = talloc_strdup(tmp_ctx, name);
 	if (!str) {
 		goto failed;
