@@ -1103,8 +1103,9 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 					union DNSSRV_RPC_UNION *rout)
 {
 	int valid_operation = 0;
-	struct dnsserver_zone *z;
-	bool list_zones;
+	struct dnsserver_zone *z, **zlist;
+	int zcount;
+	bool found;
 	int i;
 
 	if (strcasecmp(operation, "QueryDwordProperty") == 0) {
@@ -1119,45 +1120,112 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 		if (typeid_in != DNSSRV_TYPEID_DWORD) {
 			return WERR_DNS_ERROR_INVALID_PROPERTY;
 		}
-		if ((rin->Dword & (DNS_ZONE_REQUEST_PRIMARY |
-					DNS_ZONE_REQUEST_FORWARD |
-					DNS_ZONE_REQUEST_DS)) > 0) {
-			list_zones = true;
-		} else {
-			list_zones = false;
+
+		zcount = 0;
+		zlist = talloc_zero_array(mem_ctx, struct dnsserver_zone *, 0);
+		for (z = dsstate->zones; z; z = z->next) {
+			found = false;
+			if (rin->Dword & DNS_ZONE_REQUEST_PRIMARY) {
+				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_PRIMARY) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_SECONDARY) {
+				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_SECONDARY) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_CACHE) {
+				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_CACHE) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_AUTO) {
+				if (z->zoneinfo->fAutoCreated || z->zoneinfo->dwDpFlags & DNS_DP_AUTOCREATED) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_FORWARD) {
+				if (!(z->zoneinfo->Flags & DNS_RPC_ZONE_REVERSE)) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_REVERSE) {
+				if (z->zoneinfo->Flags & DNS_RPC_ZONE_REVERSE) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_FORWARDER) {
+				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_FORWARDER) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_STUB) {
+				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_STUB) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_DS) {
+				if (z->zoneinfo->Flags & DNS_RPC_ZONE_DSINTEGRATED) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_NON_DS) {
+				if (!(z->zoneinfo->Flags & DNS_RPC_ZONE_DSINTEGRATED)) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_DOMAIN_DP) {
+				if (z->zoneinfo->dwDpFlags & DNS_DP_DOMAIN_DEFAULT) {
+					found = true;
+				}
+			}
+			if (rin->Dword & DNS_ZONE_REQUEST_FOREST_DP) {
+				if (z->zoneinfo->dwDpFlags & DNS_DP_FOREST_DEFAULT) {
+					found = true;
+				}
+			}
+
+			if (found) {
+				zlist = talloc_realloc(mem_ctx, zlist, struct dnsserver_zone *, zcount+1);
+				zlist[zcount] = z;
+				zcount++;
+			}
+
 		}
 
 		if (client_version == DNS_CLIENT_VERSION_W2K) {
 			*typeid_out = DNSSRV_TYPEID_ZONE_LIST_W2K;
 			rout->ZoneListW2K = talloc_zero(mem_ctx, struct DNS_RPC_ZONE_LIST_W2K);
 
-			if (!list_zones) {
+			if (zcount == 0) {
 				rout->ZoneListW2K->dwZoneCount = 0;
 				rout->ZoneListW2K->ZoneArray = NULL;
 
 				return WERR_OK;
 			}
 
-			rout->ZoneListW2K->ZoneArray = talloc_zero_array(mem_ctx, struct DNS_RPC_ZONE_W2K *, dsstate->zones_count);
+			rout->ZoneListW2K->ZoneArray = talloc_zero_array(mem_ctx, struct DNS_RPC_ZONE_W2K *, zcount);
 			if (rout->ZoneListW2K->ZoneArray == NULL) {
+				talloc_free(zlist);
 				return WERR_NOMEM;
 			}
 
-			for (z = dsstate->zones, i=0; z; z = z->next, i++) {
+			for (i=0; i<zcount; i++) {
 				rout->ZoneListW2K->ZoneArray[i] = talloc_zero(mem_ctx, struct DNS_RPC_ZONE_W2K);
 
-				rout->ZoneListW2K->ZoneArray[i]->pszZoneName = talloc_strdup(mem_ctx, z->name);
-				rout->ZoneListW2K->ZoneArray[i]->Flags = z->zoneinfo->Flags;
-				rout->ZoneListW2K->ZoneArray[i]->ZoneType = z->zoneinfo->dwZoneType;
-				rout->ZoneListW2K->ZoneArray[i]->Version = z->zoneinfo->Version;
+				rout->ZoneListW2K->ZoneArray[i]->pszZoneName = talloc_strdup(mem_ctx, zlist[i]->name);
+				rout->ZoneListW2K->ZoneArray[i]->Flags = zlist[i]->zoneinfo->Flags;
+				rout->ZoneListW2K->ZoneArray[i]->ZoneType = zlist[i]->zoneinfo->dwZoneType;
+				rout->ZoneListW2K->ZoneArray[i]->Version = zlist[i]->zoneinfo->Version;
 			}
-			rout->ZoneListW2K->dwZoneCount = dsstate->zones_count;
+			rout->ZoneListW2K->dwZoneCount = zcount;
 
 		} else {
 			*typeid_out = DNSSRV_TYPEID_ZONE_LIST;
 			rout->ZoneList = talloc_zero(mem_ctx, struct DNS_RPC_ZONE_LIST_DOTNET);
 
-			if (!list_zones) {
+			if (zcount == 0) {
 				rout->ZoneList->dwRpcStructureVersion = 1;
 				rout->ZoneList->dwZoneCount = 0;
 				rout->ZoneList->ZoneArray = NULL;
@@ -1165,25 +1233,27 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 				return WERR_OK;
 			}
 
-			rout->ZoneList->ZoneArray = talloc_zero_array(mem_ctx, struct DNS_RPC_ZONE_DOTNET *, dsstate->zones_count);
+			rout->ZoneList->ZoneArray = talloc_zero_array(mem_ctx, struct DNS_RPC_ZONE_DOTNET *, zcount);
 			if (rout->ZoneList->ZoneArray == NULL) {
+				talloc_free(zlist);
 				return WERR_NOMEM;
 			}
 
-			for (z = dsstate->zones, i=0; z; z = z->next, i++) {
+			for (i=0; i<zcount; i++) {
 				rout->ZoneList->ZoneArray[i] = talloc_zero(mem_ctx, struct DNS_RPC_ZONE_DOTNET);
 
 				rout->ZoneList->ZoneArray[i]->dwRpcStructureVersion = 1;
-				rout->ZoneList->ZoneArray[i]->pszZoneName = talloc_strdup(mem_ctx, z->name);
-				rout->ZoneList->ZoneArray[i]->Flags = z->zoneinfo->Flags;
-				rout->ZoneList->ZoneArray[i]->ZoneType = z->zoneinfo->dwZoneType;
-				rout->ZoneList->ZoneArray[i]->Version = z->zoneinfo->Version;
-				rout->ZoneList->ZoneArray[i]->dwDpFlags = z->zoneinfo->dwDpFlags;
-				rout->ZoneList->ZoneArray[i]->pszDpFqdn = talloc_strdup(mem_ctx, z->zoneinfo->pszDpFqdn);
+				rout->ZoneList->ZoneArray[i]->pszZoneName = talloc_strdup(mem_ctx, zlist[i]->name);
+				rout->ZoneList->ZoneArray[i]->Flags = zlist[i]->zoneinfo->Flags;
+				rout->ZoneList->ZoneArray[i]->ZoneType = zlist[i]->zoneinfo->dwZoneType;
+				rout->ZoneList->ZoneArray[i]->Version = zlist[i]->zoneinfo->Version;
+				rout->ZoneList->ZoneArray[i]->dwDpFlags = zlist[i]->zoneinfo->dwDpFlags;
+				rout->ZoneList->ZoneArray[i]->pszDpFqdn = talloc_strdup(mem_ctx, zlist[i]->zoneinfo->pszDpFqdn);
 			}
 			rout->ZoneList->dwRpcStructureVersion = 1;
-			rout->ZoneList->dwZoneCount = dsstate->zones_count;
+			rout->ZoneList->dwZoneCount = zcount;
 		}
+		talloc_free(zlist);
 		return WERR_OK;
 	} else if (strcasecmp(operation, "EnumZones2") == 0) {
 		valid_operation = true;
