@@ -384,8 +384,6 @@
 #define OPLOCK_BREAK_TO_LEVEL_II 1
 
 
-#define CMD_REPLY 0x8000
-
 /* The maximum length of a trust account password.
    Used when we randomly create it, 15 char passwords
    exceed NT4's max password length */
