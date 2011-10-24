@@ -887,7 +887,7 @@ _PUBLIC_ NTSTATUS gensec_init(void)
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 
-	shared_init = load_samba_modules(NULL, "gensec");
+	shared_init = samba_modules_load(NULL, "gensec");
 
 	samba_init_module_fns_run(static_init);
 	samba_init_module_fns_run(shared_init);

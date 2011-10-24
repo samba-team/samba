@@ -409,7 +409,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	process_model_init(cmdline_lp_ctx); 
 
-	shared_init = load_samba_modules(NULL, "service");
+	shared_init = samba_modules_load(NULL, "service");
 
 	samba_init_module_fns_run(static_init);
 	samba_init_module_fns_run(shared_init);

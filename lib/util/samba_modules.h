@@ -51,7 +51,7 @@ bool samba_init_module_fns_run(samba_init_module_fn *fns);
  *
  * Will return an array of function pointers to initialization functions
  */
-samba_init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
+samba_init_module_fn *samba_modules_load(TALLOC_CTX *mem_ctx, const char *subsystem);
 
 int smb_load_modules(const char **modules);
 NTSTATUS smb_probe_module(const char *subsystem, const char *module);

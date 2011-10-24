@@ -49,7 +49,7 @@ _PUBLIC_ int torture_init(void)
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_smbtorture_MODULES_PROTO;
 	samba_init_module_fn static_init[] = { STATIC_smbtorture_MODULES };
-	samba_init_module_fn *shared_init = load_samba_modules(NULL, "smbtorture");
+	samba_init_module_fn *shared_init = samba_modules_load(NULL, "smbtorture");
 
 	samba_init_module_fns_run(static_init);
 	samba_init_module_fns_run(shared_init);
