@@ -448,7 +448,7 @@ _PUBLIC_ const char *gensec_get_target_hostname(struct gensec_security *gensec_s
 }
 
 /**
- * Set (and talloc_reference) local and peer socket addresses onto a socket
+ * Set (and copy) local and peer socket addresses onto a socket
  * context on the GENSEC context.
  *
  * This is so that kerberos can include these addresses in
