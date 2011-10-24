@@ -1191,52 +1191,6 @@ http://msdn.microsoft.com/en-us/library/cc246334(PROT.13).aspx
 #define NO_SUBSTREAMS		0x2
 #define NO_REPARSETAG		0x4
 
-/* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
-
-#define CAP_RAW_MODE         0x0001
-#define CAP_MPX_MODE         0x0002
-#define CAP_UNICODE          0x0004
-#define CAP_LARGE_FILES      0x0008
-#define CAP_NT_SMBS          0x0010
-#define CAP_RPC_REMOTE_APIS  0x0020
-#define CAP_STATUS32         0x0040
-#define CAP_LEVEL_II_OPLOCKS 0x0080
-#define CAP_LOCK_AND_READ    0x0100
-#define CAP_NT_FIND          0x0200
-#define CAP_DFS              0x1000
-#define CAP_W2K_SMBS         0x2000
-#define CAP_LARGE_READX      0x4000
-#define CAP_LARGE_WRITEX     0x8000
-#define CAP_LWIO             0x10000
-#define CAP_UNIX             0x800000 /* Capabilities for UNIX extensions. Created by HP. */
-#define CAP_DYNAMIC_REAUTH    0x20000000
-#define CAP_EXTENDED_SECURITY 0x80000000
-
-#define SMB_CAP_BOTH_MASK ( \
-	CAP_UNICODE | \
-	CAP_NT_SMBS | \
-	CAP_STATUS32 | \
-	CAP_LEVEL_II_OPLOCKS | \
-	CAP_EXTENDED_SECURITY | \
-	0)
-#define SMB_CAP_SERVER_MASK ( \
-	CAP_RAW_MODE | \
-	CAP_MPX_MODE | \
-	CAP_LARGE_FILES | \
-	CAP_RPC_REMOTE_APIS | \
-	CAP_LOCK_AND_READ | \
-	CAP_NT_FIND | \
-	CAP_DFS | \
-	CAP_W2K_SMBS | \
-	CAP_LARGE_READX | \
-	CAP_LARGE_WRITEX | \
-	CAP_LWIO | \
-	CAP_UNIX | \
-	0)
-#define SMB_CAP_CLIENT_MASK ( \
-	CAP_DYNAMIC_REAUTH | \
-	0)
-
 /* printing types */
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG,PRINT_SOFTQ,

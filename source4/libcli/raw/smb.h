@@ -449,24 +449,6 @@
 #define NEGOTIATE_SECURITY_SIGNATURES_ENABLED	0x04
 #define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED	0x08
 
-/* CIFS protocol capabilities */
-#define CAP_RAW_MODE		0x00000001
-#define CAP_MPX_MODE		0x00000002
-#define CAP_UNICODE		0x00000004
-#define CAP_LARGE_FILES		0x00000008
-#define CAP_NT_SMBS		0x00000010
-#define CAP_RPC_REMOTE_APIS	0x00000020
-#define CAP_STATUS32		0x00000040
-#define CAP_LEVEL_II_OPLOCKS	0x00000080
-#define CAP_LOCK_AND_READ	0x00000100
-#define CAP_NT_FIND		0x00000200
-#define CAP_DFS			0x00001000
-#define CAP_W2K_SMBS		0x00002000
-#define CAP_LARGE_READX		0x00004000
-#define CAP_LARGE_WRITEX	0x00008000
-#define CAP_UNIX		0x00800000 /* Capabilities for UNIX extensions. Created by HP. */
-#define CAP_EXTENDED_SECURITY	0x80000000
-
 /*
  * Global value meaning that the smb_uid field should be
  * ingored (in share level security and protocol level == CORE)
