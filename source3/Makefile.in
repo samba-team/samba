@@ -463,7 +463,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  lib/substitute.o lib/substitute_generic.o ../lib/util/substitute.o lib/dbwrap/dbwrap_util.o \
 	  lib/ms_fnmatch.o ../lib/util/ms_fnmatch.o lib/errmap_unix.o ../libcli/util/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o \
-	  libsmb/smb_signing.o \
+	  ../libcli/smb/smb_signing.o \
 	  ../lib/util/charset/iconv.o ../lib/util/charset/weird.o \
 	  ../lib/util/charset/charset_macosxfs.o intl/lang_tdb.o \
 	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \

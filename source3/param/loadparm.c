@@ -64,7 +64,7 @@
 #include "ads.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "intl.h"
-#include "smb_signing.h"
+#include "../libcli/smb/smb_signing.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "smbldap.h"

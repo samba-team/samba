@@ -66,7 +66,6 @@ LIB_SRC = '''
           lib/substitute.c lib/substitute_generic.c
           lib/ms_fnmatch.c
           lib/tallocmsg.c lib/dmallocmsg.c
-          libsmb/smb_signing.c
           intl/lang_tdb.c
           lib/conn_tdb.c lib/gencache.c
           lib/sessionid_tdb.c
