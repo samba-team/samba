@@ -707,18 +707,42 @@ int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m
 		return 1;
 	}
 
+	/* Compare the last components of names.
+	 * If search_name is not NULL, compare the second last components of names */
 	ptr1 = strrchr(name1, '.');
 	if (ptr1 == NULL) {
 		ptr1 = name1;
 	} else {
-		ptr1 = &ptr1[1];
+		if (search_name && strcmp(ptr1+1, search_name) == 0) {
+			ptr1--;
+			while (ptr1 != name1) {
+				ptr1--;
+				if (*ptr1 == '.') {
+					break;
+				}
+			}
+		}
+		if (*ptr1 == '.') {
+			ptr1 = &ptr1[1];
+		}
 	}
 
 	ptr2 = strrchr(name2, '.');
 	if (ptr2 == NULL) {
 		ptr2 = name2;
 	} else {
-		ptr2 = &ptr2[1];
+		if (search_name && strcmp(ptr2+1, search_name) == 0) {
+			ptr2--;
+			while (ptr2 != name2) {
+				ptr2--;
+				if (*ptr2 == '.') {
+					break;
+				}
+			}
+		}
+		if (*ptr2 == '.') {
+			ptr2 = &ptr2[1];
+		}
 	}
 
 	return strcasecmp(ptr1, ptr2);
