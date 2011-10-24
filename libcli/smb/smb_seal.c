@@ -21,6 +21,7 @@
 #include "smb_common.h"
 #include "libcli/auth/krb5_wrap.h"
 #include "auth/gensec/gensec.h"
+#include "libcli/smb/smb_seal.h"
 
 #undef malloc
 
