@@ -728,8 +728,6 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
 {
 	char *ropath;
 
-	DEBUG(DEBUG_ERR,("XXX set db readonly %s\n", ctdb_db->db_name));
-
 	if (ctdb_db->readonly) {
 		return 0;
 	}

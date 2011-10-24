@@ -843,32 +843,6 @@ again:
 			goto again;
 		}
 
-		if (h->header.rsn >= roheader->rsn) {
-			DEBUG(DEBUG_ERR,("READONLY RECORD: Too small RSN, migrate and try again\n"));
-			ctdb_ltdb_unlock(ctdb_db, key);
-
-			ret = ctdb_client_force_migration(ctdb_db, key);
-			if (ret != 0) {
-				DEBUG(DEBUG_DEBUG,("ctdb_fetch_readonly_lock: force_migration failed\n"));
-				talloc_free(h);
-				return NULL;
-			}
-
-			goto again;
-		}
-
-		if (ctdb_ltdb_store(ctdb_db, key, roheader, rodata) != 0) {
-			ctdb_ltdb_unlock(ctdb_db, key);
-
-			ret = ctdb_client_force_migration(ctdb_db, key);
-			if (ret != 0) {
-				DEBUG(DEBUG_DEBUG,("ctdb_fetch_readonly_lock: force_migration failed\n"));
-				talloc_free(h);
-				return NULL;
-			}
-
-			goto again;
-		}
 		return h;
 	}
 

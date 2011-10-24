@@ -142,11 +142,6 @@ This will change to instead do
                     ask ctdb to migrate the record onto the node
                     goto try_again
                 lock record in tdb
-                if record fails RSN test
-                    unlock record
-                    ask ctdb to migrate the record onto the node
-                    goto try_again
-                write the updated record from ctdb to tdb
                 goto finished
 
         unlock record
@@ -167,8 +162,6 @@ This heuristics provide a mechanism where we will not create Read-Only delegatio
 
 This avoids creating and revoking Read-Only delegations when only a single client is repeatedly accessing the same set of records.
 This also aims to limit the size of the tracking tdb.
-
-Note that writing the copy of the Read-Only record to the TDB database is done by the client, not by ctdbd. This is to avoid a probable need for creating a child process for a likely contended record where locking the record would likely block.
 
 
 Server implementation
