@@ -187,7 +187,7 @@ static struct idmap_methods rid_methods = {
 	.sids_to_unixids = idmap_rid_sids_to_unixids,
 };
 
-NTSTATUS samba_init_module(void)
+NTSTATUS samba_module_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "rid", &rid_methods);
 }

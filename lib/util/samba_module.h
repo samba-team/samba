@@ -24,13 +24,13 @@
 /* Module support */
 typedef NTSTATUS (*samba_module_init_fn) (void);
 
-NTSTATUS samba_init_module(void);
+NTSTATUS samba_module_init(void);
 
 /* this needs to be a string which is not in the C library. We
    previously used "init_module", but that meant that modules which
    did not define this function ended up calling the C library
    function init_module() which makes a system call */
-#define SAMBA_INIT_MODULE "samba_init_module"
+#define SAMBA_MODULE_INIT "samba_module_init"
 
 /**
  * Run the specified init functions.

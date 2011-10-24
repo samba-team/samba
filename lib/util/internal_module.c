@@ -57,7 +57,7 @@ samba_module_init_fn load_module(const char *path, bool is_probe, void **handle_
 		return NULL;
 	}
 
-	init_fn = (samba_module_init_fn)dlsym(handle, SAMBA_INIT_MODULE);
+	init_fn = (samba_module_init_fn)dlsym(handle, SAMBA_MODULE_INIT);
 
 	/* we could check dlerror() to determine if it worked, because
            dlsym() can validly return NULL, but what would we do with
@@ -65,7 +65,7 @@ samba_module_init_fn load_module(const char *path, bool is_probe, void **handle_
 
 	if (init_fn == NULL) {
 		DEBUG(0, ("Unable to find %s() in %s: %s\n",
-			  SAMBA_INIT_MODULE, path, dlerror()));
+			  SAMBA_MODULE_INIT, path, dlerror()));
 		DEBUG(1, ("Loading module '%s' failed\n", path));
 		dlclose(handle);
 		return NULL;
