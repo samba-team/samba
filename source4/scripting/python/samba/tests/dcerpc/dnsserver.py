@@ -166,16 +166,14 @@ class DnsserverTests(RpcInterfaceTestCase):
                                         None,
                                         del_rec_buf)
 
-        try:
-            buflen, result = self.conn.DnssrvEnumRecords2(client_version,
-                                                            0,
-                                                            self.server,
-                                                            self.zone,
-                                                            name,
-                                                            None,
-                                                            record_type,
-                                                            select_flags,
-                                                            None,
-                                                            None)
-        except RuntimeError, e:
-            self.assertEquals("(9714, 'WERR_DNS_ERROR_NAME_DOES_NOT_EXIST')", str(e))
+        self.assertRaises(RuntimeError, self.conn.DnssrvEnumRecords2,
+                                        client_version,
+                                        0,
+                                        self.server,
+                                        self.zone,
+                                        name,
+                                        None,
+                                        record_type,
+                                        select_flags,
+                                        None,
+                                        None)
