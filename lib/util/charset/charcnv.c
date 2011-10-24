@@ -22,7 +22,6 @@
 */
 #include "includes.h"
 #include "system/iconv.h"
-#include "libcli/smb/smb_common.h"
 
 /**
  * @file
