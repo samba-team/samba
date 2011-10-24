@@ -295,7 +295,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	if((!conn->case_sensitive || !(conn->fs_capabilities &
 				       FILE_CASE_SENSITIVE_SEARCH)) &&
-	    stat_cache_lookup(conn, &smb_fname->base_name, &dirpath, &start,
+	    stat_cache_lookup(conn, posix_pathnames, &smb_fname->base_name, &dirpath, &start,
 			      &smb_fname->st)) {
 		goto done;
 	}
