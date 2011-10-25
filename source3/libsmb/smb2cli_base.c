@@ -388,7 +388,8 @@ static void smb2cli_writev_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
 		/* here, we need to notify all pending requests */
-		smb2cli_notify_pending(state->cli, map_nt_error_from_unix(err));
+		NTSTATUS status = map_nt_error_from_unix_common(err);
+		smb2cli_notify_pending(state->cli, status);
 		return;
 	}
 }
@@ -536,7 +537,8 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		 * We need to close the connection and notify
 		 * all pending requests.
 		 */
-		smb2cli_notify_pending(cli, map_nt_error_from_unix(err));
+		status = map_nt_error_from_unix_common(err);
+		smb2cli_notify_pending(cli, status);
 		TALLOC_FREE(frame);
 		return;
 	}
