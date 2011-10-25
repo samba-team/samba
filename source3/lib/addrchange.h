@@ -19,7 +19,7 @@
 #ifndef __ADDRCHANGE_H__
 #define __ADDRCHANGE_H__
 
-#include "lib/talloc/talloc.h"
+#include <talloc.h>
 #include "lib/tevent/tevent.h"
 #include "libcli/util/ntstatus.h"
 #include "lib/replace/replace.h"
