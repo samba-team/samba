@@ -513,12 +513,12 @@ def handle_special_add(samdb, dn, names):
                          "CN=WellKnown Security Principals,"
                          "CN=Configuration,%s" % names.rootdn)
 
-        res = samdb.search(expression="(dn=%s)" % oldDn,
+        res = samdb.search(expression="(distinguishedName=%s)" % oldDn,
                             base=str(names.rootdn),
                             scope=SCOPE_SUBTREE, attrs=["dn"],
                             controls=["search_options:1:2"])
 
-        res2 = samdb.search(expression="(dn=%s)" % dn,
+        res2 = samdb.search(expression="(distinguishedName=%s)" % dn,
                             base=str(names.rootdn),
                             scope=SCOPE_SUBTREE, attrs=["dn"],
                             controls=["search_options:1:2"])
@@ -538,7 +538,7 @@ def handle_special_add(samdb, dn, names):
 
         if len(res) == 0:
             return 2
-        res = samdb.search(expression="(dn=%s)" % dntoremove,
+        res = samdb.search(expression="(distinguishedName=%s)" % dntoremove,
                             base=str(names.rootdn),
                             scope=SCOPE_SUBTREE, attrs=["dn"],
                             controls=["search_options:1:2"])
@@ -604,8 +604,9 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
         return True
 
 
-    reference = ref_samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
-                    scope=SCOPE_SUBTREE, controls=["search_options:1:2"])
+    reference = ref_samdb.search(expression="(distinguishedName=%s)" % (str(dn)),
+                                 base=basedn, scope=SCOPE_SUBTREE,
+                                 controls=["search_options:1:2"])
     empty = Message()
     delta = samdb.msg_diff(empty, reference[0])
     delta.dn
@@ -1029,10 +1030,10 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
     if usns is not None:
             message(CHANGE, "Using replPropertyMetadata for change selection")
     for dn in listPresent:
-        reference = ref_samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
+        reference = ref_samdb.search(expression="(distinguishedName=%s)" % (str(dn)), base=basedn,
                                         scope=SCOPE_SUBTREE,
                                         controls=controls)
-        current = samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
+        current = samdb.search(expression="(distinguishedName=%s)" % (str(dn)), base=basedn,
                                 scope=SCOPE_SUBTREE, controls=controls)
 
         if (
@@ -1043,7 +1044,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
                             "Renaming %s to %s" % (str(current[0].dn),
                                                    str(reference[0].dn)))
             identic_rename(samdb, reference[0].dn)
-            current = samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
+            current = samdb.search(expression="(distinguishedName=%s)" % (str(dn)), base=basedn,
                                     scope=SCOPE_SUBTREE,
                                     controls=controls)
 
@@ -1064,7 +1065,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
 
         if nb_items > 1 and usns is not None:
             # Fetch the replPropertyMetaData
-            res = samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
+            res = samdb.search(expression="(distinguishedName=%s)" % (str(dn)), base=basedn,
                                 scope=SCOPE_SUBTREE, controls=controls,
                                 attrs=["replPropertyMetaData"])
             ctr = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
@@ -1361,7 +1362,7 @@ def rebuild_sd(samdb, names):
             return
 
 def hasATProvision(samdb):
-        entry = samdb.search(expression="dn=@PROVISION", base = "",
+        entry = samdb.search(expression="(distinguishedName=@PROVISION)", base = "",
                                 scope=SCOPE_BASE,
                                 attrs=["dn"])
 
@@ -1372,7 +1373,7 @@ def hasATProvision(samdb):
 
 def removeProvisionUSN(samdb):
         attrs = [samba.provision.LAST_PROVISION_USN_ATTRIBUTE, "dn"]
-        entry = samdb.search(expression="dn=@PROVISION", base = "",
+        entry = samdb.search(expression="(distinguishedName=@PROVISION)", base = "",
                                 scope=SCOPE_BASE,
                                 attrs=attrs)
         empty = Message()

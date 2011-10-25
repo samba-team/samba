@@ -462,7 +462,7 @@ unicodePwd:: %s
 
             if force_change_at_next_login:
                 self.force_password_change_at_next_login(
-                  "(dn=" + str(user_dn) + ")")
+                  "(distinguishedName=" + str(user_dn) + ")")
 
             #  modify the userAccountControl to remove the disabled bit
             self.enable_account(search_filter)
@@ -662,7 +662,7 @@ accountExpires: %u
             for the given attribute. None if the attribute is not replicated
         """
 
-        res = self.search(expression="dn=%s" % dn,
+        res = self.search(expression="distinguishedName=%s" % dn,
                             scope=ldb.SCOPE_SUBTREE,
                             controls=["search_options:1:2"],
                             attrs=["replPropertyMetaData"])
@@ -684,7 +684,7 @@ accountExpires: %u
 
     def set_attribute_replmetadata_version(self, dn, att, value,
             addifnotexist=False):
-        res = self.search(expression="dn=%s" % dn,
+        res = self.search(expression="distinguishedName=%s" % dn,
                             scope=ldb.SCOPE_SUBTREE,
                             controls=["search_options:1:2"],
                             attrs=["replPropertyMetaData"])

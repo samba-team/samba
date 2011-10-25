@@ -466,9 +466,9 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
             listPresent.append(hash_new[k])
 
     for entry in listMissing:
-        reference = newsecrets_ldb.search(expression="dn=%s" % entry,
+        reference = newsecrets_ldb.search(expression="distinguishedName=%s" % entry,
                                             base="", scope=SCOPE_SUBTREE)
-        current = secrets_ldb.search(expression="dn=%s" % entry,
+        current = secrets_ldb.search(expression="distinguishedName=%s" % entry,
                                             base="", scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(empty, reference[0])
         for att in hashAttrNotCopied:
@@ -481,9 +481,9 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         secrets_ldb.add(delta)
 
     for entry in listPresent:
-        reference = newsecrets_ldb.search(expression="dn=%s" % entry,
+        reference = newsecrets_ldb.search(expression="distinguishedName=%s" % entry,
                                             base="", scope=SCOPE_SUBTREE)
-        current = secrets_ldb.search(expression="dn=%s" % entry, base="",
+        current = secrets_ldb.search(expression="distinguishedName=%s" % entry, base="",
                                             scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(current[0], reference[0])
         for att in hashAttrNotCopied:
@@ -497,9 +497,9 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
                 delta.remove(att)
 
     for entry in listPresent:
-        reference = newsecrets_ldb.search(expression="dn=%s" % entry, base="",
+        reference = newsecrets_ldb.search(expression="distinguishedName=%s" % entry, base="",
                                             scope=SCOPE_SUBTREE)
-        current = secrets_ldb.search(expression="dn=%s" % entry, base="",
+        current = secrets_ldb.search(expression="distinguishedName=%s" % entry, base="",
                                             scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(current[0], reference[0])
         for att in hashAttrNotCopied:
@@ -678,7 +678,7 @@ def delta_update_basesamdb(refsampath, sampath, creds, session, lp, message):
     reference = refsam.search(expression="")
 
     for refentry in reference:
-        entry = sam.search(expression="dn=%s" % refentry["dn"],
+        entry = sam.search(expression="distinguishedName=%s" % refentry["dn"],
                             scope=SCOPE_SUBTREE)
         if not len(entry):
             delta = sam.msg_diff(empty, refentry)

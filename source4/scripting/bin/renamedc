@@ -114,7 +114,7 @@ if __name__ == '__main__':
     ldbs.sam.modify(msg)
 
     # Do a self join one more time to resync the secrets file
-    res = ldbs.sam.search(expression=("dn=%s" % newdn),
+    res = ldbs.sam.search(expression=("distinguishedName=%s" % newdn),
             attrs=["msDs-keyVersionNumber", "serverReferenceBL"])
     assert(len(res) == 1)
     kvno = int(str(res[0]["msDs-keyVersionNumber"]))

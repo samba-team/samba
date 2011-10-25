@@ -54,7 +54,7 @@ class IDmapDB(samba.Ldb):
 
         :return xid can that be used for SID/unixid mapping
         """
-        res = self.search(expression="dn=CN=CONFIG", base="", 
+        res = self.search(expression="distinguishedName=CN=CONFIG", base="",
                           scope=ldb.SCOPE_SUBTREE)
         id = res[0].get("xidNumber")
         flag = ldb.FLAG_MOD_REPLACE

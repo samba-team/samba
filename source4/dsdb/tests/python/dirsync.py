@@ -247,14 +247,14 @@ class SimpleDirsyncTests(DirsyncBaseTests):
 
         # We don't return an entry if asked for objectGUID
         res = self.ldb_admin.search(self.base_dn,
-                                    expression="dn=%s" % self.base_dn,
+                                    expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["objectGUID"],
                                     controls=["dirsync:1:0:1"])
         self.assertEquals(len(res.msgs), 0)
 
         # a request on the root of a NC didn't return parentGUID
         res = self.ldb_admin.search(self.base_dn,
-                                    expression="dn=%s" % self.base_dn,
+                                    expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["name"],
                                     controls=["dirsync:1:0:1"])
         self.assertTrue(res.msgs[0].get("objectGUID") != None)
@@ -319,21 +319,21 @@ class SimpleDirsyncTests(DirsyncBaseTests):
     def test_dirsync_with_controls(self):
         """Check that dirsync return correct informations when dealing with the NC"""
         res = self.ldb_admin.search(self.base_dn,
-                                    expression="(dn=%s)" % str(self.base_dn),
+                                    expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["name"],
                                     controls=["dirsync:1:0:10000", "extended_dn:1", "show_deleted:1"])
 
     def test_dirsync_basenc(self):
         """Check that dirsync return correct informations when dealing with the NC"""
         res = self.ldb_admin.search(self.base_dn,
-                                    expression="(dn=%s)" % str(self.base_dn),
+                                    expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["name"],
                                     controls=["dirsync:1:0:10000"])
         self.assertEqual(len(res.msgs), 1)
         self.assertEqual(len(res.msgs[0]), 3)
 
         res = self.ldb_admin.search(self.base_dn,
-                                    expression="(dn=%s)" % str(self.base_dn),
+                                    expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["ntSecurityDescriptor"],
                                     controls=["dirsync:1:0:10000"])
         self.assertEqual(len(res.msgs), 1)

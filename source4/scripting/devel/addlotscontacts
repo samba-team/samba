@@ -63,7 +63,7 @@ if __name__ == '__main__':
                                             paths, smbconf, lp)
 
     contactdn = "OU=Contacts,%s" % str(names.domaindn)
-    res = ldbs.sam.search(expression="(dn=%s)" % contactdn,
+    res = ldbs.sam.search(expression="(distinguishedName=%s)" % contactdn,
                     base=str(names.domaindn),
                     scope=SCOPE_BASE)
 

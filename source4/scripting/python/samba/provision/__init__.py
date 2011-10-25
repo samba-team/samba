@@ -798,7 +798,7 @@ def secretsdb_self_join(secretsdb, domain,
     # but we don't delete the old record that we are about to modify,
     # because that would delete the keytab and previous password.
     res = secretsdb.search(base="cn=Primary Domains", attrs=attrs,
-        expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain)(!(dn=%s)))" % (domain, realm, str(domainsid), str(msg.dn))),
+        expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain)(!(distinguishedName=%s)))" % (domain, realm, str(domainsid), str(msg.dn))),
         scope=ldb.SCOPE_ONELEVEL)
 
     for del_msg in res:

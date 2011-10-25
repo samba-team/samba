@@ -119,7 +119,7 @@ def rebuild_en_dn(credentials,session_info,paths):
                     saveatt.append(str(res[i][att][j]))
                 m[att] = ldb.MessageElement(saveatt, ldb.FLAG_MOD_REPLACE, att)
                 sam_ldb.modify(m)
-                res3 = sam_ldb.search(expression="(&(dn=%s)(%s=*))"%(dn,att),scope=SCOPE_SUBTREE, attrs=[att],controls=["search_options:1:2"])
+                res3 = sam_ldb.search(expression="(&(distinguishedName=%s)(%s=*))"%(dn,att),scope=SCOPE_SUBTREE, attrs=[att],controls=["search_options:1:2"])
                 if( len(res3) == 0  or (len(res3[0][att])!= len(saveatt))):
                     print >>sys.stderr, str(dn) + " has no attr " +att+ " or a wrong value"
                     for satt in saveatt:
