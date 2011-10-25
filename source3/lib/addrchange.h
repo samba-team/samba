@@ -20,7 +20,7 @@
 #define __ADDRCHANGE_H__
 
 #include <talloc.h>
-#include "lib/tevent/tevent.h"
+#include <tevent.h>
 #include "libcli/util/ntstatus.h"
 #include "lib/replace/replace.h"
 #include "lib/replace/system/network.h"
