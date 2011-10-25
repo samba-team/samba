@@ -112,9 +112,12 @@ NTSTATUS dbwrap_fetch_uint32_bystring(struct db_context *db,
 		return status;
 	}
 
-	if ((dbuf.dptr == NULL) || (dbuf.dsize != sizeof(uint32_t))) {
-		TALLOC_FREE(dbuf.dptr);
+	if ((dbuf.dptr == NULL) || (dbuf.dsize == 0)) {
 		return NT_STATUS_NOT_FOUND;
+	}
+	if (dbuf.dsize != sizeof(uint32_t)) {
+		TALLOC_FREE(dbuf.dptr);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	*val = IVAL(dbuf.dptr, 0);
