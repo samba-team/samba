@@ -408,7 +408,8 @@ static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx,
 	struct ldb_result *res;
 	int ret;
 
-	ret = ldb_search(c, mem_ctx, &res, kd->dn, LDB_SCOPE_BASE, attrs, "(dn=*)");
+	ret = ldb_search(c, mem_ctx, &res, kd->dn, LDB_SCOPE_BASE, attrs,
+			 NULL);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("Error getting default value for '%s': %s\n",
@@ -503,7 +504,8 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 	ldb_path = reg_path_to_ldb(mem_ctx, h, name, NULL);
 	W_ERROR_HAVE_NO_MEMORY(ldb_path);
 
-	ret = ldb_search(c, mem_ctx, &res, ldb_path, LDB_SCOPE_BASE, NULL, "(key=*)");
+	ret = ldb_search(c, mem_ctx, &res, ldb_path, LDB_SCOPE_BASE, NULL,
+			 NULL);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(3, ("Error opening key '%s': %s\n",
