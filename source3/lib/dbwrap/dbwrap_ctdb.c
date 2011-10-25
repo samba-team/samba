@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "lib/util/tdb_wrap.h"
 #include "util_tdb.h"
+#include "dbwrap/dbwrap_ctdb.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "lib/param/param.h"
 
@@ -1526,4 +1527,16 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+#else /* CLUSTER_SUPPORT */
+
+struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
+				const char *name,
+				int hash_size, int tdb_flags,
+				int open_flags, mode_t mode)
+{
+	DEBUG(3, ("db_open_ctdb: no cluster support!\n"));
+	return NULL;
+}
+
 #endif

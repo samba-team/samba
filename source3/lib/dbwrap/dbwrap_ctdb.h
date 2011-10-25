@@ -21,8 +21,6 @@
 #ifndef __DBWRAP_CTDB_H__
 #define __DBWRAP_CTDB_H__
 
-#ifdef CLUSTER_SUPPORT
-
 #include <talloc.h>
 
 struct db_context;
@@ -31,6 +29,5 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
 				int hash_size, int tdb_flags,
 				int open_flags, mode_t mode);
-#endif /* CLUSTER_SUPPORT */
 
 #endif /* __DBWRAP_CTDB_H__ */
