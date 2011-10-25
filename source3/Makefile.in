@@ -3183,14 +3183,6 @@ bin/tdbtorture@EXEEXT@: $(BINARY_PREREQS) $(TDBTORTURE_OBJ) $(LIBTALLOC) $(LIBTD
 	@$(CC) -o $@ $(LDFLAGS) $(TDBTORTURE_OBJ) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/t_strcmp@EXEEXT@: $(BINARY_PREREQS) $(LIBTALLOC) bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
-	$(CC) -o $@ $(DYNEXP) $(LIBS) $(LIBTALLOC_LIBS) \
-		torture/t_strcmp.o -L ./bin -lbigballofmud $(LIBWBCLIENT_LIBS)
-
-bin/t_strstr@EXEEXT@: $(BINARY_PREREQS) $(LIBTALLOC) bin/libbigballofmud.@SHLIBEXT@ torture/t_strstr.o
-	$(CC) -o $@ $(DYNEXP) $(LIBS) $(LIBTALLOC_LIBS) \
-		torture/t_strstr.o -L ./bin -lbigballofmud $(LIBWBCLIENT_LIBS)
-
 bin/t_strappend@EXEEXT@: $(BINARY_PREREQS) $(LIBTALLOC) bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
 	$(CC) -o $@ $(DYNEXP) $(LIBS) $(LIBTALLOC_LIBS) \
 		torture/t_strappend.o -L ./bin -lbigballofmud $(LIBWBCLIENT_LIBS)
