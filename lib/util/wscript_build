@@ -23,6 +23,8 @@ bld.SAMBA_LIBRARY('samba-module',
 		  local_include=False,
                   public_headers='samba_module.h',
                   vnum='0.0.1',
+                  abi_directory='ABI',
+                  abi_match='samba_module_*',
                   pc_files='samba-module.pc')
 
 bld.SAMBA_LIBRARY('samba-internal-module',
