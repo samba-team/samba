@@ -2613,7 +2613,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 		/* the +2 is to strip the leading 2 backslashs */
 		fstrcpy(unix_printer, printer + 2);
 
-		chan = talloc_zero(back_channels, struct notify_back_channel);
+		chan = talloc_zero(NULL, struct notify_back_channel);
 		if (!chan) {
 			return false;
 		}
