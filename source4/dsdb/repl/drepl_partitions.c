@@ -41,7 +41,7 @@
 WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 {
 	WERROR status;
-	static const char *attrs[] = { "hasMasterNCs", "hasPartialReplicaNCs", "msDS-HasFullReplicaNCs", NULL };
+	static const char *attrs[] = { "hasMasterNCs", "msDs-hasMasterNCs", "hasPartialReplicaNCs", "msDS-HasFullReplicaNCs", NULL };
 	unsigned int a;
 	int ret;
 	TALLOC_CTX *tmp_ctx;
@@ -75,7 +75,8 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 		}
 		for (i=0; i<el->num_values; i++) {
 			struct ldb_dn *pdn;
-			struct dreplsrv_partition *p;
+			struct dreplsrv_partition *p, *tp;
+			bool found;
 
 			pdn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
 			if (pdn == NULL) {
@@ -98,8 +99,20 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 				p->rodc_replica = true;
 			}
 
-			DLIST_ADD(s->partitions, p);
+			/* Do not add partitions more than once */
+			found = false;
+			for (tp = s->partitions; tp; tp = tp->next) {
+				if (ldb_dn_compare(tp->dn, p->dn) == 0) {
+					found = true;
+					break;
+				}
+			}
+			if (found) {
+				talloc_free(p);
+				continue;
+			}
 
+			DLIST_ADD(s->partitions, p);
 			DEBUG(2, ("dreplsrv_partition[%s] loaded\n", ldb_dn_get_linearized(p->dn)));
 		}
 	}
