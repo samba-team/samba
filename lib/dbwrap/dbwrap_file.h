@@ -24,12 +24,9 @@
 
 struct db_context;
 
-struct messaging_context;
-
 struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
-				struct messaging_context *msg_ctx,
 				const char *name,
-				int hash_size, int tdb_flags,
+				int tdb_flags,
 				int open_flags, mode_t mode);
 
 
