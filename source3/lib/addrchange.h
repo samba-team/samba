@@ -19,11 +19,11 @@
 #ifndef __ADDRCHANGE_H__
 #define __ADDRCHANGE_H__
 
+#include "replace.h"
+#include "system/network.h"
 #include <talloc.h>
 #include <tevent.h>
 #include "libcli/util/ntstatus.h"
-#include "lib/replace/replace.h"
-#include "lib/replace/system/network.h"
 
 struct addrchange_context;
 
