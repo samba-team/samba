@@ -18,7 +18,7 @@ unsigned int g_print_priority;
 unsigned int g_print_size;
 
 
-void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxlen, 
+static void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxlen,
 		char *username, int unmaxlen, char *password, int pwmaxlen)
 {
 
@@ -33,7 +33,7 @@ void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxle
 
 }
 
-void print_list_fn(struct print_job_info *pji)
+static void print_list_fn(struct print_job_info *pji)
 {
 
 	g_print_id = pji->id;

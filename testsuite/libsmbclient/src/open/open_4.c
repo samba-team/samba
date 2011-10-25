@@ -11,7 +11,7 @@ char g_server[MAX_BUFF_SIZE];
 char g_share[MAX_BUFF_SIZE];
 
 
-void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxlen, 
+static void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxlen,
 		char *username, int unmaxlen, char *password, int pwmaxlen)
 {
 

@@ -21,7 +21,7 @@ unsigned int g_print_size;
 int call_back_flag;
 int print_queue_empty;
 
-void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxlen, 
+static void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxlen,
 		char *username, int unmaxlen, char *password, int pwmaxlen)
 {
 
@@ -36,13 +36,13 @@ void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxle
 
 }
 
-void print_list_fn_2(struct print_job_info *pji)
+static void print_list_fn_2(struct print_job_info *pji)
 {
 	print_queue_empty = 0;
 	g_print_id = pji->id;
 }
 
-void print_list_fn(struct print_job_info *pji)
+static void print_list_fn(struct print_job_info *pji)
 {
 
 	call_back_flag = 1;

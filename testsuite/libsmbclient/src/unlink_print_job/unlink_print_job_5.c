@@ -21,7 +21,7 @@ unsigned int print_ids[MAX_BUFF_SIZE];
 unsigned int print_id_count;
 int call_flag;
 
-void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxlen, 
+static void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxlen,
 		char *username, int unmaxlen, char *password, int pwmaxlen)
 {
 
@@ -36,7 +36,7 @@ void auth_fn(const char *server, const char *share, char *workgroup, int wgmaxle
 
 }
 
-void print_list_fn_2(struct print_job_info *pji)
+static void print_list_fn_2(struct print_job_info *pji)
 {
 
 	print_ids[print_id_count] = pji->id;
@@ -47,7 +47,7 @@ void print_list_fn_2(struct print_job_info *pji)
 	
 }
 
-void print_list_fn(struct print_job_info *pji)
+static void print_list_fn(struct print_job_info *pji)
 {
 
 	g_print_id = pji->id;
