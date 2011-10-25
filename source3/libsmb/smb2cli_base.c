@@ -324,7 +324,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	 */
 
 	state = tevent_req_data(reqs[0], struct smb2cli_req_state);
-	_smb_setlen_large(state->nbt, nbt_len);
+	_smb_setlen_tcp(state->nbt, nbt_len);
 	iov[0].iov_base = state->nbt;
 	iov[0].iov_len  = sizeof(state->nbt);
 
@@ -411,7 +411,7 @@ static NTSTATUS smb2cli_inbuf_parse_compound(uint8_t *buf, TALLOC_CTX *mem_ctx,
 	iov[0].iov_base = buf;
 	iov[0].iov_len = 4;
 
-	buflen = smb_len_large(buf) + 4;
+	buflen = smb_len_tcp(buf) + 4;
 	taken = 4;
 
 	while (taken < buflen) {
