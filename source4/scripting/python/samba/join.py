@@ -30,7 +30,6 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, provision_fill, FILL_DRS, FILL_SUBDOMAIN
 from samba.schema import Schema
 from samba.net import Net
-from samba.dcerpc import security
 import logging
 import talloc
 import random
@@ -676,9 +675,28 @@ class dc_join(object):
         else:
             ctx.local_samdb.transaction_commit()
 
+    def send_DsReplicaUpdateRefs(ctx, dn):
+        r = drsuapi.DsReplicaUpdateRefsRequest1()
+        r.naming_context = drsuapi.DsReplicaObjectIdentifier()
+        r.naming_context.dn = str(dn)
+        r.naming_context.guid = misc.GUID("00000000-0000-0000-0000-000000000000")
+        r.naming_context.sid = security.dom_sid("S-0-0")
+        r.dest_dsa_guid = ctx.ntds_guid
+        r.dest_dsa_dns_name = "%s._msdcs.%s" % (str(ctx.ntds_guid), ctx.dnsforest)
+        r.options = drsuapi.DRSUAPI_DRS_ADD_REF | drsuapi.DRSUAPI_DRS_DEL_REF
+        if not ctx.RODC:
+            r.options |= drsuapi.DRSUAPI_DRS_WRIT_REP
+
+        if ctx.drsuapi:
+            ctx.drsuapi.DsReplicaUpdateRefs(ctx.drsuapi_handle, 1, r)
 
     def join_finalise(ctx):
         '''finalise the join, mark us synchronised and setup secrets db'''
+
+        print "Sending DsReplicateUpdateRefs for all the partitions"
+        ctx.send_DsReplicaUpdateRefs(ctx.schema_dn)
+        ctx.send_DsReplicaUpdateRefs(ctx.config_dn)
+        ctx.send_DsReplicaUpdateRefs(ctx.base_dn)
 
         print "Setting isSynchronized and dsServiceName"
         m = ldb.Message()
