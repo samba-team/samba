@@ -373,7 +373,7 @@ static uint8_t *iov_concat(TALLOC_CTX *mem_ctx, const struct iovec *iov,
 }
 
 struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
-				      struct event_context *ev,
+				      struct tevent_context *ev,
 				      struct cli_state *cli,
 				      uint8_t smb_command,
 				      uint8_t additional_flags,
@@ -554,7 +554,7 @@ NTSTATUS cli_smb_req_send(struct tevent_req *req)
 }
 
 struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint8_t smb_command,
 				uint8_t additional_flags,
