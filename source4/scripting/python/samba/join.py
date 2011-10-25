@@ -658,6 +658,16 @@ class dc_join(object):
                     destination_dsa_guid, rodc=ctx.RODC,
                     replica_flags=ctx.replica_flags)
             if not ctx.subdomain:
+                # Replicate first the critical object for the basedn
+                if not ctx.domain_replica_flags & drsuapi.DRSUAPI_DRS_CRITICAL_ONLY:
+                    print "Replicating critical objects from the base DN of the domain"
+                    ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY | drsuapi.DRSUAPI_DRS_GET_ANC
+                    repl.replicate(ctx.base_dn, source_dsa_invocation_id,
+                                destination_dsa_guid, rodc=ctx.RODC,
+                                replica_flags=ctx.domain_replica_flags)
+                    ctx.domain_replica_flags ^= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY | drsuapi.DRSUAPI_DRS_GET_ANC
+                else:
+                    ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_GET_ANC
                 repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                                destination_dsa_guid, rodc=ctx.RODC,
                                replica_flags=ctx.domain_replica_flags)
