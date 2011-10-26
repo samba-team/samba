@@ -1136,16 +1136,6 @@ LIBSMBCLIENT_OBJ1 = $(LIBSMBCLIENT_OBJ0) \
 
 LIBSMBCLIENT_OBJ = $(LIBSMBCLIENT_OBJ1)
 
-# This shared library is intended for linking with unit test programs
-# to test Samba internals.  It's called libbigballofmud.so to
-# discourage casual usage.
-
-LIBBIGBALLOFMUD_MAJOR = 0
-
-LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(PASSDB_OBJ) \
-	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ)
-
 CLIENT_OBJ1 = client/client.o client/clitar.o \
 	      client/dnsbrowse.o \
 	      $(LIBMSRPC_OBJ)
@@ -2704,26 +2694,6 @@ showlibsmbsharemodes:
 	@echo "LIBSMBSHAREMODES                      = $(LIBSMBSHAREMODES)"
 
 showlibs:: showlibsmbsharemodes
-
-#-------------------------------------------------------------------
-#
-# libbigballofmud
-#
-#-------------------------------------------------------------------
-
-# This is probably wrong for anything other than the GNU linker.
-bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
-	@echo Linking shared library $@
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_OBJ) \
-		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) \
-		$(PASSDB_LIBS) $(IDMAP_LIBS) $(KRB5LIBS) $(LDAP_LIBS) -lz \
-		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
-	ln -snf libbigballofmud.so bin/libbigballofmud.so.0
-
-# It would be nice to build a static bigballofmud too, but when I try
-# I get linker errors about dl_open and similar things.  I'm not sure if
-# it can be fixed or if they just can't be called from a static
-# library.
 
 #####################################################################
 #
