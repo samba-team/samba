@@ -88,29 +88,31 @@ static bool parent_override_delete(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
-				const struct smb_filename *smb_fname,
-				uint32_t access_mask,
-				uint32_t *access_granted)
+				struct smb_filename *smb_fname,
+				uint32_t access_mask)
 {
 	/* Check if we have rights to open. */
 	NTSTATUS status;
 	struct security_descriptor *sd = NULL;
 	uint32_t rejected_share_access;
+	uint32_t rejected_mask = 0;
 
 	rejected_share_access = access_mask & ~(conn->share_access);
 
 	if (rejected_share_access) {
-		*access_granted = rejected_share_access;
+		DEBUG(10, ("smbd_check_open_rights: rejected share access 0x%x "
+			"on %s (0x%x)\n",
+			(unsigned int)access_mask,
+			smb_fname_str_dbg(smb_fname),
+			(unsigned int)rejected_share_access ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if ((access_mask & DELETE_ACCESS) && !lp_acl_check_permissions(SNUM(conn))) {
-		*access_granted = access_mask;
-
 		DEBUG(10,("smbd_check_open_rights: not checking ACL "
 			"on DELETE_ACCESS on file %s. Granting 0x%x\n",
 			smb_fname_str_dbg(smb_fname),
-			(unsigned int)*access_granted ));
+			(unsigned int)access_mask ));
 		return NT_STATUS_OK;
 	}
 
@@ -131,13 +133,13 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 				sd,
 				get_current_nttok(conn),
 				access_mask,
-				access_granted);
+				&rejected_mask);
 
 	DEBUG(10,("smbd_check_open_rights: file %s requesting "
 		"0x%x returning 0x%x (%s)\n",
 		smb_fname_str_dbg(smb_fname),
 		(unsigned int)access_mask,
-		(unsigned int)*access_granted,
+		(unsigned int)rejected_mask,
 		nt_errstr(status) ));
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -150,7 +152,53 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 
 	TALLOC_FREE(sd);
 
-	return status;
+	if (NT_STATUS_IS_OK(status) ||
+			!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		return status;
+	}
+
+	/* Here we know status == NT_STATUS_ACCESS_DENIED. */
+	if ((access_mask & FILE_WRITE_ATTRIBUTES) &&
+			(rejected_mask & FILE_WRITE_ATTRIBUTES) &&
+			(lp_map_readonly(SNUM(conn)) ||
+			lp_map_archive(SNUM(conn)) ||
+			lp_map_hidden(SNUM(conn)) ||
+			lp_map_system(SNUM(conn)))) {
+		rejected_mask &= ~FILE_WRITE_ATTRIBUTES;
+
+		DEBUG(10,("smbd_check_open_rights: "
+			"overrode "
+			"FILE_WRITE_ATTRIBUTES "
+			"on file %s\n",
+			smb_fname_str_dbg(smb_fname)));
+	}
+
+	if (parent_override_delete(conn,
+				smb_fname,
+				access_mask,
+				rejected_mask)) {
+		/* Were we trying to do an open
+		 * for delete and didn't get DELETE
+		 * access (only) ? Check if the
+		 * directory allows DELETE_CHILD.
+		 * See here:
+		 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
+		 * for details. */
+
+		rejected_mask &= ~DELETE_ACCESS;
+
+		DEBUG(10,("smbd_check_open_rights: "
+			"overrode "
+			"DELETE_ACCESS on "
+			"file %s\n",
+			smb_fname_str_dbg(smb_fname)));
+	}
+
+	if (rejected_mask != 0) {
+		return NT_STATUS_ACCESS_DENIED;
+	} else {
+		return NT_STATUS_OK;
+	}
 }
 
 static NTSTATUS check_parent_access(struct connection_struct *conn,
@@ -579,8 +627,6 @@ static NTSTATUS open_file(files_struct *fsp,
 		}
 
 	} else {
-		uint32_t access_granted = 0;
-
 		fsp->fh->fd = -1; /* What we used to call a stat open. */
 		if (!file_existed) {
 			/* File must exist for a stat open. */
@@ -589,79 +635,26 @@ static NTSTATUS open_file(files_struct *fsp,
 
 		status = smbd_check_open_rights(conn,
 				smb_fname,
-				access_mask,
-				&access_granted);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			/*
-			 * On NT_STATUS_ACCESS_DENIED, access_granted
-			 * contains the denied bits.
-			 */
+				access_mask);
 
-			if ((access_mask & FILE_WRITE_ATTRIBUTES) &&
-					(access_granted & FILE_WRITE_ATTRIBUTES) &&
-					(lp_map_readonly(SNUM(conn)) ||
-					 lp_map_archive(SNUM(conn)) ||
-					 lp_map_hidden(SNUM(conn)) ||
-					 lp_map_system(SNUM(conn)))) {
-				access_granted &= ~FILE_WRITE_ATTRIBUTES;
-
-				DEBUG(10,("open_file: "
-					  "overrode "
-					  "FILE_WRITE_"
-					  "ATTRIBUTES "
-					  "on file %s\n",
-					  smb_fname_str_dbg(
-						  smb_fname)));
-			}
-
-			if (parent_override_delete(conn,
-						smb_fname,
-						access_mask,
-						access_granted)) {
-				/* Were we trying to do a stat open
-				 * for delete and didn't get DELETE
-				 * access (only) ? Check if the
-				 * directory allows DELETE_CHILD.
-				 * See here:
-				 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
-				 * for details. */
-
-				access_granted &= ~DELETE_ACCESS;
-
-				DEBUG(10,("open_file: "
-					  "overrode "
-					  "DELETE_ACCESS on "
-					  "file %s\n",
-					  smb_fname_str_dbg(
-						  smb_fname)));
-			}
-
-			if (access_granted != 0) {
-				DEBUG(10,("open_file: Access "
-					  "denied (0x%x) on file "
-					  "%s\n",
-					  access_granted,
-					  smb_fname_str_dbg(
-						  smb_fname)));
-				return status;
-			}
-
-		} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
-				    fsp->posix_open &&
-				    S_ISLNK(smb_fname->st.st_ex_mode)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+				fsp->posix_open &&
+				S_ISLNK(smb_fname->st.st_ex_mode)) {
 			/* This is a POSIX stat open for delete
 			 * or rename on a symlink that points
 			 * nowhere. Allow. */
 			DEBUG(10,("open_file: allowing POSIX "
 				  "open on bad symlink %s\n",
-				  smb_fname_str_dbg(
-					  smb_fname)));
-		} else if (!NT_STATUS_IS_OK(status)) {
+				  smb_fname_str_dbg(smb_fname)));
+			status = NT_STATUS_OK;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("open_file: "
-				  "smbd_check_open_rights on file "
-				  "%s returned %s\n",
-				  smb_fname_str_dbg(smb_fname),
-				  nt_errstr(status) ));
+				"smbd_check_open_rights on file "
+				"%s returned %s\n",
+				smb_fname_str_dbg(smb_fname),
+				nt_errstr(status) ));
 			return status;
 		}
 	}
@@ -2797,29 +2790,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if (info == FILE_WAS_OPENED) {
-		uint32_t access_granted = 0;
-		status = smbd_check_open_rights(conn, smb_dname, access_mask,
-						&access_granted);
-
-		/* Were we trying to do a directory open
-		 * for delete and didn't get DELETE
-		 * access (only) ? Check if the
-		 * directory allows DELETE_CHILD.
-		 * See here:
-		 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
-		 * for details. */
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
-				parent_override_delete(conn,
-						smb_dname,
-						access_mask,
-						access_granted)) {
-			DEBUG(10,("open_directory: overrode ACCESS_DENIED "
-				"on directory %s\n",
-				smb_fname_str_dbg(smb_dname)));
-			status = NT_STATUS_OK;
-		}
-
+		status = smbd_check_open_rights(conn, smb_dname, access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("open_directory: smbd_check_open_rights on "
 				"file %s failed with %s\n",
