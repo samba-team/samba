@@ -352,6 +352,9 @@ _PUBLIC_ struct tsocket_address *socket_address_to_tsocket_address(TALLOC_CTX *m
 	struct tsocket_address *r;
 	int ret;
 
+	if (!a) {
+		return NULL;
+	}
 	if (a->sockaddr) {
 		ret = tsocket_address_bsd_from_sockaddr(mem_ctx,
 							a->sockaddr,
