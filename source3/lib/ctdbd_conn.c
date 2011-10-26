@@ -499,7 +499,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 		goto next_pkt;
 	}
 
-	if (hdr->reqid != reqid) {
+	if ((reqid != 0) && (hdr->reqid != reqid)) {
 		/* we got the wrong reply */
 		DEBUG(0,("Discarding mismatched ctdb reqid %u should have "
 			 "been %u\n", hdr->reqid, reqid));
