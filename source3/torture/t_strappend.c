@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	assert(strlen(string) == len);
 
 
-	for (i=0; i<(100000); i++) {
+	for (i=0; i<(10000); i++) {
 		if (i%1000 == 0) {
 			printf("%d %lld\r", i, (long long int)bufsize);
 			fflush(stdout);
