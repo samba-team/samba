@@ -3184,10 +3184,6 @@ bin/tdbtorture@EXEEXT@: $(BINARY_PREREQS) $(TDBTORTURE_OBJ) $(LIBTALLOC) $(LIBTD
 	@$(CC) -o $@ $(LDFLAGS) $(TDBTORTURE_OBJ) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/t_stringoverflow@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
-	$(CC) -o $@ $(DYNEXP) torture/t_stringoverflow.o \
-		-L./bin -lbigballofmud $(LIBWBCLIENT_LIBS)
-
 bin/timelimit@EXEEXT@: script/tests/timelimit.o
 	@echo Linking $@
 	@$(CC) -o $@ $(DYNEXP) script/tests/timelimit.o
