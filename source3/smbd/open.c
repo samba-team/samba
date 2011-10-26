@@ -68,7 +68,7 @@ NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
  Check if we have open rights.
 ****************************************************************************/
 
-NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
+static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint32_t access_mask,
 				uint32_t *access_granted)

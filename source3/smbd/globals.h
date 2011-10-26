@@ -221,10 +221,6 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				    bool file_existed,
 				    uint32_t access_mask,
 				    uint32_t *access_mask_out);
-NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
-				const struct smb_filename *smb_fname,
-				uint32_t access_mask,
-				uint32_t *access_granted);
 
 void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq);
 
