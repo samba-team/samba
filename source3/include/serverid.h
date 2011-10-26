@@ -44,6 +44,11 @@ bool serverid_register_msg_flags(const struct server_id id, bool do_reg,
 bool serverid_exists(const struct server_id *id);
 
 /*
+ * Check existence of a list of server ids
+ */
+bool serverids_exist(const struct server_id *ids, int num_ids, bool *results);
+
+/*
  * Walk the list of server_ids registered
  */
 bool serverid_traverse(int (*fn)(struct db_record *rec,

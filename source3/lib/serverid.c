@@ -273,6 +273,40 @@ bool serverid_exists(const struct server_id *id)
 	return state.exists;
 }
 
+bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
+{
+	struct db_context *db;
+	int i;
+
+	if (!processes_exist(ids, num_ids, results)) {
+		return false;
+	}
+
+	db = serverid_db();
+	if (db == NULL) {
+		return false;
+	}
+
+	for (i=0; i<num_ids; i++) {
+		struct serverid_exists_state state;
+		struct serverid_key key;
+		TDB_DATA tdbkey;
+
+		if (!results[i]) {
+			continue;
+		}
+
+		serverid_fill_key(&ids[i], &key);
+		tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
+
+		state.id = &ids[i];
+		state.exists = false;
+		dbwrap_parse_record(db, tdbkey, server_exists_parse, &state);
+		results[i] = state.exists;
+	}
+	return true;
+}
+
 static bool serverid_rec_parse(const struct db_record *rec,
 			       struct server_id *id, uint32_t *msg_flags)
 {
