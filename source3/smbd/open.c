@@ -613,6 +613,36 @@ static NTSTATUS open_file(files_struct *fsp,
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
+		/* Can we access this file ? */
+		if (!fsp->base_fsp) {
+			/* Only do this check on non-stream open. */
+			if (file_existed) {
+				status = smbd_check_open_rights(conn,
+						smb_fname,
+						access_mask);
+			} else if (local_flags & O_CREAT){
+				status = check_parent_access(conn,
+						smb_fname,
+						SEC_DIR_ADD_FILE,
+						NULL,
+						NULL);
+			} else {
+				/* File didn't exist and no O_CREAT. */
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10,("open_file: "
+					"%s on file "
+					"%s returned %s\n",
+					file_existed ?
+						"smbd_check_open_rights" :
+						"check_parent_access",
+					smb_fname_str_dbg(smb_fname),
+					nt_errstr(status) ));
+				return status;
+			}
+		}
+
 		/* Actually do the open */
 		status = fd_open(conn, fsp, local_flags, unx_mode);
 		if (!NT_STATUS_IS_OK(status)) {
