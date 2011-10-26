@@ -192,6 +192,25 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 }
 
 /****************************************************************************
+ If the requester wanted DELETE_ACCESS and was only rejected because
+ the file ACL didn't include DELETE_ACCESS, see if the parent ACL
+ ovverrides this.
+****************************************************************************/
+
+static bool parent_override_delete(connection_struct *conn,
+					struct smb_filename *smb_fname,
+					uint32_t access_mask,
+					uint32_t rejected_mask)
+{
+	if ((access_mask & DELETE_ACCESS) &&
+		    (rejected_mask == DELETE_ACCESS) &&
+		    can_delete_file_in_directory(conn, smb_fname)) {
+		return true;
+	}
+	return false;
+}
+
+/****************************************************************************
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
@@ -595,10 +614,10 @@ static NTSTATUS open_file(files_struct *fsp,
 						  smb_fname)));
 			}
 
-			if ((access_mask & DELETE_ACCESS) &&
-			    (access_granted & DELETE_ACCESS) &&
-			    can_delete_file_in_directory(conn,
-				smb_fname)) {
+			if (parent_override_delete(conn,
+						smb_fname,
+						access_mask,
+						access_granted)) {
 				/* Were we trying to do a stat open
 				 * for delete and didn't get DELETE
 				 * access (only) ? Check if the
@@ -619,12 +638,14 @@ static NTSTATUS open_file(files_struct *fsp,
 
 			if (access_granted != 0) {
 				DEBUG(10,("open_file: Access "
-					  "denied on file "
+					  "denied (0x%x) on file "
 					  "%s\n",
+					  access_granted,
 					  smb_fname_str_dbg(
 						  smb_fname)));
 				return status;
 			}
+
 		} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
 				    fsp->posix_open &&
 				    S_ISLNK(smb_fname->st.st_ex_mode)) {
@@ -2788,10 +2809,11 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
 		 * for details. */
 
-		if ((NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
-			(access_mask & DELETE_ACCESS) &&
-			(access_granted == DELETE_ACCESS) &&
-			can_delete_file_in_directory(conn, smb_dname))) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+				parent_override_delete(conn,
+						smb_dname,
+						access_mask,
+						access_granted)) {
 			DEBUG(10,("open_directory: overrode ACCESS_DENIED "
 				"on directory %s\n",
 				smb_fname_str_dbg(smb_dname)));
