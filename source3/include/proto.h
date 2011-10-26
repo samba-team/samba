@@ -512,6 +512,8 @@ int interpret_protocol(const char *str,int def);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
 bool process_exists(const struct server_id pid);
+bool processes_exist(const struct server_id *pids, int num_pids,
+		     bool *results);
 const char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
 uid_t nametouid(const char *name);

@@ -657,6 +657,72 @@ bool process_exists(const struct server_id pid)
 #endif
 }
 
+bool processes_exist(const struct server_id *pids, int num_pids,
+		     bool *results)
+{
+	struct server_id *remote_pids = NULL;
+	int *remote_idx = NULL;
+	bool *remote_results = NULL;
+	int i, num_remote_pids;
+	bool result = false;
+
+	remote_pids = talloc_array(talloc_tos(), struct server_id, num_pids);
+	if (remote_pids == NULL) {
+		goto fail;
+	}
+	remote_idx = talloc_array(talloc_tos(), int, num_pids);
+	if (remote_idx == NULL) {
+		goto fail;
+	}
+	remote_results = talloc_array(talloc_tos(), bool, num_pids);
+	if (remote_results == NULL) {
+		goto fail;
+	}
+
+	num_remote_pids = 0;
+
+	for (i=0; i<num_pids; i++) {
+		if (procid_is_me(&pids[i])) {
+			results[i] = true;
+			continue;
+		}
+		if (procid_is_local(&pids[i])) {
+			results[i] = ((kill(pids[i].pid,0) == 0) ||
+				      (errno != ESRCH));
+			continue;
+		}
+
+		remote_pids[num_remote_pids] = pids[i];
+		remote_idx[num_remote_pids] = i;
+		num_remote_pids += 1;
+	}
+
+	if (num_remote_pids != 0) {
+#ifdef CLUSTER_SUPPORT
+		if (!ctdb_processes_exist(messaging_ctdbd_connection(),
+					  remote_pids, num_remote_pids,
+					  remote_results)) {
+			goto fail;
+		}
+#else
+		for (i=0; i<num_remote_pids; i++) {
+			remote_results[i] = false;
+		}
+#endif
+
+		for (i=0; i<num_remote_pids; i++) {
+			results[remote_idx[i]] = remote_results[i];
+		}
+	}
+
+	result = true;
+fail:
+	TALLOC_FREE(remote_results);
+	TALLOC_FREE(remote_idx);
+	TALLOC_FREE(remote_pids);
+	return result;
+}
+
 /*******************************************************************
  Convert a uid into a user name.
 ********************************************************************/
