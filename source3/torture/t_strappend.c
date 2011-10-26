@@ -5,9 +5,9 @@
  */
 
 #include "includes.h"
-#include <assert.h>
+#include "torture/proto.h"
 
-int main(int argc, char *argv[])
+bool run_local_sprintf_append(int dummy)
 {
 	TALLOC_CTX *mem_ctx;
 	char *string = NULL;
@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	mem_ctx = talloc_init("t_strappend");
 	if (mem_ctx == NULL) {
 		fprintf(stderr, "talloc_init failed\n");
-		return 1;
+		return false;
 	}
 
 	sprintf_append(mem_ctx, &string, &len, &bufsize, "");
@@ -36,10 +36,14 @@ int main(int argc, char *argv[])
 			fflush(stdout);
 		}
 		sprintf_append(mem_ctx, &string, &len, &bufsize, "%d\n", i);
-		assert(strlen(string) == len);
+		if (strlen(string) != len) {
+			fprintf(stderr, "sprintf_append failed: strlen(string) %lld != len %lld\n",
+				(long long int)strlen(string), (long long int)len);
+			return false;
+		}
 	}
 
 	talloc_destroy(mem_ctx);
 
-	return 0;
+	return true;
 }

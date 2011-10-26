@@ -1268,7 +1268,8 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/uta
 		torture/test_case_insensitive.o \
 		torture/test_posix_append.o \
 		torture/test_smb2.o \
-		torture/test_authinfo_structs.o
+		torture/test_authinfo_structs.o \
+		torture/t_strappend.o
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) $(TLDAP_OBJ) \
 	$(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -3182,10 +3183,6 @@ bin/tdbtorture@EXEEXT@: $(BINARY_PREREQS) $(TDBTORTURE_OBJ) $(LIBTALLOC) $(LIBTD
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(TDBTORTURE_OBJ) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
-
-bin/t_strappend@EXEEXT@: $(BINARY_PREREQS) $(LIBTALLOC) bin/libbigballofmud.@SHLIBEXT@ torture/t_strappend.o
-	$(CC) -o $@ $(DYNEXP) $(LIBS) $(LIBTALLOC_LIBS) \
-		torture/t_strappend.o -L ./bin -lbigballofmud $(LIBWBCLIENT_LIBS)
 
 bin/t_stringoverflow@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
 	$(CC) -o $@ $(DYNEXP) torture/t_stringoverflow.o \
