@@ -20,6 +20,7 @@ passwordAttribute: initialAuthIncoming
 
 dn: @OPTIONS
 checkBaseOnSearch: TRUE
+disallowDNFilter: TRUE
 
 dn: @SAMBA_DSDB
 backendType: ${BACKEND_TYPE}

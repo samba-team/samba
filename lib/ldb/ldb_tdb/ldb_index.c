@@ -510,6 +510,15 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 			      const struct ldb_message *index_list,
 			      struct dn_list *list)
 {
+	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module),
+						    struct ltdb_private);
+	if (ltdb->disallow_dn_filter &&
+	    (ldb_attr_cmp(tree->u.equality.attr, "dn") == 0)) {
+		/* in AD mode we do not support "(dn=...)" search filters */
+		list->dn = NULL;
+		list->count = 0;
+		return LDB_SUCCESS;
+	}
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
 		list->dn = talloc_array(list, struct ldb_val, 1);
 		if (list->dn == NULL) {

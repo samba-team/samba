@@ -26,6 +26,7 @@ struct ltdb_private {
 	int in_transaction;
 
 	bool check_base;
+	bool disallow_dn_filter;
 	struct ltdb_idxptr *idxptr;
 	bool prepared_commit;
 	int read_lock_count;
@@ -62,6 +63,7 @@ struct ltdb_context {
 /* special attribute types */
 #define LTDB_SEQUENCE_NUMBER "sequenceNumber"
 #define LTDB_CHECK_BASE "checkBaseOnSearch"
+#define LTDB_DISALLOW_DN_FILTER "disallowDNFilter"
 #define LTDB_MOD_TIMESTAMP "whenChanged"
 #define LTDB_OBJECTCLASS "objectClass"
 

@@ -346,11 +346,17 @@ int ltdb_cache_load(struct ldb_module *module)
 		goto failed;
 	}
 	
-	/* set flag for checking base DN on searches */
+	/* set flags if they do exist */
 	if (r == LDB_SUCCESS) {
-		ltdb->check_base = ldb_msg_find_attr_as_bool(options, LTDB_CHECK_BASE, false);
+		ltdb->check_base = ldb_msg_find_attr_as_bool(options,
+							     LTDB_CHECK_BASE,
+							     false);
+		ltdb->disallow_dn_filter = ldb_msg_find_attr_as_bool(options,
+								     LTDB_DISALLOW_DN_FILTER,
+								     false);
 	} else {
 		ltdb->check_base = false;
+		ltdb->disallow_dn_filter = false;
 	}
 
 	talloc_free(ltdb->cache->indexlist);
