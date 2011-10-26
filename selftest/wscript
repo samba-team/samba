@@ -30,9 +30,6 @@ def set_options(opt):
     gr.add_option('--tests',
                   help=("wildcard pattern of tests to run"),
                   action="store", dest='TESTS', default='')
-    gr.add_option('--target',
-                  help=("target of samba3 or samba4"),
-                  action="store", dest='TARGET', default=None)
     gr.add_option('--filtered-subunit',
                   help=("output (xfail) filtered subunit"),
                   action="store_true", dest='FILTERED_SUBUNIT', default=False)
@@ -188,30 +185,20 @@ def cmd_testonly(opt):
     if not os.path.isdir(env.SELFTEST_PREFIX):
         os.makedirs(env.SELFTEST_PREFIX, int('755', 8))
 
-    if Options.options.TARGET:
-        env.SELFTEST_TARGET = Options.options.TARGET
-    else:
-        env.SELFTEST_TARGET = "samba"
+    env.SELFTEST_TARGET = "samba"
 
-    if env.SELFTEST_TARGET == "samba4":
-        env.SELFTEST_DIR = "${srcdir}/source4/selftest"
-    elif env.SELFTEST_TARGET == "samba3":
-        env.SELFTEST_DIR = "${srcdir}/source3/selftest"
+    for f in ["knownfail", "slow", "quick", "skip" ]:
+        combine_files(env.srcdir + "/source4/selftest/" + f,
+                      env.srcdir + "/source3/selftest/" + f,
+                      env.SELFTEST_PREFIX + "/" + f)
 
-    if env.SELFTEST_TARGET == "samba":
-        for f in ["knownfail", "slow", "quick", "skip" ]:
-            combine_files(env.srcdir + "/source4/selftest/" + f,
-                          env.srcdir + "/source3/selftest/" + f,
-                          env.SELFTEST_PREFIX + "/" + f)
+    env.SELFTEST_DIR = env.SELFTEST_PREFIX
 
-        env.SELFTEST_DIR = env.SELFTEST_PREFIX
-        env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
-                         '--testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|"')
-    else:
-        env.TESTLISTS = '--testlist="${SELFTEST_DIR}/tests.py|"'
+    env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
+                     '--testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|"')
 
     # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
-    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${SELFTEST_DIR}/skip ${TESTLISTS} ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=samba --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${SELFTEST_DIR}/skip ${TESTLISTS} ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
 
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'

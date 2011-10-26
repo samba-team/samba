@@ -26,7 +26,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--bindir=DIR] [--exeext=EXT][--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--bindir=DIR] [--exeext=EXT][--target=samba|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -56,7 +56,7 @@ Executable extention
 
 Change directory to run tests in. Default is 'st'.
 
-=item I<--target samba4|samba3|win|kvm>
+=item I<--target samba|samba3|win|kvm>
 
 Specify test target against which to run. Default is 'samba4'.
 
@@ -142,7 +142,7 @@ if ($@) {
 }
 
 my $opt_help = 0;
-my $opt_target = "samba4";
+my $opt_target = "samba";
 my $opt_quick = 0;
 my $opt_socket_wrapper = 0;
 my $opt_socket_wrapper_pcap = undef;
@@ -300,7 +300,7 @@ Usage: $Script [OPTIONS] TESTNAME-REGEX
 
 Generic options:
  --help                     this help page
- --target=samba[34]|win|kvm Samba version to target
+ --target=samba[3]|win|kvm Samba version to target
  --testlist=FILE	    file to read available tests from
 
 Paths:
@@ -490,10 +490,6 @@ if ($opt_target eq "samba") {
 	$testenv_default = "all";
 	require target::Samba;
 	$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
-} elsif ($opt_target eq "samba4") {
-	$testenv_default = "all";
-	require target::Samba4;
-	$target = new Samba4($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
 } elsif ($opt_target eq "samba3") {
 	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
