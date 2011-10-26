@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
 {
 	TALLOC_CTX *mem_ctx;
 	char *string = NULL;
-	int len = 0;
-	int bufsize = 4;
+	ssize_t len = 0;
+	size_t bufsize = 4;
 	int i;
 
 	mem_ctx = talloc_init("t_strappend");
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
 	for (i=0; i<(100000); i++) {
 		if (i%1000 == 0) {
-			printf("%d %d\r", i, bufsize);
+			printf("%d %lld\r", i, (long long int)bufsize);
 			fflush(stdout);
 		}
 		sprintf_append(mem_ctx, &string, &len, &bufsize, "%d\n", i);
