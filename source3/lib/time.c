@@ -217,11 +217,7 @@ time_t make_unix_date2(const void *date_ptr, int zone_offset)
 
 time_t make_unix_date3(const void *date_ptr, int zone_offset)
 {
-	time_t t = (time_t)IVAL(date_ptr,0);
-	if (!null_time(t)) {
-		t += zone_offset;
-	}
-	return(t);
+	return pull_dos_date3(date_ptr, zone_offset);
 }
 
 time_t srv_make_unix_date(const void *date_ptr)
