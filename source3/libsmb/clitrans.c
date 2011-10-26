@@ -754,7 +754,7 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	}
 
 	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix_common(errno);
 		goto fail;
 	}
 
