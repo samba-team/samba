@@ -914,22 +914,17 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
  */
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn, pid_t pid)
 {
-	NTSTATUS status;
-	TDB_DATA data;
-	int32_t cstatus;
+	struct server_id id;
+	bool result;
 
-	data.dptr = (uint8_t*)&pid;
-	data.dsize = sizeof(pid);
+	id.pid = pid;
+	id.vnn = vnn;
 
-	status = ctdbd_control(conn, vnn, CTDB_CONTROL_PROCESS_EXISTS, 0, 0,
-			       data, NULL, NULL, &cstatus);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ " ctdb_control for process_exists "
-			  "failed\n"));
-		return False;
+	if (!ctdb_processes_exist(conn, &id, 1, &result)) {
+		DEBUG(10, ("ctdb_processes_exist failed\n"));
+		return false;
 	}
-
-	return cstatus == 0;
+	return result;
 }
 
 bool ctdb_processes_exist(struct ctdbd_connection *conn,
