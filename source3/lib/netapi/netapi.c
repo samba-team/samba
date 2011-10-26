@@ -262,20 +262,6 @@ NET_API_STATUS libnetapi_set_use_kerberos(struct libnetapi_ctx *ctx)
 /****************************************************************
 ****************************************************************/
 
-NET_API_STATUS libnetapi_set_use_memory_krb5_ccache(struct libnetapi_ctx *ctx)
-{
-	ctx->krb5_cc_env = talloc_strdup(ctx, "MEMORY:libnetapi");
-	if (!ctx->krb5_cc_env) {
-		return W_ERROR_V(WERR_NOMEM);
-	}
-	setenv(KRB5_ENV_CCNAME, ctx->krb5_cc_env, 1);
-	ctx->use_memory_krb5_ccache = 1;
-	return NET_API_STATUS_SUCCESS;
-}
-
-/****************************************************************
-****************************************************************/
-
 NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
 {
 	ctx->use_ccache = true;
