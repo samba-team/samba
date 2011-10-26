@@ -645,6 +645,8 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 	struct locking_data data;
 	int delete_tokens_size;
 	int i;
+	struct server_id *pids;
+	bool *pid_exists;
 
 	if (dbuf.dsize < sizeof(struct locking_data)) {
 		smb_panic("parse_share_modes: buffer too short");
@@ -719,6 +721,24 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 	 * Ensure that each entry has a real process attached.
 	 */
 
+	pids = talloc_array(talloc_tos(), struct server_id,
+			    lck->num_share_modes);
+	if (pids == NULL) {
+		smb_panic("parse_share_modes: talloc_array failed");
+	}
+	pid_exists = talloc_array(talloc_tos(), bool, lck->num_share_modes);
+	if (pid_exists == NULL) {
+		smb_panic("parse_share_modes: talloc_array failed");
+	}
+
+	for (i=0; i<lck->num_share_modes; i++) {
+		pids[i] = lck->share_modes[i].pid;
+	}
+
+	if (!serverids_exist(pids, lck->num_share_modes, pid_exists)) {
+		smb_panic("parse_share_modes: serverids_exist failed");
+	}
+
 	for (i = 0; i < lck->num_share_modes; i++) {
 		struct share_mode_entry *entry_p = &lck->share_modes[i];
 		char *str = NULL;
@@ -727,7 +747,7 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 		}
 		DEBUG(10,("parse_share_modes: %s\n",
 			str ? str : ""));
-		if (!serverid_exists(&entry_p->pid)) {
+		if (!pid_exists[i]) {
 			DEBUG(10,("parse_share_modes: deleted %s\n",
 				str ? str : ""));
 			entry_p->op_type = UNUSED_SHARE_MODE_ENTRY;
@@ -735,6 +755,8 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 		}
 		TALLOC_FREE(str);
 	}
+	TALLOC_FREE(pid_exists);
+	TALLOC_FREE(pids);
 
 	return True;
 }
