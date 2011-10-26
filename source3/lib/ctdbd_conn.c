@@ -62,6 +62,15 @@ struct ctdbd_connection {
 	void *release_ip_priv;
 };
 
+static uint32_t ctdbd_next_reqid(struct ctdbd_connection *conn)
+{
+	conn->reqid += 1;
+	if (conn->reqid == 0) {
+		conn->reqid += 1;
+	}
+	return conn->reqid;
+}
+
 static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 			      uint32_t vnn, uint32 opcode, 
 			      uint64_t srvid, uint32_t flags, TDB_DATA data, 
@@ -833,7 +842,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
 	req.hdr.ctdb_version = CTDB_VERSION;
 	req.hdr.operation    = CTDB_REQ_CONTROL;
-	req.hdr.reqid        = ++conn->reqid;
+	req.hdr.reqid        = ctdbd_next_reqid(conn);
 	req.hdr.destnode     = vnn;
 	req.opcode           = opcode;
 	req.srvid            = srvid;
@@ -1016,7 +1025,7 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
 	req.hdr.ctdb_version = CTDB_VERSION;
 	req.hdr.operation    = CTDB_REQ_CALL;
-	req.hdr.reqid        = ++conn->reqid;
+	req.hdr.reqid        = ctdbd_next_reqid(conn);
 	req.flags            = CTDB_IMMEDIATE_MIGRATION;
 	req.callid           = CTDB_NULL_FUNC;
 	req.db_id            = db_id;
@@ -1078,7 +1087,7 @@ NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
 	req.hdr.ctdb_magic   = CTDB_MAGIC;
 	req.hdr.ctdb_version = CTDB_VERSION;
 	req.hdr.operation    = CTDB_REQ_CALL;
-	req.hdr.reqid        = ++conn->reqid;
+	req.hdr.reqid        = ctdbd_next_reqid(conn);
 	req.flags            = 0;
 	req.callid           = CTDB_FETCH_FUNC;
 	req.db_id            = db_id;
@@ -1225,7 +1234,7 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 
 	t.db_id = db_id;
 	t.srvid = conn->rand_srvid;
-	t.reqid = ++conn->reqid;
+	t.reqid = ctdbd_next_reqid(conn);
 
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
