@@ -198,25 +198,7 @@ void dos_filetime_timespec(struct timespec *tsp)
 
 time_t make_unix_date(const void *date_ptr, int zone_offset)
 {
-	uint32_t dos_date=0;
-	struct tm t;
-	time_t ret;
-
-	dos_date = IVAL(date_ptr,0);
-
-	if (dos_date == 0) {
-		return 0;
-	}
-  
-	interpret_dos_date(dos_date,&t.tm_year,&t.tm_mon,
-			&t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec);
-	t.tm_isdst = -1;
-  
-	ret = timegm(&t);
-
-	ret += zone_offset;
-
-	return(ret);
+	return pull_dos_date(date_ptr, zone_offset);
 }
 
 /*******************************************************************
