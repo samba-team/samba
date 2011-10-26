@@ -490,6 +490,7 @@ static void cli_trans_done(struct tevent_req *subreq)
 		req, struct cli_trans_state);
 	NTSTATUS status;
 	bool sent_all;
+	const uint8_t *inhdr;
 	uint8_t wct;
 	uint16_t *vwv;
 	uint32_t num_bytes;
@@ -521,6 +522,7 @@ static void cli_trans_done(struct tevent_req *subreq)
 	if (NT_STATUS_IS_ERR(status)) {
 		goto fail;
 	}
+	inhdr = inbuf + NBT_HDR_SIZE;
 
 	sent_all = ((state->param_sent == state->num_param)
 		    && (state->data_sent == state->num_data));
@@ -579,7 +581,7 @@ static void cli_trans_done(struct tevent_req *subreq)
 
 	if ((state->rparam.total == state->rparam.received)
 	    && (state->rdata.total == state->rdata.received)) {
-		state->recv_flags2 = SVAL(inbuf, smb_flg2);
+		state->recv_flags2 = SVAL(inhdr, HDR_FLG2);
 		cli_trans_cleanup_primary(state);
 		tevent_req_done(req);
 		return;
