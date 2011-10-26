@@ -140,10 +140,10 @@ static NTSTATUS cli_pull_trans(uint8_t *inbuf,
 	 * length. Likewise for param_ofs/param_disp.
 	 */
 
-	if (trans_oob(smb_len_nbt(inbuf), param_ofs, *pnum_param)
-	    || trans_oob(*ptotal_param, *pparam_disp, *pnum_param)
-	    || trans_oob(smb_len_nbt(inbuf), data_ofs, *pnum_data)
-	    || trans_oob(*ptotal_data, *pdata_disp, *pnum_data)) {
+	if (smb_buffer_oob(smb_len_nbt(inbuf), param_ofs, *pnum_param)
+	    || smb_buffer_oob(*ptotal_param, *pparam_disp, *pnum_param)
+	    || smb_buffer_oob(smb_len_nbt(inbuf), data_ofs, *pnum_data)
+	    || smb_buffer_oob(*ptotal_data, *pdata_disp, *pnum_data)) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
