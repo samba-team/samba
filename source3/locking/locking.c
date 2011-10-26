@@ -723,7 +723,7 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 		struct share_mode_entry *entry_p = &lck->share_modes[i];
 		char *str = NULL;
 		if (DEBUGLEVEL >= 10) {
-			str = share_mode_str(NULL, i, entry_p);
+			str = share_mode_str(talloc_tos(), i, entry_p);
 		}
 		DEBUG(10,("parse_share_modes: %s\n",
 			str ? str : ""));
