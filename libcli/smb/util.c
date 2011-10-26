@@ -163,3 +163,15 @@ mode_t unix_filetype_from_wire(uint32_t wire_type)
 	}
 }
 
+bool smb_buffer_oob(uint32_t bufsize, uint32_t offset, uint32_t length)
+{
+	if ((offset + length < offset) || (offset + length < length)) {
+		/* wrap */
+		return true;
+	}
+	if ((offset > bufsize) || (offset + length > bufsize)) {
+		/* overflow */
+		return true;
+	}
+	return false;
+}
