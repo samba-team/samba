@@ -2016,25 +2016,6 @@ bool procid_is_local(const struct server_id *pid)
 }
 
 /****************************************************************
- Check if offset/length fit into bufsize. Should probably be
- merged with is_offset_safe, but this would require a rewrite
- of lanman.c. Later :-)
-****************************************************************/
-
-bool trans_oob(uint32_t bufsize, uint32_t offset, uint32_t length)
-{
-	if ((offset + length < offset) || (offset + length < length)) {
-		/* wrap */
-		return true;
-	}
-	if ((offset > bufsize) || (offset + length > bufsize)) {
-		/* overflow */
-		return true;
-	}
-	return false;
-}
-
-/****************************************************************
  Check if an offset into a buffer is safe.
  If this returns True it's safe to indirect into the byte at
  pointer ptr+off.

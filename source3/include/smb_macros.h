@@ -301,4 +301,7 @@ extern const char toupper_ascii_fast_table[];
 #define toupper_ascii_fast(c) toupper_ascii_fast_table[(unsigned int)(c)];
 #endif
 
+#define trans_oob(bufsize, offset, length) \
+	smb_buffer_oob(bufsize, offset, length)
+
 #endif /* _SMB_MACROS_H */

@@ -567,7 +567,6 @@ struct server_id interpret_pid(const char *pid_string);
 char *procid_str_static(const struct server_id *pid);
 bool procid_valid(const struct server_id *pid);
 bool procid_is_local(const struct server_id *pid);
-bool trans_oob(uint32_t bufsize, uint32_t offset, uint32_t length);
 bool is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
