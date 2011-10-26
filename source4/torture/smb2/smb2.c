@@ -74,24 +74,29 @@ static bool wrap_simple_2smb2_test(struct torture_context *torture_ctx,
 				   struct torture_test *test)
 {
 	bool (*fn) (struct torture_context *, struct smb2_tree *, struct smb2_tree *);
-	bool ret;
+	bool ret = false;
 
 	struct smb2_tree *tree1;
 	struct smb2_tree *tree2;
 	TALLOC_CTX *mem_ctx = talloc_new(torture_ctx);
 
-	if (!torture_smb2_connection(torture_ctx, &tree1) ||
-	    !torture_smb2_connection(torture_ctx, &tree2)) {
-		return false;
+	if (!torture_smb2_connection(torture_ctx, &tree1)) {
+		goto done;
 	}
 
 	talloc_steal(mem_ctx, tree1);
+
+	if (!torture_smb2_connection(torture_ctx, &tree2)) {
+		goto done;
+	}
+
 	talloc_steal(mem_ctx, tree2);
 
 	fn = test->fn;
 
 	ret = fn(torture_ctx, tree1, tree2);
 
+done:
 	/* the test may already closed some of the connections */
 	talloc_free(mem_ctx);
 
