@@ -29,7 +29,7 @@ struct trans_recvblob {
 
 struct cli_trans_state {
 	struct cli_state *cli;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	uint8_t cmd;
 	uint16_t mid;
 	const char *pipe_name;
@@ -375,7 +375,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 static void cli_trans_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_trans_send(
-	TALLOC_CTX *mem_ctx, struct event_context *ev,
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct cli_state *cli, uint8_t cmd,
 	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
 	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
@@ -723,7 +723,7 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		   uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -735,7 +735,7 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;

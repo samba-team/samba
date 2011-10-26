@@ -822,7 +822,7 @@ size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 /* The following definitions come from libsmb/clitrans.c  */
 
 struct tevent_req *cli_trans_send(
-	TALLOC_CTX *mem_ctx, struct event_context *ev,
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct cli_state *cli, uint8_t cmd,
 	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
 	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
