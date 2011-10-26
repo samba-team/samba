@@ -196,6 +196,12 @@ enum smb_signing_setting {
 /* used to indicate end of chain */
 #define SMB_CHAIN_NONE   0xFF
 
+/* Sercurity mode bits. */
+#define NEGOTIATE_SECURITY_USER_LEVEL		0x01
+#define NEGOTIATE_SECURITY_CHALLENGE_RESPONSE	0x02
+#define NEGOTIATE_SECURITY_SIGNATURES_ENABLED	0x04
+#define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED	0x08
+
 /* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
 
 #define CAP_RAW_MODE		0x00000001

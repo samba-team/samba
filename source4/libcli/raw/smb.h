@@ -337,12 +337,6 @@
 #define BROWSER_ELECTION_VERSION	0x010f
 #define BROWSER_CONSTANT	0xaa55
 
-/* Sercurity mode bits. */
-#define NEGOTIATE_SECURITY_USER_LEVEL		0x01
-#define NEGOTIATE_SECURITY_CHALLENGE_RESPONSE	0x02
-#define NEGOTIATE_SECURITY_SIGNATURES_ENABLED	0x04
-#define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED	0x08
-
 /*
  * Global value meaning that the smb_uid field should be
  * ingored (in share level security and protocol level == CORE)
