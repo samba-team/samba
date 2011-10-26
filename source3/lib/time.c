@@ -207,13 +207,7 @@ time_t make_unix_date(const void *date_ptr, int zone_offset)
 
 time_t make_unix_date2(const void *date_ptr, int zone_offset)
 {
-	uint32_t x,x2;
-
-	x = IVAL(date_ptr,0);
-	x2 = ((x&0xFFFF)<<16) | ((x&0xFFFF0000)>>16);
-	SIVAL(&x,0,x2);
-
-	return(make_unix_date((const void *)&x, zone_offset));
+	return pull_dos_date2(date_ptr, zone_offset);
 }
 
 /*******************************************************************
