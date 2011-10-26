@@ -14,6 +14,8 @@
 .*driver.add_driver_timestamps # we only can store dates, not timestamps
 ^samba3.raw.mux.* #This test is flaky on the async lock time
 ^samba3.smbtorture_s3.*OPLOCK4 # fails sometimes on sn-devel
+^samba3.smbtorture_s3.LOCAL-MEMCACHE #fails
+^samba3.smbtorture_s3.LOCAL-TALLOC-DICT #fails
 ^samba3.posix_s3.nbt.dgram.*netlogon2
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3
 ^samba3.*rap.sam.*.userdelete # Not provided by Samba 3

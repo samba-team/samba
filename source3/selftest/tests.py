@@ -60,12 +60,31 @@ tests=[ "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7",
         "GETADDRINFO", "POSIX", "UID-REGRESSION-TEST", "SHORTNAME-TEST",
         "LOCAL-BASE64", "LOCAL-GENCACHE", "POSIX-APPEND",
         "CASE-INSENSITIVE-CREATE", "SMB2-BASIC", "NTTRANS-FSCTL",
-        "BAD-NBT-SESSION",
-        "LOCAL-string_to_sid", "LOCAL-CONVERT-STRING", "LOCAL-sprintf_append"]
+        "BAD-NBT-SESSION"]
 
 for t in tests:
     plantestsuite("samba3.smbtorture_s3.plain(s3dc).%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "", "-l $LOCAL_PATH"])
     plantestsuite("samba3.smbtorture_s3.crypt(s3dc).%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "-e", "-l $LOCAL_PATH"])
+
+local_tests=[
+	"LOCAL-SUBSTITUTE",
+	"LOCAL-GENCACHE",
+	"LOCAL-TALLOC-DICT",
+	"LOCAL-BASE64",
+	"LOCAL-RBTREE",
+	"LOCAL-MEMCACHE",
+	"LOCAL-STREAM-NAME",
+	"LOCAL-WBCLIENT",
+	"LOCAL-string_to_sid",
+	"LOCAL-binary_to_sid",
+	"LOCAL-DBTRANS",
+	"LOCAL-TEVENT-SELECT",
+	"LOCAL-CONVERT-STRING",
+	"LOCAL-CONV-AUTH-INFO",
+	"LOCAL-sprintf_append"]
+
+for t in local_tests:
+    plantestsuite("samba3.smbtorture_s3.%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "-e"])
 
 tests=["--ping", "--separator",
        "--own-domain",
