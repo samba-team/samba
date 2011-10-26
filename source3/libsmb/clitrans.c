@@ -205,7 +205,7 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 		cmd += 1;
 	}
 
-	param_offset = smb_size - 4;
+	param_offset = MIN_SMB_SIZE;
 
 	switch (cmd) {
 	case SMBtrans:
