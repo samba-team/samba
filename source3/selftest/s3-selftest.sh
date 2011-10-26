@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FILTER_XFAIL="${PYTHON} -u ${SELFTESTDIR}/filter-subunit --expected-failures=${SOURCEDIR}/selftest/knownfail"
+FILTER_XFAIL="${PYTHON} -u ${SELFTESTDIR}/filter-subunit --expected-failures=${SELFTESTDIR}/knownfail"
 if [ "x${SUBUNIT_FORMATTER}" = x"" ]; then
 	SUBUNIT_FORMATTER="${PYTHON} -u ${SELFTESTDIR}/format-subunit --prefix=${SELFTESTPREFIX} --immediate"
 fi
@@ -23,7 +23,7 @@ if [ "x${RUN_FROM_BUILD_FARM}" = "xyes" ]; then
 	                --binary-mapping=smbtorture3:smbtorture,nmblookup3:nmblookup,smbclient3:smbclient,ntlm_auth3:ntlm_auth \
 			--prefix=${SELFTESTPREFIX} --target=samba3 \
 			--testlist="${PYTHON} ${SOURCEDIR}/selftest/tests.py|" \
-			--exclude=${SOURCEDIR}/selftest/skip \
+			--exclude=${SELFTESTDIR}/skip \
 	                --srcdir="${SOURCEDIR}/.." \
 			--socket-wrapper ${TESTS} \
 	&& touch ${SELFTESTPREFIX}/st_done ) | \
@@ -37,7 +37,7 @@ else
 	                --binary-mapping=smbtorture3:smbtorture,nmblookup3:nmblookup,smbclient3:smbclient,ntlm_auth3:ntlm_auth \
 			--prefix=${SELFTESTPREFIX} --target=samba3 \
 			--testlist="${PYTHON} ${SOURCEDIR}/selftest/tests.py|" \
-			--exclude=${SOURCEDIR}/selftest/skip \
+			--exclude=${SELFTESTDIR}/skip \
 	                --srcdir="${SOURCEDIR}/.." \
 			--socket-wrapper ${TESTS} \
 	&& touch ${SELFTESTPREFIX}/st_done ) | \

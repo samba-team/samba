@@ -1,4 +1,4 @@
-# This file contains a list of regular expressions matching testsuites that 
+# This file contains a list of regular expressions matching testsuites that
 # should be skipped during "make test".
 #
 # Possible reasons for adding a testsuite here:
@@ -8,7 +8,7 @@
 # * Testsuite contains "flapping" tests (sometimes success, sometimes failure)
 # * Testsuite hangs indefinitely
 #
-# If a testsuite is partially succeeding, please list the failing bits 
+# If a testsuite is partially succeeding, please list the failing bits
 # in the selftest/knownfail file rather than disabling the testsuite completely.
 # That way those tests that do succeed still get run and we will be notified
 # if a known failing test suddenly starts succeeding.
@@ -18,6 +18,28 @@
 #
 # Please add a comment for each testsuite you disable explaining why
 # it is being skipped.
+^samba3.smbtorture_s3.*.randomipc
+^samba3.smbtorture_s3.*.negnowait
+^samba3.smbtorture_s3.*.nbench
+^samba3.smbtorture_s3.*.errmapextract
+^samba3.smbtorture_s3.*.trans2scan
+^samba3.smbtorture_s3.*.nttransscan
+^samba3.smbtorture_s3.*.deny1
+^samba3.smbtorture_s3.*.deny2
+^samba3.smbtorture_s3.*.openattr
+^samba3.smbtorture_s3.*.casetable
+^samba3.smbtorture_s3.*.eatest
+^samba3.smbtorture_s3.*.mangle
+^samba3.smbtorture_s3.*.utable
+^samba3.smbtorture_s3.*.pipe_number
+^samba3.*base.charset
+^samba3.*raw.acls
+^samba3.*raw.composite
+^samba3.*raw.context
+^samba3.*raw.ioctl
+^samba3.*raw.qfileinfo
+^samba3.*raw.qfsinfo
+^samba3.*raw.sfileinfo.base
 ^samba4.raw.composite
 ^samba4.base.iometer
 ^samba4.base.casetable
