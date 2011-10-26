@@ -600,124 +600,6 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 }
 
 /*********************************************************************
- Check ACL on open. For new files inherit from parent directory.
-*********************************************************************/
-
-static int open_acl_common(vfs_handle_struct *handle,
-			struct smb_filename *smb_fname,
-			files_struct *fsp,
-			int flags,
-			mode_t mode)
-{
-	uint32_t access_granted = 0;
-	struct security_descriptor *pdesc = NULL;
-	bool file_existed = true;
-	char *fname = NULL;
-	NTSTATUS status;
-
-	if (fsp->base_fsp) {
-		/* Stream open. Base filename open already did the ACL check. */
-		DEBUG(10,("open_acl_common: stream open on %s\n",
-			fsp_str_dbg(fsp) ));
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname,
-				       &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto err;
-	}
-
-	status = get_nt_acl_internal(handle,
-				NULL,
-				fname,
-				(SECINFO_OWNER |
-				 SECINFO_GROUP |
-				 SECINFO_DACL),
-				&pdesc);
-        if (NT_STATUS_IS_OK(status)) {
-		/* See if we can access it. */
-		status = smb1_file_se_access_check(handle->conn,
-					pdesc,
-					get_current_nttok(handle->conn),
-					fsp->access_mask,
-					&access_granted);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("open_acl_xattr: %s open "
-				"refused with error %s\n",
-				fsp_str_dbg(fsp),
-				nt_errstr(status) ));
-			goto err;
-		}
-        } else if (NT_STATUS_EQUAL(status,NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		file_existed = false;
-		/*
-		 * If O_CREAT is true then we're trying to create a file.
-		 * Check the parent directory ACL will allow this.
-		 */
-		if (flags & O_CREAT) {
-			struct security_descriptor *parent_desc = NULL;
-			struct security_descriptor **pp_psd = NULL;
-
-			status = check_parent_acl_common(handle, fname,
-					SEC_DIR_ADD_FILE, &parent_desc);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto err;
-			}
-
-			/* Cache the parent security descriptor for
-			 * later use. */
-
-			pp_psd = (struct security_descriptor **)
-				VFS_ADD_FSP_EXTENSION(handle,
-					fsp,
-					struct security_descriptor *,
-					NULL);
-			if (!pp_psd) {
-				status = NT_STATUS_NO_MEMORY;
-				goto err;
-			}
-
-			*pp_psd = parent_desc;
-			status = NT_STATUS_OK;
-		}
-	}
-
-	DEBUG(10,("open_acl_xattr: get_nt_acl_attr_internal for "
-		"%s returned %s\n",
-		fsp_str_dbg(fsp),
-		nt_errstr(status) ));
-
-	fsp->fh->fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	return fsp->fh->fd;
-
-  err:
-
-	errno = map_errno_from_nt_status(status);
-	return -1;
-}
-
-static int mkdir_acl_common(vfs_handle_struct *handle, const char *path, mode_t mode)
-{
-	int ret;
-	NTSTATUS status;
-	SMB_STRUCT_STAT sbuf;
-
-	ret = vfs_stat_smb_fname(handle->conn, path, &sbuf);
-	if (ret == -1 && errno == ENOENT) {
-		/* We're creating a new directory. */
-		status = check_parent_acl_common(handle, path,
-				SEC_DIR_ADD_SUBDIR, NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
-			return -1;
-		}
-	}
-
-	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
-}
-
-/*********************************************************************
  Fetch a security descriptor given an fsp.
 *********************************************************************/
 
@@ -965,7 +847,6 @@ static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
 	files_struct *fsp = NULL;
 	int info;
 	struct security_descriptor *parent_sd = NULL;
-	struct security_descriptor **pp_parent_sd = NULL;
 
 	status = SMB_VFS_NEXT_CREATE_FILE(handle,
 					req,
@@ -1010,18 +891,11 @@ static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	/* See if we have a cached parent sd, if so, use it. */
-	pp_parent_sd = (struct security_descriptor **)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	if (!pp_parent_sd) {
-		/* Must be a directory, fetch again (sigh). */
-		status = get_parent_acl_common(handle,
-				fsp->fsp_name->base_name,
-				&parent_sd);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-	} else {
-		parent_sd = *pp_parent_sd;
+	status = get_parent_acl_common(handle,
+			fsp->fsp_name->base_name,
+			&parent_sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
 	}
 
 	if (!parent_sd) {
@@ -1040,9 +914,7 @@ static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
 
   out:
 
-	if (fsp) {
-		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
-	}
+	TALLOC_FREE(parent_sd);
 
 	if (NT_STATUS_IS_OK(status) && pinfo) {
 		*pinfo = info;
