@@ -950,6 +950,10 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 
 		ZERO_STRUCT(req);
 
+		DEBUG(10, ("Requesting PID %d/%d, reqid=%d\n",
+			   (int)pids[i].vnn, (int)pids[i].pid,
+			   (int)reqids[i]));
+
 		req.hdr.length = offsetof(struct ctdb_req_control, data);
 		req.hdr.length += sizeof(pid_t);
 		req.hdr.ctdb_magic   = CTDB_MAGIC;
@@ -1003,6 +1007,8 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 		}
 
 		reqid = reply->hdr.reqid;
+
+		DEBUG(10, ("Received reqid %d\n", (int)reqid));
 
 		for (i=0; i<num_pids; i++) {
 			if (reqid == reqids[i]) {
