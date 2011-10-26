@@ -1673,6 +1673,9 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 	case LDB_MODIFY:
 		msg = io->ac->req->op.mod.message;
 		break;
+	default:
+		return LDB_ERR_OPERATIONS_ERROR;
+		break;
 	}
 
 	if (io->ac->pwd_last_set_bypass) {
