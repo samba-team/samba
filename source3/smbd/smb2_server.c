@@ -574,7 +574,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		/* setup the SMB2 header */
 		SIVAL(outhdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
 		SSVAL(outhdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
-		SSVAL(outhdr, SMB2_HDR_EPOCH,		0);
+		SSVAL(outhdr, SMB2_HDR_CREDIT_CHARGE,
+		      SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE));
 		SIVAL(outhdr, SMB2_HDR_STATUS,
 		      NT_STATUS_V(NT_STATUS_INTERNAL_ERROR));
 		SSVAL(outhdr, SMB2_HDR_OPCODE,
@@ -590,7 +591,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		      IVAL(inhdr, SMB2_HDR_TID));
 		SBVAL(outhdr, SMB2_HDR_SESSION_ID,
 		      BVAL(inhdr, SMB2_HDR_SESSION_ID));
-		memset(outhdr + SMB2_HDR_SIGNATURE, 0, 16);
+		memcpy(outhdr + SMB2_HDR_SIGNATURE,
+		       inhdr + SMB2_HDR_SIGNATURE, 16);
 
 		/* setup error body header */
 		SSVAL(outbody, 0x00, 0x08 + 1);
