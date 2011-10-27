@@ -1,0 +1,13 @@
+[Unit]
+Description=Samba SMB Daemon
+After=syslog.target network.target
+
+[Service]
+Type=forking
+PIDFile=/run/smbd.pid
+LimitNOFILE=16384
+EnvironmentFile=-/etc/sysconfig/samba
+ExecStart=/usr/sbin/smbd $SMBDOPTIONS
+
+[Install]
+WantedBy=multi-user.target
