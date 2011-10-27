@@ -65,7 +65,7 @@ NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
 }
 
 /****************************************************************************
- If the requester wanted DELETE_ACCESS and was only rejected because
+ If the requester wanted DELETE_ACCESS and was rejected because
  the file ACL didn't include DELETE_ACCESS, see if the parent ACL
  ovverrides this.
 ****************************************************************************/
@@ -76,7 +76,7 @@ static bool parent_override_delete(connection_struct *conn,
 					uint32_t rejected_mask)
 {
 	if ((access_mask & DELETE_ACCESS) &&
-		    (rejected_mask == DELETE_ACCESS) &&
+		    (rejected_mask & DELETE_ACCESS) &&
 		    can_delete_file_in_directory(conn, smb_fname)) {
 		return true;
 	}
