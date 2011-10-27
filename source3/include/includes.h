@@ -645,9 +645,6 @@ void dump_core(void) _NORETURN_;
 void exit_server(const char *const reason) _NORETURN_;
 void exit_server_cleanly(const char *const reason) _NORETURN_;
 
-/* samba3 doesn't use uwrap yet */
-#define uwrap_enabled() 0
-
 #define BASE_RID (0x000003E8L)
 
 #endif /* _INCLUDES_H */
