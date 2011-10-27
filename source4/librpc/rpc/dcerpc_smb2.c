@@ -284,13 +284,17 @@ static NTSTATUS smb2_send_trans_request(struct dcecli_connection *c, DATA_BLOB *
 static void smb2_write_callback(struct smb2_request *req)
 {
 	struct dcecli_connection *c = (struct dcecli_connection *)req->async.private_data;
+	struct smb2_write io;
+	NTSTATUS status;
 
-	if (!NT_STATUS_IS_OK(req->status)) {
-		DEBUG(0,("dcerpc_smb2: write callback error\n"));
-		pipe_dead(c, req->status);
+	ZERO_STRUCT(io);
+
+	status = smb2_write_recv(req, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("dcerpc_smb2: write callback error: %s\n",
+			 nt_errstr(status)));
+		pipe_dead(c, status);
 	}
-
-	smb2_request_destroy(req);
 }
 
 /* 
