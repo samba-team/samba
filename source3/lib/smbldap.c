@@ -26,6 +26,7 @@
 #include "smbldap.h"
 #include "secrets.h"
 #include "../libcli/security/security.h"
+#include <tevent.h>
 
 /* Try not to hit the up or down server forever */
 
@@ -1249,7 +1250,7 @@ done:
 	return rc;
 }
 
-static void smbldap_idle_fn(struct event_context *event_ctx,
+static void smbldap_idle_fn(struct tevent_context *tevent_ctx,
 			    struct timed_event *te,
 			    struct timeval now_abs,
 			    void *private_data);
@@ -1310,9 +1311,9 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 	TALLOC_FREE(ldap_state->idle_event);
 
-	if (ldap_state->event_context != NULL) {
-		ldap_state->idle_event = event_add_timed(
-			ldap_state->event_context, ldap_state,
+	if (ldap_state->tevent_context != NULL) {
+		ldap_state->idle_event = tevent_add_timer(
+			ldap_state->tevent_context, ldap_state,
 			timeval_current_ofs(SMBLDAP_IDLE_TIME, 0),
 			smbldap_idle_fn, ldap_state);
 	}
@@ -1859,7 +1860,7 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state,
 			      filter, search_attr, 0, result);
 }
 
-static void smbldap_idle_fn(struct event_context *event_ctx,
+static void smbldap_idle_fn(struct tevent_context *tevent_ctx,
 			    struct timed_event *te,
 			    struct timeval now_abs,
 			    void *private_data)
@@ -1877,8 +1878,8 @@ static void smbldap_idle_fn(struct event_context *event_ctx,
 		DEBUG(10,("ldap connection not idle...\n"));
 
 		/* this needs to be made monotonic clock aware inside tevent: */
-		state->idle_event = event_add_timed(
-			event_ctx, state,
+		state->idle_event = tevent_add_timer(
+			tevent_ctx, state,
 			timeval_add(&now_abs, SMBLDAP_IDLE_TIME, 0),
 			smbldap_idle_fn,
 			private_data);
@@ -1920,7 +1921,7 @@ static int smbldap_state_destructor(struct smbldap_state *state)
  Intitalise the 'general' ldap structures, on which ldap operations may be conducted
  *********************************************************************/
 
-NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
+NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct tevent_context *tevent_ctx,
 		      const char *location,
 		      struct smbldap_state **smbldap_state)
 {
@@ -1936,7 +1937,7 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
 		(*smbldap_state)->uri = "ldap://localhost";
 	}
 
-	(*smbldap_state)->event_context = event_ctx;
+	(*smbldap_state)->tevent_context = tevent_ctx;
 
 	talloc_set_destructor(*smbldap_state, smbldap_state_destructor);
 	return NT_STATUS_OK;

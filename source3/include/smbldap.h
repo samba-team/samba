@@ -131,7 +131,7 @@ extern ATTRIB_MAP_ENTRY trustpw_attr_list[];
    have to worry about LDAP structure types */
 
 NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
-		      struct event_context *event_ctx,
+		      struct tevent_context *tevent_ctx,
                       const char *location,
                       struct smbldap_state **smbldap_state);
 
@@ -174,7 +174,7 @@ struct smbldap_state {
 	unsigned int num_failures;
 
 	time_t last_use; /* monotonic */
-	struct event_context *event_context;
+	struct tevent_context *tevent_context;
 	struct timed_event *idle_event;
 
 	struct timeval last_rebind; /* monotonic */
@@ -239,7 +239,7 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state,
 			   const char *filter, const char **search_attr,
 			   LDAPMessage ** result);
 void smbldap_free_struct(struct smbldap_state **ldap_state) ;
-NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct event_context *event_ctx,
+NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct tevent_context *tevent_ctx,
 		      const char *location,
 		      struct smbldap_state **smbldap_state);
 bool smbldap_has_control(LDAP *ld, const char *control);
