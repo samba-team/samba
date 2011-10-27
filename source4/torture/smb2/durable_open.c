@@ -164,6 +164,9 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 
 	smb2_util_unlink(tree2, fname);
 done:
+	talloc_free(tree1);
+	talloc_free(tree2);
+
 	return ret;
 }
 
@@ -248,6 +251,9 @@ bool test_durable_open_oplock(struct torture_context *tctx,
  done:
 	smb2_util_close(tree2, h2);
 	smb2_util_unlink(tree2, fname);
+
+	talloc_free(tree1);
+	talloc_free(tree2);
 
 	return ret;
 }
@@ -362,6 +368,9 @@ bool test_durable_open_lease(struct torture_context *tctx,
 	smb2_util_close(tree2, h2);
 	smb2_util_unlink(tree2, fname);
 
+	talloc_free(tree1);
+	talloc_free(tree2);
+
 	return ret;
 }
 
@@ -469,6 +478,7 @@ bool test_durable_open_lock(struct torture_context *tctx,
  done:
 	smb2_util_close(tree, h);
 	smb2_util_unlink(tree, fname);
+	talloc_free(tree);
 
 	return ret;
 }
@@ -579,6 +589,9 @@ bool test_durable_open_open(struct torture_context *tctx,
 	smb2_util_unlink(tree2, fname);
 	smb2_util_close(tree1, h1);
 	smb2_util_unlink(tree1, fname);
+
+	talloc_free(tree1);
+	talloc_free(tree2);
 
 	return ret;
 }
