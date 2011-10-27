@@ -97,7 +97,7 @@ static bool wrap_simple_2smb2_test(struct torture_context *torture_ctx,
 	ret = fn(torture_ctx, tree1, tree2);
 
 done:
-	/* the test may already closed some of the connections */
+	/* the test may already have closed some of the connections */
 	talloc_free(mem_ctx);
 
 	return ret;
