@@ -33,6 +33,8 @@ int uwrap_getgroups(int size, gid_t *list);
 uid_t uwrap_getuid(void);
 gid_t uwrap_getgid(void);
 
+#ifdef UID_WRAPPER_REPLACE
+
 #ifdef seteuid
 #undef seteuid
 #endif
@@ -93,5 +95,6 @@ gid_t uwrap_getgid(void);
 #endif
 #define getgid	uwrap_getgid
 
-#endif
+#endif /* UID_WRAPPER_REPLACE */
+#endif /* uwrap_enabled */
 #endif /* __UID_WRAPPER_H__ */

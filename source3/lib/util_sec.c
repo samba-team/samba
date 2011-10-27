@@ -19,7 +19,7 @@
 
 #ifndef AUTOCONF_TEST
 #include "includes.h"
-#include "lib/uid_wrapper/uid_wrapper.h"
+#include "system/passwd.h" /* uid_wrapper */
 #else
 /* we are running this code in autoconf test mode to see which type of setuid
    function works */

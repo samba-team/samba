@@ -27,21 +27,13 @@
 #include "system/filesys.h"
 #include "system/locale.h"
 #include "system/shmem.h"
+#include "system/passwd.h"
 
 #undef malloc
 #undef strcasecmp
 #undef strncasecmp
 #undef strdup
 #undef realloc
-
-#if defined(UID_WRAPPER)
-#if !defined(UID_WRAPPER_REPLACE) && !defined(UID_WRAPPER_NOT_REPLACE)
-#define UID_WRAPPER_REPLACE
-#include "../uid_wrapper/uid_wrapper.h"
-#endif
-#else
-#define uwrap_enabled() 0
-#endif
 
 /**
  * @file

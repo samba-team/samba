@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 #include "auth/auth.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/xattr.h"
@@ -27,15 +28,6 @@
 #include "param/param.h"
 #include "../lib/util/unix_privs.h"
 #include "lib/util/samba_modules.h"
-
-#if defined(UID_WRAPPER)
-#if !defined(UID_WRAPPER_REPLACE) && !defined(UID_WRAPPER_NOT_REPLACE)
-#define UID_WRAPPER_REPLACE
-#include "../uid_wrapper/uid_wrapper.h"
-#endif
-#else
-#define uwrap_enabled() 0
-#endif
 
 /* the list of currently registered ACL backends */
 static struct pvfs_acl_backend {

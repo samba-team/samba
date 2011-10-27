@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "system/passwd.h" /* uid_wrapper */
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "auth.h"

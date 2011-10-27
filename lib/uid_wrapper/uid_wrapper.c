@@ -19,9 +19,9 @@
 #ifdef _SAMBA_BUILD_
 
 #define UID_WRAPPER_NOT_REPLACE
-#include "../replace/replace.h"
-#include <talloc.h>
+#include "replace.h"
 #include "system/passwd.h"
+#include <talloc.h>
 
 #else /* _SAMBA_BUILD_ */
 

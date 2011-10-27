@@ -28,6 +28,7 @@
  */
 
 #include "includes.h"
+#include "system/passwd.h" /* uid_wrapper */
 #include "rpc_server/srv_access_check.h"
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
