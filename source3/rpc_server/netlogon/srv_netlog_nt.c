@@ -1120,6 +1120,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
+	become_root();
 	status = samr_find_machine_account(mem_ctx,
 					   h,
 					   account_name,
@@ -1127,6 +1128,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 					   NULL,
 					   NULL,
 					   &user_handle);
+	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -1170,12 +1172,14 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 	info->info18 = info18;
 
+	become_root();
 	status = dcerpc_samr_SetUserInfo2(h,
 					  mem_ctx,
 					  &user_handle,
 					  UserInternal1Information,
 					  info,
 					  &result);
+	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
