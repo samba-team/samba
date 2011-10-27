@@ -916,6 +916,7 @@ sub provision($$$$$$$)
 	map readonly = no
 	store dos attributes = yes
 	create mask = 755
+	dos filemode = yes
 	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
 
 	printing = vlp
