@@ -367,9 +367,9 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 	status = smb2_close_recv(req[1], &cl);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	status = smb2_close_recv(req[2], &cl);
-	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
+	CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
 	status = smb2_close_recv(req[3], &cl);
-	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
+	CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
 	status = smb2_close_recv(req[4], &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
