@@ -32,6 +32,7 @@
 #endif
 
 #include "../librpc/gen_ndr/lsa.h"
+#include <tevent.h>
 
 /* group mapping headers */
 
@@ -801,7 +802,7 @@ bool pdb_element_is_set_or_changed(const struct samu *sampass,
 NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init) ;
 struct pdb_init_function_entry *pdb_find_backend_entry(const char *name);
 const struct pdb_init_function_entry *pdb_get_backends(void);
-struct event_context *pdb_get_event_context(void);
+struct tevent_context *pdb_get_tevent_context(void);
 NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected);
 struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx);
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) ;
@@ -872,7 +873,7 @@ bool pdb_sid_to_id(const struct dom_sid *sid, uid_t *uid, gid_t *gid,
 		   enum lsa_SidType *type);
 uint32_t pdb_capabilities(void);
 bool pdb_new_rid(uint32_t *rid);
-bool initialize_password_db(bool reload, struct event_context *event_ctx);
+bool initialize_password_db(bool reload, struct tevent_context *tevent_ctx);
 struct pdb_search *pdb_search_init(TALLOC_CTX *mem_ctx,
 				   enum pdb_search_type type);
 struct pdb_search *pdb_search_users(TALLOC_CTX *mem_ctx, uint32_t acct_flags);

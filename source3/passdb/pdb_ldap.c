@@ -6487,7 +6487,7 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = smbldap_init(*pdb_method, pdb_get_event_context(),
+	nt_status = smbldap_init(*pdb_method, pdb_get_tevent_context(),
 				 location, &ldap_state->smbldap_state);
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {

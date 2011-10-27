@@ -116,11 +116,11 @@ const struct pdb_init_function_entry *pdb_get_backends(void)
  * smb_idle_event_list that used to exist in lib/module.c.  -- VL
  */
 
-static struct event_context *pdb_event_ctx;
+static struct tevent_context *pdb_tevent_ctx;
 
-struct event_context *pdb_get_event_context(void)
+struct tevent_context *pdb_get_tevent_context(void)
 {
-	return pdb_event_ctx;
+	return pdb_tevent_ctx;
 }
 
 /******************************************************************
@@ -1315,9 +1315,9 @@ bool pdb_new_rid(uint32_t *rid)
   If uninitialised, context will auto-init on first use.
  ***************************************************************/
 
-bool initialize_password_db(bool reload, struct event_context *event_ctx)
+bool initialize_password_db(bool reload, struct tevent_context *tevent_ctx)
 {
-	pdb_event_ctx = event_ctx;
+	pdb_tevent_ctx = tevent_ctx;
 	return (pdb_get_methods_reload(reload) != NULL);
 }
 
