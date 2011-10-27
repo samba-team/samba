@@ -1,0 +1,13 @@
+[Unit]
+Description=Samba Winbind Daemon
+Requires=smb.service nmb.service
+After=syslog.target network.target smb.service nmb.service
+
+[Service]
+Type=forking
+PIDFile=/run/winbindd.pid
+EnvironmentFile=-/etc/sysconfig/samba
+ExecStart=/usr/sbin/winbindd "$WINBINDOPTIONS"
+
+[Install]
+WantedBy=multi-user.target
