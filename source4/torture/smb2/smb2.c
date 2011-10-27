@@ -30,17 +30,25 @@ static bool wrap_simple_1smb2_test(struct torture_context *torture_ctx,
 {
 	bool (*fn) (struct torture_context *, struct smb2_tree *);
 	bool ret;
-
 	struct smb2_tree *tree1;
+	TALLOC_CTX *mem_ctx = talloc_new(torture_ctx);
 
 	if (!torture_smb2_connection(torture_ctx, &tree1))
 		return false;
+
+	/*
+	 * This is a trick:
+	 * The test might close the connection. If we steal the tree context
+	 * before that and free the parent instead of tree directly, we avoid
+	 * a double free error.
+	 */
+	talloc_steal(mem_ctx, tree1);
 
 	fn = test->fn;
 
 	ret = fn(torture_ctx, tree1);
 
-	talloc_free(tree1);
+	talloc_free(mem_ctx);
 
 	return ret;
 }
