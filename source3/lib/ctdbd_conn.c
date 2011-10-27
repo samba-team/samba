@@ -380,35 +380,29 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 	struct req_pull_state state;
 	NTSTATUS status;
 
- again:
-
-	status = ctdb_packet_fd_read_sync(conn->pkt);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_BUSY)) {
-		/* EAGAIN */
-		goto again;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
-		/* EAGAIN */
-		goto again;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ctdb_packet_fd_read failed: %s\n", nt_errstr(status)));
-		cluster_fatal("ctdbd died\n");
-	}
-
  next_pkt:
-
 	ZERO_STRUCT(state);
 	state.mem_ctx = mem_ctx;
 
-	if (!ctdb_packet_handler(conn->pkt, ctdb_req_complete, ctdb_req_pull,
-			    &state, &status)) {
+	while (!ctdb_packet_handler(conn->pkt, ctdb_req_complete,
+				    ctdb_req_pull, &state, &status)) {
 		/*
 		 * Not enough data
 		 */
-		DEBUG(10, ("not enough data from ctdb socket, retrying\n"));
-		goto again;
+		status = ctdb_packet_fd_read_sync(conn->pkt);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_BUSY)) {
+			/* EAGAIN */
+			continue;
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			/* EAGAIN */
+			continue;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("packet_fd_read failed: %s\n", nt_errstr(status)));
+			cluster_fatal("ctdbd died\n");
+		}
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -504,7 +498,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 		DEBUG(0,("Discarding mismatched ctdb reqid %u should have "
 			 "been %u\n", hdr->reqid, reqid));
 		TALLOC_FREE(hdr);
-		goto again;
+		goto next_pkt;
 	}
 
 	*((void **)result) = talloc_move(mem_ctx, &hdr);
