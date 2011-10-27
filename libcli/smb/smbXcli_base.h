@@ -154,6 +154,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      uint16_t fixed_len,
 				      const uint8_t *dyn,
 				      uint32_t dyn_len);
+void smb2cli_req_set_notify_async(struct tevent_req *req);
 NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 				     int num_reqs);
 void smb2cli_req_set_credit_charge(struct tevent_req *req, uint16_t charge);
