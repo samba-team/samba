@@ -1466,7 +1466,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		/* We enter this block with user creds */
 		ADS_STRUCT *ads_dns = NULL;
 
-		if ( (ads_dns = ads_init( lp_realm(), NULL, NULL )) != NULL ) {
+		if ( (ads_dns = ads_init( lp_realm(), NULL, r->in.dc_name )) != NULL ) {
 			/* kinit with the machine password */
 
 			use_in_memory_ccache();
