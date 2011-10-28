@@ -741,8 +741,14 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			goto finished_ro;
 		}
 
+		if (c->datalen < sizeof(struct ctdb_ltdb_header)) {
+			DEBUG(DEBUG_ERR,(__location__ " Got FETCH_WITH_HEADER reply with too little data: %d bytes\n", c->datalen));
+			ctdb_ltdb_unlock(ctdb_db, key);
+			goto finished_ro;
+		}
+
+		data.dsize = c->datalen - sizeof(struct ctdb_ltdb_header);
 		data.dptr  = &c->data[sizeof(struct ctdb_ltdb_header)];
-		data.dsize = sizeof(struct ctdb_ltdb_header);
 		ret = ctdb_ltdb_store(ctdb_db, key, header, data);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, ("Failed to store new record in ctdb_reply_call\n"));
