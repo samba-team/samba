@@ -1224,7 +1224,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			result = rpccli_netlogon_sam_network_logon_ex(
 					netlogon_pipe,
 					mem_ctx,
-					0,
+					logon_parameters,
 					server,		/* server name */
 					username,	/* user name */
 					domainname,	/* target domain */
@@ -1238,7 +1238,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			result = rpccli_netlogon_sam_network_logon(
 					netlogon_pipe,
 					mem_ctx,
-					0,
+					logon_parameters,
 					server,		/* server name */
 					username,	/* user name */
 					domainname,	/* target domain */
