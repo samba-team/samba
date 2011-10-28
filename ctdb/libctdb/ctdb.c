@@ -806,6 +806,13 @@ static bool try_readrecordlock(struct ctdb_lock *lock, TDB_DATA *data)
 		return true;
 	}
 
+	/* we dont have the record locally,
+	 * drop to writelock to force a migration
+	 */
+	if (!hdr && lock->readonly) {
+		lock->readonly = false;
+	}
+
 	tdb_chainunlock(lock->ctdb_db->tdb, lock->key);
 	free(hdr);
 	return NULL;
