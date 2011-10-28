@@ -19,44 +19,56 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "popt.h"
-#include "cmdline.h"
-#include "ctdb_private.h"
-
-static struct ctdb_db_context *ctdb_db;
+#include <poll.h>
+#include "ctdb.h"
 
 const char *TESTKEY = "testkey";
 
-
-/*
-	Just try locking/unlocking a single record once
-*/
-static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev)
+static void rorl_cb(struct ctdb_db *ctdb_db,
+		   struct ctdb_lock *lock, TDB_DATA outdata, void *private)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	TDB_DATA key, data;
-	struct ctdb_record_handle *h;
-
-	key.dptr = discard_const(TESTKEY);
-	key.dsize = strlen(TESTKEY);
-
-	printf("Trying to fetch lock the record ...\n");
-
-	h = ctdb_fetch_readonly_lock(ctdb_db, tmp_ctx, key, &data, true);
-	if (h == NULL) {
-		printf("Failed to fetch record '%s' on node %d\n", 
-	       		(const char *)key.dptr, ctdb_get_pnn(ctdb));
-		talloc_free(tmp_ctx);
-		exit(10);
-	}
+	int *finished = private;
 
 	printf("Record fetchlocked.\n");
 	printf("Press enter to release the record ...\n");
 	(void)getchar();
 
-	talloc_free(tmp_ctx);
+	*finished = 1;
+}
+
+/*
+	Just try locking/unlocking a single record once
+*/
+static void fetch_readonly_once(struct ctdb_connection *ctdb, struct ctdb_db *ctdb_db, TDB_DATA key)
+{
+	int finished;
+
+	printf("Trying to fetch lock the record ...\n");
+
+	finished = 0;
+	if (!ctdb_readonlyrecordlock_async(ctdb_db, key,
+				       rorl_cb, &finished)) {
+		printf("Failed to send READONLYRECORDLOCK\n");
+		exit(10);
+	}
+
+	while (!finished) {
+		struct pollfd pfd;
+
+		pfd.fd = ctdb_get_fd(ctdb);
+		pfd.events = ctdb_which_events(ctdb);
+		if (poll(&pfd, 1, -1) < 0) {
+			fprintf(stderr, "Poll failed");
+			exit(10);
+		}
+		if (ctdb_service(ctdb, pfd.revents) < 0) {
+			fprintf(stderr, "Failed to service");
+			exit(10);
+		}
+	}
+
 	printf("Record released.\n");
 }
 
@@ -65,20 +77,20 @@ static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev)
 */
 int main(int argc, const char *argv[])
 {
-	struct ctdb_context *ctdb;
+	struct ctdb_connection *ctdb;
+	struct ctdb_db *ctdb_db;
+
 	TDB_DATA key;
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-		POPT_CTDB_CMDLINE
 		{ "record",      'r', POPT_ARG_STRING, &TESTKEY, 0, "record", "string" },
 		POPT_TABLEEND
 	};
-	int opt, ret;
+	int opt;
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
-	struct event_context *ev;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -98,37 +110,33 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	ev = event_context_init(NULL);
+	ctdb = ctdb_connect("/tmp/ctdb.socket",
+			    ctdb_log_file, stderr);
 
-	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(5, 0));
+	if (!ctdb) {
+		fprintf(stderr, "Connecting to /tmp/ctdb.socket");
+		exit(10);
+	}
 
 	key.dptr  = discard_const(TESTKEY);
 	key.dsize = strlen(TESTKEY);
 
-	ret = ctdb_ctrl_getvnnmap(ctdb, timeval_zero(), CTDB_CURRENT_NODE, ctdb, &ctdb->vnn_map);
-	if (ret != 0) {
-		printf("failed to get vnnmap\n");
-		exit(10);
-	}
-	printf("Record:%s\n", TESTKEY);
-	printf("Lmaster : %d\n", ctdb_lmaster(ctdb, &key)); 
-
 	/* attach to a specific database */
-	ctdb_db = ctdb_attach(ctdb, timeval_current_ofs(5, 0), "test.tdb", false, 0);
+	ctdb_db = ctdb_attachdb(ctdb, "test.tdb", false, 0);
 	if (!ctdb_db) {
-		printf("ctdb_attach failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+		fprintf(stderr, "ctdb_attachdb failed\n");
+		exit(10);
 	}
 
 	printf("Waiting for cluster\n");
 	while (1) {
 		uint32_t recmode=1;
-		ctdb_ctrl_getrecmode(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, &recmode);
+		ctdb_getrecmode(ctdb, CTDB_CURRENT_NODE, &recmode);
 		if (recmode == 0) break;
-		event_loop_once(ev);
+		sleep(1);
 	}
 
-	fetch_lock_once(ctdb, ev);
+	fetch_readonly_once(ctdb, ctdb_db, key);
 
 	return 0;
 }
