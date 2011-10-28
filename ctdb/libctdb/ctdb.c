@@ -950,6 +950,13 @@ ctdb_readonlyrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 bool ctdb_writerecord(struct ctdb_db *ctdb_db,
 		      struct ctdb_lock *lock, TDB_DATA data)
 {
+	if (lock->readonly) {
+		errno = EBADF;
+		DEBUG(ctdb_db->ctdb, LOG_ALERT,
+		      "ctdb_writerecord: Can not write, read-only record.");
+		return false;
+	}
+
 	if (lock->ctdb_db != ctdb_db) {
 		errno = EBADF;
 		DEBUG(ctdb_db->ctdb, LOG_ALERT,
