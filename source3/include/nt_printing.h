@@ -176,5 +176,9 @@ void nt_printer_remove(TALLOC_CTX *mem_ctx,
 			const struct auth_serversupplied_info *server_info,
 			struct messaging_context *msg_ctx,
 			const char *printer);
+void nt_printer_add(TALLOC_CTX *mem_ctx,
+		    const struct auth_serversupplied_info *server_info,
+		    struct messaging_context *msg_ctx,
+		    const char *printer);
 
 #endif /* NT_PRINTING_H_ */
