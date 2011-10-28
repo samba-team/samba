@@ -1003,6 +1003,11 @@ sub provision($$$$$$$)
 	copy = print1
 [lp]
 	copy = print1
+[xcopy_share]
+	path = $shrdir
+	comment = smb username is [%U]
+	create mask = 777
+	force create mode = 777
 [print\$]
 	copy = tmp
 	";

@@ -751,6 +751,13 @@ sub provision($$$$$$$$$)
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 500000
 
+[xcopy_share]
+	path = $ctx->{tmpdir}
+	read only = no
+	posix:sharedelay = 10000
+	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
+
 [test1]
 	path = $ctx->{tmpdir}/test1
 	read only = no

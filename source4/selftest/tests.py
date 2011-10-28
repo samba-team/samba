@@ -340,7 +340,7 @@ for mech in [
     for signing in ["--signing=on", "--signing=required"]:
         signoptions = "%s %s" % (mech, signing)
         name = "smb.signing on with %s" % signoptions
-        plantestsuite_loadlist("samba4.%s" % name, "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$USERNAME%$PASSWORD', 'base.xcopy'])
+        plantestsuite_loadlist("samba4.%s" % name, "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', signoptions, '-U$USERNAME%$PASSWORD', 'base.xcopy'])
 
 for mech in [
     "-k no",
@@ -349,12 +349,12 @@ for mech in [
     "-k yes"]:
     signoptions = "%s --signing=off" % mech
     name = "smb.signing disabled on with %s" % signoptions
-    plantestsuite_loadlist("samba4.%s domain-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
+    plantestsuite_loadlist("samba4.%s domain-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
     if have_ads_support:
-        plantestsuite_loadlist("samba4.%s domain-creds" % name, "s3member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
-        plantestsuite_loadlist("samba4.%s" % name, "plugin_s4_dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$USERNAME%$PASSWORD', 'base.xcopy'])
+        plantestsuite_loadlist("samba4.%s domain-creds" % name, "s3member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
+        plantestsuite_loadlist("samba4.%s" % name, "plugin_s4_dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', signoptions, '-U$USERNAME%$PASSWORD', 'base.xcopy'])
         plantestsuite_loadlist("samba4.%s administrator" % name, "plugin_s4_dc",
-                               [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
+                               [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD', 'base.xcopy'])
 
 for mech in [
     "-k no",
@@ -362,11 +362,11 @@ for mech in [
     "-k no --option=gensec:spengo=no"]:
     signoptions = "%s --signing=off" % mech
     name = "smb.signing on with %s" % signoptions
-    plantestsuite_loadlist("samba4.%s local-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', signoptions, '-U$NETBIOSNAME/$USERNAME%$PASSWORD', 'base.xcopy'])
+    plantestsuite_loadlist("samba4.%s local-creds" % name, "s4member", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', signoptions, '-U$NETBIOSNAME/$USERNAME%$PASSWORD', 'base.xcopy'])
 
-plantestsuite_loadlist("samba4.smb.signing --signing=yes anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=yes', '-U%', 'base.xcopy'])
-plantestsuite_loadlist("samba4.smb.signing --signing=required anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=required', '-U%', 'base.xcopy'])
-plantestsuite_loadlist("samba4.smb.signing --signing=no anon", "s4member",  [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/tmp', '-k', 'no', '--signing=no', '-U%', 'base.xcopy'])
+plantestsuite_loadlist("samba4.smb.signing --signing=yes anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=yes', '-U%', 'base.xcopy'])
+plantestsuite_loadlist("samba4.smb.signing --signing=required anon", "dc", [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=required', '-U%', 'base.xcopy'])
+plantestsuite_loadlist("samba4.smb.signing --signing=no anon", "s4member",  [valgrindify(smb4torture), "$LISTOPT", '//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=no', '-U%', 'base.xcopy'])
 
 
 wb_opts = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=1\"", "--option=\"torture:winbindd_separator=/\"", "--option=\"torture:winbindd_netbios_name=$SERVER\"", "--option=\"torture:winbindd_netbios_domain=$DOMAIN\""]
