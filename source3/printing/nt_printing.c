@@ -1852,7 +1852,7 @@ void nt_printer_remove(TALLOC_CTX *mem_ctx,
 	result = winreg_delete_printer_key_internal(mem_ctx, session_info, msg_ctx,
 					   printer, "");
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("nt_printer_remove: failed to remove rpinter %s",
+		DEBUG(0, ("nt_printer_remove: failed to remove printer %s",
 			  printer));
 	}
 }
