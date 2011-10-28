@@ -1863,7 +1863,22 @@ void nt_printer_remove(TALLOC_CTX *mem_ctx,
 	result = winreg_delete_printer_key_internal(mem_ctx, session_info, msg_ctx,
 					   printer, "");
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("nt_printer_remove: failed to remove rpinter %s",
-			  printer));
+		DEBUG(0, ("nt_printer_remove: failed to remove printer %s: "
+			  "%s\n", printer, win_errstr(result)));
+	}
+}
+
+void nt_printer_add(TALLOC_CTX *mem_ctx,
+		    const struct auth_serversupplied_info *session_info,
+		    struct messaging_context *msg_ctx,
+		    const char *printer)
+{
+	WERROR result;
+
+	result = winreg_create_printer_internal(mem_ctx, session_info, msg_ctx,
+						printer);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("nt_printer_add: failed to add printer %s: %s\n",
+			  printer, win_errstr(result)));
 	}
 }
