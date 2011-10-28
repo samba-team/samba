@@ -8,5 +8,5 @@
 	<para>See the discussion in the section <smbconfoption name="name mangling"/>.</para>
 </description>
 
-<value type="default">no</value>
+<value type="default">auto</value>
 </samba:parameter>
