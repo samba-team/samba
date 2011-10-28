@@ -2211,7 +2211,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	pull->data.data = (uint8_t*)fd_load(regf->fd, &pull->data.length, 0, regf);
 
 	if (pull->data.data == NULL) {
-		DEBUG(0, ("Error reading data\n"));
+		DEBUG(0, ("Error reading data from file: %s\n", location));
 		talloc_free(regf);
 		return WERR_GENERAL_FAILURE;
 	}
@@ -2220,6 +2220,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	W_ERROR_HAVE_NO_MEMORY(regf_hdr);
 
 	if (NT_STATUS_IS_ERR(tdr_pull_regf_hdr(pull, regf_hdr, regf_hdr))) {
+		DEBUG(0, ("Failed to pull regf header from file: %s\n", location));
 		talloc_free(regf);
 		return WERR_GENERAL_FAILURE;
 	}
