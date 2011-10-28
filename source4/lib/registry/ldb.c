@@ -653,7 +653,9 @@ static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 
 		talloc_free(msg);
 
-		if (ret != LDB_SUCCESS) {
+		if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+			return WERR_BADFILE;
+		} else if (ret != LDB_SUCCESS) {
 			DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(kd->ldb)));
 			return WERR_FOOBAR;
 		}
