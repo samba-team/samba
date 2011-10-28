@@ -2,6 +2,7 @@
    core of libctdb
 
    Copyright (C) Rusty Russell 2010
+   Copyright (C) Ronnie Sahlberg 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,6 +36,7 @@
 /* Remove type-safety macros. */
 #undef ctdb_attachdb_send
 #undef ctdb_readrecordlock_async
+#undef ctdb_readonlyrecordlock_async
 #undef ctdb_connect
 
 struct ctdb_lock {
@@ -42,6 +44,9 @@ struct ctdb_lock {
 
 	struct ctdb_db *ctdb_db;
 	TDB_DATA key;
+
+	/* Is this a request for read-only lock ? */
+	bool readonly;
 
 	/* This will always be set by the time user sees this. */
 	unsigned long held_magic;
@@ -784,6 +789,14 @@ static bool try_readrecordlock(struct ctdb_lock *lock, TDB_DATA *data)
 	}
 
 	hdr = ctdb_local_fetch(lock->ctdb_db->tdb, lock->key, data);
+	if (hdr && lock->readonly && (hdr->flags & CTDB_REC_RO_HAVE_READONLY) ) {
+		DEBUG(lock->ctdb_db->ctdb, LOG_DEBUG,
+		      "ctdb_readrecordlock_async: got local lock for ro");
+		lock->held_magic = lock_magic(lock);
+		lock->hdr = hdr;
+		add_lock(lock->ctdb_db->ctdb, lock);
+		return true;
+	}
 	if (hdr && hdr->dmaster == lock->ctdb_db->ctdb->pnn) {
 		DEBUG(lock->ctdb_db->ctdb, LOG_DEBUG,
 		      "ctdb_readrecordlock_async: got local lock");
@@ -812,13 +825,13 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 	struct ctdb_reply_call *reply;
 	TDB_DATA data;
 
-	/* OK, we've received reply to noop migration */
-	reply = unpack_reply_call(req, CTDB_NULL_FUNC);
+	/* OK, we've received reply to fetch-with-header migration */
+	reply = unpack_reply_call(req, CTDB_FETCH_WITH_HEADER_FUNC);
 	if (!reply || reply->status != 0) {
 		if (reply) {
 			DEBUG(ctdb, LOG_ERR,
 			      "ctdb_readrecordlock_async(async):"
-			      " NULL_FUNC returned %i", reply->status);
+			      " FETCH_WITH_HEADER_FUNC returned %i", reply->status);
 		}
 		lock->callback(lock->ctdb_db, NULL, tdb_null, private);
 		ctdb_request_free(req); /* Also frees lock. */
@@ -839,9 +852,10 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 	DLIST_ADD(ctdb->outq, req);
 }
 
-bool
-ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
-			  ctdb_rrl_callback_t callback, void *cbdata)
+static bool
+ctdb_readrecordlock_internal(struct ctdb_db *ctdb_db, TDB_DATA key,
+			     bool readonly,
+			     ctdb_rrl_callback_t callback, void *cbdata)
 {
 	struct ctdb_request *req;
 	struct ctdb_lock *lock;
@@ -866,6 +880,7 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	lock->ctdb_db = ctdb_db;
 	lock->hdr = NULL;
 	lock->held_magic = 0;
+	lock->readonly = readonly;
 
 	/* Fast path. */
 	if (try_readrecordlock(lock, &data)) {
@@ -892,15 +907,37 @@ ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 	io_elem_init_req_header(req->io, CTDB_REQ_CALL, CTDB_CURRENT_NODE,
 				new_reqid(ctdb_db->ctdb));
 
-	req->hdr.call->flags = CTDB_IMMEDIATE_MIGRATION;
+	if (lock->readonly) {
+		req->hdr.call->flags = CTDB_WANT_READONLY;
+	} else {
+		req->hdr.call->flags = CTDB_IMMEDIATE_MIGRATION;
+	}
 	req->hdr.call->db_id = ctdb_db->id;
-	req->hdr.call->callid = CTDB_NULL_FUNC;
+	req->hdr.call->callid = CTDB_FETCH_WITH_HEADER_FUNC;
 	req->hdr.call->hopcount = 0;
 	req->hdr.call->keylen = key.dsize;
 	req->hdr.call->calldatalen = 0;
 	memcpy(req->hdr.call->data, key.dptr, key.dsize);
 	DLIST_ADD(ctdb_db->ctdb->outq, req);
 	return true;
+}
+
+bool
+ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
+			  ctdb_rrl_callback_t callback, void *cbdata)
+{
+	return ctdb_readrecordlock_internal(ctdb_db, key,
+			false,
+			callback, cbdata);
+}
+
+bool
+ctdb_readonlyrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
+			  ctdb_rrl_callback_t callback, void *cbdata)
+{
+	return ctdb_readrecordlock_internal(ctdb_db, key,
+			true,
+			callback, cbdata);
 }
 
 bool ctdb_writerecord(struct ctdb_db *ctdb_db,

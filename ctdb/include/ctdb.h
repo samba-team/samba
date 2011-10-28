@@ -315,6 +315,24 @@ bool ctdb_readrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
 			       ctdb_rrl_callback_t callback, void *cbdata);
 
 /**
+ * ctdb_readonlyrecordlock_async - read and lock a record for read-only access
+ * @ctdb_db: the database handle from ctdb_attachdb/ctdb_attachdb_recv.
+ * @key: the key of the record to lock.
+ * @callback: the callback once the record is locked (typesafe).
+ * @cbdata: the argument to callback()
+ *
+ * This returns true on success.  Commonly, we can obtain the record
+ * immediately and so the callback will be invoked.  Otherwise a request
+ * will be queued to ctdbd for the record.
+ *
+ * If failure is immediate, false is returned.  Otherwise, the callback
+ * may receive a NULL lock arg to indicate asynchronous failure.
+ */
+bool ctdb_readonlyrecordlock_async(struct ctdb_db *ctdb_db, TDB_DATA key,
+			       ctdb_rrl_callback_t callback, void *cbdata);
+
+
+/**
  * ctdb_writerecord - write a locked record in a TDB
  * @ctdb_db: the database handle from ctdb_attachdb/ctdb_attachdb_recv.
  * @lock: the lock from ctdb_readrecordlock/ctdb_readrecordlock_recv
