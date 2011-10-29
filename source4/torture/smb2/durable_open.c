@@ -49,6 +49,116 @@
 		CHECK_VAL((__io)->out.reserved2, 0);			\
 	} while(0)
 
+
+/**
+ * basic durable_open test.
+ * durable state should only be granted when requested
+ * along with a batch oplock or a handle lease.
+ *
+ * This test tests durable open with all possible oplock types.
+ */
+
+struct durable_open_vs_oplock {
+	uint8_t level;
+	bool expected;
+};
+
+#define NUM_OPLOCK_OPEN_TESTS 4
+struct durable_open_vs_oplock durable_open_vs_oplock_table[NUM_OPLOCK_OPEN_TESTS] =
+{
+	{ SMB2_OPLOCK_LEVEL_NONE, false },
+	{ SMB2_OPLOCK_LEVEL_II, false },
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, false },
+	{ SMB2_OPLOCK_LEVEL_BATCH, true },
+};
+
+static bool test_one_durable_open_basic1(struct torture_context *tctx,
+					 struct smb2_tree *tree,
+					 const char *fname,
+					 struct smb2_create io,
+					 struct durable_open_vs_oplock test)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	bool ret = true;
+
+	smb2_util_unlink(tree, fname);
+
+	io.in.fname = fname;
+	io.in.oplock_level = test.level;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, test.expected);
+	CHECK_VAL(io.out.oplock_level, test.level);
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+bool test_durable_open_basic1(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	char fname[256];
+	bool ret = true;
+	int i;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_open_basic1_%s.dat", generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	ZERO_STRUCT(io);
+	io.in.security_flags		= 0x00;
+	io.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.in.create_flags		= 0x00000000;
+	io.in.reserved			= 0x00000000;
+	io.in.desired_access		= SEC_RIGHTS_FILE_ALL;
+	io.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
+	io.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+					  NTCREATEX_SHARE_ACCESS_WRITE |
+					  NTCREATEX_SHARE_ACCESS_DELETE;
+	io.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
+	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io.in.durable_open		= true;
+	io.in.fname			= fname;
+
+	/* test various oplock levels with durable open */
+
+	for (i = 0; i < NUM_OPLOCK_OPEN_TESTS; i++) {
+		ret = test_one_durable_open_basic1(tctx,
+						   tree,
+						   fname,
+						   io,
+						   durable_open_vs_oplock_table[i]);
+		if (ret == false) {
+			goto done;
+		}
+	}
+
+done:
+	smb2_util_unlink(tree, fname);
+	talloc_free(tree);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 /*
    basic testing of SMB2 durable opens
    regarding the position information on the handle
@@ -612,6 +722,7 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	struct torture_suite *suite =
 	    torture_suite_create(talloc_autofree_context(), "durable-open");
 
+	torture_suite_add_1smb2_test(suite, "basic1", test_durable_open_basic1);
 	torture_suite_add_2smb2_test(suite, "file-position",
 	    test_durable_open_file_position);
 	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
