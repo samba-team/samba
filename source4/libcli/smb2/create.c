@@ -274,6 +274,13 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 			io->out.lease_response.lease_flags = IVAL(data, 20);
 			io->out.lease_response.lease_duration = BVAL(data, 24);
 		}
+		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_DHNQ) == 0) {
+			if (io->out.blobs.blobs[i].data.length != 8) {
+				smb2_request_destroy(req);
+				return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			}
+			io->out.durable_open = true;
+		}
 	}
 
 	data_blob_free(&blob);
