@@ -347,7 +347,7 @@ bool test_durable_open_lease(struct torture_context *tctx,
 	CHECK_VAL(io2.out.lease_response.lease_key.data[0], lease2);
 	CHECK_VAL(io2.out.lease_response.lease_key.data[1], ~lease2);
 	CHECK_VAL(io2.out.lease_response.lease_state,
-	    SMB2_LEASE_READ|SMB2_LEASE_HANDLE);
+	    SMB2_LEASE_READ|SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE);
 
 	/* What if tree1 tries to come back and reclaim? */
 	if (!torture_smb2_connection(tctx, &tree1)) {
