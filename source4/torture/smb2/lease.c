@@ -550,7 +550,7 @@ static inline uint32_t oplock(const char *op) {
 		case 'x':
 			return SMB2_OPLOCK_LEVEL_EXCLUSIVE;
 		case 'b':
-			return SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+			return SMB2_OPLOCK_LEVEL_BATCH;
 		default:
 			continue;
 		}
