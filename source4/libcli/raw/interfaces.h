@@ -1741,6 +1741,7 @@ union smb_open {
 			uint32_t maximal_access;
 			uint8_t on_disk_id[32];
 			struct smb2_lease lease_response;
+			bool durable_open;
 
 			/* tagged blobs in the reply */
 			struct smb2_create_blobs blobs;
