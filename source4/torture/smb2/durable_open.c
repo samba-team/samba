@@ -337,6 +337,9 @@ bool test_durable_open_lease(struct torture_context *tctx,
 	 * Windows7 (build 7000) will grant an RH lease immediate (not an RHW?)
 	 * even if the original client is gone. (ZML: This seems like a bug. It
 	 * should give some time for the client to reconnect! And why RH?)
+	 * 
+	 * obnox: Current windows 7 and w2k8r2 grant RHW instead of RH.
+	 * Test is adapted accordingly.
 	 */
 	status = smb2_create(tree2, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
