@@ -245,17 +245,58 @@ done:
 
 struct durable_open_vs_lease {
 	const char *type;
+	const char *share_mode;
 	bool expected;
 };
 
-#define NUM_LEASE_OPEN_TESTS 5
+#define NUM_LEASE_TYPES 5
+#define NUM_LEASE_OPEN_TESTS ( NUM_LEASE_TYPES * NUM_SHARE_MODES )
 struct durable_open_vs_lease durable_open_vs_lease_table[NUM_LEASE_OPEN_TESTS] =
 {
-	{ "", false },
-	{ "R", false },
-	{ "RW", false },
-	{ "RH", true },
-	{ "RHW", true },
+	{ "", "", false },
+	{ "", "R", false },
+	{ "", "W", false },
+	{ "", "D", false },
+	{ "", "RW", false },
+	{ "", "RD", false },
+	{ "", "WD", false },
+	{ "", "RWD", false },
+
+	{ "R", "", false },
+	{ "R", "R", false },
+	{ "R", "W", false },
+	{ "R", "D", false },
+	{ "R", "RW", false },
+	{ "R", "RD", false },
+	{ "R", "DW", false },
+	{ "R", "RWD", false },
+
+	{ "RW", "", false },
+	{ "RW", "R", false },
+	{ "RW", "W", false },
+	{ "RW", "D", false },
+	{ "RW", "RW", false },
+	{ "RW", "RD", false },
+	{ "RW", "WD", false },
+	{ "RW", "RWD", false },
+
+	{ "RH", "", true },
+	{ "RH", "R", true },
+	{ "RH", "W", true },
+	{ "RH", "D", true },
+	{ "RH", "RW", true },
+	{ "RH", "RD", true },
+	{ "RH", "WD", true },
+	{ "RH", "RWD", true },
+
+	{ "RHW", "", true },
+	{ "RHW", "R", true },
+	{ "RHW", "W", true },
+	{ "RHW", "D", true },
+	{ "RHW", "RW", true },
+	{ "RHW", "RD", true },
+	{ "RHW", "WD", true },
+	{ "RHW", "RWD", true },
 };
 
 static bool test_one_durable_open_open2(struct torture_context *tctx,
@@ -275,6 +316,7 @@ static bool test_one_durable_open_open2(struct torture_context *tctx,
 	smb2_util_unlink(tree, fname);
 
 	io.in.fname = fname;
+	io.in.share_access = map_sharemode(test.share_mode);
 	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
 
 	lease = random();
@@ -326,9 +368,6 @@ bool test_durable_open_open2(struct torture_context *tctx,
 	io.in.reserved			= 0x00000000;
 	io.in.desired_access		= SEC_RIGHTS_FILE_ALL;
 	io.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
-	io.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
-					  NTCREATEX_SHARE_ACCESS_WRITE |
-					  NTCREATEX_SHARE_ACCESS_DELETE;
 	io.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
 	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
 					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
