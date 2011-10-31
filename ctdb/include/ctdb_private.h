@@ -967,6 +967,8 @@ int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA da
 int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
 int ctdb_deregister_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data);
 int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
+int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
+			TDB_DATA *outdata);
 
 int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
 int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint32_t srcnode);
