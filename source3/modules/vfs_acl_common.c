@@ -564,41 +564,6 @@ static NTSTATUS get_parent_acl_common(vfs_handle_struct *handle,
 	return status;
 }
 
-static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
-				const char *path,
-				uint32_t access_mask,
-				struct security_descriptor **pp_parent_desc)
-{
-	char *parent_name = NULL;
-	struct security_descriptor *parent_desc = NULL;
-	uint32_t access_granted = 0;
-	NTSTATUS status;
-
-	status = get_parent_acl_common(handle, path, &parent_desc);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (pp_parent_desc) {
-		*pp_parent_desc = parent_desc;
-	}
-	status = smb1_file_se_access_check(handle->conn,
-					parent_desc,
-					get_current_nttok(handle->conn),
-					access_mask,
-					&access_granted);
-	if(!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("check_parent_acl_common: access check "
-			"on directory %s for "
-			"path %s for mask 0x%x returned %s\n",
-			parent_name,
-			path,
-			access_mask,
-			nt_errstr(status) ));
-		return status;
-	}
-	return NT_STATUS_OK;
-}
-
 /*********************************************************************
  Fetch a security descriptor given an fsp.
 *********************************************************************/
@@ -699,19 +664,6 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	store_acl_blob_fsp(handle, fsp, &blob);
 
 	return NT_STATUS_OK;
-}
-
-static SMB_STRUCT_DIR *opendir_acl_common(vfs_handle_struct *handle,
-			const char *fname, const char *mask, uint32 attr)
-{
-	NTSTATUS status = check_parent_acl_common(handle, fname,
-					SEC_DIR_LIST, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return NULL;
-	}
-	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }
 
 static int acl_common_remove_object(vfs_handle_struct *handle,

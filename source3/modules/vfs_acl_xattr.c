@@ -201,7 +201,6 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.connect_fn = connect_acl_xattr,
-	.opendir = opendir_acl_common,
 	.rmdir = rmdir_acl_common,
 	.create_file = create_file_acl_common,
 	.unlink = unlink_acl_common,
