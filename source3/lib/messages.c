@@ -116,7 +116,10 @@ static int traverse_fn(struct db_record *rec, const struct server_id *id,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		
-		/* If the pid was not found delete the entry from connections.tdb */
+		/*
+		 * If the pid was not found delete the entry from
+		 * serverid.tdb
+		 */
 
 		DEBUG(2, ("pid %s doesn't exist\n", procid_str_static(id)));
 
