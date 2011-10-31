@@ -46,6 +46,9 @@ bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn,
 bool ctdb_processes_exist(struct ctdbd_connection *conn,
 			  const struct server_id *pids, int num_pids,
 			  bool *results);
+bool ctdb_serverids_exist(struct ctdbd_connection *conn,
+			  const struct server_id *pids, unsigned num_pids,
+			  bool *results);
 
 char *ctdbd_dbpath(struct ctdbd_connection *conn,
 		   TALLOC_CTX *mem_ctx, uint32_t db_id);
@@ -79,5 +82,6 @@ NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32 opcode,
 			     int *cstatus);
 NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn);
 NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn);
+NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid);
 
 #endif /* _CTDBD_CONN_H */

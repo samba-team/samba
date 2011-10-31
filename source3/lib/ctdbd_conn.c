@@ -107,8 +107,7 @@ static void ctdb_packet_dump(struct ctdb_req_header *hdr)
 /*
  * Register a srvid with ctdbd
  */
-static NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn,
-				    uint64_t srvid)
+NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid)
 {
 
 	int cstatus;
@@ -1029,6 +1028,215 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 	result = true;
 fail:
 	TALLOC_FREE(frame);
+	return result;
+}
+
+struct ctdb_vnn_list {
+	uint32_t vnn;
+	uint32_t reqid;
+	unsigned num_srvids;
+	unsigned num_filled;
+	uint64_t *srvids;
+	unsigned *pid_indexes;
+};
+
+/*
+ * Get a list of all vnns mentioned in a list of
+ * server_ids. vnn_indexes tells where in the vnns array we have to
+ * place the pids.
+ */
+static bool ctdb_collect_vnns(TALLOC_CTX *mem_ctx,
+			      const struct server_id *pids, unsigned num_pids,
+			      struct ctdb_vnn_list **pvnns,
+			      unsigned *pnum_vnns)
+{
+	struct ctdb_vnn_list *vnns = NULL;
+	unsigned *vnn_indexes = NULL;
+	unsigned i, num_vnns = 0;
+
+	vnn_indexes = talloc_array(mem_ctx, unsigned, num_pids);
+	if (vnn_indexes == NULL) {
+		goto fail;
+	}
+
+	for (i=0; i<num_pids; i++) {
+		unsigned j;
+		uint32_t vnn = pids[i].vnn;
+
+		for (j=0; j<num_vnns; j++) {
+			if (vnn == vnns[j].vnn) {
+				break;
+			}
+		}
+		vnn_indexes[i] = j;
+
+		if (j < num_vnns) {
+			/*
+			 * Already in the array
+			 */
+			vnns[j].num_srvids += 1;
+			continue;
+		}
+		vnns = talloc_realloc(mem_ctx, vnns, struct ctdb_vnn_list,
+				      num_vnns+1);
+		if (vnns == NULL) {
+			goto fail;
+		}
+		vnns[num_vnns].vnn = vnn;
+		vnns[num_vnns].num_srvids = 1;
+		vnns[num_vnns].num_filled = 0;
+		num_vnns += 1;
+	}
+	for (i=0; i<num_vnns; i++) {
+		struct ctdb_vnn_list *vnn = &vnns[i];
+
+		vnn->srvids = talloc_array(vnns, uint64_t, vnn->num_srvids);
+		if (vnn->srvids == NULL) {
+			goto fail;
+		}
+		vnn->pid_indexes = talloc_array(vnns, unsigned,
+						vnn->num_srvids);
+		if (vnn->pid_indexes == NULL) {
+			goto fail;
+		}
+	}
+	for (i=0; i<num_pids; i++) {
+		struct ctdb_vnn_list *vnn = &vnns[vnn_indexes[i]];
+		vnn->srvids[vnn->num_filled] = pids[i].unique_id;
+		vnn->pid_indexes[vnn->num_filled] = i;
+		vnn->num_filled += 1;
+	}
+
+	TALLOC_FREE(vnn_indexes);
+	*pvnns = vnns;
+	*pnum_vnns = num_vnns;
+	return true;
+fail:
+	TALLOC_FREE(vnns);
+	TALLOC_FREE(vnn_indexes);
+	return false;
+}
+
+bool ctdb_serverids_exist(struct ctdbd_connection *conn,
+			  const struct server_id *pids, unsigned num_pids,
+			  bool *results)
+{
+	unsigned i, num_received;
+	NTSTATUS status;
+	struct ctdb_vnn_list *vnns = NULL;
+	unsigned num_vnns;
+	bool result = false;
+
+	if (!ctdb_collect_vnns(talloc_tos(), pids, num_pids,
+			       &vnns, &num_vnns)) {
+		goto fail;
+	}
+
+	for (i=0; i<num_vnns; i++) {
+		struct ctdb_vnn_list *vnn = &vnns[i];
+		struct ctdb_req_control req;
+
+		vnn->reqid = ctdbd_next_reqid(conn);
+
+		ZERO_STRUCT(req);
+
+		DEBUG(10, ("Requesting VNN %d, reqid=%d, num_srvids=%u\n",
+			   (int)vnn->vnn, (int)vnn->reqid, vnn->num_srvids));
+
+		req.hdr.length = offsetof(struct ctdb_req_control, data);
+		req.hdr.ctdb_magic   = CTDB_MAGIC;
+		req.hdr.ctdb_version = CTDB_VERSION;
+		req.hdr.operation    = CTDB_REQ_CONTROL;
+		req.hdr.reqid        = vnn->reqid;
+		req.hdr.destnode     = vnn->vnn;
+		req.opcode           = CTDB_CONTROL_CHECK_SRVIDS;
+		req.srvid            = 0;
+		req.datalen          = sizeof(uint64_t) * vnn->num_srvids;
+		req.hdr.length	    += req.datalen;
+		req.flags            = 0;
+
+		DEBUG(10, ("ctdbd_control: Sending ctdb packet\n"));
+		ctdb_packet_dump(&req.hdr);
+
+		status = ctdb_packet_send(
+			conn->pkt, 2,
+			data_blob_const(
+				&req, offsetof(struct ctdb_req_control,
+					       data)),
+			data_blob_const(vnn->srvids, req.datalen));
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("ctdb_packet_send failed: %s\n",
+				   nt_errstr(status)));
+			goto fail;
+		}
+	}
+
+	status = ctdb_packet_flush(conn->pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("ctdb_packet_flush failed: %s\n",
+			   nt_errstr(status)));
+		goto fail;
+	}
+
+	num_received = 0;
+
+	while (num_received < num_vnns) {
+		struct ctdb_reply_control *reply = NULL;
+		struct ctdb_vnn_list *vnn;
+		uint32_t reqid;
+
+		status = ctdb_read_req(conn, 0, talloc_tos(), (void *)&reply);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("ctdb_read_req failed: %s\n",
+				   nt_errstr(status)));
+			goto fail;
+		}
+
+		if (reply->hdr.operation != CTDB_REPLY_CONTROL) {
+			DEBUG(10, ("Received invalid reply\n"));
+			goto fail;
+		}
+
+		reqid = reply->hdr.reqid;
+
+		DEBUG(10, ("Received reqid %d\n", (int)reqid));
+
+		for (i=0; i<num_vnns; i++) {
+			if (reqid == vnns[i].reqid) {
+				break;
+			}
+		}
+		if (i == num_vnns) {
+			DEBUG(10, ("Received unknown reqid number %u\n",
+				   (unsigned)reqid));
+			goto fail;
+		}
+
+		DEBUG(10, ("Found index %u\n", i));
+
+		vnn = &vnns[i];
+
+		DEBUG(10, ("Received vnn %u, vnn->num_srvids %u, datalen %u\n",
+			   (unsigned)vnn->vnn, vnn->num_srvids,
+			   (unsigned)reply->datalen));
+
+		if (reply->datalen < ((vnn->num_srvids+7)/8)) {
+			DEBUG(10, ("Received short reply\n"));
+			goto fail;
+		}
+
+		for (i=0; i<vnn->num_srvids; i++) {
+			results[vnn->pid_indexes[i]] =
+				((reply->data[i/8] & (1<<(i%8))) != 0);
+		}
+
+		TALLOC_FREE(reply);
+		num_received += 1;
+	}
+
+	result = true;
+fail:
+	TALLOC_FREE(vnns);
 	return result;
 }
 
