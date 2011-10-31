@@ -2066,6 +2066,51 @@ static int getsrvids(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 /*
+  check if a server id exists
+ */
+static int check_srvids(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int32_t status;
+	char *errmsg;
+	int ret;
+	uint32_t pnn;
+	uint64_t *ids;
+	int i;
+	TDB_DATA data, outdata;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	pnn = strtoul(argv[0], NULL, 0);
+
+	ids = talloc_array(ctdb, uint64_t, argc-1);
+
+	for (i=0; i<argc-1; i++) {
+		ids[i] = strtoull(argv[i+1], NULL, 0);
+	}
+	data.dptr = (uint8_t *)ids;
+	data.dsize = talloc_get_size(ids);
+
+	ret = ctdb_control(ctdb, pnn, 0, CTDB_CONTROL_CHECK_SRVIDS,
+			   0, data, ctdb, &outdata, &status, NULL, &errmsg);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to check server_id from node %u\n",
+				  pnn));
+		return ret;
+	}
+	for (i=0; i<argc-1; i++) {
+		bool exists;
+
+		exists = ((outdata.dptr[i/8] & (1<<(i%8))) != 0);
+
+		printf("Server id %d:%llu %s\n", pnn, ids[i],
+		       exists ? "exists" : "does not exist");
+	}
+	return 0;
+}
+
+/*
   send a tcp tickle ack
  */
 static int tickle_tcp(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5132,6 +5177,7 @@ static const struct {
 	{ "unregsrvid",      unregsrvid,		false,	false, "unregister a server id", "<pnn> <type> <id>" },
 	{ "chksrvid",        chksrvid,			false,	false, "check if a server id exists", "<pnn> <type> <id>" },
 	{ "getsrvids",       getsrvids,			false,	false, "get a list of all server ids"},
+	{ "check_srvids",    check_srvids,		false,	false, "check if a srvid exists", "<pnn> <id>" },
 	{ "vacuum",          ctdb_vacuum,		false,	false, "vacuum the databases of empty records", "[max_records]"},
 	{ "repack",          ctdb_repack,		false,	false, "repack all databases", "[max_freelist]"},
 	{ "listnodes",       control_listnodes,		false,	true, "list all nodes in the cluster"},
