@@ -100,7 +100,7 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, "IPC$", "IPC", "", 1))) {
+	if (!NT_STATUS_IS_OK(cli_tree_connect(cli, "IPC$", "IPC", "", 1))) {
 		cli_shutdown(cli);
 		return;
 	}
