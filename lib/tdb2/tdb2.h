@@ -29,8 +29,10 @@
 extern "C" {
 #endif
 
-#ifndef _SAMBA_BUILD_
 #include "config.h"
+#ifdef HAVE_LIBREPLACE
+#include "replace.h"
+#else
 #if HAVE_FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
 #endif
@@ -46,8 +48,6 @@ extern "C" {
 #include <stdbool.h>
 /* For memcmp */
 #include <string.h>
-#else
-#include "replace.h"
 #endif
 #include <ccan/compiler/compiler.h>
 #include <ccan/typesafe_cb/typesafe_cb.h>

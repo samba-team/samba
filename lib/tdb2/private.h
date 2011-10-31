@@ -22,7 +22,7 @@
 #include <ccan/likely/likely.h>
 #include <ccan/endian/endian.h>
 
-#ifdef _SAMBA_BUILD_
+#ifdef HAVE_LIBREPLACE
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/time.h"
