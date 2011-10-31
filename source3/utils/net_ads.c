@@ -1457,7 +1457,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	 * net ads dns register.
 	 */
 	if (lp_clustering()) {
-		d_fprintf(stderr, _("Not doing automatic DNS update in a"
+		d_fprintf(stderr, _("Not doing automatic DNS update in a "
 				    "clustered setup.\n"));
 		goto done;
 	}
