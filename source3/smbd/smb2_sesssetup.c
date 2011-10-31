@@ -818,7 +818,6 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	uint64_t in_session_id;
 	void *p;
 	struct smbd_smb2_session *session;
-	bool chained_fixup = false;
 
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 
@@ -839,7 +838,6 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 			 */
 			outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
 			in_session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
-			chained_fixup = true;
 		}
 	}
 
@@ -860,11 +858,6 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 
 	req->session = session;
 
-	if (chained_fixup) {
-		/* Fix up our own outhdr. */
-		outhdr = (const uint8_t *)req->out.vector[i].iov_base;
-		SBVAL(outhdr, SMB2_HDR_SESSION_ID, in_session_id);
-	}
 	return NT_STATUS_OK;
 }
 
