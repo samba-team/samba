@@ -168,7 +168,7 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 		goto failed;
 	}
 
-	DEBUG(2,("netlogon request to %s from %s:%d\n", 
+	DEBUG(5,("netlogon request to %s from %s:%d\n",
 		 nbt_name_string(netlogon, name), src->addr, src->port));
 	status = dgram_mailslot_netlogon_parse_request(dgmslot, netlogon, packet, netlogon);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
