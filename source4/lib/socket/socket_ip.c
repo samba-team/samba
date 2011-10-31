@@ -58,7 +58,10 @@ static NTSTATUS ipv4_init(struct socket_context *sock)
 
 static void ip_close(struct socket_context *sock)
 {
-	close(sock->fd);
+	if (sock->fd != -1) {
+		close(sock->fd);
+		sock->fd = -1;
+	}
 }
 
 static NTSTATUS ip_connect_complete(struct socket_context *sock, uint32_t flags)
