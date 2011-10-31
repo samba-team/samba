@@ -204,11 +204,11 @@ struct durable_open_vs_lease durable_open_vs_lease_table[NUM_LEASE_OPEN_TESTS] =
 	{ "RHW", true },
 };
 
-static bool test_one_durable_open_basic2(struct torture_context *tctx,
-					 struct smb2_tree *tree,
-					 const char *fname,
-					 struct smb2_create io,
-					 struct durable_open_vs_lease test)
+static bool test_one_durable_open_open2(struct torture_context *tctx,
+					struct smb2_tree *tree,
+					const char *fname,
+					struct smb2_create io,
+					struct durable_open_vs_lease test)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
@@ -251,8 +251,8 @@ done:
 	return ret;
 }
 
-bool test_durable_open_basic2(struct torture_context *tctx,
-			      struct smb2_tree *tree)
+bool test_durable_open_open2(struct torture_context *tctx,
+			     struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io;
@@ -261,7 +261,7 @@ bool test_durable_open_basic2(struct torture_context *tctx,
 	int i;
 
 	/* Choose a random name in case the state is left a little funky. */
-	snprintf(fname, 256, "durable_open_basic2_%s.dat", generate_random_str(tctx, 8));
+	snprintf(fname, 256, "durable_open_open2_%s.dat", generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
 
@@ -286,11 +286,11 @@ bool test_durable_open_basic2(struct torture_context *tctx,
 	/* test various oplock levels with durable open */
 
 	for (i = 0; i < NUM_LEASE_OPEN_TESTS; i++) {
-		ret = test_one_durable_open_basic2(tctx,
-						   tree,
-						   fname,
-						   io,
-						   durable_open_vs_lease_table[i]);
+		ret = test_one_durable_open_open2(tctx,
+						  tree,
+						  fname,
+						  io,
+						  durable_open_vs_lease_table[i]);
 		if (ret == false) {
 			goto done;
 		}
@@ -868,7 +868,7 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	    torture_suite_create(talloc_autofree_context(), "durable-open");
 
 	torture_suite_add_1smb2_test(suite, "open1", test_durable_open_open1);
-	torture_suite_add_1smb2_test(suite, "basic2", test_durable_open_basic2);
+	torture_suite_add_1smb2_test(suite, "open2", test_durable_open_open2);
 	torture_suite_add_2smb2_test(suite, "file-position",
 	    test_durable_open_file_position);
 	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
