@@ -80,6 +80,11 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 	uint32_t flags = IVAL(req->in.hdr, SMB2_HDR_FLAGS);
 	uint32_t pid = IVAL(req->in.hdr, SMB2_HDR_PID);
 	uint32_t tid = IVAL(req->in.hdr, SMB2_HDR_TID);
+	uint16_t credits = SVAL(req->in.hdr, SMB2_HDR_CREDIT);
+
+	if (credits == 0) {
+		credits = 1;
+	}
 
 	flags |= SMB2_HDR_FLAG_REDIRECT;
 
@@ -87,6 +92,7 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 		flags |= SMB2_HDR_FLAG_ASYNC;
 		pid = req->pending_id;
 		tid = 0;
+		credits = 0;
 	}
 
 	if (body_dynamic_present) {
@@ -116,7 +122,7 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 	      SVAL(req->in.hdr, SMB2_HDR_CREDIT_CHARGE));
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,		NT_STATUS_V(req->status));
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,		SVAL(req->in.hdr, SMB2_HDR_OPCODE));
-	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,		0x0001);
+	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,		credits);
 	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,		flags);
 	SIVAL(req->out.hdr, SMB2_HDR_NEXT_COMMAND,	0);
 	SBVAL(req->out.hdr, SMB2_HDR_MESSAGE_ID,	req->seqnum);
@@ -573,9 +579,19 @@ NTSTATUS smb2srv_queue_pending(struct smb2srv_request *req)
 	NTSTATUS status;
 	bool signing_used = false;
 	int id;
+	uint16_t credits = SVAL(req->in.hdr, SMB2_HDR_CREDIT);
+
+	if (credits == 0) {
+		credits = 1;
+	}
 
 	if (req->pending_id) {
 		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (req->smb_conn->connection->event.fde == NULL) {
+		/* the socket has been destroyed - no point trying to send an error! */
+		return NT_STATUS_REMOTE_DISCONNECT;
 	}
 
 	id = idr_get_new_above(req->smb_conn->requests2.idtree_req, req, 
@@ -587,11 +603,6 @@ NTSTATUS smb2srv_queue_pending(struct smb2srv_request *req)
 	DLIST_ADD_END(req->smb_conn->requests2.list, req, struct smb2srv_request *);
 	req->pending_id = id;
 
-	if (req->smb_conn->connection->event.fde == NULL) {
-		/* the socket has been destroyed - no point trying to send an error! */
-		return NT_STATUS_REMOTE_DISCONNECT;
-	}
-
 	talloc_set_destructor(req, smb2srv_request_deny_destructor);
 
 	status = smb2srv_setup_reply(req, 8, true, 0);
@@ -600,6 +611,7 @@ NTSTATUS smb2srv_queue_pending(struct smb2srv_request *req)
 	}
 
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS, NT_STATUS_V(STATUS_PENDING));
+	SSVAL(req->out.hdr, SMB2_HDR_CREDIT, credits);
 
 	SSVAL(req->out.body, 0x02, 0);
 	SIVAL(req->out.body, 0x04, 0);

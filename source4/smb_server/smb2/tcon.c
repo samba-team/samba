@@ -359,23 +359,14 @@ failed:
 
 static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 {
-	uint16_t credit;
-
 	if (!NT_STATUS_IS_OK(req->status)) {
 		smb2srv_send_error(req, req->status);
 		return;
-	}
-	if (io->smb2.out.share_type == NTVFS_IPC) {
-		/* if it's an IPC share vista returns 0x0005 */
-		credit = 0x0005;
-	} else {
-		credit = 0x0001;
 	}
 
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, false, 0));
 
 	SIVAL(req->out.hdr,	SMB2_HDR_TID,	io->smb2.out.tid);
-	SSVAL(req->out.hdr,	SMB2_HDR_CREDIT,credit);
 
 	SCVAL(req->out.body,	0x02,		io->smb2.out.share_type);
 	SCVAL(req->out.body,	0x03,		io->smb2.out.reserved);
