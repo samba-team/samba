@@ -4346,7 +4346,7 @@ static int cmd_tcon(void)
 		return 1;
 	}
 
-	status = cli_tcon_andx(cli, sharename, "?????", "", 0);
+	status = cli_tree_connect(cli, sharename, "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("tcon failed: %s\n", nt_errstr(status));
 		return -1;

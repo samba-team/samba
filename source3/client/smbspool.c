@@ -433,8 +433,8 @@ smb_complete_connection(const char *myname,
 		return NULL;
 	}
 
-	nt_status = cli_tcon_andx(cli, share, "?????", password,
-				  strlen(password) + 1);
+	nt_status = cli_tree_connect(cli, share, "?????", password,
+				     strlen(password) + 1);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: Tree connect failed (%s)\n",
 			nt_errstr(nt_status));
