@@ -72,6 +72,28 @@ static inline uint32_t map_lease(const char *ls)
 	return val;
 }
 
+static inline uint32_t map_sharemode(const char *sharemode)
+{
+	uint32_t val = NTCREATEX_SHARE_ACCESS_NONE; /* 0 */
+	int i;
+
+	for (i = 0; i < strlen(sharemode); i++) {
+		switch(sharemode[i]) {
+		case 'R':
+			val |= NTCREATEX_SHARE_ACCESS_READ;
+			break;
+		case 'W':
+			val |= NTCREATEX_SHARE_ACCESS_WRITE;
+			break;
+		case 'D':
+			val |= NTCREATEX_SHARE_ACCESS_DELETE;
+			break;
+		}
+	}
+
+	return val;
+}
+
 /**
  * basic durable_open test.
  * durable state should only be granted when requested
@@ -82,16 +104,50 @@ static inline uint32_t map_lease(const char *ls)
 
 struct durable_open_vs_oplock {
 	uint8_t level;
+	const char *share_mode;
 	bool expected;
 };
 
-#define NUM_OPLOCK_OPEN_TESTS 4
+#define NUM_OPLOCK_TYPES 4
+#define NUM_SHARE_MODES 8
+#define NUM_OPLOCK_OPEN_TESTS ( NUM_OPLOCK_TYPES * NUM_SHARE_MODES )
 struct durable_open_vs_oplock durable_open_vs_oplock_table[NUM_OPLOCK_OPEN_TESTS] =
 {
-	{ SMB2_OPLOCK_LEVEL_NONE, false },
-	{ SMB2_OPLOCK_LEVEL_II, false },
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, false },
-	{ SMB2_OPLOCK_LEVEL_BATCH, true },
+	{ SMB2_OPLOCK_LEVEL_NONE, "", false },
+	{ SMB2_OPLOCK_LEVEL_NONE, "R", false },
+	{ SMB2_OPLOCK_LEVEL_NONE, "W", false },
+	{ SMB2_OPLOCK_LEVEL_NONE, "D", false },
+	{ SMB2_OPLOCK_LEVEL_NONE, "RD", false },
+	{ SMB2_OPLOCK_LEVEL_NONE, "RW", false },
+	{ SMB2_OPLOCK_LEVEL_NONE, "WD", false },
+	{ SMB2_OPLOCK_LEVEL_NONE, "RWD", false },
+
+	{ SMB2_OPLOCK_LEVEL_II, "", false },
+	{ SMB2_OPLOCK_LEVEL_II, "R", false },
+	{ SMB2_OPLOCK_LEVEL_II, "W", false },
+	{ SMB2_OPLOCK_LEVEL_II, "D", false },
+	{ SMB2_OPLOCK_LEVEL_II, "RD", false },
+	{ SMB2_OPLOCK_LEVEL_II, "RW", false },
+	{ SMB2_OPLOCK_LEVEL_II, "WD", false },
+	{ SMB2_OPLOCK_LEVEL_II, "RWD", false },
+
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "", false },
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "R", false },
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "W", false },
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "D", false },
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "RD", false },
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "RW", false },
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "WD", false },
+	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "RWD", false },
+
+	{ SMB2_OPLOCK_LEVEL_BATCH, "", true },
+	{ SMB2_OPLOCK_LEVEL_BATCH, "R", true },
+	{ SMB2_OPLOCK_LEVEL_BATCH, "W", true },
+	{ SMB2_OPLOCK_LEVEL_BATCH, "D", true },
+	{ SMB2_OPLOCK_LEVEL_BATCH, "RD", true },
+	{ SMB2_OPLOCK_LEVEL_BATCH, "RW", true },
+	{ SMB2_OPLOCK_LEVEL_BATCH, "WD", true },
+	{ SMB2_OPLOCK_LEVEL_BATCH, "RWD", true },
 };
 
 static bool test_one_durable_open_open1(struct torture_context *tctx,
@@ -109,6 +165,7 @@ static bool test_one_durable_open_open1(struct torture_context *tctx,
 	smb2_util_unlink(tree, fname);
 
 	io.in.fname = fname;
+	io.in.share_access = map_sharemode(test.share_mode);
 	io.in.oplock_level = test.level;
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -149,9 +206,6 @@ bool test_durable_open_open1(struct torture_context *tctx,
 	io.in.reserved			= 0x00000000;
 	io.in.desired_access		= SEC_RIGHTS_FILE_ALL;
 	io.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
-	io.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
-					  NTCREATEX_SHARE_ACCESS_WRITE |
-					  NTCREATEX_SHARE_ACCESS_DELETE;
 	io.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
 	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
 					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
