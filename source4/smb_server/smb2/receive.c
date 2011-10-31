@@ -69,6 +69,9 @@ struct smb2srv_request *smb2srv_init_request(struct smbsrv_connection *smb_conn)
 
 	req->smb_conn = smb_conn;
 
+	req->chained_session_id = UINT64_MAX;
+	req->chained_tree_id = UINT32_MAX;
+
 	talloc_set_destructor(req, smb2srv_request_destructor);
 
 	return req;
@@ -233,6 +236,8 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 			       sizeof(req->_chained_file_handle));
 			req->chained_file_handle = req->_chained_file_handle;
 		}
+		req->chained_session_id = p_req->chained_session_id;
+		req->chained_tree_id = p_req->chained_tree_id;
 		req->chain_status = p_req->chain_status;
 	}
 
@@ -342,8 +347,16 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 		req->smb_conn->highest_smb2_seqnum = req->seqnum;
 	}
 
+	if (flags & SMB2_HDR_FLAG_CHAINED) {
+		uid = req->chained_session_id;
+		tid = req->chained_tree_id;
+	}
+
 	req->session	= smbsrv_session_find(req->smb_conn, uid, req->request_time);
 	req->tcon	= smbsrv_smb2_tcon_find(req->session, tid, req->request_time);
+
+	req->chained_session_id = uid;
+	req->chained_tree_id = tid;
 
 	errno = 0;
 

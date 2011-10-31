@@ -64,6 +64,8 @@ struct smb2srv_request {
 	/* chained file handle */
 	uint8_t _chained_file_handle[16];
 	uint8_t *chained_file_handle;
+	uint64_t chained_session_id;
+	uint32_t chained_tree_id;
 
 	bool is_signed;
 
