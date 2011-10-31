@@ -3527,7 +3527,7 @@ static bool check_share_availability(struct cli_state *cli, const char *netname)
 {
 	NTSTATUS status;
 
-	status = cli_tcon_andx(cli, netname, "A:", "", 0);
+	status = cli_tree_connect(cli, netname, "A:", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("skipping   [%s]: not a file share.\n"), netname);
 		return false;
@@ -4858,7 +4858,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 
 	cnum = cli_state_get_tid(cli);
 
-	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, netname, "A:", "", 0))) {
+	if (!NT_STATUS_IS_OK(cli_tree_connect(cli, netname, "A:", "", 0))) {
 		return;
 	}
 
