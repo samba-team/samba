@@ -739,6 +739,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 	if (!serverid_register(procid_self(),
 			       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
+			       |FLAG_MSG_PRINT_GENERAL
 			       |FLAG_MSG_DBWRAP)) {
 		DEBUG(0, ("open_sockets_smbd: Failed to register "
 			  "myself in serverid.tdb\n"));
