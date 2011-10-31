@@ -134,7 +134,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		}
 	}
 
-	result = cli_tcon_andx(cli, "IPC$", "IPC", "", 1);
+	result = cli_tree_connect(cli, "IPC$", "IPC", "", 1);
 	if (!NT_STATUS_IS_OK(result)) {
 		if (asprintf(err_str, "machine %s rejected the tconX on the "
 			     "IPC$ share. Error was : %s.\n",

@@ -314,9 +314,11 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 			 * tid.
 			 */
 
-			status = cli_tcon_andx(srv->cli, srv->cli->share, "?????",
-					       *pp_password,
-					       strlen(*pp_password)+1);
+			status = cli_tree_connect(srv->cli,
+						  srv->cli->share,
+						  "?????",
+						  *pp_password,
+						  strlen(*pp_password)+1);
 			if (!NT_STATUS_IS_OK(status)) {
                                 errno = map_errno_from_nt_status(status);
                                 cli_shutdown(srv->cli);
@@ -507,8 +509,8 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	/* must be a normal share */
 
-	status = cli_tcon_andx(c, share, "?????", *pp_password,
-			       strlen(*pp_password)+1);
+	status = cli_tree_connect(c, share, "?????", *pp_password,
+				  strlen(*pp_password)+1);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		cli_shutdown(c);
