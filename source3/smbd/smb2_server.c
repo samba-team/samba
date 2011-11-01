@@ -206,6 +206,9 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 	req->mem_pool	= mem_pool;
 	req->parent	= parent;
 
+	req->last_session_id = UINT64_MAX;
+	req->last_tid = UINT32_MAX;
+
 	talloc_set_destructor(parent, smbd_smb2_request_parent_destructor);
 	talloc_set_destructor(req, smbd_smb2_request_destructor);
 
