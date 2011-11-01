@@ -125,9 +125,6 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 
 	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypted_passwords(req->smb_conn->lp_ctx);
 
-	if (lpcfg_security(req->smb_conn->lp_ctx) != SEC_SHARE)
-		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-
 	if (req->smb_conn->negotiate.encrypted_passwords)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
@@ -183,9 +180,6 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 
 	req->smb_conn->negotiate.encrypted_passwords = lpcfg_encrypted_passwords(req->smb_conn->lp_ctx);
   
-	if (lpcfg_security(req->smb_conn->lp_ctx) != SEC_SHARE)
-		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-
 	if (req->smb_conn->negotiate.encrypted_passwords)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
@@ -263,7 +257,6 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	   supports it and we can do encrypted passwords */
 	
 	if (req->smb_conn->negotiate.encrypted_passwords && 
-	    (lpcfg_security(req->smb_conn->lp_ctx) != SEC_SHARE) &&
 	    lpcfg_use_spnego(req->smb_conn->lp_ctx) &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
 		negotiate_spnego = true; 
@@ -301,9 +294,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		capabilities |= CAP_DFS;
 	}
 	
-	if (lpcfg_security(req->smb_conn->lp_ctx) != SEC_SHARE) {
-		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-	}
+	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 
 	if (req->smb_conn->negotiate.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;

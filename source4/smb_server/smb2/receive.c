@@ -692,7 +692,6 @@ NTSTATUS smbsrv_init_smb2_connection(struct smbsrv_connection *smb_conn)
 
 	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
-	smb_conn->config.security = SEC_USER;
 	smb_conn->config.nt_status_support = true;
 
 	status = smbsrv_init_sessions(smb_conn, UINT64_MAX);

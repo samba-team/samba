@@ -492,14 +492,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		   hasn't already been initialised (to cope with SMB
 		   chaining) */
 
-		/* In share mode security we must ignore the vuid. */
-		if (smb_conn->config.security == SEC_SHARE) {
-			if (req->tcon) {
-				req->session = req->tcon->sec_share.session;
-			}
- 		} else {
-			req->session = smbsrv_session_find(req->smb_conn, SVAL(req->in.hdr,HDR_UID), req->request_time);
-		}
+		req->session = smbsrv_session_find(req->smb_conn, SVAL(req->in.hdr,HDR_UID), req->request_time);
 	}
 
 	task_id = server_id_str(NULL, &req->smb_conn->connection->server_id);
@@ -670,7 +663,6 @@ NTSTATUS smbsrv_init_smb_connection(struct smbsrv_connection *smb_conn, struct l
 
 	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
-	smb_conn->config.security = lpcfg_security(lp_ctx);
 	smb_conn->config.nt_status_support = lpcfg_nt_status_support(lp_ctx);
 
 	status = smbsrv_init_sessions(smb_conn, UINT16_MAX);

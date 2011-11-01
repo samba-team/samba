@@ -370,7 +370,6 @@ struct smbsrv_connection {
 
 	/* configuration parameters */
 	struct {
-		enum security_types security;
 		bool nt_status_support;
 	} config;
 
