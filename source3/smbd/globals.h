@@ -353,9 +353,11 @@ struct smbd_smb2_request {
 
 	/* the session the request operates on, maybe NULL */
 	struct smbd_smb2_session *session;
+	uint64_t last_session_id;
 
 	/* the tcon the request operates on, maybe NULL */
 	struct smbd_smb2_tcon *tcon;
+	uint32_t last_tid;
 
 	int current_idx;
 	bool do_signing;

@@ -281,32 +281,21 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
-	const uint8_t *outhdr;
 	int i = req->current_idx;
+	uint32_t in_flags;
 	uint32_t in_tid;
 	void *p;
 	struct smbd_smb2_tcon *tcon;
 
+	req->tcon = NULL;
+
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 
+	in_flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 	in_tid = IVAL(inhdr, SMB2_HDR_TID);
 
-	if (in_tid == (0xFFFFFFFF)) {
-		if (req->async) {
-			/*
-			 * async request - fill in tid from
-			 * already setup out.vector[].iov_base.
-			 */
-			outhdr = (const uint8_t *)req->out.vector[i].iov_base;
-			in_tid = IVAL(outhdr, SMB2_HDR_TID);
-		} else if (i > 2) {
-			/*
-			 * Chained request - fill in tid from
-			 * the previous request out.vector[].iov_base.
-			 */
-			outhdr = (const uint8_t *)req->out.vector[i-3].iov_base;
-			in_tid = IVAL(outhdr, SMB2_HDR_TID);
-		}
+	if (in_flags & SMB2_HDR_FLAG_CHAINED) {
+		in_tid = req->last_tid;
 	}
 
 	/* lookup an existing session */
@@ -326,6 +315,7 @@ NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 	}
 
 	req->tcon = tcon;
+	req->last_tid = in_tid;
 
 	return NT_STATUS_OK;
 }
