@@ -77,7 +77,7 @@ class cmd_domain_export_keytab(Command):
 
 
 class cmd_domain_join(Command):
-    """Joins domain as either member or backup domain controller *"""
+    """Joins domain as either member or backup domain controller"""
 
     synopsis = "%prog <dnsdomain> [DC|RODC|MEMBER|SUBDOMAIN] [options]"
 
@@ -133,7 +133,7 @@ class cmd_domain_join(Command):
                            site=site, netbios_name=netbios_name, netbios_domain=netbios_domain, targetdir=targetdir)
             return
         else:
-            raise CommandError("Invalid role %s (possible values: MEMBER, DC, RODC)" % role)
+            raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
 
 
 
@@ -264,7 +264,7 @@ class cmd_domain_level(Command):
                     new_level_domain = DS_DOMAIN_FUNCTION_2008_R2
 
                 if new_level_domain <= level_domain and level_domain_mixed == 0:
-                    raise CommandError("Domain function level can't be smaller equal to the actual one!")
+                    raise CommandError("Domain function level can't be smaller than or equal to the actual one!")
 
                 if new_level_domain > min_level_dc:
                     raise CommandError("Domain function level can't be higher than the lowest function level of a DC!")
@@ -319,7 +319,7 @@ class cmd_domain_level(Command):
                 elif forest_level == "2008_R2":
                     new_level_forest = DS_DOMAIN_FUNCTION_2008_R2
                 if new_level_forest <= level_forest:
-                    raise CommandError("Forest function level can't be smaller equal to the actual one!")
+                    raise CommandError("Forest function level can't be smaller than or equal to the actual one!")
                 if new_level_forest > level_domain:
                     raise CommandError("Forest function level can't be higher than the domain function level(s). Please raise it/them first!")
                 m = ldb.Message()
@@ -332,7 +332,7 @@ class cmd_domain_level(Command):
             msgs.append("All changes applied successfully!")
             self.message("\n".join(msgs))
         else:
-            raise CommandError("Wrong argument '%s'!" % subcommand)
+            raise CommandError("invalid argument: '%s' (choose from 'show', 'raise')" % subcommand)
 
 
 
