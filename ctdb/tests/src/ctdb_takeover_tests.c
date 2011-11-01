@@ -20,6 +20,10 @@
 #include "includes.h"
 #include "../include/ctdb_private.h"
 
+/* This is lazy... but it is test code! */
+#define CTDB_TEST_MAX_NODES 256
+#define CTDB_TEST_MAX_IPS 256
+
 /*
  * Need these, since they're defined in ctdbd.c but we can't link
  * that.
@@ -102,6 +106,157 @@ void ctdb_test_read_ctdb_public_ip_list(void)
 	talloc_free(tmp_ctx);
 }
 
+/* Format of each line is "IP pnn" - the separator has to be at least
+ * 1 space (not a tab or whatever - a space!).
+ */
+static bool
+read_ctdb_public_ip_info(TALLOC_CTX *ctx,
+			 int numnodes,
+			 struct ctdb_public_ip_list ** all_ips,
+			 struct ctdb_all_public_ips *** avail)
+{
+	char line[1024];
+	ctdb_sock_addr addr;
+	char *t, *tok;
+	struct ctdb_public_ip_list * ta;
+	int pnn, numips, curr, n, i;
+	struct ctdb_all_public_ips * a;
+
+	struct ctdb_public_ip_list *last = NULL;
+
+	*avail = talloc_array_size(ctx, sizeof(struct ctdb_all_public_ips *), CTDB_TEST_MAX_NODES);
+	memset(*avail, 0,
+	       sizeof(struct ctdb_all_public_ips *) * CTDB_TEST_MAX_NODES);
+
+	numips = 0;
+	*all_ips = NULL;
+	while (fgets(line, sizeof(line), stdin) != NULL) {
+
+		/* Get rid of pesky newline */
+		if ((t = strchr(line, '\n')) != NULL) {
+			*t = '\0';
+		}
+
+		/* Get the IP address */
+		tok = strtok(line, " \t");
+		if (tok == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignored :%s\n", line));
+			continue;
+		}
+
+		if (!parse_ip(tok, NULL, 0, &addr)) {
+			DEBUG(DEBUG_ERR, (__location__ " ERROR, bad address :%s\n", tok));
+			continue;
+		}
+
+		numips++;
+
+		/* Get the PNN */
+		pnn = -1;
+		tok = strtok(NULL, " \t");
+		if (tok != NULL) {
+			pnn = (int) strtol(tok, (char **) NULL, 10);
+		}
+
+		/* Add address + pnn to all_ips */
+		if (last == NULL) {
+			last = talloc(ctx, struct ctdb_public_ip_list);
+		} else {
+			last->next = talloc(ctx, struct ctdb_public_ip_list);
+			last = last->next;
+		}
+		last->next = NULL;
+		last->pnn = pnn;
+		memcpy(&(last->addr), &addr, sizeof(addr));
+		if (*all_ips == NULL) {
+			*all_ips = last;
+		}
+
+		tok = strtok(NULL, " \t#");
+		if (tok == NULL) {
+			continue;
+		}
+
+		/* Handle allowed nodes for addr */
+		t = strtok(tok, ",");
+		while (t != NULL) {
+			n = (int) strtol(t, (char **) NULL, 10);
+			if ((*avail)[n] == NULL) {
+				(*avail)[n] = talloc_array(ctx, struct ctdb_all_public_ips, CTDB_TEST_MAX_IPS);
+				(*avail)[n]->num = 0;
+			}
+			curr = (*avail)[n]->num;
+			(*avail)[n]->ips[curr].pnn = pnn;
+			memcpy(&((*avail)[n]->ips[curr].addr),
+			       &addr, sizeof(addr));
+			(*avail)[n]->num++;
+			t = strtok(NULL, ",");
+		}
+
+	}
+
+	/* Build list of all allowed IPs */
+	a = talloc_array(ctx, struct ctdb_all_public_ips, CTDB_TEST_MAX_IPS);
+	a->num = numips;
+	for (ta = *all_ips, i=0; ta != NULL && i < numips ; ta = ta->next, i++) {
+		a->ips[i].pnn = ta->pnn;
+		memcpy(&(a->ips[i].addr), &(ta->addr), sizeof(ta->addr));
+	}
+
+	/* Assign it to any nodes that don't have a list assigned */
+	for (n = 0; n < numnodes; n++) {
+		if ((*avail)[n] == NULL) {
+			(*avail)[n] = a;
+		}
+	}
+
+	return true;
+}
+
+void print_ctdb_available_ips(int numnodes, struct ctdb_all_public_ips **avail)
+{
+	int n, i;
+
+	for (n = 0; n < numnodes; n++) {
+		if ((avail[n] != NULL) && (avail[n]->num > 0)) {
+			printf("%d:", n);
+			for (i = 0; i < avail[n]->num; i++) {
+				printf("%s%s",
+				       (i == 0) ? " " : ", ",
+				       ctdb_addr_to_str(&(avail[n]->ips[i].addr)));
+			}
+			printf("\n");
+		}
+	}
+}
+
+void ctdb_test_read_ctdb_public_ip_info(const char nodestates[])
+{
+	int numnodes;
+	struct ctdb_public_ip_list *l;
+	struct ctdb_all_public_ips **avail;
+	char *tok, *ns;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+
+	/* Avoid that const */
+	ns = talloc_strdup(tmp_ctx, nodestates);
+
+	numnodes = 0;
+	tok = strtok(ns, ",");
+	while (tok != NULL) {
+		numnodes++;
+		tok = strtok(NULL, ",");
+	}
+	
+	read_ctdb_public_ip_info(tmp_ctx, numnodes, &l, &avail);
+
+	print_ctdb_public_ip_list(l);
+	print_ctdb_available_ips(numnodes, avail);
+
+	talloc_free(tmp_ctx);
+}
+
 /* Read 2 IPs from stdin, calculate the IP distance and print it. */
 void ctdb_test_ip_distance(void)
 {
@@ -180,11 +335,9 @@ void ctdb_test_init(const char nodestates[],
 		    struct ctdb_public_ip_list **all_ips,
 		    struct ctdb_node_map **nodemap)
 {
-	struct ctdb_public_ip_list *t;
-	struct ctdb_all_public_ips *available_public_ips;
-	int i, numips, numnodes;
-	/* This is test code and this is unreasonably big... :-) */
-	uint32_t nodeflags[256];
+	struct ctdb_all_public_ips **avail;
+	int i, numnodes;
+	uint32_t nodeflags[CTDB_TEST_MAX_NODES];
 	char *tok, *ns;
 
 	*ctdb = talloc_zero(NULL, struct ctdb_context);
@@ -218,23 +371,10 @@ void ctdb_test_init(const char nodestates[],
 	*nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
 	(*nodemap)->num = numnodes;
 
-	*all_ips = read_ctdb_public_ip_list(*ctdb);
-	numips = 0;
-	for (t = *all_ips; t != NULL; t = t->next) {
-		numips++;
-	}
-
-	available_public_ips = talloc_array(*ctdb, struct ctdb_all_public_ips, numips); // FIXME: bogus size, overkill
-	available_public_ips->num = numips;
-	for (t = *all_ips, i=0; t != NULL && i < numips ; t = t->next, i++) {
-		available_public_ips->ips[i].pnn = t->pnn;
-		memcpy(&(available_public_ips->ips[i].addr), &(t->addr), sizeof(t->addr));
-	}
+	read_ctdb_public_ip_info(*ctdb, numnodes, all_ips, &avail);
 
 	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, numnodes); // FIXME: bogus size, overkill
 
-	/* Setup both nodemap and ctdb->nodes.  Mark all nodes as
-	 * healthy - change this later. */
 	for (i=0; i < numnodes; i++) {
 		(*nodemap)->nodes[i].pnn = i;
 		(*nodemap)->nodes[i].flags = nodeflags[i];
@@ -243,8 +383,8 @@ void ctdb_test_init(const char nodestates[],
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
 		(*ctdb)->nodes[i]->pnn = i;
 		(*ctdb)->nodes[i]->flags = nodeflags[i];
-		(*ctdb)->nodes[i]->available_public_ips = available_public_ips;
-		(*ctdb)->nodes[i]->known_public_ips = available_public_ips;
+		(*ctdb)->nodes[i]->available_public_ips = avail[i];
+		(*ctdb)->nodes[i]->known_public_ips = avail[i];
 	}
 }
 
@@ -361,6 +501,8 @@ int main(int argc, const char *argv[])
 
 	if (strcmp(argv[1], "ip_list") == 0) {
 		ctdb_test_read_ctdb_public_ip_list();
+	} else if (argc == 3 && strcmp(argv[1], "ip_info") == 0) {
+		ctdb_test_read_ctdb_public_ip_info(argv[2]);
 	} else if (strcmp(argv[1], "ip_distance") == 0) {
 		ctdb_test_ip_distance();
 	} else if (argc == 4 && strcmp(argv[1], "ip_distance_2_sum") == 0) {
