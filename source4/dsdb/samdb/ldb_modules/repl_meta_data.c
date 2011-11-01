@@ -3008,9 +3008,15 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	case OBJECT_RECYCLED:
 	case OBJECT_TOMBSTONE:
 
-		/* we also mark it as recycled, meaning this object can't be
-		   recovered (we are stripping its attributes) */
-		if (functional_level >= DS_DOMAIN_FUNCTION_2008_R2) {
+		/*
+		 * we also mark it as recycled, meaning this object can't be
+		 * recovered (we are stripping its attributes).
+		 * This is done only if we have this schema object of course ...
+		 * This behavior is identical to the one of Windows 2008R2 which
+		 * always set the isRecycled attribute, even if the recycle-bin is
+		 * not activated and what ever the forest level is.
+		 */
+		if (dsdb_attribute_by_lDAPDisplayName(schema, "isRecycled") != NULL) {
 			ret = ldb_msg_add_string(msg, "isRecycled", "TRUE");
 			if (ret != LDB_SUCCESS) {
 				DEBUG(0,(__location__ ": Failed to add isRecycled string to the msg\n"));
