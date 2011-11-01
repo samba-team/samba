@@ -1665,6 +1665,100 @@ void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 	}
 }
 
+/* LCP2 algorithm for rebalancing the cluster.  Given a candidate node
+ * to move IPs from, determines the best IP/destination node
+ * combination to move from the source node.
+ *
+ * Not static, so we can easily link it into a unit test.
+ */
+bool lcp2_failback_candidate(struct ctdb_context *ctdb,
+			     struct ctdb_node_map *nodemap,
+			     struct ctdb_public_ip_list *all_ips,
+			     int srcnode,
+			     uint32_t candimbl,
+			     uint32_t *lcp2_imbalances,
+			     bool *newly_healthy)
+{
+	int dstnode, mindstnode;
+	uint32_t srcimbl, srcdsum, dstimbl, dstdsum;
+	uint32_t minsrcimbl, mindstimbl;
+	struct ctdb_public_ip_list *minip;
+	struct ctdb_public_ip_list *tmp_ip;
+
+	/* Find an IP and destination node that best reduces imbalance. */
+	minip = NULL;
+	minsrcimbl = 0;
+	mindstnode = -1;
+	mindstimbl = 0;
+
+	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
+	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n", srcnode, candimbl));
+
+	for (tmp_ip=all_ips; tmp_ip; tmp_ip=tmp_ip->next) {
+		/* Only consider addresses on srcnode. */
+		if (tmp_ip->pnn != srcnode) {
+			continue;
+		}
+
+		/* What is this IP address costing the source node? */
+		srcdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, srcnode);
+		srcimbl = candimbl - srcdsum;
+
+		/* Consider this IP address would cost each potential
+		 * destination node.  Destination nodes are limited to
+		 * those that are newly healthy, since we don't want
+		 * to do gratuitous failover of IPs just to make minor
+		 * balance improvements.
+		 */
+		for (dstnode=0; dstnode < nodemap->num; dstnode++) {
+			if (! newly_healthy[dstnode]) {
+				continue;
+			}
+			/* only check nodes that can actually serve this ip */
+			if (can_node_serve_ip(ctdb, dstnode, tmp_ip)) {
+				/* no it couldnt   so skip to the next node */
+				continue;
+			}
+
+			dstdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, dstnode);
+			dstimbl = lcp2_imbalances[dstnode] + dstdsum;
+			DEBUG(DEBUG_DEBUG,(" %d [%d] -> %s -> %d [+%d]\n",
+					   srcnode, srcimbl - lcp2_imbalances[srcnode],
+					   ctdb_addr_to_str(&(tmp_ip->addr)),
+					   dstnode, dstimbl - lcp2_imbalances[dstnode]));
+
+			if ((dstimbl < candimbl) && (dstdsum < srcdsum) && \
+			    ((mindstnode == -1) ||				\
+			     ((srcimbl + dstimbl) < (minsrcimbl + mindstimbl)))) {
+
+				minip = tmp_ip;
+				minsrcimbl = srcimbl;
+				mindstnode = dstnode;
+				mindstimbl = dstimbl;
+			}
+		}
+	}
+	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
+
+        if (mindstnode != -1) {
+		/* We found a move that makes things better... */
+		DEBUG(DEBUG_INFO,("%d [%d] -> %s -> %d [+%d]\n",
+				  srcnode, minsrcimbl - lcp2_imbalances[srcnode],
+				  ctdb_addr_to_str(&(minip->addr)),
+				  mindstnode, mindstimbl - lcp2_imbalances[mindstnode]));
+
+
+		lcp2_imbalances[srcnode] = srcimbl;
+		lcp2_imbalances[mindstnode] = mindstimbl;
+		minip->pnn = mindstnode;
+
+		return true;
+	}
+
+        return false;
+	
+}
+
 /* LCP2 algorithm for rebalancing the cluster.  This finds the source
  * node with the highest LCP2 imbalance, and then determines the best
  * IP/destination node combination to move from the source node.
@@ -1678,11 +1772,8 @@ bool lcp2_failback(struct ctdb_context *ctdb,
 		   uint32_t *lcp2_imbalances,
 		   bool *newly_healthy)
 {
-	int srcnode, dstnode, mindstnode, i, num_newly_healthy;
-	uint32_t srcimbl, srcdsum, maximbl, dstimbl, dstdsum;
-	uint32_t minsrcimbl, mindstimbl, b;
-	struct ctdb_public_ip_list *minip;
-	struct ctdb_public_ip_list *tmp_ip;
+	int srcnode, i, num_newly_healthy;
+	uint32_t maximbl, b;
 
 	/* It is only worth continuing if we have suitable target
 	 * nodes to transfer IPs to.  This check is much cheaper than
@@ -1716,78 +1807,13 @@ bool lcp2_failback(struct ctdb_context *ctdb,
 		return false;
 	}
 
-	/* Find an IP and destination node that best reduces imbalance. */
-	minip = NULL;
-	minsrcimbl = 0;
-	mindstnode = -1;
-	mindstimbl = 0;
-
-	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
-	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n", srcnode, maximbl));
-
-	for (tmp_ip=all_ips; tmp_ip; tmp_ip=tmp_ip->next) {
-		/* Only consider addresses on srcnode. */
-		if (tmp_ip->pnn != srcnode) {
-			continue;
-		}
-
-		/* What is this IP address costing the source node? */
-		srcdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, srcnode);
-		srcimbl = maximbl - srcdsum;
-
-		/* Consider this IP address would cost each potential
-		 * destination node.  Destination nodes are limited to
-		 * those that are newly healthy, since we don't want
-		 * to do gratuitous failover of IPs just to make minor
-		 * balance improvements.
-		 */
-		for (dstnode=0; dstnode < nodemap->num; dstnode++) {
-			if (! newly_healthy[dstnode]) {
-				continue;
-			}
-			/* only check nodes that can actually serve this ip */
-			if (can_node_serve_ip(ctdb, dstnode, tmp_ip)) {
-				/* no it couldnt   so skip to the next node */
-				continue;
-			}
-
-			dstdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, dstnode);
-			dstimbl = lcp2_imbalances[dstnode] + dstdsum;
-			DEBUG(DEBUG_DEBUG,(" %d [%d] -> %s -> %d [+%d]\n",
-					   srcnode, srcimbl - lcp2_imbalances[srcnode],
-					   ctdb_addr_to_str(&(tmp_ip->addr)),
-					   dstnode, dstimbl - lcp2_imbalances[dstnode]));
-
-			if ((dstimbl < maximbl) && (dstdsum < srcdsum) && \
-			    ((mindstnode == -1) ||				\
-			     ((srcimbl + dstimbl) < (minsrcimbl + mindstimbl)))) {
-
-				minip = tmp_ip;
-				minsrcimbl = srcimbl;
-				mindstnode = dstnode;
-				mindstimbl = dstimbl;
-			}
-		}
-	}
-	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
-
-        if (mindstnode != -1) {
-		/* We found a move that makes things better... */
-		DEBUG(DEBUG_INFO,("%d [%d] -> %s -> %d [+%d]\n",
-				  srcnode, minsrcimbl - lcp2_imbalances[srcnode],
-				  ctdb_addr_to_str(&(minip->addr)),
-				  mindstnode, mindstimbl - lcp2_imbalances[mindstnode]));
-
-
-		lcp2_imbalances[srcnode] = srcimbl;
-		lcp2_imbalances[mindstnode] = mindstimbl;
-		minip->pnn = mindstnode;
-
-		return true;
-	}
-
-        return false;
-	
+	return lcp2_failback_candidate(ctdb,
+				       nodemap,
+				       all_ips,
+				       srcnode,
+				       maximbl,
+				       lcp2_imbalances,
+				       newly_healthy);
 }
 
 /* The calculation part of the IP allocation algorithm.
