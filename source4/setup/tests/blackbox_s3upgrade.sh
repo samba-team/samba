@@ -12,6 +12,7 @@ shift 1
 
 samba4bindir="$BINDIR"
 samba_tool="$samba4bindir/samba-tool$EXEEXT"
+samba_net="$samba4bindir/net$EXEEXT"
 testparm="$samba4bindir/testparm$EXEEXT"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
@@ -39,6 +40,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb1.conf <<EOF
 EOF
 
 testit "samba3-upgrade-member" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb1.conf --targetdir=$PREFIX/samba3-upgrade/s4_1 --dbdir=$PREFIX/samba3-upgrade/samba3
+testit "samba3-upgrade-member-getlocalsid" $samba_net getlocalsid s3upgrade -s $PREFIX/samba3-upgrade/s4_1/etc/smb.conf
 
 # Test 2 (s3 dc)
 cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
@@ -60,6 +62,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
 EOF
 
 testit "samba3-upgrade-dc" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --dbdir=$PREFIX/samba3-upgrade/samba3
+testit "samba3-upgrade-dc-getlocalsid" $samba_net getlocalsid samba -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf
 
 #Run final test without a wins.dat
 rm -f $PREFIX/samba3-upgrade/samba3/wins.dat
@@ -84,6 +87,7 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb3.conf <<EOF
 EOF
 
 testit "samba3-upgrade-testparm" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_3 --testparm=$testparm
+testit "samba3-upgrade-testparm-getlocalsid" $samba_net getlocalsid samba -s $PREFIX/samba3-upgrade/s4_3/etc/smb.conf
 
 rm -rf $PREFIX/samba3-upgrade
 
