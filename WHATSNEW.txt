@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.5.12
-			  October 26, 2011
+			  November 2, 2011
                    ==============================
 
 
@@ -29,6 +29,10 @@ o   Jeremy Allison <jra@samba.org>
       set.
     * BUG 8507: Make smbd correctly honor the "force create mode" bits from a
       cifsfs create.
+    * BUG 8541: Fix readlink() on Linux clients if the symlink target is
+      outside of the share.
+    * BUG 8542: smbclient posix_open command fails to return correct info on
+      open file.
 
 
 o   Pierre Carrier <pcarrier@redhat.com>
