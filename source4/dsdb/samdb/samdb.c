@@ -44,51 +44,6 @@
 #include "auth/auth.h"
 
 /*
-  make sure the static credentials are not freed
- */
-static int samdb_credentials_destructor(struct cli_credentials *creds)
-{
-	return -1;
-}
-
-/*
-  this returns a static set of system credentials. It is static so
-  that we always get the same pointer in ldb_wrap_connect()
- */
-struct cli_credentials *samdb_credentials(struct loadparm_context *lp_ctx)
-{
-	static struct cli_credentials *static_credentials;
-	struct cli_credentials *cred;
-	char *error_string;
-
-	if (static_credentials) {
-		return static_credentials;
-	}
-
-	cred = cli_credentials_init(talloc_autofree_context());
-	if (!cred) {
-		return NULL;
-	}
-	cli_credentials_set_conf(cred, lp_ctx);
-
-	/* We don't want to use krb5 to talk to our samdb - recursion
-	 * here would be bad, and this account isn't in the KDC
-	 * anyway */
-	cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
-
-	if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, lp_ctx, NULL, NULL,
-							 SECRETS_LDAP_FILTER, &error_string))) {
-		DEBUG(5, ("(normal if no LDAP backend) %s", error_string));
-		/* Perfectly OK - if not against an LDAP backend */
-		talloc_free(cred);
-		return NULL;
-	}
-	static_credentials = cred;
-	talloc_set_destructor(cred, samdb_credentials_destructor);
-	return cred;
-}
-
-/*
   connect to the SAM database specified by URL
   return an opaque context pointer on success, or NULL on failure
  */
@@ -100,16 +55,13 @@ struct ldb_context *samdb_connect_url(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_context *ldb;
 	struct dsdb_schema *schema;
-	struct cli_credentials *credentials;
 	int ret;
 
-	credentials = samdb_credentials(lp_ctx);
-
-	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, credentials, flags);
+	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, NULL, flags);
 	if (ldb != NULL)
 		return talloc_reference(mem_ctx, ldb);
 
-	ldb = samba_ldb_init(mem_ctx, ev_ctx, lp_ctx, session_info, credentials);
+	ldb = samba_ldb_init(mem_ctx, ev_ctx, lp_ctx, session_info, NULL);
 
 	if (ldb == NULL)
 		return NULL;
@@ -128,7 +80,7 @@ struct ldb_context *samdb_connect_url(TALLOC_CTX *mem_ctx,
 		dsdb_make_schema_global(ldb, schema);
 	}
 
-	if (!ldb_wrap_add(url, ev_ctx, lp_ctx, session_info, credentials, flags, ldb)) {
+	if (!ldb_wrap_add(url, ev_ctx, lp_ctx, session_info, NULL, flags, ldb)) {
 		talloc_free(ldb);
 		return NULL;
 	}
