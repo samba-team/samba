@@ -3280,8 +3280,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "share backend", "classic");
 
-	lpcfg_do_global_parameter(lp_ctx, "share backend", "classic");
-
 	lpcfg_do_global_parameter(lp_ctx, "server role", "standalone");
 
 	/* options that can be set on the command line must be initialised via
