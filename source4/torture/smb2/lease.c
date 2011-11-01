@@ -301,7 +301,11 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	return ret;
 }
 
-struct lease_upgrade_test {
+/**
+ * upgrade2 test.
+ * full matrix of lease upgrade combinations
+ */
+struct lease_upgrade2_test {
 	const char *initial;
 	const char *upgrade_to;
 	const char *expected;
@@ -309,7 +313,7 @@ struct lease_upgrade_test {
 
 #define NUM_LEASE_TYPES 5
 #define NUM_UPGRADE_TESTS ( NUM_LEASE_TYPES * NUM_LEASE_TYPES )
-struct lease_upgrade_test lease_upgrade_tests[NUM_UPGRADE_TESTS] = {
+struct lease_upgrade2_test lease_upgrade2_tests[NUM_UPGRADE_TESTS] = {
 	{ "", "", "" },
 	{ "", "R", "R" },
 	{ "", "RH", "RH" },
@@ -354,7 +358,7 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 	int i;
 
 	for (i = 0; i < NUM_UPGRADE_TESTS; i++) {
-		struct lease_upgrade_test t = lease_upgrade_tests[i];
+		struct lease_upgrade2_test t = lease_upgrade2_tests[i];
 
 		smb2_util_unlink(tree, fname);
 
