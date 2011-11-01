@@ -301,6 +301,95 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	return ret;
 }
 
+struct lease_upgrade_test {
+	const char *initial;
+	const char *upgrade_to;
+	const char *expected;
+};
+
+#define NUM_LEASE_TYPES 5
+#define NUM_UPGRADE_TESTS ( NUM_LEASE_TYPES * NUM_LEASE_TYPES )
+struct lease_upgrade_test lease_upgrade_tests[NUM_UPGRADE_TESTS] = {
+	{ "", "", "" },
+	{ "", "R", "R" },
+	{ "", "RH", "RH" },
+	{ "", "RW", "RW" },
+	{ "", "RWH", "RWH" },
+
+	{ "R", "", "R" },
+	{ "R", "R", "R" },
+	{ "R", "RH", "RH" },
+	{ "R", "RW", "RW" },
+	{ "R", "RWH", "RWH" },
+
+	{ "RH", "", "RH" },
+	{ "RH", "R", "RH" },
+	{ "RH", "RH", "RH" },
+	{ "RH", "RW", "RH" },
+	{ "RH", "RWH", "RWH" },
+
+	{ "RW", "", "RW" },
+	{ "RW", "R", "RW" },
+	{ "RW", "RH", "RW" },
+	{ "RW", "RW", "RW" },
+	{ "RW", "RWH", "RWH" },
+
+	{ "RWH", "", "RWH" },
+	{ "RWH", "R", "RWH" },
+	{ "RWH", "RH", "RWH" },
+	{ "RWH", "RW", "RWH" },
+	{ "RWH", "RWH", "RWH" },
+};
+
+static bool test_lease_upgrade2(struct torture_context *tctx,
+                                struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle h, hnew;
+	NTSTATUS status;
+	struct smb2_create io;
+	struct smb2_lease ls;
+	const char *fname = "lease.dat";
+	bool ret = true;
+	int i;
+
+	for (i = 0; i < NUM_UPGRADE_TESTS; i++) {
+		struct lease_upgrade_test t = lease_upgrade_tests[i];
+
+		smb2_util_unlink(tree, fname);
+
+		/* Grab a lease. */
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, lease(t.initial));
+		status = smb2_create(tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+		CHECK_LEASE(&io, t.initial, true, LEASE1);
+		h = io.out.file.handle;
+
+		/* Upgrade. */
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, lease(t.upgrade_to));
+		status = smb2_create(tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+		CHECK_LEASE(&io, t.expected, true, LEASE1);
+		hnew = io.out.file.handle;
+
+		smb2_util_close(tree, hnew);
+		smb2_util_close(tree, h);
+	}
+
+ done:
+	smb2_util_close(tree, h);
+	smb2_util_close(tree, hnew);
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
 #define CHECK_LEASE_BREAK(__lb, __oldstate, __state, __key)		\
 	do {								\
 		CHECK_VAL((__lb)->new_lease_state, lease(__state));	\
@@ -836,6 +925,7 @@ struct torture_suite *torture_smb2_lease_init(void)
 
 	torture_suite_add_1smb2_test(suite, "request", test_lease_request);
 	torture_suite_add_1smb2_test(suite, "upgrade", test_lease_upgrade);
+	torture_suite_add_1smb2_test(suite, "upgrade2", test_lease_upgrade2);
 	torture_suite_add_1smb2_test(suite, "break", test_lease_break);
 	torture_suite_add_1smb2_test(suite, "oplock", test_lease_oplock);
 	torture_suite_add_1smb2_test(suite, "multibreak", test_lease_multibreak);
