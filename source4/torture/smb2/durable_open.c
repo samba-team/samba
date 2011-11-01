@@ -535,7 +535,7 @@ bool test_durable_open_oplock(struct torture_context *tctx,
 	bool ret = true;
 
 	/* Choose a random name in case the state is left a little funky. */
-	snprintf(fname, 256, "durable_open_lease_%s.dat", generate_random_str(tctx, 8));
+	snprintf(fname, 256, "durable_open_oplock_%s.dat", generate_random_str(tctx, 8));
 
 	/* Clean slate */
 	smb2_util_unlink(tree1, fname);
