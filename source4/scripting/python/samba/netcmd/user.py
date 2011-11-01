@@ -41,12 +41,6 @@ class cmd_user_create(Command):
 
     synopsis = "%prog <username> [<password>] [options]"
 
-    # take this print out after the add subcommand is removed.
-    # the add subcommand is deprecated but left in for now to allow people to migrate to create
-    if (len(sys.argv) > 2):
-        if ((sys.argv[2]) == 'add'):
-            print "\nNote: samba-tool user add is deprecated.  Please use samba-tool user create for the same function.\n"
-    
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                 metavar="URL", dest="H"),
@@ -107,6 +101,16 @@ class cmd_user_create(Command):
             raise CommandError("Failed to add user '%s': " % username, e)
 
         self.outf.write("User '%s' created successfully\n" % username)
+
+
+class cmd_user_add(cmd_user_create):
+    __doc__ = cmd_user_create.__doc__
+    # take this print out after the add subcommand is removed.
+    # the add subcommand is deprecated but left in for now to allow people to migrate to create
+
+    def run(self, *args, **kwargs):
+        self.err.write("\nNote: samba-tool user add is deprecated.  Please use samba-tool user create for the same function.\n")
+        return super(self, cmd_user_add).run(*args, **kwargs)
 
 
 class cmd_user_delete(Command):
