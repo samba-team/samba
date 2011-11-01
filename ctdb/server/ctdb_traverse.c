@@ -130,7 +130,7 @@ struct traverse_all_state {
 /*
   setup a non-blocking traverse of a local ltdb. The callback function
   will be called on every record in the local ltdb. To stop the
-  travserse, talloc_free() the travserse_handle.
+  traverse, talloc_free() the traverse_handle.
 
   The traverse is finished when the callback is called with tdb_null for key and data
  */
