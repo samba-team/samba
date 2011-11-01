@@ -346,11 +346,9 @@ class cmd_domain_machinepassword(Command):
     def run(self, secret, sambaopts=None, credopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        name = lp.get("secrets database")
-        path = lp.get("private dir")
-        url = os.path.join(path, name)
+        url = lp.private_path("secrets.ldb")
         if not os.path.exists(url):
-            raise CommandError("secret database not found at %s " % url)
+            raise CommandError("secrets database not found at %s " % url)
         if not secret.endswith('$'):
             secret += '$'
         secretsdb = Ldb(url=url, session_info=system_session(),
