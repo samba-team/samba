@@ -15,7 +15,7 @@ define_test ()
     case "$_f" in
 	nondet.*)
 	    algorithm="nondet"
-	    CTDB_LCP2="no"
+	    export CTDB_LCP2="no"
 	    ;;
 	lcp2.*)
 	    algorithm="lcp2"
