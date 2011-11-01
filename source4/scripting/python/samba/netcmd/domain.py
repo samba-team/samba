@@ -548,7 +548,7 @@ class cmd_domain_samba3upgrade(Command):
                   help="Path to samba3 testparm utility from the previous installation.  This allows the default paths of the previous installation to be followed"),
         Option("--targetdir", type="string", metavar="DIR",
                   help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
-        Option("--quiet", help="Be quiet"),
+        Option("--quiet", help="Be quiet", action="store_true"),
         Option("--use-xattrs", type="choice", choices=["yes","no","auto"], metavar="[yes|no|auto]",
                    help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
     ]
@@ -556,7 +556,7 @@ class cmd_domain_samba3upgrade(Command):
     takes_args = ["smbconf"]
 
     def run(self, smbconf=None, targetdir=None, dbdir=None, testparm=None, 
-            quiet=None, use_xattrs=None, sambaopts=None, versionopts=None):
+            quiet=False, use_xattrs=None, sambaopts=None, versionopts=None):
 
         if not os.path.exists(smbconf):
             raise CommandError("File %s does not exist" % smbconf)
