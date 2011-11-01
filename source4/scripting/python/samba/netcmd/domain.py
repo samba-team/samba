@@ -351,6 +351,8 @@ class cmd_domain_machinepassword(Command):
         url = os.path.join(path, name)
         if not os.path.exists(url):
             raise CommandError("secret database not found at %s " % url)
+        if not secret.endswith('$'):
+            secret += '$'
         secretsdb = Ldb(url=url, session_info=system_session(),
             credentials=creds, lp=lp)
         result = secretsdb.search(attrs=["secret"],
