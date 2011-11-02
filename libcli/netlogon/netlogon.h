@@ -49,5 +49,4 @@ struct nbt_netlogon_response
 };
 
 #include "../libcli/netlogon/netlogon_proto.h"
-#include "../libcli/netlogon/ndr_netlogon_proto.h"
 #endif /* __CLDAP_SERVER_PROTO_H__ */
