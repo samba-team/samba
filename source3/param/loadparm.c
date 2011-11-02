@@ -4980,8 +4980,8 @@ static void init_globals(bool reinit_globals)
 	Globals.bUseSpnego = true;
 	Globals.bClientUseSpnego = true;
 
-	Globals.client_signing = SMB_SIGNING_IF_REQUIRED;
-	Globals.server_signing = SMB_SIGNING_OFF;
+	Globals.client_signing = SMB_SIGNING_DEFAULT;
+	Globals.server_signing = SMB_SIGNING_DEFAULT;
 
 	Globals.bDeferSharingViolations = true;
 	string_set(&Globals.smb_ports, SMB_PORTS);
