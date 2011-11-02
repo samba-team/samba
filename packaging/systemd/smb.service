@@ -1,6 +1,6 @@
 [Unit]
 Description=Samba SMB Daemon
-After=syslog.target network.target
+After=syslog.target network.target nmb.service winbind.service
 
 [Service]
 Type=forking
