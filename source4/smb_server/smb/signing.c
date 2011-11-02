@@ -112,7 +112,7 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 	case SMB_SIGNING_OFF:
 		smb_conn->signing.allow_smb_signing = false;
 		break;
-	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_IF_REQUIRED:
 		smb_conn->signing.allow_smb_signing = true;
 		break;
 	case SMB_SIGNING_REQUIRED:

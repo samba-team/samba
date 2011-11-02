@@ -150,7 +150,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	case SMB_SIGNING_OFF:
 		io->out.security_mode = 0;
 		break;
-	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_IF_REQUIRED:
 		io->out.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
 		break;
 	case SMB_SIGNING_REQUIRED:
