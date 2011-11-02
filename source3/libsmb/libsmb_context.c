@@ -739,12 +739,12 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		use_kerberos = True;
 	}
 
-	if (lp_client_signing()) {
-		signing_state = "on";
+	if (lp_client_signing() != SMB_SIGNING_OFF) {
+		signing_state = "if_required";
 	}
 
-	if (lp_client_signing() == Required) {
-		signing_state = "force";
+	if (lp_client_signing() == SMB_SIGNING_REQUIRED) {
+		signing_state = "required";
 	}
 
         set_cmdline_auth_info_username(auth_info, user);
