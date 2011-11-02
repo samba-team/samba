@@ -2736,9 +2736,10 @@ out:
 		_pam_free_data_info3(pamh);
 	}
 
-	_PAM_LOG_FUNCTION_LEAVE("pam_sm_authenticate", ctx, retval);
-
-	TALLOC_FREE(ctx);
+	if (ctx != NULL) {
+		_PAM_LOG_FUNCTION_LEAVE("pam_sm_authenticate", ctx, retval);
+		TALLOC_FREE(ctx);
+	}
 
 	return retval;
 }
