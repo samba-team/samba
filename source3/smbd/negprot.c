@@ -368,16 +368,16 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	if (lp_server_signing()) {
+	if (lp_server_signing() != SMB_SIGNING_OFF) {
 	       	if (lp_security() >= SEC_USER) {
 			secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
 			/* No raw mode with smb signing. */
 			capabilities &= ~CAP_RAW_MODE;
-			if (lp_server_signing() == Required)
+			if (lp_server_signing() == SMB_SIGNING_REQUIRED)
 				secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
 		} else {
 			DEBUG(0,("reply_nt1: smb signing is incompatible with share level security !\n"));
-			if (lp_server_signing() == Required) {
+			if (lp_server_signing() == SMB_SIGNING_REQUIRED) {
 				exit_server_cleanly("reply_nt1: smb signing required and share level security selected.");
 			}
 		}
@@ -736,7 +736,8 @@ void reply_negprot(struct smb_request *req)
 
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
-	if ((lp_server_signing() == Required) && (get_Protocol() < PROTOCOL_NT1)) {
+	if ((lp_server_signing() == SMB_SIGNING_REQUIRED)
+	    && (get_Protocol() < PROTOCOL_NT1)) {
 		exit_server_cleanly("SMB signing is required and "
 			"client negotiated a downlevel protocol");
 	}

@@ -161,12 +161,13 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 	bool mandatory = false;
 
 	switch (lp_server_signing()) {
-	case Required:
+	case SMB_SIGNING_REQUIRED:
 		mandatory = true;
 		break;
-	case True:
+	case SMB_SIGNING_IF_REQUIRED:
 		break;
-	case False:
+	case SMB_SIGNING_DEFAULT:
+	case SMB_SIGNING_OFF:
 		allowed = false;
 		break;
 	}

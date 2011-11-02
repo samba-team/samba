@@ -223,7 +223,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	}
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
-	     lp_server_signing() == Required) {
+	     lp_server_signing() == SMB_SIGNING_REQUIRED) {
 		session->do_signing = true;
 	}
 
@@ -434,7 +434,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 	bool guest = false;
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
-	    lp_server_signing() == Required) {
+	    lp_server_signing() == SMB_SIGNING_REQUIRED) {
 		session->do_signing = true;
 	}
 
