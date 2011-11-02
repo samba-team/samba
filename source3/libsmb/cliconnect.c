@@ -3213,7 +3213,7 @@ struct cli_state *get_ipc_connect(char *server,
 					lp_workgroup(),
 					user_info->password ? user_info->password : "",
 					flags,
-					Undefined);
+					SMB_SIGNING_DEFAULT);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;

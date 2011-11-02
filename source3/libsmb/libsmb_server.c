@@ -420,7 +420,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		 */
 		status = cli_connect_nb(server_n, NULL, 139, 0x20,
 					smbc_getNetbiosName(context),
-					Undefined, flags, &c);
+					SMB_SIGNING_DEFAULT, flags, &c);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -429,7 +429,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		 */
 		status = cli_connect_nb(server_n, NULL, 0, 0x20,
 					smbc_getNetbiosName(context),
-					Undefined, flags, &c);
+					SMB_SIGNING_DEFAULT, flags, &c);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -735,7 +735,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 						*pp_workgroup,
 						*pp_password,
 						flags,
-						Undefined);
+						SMB_SIGNING_DEFAULT);
                 if (! NT_STATUS_IS_OK(nt_status)) {
                         DEBUG(1,("cli_full_connection failed! (%s)\n",
                                  nt_errstr(nt_status)));

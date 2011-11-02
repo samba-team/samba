@@ -167,7 +167,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 					   NULL, 0,
 					   "IPC$", "IPC",
 					   "", "",
-					   "", 0, Undefined))) {
+					   "", 0, SMB_SIGNING_DEFAULT))) {
 		DEBUG(0,("modify_trust_password: Connection to %s failed!\n", dc_name));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
