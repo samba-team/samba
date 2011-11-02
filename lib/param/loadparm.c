@@ -142,6 +142,7 @@ static const struct enum_list enum_csc_policy[] = {
 
 /* SMB signing types. */
 static const struct enum_list enum_smb_signing_vals[] = {
+	{SMB_SIGNING_DEFAULT, "default"},
 	{SMB_SIGNING_OFF, "No"},
 	{SMB_SIGNING_OFF, "False"},
 	{SMB_SIGNING_OFF, "0"},
@@ -3380,7 +3381,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
 	lpcfg_do_global_parameter(lp_ctx, "idmap trusted only", "False");
 
-	lpcfg_do_global_parameter(lp_ctx, "client signing", "Yes");
+	lpcfg_do_global_parameter(lp_ctx, "client signing", "default");
 	lpcfg_do_global_parameter(lp_ctx, "server signing", "auto");
 
 	lpcfg_do_global_parameter(lp_ctx, "use spnego", "True");
