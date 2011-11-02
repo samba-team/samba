@@ -699,7 +699,7 @@ static NTSTATUS libnet_join_connect_dc_ipc(const char *dc,
 				   NULL,
 				   pass,
 				   flags,
-				   Undefined);
+				   SMB_SIGNING_DEFAULT);
 }
 
 /****************************************************************
@@ -1179,7 +1179,7 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 				     NULL,
 				     machine_password,
 				     0,
-				     Undefined);
+				     SMB_SIGNING_DEFAULT);
 	free(machine_account);
 	free(machine_password);
 
@@ -1192,7 +1192,7 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 					     NULL,
 					     "",
 					     0,
-					     Undefined);
+					     SMB_SIGNING_DEFAULT);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
