@@ -1660,78 +1660,6 @@ NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
 					   r->out.trustdom_handle);
 }
 
-static NTSTATUS add_trusted_domain_user(TALLOC_CTX *mem_ctx,
-					const char *netbios_name,
-					const char *domain_name,
-					const struct trustDomainPasswords *auth_struct)
-{
-	NTSTATUS status;
-	struct samu *sam_acct;
-	char *acct_name;
-	uint32_t rid;
-	struct dom_sid user_sid;
-	int i;
-	char *dummy;
-	size_t dummy_size;
-
-	sam_acct = samu_new(mem_ctx);
-	if (sam_acct == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	acct_name = talloc_asprintf(mem_ctx, "%s$", netbios_name);
-	if (acct_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!pdb_set_username(sam_acct, acct_name, PDB_SET)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!pdb_set_domain(sam_acct, domain_name, PDB_SET)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!pdb_set_acct_ctrl(sam_acct, ACB_DOMTRUST, PDB_SET)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (!pdb_new_rid(&rid)) {
-		return NT_STATUS_DS_NO_MORE_RIDS;
-	}
-	sid_compose(&user_sid, get_global_sam_sid(), rid);
-	if (!pdb_set_user_sid(sam_acct, &user_sid, PDB_SET)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	for (i = 0; i < auth_struct->incoming.count; i++) {
-		switch (auth_struct->incoming.current.array[i].AuthType) {
-			case TRUST_AUTH_TYPE_CLEAR:
-				if (!convert_string_talloc(mem_ctx,
-							   CH_UTF16LE,
-							   CH_UNIX,
-							   auth_struct->incoming.current.array[i].AuthInfo.clear.password,
-							   auth_struct->incoming.current.array[i].AuthInfo.clear.size,
-							   &dummy,
-							   &dummy_size)) {
-					return NT_STATUS_UNSUCCESSFUL;
-				}
-				if (!pdb_set_plaintext_passwd(sam_acct, dummy)) {
-					return NT_STATUS_UNSUCCESSFUL;
-				}
-				break;
-			default:
-				continue;
-		}
-	}
-
-	status = pdb_add_sam_account(sam_acct);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /***************************************************************************
  _lsa_CreateTrustedDomainEx2
  ***************************************************************************/
@@ -1845,16 +1773,6 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		return status;
 	}
 
-	if (r->in.info->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
-		status = add_trusted_domain_user(p->mem_ctx,
-						 r->in.info->netbios_name.string,
-						 r->in.info->domain_name.string,
-						 &auth_struct);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
 	status = create_lsa_policy_handle(p->mem_ctx, p,
 					  LSA_HANDLE_TRUST_TYPE,
 					  acc_granted,
@@ -1955,25 +1873,6 @@ NTSTATUS _lsa_DeleteTrustedDomain(struct pipes_struct *p,
 		DEBUG(10, ("Missing netbios name for for trusted domain %s.\n",
 			   sid_string_tos(r->in.dom_sid)));
 		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (td->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
-		sam_acct = samu_new(p->mem_ctx);
-		if (sam_acct == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		acct_name = talloc_asprintf(p->mem_ctx, "%s$", td->netbios_name);
-		if (acct_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		if (!pdb_set_username(sam_acct, acct_name, PDB_SET)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		status = pdb_delete_sam_account(sam_acct);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 	}
 
 	status = pdb_del_trusted_domain(td->netbios_name);
