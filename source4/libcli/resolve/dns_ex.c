@@ -178,29 +178,38 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 	   to avoid them in the parent */
 	reply = rk_dns_lookup(name, "AAAA");
 
-	if (!reply) {
-		return ret;
-	}
+	count = count2 = 0;
 
-	count = count_dns_rr(reply->head, rk_ns_t_aaaa);
-	count2 = count_dns_rr(reply->head, rk_ns_t_a);
+	if (reply) {
 
-	if (!count2) {
-		/*
-		 * DNS server didn't returned A when asked for AAAA records.
-		 * Most of the server do it, let's ask for A specificaly.
-		 */
-		reply2 = rk_dns_lookup(name, "A");
+		count = count_dns_rr(reply->head, rk_ns_t_aaaa);
+		count2 = count_dns_rr(reply->head, rk_ns_t_a);
 
-		if (!reply2) {
+		if (!count2) {
+			/*
+			* DNS server didn't returned A when asked for AAAA records.
+			* Most of the server do it, let's ask for A specificaly.
+			*/
+			reply2 = rk_dns_lookup(name, "A");
+
+			if (!reply2) {
+				return ret;
+			}
+
+			count2 = count_dns_rr(reply2->head, rk_ns_t_a);
+		} else {
+			reply2 = NULL;
+		}
+	} else {
+
+		reply = rk_dns_lookup(name, "A");
+		if (!reply) {
 			return ret;
 		}
 
-		count2 = count_dns_rr(reply2->head, rk_ns_t_a);
-	} else {
 		reply2 = NULL;
+		count = count_dns_rr(reply->head, rk_ns_t_a);
 	}
-
 	count += count2;
 
 	if (count == 0) {
@@ -322,7 +331,7 @@ static struct dns_records_container get_srv_records(TALLOC_CTX *mem_ctx,
 
 			addrs = talloc_realloc(mem_ctx, addrs, char*, total);
 			for (j=0; j < c.count; j++) {
-				addrs[total - j] = talloc_steal(addrs, c.list[j]);
+				addrs[total - j - 1] = talloc_steal(addrs, c.list[j]);
 			}
 		}
 	}
