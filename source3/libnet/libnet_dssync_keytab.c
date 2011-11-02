@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "smb_krb5.h"
-#include "ads.h"
 #include "libnet/libnet_dssync.h"
 #include "libnet/libnet_keytab.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
