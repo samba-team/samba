@@ -37,8 +37,32 @@ from samba.netcmd import (
 
 
 class cmd_user_create(Command):
-    """Creates a new user"""
+    """Creates a new user
 
+This command creates a new user account in the Active Directory domain.  The username specified on the command is the sAMaccountName.
+
+User accounts may represent physical entities, such as people or may be used as service accounts for applications.  User accounts are also referred to as security principals and are assigned a security identifier (SID).
+
+A user account enables a user to logon to a computer and domain with an identity that can be authenticated.  To maximize security, each user should have their own unique user account and password.  A user's access to domain resources is based on permissions assigned to the user account.
+
+The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
+
+Example1:
+samba-tool user add User1 passw0rd --given-name=John --surname=Smith --must-change-at-next-login -H ldap://samba.samdom.example.com -Uadministrator%passw1rd
+
+Example1 shows how to create a new user in the domain against a remote LDAP server.  The -H parameter is used to specify the remote target server.  The -U option is used to pass the userid and password authorized to issue the command remotely.
+
+Example2:
+sudo samba-tool user add User2 passw2rd --given-name=Jane --surname=Doe --must-change-at-next-login
+
+Example2 shows how to create a new user in the domain against the local server.   sudo is used so a user may run the command as root.  In this example, after User2 is created, he/she will be forced to change their password when they logon.
+
+Example3:
+samba-tool user add User3 passw3rd --userou=OrgUnit
+
+Example3 shows how to create a new user in the OrgUnit organizational unit.
+
+"""
     synopsis = "%prog <username> [<password>] [options]"
 
     takes_options = [
@@ -114,8 +138,25 @@ class cmd_user_add(cmd_user_create):
 
 
 class cmd_user_delete(Command):
-    """Delete a user"""
+    """Deletes a user
 
+This command deletes a user account from the Active Directory domain.  The username specified on the command is the sAMAccountName.
+
+Once the account is deleted, all permissions and memberships associated with that account are deleted.  If a new user account is added with the same name as a previously deleted account name, the new user does not have the previous permissions.  The new account user will be assigned a new security identifier (SID) and permissions and memberships will have to be added.
+
+The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
+
+Example1:
+samba-tool user delete User1 -H ldap://samba.samdom.example.com --username=administrator --password=passw1rd
+
+Example1 shows how to delete a user in the domain against a remote LDAP server.  The -H parameter is used to specify the remote target server.  The --username= and --password= options are used to pass the username and password of a user that exists on the remote server and is authorized to issue the command on that server.
+
+Example2:
+sudo samba-tool user delete User2
+
+Example2 shows how to delete a user in the domain against the local server.   sudo is used so a user may run the command as root.
+
+"""
     synopsis = "%prog <username> [options]"
 
     takes_options = [
@@ -140,8 +181,37 @@ class cmd_user_delete(Command):
 
 
 class cmd_user_enable(Command):
-    """Enables a user"""
+    """Enables a user
 
+This command enables a user account for logon to an Active Directory domain.  The username specified on the command is the sAMAccountName.  The username may also be specified using the --filter option.
+
+There are many reasons why an account may become disabled.  These include:
+- If a user exceeds the account policy for logon attempts
+- If an administrator disables the account
+- If the account expires
+
+The samba-tool user enable command allows an administrator to enable an account which has become disabled.
+
+Additionally, the enable function allows an administrator to have a set of created user accounts defined and setup with default permissions that can be easily enabled for use.
+
+The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
+
+Example1:
+samba-tool user enable Testuser1 --URL=ldap://samba.samdom.example.com --username=administrator --password=passw1rd
+
+Example1 shows how to enable a user in the domain against a remote LDAP server.  The --URL parameter is used to specify the remote target server.  The --username= and --password= options are used to pass the username and password of a user that exists on the remote server and is authorized to update that server.
+
+Exampl2:
+su samba-tool user enable Testuser2
+
+Example2 shows how to enable user Testuser2 for use in the domain on the local server.   sudo is used so a user may run the command as root.
+
+Example3:
+samba-tool user enable --filter=samaccountname=Testuser3
+
+Example3 shows how to enable a user in the domain against a local LDAP server.  It uses the --filter=samaccountname to specify the username.
+
+"""
     synopsis = "%prog (<username>|--filter <filter>) [options]"
 
     takes_options = [
@@ -173,8 +243,34 @@ class cmd_user_enable(Command):
 
 
 class cmd_user_setexpiry(Command):
-    """Sets the expiration of a user account"""
+    """Sets the expiration of a user account
 
+This command sets the expiration of a user account.  The username specified on the command is the sAMAccountName.  The username may also be specified using the --filter option.
+
+When a user account expires, it becomes disabled and the user is unable to logon.  The administrator may issue the samba-tool user enable command to enable the account for logon.  The permissions and memberships associated with the account are retained when the account is enabled.
+
+The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command on a remote server.
+
+Example1:
+samba-tool user setexpiry User1 --days=20 --URL=ldap://samba.samdom.example.com --username=administrator --password=passw1rd
+
+Example1 shows how to set the expiration of an account in a remote LDAP server.  The --URL parameter is used to specify the remote target server.  The --username= and --password= options are used to pass the username and password of a user that exists on the remote server and is authorized to update that server.
+
+Exampl2:
+su samba-tool user setexpiry User2
+
+Example2 shows how to set the account expiration of user User2 so it will never expire.  The user in this example resides on the  local server.   sudo is used so a user may run the command as root.
+
+Example3:
+samba-tool user setexpiry --days=20 --filter=samaccountname=User3
+
+Example3 shows how to set the account expiration date to end of day 20 days from the current day.  The username or sAMAccountName is specified using the --filter= paramter and the username in this example is User3.
+
+Example4:
+samba-tool user setexpiry --noexpiry User4
+Example4 shows how to set the account expiration so that it will never expire.  The username and sAMAccountName in this example is User4.
+
+"""
     synopsis = "%prog (<username>|--filter <filter>) [options]"
 
     takes_options = [
@@ -212,7 +308,11 @@ class cmd_user_setexpiry(Command):
 
 
 class cmd_user_password(Command):
-    """Change password for a user account (the one provided in authentication)"""
+    """Change password for a user account (the one provided in authentication)
+
+
+
+"""
 
     synopsis = "%prog [options]"
 
@@ -246,8 +346,32 @@ class cmd_user_password(Command):
 
 
 class cmd_user_setpassword(Command):
-    """(Re)sets the password of a user account"""
+    """Sets or resets the password of a user account
 
+This command sets or resets the logon password for a user account.  The username specified on the command is the sAMAccountName.  The username may also be specified using the --filter option.
+
+If the password is not specified on the command through the --newpassword parameter, the user is prompted for the password to be entered through the command line.
+
+It is good security practice for the administrator to use the --must-change-at-next-login option which requires that when the user logs on to the account for the first time following the password change, he/she must change the password.
+
+The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
+
+Example1:
+samba-tool user setpassword TestUser1 passw0rd --URL=ldap://samba.samdom.example.com -Uadministrator%passw1rd
+
+Example1 shows how to set the password of user TestUser1 on a remote LDAP server.  The --URL parameter is used to specify the remote target server.  The -U option is used to pass the username and password of a user that exists on the remote server and is authorized to update the server.
+
+Example2:
+sudo samba-tool user setpassword TestUser2 passw0rd --must-change-at-next-login
+
+Example2 shows how an administrator would reset the TestUser2 user's password to passw0rd.  The user is running under the root userid using the sudo command.  In this example the user TestUser2 must change their password the next time they logon to the account.
+
+Example3:
+samba-tool user setpassword --filter=samaccountname=TestUser3 --password=passw0rd
+
+Example3 shows how an administrator would reset TestUser3 user's password to passw0rd using the --filter= option to specify the username.
+
+"""
     synopsis = "%prog (<username>|--filter <filter>) [options]"
 
     takes_options = [

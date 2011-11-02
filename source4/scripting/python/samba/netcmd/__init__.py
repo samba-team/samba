@@ -25,9 +25,23 @@ from ldb import LdbError
 import sys, traceback
 import textwrap
 
-
 class Option(optparse.Option):
     pass
+
+# This help formatter does text wrapping and preserves newlines
+class PlainHelpFormatter(optparse.IndentedHelpFormatter):
+    def format_description(self,description=""):
+            desc_width = self.width - self.current_indent
+            indent = " "*self.current_indent
+            paragraphs = description.split('\n')
+            wrapped_paragraphs = [
+                textwrap.fill(p,
+                        desc_width,
+                        initial_indent=indent,
+                        subsequent_indent=indent)
+                for p in paragraphs]
+            result = "\n".join(wrapped_paragraphs) + "\n"
+            return result
 
 
 class Command(object):
@@ -108,6 +122,7 @@ class Command(object):
         parser = optparse.OptionParser(
             usage=self.synopsis,
             description=self.full_description,
+            formatter=PlainHelpFormatter(),
             prog=prog)
         parser.add_options(self.takes_options)
         optiongroups = {}
