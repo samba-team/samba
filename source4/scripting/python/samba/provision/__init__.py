@@ -1200,8 +1200,7 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
 
 
 def setup_samdb(path, session_info, provision_backend, lp, names,
-        logger, fill, serverrole,
-        am_rodc=False, schema=None):
+        logger, fill, serverrole, schema, am_rodc=False):
     """Setup a complete SAM Database.
 
     :note: This will wipe the main SAM database file!
@@ -1211,9 +1210,6 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     setup_samdb_partitions(path, logger=logger, lp=lp,
         provision_backend=provision_backend, session_info=session_info,
         names=names, serverrole=serverrole, schema=schema)
-
-    if schema is None:
-        schema = Schema(domainsid, schemadn=names.schemadn)
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
