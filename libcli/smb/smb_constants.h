@@ -92,7 +92,6 @@ enum smb_signing_setting {
 	SMB_SIGNING_OFF,
 	SMB_SIGNING_SUPPORTED,
 	SMB_SIGNING_REQUIRED,
-	SMB_SIGNING_AUTO
 };
 
 /* types of buffers in core SMB protocol */
