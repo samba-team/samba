@@ -104,16 +104,17 @@ void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
 bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
 					 const char *arg)
 {
-	auth_info->signing_state = -1;
+	auth_info->signing_state = SMB_SIGNING_DEFAULT;
 	if (strequal(arg, "off") || strequal(arg, "no") ||
 			strequal(arg, "false")) {
-		auth_info->signing_state = false;
+		auth_info->signing_state = SMB_SIGNING_OFF;
 	} else if (strequal(arg, "on") || strequal(arg, "yes") ||
+			strequal(arg, "if_required") ||
 			strequal(arg, "true") || strequal(arg, "auto")) {
-		auth_info->signing_state = true;
+		auth_info->signing_state = SMB_SIGNING_IF_REQUIRED;
 	} else if (strequal(arg, "force") || strequal(arg, "required") ||
 			strequal(arg, "forced")) {
-		auth_info->signing_state = Required;
+		auth_info->signing_state = SMB_SIGNING_REQUIRED;
 	} else {
 		return false;
 	}
