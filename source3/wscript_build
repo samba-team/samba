@@ -36,7 +36,7 @@ LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c rpc_client/util_lsarpc.c'''
 
 LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
-LIBRPCCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c rpc_client/util_netlogon.c'
+LIBCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c rpc_client/util_netlogon.c'
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -644,9 +644,9 @@ bld.SAMBA3_LIBRARY('netapi',
                     pdb param samba-util
                     LIBMSRPC_GEN msrpc3 ads LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL smbconf REG_SMBCONF
-                    LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON
+                    LIBCLI_SAMR libcli_lsa3 libcli_netlogon3
                     RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
-                    INIT_NETLOGON INIT_SAMR popt_samba3''',
+                    INIT_SAMR popt_samba3''',
                     public_headers='../source3/lib/netapi/netapi.h',
                     pc_files=[],
                     vnum='0',
@@ -892,8 +892,8 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     smbconf REG_FULL FNAME_UTIL
-                    LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
-                    RPC_NDR_SRVSVC npa_tstream INIT_NETLOGON INIT_SAMR
+                    LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
+                    RPC_NDR_SRVSVC npa_tstream INIT_SAMR
                     cli_smb_common RPC_SERVER smbd_conn param_service
                     smbd_shim NDR_DFSBLOBS
                     ''',
@@ -1005,12 +1005,12 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source=DCUTIL_SRC,
-                    deps='ads msrpc3 libcli_lsa3 INIT_NETLOGON',
+                    deps='ads msrpc3 libcli_lsa3',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('trusts_util',
                    source='libsmb/trusts_util.c',
-                   deps='ads LIBRPCCLI_NETLOGON msrpc3 INIT_NETLOGON',
+                   deps='ads libcli_netlogon3 msrpc3',
                    vars=locals(),
                    private_library=True)
 
@@ -1078,9 +1078,10 @@ bld.SAMBA3_LIBRARY('libcli_lsa3',
                    deps='RPC_NDR_LSA INIT_LSA', 
                    private_library=True)
 
-bld.SAMBA3_SUBSYSTEM('LIBRPCCLI_NETLOGON',
-                    source=LIBRPCCLI_NETLOGON_SRC,
-                    deps='RPC_NDR_NETLOGON')
+bld.SAMBA3_LIBRARY('libcli_netlogon3',
+                   source=LIBCLI_NETLOGON_SRC,
+                   deps='RPC_NDR_NETLOGON INIT_NETLOGON cliauth param',
+                   private_library=True)
 
 bld.SAMBA3_LIBRARY('cli_spoolss',
                    source=LIBCLI_SPOOLSS_SRC,
@@ -1136,8 +1137,8 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  SRV_NDR_WBINT RPC_NDR_WBINT NDR_WBINT LIBAFS
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
-                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON
-                 RPC_NDR_DSSETUP npa_tstream INIT_NETLOGON
+                 LIBCLI_SAMR libcli_lsa3 libcli_netlogon3
+                 RPC_NDR_DSSETUP npa_tstream
                  RPC_NCACN_NP RPC_PIPE_REGISTER RPC_SAMR RPC_LSARPC
                  PAM_ERRORS WB_REQTRANS auth
                  ''',
@@ -1161,9 +1162,9 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3
                  ads SMBREADLINE trusts_util RPC_NDR_WINREG RPC_NDR_ECHO
                  RPC_CLIENT_SCHANNEL
-                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
+                 LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
-                 RPC_NDR_DRSUAPI RPC_NDR_NTSVCS RPC_NDR_EVENTLOG INIT_NETLOGON
+                 RPC_NDR_DRSUAPI RPC_NDR_NTSVCS RPC_NDR_EVENTLOG
                  INIT_SAMR
                  ''',
                  vars=locals())
@@ -1184,9 +1185,9 @@ bld.SAMBA3_BINARY('net',
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPC_NDR_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
-                 LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
+                 LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
-                 RPC_NDR_INITSHUTDOWN RPC_NDR_DRSUAPI INIT_NETLOGON INIT_SAMR
+                 RPC_NDR_INITSHUTDOWN RPC_NDR_DRSUAPI INIT_SAMR
                  printing_migrate trusts_util
 		 ''',
                  vars=locals())

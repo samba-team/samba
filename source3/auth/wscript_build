@@ -34,7 +34,7 @@ bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
 
 bld.SAMBA3_LIBRARY('auth',
                     source=AUTH_SRC,
-                   deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL AUTH_COMMON LIBRPCCLI_NETLOGON samba-hostconfig''',
+                   deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL AUTH_COMMON libcli_netlogon3 samba-hostconfig''',
                    private_library=True)
 
 bld.SAMBA3_MODULE('auth_sam',
