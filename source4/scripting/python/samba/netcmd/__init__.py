@@ -30,7 +30,6 @@ class Option(optparse.Option):
     pass
 
 
-
 class Command(object):
     """A samba-tool command."""
 
@@ -63,8 +62,10 @@ class Command(object):
         "credopts": options.CredentialsOptions,
         "versionopts": options.VersionOptions,
         }
-    outf = sys.stdout
-    errf = sys.stderr
+
+    def __init__(self, outf=sys.stdout, errf=sys.stderr):
+        self.outf = outf
+        self.errf = errf
 
     def usage(self, prog, *args):
         parser, _ = self._create_parser(prog)

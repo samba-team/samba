@@ -28,9 +28,7 @@ import samba.tests
 class NetCmdTestCase(samba.tests.TestCase):
 
     def run_netcmd(self, cmd_klass, args, retcode=0):
-        cmd = cmd_klass()
-        cmd.outf = StringIO()
-        cmd.errf = StringIO()
+        cmd = cmd_klass(outf=StringIO(), errf=StringIO())
         try:
             retval = cmd._run(cmd_klass.__name__, *args)
         except Exception, e:
