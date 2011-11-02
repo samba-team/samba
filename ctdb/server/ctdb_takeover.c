@@ -1251,13 +1251,14 @@ static void *add_ip_callback(void *parm, void *data)
 	return parm;
 }
 
-void getips_count_callback(void *param, void *data)
+static int getips_count_callback(void *param, void *data)
 {
 	struct ctdb_public_ip_list **ip_list = (struct ctdb_public_ip_list **)param;
 	struct ctdb_public_ip_list *new_ip = (struct ctdb_public_ip_list *)data;
 
 	new_ip->next = *ip_list;
 	*ip_list     = new_ip;
+	return 0;
 }
 
 static struct ctdb_public_ip_list *
@@ -2827,7 +2828,7 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
     by a RST)
    this callback is called for each connection we are currently trying to kill
 */
-static void tickle_connection_traverse(void *param, void *data)
+static int tickle_connection_traverse(void *param, void *data)
 {
 	struct ctdb_killtcp_con *con = talloc_get_type(data, struct ctdb_killtcp_con);
 
@@ -2835,7 +2836,7 @@ static void tickle_connection_traverse(void *param, void *data)
 	if (con->count >= 5) {
 		/* can't delete in traverse: reparent to delete_cons */
 		talloc_steal(param, con);
-		return;
+		return 0;
 	}
 
 	/* othervise, try tickling it again */
@@ -2844,6 +2845,7 @@ static void tickle_connection_traverse(void *param, void *data)
 		(ctdb_sock_addr *)&con->dst_addr,
 		(ctdb_sock_addr *)&con->src_addr,
 		0, 0, 0);
+	return 0;
 }
 
 

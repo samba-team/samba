@@ -62,27 +62,44 @@ void *random_add(void *p, void *d)
 	return p;
 }
 
-void traverse(void *p, void *d)
+int traverse(void *p, void *d)
 {
 	uint32_t *data = (uint32_t *)d;
 
 	printf("traverse data:%d\n",*data);
+	return 0;
 }
 
-void random_traverse(void *p, void *d)
+int random_traverse(void *p, void *d)
 {
 	printf("%s   ",(char *)d);
+	return 0;
 }
 
 static uint32_t calc_checksum = 0;	
-void traverse_checksum(void *p, void *d)
+int traverse_checksum(void *p, void *d)
 {
 	int i,j,k;
 
 	sscanf(d, "%d.%d.%d", &i, &j, &k);
 	calc_checksum += i*100+j*10+k;
+	return 0;
 }
-				
+
+int count_traverse(void *p, void *d)
+{
+	int *count = p;
+	(*count)++;
+	return 0;
+}
+
+int count_traverse_abort(void *p, void *d)
+{
+	int *count = p;
+	(*count)++;
+	return -1;
+}
+
 /*
   main program
 */
@@ -94,7 +111,7 @@ int main(int argc, const char *argv[])
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		POPT_TABLEEND
 	};
-	int opt;
+	int opt, traverse_count;
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
@@ -303,7 +320,19 @@ int main(int argc, const char *argv[])
 	printf("\n");
 	printf("first node: %s\n", (char *)trbt_findfirstarray32(tree, 3));
 
+	traverse_count = 0;
+	trbt_traversearray32(tree, 3, count_traverse, &traverse_count);
+	printf("\n");
+	printf("number of entries in traverse %d\n", traverse_count);
 
+	traverse_count = 0;
+	trbt_traversearray32(tree, 3, count_traverse_abort, &traverse_count);
+	printf("\n");
+	printf("number of entries in aborted traverse %d\n", traverse_count);
+	if (traverse_count != 1) {
+		printf("Failed to abort the traverse. Should have been aborted after 1 element but did iterate over %d elements\n", traverse_count);
+		exit(10);
+	}
 	printf("\ndeleting all entries\n");
 	for(i=0;i<10;i++){
 	for(j=0;j<10;j++){

@@ -916,13 +916,17 @@ trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key)
 
 
 /* traverse a tree starting at node */
-static void 
+static int
 trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen, 
-	void (*callback)(void *param, void *data), 
+	int (*callback)(void *param, void *data), 
 	void *param)
 {
 	if (node->left) {
-		trbt_traversearray32_node(node->left, keylen, callback, param);
+		int ret;
+		ret = trbt_traversearray32_node(node->left, keylen, callback, param);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	/* this is the smallest node in this subtree
@@ -930,35 +934,52 @@ trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen,
 	   otherwise we must pull the next subtree and traverse that one as well
 	*/
 	if (keylen == 0) {
-		callback(param, node->data);
+		int ret;
+
+		ret = callback(param, node->data);
+		if (ret != 0) {
+			return ret;
+		}
 	} else {
-		trbt_traversearray32(node->data, keylen, callback, param);
+		int ret;
+
+		ret = trbt_traversearray32(node->data, keylen, callback, param);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	if (node->right) {
-		trbt_traversearray32_node(node->right, keylen, callback, param);
+		int ret;
+
+		ret = trbt_traversearray32_node(node->right, keylen, callback, param);
+		if (ret != 0) {
+			return ret;
+		}
 	}
+
+	return 0;
 }
 	
 
 /* traverse the tree using an array of uint32 as a key */
-void 
+int 
 trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen, 
-	void (*callback)(void *param, void *data), 
+	int (*callback)(void *param, void *data), 
 	void *param)
 {
 	trbt_node_t *node;
 
 	if (tree == NULL) {
-		return;
+		return 0;
 	}
 
 	node=tree->root;
 	if (node == NULL) {
-		return;
+		return 0;
 	}
 
-	trbt_traversearray32_node(node, keylen-1, callback, param);
+	return trbt_traversearray32_node(node, keylen-1, callback, param);
 }
 
 
@@ -999,7 +1020,7 @@ trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen)
 }
 
 
-#if 0
+#if TEST_RB_TREE
 static void printtree(trbt_node_t *node, int levels)
 {
 	int i;
@@ -1007,7 +1028,7 @@ static void printtree(trbt_node_t *node, int levels)
 	printtree(node->left, levels+1);
 
 	for(i=0;i<levels;i++)printf("    ");
-	printf("key:%d COLOR:%s (node:0x%08x parent:0x%08x left:0x%08x right:0x%08x)\n",node->key32,node->rb_color==TRBT_BLACK?"BLACK":"RED",(int)node,(int)node->parent, (int)node->left,(int)node->right);
+	printf("key:%d COLOR:%s (node:%p parent:%p left:%p right:%p)\n",node->key32,node->rb_color==TRBT_BLACK?"BLACK":"RED", node, node->parent, node->left, node->right);
 
 	printtree(node->right, levels+1);
 	printf("\n");
@@ -1021,13 +1042,11 @@ void print_tree(trbt_tree_t *tree)
 	}
 	printf("---\n");
 	printtree(tree->root->left, 1);
-	printf("root node key:%d COLOR:%s (node:0x%08x left:0x%08x right:0x%08x)\n",tree->root->key32,tree->root->rb_color==TRBT_BLACK?"BLACK":"RED",(int)tree->root,(int)tree->root->left,(int)tree->root->right);
+	printf("root node key:%d COLOR:%s (node:%p left:%p right:%p)\n",tree->root->key32,tree->root->rb_color==TRBT_BLACK?"BLACK":"RED", tree->root, tree->root->left, tree->root->right);
 	printtree(tree->root->right, 1);
 	printf("===\n");
 }
-#endif
 
-# if 0
 void 
 test_tree(void)
 {
@@ -1037,7 +1056,7 @@ test_tree(void)
 	int NUM=15;
 	int cnt=0;
 
-	tree=trbt_create(talloc_new(NULL));
+	tree=trbt_create(talloc_new(NULL), 0);
 #if 0
 	for(i=0;i<10;i++){
 		printf("adding node %i\n",i);
