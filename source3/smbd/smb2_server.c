@@ -1142,7 +1142,6 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
-	const uint8_t *outhdr;
 	int i = req->current_idx;
 	uint32_t in_flags;
 	uint32_t in_tid;
@@ -1189,7 +1188,6 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
-	const uint8_t *outhdr;
 	int i = req->current_idx;
 	uint32_t in_flags;
 	uint64_t in_session_id;
