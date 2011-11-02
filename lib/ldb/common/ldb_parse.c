@@ -535,12 +535,12 @@ static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *mem_ctx, const ch
 	while (isspace((unsigned char)*p)) p++;
 
 	while (*p) {
+		struct ldb_parse_tree **e;
 		if (*p == ')') {
 			break;
 		}
 
 		next = ldb_parse_filter(ret->u.list.elements, &p);
-		struct ldb_parse_tree **e;
 		if (next == NULL) {
 			/* an invalid filter element */
 			talloc_free(ret);
