@@ -77,12 +77,35 @@ bool smbsrv_setup_signing(struct smbsrv_connection *smb_conn,
 
 bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 {
+	enum smb_signing_setting signing_setting;
+
 	smb_conn->signing.mac_key = data_blob(NULL, 0);
 	if (!smbcli_set_signing_off(&smb_conn->signing)) {
 		return false;
 	}
-	
-	switch (lpcfg_server_signing(smb_conn->lp_ctx)) {
+
+	signing_setting = lpcfg_server_signing(smb_conn->lp_ctx);
+	if (signing_setting == SMB_SIGNING_AUTO) {
+		/*
+		 * If we are a domain controller, SMB signing is
+		 * really important, as it can prevent a number of
+		 * attacks on communications between us and the
+		 * clients
+		 *
+		 * However, it really sucks (no sendfile, CPU
+		 * overhead) performance-wise when used on a
+		 * file server, so disable it by default
+		 * on non-DCs
+		 */
+
+		if (lpcfg_server_role(smb_conn->lp_ctx) >= ROLE_DOMAIN_CONTROLLER) {
+			signing_setting = SMB_SIGNING_REQUIRED;
+		} else {
+			signing_setting = SMB_SIGNING_OFF;
+		}
+	}
+
+	switch (signing_setting) {
 	case SMB_SIGNING_OFF:
 		smb_conn->signing.allow_smb_signing = false;
 		break;
@@ -92,23 +115,6 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 	case SMB_SIGNING_REQUIRED:
 		smb_conn->signing.allow_smb_signing = true;
 		smb_conn->signing.mandatory_signing = true;
-		break;
-	case SMB_SIGNING_AUTO:
-		/* If we are a domain controller, SMB signing is
-		 * really important, as it can prevent a number of
-		 * attacks on communications between us and the
-		 * clients */
-
-		if (lpcfg_server_role(smb_conn->lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
-			smb_conn->signing.allow_smb_signing = true;
-			smb_conn->signing.mandatory_signing = true;
-		} else {
-			/* However, it really sucks (no sendfile, CPU
-			 * overhead) performance-wise when used on a
-			 * file server, so disable it by default (auto
-			 * is the default) on non-DCs */
-			smb_conn->signing.allow_smb_signing = false;
-		}
 		break;
 	}
 	return true;
