@@ -111,7 +111,7 @@ static struct con_struct *create_cs(struct net_context *c,
 					"",
 #endif
 					0,
-					Undefined);
+					SMB_SIGNING_DEFAULT);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: Connect failed. Error was %s\n", nt_errstr(nt_status)));

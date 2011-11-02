@@ -125,7 +125,8 @@ NTSTATUS connect_to_service(struct net_context *c,
 					server_ss, c->opt_port,
 					service_name, service_type,
 					c->opt_user_name, c->opt_workgroup,
-					c->opt_password, flags, Undefined);
+					c->opt_password, flags,
+					SMB_SIGNING_DEFAULT);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("Could not connect to server %s\n"),
 			  server_name);
@@ -209,7 +210,7 @@ NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 					server_name, server_ss, c->opt_port,
 					"IPC$", "IPC",
 					"", "",
-					"", 0, Undefined);
+					"", 0, SMB_SIGNING_DEFAULT);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -269,7 +270,7 @@ NTSTATUS connect_to_ipc_krb5(struct net_context *c,
 					user_and_realm, c->opt_workgroup,
 					c->opt_password,
 					CLI_FULL_CONNECTION_USE_KERBEROS,
-					Undefined);
+					SMB_SIGNING_DEFAULT);
 
 	SAFE_FREE(user_and_realm);
 
