@@ -32,6 +32,7 @@ from samba.netcmd.group import cmd_group
 from samba.netcmd.ldapcmp import cmd_ldapcmp
 from samba.netcmd.ntacl import cmd_ntacl
 from samba.netcmd.rodc import cmd_rodc
+from samba.netcmd.sites import cmd_sites
 from samba.netcmd.spn import cmd_spn
 from samba.netcmd.testparm import cmd_testparm
 from samba.netcmd.time import cmd_time
@@ -55,6 +56,7 @@ class cmd_sambatool(SuperCommand):
     subcommands["ldapcmp"] = cmd_ldapcmp()
     subcommands["ntacl"] = cmd_ntacl()
     subcommands["rodc"] = cmd_rodc()
+    subcommands["sites"] = cmd_sites()
     subcommands["spn"] = cmd_spn()
     subcommands["testparm"] =  cmd_testparm()
     subcommands["time"] = cmd_time()
