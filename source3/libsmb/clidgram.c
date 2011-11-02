@@ -25,6 +25,7 @@
 #include "libsmb/clidgram.h"
 #include "libsmb/nmblib.h"
 #include "messages.h"
+#include "librpc/gen_ndr/samr.h"
 
 /*
  * cli_send_mailslot, send a mailslot for client code ...

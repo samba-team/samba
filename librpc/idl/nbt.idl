@@ -8,7 +8,7 @@
    encoding if it doesn't work out
 */
 
-import "misc.idl", "security.idl", "svcctl.idl", "samr.idl";
+import "misc.idl", "security.idl", "svcctl.idl";
 [
 	helper("../libcli/netlogon/netlogon.h", "../libcli/nbt/libnbt.h"),
 	helpstring("NBT messages"),
@@ -393,8 +393,6 @@ interface nbt
 		LOGON_SAM_LOGON_USER_UNKNOWN_EX   = 25 /* was NETLOGON_RESPONSE_FROM_PDC_USER */
 	} netlogon_command;
 
-	typedef bitmap samr_AcctFlags samr_AcctFlags;
-
 	/* query to dc hand marshaled, as it has 'optional'
 	 * parts */
 	typedef [nopull,nopush] struct {
@@ -402,7 +400,8 @@ interface nbt
 		nstring              computer_name;
 		nstring              user_name;
 		astring              mailslot_name;
-		samr_AcctFlags       acct_control;
+		uint32               acct_control;
+		/* samr_AcctFlags       acct_control; */
 		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
 		/* The manual alignment is required because this
 		 * structure is marked flag(NDR_NOALIGN) via the
@@ -510,8 +509,6 @@ interface nbt
 		astring pdc_name;
 		uint16 lm20_token;
 	} nbt_netlogon_response2;
-
-	typedef enum netr_SamDatabaseID netr_SamDatabaseID;
 
 	/* used to announce SAM changes - MS-NRPC 2.2.1.5.1 */
 	typedef struct {

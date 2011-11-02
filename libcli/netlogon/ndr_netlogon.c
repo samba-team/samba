@@ -48,7 +48,7 @@ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_REQUEST(struct ndr_push *ndr, int 
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->mailslot_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_push_samr_AcctFlags(ndr, NDR_SCALARS, r->acct_control));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->acct_control));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		if (ndr_size_dom_sid0(&r->sid, ndr->flags)) {
 			struct ndr_push *_ndr_sid;
@@ -93,7 +93,7 @@ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_REQUEST(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->mailslot_name));
 			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_pull_samr_AcctFlags(ndr, NDR_SCALARS, &r->acct_control));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->acct_control));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sid_size));
 		if (r->sid_size) {
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;

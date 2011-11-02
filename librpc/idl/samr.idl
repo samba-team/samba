@@ -17,13 +17,6 @@ import "misc.idl", "lsa.idl", "security.idl";
 {
 	typedef bitmap security_secinfo security_secinfo;
 
-	/* SAM database types */
-	typedef [public,v1_enum] enum {
-		SAM_DATABASE_DOMAIN  = 0, /* Domain users and groups */
-		SAM_DATABASE_BUILTIN = 1, /* BUILTIN users and groups */
-		SAM_DATABASE_PRIVS   = 2 /* Privileges */
-	} netr_SamDatabaseID;
-
 	/* account control (acct_flags) bits */
 	typedef [public,bitmap32bit] bitmap {
 		ACB_DISABLED			= 0x00000001,  /* 1 = User account disabled */

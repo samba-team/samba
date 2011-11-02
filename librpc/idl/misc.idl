@@ -77,4 +77,11 @@ interface misc
 		[case(REG_MULTI_SZ)] nstring_array string_array;
 		[default,flag(NDR_REMAINING)] DATA_BLOB data;
 	} winreg_Data;
+
+	/* SAM database types */
+	typedef [public,v1_enum] enum {
+		SAM_DATABASE_DOMAIN  = 0, /* Domain users and groups */
+		SAM_DATABASE_BUILTIN = 1, /* BUILTIN users and groups */
+		SAM_DATABASE_PRIVS   = 2 /* Privileges */
+	} netr_SamDatabaseID;
 }
