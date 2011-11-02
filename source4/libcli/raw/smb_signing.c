@@ -51,8 +51,8 @@ static bool smbcli_set_smb_signing_common(struct smbcli_transport *transport)
 		return false;
 	}
 
-	if (!(transport->negotiate.sec_mode & 
-	      (NEGOTIATE_SECURITY_SIGNATURES_REQUIRED|NEGOTIATE_SECURITY_SIGNATURES_ENABLED))) {
+	if (!(transport->negotiate.sec_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED)
+	    && !transport->negotiate.sign_info.mandatory_signing) {
 		DEBUG(5, ("SMB Signing is not negotiated by the peer\n"));
 		return false;
 	}
