@@ -402,7 +402,7 @@ smb_complete_connection(const char *myname,
 	/* Start the SMB connection */
 	*need_auth = false;
 	nt_status = cli_start_connection(&cli, myname, server, NULL, port,
-					 Undefined, flags);
+					 SMB_SIGNING_DEFAULT, flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: Connection failed: %s\n", nt_errstr(nt_status));
 		return NULL;
