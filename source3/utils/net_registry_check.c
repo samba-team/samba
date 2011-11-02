@@ -862,7 +862,7 @@ static bool get_version(struct check_ctx *ctx) {
 
 	if (!version) {
 		printf("Couldn't determine registry format version, "
-		       "specify with --version\n");
+		       "specify with --reg-version\n");
 		return false;
 	}
 
