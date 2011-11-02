@@ -13,7 +13,7 @@ bld.SAMBA_SUBSYSTEM('NDR_WINSTATION',
 
 bld.SAMBA_SUBSYSTEM('NDR_IRPC',
 	source='gen_ndr/ndr_irpc.c',
-	public_deps='ndr NDR_SECURITY NDR_NBT'
+	public_deps='ndr NDR_SECURITY ndr_nbt'
 	)
 
 
@@ -51,7 +51,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NTP_SIGND',
 
 bld.SAMBA_SUBSYSTEM('NDR_WINSREPL',
 	source='gen_ndr/ndr_winsrepl.c',
-	public_deps='ndr NDR_NBT'
+	public_deps='ndr ndr_nbt'
 	)
 
 
@@ -86,7 +86,7 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
         NDR_DBGIDL NDR_DSSETUP NDR_MSGSVC NDR_WINSIF NDR_MGMT
         NDR_OXIDRESOLVER NDR_REMACT NDR_WZCSVC
         NDR_BROWSER NDR_W32TIME NDR_SCERPC NDR_TRKWKS NDR_KEYSVC ndr-krb5pac
-        NDR_XATTR NDR_SCHANNEL NDR_ROT NDR_DRSBLOBS NDR_NBT NDR_WINSREPL
+        NDR_XATTR NDR_SCHANNEL NDR_ROT NDR_DRSBLOBS ndr_nbt NDR_WINSREPL
         NDR_SECURITY NDR_DNSSERVER NDR_WINSTATION NDR_IRPC NDR_OPENDB
         NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI
         NDR_FRSTRANS NDR_NFS4ACL NDR_NTP_SIGND NDR_DCOM NDR_WMI
@@ -237,7 +237,7 @@ bld.SAMBA_PYTHON('python_atsvc',
 
 bld.SAMBA_PYTHON('python_dcerpc_nbt',
 	source='../../librpc/gen_ndr/py_nbt.c',
-	deps='NDR_NBT RPC_NDR_NBT pytalloc-util pyrpc_util',
+	deps='ndr_nbt RPC_NDR_NBT pytalloc-util pyrpc_util',
 	realname='samba/dcerpc/nbt.so'
 	)
 

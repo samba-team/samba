@@ -13,7 +13,7 @@ bld.SAMBA_SUBSYSTEM('lmhosts',
 
 bld.SAMBA_LIBRARY('cli-nbt',
                   source='nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c',
-                  public_deps='ndr NDR_NBT tevent tevent-util NDR_SECURITY samba_socket samba-util lmhosts',
+                  public_deps='ndr ndr_nbt tevent tevent-util NDR_SECURITY samba_socket samba-util lmhosts',
                   private_library=True
                   )
 

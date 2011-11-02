@@ -2,5 +2,5 @@
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_NETLOGON',
 	source='netlogon.c',
-	public_deps='samba-util NDR_NBT'
+	public_deps='samba-util ndr_nbt'
 	)

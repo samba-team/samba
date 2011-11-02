@@ -251,7 +251,7 @@ bld.SAMBA_SUBSYSTEM('NDR_SRVSVC',
 
 bld.SAMBA_SUBSYSTEM('NDR_NETLOGON',
 	source='gen_ndr/ndr_netlogon.c ndr/ndr_netlogon.c',
-	public_deps='ndr NDR_SECURITY NDR_LSA NDR_SAMR NDR_NBT'
+	public_deps='ndr NDR_SECURITY NDR_LSA NDR_SAMR ndr_nbt'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_EVENTLOG',
@@ -331,14 +331,16 @@ bld.SAMBA_SUBSYSTEM('NDR_XATTR',
 
 bld.SAMBA_SUBSYSTEM('NDR_SCHANNEL',
 	source='ndr/ndr_schannel.c gen_ndr/ndr_schannel.c',
-	public_deps='ndr NDR_NBT'
+	public_deps='ndr ndr_nbt'
 	)
 
-bld.SAMBA_SUBSYSTEM('NDR_NBT',
+bld.SAMBA_LIBRARY('ndr_nbt',
 	source='gen_ndr/ndr_nbt.c ndr/ndr_nbt.c',
-	public_deps='ndr NDR_NBT_BUF NDR_SECURITY ndr-standard',
-	public_headers='gen_ndr/nbt.h',
-        header_path='gen_ndr'
+	public_deps='ndr NDR_NBT_BUF NDR_SECURITY',
+	public_headers='gen_ndr/nbt.h gen_ndr/ndr_nbt.h ndr/ndr_nbt.h',
+        header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')],
+        pc_files='ndr_nbt.pc',
+        vnum='0.0.1'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_BACKUPKEY',
@@ -443,7 +445,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_SPOOLSS',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_NBT',
 	source='gen_ndr/ndr_nbt_c.c',
-	public_deps='dcerpc-binding NDR_NBT'
+	public_deps='dcerpc-binding ndr_nbt'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WKSSVC',
