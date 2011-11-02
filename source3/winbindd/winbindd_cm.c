@@ -812,7 +812,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	*cli = cli_state_create(NULL, sockfd,
 				controller, domain->alt_name,
-				Undefined, flags);
+				SMB_SIGNING_DEFAULT, flags);
 	if (*cli == NULL) {
 		DEBUG(1, ("Could not cli_initialize\n"));
 		result = NT_STATUS_NO_MEMORY;
