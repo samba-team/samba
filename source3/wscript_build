@@ -975,7 +975,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNMB',
 
 bld.SAMBA3_SUBSYSTEM('LIBNBT',
                     source='',
-                    deps='NDR_SVCCTL NDR_NBT NDR_NBT_BUF LIBCLI_NETLOGON LIBCLI_NDR_NETLOGON',
+                    deps='NDR_SVCCTL NDR_NBT LIBCLI_NETLOGON LIBCLI_NDR_NETLOGON',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
