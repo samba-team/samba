@@ -64,7 +64,7 @@ static fstring multishare_conn_fname;
 static bool use_multishare_conn = False;
 static bool do_encrypt;
 static const char *local_path = NULL;
-static int signing_state = Undefined;
+static int signing_state = SMB_SIGNING_DEFAULT;
 char *test_filename;
 
 bool torture_showall = False;
@@ -1096,9 +1096,9 @@ static bool run_readwritelarge(int dummy)
 static bool run_readwritelarge_signtest(int dummy)
 {
 	bool ret;
-	signing_state = Required;
+	signing_state = SMB_SIGNING_REQUIRED;
 	ret = run_readwritelarge_internal();
-	signing_state = Undefined;
+	signing_state = SMB_SIGNING_DEFAULT;
 	return ret;
 }
 
@@ -6570,7 +6570,7 @@ static bool run_chain2(int dummy)
 
 	printf("starting chain2 test\n");
 	status = cli_start_connection(&cli1, lp_netbios_name(), host, NULL,
-				      port_to_use, Undefined, 0);
+				      port_to_use, SMB_SIGNING_DEFAULT, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

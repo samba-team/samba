@@ -191,7 +191,7 @@ static struct cli_state *connect_one(char *share, int snum)
 	}
 
 	status = cli_connect_nb(server_n, NULL, 0, 0x20, myname,
-				Undefined, flags, &c);
+				SMB_SIGNING_DEFAULT, flags, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Connection to %s failed. Error %s\n", server_n,
 			  nt_errstr(status)));
