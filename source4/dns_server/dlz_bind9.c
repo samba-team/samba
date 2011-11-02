@@ -25,17 +25,33 @@
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
+#include "auth/auth.h"
 #include "auth/session.h"
 #include "auth/gensec/gensec.h"
+#include "librpc/gen_ndr/security.h"
+#include "auth/credentials/credentials.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 #include "gen_ndr/ndr_dnsp.h"
+#include "gen_ndr/server_id.h"
+#include "messaging/messaging.h"
 #include "dlz_minimal.h"
 
+
+struct b9_options {
+	const char *url;
+};
+
 struct dlz_bind9_data {
+	struct b9_options options;
 	struct ldb_context *samdb;
 	struct tevent_context *ev_ctx;
 	struct loadparm_context *lp;
 	int *transaction_token;
 	uint32_t soa_serial;
+
+	/* Used for dynamic update */
+	struct smb_krb5_context *smb_krb5_ctx;
 
 	/* helper functions from the dlz_dlopen driver */
 	void (*log)(int level, const char *fmt, ...);
@@ -412,10 +428,6 @@ static isc_result_t b9_putnamedrr(struct dlz_bind9_data *state,
 	return result;
 }
 
-struct b9_options {
-	const char *url;
-};
-
 /*
    parse options
  */
@@ -448,9 +460,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	isc_result_t result;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_dn *dn;
-	struct b9_options options;
-
-	ZERO_STRUCT(options);
+	NTSTATUS nt_status;
 
 	state = talloc_zero(NULL, struct dlz_bind9_data);
 	if (state == NULL) {
@@ -472,7 +482,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		goto failed;
 	}
 
-	result = parse_options(state, argc, argv, &options);
+	result = parse_options(state, argc, argv, &state->options);
 	if (result != ISC_R_SUCCESS) {
 		goto failed;
 	}
@@ -483,9 +493,20 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		goto failed;
 	}
 
-	if (options.url == NULL) {
-		options.url = lpcfg_private_path(tmp_ctx, state->lp, "dns/sam.ldb");
-		if (options.url == NULL) {
+	if (smb_krb5_init_context(state, state->ev_ctx, state->lp, &state->smb_krb5_ctx) != 0) {
+		result = ISC_R_NOMEMORY;
+		goto failed;
+	}
+
+	nt_status = gensec_init();
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	if (state->options.url == NULL) {
+		state->options.url = lpcfg_private_path(state, state->lp, "dns/sam.ldb");
+		if (state->options.url == NULL) {
 			result = ISC_R_NOMEMORY;
 			goto failed;
 		}
@@ -495,10 +516,10 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	fault_setup_disable();
 
 	state->samdb = samdb_connect_url(state, state->ev_ctx, state->lp,
-					system_session(state->lp), 0, options.url);
+					system_session(state->lp), 0, state->options.url);
 	if (state->samdb == NULL) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to connect to %s",
-			options.url);
+			state->options.url);
 		result = ISC_R_FAILURE;
 		goto failed;
 	}
@@ -506,7 +527,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	dn = ldb_get_default_basedn(state->samdb);
 	if (dn == NULL) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: Unable to get basedn for %s - %s",
-			   options.url, ldb_errstring(state->samdb));
+			   state->options.url, ldb_errstring(state->samdb));
 		result = ISC_R_FAILURE;
 		goto failed;
 	}
@@ -998,6 +1019,17 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 	return ISC_R_SUCCESS;
 }
 
+static char *strlower(char *str)
+{
+	int i;
+
+	for (i=0; i<strlen(str); i++) {
+		str[i] = (char) tolower(str[i]);
+	}
+
+	return str;
+}
+
 /*
   authorize a zone update
  */
@@ -1006,9 +1038,127 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 				    void *dbdata)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+	TALLOC_CTX *tmp_ctx;
+	DATA_BLOB ap_req;
+	struct cli_credentials *server_credentials;
+	char *keytab_name, *username;
+	bool ret;
+	int ldb_ret;
+	NTSTATUS nt_status;
+	struct gensec_security *gensec_ctx;
+	struct auth_session_info *session_info;
+	struct ldb_dn *dn;
+	isc_result_t result;
+	struct ldb_result *res;
+	const char * attrs[] = { NULL };
+	uint32_t access_mask;
 
-	state->log(ISC_LOG_INFO, "samba_dlz: allowing update of signer=%s name=%s tcpaddr=%s type=%s key=%s keydatalen=%u",
-		   signer, name, tcpaddr, type, key, keydatalen);
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: no memory");
+		return false;
+	}
+
+	ap_req = data_blob_const(keydata, keydatalen);
+	server_credentials = cli_credentials_init(tmp_ctx);
+	if (!server_credentials) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to init server credentials");
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	cli_credentials_set_krb5_context(server_credentials, state->smb_krb5_ctx);
+	cli_credentials_set_conf(server_credentials, state->lp);
+
+	username = talloc_asprintf(tmp_ctx, "dns-%s", lpcfg_netbios_name(state->lp));
+	username = strlower(username);
+	cli_credentials_set_username(server_credentials, username, CRED_SPECIFIED);
+	talloc_free(username);
+
+	keytab_name = talloc_asprintf(tmp_ctx, "file:%s/dns.keytab",
+					lpcfg_private_dir(state->lp));
+	ret = cli_credentials_set_keytab_name(server_credentials, state->lp, keytab_name,
+						CRED_SPECIFIED);
+	talloc_free(keytab_name);
+	if (ret != 0) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to obtain server credentials for %s",
+				username);
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	nt_status = gensec_server_start(tmp_ctx,
+					lpcfg_gensec_settings(tmp_ctx, state->lp),
+					NULL, &gensec_ctx);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to start gensec server");
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	gensec_set_credentials(gensec_ctx, server_credentials);
+	gensec_set_target_service(gensec_ctx, "dns");
+
+	nt_status = gensec_start_mech_by_name(gensec_ctx, "spnego");
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to start spnego");
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	nt_status = gensec_update(gensec_ctx, tmp_ctx, state->ev_ctx, ap_req, &ap_req);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: spnego update failed");
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	nt_status = gensec_session_info(gensec_ctx, tmp_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to create session info");
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	/* Get the DN from name */
+	result = b9_find_name_dn(state, name, tmp_ctx, &dn);
+	if (result != ISC_R_SUCCESS) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to find name %s", name);
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	/* make sure the dn exists, or find parent dn in case new object is being added */
+	ldb_ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE,
+				attrs, "objectClass=dnsNode");
+	if (ldb_ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ldb_dn_remove_child_components(dn, 1);
+		access_mask = SEC_STD_REQUIRED | SEC_ADS_CREATE_CHILD;
+		talloc_free(res);
+	} else if (ldb_ret == LDB_SUCCESS) {
+		access_mask = SEC_STD_REQUIRED | SEC_ADS_SELF_WRITE;
+		talloc_free(res);
+	} else {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	/* Do ACL check */
+	ldb_ret = dsdb_check_access_on_dn(state->samdb, tmp_ctx, dn,
+						session_info->security_token,
+						access_mask, NULL);
+	if (ldb_ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_INFO,
+			"samba_dlz: disallowing update of signer=%s name=%s type=%s error=%s",
+			signer, name, type, ldb_strerror(ldb_ret));
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	state->log(ISC_LOG_INFO, "samba_dlz: allowing update of signer=%s name=%s tcpaddr=%s type=%s key=%s",
+		   signer, name, tcpaddr, type, key);
+
+	talloc_free(tmp_ctx);
 	return true;
 }
 
