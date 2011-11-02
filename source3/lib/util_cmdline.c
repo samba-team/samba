@@ -39,7 +39,7 @@ struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	result->signing_state = Undefined;
+	result->signing_state = SMB_SIGNING_DEFAULT;
 	return result;
 }
 
