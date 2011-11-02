@@ -97,6 +97,8 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	struct timeval boot_time;
 	uint16_t i;
 	uint16_t dialect = 0;
+	enum smb_signing_setting signing_setting;
+	struct loadparm_context *lp_ctx = req->smb_conn->lp_ctx;
 
 	/* we only do one dialect for now */
 	if (io->in.dialect_count < 1) {
@@ -119,12 +121,33 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	boot_time = timeval_current(); /* TODO: fix me */
 
 	ZERO_STRUCT(io->out);
-	switch (lpcfg_server_signing(req->smb_conn->lp_ctx)) {
+
+	signing_setting = lpcfg_server_signing(lp_ctx);
+	if (signing_setting == SMB_SIGNING_AUTO) {
+		/*
+		 * If we are a domain controller, SMB signing is
+		 * really important, as it can prevent a number of
+		 * attacks on communications between us and the
+		 * clients
+		 *
+		 * However, it really sucks (no sendfile, CPU
+		 * overhead) performance-wise when used on a
+		 * file server, so disable it by default
+		 * on non-DCs
+		 */
+
+		if (lpcfg_server_role(lp_ctx) >= ROLE_DOMAIN_CONTROLLER) {
+			signing_setting = SMB_SIGNING_REQUIRED;
+		} else {
+			signing_setting = SMB_SIGNING_OFF;
+		}
+	}
+
+	switch (signing_setting) {
 	case SMB_SIGNING_OFF:
 		io->out.security_mode = 0;
 		break;
 	case SMB_SIGNING_SUPPORTED:
-	case SMB_SIGNING_AUTO:
 		io->out.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
 		break;
 	case SMB_SIGNING_REQUIRED:
