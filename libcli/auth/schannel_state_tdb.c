@@ -169,7 +169,7 @@ NTSTATUS schannel_creds_server_step_check_tdb(struct tdb_context *tdb,
 					      struct netr_Authenticator *return_authenticator,
 					      struct netlogon_creds_CredentialState **creds_out)
 {
-	struct netlogon_creds_CredentialState *creds;
+	struct netlogon_creds_CredentialState *creds = NULL;
 	NTSTATUS status;
 	int ret;
 
@@ -194,6 +194,7 @@ NTSTATUS schannel_creds_server_step_check_tdb(struct tdb_context *tdb,
 		DEBUG(0,("schannel_creds_server_step_check_tdb: "
 			"client %s not using schannel for netlogon, despite negotiating it\n",
 			computer_name));
+		TALLOC_FREE(creds);
 		tdb_transaction_cancel(tdb);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -211,12 +212,12 @@ NTSTATUS schannel_creds_server_step_check_tdb(struct tdb_context *tdb,
 	if (NT_STATUS_IS_OK(status)) {
 		tdb_transaction_commit(tdb);
 		if (creds_out) {
-			*creds_out = creds;
-			talloc_steal(mem_ctx, creds);
+			*creds_out = talloc_move(mem_ctx, &creds);
 		}
 	} else {
 		tdb_transaction_cancel(tdb);
 	}
 
+	TALLOC_FREE(creds);
 	return status;
 }
