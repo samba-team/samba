@@ -169,7 +169,7 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 		state->negprot.in.security_mode = 0;
 		break;
 	case SMB_SIGNING_DEFAULT:
-	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_IF_REQUIRED:
 		state->negprot.in.security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
 		break;
 	case SMB_SIGNING_REQUIRED:
@@ -224,7 +224,7 @@ static void smb2_connect_negprot_done(struct smb2_request *smb2req)
 		transport->signing_required = false;
 		break;
 	case SMB_SIGNING_DEFAULT:
-	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_IF_REQUIRED:
 		if (transport->negotiate.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
 			transport->signing_required = true;
 		} else {
