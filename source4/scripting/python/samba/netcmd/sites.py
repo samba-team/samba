@@ -23,7 +23,7 @@
 
 import os
 from samba import sites
-from samba import Ldb
+from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.netcmd import (
     Command,
@@ -42,20 +42,20 @@ class cmd_sites_create(Command):
     def run(self, sitename, sambaopts=None, credopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        name = "sam.ldb"
-        path = lp.get("private dir")
-        url = os.path.join(path, name)
+        url =  lp.private_path("sam.ldb")
+
         if not os.path.exists(url):
             raise CommandError("secret database not found at %s " % url)
-        samdb = Ldb(url=url, session_info=system_session(),
-            credentials=creds, lp=lp)
+        samdb = SamDB(url=url, session_info=system_session(),
+                      credentials=creds, lp=lp)
 
         samdb.transaction_start()
-        ok = sites.create_site(samdb, samdb.get_config_basedn(), sitename)
-        samdb.transaction_commit()
-
-        if not ok:
-            raise CommandError("Error while creating site %s" % sitename)
+        try:
+            ok = sites.create_site(samdb, samdb.get_config_basedn(), sitename)
+            samdb.transaction_commit()
+        except sites.SiteAlreadyExistsException, e:
+            samdb.transaction_cancel()
+            raise CommandError("Error while creating site %s, error: %s" % (sitename, str(e)))
 
         self.outf.write("Site %s created !\n" % sitename)
 
@@ -69,20 +69,20 @@ class cmd_sites_delete(Command):
     def run(self, sitename, sambaopts=None, credopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        name = "sam.ldb"
-        path = lp.get("private dir")
-        url = os.path.join(path, name)
+        url =  lp.private_path("sam.ldb")
+
         if not os.path.exists(url):
             raise CommandError("secret database not found at %s " % url)
-        samdb = Ldb(url=url, session_info=system_session(),
+        samdb = SamDB(url=url, session_info=system_session(),
             credentials=creds, lp=lp)
 
         samdb.transaction_start()
-        ok = sites.delete_site(samdb, samdb.get_config_basedn(), sitename)
-        samdb.transaction_commit()
-
-        if not ok:
-            raise CommandError("Error while creating site %s" % sitename)
+        try:
+            ok = sites.delete_site(samdb, samdb.get_config_basedn(), sitename)
+            samdb.transaction_commit()
+        except sites.SiteException, e:
+            samdb.transaction_cancel()
+            raise CommandError("Error while removing site %s, error: %s" % (sitename, str(e)))
 
         self.outf.write("Site %s removed!\n" % sitename)
 

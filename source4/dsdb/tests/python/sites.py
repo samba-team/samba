@@ -80,7 +80,6 @@ class SitesBaseTests(samba.tests.TestCase):
 #tests on sites
 class SimpleSitesTests(SitesBaseTests):
 
-
     def test_create(self):
         """test creation of 1 site"""
 
@@ -88,30 +87,31 @@ class SimpleSitesTests(SitesBaseTests):
         ok = sites.create_site(self.ldb_admin, self.ldb_admin.get_config_basedn(),
                             "testsamba")
         self.ldb_admin.transaction_commit()
-        self.assertTrue(ok)
-        ok = False
-        try:
-            ok = sites.create_site(self.ldb_admin, self.ldb_admin.get_config_basedn(),
-                                "testsamba")
-            self.assertFalse(ok)
-        except:
-           self.assertFalse(ok)
+
+        self.assertRaises(sites.SiteAlreadyExistsException,
+                            sites.create_site, self.ldb_admin, self.ldb_admin.get_config_basedn(),
+                            "testsamba")
 
     def test_delete(self):
-        """test creation of 1 site"""
+        """test removal of 1 site"""
 
         self.ldb_admin.transaction_start()
         ok = sites.delete_site(self.ldb_admin, self.ldb_admin.get_config_basedn(),
                             "testsamba")
+
         self.ldb_admin.transaction_commit()
-        self.assertTrue(ok)
-        ok = False
-        try:
-            ok = sites.delete_site(self.ldb_admin, self.ldb_admin.get_config_basedn(),
-                                "testsamba")
-            self.assertFalse(ok)
-        except:
-           self.assertFalse(ok)
+
+        self.assertRaises(sites.SiteNotFoundException,
+                            sites.delete_site, self.ldb_admin, self.ldb_admin.get_config_basedn(),
+                            "testsamba")
+
+
+    def test_delete_not_empty(self):
+        """test removal of 1 site with servers"""
+
+        self.assertRaises(sites.SiteServerNotEmptyException,
+                            sites.delete_site, self.ldb_admin, self.ldb_admin.get_config_basedn(),
+                            "Default-First-Site-Name")
 
 
 ldb = SamDB(ldapshost, credentials=creds, session_info=system_session(lp), lp=lp)

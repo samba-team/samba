@@ -22,11 +22,59 @@
 import ldb
 from ldb import FLAG_MOD_ADD
 
+
+class SiteException(Exception):
+    """Base element for Sites errors"""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "SiteException: " + self.value
+
+
+class SiteNotFoundException(SiteException):
+    """Raised when the site is not found and it's expected to exists."""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "SiteNotFoundException: " + self.value
+
+class SiteAlreadyExistsException(SiteException):
+    """Raised when the site is not found and it's expected not to exists."""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "SiteAlreadyExists: " + self.value
+
+class SiteServerNotEmptyException(SiteException):
+    """Raised when the site still has servers attached."""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "SiteServerNotEmpty: " + self.value
+
 def create_site(samdb, configDn, siteName):
+    """
+    Create a site
+
+    :param samdb: A samdb connection
+    :param configDn: The DN of the configuration partition
+    :param siteName: Name of the site to create
+    :return: True upon success
+    :raise SiteAlreadyExists: if the site to be created already exists.
+    """
+
     ret = samdb.search(base=configDn, scope=ldb.SCOPE_SUBTREE,
                     expression='(&(objectclass=Site)(cn=%s))' % siteName)
     if len(ret) != 0:
-        raise Exception('A site with the name %s already exists' % siteName)
+        raise SiteAlreadyExistsException('A site with the name %s already exists' % siteName)
 
     m = ldb.Message()
     m.dn = ldb.Dn(samdb, "Cn=%s,CN=Sites,%s" % (siteName, str(configDn)))
@@ -49,14 +97,30 @@ def create_site(samdb, configDn, siteName):
     return True
 
 def delete_site(samdb, configDn, siteName):
+    """
+    Delete a site
 
+    :param samdb: A samdb connection
+    :param configDn: The DN of the configuration partition
+    :param siteName: Name of the site to delete
+    :return: True upon success
+    :raise SiteNotFoundException: if the site to be deleted do not exists.
+    :raise SiteServerNotEmpty: if the site has still servers in it.
+    """
+
+    dnsites = ldb.Dn(samdb, "CN=Sites,%s" % (str(configDn)))
     dnsite = ldb.Dn(samdb, "Cn=%s,CN=Sites,%s" % (siteName, str(configDn)))
     dnserver = ldb.Dn(samdb, "Cn=Servers,%s" % str(dnsite))
+
+    ret = samdb.search(base=dnsites, scope=ldb.SCOPE_ONELEVEL,
+                    expression='(dn=%s)' % str(dnsite))
+    if len(ret) != 1:
+        raise SiteNotFoundException('Site %s do not exists' % siteName)
 
     ret = samdb.search(base=dnserver, scope=ldb.SCOPE_ONELEVEL,
                     expression='(objectclass=server)')
     if len(ret) != 0:
-        raise Exception('Site %s still has servers in it, move them before removal' % siteName)
+        raise SiteServerNotEmptyException('Site %s still has servers in it, move them before removal' % siteName)
 
     samdb.delete(dnsite, ["tree_delete:0"])
 
