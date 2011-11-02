@@ -421,6 +421,10 @@ planpythontestsuite("none", "samba.tests.samdb")
 planpythontestsuite("none", "samba.tests.hostconfig")
 planpythontestsuite("none", "samba.tests.messaging")
 planpythontestsuite("none", "samba.tests.samba3sam")
+
+planpythontestsuite("dc:local", "samba.tests.samba_tool.timecmd")
+planpythontestsuite("dc:local", "samba.tests.samba_tool.user")
+
 planpythontestsuite("none", "subunit")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.rpcecho")
 plantestsuite_idlist("samba.tests.dcerpc.registry", "dc:local", [subunitrun, "$LISTOPT", '-U"$USERNAME%$PASSWORD"', "samba.tests.dcerpc.registry"])
