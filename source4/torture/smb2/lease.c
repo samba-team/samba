@@ -901,6 +901,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	w.in.file.handle = h3;
 	w.in.offset      = 0;
 	w.in.data        = data_blob_talloc(mem_ctx, NULL, 4096);
+	memset(w.in.data.data, 'o', w.in.data.length);
 	status = smb2_write(tree, &w);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
