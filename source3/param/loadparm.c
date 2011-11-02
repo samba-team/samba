@@ -435,22 +435,24 @@ static const struct enum_list enum_csc_policy[] = {
 
 /* SMB signing types. */
 static const struct enum_list enum_smb_signing_vals[] = {
-	{false, "No"},
-	{false, "False"},
-	{false, "0"},
-	{false, "Off"},
-	{false, "disabled"},
-	{true, "Yes"},
-	{true, "True"},
-	{true, "1"},
-	{true, "On"},
-	{true, "enabled"},
-	{true, "auto"},
-	{Required, "required"},
-	{Required, "mandatory"},
-	{Required, "force"},
-	{Required, "forced"},
-	{Required, "enforced"},
+	{SMB_SIGNING_DEFAULT, "default"},
+	{SMB_SIGNING_OFF, "No"},
+	{SMB_SIGNING_OFF, "False"},
+	{SMB_SIGNING_OFF, "0"},
+	{SMB_SIGNING_OFF, "Off"},
+	{SMB_SIGNING_OFF, "disabled"},
+	{SMB_SIGNING_IF_REQUIRED, "if_required"},
+	{SMB_SIGNING_IF_REQUIRED, "Yes"},
+	{SMB_SIGNING_IF_REQUIRED, "True"},
+	{SMB_SIGNING_IF_REQUIRED, "1"},
+	{SMB_SIGNING_IF_REQUIRED, "On"},
+	{SMB_SIGNING_IF_REQUIRED, "enabled"},
+	{SMB_SIGNING_IF_REQUIRED, "auto"},
+	{SMB_SIGNING_REQUIRED, "required"},
+	{SMB_SIGNING_REQUIRED, "mandatory"},
+	{SMB_SIGNING_REQUIRED, "force"},
+	{SMB_SIGNING_REQUIRED, "forced"},
+	{SMB_SIGNING_REQUIRED, "enforced"},
 	{-1, NULL}
 };
 
@@ -4978,8 +4980,8 @@ static void init_globals(bool reinit_globals)
 	Globals.bUseSpnego = true;
 	Globals.bClientUseSpnego = true;
 
-	Globals.client_signing = true;
-	Globals.server_signing = false;
+	Globals.client_signing = SMB_SIGNING_IF_REQUIRED;
+	Globals.server_signing = SMB_SIGNING_OFF;
 
 	Globals.bDeferSharingViolations = true;
 	string_set(&Globals.smb_ports, SMB_PORTS);
