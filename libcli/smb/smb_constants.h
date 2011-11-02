@@ -88,8 +88,12 @@ enum protocol_types {
 };
 
 enum smb_signing_setting {
-	SMB_SIGNING_OFF, SMB_SIGNING_SUPPORTED, 
-	SMB_SIGNING_REQUIRED, SMB_SIGNING_AUTO};
+	SMB_SIGNING_DEFAULT,
+	SMB_SIGNING_OFF,
+	SMB_SIGNING_SUPPORTED,
+	SMB_SIGNING_REQUIRED,
+	SMB_SIGNING_AUTO
+};
 
 /* types of buffers in core SMB protocol */
 #define SMB_DATA_BLOCK 0x1
