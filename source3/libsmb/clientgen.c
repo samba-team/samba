@@ -236,25 +236,25 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		use_level_II_oplocks = true;
 	}
 
-	if (signing_state == Undefined) {
+	if (signing_state == SMB_SIGNING_DEFAULT) {
 		signing_state = lp_client_signing();
 	}
 
 	switch (signing_state) {
-	case false:
+	case SMB_SIGNING_OFF:
 		/* never */
 		allow_smb_signing = false;
 		desire_smb_signing = false;
 		mandatory_signing = false;
 		break;
 	default:
-	case true:
-	case Undefined:
+	case SMB_SIGNING_DEFAULT:
+	case SMB_SIGNING_IF_REQUIRED:
 		allow_smb_signing = true;
 		desire_smb_signing = false;
 		mandatory_signing = false;
 		break;
-	case Required:
+	case SMB_SIGNING_REQUIRED:
 		/* always */
 		allow_smb_signing = true;
 		desire_smb_signing = true;
