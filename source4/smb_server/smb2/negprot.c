@@ -123,7 +123,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	ZERO_STRUCT(io->out);
 
 	signing_setting = lpcfg_server_signing(lp_ctx);
-	if (signing_setting == SMB_SIGNING_AUTO) {
+	if (signing_setting == SMB_SIGNING_DEFAULT) {
 		/*
 		 * If we are a domain controller, SMB signing is
 		 * really important, as it can prevent a number of
@@ -144,6 +144,9 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	}
 
 	switch (signing_setting) {
+	case SMB_SIGNING_DEFAULT:
+		smb_panic(__location__);
+		break;
 	case SMB_SIGNING_OFF:
 		io->out.security_mode = 0;
 		break;

@@ -85,7 +85,7 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 	}
 
 	signing_setting = lpcfg_server_signing(smb_conn->lp_ctx);
-	if (signing_setting == SMB_SIGNING_AUTO) {
+	if (signing_setting == SMB_SIGNING_DEFAULT) {
 		/*
 		 * If we are a domain controller, SMB signing is
 		 * really important, as it can prevent a number of
@@ -106,6 +106,9 @@ bool smbsrv_init_signing(struct smbsrv_connection *smb_conn)
 	}
 
 	switch (signing_setting) {
+	case SMB_SIGNING_DEFAULT:
+		smb_panic(__location__);
+		break;
 	case SMB_SIGNING_OFF:
 		smb_conn->signing.allow_smb_signing = false;
 		break;
