@@ -26,7 +26,6 @@
 
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "librpc/gen_ndr/ndr_svcctl.h"
 
 struct netlogon_samlogon_response
 {

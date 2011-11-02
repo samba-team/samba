@@ -8,7 +8,7 @@
    encoding if it doesn't work out
 */
 
-import "misc.idl", "security.idl", "svcctl.idl";
+import "misc.idl", "security.idl";
 [
 	helper("../libcli/netlogon/netlogon.h", "../libcli/nbt/libnbt.h"),
 	helpstring("NBT messages"),
