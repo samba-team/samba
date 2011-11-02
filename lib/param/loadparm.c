@@ -153,12 +153,12 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{SMB_SIGNING_SUPPORTED, "1"},
 	{SMB_SIGNING_SUPPORTED, "On"},
 	{SMB_SIGNING_SUPPORTED, "enabled"},
+	{SMB_SIGNING_SUPPORTED, "auto"},
 	{SMB_SIGNING_REQUIRED, "required"},
 	{SMB_SIGNING_REQUIRED, "mandatory"},
 	{SMB_SIGNING_REQUIRED, "force"},
 	{SMB_SIGNING_REQUIRED, "forced"},
 	{SMB_SIGNING_REQUIRED, "enforced"},
-	{SMB_SIGNING_AUTO, "auto"},
 	{-1, NULL}
 };
 
