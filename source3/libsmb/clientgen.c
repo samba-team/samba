@@ -250,7 +250,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	default:
 	case true:
 	case Undefined:
-	case Auto:
 		allow_smb_signing = true;
 		desire_smb_signing = false;
 		mandatory_signing = false;

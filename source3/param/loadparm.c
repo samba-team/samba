@@ -445,7 +445,7 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{true, "1"},
 	{true, "On"},
 	{true, "enabled"},
-	{Auto, "auto"},
+	{true, "auto"},
 	{Required, "required"},
 	{Required, "mandatory"},
 	{Required, "force"},
@@ -4978,7 +4978,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bUseSpnego = true;
 	Globals.bClientUseSpnego = true;
 
-	Globals.client_signing = Auto;
+	Globals.client_signing = true;
 	Globals.server_signing = false;
 
 	Globals.bDeferSharingViolations = true;

@@ -164,8 +164,6 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 	case Required:
 		mandatory = true;
 		break;
-	case Auto:
-		break;
 	case True:
 		break;
 	case False:
