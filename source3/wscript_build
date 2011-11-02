@@ -693,7 +693,7 @@ bld.SAMBA3_SUBSYSTEM('LIBMSRPC_GEN',
                     deps='''ndr-standard NDR_DSSETUP NDR_SPOOLSS''',
                     vars=locals())
 
-bld.SAMBA3_LIBRARY('libgpo',
+bld.SAMBA3_LIBRARY('gpo',
                    source='${LIBGPO_SRC}',
                    deps='talloc ads TOKEN_UTIL gpext',
                    vars=locals(),
@@ -1166,7 +1166,7 @@ bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
 bld.SAMBA3_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb_compat netapi addns cap intl popt_samba3 pdb libsmb smbd_shim
-                 param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3 libgpo ads LIBADS_SERVER LIBADS_PRINTER
+                 param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3 gpo ads LIBADS_SERVER LIBADS_PRINTER
                  LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPC_NDR_WINREG
