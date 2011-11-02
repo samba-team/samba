@@ -34,7 +34,7 @@ bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
 
 bld.SAMBA3_LIBRARY('auth',
                     source=AUTH_SRC,
-                    deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL AUTH_COMMON samba-hostconfig''',
+                   deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL AUTH_COMMON LIBRPCCLI_NETLOGON samba-hostconfig''',
                    private_library=True)
 
 bld.SAMBA3_MODULE('auth_sam',
@@ -80,7 +80,7 @@ bld.SAMBA3_MODULE('auth_server',
 bld.SAMBA3_MODULE('auth_domain',
                  subsystem='auth',
                  source=AUTH_DOMAIN_SRC,
-                 deps='RPC_CLIENT_SCHANNEL',
+                 deps='RPC_CLIENT_SCHANNEL trusts_util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_domain'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_domain'))

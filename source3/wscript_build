@@ -244,7 +244,7 @@ PLAINTEXT_AUTH_SRC = '''auth/pampass.c auth/pass_check.c'''
 
 SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
 
-DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/trusts_util.c libsmb/dsgetdcname.c'''
+DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/dsgetdcname.c'''
 
 WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_group.c
@@ -1005,8 +1005,14 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source=DCUTIL_SRC,
-                     deps='ads LIBRPCCLI_NETLOGON msrpc3 libcli_lsa3 INIT_NETLOGON',
+                    deps='ads msrpc3 libcli_lsa3 INIT_NETLOGON',
                     vars=locals())
+
+bld.SAMBA3_LIBRARY('trusts_util',
+                   source='libsmb/trusts_util.c',
+                   deps='ads LIBRPCCLI_NETLOGON msrpc3 INIT_NETLOGON',
+                   vars=locals(),
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
@@ -1153,7 +1159,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb_compat cap popt_samba3 pdb libsmb smbd_shim
                  param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3
-                 ads SMBREADLINE DCUTIL RPC_NDR_WINREG RPC_NDR_ECHO
+                 ads SMBREADLINE trusts_util RPC_NDR_WINREG RPC_NDR_ECHO
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
@@ -1181,7 +1187,7 @@ bld.SAMBA3_BINARY('net',
                  LIBCLI_SAMR libcli_lsa3 LIBRPCCLI_NETLOGON cli_spoolss
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
                  RPC_NDR_INITSHUTDOWN RPC_NDR_DRSUAPI INIT_NETLOGON INIT_SAMR
-                 printing_migrate
+                 printing_migrate trusts_util
 		 ''',
                  vars=locals())
 
