@@ -667,10 +667,24 @@ WERROR regdb_init(void)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("regdb_init: registry version uninitialized "
 			   "(got %d), initializing to version %d\n",
-			   vers_id, REGDB_CODE_VERSION));
+			   vers_id, REGDB_VERSION_V1));
 
-		werr = regdb_store_regdb_version(regdb, REGDB_CODE_VERSION);
-		return werr;
+		/*
+		 * There was a regdb format version prior to version 1
+		 * which did not store a INFO/version key. The format
+		 * of this version was identical to version 1 except for
+		 * the lack of the sorted subkey cache records.
+		 * Since these are disposable, we can safely assume version
+		 * 1 if no INFO/version key is found and run the db through
+		 * the whole chain of upgrade. If the database was not
+		 * initialized, this does not harm. If it was the unversioned
+		 * version ("0"), then it do the right thing with the records.
+		 */
+		werr = regdb_store_regdb_version(regdb, REGDB_VERSION_V1);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+		vers_id = REGDB_VERSION_V1;
 	}
 
 	if (vers_id > REGDB_CODE_VERSION || vers_id == 0) {
