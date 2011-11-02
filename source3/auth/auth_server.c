@@ -88,7 +88,8 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		}
 
 		status = cli_connect_nb(desthost, &dest_ss, 0, 0x20,
-					lp_netbios_name(), Undefined, flags, &cli);
+					lp_netbios_name(), SMB_SIGNING_DEFAULT,
+					flags, &cli);
 		if (NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("connected to password server %s\n",desthost));
 			connected_ok = True;
