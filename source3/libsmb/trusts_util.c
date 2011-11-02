@@ -20,8 +20,6 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/ndr_lsa_c.h"
-#include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/cli_netlogon.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
@@ -134,105 +132,6 @@ NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli,
 					    account_name,
 					    old_trust_passwd_hash,
 					    sec_channel_type);
-}
-
-/*********************************************************************
- Enumerate the list of trusted domains from a DC
-*********************************************************************/
-
-bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
-                                     char ***domain_names, uint32 *num_domains,
-				     struct dom_sid **sids )
-{
-	struct policy_handle 	pol;
-	NTSTATUS status, result;
-	fstring 	dc_name;
-	struct sockaddr_storage	dc_ss;
-	uint32 		enum_ctx = 0;
-	struct cli_state *cli = NULL;
-	struct rpc_pipe_client *lsa_pipe = NULL;
-	struct lsa_DomainList dom_list;
-	int i;
-	struct dcerpc_binding_handle *b = NULL;
-
-	*domain_names = NULL;
-	*num_domains = 0;
-	*sids = NULL;
-
-	/* lookup a DC first */
-
-	if ( !get_dc_name(domain, NULL, dc_name, &dc_ss) ) {
-		DEBUG(3,("enumerate_domain_trusts: can't locate a DC for domain %s\n",
-			domain));
-		return False;
-	}
-
-	/* setup the anonymous connection */
-
-	status = cli_full_connection( &cli, lp_netbios_name(), dc_name, &dc_ss, 0, "IPC$", "IPC",
-		"", "", "", 0, Undefined);
-	if ( !NT_STATUS_IS_OK(status) )
-		goto done;
-
-	/* open the LSARPC_PIPE	*/
-
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
-					  &lsa_pipe);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	b = lsa_pipe->binding_handle;
-
-	/* get a handle */
-
-	status = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, True,
-		LSA_POLICY_VIEW_LOCAL_INFORMATION, &pol);
-	if ( !NT_STATUS_IS_OK(status) )
-		goto done;
-
-	/* Lookup list of trusted domains */
-
-	status = dcerpc_lsa_EnumTrustDom(b, mem_ctx,
-					 &pol,
-					 &enum_ctx,
-					 &dom_list,
-					 (uint32_t)-1,
-					 &result);
-	if ( !NT_STATUS_IS_OK(status) )
-		goto done;
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
-		goto done;
-	}
-
-	*num_domains = dom_list.count;
-
-	*domain_names = talloc_zero_array(mem_ctx, char *, *num_domains);
-	if (!*domain_names) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	*sids = talloc_zero_array(mem_ctx, struct dom_sid, *num_domains);
-	if (!*sids) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	for (i=0; i< *num_domains; i++) {
-		(*domain_names)[i] = discard_const_p(char, dom_list.domains[i].name.string);
-		(*sids)[i] = *dom_list.domains[i].sid;
-	}
-
-done:
-	/* cleanup */
-	if (cli) {
-		DEBUG(10,("enumerate_domain_trusts: shutting down connection...\n"));
-		cli_shutdown( cli );
-	}
-
-	return NT_STATUS_IS_OK(status);
 }
 
 NTSTATUS change_trust_account_password( const char *domain, const char *remote_machine)

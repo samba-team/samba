@@ -1145,9 +1145,6 @@ NTSTATUS trust_pw_change_and_store_it(struct rpc_pipe_client *cli, TALLOC_CTX *m
 NTSTATUS trust_pw_find_change_and_store_it(struct rpc_pipe_client *cli, 
 					   TALLOC_CTX *mem_ctx, 
 					   const char *domain) ;
-bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
-                                     char ***domain_names, uint32 *num_domains,
-				     struct dom_sid **sids );
 NTSTATUS change_trust_account_password( const char *domain, const char *remote_machine);
 
 /* The following definitions come from param/loadparm.c  */
