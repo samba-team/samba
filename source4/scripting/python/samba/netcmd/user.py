@@ -25,7 +25,7 @@ import sys, ldb
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba import gensec
+from samba import gensec, generate_random_password
 from samba.net import Net
 
 from samba.netcmd import (
@@ -71,6 +71,9 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
         Option("--must-change-at-next-login",
                 help="Force password to be changed on next login",
                 action="store_true"),
+        Option("--random-password",
+                help="Generate random password",
+                action="store_true"),
         Option("--use-username-as-cn",
                 help="Force use of username as user's CN",
                 action="store_true"),
@@ -97,11 +100,14 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
     takes_args = ["username", "password?"]
 
     def run(self, username, password=None, credopts=None, sambaopts=None,
-            versionopts=None, H=None, must_change_at_next_login=None,
+            versionopts=None, H=None, must_change_at_next_login=None, random_password=False,
             use_username_as_cn=None, userou=None, surname=None, given_name=None, initials=None,
             profile_path=None, script_path=None, home_drive=None, home_directory=None,
             job_title=None, department=None, company=None, description=None,
             mail_address=None, internet_address=None, telephone_number=None, physical_delivery_office=None):
+
+        if random_password is not False:
+            password = generate_random_password(128, 255)
 
         while 1:
             if password is not None and password is not '':
@@ -382,17 +388,23 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
         Option("--must-change-at-next-login",
                help="Force password to be changed on next login",
                action="store_true"),
+        Option("--random-password",
+                help="Generate random password",
+                action="store_true"),
         ]
 
     takes_args = ["username?"]
 
     def run(self, username=None, filter=None, credopts=None, sambaopts=None,
             versionopts=None, H=None, newpassword=None,
-            must_change_at_next_login=None):
+            must_change_at_next_login=None, random_password=False):
         if filter is None and username is None:
             raise CommandError("Either the username or '--filter' must be specified!")
 
-        password = newpassword
+        if random_password is not False:
+            password = generate_random_password(128, 255)
+        else:
+            password = newpassword
         while 1:
             if password is not None and password is not '':
                 break
