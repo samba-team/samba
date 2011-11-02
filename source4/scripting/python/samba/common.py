@@ -20,10 +20,11 @@
 
 import ldb, dsdb
 
-def confirm(msg, forced = False, allow_all=False):
+def confirm(msg, forced=False, allow_all=False):
     """confirm an action with the user
-        :param msg: A string to print to the user
-        :param forced: Are the answer forced
+
+    :param msg: A string to print to the user
+    :param forced: Are the answer forced
     """
     if forced:
         print("%s [YES]" % msg)
