@@ -510,7 +510,7 @@ SMBCONFTORT_SRC0 = 'lib/smbconf/testsuite.c'
 
 SMBCONFTORT_SRC = '''${SMBCONFTORT_SRC0}'''
 
-LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c'
+LIBNET_SRC = 'libnet/libnet_join.c'
 
 
 LIBNET_DSSYNC_SRC = '''libnet/libnet_dssync.c
@@ -943,8 +943,15 @@ bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
                     source=LIBNET_SRC,
-                    deps='NDR_LIBNET_JOIN KRB5_WRAP',
+                    deps='NDR_LIBNET_JOIN KRB5_WRAP net_keytab',
                     vars=locals())
+
+bld.SAMBA3_LIBRARY('net_keytab',
+                   source='libnet/libnet_keytab.c',
+                   deps='KRB5_WRAP ads',
+                   vars=locals(),
+                   private_library=True)
+
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                     source=LIBNET_DSSYNC_SRC,
