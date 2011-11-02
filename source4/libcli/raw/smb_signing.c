@@ -394,7 +394,7 @@ bool smbcli_init_signing(struct smbcli_transport *transport)
 		transport->negotiate.sign_info.allow_smb_signing = false;
 		break;
 	case SMB_SIGNING_DEFAULT:
-	case SMB_SIGNING_SUPPORTED:
+	case SMB_SIGNING_IF_REQUIRED:
 		transport->negotiate.sign_info.allow_smb_signing = true;
 		break;
 	case SMB_SIGNING_REQUIRED:
