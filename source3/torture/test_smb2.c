@@ -61,12 +61,17 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(
-		cli, "test.txt", SMB2_OPLOCK_LEVEL_NONE, 0,
-		MAXIMUM_ALLOWED_ACCESS, FILE_ATTRIBUTE_NORMAL,
-		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-		FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE, NULL,
-		&fid_persistent, &fid_volatile);
+	status = smb2cli_create(cli, "smb2-basic.txt",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
+			FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_DELETE_ON_CLOSE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create returned %s\n", nt_errstr(status));
 		return false;
@@ -111,10 +116,19 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(
-		cli, "", SMB2_OPLOCK_LEVEL_NONE, 0,
-		MAXIMUM_ALLOWED_ACCESS, FILE_ATTRIBUTE_DIRECTORY, 0,
-		FILE_OPEN, 0, NULL, &fid_persistent, &fid_volatile);
+	status = smb2cli_create(cli, "",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_SYNCHRONIZE|
+			SEC_DIR_LIST|
+			SEC_DIR_READ_ATTRIBUTE, /* desired_access, */
+			0, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_OPEN, /* create_disposition, */
+			FILE_SYNCHRONOUS_IO_NONALERT|FILE_DIRECTORY_FILE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create returned %s\n", nt_errstr(status));
 		return false;
