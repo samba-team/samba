@@ -35,6 +35,8 @@
 #include "lib/events/events.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/util/clilsa.h"
 #include "system/dir.h"
 #include "system/filesys.h"
