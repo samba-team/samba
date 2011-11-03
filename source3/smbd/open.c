@@ -201,8 +201,8 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 	}
 }
 
-NTSTATUS check_parent_access(struct connection_struct *conn,
-				const char *path,
+static NTSTATUS check_parent_access(struct connection_struct *conn,
+				struct smb_filename *smb_fname,
 				uint32_t access_mask,
 				char **pp_parent_dir)
 {
@@ -212,7 +212,7 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	uint32_t access_granted = 0;
 
 	if (!parent_dirname(talloc_tos(),
-				path,
+				smb_fname->base_name,
 				&parent_dir,
 				NULL)) {
 		return NT_STATUS_NO_MEMORY;
@@ -241,7 +241,7 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 			"on directory %s for "
 			"path %s for mask 0x%x returned (0x%x) %s\n",
 			parent_dir,
-			path,
+			smb_fname->base_name,
 			access_mask,
 			access_granted,
 			nt_errstr(status) ));
@@ -618,7 +618,7 @@ static NTSTATUS open_file(files_struct *fsp,
 						access_mask);
 			} else if (local_flags & O_CREAT){
 				status = check_parent_access(conn,
-						smb_fname->base_name,
+						smb_fname,
 						SEC_DIR_ADD_FILE,
 						NULL);
 			} else {
@@ -2564,7 +2564,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	status = check_parent_access(conn,
-					smb_dname->base_name,
+					smb_dname,
 					access_mask,
 					&parent_dir);
 	if(!NT_STATUS_IS_OK(status)) {
