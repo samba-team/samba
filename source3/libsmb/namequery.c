@@ -25,6 +25,7 @@
 #include "../libcli/netlogon/netlogon.h"
 #include "lib/async_req/async_sock.h"
 #include "libsmb/nmblib.h"
+#include "../libcli/nbt/libnbt.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;

@@ -6,6 +6,7 @@ import "nbt.idl";
 	uuid("45f52c28-7f9f-101a-b52b-08002b2efabe"),
 	version(1.0),
 	helpstring("WINS Administration Interface1"),
+	helper("../libcli/nbt/libnbt.h"),
 	pointer_default(unique)
 ] interface winsif
 {

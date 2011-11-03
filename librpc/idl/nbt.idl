@@ -10,7 +10,7 @@
 
 import "misc.idl", "security.idl";
 [
-	helper("../libcli/netlogon/netlogon.h", "../libcli/nbt/libnbt.h", "../librpc/ndr/ndr_nbt.h"),
+	helper("../librpc/ndr/ndr_nbt.h"),
 	helpstring("NBT messages"),
 	uuid("6def41b6-86e4-4c32-997c-ed33af7bcd8e")
 ]

@@ -27,6 +27,7 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "libcli/nbt/libnbt.h"
 #include "torture/torture.h"
 #include "torture/nbt/proto.h"
 #include "param/param.h"
