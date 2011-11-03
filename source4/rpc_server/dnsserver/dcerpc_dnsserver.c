@@ -1105,7 +1105,7 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 	int valid_operation = 0;
 	struct dnsserver_zone *z, **zlist;
 	int zcount;
-	bool found;
+	bool found1, found2, found3, found4;
 	int i;
 
 	if (strcasecmp(operation, "QueryDwordProperty") == 0) {
@@ -1124,74 +1124,109 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 		zcount = 0;
 		zlist = talloc_zero_array(mem_ctx, struct dnsserver_zone *, 0);
 		for (z = dsstate->zones; z; z = z->next) {
-			found = false;
-			if (rin->Dword & DNS_ZONE_REQUEST_PRIMARY) {
-				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_PRIMARY) {
-					found = true;
+
+			/* Match the flags in groups
+			 *
+			 * Group1 : PRIMARY, SECONDARY, CACHE, AUTO
+			 * Group2 : FORWARD, REVERSE, FORWARDER, STUB
+			 * Group3 : DS, NON_DS, DOMAIN_DP, FOREST_DP
+			 * Group4 : CUSTOM_DP, LEGACY_DP
+			 */
+			
+			/* Group 1 */
+			found1 = false;
+			if (rin->Dword & 0x0000000f) {
+				if (rin->Dword & DNS_ZONE_REQUEST_PRIMARY) {
+					if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_PRIMARY) {
+					found1 = true;
+					}
 				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_SECONDARY) {
-				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_SECONDARY) {
-					found = true;
+				if (rin->Dword & DNS_ZONE_REQUEST_SECONDARY) {
+					if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_SECONDARY) {
+						found1 = true;
+					}
 				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_CACHE) {
-				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_CACHE) {
-					found = true;
+				if (rin->Dword & DNS_ZONE_REQUEST_CACHE) {
+					if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_CACHE) {
+						found1 = true;
+					}
 				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_AUTO) {
-				if (z->zoneinfo->fAutoCreated || z->zoneinfo->dwDpFlags & DNS_DP_AUTOCREATED) {
-					found = true;
+				if (rin->Dword & DNS_ZONE_REQUEST_AUTO) {
+					if (z->zoneinfo->fAutoCreated 
+						|| z->zoneinfo->dwDpFlags & DNS_DP_AUTOCREATED) {
+						found1 = true;
+					}
 				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_FORWARD) {
-				if (!(z->zoneinfo->Flags & DNS_RPC_ZONE_REVERSE)) {
-					found = true;
-				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_REVERSE) {
-				if (z->zoneinfo->Flags & DNS_RPC_ZONE_REVERSE) {
-					found = true;
-				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_FORWARDER) {
-				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_FORWARDER) {
-					found = true;
-				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_STUB) {
-				if (z->zoneinfo->dwZoneType & DNS_ZONE_TYPE_STUB) {
-					found = true;
-				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_DS) {
-				if (z->zoneinfo->Flags & DNS_RPC_ZONE_DSINTEGRATED) {
-					found = true;
-				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_NON_DS) {
-				if (!(z->zoneinfo->Flags & DNS_RPC_ZONE_DSINTEGRATED)) {
-					found = true;
-				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_DOMAIN_DP) {
-				if (z->zoneinfo->dwDpFlags & DNS_DP_DOMAIN_DEFAULT) {
-					found = true;
-				}
-			}
-			if (rin->Dword & DNS_ZONE_REQUEST_FOREST_DP) {
-				if (z->zoneinfo->dwDpFlags & DNS_DP_FOREST_DEFAULT) {
-					found = true;
-				}
+			} else {
+				found1 = true;
 			}
 
-			if (found) {
+			/* Group 2 */
+			found2 = false;
+			if (rin->Dword & 0x000000f0) {
+				if (rin->Dword & DNS_ZONE_REQUEST_FORWARD) {
+					if (!(z->zoneinfo->Flags & DNS_RPC_ZONE_REVERSE)) {
+						found2 = true;
+					}
+				}
+				if (rin->Dword & DNS_ZONE_REQUEST_REVERSE) {
+					if (z->zoneinfo->Flags & DNS_RPC_ZONE_REVERSE) {
+						found2 = true;
+					}
+				}
+				if (rin->Dword & DNS_ZONE_REQUEST_FORWARDER) {
+					if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_FORWARDER) {
+						found2 = true;
+					}
+				}
+				if (rin->Dword & DNS_ZONE_REQUEST_STUB) {
+					if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_STUB) {
+						found2 = true;
+					}
+				}
+			} else {
+				found2 = true;
+			}
+
+			/* Group 3 */
+			found3 = false;
+			if (rin->Dword & 0x00000f00) {
+				if (rin->Dword & DNS_ZONE_REQUEST_DS) {
+					if (z->zoneinfo->Flags & DNS_RPC_ZONE_DSINTEGRATED) {
+						found3 = true;
+					}
+				}
+				if (rin->Dword & DNS_ZONE_REQUEST_NON_DS) {
+					if (!(z->zoneinfo->Flags & DNS_RPC_ZONE_DSINTEGRATED)) {
+						found3 = true;
+					}
+				}
+				if (rin->Dword & DNS_ZONE_REQUEST_DOMAIN_DP) {
+					if (!(z->zoneinfo->dwDpFlags & DNS_DP_DOMAIN_DEFAULT)) {
+						found3 = true;
+					}
+				}
+				if (rin->Dword & DNS_ZONE_REQUEST_FOREST_DP) {
+					if (!(z->zoneinfo->dwDpFlags & DNS_DP_FOREST_DEFAULT)) {
+						found3 = true;
+					}
+				}
+			} else {
+				found3 = true;
+			}
+	
+			/* Group 4 */
+			if (rin->Dword & 0x0000f000) {
+				found4 = false;
+			} else {
+				found4 = true;
+			}
+
+			if (found1 && found2 && found3 && found4) {
 				zlist = talloc_realloc(mem_ctx, zlist, struct dnsserver_zone *, zcount+1);
 				zlist[zcount] = z;
 				zcount++;
 			}
-
 		}
 
 		if (client_version == DNS_CLIENT_VERSION_W2K) {
