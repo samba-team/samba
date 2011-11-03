@@ -264,22 +264,19 @@ static struct regkey*
 check_ctx_lookup_key(struct check_ctx *ctx, const char *path) {
 	struct regkey *ret = NULL;
 	NTSTATUS status;
-	TDB_DATA val;
+	TDB_DATA val = tdb_null;
 
 	if ( path == NULL) {
 		return ctx->root;
 	}
 
 	status = dbwrap_fetch(ctx->reg, ctx, string_term_tdb_data(path), &val);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
-	}
-	if (val.dptr != NULL) {
+	if (NT_STATUS_IS_OK(status)) {
 		if (ctx->opt.verbose) {
 			printf("Open: %s\n", path);
 		}
 		ret = *(struct regkey**)val.dptr;
-	} else {
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		/* not yet existing, create */
 		char *pp;
 		if (ctx->opt.verbose) {
@@ -304,6 +301,9 @@ check_ctx_lookup_key(struct check_ctx *ctx, const char *path) {
 
 		dbwrap_store(ctx->reg, string_term_tdb_data(path),
 			     make_tdb_data((void*)&ret, sizeof(ret)), 0);
+	} else {
+		DEBUG(0, ("lookup key: failed to fetch %s: %s\n", path,
+			  nt_errstr(status)));
 	}
 done:
 	talloc_free(val.dptr);
