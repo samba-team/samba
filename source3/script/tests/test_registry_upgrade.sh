@@ -38,30 +38,34 @@ registry_check()
     local ALLOWEDERR="INFO: version =|Check database:|overwrite registry format version 0 with 1|no INFO/version found"
 
     test "x$CHECKNO" = "x0" && {
-	REGVER="--reg-version=1"
+        REGVER="--reg-version=1"
     }
 
-    echo "Registry check $CHECKNO" >> $LOG
+    echo "Registry check $CHECKNO" | tee -a $LOG
     CHECK="$($NETCMD registry check $REGVER 2>&1)"
     RC=$?
-    ERRORSTR="$(echo "$CHECK" | grep -vE $ALLOWEDERR )"
 
+    ERRORSTR="$(echo "$CHECK" | grep -vE $ALLOWEDERR )"
     test "x$RC" = "x0" || {
-        echo "upgrade check $CHECKNO failed:" >> $LOG
+        echo "upgrade check $CHECKNO failed:" | tee -a $LOG
         return 1
     }
 
     test "x$ERRORSTR" = "x" || {
-        echo "upgrade check $CHECKNO failed:" >> $LOG
-	echo "reason: $CHECK" >> $LOG
-	return 1
+        echo "upgrade check $CHECKNO failed:" | tee -a $LOG
+        echo "reason: $CHECK" | tee -a $LOG
+        return 1
     }
 
     test "x$CHECKDIFF" = "xcheckdiff" && {
-        $NETCMD registry export 'HKLM' $WORKSPACE/export_${CHECKNO}.reg >> $LOG 2>&1
-        diff $WORKSPACE/export_0.reg $WORKSPACE/export_${CHECKNO}.reg >> $LOG 2>&1
+        $NETCMD registry export 'HKLM' $WORKSPACE/export_${CHECKNO}.reg >> $LOG
         test "x$?" = "x0" || {
-            echo "Error: $WORKSPACE/export_0.reg differs from $WORKSPACE/export_${CHECKNO}.reg" >> $LOG
+            echo "Error: 'net registry export HKLM' failed" | tee -a $LOG
+        }
+
+        diff -q $WORKSPACE/export_0.reg $WORKSPACE/export_${CHECKNO}.reg >> $LOG
+        test "x$?" = "x0" || {
+            echo "Error: $WORKSPACE/export_0.reg differs from $WORKSPACE/export_${CHECKNO}.reg" | tee -a  $LOG
             return 1
         }
     }
@@ -71,18 +75,14 @@ registry_check()
 
 registry_upgrade()
 {
-    local DIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
-    local LOG=$DIR/log
+    echo registry_upgrade $1 | tee -a $LOG
 
-    echo registry_upgrade $1 > $LOG
-
-    mkdir $WORKSPACE
     cp -v $DATADIR/registry.tdb $WORKSPACE/registry.tdb >> $LOG 2>&1
 
     REGISTRY="${WORKSPACE}/registry.tdb"
 
     test -e $REGISTRY || {
-        echo "Error: Database file not available" >> $LOG
+        echo "Error: Database file not available" | tee -a $LOG
         return 1
     }
 
@@ -98,68 +98,77 @@ registry_upgrade()
     #}
 
     # check original registry.tdb
-    echo "$REGISTRY" >> $LOG
+    echo "$REGISTRY" | tee -a $LOG
     registry_check 0
     test "x$?" = "x0" || {
+        echo "Error: initial 'registry_check 0' failed" | tee -a $LOG
         return 1
     }
 
     # trigger upgrade
-    $NETCMD registry enumerate $REGPATH >> $LOG 2>&1
+    echo "$NETCMD registry enumerate $REGPATH" >> $LOG
+    $NETCMD registry enumerate $REGPATH >> $LOG
     test "x$?" = "x0" || {
+        echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
         return 1
     }
 
     # check upgraded database
     registry_check 1
     test "x$?" = "x0" || {
+        echo "Error: 'registry_check 1' after upgrade failed" | tee -a $LOG
         return 1
     }
 
     # export database for diffs
-    $NETCMD registry export 'HKLM' $WORKSPACE/export_0.reg >> $LOG 2>&1
+    $NETCMD registry export 'HKLM' $WORKSPACE/export_0.reg | tee -a $LOG
+    test "x$?" = "x0" || {
+        echo "Error 'net registry export' failed" | tee -a $LOG
+        return 1
+    }
 
     # remove version string
-    $DBWRAP_TOOL $REGISTRY delete INFO/version >> $LOG 2>&1
+    $DBWRAP_TOOL $REGISTRY delete INFO/version | tee -a $LOG
     test "x$?" = "x0" || {
-        echo "Error: Can not remove INFO/version key from registry" >> $LOG
+        echo "Error: Can not remove INFO/version key from registry" | tee -a $LOG
         return 1
     }
 
     # trigger upgrade on upgraded database
+    echo "$NETCMD registry enumerate $REGPATH" >> $LOG
     $NETCMD registry enumerate $REGPATH >> $LOG 2>&1
     test "x$?" = "x0" || {
+        echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
         return 1
     }
 
     # check upgraded database again
     registry_check 2 checkdiff
     test "x$?" = "x0" || {
+        echo "Error: 'registry_check 2' after upgrade failed" | tee -a $LOG
         return 1
     }
 
     # set database INFO/version to version 2
     $DBWRAP_TOOL $REGISTRY store 'INFO/version' uint32 2
     test "x$?" = "x0" || {
-        echo "Error: Can not set INFO/version" >> $LOG
+        echo "Error: Can not set INFO/version" | tee -a $LOG
         return 1
     }
 
     # trigger upgrade
-    $NETCMD registry enumerate $REGPATH >> $LOG 2>&1
+    $NETCMD registry enumerate $REGPATH >> $LOG
     test "x$?" = "x0" || {
+        echo "Error: 'net registry enumerate $REGPATH' failed" | tee -a $LOG
         return 1
     }
 
     # check upgraded database again
     registry_check 3 checkdiff
     test "x$?" = "x0" || {
+        echo "Error: 'registry_check 3' after upgrade failed" | tee -a $LOG
         return 1
     }
-
-    # remove workspace
-    rm -r $DIR
-    rm -r $WORKSPACE
 }
 
 # remove old logs
@@ -167,10 +176,20 @@ for OLDDIR in $(find ${PREFIX} -type d -name "${LOGDIR_PREFIX}_*") ; do
 	echo "removing old directory ${OLDDIR}"
 	rm -rf ${OLDDIR}
 done
+
 # remove old workspace
 rm -rf $WORKSPACE
 
+mkdir $WORKSPACE
+
+DIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
+LOG=$DIR/log
+
 testit "registry_upgrade" registry_upgrade || failed=`expr $failed + 1`
+
+if [ $failed -eq 0 ]; then
+    rm -r $DIR
+fi
 
 testok $0 $failed
 
