@@ -3,6 +3,7 @@
 
    CLDAP server structures
 
+   Copyright (C) Andrew Tridgell 2005
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
 
    This program is free software; you can redistribute it and/or modify
@@ -23,6 +24,10 @@
 
 #ifndef _LIBRPC_NDR_NDR_NBT_H
 #define _LIBRPC_NDR_NDR_NBT_H
+
+#include "librpc/gen_ndr/nbt.h"
+
+NDR_SCALAR_PROTO(nbt_string, const char *)
 
 enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_REQUEST(struct ndr_push *ndr, int ndr_flags, const struct NETLOGON_SAM_LOGON_REQUEST *r);
 enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_REQUEST(struct ndr_pull *ndr, int ndr_flags, struct NETLOGON_SAM_LOGON_REQUEST *r);
