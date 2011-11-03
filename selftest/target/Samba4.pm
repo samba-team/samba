@@ -616,6 +616,10 @@ sub provision_raw_step1($$)
 	dreplsrv:periodic_startup_interval = 0
 
         passdb backend = samba4
+
+        # remove this again, when our smb2 client library
+        # supports signin on compound related requests
+        server signing = on
 ";
 
 	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
