@@ -1641,10 +1641,10 @@ def provision(logger, session_info, credentials, smbconf=None,
         dns_backend=None, dnspass=None,
         invocationid=None, machinepass=None, ntdsguid=None,
         root=None, nobody=None, users=None, wheel=None, backup=None, aci=None,
-        serverrole=None, dom_for_fun_level=None, ldap_backend_extra_port=None,
-        ldap_backend_forced_uri=None, backend_type=None, sitename=None,
-        ol_mmr_urls=None, ol_olc=None, setup_ds_path=None, slapd_path=None,
-        nosync=False, ldap_dryrun_mode=False, useeadb=False, am_rodc=False,
+        serverrole=None, dom_for_fun_level=None, 
+        backend_type=None, sitename=None,
+        ol_mmr_urls=None, ol_olc=None, slapd_path=None,
+        useeadb=False, am_rodc=False,
         lp=None):
     """Provision samba4
 
@@ -1759,30 +1759,24 @@ def provision(logger, session_info, credentials, smbconf=None,
             lp=lp, credentials=credentials,
             names=names, logger=logger)
     elif backend_type == "existing":
+        # If support for this is ever added back, then the URI will need to be specified again
         provision_backend = ExistingBackend(backend_type, paths=paths,
             lp=lp, credentials=credentials,
             names=names, logger=logger,
-            ldap_backend_forced_uri=ldap_backend_forced_uri)
+            ldap_backend_forced_uri=None)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type, paths=paths,
             lp=lp, credentials=credentials,
             names=names, logger=logger, domainsid=domainsid,
             schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
             slapd_path=slapd_path,
-            ldap_backend_extra_port=ldap_backend_extra_port,
-            ldap_dryrun_mode=ldap_dryrun_mode, root=root,
-            setup_ds_path=setup_ds_path,
-            ldap_backend_forced_uri=ldap_backend_forced_uri)
+            root=root)
     elif backend_type == "openldap":
         provision_backend = OpenLDAPBackend(backend_type, paths=paths,
             lp=lp, credentials=credentials,
             names=names, logger=logger, domainsid=domainsid,
             schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
-            slapd_path=slapd_path,
-            ldap_backend_extra_port=ldap_backend_extra_port,
-            ldap_dryrun_mode=ldap_dryrun_mode, ol_mmr_urls=ol_mmr_urls,
-            nosync=nosync,
-            ldap_backend_forced_uri=ldap_backend_forced_uri)
+            slapd_path=slapd_path, ol_mmr_urls=ol_mmr_urls)
     else:
         raise ValueError("Unknown LDAP backend type selected")
 

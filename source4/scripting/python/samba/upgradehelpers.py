@@ -266,11 +266,11 @@ def newprovision(names, creds, session, smbconf, provdir, logger):
             invocationid=names.invocation, adminpass=names.adminpass,
             krbtgtpass=None, machinepass=None, dnspass=None, root=None,
             nobody=None, wheel=None, users=None,
-            serverrole="domain controller", ldap_backend_extra_port=None,
+            serverrole="domain controller", 
             backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
-            slapd_path=None, setup_ds_path=None, nosync=None,
+            slapd_path=None, 
             dom_for_fun_level=names.domainlevel, dns_backend=dns_backend,
-            ldap_dryrun_mode=None, useeadb=True)
+            useeadb=True)
 
 
 def dn_sort(x, y):

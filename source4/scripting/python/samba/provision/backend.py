@@ -133,7 +133,7 @@ class LDAPBackend(ProvisionBackend):
                  credentials=None, names=None, logger=None, domainsid=None,
                  schema=None, hostname=None, ldapadminpass=None,
                  slapd_path=None, ldap_backend_extra_port=None,
-                 ldap_backend_forced_uri=None, ldap_dryrun_mode=False):
+                 ldap_backend_forced_uri=None, ldap_dryrun_mode=True):
 
         super(LDAPBackend, self).__init__(backend_type=backend_type,
                 paths=paths, lp=lp,
@@ -286,7 +286,7 @@ class OpenLDAPBackend(LDAPBackend):
     def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
-            ldap_backend_extra_port=None, ldap_dryrun_mode=False,
+            ldap_backend_extra_port=None, ldap_dryrun_mode=True,
             ol_mmr_urls=None, nosync=False, ldap_backend_forced_uri=None):
         from samba.provision import setup_path
         super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
@@ -568,7 +568,7 @@ class FDSBackend(LDAPBackend):
     def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
-            ldap_backend_extra_port=None, ldap_dryrun_mode=False, root=None,
+            ldap_backend_extra_port=None, ldap_dryrun_mode=True, root=None,
             setup_ds_path=None):
 
         from samba.provision import setup_path
