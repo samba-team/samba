@@ -27,17 +27,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
-struct netlogon_samlogon_response
-{
-	uint32_t ntver;
-	union {
-		struct NETLOGON_SAM_LOGON_RESPONSE_NT40 nt4;
-		struct NETLOGON_SAM_LOGON_RESPONSE nt5;
-		struct NETLOGON_SAM_LOGON_RESPONSE_EX nt5_ex;
-	} data;
-
-};
-
 struct nbt_netlogon_response
 {
 	enum {NETLOGON_GET_PDC, NETLOGON_SAMLOGON, NETLOGON_RESPONSE2} response_type;
