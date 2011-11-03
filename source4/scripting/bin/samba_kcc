@@ -1,0 +1,703 @@
+#!/usr/bin/env python
+#
+# Compute our KCC topology
+#
+# Copyright (C) Dave Craft 2011
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import sys
+import random
+
+# ensure we get messages out immediately, so they get in the samba logs,
+# and don't get swallowed by a timeout
+os.environ['PYTHONUNBUFFERED'] = '1'
+
+# forcing GMT avoids a problem in some timezones with kerberos. Both MIT
+# heimdal can get mutual authentication errors due to the 24 second difference
+# between UTC and GMT when using some zone files (eg. the PDT zone from
+# the US)
+os.environ["TZ"] = "GMT"
+
+# Find right directory when running from source tree
+sys.path.insert(0, "bin/python")
+
+import samba, ldb
+import optparse
+import logging
+
+from samba 		import getopt as options
+from samba.auth 	import system_session
+from samba.samdb 	import SamDB
+from samba.kcc_utils    import *
+
+class KCC:
+    """The Knowledge Consistency Checker class.  A container for
+       objects and methods allowing a run of the KCC.  Produces
+       a set of connections in the samdb for which the Distributed
+       Replication Service can then utilize to replicate naming
+       contexts
+    """
+    def __init__(self, samdb):
+        """Initializes the partitions class which can hold
+           our local DCs partitions or all the partitions in
+           the forest
+        """
+        self.dsa_table     = {}    # dsa objects
+        self.part_table    = {}    # partition objects
+        self.site_table    = {}
+        self.my_dsa_dnstr  = None  # My dsa DN
+        self.my_site_dnstr = None
+        self.samdb         = samdb
+        return
+
+    def load_my_site(self):
+        """Loads the Site class for the local DSA
+           Raises an Exception on error
+        """
+        self.my_site_dnstr = "CN=%s,CN=Sites,%s" % (samdb.server_site_name(),
+                             samdb.get_config_basedn())
+        site = Site(self.my_site_dnstr)
+
+        site.load_site(samdb)
+        self.site_table[self.my_site_dnstr] = site
+        return
+
+    def load_my_dsa(self):
+        """Discover my nTDSDSA thru the rootDSE entry and
+           instantiate and load the DSA.  The dsa is inserted
+           into the dsa_table by dn string
+           Raises an Exception on error.
+        """
+	dn = ldb.Dn(self.samdb, "")
+        try:
+            res = samdb.search(base=dn, scope=ldb.SCOPE_BASE,
+                               attrs=["dsServiceName"])
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find my nTDSDSA - (%s)" % estr)
+            return
+
+        dnstr = res[0]["dsServiceName"][0]
+
+        # already loaded
+        if dnstr in self.dsa_table.keys():
+            return
+
+        self.my_dsa_dnstr = dnstr
+        dsa = DirectoryServiceAgent(dnstr)
+
+        dsa.load_dsa(samdb)
+
+        # Assign this dsa to my dsa table
+        # and index by dsa dn
+        self.dsa_table[dnstr] = dsa
+
+        return
+
+    def load_all_dsa(self):
+        """Discover all nTDSDSA thru the sites entry and
+           instantiate and load the DSAs.  Each dsa is inserted
+           into the dsa_table by dn string.
+           Raises an Exception on error.
+        """
+        try:
+            res = self.samdb.search("CN=Sites,%s" %
+                                    self.samdb.get_config_basedn(),
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    expression="(objectClass=nTDSDSA)")
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find nTDSDSAs - (%s)" % estr)
+            return
+
+        for msg in res:
+            dnstr = str(msg.dn)
+
+            # already loaded
+            if dnstr in self.dsa_table.keys():
+                continue
+
+            dsa = DirectoryServiceAgent(dnstr)
+
+            dsa.load_dsa(self.samdb)
+
+            # Assign this dsa to my dsa table
+            # and index by dsa dn
+            self.dsa_table[dnstr] = dsa
+
+        return
+
+    def load_all_partitions(self):
+        """Discover all NCs thru the Partitions dn and
+           instantiate and load the NCs.  Each NC is inserted
+           into the part_table by partition dn string (not
+           the nCName dn string)
+           Raises an Exception on error
+        """
+        try:
+            res = self.samdb.search("CN=Partitions,%s" %
+                                    self.samdb.get_config_basedn(),
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    expression="(objectClass=crossRef)")
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find partitions - (%s)" % estr)
+
+        for msg in res:
+            partstr = str(msg.dn)
+
+            # already loaded
+            if partstr in self.part_table.keys():
+                continue
+
+            part = Partition(partstr)
+
+            part.load_partition(self.samdb)
+            self.part_table[partstr] = part
+
+        return
+
+    def should_be_present_test(self):
+        """Enumerate all loaded partitions and DSAs and test
+           if NC should be present as replica
+        """
+        for partdn, part in self.part_table.items():
+
+           for dsadn, dsa in self.dsa_table.items():
+               needed, ro, partial = part.should_be_present(dsa)
+
+               logger.info("dsadn:%s\nncdn:%s\nneeded=%s:ro=%s:partial=%s\n" % \
+                           (dsa.dsa_dnstr, part.nc_dnstr, needed, ro, partial))
+        return
+
+    def refresh_failed_links_connections(self):
+        # XXX - not implemented yet
+        return
+
+    def is_stale_link_connection(self, target_dsa):
+        """Returns False if no tuple z exists in the kCCFailedLinks or
+           kCCFailedConnections variables such that z.UUIDDsa is the
+           objectGUID of the target dsa, z.FailureCount > 0, and
+           the current time - z.TimeFirstFailure > 2 hours.
+        """
+        # XXX - not implemented yet
+        return False
+
+    def remove_unneeded_failed_links_connections(self):
+        # XXX - not implemented yet
+        return
+
+    def remove_unneeded_ntds_connections(self):
+        # XXX - not implemented yet
+        return
+
+    def translate_connections(self):
+        # XXX - not implemented yet
+        return
+
+    def intersite(self):
+        """The head method for generating the inter-site KCC replica
+           connection graph and attendant nTDSConnection objects
+           in the samdb
+        """
+        # XXX - not implemented yet
+        return
+
+    def update_rodc_connection(self):
+        """Runs when the local DC is an RODC and updates the RODC NTFRS
+           connection object.
+        """
+        # Given an nTDSConnection object cn1, such that cn1.options contains
+        # NTDSCONN_OPT_RODC_TOPOLOGY, and another nTDSConnection object cn2,
+        # does not contain NTDSCONN_OPT_RODC_TOPOLOGY, modify cn1 to ensure
+        # that the following is true:
+        #
+        #     cn1.fromServer = cn2.fromServer
+        #     cn1.schedule   = cn2.schedule
+        #
+        # If no such cn2 can be found, cn1 is not modified.
+        # If no such cn1 can be found, nothing is modified by this task.
+
+        # XXX - not implemented yet
+        return
+
+    def intrasite_max_node_edges(self, node_count):
+        """Returns the maximum number of edges directed to a node in
+           the intrasite replica graph.  The KCC does not create more
+           than 50 edges directed to a single DC. To optimize replication,
+           we compute that each node should have n+2 total edges directed
+           to it such that (n) is the smallest non-negative integer
+           satisfying (node_count <= 2*(n*n) + 6*n + 7)
+           :param node_count: total number of nodes in the replica graph
+        """
+        n = 0
+        while True:
+            if node_count <= (2 * (n * n) + (6 * n) + 7):
+                break
+            n = n + 1
+        n = n + 2
+        if n < 50:
+            return n
+        return 50
+
+    def construct_intrasite_graph(self, site_local, dc_local,
+                                  nc_x, gc_only, detect_stale):
+
+        # We're using the MS notation names here to allow
+        # correlation back to the published algorithm.
+        #
+        # nc_x     - naming context (x) that we are testing if it
+        #            "should be present" on the local DC
+        # f_of_x   - replica (f) found on a DC (s) for NC (x)
+        # dc_s     - DC where f_of_x replica was found
+        # dc_local - local DC that potentially needs a replica
+        #            (f_of_x)
+        # r_list   - replica list R
+        # p_of_x   - replica (p) is partial and found on a DC (s)
+        #            for NC (x)
+        # l_of_x   - replica (l) is the local replica for NC (x)
+        #            that should appear on the local DC
+        # r_len    = is length of replica list |R|
+        #
+        # If the DSA doesn't need a replica for this
+        # partition (NC x) then continue
+        needed, ro, partial = nc_x.should_be_present(dc_local)
+
+        logger.debug("construct_intrasite_graph:\n" + \
+                     "nc_x: %s\ndc_local: %s\n" % \
+                     (nc_x, dc_local) + \
+                     "gc_only: %s\nneeded: %s\nro: %s\npartial: %s" % \
+                     (gc_only, needed, ro, partial))
+
+        if needed == False:
+            return
+
+        # Create a NCReplica that matches what the local replica
+        # should say.  We'll use this below in our r_list
+        l_of_x = NCReplica(dc_local.dsa_dnstr, dc_local.dsa_guid, \
+                           nc_x.nc_dnstr, nc_x.nc_guid, nc_x.nc_sid)
+
+        l_of_x.identify_by_basedn(self.samdb)
+
+        l_of_x.rep_partial  = partial
+        l_of_x.rep_ro       = ro
+
+        # Empty replica sequence list
+        r_list = []
+
+        # We'll loop thru all the DSAs looking for
+        # writeable NC replicas that match the naming
+        # context dn for (nc_x)
+        #
+        for dc_s_dn, dc_s in self.dsa_table.items():
+
+            # If this partition (nc_x) doesn't appear as a
+            # replica (f_of_x) on (dc_s) then continue
+            if not nc_x.nc_dnstr in dc_s.rep_table.keys():
+                continue
+
+            # Pull out the NCReplica (f) of (x) with the dn
+            # that matches NC (x) we are examining.
+            f_of_x = dc_s.rep_table[nc_x.nc_dnstr]
+
+            # Replica (f) of NC (x) must be writable
+            if f_of_x.is_ro() == True:
+                continue
+
+            # Replica (f) of NC (x) must satisfy the
+            # "is present" criteria for DC (s) that
+            # it was found on
+            if f_of_x.is_present() == False:
+                continue
+
+            # DC (s) must be a writable DSA other than
+            # my local DC.  In other words we'd only replicate
+            # from other writable DC
+            if dc_s.is_ro() or dc_s is dc_local:
+                continue
+
+            # Certain replica graphs are produced only
+            # for global catalogs, so test against
+            # method input parameter
+            if gc_only and dc_s.is_gc() == False:
+                continue
+
+            # DC (s) must be in the same site as the local DC
+            # This is the intra-site algorithm.  We are not
+            # replicating across multiple sites
+            if site_local.is_same_site(dc_s) == False:
+                continue
+
+            # If NC (x) is intended to be read-only full replica
+            # for a domain NC on the target DC then the source
+            # DC should have functional level at minimum WIN2008
+            #
+            # Effectively we're saying that in order to replicate
+            # to a targeted RODC (which was introduced in Windows 2008)
+            # then we have to replicate from a DC that is also minimally
+            # at that level.
+            #
+            # You can also see this requirement in the MS special
+            # considerations for RODC which state that to deploy
+            # an RODC, at least one writable domain controller in
+            # the domain must be running Windows Server 2008
+            if ro and partial == False and nc_x.nc_type == NCType.domain:
+                if dc_s.is_minimum_behavior(DS_BEHAVIOR_WIN2008) == False:
+                    continue
+
+            # If we haven't been told to turn off stale connection
+            # detection and this dsa has a stale connection then
+            # continue
+            if detect_stale and self.is_stale_link_connection(dc_s) == True:
+               continue
+
+            # Replica meets criteria.  Add it to table indexed
+            # by the GUID of the DC that it appears on
+            r_list.append(f_of_x)
+
+        # If a partial (not full) replica of NC (x) "should be present"
+        # on the local DC, append to R each partial replica (p of x)
+        # such that p "is present" on a DC satisfying the same
+        # criteria defined above for full replica DCs.
+        if partial == True:
+
+            # Now we loop thru all the DSAs looking for
+            # partial NC replicas that match the naming
+            # context dn for (NC x)
+            for dc_s_dn, dc_s in self.dsa_table.items():
+
+                # If this partition NC (x) doesn't appear as a
+                # replica (p) of NC (x) on the dsa DC (s) then
+                # continue
+                if not nc_x.nc_dnstr in dc_s.rep_table.keys():
+                    continue
+
+                # Pull out the NCReplica with the dn that
+                # matches NC (x) we are examining.
+                p_of_x = dsa.rep_table[nc_x.nc_dnstr]
+
+                # Replica (p) of NC (x) must be partial
+                if p_of_x.is_partial() == False:
+                    continue
+
+                # Replica (p) of NC (x) must satisfy the
+                # "is present" criteria for DC (s) that
+                # it was found on
+                if p_of_x.is_present() == False:
+                    continue
+
+                # DC (s) must be a writable DSA other than
+                # my DSA.  In other words we'd only replicate
+                # from other writable DSA
+                if dc_s.is_ro() or dc_s is dc_local:
+                    continue
+
+                # Certain replica graphs are produced only
+                # for global catalogs, so test against
+                # method input parameter
+                if gc_only and dc_s.is_gc() == False:
+                    continue
+
+                # DC (s) must be in the same site as the local DC
+                # This is the intra-site algorithm.  We are not
+                # replicating across multiple sites
+                if site_local.is_same_site(dc_s) == False:
+                    continue
+
+                # This criteria is moot (a no-op) for this case
+                # because we are scanning for (partial = True).  The
+                # MS algorithm statement says partial replica scans
+                # should adhere to the "same" criteria as full replica
+                # scans so the criteria doesn't change here...its just
+                # rendered pointless.
+                #
+                # The case that is occurring would be a partial domain
+                # replica is needed on a local DC global catalog.  There
+                # is no minimum windows behavior for those since GCs
+                # have always been present.
+                if ro and partial == False and nc_x.nc_type == NCType.domain:
+                    if dc_s.is_minimum_behavior(DS_BEHAVIOR_WIN2008) == False:
+                        continue
+
+                # If we haven't been told to turn off stale connection
+                # detection and this dsa has a stale connection then
+                # continue
+                if detect_stale and self.is_stale_link_connection(dc_s) == True:
+                    continue
+
+                # Replica meets criteria.  Add it to table indexed
+                # by the GUID of the DSA that it appears on
+                r_list.append(p_of_x)
+
+        # Append to R the NC replica that "should be present"
+        # on the local DC
+        r_list.append(l_of_x)
+
+        r_list.sort(sort_replica_by_dsa_guid)
+
+        r_len = len(r_list)
+
+        max_node_edges = self.intrasite_max_node_edges(r_len)
+
+        # Add a node for each r_list element to the replica graph
+        graph_list = []
+        for rep in r_list:
+            node = GraphNode(rep.rep_dsa_dnstr, max_node_edges)
+            graph_list.append(node)
+
+        # For each r(i) from (0 <= i < |R|-1)
+        i = 0
+        while i < (r_len-1):
+            # Add an edge from r(i) to r(i+1) if r(i) is a full
+            # replica or r(i+1) is a partial replica
+            if r_list[i].is_partial() == False or \
+               r_list[i+1].is_partial() == True:
+                graph_list[i+1].add_edge_from(r_list[i].rep_dsa_dnstr)
+
+            # Add an edge from r(i+1) to r(i) if r(i+1) is a full
+            # replica or ri is a partial replica.
+            if r_list[i+1].is_partial() == False or \
+               r_list[i].is_partial() == True:
+                graph_list[i].add_edge_from(r_list[i+1].rep_dsa_dnstr)
+            i = i + 1
+
+        # Add an edge from r|R|-1 to r0 if r|R|-1 is a full replica
+        # or r0 is a partial replica.
+        if r_list[r_len-1].is_partial() == False or \
+           r_list[0].is_partial() == True:
+            graph_list[0].add_edge_from(r_list[r_len-1].rep_dsa_dnstr)
+
+        # Add an edge from r0 to r|R|-1 if r0 is a full replica or
+        # r|R|-1 is a partial replica.
+        if r_list[0].is_partial() == False or \
+           r_list[r_len-1].is_partial() == True:
+            graph_list[r_len-1].add_edge_from(r_list[0].rep_dsa_dnstr)
+
+        # For each existing nTDSConnection object implying an edge
+        # from rj of R to ri such that j != i, an edge from rj to ri
+        # is not already in the graph, and the total edges directed
+        # to ri is less than n+2, the KCC adds that edge to the graph.
+        i = 0
+        while i < r_len:
+            dsa = self.dsa_table[graph_list[i].dsa_dnstr]
+            graph_list[i].add_edges_from_connections(dsa)
+            i = i + 1
+
+        i = 0
+        while i < r_len:
+            tnode  = graph_list[i]
+
+            # To optimize replication latency in sites with many NC replicas, the
+            # KCC adds new edges directed to ri to bring the total edges to n+2,
+            # where the NC replica rk of R from which the edge is directed
+            # is chosen at random such that k != i and an edge from rk to ri
+            # is not already in the graph.
+            #
+            # Note that the KCC tech ref does not give a number for the definition
+            # of "sites with many NC replicas".   At a bare minimum to satisfy
+            # n+2 edges directed at a node we have to have at least three replicas
+            # in |R| (i.e. if n is zero then at least replicas from two other graph
+            # nodes may direct edges to us).
+            if r_len >= 3:
+                # pick a random index
+                findex = rindex = random.randint(0, r_len-1)
+
+                # while this node doesn't have sufficient edges
+                while tnode.has_sufficient_edges() == False:
+                    # If this edge can be successfully added (i.e. not
+                    # the same node and edge doesn't already exist) then
+                    # select a new random index for the next round
+                    if tnode.add_edge_from(graph_list[rindex].dsa_dnstr) == True:
+                        findex = rindex = random.randint(0, r_len-1)
+                    else:
+                        # Otherwise continue looking against each node
+                        # after the random selection
+                        rindex = rindex + 1
+                        if rindex >= r_len:
+                            rindex = 0
+
+                        if rindex == findex:
+                            logger.error("Unable to satisfy max edge criteria!")
+                            break
+
+            # Print the graph node in debug mode
+            logger.debug("%s" % tnode)
+
+            # For each edge directed to the local DC, ensure a nTDSConnection
+            # points to us that satisfies the KCC criteria
+            if graph_list[i].dsa_dnstr == dc_local.dsa_dnstr:
+                graph_list[i].add_connections_from_edges(dc_local)
+
+            i = i + 1
+
+        return
+
+    def intrasite(self):
+        """The head method for generating the intra-site KCC replica
+           connection graph and attendant nTDSConnection objects
+           in the samdb
+        """
+        # Retrieve my DSA
+        mydsa = self.dsa_table[self.my_dsa_dnstr]
+
+        logger.debug("intrasite enter:\nmydsa: %s" % mydsa)
+
+        # Test whether local site has topology disabled
+        mysite = self.site_table[self.my_site_dnstr]
+        if mysite.is_intrasite_topology_disabled():
+            return
+
+        detect_stale = mysite.should_detect_stale()
+
+        # Loop thru all the partitions.
+        for partdn, part in self.part_table.items():
+            self.construct_intrasite_graph(mysite, mydsa, part,  \
+                                           False, \
+                                           detect_stale)
+
+        # If the DC is a GC server, the KCC constructs an additional NC
+        # replica graph (and creates nTDSConnection objects) for the
+        # config NC as above, except that only NC replicas that "are present"
+        # on GC servers are added to R.
+        for partdn, part in self.part_table.items():
+            if part.is_config():
+                self.construct_intrasite_graph(mysite, mydsa, part,  \
+                                               True, \
+                                               detect_stale)
+
+        # The DC repeats the NC replica graph computation and nTDSConnection
+        # creation for each of the NC replica graphs, this time assuming
+        # that no DC has failed. It does so by re-executing the steps as
+        # if the bit NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED were
+        # set in the options attribute of the site settings object for
+        # the local DC's site.  (ie. we set "detec_stale" flag to False)
+
+        # Loop thru all the partitions.
+        for partdn, part in self.part_table.items():
+            self.construct_intrasite_graph(mysite, mydsa, part,  \
+                                           False, \
+                                           False) # don't detect stale
+
+        # If the DC is a GC server, the KCC constructs an additional NC
+        # replica graph (and creates nTDSConnection objects) for the
+        # config NC as above, except that only NC replicas that "are present"
+        # on GC servers are added to R.
+        for partdn, part in self.part_table.items():
+            if part.is_config():
+                self.construct_intrasite_graph(mysite, mydsa, part,  \
+                                               True, \
+                                               False)  # don't detect stale
+
+        # Commit any newly created connections to the samdb
+        mydsa.commit_connection_table(self.samdb)
+
+        logger.debug("intrasite exit:\nmydsa: %s" % mydsa)
+        return
+
+    def run(self):
+        """Method to perform a complete run of the KCC and
+           produce an updated topology for subsequent NC replica
+           syncronization between domain controllers
+        """
+        # Setup
+        try:
+            self.load_my_dsa()
+            self.load_all_dsa()
+            self.load_all_partitions()
+            self.load_my_site()
+
+        except Exception, estr:
+            logger.error("%s" % estr)
+            return
+
+        # self.should_be_present_test()
+
+        # These are the published steps (in order) for the
+        # MS description of the KCC algorithm
+
+        # Step 1
+        self.refresh_failed_links_connections()
+
+        # Step 2
+        self.intrasite()
+
+        # Step 3
+        self.intersite()
+
+        # Step 4
+        self.remove_unneeded_ntds_connections()
+
+        # Step 5
+        self.translate_connections()
+
+        # Step 6
+        self.remove_unneeded_failed_links_connections()
+
+        # Step 7
+        self.update_rodc_connection()
+
+        return
+
+##################################################
+# Global Functions
+##################################################
+def sort_replica_by_dsa_guid(rep1, rep2):
+    return cmp(rep1.rep_dsa_guid, rep2.rep_dsa_guid)
+
+##################################################
+# kcccompute entry point
+##################################################
+
+parser    = optparse.OptionParser("kcccompute [options]")
+sambaopts = options.SambaOptions(parser)
+credopts  = options.CredentialsOptions(parser)
+
+parser.add_option_group(sambaopts)
+parser.add_option_group(credopts)
+parser.add_option_group(options.VersionOptions(parser))
+
+parser.add_option("--debug", help="debug output", action="store_true")
+parser.add_option("--seed",  help="random number seed")
+
+logger = logging.getLogger("kcccompute")
+logger.addHandler(logging.StreamHandler(sys.stdout))
+
+lp     = sambaopts.get_loadparm()
+creds  = credopts.get_credentials(lp, fallback_machine=True)
+
+opts, args = parser.parse_args()
+
+if opts.debug:
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.WARNING)
+
+# initialize seed from optional input parameter
+if opts.seed:
+    random.seed(int(opts.seed))
+else:
+    random.seed(0xACE5CA11)
+
+private_dir = lp.get("private dir")
+samdb_path  = os.path.join(private_dir, "samdb.ldb")
+
+try:
+    samdb = SamDB(url=lp.samdb_url(), session_info=system_session(),
+                  credentials=creds, lp=lp)
+except ldb.LdbError, (num, msg):
+    logger.info("Unable to open sam database %s : %s" % (lp.samdb_url(), msg))
+    sys.exit(1)
+
+# Instantiate Knowledge Consistency Checker and perform run
+kcc = KCC(samdb)
+kcc.run()

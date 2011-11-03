@@ -2,7 +2,7 @@
 
 from samba_utils import MODE_755
 
-bld.INSTALL_FILES('${SBINDIR}','bin/upgradeprovision bin/samba_dnsupdate bin/samba_spnupdate bin/samba-tool',
+bld.INSTALL_FILES('${SBINDIR}','bin/upgradeprovision bin/samba_dnsupdate bin/samba_spnupdate bin/samba-tool bin/samba_kcc',
                   chmod=MODE_755, python_fixup=True, flat=True)
 
 bld.RECURSE('bin')
