@@ -845,7 +845,7 @@ struct timeval convert_timespec_to_timeval(const struct timespec ts)
  Return a timespec for the current time
 ****************************************************************************/
 
-struct timespec timespec_current(void)
+_PUBLIC_ struct timespec timespec_current(void)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
@@ -872,7 +872,7 @@ struct timespec timespec_min(const struct timespec *ts1,
   Return 1 if ts1 > ts2
 ****************************************************************************/
 
-int timespec_compare(const struct timespec *ts1, const struct timespec *ts2)
+_PUBLIC_ int timespec_compare(const struct timespec *ts1, const struct timespec *ts2)
 {
 	if (ts1->tv_sec  > ts2->tv_sec)  return 1;
 	if (ts1->tv_sec  < ts2->tv_sec)  return -1;
@@ -910,7 +910,7 @@ void round_timespec_to_usec(struct timespec *ts)
  Put a 8 byte filetime from a struct timespec. Uses GMT.
 ****************************************************************************/
 
-void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
+_PUBLIC_ void unix_timespec_to_nt_time(NTTIME *nt, struct timespec ts)
 {
 	uint64_t d;
 
