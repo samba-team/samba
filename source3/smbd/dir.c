@@ -427,7 +427,6 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 	struct smbd_server_connection *sconn = conn->sconn;
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
-	NTSTATUS status;
 
 	if (fsp && fsp->is_directory && fsp->fh->fd != -1) {
 		path = fsp->fsp_name->base_name;
@@ -442,18 +441,6 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 
 	if (!wcard) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = check_parent_access(conn,
-				path,
-				SEC_DIR_LIST,
-				NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("dptr_create: parent access check for path "
-			"%s failed with %s\n",
-			path,
-			nt_errstr(status)));
-		return status;
 	}
 
 	if (fsp) {
