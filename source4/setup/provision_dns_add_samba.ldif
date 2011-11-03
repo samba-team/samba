@@ -12,6 +12,5 @@ userAccountControl: 512
 accountExpires: 9223372036854775807
 sAMAccountName: dns-${HOSTNAME}
 servicePrincipalName: DNS/${DNSNAME}
-servicePrincipalName: DNS/${DNSDOMAIN}
 clearTextPassword:: ${DNSPASS_B64}
 isCriticalSystemObject: TRUE
