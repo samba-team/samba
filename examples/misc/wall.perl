@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # 
 #@(#) smb-wall.pl Description:
 #@(#) A perl script which allows you to announce whatever you choose to
