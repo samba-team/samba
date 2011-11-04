@@ -38,24 +38,6 @@ struct deferred_open_record {
 };
 
 /****************************************************************************
- SMB1 file varient of se_access_check. Never test FILE_READ_ATTRIBUTES.
-****************************************************************************/
-
-static NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
-				const struct security_descriptor *sd,
-				const struct security_token *token,
-				uint32_t access_desired,
-				uint32_t *access_granted)
-{
-	*access_granted = 0;
-
-	return se_access_check(sd,
-				token,
-				(access_desired & ~FILE_READ_ATTRIBUTES),
-				access_granted);
-}
-
-/****************************************************************************
  If the requester wanted DELETE_ACCESS and was rejected because
  the file ACL didn't include DELETE_ACCESS, see if the parent ACL
  ovverrides this.
@@ -129,10 +111,13 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 		return status;
 	}
 
-	status = smb1_file_se_access_check(conn,
-				sd,
+ 	/*
+	 * Never test FILE_READ_ATTRIBUTES. se_access_check() also takes care of
+	 * owner WRITE_DAC and READ_CONTROL.
+	 */
+	status = se_access_check(sd,
 				get_current_nttok(conn),
-				access_mask,
+				(access_mask & ~FILE_READ_ATTRIBUTES),
 				&rejected_mask);
 
 	DEBUG(10,("smbd_check_open_rights: file %s requesting "
@@ -244,11 +229,14 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 		return status;
 	}
 
-	status = smb1_file_se_access_check(conn,
-					parent_sd,
-					get_current_nttok(conn),
-					access_mask,
-					&access_granted);
+ 	/*
+	 * Never test FILE_READ_ATTRIBUTES. se_access_check() also takes care of
+	 * owner WRITE_DAC and READ_CONTROL.
+	 */
+	status = se_access_check(parent_sd,
+				get_current_nttok(conn),
+				(access_mask & ~FILE_READ_ATTRIBUTES),
+				&access_granted);
 	if(!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("check_parent_access: access check "
 			"on directory %s for "
@@ -1504,10 +1492,13 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
-			status = smb1_file_se_access_check(conn,
-					sd,
+ 			/*
+			 * Never test FILE_READ_ATTRIBUTES. se_access_check()
+			 * also takes care of owner WRITE_DAC and READ_CONTROL.
+			 */
+			status = se_access_check(sd,
 					get_current_nttok(conn),
-					access_mask,
+					(access_mask & ~FILE_READ_ATTRIBUTES),
 					&access_granted);
 
 			TALLOC_FREE(sd);
@@ -1520,7 +1511,7 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
-			access_mask = access_granted;
+			access_mask = (access_granted | FILE_READ_ATTRIBUTES);
 		} else {
 			access_mask = FILE_GENERIC_ALL;
 		}
