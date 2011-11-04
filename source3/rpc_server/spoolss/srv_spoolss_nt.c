@@ -288,6 +288,7 @@ static void srv_spoolss_replycloseprinter(int snum,
 
 	if (prn_hnd->notify.cli_chan) {
 		prn_hnd->notify.cli_chan->active_connections--;
+		prn_hnd->notify.cli_chan = NULL;
 	}
 }
 
