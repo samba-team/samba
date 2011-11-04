@@ -138,6 +138,7 @@ struct cli_state {
 				DATA_BLOB gss_blob;
 				uint8_t challenge[8];
 				const char *workgroup;
+				const char *name;
 				int time_zone;
 				time_t system_time;
 			} server;

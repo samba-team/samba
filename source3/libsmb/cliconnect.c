@@ -2620,6 +2620,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	DATA_BLOB server_gss_blob = data_blob_null;
 	uint8_t server_challenge[8];
 	char *server_workgroup = NULL;
+	char *server_name = NULL;
 	int server_time_zone = 0;
 	time_t server_system_time = 0;
 	enum protocol_types protocol;
@@ -2713,8 +2714,8 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			}
 			server_gss_blob = blob2;
 		} else {
-			DATA_BLOB blob1;
-			ssize_t ret;
+			DATA_BLOB blob1, blob2;
+			ssize_t ret = 0;
 
 			if (num_bytes < key_len) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
@@ -2731,6 +2732,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 			}
 
 			blob1 = data_blob_const(bytes+key_len, num_bytes-key_len);
+			blob2 = data_blob_const(bytes+key_len, num_bytes-key_len);
 			if (blob1.length > 0) {
 				ret = pull_string_talloc(state,
 							 (char *)inbuf,
@@ -2738,6 +2740,24 @@ static void cli_negprot_done(struct tevent_req *subreq)
 							 &server_workgroup,
 							 blob1.data,
 							 blob1.length,
+							 STR_TERMINATE|
+							 STR_UNICODE|
+							 STR_NOALIGN);
+				if (ret == -1) {
+					tevent_req_oom(req);
+					return;
+				}
+			}
+
+			blob2.data += ret;
+			blob2.length -= ret;
+			if (blob2.length > 0) {
+				ret = pull_string_talloc(state,
+							 (char *)inbuf,
+							 SVAL(inbuf, smb_flg2),
+							 &server_name,
+							 blob2.data,
+							 blob2.length,
 							 STR_TERMINATE|
 							 STR_UNICODE|
 							 STR_NOALIGN);
@@ -2871,6 +2891,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	cli->conn.smb1.server.guid = server_guid;
 	memcpy(cli->conn.smb1.server.challenge, server_challenge, 8);
 	cli->conn.smb1.server.workgroup = talloc_move(cli, &server_workgroup);
+	cli->conn.smb1.server.name = talloc_move(cli, &server_name);
 
 	cli->conn.smb1.server.time_zone = server_time_zone;
 	cli->conn.smb1.server.system_time = server_system_time;
