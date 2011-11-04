@@ -54,8 +54,8 @@
 		<arg choice="opt">--separator</arg>
 		<arg choice="opt">--set-auth-user user%password</arg>
 		<arg choice="opt">-S sid</arg>
-		<arg choide="opt">--sid-aliases</arg>
-		<arg choide="opt">--sid-to-fullname</arg>
+		<arg choide="opt">--sid-aliases sid</arg>
+		<arg choide="opt">--sid-to-fullname sid</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-u</arg>
 		<arg choice="opt">--uid-info uid</arg>
