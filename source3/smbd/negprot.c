@@ -423,6 +423,14 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
+		ret = message_push_string(&req->outbuf, lp_netbios_name(),
+					  STR_UNICODE|STR_TERMINATE
+					  |STR_NOALIGN);
+		if (ret == -1) {
+			DEBUG(0, ("Could not push netbios name string\n"));
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
 		DATA_BLOB spnego_blob = negprot_spnego(req, req->sconn);
