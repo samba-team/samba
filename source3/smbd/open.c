@@ -3254,28 +3254,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	/* This is the correct thing to do (check every time) but can_delete
-	 * is expensive (it may have to read the parent directory
-	 * permissions). So for now we're not doing it unless we have a strong
-	 * hint the client is really going to delete this file. If the client
-	 * is forcing FILE_CREATE let the filesystem take care of the
-	 * permissions. */
-
-	/* Setting FILE_SHARE_DELETE is the hint. */
-
-	if ((create_disposition != FILE_CREATE)
-	    && (access_mask & DELETE_ACCESS)
-	    && (!(can_delete_file_in_directory(conn, smb_fname) ||
-		 NT_STATUS_IS_OK(smbd_check_access_rights(conn,
-				smb_fname,
-				DELETE_ACCESS))))) {
-		status = NT_STATUS_ACCESS_DENIED;
-		DEBUG(10,("create_file_unixpath: open file %s "
-			  "for delete ACCESS_DENIED\n",
-			  smb_fname_str_dbg(smb_fname)));
-		goto fail;
-	}
-
 	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
 			!security_token_has_privilege(get_current_nttok(conn),
 					SEC_PRIV_SECURITY)) {
