@@ -177,61 +177,6 @@ bool can_delete_file_in_directory(connection_struct *conn,
 }
 
 /****************************************************************************
- Actually emulate the in-kernel access checking for read/write access. We need
- this to successfully check for ability to write for dos filetimes.
- Note this doesn't take into account share write permissions.
-****************************************************************************/
-
-bool can_access_file_data(connection_struct *conn,
-			  const struct smb_filename *smb_fname,
-			  uint32 access_mask)
-{
-	if (!(access_mask & (FILE_READ_DATA|FILE_WRITE_DATA))) {
-		return False;
-	}
-	access_mask &= (FILE_READ_DATA|FILE_WRITE_DATA);
-
-	/* some fast paths first */
-
-	DEBUG(10,("can_access_file_data: requesting 0x%x on file %s\n",
-		  (unsigned int)access_mask, smb_fname_str_dbg(smb_fname)));
-
-	if (get_current_uid(conn) == (uid_t)0) {
-		/* I'm sorry sir, I didn't know you were root... */
-		return True;
-	}
-
-	SMB_ASSERT(VALID_STAT(smb_fname->st));
-
-	/* Check primary owner access. */
-	if (get_current_uid(conn) == smb_fname->st.st_ex_uid) {
-		switch (access_mask) {
-			case FILE_READ_DATA:
-				return (smb_fname->st.st_ex_mode & S_IRUSR) ?
-				    True : False;
-
-			case FILE_WRITE_DATA:
-				return (smb_fname->st.st_ex_mode & S_IWUSR) ?
-				    True : False;
-
-			default: /* FILE_READ_DATA|FILE_WRITE_DATA */
-
-				if ((smb_fname->st.st_ex_mode &
-					(S_IWUSR|S_IRUSR)) ==
-				    (S_IWUSR|S_IRUSR)) {
-					return True;
-				} else {
-					return False;
-				}
-		}
-	}
-
-	/* now for ACL checks */
-
-	return can_access_file_acl(conn, smb_fname, access_mask);
-}
-
-/****************************************************************************
  Userspace check for write access.
  Note this doesn't take into account share write permissions.
 ****************************************************************************/
@@ -239,7 +184,9 @@ bool can_access_file_data(connection_struct *conn,
 bool can_write_to_file(connection_struct *conn,
 		       const struct smb_filename *smb_fname)
 {
-	return can_access_file_data(conn, smb_fname, FILE_WRITE_DATA);
+	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
+				smb_fname,
+				FILE_WRITE_DATA));
 }
 
 /****************************************************************************

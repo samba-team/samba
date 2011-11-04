@@ -1042,8 +1042,8 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 			if (((can_access_mask & FILE_WRITE_DATA) &&
 				!CAN_WRITE(conn)) ||
-			    !can_access_file_data(conn, smb_fname,
-						  can_access_mask)) {
+				!NT_STATUS_IS_OK(smbd_check_access_rights(conn,
+						smb_fname, can_access_mask))) {
 				can_access = False;
 			}
 
