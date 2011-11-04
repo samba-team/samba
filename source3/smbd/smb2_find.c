@@ -323,11 +323,6 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	if (fsp->dptr == NULL) {
 		bool wcard_has_wild;
 
-		if (!(fsp->access_mask & SEC_DIR_LIST)) {
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-
 		wcard_has_wild = ms_has_wild(in_file_name);
 
 		status = dptr_create(conn,

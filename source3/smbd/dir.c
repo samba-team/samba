@@ -444,6 +444,12 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 	}
 
 	if (fsp) {
+		if (!(fsp->access_mask & SEC_DIR_LIST)) {
+			DEBUG(5,("dptr_create: directory %s "
+				"not open for LIST access\n",
+				path));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		dir_hnd = OpenDir_fsp(NULL, conn, fsp, wcard, attr);
 	} else {
 		dir_hnd = OpenDir(NULL, conn, path, wcard, attr);
