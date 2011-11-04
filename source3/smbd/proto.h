@@ -307,7 +307,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 			 const struct smb_filename *smb_fname,
 			 uint32_t access_mask);
 bool can_delete_file_in_directory(connection_struct *conn,
-				  struct smb_filename *smb_fname);
+				  const struct smb_filename *smb_fname);
 bool can_access_file_data(connection_struct *conn,
 			  const struct smb_filename *smb_fname,
 			  uint32 access_mask);
@@ -581,7 +581,7 @@ void reply_nttranss(struct smb_request *req);
 /* The following definitions come from smbd/open.c  */
 
 NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
-				struct smb_filename *smb_fname,
+				const struct smb_filename *smb_fname,
 				uint32_t access_mask);
 NTSTATUS fd_close(files_struct *fsp);
 void change_file_owner_to_parent(connection_struct *conn,

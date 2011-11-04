@@ -44,7 +44,7 @@ struct deferred_open_record {
 ****************************************************************************/
 
 static bool parent_override_delete(connection_struct *conn,
-					struct smb_filename *smb_fname,
+					const struct smb_filename *smb_fname,
 					uint32_t access_mask,
 					uint32_t rejected_mask)
 {
@@ -61,7 +61,7 @@ static bool parent_override_delete(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
-				struct smb_filename *smb_fname,
+				const struct smb_filename *smb_fname,
 				uint32_t access_mask)
 {
 	/* Check if we have rights to open. */
