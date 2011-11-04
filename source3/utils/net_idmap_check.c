@@ -355,11 +355,8 @@ fetch_record(struct check_ctx* ctx, TALLOC_CTX* mem_ctx, TDB_DATA key)
 	NTSTATUS status;
 
 	status = dbwrap_fetch(ctx->diff, mem_ctx, key, &tmp);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Out of memory!\n"));
-		return tdb_null;
-	}
-	if (tmp.dptr != NULL) {
+
+	if (NT_STATUS_IS_OK(status)) {
 		TDB_DATA_diff diff = unpack_diff(tmp);
 		TDB_DATA ret = talloc_copy(mem_ctx, diff.nval);
 		talloc_free(tmp.dptr);
@@ -368,7 +365,6 @@ fetch_record(struct check_ctx* ctx, TALLOC_CTX* mem_ctx, TDB_DATA key)
 
 	status = dbwrap_fetch(ctx->db, mem_ctx, key, &tmp);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Out of memory!\n"));
 		return tdb_null;
 	}
 
