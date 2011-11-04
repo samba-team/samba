@@ -133,7 +133,6 @@ bool can_delete_file_in_directory(connection_struct *conn,
 
 /****************************************************************************
  Userspace check for write access.
- Note this doesn't take into account share write permissions.
 ****************************************************************************/
 
 bool can_write_to_file(connection_struct *conn,
