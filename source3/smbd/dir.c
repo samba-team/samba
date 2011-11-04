@@ -1161,7 +1161,9 @@ static bool user_can_read_file(connection_struct *conn,
 		return True;
 	}
 
-	return can_access_file_acl(conn, smb_fname, FILE_READ_DATA);
+	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
+				smb_fname,
+				FILE_READ_DATA));
 }
 
 /*******************************************************************

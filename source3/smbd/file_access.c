@@ -27,53 +27,6 @@
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
-/**
- * Security descriptor / NT Token level access check function.
- */
-bool can_access_file_acl(struct connection_struct *conn,
-			 const struct smb_filename *smb_fname,
-			 uint32_t access_mask)
-{
-	NTSTATUS status;
-	uint32_t access_granted;
-	struct security_descriptor *secdesc = NULL;
-	bool ret;
-
-	if (get_current_uid(conn) == (uid_t)0) {
-		/* I'm sorry sir, I didn't know you were root... */
-		return true;
-	}
-
-	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
-				    (SECINFO_OWNER |
-				     SECINFO_GROUP |
-				     SECINFO_DACL),
-				    &secdesc);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("Could not get acl: %s\n", nt_errstr(status)));
-		ret = false;
-		goto out;
-	}
-
-	status = se_access_check(secdesc, get_current_nttok(conn),
-				 access_mask, &access_granted);
-	ret = NT_STATUS_IS_OK(status);
-
-	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("can_access_file_acl for file %s "
-			"access_mask 0x%x, access_granted 0x%x "
-			"access %s\n",
-			smb_fname_str_dbg(smb_fname),
-			(unsigned int)access_mask,
-			(unsigned int)access_granted,
-			ret ? "ALLOWED" : "DENIED" ));
-		NDR_PRINT_DEBUG(security_descriptor, secdesc);
-	}
- out:
-	TALLOC_FREE(secdesc);
-	return ret;
-}
-
 /****************************************************************************
  Actually emulate the in-kernel access checking for delete access. We need
  this to successfully return ACCESS_DENIED on a file open for delete access.
@@ -169,7 +122,9 @@ bool can_delete_file_in_directory(connection_struct *conn,
 	 * check the file DELETE permission separately.
 	 */
 
-	ret = can_access_file_acl(conn, smb_fname_parent, FILE_DELETE_CHILD);
+	ret = NT_STATUS_IS_OK(smbd_check_access_rights(conn,
+				smb_fname_parent,
+				FILE_DELETE_CHILD));
  out:
 	TALLOC_FREE(dname);
 	TALLOC_FREE(smb_fname_parent);

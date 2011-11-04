@@ -3266,7 +3266,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	if ((create_disposition != FILE_CREATE)
 	    && (access_mask & DELETE_ACCESS)
 	    && (!(can_delete_file_in_directory(conn, smb_fname) ||
-		 can_access_file_acl(conn, smb_fname, DELETE_ACCESS)))) {
+		 NT_STATUS_IS_OK(smbd_check_access_rights(conn,
+				smb_fname,
+				DELETE_ACCESS))))) {
 		status = NT_STATUS_ACCESS_DENIED;
 		DEBUG(10,("create_file_unixpath: open file %s "
 			  "for delete ACCESS_DENIED\n",
