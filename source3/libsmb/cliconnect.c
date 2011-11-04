@@ -2736,8 +2736,11 @@ static void cli_negprot_done(struct tevent_req *subreq)
 							 (char *)inbuf,
 							 SVAL(inbuf, smb_flg2),
 							 &server_workgroup,
-							 blob1.data, blob1.length,
-							 STR_TERMINATE);
+							 blob1.data,
+							 blob1.length,
+							 STR_TERMINATE|
+							 STR_UNICODE|
+							 STR_NOALIGN);
 				if (ret == -1) {
 					tevent_req_oom(req);
 					return;
