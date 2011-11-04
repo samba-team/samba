@@ -49,15 +49,6 @@ static NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
 {
 	*access_granted = 0;
 
-	if (get_current_uid(conn) == (uid_t)0) {
-		/* I'm sorry sir, I didn't know you were root... */
-		*access_granted = access_desired;
-		if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
-			*access_granted |= FILE_GENERIC_ALL;
-		}
-		return NT_STATUS_OK;
-	}
-
 	return se_access_check(sd,
 				token,
 				(access_desired & ~FILE_READ_ATTRIBUTES),
@@ -106,6 +97,15 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 			smb_fname_str_dbg(smb_fname),
 			(unsigned int)rejected_share_access ));
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (get_current_uid(conn) == (uid_t)0) {
+		/* I'm sorry sir, I didn't know you were root... */
+		DEBUG(10,("smbd_check_open_rights: root override "
+			"on %s. Granting 0x%x\n",
+			smb_fname_str_dbg(smb_fname),
+			(unsigned int)access_mask ));
+		return NT_STATUS_OK;
 	}
 
 	if ((access_mask & DELETE_ACCESS) && !lp_acl_check_permissions(SNUM(conn))) {
@@ -218,6 +218,19 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (pp_parent_dir) {
+		*pp_parent_dir = parent_dir;
+	}
+
+	if (get_current_uid(conn) == (uid_t)0) {
+		/* I'm sorry sir, I didn't know you were root... */
+		DEBUG(10,("check_parent_access: root override "
+			"on %s. Granting 0x%x\n",
+			smb_fname_str_dbg(smb_fname),
+			(unsigned int)access_mask ));
+		return NT_STATUS_OK;
+	}
+
 	status = SMB_VFS_GET_NT_ACL(conn,
 				parent_dir,
 				SECINFO_DACL,
@@ -248,9 +261,6 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 		return status;
 	}
 
-	if (pp_parent_dir) {
-		*pp_parent_dir = parent_dir;
-	}
 	return NT_STATUS_OK;
 }
 
@@ -1474,7 +1484,9 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 
 	/* Calculate MAXIMUM_ALLOWED_ACCESS if requested. */
 	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
-		if (file_existed) {
+		if (get_current_uid(conn) == (uid_t)0) {
+			access_mask  |= FILE_GENERIC_ALL;
+		} else if (file_existed) {
 
 			struct security_descriptor *sd;
 			uint32_t access_granted = 0;
