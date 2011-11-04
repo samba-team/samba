@@ -2655,6 +2655,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		struct timespec ts;
 		bool negotiated_smb_signing = false;
+		DATA_BLOB blob = data_blob_null;
 
 		if (wct != 0x11) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
@@ -2680,12 +2681,28 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		/* work out if they sent us a workgroup */
 		if (!(cli->capabilities & CAP_EXTENDED_SECURITY) &&
 		    smb_buflen(inbuf) > 8) {
+			blob = data_blob_const(bytes + 8, num_bytes - 8);
+		}
+
+		if (blob.length > 0) {
 			ssize_t ret;
-			status = smb_bytes_talloc_string(
-				cli, (char *)inbuf, &cli->server_domain,
-				bytes + 8, num_bytes - 8, &ret);
-			if (tevent_req_nterror(req, status)) {
+			char *server_domain = NULL;
+
+			ret = clistr_pull_talloc(cli,
+						 (const char *)inbuf,
+						 SVAL(inbuf, smb_flg2),
+						 &server_domain,
+						 (char *)blob.data,
+						 blob.length,
+						 STR_TERMINATE|
+						 STR_UNICODE|
+						 STR_NOALIGN);
+			if (ret == -1) {
+				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
+			}
+			if (server_domain) {
+				cli->server_domain = server_domain;
 			}
 		}
 
