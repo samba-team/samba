@@ -60,7 +60,7 @@ static bool parent_override_delete(connection_struct *conn,
  Check if we have open rights.
 ****************************************************************************/
 
-static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
+static NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 				struct smb_filename *smb_fname,
 				uint32_t access_mask)
 {
@@ -73,7 +73,7 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 	rejected_share_access = access_mask & ~(conn->share_access);
 
 	if (rejected_share_access) {
-		DEBUG(10, ("smbd_check_open_rights: rejected share access 0x%x "
+		DEBUG(10, ("smbd_check_access_rights: rejected share access 0x%x "
 			"on %s (0x%x)\n",
 			(unsigned int)access_mask,
 			smb_fname_str_dbg(smb_fname),
@@ -83,7 +83,7 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 
 	if (get_current_uid(conn) == (uid_t)0) {
 		/* I'm sorry sir, I didn't know you were root... */
-		DEBUG(10,("smbd_check_open_rights: root override "
+		DEBUG(10,("smbd_check_access_rights: root override "
 			"on %s. Granting 0x%x\n",
 			smb_fname_str_dbg(smb_fname),
 			(unsigned int)access_mask ));
@@ -91,7 +91,7 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 	}
 
 	if ((access_mask & DELETE_ACCESS) && !lp_acl_check_permissions(SNUM(conn))) {
-		DEBUG(10,("smbd_check_open_rights: not checking ACL "
+		DEBUG(10,("smbd_check_access_rights: not checking ACL "
 			"on DELETE_ACCESS on file %s. Granting 0x%x\n",
 			smb_fname_str_dbg(smb_fname),
 			(unsigned int)access_mask ));
@@ -104,7 +104,7 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 			SECINFO_DACL),&sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("smbd_check_open_rights: Could not get acl "
+		DEBUG(10, ("smbd_check_access_rights: Could not get acl "
 			"on %s: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status)));
@@ -120,7 +120,7 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 				(access_mask & ~FILE_READ_ATTRIBUTES),
 				&rejected_mask);
 
-	DEBUG(10,("smbd_check_open_rights: file %s requesting "
+	DEBUG(10,("smbd_check_access_rights: file %s requesting "
 		"0x%x returning 0x%x (%s)\n",
 		smb_fname_str_dbg(smb_fname),
 		(unsigned int)access_mask,
@@ -129,7 +129,7 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("smbd_check_open_rights: acl for %s is:\n",
+			DEBUG(10,("smbd_check_access_rights: acl for %s is:\n",
 				smb_fname_str_dbg(smb_fname) ));
 			NDR_PRINT_DEBUG(security_descriptor, sd);
 		}
@@ -151,7 +151,7 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 			lp_map_system(SNUM(conn)))) {
 		rejected_mask &= ~FILE_WRITE_ATTRIBUTES;
 
-		DEBUG(10,("smbd_check_open_rights: "
+		DEBUG(10,("smbd_check_access_rights: "
 			"overrode "
 			"FILE_WRITE_ATTRIBUTES "
 			"on file %s\n",
@@ -172,7 +172,7 @@ static NTSTATUS smbd_check_open_rights(struct connection_struct *conn,
 
 		rejected_mask &= ~DELETE_ACCESS;
 
-		DEBUG(10,("smbd_check_open_rights: "
+		DEBUG(10,("smbd_check_access_rights: "
 			"overrode "
 			"DELETE_ACCESS on "
 			"file %s\n",
@@ -611,7 +611,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		if (!fsp->base_fsp) {
 			/* Only do this check on non-stream open. */
 			if (file_existed) {
-				status = smbd_check_open_rights(conn,
+				status = smbd_check_access_rights(conn,
 						smb_fname,
 						access_mask);
 			} else if (local_flags & O_CREAT){
@@ -628,7 +628,7 @@ static NTSTATUS open_file(files_struct *fsp,
 					"%s on file "
 					"%s returned %s\n",
 					file_existed ?
-						"smbd_check_open_rights" :
+						"smbd_check_access_rights" :
 						"check_parent_access",
 					smb_fname_str_dbg(smb_fname),
 					nt_errstr(status) ));
@@ -656,7 +656,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		status = smbd_check_open_rights(conn,
+		status = smbd_check_access_rights(conn,
 				smb_fname,
 				access_mask);
 
@@ -674,7 +674,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("open_file: "
-				"smbd_check_open_rights on file "
+				"smbd_check_access_rights on file "
 				"%s returned %s\n",
 				smb_fname_str_dbg(smb_fname),
 				nt_errstr(status) ));
@@ -2817,9 +2817,9 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if (info == FILE_WAS_OPENED) {
-		status = smbd_check_open_rights(conn, smb_dname, access_mask);
+		status = smbd_check_access_rights(conn, smb_dname, access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("open_directory: smbd_check_open_rights on "
+			DEBUG(10, ("open_directory: smbd_check_access_rights on "
 				"file %s failed with %s\n",
 				smb_fname_str_dbg(smb_dname),
 				nt_errstr(status)));
