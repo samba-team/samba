@@ -452,6 +452,33 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 		}
 		dir_hnd = OpenDir_fsp(NULL, conn, fsp, wcard, attr);
 	} else {
+		int ret;
+		struct smb_filename *smb_dname = NULL;
+		NTSTATUS status = create_synthetic_smb_fname(talloc_tos(),
+						path,
+						NULL,
+						NULL,
+						&smb_dname);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (lp_posix_pathnames()) {
+			ret = SMB_VFS_LSTAT(conn, smb_dname);
+		} else {
+			ret = SMB_VFS_STAT(conn, smb_dname);
+		}
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		if (!S_ISDIR(smb_dname->st.st_ex_mode)) {
+			return NT_STATUS_NOT_A_DIRECTORY;
+		}
+		status = smbd_check_access_rights(conn,
+						smb_dname,
+						SEC_DIR_LIST);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		dir_hnd = OpenDir(NULL, conn, path, wcard, attr);
 	}
 
