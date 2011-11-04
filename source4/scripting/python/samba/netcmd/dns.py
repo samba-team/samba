@@ -18,9 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import samba.getopt as options
-import ldb
 from struct import pack
 from socket import inet_ntoa
 
@@ -31,7 +29,6 @@ from samba.netcmd import (
     SuperCommand,
     )
 from samba.dcerpc import dnsp, dnsserver
-from samba.ndr import ndr_print
 
 
 def dns_connect(server, lp, creds):

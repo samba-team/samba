@@ -23,7 +23,7 @@
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba import gensec, Ldb, drs_utils
-import ldb, samba, sys, os, uuid
+import ldb, samba, sys, uuid
 from samba.ndr import ndr_pack
 from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs
 from samba.credentials import Credentials, DONT_USE_KERBEROS
@@ -124,7 +124,6 @@ class dc_join(object):
         ctx.drsuapi = None
         ctx.managedby = None
         ctx.subdomain = False
-
 
     def del_noerror(ctx, dn, recursive=False):
         if recursive:
@@ -375,7 +374,6 @@ class dc_join(object):
             raise RuntimeError("DsAddEntry failed")
         return ctr.objects
 
-
     def join_add_ntdsdsa(ctx):
         '''add the ntdsdsa object'''
         # FIXME: the partition (NC) assignment has to be made dynamic
@@ -411,7 +409,6 @@ class dc_join(object):
         # find the GUID of our NTDS DN
         res = ctx.samdb.search(base=ctx.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
         ctx.ntds_guid = misc.GUID(ctx.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
-
 
     def join_add_objects(ctx):
         '''add the various objects needed for the join'''
@@ -496,7 +493,6 @@ class dc_join(object):
                                                          ldb.FLAG_MOD_REPLACE,
                                                          "userAccountControl")
             ctx.samdb.modify(m)
-
 
     def join_add_objects2(ctx):
         '''add the various objects needed for the join, for subdomains post replication'''
@@ -616,7 +612,6 @@ class dc_join(object):
                                  lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
                                  dns_backend="BIND9_FLATFILE")
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
-
 
     def join_replicate(ctx):
         '''replicate the SAM'''
