@@ -41,7 +41,7 @@ struct deferred_open_record {
  SMB1 file varient of se_access_check. Never test FILE_READ_ATTRIBUTES.
 ****************************************************************************/
 
-NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
+static NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
 				const struct security_descriptor *sd,
 				const struct security_token *token,
 				uint32_t access_desired,
