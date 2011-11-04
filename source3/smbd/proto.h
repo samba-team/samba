@@ -580,6 +580,9 @@ void reply_nttranss(struct smb_request *req);
 
 /* The following definitions come from smbd/open.c  */
 
+NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
+				struct smb_filename *smb_fname,
+				uint32_t access_mask);
 NTSTATUS fd_close(files_struct *fsp);
 void change_file_owner_to_parent(connection_struct *conn,
 				 const char *inherit_from_dir,

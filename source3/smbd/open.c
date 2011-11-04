@@ -60,7 +60,7 @@ static bool parent_override_delete(connection_struct *conn,
  Check if we have open rights.
 ****************************************************************************/
 
-static NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
+NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 				struct smb_filename *smb_fname,
 				uint32_t access_mask)
 {
