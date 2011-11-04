@@ -735,6 +735,7 @@ struct libnet_BecomeDC_state {
 	struct libnet_BecomeDC_Callbacks callbacks;
 
 	bool rodc_join;
+	bool critical_only;
 };
 
 static int32_t get_dc_function_level(struct loadparm_context *lp_ctx)
@@ -2867,6 +2868,9 @@ static void becomeDC_drsuapi3_pull_domain_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
 					| DRSUAPI_DRS_NEVER_SYNCED
 					| DRSUAPI_DRS_USE_COMPRESSION;
+	if (s->critical_only) {
+		s->domain_part.replica_flags |= DRSUAPI_DRS_CRITICAL_ONLY | DRSUAPI_DRS_GET_ANC;
+	}
 	if (s->rodc_join) {
 	    s->schema_part.replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	}
@@ -2912,6 +2916,14 @@ static void becomeDC_drsuapi3_pull_domain_recv(struct tevent_req *subreq)
 		return;
 	}
 
+	if (s->critical_only) {
+		/* Remove the critical and ANC */
+		s->domain_part.replica_flags ^= DRSUAPI_DRS_CRITICAL_ONLY | DRSUAPI_DRS_GET_ANC;
+		s->critical_only = false;
+		becomeDC_drsuapi_pull_partition_send(s, &s->drsuapi2, &s->drsuapi3, &s->domain_part,
+						     becomeDC_drsuapi3_pull_domain_recv);
+		return;
+	}
 	becomeDC_drsuapi_update_refs_send(s, &s->drsuapi2, &s->schema_part,
 					  becomeDC_drsuapi2_update_refs_schema_recv);
 }
@@ -3135,6 +3147,7 @@ static void becomeDC_connect_ldap2(struct libnet_BecomeDC_state *s)
 	c->status = becomeDC_ldap2_move_computer(s);
 	if (!composite_is_ok(c)) return;
 
+	s->critical_only = true;
 	becomeDC_drsuapi3_pull_domain_send(s);
 }
 
