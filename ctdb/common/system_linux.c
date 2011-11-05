@@ -563,3 +563,15 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 	
 	return true;
 }
+
+int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
+{
+	struct ucred cr;
+	socklen_t crl = sizeof(struct ucred);
+	int ret;
+	if ((ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl) == 0)) {
+		peer_pid = cr.pid;
+	}
+	return ret;
+}
+

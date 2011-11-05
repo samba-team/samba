@@ -894,13 +894,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	struct ctdb_client *client;
 	struct ctdb_client_pid_list *client_pid;
-#ifdef _AIX
-	struct peercred_struct cr;
-	socklen_t crl = sizeof(struct peercred_struct);
-#else
-	struct ucred cr;
-	socklen_t crl = sizeof(struct ucred);
-#endif
+	pid_t peer_pid = 0;
 
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
@@ -915,18 +909,14 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 	DEBUG(DEBUG_DEBUG,(__location__ " Created SOCKET FD:%d to connected child\n", fd));
 
 	client = talloc_zero(ctdb, struct ctdb_client);
-#ifdef _AIX
-	if (getsockopt(fd, SOL_SOCKET, SO_PEERID, &cr, &crl) == 0) {
-#else
-	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl) == 0) {
-#endif
-		DEBUG(DEBUG_INFO,("Connected client with pid:%u\n", (unsigned)cr.pid));
+	if (ctdb_get_peer_pid(fd, &peer_pid) == 0) {
+		DEBUG(DEBUG_INFO,("Connected client with pid:%u\n", (unsigned)peer_pid));
 	}
 
 	client->ctdb = ctdb;
 	client->fd = fd;
 	client->client_id = ctdb_reqid_new(ctdb, client);
-	client->pid = cr.pid;
+	client->pid = peer_pid;
 
 	client_pid = talloc(client, struct ctdb_client_pid_list);
 	if (client_pid == NULL) {
@@ -936,7 +926,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 		return;
 	}		
 	client_pid->ctdb   = ctdb;
-	client_pid->pid    = cr.pid;
+	client_pid->pid    = peer_pid;
 	client_pid->client = client;
 
 	DLIST_ADD(ctdb->client_pids, client_pid);
