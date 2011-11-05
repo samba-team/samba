@@ -196,6 +196,8 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 				return ret;
 			}
 
+			/* Some servers (Microsoft at least return here AAAA records .... */
+			count += count_dns_rr(reply2->head, rk_ns_t_aaaa);
 			count2 = count_dns_rr(reply2->head, rk_ns_t_a);
 		} else {
 			reply2 = NULL;
@@ -241,8 +243,8 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 			if (!rr->u.data) {
 				continue;
 			}
-			rr_to_string(mem_ctx, rr, port);
-			addrs[total] = rr_to_string(mem_ctx, rr, port);
+
+			addrs[total] = rr_to_string(addrs, rr, port);
 			if (addrs[total]) {
 				total++;
 			}
