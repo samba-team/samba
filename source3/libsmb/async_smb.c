@@ -878,6 +878,7 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 			return NT_STATUS_REQUEST_ABORTED;
 		}
 
+		cmd = CVAL(state->inbuf, wct_ofs + 1);
 		wct_ofs = SVAL(state->inbuf, wct_ofs + 3);
 
 		/*
@@ -889,8 +890,6 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 		if (wct_ofs+2 > talloc_get_size(state->inbuf)) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
-
-		cmd = CVAL(state->inbuf, wct_ofs + 1);
 	}
 
 	state->cli->raw_status = cli_pull_raw_error(state->inbuf);
