@@ -1,0 +1,56 @@
+check_ctdb 0.3
+
+This nagios plugin is free software, and comes with ABSOLUTELY NO WARRANTY. 
+It may be used, redistributed and/or modified under the terms of the GNU 
+General Public Licence (see http://www.fsf.org/licensing/licenses/gpl.txt).
+
+CTDB plugin
+
+Usage: check_ctdb -i <info>
+    [ -t <timeout> ] [ -w <warn_range> ] [ -c <crit_range> ]
+    [ -H <host> ] [-s] [ -l <login_name> ]
+    [ -V ] [ -h ]
+
+ -?, --usage
+   Print usage information
+ -h, --help
+   Print detailed help screen
+ -V, --version
+   Print version information
+ --extra-opts=[section][@file]
+   Read options from an ini file. See http://nagiosplugins.org/extra-opts for usage
+ -i, --info=<info>
+   Information: One of scriptstatus or ping.
+ -H, --hostname=<login_name>
+   Host name or IP Address.
+ -s, --sudo
+   Use sudo.
+ -l, --login=<host>
+   The user to log in as on the remote machine.
+ -w, --warning=THRESHOLD
+   Warning threshold. See
+   http://nagiosplug.sourceforge.net/developer-guidelines.html#THRESHOLDFORMAT
+   for the threshold format.
+ -c, --critical=THRESHOLD
+   Critical threshold. See
+   http://nagiosplug.sourceforge.net/developer-guidelines.html#THRESHOLDFORMAT
+   for the threshold format.
+ -t, --timeout=INTEGER
+   Seconds before plugin times out (default: 30)
+ -v, --verbose
+   Show details for command-line debugging (can repeat up to 3 times)
+Supported commands:
+    * scriptstatus :
+        check the ctdb scriptstatus command and return CRITICAL if one of the
+        scripts fails.
+        Perfdata count the number of scripts by state (ok, disabled, error,
+        total).
+    * ping :
+        check the ctdb ping command.
+        Perfdata count the number of nodes, the total ping time and the number
+        of clients.
+        Thresholds are checked against the number of nodes.
+
+
+Copyright (c) 2011 Nantes Metropole
+
