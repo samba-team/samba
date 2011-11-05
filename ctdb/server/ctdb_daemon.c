@@ -1183,6 +1183,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 					 ctdb,
 					 false,
 					 CTDB_EVENT_SETUP,
+					 "%s",
 					 "");
 	if (ret != 0) {
 		DEBUG(DEBUG_CRIT,("Failed to set up 'setup' event\n"));
