@@ -401,22 +401,22 @@ static NTSTATUS smb2cli_inbuf_parse_compound(uint8_t *buf, TALLOC_CTX *mem_ctx,
 	int num_iov;
 	size_t buflen;
 	size_t taken;
+	uint8_t *first_hdr;
 
-	num_iov = 1;
+	num_iov = 0;
 
 	iov = talloc_array(mem_ctx, struct iovec, num_iov);
 	if (iov == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	iov[0].iov_base = buf;
-	iov[0].iov_len = 4;
 
-	buflen = smb_len_tcp(buf) + 4;
-	taken = 4;
+	buflen = smb_len_tcp(buf);
+	taken = 0;
+	first_hdr = buf + NBT_HDR_SIZE;
 
 	while (taken < buflen) {
 		size_t len = buflen - taken;
-		uint8_t *hdr = buf + taken;
+		uint8_t *hdr = first_hdr + taken;
 		struct iovec *cur;
 		size_t full_size;
 		size_t next_command_ofs;
@@ -558,7 +558,7 @@ static void smb2cli_inbuf_received(struct tevent_req *subreq)
 		return;
 	}
 
-	for (i=1; i<num_iov; i+=3) {
+	for (i=0; i<num_iov; i+=3) {
 		uint8_t *inbuf_ref = NULL;
 		struct iovec *cur = &iov[i];
 		uint8_t *inhdr = (uint8_t *)cur[0].iov_base;
