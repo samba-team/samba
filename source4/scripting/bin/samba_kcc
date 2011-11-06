@@ -38,10 +38,10 @@ import samba, ldb
 import optparse
 import logging
 
-from samba 		import getopt as options
-from samba.auth 	import system_session
-from samba.samdb 	import SamDB
-from samba.kcc_utils    import *
+from samba           import getopt as options
+from samba.auth      import system_session
+from samba.samdb     import SamDB
+from samba.kcc_utils import *
 
 class KCC:
     """The Knowledge Consistency Checker class.  A container for
@@ -81,7 +81,7 @@ class KCC:
            into the dsa_table by dn string
            Raises an Exception on error.
         """
-	dn = ldb.Dn(self.samdb, "")
+        dn = ldb.Dn(self.samdb, "")
         try:
             res = samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                attrs=["dsServiceName"])

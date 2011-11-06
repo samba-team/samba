@@ -39,11 +39,11 @@ class NamingContext:
             :param nc_guid: NC guid string
             :param nc_sid: NC sid
         """
-	self.nc_dnstr = nc_dnstr
-	self.nc_guid  = nc_guid
-	self.nc_sid   = nc_sid
-	self.nc_type  = NCType.unknown
-	return
+        self.nc_dnstr = nc_dnstr
+        self.nc_guid  = nc_guid
+        self.nc_sid   = nc_sid
+        self.nc_type  = NCType.unknown
+        return
 
     def __str__(self):
         '''Debug dump string output of class'''
@@ -239,7 +239,7 @@ class NCReplica(NamingContext):
            set then the NC replica is not present (false)
         """
         if self.rep_present_criteria_one and \
-	   self.rep_flags & dsdb.INSTANCE_TYPE_NC_GOING == 0:
+           self.rep_flags & dsdb.INSTANCE_TYPE_NC_GOING == 0:
             return True
         return False
 
@@ -309,7 +309,7 @@ class DirectoryServiceAgent:
            Raises an Exception on error.
         """
         controls = [ "extended_dn:1:1" ]
-	attrs    = [ "objectGUID",
+        attrs    = [ "objectGUID",
                      "invocationID",
                      "options",
                      "msDS-isRODC",
@@ -333,7 +333,7 @@ class DirectoryServiceAgent:
             self.dsa_ivid = misc.GUID(samdb.schema_format_value("objectGUID",
                                       msg["invocationId"][0]))
 
-	if "options" in msg and \
+        if "options" in msg and \
             ((int(msg["options"][0]) & dsdb.DS_NTDSDSA_OPT_IS_GC) != 0):
             self.dsa_is_gc = True
         else:
@@ -368,7 +368,7 @@ class DirectoryServiceAgent:
            :param samdb: database to query for DSA replica list
         """
         controls = ["extended_dn:1:1"]
-	ncattrs = [ # not RODC - default, config, schema (old style)
+        ncattrs = [ # not RODC - default, config, schema (old style)
                     "hasMasterNCs",
                     # not RODC - default, config, schema, app NCs
                     "msDS-hasMasterNCs",
@@ -551,7 +551,7 @@ class NTDSConnection():
            from the samdb.
            Raises an Exception on error.
         """
-	attrs = [ "options",
+        attrs = [ "options",
                   "enabledConnection",
                   "schedule",
                   "fromServer",
@@ -572,7 +572,7 @@ class NTDSConnection():
         if "enabledConnection" in msg:
             if msg["enabledConnection"][0].upper().lstrip().rstrip() == "TRUE":
                 self.enabled = True
-	if "systemFlags" in msg:
+        if "systemFlags" in msg:
             self.flags = int(msg["systemFlags"][0])
         if "schedule" in msg:
             self.schedulestr = msg["schedule"][0]
@@ -629,7 +629,7 @@ class Partition(NamingContext):
            :param samdb: sam database to load partition from
         """
         controls = ["extended_dn:1:1"]
-	attrs = [ "nCName",
+        attrs = [ "nCName",
                   "msDS-NC-Replica-Locations",
                   "msDS-NC-RO-Replica-Locations" ]
         try:
@@ -760,7 +760,7 @@ class Site:
             return
 
         msg = res[0]
-	if "options" in msg:
+        if "options" in msg:
             self.site_options = int(msg["options"][0])
         return
 
