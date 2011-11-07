@@ -100,13 +100,13 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
     takes_args = ["username", "password?"]
 
     def run(self, username, password=None, credopts=None, sambaopts=None,
-            versionopts=None, H=None, must_change_at_next_login=None, random_password=False,
+            versionopts=None, H=None, must_change_at_next_login=None, random_password=None,
             use_username_as_cn=None, userou=None, surname=None, given_name=None, initials=None,
             profile_path=None, script_path=None, home_drive=None, home_directory=None,
             job_title=None, department=None, company=None, description=None,
             mail_address=None, internet_address=None, telephone_number=None, physical_delivery_office=None):
 
-        if random_password is not False:
+        if random_password is True:
             password = generate_random_password(128, 255)
 
         while 1:
@@ -397,14 +397,15 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
 
     def run(self, username=None, filter=None, credopts=None, sambaopts=None,
             versionopts=None, H=None, newpassword=None,
-            must_change_at_next_login=None, random_password=False):
+            must_change_at_next_login=None, random_password=None):
         if filter is None and username is None:
             raise CommandError("Either the username or '--filter' must be specified!")
 
-        if random_password is not False:
+        if random_password is True:
             password = generate_random_password(128, 255)
         else:
             password = newpassword
+
         while 1:
             if password is not None and password is not '':
                 break
