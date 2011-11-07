@@ -1091,6 +1091,12 @@ NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 		return status;
 	}
 
+	for (i=0; i < (num_reqs - 1); i++) {
+		state = tevent_req_data(reqs[i], struct cli_smb_state);
+
+		state->seqnum = last_state->seqnum;
+	}
+
 	return NT_STATUS_OK;
 }
 
