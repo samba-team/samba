@@ -43,9 +43,6 @@ static int traverse_check(struct db_record *rec, void* data);
 static char*    print_data(TALLOC_CTX* mem_ctx, TDB_DATA d);
 static TDB_DATA parse_data(TALLOC_CTX* mem_ctx, const char** ptr);
 static TDB_DATA talloc_copy(TALLOC_CTX* mem_ctx, TDB_DATA data);
-static bool is_empty(TDB_DATA data) {
-	return (data.dsize == 0) || (data.dptr == NULL);
-}
 
 /* record *********************************************************************/
 
@@ -275,10 +272,10 @@ static TDB_DATA_diff unpack_diff(TDB_DATA data) {
 
 #define DEBUG_DIFF(LEV,MEM,MSG,KEY,OLD,NEW)			\
 	DEBUG(LEV, ("%s: %s\n", MSG, print_data(MEM, KEY)));	\
-	if (!is_empty(OLD)) {					\
+	if (!tdb_data_is_empty(OLD)) {				\
 		DEBUGADD(LEV, ("-%s\n", print_data(MEM, OLD)));	\
 	}							\
-	if (!is_empty(NEW)) {					\
+	if (!tdb_data_is_empty(NEW)) {				\
 		DEBUGADD(LEV, ("+%s\n", print_data(MEM, NEW)));	\
 	}
 
@@ -501,7 +498,7 @@ int traverse_check(struct db_record *rec, void* data) {
 			}
 			if (!tdb_data_equal(key, r->key)) {
 				TDB_DATA oval = fetch_record(ctx, mem, r->key);
-				if (!is_empty(oval) &&
+				if (!tdb_data_is_empty(oval) &&
 				    !tdb_data_equal(oval, r->val))
 				{
 					action = get_action(&act->record_exists,
@@ -513,7 +510,7 @@ int traverse_check(struct db_record *rec, void* data) {
 			}
 			if (is_map(r)) {
 				TDB_DATA okey = fetch_record(ctx, mem, r->val);
-				if (!is_empty(okey) &&
+				if (!tdb_data_is_empty(okey) &&
 				    !tdb_data_equal(okey, r->key))
 				{
 					action = get_action(&act->record_exists,
@@ -566,7 +563,7 @@ TDB_DATA talloc_copy(TALLOC_CTX* mem_ctx, TDB_DATA data) {
 }
 
 static bool is_cstr(TDB_DATA str) {
-	return !is_empty(str) && str.dptr[str.dsize-1] == '\0';
+	return !tdb_data_is_empty(str) && str.dptr[str.dsize-1] == '\0';
 }
 
 static bool parse_sid (TDB_DATA str, enum DT* type, struct dom_sid* sid) {
@@ -666,7 +663,7 @@ struct record* reverse_record(struct record* in)
 
 char* print_data(TALLOC_CTX* mem_ctx, TDB_DATA d)
 {
-	if (!is_empty(d)) {
+	if (!tdb_data_is_empty(d)) {
 		char* ret = NULL;
 		cbuf* ost = cbuf_new(mem_ctx);
 		int len = cbuf_print_quoted(ost, (const char*)d.dptr, d.dsize);
@@ -753,7 +750,7 @@ static int traverse_commit(struct db_record *diff_rec, void* data) {
 
 	DEBUG_DIFF(0, mem, "Commit", key, diff.oval, diff.nval);
 
-	if (is_empty(diff.nval)) {
+	if (tdb_data_is_empty(diff.nval)) {
 		status = dbwrap_record_delete(rec);
 	} else {
 		status = dbwrap_record_store(rec, diff.nval, 0);

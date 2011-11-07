@@ -541,10 +541,6 @@ static bool tdb_data_read_cstr(TDB_DATA *buf, char **result)
 	return false;
 }
 
-static bool tdb_data_is_empty(TDB_DATA d) {
-	return (d.dptr == NULL) || (d.dsize == 0);
-}
-
 static bool tdb_data_is_cstr(TDB_DATA d) {
 	if (tdb_data_is_empty(d) || (d.dptr[d.dsize-1] != '\0')) {
 		return false;

@@ -46,6 +46,10 @@ bool tdb_data_equal(TDB_DATA t1, TDB_DATA t2)
 	return (memcmp(t1.dptr, t2.dptr, t1.dsize) == 0);
 }
 
+bool tdb_data_is_empty(TDB_DATA d) {
+	return (d.dsize == 0) || (d.dptr == NULL);
+}
+
 TDB_DATA string_tdb_data(const char *string)
 {
 	return make_tdb_data((const uint8_t *)string, string ? strlen(string) : 0 );

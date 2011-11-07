@@ -207,10 +207,6 @@ static bool tdb_data_read_regval(TDB_DATA *buf, struct regval *result)
 	return true;
 }
 
-static bool tdb_data_is_empty(TDB_DATA d) {
-	return (d.dptr == NULL) || (d.dsize == 0);
-}
-
 static bool tdb_data_is_cstr(TDB_DATA d) {
 	if (tdb_data_is_empty(d)) {
 		return false;

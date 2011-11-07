@@ -27,6 +27,7 @@
 ****************************************************************/
 TDB_DATA make_tdb_data(const uint8_t *dptr, size_t dsize);
 bool tdb_data_equal(TDB_DATA t1, TDB_DATA t2);
+bool tdb_data_is_empty(TDB_DATA d);
 TDB_DATA string_tdb_data(const char *string);
 TDB_DATA string_term_tdb_data(const char *string);
 
