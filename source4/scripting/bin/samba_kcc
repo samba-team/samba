@@ -61,7 +61,6 @@ class KCC:
         self.my_dsa_dnstr  = None  # My dsa DN
         self.my_site_dnstr = None
         self.samdb         = samdb
-        return
 
     def load_my_site(self):
         """Loads the Site class for the local DSA
@@ -73,7 +72,6 @@ class KCC:
 
         site.load_site(samdb)
         self.site_table[self.my_site_dnstr] = site
-        return
 
     def load_my_dsa(self):
         """Discover my nTDSDSA thru the rootDSE entry and
@@ -87,7 +85,6 @@ class KCC:
                                attrs=["dsServiceName"])
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find my nTDSDSA - (%s)" % estr)
-            return
 
         dnstr = res[0]["dsServiceName"][0]
 
@@ -104,8 +101,6 @@ class KCC:
         # and index by dsa dn
         self.dsa_table[dnstr] = dsa
 
-        return
-
     def load_all_dsa(self):
         """Discover all nTDSDSA thru the sites entry and
            instantiate and load the DSAs.  Each dsa is inserted
@@ -119,7 +114,6 @@ class KCC:
                                     expression="(objectClass=nTDSDSA)")
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find nTDSDSAs - (%s)" % estr)
-            return
 
         for msg in res:
             dnstr = str(msg.dn)
@@ -135,8 +129,6 @@ class KCC:
             # Assign this dsa to my dsa table
             # and index by dsa dn
             self.dsa_table[dnstr] = dsa
-
-        return
 
     def load_all_partitions(self):
         """Discover all NCs thru the Partitions dn and
@@ -165,8 +157,6 @@ class KCC:
             part.load_partition(self.samdb)
             self.part_table[partstr] = part
 
-        return
-
     def should_be_present_test(self):
         """Enumerate all loaded partitions and DSAs and test
            if NC should be present as replica
@@ -178,7 +168,6 @@ class KCC:
 
                logger.info("dsadn:%s\nncdn:%s\nneeded=%s:ro=%s:partial=%s\n" % \
                            (dsa.dsa_dnstr, part.nc_dnstr, needed, ro, partial))
-        return
 
     def refresh_failed_links_connections(self):
         # XXX - not implemented yet
@@ -211,7 +200,6 @@ class KCC:
            in the samdb
         """
         # XXX - not implemented yet
-        return
 
     def update_rodc_connection(self):
         """Runs when the local DC is an RODC and updates the RODC NTFRS
@@ -229,7 +217,6 @@ class KCC:
         # If no such cn1 can be found, nothing is modified by this task.
 
         # XXX - not implemented yet
-        return
 
     def intrasite_max_node_edges(self, node_count):
         """Returns the maximum number of edges directed to a node in
@@ -540,8 +527,6 @@ class KCC:
 
             i = i + 1
 
-        return
-
     def intrasite(self):
         """The head method for generating the intra-site KCC replica
            connection graph and attendant nTDSConnection objects
@@ -602,7 +587,6 @@ class KCC:
         mydsa.commit_connection_table(self.samdb)
 
         logger.debug("intrasite exit:\nmydsa: %s" % mydsa)
-        return
 
     def run(self):
         """Method to perform a complete run of the KCC and
@@ -646,7 +630,6 @@ class KCC:
         # Step 7
         self.update_rodc_connection()
 
-        return
 
 ##################################################
 # Global Functions
