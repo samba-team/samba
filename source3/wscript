@@ -117,8 +117,9 @@ long ret = splice(0,0,1,0,400,0);
     # Check for inotify support
     conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h')
     conf.CHECK_FUNCS('inotify_init')
-    if "HAVE_LINUX_INOTIFY_H" in conf.env and "HAVE_INOTIFY_INIT" in conf.env:
-        conf.DEFINE('HAVE_INOTIFY', 1)
+    if "HAVE_INOTIFY_INIT" in conf.env:
+        if "HAVE_LINUX_INOTIFY_H" in conf.env or "HAVE_SYS_INOTIFY_H" in conf.env:
+            conf.DEFINE('HAVE_INOTIFY', 1)
 
     # Check for kernel change notify support
     conf.CHECK_CODE('''
