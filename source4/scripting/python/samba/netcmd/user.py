@@ -106,7 +106,7 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
             job_title=None, department=None, company=None, description=None,
             mail_address=None, internet_address=None, telephone_number=None, physical_delivery_office=None):
 
-        if random_password is True:
+        if random_password:
             password = generate_random_password(128, 255)
 
         while 1:
@@ -401,7 +401,7 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
         if filter is None and username is None:
             raise CommandError("Either the username or '--filter' must be specified!")
 
-        if random_password is True:
+        if random_password:
             password = generate_random_password(128, 255)
         else:
             password = newpassword
