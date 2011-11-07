@@ -341,20 +341,20 @@ class cmd_domain_machinepassword(Command):
 
     synopsis = "%prog <accountname> [options]"
 
-    takes_args = ["secret"]
+    takes_args = ["accountname"]
 
-    def run(self, secret, sambaopts=None, credopts=None, versionopts=None):
+    def run(self, accountname, sambaopts=None, credopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         url = lp.private_path("secrets.ldb")
         if not os.path.exists(url):
             raise CommandError("secrets database not found at %s " % url)
-        if not secret.endswith('$'):
-            secret += '$'
+        if not accountname.endswith('$'):
+            accountname += '$'
         secretsdb = Ldb(url=url, session_info=system_session(),
             credentials=creds, lp=lp)
         result = secretsdb.search(attrs=["secret"],
-            expression="(&(objectclass=primaryDomain)(samaccountname=%s))" % ldb.binary_encode(secret))
+            expression="(&(objectclass=primaryDomain)(samaccountname=%s))" % ldb.binary_encode(accountname))
 
         if len(result) != 1:
             raise CommandError("search returned %d records, expected 1" % len(result))
