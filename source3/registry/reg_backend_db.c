@@ -656,6 +656,13 @@ WERROR regdb_init(void)
 			return werr;
 		}
 
+		werr = regdb_store_regdb_version(regdb, REGDB_CODE_VERSION);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(1, ("regdb_init: Failed to store version: %s\n",
+				  win_errstr(werr)));
+			return werr;
+		}
+
 		DEBUG(10,("regdb_init: Successfully created registry tdb\n"));
 	}
 
