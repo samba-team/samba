@@ -51,10 +51,14 @@ static NTSTATUS cli_pull_raw_error(const uint8_t *buf)
  * @retval Is there a command following?
  */
 
-static bool have_andx_command(const char *buf, uint16_t ofs)
+static bool have_andx_command(const char *buf, uint16_t ofs, uint8_t cmd)
 {
 	uint8_t wct;
 	size_t buflen = talloc_get_size(buf);
+
+	if (!is_andx_req(cmd)) {
+		return false;
+	}
 
 	if ((ofs == buflen-1) || (ofs == buflen)) {
 		return false;
@@ -870,7 +874,7 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 			}
 		}
 
-		if (!have_andx_command((char *)state->inbuf, wct_ofs)) {
+		if (!have_andx_command((char *)state->inbuf, wct_ofs, cmd)) {
 			/*
 			 * This request was not completed because a previous
 			 * request in the chain had received an error.
@@ -907,7 +911,7 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 		status = state->cli->raw_status;
 	}
 
-	if (!have_andx_command((char *)state->inbuf, wct_ofs)) {
+	if (!have_andx_command((char *)state->inbuf, wct_ofs, cmd)) {
 
 		if ((cmd == SMBsesssetupX)
 		    && NT_STATUS_EQUAL(
