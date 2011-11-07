@@ -962,6 +962,17 @@ again:
 		}
 	}
 
+	/* set up a rb tree we can use to track which records we have a 
+	   fetch-lock in-flight for so we can defer any additional calls
+	   for the same record.
+	 */
+	ctdb_db->deferred_fetch = trbt_create(ctdb_db, 0);
+	if (ctdb_db->deferred_fetch == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to create deferred fetch rb tree for ctdb database\n"));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
 	/* setting this can help some high churn databases */
