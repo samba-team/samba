@@ -2832,8 +2832,10 @@ samba_cv_HAVE_INOTIFY=yes,
 samba_cv_HAVE_INOTIFY=no,
 samba_cv_HAVE_INOTIFY=cross)
 
-if test x"$ac_cv_func_inotify_init" = x"yes" -a x"$ac_cv_header_linux_inotify_h" = x"yes"; then
-    AC_DEFINE(HAVE_INOTIFY,1,[Whether kernel has inotify support])
+if test x"$ac_cv_func_inotify_init" = x"yes"; then
+    if test  x"$ac_cv_header_sys_inotify_h" = x"yes" -o x"$ac_cv_header_linux_inotify_h" = x"yes"; then
+        AC_DEFINE(HAVE_INOTIFY,1,[Whether kernel or sys has inotify support])
+    fi
 fi
 
 #################################################
