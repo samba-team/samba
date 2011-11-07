@@ -60,9 +60,10 @@ class DnsserverTests(RpcInterfaceTestCase):
         self.assertEquals(dnsserver.DNSSRV_TYPEID_SERVER_INFO, typeid)
 
 
-    def test_complexoepration2(self):
+    def test_complexoperation2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
-        request_filter = dnsserver.DNS_ZONE_REQUEST_PRIMARY
+        request_filter = (dnsserver.DNS_ZONE_REQUEST_FORWARD |
+                            dnsserver.DNS_ZONE_REQUEST_PRIMARY)
         typeid, zones = self.conn.DnssrvComplexOperation2(client_version,
                                                             0,
                                                             self.server,
@@ -72,6 +73,18 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                             request_filter)
         self.assertEquals(dnsserver.DNSSRV_TYPEID_ZONE_LIST, typeid)
         self.assertEquals(2, zones.dwZoneCount)
+
+        request_filter = (dnsserver.DNS_ZONE_REQUEST_REVERSE |
+                            dnsserver.DNS_ZONE_REQUEST_PRIMARY)
+        typeid, zones = self.conn.DnssrvComplexOperation2(client_version,
+                                                            0,
+                                                            self.server,
+                                                            None,
+                                                            'EnumZones',
+                                                            dnsserver.DNSSRV_TYPEID_DWORD,
+                                                            request_filter)
+        self.assertEquals(dnsserver.DNSSRV_TYPEID_ZONE_LIST, typeid)
+        self.assertEquals(0, zones.dwZoneCount)
 
 
     def test_enumrecords2(self):
