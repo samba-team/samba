@@ -931,6 +931,12 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 			 */
 			return status;
 		}
+	} else {
+		/*
+		 * Only the last request in the chain get the returned
+		 * status.
+		 */
+		status = NT_STATUS_OK;
 	}
 
 no_err:
