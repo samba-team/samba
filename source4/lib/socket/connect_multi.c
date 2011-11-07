@@ -132,6 +132,11 @@ static void connect_multi_next_socket(struct composite_context *result)
 
 	multi->num_connects_sent += 1;
 
+	if (multi->server_address == NULL) {
+		composite_error(result, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return;
+	}
+
 	state = talloc(multi, struct connect_one_state);
 	if (composite_nomem(state, result)) return;
 
