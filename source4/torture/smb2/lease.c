@@ -42,7 +42,7 @@
 
 static void smb2_generic_create(struct smb2_create *io, struct smb2_lease *ls,
                                 bool dir, const char *name, uint32_t disposition,
-                                uint32_t oplock, uint64_t leasekey,
+                                uint8_t oplock, uint64_t leasekey,
                                 uint32_t leasestate)
 {
 	ZERO_STRUCT(*io);
@@ -88,7 +88,7 @@ static void smb2_lease_create(struct smb2_create *io, struct smb2_lease *ls,
 }
 
 static void smb2_oplock_create(struct smb2_create *io, const char *name,
-                               uint32_t oplock)
+                               uint8_t oplock)
 {
 	smb2_generic_create(io, NULL, false, name, NTCREATEX_DISP_OPEN_IF,
 	    oplock, 0, 0);
@@ -398,8 +398,8 @@ static struct {
 	int failures;
 
 	struct smb2_handle oplock_handle;
-	int held_oplock_level;
-	int oplock_level;
+	uint8_t held_oplock_level;
+	uint8_t oplock_level;
 	int oplock_count;
 	int oplock_failures;
 } break_info;

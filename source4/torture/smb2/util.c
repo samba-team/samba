@@ -544,9 +544,9 @@ uint32_t smb2_util_share_access(const char *sharemode)
 	return val;
 }
 
-uint32_t smb2_util_oplock_level(const char *op)
+uint8_t smb2_util_oplock_level(const char *op)
 {
-	uint32_t val = SMB2_OPLOCK_LEVEL_NONE;
+	uint8_t val = SMB2_OPLOCK_LEVEL_NONE;
 	int i;
 
 	for (i = 0; i < strlen(op); i++) {
