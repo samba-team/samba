@@ -720,7 +720,6 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger, dns_backend,
     dnsforest = dnsdomain
 
     hostname = names.netbiosname.lower()
-    site = names.sitename
 
     domainguid = get_domainguid(samdb, domaindn)
     ntdsguid = get_ntdsguid(samdb, domaindn)
