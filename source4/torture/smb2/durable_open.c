@@ -447,27 +447,11 @@ bool test_durable_open_oplock(struct torture_context *tctx,
 	smb2_util_unlink(tree1, fname);
 
 	/* Create with batch oplock */
-	ZERO_STRUCT(io1);
-	io1.in.security_flags		= 0x00;
-	io1.in.oplock_level		= SMB2_OPLOCK_LEVEL_BATCH;
-	io1.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
-	io1.in.create_flags		= 0x00000000;
-	io1.in.reserved			= 0x00000000;
-	io1.in.desired_access		= SEC_RIGHTS_FILE_ALL;
-	io1.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
-	io1.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
-					  NTCREATEX_SHARE_ACCESS_WRITE |
-					  NTCREATEX_SHARE_ACCESS_DELETE;
-	io1.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
-	io1.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
-					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
-					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
-					  0x00200000;
-	io1.in.fname			= fname;
-	io1.in.durable_open		= true;
+	smb2_oplock_create(&io1, fname, SMB2_OPLOCK_LEVEL_BATCH);
+	io1.in.durable_open = true;
 
 	io2 = io1;
-	io2.in.create_disposition	= NTCREATEX_DISP_OPEN;
+	io2.in.create_disposition = NTCREATEX_DISP_OPEN;
 
 	status = smb2_create(tree1, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OK);
