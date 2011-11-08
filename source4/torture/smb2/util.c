@@ -569,10 +569,11 @@ uint8_t smb2_util_oplock_level(const char *op)
  * Helper functions to fill a smb2_create struct for several
  * open scenarios.
  */
-void smb2_generic_create(struct smb2_create *io, struct smb2_lease *ls,
-			 bool dir, const char *name, uint32_t disposition,
-			 uint8_t oplock, uint64_t leasekey,
-			 uint32_t leasestate)
+void smb2_generic_create_share(struct smb2_create *io, struct smb2_lease *ls,
+			       bool dir, const char *name, uint32_t disposition,
+			       uint32_t share_access,
+			       uint8_t oplock, uint64_t leasekey,
+			       uint32_t leasestate)
 {
 	ZERO_STRUCT(*io);
 	io->in.security_flags		= 0x00;
@@ -582,9 +583,7 @@ void smb2_generic_create(struct smb2_create *io, struct smb2_lease *ls,
 	io->in.reserved			= 0x00000000;
 	io->in.desired_access		= SEC_RIGHTS_FILE_ALL;
 	io->in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
-	io->in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
-					  NTCREATEX_SHARE_ACCESS_WRITE |
-					  NTCREATEX_SHARE_ACCESS_DELETE;
+	io->in.share_access		= share_access;
 	io->in.create_disposition	= disposition;
 	io->in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
 					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
@@ -606,6 +605,17 @@ void smb2_generic_create(struct smb2_create *io, struct smb2_lease *ls,
 		ls->lease_state = leasestate;
 		io->in.lease_request = ls;
 	}
+}
+
+void smb2_generic_create(struct smb2_create *io, struct smb2_lease *ls,
+			 bool dir, const char *name, uint32_t disposition,
+			 uint8_t oplock, uint64_t leasekey,
+			 uint32_t leasestate)
+{
+	smb2_generic_create_share(io, ls, dir, name, disposition,
+				  smb2_util_share_access("RWD"),
+				  oplock,
+				  leasekey, leasestate);
 }
 
 void smb2_lease_create(struct smb2_create *io, struct smb2_lease *ls,
