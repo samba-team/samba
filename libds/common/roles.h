@@ -29,7 +29,10 @@ enum server_role {
 	ROLE_STANDALONE    = 0,
 	ROLE_DOMAIN_MEMBER = 1,
 	ROLE_DOMAIN_BDC    = 2,
-	ROLE_DOMAIN_PDC    = 3
+	ROLE_DOMAIN_PDC    = 3,
+
+	/* To determine the role automatically, this is not a valid role */
+	ROLE_AUTO          = 100
 };
 
 /* keep compatibility with the s4 'ROLE_DOMAIN_CONTROLLER' by mapping
