@@ -140,33 +140,39 @@ struct ctdb_call_info {
 */
 #define CTDB_SRVID_TAKEOVER_RUN_RESPONSE  0xFD00000000000000LL
 
-/* A range of ports reserved for samba (top 32 bits)
- * All ports matching the 32 top bits are reserved for exclusive use by
+/* A range of ports reserved for registering a PID (top 8 bits)
+ * All ports matching the 8 top bits are reserved for exclusive use by
+ * registering a SRVID that matches the process-id of the requesting process
+ */
+#define CTDB_SRVID_PID_RANGE   0x0000000000000000LL
+
+/* A range of ports reserved for samba (top 8 bits)
+ * All ports matching the 8 top bits are reserved for exclusive use by
  * CIFS server
  */
 #define CTDB_SRVID_SAMBA_NOTIFY  0xFE00000000000000LL
 #define CTDB_SRVID_SAMBA_RANGE   0xFE00000000000000LL
 
-/* A range of ports reserved for a CTDB NFS server (top 32 bits)
- * All ports matching the 32 top bits are reserved for exclusive use by
+/* A range of ports reserved for a CTDB NFS server (top 8 bits)
+ * All ports matching the 8 top bits are reserved for exclusive use by
  * NFS server
  */
-#define CTDB_SRVID_NFSD_RANGE  0xFE01000000000000LL
+#define CTDB_SRVID_NFSD_RANGE  0xEE00000000000000LL
 
-/* A range of ports reserved for a CTDB ISCSI server (top 32 bits)
- * All ports matching the 32 top bits are reserved for exclusive use by
+/* A range of ports reserved for a CTDB ISCSI server (top 8 bits)
+ * All ports matching the 8 top bits are reserved for exclusive use by
  * ISCSI server
  */
-#define CTDB_SRVID_ISCSID_RANGE  0xFE02000000000000LL
+#define CTDB_SRVID_ISCSID_RANGE  0xDE00000000000000LL
 
-/* A range of ports reserved for testing (top 32 bits)
- * All ports matching the 32 top bits are reserved for exclusive use by
+/* A range of ports reserved for testing (top 8 bits)
+ * All ports matching the 8 top bits are reserved for exclusive use by
  * test applications
  */
-#define CTDB_SRVID_TEST_RANGE  0xFE03000000000000LL
+#define CTDB_SRVID_TEST_RANGE  0xCE00000000000000LL
 
 /* Range of ports reserved for traversals */
-#define CTDB_SRVID_TRAVERSE_RANGE  0xFE04000000000000LL
+#define CTDB_SRVID_TRAVERSE_RANGE  0xBE00000000000000LL
 
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
