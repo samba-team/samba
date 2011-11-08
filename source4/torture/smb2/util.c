@@ -499,3 +499,25 @@ bool smb2_util_verify_attrib(TALLOC_CTX *tctx, struct smb2_tree *tree,
 }
 
 
+uint32_t smb2_util_lease_state(const char *ls)
+{
+	uint32_t val = 0;
+	int i;
+
+	for (i = 0; i < strlen(ls); i++) {
+		switch (ls[i]) {
+		case 'R':
+			val |= SMB2_LEASE_READ;
+			break;
+		case 'H':
+			val |= SMB2_LEASE_HANDLE;
+			break;
+		case 'W':
+			val |= SMB2_LEASE_WRITE;
+			break;
+		}
+	}
+
+	return val;
+}
+

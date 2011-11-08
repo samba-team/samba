@@ -50,28 +50,6 @@
 	} while(0)
 
 
-static inline uint32_t map_lease(const char *ls)
-{
-	uint32_t val = 0;
-	int i;
-
-	for (i = 0; i < strlen(ls); i++) {
-		switch (ls[i]) {
-		case 'R':
-			val |= SMB2_LEASE_READ;
-			break;
-		case 'H':
-			val |= SMB2_LEASE_HANDLE;
-			break;
-		case 'W':
-			val |= SMB2_LEASE_WRITE;
-			break;
-		}
-	}
-
-	return val;
-}
-
 static inline uint32_t map_sharemode(const char *sharemode)
 {
 	uint32_t val = NTCREATEX_SHARE_ACCESS_NONE; /* 0 */
@@ -324,7 +302,7 @@ static bool test_one_durable_open_open2(struct torture_context *tctx,
 	ZERO_STRUCT(ls);
 	ls.lease_key.data[0] = lease;
 	ls.lease_key.data[1] = ~lease;
-	ls.lease_state = map_lease(test.type);
+	ls.lease_state = smb2_util_lease_state(test.type);
 	io.in.lease_request = &ls;
 
 	status = smb2_create(tree, mem_ctx, &io);
@@ -336,7 +314,8 @@ static bool test_one_durable_open_open2(struct torture_context *tctx,
 	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
 	CHECK_VAL(io.out.lease_response.lease_key.data[0], lease);
 	CHECK_VAL(io.out.lease_response.lease_key.data[1], ~lease);
-	CHECK_VAL(io.out.lease_response.lease_state, map_lease(test.type));
+	CHECK_VAL(io.out.lease_response.lease_state,
+		  smb2_util_lease_state(test.type));
 done:
 	if (h != NULL) {
 		smb2_util_close(tree, *h);
