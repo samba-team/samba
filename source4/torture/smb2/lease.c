@@ -611,26 +611,6 @@ static bool torture_oplock_handler(struct smb2_transport *transport,
 	return true;
 }
 
-static inline uint32_t oplock(const char *op) {
-	uint32_t val = SMB2_OPLOCK_LEVEL_NONE;
-	int i;
-
-	for (i = 0; i < strlen(op); i++) {
-		switch (op[i]) {
-		case 's':
-			return SMB2_OPLOCK_LEVEL_II;
-		case 'x':
-			return SMB2_OPLOCK_LEVEL_EXCLUSIVE;
-		case 'b':
-			return SMB2_OPLOCK_LEVEL_BATCH;
-		default:
-			continue;
-		}
-	}
-
-	return val;
-}
-
 #define NOPLOCK_RESULTS 12
 static const char *oplock_results[NOPLOCK_RESULTS][4] = {
 	{"R",	"s",	"R",	"s"},
@@ -693,8 +673,8 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		const char *granted = oplock_results[i][3];
 		torture_comment(tctx, "Hold %s(%x), requesting %s(%x), "
 		    "expecting break to %s(%x) and grant of %s(%x)\n",
-		    held, smb2_util_lease_state(held), contend, oplock(contend),
-		    brokento, smb2_util_lease_state(brokento), granted, oplock(granted));
+		    held, smb2_util_lease_state(held), contend, smb2_util_oplock_level(contend),
+		    brokento, smb2_util_lease_state(brokento), granted, smb2_util_oplock_level(granted));
 
 		ZERO_STRUCT(break_info);
 
@@ -707,12 +687,12 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		CHECK_LEASE(&io, held, true, LEASE1);
 
 		/* Does an oplock contend the lease? */
-		smb2_oplock_create(&io, fname, oplock(contend));
+		smb2_oplock_create(&io, fname, smb2_util_oplock_level(contend));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		h2 = io.out.file.handle;
 		CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-		CHECK_VAL(io.out.oplock_level, oplock(granted));
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level(granted));
 		break_info.held_oplock_level = io.out.oplock_level;
 
 		if (smb2_util_lease_state(held) != smb2_util_lease_state(brokento)) {
@@ -736,18 +716,18 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		const char *granted = oplock_results_2[i][3];
 		torture_comment(tctx, "Hold %s(%x), requesting %s(%x), "
 		    "expecting break to %s(%x) and grant of %s(%x)\n",
-		    held, oplock(held), contend, smb2_util_lease_state(contend),
-		    brokento, oplock(brokento), granted, smb2_util_lease_state(granted));
+		    held, smb2_util_oplock_level(held), contend, smb2_util_lease_state(contend),
+		    brokento, smb2_util_oplock_level(brokento), granted, smb2_util_lease_state(granted));
 
 		ZERO_STRUCT(break_info);
 
 		/* Grab an oplock. */
-		smb2_oplock_create(&io, fname, oplock(held));
+		smb2_oplock_create(&io, fname, smb2_util_oplock_level(held));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		h = io.out.file.handle;
 		CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-		CHECK_VAL(io.out.oplock_level, oplock(held));
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level(held));
 		break_info.held_oplock_level = io.out.oplock_level;
 
 		/* Grab lease. */
@@ -758,10 +738,10 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
 		CHECK_LEASE(&io, granted, true, LEASE1);
 
-		if (oplock(held) != oplock(brokento)) {
+		if (smb2_util_oplock_level(held) != smb2_util_oplock_level(brokento)) {
 			CHECK_VAL(break_info.oplock_count, 1);
 			CHECK_VAL(break_info.oplock_failures, 0);
-			CHECK_VAL(break_info.oplock_level, oplock(brokento));
+			CHECK_VAL(break_info.oplock_level, smb2_util_oplock_level(brokento));
 			break_info.held_oplock_level = break_info.oplock_level;
 		} else {
 			CHECK_VAL(break_info.oplock_count, 0);
@@ -852,12 +832,12 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	CHECK_LEASE(&io, "R", true, LEASE1);
 
 	/* Grab a level-II oplock. */
-	smb2_oplock_create(&io, fname, oplock("s"));
+	smb2_oplock_create(&io, fname, smb2_util_oplock_level("s"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h2 = io.out.file.handle;
 	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io.out.oplock_level, oplock("s"));
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("s"));
 	break_info.held_oplock_level = io.out.oplock_level;
 
 	/* Verify no breaks. */
@@ -866,12 +846,12 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 
 	/* Open for truncate, force a break. */
 	smb2_generic_create(&io, NULL, false, fname,
-	    NTCREATEX_DISP_OVERWRITE_IF, oplock(""), 0, 0);
+	    NTCREATEX_DISP_OVERWRITE_IF, smb2_util_oplock_level(""), 0, 0);
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h3 = io.out.file.handle;
 	CHECK_CREATED(&io, TRUNCATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io.out.oplock_level, oplock(""));
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level(""));
 	break_info.held_oplock_level = io.out.oplock_level;
 
 	/* Sleep, use a write to clear the recv queue. */
@@ -887,7 +867,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	/* Verify one oplock break, one lease break. */
 	CHECK_VAL(break_info.oplock_count, 1);
 	CHECK_VAL(break_info.oplock_failures, 0);
-	CHECK_VAL(break_info.oplock_level, oplock(""));
+	CHECK_VAL(break_info.oplock_level, smb2_util_oplock_level(""));
 	CHECK_BREAK_INFO("R", "", LEASE1);
 
  done:
