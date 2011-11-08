@@ -565,3 +565,60 @@ uint8_t smb2_util_oplock_level(const char *op)
 	return val;
 }
 
+/**
+ * Helper functions to fill a smb2_create struct for several
+ * open scenarios.
+ */
+void smb2_generic_create(struct smb2_create *io, struct smb2_lease *ls,
+			 bool dir, const char *name, uint32_t disposition,
+			 uint8_t oplock, uint64_t leasekey,
+			 uint32_t leasestate)
+{
+	ZERO_STRUCT(*io);
+	io->in.security_flags		= 0x00;
+	io->in.oplock_level		= oplock;
+	io->in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io->in.create_flags		= 0x00000000;
+	io->in.reserved			= 0x00000000;
+	io->in.desired_access		= SEC_RIGHTS_FILE_ALL;
+	io->in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
+	io->in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
+					  NTCREATEX_SHARE_ACCESS_WRITE |
+					  NTCREATEX_SHARE_ACCESS_DELETE;
+	io->in.create_disposition	= disposition;
+	io->in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+					  0x00200000;
+	io->in.fname			= name;
+
+	if (dir) {
+		io->in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+		io->in.share_access &= ~NTCREATEX_SHARE_ACCESS_DELETE;
+		io->in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+		io->in.create_disposition = NTCREATEX_DISP_CREATE;
+	}
+
+	if (ls) {
+		ZERO_STRUCT(*ls);
+		ls->lease_key.data[0] = leasekey;
+		ls->lease_key.data[1] = ~leasekey;
+		ls->lease_state = leasestate;
+		io->in.lease_request = ls;
+	}
+}
+
+void smb2_lease_create(struct smb2_create *io, struct smb2_lease *ls,
+		       bool dir, const char *name, uint64_t leasekey,
+		       uint32_t leasestate)
+{
+	smb2_generic_create(io, ls, dir, name, NTCREATEX_DISP_OPEN_IF,
+	    SMB2_OPLOCK_LEVEL_LEASE, leasekey, leasestate);
+}
+
+void smb2_oplock_create(struct smb2_create *io, const char *name, uint8_t oplock)
+{
+	smb2_generic_create(io, NULL, false, name, NTCREATEX_DISP_OPEN_IF,
+	    oplock, 0, 0);
+}
+
