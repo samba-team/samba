@@ -1646,6 +1646,7 @@ int lp_min_receive_file_size(void);
 char* lp_perfcount_module(void);
 void widelinks_warning(int snum);
 const char *lp_ncalrpc_dir(void);
+void _lp_set_server_role(int server_role);
 
 /* The following definitions come from param/loadparm_ctx.c  */
 

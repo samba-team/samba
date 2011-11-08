@@ -512,6 +512,18 @@ static const struct enum_list enum_kerberos_method[] = {
 	{-1, NULL}
 };
 
+/* Server role options */
+static const struct enum_list enum_server_role_s3[] = {
+	{ROLE_STANDALONE, "standalone"},
+	{ROLE_DOMAIN_MEMBER, "member server"},
+	{ROLE_DOMAIN_MEMBER, "member"},
+	{ROLE_DOMAIN_BDC, "bdc"},
+	{ROLE_DOMAIN_BDC, "domain controller"},
+	{ROLE_DOMAIN_BDC, "dc"},
+	{ROLE_DOMAIN_PDC, "pdc"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * The FLAG_HIDE is explicit. Parameters set this way do NOT appear in any edit
@@ -661,6 +673,15 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= enum_config_backend,
 		.flags		= FLAG_HIDE|FLAG_ADVANCED|FLAG_META,
+	},
+	{
+		.label		= "server role",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(ServerRole),
+		.special	= NULL,
+		.enum_list	= enum_server_role_s3,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED,
 	},
 
 	{N_("Security Options"), P_SEP, P_SEPARATOR},
@@ -4796,6 +4817,7 @@ static void init_globals(bool reinit_globals)
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
 	Globals.ConfigBackend = config_backend;
+	Globals.ServerRole = ROLE_STANDALONE;
 
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
@@ -5363,6 +5385,7 @@ FN_GLOBAL_INTEGER(lp_lock_spin_time, iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, iUsershareMaxShares)
 FN_GLOBAL_CONST_STRING(lp_socket_options, szSocketOptions)
 FN_GLOBAL_INTEGER(lp_config_backend, ConfigBackend)
+FN_GLOBAL_INTEGER(lp_server_role, ServerRole)
 FN_GLOBAL_INTEGER(lp_smb2_max_read, ismb2_max_read)
 FN_GLOBAL_INTEGER(lp_smb2_max_write, ismb2_max_write)
 FN_GLOBAL_INTEGER(lp_smb2_max_trans, ismb2_max_trans)
@@ -9706,4 +9729,9 @@ bool lp_readraw(void)
 		return false;
 	}
 	return _lp_readraw();
+}
+
+void _lp_set_server_role(int server_role)
+{
+	Globals.ServerRole = server_role;
 }

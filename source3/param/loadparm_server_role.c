@@ -30,7 +30,6 @@
 /*******************************************************************
  Set the server type we will announce as via nmbd.
 ********************************************************************/
-static int server_role;
 
 static const struct srv_role_tab {
 	uint32 role;
@@ -56,7 +55,7 @@ const char* server_role_str(uint32 role)
 
 void set_server_role(void)
 {
-	server_role = ROLE_STANDALONE;
+	int server_role = ROLE_STANDALONE;
 
 	switch (lp_security()) {
 		case SEC_SHARE:
@@ -98,14 +97,7 @@ void set_server_role(void)
 			break;
 	}
 
+	_lp_set_server_role(server_role);
 	DEBUG(10, ("set_server_role: role = %s\n", server_role_str(server_role)));
 }
 
-/***********************************************************
- returns role of Samba server
-************************************************************/
-
-int lp_server_role(void)
-{
-	return server_role;
-}
