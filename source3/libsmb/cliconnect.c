@@ -2802,6 +2802,10 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		}
 
 	} else if (protocol >= PROTOCOL_LANMAN1) {
+		DATA_BLOB blob1;
+		ssize_t ret = 0;
+		uint16_t key_len;
+
 		if (wct != 0x0D) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
@@ -2810,22 +2814,44 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		server_security_mode = SVAL(vwv + 1, 0);
 		server_max_xmit = SVAL(vwv + 2, 0);
 		server_max_mux = SVAL(vwv + 3, 0);
+		server_readbraw = ((SVAL(vwv + 5, 0) & 0x1) != 0);
+		server_writebraw = ((SVAL(vwv + 5, 0) & 0x2) != 0);
 		server_session_key = IVAL(vwv + 6, 0);
 		server_time_zone = SVALS(vwv + 10, 0);
 		server_time_zone *= 60;
 		/* this time is converted to GMT by make_unix_date */
 		server_system_time = make_unix_date(
 			(char *)(vwv + 8), server_time_zone);
-		server_readbraw = ((SVAL(vwv + 5, 0) & 0x1) != 0);
-		server_writebraw = ((SVAL(vwv + 5, 0) & 0x2) != 0);
+		key_len = SVAL(vwv + 11, 0);
 
-		if (num_bytes != 0 && num_bytes != 8) {
+		if (num_bytes < key_len) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
 		}
 
-		if (num_bytes == 8) {
+		if (key_len != 0 && key_len != 8) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		if (key_len == 8) {
 			memcpy(server_challenge, bytes, 8);
+		}
+
+		blob1 = data_blob_const(bytes+key_len, num_bytes-key_len);
+		if (blob1.length > 0) {
+			ret = pull_string_talloc(state,
+						 (char *)inbuf,
+						 SVAL(inbuf, smb_flg2),
+						 &server_workgroup,
+						 blob1.data,
+						 blob1.length,
+						 STR_TERMINATE|
+						 STR_ASCII);
+			if (ret == -1) {
+				tevent_req_oom(req);
+				return;
+			}
 		}
 	} else {
 		/* the old core protocol */
