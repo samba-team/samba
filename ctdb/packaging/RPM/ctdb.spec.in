@@ -146,6 +146,24 @@ development libraries for ctdb
 %{_libdir}/libctdb.a
 
 %changelog
+* Tue Nov 8 2011 : Version 1.12
+ - Add new tunable : AllowClientDBAttach that can be used to stop
+   client db access during maintenance operations
+ - Updated logging for interfaces that are missing or dont exist but are
+   configured to be used.
+ - Add timeout argument to ctdb_cmdline_client
+ - PDMA support
+ - Initial support for 'readonly' delegations for ctdb databases
+   This will when finished greatly improve performance for contended hot
+   records that are used for just read-access.
+ - New 'ctdb cattdb' command
+ - Massive updates to tests and eventscripts
+ - LCP2 ip allocation algorithm
+ - Record Fetch collapse. Collapse multiple fetch-lock requests from cients
+   to a single network fetch and defer other concurrent requests until the 
+   initial fetch completes, and then service the deferred calls locally.
+   This will greatly improve performance for contended hot records 
+   where clients request write-locks.
 * Thu Sep 1 2011 : Version 1.11
  - Major updates.
 * Tue May 25 2010 : Version 1.10
