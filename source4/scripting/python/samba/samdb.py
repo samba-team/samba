@@ -80,6 +80,16 @@ class SamDB(samba.Ldb):
         '''return the domain DN'''
         return str(self.get_default_basedn())
 
+    def disable_account(self, search_filter):
+        """Disables an account
+
+        :param search_filter: LDAP filter to find the user (eg
+            samccountname=name)
+        """
+
+        flags = samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_PASSWD_NOTREQD
+        self.toggle_userAccountFlags(search_filter, flags, on=True)
+
     def enable_account(self, search_filter):
         """Enables an account
 

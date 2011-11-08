@@ -281,6 +281,38 @@ Example3 shows how to enable a user in the domain against a local LDAP server.  
         self.outf.write("Enabled user '%s'\n" % (username or filter))
 
 
+class cmd_user_disable(Command):
+    """Disable a user"""
+
+    synopsis = "%prog (<username>|--filter <filter>) [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        Option("--filter", help="LDAP Filter to set password on", type=str),
+        ]
+
+    takes_args = ["username?"]
+
+    def run(self, username=None, sambaopts=None, credopts=None,
+            versionopts=None, filter=None, H=None):
+        if username is None and filter is None:
+            raise CommandError("Either the username or '--filter' must be specified!")
+
+        if filter is None:
+            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (ldb.binary_encode(username))
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+
+        samdb = SamDB(url=H, session_info=system_session(),
+            credentials=creds, lp=lp)
+        try:
+            samdb.disable_account(filter)
+        except Exception, msg:
+            raise CommandError("Failed to disable user '%s': %s" % (username or filter, msg))
+
+
 class cmd_user_setexpiry(Command):
     """Sets the expiration of a user account
 
@@ -472,6 +504,7 @@ class cmd_user(SuperCommand):
     subcommands["add"] = cmd_user_create()
     subcommands["create"] = cmd_user_create()
     subcommands["delete"] = cmd_user_delete()
+    subcommands["disable"] = cmd_user_disable()
     subcommands["enable"] = cmd_user_enable()
     subcommands["list"] = cmd_user_list()
     subcommands["setexpiry"] = cmd_user_setexpiry()
