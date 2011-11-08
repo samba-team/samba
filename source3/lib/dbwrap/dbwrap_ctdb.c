@@ -1642,6 +1642,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				enum dbwrap_lock_order lock_order)
 {
 	DEBUG(3, ("db_open_ctdb: no cluster support!\n"));
+	errno = ENOSYS;
 	return NULL;
 }
 
