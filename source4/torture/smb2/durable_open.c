@@ -243,7 +243,6 @@ struct durable_open_vs_lease durable_open_vs_lease_table[NUM_LEASE_OPEN_TESTS] =
 static bool test_one_durable_open_open2(struct torture_context *tctx,
 					struct smb2_tree *tree,
 					const char *fname,
-					struct smb2_create io,
 					struct durable_open_vs_lease test)
 {
 	NTSTATUS status;
@@ -251,22 +250,19 @@ static bool test_one_durable_open_open2(struct torture_context *tctx,
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
 	bool ret = true;
+	struct smb2_create io;
 	struct smb2_lease ls;
 	uint64_t lease;
 
 	smb2_util_unlink(tree, fname);
 
-	io.in.fname = fname;
-	io.in.share_access = smb2_util_share_access(test.share_mode);
-	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
-
 	lease = random();
 
-	ZERO_STRUCT(ls);
-	ls.lease_key.data[0] = lease;
-	ls.lease_key.data[1] = ~lease;
-	ls.lease_state = smb2_util_lease_state(test.type);
-	io.in.lease_request = &ls;
+	smb2_lease_create_share(&io, &ls, false /* dir */, fname,
+				smb2_util_share_access(test.share_mode),
+				lease,
+				smb2_util_lease_state(test.type));
+	io.in.durable_open = true;
 
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -293,7 +289,6 @@ bool test_durable_open_open2(struct torture_context *tctx,
 			     struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
-	struct smb2_create io;
 	char fname[256];
 	bool ret = true;
 	int i;
@@ -303,20 +298,6 @@ bool test_durable_open_open2(struct torture_context *tctx,
 
 	smb2_util_unlink(tree, fname);
 
-	ZERO_STRUCT(io);
-	io.in.security_flags		= 0x00;
-	io.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
-	io.in.create_flags		= 0x00000000;
-	io.in.reserved			= 0x00000000;
-	io.in.desired_access		= SEC_RIGHTS_FILE_ALL;
-	io.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
-	io.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
-	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
-					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
-					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
-					  0x00200000;
-	io.in.durable_open		= true;
-	io.in.fname			= fname;
 
 	/* test various oplock levels with durable open */
 
@@ -324,7 +305,6 @@ bool test_durable_open_open2(struct torture_context *tctx,
 		ret = test_one_durable_open_open2(tctx,
 						  tree,
 						  fname,
-						  io,
 						  durable_open_vs_lease_table[i]);
 		if (ret == false) {
 			goto done;
