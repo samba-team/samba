@@ -277,6 +277,32 @@ static const uint8_t samr_changepassworduser3_w2k_out_data[] = {
 	0xbb, 0x00, 0x00, 0xc0
 };
 
+static const uint8_t samr_changepassworduser3_w2k8r2_out_data[] = {
+	0x00, 0x00, 0x02, 0x00, 0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x00, 0x80, 0xa6, 0x0a, 0xff, 0xde, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x02, 0x00, 0x05, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x6c, 0x00, 0x00, 0xc0
+};
+
+static bool samr_changepassworduser3_w2k8r2_out_check(struct torture_context *tctx,
+						      struct samr_ChangePasswordUser3 *r)
+{
+	struct samr_DomInfo1 *dominfo = *r->out.dominfo;
+	struct userPwdChangeFailureInformation *reject = *r->out.reject;
+
+	torture_assert_int_equal(tctx, dominfo->min_password_length, 7, "min_password_length");
+	torture_assert_int_equal(tctx, dominfo->password_history_length, 0, "password_history_length");
+	torture_assert_int_equal(tctx, dominfo->password_properties, DOMAIN_PASSWORD_COMPLEX, "password_properties");
+	torture_assert_u64_equal(tctx, dominfo->max_password_age, 0xffffdeff0aa68000, "max_password_age");
+	torture_assert_u64_equal(tctx, dominfo->min_password_age, 0x0000000000000000, "min_password_age");
+
+	torture_assert_int_equal(tctx, reject->extendedFailureReason, SAM_PWD_CHANGE_NOT_COMPLEX, "extendedFailureReason");
+
+	torture_assert_ntstatus_equal(tctx, r->out.result, NT_STATUS_PASSWORD_RESTRICTION, "result");
+
+	return true;
+}
+
 struct torture_suite *ndr_samr_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "samr");
@@ -313,6 +339,12 @@ struct torture_suite *ndr_samr_suite(TALLOC_CTX *ctx)
 	/* Samba currently fails to parse a w2k reply */
 	torture_suite_add_ndr_pull_fn_test(suite, samr_ChangePasswordUser3, samr_changepassworduser3_w2k_out_data, NDR_OUT, NULL);
 #endif
+	torture_suite_add_ndr_pull_fn_test(suite,
+					   samr_ChangePasswordUser3,
+					   samr_changepassworduser3_w2k8r2_out_data,
+					   NDR_OUT,
+					   samr_changepassworduser3_w2k8r2_out_check);
+
 	return suite;
 }
 
