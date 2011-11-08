@@ -59,7 +59,7 @@
  */
 
 struct durable_open_vs_oplock {
-	uint8_t level;
+	const char *level;
 	const char *share_mode;
 	bool expected;
 };
@@ -69,41 +69,41 @@ struct durable_open_vs_oplock {
 #define NUM_OPLOCK_OPEN_TESTS ( NUM_OPLOCK_TYPES * NUM_SHARE_MODES )
 struct durable_open_vs_oplock durable_open_vs_oplock_table[NUM_OPLOCK_OPEN_TESTS] =
 {
-	{ SMB2_OPLOCK_LEVEL_NONE, "", false },
-	{ SMB2_OPLOCK_LEVEL_NONE, "R", false },
-	{ SMB2_OPLOCK_LEVEL_NONE, "W", false },
-	{ SMB2_OPLOCK_LEVEL_NONE, "D", false },
-	{ SMB2_OPLOCK_LEVEL_NONE, "RD", false },
-	{ SMB2_OPLOCK_LEVEL_NONE, "RW", false },
-	{ SMB2_OPLOCK_LEVEL_NONE, "WD", false },
-	{ SMB2_OPLOCK_LEVEL_NONE, "RWD", false },
+	{ "", "", false },
+	{ "", "R", false },
+	{ "", "W", false },
+	{ "", "D", false },
+	{ "", "RD", false },
+	{ "", "RW", false },
+	{ "", "WD", false },
+	{ "", "RWD", false },
 
-	{ SMB2_OPLOCK_LEVEL_II, "", false },
-	{ SMB2_OPLOCK_LEVEL_II, "R", false },
-	{ SMB2_OPLOCK_LEVEL_II, "W", false },
-	{ SMB2_OPLOCK_LEVEL_II, "D", false },
-	{ SMB2_OPLOCK_LEVEL_II, "RD", false },
-	{ SMB2_OPLOCK_LEVEL_II, "RW", false },
-	{ SMB2_OPLOCK_LEVEL_II, "WD", false },
-	{ SMB2_OPLOCK_LEVEL_II, "RWD", false },
+	{ "s", "", false },
+	{ "s", "R", false },
+	{ "s", "W", false },
+	{ "s", "D", false },
+	{ "s", "RD", false },
+	{ "s", "RW", false },
+	{ "s", "WD", false },
+	{ "s", "RWD", false },
 
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "", false },
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "R", false },
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "W", false },
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "D", false },
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "RD", false },
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "RW", false },
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "WD", false },
-	{ SMB2_OPLOCK_LEVEL_EXCLUSIVE, "RWD", false },
+	{ "x", "", false },
+	{ "x", "R", false },
+	{ "x", "W", false },
+	{ "x", "D", false },
+	{ "x", "RD", false },
+	{ "x", "RW", false },
+	{ "x", "WD", false },
+	{ "x", "RWD", false },
 
-	{ SMB2_OPLOCK_LEVEL_BATCH, "", true },
-	{ SMB2_OPLOCK_LEVEL_BATCH, "R", true },
-	{ SMB2_OPLOCK_LEVEL_BATCH, "W", true },
-	{ SMB2_OPLOCK_LEVEL_BATCH, "D", true },
-	{ SMB2_OPLOCK_LEVEL_BATCH, "RD", true },
-	{ SMB2_OPLOCK_LEVEL_BATCH, "RW", true },
-	{ SMB2_OPLOCK_LEVEL_BATCH, "WD", true },
-	{ SMB2_OPLOCK_LEVEL_BATCH, "RWD", true },
+	{ "b", "", true },
+	{ "b", "R", true },
+	{ "b", "W", true },
+	{ "b", "D", true },
+	{ "b", "RD", true },
+	{ "b", "RW", true },
+	{ "b", "WD", true },
+	{ "b", "RWD", true },
 };
 
 static bool test_one_durable_open_open1(struct torture_context *tctx,
@@ -122,14 +122,14 @@ static bool test_one_durable_open_open1(struct torture_context *tctx,
 
 	io.in.fname = fname;
 	io.in.share_access = smb2_util_share_access(test.share_mode);
-	io.in.oplock_level = test.level;
+	io.in.oplock_level = smb2_util_oplock_level(test.level);
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	_h = io.out.file.handle;
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_VAL(io.out.durable_open, test.expected);
-	CHECK_VAL(io.out.oplock_level, test.level);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level(test.level));
 
 done:
 	if (h != NULL) {
