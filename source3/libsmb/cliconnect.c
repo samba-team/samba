@@ -2666,7 +2666,7 @@ static void cli_negprot_done(struct tevent_req *subreq)
 		bool server_allowed;
 		const char *server_signing = NULL;
 		bool ok;
-		uint16_t key_len;
+		uint8_t key_len;
 
 		if (wct != 0x11) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
