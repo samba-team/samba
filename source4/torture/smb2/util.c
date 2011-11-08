@@ -636,9 +636,15 @@ void smb2_lease_create(struct smb2_create *io, struct smb2_lease *ls,
 				leasekey, leasestate);
 }
 
+void smb2_oplock_create_share(struct smb2_create *io, const char *name,
+			      uint32_t share_access, uint8_t oplock)
+{
+	smb2_generic_create_share(io, NULL, false, name, NTCREATEX_DISP_OPEN_IF,
+				  share_access, oplock, 0, 0);
+}
 void smb2_oplock_create(struct smb2_create *io, const char *name, uint8_t oplock)
 {
-	smb2_generic_create(io, NULL, false, name, NTCREATEX_DISP_OPEN_IF,
-	    oplock, 0, 0);
+	smb2_oplock_create_share(io, name, smb2_util_share_access("RWD"),
+				 oplock);
 }
 
