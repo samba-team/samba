@@ -26,6 +26,7 @@ from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba import gensec, generate_random_password
+from samba import dsdb
 from samba.net import Net
 
 from samba.netcmd import (
@@ -184,6 +185,38 @@ Example2 shows how to delete a user in the domain against the local server.   su
         except Exception, e:
             raise CommandError('Failed to remove user "%s"' % username, e)
         self.outf.write("Deleted user %s\n" % username)
+
+
+class cmd_user_list(Command):
+    """List all users"""
+
+    synopsis = "%prog [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        ]
+
+    def run(self, sambaopts=None, credopts=None, versionopts=None, H=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+
+        samdb = SamDB(url=H, session_info=system_session(),
+            credentials=creds, lp=lp)
+
+        domain_dn = samdb.domain_dn()
+        res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
+                    expression=("(&(objectClass=user)(userAccountControl:%s:=%u))"
+                    % (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT)),
+                    attrs=["name"])
+        if (len(res) == 0):
+            return
+
+        try:
+            for msg in res:
+                self.outf.write("%s\n" % msg["name"][0])
+        except Exception, msg:
+            raise CommandError("Failed to get user list: %s" % msg)
 
 
 class cmd_user_enable(Command):
@@ -440,6 +473,7 @@ class cmd_user(SuperCommand):
     subcommands["create"] = cmd_user_create()
     subcommands["delete"] = cmd_user_delete()
     subcommands["enable"] = cmd_user_enable()
+    subcommands["list"] = cmd_user_list()
     subcommands["setexpiry"] = cmd_user_setexpiry()
     subcommands["password"] = cmd_user_password()
     subcommands["setpassword"] = cmd_user_setpassword()
