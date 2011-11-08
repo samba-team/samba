@@ -1666,56 +1666,25 @@ void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 	}
 }
 
-/* LCP2 algorithm for rebalancing the cluster.  This finds the source
- * node with the highest LCP2 imbalance, and then determines the best
- * IP/destination node combination to move from the source node.
+/* LCP2 algorithm for rebalancing the cluster.  Given a candidate node
+ * to move IPs from, determines the best IP/destination node
+ * combination to move from the source node.
  *
  * Not static, so we can easily link it into a unit test.
  */
-bool lcp2_failback(struct ctdb_context *ctdb,
-		   struct ctdb_node_map *nodemap,
-		   uint32_t mask,
-		   struct ctdb_public_ip_list *all_ips,
-		   uint32_t *lcp2_imbalances,
-		   bool *newly_healthy)
+bool lcp2_failback_candidate(struct ctdb_context *ctdb,
+			     struct ctdb_node_map *nodemap,
+			     struct ctdb_public_ip_list *all_ips,
+			     int srcnode,
+			     uint32_t candimbl,
+			     uint32_t *lcp2_imbalances,
+			     bool *newly_healthy)
 {
-	int srcnode, dstnode, mindstnode, i, num_newly_healthy;
-	uint32_t srcimbl, srcdsum, maximbl, dstimbl, dstdsum;
-	uint32_t minsrcimbl, mindstimbl, b;
+	int dstnode, mindstnode;
+	uint32_t srcimbl, srcdsum, dstimbl, dstdsum;
+	uint32_t minsrcimbl, mindstimbl;
 	struct ctdb_public_ip_list *minip;
 	struct ctdb_public_ip_list *tmp_ip;
-
-	/* It is only worth continuing if we have suitable target
-	 * nodes to transfer IPs to.  This check is much cheaper than
-	 * continuing on...
-	 */
-	num_newly_healthy = 0;
-	for (i = 0; i < nodemap->num; i++) {
-		if (newly_healthy[i]) {
-			num_newly_healthy++;
-		}
-	}
-	if (num_newly_healthy == 0) {
-		return false;
-	}
-
-        /* Get the node with the highest imbalance metric. */
-        srcnode = -1;
-        maximbl = 0;
-	for (i=0; i < nodemap->num; i++) {
-		b = lcp2_imbalances[i];
-		if ((srcnode == -1) || (b > maximbl)) {
-			srcnode = i;
-			maximbl = b;
-		}
-	}
-
-        /* This means that all nodes had 0 or 1 addresses, so can't be
-	 * imbalanced.
-	 */
-        if (maximbl == 0) {
-		return false;
-	}
 
 	/* Find an IP and destination node that best reduces imbalance. */
 	minip = NULL;
@@ -1724,7 +1693,7 @@ bool lcp2_failback(struct ctdb_context *ctdb,
 	mindstimbl = 0;
 
 	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
-	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n", srcnode, maximbl));
+	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n", srcnode, candimbl));
 
 	for (tmp_ip=all_ips; tmp_ip; tmp_ip=tmp_ip->next) {
 		/* Only consider addresses on srcnode. */
@@ -1734,7 +1703,7 @@ bool lcp2_failback(struct ctdb_context *ctdb,
 
 		/* What is this IP address costing the source node? */
 		srcdsum = ip_distance_2_sum(&(tmp_ip->addr), all_ips, srcnode);
-		srcimbl = maximbl - srcdsum;
+		srcimbl = candimbl - srcdsum;
 
 		/* Consider this IP address would cost each potential
 		 * destination node.  Destination nodes are limited to
@@ -1759,7 +1728,7 @@ bool lcp2_failback(struct ctdb_context *ctdb,
 					   ctdb_addr_to_str(&(tmp_ip->addr)),
 					   dstnode, dstimbl - lcp2_imbalances[dstnode]));
 
-			if ((dstimbl < maximbl) && (dstdsum < srcdsum) && \
+			if ((dstimbl < candimbl) && (dstdsum < srcdsum) && \
 			    ((mindstnode == -1) ||				\
 			     ((srcimbl + dstimbl) < (minsrcimbl + mindstimbl)))) {
 
@@ -1789,6 +1758,93 @@ bool lcp2_failback(struct ctdb_context *ctdb,
 
         return false;
 	
+}
+
+struct lcp2_imbalance_pnn {
+	uint32_t imbalance;
+	int pnn;
+};
+
+int lcp2_cmp_imbalance_pnn(const void * a, const void * b)
+{
+	const struct lcp2_imbalance_pnn * lipa = (const struct lcp2_imbalance_pnn *) a;
+	const struct lcp2_imbalance_pnn * lipb = (const struct lcp2_imbalance_pnn *) b;
+
+	if (lipa->imbalance > lipb->imbalance) {
+		return -1;
+	} else if (lipa->imbalance == lipb->imbalance) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+/* LCP2 algorithm for rebalancing the cluster.  This finds the source
+ * node with the highest LCP2 imbalance, and then determines the best
+ * IP/destination node combination to move from the source node.
+ *
+ * Not static, so we can easily link it into a unit test.
+ */
+bool lcp2_failback(struct ctdb_context *ctdb,
+		   struct ctdb_node_map *nodemap,
+		   uint32_t mask,
+		   struct ctdb_public_ip_list *all_ips,
+		   uint32_t *lcp2_imbalances,
+		   bool *newly_healthy)
+{
+	int i, num_newly_healthy;
+	struct lcp2_imbalance_pnn * lips;
+	bool ret;
+
+	/* It is only worth continuing if we have suitable target
+	 * nodes to transfer IPs to.  This check is much cheaper than
+	 * continuing on...
+	 */
+	num_newly_healthy = 0;
+	for (i = 0; i < nodemap->num; i++) {
+		if (newly_healthy[i]) {
+			num_newly_healthy++;
+		}
+	}
+	if (num_newly_healthy == 0) {
+		return false;
+	}
+
+	/* Put the imbalances and nodes into an array, sort them and
+	 * iterate through candidates.  Usually the 1st one will be
+	 * used, so this doesn't cost much...
+	 */
+	lips = talloc_array(ctdb, struct lcp2_imbalance_pnn, nodemap->num);
+	for (i = 0; i < nodemap->num; i++) {
+		lips[i].imbalance = lcp2_imbalances[i];
+		lips[i].pnn = i;
+	}
+	qsort(lips, nodemap->num, sizeof(struct lcp2_imbalance_pnn),
+	      lcp2_cmp_imbalance_pnn);
+
+	ret = false;
+	for (i = 0; i < nodemap->num; i++) {
+		/* This means that all nodes had 0 or 1 addresses, so
+		 * can't be imbalanced.
+		 */
+		if (lips[i].imbalance == 0) {
+			break;
+		}
+
+		if (lcp2_failback_candidate(ctdb,
+					    nodemap,
+					    all_ips,
+					    lips[i].pnn,
+					    lips[i].imbalance,
+					    lcp2_imbalances,
+					    newly_healthy)) {
+			ret = true;
+			break;
+		}
+	}
+
+	talloc_free(lips);
+	return ret;
 }
 
 /* The calculation part of the IP allocation algorithm.
