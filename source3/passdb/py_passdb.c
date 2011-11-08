@@ -1805,7 +1805,8 @@ static PyObject *py_pdb_enum_group_mapping(pytalloc_Object *self, PyObject *args
 	int unix_only = 0;
 	PyObject *py_domain_sid;
 	struct dom_sid *domain_sid = NULL;
-	GROUP_MAP **gmap, *group_map;
+	GROUP_MAP **gmap = NULL;
+	GROUP_MAP *group_map;
 	size_t num_entries;
 	PyObject *py_gmap_list, *py_group_map;
 	int i;
