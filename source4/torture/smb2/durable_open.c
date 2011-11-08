@@ -528,36 +528,13 @@ bool test_durable_open_lease(struct torture_context *tctx,
 	smb2_util_unlink(tree1, fname);
 
 	/* Create with lease */
-	ZERO_STRUCT(io1);
-	io1.in.security_flags		= 0x00;
-	io1.in.oplock_level		= SMB2_OPLOCK_LEVEL_LEASE;
-	io1.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
-	io1.in.create_flags		= 0x00000000;
-	io1.in.reserved			= 0x00000000;
-	io1.in.desired_access		= SEC_RIGHTS_FILE_ALL;
-	io1.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
-	io1.in.share_access		= NTCREATEX_SHARE_ACCESS_READ |
-					  NTCREATEX_SHARE_ACCESS_WRITE |
-					  NTCREATEX_SHARE_ACCESS_DELETE;
-	io1.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
-	io1.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
-					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
-					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
-					  0x00200000;
-	io1.in.fname			= fname;
-	io1.in.durable_open 		= true;
+	smb2_lease_create(&io1, &ls1, false /* dir */, fname,
+			  lease1, smb2_util_lease_state("RHW"));
+	io1.in.durable_open = true;
 
-	ZERO_STRUCT(ls1);
-	ls1.lease_key.data[0] = lease1;
-	ls1.lease_key.data[1] = ~lease1;
-	ls1.lease_state = SMB2_LEASE_READ|SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE;
-	io1.in.lease_request = &ls1;
-
-	io2 = io1;
-	ls2 = ls1;
-	ls2.lease_key.data[0] = lease2;
-	ls2.lease_key.data[1] = ~lease2;
-	io2.in.lease_request = &ls2;
+	smb2_lease_create(&io2, &ls2, false /* dir */, fname,
+			  lease2, smb2_util_lease_state("RHW"));
+	io2.in.durable_open = true;
 	io2.in.create_disposition = NTCREATEX_DISP_OPEN;
 
 	status = smb2_create(tree1, mem_ctx, &io1);
