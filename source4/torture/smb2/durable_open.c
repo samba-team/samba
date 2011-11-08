@@ -109,7 +109,6 @@ struct durable_open_vs_oplock durable_open_vs_oplock_table[NUM_OPLOCK_OPEN_TESTS
 static bool test_one_durable_open_open1(struct torture_context *tctx,
 					struct smb2_tree *tree,
 					const char *fname,
-					struct smb2_create io,
 					struct durable_open_vs_oplock test)
 {
 	NTSTATUS status;
@@ -117,12 +116,15 @@ static bool test_one_durable_open_open1(struct torture_context *tctx,
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
 	bool ret = true;
+	struct smb2_create io;
 
 	smb2_util_unlink(tree, fname);
 
-	io.in.fname = fname;
-	io.in.share_access = smb2_util_share_access(test.share_mode);
-	io.in.oplock_level = smb2_util_oplock_level(test.level);
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(test.share_mode),
+				 smb2_util_oplock_level(test.level));
+	io.in.durable_open = true;
+
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	_h = io.out.file.handle;
@@ -145,7 +147,6 @@ bool test_durable_open_open1(struct torture_context *tctx,
 			     struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
-	struct smb2_create io;
 	char fname[256];
 	bool ret = true;
 	int i;
@@ -155,28 +156,12 @@ bool test_durable_open_open1(struct torture_context *tctx,
 
 	smb2_util_unlink(tree, fname);
 
-	ZERO_STRUCT(io);
-	io.in.security_flags		= 0x00;
-	io.in.impersonation_level	= NTCREATEX_IMPERSONATION_IMPERSONATION;
-	io.in.create_flags		= 0x00000000;
-	io.in.reserved			= 0x00000000;
-	io.in.desired_access		= SEC_RIGHTS_FILE_ALL;
-	io.in.file_attributes		= FILE_ATTRIBUTE_NORMAL;
-	io.in.create_disposition	= NTCREATEX_DISP_OPEN_IF;
-	io.in.create_options		= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
-					  NTCREATEX_OPTIONS_ASYNC_ALERT	|
-					  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
-					  0x00200000;
-	io.in.durable_open		= true;
-	io.in.fname			= fname;
-
 	/* test various oplock levels with durable open */
 
 	for (i = 0; i < NUM_OPLOCK_OPEN_TESTS; i++) {
 		ret = test_one_durable_open_open1(tctx,
 						  tree,
 						  fname,
-						  io,
 						  durable_open_vs_oplock_table[i]);
 		if (ret == false) {
 			goto done;
