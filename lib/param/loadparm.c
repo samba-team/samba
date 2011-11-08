@@ -185,6 +185,22 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= enum_server_role
 	},
 	{
+		.label		= "domain logons",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(domain_logons),
+		.special	= NULL,
+		.enum_list	= enum_bool_auto
+	},
+	{
+		.label		= "domain master",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(domain_master),
+		.special	= NULL,
+		.enum_list	= enum_bool_auto
+	},
+	{
 		.label		= "dos charset",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -1461,6 +1477,8 @@ static struct loadparm_context *global_loadparm_context;
 #include "lib/param/param_functions.c"
 
 FN_GLOBAL_INTEGER(server_role, server_role)
+FN_GLOBAL_BOOL(domain_logons, domain_logons)
+FN_GLOBAL_INTEGER(domain_master, domain_master)
 FN_GLOBAL_LIST(smb_ports, smb_ports)
 FN_GLOBAL_INTEGER(nbt_port, nbt_port)
 FN_GLOBAL_INTEGER(dgram_port, dgram_port)
@@ -3281,6 +3299,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "share backend", "classic");
 
 	lpcfg_do_global_parameter(lp_ctx, "server role", "standalone");
+	lpcfg_do_global_parameter(lp_ctx, "domain logons", "No");
+	lpcfg_do_global_parameter(lp_ctx, "domain master", "Auto");
 
 	/* options that can be set on the command line must be initialised via
 	   the slower lpcfg_do_global_parameter() to ensure that FLAG_CMDLINE is obeyed */
