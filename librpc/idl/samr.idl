@@ -1455,7 +1455,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef struct {
 		samPwdChangeReason extendedFailureReason;
-		[string,charset(UTF16)] uint16 *filterModuleName;
+		lsa_String filterModuleName;
 	} userPwdChangeFailureInformation;
 
 	[public] NTSTATUS samr_ChangePasswordUser3(
