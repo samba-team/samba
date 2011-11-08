@@ -952,7 +952,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	SIVAL(hdr, SMB2_HDR_STATUS, NT_STATUS_V(STATUS_PENDING));
 	SSVAL(hdr, SMB2_HDR_OPCODE, SVAL(reqhdr, SMB2_HDR_OPCODE));
 
-	SIVAL(hdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
+	SIVAL(hdr, SMB2_HDR_FLAGS, flags);
 	SIVAL(hdr, SMB2_HDR_NEXT_COMMAND, 0);
 	SBVAL(hdr, SMB2_HDR_MESSAGE_ID, message_id);
 	SBVAL(hdr, SMB2_HDR_PID, async_id);
@@ -974,6 +974,8 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	smb2_set_operation_credit(req->sconn,
 			&req->in.vector[i],
 			&state->vector[1]);
+
+	SIVAL(hdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
 
 	if (req->do_signing) {
 		status = smb2_signing_sign_pdu(req->session->session_key,
