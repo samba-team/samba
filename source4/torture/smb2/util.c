@@ -618,12 +618,22 @@ void smb2_generic_create(struct smb2_create *io, struct smb2_lease *ls,
 				  leasekey, leasestate);
 }
 
+void smb2_lease_create_share(struct smb2_create *io, struct smb2_lease *ls,
+			     bool dir, const char *name, uint32_t share_access,
+			     uint64_t leasekey, uint32_t leasestate)
+{
+	smb2_generic_create_share(io, ls, dir, name, NTCREATEX_DISP_OPEN_IF,
+				  share_access, SMB2_OPLOCK_LEVEL_LEASE,
+				  leasekey, leasestate);
+}
+
 void smb2_lease_create(struct smb2_create *io, struct smb2_lease *ls,
 		       bool dir, const char *name, uint64_t leasekey,
 		       uint32_t leasestate)
 {
-	smb2_generic_create(io, ls, dir, name, NTCREATEX_DISP_OPEN_IF,
-	    SMB2_OPLOCK_LEVEL_LEASE, leasekey, leasestate);
+	smb2_lease_create_share(io, ls, dir, name,
+				smb2_util_share_access("RWD"),
+				leasekey, leasestate);
 }
 
 void smb2_oplock_create(struct smb2_create *io, const char *name, uint8_t oplock)
