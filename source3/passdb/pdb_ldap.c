@@ -3486,7 +3486,7 @@ static NTSTATUS ldapsam_enum_group_mapping(struct pdb_methods *methods,
 	size_t entries = 0;
 
 	*p_num_entries = 0;
-	**pp_rmap = NULL;
+	*pp_rmap = NULL;
 
 	if (!NT_STATUS_IS_OK(ldapsam_setsamgrent(methods, False))) {
 		DEBUG(0, ("ldapsam_enum_group_mapping: Unable to open "
