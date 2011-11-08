@@ -25,27 +25,6 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 
-static inline uint32_t lease(const char *ls) {
-	uint32_t val = 0;
-	int i;
-
-	for (i = 0; i < strlen(ls); i++) {
-		switch (ls[i]) {
-		case 'R':
-			val |= SMB2_LEASE_READ;
-			break;
-		case 'H':
-			val |= SMB2_LEASE_HANDLE;
-			break;
-		case 'W':
-			val |= SMB2_LEASE_WRITE;
-			break;
-		}
-	}
-
-	return val;
-}
-
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
 		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got 0x%x - should be 0x%x\n", \
@@ -130,7 +109,7 @@ static void smb2_oplock_create(struct smb2_create *io, const char *name,
 			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE); \
 			CHECK_VAL((__io)->out.lease_response.lease_key.data[0], (__key)); \
 			CHECK_VAL((__io)->out.lease_response.lease_key.data[1], ~(__key)); \
-			CHECK_VAL((__io)->out.lease_response.lease_state, lease(__state)); \
+			CHECK_VAL((__io)->out.lease_response.lease_state, smb2_util_lease_state(__state)); \
 		} else {						\
 			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_NONE); \
 			CHECK_VAL((__io)->out.lease_response.lease_key.data[0], 0); \
@@ -178,7 +157,7 @@ static bool test_lease_request(struct torture_context *tctx,
 	smb2_util_rmdir(tree, dname);
 
 	/* Win7 is happy to grant RHW leases on files. */
-	smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("RHW"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("RHW"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h1 = io.out.file.handle;
@@ -186,7 +165,7 @@ static bool test_lease_request(struct torture_context *tctx,
 	CHECK_LEASE(&io, "RHW", true, LEASE1);
 
 	/* But will reject leases on directories. */
-	smb2_lease_create(&io, &ls, true, dname, LEASE2, lease("RHW"));
+	smb2_lease_create(&io, &ls, true, dname, LEASE2, smb2_util_lease_state("RHW"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_DIRECTORY);
@@ -194,12 +173,12 @@ static bool test_lease_request(struct torture_context *tctx,
 	smb2_util_close(tree, io.out.file.handle);
 
 	/* Also rejects multiple files leased under the same key. */
-	smb2_lease_create(&io, &ls, true, fname2, LEASE1, lease("RHW"));
+	smb2_lease_create(&io, &ls, true, fname2, LEASE1, smb2_util_lease_state("RHW"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	/* And grants leases on streams (with separate leasekey). */
-	smb2_lease_create(&io, &ls, false, sname, LEASE2, lease("RHW"));
+	smb2_lease_create(&io, &ls, false, sname, LEASE2, smb2_util_lease_state("RHW"));
 	status = smb2_create(tree, mem_ctx, &io);
 	h2 = io.out.file.handle;
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -213,10 +192,10 @@ static bool test_lease_request(struct torture_context *tctx,
 	for (i = 0; i < NREQUEST_RESULTS; i++) {
 		torture_comment(tctx, "Requesting lease type %s(%x),"
 		    " expecting %s(%x)\n",
-		    request_results[i][0], lease(request_results[i][0]),
-		    request_results[i][1], lease(request_results[i][1]));
+		    request_results[i][0], smb2_util_lease_state(request_results[i][0]),
+		    request_results[i][1], smb2_util_lease_state(request_results[i][1]));
 		smb2_lease_create(&io, &ls, false, fname, LEASE1,
-		    lease(request_results[i][0]));
+		    smb2_util_lease_state(request_results[i][0]));
 		status = smb2_create(tree, mem_ctx, &io);
 		h2 = io.out.file.handle;
 		CHECK_STATUS(status, NT_STATUS_OK);
@@ -252,7 +231,7 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	smb2_util_unlink(tree, fname);
 
 	/* Grab a RH lease. */
-	smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("RH"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("RH"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
@@ -260,7 +239,7 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	h = io.out.file.handle;
 
 	/* Upgrades (sidegrades?) to RW leave us with an RH. */
-	smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("RW"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("RW"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
@@ -270,7 +249,7 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	smb2_util_close(tree, hnew);
 
 	/* Upgrade to RHW lease. */
-	smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("RHW"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("RHW"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
@@ -281,7 +260,7 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	h = hnew;
 
 	/* Attempt to downgrade - original lease state is maintained. */
-	smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("RH"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("RH"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
@@ -363,7 +342,7 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 		smb2_util_unlink(tree, fname);
 
 		/* Grab a lease. */
-		smb2_lease_create(&io, &ls, false, fname, LEASE1, lease(t.initial));
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state(t.initial));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
@@ -371,7 +350,7 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 		h = io.out.file.handle;
 
 		/* Upgrade. */
-		smb2_lease_create(&io, &ls, false, fname, LEASE1, lease(t.upgrade_to));
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state(t.upgrade_to));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
@@ -396,8 +375,8 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 
 #define CHECK_LEASE_BREAK(__lb, __oldstate, __state, __key)		\
 	do {								\
-		CHECK_VAL((__lb)->new_lease_state, lease(__state));	\
-		CHECK_VAL((__lb)->current_lease.lease_state, lease(__oldstate)); \
+		CHECK_VAL((__lb)->new_lease_state, smb2_util_lease_state(__state));	\
+		CHECK_VAL((__lb)->current_lease.lease_state, smb2_util_lease_state(__oldstate)); \
 		CHECK_VAL((__lb)->current_lease.lease_key.data[0], (__key)); \
 		CHECK_VAL((__lb)->current_lease.lease_key.data[1], ~(__key)); \
 	} while(0)
@@ -407,7 +386,7 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 		CHECK_VAL((__lba)->out.reserved, 0);			\
 		CHECK_VAL((__lba)->out.lease.lease_key.data[0], (__key)); \
 		CHECK_VAL((__lba)->out.lease.lease_key.data[1], ~(__key)); \
-		CHECK_VAL((__lba)->out.lease.lease_state, lease(__state)); \
+		CHECK_VAL((__lba)->out.lease.lease_state, smb2_util_lease_state(__state)); \
 		CHECK_VAL((__lba)->out.lease.lease_flags, 0);		\
 		CHECK_VAL((__lba)->out.lease.lease_duration, 0);	\
 	} while(0)
@@ -530,13 +509,13 @@ static bool test_lease_break(struct torture_context *tctx,
 		const char *granted = break_results[i][3];
 		torture_comment(tctx, "Hold %s(%x), requesting %s(%x), "
 		    "expecting break to %s(%x) and grant of %s(%x)\n",
-		    held, lease(held), contend, lease(contend),
-		    brokento, lease(brokento), granted, lease(granted));
+		    held, smb2_util_lease_state(held), contend, smb2_util_lease_state(contend),
+		    brokento, smb2_util_lease_state(brokento), granted, smb2_util_lease_state(granted));
 
 		ZERO_STRUCT(break_info);
 
 		/* Grab lease. */
-		smb2_lease_create(&io, &ls, false, fname, LEASE1, lease(held));
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state(held));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		h = io.out.file.handle;
@@ -544,14 +523,14 @@ static bool test_lease_break(struct torture_context *tctx,
 		CHECK_LEASE(&io, held, true, LEASE1);
 
 		/* Possibly contend lease. */
-		smb2_lease_create(&io, &ls, false, fname, LEASE2, lease(contend));
+		smb2_lease_create(&io, &ls, false, fname, LEASE2, smb2_util_lease_state(contend));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		h2 = io.out.file.handle;
 		CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
 		CHECK_LEASE(&io, granted, true, LEASE2);
 
-		if (lease(held) != lease(brokento)) {
+		if (smb2_util_lease_state(held) != smb2_util_lease_state(brokento)) {
 			CHECK_BREAK_INFO(held, brokento, LEASE1);
 		} else {
 			CHECK_VAL(break_info.count, 0);
@@ -564,7 +543,7 @@ static bool test_lease_break(struct torture_context *tctx,
 		  Now verify that an attempt to upgrade LEASE1 results in no
 		  break and no change in LEASE1.
 		 */
-		smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("RHW"));
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("RHW"));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		h3 = io.out.file.handle;
@@ -714,13 +693,13 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		const char *granted = oplock_results[i][3];
 		torture_comment(tctx, "Hold %s(%x), requesting %s(%x), "
 		    "expecting break to %s(%x) and grant of %s(%x)\n",
-		    held, lease(held), contend, oplock(contend),
-		    brokento, lease(brokento), granted, oplock(granted));
+		    held, smb2_util_lease_state(held), contend, oplock(contend),
+		    brokento, smb2_util_lease_state(brokento), granted, oplock(granted));
 
 		ZERO_STRUCT(break_info);
 
 		/* Grab lease. */
-		smb2_lease_create(&io, &ls, false, fname, LEASE1, lease(held));
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state(held));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		h = io.out.file.handle;
@@ -736,7 +715,7 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		CHECK_VAL(io.out.oplock_level, oplock(granted));
 		break_info.held_oplock_level = io.out.oplock_level;
 
-		if (lease(held) != lease(brokento)) {
+		if (smb2_util_lease_state(held) != smb2_util_lease_state(brokento)) {
 			CHECK_BREAK_INFO(held, brokento, LEASE1);
 		} else {
 			CHECK_VAL(break_info.count, 0);
@@ -757,8 +736,8 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		const char *granted = oplock_results_2[i][3];
 		torture_comment(tctx, "Hold %s(%x), requesting %s(%x), "
 		    "expecting break to %s(%x) and grant of %s(%x)\n",
-		    held, oplock(held), contend, lease(contend),
-		    brokento, oplock(brokento), granted, lease(granted));
+		    held, oplock(held), contend, smb2_util_lease_state(contend),
+		    brokento, oplock(brokento), granted, smb2_util_lease_state(granted));
 
 		ZERO_STRUCT(break_info);
 
@@ -772,7 +751,7 @@ static bool test_lease_oplock(struct torture_context *tctx,
 		break_info.held_oplock_level = io.out.oplock_level;
 
 		/* Grab lease. */
-		smb2_lease_create(&io, &ls, false, fname, LEASE1, lease(contend));
+		smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state(contend));
 		status = smb2_create(tree, mem_ctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		h2 = io.out.file.handle;
@@ -829,14 +808,14 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	ZERO_STRUCT(break_info);
 
 	/* Grab lease, upgrade to RHW .. */
-	smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("RH"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("RH"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h = io.out.file.handle;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_LEASE(&io, "RH", true, LEASE1);
 
-	smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("RHW"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("RHW"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h2 = io.out.file.handle;
@@ -844,7 +823,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	CHECK_LEASE(&io, "RHW", true, LEASE1);
 
 	/* Contend with LEASE2. */
-	smb2_lease_create(&io, &ls, false, fname, LEASE2, lease("RHW"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE2, smb2_util_lease_state("RHW"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h3 = io.out.file.handle;
@@ -865,7 +844,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	ZERO_STRUCT(break_info);
 
 	/* Grab an R lease. */
-	smb2_lease_create(&io, &ls, false, fname, LEASE1, lease("R"));
+	smb2_lease_create(&io, &ls, false, fname, LEASE1, smb2_util_lease_state("R"));
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h = io.out.file.handle;
