@@ -1848,8 +1848,6 @@ NTSTATUS _lsa_DeleteTrustedDomain(struct pipes_struct *p,
 	NTSTATUS status;
 	struct lsa_info *handle;
 	struct pdb_trusted_domain *td;
-	struct samu *sam_acct;
-	char *acct_name;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
