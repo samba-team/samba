@@ -298,6 +298,8 @@ static bool samr_changepassworduser3_w2k8r2_out_check(struct torture_context *tc
 	torture_assert_u64_equal(tctx, dominfo->min_password_age, 0x0000000000000000, "min_password_age");
 
 	torture_assert_int_equal(tctx, reject->extendedFailureReason, SAM_PWD_CHANGE_NOT_COMPLEX, "extendedFailureReason");
+	torture_assert_int_equal(tctx, reject->filterModuleName.length, 0, "filterModuleName.length");
+	torture_assert_int_equal(tctx, reject->filterModuleName.size, 0, "filterModuleName.size");
 
 	torture_assert_ntstatus_equal(tctx, r->out.result, NT_STATUS_PASSWORD_RESTRICTION, "result");
 
