@@ -1365,7 +1365,7 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
-void getips_store_callback(void *param, void *data)
+static int getips_store_callback(void *param, void *data)
 {
 	struct ctdb_public_ip *node_ip = (struct ctdb_public_ip *)data;
 	struct ctdb_all_public_ips *ips = param;
@@ -1374,13 +1374,15 @@ void getips_store_callback(void *param, void *data)
 	i = ips->num++;
 	ips->ips[i].pnn  = node_ip->pnn;
 	ips->ips[i].addr = node_ip->addr;
+	return 0;
 }
 
-void getips_count_callback(void *param, void *data)
+static int getips_count_callback(void *param, void *data)
 {
 	uint32_t *count = param;
 
 	(*count)++;
+	return 0;
 }
 
 #define IP_KEYLEN	4

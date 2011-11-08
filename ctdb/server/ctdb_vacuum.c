@@ -279,7 +279,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
  * traverse the tree of records to delete and marshall them into
  * a blob
  */
-static void delete_traverse(void *param, void *data)
+static int delete_traverse(void *param, void *data)
 {
 	struct delete_record_data *dd = talloc_get_type(data, struct delete_record_data);
 	struct delete_records_list *recs = talloc_get_type(param, struct delete_records_list);
@@ -289,17 +289,18 @@ static void delete_traverse(void *param, void *data)
 	rec = ctdb_marshall_record(dd, recs->records->db_id, dd->key, &dd->hdr, tdb_null);
 	if (rec == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to marshall record\n"));
-		return;
+		return 0;
 	}
 
 	old_size = talloc_get_size(recs->records);
 	recs->records = talloc_realloc_size(NULL, recs->records, old_size + rec->length);
 	if (recs->records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
-		return;
+		return 0;
 	}
 	recs->records->count++;
 	memcpy(old_size+(uint8_t *)(recs->records), rec, rec->length);
+	return 0;
 }
 
 /**
@@ -322,7 +323,7 @@ static void delete_traverse(void *param, void *data)
  *    add it to the list of records that are to be sent to
  *    the lmaster with the VACUUM_FETCH message.
  */
-static void delete_queue_traverse(void *param, void *data)
+static int delete_queue_traverse(void *param, void *data)
 {
 	struct delete_record_data *dd =
 		talloc_get_type(data, struct delete_record_data);
@@ -340,7 +341,7 @@ static void delete_queue_traverse(void *param, void *data)
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Error getting chainlock.\n"));
 		vdata->fast_error++;
-		return;
+		return 0;
 	}
 
 	tdb_data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
@@ -431,7 +432,7 @@ done:
 	}
 	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 
-	return;
+	return 0;
 }
 
 /* 

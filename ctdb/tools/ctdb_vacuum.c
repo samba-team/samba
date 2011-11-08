@@ -160,7 +160,7 @@ struct delete_records_list {
  traverse the tree of records to delete and marshall them into
  a blob
 */
-static void
+static int
 delete_traverse(void *param, void *data)
 {
 	struct delete_record_data *dd = talloc_get_type(data, struct delete_record_data);
@@ -171,21 +171,22 @@ delete_traverse(void *param, void *data)
 	rec = ctdb_marshall_record(dd, recs->records->db_id, dd->key, &dd->hdr, tdb_null);
 	if (rec == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to marshall record\n"));
-		return;
+		return 0;
 	}
 
 	old_size = talloc_get_size(recs->records);
 	recs->records = talloc_realloc_size(NULL, recs->records, old_size + rec->length);
 	if (recs->records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
-		return;
+		return 0;
 	}
 	recs->records->count++;
 	memcpy(old_size+(uint8_t *)(recs->records), rec, rec->length);
+	return 0;
 }
 
 
-static void delete_record(void *param, void *d)
+static int delete_record(void *param, void *d)
 {
 	struct delete_record_data *dd = talloc_get_type(d, struct delete_record_data);
 	struct ctdb_context *ctdb = dd->ctdb;
@@ -197,18 +198,18 @@ static void delete_record(void *param, void *d)
 	/* its deleted on all other nodes - refetch, check and delete */
 	if (tdb_chainlock_nonblock(ctdb_db->ltdb->tdb, dd->key) != 0) {
 		/* the chain is busy - come back later */
-		return;
+		return 0;
 	}
 
 	data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
 	if (data.dptr == NULL) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
-		return;
+		return 0;
 	}
 	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
 		free(data.dptr);
 		tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
-		return;
+		return 0;
 	}
 
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
@@ -219,7 +220,7 @@ static void delete_record(void *param, void *d)
 	    dd->hdr.rsn != hdr->rsn) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
 		free(data.dptr);
-		return;
+		return 0;
 	}
 
 	ctdb_block_signal(SIGALRM);
@@ -229,6 +230,7 @@ static void delete_record(void *param, void *d)
 	free(data.dptr);
 
 	(*count)++;
+	return 0;
 }
 
 /* vacuum one database */

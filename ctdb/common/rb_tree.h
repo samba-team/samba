@@ -74,8 +74,13 @@ void trbt_insertarray32_callback(trbt_tree_t *tree, uint32_t keylen, uint32_t *k
    and return a pointer to data or NULL */
 void *trbt_lookuparray32(trbt_tree_t *tree, uint32_t keylen, uint32_t *key);
 
-/* Traverse a tree with a key based on an array of uint32 */
-void trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen, void (*callback)(void *param, void *data), void *param);
+/* Traverse a tree with a key based on an array of uint32
+   returns 0 if traverse completed
+   !0 if the traverse was aborted
+
+   If the callback returns !0  the traverse will be aborted
+*/
+int trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen, int (*callback)(void *param, void *data), void *param);
 
 /* Lookup the first node in the tree with a key based on an array of uint32 
    and return a pointer to data or NULL */

@@ -119,20 +119,21 @@ struct count_server_ids {
 	struct ctdb_server_id_list *list;
 };
 
-static void server_id_count(void *param, void *data)
+static int server_id_count(void *param, void *data)
 {
 	struct count_server_ids *svid = talloc_get_type(param, 
 						struct count_server_ids);
 
 	if (svid == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Got null pointer for svid\n"));
-		return;
+		return -1;
 	}
 
 	svid->count++;
+	return 0;
 }
 
-static void server_id_store(void *param, void *data)
+static int server_id_store(void *param, void *data)
 {
 	struct count_server_ids *svid = talloc_get_type(param, 
 						struct count_server_ids);
@@ -141,16 +142,17 @@ static void server_id_store(void *param, void *data)
 
 	if (svid == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Got null pointer for svid\n"));
-		return;
+		return -1;
 	}
 
 	if (svid->count >= svid->list->num) {
 		DEBUG(DEBUG_ERR, (__location__ " size of server id tree changed during traverse\n"));
-		return;
+		return -1;
 	}
 
 	memcpy(&svid->list->server_ids[svid->count], server_id, sizeof(struct ctdb_server_id));
 	svid->count++;
+	return 0;
 }
 
 /* 
