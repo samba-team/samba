@@ -521,3 +521,26 @@ uint32_t smb2_util_lease_state(const char *ls)
 	return val;
 }
 
+
+uint32_t smb2_util_share_access(const char *sharemode)
+{
+	uint32_t val = NTCREATEX_SHARE_ACCESS_NONE; /* 0 */
+	int i;
+
+	for (i = 0; i < strlen(sharemode); i++) {
+		switch(sharemode[i]) {
+		case 'R':
+			val |= NTCREATEX_SHARE_ACCESS_READ;
+			break;
+		case 'W':
+			val |= NTCREATEX_SHARE_ACCESS_WRITE;
+			break;
+		case 'D':
+			val |= NTCREATEX_SHARE_ACCESS_DELETE;
+			break;
+		}
+	}
+
+	return val;
+}
+

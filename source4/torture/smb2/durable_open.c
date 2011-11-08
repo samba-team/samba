@@ -50,28 +50,6 @@
 	} while(0)
 
 
-static inline uint32_t map_sharemode(const char *sharemode)
-{
-	uint32_t val = NTCREATEX_SHARE_ACCESS_NONE; /* 0 */
-	int i;
-
-	for (i = 0; i < strlen(sharemode); i++) {
-		switch(sharemode[i]) {
-		case 'R':
-			val |= NTCREATEX_SHARE_ACCESS_READ;
-			break;
-		case 'W':
-			val |= NTCREATEX_SHARE_ACCESS_WRITE;
-			break;
-		case 'D':
-			val |= NTCREATEX_SHARE_ACCESS_DELETE;
-			break;
-		}
-	}
-
-	return val;
-}
-
 /**
  * basic durable_open test.
  * durable state should only be granted when requested
@@ -143,7 +121,7 @@ static bool test_one_durable_open_open1(struct torture_context *tctx,
 	smb2_util_unlink(tree, fname);
 
 	io.in.fname = fname;
-	io.in.share_access = map_sharemode(test.share_mode);
+	io.in.share_access = smb2_util_share_access(test.share_mode);
 	io.in.oplock_level = test.level;
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -294,7 +272,7 @@ static bool test_one_durable_open_open2(struct torture_context *tctx,
 	smb2_util_unlink(tree, fname);
 
 	io.in.fname = fname;
-	io.in.share_access = map_sharemode(test.share_mode);
+	io.in.share_access = smb2_util_share_access(test.share_mode);
 	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
 
 	lease = random();
