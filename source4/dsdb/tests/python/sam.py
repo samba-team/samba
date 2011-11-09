@@ -63,7 +63,7 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-class SamTests(unittest.TestCase):
+class SamTests(samba.tests.TestCase):
 
     def setUp(self):
         super(SamTests, self).setUp()

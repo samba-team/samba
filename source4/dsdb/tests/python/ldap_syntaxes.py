@@ -44,7 +44,7 @@ lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
 
-class SyntaxTests(unittest.TestCase):
+class SyntaxTests(samba.tests.TestCase):
 
     def setUp(self):
         super(SyntaxTests, self).setUp()

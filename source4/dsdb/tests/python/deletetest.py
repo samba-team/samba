@@ -40,13 +40,14 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-class BasicDeleteTests(unittest.TestCase):
+class BasicDeleteTests(samba.tests.TestCase):
 
 
     def GUID_string(self, guid):
         return self.ldb.schema_format_value("objectGUID", guid)
 
     def setUp(self):
+        super(BasicDeleteTests, self).setUp()
         self.ldb = ldb
         self.base_dn = ldb.domain_dn()
         self.configuration_dn = ldb.get_config_basedn().get_linearized()

@@ -48,7 +48,7 @@ lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
 
-class SchemaTests(unittest.TestCase):
+class SchemaTests(samba.tests.TestCase):
 
     def setUp(self):
         super(SchemaTests, self).setUp()
@@ -246,7 +246,7 @@ instanceType: 4
         delete_force(self.ldb, "ou=%s,%s" % (object_name, self.base_dn))
 
 
-class SchemaTests_msDS_IntId(unittest.TestCase):
+class SchemaTests_msDS_IntId(samba.tests.TestCase):
 
     def setUp(self):
         super(SchemaTests_msDS_IntId, self).setUp()
@@ -518,7 +518,7 @@ systemOnly: FALSE
                 self.assertTrue("msDS-IntId" not in ldb_msg)
 
 
-class SchemaTests_msDS_isRODC(unittest.TestCase):
+class SchemaTests_msDS_isRODC(samba.tests.TestCase):
 
     def setUp(self):
         super(SchemaTests_msDS_isRODC, self).setUp()

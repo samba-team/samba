@@ -25,10 +25,10 @@ from samba.auth import system_session
 from samba import gensec
 from samba.samdb import SamDB
 from samba.credentials import Credentials
-import samba.tests
+import samba.tests, unittest
 from samba.tests import delete_force
 from subunit.run import SubunitTestRunner
-import unittest
+from samba.tests import TestCase, TestSkipped
 
 parser = optparse.OptionParser("ldap [options] <host>")
 sambaopts = options.SambaOptions(parser)

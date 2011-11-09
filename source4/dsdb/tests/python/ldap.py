@@ -60,7 +60,7 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-class BasicTests(unittest.TestCase):
+class BasicTests(samba.tests.TestCase):
 
     def setUp(self):
         super(BasicTests, self).setUp()
@@ -2768,7 +2768,7 @@ nTSecurityDescriptor:: """ + desc_base64
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("whenChanged" in res[0])
 
-class BaseDnTests(unittest.TestCase):
+class BaseDnTests(samba.tests.TestCase):
 
     def setUp(self):
         super(BaseDnTests, self).setUp()
