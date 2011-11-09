@@ -60,6 +60,7 @@ NTSTATUS idmap_uid_to_sid(const char *domname, struct dom_sid *sid, uid_t uid)
 	}
 
 backend:
+	ZERO_STRUCT(map);
 	map.sid = sid;
 	map.xid.type = ID_TYPE_UID;
 	map.xid.id = uid;
@@ -119,6 +120,7 @@ NTSTATUS idmap_gid_to_sid(const char *domname, struct dom_sid *sid, gid_t gid)
 	}
 
 backend:
+	ZERO_STRUCT(map);
 	map.sid = sid;
 	map.xid.type = ID_TYPE_GID;
 	map.xid.id = gid;
@@ -177,8 +179,9 @@ NTSTATUS idmap_sid_to_uid(const char *dom_name, struct dom_sid *sid, uid_t *uid)
 	}
 
 backend:
+	ZERO_STRUCT(map);
 	map.sid = sid;
-	map.xid.type = ID_TYPE_UID;	
+	map.xid.type = ID_TYPE_UID;
 
 	ret = idmap_backends_sid_to_unixid(dom_name, &map);
 
@@ -250,6 +253,7 @@ NTSTATUS idmap_sid_to_gid(const char *domname, struct dom_sid *sid, gid_t *gid)
 	}
 
 backend:
+	ZERO_STRUCT(map);
 	map.sid = sid;
 	map.xid.type = ID_TYPE_GID;
 
