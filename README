@@ -61,7 +61,7 @@ a complete replacement for Windows NT, Warp, NFS or Netware servers."
 - a SMB server, to provide Windows NT and LAN Manager-style file and print 
   services to SMB clients such as Windows 95, Warp Server, smbfs and others.
 
-- a Windows NT 4.0 Domain Controller replacement.
+- a Windows Domain Controller (NT4 and AD) replacement.
 
 - a file/print server that can act as a member of a Windows NT 4.0
   or Active Directory domain.
@@ -82,13 +82,13 @@ http://samba.org/samba, and browse the user survey.
 
 Related packages include:
 
-- smbfs, a Linux-only filesystem allowing you to mount remote SMB
-  filesystems from PCs on your Linux box. This is included as standard with
-  Linux 2.0 and later.
-
-- cifsvfs, a more advanced Linux-only filesystem allowing you to mount 
+- cifsvfs, an advanced Linux-only filesystem allowing you to mount 
   remote SMB filesystems from PCs on your Linux box. This is included 
   as standard with Linux 2.5 and later.
+
+- smbfs, the previous Linux-only filesystem allowing you to mount remote SMB
+  filesystems from PCs on your Linux box. This is included as standard with
+  Linux 2.0 and later.
 
 
 
@@ -105,20 +105,13 @@ on the various Samba mailing lists can be found at http://lists.samba.org/.
 You can also get the Samba sourcecode straight from the git repository - see
 http://wiki.samba.org/index.php/Using_Git_for_Samba_Development.
 
-You could also send hardware/software/money/jewelry or pre-paid pizza
-vouchers directly to Andrew. The pizza vouchers would be especially
-welcome, in fact there is a special field in the survey for people who
-have paid up their pizza :-)
-
 If you like a particular feature then look through the git change-log
 (on the web at http://gitweb.samba.org/?p=samba.git;a=summary) and see
 who added it, then send them an email.
 
 Remember that free software of this kind lives or dies by the response
 we get. If no one tells us they like it then we'll probably move onto
-something else. However, as you can see from the user survey quite a lot of 
-people do seem to like it at the moment :-)
-
+something else.
 
 MORE INFO
 =========
@@ -201,25 +194,14 @@ A few tips when submitting to this or any mailing list.
 8. RTFM. Google. groups.google.com.
 
 
-NEWS GROUP
-----------
-
-You might also like to look at the usenet news group comp.protocols.smb 
-as it often contains lots of useful info and is frequented by lots of 
-Samba users. The newsgroup was initially setup by people on the Samba 
-mailing list. It is not, however, exclusive to Samba, it is a forum for 
-discussing the SMB protocol (which Samba implements). The samba list 
-is gatewayed to this newsgroup.
-
-
 WEB SITE
 --------
 
 A Samba WWW site has been setup with lots of useful info. Connect to:
 
-http://samba.org/samba/
+http://samba.org/
 
 As well as general information and documentation, this also has searchable 
 archives of the mailing list and a user survey that shows who else is using
-this package. Have you registered with the survey yet? :-)
+this package.
 
