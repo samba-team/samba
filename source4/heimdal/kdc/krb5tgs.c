@@ -1320,9 +1320,9 @@ tgs_build_reply(krb5_context context,
 {
     krb5_error_code ret;
     krb5_principal cp = NULL, sp = NULL, tp = NULL, dp = NULL;
-    krb5_principal krbtgt_principal = NULL;
+    krb5_principal krbtgt_out_principal = NULL;
     krb5_principal user2user_princ = NULL;
-    char *spn = NULL, *cpn = NULL, *tpn = NULL, *dpn = NULL;
+    char *spn = NULL, *cpn = NULL, *tpn = NULL, *dpn = NULL, *krbtgt_out_n = NULL;
     char *user2user_name = NULL;
     hdb_entry_ex *server = NULL, *client = NULL, *s4u2self_impersonated_client = NULL;
     hdb_entry_ex *user2user_krbtgt = NULL;
@@ -1488,7 +1488,7 @@ server_lookup:
     /* Now refetch the primary krbtgt, and get the current kvno (the
      * sign check may have been on an old kvno, and the server may
      * have been an incoming trust) */
-    ret = krb5_make_principal(context, &krbtgt_principal,
+    ret = krb5_make_principal(context, &krbtgt_out_principal,
 			      krb5_principal_get_comp_string(context,
 							     krbtgt->entry.principal,
 							     1),
@@ -1498,24 +1498,28 @@ server_lookup:
 							     1), NULL);
     if(ret) {
 	kdc_log(context, config, 0,
-		    "Failed to generate krbtgt principal");
+		"Failed to make krbtgt principal name object for "
+		"authz-data signatures");
+	goto out;
+    }
+    ret = krb5_unparse_name(context, krbtgt_out_principal, &krbtgt_out_n);
+    if (ret) {
+	kdc_log(context, config, 0,
+		"Failed to make krbtgt principal name object for "
+		"authz-data signatures");
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, krbtgt_principal, HDB_F_GET_KRBTGT, NULL, NULL, &krbtgt_out);
-    krb5_free_principal(context, krbtgt_principal);
+    ret = _kdc_db_fetch(context, config, krbtgt_out_principal,
+			HDB_F_GET_KRBTGT, NULL, NULL, &krbtgt_out);
     if (ret) {
-	krb5_error_code ret2;
-	char *ktpn, *ktpn2;
+	char *ktpn = NULL;
 	ret = krb5_unparse_name(context, krbtgt->entry.principal, &ktpn);
-	ret2 = krb5_unparse_name(context, krbtgt_principal, &ktpn2);
 	kdc_log(context, config, 0,
-		"Request with wrong krbtgt: %s, %s not found in our database",
-		(ret == 0) ? ktpn : "<unknown>", (ret2 == 0) ? ktpn2 : "<unknown>");
-	if(ret == 0)
-	    free(ktpn);
-	if(ret2 == 0)
-	    free(ktpn2);
+		"No such principal %s (needed for authz-data signature keys) "
+		"while processing TGS-REQ for service %s with krbtg %s",
+		krbtgt_out_n, spn, (ret == 0) ? ktpn : "<unknown>");
+	free(ktpn);
 	ret = KRB5KRB_AP_ERR_NOT_US;
 	goto out;
     }
@@ -1713,8 +1717,15 @@ server_lookup:
 	ret = KRB5KRB_AP_ERR_NOT_US;
     }
 
+    ret = _kdc_get_preferred_key(context, config, krbtgt_out, krbtgt_out_n,
+				 NULL, &tkey_sign);
+    if (ret) {
+	kdc_log(context, config, 0,
+		    "Failed to find key for krbtgt PAC signature");
+	goto out;
+    }
     ret = hdb_enctype2key(context, &krbtgt_out->entry,
-			  krbtgt_etype, &tkey_sign);
+			  tkey_sign->key.keytype, &tkey_sign);
     if(ret) {
 	kdc_log(context, config, 0,
 		    "Failed to find key for krbtgt PAC signature");
@@ -2166,8 +2177,8 @@ out:
 	    free(tpn);
     free(spn);
     free(cpn);
-    if (dpn)
-	free(dpn);
+    free(dpn);
+    free(krbtgt_out_n);
 
     krb5_free_keyblock_contents(context, &sessionkey);
     if(krbtgt_out)
@@ -2185,12 +2196,10 @@ out:
 	krb5_free_principal(context, user2user_princ);
     if (tp && tp != cp)
 	krb5_free_principal(context, tp);
-    if (cp)
-	krb5_free_principal(context, cp);
-    if (dp)
-	krb5_free_principal(context, dp);
-    if (sp)
-	krb5_free_principal(context, sp);
+    krb5_free_principal(context, cp);
+    krb5_free_principal(context, dp);
+    krb5_free_principal(context, sp);
+    krb5_free_principal(context, krbtgt_out_principal);
     if (ref_realm)
 	free(ref_realm);
     free_METHOD_DATA(&enc_pa_data);
