@@ -196,12 +196,12 @@ plantestsuite("samba3.blackbox.net.rpc.registry", "s3dc", [os.path.join(samba3sr
                                                        scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration, 'rpc'])
 
 plantestsuite("samba3.blackbox.net.local.registry.roundtrip", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry_roundtrip.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration,])
+                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration])
 plantestsuite("samba3.blackbox.net.rpc.registry.roundtrip", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_registry_roundtrip.sh"),
                                                        scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration, 'rpc'])
 
 plantestsuite("samba3.blackbox.net.local.conf", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_conf.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration,])
+                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration])
 plantestsuite("samba3.blackbox.net.rpc.conf", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_conf.sh"),
                                                        scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration, 'rpc'])
 
