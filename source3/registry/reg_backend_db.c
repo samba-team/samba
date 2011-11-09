@@ -687,6 +687,10 @@ WERROR regdb_init(void)
 		vers_id = REGDB_VERSION_V1;
 	}
 
+	if (vers_id == REGDB_CODE_VERSION) {
+		return WERR_OK;
+	}
+
 	if (vers_id > REGDB_CODE_VERSION || vers_id == 0) {
 		DEBUG(0, ("regdb_init: unknown registry version %d "
 			  "(code version = %d), refusing initialization\n",
