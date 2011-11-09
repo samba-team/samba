@@ -363,15 +363,24 @@ class dc_join(object):
             prev = o
 
         (level, ctr) = ctx.drsuapi.DsAddEntry(ctx.drsuapi_handle, 2, req2)
-        if ctr.err_ver != 1:
-            raise RuntimeError("expected err_ver 1, got %u" % ctr.err_ver)
-        if ctr.err_data.status != (0, 'WERR_OK'):
-            print("DsAddEntry failed with status %s info %s" % (ctr.err_data.status,
-                                                                ctr.err_data.info.extended_err))
-            raise RuntimeError("DsAddEntry failed")
-        if ctr.err_data.dir_err != drsuapi.DRSUAPI_DIRERR_OK:
-            print("DsAddEntry failed with dir_err %u" % ctr.err_data.dir_err)
-            raise RuntimeError("DsAddEntry failed")
+        if level == 2:
+            if ctr.dir_err != drsuapi.DRSUAPI_DIRERR_OK:
+                print("DsAddEntry failed with dir_err %u" % ctr.dir_err)
+                raise RuntimeError("DsAddEntry failed")
+            if ctr.extended_err != (0, 'WERR_OK'):
+                print("DsAddEntry failed with status %s info %s" % (ctr.extended_err))
+                raise RuntimeError("DsAddEntry failed")
+        if level == 3:
+            if ctr.err_ver != 1:
+                raise RuntimeError("expected err_ver 1, got %u" % ctr.err_ver)
+            if ctr.err_data.status != (0, 'WERR_OK'):
+                print("DsAddEntry failed with status %s info %s" % (ctr.err_data.status,
+                                                                    ctr.err_data.info.extended_err))
+                raise RuntimeError("DsAddEntry failed")
+            if ctr.err_data.dir_err != drsuapi.DRSUAPI_DIRERR_OK:
+                print("DsAddEntry failed with dir_err %u" % ctr.err_data.dir_err)
+                raise RuntimeError("DsAddEntry failed")
+
         return ctr.objects
 
     def join_add_ntdsdsa(ctx):
