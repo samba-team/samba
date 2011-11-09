@@ -90,6 +90,8 @@
 
 	<programlisting>
 	[global]
+	workgroup = CORP
+
 	idmap config * : backend = tdb
 	idmap config * : range = 1000000-1999999
 
