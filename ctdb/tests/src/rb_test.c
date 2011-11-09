@@ -115,7 +115,6 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
-	struct event_context *ev;
 	int i,j,k;
 	trbt_tree_t *tree;
 	uint32_t *data;
@@ -145,9 +144,6 @@ int main(int argc, const char *argv[])
 		extra_argv++;
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
-
-	ev = event_context_init(NULL);
-
 
 	printf("testing trbt_insert32_callback for %d records\n", num_records);
 	memctx   = talloc_new(NULL);
