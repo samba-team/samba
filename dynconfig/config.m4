@@ -212,6 +212,37 @@ AC_ARG_WITH(privileged-socket-dir,
 
 WINBINDD_SOCKET_DIR="${SOCKET_DIR}/winbindd"
 WINBINDD_PRIVILEGED_SOCKET_DIR="${PRIVILEGED_SOCKET_DIR}/winbindd_privileged"
+
+AC_ARG_WITH(winbind-socket-dir,
+[AS_HELP_STRING([--with-winbind-socket-dir=DIR],
+ [winbnd socket directory ($localstatedir/run/winbindd)])],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-winbind-socket-dir called without argument - will use default])
+  ;;
+  * )
+    WINBINDD_SOCKET_DIR="$withval"
+  ;;
+  esac])
+
+AC_ARG_WITH(winbind-privileged-socket-dir,
+[AS_HELP_STRING([--with-winbind-privileged-socket-dir=DIR],
+ [winbind privileged socket directory ($localstatedir/lib/winbindd)])],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-winbind-privileged-socket-dir called without argument - will use default])
+  ;;
+  * )
+    WINBINDD_PRIVILEGED_SOCKET_DIR="$withval"
+  ;;
+  esac])
+
 NMBDSOCKETDIR="${SOCKET_DIR}/nmbd"
 NTP_SIGND_SOCKET_DIR="${SOCKET_DIR}/ntp_signd"
 NCALRPCDIR="${SOCKET_DIR}/ncalrpc"
