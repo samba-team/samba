@@ -230,7 +230,7 @@ int scsi_inquiry(int fd)
 	unsigned int sense_len=32;
 	unsigned char sense[sense_len];
 
-	int res, alen, i;
+	int res, i;
 
 	cdb[3]=(data_size>>8)&0xff;
 	cdb[4]=data_size&0xff;
@@ -273,9 +273,6 @@ int scsi_inquiry(int fd)
 		!!(data[3]&0x10),
 		data[3]&0x0f);
 
-	/* Additional Length */
-	alen=data[4];
- 
 	switch(data[3]&0x0f){
 	/*SPC-2/SPC-3/SPC-4*/
 	case 2:
