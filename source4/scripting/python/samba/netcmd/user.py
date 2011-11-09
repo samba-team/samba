@@ -208,15 +208,12 @@ class cmd_user_list(Command):
         res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
                     expression=("(&(objectClass=user)(userAccountControl:%s:=%u))"
                     % (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT)),
-                    attrs=["name"])
+                    attrs=["samaccountname"])
         if (len(res) == 0):
             return
 
-        try:
-            for msg in res:
-                self.outf.write("%s\n" % msg["name"][0])
-        except Exception, msg:
-            raise CommandError("Failed to get user list: %s" % msg)
+        for msg in res:
+            self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
 
 
 class cmd_user_enable(Command):
