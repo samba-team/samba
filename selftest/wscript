@@ -205,5 +205,12 @@ def cmd_testonly(opt):
 # main test entry point
 def cmd_test(opt):
     '''Run the test suite (see test options below)'''
+
+    # if running all tests, then force a symbol check
+    env = LOAD_ENVIRONMENT()
+    CHECK_MAKEFLAGS(env)
+    if not Options.options.TESTS:
+        Options.options.DUP_SYMBOLCHECK = True
+
     Scripting.commands.append('build')
     Scripting.commands.append('testonly')
