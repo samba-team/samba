@@ -2533,24 +2533,38 @@ static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
 	return ret;
 }
 
-static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args)
+static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args, PyObject *kwargs)
 {
-	PyObject *name, *ret, *retobj;
-	retobj = NULL;
-	if (!PyArg_ParseTuple(args, "O|O", &name, &retobj))
-		return NULL;
+	PyObject *def = NULL;
+	const char *kwnames[] = { "name", "default", "idx", NULL };
+	const char *name = NULL;
+	int idx = -1;
+	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	struct ldb_message_element *el;
 
-	ret = py_ldb_msg_getitem_helper(self, name);
-	if (ret == NULL) {
-		if (PyErr_Occurred())
-			return NULL;
-		if (retobj != NULL) {
-			return retobj;
-		} else {
-			Py_RETURN_NONE;
-		}
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Oi:msg",
+					 discard_const_p(char *, kwnames), &name, &def, &idx)) {
+		return NULL;
 	}
-	return ret;
+
+	if (strcasecmp(name, "dn") == 0) {
+		return pyldb_Dn_FromDn(msg->dn);
+	}
+
+	el = ldb_msg_find_element(msg, name);
+
+	if (el == NULL || (idx != -1 && el->num_values <= idx)) {
+		if (def != NULL) {
+			return def;
+		}
+		Py_RETURN_NONE;
+	}
+
+	if (idx == -1) {
+		return (PyObject *)PyLdbMessageElement_FromMessageElement(el, msg->elements);
+	}
+
+	return PyObject_FromLdbValue(&el->values[idx]);
 }
 
 static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
@@ -2614,7 +2628,12 @@ static PyMethodDef py_ldb_msg_methods[] = {
 	{ "remove", (PyCFunction)py_ldb_msg_remove_attr, METH_VARARGS, 
 		"S.remove(name)\n\n"
 		"Remove all entries for attributes with the specified name."},
-	{ "get", (PyCFunction)py_ldb_msg_get, METH_VARARGS, NULL },
+	{ "get", (PyCFunction)py_ldb_msg_get, METH_VARARGS | METH_KEYWORDS,
+	  "msg.get(name,default=None,idx=None) -> string\n"
+	  "idx is the index into the values array\n"
+	  "if idx is None, then a list is returned\n"
+	  "if idx is not None, then the element with that index is returned\n"
+	  "if you pass the special name 'dn' then the DN object is returned\n"},
 	{ "items", (PyCFunction)py_ldb_msg_items, METH_NOARGS, NULL },
 	{ "elements", (PyCFunction)py_ldb_msg_elements, METH_NOARGS, NULL },
 	{ "add", (PyCFunction)py_ldb_msg_add, METH_VARARGS,
