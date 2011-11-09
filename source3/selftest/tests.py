@@ -190,6 +190,8 @@ plantestsuite("samba3.blackbox.net.misc", "s3dc:local", [os.path.join(samba3srcd
                                                        scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration])
 plantestsuite("samba3.blackbox.net.local.registry", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
                                                        scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration])
+plantestsuite("samba3.blackbox.net.registry.check", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry_check.sh"),
+                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration,binpath('dbwrap_tool')])
 plantestsuite("samba3.blackbox.net.rpc.registry", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
                                                        scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration, 'rpc'])
 
