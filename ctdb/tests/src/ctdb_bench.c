@@ -234,7 +234,13 @@ int main(int argc, const char *argv[])
 
 	/* setup a ctdb call function */
 	ret = ctdb_set_call(ctdb_db, incr_func,  FUNC_INCR);
+	if (ret != 0) {
+		DEBUG(DEBUG_DEBUG,("ctdb_set_call() failed, ignoring return code %d\n", ret));
+	}
 	ret = ctdb_set_call(ctdb_db, fetch_func, FUNC_FETCH);
+	if (ret != 0) {
+		DEBUG(DEBUG_DEBUG,("ctdb_set_call() failed, ignoring return code %d\n", ret));
+	}
 
 	if (ctdb_client_set_message_handler(ctdb, 0, ring_message_handler,&msg_count))
 		goto error;

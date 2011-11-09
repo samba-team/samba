@@ -937,6 +937,9 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 	state->ctdb_db = ctdb_db;
 
 	ret = ctdb_call_local(ctdb_db, state->call, header, state, data, true);
+	if (ret != 0) {
+		DEBUG(DEBUG_DEBUG,("ctdb_call_local() failed, ignoring return code %d\n", ret));
+	}
 
 	event_add_timed(ctdb->ev, state, timeval_zero(), call_local_trigger, state);
 
