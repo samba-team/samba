@@ -260,6 +260,10 @@ static void dptr_close_internal(struct dptr_struct *dptr)
 		goto done;
 	}
 
+	if (sconn->using_smb2) {
+		goto done;
+	}
+
 	DLIST_REMOVE(sconn->searches.dirptrs, dptr);
 
 	/*
@@ -495,6 +499,10 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 
 	dptr->attr = attr;
 
+	if (sconn->using_smb2) {
+		goto done;
+	}
+
 	if(old_handle) {
 
 		/*
@@ -565,6 +573,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 
 	DLIST_ADD(sconn->searches.dirptrs, dptr);
 
+done:
 	DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
 		dptr->dnum,path,expect_close));  
 
@@ -1336,7 +1345,7 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
 #endif
 		SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
 	}
-	if (dirp->conn->sconn) {
+	if (dirp->conn->sconn && !dirp->conn->sconn->using_smb2) {
 		dirp->conn->sconn->searches.dirhandles_open--;
 	}
 	return 0;
@@ -1367,7 +1376,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 
-	if (sconn) {
+	if (sconn && !sconn->using_smb2) {
 		sconn->searches.dirhandles_open++;
 	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
@@ -1411,7 +1420,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 
-	if (sconn) {
+	if (sconn && !sconn->using_smb2) {
 		sconn->searches.dirhandles_open++;
 	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
