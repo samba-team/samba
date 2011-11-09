@@ -15,15 +15,11 @@ Samba-3.0.x		This release turned into maintenance mode since we
 Samba-3.6.x		This is the current stable Samba 3 release intended
 			for all Samba production server.
 
-Samba-4			Danger Will Robinson, a big code clean up with major
-			system redesign. More will be announced as this work
-			starts to take shape.
+Samba-4.0		A future release including the AD domain controller
+                        feature, and the file server and other functionality 
+                        from Samba 3.6.
 
 
 Note that it is a given that the Samba-Team will continue to track
-Windows (NT/200x) update releases, ensuring that Samba will work
-well with whatever "Beta" releases Redmond throws our way :-).
-
-You may also note that the release numbers get fuzzier the
-further into the future the objectives get. This is intentional
-as we cannot commit to exact timeframes.
+Windows releases, ensuring that Samba will work
+well with whatever releases Redmond throws our way :-).
