@@ -257,7 +257,7 @@ store:
 	if (schedule_for_deletion) {
 		int ret2;
 		ret2 = ctdb_local_schedule_for_deletion(ctdb_db, header, key);
-		if (ret != 0) {
+		if (ret2 != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " ctdb_local_schedule_for_deletion failed.\n"));
 		}
 	}
