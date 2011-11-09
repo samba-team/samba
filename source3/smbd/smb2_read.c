@@ -466,14 +466,8 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(status)) {
 		/*
-		 * Doing an async read. Don't
-		 * send a "gone async" message
-		 * as we expect this to be less
-		 * than the client timeout period.
-		 * JRA. FIXME for offline files..
-		 * FIXME. Add cancel code..
+		 * Doing an async read.
 		 */
-		smb2req->async = true;
 		return req;
 	}
 

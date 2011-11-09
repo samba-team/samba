@@ -347,7 +347,7 @@ struct smbd_smb2_request {
 
 	int current_idx;
 	bool do_signing;
-	bool async;
+	struct tevent_timer *async_te;
 	bool cancelled;
 	bool compound_related;
 

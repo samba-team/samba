@@ -711,15 +711,6 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 	newreq->session = req->session;
 	newreq->do_signing = req->do_signing;
 	newreq->current_idx = req->current_idx;
-	newreq->async = false;
-	newreq->cancelled = false;
-	/* Note we are leaving:
-		->tcon
-		->smb1req
-		->compat_chain_fsp
-	   uninitialized as NULL here as
-	   they're not used in the interim
-	   response code. JRA. */
 
 	outvec = talloc_zero_array(newreq, struct iovec, count);
 	if (!outvec) {
@@ -844,19 +835,20 @@ static void smbd_smb2_request_pending_writev_done(struct tevent_req *subreq)
 	TALLOC_FREE(state);
 }
 
+static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
+					    struct tevent_timer *te,
+					    struct timeval current_time,
+					    void *private_data);
+
 NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 					 struct tevent_req *subreq)
 {
 	NTSTATUS status;
-	struct smbd_smb2_request_pending_state *state = NULL;
 	int i = req->current_idx;
-	uint8_t *reqhdr = NULL;
-	uint8_t *hdr = NULL;
-	uint8_t *body = NULL;
-	uint32_t flags = 0;
-	uint64_t message_id = 0;
-	uint64_t async_id = 0;
-	struct iovec *outvec = NULL;
+	uint32_t defer_time = 500;
+	struct timeval defer_endtime;
+	uint8_t *outhdr = NULL;
+	uint32_t flags;
 
 	if (!tevent_req_is_in_progress(subreq)) {
 		return NT_STATUS_OK;
@@ -865,7 +857,14 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	req->subreq = subreq;
 	subreq = NULL;
 
-	if (req->async) {
+	if (req->async_te) {
+		/* We're already async. */
+		return NT_STATUS_OK;
+	}
+
+	outhdr = (uint8_t *)req->out.vector[i].iov_base;
+	flags = IVAL(outhdr, SMB2_HDR_FLAGS);
+	if (flags & SMB2_HDR_FLAG_ASYNC) {
 		/* We're already async. */
 		return NT_STATUS_OK;
 	}
@@ -888,6 +887,8 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	}
 
 	if (req->out.vector_count > 4) {
+		struct iovec *outvec = NULL;
+
 		/* This is a compound reply. We
 		 * must do an interim response
 		 * followed by the async response
@@ -911,17 +912,93 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		 */
 		req->compound_related = false;
 		req->sconn->smb2.compound_related_in_progress = false;
+
+		/* Re-arrange the in.vectors. */
+		req->in.vector[1] = req->in.vector[i];
+		req->in.vector[2] = req->in.vector[i+1];
+		req->in.vector[3] = req->in.vector[i+2];
+		req->in.vector_count = 4;
+
+		/* Reset the new in size. */
+		smb2_setup_nbt_length(req->in.vector, 4);
+
+		/* Now recreate the out.vectors. */
+		outvec = talloc_zero_array(req, struct iovec, 4);
+		if (!outvec) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* 0 is always boilerplate and must
+		 * be of size 4 for the length field. */
+
+		outvec[0].iov_base = req->out.nbt_hdr;
+		outvec[0].iov_len = 4;
+		SIVAL(req->out.nbt_hdr, 0, 0);
+
+		if (!dup_smb2_vec3(outvec, &outvec[1], &req->out.vector[i])) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		TALLOC_FREE(req->out.vector);
+
+		req->out.vector = outvec;
+
+		req->current_idx = 1;
+		req->out.vector_count = 4;
+
+		outhdr = (uint8_t *)req->out.vector[1].iov_base;
+		flags = (IVAL(outhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
+		SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
 	}
 
-	/* Don't return an intermediate packet on a pipe read/write. */
-	if (req->tcon && req->tcon->compat_conn && IS_IPC(req->tcon->compat_conn)) {
-		goto ipc_out;
+	defer_endtime = timeval_current_ofs_usec(defer_time);
+	req->async_te = tevent_add_timer(req->sconn->smb2.event_ctx,
+					 req, defer_endtime,
+					 smbd_smb2_request_pending_timer,
+					 req);
+	if (req->async_te == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	reqhdr = (uint8_t *)req->out.vector[i].iov_base;
-	flags = (IVAL(reqhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
-	message_id = BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
+	return NT_STATUS_OK;
+}
+
+static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
+					    struct tevent_timer *te,
+					    struct timeval current_time,
+					    void *private_data)
+{
+	struct smbd_smb2_request *req =
+		talloc_get_type_abort(private_data,
+		struct smbd_smb2_request);
+	struct smbd_smb2_request_pending_state *state = NULL;
+	int i = req->current_idx;
+	uint8_t *outhdr = NULL;
+	const uint8_t *inhdr = NULL;
+	uint8_t *hdr = NULL;
+	uint8_t *body = NULL;
+	uint32_t flags = 0;
+	uint64_t message_id = 0;
+	uint64_t async_id = 0;
+	struct tevent_req *subreq = NULL;
+
+	TALLOC_FREE(req->async_te);
+
+	/* Ensure our final reply matches the interim one. */
+	inhdr = (const uint8_t *)req->in.vector[1].iov_base;
+	outhdr = (uint8_t *)req->out.vector[1].iov_base;
+	flags = IVAL(outhdr, SMB2_HDR_FLAGS);
+	message_id = BVAL(outhdr, SMB2_HDR_MESSAGE_ID);
+
 	async_id = message_id; /* keep it simple for now... */
+
+	SIVAL(outhdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
+	SBVAL(outhdr, SMB2_HDR_ASYNC_ID, async_id);
+
+	DEBUG(10,("smbd_smb2_request_pending_queue: opcode[%s] mid %llu "
+		"going async\n",
+		smb2_opcode_name((uint16_t)IVAL(inhdr, SMB2_HDR_OPCODE)),
+		(unsigned long long)async_id ));
 
 	/*
 	 * What we send is identical to a smbd_smb2_request_error
@@ -931,7 +1008,9 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 	state = talloc_zero(req->sconn, struct smbd_smb2_request_pending_state);
 	if (state == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		smbd_server_connection_terminate(req->sconn,
+						 nt_errstr(NT_STATUS_NO_MEMORY));
+		return;
 	}
 	state->sconn = req->sconn;
 
@@ -953,15 +1032,16 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	SSVAL(hdr, SMB2_HDR_LENGTH, SMB2_HDR_BODY);
 	SSVAL(hdr, SMB2_HDR_EPOCH, 0);
 	SIVAL(hdr, SMB2_HDR_STATUS, NT_STATUS_V(STATUS_PENDING));
-	SSVAL(hdr, SMB2_HDR_OPCODE, SVAL(reqhdr, SMB2_HDR_OPCODE));
+	SSVAL(hdr, SMB2_HDR_OPCODE, SVAL(outhdr, SMB2_HDR_OPCODE));
 
 	SIVAL(hdr, SMB2_HDR_FLAGS, flags);
 	SIVAL(hdr, SMB2_HDR_NEXT_COMMAND, 0);
 	SBVAL(hdr, SMB2_HDR_MESSAGE_ID, message_id);
 	SBVAL(hdr, SMB2_HDR_PID, async_id);
 	SBVAL(hdr, SMB2_HDR_SESSION_ID,
-		BVAL(reqhdr, SMB2_HDR_SESSION_ID));
-	memset(hdr+SMB2_HDR_SIGNATURE, 0, 16);
+		BVAL(outhdr, SMB2_HDR_SESSION_ID));
+	memcpy(hdr+SMB2_HDR_SIGNATURE,
+	       outhdr+SMB2_HDR_SIGNATURE, 16);
 
 	SSVAL(body, 0x00, 0x08 + 1);
 
@@ -981,97 +1061,31 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	SIVAL(hdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
 
 	if (req->do_signing) {
+		NTSTATUS status;
+
 		status = smb2_signing_sign_pdu(req->session->session_key,
 					&state->vector[1], 2);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			smbd_server_connection_terminate(req->sconn,
+						nt_errstr(status));
+			return;
 		}
 	}
 
 	subreq = tstream_writev_queue_send(state,
-					req->sconn->smb2.event_ctx,
-					req->sconn->smb2.stream,
-					req->sconn->smb2.send_queue,
+					state->sconn->smb2.event_ctx,
+					state->sconn->smb2.stream,
+					state->sconn->smb2.send_queue,
 					state->vector,
 					3);
-
 	if (subreq == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		smbd_server_connection_terminate(state->sconn,
+						 nt_errstr(NT_STATUS_NO_MEMORY));
+		return;
 	}
-
 	tevent_req_set_callback(subreq,
 			smbd_smb2_request_pending_writev_done,
 			state);
-
-	/* Note we're going async with this request. */
-	req->async = true;
-
-  ipc_out:
-
-	/*
-	 * Now manipulate req so that the outstanding async request
-	 * is the only one left in the struct smbd_smb2_request.
-	 */
-
-	if (req->current_idx == 1) {
-		/* There was only one. */
-		goto out;
-	}
-
-	/* Re-arrange the in.vectors. */
-	req->in.vector[1] = req->in.vector[i];
-	req->in.vector[2] = req->in.vector[i+1];
-	req->in.vector[3] = req->in.vector[i+2];
-	req->in.vector_count = 4;
-	/* Reset the new in size. */
-	smb2_setup_nbt_length(req->in.vector, 4);
-
-	/* Now recreate the out.vectors. */
-	outvec = talloc_zero_array(req, struct iovec, 4);
-	if (!outvec) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* 0 is always boilerplate and must
-	 * be of size 4 for the length field. */
-
-	outvec[0].iov_base = req->out.nbt_hdr;
-	outvec[0].iov_len = 4;
-	SIVAL(req->out.nbt_hdr, 0, 0);
-
-	if (!dup_smb2_vec3(outvec, &outvec[1], &req->out.vector[i])) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	TALLOC_FREE(req->out.vector);
-
-	req->out.vector = outvec;
-
-	req->current_idx = 1;
-	req->out.vector_count = 4;
-
-  out:
-
-	smb2_setup_nbt_length(req->out.vector,
-		req->out.vector_count);
-
-	if (req->async) {
-		/* Ensure our final reply matches the interim one. */
-		reqhdr = (uint8_t *)req->out.vector[1].iov_base;
-		SIVAL(reqhdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
-		SBVAL(reqhdr, SMB2_HDR_PID, async_id);
-
-		{
-			const uint8_t *inhdr =
-				(const uint8_t *)req->in.vector[1].iov_base;
-			DEBUG(10,("smbd_smb2_request_pending_queue: opcode[%s] mid %llu "
-				"going async\n",
-				smb2_opcode_name((uint16_t)IVAL(inhdr, SMB2_HDR_OPCODE)),
-				(unsigned long long)async_id ));
-		}
-	}
-
-	return NT_STATUS_OK;
 }
 
 static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
@@ -1807,6 +1821,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	int i = req->current_idx;
 
 	req->subreq = NULL;
+	TALLOC_FREE(req->async_te);
 
 	req->current_idx += 3;
 

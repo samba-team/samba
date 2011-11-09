@@ -437,7 +437,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 
 
-	if (!smb2req->async) {
+	if (smb2req->subreq == NULL) {
 		/* New create call. */
 		req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_create_state);
@@ -445,7 +445,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 		state->smb2req = smb2req;
-		smb2req->subreq = req; /* So we can find this when going async. */
 
 		smb1req = smbd_smb2_fake_smb_request(smb2req);
 		if (tevent_req_nomem(smb1req, req)) {
@@ -892,7 +891,7 @@ bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 	if (!smb2req) {
 		return false;
 	}
-	if (!smb2req->async) {
+	if (smb2req->subreq == NULL) {
 		return false;
 	}
 	req = smb2req->subreq;
@@ -1200,35 +1199,6 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 	if (!state->private_data.data) {
 		return false;
 	}
-
-#if 1
-	/* Boo - turns out this isn't what W2K8R2
-	   does. It actually sends the STATUS_PENDING
-	   message followed by the STATUS_SHARING_VIOLATION
-	   message. Surely this means that all open
-	   calls (even on directories) will potentially
-	   fail in a chain.... ? And I've seen directory
-	   opens as the start of a chain. JRA.
-
-	   Update: 19th May 2010. Talking with Microsoft
-	   engineers at the plugfest this is a bug in
-	   Windows. Re-enable this code.
-	*/
-	/*
-	 * More subtlety. To match W2K8R2 don't
-	 * send a "gone async" message if it's simply
-	 * a STATUS_SHARING_VIOLATION (short) wait, not
-	 * an oplock break wait. We do this by prematurely
-	 * setting smb2req->async flag.
-	 */
-	if (timeout.tv_sec < 2) {
-		DEBUG(10,("push_deferred_open_message_smb2: "
-			"short timer wait (usec = %u). "
-			"Don't send async message.\n",
-			(unsigned int)timeout.tv_usec ));
-		smb2req->async = true;
-	}
-#endif
 
 	/* Re-schedule us to retry on timer expiry. */
 	end_time = timeval_sum(&request_time, &timeout);
