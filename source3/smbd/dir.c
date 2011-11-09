@@ -470,6 +470,31 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 
 	ZERO_STRUCTP(dptr);
 
+	dptr->path = SMB_STRDUP(path);
+	if (!dptr->path) {
+		SAFE_FREE(dptr);
+		TALLOC_FREE(dir_hnd);
+		return NT_STATUS_NO_MEMORY;
+	}
+	dptr->conn = conn;
+	dptr->dir_hnd = dir_hnd;
+	dptr->spid = spid;
+	dptr->expect_close = expect_close;
+	dptr->wcard = SMB_STRDUP(wcard);
+	if (!dptr->wcard) {
+		SAFE_FREE(dptr->path);
+		SAFE_FREE(dptr);
+		TALLOC_FREE(dir_hnd);
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
+		dptr->has_wild = True;
+	} else {
+		dptr->has_wild = wcard_has_wild;
+	}
+
+	dptr->attr = attr;
+
 	if(old_handle) {
 
 		/*
@@ -493,6 +518,8 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 			dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 0);
 			if(dptr->dnum == -1 || dptr->dnum > 254) {
 				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
+				SAFE_FREE(dptr->path);
+				SAFE_FREE(dptr->wcard);
 				SAFE_FREE(dptr);
 				TALLOC_FREE(dir_hnd);
 				return NT_STATUS_TOO_MANY_OPENED_FILES;
@@ -523,6 +550,8 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 
 			if(dptr->dnum == -1 || dptr->dnum < 255) {
 				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
+				SAFE_FREE(dptr->path);
+				SAFE_FREE(dptr->wcard);
 				SAFE_FREE(dptr);
 				TALLOC_FREE(dir_hnd);
 				return NT_STATUS_TOO_MANY_OPENED_FILES;
@@ -533,33 +562,6 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 	bitmap_set(sconn->searches.dptr_bmap, dptr->dnum);
 
 	dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
-
-	dptr->path = SMB_STRDUP(path);
-	if (!dptr->path) {
-		bitmap_clear(sconn->searches.dptr_bmap, dptr->dnum - 1);
-		SAFE_FREE(dptr);
-		TALLOC_FREE(dir_hnd);
-		return NT_STATUS_NO_MEMORY;
-	}
-	dptr->conn = conn;
-	dptr->dir_hnd = dir_hnd;
-	dptr->spid = spid;
-	dptr->expect_close = expect_close;
-	dptr->wcard = SMB_STRDUP(wcard);
-	if (!dptr->wcard) {
-		bitmap_clear(sconn->searches.dptr_bmap, dptr->dnum - 1);
-		SAFE_FREE(dptr->path);
-		SAFE_FREE(dptr);
-		TALLOC_FREE(dir_hnd);
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
-		dptr->has_wild = True;
-	} else {
-		dptr->has_wild = wcard_has_wild;
-	}
-
-	dptr->attr = attr;
 
 	DLIST_ADD(sconn->searches.dirptrs, dptr);
 
