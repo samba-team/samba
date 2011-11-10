@@ -136,3 +136,4 @@ struct parm_struct {
 const char* server_role_str(uint32_t role);
 int lp_find_server_role(int server_role, int security, bool domain_logons, bool domain_master);
 int lp_find_security(int server_role, int security);
+bool lp_is_security_and_server_role_valid(int server_role, int security);

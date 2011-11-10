@@ -141,3 +141,42 @@ int lp_find_security(int server_role, int security)
 		return SEC_USER;
 	}
 }
+
+
+/**
+ * Check if server role and security parameters are contradictory
+ */
+bool lp_is_security_and_server_role_valid(int server_role, int security)
+{
+	bool valid = false;
+
+	if (server_role == ROLE_AUTO || security == SEC_AUTO) {
+		return false;
+	}
+
+	switch (server_role) {
+	case ROLE_STANDALONE:
+		if (security == SEC_SHARE || security == SEC_SERVER || security == SEC_USER) {
+			valid = true;
+		}
+		break;
+
+	case ROLE_DOMAIN_MEMBER:
+		if (security == SEC_ADS || security == SEC_DOMAIN) {
+			valid = true;
+		}
+		break;
+
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+		if (security == SEC_USER) {
+			valid = true;
+		}
+		break;
+
+	default:
+		break;
+	}
+
+	return valid;
+}
