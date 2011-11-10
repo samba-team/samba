@@ -158,17 +158,10 @@ def planperltestsuite(name, path):
         skiptestsuite(name, "Test::More not available")
 
 
-def planpythontestsuite(env, module, name=None, directory=None):
-
-    if name is None:
-        name = module
+def planpythontestsuite(env, module):
     if has_system_subunit_run:
-        cmd = [python, "-m", "subunit.run", "$LISTOPT", module]
-        if directory is not None:
-            cmd.extend(['-D', directory])
-        plantestsuite_idlist(name, env, cmd)
+        plantestsuite_idlist(module, env, [python, "-m", "subunit.run", "$LISTOPT", module])
     else:
-        cmd = "PYTHONPATH=$PYTHONPATH:%s/lib/subunit/python:%s/lib/testtools %s -m subunit.run $LISTOPT %s" % (srcdir(), srcdir(), python, module)
-        if directory is not None:
-            cmd += ' -D %s' % directory
-        plantestsuite_idlist(name, env, cmd)
+        plantestsuite_idlist(module, env, "PYTHONPATH=$PYTHONPATH:%s/lib/subunit/python:%s/lib/testtools %s -m subunit.run $LISTOPT %s" % (srcdir(), srcdir(), python, module))
+
+
