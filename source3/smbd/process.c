@@ -2217,46 +2217,41 @@ static void smbd_server_connection_read_handler(
 	NTSTATUS status;
 	uint32_t seqnum;
 
-	bool from_client = (sconn->sock == fd);
+	bool from_client;
+
+	if (lp_async_smb_echo_handler()
+	    && fd_is_readable(sconn->smb1.echo_handler.trusted_fd)) {
+		/*
+		 * This is the super-ugly hack to prefer the packets
+		 * forwarded by the echo handler over the ones by the
+		 * client directly
+		 */
+		fd = sconn->smb1.echo_handler.trusted_fd;
+	}
+
+	from_client = (sconn->sock == fd);
 
 	if (from_client) {
 		smbd_lock_socket(sconn);
 
-		if (lp_async_smb_echo_handler()) {
-
-			if (fd_is_readable(sconn->smb1.echo_handler.trusted_fd)) {
-				/*
-				 * This is the super-ugly hack to
-				 * prefer the packets forwarded by the
-				 * echo handler over the ones by the
-				 * client directly
-				 */
-				fd = sconn->smb1.echo_handler.trusted_fd;
-			} else if (!fd_is_readable(fd)) {
-				DEBUG(10,("the echo listener was faster\n"));
-				smbd_unlock_socket(sconn);
-				return;
-			}
+		if (!fd_is_readable(fd)) {
+			DEBUG(10,("the echo listener was faster\n"));
+			smbd_unlock_socket(sconn);
+			return;
 		}
+	}
 
-		/* TODO: make this completely nonblocking */
-		status = receive_smb_talloc(mem_ctx, sconn, fd,
-					    (char **)(void *)&inbuf,
-					    0, /* timeout */
-					    &unread_bytes,
-					    &encrypted,
-					    &inbuf_len, &seqnum,
-					    false /* trusted channel */);
+	/* TODO: make this completely nonblocking */
+	status = receive_smb_talloc(mem_ctx, sconn, fd,
+				    (char **)(void *)&inbuf,
+				    0, /* timeout */
+				    &unread_bytes,
+				    &encrypted,
+				    &inbuf_len, &seqnum,
+				    false /* trusted channel */);
+
+	if (from_client) {
 		smbd_unlock_socket(sconn);
-	} else {
-		/* TODO: make this completely nonblocking */
-		status = receive_smb_talloc(mem_ctx, sconn, fd,
-					    (char **)(void *)&inbuf,
-					    0, /* timeout */
-					    &unread_bytes,
-					    &encrypted,
-					    &inbuf_len, &seqnum,
-					    true /* trusted channel */);
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
