@@ -18,7 +18,7 @@
 _free(/*@only@*/ /*@null@*/ const void * p)
 	/*@modifies p @*/
 {
-    if (p != NULL)	free((void *)p);
+    if (p != NULL)	free((void *)(intptr_t)p);
     return NULL;
 }
 

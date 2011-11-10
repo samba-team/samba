@@ -368,7 +368,9 @@ static int execCommand(poptContext con)
     poptItem item = con->doExec;
     const char ** argv;
     int argc = 0;
+#if defined(__hpux) || defined(HAVE_SETUID) || defined(HAVE_SETREUID)
     int rc;
+#endif
 
     if (item == NULL) /*XXX can't happen*/
 	return POPT_ERROR_NOARG;
@@ -444,7 +446,7 @@ if (_popt_debug)
     }
 #endif
 
-    rc = execvp(argv[0], (char *const *)argv);
+    (void) execvp(argv[0], (char *const *)(intptr_t)argv);
 
     return POPT_ERROR_ERRNO;
 }
