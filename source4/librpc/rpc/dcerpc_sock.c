@@ -362,7 +362,8 @@ static NTSTATUS dcerpc_pipe_open_socket_recv(struct composite_context *c)
 struct pipe_tcp_state {
 	const char *server;
 	const char *target_hostname;
-	const char *address;
+	const char **addresses;
+	uint32_t index;
 	uint32_t port;
 	struct socket_address *localaddr;
 	struct socket_address *srvaddr;
@@ -382,11 +383,12 @@ static void continue_ip_resolve_name(struct composite_context *ctx)
 						   struct pipe_tcp_state);
 	struct composite_context *sock_ip_req;
 
-	c->status = resolve_name_recv(ctx, s, &s->address);
+	c->status = resolve_name_multiple_recv(ctx, s, &s->addresses);
 	if (!composite_is_ok(c)) return;
 
 	/* prepare server address using host ip:port and transport name */
-	s->srvaddr = socket_address_from_strings(s->conn, "ip", s->address, s->port);
+	s->srvaddr = socket_address_from_strings(s->conn, "ip", s->addresses[s->index], s->port);
+	s->index++;
 	if (composite_nomem(s->srvaddr, c)) return;
 
 	sock_ip_req = dcerpc_pipe_open_socket_send(c, s->conn, s->localaddr,
@@ -413,11 +415,27 @@ static void continue_ip_open_socket(struct composite_context *ctx)
 	if (!NT_STATUS_IS_OK(c->status)) {
 		/* something went wrong... */
 		DEBUG(0, ("Failed to connect host %s (%s) on port %d - %s.\n",
-			  s->address, s->target_hostname, 
+			  s->addresses[s->index - 1], s->target_hostname,
 			  s->port, nt_errstr(c->status)));
+		if (s->addresses[s->index]) {
+			struct composite_context *sock_ip_req;
+			talloc_free(s->srvaddr);
+			/* prepare server address using host ip:port and transport name */
+			s->srvaddr = socket_address_from_strings(s->conn, "ip", s->addresses[s->index], s->port);
+			s->index++;
+			if (composite_nomem(s->srvaddr, c)) return;
 
-		composite_error(c, c->status);
-		return;
+			sock_ip_req = dcerpc_pipe_open_socket_send(c, s->conn, s->localaddr,
+								s->srvaddr, s->target_hostname,
+								NULL,
+								NCACN_IP_TCP);
+			composite_continue(c, sock_ip_req, continue_ip_open_socket, c);
+
+			return;
+		} else {
+			composite_error(c, c->status);
+			return;
+		}
 	}
 
 	composite_done(c);
