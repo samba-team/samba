@@ -74,6 +74,7 @@ static const struct loadparm_s3_context s3_fns =
 	.dump = lp_dump,
 
 	.server_role = lp_server_role,
+	.security = lp_security,
 
 	.winbind_separator = lp_winbind_separator,
 	.template_homedir = lp_template_homedir,

@@ -3733,3 +3733,13 @@ int lpcfg_server_role(struct loadparm_context *lp_ctx)
 				   (lp_ctx->globals->domain_master == true) ||
 				   (lp_ctx->globals->domain_master == Auto));
 }
+
+int lpcfg_security(struct loadparm_context *lp_ctx)
+{
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->security();
+	}
+
+	return lp_find_security(lp_ctx->globals->server_role,
+				lp_ctx->globals->security);
+}
