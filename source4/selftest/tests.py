@@ -399,7 +399,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
         name = module
     plantestsuite(name, env, args)
 
-planpythontestsuite("api", "none", name="ldb.python", extra_path=['lib/ldb/tests/python'])
+planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
 planpythontestsuite("none", "samba.tests.credentials")
 planoldpythontestsuite("dc:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planpythontestsuite("none", "samba.tests.registry")
