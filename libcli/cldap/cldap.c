@@ -212,8 +212,6 @@ static void cldap_recvfrom_done(struct tevent_req *subreq)
 nomem:
 	talloc_free(subreq);
 	talloc_free(in);
-	/*TODO: call a dead socket handler */
-	return;
 }
 
 /*
