@@ -258,7 +258,8 @@ static bool cldap_socket_recv_dgram(struct cldap_socket *c,
 	p = idr_find(c->searches.idr, in->ldap_msg->messageid);
 	if (p == NULL) {
 		if (!c->incoming.handler) {
-			goto done;
+			TALLOC_FREE(in);
+			return true;
 		}
 
 		/* this function should free or steal 'in' */
@@ -266,37 +267,51 @@ static bool cldap_socket_recv_dgram(struct cldap_socket *c,
 		return false;
 	}
 
-	search = talloc_get_type(p, struct cldap_search_state);
+	search = talloc_get_type_abort(p, struct cldap_search_state);
 	search->response.in = talloc_move(search, &in);
 	search->response.asn1 = asn1;
 	search->response.asn1->ofs = 0;
 
 	DLIST_REMOVE(c->searches.list, search);
 
-	if (!cldap_recvfrom_setup(c)) {
-		goto nomem;
+	if (cldap_recvfrom_setup(c)) {
+		tevent_req_done(search->req);
+		return true;
 	}
 
+	/*
+	 * This request was ok, just defer the notify of the caller
+	 * and then just fail the next request if needed
+	 */
+	tevent_req_defer_callback(search->req, search->caller.ev);
 	tevent_req_done(search->req);
-	talloc_free(in);
-	return true;
 
+	status = NT_STATUS_NO_MEMORY;
+	/* in is NULL it this point */
+	goto nterror;
 nomem:
 	in->recv_errno = ENOMEM;
 error:
 	status = map_nt_error_from_unix_common(in->recv_errno);
 nterror:
+	TALLOC_FREE(in);
 	/* in connected mode the first pending search gets the error */
 	if (!c->connected) {
 		/* otherwise we just ignore the error */
-		goto done;
+		return false;
 	}
 	if (!c->searches.list) {
-		goto done;
+		return false;
 	}
+	/*
+	 * We might called tevent_req_done() for a successful
+	 * search before, so we better deliver the failure
+	 * after the success, that is why we better also
+	 * use tevent_req_defer_callback() here.
+	 */
+	tevent_req_defer_callback(c->searches.list->req,
+				  c->searches.list->caller.ev);
 	tevent_req_nterror(c->searches.list->req, status);
-done:
-	talloc_free(in);
 	return false;
 }
 
