@@ -33,7 +33,8 @@
   overall state
 */
 struct connect_multi_state {
-	struct socket_address *server_address;
+	struct socket_address **server_address;
+	unsigned num_address, current_address, current_port;
 	int num_ports;
 	uint16_t *ports;
 
@@ -125,14 +126,18 @@ static void connect_multi_next_socket(struct composite_context *result)
 	struct composite_context *creq;
 	int next = multi->num_connects_sent;
 
-	if (next == multi->num_ports) {
+	if (next == multi->num_address * multi->num_ports) {
 		/* don't do anything, just wait for the existing ones to finish */
 		return;
 	}
 
+	if (multi->current_address == multi->num_address) {
+		multi->current_address = 0;
+		multi->current_port += 1;
+	}
 	multi->num_connects_sent += 1;
 
-	if (multi->server_address == NULL) {
+	if (multi->server_address == NULL || multi->server_address[multi->current_address] == NULL) {
 		composite_error(result, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
@@ -141,13 +146,14 @@ static void connect_multi_next_socket(struct composite_context *result)
 	if (composite_nomem(state, result)) return;
 
 	state->result = result;
-	result->status = socket_create(multi->server_address->family, SOCKET_TYPE_STREAM, &state->sock, 0);
+	result->status = socket_create(multi->server_address[multi->current_address]->family,
+					SOCKET_TYPE_STREAM, &state->sock, 0);
 	if (!composite_is_ok(result)) return;
 
-	state->addr = socket_address_copy(state, multi->server_address);
+	state->addr = socket_address_copy(state, multi->server_address[multi->current_address]);
 	if (composite_nomem(state->addr, result)) return;
 
-	socket_address_set_port(state->addr, multi->ports[next]);
+	socket_address_set_port(state->addr, multi->ports[multi->current_port]);
 
 	talloc_steal(state, state->sock);
 
@@ -157,12 +163,13 @@ static void connect_multi_next_socket(struct composite_context *result)
 	if (composite_nomem(creq, result)) return;
 	talloc_steal(state, creq);
 
+	multi->current_address++;
 	composite_continue(result, creq, continue_one, state);
 
-	/* if there are more ports to go then setup a timer to fire when we have waited
+	/* if there are more ports / addresses to go then setup a timer to fire when we have waited
 	   for a couple of milli-seconds, when that goes off we try the next port regardless
 	   of whether this port has completed */
-	if (multi->num_ports > multi->num_connects_sent) {
+	if (multi->num_ports * multi->num_address > multi->num_connects_sent) {
 		/* note that this timer is a child of the single
 		   connect attempt state, so it will go away when this
 		   request completes */
@@ -194,12 +201,14 @@ static void continue_resolve_name(struct composite_context *creq)
 	struct connect_multi_state *multi = talloc_get_type(result->private_data, 
 							    struct connect_multi_state);
 	struct socket_address **addr;
+	unsigned i;
 
 	result->status = resolve_name_all_recv(creq, multi, &addr, NULL);
 	if (!composite_is_ok(result)) return;
 
-	/* Let's just go for the first for now */
-	multi->server_address = addr[0];
+	for(i=0; addr[i]; i++);
+	multi->num_address = i;
+	multi->server_address = talloc_steal(multi, addr);
 
 	connect_multi_next_socket(result);
 }
@@ -227,8 +236,8 @@ static void continue_one(struct composite_context *creq)
 
 	talloc_free(state);
 
-	if (NT_STATUS_IS_OK(status) || 
-	    multi->num_connects_recv == multi->num_ports) {
+	if (NT_STATUS_IS_OK(status) ||
+	    multi->num_connects_recv == (multi->num_address * multi->num_ports)) {
 		result->status = status;
 		composite_done(result);
 		return;
