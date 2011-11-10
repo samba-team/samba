@@ -165,5 +165,5 @@ def planpythontestsuite(env, module, name=None, extra_path=[]):
             "%s/lib/testtools" % srcdir()])
     args = [python, "-m", "subunit.run", "$LISTOPT", module]
     if pypath:
-        args.insert(0, "PYTHONPATH=%s" % ":".join(["$PYTHONPATH"] + pypath]))
+        args.insert(0, "PYTHONPATH=%s" % ":".join(["$PYTHONPATH"] + pypath))
     plantestsuite_idlist(name, env, args)
