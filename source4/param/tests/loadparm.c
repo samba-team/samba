@@ -145,6 +145,78 @@ static bool test_lp_service(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_server_role_default(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_STANDALONE, "ROLE should be standalone by default");
+	return true;
+}
+
+static bool test_server_role_dc_specified(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "server role=domain controller"), "lpcfg_set_option failed");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_DOMAIN_CONTROLLER, "ROLE should be DC");
+	return true;
+}
+
+static bool test_server_role_member_specified(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "server role=member"), "lpcfg_set_option failed");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_DOMAIN_MEMBER, "ROLE should be member");
+	return true;
+}
+
+static bool test_server_role_dc_domain_logons(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "domain logons=true"), "lpcfg_set_option failed");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_DOMAIN_PDC, "ROLE should be PDC");
+	return true;
+}
+
+static bool test_server_role_dc_domain_logons_and_not_master(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "domain logons=true"), "lpcfg_set_option failed");
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "domain master=false"), "lpcfg_set_option failed");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_DOMAIN_BDC, "ROLE should be BDC");
+	return true;
+}
+
+static bool test_server_role_security_ads(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "security=ads"), "lpcfg_set_option failed");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_DOMAIN_MEMBER, "ROLE should be MEMBER");
+	return true;
+}
+
+static bool test_server_role_security_domain(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "security=domain"), "lpcfg_set_option failed");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_DOMAIN_MEMBER, "ROLE should be MEMBER");
+	return true;
+}
+
+static bool test_server_role_security_share(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "security=share"), "lpcfg_set_option failed");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_STANDALONE, "ROLE should be STANDALONE");
+	return true;
+}
+
+static bool test_server_role_security_server(struct torture_context *tctx)
+{
+	struct loadparm_context *lp_ctx = loadparm_init(tctx);
+	torture_assert(tctx, lpcfg_set_option(lp_ctx, "security=server"), "lpcfg_set_option failed");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_STANDALONE, "ROLE should be STANDALONE");
+	return true;
+}
+
 struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "loadparm");
@@ -162,6 +234,15 @@ struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "lpcfg_service", test_lp_service);
 	torture_suite_add_simple_test(suite, "do_global_parameter_var", test_do_global_parameter_var);
 	torture_suite_add_simple_test(suite, "do_global_parameter", test_do_global_parameter);
+	torture_suite_add_simple_test(suite, "test_server_role_default", test_server_role_default);
+	torture_suite_add_simple_test(suite, "test_server_role_dc_specified", test_server_role_dc_specified);
+	torture_suite_add_simple_test(suite, "test_server_role_member_specified", test_server_role_member_specified);
+	torture_suite_add_simple_test(suite, "test_server_role_dc_domain_logons", test_server_role_dc_domain_logons);
+	torture_suite_add_simple_test(suite, "test_server_role_dc_domain_logons_and_not_master", test_server_role_dc_domain_logons_and_not_master);
+	torture_suite_add_simple_test(suite, "test_server_role_security_ads", test_server_role_security_ads);
+	torture_suite_add_simple_test(suite, "test_server_role_security_domain", test_server_role_security_domain);
+	torture_suite_add_simple_test(suite, "test_server_role_security_share", test_server_role_security_share);
+	torture_suite_add_simple_test(suite, "test_server_role_security_server", test_server_role_security_server);
 
 	return suite;
 }
