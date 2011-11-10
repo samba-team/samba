@@ -463,14 +463,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
     :param targetdir: samba4 database directory
     :param session_info: Session information
     """
-
-    if samba3.lp.get("domain logons"):
-        serverrole = "domain controller"
-    else:
-        if samba3.lp.get("security") == "user":
-            serverrole = "standalone"
-        else:
-            serverrole = "member server"
+    serverrole = samba3.lp.server_role()
 
     domainname = samba3.lp.get("workgroup")
     realm = samba3.lp.get("realm")
@@ -488,7 +481,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
                 domainname)
 
     if not realm:
-        if serverrole == "domain controller":
+        if serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC":
             raise ProvisioningError("No realm specified in smb.conf file and being a DC. That upgrade path doesn't work! Please add a 'realm' directive to your old smb.conf to let us know which one you want to use (it is the DNS name of the AD domain you wish to create.")
         else:
             realm = domainname.upper()
@@ -632,7 +625,7 @@ Please fix this account before attempting to upgrade again
             logger.error("   %s" % str(sid))
         raise ProvisioningError("Please remove duplicate sid entries before upgrade.")
 
-    if serverrole == "domain controller":
+    if serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC":
         dns_backend = "BIND9_FLATFILE"
     else:
         dns_backend = "NONE"

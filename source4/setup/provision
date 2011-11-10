@@ -187,12 +187,7 @@ if not opts.adminpass:
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile
 
-if opts.server_role == "dc":
-    server_role = "domain controller"
-elif opts.server_role == "member":
-    server_role = "member server"
-else:
-    server_role = opts.server_role
+server_role = opts.server_role
 
 if server_role is None:
     server_role = "domain controller"

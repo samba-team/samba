@@ -1651,6 +1651,22 @@ def provision(logger, session_info, credentials, smbconf=None,
     :note: caution, this wipes all existing data!
     """
 
+    roles = {}
+    roles["ROLE_STANDALONE"] = "standalone"
+    roles["ROLE_DOMAIN_MEMBER"] = "member server"
+    roles["ROLE_DOMAIN_BDC"] = "domain controller"
+    roles["ROLE_DOMAIN_PDC"] = "domain controller"
+    roles["dc"] = "domain controller"
+    roles["member"] = "member server"
+    roles["domain controller"] = "domain controller"
+    roles["member server"] = "member server"
+    roles["standalone"] = "standalone"
+
+    try:
+        serverrole = roles[serverrole]
+    except KeyError:
+        raise ProvisioningError('server role (%s) should be one of "domain controller", "member server", "standalone"' % serverrole)
+
     if ldapadminpass is None:
         # Make a new, random password between Samba and it's LDAP server
         ldapadminpass=samba.generate_random_password(128, 255)
@@ -1741,8 +1757,6 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     if serverrole is None:
         serverrole = lp.get("server role")
-
-    assert serverrole in ("domain controller", "member server", "standalone")
 
     if not os.path.exists(paths.private_dir):
         os.mkdir(paths.private_dir)
