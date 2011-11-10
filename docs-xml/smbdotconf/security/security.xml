@@ -42,9 +42,14 @@
     <para>The different settings will now be explained.</para>
 
 
+    <para><anchor id="SECURITYEQUALSAUTO"/><emphasis>SECURITY = AUTO</emphasis></para>
+
+    <para>This is the default security setting in Samba, and causes Samba to consult
+    the <smbconfoption name="server role"/> parameter (if set) to determine the security mode.</para>
+
     <para><anchor id="SECURITYEQUALSUSER"/><emphasis>SECURITY = USER</emphasis></para>
 
-    <para>This is the default security setting in Samba. 
+    <para>If <smbconfoption name="server role"/> is not specified, this is the default security setting in Samba. 
     With user-level security a client must first &quot;log-on&quot; with a 
     valid username and password (which can be mapped using the <smbconfoption name="username map"/> 
     parameter). Encrypted passwords (see the <smbconfoption name="encrypted passwords"/> parameter) can also
