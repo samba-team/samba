@@ -80,11 +80,7 @@ static const struct enum_list enum_server_role[] = {
 	/* note that currently
 	   ROLE_DOMAIN_CONTROLLER == ROLE_DOMAIN_BDC */
 	{ROLE_DOMAIN_CONTROLLER, "domain controller"},
-	{ROLE_DOMAIN_BDC, "backup domain controller"},
-	{ROLE_DOMAIN_BDC, "bdc"},
-	{ROLE_DOMAIN_BDC, "dc"},
-	{ROLE_DOMAIN_PDC, "primary domain controller"},
-	{ROLE_DOMAIN_PDC, "pdc"},
+	{ROLE_DOMAIN_CONTROLLER, "dc"},
 	{-1, NULL}
 };
 
