@@ -255,6 +255,18 @@ static PyObject *py_lp_ctx_services(pytalloc_Object *self)
 	return ret;
 }
 
+static PyObject *py_lp_ctx_server_role(pytalloc_Object *self)
+{
+	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
+	uint32_t role;
+	const char *role_str;
+
+	role = lpcfg_server_role(lp_ctx);
+	role_str = server_role_str(role);
+
+	return PyString_FromString(role_str);
+}
+
 static PyObject *py_lp_dump(PyObject *self, PyObject *args)
 {
 	PyObject *py_stream;
@@ -306,6 +318,9 @@ static PyMethodDef py_lp_ctx_methods[] = {
 		"S.private_path(name) -> path\n" },
 	{ "services", (PyCFunction)py_lp_ctx_services, METH_NOARGS,
 		"S.services() -> list" },
+	{ "server_role", (PyCFunction)py_lp_ctx_server_role, METH_NOARGS,
+		"S.server_role() -> value\n"
+		"Get the server role." },
 	{ "dump", (PyCFunction)py_lp_dump, METH_VARARGS, 
 		"S.dump(stream, show_defaults=False)" },
 	{ "samdb_url", (PyCFunction)py_samdb_url, METH_NOARGS,
