@@ -249,7 +249,8 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 		NETLOGON_NT_VERSION_IP;
 	state->netlogon->in.map_response = true;
 
-	DEBUG(4,("finddcs: performing CLDAP query on %s\n", state->netlogon->in.dest_address));
+	DEBUG(4,("finddcs: performing CLDAP query on %s\n",
+		 state->srv_addresses[state->srv_address_index]));
 
 	subreq = cldap_netlogon_send(state, state->ev,
 				     state->cldap, state->netlogon);
