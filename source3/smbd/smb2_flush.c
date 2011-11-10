@@ -87,7 +87,7 @@ static void smbd_smb2_request_flush_done(struct tevent_req *subreq)
 		return;
 	}
 
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x10);
+	outbody = data_blob_talloc(req->out.vector, NULL, 0x04);
 	if (outbody.data == NULL) {
 		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 		if (!NT_STATUS_IS_OK(error)) {
