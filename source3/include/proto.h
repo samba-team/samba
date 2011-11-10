@@ -1275,7 +1275,6 @@ bool lp_dns_proxy(void);
 bool lp_we_are_a_wins_server(void);
 bool lp_wins_proxy(void);
 bool lp_local_master(void);
-bool lp_domain_logons(void);
 const char **lp_init_logon_delayed_hosts(void);
 int lp_init_logon_delay(void);
 bool lp_load_printers(void);

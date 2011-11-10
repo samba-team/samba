@@ -329,7 +329,7 @@ void process_logon_packet(struct packet_struct *p, const char *buf,int len,
 	}
 	ip = ((const struct sockaddr_in *)pss)->sin_addr;
 
-	if (!lp_domain_logons()) {
+	if (!IS_DC) {
 		DEBUG(5,("process_logon_packet: Logon packet received from IP %s and domain \
 logons are not enabled.\n", inet_ntoa(p->ip) ));
 		return;

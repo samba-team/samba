@@ -375,7 +375,7 @@ void add_domain_names(time_t t)
 	lastrun = t;
 
 	/* Do the "internet group" - <1c> names. */
-	if (lp_domain_logons())
+	if (IS_DC)
 		add_logon_names();
 
 	/* Do the domain master names. */

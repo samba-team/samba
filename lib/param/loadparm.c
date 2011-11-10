@@ -1485,7 +1485,7 @@ static struct loadparm_context *global_loadparm_context;
 #include "lib/param/param_functions.c"
 
 FN_GLOBAL_INTEGER(server_role, server_role)
-FN_GLOBAL_BOOL(domain_logons, domain_logons)
+static FN_GLOBAL_BOOL(domain_logons, domain_logons)
 FN_GLOBAL_INTEGER(domain_master, domain_master)
 FN_GLOBAL_LIST(smb_ports, smb_ports)
 FN_GLOBAL_INTEGER(nbt_port, nbt_port)
