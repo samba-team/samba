@@ -119,7 +119,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  uint32_t replica_flags,
 					  struct drsuapi_DsPartialAttributeSet *partial_attribute_set,
 					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
-					  enum drsuapi_DsExtendedOperation extended_op)
+					  enum drsuapi_DsExtendedOperation extended_op,
+					  bool force_object_return)
 {
 	const struct ldb_val *md_value;
 	uint32_t i, n;
@@ -260,9 +261,17 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	/* ignore it if its an empty change. Note that renames always
 	 * change the 'name' attribute, so they won't be ignored by
-	 * this */
+	 * this
+
+	 * the force_object_return check is used to force an empty
+	 * object return when we timeout in the getncchanges loop.
+	 * This allows us to return an empty object, which keeps the
+	 * client happy while preventing timeouts
+	 */
 	if (n == 0 ||
-	    (n == 1 && attids[0] == DRSUAPI_ATTID_instanceType)) {
+	    (n == 1 &&
+	     attids[0] == DRSUAPI_ATTID_instanceType &&
+	     !force_object_return)) {
 		talloc_free(obj->meta_data_ctr);
 		obj->meta_data_ctr = NULL;
 		return WERR_OK;
@@ -327,7 +336,6 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	return WERR_OK;
 }
-
 
 /*
   add one linked attribute from an object to the list of linked
@@ -1426,6 +1434,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	bool is_secret_request;
 	bool is_gc_pas_request;
 	struct drsuapi_changed_objects *changes;
+	time_t max_wait;
+	time_t start = time(NULL);
+	bool max_wait_reached = false;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -1753,10 +1764,17 @@ allowed:
 	 */
 	max_links = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
 
+	/*
+	 * Maximum time that we can spend in a getncchanges
+	 * in order to avoid timeout of the other part.
+	 * 10 seconds by default.
+	 */
+	max_wait = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max work time", 10);
 	for (i=getnc_state->num_processed;
 	     i<getnc_state->num_records &&
 		     !null_scope &&
-		     (r->out.ctr->ctr6.object_count < max_objects);
+		     (r->out.ctr->ctr6.object_count < max_objects)
+		     && !max_wait_reached;
 	    i++) {
 		int uSN;
 		struct drsuapi_DsReplicaObjectListItemEx *obj;
@@ -1795,6 +1813,8 @@ allowed:
 
 		msg = msg_res->msgs[0];
 
+		max_wait_reached = (time(NULL) - start > max_wait);
+
 		werr = get_nc_changes_build_object(obj, msg,
 						   sam_ctx, getnc_state->ncRoot_dn,
 						   getnc_state->is_schema_nc,
@@ -1802,7 +1822,8 @@ allowed:
 						   req10->replica_flags,
 						   req10->partial_attribute_set,
 						   getnc_state->uptodateness_vector,
-						   req10->extended_op);
+						   req10->extended_op,
+						   max_wait_reached);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
