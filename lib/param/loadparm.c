@@ -163,12 +163,20 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{-1, NULL}
 };
 
+/* Server role options */
 static const struct enum_list enum_server_role[] = {
+	{ROLE_AUTO, "auto"},
 	{ROLE_STANDALONE, "standalone"},
 	{ROLE_DOMAIN_MEMBER, "member server"},
 	{ROLE_DOMAIN_MEMBER, "member"},
+	/* note that currently
+	   ROLE_DOMAIN_CONTROLLER == ROLE_DOMAIN_BDC */
 	{ROLE_DOMAIN_CONTROLLER, "domain controller"},
-	{ROLE_DOMAIN_CONTROLLER, "dc"},
+	{ROLE_DOMAIN_BDC, "backup domain controller"},
+	{ROLE_DOMAIN_BDC, "bdc"},
+	{ROLE_DOMAIN_BDC, "dc"},
+	{ROLE_DOMAIN_PDC, "primary domain controller"},
+	{ROLE_DOMAIN_PDC, "pdc"},
 	{-1, NULL}
 };
 
