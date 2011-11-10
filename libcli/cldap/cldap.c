@@ -273,12 +273,9 @@ static bool cldap_socket_recv_dgram(struct cldap_socket *c,
 
 	DLIST_REMOVE(c->searches.list, search);
 
-	if (!cldap_recvfrom_setup(c)) {
-		goto nomem;
-	}
+	cldap_recvfrom_setup(c);
 
 	tevent_req_done(search->req);
-	talloc_free(in);
 	return true;
 
 nomem:
@@ -286,6 +283,7 @@ nomem:
 error:
 	status = map_nt_error_from_unix(in->recv_errno);
 nterror:
+	TALLOC_FREE(in);
 	/* in connected mode the first pending search gets the error */
 	if (!c->connected) {
 		/* otherwise we just ignore the error */
@@ -294,9 +292,11 @@ nterror:
 	if (!c->searches.list) {
 		goto done;
 	}
+	cldap_recvfrom_setup(c);
 	tevent_req_nterror(c->searches.list->req, status);
+	return true;
 done:
-	talloc_free(in);
+	TALLOC_FREE(in);
 	return false;
 }
 
