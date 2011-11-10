@@ -387,7 +387,7 @@ else:
     skiptestsuite("samba4.nss.test using winbind(s4member)", "nsstest not available")
 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
-def planoldpythontestsuite(module, env, name=None, extra_path=[], environ={}, extra_args=[]):
+def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[]):
     environ = dict(environ)
     py_path = list(extra_path)
     if py_path:
