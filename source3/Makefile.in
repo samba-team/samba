@@ -495,7 +495,7 @@ READLINE_OBJ = ../libcli/smbreadline/smbreadline.o
 # Be sure to include them into your application
 POPT_LIB_OBJ = lib/popt_common.o
 
-PARAM_WITHOUT_REG_OBJ = ../dynconfig/dynconfig.o param/loadparm.o param/loadparm_ctx.o param/loadparm_server_role.o param/util.o lib/sharesec.o lib/ldap_debug_handler.o ../lib/param/loadparm.o ../lib/param/util.o
+PARAM_WITHOUT_REG_OBJ = ../dynconfig/dynconfig.o param/loadparm.o param/loadparm_ctx.o ../lib/param/loadparm_server_role.o param/util.o lib/sharesec.o lib/ldap_debug_handler.o ../lib/param/loadparm.o ../lib/param/util.o
 PARAM_REG_ADD_OBJ = $(REG_SMBCONF_OBJ) $(LIBSMBCONF_OBJ) $(PRIVILEGES_BASIC_OBJ)
 PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 

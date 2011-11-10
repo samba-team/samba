@@ -16,11 +16,16 @@ bld.SAMBA_GENERATOR('param_global_h',
                     target='param_global.h',
                     rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
 
+bld.SAMBA_LIBRARY('server-role',
+                  source='loadparm_server_role.c',
+                  deps='samba-util',
+                  private_library=True)
+
 bld.SAMBA_LIBRARY('samba-hostconfig',
 	source='loadparm.c generic.c util.c',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
-	deps='DYNCONFIG',
+	deps='DYNCONFIG server-role',
 	public_deps='samba-util param_local_h',
 	public_headers='param.h',
 	autoproto='param_proto.h',

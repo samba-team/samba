@@ -43,6 +43,6 @@ enum server_role {
 #define ROLE_DOMAIN_CONTROLLER ROLE_DOMAIN_BDC
 
 /* security levels for 'security =' option */
-enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN,SEC_ADS};
+enum security_types {SEC_AUTO, SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN,SEC_ADS};
 
 #endif /* _LIBDS_ROLES_H_ */

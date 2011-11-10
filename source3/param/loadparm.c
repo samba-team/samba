@@ -60,6 +60,7 @@
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/param/loadparm.h"
+#include "lib/param/loadparm_server_role.h"
 
 #include "ads.h"
 #include "../librpc/gen_ndr/svcctl.h"
@@ -4822,7 +4823,7 @@ static void init_globals(bool reinit_globals)
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
 	Globals.ConfigBackend = config_backend;
-	Globals.ServerRole = ROLE_STANDALONE;
+	Globals.ServerRole = ROLE_AUTO;
 
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
@@ -5390,7 +5391,7 @@ FN_GLOBAL_INTEGER(lp_lock_spin_time, iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, iUsershareMaxShares)
 FN_GLOBAL_CONST_STRING(lp_socket_options, szSocketOptions)
 FN_GLOBAL_INTEGER(lp_config_backend, ConfigBackend)
-FN_GLOBAL_INTEGER(lp_server_role, ServerRole)
+static FN_GLOBAL_INTEGER(lp__server_role, ServerRole)
 FN_GLOBAL_INTEGER(lp_smb2_max_read, ismb2_max_read)
 FN_GLOBAL_INTEGER(lp_smb2_max_write, ismb2_max_write)
 FN_GLOBAL_INTEGER(lp_smb2_max_trans, ismb2_max_trans)
@@ -9121,7 +9122,6 @@ static bool lp_load_ex(const char *pszFname,
 		}
 	}
 
-	set_server_role();
 	set_allowed_client_auth();
 
 	if (lp_security() == SEC_SHARE) {
@@ -9432,7 +9432,7 @@ bool lp_domain_master(void)
  If we are PDC then prefer us as DMB
 ************************************************************/
 
-bool lp_domain_master_true_or_auto(void)
+static bool lp_domain_master_true_or_auto(void)
 {
 	if (Globals.iDomainMaster) /* auto or yes */
 		return true;
@@ -9736,7 +9736,10 @@ bool lp_readraw(void)
 	return _lp_readraw();
 }
 
-void _lp_set_server_role(int server_role)
+int lp_server_role(void)
 {
-	Globals.ServerRole = server_role;
+	return lp_find_server_role(lp__server_role(),
+				   lp_security(),
+				   lp_domain_logons(),
+				   lp_domain_master_true_or_auto());
 }

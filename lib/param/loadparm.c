@@ -65,6 +65,7 @@
 #include "s3_param.h"
 #include "lib/util/bitmap.h"
 #include "libcli/smb/smb_constants.h"
+#include "lib/param/loadparm_server_role.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -81,6 +82,10 @@ static bool defaults_saved = false;
 	char *tls_dhpfile;						\
 	char *loglevel;							\
 	char *panic_action;						\
+	int server_role;						\
+	int security;							\
+	int domain_master;						\
+	bool domain_logons;						\
 	int bPreferredMaster;
 
 #include "param_global.h"
@@ -113,8 +118,10 @@ static const struct enum_list enum_protocol[] = {
 };
 
 static const struct enum_list enum_security[] = {
+	{SEC_AUTO, "AUTO"},
 	{SEC_SHARE, "SHARE"},
 	{SEC_USER, "USER"},
+	{SEC_DOMAIN, "DOMAIN"},
 	{SEC_ADS, "ADS"},
 	{-1, NULL}
 };
@@ -1484,9 +1491,6 @@ static struct loadparm_context *global_loadparm_context;
 
 #include "lib/param/param_functions.c"
 
-FN_GLOBAL_INTEGER(server_role, server_role)
-static FN_GLOBAL_BOOL(domain_logons, domain_logons)
-FN_GLOBAL_INTEGER(domain_master, domain_master)
 FN_GLOBAL_LIST(smb_ports, smb_ports)
 FN_GLOBAL_INTEGER(nbt_port, nbt_port)
 FN_GLOBAL_INTEGER(dgram_port, dgram_port)
@@ -1570,7 +1574,6 @@ FN_GLOBAL_INTEGER(srv_maxprotocol, srv_maxprotocol)
 FN_GLOBAL_INTEGER(srv_minprotocol, srv_minprotocol)
 FN_GLOBAL_INTEGER(cli_maxprotocol, cli_maxprotocol)
 FN_GLOBAL_INTEGER(cli_minprotocol, cli_minprotocol)
-FN_GLOBAL_INTEGER(security, security)
 FN_GLOBAL_BOOL(paranoid_server_security, paranoid_server_security)
 
 FN_GLOBAL_INTEGER(server_signing, server_signing)
@@ -3306,7 +3309,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "share backend", "classic");
 
-	lpcfg_do_global_parameter(lp_ctx, "server role", "standalone");
+	lpcfg_do_global_parameter(lp_ctx, "server role", "auto");
 	lpcfg_do_global_parameter(lp_ctx, "domain logons", "No");
 	lpcfg_do_global_parameter(lp_ctx, "domain master", "Auto");
 
@@ -3370,7 +3373,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "server max protocol", "NT1");
 	lpcfg_do_global_parameter(lp_ctx, "client min protocol", "CORE");
 	lpcfg_do_global_parameter(lp_ctx, "client max protocol", "NT1");
-	lpcfg_do_global_parameter(lp_ctx, "security", "USER");
+	lpcfg_do_global_parameter(lp_ctx, "security", "AUTO");
 	lpcfg_do_global_parameter(lp_ctx, "paranoid server security", "True");
 	lpcfg_do_global_parameter(lp_ctx, "EncryptPasswords", "True");
 	lpcfg_do_global_parameter(lp_ctx, "ReadRaw", "True");
@@ -3799,3 +3802,15 @@ struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *mem_ctx, struct loadpa
 	return settings;
 }
 
+int lpcfg_server_role(struct loadparm_context *lp_ctx)
+{
+	if (lp_ctx->s3_fns) {
+		return lp_ctx->s3_fns->server_role();
+	}
+
+	return lp_find_server_role(lp_ctx->globals->server_role,
+				   lp_ctx->globals->security,
+				   lp_ctx->globals->domain_logons,
+				   (lp_ctx->globals->domain_master == true) ||
+				   (lp_ctx->globals->domain_master == Auto));
+}

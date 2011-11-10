@@ -1619,7 +1619,6 @@ struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
 				      const char *sharename);
 const char *volume_label(int snum);
 bool lp_domain_master(void);
-bool lp_domain_master_true_or_auto(void);
 bool lp_preferred_master(void);
 void lp_remove_service(int snum);
 void lp_copy_service(int snum, const char *new_name);

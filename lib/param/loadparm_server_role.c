@@ -26,13 +26,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
+#include "lib/param/loadparm_server_role.h"
+#include "libds/common/roles.h"
 
 /*******************************************************************
  Set the server type we will announce as via nmbd.
 ********************************************************************/
 
 static const struct srv_role_tab {
-	uint32 role;
+	uint32_t role;
 	const char *role_str;
 } srv_role_tab [] = {
 	{ ROLE_STANDALONE, "ROLE_STANDALONE" },
@@ -42,7 +44,7 @@ static const struct srv_role_tab {
 	{ 0, NULL }
 };
 
-const char* server_role_str(uint32 role)
+const char* server_role_str(uint32_t role)
 {
 	int i = 0;
 	for (i=0; srv_role_tab[i].role_str; i++) {
@@ -53,43 +55,57 @@ const char* server_role_str(uint32 role)
 	return NULL;
 }
 
-void set_server_role(void)
+/**
+ * Set the server role based on security, domain logons and domain master
+ */
+int lp_find_server_role(int server_role, int security, bool domain_logons, bool domain_master)
 {
-	int server_role = ROLE_STANDALONE;
+	int role;
 
-	switch (lp_security()) {
+	if (server_role != ROLE_AUTO) {
+		return server_role;
+	}
+
+	/* If server_role is set to ROLE_AUTO, figure out the correct role */
+	role = ROLE_STANDALONE;
+
+	switch (security) {
 		case SEC_SHARE:
-			if (lp_domain_logons())
+			if (domain_logons) {
 				DEBUG(0, ("Server's Role (logon server) conflicts with share-level security\n"));
+			}
 			break;
 		case SEC_SERVER:
-			if (lp_domain_logons())
+			if (domain_logons) {
 				DEBUG(0, ("Server's Role (logon server) conflicts with server-level security\n"));
+			}
 			/* this used to be considered ROLE_DOMAIN_MEMBER but that's just wrong */
-			server_role = ROLE_STANDALONE;
+			role = ROLE_STANDALONE;
 			break;
 		case SEC_DOMAIN:
-			if (lp_domain_logons()) {
+			if (domain_logons) {
 				DEBUG(1, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
-				server_role = ROLE_DOMAIN_BDC;
+				role = ROLE_DOMAIN_BDC;
 				break;
 			}
-			server_role = ROLE_DOMAIN_MEMBER;
+			role = ROLE_DOMAIN_MEMBER;
 			break;
 		case SEC_ADS:
-			if (lp_domain_logons()) {
-				server_role = ROLE_DOMAIN_CONTROLLER;
+			if (domain_logons) {
+				role = ROLE_DOMAIN_CONTROLLER;
 				break;
 			}
-			server_role = ROLE_DOMAIN_MEMBER;
+			role = ROLE_DOMAIN_MEMBER;
 			break;
+		case SEC_AUTO:
 		case SEC_USER:
-			if (lp_domain_logons()) {
+			if (domain_logons) {
 
-				if (lp_domain_master_true_or_auto()) /* auto or yes */
-					server_role = ROLE_DOMAIN_PDC;
-				else
-					server_role = ROLE_DOMAIN_BDC;
+				if (domain_master) {
+					role = ROLE_DOMAIN_PDC;
+				} else {
+					role = ROLE_DOMAIN_BDC;
+				}
 			}
 			break;
 		default:
@@ -97,7 +113,31 @@ void set_server_role(void)
 			break;
 	}
 
-	_lp_set_server_role(server_role);
-	DEBUG(10, ("set_server_role: role = %s\n", server_role_str(server_role)));
+	return role;
 }
 
+/**
+ * Set the server role based on security, domain logons and domain master
+ */
+int lp_find_security(int server_role, int security)
+{
+	if (security != SEC_AUTO) {
+		return security;
+	}
+
+	switch (server_role) {
+	case ROLE_AUTO:
+	case ROLE_STANDALONE:
+		return SEC_USER;
+	case ROLE_DOMAIN_MEMBER:
+#if (defined(HAVE_ADS) || _SAMBA_BUILD_ >= 4)
+		return SEC_ADS;
+#else
+		return SEC_DOMAIN;
+#endif
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+	default:
+		return SEC_USER;
+	}
+}

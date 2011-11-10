@@ -82,7 +82,7 @@ POPT_LIB_SRC = '''lib/popt_common.c'''
 
 PARAM_UTIL_SRC = '''param/util.c'''
 
-PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/loadparm_server_role.c
+PARAM_WITHOUT_REG_SRC = '''param/loadparm.c
                            lib/sharesec.c lib/ldap_debug_handler.c lib/util_names.c'''
 
 KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c libsmb/clikrb5.c'''
