@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 
 # Simple subunit testrunner for python
+
+# NOTE: This is deprecated - Using the standard subunit runner is
+# preferred - e.g. "python -m subunit.run YOURMODULE".
+#
+# This wrapper will be removed once all tests can be run
+# without it. At the moment there are various tests which still
+# get e.g. credentials passed via command-line options to this
+# script.
+
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
 #   
 # This program is free software; you can redistribute it and/or modify
@@ -44,6 +53,9 @@ samba.tests.MODULE. For example, to run the tests in common.py:
 To list the tests in that module, use:
 
    subunitrun -l samba.tests.common
+
+NOTE: This script is deprecated in favor of "python -m subunit.run". Don't use
+it unless it can be avoided.
 '''
 
 def format_description(formatter):
