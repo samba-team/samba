@@ -517,9 +517,20 @@ static int get_windows_lock_ref_count(files_struct *fsp)
 		goto done;
 	}
 
-	SMB_ASSERT(NT_STATUS_IS_OK(status));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("get_windows_lock_ref_count: Error fetching "
+			  "lock ref count for file %s: %s\n",
+			  fsp_str_dbg(fsp), nt_errstr(status)));
+		goto done;
+	}
 
-	SMB_ASSERT(dbuf.dsize == sizeof(lock_ref_count));
+	if (dbuf.dsize != sizeof(lock_ref_count)) {
+		DEBUG(0, ("get_windows_lock_ref_count: invalid entry "
+			  "in lock ref count record for file %s: "
+			  "(invalid data size %u)\n",
+			  fsp_str_dbg(fsp), (unsigned int)dbuf.dsize));
+		goto done;
+	}
 
 	memcpy(&lock_ref_count, dbuf.dptr, sizeof(lock_ref_count));
 	TALLOC_FREE(dbuf.dptr);
