@@ -34,8 +34,8 @@ struct db_context {
 	struct db_record *(*fetch_locked)(struct db_context *db,
 					  TALLOC_CTX *mem_ctx,
 					  TDB_DATA key);
-	int (*fetch)(struct db_context *db, TALLOC_CTX *mem_ctx,
-		     TDB_DATA key, TDB_DATA *data);
+	NTSTATUS (*fetch)(struct db_context *db, TALLOC_CTX *mem_ctx,
+			  TDB_DATA key, TDB_DATA *data);
 	int (*traverse)(struct db_context *db,
 			int (*f)(struct db_record *rec,
 				 void *private_data),
@@ -59,8 +59,8 @@ struct db_context {
 	bool persistent;
 };
 
-int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			  TDB_DATA key, TDB_DATA *data);
+NTSTATUS dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+			       TDB_DATA key, TDB_DATA *data);
 
 
 int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,

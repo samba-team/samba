@@ -456,9 +456,9 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 /*
   fetch a record inside a transaction
  */
-static int db_ctdb_transaction_fetch(struct db_ctdb_ctx *db, 
-				     TALLOC_CTX *mem_ctx, 
-				     TDB_DATA key, TDB_DATA *data)
+static NTSTATUS db_ctdb_transaction_fetch(struct db_ctdb_ctx *db,
+					  TALLOC_CTX *mem_ctx,
+					  TDB_DATA key, TDB_DATA *data)
 {
 	struct db_ctdb_transaction_handle *h = db->transaction;
 	NTSTATUS status;
@@ -467,18 +467,16 @@ static int db_ctdb_transaction_fetch(struct db_ctdb_ctx *db,
 	found = pull_newest_from_marshall_buffer(h->m_write, key, NULL,
 						 mem_ctx, data);
 	if (found) {
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	status = db_ctdb_ltdb_fetch(h->ctx, key, NULL, mem_ctx, data);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		*data = tdb_null;
-	} else if (!NT_STATUS_IS_OK(status)) {
-		return -1;
 	}
 
-	return 0;
+	return status;
 }
 
 /**
@@ -492,9 +490,9 @@ static int db_ctdb_transaction_fetch(struct db_ctdb_ctx *db,
  * of records bump their RSN and hence render the persistent
  * database inconsistent.
  */
-static int db_ctdb_fetch_persistent(struct db_ctdb_ctx *db,
-				    TALLOC_CTX *mem_ctx,
-				    TDB_DATA key, TDB_DATA *data)
+static NTSTATUS db_ctdb_fetch_persistent(struct db_ctdb_ctx *db,
+					 TALLOC_CTX *mem_ctx,
+					 TDB_DATA key, TDB_DATA *data)
 {
 	NTSTATUS status;
 
@@ -502,11 +500,9 @@ static int db_ctdb_fetch_persistent(struct db_ctdb_ctx *db,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		*data = tdb_null;
-	} else if (!NT_STATUS_IS_OK(status)) {
-		return -1;
 	}
 
-	return 0;
+	return status;
 }
 
 static NTSTATUS db_ctdb_store_transaction(struct db_record *rec, TDB_DATA data, int flag);
@@ -1144,8 +1140,8 @@ static struct db_record *db_ctdb_fetch_locked(struct db_context *db,
 /*
   fetch (unlocked, no migration) operation on ctdb
  */
-static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			 TDB_DATA key, TDB_DATA *data)
+static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+			      TDB_DATA key, TDB_DATA *data)
 {
 	struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 							struct db_ctdb_ctx);
@@ -1175,11 +1171,6 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		/* we are the dmaster - avoid the ctdb protocol op */
 
 		data->dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header);
-		if (data->dsize == 0) {
-			SAFE_FREE(ctdb_data.dptr);
-			data->dptr = NULL;
-			return 0;
-		}
 
 		data->dptr = (uint8 *)talloc_memdup(
 			mem_ctx, ctdb_data.dptr+sizeof(struct ctdb_ltdb_header),
@@ -1188,9 +1179,9 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		SAFE_FREE(ctdb_data.dptr);
 
 		if (data->dptr == NULL) {
-			return -1;
+			return NT_STATUS_NO_MEMORY;
 		}
-		return 0;
+		return NT_STATUS_OK;
 	}
 
 	SAFE_FREE(ctdb_data.dptr);
@@ -1200,10 +1191,9 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 			     mem_ctx, data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("ctdbd_fetch failed: %s\n", nt_errstr(status)));
-		return -1;
 	}
 
-	return 0;
+	return status;
 }
 
 struct traverse_state {

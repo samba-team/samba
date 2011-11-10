@@ -28,19 +28,20 @@
  * Fall back using fetch_locked if no genuine fetch operation is provided
  */
 
-int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			  TDB_DATA key, TDB_DATA *data)
+NTSTATUS dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+			       TDB_DATA key, TDB_DATA *data)
 {
 	struct db_record *rec;
 
-	if (!(rec = db->fetch_locked(db, mem_ctx, key))) {
-		return -1;
+	rec = db->fetch_locked(db, mem_ctx, key);
+	if (rec == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	data->dsize = rec->value.dsize;
 	data->dptr = talloc_move(mem_ctx, &rec->value.dptr);
 	TALLOC_FREE(rec);
-	return 0;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -65,9 +66,10 @@ int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
 {
 	TDB_DATA data;
 	int res;
+	NTSTATUS status;
 
-	res = db->fetch(db, talloc_tos(), key, &data);
-	if (res != 0) {
+	status = db->fetch(db, talloc_tos(), key, &data);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
@@ -137,11 +139,7 @@ NTSTATUS dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (db->fetch(db, mem_ctx, key, value) != 0) {
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	return NT_STATUS_OK;
+	return db->fetch(db, mem_ctx, key, value);
 }
 
 bool dbwrap_exists(struct db_context *db, TDB_DATA key)

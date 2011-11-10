@@ -344,8 +344,8 @@ static int db_rbt_parse_record(struct db_context *db, TDB_DATA key,
 	return parser(res.key, res.val, private_data);
 }
 
-static int db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			TDB_DATA key, TDB_DATA *data)
+static NTSTATUS db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+			     TDB_DATA key, TDB_DATA *data)
 {
 	uint8_t *result;
 	struct db_rbt_search_result res;
@@ -354,17 +354,17 @@ static int db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 
 	if (!found) {
 		*data = tdb_null;
-		return 0;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	result = (uint8_t*)talloc_memdup(mem_ctx, res.val.dptr, res.val.dsize);
 	if (result == NULL) {
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	data->dptr = result;
 	data->dsize = res.val.dsize;
-	return 0;
+	return NT_STATUS_OK;
 }
 
 static int db_rbt_traverse_internal(struct rb_node *n,
