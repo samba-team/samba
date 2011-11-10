@@ -65,7 +65,6 @@
 #include "s3_param.h"
 #include "lib/util/bitmap.h"
 #include "libcli/smb/smb_constants.h"
-#include "lib/param/loadparm_server_role.h"
 
 #define standard_sub_basic talloc_strdup
 

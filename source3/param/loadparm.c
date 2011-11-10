@@ -60,7 +60,6 @@
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/param/loadparm.h"
-#include "lib/param/loadparm_server_role.h"
 
 #include "ads.h"
 #include "../librpc/gen_ndr/svcctl.h"
