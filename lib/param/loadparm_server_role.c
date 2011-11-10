@@ -63,10 +63,13 @@ int lp_find_server_role(int server_role, int security, bool domain_logons, bool 
 	int role;
 
 	if (server_role != ROLE_AUTO) {
-		return server_role;
+		if (lp_is_security_and_server_role_valid(server_role, security)) {
+			return server_role;
+		}
 	}
 
-	/* If server_role is set to ROLE_AUTO, figure out the correct role */
+	/* If server_role is set to ROLE_AUTO, or conflicted with the
+	 * chosen security setting, figure out the correct role */
 	role = ROLE_STANDALONE;
 
 	switch (security) {
@@ -150,11 +153,14 @@ bool lp_is_security_and_server_role_valid(int server_role, int security)
 {
 	bool valid = false;
 
-	if (server_role == ROLE_AUTO || security == SEC_AUTO) {
-		return false;
+	if (security == SEC_AUTO) {
+		return true;
 	}
 
 	switch (server_role) {
+	case ROLE_AUTO:
+		valid = true;
+		break;
 	case ROLE_STANDALONE:
 		if (security == SEC_SHARE || security == SEC_SERVER || security == SEC_USER) {
 			valid = true;
@@ -169,7 +175,7 @@ bool lp_is_security_and_server_role_valid(int server_role, int security)
 
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
-		if (security == SEC_USER) {
+		if (security == SEC_USER || security == SEC_ADS || security == SEC_DOMAIN) {
 			valid = true;
 		}
 		break;
