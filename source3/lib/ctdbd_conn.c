@@ -938,18 +938,25 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 
 	for (i=0; i<num_pids; i++) {
 		struct ctdb_req_control req;
+		pid_t pid;
 
 		results[i] = false;
 		reqids[i] = ctdbd_next_reqid(conn);
 
 		ZERO_STRUCT(req);
 
+		/*
+		 * pids[i].pid is uint64_t, scale down to pid_t which
+		 * is the wire protocol towards ctdb.
+		 */
+		pid = pids[i].pid;
+
 		DEBUG(10, ("Requesting PID %d/%d, reqid=%d\n",
-			   (int)pids[i].vnn, (int)pids[i].pid,
+			   (int)pids[i].vnn, (int)pid,
 			   (int)reqids[i]));
 
 		req.hdr.length = offsetof(struct ctdb_req_control, data);
-		req.hdr.length += sizeof(pid_t);
+		req.hdr.length += sizeof(pid);
 		req.hdr.ctdb_magic   = CTDB_MAGIC;
 		req.hdr.ctdb_version = CTDB_VERSION;
 		req.hdr.operation    = CTDB_REQ_CONTROL;
@@ -957,7 +964,7 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 		req.hdr.destnode     = pids[i].vnn;
 		req.opcode           = CTDB_CONTROL_PROCESS_EXISTS;
 		req.srvid            = 0;
-		req.datalen          = sizeof(pids[i].pid);
+		req.datalen          = sizeof(pid);
 		req.flags            = 0;
 
 		DEBUG(10, ("ctdbd_control: Sending ctdb packet\n"));
@@ -967,7 +974,7 @@ bool ctdb_processes_exist(struct ctdbd_connection *conn,
 			conn->pkt, 2,
 			data_blob_const(
 				&req, offsetof(struct ctdb_req_control, data)),
-			data_blob_const(&pids[i].pid, sizeof(pids[i].pid)));
+			data_blob_const(&pid, sizeof(pid)));
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("ctdb_packet_send failed: %s\n",
 				   nt_errstr(status)));
