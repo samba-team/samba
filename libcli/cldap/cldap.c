@@ -278,6 +278,7 @@ nomem:
 error:
 	status = map_nt_error_from_unix(in->recv_errno);
 nterror:
+	TALLOC_FREE(in);
 	/* in connected mode the first pending search gets the error */
 	if (!c->connected) {
 		/* otherwise we just ignore the error */
@@ -288,7 +289,7 @@ nterror:
 	}
 	tevent_req_nterror(c->searches.list->req, status);
 done:
-	talloc_free(in);
+	TALLOC_FREE(in);
 }
 
 /*
