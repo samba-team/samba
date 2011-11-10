@@ -279,7 +279,7 @@ done:
 
 	/* Lanman 2 specific code */
 	SAFE_FREE(dptr->wcard);
-	string_set(&dptr->path,"");
+	SAFE_FREE(dptr->path);
 	SAFE_FREE(dptr);
 }
 
@@ -534,7 +534,13 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 
 	dptr->dnum += 1; /* Always bias the dnum by one - no zero dnums allowed. */
 
-	string_set(&dptr->path,path);
+	dptr->path = SMB_STRDUP(path);
+	if (!dptr->path) {
+		bitmap_clear(sconn->searches.dptr_bmap, dptr->dnum - 1);
+		SAFE_FREE(dptr);
+		TALLOC_FREE(dir_hnd);
+		return NT_STATUS_NO_MEMORY;
+	}
 	dptr->conn = conn;
 	dptr->dir_hnd = dir_hnd;
 	dptr->spid = spid;
@@ -542,6 +548,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 	dptr->wcard = SMB_STRDUP(wcard);
 	if (!dptr->wcard) {
 		bitmap_clear(sconn->searches.dptr_bmap, dptr->dnum - 1);
+		SAFE_FREE(dptr->path);
 		SAFE_FREE(dptr);
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
