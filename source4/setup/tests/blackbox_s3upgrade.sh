@@ -63,6 +63,7 @@ EOF
 
 testit "samba3-upgrade-dc" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --dbdir=$PREFIX/samba3-upgrade/samba3
 testit "samba3-upgrade-dc-getlocalsid" $samba_net getlocalsid samba -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf
+testit "samba3-upgrade-dc-getdomainsid" $samba_net getdomainsid -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf
 
 #Run final test without a wins.dat
 rm -f $PREFIX/samba3-upgrade/samba3/wins.dat
@@ -88,6 +89,7 @@ EOF
 
 testit "samba3-upgrade-testparm" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_3 --testparm=$testparm
 testit "samba3-upgrade-testparm-getlocalsid" $samba_net getlocalsid samba -s $PREFIX/samba3-upgrade/s4_3/etc/smb.conf
+testit "samba3-upgrade-testparm-getdomainsid" $samba_net getdomainsid -s $PREFIX/samba3-upgrade/s4_3/etc/smb.conf
 
 rm -rf $PREFIX/samba3-upgrade
 
