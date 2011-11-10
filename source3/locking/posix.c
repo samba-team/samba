@@ -513,14 +513,18 @@ static int get_windows_lock_ref_count(files_struct *fsp)
 		posix_pending_close_db, talloc_tos(),
 		locking_ref_count_key_fsp(fsp, &tmp), &dbuf);
 
-	SMB_ASSERT(NT_STATUS_IS_OK(status));
-
-	if (dbuf.dsize != 0) {
-		SMB_ASSERT(dbuf.dsize == sizeof(lock_ref_count));
-		memcpy(&lock_ref_count, dbuf.dptr, sizeof(lock_ref_count));
-		TALLOC_FREE(dbuf.dptr);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		goto done;
 	}
 
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+
+	SMB_ASSERT(dbuf.dsize == sizeof(lock_ref_count));
+
+	memcpy(&lock_ref_count, dbuf.dptr, sizeof(lock_ref_count));
+	TALLOC_FREE(dbuf.dptr);
+
+done:
 	DEBUG(10,("get_windows_lock_count for file %s = %d\n",
 		  fsp_str_dbg(fsp), lock_ref_count));
 
@@ -622,6 +626,11 @@ static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
 	status = dbwrap_fetch(
 		posix_pending_close_db, mem_ctx, fd_array_key_fsp(fsp),
 		&dbuf);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		*entries = NULL;
+		return 0;
+	}
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
