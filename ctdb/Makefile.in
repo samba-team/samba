@@ -147,7 +147,7 @@ utils/smnotify/smnotify.h:  utils/smnotify/smnotify.x
 
 utils/smnotify/gen_xdr.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
-	rpcgen -c utils/smnotify/smnotify.x > utils/smnotify/gen_xdr.c 
+	rpcgen -c utils/smnotify/smnotify.x | grep -Ev '^[[:space:]]+register int32_t \*buf;' > utils/smnotify/gen_xdr.c 
 
 utils/smnotify/gen_smnotify.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
