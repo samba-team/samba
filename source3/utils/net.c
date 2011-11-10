@@ -346,14 +346,15 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 	/* Generate one, if it doesn't exist */
 	get_global_sam_sid();
 
-	if (!secrets_fetch_domain_sid(lp_netbios_name(), &domain_sid)) {
-		d_fprintf(stderr, _("Could not fetch local SID\n"));
-		return 1;
+	if (!IS_DC) {
+		if (!secrets_fetch_domain_sid(lp_netbios_name(), &domain_sid)) {
+			d_fprintf(stderr, _("Could not fetch local SID\n"));
+			return 1;
+		}
+		sid_to_fstring(sid_str, &domain_sid);
+		d_printf(_("SID for local machine %s is: %s\n"),
+			 lp_netbios_name(), sid_str);
 	}
-	sid_to_fstring(sid_str, &domain_sid);
-	d_printf(_("SID for local machine %s is: %s\n"),
-		 lp_netbios_name(), sid_str);
-
 	if (!secrets_fetch_domain_sid(c->opt_workgroup, &domain_sid)) {
 		d_fprintf(stderr, _("Could not fetch domain SID\n"));
 		return 1;
