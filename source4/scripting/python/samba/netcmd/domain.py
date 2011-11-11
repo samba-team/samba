@@ -570,15 +570,15 @@ class cmd_domain_samba3upgrade(Command):
         if not dbdir and not testparm:
             raise CommandError("Please specify either dbdir or testparm")
 
-        if dbdir and testparm:
-            self.outf.write("warning: both dbdir and testparm specified, ignoring dbdir.\n")
-            dbdir = None
-
         logger = self.get_logger()
         if quiet:
             logger.setLevel(logging.WARNING)
         else:
             logger.setLevel(logging.INFO)
+
+        if dbdir and testparm:
+            logger.warning("both dbdir and testparm specified, ignoring dbdir.")
+            dbdir = None
 
         lp = sambaopts.get_loadparm()
 
