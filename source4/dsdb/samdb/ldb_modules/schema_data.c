@@ -179,6 +179,12 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
+	if (!schema->fsmo.update_allowed && !rodc) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			  "schema_data_add: updates are not allowed: reject request\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID)) {
 		/*
 		 * the provision code needs to create
@@ -314,6 +320,12 @@ static int schema_data_modify(struct ldb_module *module, struct ldb_request *req
 	if (!schema->fsmo.we_are_master && !rodc) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 			  "schema_data_modify: we are not master: reject request\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	if (!schema->fsmo.update_allowed && !rodc) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			  "schema_data_add: updates are not allowed: reject request\n");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
