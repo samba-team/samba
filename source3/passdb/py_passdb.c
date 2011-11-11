@@ -2236,7 +2236,7 @@ static PyObject *py_pdb_enum_aliasmem(pytalloc_Object *self, PyObject *args)
 	struct pdb_methods *methods;
 	TALLOC_CTX *tframe;
 	PyObject *py_alias_sid;
-	struct dom_sid *alias_sid, *member_sid;
+	struct dom_sid *alias_sid, *member_sid, *tmp_sid;
 	PyObject *py_member_list, *py_member_sid;
 	size_t num_members;
 	int i;
@@ -2271,10 +2271,15 @@ static PyObject *py_pdb_enum_aliasmem(pytalloc_Object *self, PyObject *args)
 	}
 
 	for(i=0; i<num_members; i++) {
-		py_member_sid = pytalloc_steal(dom_sid_Type, &member_sid[i]);
-		if (py_member_sid) {
-			PyList_Append(py_member_list, py_member_sid);
+		py_member_sid = pytalloc_new(struct dom_sid, dom_sid_Type);
+		if (py_member_sid == NULL) {
+			PyErr_NoMemory();
+			talloc_free(tframe);
+			return NULL;
 		}
+		tmp_sid = pytalloc_get_ptr(py_member_sid);
+		*tmp_sid = member_sid[i];
+		PyList_Append(py_member_list, py_member_sid);
 	}
 
 	talloc_free(tframe);
