@@ -275,6 +275,34 @@ static int schema_data_modify(struct ldb_module *module, struct ldb_request *req
 
 	cmp = ldb_dn_compare(req->op.mod.message->dn, schema->base_dn);
 	if (cmp == 0) {
+		static const char * const constrained_attrs[] = {
+			"schemaInfo",
+			"prefixMap",
+			"msDs-Schema-Extensions",
+			"msDS-IntId",
+			NULL
+		};
+		size_t i;
+		struct ldb_message_element *el;
+
+		if (ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID)) {
+			return ldb_next_request(module, req);
+		}
+
+		for (i=0; constrained_attrs[i]; i++) {
+			el = ldb_msg_find_element(req->op.mod.message,
+						  constrained_attrs[i]);
+			if (el == NULL) {
+				continue;
+			}
+
+			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+				      "schema_data_modify: reject update "
+				      "of attribute[%s]\n",
+				      constrained_attrs[i]);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
 		return ldb_next_request(module, req);
 	}
 
