@@ -1472,4 +1472,10 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 
 int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
 
+int ctdb_null_func(struct ctdb_call_info *call);
+
+int ctdb_fetch_func(struct ctdb_call_info *call);
+
+int ctdb_fetch_with_header_func(struct ctdb_call_info *call);
+
 #endif
