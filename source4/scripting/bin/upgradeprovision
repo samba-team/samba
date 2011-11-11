@@ -1101,7 +1101,8 @@ def reload_full_schema(samdb, names):
     :param names: List of key provision parameters
     """
 
-    current = samdb.search(expression="objectClass=*", base=str(names.schemadn),
+    schemadn = str(names.schemadn)
+    current = samdb.search(expression="objectClass=*", base=schemadn,
                                 scope=SCOPE_SUBTREE)
     schema_ldif = ""
     prefixmap_data = ""
@@ -1113,9 +1114,9 @@ def reload_full_schema(samdb, names):
     prefixmap_data = b64encode(prefixmap_data)
 
     # We don't actually add this ldif, just parse it
-    prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % prefixmap_data
+    prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
 
-    dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif)
+    dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif, schemadn)
 
 
 def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, prereloadfunc):

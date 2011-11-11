@@ -829,11 +829,11 @@ static PyObject *py_dsdb_set_am_rodc(PyObject *self, PyObject *args)
 static PyObject *py_dsdb_set_schema_from_ldif(PyObject *self, PyObject *args)
 {
 	WERROR result;
-	char *pf, *df;
+	char *pf, *df, *dn;
 	PyObject *py_ldb;
 	struct ldb_context *ldb;
 
-	if (!PyArg_ParseTuple(args, "Oss", &py_ldb, &pf, &df))
+	if (!PyArg_ParseTuple(args, "Osss", &py_ldb, &pf, &df, &dn))
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);

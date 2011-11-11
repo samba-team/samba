@@ -120,7 +120,7 @@ class Schema(object):
         self.set_from_ldif(prefixmap_ldif, self.schema_data, self.schemadn)
 
     def set_from_ldif(self, pf, df, dn):
-        dsdb._dsdb_set_schema_from_ldif(self.ldb, pf, df)
+        dsdb._dsdb_set_schema_from_ldif(self.ldb, pf, df, dn)
 
     def write_to_tmp_ldb(self, schemadb_path):
         self.ldb.connect(url=schemadb_path)
