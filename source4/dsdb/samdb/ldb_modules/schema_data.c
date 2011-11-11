@@ -139,8 +139,10 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_val *governsID = NULL;
 	const char *oid_attr = NULL;
 	const char *oid = NULL;
+	struct ldb_dn *parent_dn = NULL;
+	int cmp;
 	WERROR status;
-	bool rodc;
+	bool rodc = false;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -160,6 +162,12 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	if (schema->base_dn == NULL) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			  "schema_data_add: base_dn NULL\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	ret = samdb_rodc(ldb, &rodc);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(4, (__location__ ": unable to tell if we are an RODC \n"));
@@ -168,6 +176,30 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	if (!schema->fsmo.we_are_master && !rodc) {
 		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 			  "schema_data_add: we are not master: reject request\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID)) {
+		/*
+		 * the provision code needs to create
+		 * the schema root object.
+		 */
+		cmp = ldb_dn_compare(req->op.add.message->dn, schema->base_dn);
+		if (cmp == 0) {
+			return ldb_next_request(module, req);
+		}
+	}
+
+	parent_dn = ldb_dn_get_parent(req, req->op.add.message->dn);
+	if (!parent_dn) {
+		return ldb_oom(ldb);
+	}
+
+	cmp = ldb_dn_compare(parent_dn, schema->base_dn);
+	if (cmp != 0) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			  "schema_data_add: no direct child :%s\n",
+			  ldb_dn_get_linearized(req->op.add.message->dn));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
