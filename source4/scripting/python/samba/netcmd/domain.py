@@ -336,33 +336,6 @@ class cmd_domain_level(Command):
 
 
 
-class cmd_domain_machinepassword(Command):
-    """Gets a machine password out of our SAM"""
-
-    synopsis = "%prog <accountname> [options]"
-
-    takes_args = ["accountname"]
-
-    def run(self, accountname, sambaopts=None, credopts=None, versionopts=None):
-        lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp, fallback_machine=True)
-        url = lp.private_path("secrets.ldb")
-        if not os.path.exists(url):
-            raise CommandError("secrets database not found at %s " % url)
-        if not accountname.endswith('$'):
-            accountname += '$'
-        secretsdb = Ldb(url=url, session_info=system_session(),
-            credentials=creds, lp=lp)
-        result = secretsdb.search(attrs=["secret"],
-            expression="(&(objectclass=primaryDomain)(samaccountname=%s))" % ldb.binary_encode(accountname))
-
-        if len(result) != 1:
-            raise CommandError("search returned %d records, expected 1" % len(result))
-
-        self.outf.write("%s\n" % result[0]["secret"])
-
-
-
 class cmd_domain_passwordsettings(Command):
     """Sets password settings
 
@@ -640,6 +613,5 @@ class cmd_domain(SuperCommand):
     subcommands["exportkeytab"] = cmd_domain_export_keytab()
     subcommands["join"] = cmd_domain_join()
     subcommands["level"] = cmd_domain_level()
-    subcommands["machinepassword"] = cmd_domain_machinepassword()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
     subcommands["samba3upgrade"] = cmd_domain_samba3upgrade()
