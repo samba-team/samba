@@ -1313,13 +1313,12 @@ create_merged_ip_list(struct ctdb_context *ctdb)
  * It is calculated by XOR-ing the 2 IPs together and counting the
  * number of leading zeroes.  The implementation means that all
  * addresses end up being 128 bits long.
- * Not static, so we can easily link it into a unit test.
  *
  * FIXME? Should we consider IPv4 and IPv6 separately given that the
  * 12 bytes of 0 prefix padding will hurt the algorithm if there are
  * lots of nodes and IP addresses?
  */
-uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
+static uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 {
 	uint32_t ip1_k[IP_KEYLEN];
 	uint32_t *t;
@@ -1351,11 +1350,10 @@ uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 /* Calculate the IP distance for the given IP relative to IPs on the
    given node.  The ips argument is generally the all_ips variable
    used in the main part of the algorithm.
- * Not static, so we can easily link it into a unit test.
  */
-uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
-			   struct ctdb_public_ip_list *ips,
-			   int pnn)
+static uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
+				  struct ctdb_public_ip_list *ips,
+				  int pnn)
 {
 	struct ctdb_public_ip_list *t;
 	uint32_t d;
@@ -1389,9 +1387,8 @@ uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
 
 /* Return the LCP2 imbalance metric for addresses currently assigned
    to the given node.
- * Not static, so we can easily link it into a unit test.
  */
-uint32_t lcp2_imbalance(struct ctdb_public_ip_list * all_ips, int pnn)
+static uint32_t lcp2_imbalance(struct ctdb_public_ip_list * all_ips, int pnn)
 {
 	struct ctdb_public_ip_list *t;
 
@@ -1412,12 +1409,11 @@ uint32_t lcp2_imbalance(struct ctdb_public_ip_list * all_ips, int pnn)
 
 /* Allocate any unassigned IPs just by looping through the IPs and
  * finding the best node for each.
- * Not static, so we can easily link it into a unit test.
  */
-void basic_allocate_unassigned(struct ctdb_context *ctdb,
-			       struct ctdb_node_map *nodemap,
-			       uint32_t mask,
-			       struct ctdb_public_ip_list *all_ips)
+static void basic_allocate_unassigned(struct ctdb_context *ctdb,
+				      struct ctdb_node_map *nodemap,
+				      uint32_t mask,
+				      struct ctdb_public_ip_list *all_ips)
 {
 	struct ctdb_public_ip_list *tmp_ip;
 
@@ -1435,14 +1431,13 @@ void basic_allocate_unassigned(struct ctdb_context *ctdb,
 }
 
 /* Basic non-deterministic rebalancing algorithm.
- * Not static, so we can easily link it into a unit test.
  */
-bool basic_failback(struct ctdb_context *ctdb,
-		    struct ctdb_node_map *nodemap,
-		    uint32_t mask,
-		    struct ctdb_public_ip_list *all_ips,
-		    int num_ips,
-		    int *retries)
+static bool basic_failback(struct ctdb_context *ctdb,
+			   struct ctdb_node_map *nodemap,
+			   uint32_t mask,
+			   struct ctdb_public_ip_list *all_ips,
+			   int num_ips,
+			   int *retries)
 {
 	int i;
 	int maxnode, maxnum=0, minnode, minnum=0, num;
@@ -1536,9 +1531,8 @@ bool basic_failback(struct ctdb_context *ctdb,
 
 /* Do necessary LCP2 initialisation.  Bury it in a function here so
  * that we can unit test it.
- * Not static, so we can easily link it into a unit test.
  */
-void lcp2_init(struct ctdb_context * tmp_ctx,
+static void lcp2_init(struct ctdb_context * tmp_ctx,
 	       struct ctdb_node_map * nodemap,
 	       uint32_t mask,
 	       struct ctdb_public_ip_list *all_ips,
@@ -1570,9 +1564,8 @@ void lcp2_init(struct ctdb_context * tmp_ctx,
 
 /* Allocate any unassigned addresses using the LCP2 algorithm to find
  * the IP/node combination that will cost the least.
- * Not static, so we can easily link it into a unit test.
  */
-void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
+static void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 			      struct ctdb_node_map *nodemap,
 			      uint32_t mask,
 			      struct ctdb_public_ip_list *all_ips,
@@ -1669,16 +1662,14 @@ void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 /* LCP2 algorithm for rebalancing the cluster.  Given a candidate node
  * to move IPs from, determines the best IP/destination node
  * combination to move from the source node.
- *
- * Not static, so we can easily link it into a unit test.
  */
-bool lcp2_failback_candidate(struct ctdb_context *ctdb,
-			     struct ctdb_node_map *nodemap,
-			     struct ctdb_public_ip_list *all_ips,
-			     int srcnode,
-			     uint32_t candimbl,
-			     uint32_t *lcp2_imbalances,
-			     bool *newly_healthy)
+static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
+				    struct ctdb_node_map *nodemap,
+				    struct ctdb_public_ip_list *all_ips,
+				    int srcnode,
+				    uint32_t candimbl,
+				    uint32_t *lcp2_imbalances,
+				    bool *newly_healthy)
 {
 	int dstnode, mindstnode;
 	uint32_t srcimbl, srcdsum, dstimbl, dstdsum;
@@ -1765,7 +1756,7 @@ struct lcp2_imbalance_pnn {
 	int pnn;
 };
 
-int lcp2_cmp_imbalance_pnn(const void * a, const void * b)
+static int lcp2_cmp_imbalance_pnn(const void * a, const void * b)
 {
 	const struct lcp2_imbalance_pnn * lipa = (const struct lcp2_imbalance_pnn *) a;
 	const struct lcp2_imbalance_pnn * lipb = (const struct lcp2_imbalance_pnn *) b;
@@ -1782,15 +1773,13 @@ int lcp2_cmp_imbalance_pnn(const void * a, const void * b)
 /* LCP2 algorithm for rebalancing the cluster.  This finds the source
  * node with the highest LCP2 imbalance, and then determines the best
  * IP/destination node combination to move from the source node.
- *
- * Not static, so we can easily link it into a unit test.
  */
-bool lcp2_failback(struct ctdb_context *ctdb,
-		   struct ctdb_node_map *nodemap,
-		   uint32_t mask,
-		   struct ctdb_public_ip_list *all_ips,
-		   uint32_t *lcp2_imbalances,
-		   bool *newly_healthy)
+static bool lcp2_failback(struct ctdb_context *ctdb,
+			  struct ctdb_node_map *nodemap,
+			  uint32_t mask,
+			  struct ctdb_public_ip_list *all_ips,
+			  uint32_t *lcp2_imbalances,
+			  bool *newly_healthy)
 {
 	int i, num_newly_healthy;
 	struct lcp2_imbalance_pnn * lips;
@@ -1847,12 +1836,10 @@ bool lcp2_failback(struct ctdb_context *ctdb,
 	return ret;
 }
 
-/* The calculation part of the IP allocation algorithm.
- * Not static, so we can easily link it into a unit test.
- */
-void ctdb_takeover_run_core(struct ctdb_context *ctdb,
-			    struct ctdb_node_map *nodemap,
-			    struct ctdb_public_ip_list **all_ips_p)
+/* The calculation part of the IP allocation algorithm. */
+static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
+				   struct ctdb_node_map *nodemap,
+				   struct ctdb_public_ip_list **all_ips_p)
 {
 	int i, num_healthy, retries, num_ips;
 	uint32_t mask;
