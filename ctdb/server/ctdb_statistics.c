@@ -59,21 +59,21 @@ int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
 				      TDB_DATA *outdata)
 {
 	int len;
-	struct ctdb_statistics_wire *stat;
+	struct ctdb_statistics_wire *s;
 
 	len = offsetof(struct ctdb_statistics_wire, stats) + MAX_STAT_HISTORY*sizeof(struct ctdb_statistics);
 
-	stat = talloc_size(outdata, len);
-	if (stat == NULL) {
+	s = talloc_size(outdata, len);
+	if (s == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to allocate statistics history structure\n"));
 		return -1;
 	}
 
-	stat->num = MAX_STAT_HISTORY;
-	memcpy(&stat->stats[0], &ctdb->statistics_history[0], sizeof(ctdb->statistics_history));
+	s->num = MAX_STAT_HISTORY;
+	memcpy(&s->stats[0], &ctdb->statistics_history[0], sizeof(ctdb->statistics_history));
 
 	outdata->dsize = len;
-	outdata->dptr  = (uint8_t *)stat;
+	outdata->dptr  = (uint8_t *)s;
 
 	return 0;
 }
