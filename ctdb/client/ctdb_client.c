@@ -978,7 +978,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 /*
   destroy a ctdb_control in client
 */
-static int ctdb_control_destructor(struct ctdb_client_control_state *state)	
+static int ctdb_client_control_destructor(struct ctdb_client_control_state *state)
 {
 	ctdb_reqid_remove(state->ctdb, state->reqid);
 	return 0;
@@ -1035,7 +1035,7 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 	state->state      = CTDB_CONTROL_WAIT;
 	state->errormsg   = NULL;
 
-	talloc_set_destructor(state, ctdb_control_destructor);
+	talloc_set_destructor(state, ctdb_client_control_destructor);
 
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;
 	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
