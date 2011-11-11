@@ -838,7 +838,7 @@ static PyObject *py_dsdb_set_schema_from_ldif(PyObject *self, PyObject *args)
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	result = dsdb_set_schema_from_ldif(ldb, pf, df);
+	result = dsdb_set_schema_from_ldif(ldb, pf, df, dn);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	Py_RETURN_NONE;

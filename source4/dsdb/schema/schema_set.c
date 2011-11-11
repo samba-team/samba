@@ -683,7 +683,9 @@ WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_sche
  * schema itself to the directory.
  */
 
-WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const char *df)
+WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
+				 const char *pf, const char *df,
+				 const char *dn)
 {
 	struct ldb_ldif *ldif;
 	struct ldb_message *msg;
@@ -702,9 +704,15 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb, const char *pf, const 
 	}
 
 	schema = dsdb_new_schema(mem_ctx);
-
+	if (!schema) {
+		goto nomem;
+	}
+	schema->base_dn = ldb_dn_new(schema, ldb, dn);
+	if (!schema->base_dn) {
+		goto nomem;
+	}
 	schema->fsmo.we_are_master = true;
-	schema->fsmo.master_dn = ldb_dn_new_fmt(schema, ldb, "@PROVISION_SCHEMA_MASTER");
+	schema->fsmo.master_dn = ldb_dn_new(schema, ldb, "@PROVISION_SCHEMA_MASTER");
 	if (!schema->fsmo.master_dn) {
 		goto nomem;
 	}
