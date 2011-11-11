@@ -4093,7 +4093,7 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
 		struct timeval timeout, uint32_t destnode, 
 		TALLOC_CTX *mem_ctx, enum ctdb_eventscript_call type,
-		struct ctdb_scripts_wire **script_status)
+		struct ctdb_scripts_wire **scripts)
 {
 	int ret;
 	TDB_DATA outdata, indata;
@@ -4112,9 +4112,9 @@ int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
 	}
 
 	if (outdata.dsize == 0) {
-		*script_status = NULL;
+		*scripts = NULL;
 	} else {
-		*script_status = (struct ctdb_scripts_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+		*scripts = (struct ctdb_scripts_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 		talloc_free(outdata.dptr);
 	}
 		    
