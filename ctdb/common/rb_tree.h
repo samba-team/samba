@@ -17,8 +17,9 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
+#ifndef _RB_TREE_H
+#define _RB_TREE_H
+ 
 #define TRBT_RED		0x00
 #define TRBT_BLACK		0x01
 typedef struct trbt_node {
@@ -85,3 +86,5 @@ int trbt_traversearray32(trbt_tree_t *tree, uint32_t keylen, int (*callback)(voi
 /* Lookup the first node in the tree with a key based on an array of uint32 
    and return a pointer to data or NULL */
 void *trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen);
+
+#endif /* _RB_TREE_H */
