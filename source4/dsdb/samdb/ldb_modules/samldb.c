@@ -803,7 +803,9 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	}
 
 	ret = dsdb_module_schema_info_update(ac->module, schema,
-					     DSDB_FLAG_NEXT_MODULE, ac->req);
+					     DSDB_FLAG_NEXT_MODULE|
+					     DSDB_FLAG_AS_SYSTEM,
+					     ac->req);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "samldb_schema_info_update: dsdb_module_schema_info_update failed with %s",
