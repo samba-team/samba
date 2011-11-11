@@ -712,6 +712,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 		goto nomem;
 	}
 	schema->fsmo.we_are_master = true;
+	schema->fsmo.update_allowed = true;
 	schema->fsmo.master_dn = ldb_dn_new(schema, ldb, "@PROVISION_SCHEMA_MASTER");
 	if (!schema->fsmo.master_dn) {
 		goto nomem;

@@ -818,6 +818,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	const struct ldb_val *info_val;
 	struct ldb_val info_val_default;
 	struct dsdb_schema *schema;
+	struct loadparm_context *lp_ctx = NULL;
 	int ret;
 
 	schema = dsdb_new_schema(mem_ctx);
@@ -869,8 +870,20 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		schema->fsmo.we_are_master = false;
 	}
 
-	DEBUG(5, ("schema_fsmo_init: we are master: %s\n",
-		  (schema->fsmo.we_are_master?"yes":"no")));
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+						struct loadparm_context);
+	if (lp_ctx) {
+		bool allowed = lpcfg_parm_bool(lp_ctx, NULL,
+						"dsdb", "schema update allowed",
+						false);
+		schema->fsmo.update_allowed = allowed;
+	} else {
+		schema->fsmo.update_allowed = false;
+	}
+
+	DEBUG(5, ("schema_fsmo_init: we are master[%s] updates allowed[%s]\n",
+		  (schema->fsmo.we_are_master?"yes":"no"),
+		  (schema->fsmo.update_allowed?"yes":"no")));
 
 	*schema_out = schema;
 	return LDB_SUCCESS;

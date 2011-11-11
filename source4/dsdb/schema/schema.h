@@ -237,6 +237,7 @@ struct dsdb_schema {
 
 	struct {
 		bool we_are_master;
+		bool update_allowed;
 		struct ldb_dn *master_dn;
 	} fsmo;
 
