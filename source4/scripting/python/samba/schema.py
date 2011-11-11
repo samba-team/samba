@@ -116,10 +116,10 @@ class Schema(object):
         self.prefixmap_data = b64encode(self.prefixmap_data)
 
         # We don't actually add this ldif, just parse it
-        prefixmap_ldif = "dn: cn=schema\nprefixMap:: %s\n\n" % self.prefixmap_data
-        self.set_from_ldif(prefixmap_ldif, self.schema_data)
+        prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (self.schemadn, self.prefixmap_data)
+        self.set_from_ldif(prefixmap_ldif, self.schema_data, self.schemadn)
 
-    def set_from_ldif(self, pf, df):
+    def set_from_ldif(self, pf, df, dn):
         dsdb._dsdb_set_schema_from_ldif(self.ldb, pf, df)
 
     def write_to_tmp_ldb(self, schemadb_path):
