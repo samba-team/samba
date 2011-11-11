@@ -217,11 +217,19 @@ tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_transaction.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-CTDB_TAKEOVER_OBJ = $(CTDB_SERVER_OBJ:server/ctdbd.o=)
+CTDB_SERVER_MOST_OBJ = $(CTDB_SERVER_OBJ:server/ctdbd.o=)
+CTDB_TEST_C = $(CTDB_SERVER_MOST_OBJ:.o=.c) tests/src/ctdbd_test.c
+CTDB_TEST_OBJ =  @TALLOC_OBJ@ @TDB_OBJ@ \
+	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @TEVENT_OBJ@
 
-tests/bin/ctdb_takeover_tests: $(CTDB_TAKEOVER_OBJ) tests/src/ctdb_takeover_tests.o
+CTDB_TEST_DEPENDS = $(CTDB_TEST_OBJ) $(CTDB_SERVER_MOST_C) \
+	tests/src/ctdbd_test.c
+
+tests/src/ctdb_takeover_tests.o: tests/src/ctdb_takeover_tests.c $(CTDB_TEST_C)
+
+tests/bin/ctdb_takeover_tests: $(CTDB_TEST_OBJ) tests/src/ctdb_takeover_tests.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_takeover_tests.o $(CTDB_TAKEOVER_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_takeover_tests.o $(CTDB_TEST_OBJ) $(LIB_FLAGS)
 
 tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
