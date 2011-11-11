@@ -243,6 +243,105 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+static int schema_data_modify(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+	int cmp;
+	bool rodc = false;
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	/* special objects should always go through */
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* replicated update should always go through */
+	if (ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* dbcheck should be able to fix things */
+	if (ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+		return ldb_next_request(module, req);
+	}
+
+	schema = dsdb_get_schema(ldb, req);
+	if (!schema) {
+		return ldb_next_request(module, req);
+	}
+
+	cmp = ldb_dn_compare(req->op.mod.message->dn, schema->base_dn);
+	if (cmp == 0) {
+		return ldb_next_request(module, req);
+	}
+
+	ret = samdb_rodc(ldb, &rodc);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4, (__location__ ": unable to tell if we are an RODC \n"));
+	}
+
+	if (!schema->fsmo.we_are_master && !rodc) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			  "schema_data_modify: we are not master: reject request\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	return ldb_next_request(module, req);
+}
+
+static int schema_data_del(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
+	bool rodc = false;
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	/* special objects should always go through */
+	if (ldb_dn_is_special(req->op.del.dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* replicated update should always go through */
+	if (ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* dbcheck should be able to fix things */
+	if (ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+		return ldb_next_request(module, req);
+	}
+
+	schema = dsdb_get_schema(ldb, req);
+	if (!schema) {
+		return ldb_next_request(module, req);
+	}
+
+	ret = samdb_rodc(ldb, &rodc);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4, (__location__ ": unable to tell if we are an RODC \n"));
+	}
+
+	if (!schema->fsmo.we_are_master && !rodc) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			  "schema_data_modify: we are not master: reject request\n");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/*
+	 * normaly the DACL will prevent delete
+	 * with LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS
+	 * above us.
+	 */
+	ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+		      "schema_data_del: delete is not allowed in the schema\n");
+	return LDB_ERR_UNWILLING_TO_PERFORM;
+}
+
 static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *msg,
 				  const struct dsdb_schema *schema) 
 {
@@ -512,6 +611,8 @@ static const struct ldb_module_ops ldb_schema_data_module_ops = {
 	.name		= "schema_data",
 	.init_context	= schema_data_init,
 	.add		= schema_data_add,
+	.modify		= schema_data_modify,
+	.del		= schema_data_del,
 	.search         = schema_data_search
 };
 
