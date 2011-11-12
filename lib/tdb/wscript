@@ -33,7 +33,7 @@ def configure(conf):
     conf.env.standalone_tdb = conf.IN_LAUNCH_DIR()
 
     if not conf.env.standalone_tdb:
-        if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
+        if conf.CHECK_BUNDLED_SYSTEM_PKG('tdb', minversion=VERSION,
                                      implied_deps='replace'):
             conf.define('USING_SYSTEM_TDB', 1)
             if conf.CHECK_BUNDLED_SYSTEM_PYTHON('pytdb', 'tdb', minversion=VERSION):
