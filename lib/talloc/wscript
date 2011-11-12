@@ -44,10 +44,10 @@ def configure(conf):
     conf.env.disable_python = getattr(Options.options, 'disable_python', False)
 
     if not conf.env.standalone_talloc:
-        if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,
+        if conf.CHECK_BUNDLED_SYSTEM_PKG('talloc', minversion=VERSION,
                                      implied_deps='replace'):
             conf.define('USING_SYSTEM_TALLOC', 1)
-        if conf.CHECK_BUNDLED_SYSTEM('pytalloc-util', minversion=VERSION,
+        if conf.CHECK_BUNDLED_SYSTEM_PKG('pytalloc-util', minversion=VERSION,
                                      implied_deps='talloc replace'):
             conf.define('USING_SYSTEM_PYTALLOC_UTIL', 1)
 
