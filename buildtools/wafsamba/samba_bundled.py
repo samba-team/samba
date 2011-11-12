@@ -126,7 +126,7 @@ def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
         pkg = libname
 
     if conf.check_cfg(package=pkg,
-                      args='"%s >= %s" --cflags --libs' % (libname, minversion),
+                      args='"%s >= %s" --cflags --libs' % (pkg, minversion),
                       msg=msg):
         conf.SET_TARGET_TYPE(libname, 'SYSLIB')
         conf.env[found] = True
