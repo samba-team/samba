@@ -213,9 +213,8 @@ def SAMBA_LIBRARY(bld, libname, source,
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
         features += ' pyext'
-    if pyext or pyembed:
-        # this is quite strange. we should add pyext feature for pyext
-        # but that breaks the build. This may be a bug in the waf python tool
+        allow_undefined_symbols = True
+    if pyembed:
         features += ' pyembed'
 
     if abi_directory:

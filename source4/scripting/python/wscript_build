@@ -5,7 +5,7 @@ bld.SAMBA_LIBRARY('samba_python',
 	deps='LIBPYTHON pytalloc-util pyrpc_util',
 	grouping_library=True,
 	private_library=True,
-	pyext=True)
+	pyembed=True)
 
 bld.SAMBA_SUBSYSTEM('LIBPYTHON',
 	source='modules.c',

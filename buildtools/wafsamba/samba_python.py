@@ -45,7 +45,7 @@ def SAMBA_PYTHON(bld, name,
                           cflags=cflags,
                           local_include=local_include,
                           vars=vars,
-                          pyembed=True,
+                          pyext=True,
                           enabled=enabled)
         return
 
@@ -61,7 +61,7 @@ def SAMBA_PYTHON(bld, name,
                       local_include=local_include,
                       vars=vars,
                       link_name=link_name,
-                      pyembed=True,
+                      pyext=True,
                       target_type='PYTHON',
                       install_path='${PYTHONARCHDIR}',
                       enabled=enabled)
