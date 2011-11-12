@@ -112,7 +112,7 @@ def build(bld):
         bld.SAMBA_LIBRARY('pytalloc-util',
             source='pytalloc_util.c',
             public_deps='talloc',
-            pyext=True,
+            pyembed=True,
             vnum=VERSION,
             hide_symbols=True,
             abi_directory='ABI',
