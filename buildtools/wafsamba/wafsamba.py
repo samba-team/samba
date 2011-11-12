@@ -155,6 +155,10 @@ def SAMBA_LIBRARY(bld, libname, source,
     else:
         subsystem_group = group
 
+    if target_type == "PYTHON":
+        allow_undefined_symbols = True
+        pyext = True
+
     # first create a target for building the object files for this library
     # by separating in this way, we avoid recompiling the C files
     # separately for the install library and the build library
@@ -173,8 +177,9 @@ def SAMBA_LIBRARY(bld, libname, source,
                         depends_on     = depends_on,
                         hide_symbols   = hide_symbols,
                         pyembed        = pyembed,
-                        pyext          = pyext or (target_type == "PYTHON"),
+                        pyext          = pyext,
                         local_include  = local_include,
+                        allow_undefined_symbols = allow_undefined_symbols,
                         global_include = global_include)
 
     if BUILTIN_LIBRARY(bld, libname):
@@ -212,9 +217,8 @@ def SAMBA_LIBRARY(bld, libname, source,
     ldflags = TO_LIST(ldflags)
 
     features = 'cc cshlib symlink_lib install_lib'
-    if target_type == 'PYTHON':
+    if pyext:
         features += ' pyext'
-        allow_undefined_symbols = True
     if pyembed:
         features += ' pyembed'
 
@@ -493,6 +497,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     subdir=None,
                     hide_symbols=False,
                     pyext=False,
+                    allow_undefined_symbols=False,
                     pyembed=False):
     '''define a Samba subsystem'''
 
@@ -536,7 +541,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         global_include = global_include,
         samba_subsystem= subsystem_name,
         samba_use_hostcc = use_hostcc,
-        samba_use_global_deps = use_global_deps
+        samba_use_global_deps = use_global_deps,
+        allow_undefined_symbols=allow_undefined_symbols,
         )
 
     if cflags_end is not None:
