@@ -3,7 +3,7 @@
 import Options
 
 def configure(conf):
-	if conf.CHECK_BUNDLED_SYSTEM('subunit', checkfunctions='subunit_test_start', headers='subunit/child.h'):
+	if conf.CHECK_BUNDLED_SYSTEM_PKG('subunit', pkg='libsubunit'):
 		conf.define('USING_SYSTEM_SUBUNIT', 1)
 
 def build(bld):
