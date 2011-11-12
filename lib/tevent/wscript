@@ -91,7 +91,6 @@ def build(bld):
     bld.SAMBA_PYTHON('pytevent',
                      'pytevent.c',
                      deps='tevent',
-                     enabled=True,
                      realname='_tevent.so')
 
 
