@@ -38,6 +38,8 @@ def configure(conf):
         if conf.CHECK_BUNDLED_SYSTEM('tevent', minversion=VERSION,
                                      onlyif='talloc', implied_deps='replace talloc'):
             conf.define('USING_SYSTEM_TEVENT', 1)
+            if conf.CHECK_BUNDLED_SYSTEM_PYTHON('pytevent', 'tevent', minversion=VERSION):
+                conf.define('USING_SYSTEM_PYTEVENT', 1)
 
     if conf.CHECK_FUNCS('epoll_create', headers='sys/epoll.h'):
         conf.DEFINE('HAVE_EPOLL', 1)
@@ -62,7 +64,7 @@ def build(bld):
 
     SRC = '''tevent.c tevent_debug.c tevent_fd.c tevent_immediate.c
              tevent_queue.c tevent_req.c tevent_select.c
-	     tevent_poll.c
+         tevent_poll.c
              tevent_signal.c tevent_standard.c tevent_timed.c tevent_util.c tevent_wakeup.c'''
 
     if bld.CONFIG_SET('HAVE_EPOLL'):
@@ -88,10 +90,11 @@ def build(bld):
                           pc_files='tevent.pc',
                           private_library=private_library)
 
-    bld.SAMBA_PYTHON('pytevent',
-                     'pytevent.c',
-                     deps='tevent',
-                     realname='_tevent.so')
+    if not bld.CONFIG_SET('USING_SYSTEM_PYTDB'):
+        bld.SAMBA_PYTHON('pytevent',
+                         'pytevent.c',
+                         deps='tevent',
+                         realname='_tevent.so')
 
 
 def test(ctx):
