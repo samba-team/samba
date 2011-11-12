@@ -35,7 +35,7 @@ def configure(conf):
     conf.env.standalone_tevent = conf.IN_LAUNCH_DIR()
 
     if not conf.env.standalone_tevent:
-        if conf.CHECK_BUNDLED_SYSTEM('tevent', minversion=VERSION,
+        if conf.CHECK_BUNDLED_SYSTEM_PKG('tevent', minversion=VERSION,
                                      onlyif='talloc', implied_deps='replace talloc'):
             conf.define('USING_SYSTEM_TEVENT', 1)
             if conf.CHECK_BUNDLED_SYSTEM_PYTHON('pytevent', 'tevent', minversion=VERSION):
