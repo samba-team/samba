@@ -82,6 +82,64 @@ def LIB_MUST_BE_BUNDLED(conf, libname):
             libname in conf.env.BUNDLED_LIBS)
 
 
+@conf
+def CHECK_PREREQUISITES(conf, prereqs):
+    for syslib in TO_LIST(prereqs):
+        f = 'FOUND_SYSTEMLIB_%s' % syslib
+        if not f in conf.env:
+            return False
+    return True
+
+
+@runonce
+@conf
+def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
+        onlyif=None, implied_deps=None, pkg=None):
+    '''check if a library is available as a system library.
+
+    This only tries using pkg-config
+    '''
+    if conf.LIB_MUST_BE_BUNDLED(libname):
+        return False
+    found = 'FOUND_SYSTEMLIB_%s' % libname
+    if found in conf.env:
+        return conf.env[found]
+
+    # see if the library should only use a system version if another dependent
+    # system version is found. That prevents possible use of mixed library
+    # versions
+    if onlyif:
+        if not conf.CHECK_PREREQUISITES(onlyif):
+            if not conf.LIB_MAY_BE_BUNDLED(libname):
+                Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
+                sys.exit(1)
+            conf.env[found] = False
+            return False
+
+    minversion = minimum_library_version(conf, libname, minversion)
+
+    msg = 'Checking for system %s' % libname
+    if minversion != '0.0.0':
+        msg += ' >= %s' % minversion
+
+    if pkg is None:
+        pkg = libname
+
+    if conf.check_cfg(package=pkg,
+                      args='"%s >= %s" --cflags --libs' % (libname, minversion),
+                      msg=msg):
+        conf.SET_TARGET_TYPE(libname, 'SYSLIB')
+        conf.env[found] = True
+        if implied_deps:
+            conf.SET_SYSLIB_DEPS(libname, implied_deps)
+        return True
+    conf.env[found] = False
+    if not conf.LIB_MAY_BE_BUNDLED(libname):
+        Logs.error('ERROR: System library %s of version %s not found, and bundling disabled' % (libname, minversion))
+        sys.exit(1)
+    return False
+
+
 @runonce
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
@@ -111,14 +169,12 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     # system version is found. That prevents possible use of mixed library
     # versions
     if onlyif:
-        for syslib in TO_LIST(onlyif):
-            f = 'FOUND_SYSTEMLIB_%s' % syslib
-            if not f in conf.env:
-                if not conf.LIB_MAY_BE_BUNDLED(libname):
-                    Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
-                    sys.exit(1)
-                conf.env[found] = False
-                return False
+        if not conf.CHECK_PREREQUISITES(onlyif):
+            if not conf.LIB_MAY_BE_BUNDLED(libname):
+                Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
+                sys.exit(1)
+            conf.env[found] = False
+            return False
 
     minversion = minimum_library_version(conf, libname, minversion)
 
