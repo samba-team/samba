@@ -172,6 +172,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         autoproto_extra_source=autoproto_extra_source,
                         depends_on     = depends_on,
                         hide_symbols   = hide_symbols,
+                        pyembed        = pyembed,
                         pyext          = pyext or (target_type == "PYTHON"),
                         local_include  = local_include,
                         global_include = global_include)
@@ -491,7 +492,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     vars=None,
                     subdir=None,
                     hide_symbols=False,
-                    pyext=False):
+                    pyext=False,
+                    pyembed=False):
     '''define a Samba subsystem'''
 
     if not enabled:
@@ -518,6 +520,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     features = 'cc'
     if pyext:
         features += ' pyext'
+    if pyembed:
+        features += ' pyembed'
 
     t = bld(
         features       = features,

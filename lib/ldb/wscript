@@ -120,7 +120,7 @@ def build(bld):
                           vnum=VERSION,
                           private_library=private_library,
                           pc_files='pyldb-util.pc',
-                          pyext=True,
+                          pyembed=True,
                           abi_directory='ABI',
                           abi_match='pyldb_*')
 
