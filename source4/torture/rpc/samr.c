@@ -7827,7 +7827,7 @@ static bool test_Connect(struct dcerpc_binding_handle *b,
 
 	torture_comment(tctx, "Testing samr_Connect\n");
 
-	r.in.system_name = 0;
+	r.in.system_name = NULL;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.connect_handle = &h;
 
