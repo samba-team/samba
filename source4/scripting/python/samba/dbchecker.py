@@ -407,7 +407,7 @@ class dbcheck(object):
             attrs.append("replPropertyMetaData")
 
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
-                                controls=["extended_dn:1:1", "show_recycled:1"],
+                controls=["extended_dn:1:1", "show_recycled:1", "show_deleted:1"],
                                 attrs=attrs)
         if len(res) != 1:
             self.report("Object %s disappeared during check" % dn)
