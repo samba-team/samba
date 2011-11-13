@@ -742,7 +742,7 @@ class dc_join(object):
             return blob
 
         print "Setup domain trusts with server %s" % ctx.server
-        binding_options = ""  # why doesn't signing work gere? w2k8r2 claims no session key
+        binding_options = ""  # why doesn't signing work here? w2k8r2 claims no session key
         lsaconn = lsa.lsarpc("ncacn_np:%s[%s]" % (ctx.server, binding_options),
                              ctx.lp, ctx.creds)
 
