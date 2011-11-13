@@ -155,7 +155,7 @@ class Test_BinaryMismatch(TestCase):
         one_line_b = self._long_b.replace(_b("\n"), _b(" "))
         mismatch = _BinaryMismatch(one_line_b, "!~", self._long_b)
         self.assertEqual(mismatch.describe(),
-            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+            "%s:\nreference = %s\nactual    = %s\n" % ("!~",
                 text_repr(one_line_b),
                 text_repr(self._long_b, multiline=True)))
 
@@ -163,14 +163,14 @@ class Test_BinaryMismatch(TestCase):
         one_line_u = self._long_u.replace("\n", " ")
         mismatch = _BinaryMismatch(one_line_u, "!~", self._long_u)
         self.assertEqual(mismatch.describe(),
-            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+            "%s:\nreference = %s\nactual    = %s\n" % ("!~",
                 text_repr(one_line_u),
                 text_repr(self._long_u, multiline=True)))
 
     def test_long_mixed_strings(self):
         mismatch = _BinaryMismatch(self._long_b, "!~", self._long_u)
         self.assertEqual(mismatch.describe(),
-            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+            "%s:\nreference = %s\nactual    = %s\n" % ("!~",
                 text_repr(self._long_b, multiline=True),
                 text_repr(self._long_u, multiline=True)))
 
@@ -178,7 +178,7 @@ class Test_BinaryMismatch(TestCase):
         obj = object()
         mismatch = _BinaryMismatch(self._long_b, "!~", obj)
         self.assertEqual(mismatch.describe(),
-            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+            "%s:\nreference = %s\nactual    = %s\n" % ("!~",
                 text_repr(self._long_b, multiline=True),
                 repr(obj)))
 
@@ -186,7 +186,7 @@ class Test_BinaryMismatch(TestCase):
         obj = object()
         mismatch = _BinaryMismatch(self._long_u, "!~", obj)
         self.assertEqual(mismatch.describe(),
-            "%s:\nreference = %s\nactual = %s\n" % ("!~",
+            "%s:\nreference = %s\nactual    = %s\n" % ("!~",
                 text_repr(self._long_u, multiline=True),
                 repr(obj)))
 

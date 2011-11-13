@@ -222,6 +222,10 @@ class MultiTestResult(TestResult):
         TestResult.__init__(self)
         self._results = list(map(ExtendedToOriginalDecorator, results))
 
+    def __repr__(self):
+        return '<%s (%s)>' % (
+            self.__class__.__name__, ', '.join(map(repr, self._results)))
+
     def _dispatch(self, message, *args, **kwargs):
         return tuple(
             getattr(result, message)(*args, **kwargs)
@@ -354,6 +358,9 @@ class ThreadsafeForwardingResult(TestResult):
         self.result = ExtendedToOriginalDecorator(target)
         self.semaphore = semaphore
 
+    def __repr__(self):
+        return '<%s %r>' % (self.__class__.__name__, self.result)
+
     def _add_result_with_semaphore(self, method, test, *args, **kwargs):
         self.semaphore.acquire()
         try:
@@ -432,6 +439,9 @@ class ExtendedToOriginalDecorator(object):
 
     def __init__(self, decorated):
         self.decorated = decorated
+
+    def __repr__(self):
+        return '<%s %r>' % (self.__class__.__name__, self.decorated)
 
     def __getattr__(self, name):
         return getattr(self.decorated, name)

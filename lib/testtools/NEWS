@@ -6,6 +6,11 @@ Changes and improvements to testtools_, grouped by release.
 NEXT
 ~~~~
 
+Changes
+-------
+
+* Failed equality assertions now line up. (Jonathan Lange, #879339)
+
 
 0.9.12
 ~~~~~~

@@ -378,7 +378,7 @@ class _BinaryMismatch(Mismatch):
         left = repr(self.expected)
         right = repr(self.other)
         if len(left) + len(right) > 70:
-            return "%s:\nreference = %s\nactual = %s\n" % (
+            return "%s:\nreference = %s\nactual    = %s\n" % (
                 self._mismatch_string, self._format(self.expected),
                 self._format(self.other))
         else:

@@ -550,7 +550,7 @@ class TestAssertions(TestCase):
         expected_error = '\n'.join([
             '!=:',
             'reference = %s' % pformat(a),
-            'actual = %s' % pformat(b),
+            'actual    = %s' % pformat(b),
             ': ' + message,
             ])
         self.assertFails(expected_error, self.assertEqual, a, b, message)
@@ -575,7 +575,7 @@ class TestAssertions(TestCase):
             'a',
             repr('\xa7')[1:-1],
             "'''",
-            'actual = %r' % (b,),
+            'actual    = %r' % (b,),
             ': ' + message,
             ])
         self.assertFails(expected_error, self.assertEqual, a, b, message)

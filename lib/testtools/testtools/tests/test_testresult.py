@@ -431,6 +431,13 @@ class TestMultiTestResult(TestCase):
         self.assertEqual(expectedEvents, self.result1._events)
         self.assertEqual(expectedEvents, self.result2._events)
 
+    def test_repr(self):
+        self.assertEqual(
+            '<MultiTestResult (%r, %r)>' % (
+                ExtendedToOriginalDecorator(self.result1),
+                ExtendedToOriginalDecorator(self.result2)),
+            repr(self.multiResult))
+
     def test_empty(self):
         # Initializing a `MultiTestResult` doesn't do anything to its
         # `TestResult`s.
