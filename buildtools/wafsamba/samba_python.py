@@ -34,22 +34,10 @@ def SAMBA_PYTHON(bld, name,
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
 
-    if realname is None:
-        # a SAMBA_PYTHON target without a realname is just a
-        # library with pyembed=True
-        bld.SAMBA_LIBRARY(name,
-                          source=source,
-                          deps=deps,
-                          public_deps=public_deps,
-                          includes=includes,
-                          cflags=cflags,
-                          local_include=local_include,
-                          vars=vars,
-                          pyext=True,
-                          enabled=enabled)
-        return
-
-    link_name = 'python/%s' % realname
+    if realname is not None:
+        link_name = 'python/%s' % realname
+    else:
+        link_name = None
 
     bld.SAMBA_LIBRARY(name,
                       source=source,
@@ -57,13 +45,14 @@ def SAMBA_PYTHON(bld, name,
                       public_deps=public_deps,
                       includes=includes,
                       cflags=cflags,
-                      realname=realname,
                       local_include=local_include,
                       vars=vars,
+                      realname=realname,
                       link_name=link_name,
                       pyext=True,
                       target_type='PYTHON',
                       install_path='${PYTHONARCHDIR}',
+                      allow_undefined_symbols=True,
                       enabled=enabled)
 
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON

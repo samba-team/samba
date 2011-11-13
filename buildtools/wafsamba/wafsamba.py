@@ -155,10 +155,6 @@ def SAMBA_LIBRARY(bld, libname, source,
     else:
         subsystem_group = group
 
-    if target_type == "PYTHON":
-        allow_undefined_symbols = True
-        pyext = True
-
     # first create a target for building the object files for this library
     # by separating in this way, we avoid recompiling the C files
     # separately for the install library and the build library
