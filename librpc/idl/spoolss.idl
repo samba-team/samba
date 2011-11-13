@@ -697,7 +697,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint16 yresolution;
 		spoolss_DeviceModeTTOption ttoption;
 		spoolss_DeviceModeCollate collate;
-		[charset(UTF16)] uint16 formname[MAXDEVICENAME];
+		[charset(UTF16),to_null] uint16 formname[MAXDEVICENAME];
 		uint16 logpixels; /* reserved */
 		uint32 bitsperpel; /* reserved */
 		uint32 pelswidth; /* reserved */
