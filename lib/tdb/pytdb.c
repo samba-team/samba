@@ -569,7 +569,8 @@ void inittdb(void)
 	if (PyType_Ready(&PyTdbIterator) < 0)
 		return;
 
-	m = Py_InitModule3("tdb", tdb_methods, "TDB is a simple key-value database similar to GDBM that supports multiple writers.");
+	m = Py_InitModule3("tdb", tdb_methods,
+		"simple key-value database that supports multiple writers.");
 	if (m == NULL)
 		return;
 
