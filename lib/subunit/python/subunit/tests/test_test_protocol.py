@@ -22,11 +22,18 @@ from testtools import skipIf, TestCase
 from testtools.compat import _b, _u, BytesIO, StringIO
 from testtools.content import Content, TracebackContent
 from testtools.content_type import ContentType
-from testtools.tests.helpers import (
-    Python26TestResult,
-    Python27TestResult,
-    ExtendedTestResult,
-    )
+try:
+    from testtools.testresult.doubles import (
+        Python26TestResult,
+        Python27TestResult,
+        ExtendedTestResult,
+        )
+except ImportError:
+    from testtools.tests.helpers import (
+        Python26TestResult,
+        Python27TestResult,
+        ExtendedTestResult,
+        )
 
 import subunit
 from subunit import _remote_exception_str, _remote_exception_str_chunked

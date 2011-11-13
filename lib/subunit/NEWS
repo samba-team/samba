@@ -5,6 +5,26 @@ subunit release notes
 NEXT (In development)
 ---------------------
 
+IMPROVEMENTS
+~~~~~~~~~~~~
+
+* Perl module now correctly outputs "failure" instead of "fail".  (Stewart Smith)
+
+* Shell functions now output timestamps. (Stewart Smith)
+
+BUG FIXES
+~~~~~~~~~
+
+* Add 'subunit --no-xfail', which will omit expected failures from the subunit
+  stream. (John Arbash Meinel, #623642)
+
+* Add 'subunit -F/--only-genuine-failures' which sets all of '--no-skips',
+  '--no-xfail', '--no-passthrough, '--no-success', and gives you just the
+  failure stream. (John Arbash Meinel)
+
+0.0.7
+-----
+
 The Subunit Python test runner ``python -m subunit.run`` can now report the
 test ids and also filter via a test id list file thanks to improvements in
 ``testtools.run``. See the testtools manual, or testrepository - a major
@@ -26,12 +46,8 @@ IMPROVEMENTS
 * Force flush of writes to stdout in c/tests/test_child.
   (Jelmer Vernooij, #687611)
 
-* Perl module now correctly outputs "failure" instead of "fail".  (Stewart Smith)
-
 * Provisional Python 3.x support.
   (Robert Collins, Tres Seaver, Martin[gz], #666819)
-
-* Shell functions now output timestamps. (Stewart Smith)
 
 * ``subunit.chunked.Decoder`` Python class takes a new ``strict`` option,
   which defaults to ``True``. When ``False``, the ``Decoder`` will accept
@@ -68,20 +84,11 @@ IMPROVEMENTS
 * The Python2.7 / testtools addUnexpectedSuccess API is now supported. This
   required adding a new status code to the protocol. (Robert Collins, #654474)
 
-BUG FIXES
-~~~~~~~~~
-
-* Add 'subunit --no-xfail', which will omit expected failures from the subunit
-  stream. (John Arbash Meinel, #623642)
-
-* Add 'subunit -F/--only-genuine-failures' which sets all of '--no-skips',
-  '--no-xfail', '--no-passthrough, '--no-success', and gives you just the
-  failure stream. (John Arbash Meinel)
-
 CHANGES
 ~~~~~~~
 
-* Newer testtools is needed as part of the Python 3 support. (Robert Collins)
+* testtools 0.9.11 or newer is new needed (due to the Python 3 support).
+  (Robert Collins)
 
 0.0.6
 -----

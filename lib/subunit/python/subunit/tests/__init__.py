@@ -19,6 +19,7 @@ from subunit.tests import (
     test_chunked,
     test_details,
     test_progress_model,
+    test_run,
     test_subunit_filter,
     test_subunit_stats,
     test_subunit_tags,
@@ -38,4 +39,5 @@ def test_suite():
     result.addTest(test_subunit_filter.test_suite())
     result.addTest(test_subunit_tags.test_suite())
     result.addTest(test_subunit_stats.test_suite())
+    result.addTest(test_run.test_suite())
     return result
