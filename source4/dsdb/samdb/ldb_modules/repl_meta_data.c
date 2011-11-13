@@ -50,6 +50,7 @@
 #include "lib/util/binsearch.h"
 #include "lib/util/tsort.h"
 
+static const uint64_t DELETED_OBJECT_CONTAINER_CHANGE_TIME = 253402127999L;
 struct replmd_private {
 	TALLOC_CTX *la_ctx;
 	struct la_entry *la_list;
@@ -917,7 +918,32 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 
 		m->attid			= sa->attributeID_id;
 		m->version			= 1;
-		m->originating_change_time	= now;
+		if (m->attid == 0x20030) {
+			const struct ldb_val *rdn_val = ldb_dn_get_rdn_val(msg->dn);
+			const char* rdn;
+
+			if (rdn_val == NULL) {
+				ldb_oom(ldb);
+				talloc_free(ac);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+
+			rdn = (const char*)rdn_val->data;
+			if (strcmp(rdn, "Deleted Objects") == 0) {
+				/*
+				 * Set the originating_change_time to 29/12/9999 at 23:59:59
+				 * as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
+				 */
+				NTTIME deleted_obj_ts;
+
+				unix_to_nt_time(&deleted_obj_ts, DELETED_OBJECT_CONTAINER_CHANGE_TIME);
+				m->originating_change_time	= deleted_obj_ts;
+			} else {
+				m->originating_change_time	= now;
+			}
+		} else {
+			m->originating_change_time	= now;
+		}
 		m->originating_invocation_id	= *our_invocation_id;
 		m->originating_usn		= ac->seq_num;
 		m->local_usn			= ac->seq_num;
@@ -1118,7 +1144,31 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	md1 = &omd->ctr.ctr1.array[i];
 	md1->version++;
 	md1->attid                     = a->attributeID_id;
-	md1->originating_change_time   = now;
+	if (md1->attid == 0x20030) {
+		const struct ldb_val *rdn_val = ldb_dn_get_rdn_val(msg->dn);
+		const char* rdn;
+
+		if (rdn_val == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		rdn = (const char*)rdn_val->data;
+		if (strcmp(rdn, "Deleted Objects") == 0) {
+			/*
+			 * Set the originating_change_time to 29/12/9999 at 23:59:59
+			 * as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
+			 */
+			NTTIME deleted_obj_ts;
+
+			unix_to_nt_time(&deleted_obj_ts, DELETED_OBJECT_CONTAINER_CHANGE_TIME);
+			md1->originating_change_time	= deleted_obj_ts;
+		} else {
+			md1->originating_change_time	= now;
+		}
+	} else {
+		md1->originating_change_time	= now;
+	}
 	md1->originating_invocation_id = *our_invocation_id;
 	md1->originating_usn           = *seq_num;
 	md1->local_usn                 = *seq_num;
