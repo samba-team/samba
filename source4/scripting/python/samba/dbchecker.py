@@ -45,6 +45,7 @@ class dbcheck(object):
         self.remove_all_deleted_DN_links = False
         self.fix_all_target_mismatch = False
         self.fix_all_metadata = False
+        self.fix_time_metadata = False
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
 
@@ -368,6 +369,22 @@ class dbcheck(object):
         return error_count
 
 
+    def get_originating_time(self, val, attid):
+        '''Read metadata properties and return the originating time for
+           a given attributeId.
+
+           :return: the originating time or 0 if not found
+        '''
+
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
+        obj = repl.ctr
+
+        for o in repl.ctr.array:
+            if o.attid == attid:
+                return o.originating_change_time
+
+        return 0
+
     def process_metadata(self, val):
         '''Read metadata properties and list attributes in it'''
 
@@ -465,6 +482,23 @@ class dbcheck(object):
 
         show_dn = True
         if got_repl_property_meta_data:
+            rdn = (str(dn).split(","))[0]
+            if rdn == "CN=Deleted Objects":
+                isDeletedAttId = 131120
+                # It's 29/12/9999 at 23:59:59 UTC as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
+
+                expectedTimeDo = 2650466015990000000
+                originating = self.get_originating_time(obj["replPropertyMetaData"], isDeletedAttId)
+                if originating != expectedTimeDo:
+                    if self.confirm_all("Fix isDeleted originating_change_time on '%s'" % str(dn), 'fix_time_metadata'):
+                        nmsg = ldb.Message()
+                        nmsg.dn = dn
+                        nmsg["isDeleted"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isDeleted")
+                        error_count += 1
+                        self.samdb.modify(nmsg, controls=["provision:0"])
+
+                    else:
+                        self.report("Not fixing isDeleted originating_change_time on '%s'" % str(dn))
             for att in list_attrs_seen:
                 if not att in list_attrs_from_md:
                     if show_dn:
