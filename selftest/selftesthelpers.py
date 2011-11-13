@@ -40,13 +40,15 @@ def binpath(name):
 binary_mapping_string = os.getenv("BINARY_MAPPING", None)
 if binary_mapping_string is not None:
     for binmapping_entry in binary_mapping_string.split(','):
-        binmapping = binmapping_entry.split(':')
-        binary_mapping[binmapping[0]] = binmapping[1]
+        try:
+            (from_path, to_path) = binmapping_entry.split(':', 1)
+        except ValueError:
+            continue
+        binary_mapping[from_path] = to_path
 
 perl = os.getenv("PERL", "perl")
-perl = perl.split()
 
-if subprocess.call(perl + ["-e", "eval require Test::More;"]) == 0:
+if subprocess.call([perl, "-e", "eval require Test::More;"]) == 0:
     has_perl_test_more = True
 else:
     has_perl_test_more = False
@@ -157,7 +159,7 @@ def planperltestsuite(name, path):
     :param path: Path to the test runner
     """
     if has_perl_test_more:
-        plantestsuite(name, "none", "%s %s | %s" % (" ".join(perl), path, tap2subunit))
+        plantestsuite(name, "none", "%s %s | %s" % (perl, path, tap2subunit))
     else:
         skiptestsuite(name, "Test::More not available")
 
