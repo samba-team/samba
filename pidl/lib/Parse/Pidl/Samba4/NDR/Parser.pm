@@ -1033,7 +1033,11 @@ sub ParseElementPullLevel
 				if ($l->{IS_ZERO_TERMINATED}) {
 					$self->CheckStringTerminator($ndr, $e, $l, $length);
 				}
-				$self->pidl("NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . mapTypeName($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));");
+				if ($l->{IS_TO_NULL}) {
+					$self->pidl("NDR_CHECK(ndr_pull_charset_to_null($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . mapTypeName($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));");
+				} else {
+					$self->pidl("NDR_CHECK(ndr_pull_charset($ndr, $ndr_flags, ".get_pointer_to($var_name).", $length, sizeof(" . mapTypeName($nl->{DATA_TYPE}) . "), CH_$e->{PROPERTIES}->{charset}));");
+				}
 				return;
 			} elsif (has_fast_array($e, $l)) {
 				if ($l->{IS_ZERO_TERMINATED}) {
