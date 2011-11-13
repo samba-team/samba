@@ -712,3 +712,15 @@ def SETUP_CONFIGURE_CACHE(conf, enable):
         preproc.recursion_limit = 1
     # in either case we don't need to scan system includes
     preproc.go_absolute = False
+
+
+@conf
+def SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS(conf):
+    # we don't want any libraries or modules to rely on runtime
+    # resolution of symbols
+    if sys.platform != "openbsd4":
+        conf.env.undefined_ldflags = conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
+
+    if sys.platform != "openbsd4" and conf.env.undefined_ignore_ldflags == []:
+        if conf.CHECK_LDFLAGS(['-undefined', 'dynamic_lookup']):
+            conf.env.undefined_ignore_ldflags = ['-undefined', 'dynamic_lookup']

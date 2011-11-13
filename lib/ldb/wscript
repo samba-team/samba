@@ -75,6 +75,8 @@ def configure(conf):
 
     conf.SAMBA_CONFIG_H()
 
+    conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
+
 def build(bld):
     bld.RECURSE('lib/tdb_compat')
     bld.RECURSE('lib/tevent')
