@@ -17,7 +17,7 @@ from samba.auth import system_session
 from samba import ldb
 from samba.samdb import SamDB
 from samba.auth import AuthContext
-from samba.ndr import ndr_pack, ndr_unpack
+from samba.ndr import ndr_unpack
 from samba import gensec
 from samba.credentials import Credentials
 
@@ -25,7 +25,6 @@ from subunit.run import SubunitTestRunner
 import unittest
 import samba.tests
 
-from samba.dcerpc import security
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 
 
@@ -88,7 +87,7 @@ class TokenTest(samba.tests.TestCase):
         if len(sidset1.difference(sidset2)):
             print("token sids don't match")
             print("tokengroups: %s" % tokengroups)
-            print("calculated : %s" % self.user_sids);
+            print("calculated : %s" % self.user_sids)
             print("difference : %s" % sidset1.difference(sidset2))
             self.fail(msg="calculated groups don't match against rootDSE tokenGroups")
 
@@ -105,8 +104,6 @@ class TokenTest(samba.tests.TestCase):
         sidset2 = set(self.user_sids)
         if len(sidset1.difference(sidset2)):
             print("token sids don't match")
-            print("tokengroups: %s" % tokengroups)
-            print("calculated : %s" % sids);
             print("difference : %s" % sidset1.difference(sidset2))
             self.fail(msg="calculated groups don't match against user DN tokenGroups")
         
@@ -155,8 +152,6 @@ class TokenTest(samba.tests.TestCase):
         sidset2 = set(self.user_sids)
         if len(sidset1.difference(sidset2)):
             print("token sids don't match")
-            print("tokengroups: %s" % tokengroups)
-            print("calculated : %s" % sids);
             print("difference : %s" % sidset1.difference(sidset2))
             self.fail(msg="calculated groups don't match against user PAC tokenGroups")
 
