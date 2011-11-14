@@ -147,7 +147,24 @@ static void wb_next_pwent_fill_done(struct tevent_req *subreq)
 
 	status = wb_fill_pwent_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	/*
+	 * When you try to enumerate users with 'getent passwd' and the user
+	 * doesn't have a uid set we should just move on.
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		state->gstate->next_user += 1;
+
+		subreq = wb_fill_pwent_send(state,
+					    state->ev,
+					    &state->gstate->users[state->gstate->next_user],
+					    state->pw);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, wb_next_pwent_fill_done, req);
+
+		return;
+	} else if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
 	}
