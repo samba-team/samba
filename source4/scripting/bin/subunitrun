@@ -79,7 +79,7 @@ else:
 
 opts, args = parser.parse_args()
 
-if opts.listtests:
+if getattr(opts, "listtests", False):
     args.insert(0, "--list")
 else:
     lp = sambaopts.get_loadparm()
