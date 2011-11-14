@@ -218,7 +218,7 @@
 #define INVALID_SHARENAME_CHARS "%<>*?|/\\+=;:\","
 
 /* Seconds between connection attempts to a remote server. */
-#define FAILED_CONNECTION_CACHE_TIMEOUT 30
+#define FAILED_CONNECTION_CACHE_TIMEOUT (LONG_CONNECT_TIMEOUT * 2 / 1000)
 
 /* Default hash size for the winbindd cache. */
 #define WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE 5000
