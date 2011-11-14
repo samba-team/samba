@@ -487,11 +487,25 @@ class dc_join(object):
                                                            "servicePrincipalName")
             ctx.samdb.modify(m)
 
+            # The account password set operation should normally be done over
+            # LDAP. Windows 2000 DCs however allow this only with SSL
+            # connections which are hard to set up and otherwise refuse with
+            # ERR_UNWILLING_TO_PERFORM. In this case we fall back to libnet
+            # over SAMR.
             print "Setting account password for %s" % ctx.samname
-            ctx.samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))" % ldb.binary_encode(ctx.samname),
-                                  ctx.acct_pass,
-                                  force_change_at_next_login=False,
-                                  username=ctx.samname)
+            try:
+                ctx.samdb.setpassword("(&(objectClass=user)(sAMAccountName=%s))"
+                                      % ldb.binary_encode(ctx.samname),
+                                      ctx.acct_pass,
+                                      force_change_at_next_login=False,
+                                      username=ctx.samname)
+            except ldb.LdbError, (num, _):
+                if num != ldb.ERR_UNWILLING_TO_PERFORM:
+                    pass
+                ctx.net.set_password(account_name=ctx.samname,
+                                     domain_name=ctx.domain_name,
+                                     newpassword=ctx.acct_pass)
+
             res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-keyVersionNumber"])
             ctx.key_version_number = int(res[0]["msDS-keyVersionNumber"][0])
 
