@@ -244,7 +244,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	}
 	tevent_req_set_callback(tsubreq, smbd_smb2_request_create_done, smb2req);
 
-	return smbd_smb2_request_pending_queue(smb2req, tsubreq);
+	return smbd_smb2_request_pending_queue(smb2req, tsubreq, 500);
 }
 
 static uint64_t get_mid_from_smb2req(struct smbd_smb2_request *smb2req)

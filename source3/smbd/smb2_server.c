@@ -841,11 +841,11 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 					    void *private_data);
 
 NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
-					 struct tevent_req *subreq)
+					 struct tevent_req *subreq,
+					 uint32_t defer_time)
 {
 	NTSTATUS status;
 	int i = req->current_idx;
-	uint32_t defer_time = 500;
 	struct timeval defer_endtime;
 	uint8_t *outhdr = NULL;
 	uint32_t flags;

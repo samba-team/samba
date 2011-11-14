@@ -110,7 +110,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_ioctl_done, req);
 
-	return smbd_smb2_request_pending_queue(req, subreq);
+	return smbd_smb2_request_pending_queue(req, subreq, 500);
 }
 
 static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
