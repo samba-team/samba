@@ -10,7 +10,7 @@
 # get e.g. credentials passed via command-line options to this
 # script.
 
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2011
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -79,10 +79,11 @@ else:
 
 opts, args = parser.parse_args()
 
-lp = sambaopts.get_loadparm()
-samba.tests.cmdline_credentials = credopts.get_credentials(lp)
-if getattr(opts, "listtests", False):
+if opts.listtests:
     args.insert(0, "--list")
+else:
+    lp = sambaopts.get_loadparm()
+    samba.tests.cmdline_credentials = credopts.get_credentials(lp)
 
 runner = SubunitTestRunner()
 program = TestProgram(module=None, argv=[sys.argv[0]] + args, testRunner=runner)
