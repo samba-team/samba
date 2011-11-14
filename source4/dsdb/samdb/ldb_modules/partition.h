@@ -21,6 +21,7 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <ldb_module.h>
+#include "lib/util/tdb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "system/locale.h"
@@ -39,9 +40,15 @@ struct partition_module {
 	struct ldb_dn *dn;
 };
 
+struct partition_metadata {
+	struct tdb_wrap *db;
+	int in_transaction;
+};
+
 struct partition_private_data {
 	struct dsdb_partition **partitions;
 	struct ldb_dn **replicate;
+	struct partition_metadata *metadata;
 	
 	struct partition_module **modules;
 	const char *ldapBackend;

@@ -875,5 +875,11 @@ int partition_init(struct ldb_module *module)
 		return ldb_operr(ldb);
 	}
 
+	/* This loads metadata tdb. If it's missing, creates it */
+	ret = partition_metadata_init(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	return ldb_next_init(module);
 }

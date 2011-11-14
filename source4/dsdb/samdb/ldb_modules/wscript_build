@@ -194,7 +194,7 @@ bld.SAMBA_MODULE('ldb_show_deleted',
 
 
 bld.SAMBA_MODULE('ldb_partition',
-	source='partition.c partition_init.c',
+	source='partition.c partition_init.c partition_metadata.c',
 	autoproto='partition_proto.h',
 	subsystem='ldb',
 	init_function='ldb_partition_module_init',
