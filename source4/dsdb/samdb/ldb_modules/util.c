@@ -314,20 +314,31 @@ int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct 
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
+
+
 /*
   a ldb_extended request operating on modules below the
   current module
+
+  Note that this does not automatically start a transaction. If you
+  need a transaction the caller needs to start it as needed.
  */
 int dsdb_module_extended(struct ldb_module *module,
-		       const char* oid, void* data,
-		       uint32_t dsdb_flags,
-		       struct ldb_request *parent)
+			 TALLOC_CTX *mem_ctx,
+			 struct ldb_result **_res,
+			 const char* oid, void* data,
+			 uint32_t dsdb_flags,
+			 struct ldb_request *parent)
 {
 	struct ldb_request *req;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_result *res;
+
+	if (_res != NULL) {
+		(*_res) = NULL;
+	}
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
@@ -373,9 +384,15 @@ int dsdb_module_extended(struct ldb_module *module,
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 
+	if (_res != NULL && ret == LDB_SUCCESS) {
+		(*_res) = talloc_steal(mem_ctx, res);
+	}
+
 	talloc_free(tmp_ctx);
 	return ret;
 }
+
+
 /*
   a ldb_modify request operating on modules below the
   current module
