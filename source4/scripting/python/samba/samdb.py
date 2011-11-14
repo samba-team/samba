@@ -87,7 +87,7 @@ class SamDB(samba.Ldb):
             samccountname=name)
         """
 
-        flags = samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_PASSWD_NOTREQD
+        flags = samba.dsdb.UF_ACCOUNTDISABLE
         self.toggle_userAccountFlags(search_filter, flags, on=True)
 
     def enable_account(self, search_filter):
