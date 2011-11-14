@@ -33,8 +33,9 @@ if validate:
 else:
     validate_list = []
 
-def plansmbtorturetestsuite(name, env, options):
-    modname = "samba4.%s" % name
+def plansmbtorturetestsuite(name, env, options, modname=None):
+    if modname is None:
+        modname = "samba4.%s" % name
     cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 
@@ -274,9 +275,9 @@ for t in smb4torture_testsuites("local."):
 
 # Confirm these tests with the system iconv too
 for t in ["local.convert_string_handle", "local.convert_string", "local.ndr"]:
-    modname = "samba4.%s.system.iconv" % t
-    cmdline = "%s %s %s" % (valgrindify(smb4torture), "ncalrpc: --option='iconv:use_builtin_handlers=false'", t)
-    plantestsuite_loadlist(modname, "none", cmdline)
+    options = "ncalrpc: --option='iconv:use_builtin_handlers=false'"
+    plansmbtorturetestsuite(t, "none", options,
+        modname="samba4.%s.system.iconv" % t)
 
 tdbtorture4 = binpath("tdbtorture")
 if os.path.exists(tdbtorture4):
