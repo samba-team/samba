@@ -627,29 +627,37 @@ static int linked_attribute_compare(const struct drsuapi_DsReplicaLinkedAttribut
 	return GUID_compare(&guid1, &guid2);
 }
 
+struct drsuapi_changed_objects {
+	struct ldb_dn *dn;
+	struct GUID guid;
+	uint64_t usn;
+};
 
 /*
   sort the objects we send by tree order
  */
-static int site_res_cmp_parent_order(struct ldb_message **m1, struct ldb_message **m2)
+static int site_res_cmp_parent_order(struct drsuapi_changed_objects *m1,
+					struct drsuapi_changed_objects *m2)
 {
-	return ldb_dn_compare((*m2)->dn, (*m1)->dn);
+	return ldb_dn_compare(m2->dn, m1->dn);
 }
 
 /*
   sort the objects we send first by uSNChanged
  */
-static int site_res_cmp_usn_order(struct ldb_message **m1, struct ldb_message **m2)
+static int site_res_cmp_dn_usn_order(struct drsuapi_changed_objects *m1,
+					struct drsuapi_changed_objects *m2)
 {
 	unsigned usnchanged1, usnchanged2;
 	unsigned cn1, cn2;
-	cn1 = ldb_dn_get_comp_num((*m1)->dn);
-	cn2 = ldb_dn_get_comp_num((*m2)->dn);
+
+	cn1 = ldb_dn_get_comp_num(m1->dn);
+	cn2 = ldb_dn_get_comp_num(m2->dn);
 	if (cn1 != cn2) {
 		return cn1 > cn2 ? 1 : -1;
 	}
-	usnchanged1 = ldb_msg_find_attr_as_uint(*m1, "uSNChanged", 0);
-	usnchanged2 = ldb_msg_find_attr_as_uint(*m2, "uSNChanged", 0);
+	usnchanged1 = m1->usn;
+	usnchanged2 = m2->usn;
 	if (usnchanged1 == usnchanged2) {
 		return 0;
 	}
@@ -1417,6 +1425,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct dom_sid *user_sid;
 	bool is_secret_request;
 	bool is_gc_pas_request;
+	struct drsuapi_changed_objects *changes;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -1653,33 +1662,31 @@ allowed:
 		}
 		W_ERROR_NOT_OK_RETURN(werr);
 
-		if (search_res) {
-			if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
-				TYPESAFE_QSORT(search_res->msgs,
-					       search_res->count,
-					       site_res_cmp_parent_order);
-			} else {
-				TYPESAFE_QSORT(search_res->msgs,
-					       search_res->count,
-					       site_res_cmp_usn_order);
-			}
-		}
-
 		/* extract out the GUIDs list */
 		getnc_state->num_records = search_res ? search_res->count : 0;
 		getnc_state->guids = talloc_array(getnc_state, struct GUID, getnc_state->num_records);
 		W_ERROR_HAVE_NO_MEMORY(getnc_state->guids);
 
+		changes = talloc_array(getnc_state,
+				       struct drsuapi_changed_objects,
+				       getnc_state->num_records);
+		W_ERROR_HAVE_NO_MEMORY(changes);
+
 		for (i=0; i<getnc_state->num_records; i++) {
-			getnc_state->guids[i] = samdb_result_guid(search_res->msgs[i], "objectGUID");
-			if (GUID_all_zero(&getnc_state->guids[i])) {
-				DEBUG(2,("getncchanges: bad objectGUID from %s\n", ldb_dn_get_linearized(search_res->msgs[i]->dn)));
-				return WERR_DS_DRA_INTERNAL_ERROR;
-			}
+			changes[i].dn = search_res->msgs[i]->dn;
+			changes[i].guid = samdb_result_guid(search_res->msgs[i], "objectGUID");
+			changes[i].usn = ldb_msg_find_attr_as_uint64(search_res->msgs[i], "uSNChanged", 0);
 		}
 
-
-		talloc_free(search_res);
+		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
+			TYPESAFE_QSORT(changes,
+				       getnc_state->num_records,
+				       site_res_cmp_parent_order);
+		} else {
+			TYPESAFE_QSORT(changes,
+				       getnc_state->num_records,
+				       site_res_cmp_dn_usn_order);
+		}
 
 		getnc_state->uptodateness_vector = talloc_steal(getnc_state, req10->uptodateness_vector);
 		if (getnc_state->uptodateness_vector) {
@@ -1688,6 +1695,18 @@ allowed:
 				       getnc_state->uptodateness_vector->count,
 				       drsuapi_DsReplicaCursor_compare);
 		}
+
+		for (i=0; i < getnc_state->num_records; i++) {
+			getnc_state->guids[i] = changes[i].guid;
+			if (GUID_all_zero(&getnc_state->guids[i])) {
+				DEBUG(2,("getncchanges: bad objectGUID from %s\n",
+					 ldb_dn_get_linearized(search_res->msgs[i]->dn)));
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+		}
+
+		talloc_free(search_res);
+		talloc_free(changes);
 	}
 
 	/* Prefix mapping */
