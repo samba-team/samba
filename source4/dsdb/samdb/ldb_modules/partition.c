@@ -960,45 +960,27 @@ static int partition_del_trans(struct ldb_module *module)
 }
 
 int partition_primary_sequence_number(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-				     enum ldb_sequence_type type, uint64_t *seq_number) 
+				     enum ldb_sequence_type type, uint64_t *seq_number,
+				     struct ldb_request *parent)
 {
 	int ret;
 	struct ldb_result *res;
 	struct ldb_seqnum_request *tseq;
-	struct ldb_request *treq;
 	struct ldb_seqnum_result *seqr;
-	res = talloc_zero(mem_ctx, struct ldb_result);
-	if (res == NULL) {
-		return ldb_oom(ldb_module_get_ctx(module));
-	}
-	tseq = talloc_zero(res, struct ldb_seqnum_request);
+
+	tseq = talloc_zero(mem_ctx, struct ldb_seqnum_request);
 	if (tseq == NULL) {
-		talloc_free(res);
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
 	tseq->type = type;
 	
-	ret = ldb_build_extended_req(&treq, ldb_module_get_ctx(module), res,
-				     LDB_EXTENDED_SEQUENCE_NUMBER,
-				     tseq,
-				     NULL,
-				     res,
-				     ldb_extended_default_callback,
-				     NULL);
-	LDB_REQ_SET_LOCATION(treq);
+	ret = dsdb_module_extended(module, tseq, &res,
+				   LDB_EXTENDED_SEQUENCE_NUMBER,
+				   tseq,
+				   DSDB_FLAG_NEXT_MODULE,
+				   parent);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
-		return ret;
-	}
-	
-	ret = ldb_next_request(module, treq);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
-		return ret;
-	}
-	ret = ldb_wait(treq->handle, LDB_WAIT_ALL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
+		talloc_free(tseq);
 		return ret;
 	}
 	
@@ -1011,7 +993,7 @@ int partition_primary_sequence_number(struct ldb_module *module, TALLOC_CTX *mem
 	}
 
 	*seq_number = seqr->seq_num;
-	talloc_free(res);
+	talloc_free(tseq);
 	return LDB_SUCCESS;
 }
 
@@ -1046,7 +1028,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	case LDB_SEQ_NEXT:
 	case LDB_SEQ_HIGHEST_SEQ:
 
-		ret = partition_primary_sequence_number(module, req, seq->type, &seq_number);
+		ret = partition_primary_sequence_number(module, req, seq->type, &seq_number, req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
