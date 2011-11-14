@@ -30,8 +30,6 @@
 
 #define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
 
-NTSTATUS init_module(void);
-
 /*
  * IdMap backend
  */

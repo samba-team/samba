@@ -75,7 +75,7 @@ static NTSTATUS testsam_add_sam_account (struct pdb_methods *methods, struct sam
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS testsam_init(struct pdb_methods **pdb_method, const char *location)
+static NTSTATUS testsam_init(struct pdb_methods **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
 
@@ -107,7 +107,9 @@ NTSTATUS testsam_init(struct pdb_methods **pdb_method, const char *location)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS init_module(void) {
+NTSTATUS pdb_testsam_init(void);
+NTSTATUS pdb_testsam_init(void)
+{
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "testsam",
 				   testsam_init);
 }

@@ -56,8 +56,6 @@ struct idmap_ad_context {
 	enum wb_posix_mapping ad_map_type; /* WB_POSIX_MAP_UNKNOWN */
 };
 
-NTSTATUS init_module(void);
-
 /************************************************************************
  ***********************************************************************/
 

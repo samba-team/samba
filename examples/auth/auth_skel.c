@@ -42,7 +42,7 @@ static NTSTATUS check_skel_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-NTSTATUS auth_init_skel(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_skel(struct auth_context *auth_context, const char *param, auth_methods **auth_method)
 {
 	struct auth_methods *result;
 
@@ -67,7 +67,8 @@ NTSTATUS auth_init_skel(struct auth_context *auth_context, const char *param, au
 	return NT_STATUS_OK;
 }
 
-NTSTATUS init_module(void)
+NTSTATUS auth_skel_init(void);
+NTSTATUS auth_skel_init(void)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "skel", auth_init_skel);
 }
