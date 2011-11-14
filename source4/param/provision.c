@@ -330,7 +330,9 @@ failure:
 }
 
 
-struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx,
+					 struct loadparm_context *lp_ctx,
+					 const char *schema_dn,
 					 DATA_BLOB *override_prefixmap)
 {
 	PyObject *schema_mod, *schema_dict, *schema_fn, *py_result, *parameters;
@@ -361,6 +363,11 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_co
 	}
 	
 	parameters = PyDict_New();
+
+	if (schema_dn) {
+		PyDict_SetItemString(parameters, "schemadn",
+				     PyString_FromString(schema_dn));
+	}
 
 	if (override_prefixmap) {
 		PyDict_SetItemString(parameters, "override_prefixmap",

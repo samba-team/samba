@@ -205,7 +205,7 @@ static bool torture_dsdb_syntax_tcase_setup(struct torture_context *tctx, void *
 	priv = talloc_zero(tctx, struct torture_dsdb_syntax);
 	torture_assert(tctx, priv, "No memory");
 
-	priv->ldb = provision_get_schema(priv, tctx->lp_ctx, NULL);
+	priv->ldb = provision_get_schema(priv, tctx->lp_ctx, NULL, NULL);
 	torture_assert(tctx, priv->ldb, "Failed to load schema from disk");
 
 	priv->schema = dsdb_get_schema(priv->ldb, NULL);

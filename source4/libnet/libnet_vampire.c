@@ -308,7 +308,9 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
 	s_dsa->other_info->dns_name = tmp_dns_name;
 
-	schema_ldb = provision_get_schema(s, s->lp_ctx, &s->prefixmap_blob);
+	schema_ldb = provision_get_schema(s, s->lp_ctx,
+					  c->forest->schema_dn_str,
+					  &s->prefixmap_blob);
 	if (!schema_ldb) {
 		DEBUG(0,("Failed to re-load from local provision using remote prefixMap. "
 			 "Will continue with local prefixMap\n"));
