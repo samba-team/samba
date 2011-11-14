@@ -483,7 +483,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	 * somehow updated the prefixMap during this transaction */
 	prefixMap_el->flags = LDB_FLAG_MOD_ADD;
 
-	ret = ldb_modify(s->ldb, msg);
+	ret = dsdb_modify(s->ldb, msg, DSDB_FLAG_AS_SYSTEM);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to add prefixMap: %s\n", ldb_errstring(s->ldb)));
 		return NT_STATUS_FOOBAR;
