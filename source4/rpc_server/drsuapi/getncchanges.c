@@ -375,15 +375,15 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 		int ret;
 		const char *v;
 
-		v = ldb_msg_find_attr_as_string(msg, "isDeleted", "false");
-		if (strncasecmp(v, "true", 4) == 0) {
+		v = ldb_msg_find_attr_as_string(msg, "isDeleted", "FALSE");
+		if (strncmp(v, "TRUE", 4) == 0) {
 			/*
 			  * Note: we skip the transmition of the deleted link even if the other part used to
 			  * know about it because when we transmit the deletion of the object, the link will
 			  * be deleted too due to deletion of object where link points and Windows do so.
 			  */
 			if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008_R2) {
-				v = ldb_msg_find_attr_as_string(msg, "isRecycled", "true");
+				v = ldb_msg_find_attr_as_string(msg, "isRecycled", "TRUE");
 				/*
 				 * On Windows 2008R2 isRecycled is always present even if FL or DL are < FL 2K8R2
 				 * if it join an existing domain with deleted objets, it firsts impose to have a
@@ -396,7 +396,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 				 * For this kind of forest level we do not return the link if the object is recycled
 				 * (isRecycled = true).
 				 */
-				if (strncasecmp(v, "true", 4) == 0) {
+				if (strncmp(v, "TRUE", 4) == 0) {
 					DEBUG(2, (" object %s is recycled, not returning linked attribute !\n",
 								ldb_dn_get_linearized(msg->dn)));
 					return WERR_OK;
