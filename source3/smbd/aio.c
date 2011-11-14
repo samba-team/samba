@@ -871,6 +871,11 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 		return false;
 	}
 
+	if (!aio_ex->fsp) {
+	        DEBUG(3, ("handle_aio_completed: aio_ex->fsp == NULL\n"));
+		return false;
+	}
+
 	fsp = aio_ex->fsp;
 
 	/* Ensure the operation has really completed. */
