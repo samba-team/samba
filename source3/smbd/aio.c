@@ -380,6 +380,37 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+bool cancel_smb2_aio(struct smb_request *smbreq)
+{
+	struct smbd_smb2_request *smb2req = smbreq->smb2req;
+	struct aio_extra *aio_ex = NULL;
+	int ret;
+
+	if (smbreq) {
+		smb2req = smbreq->smb2req;
+	}
+
+	if (smb2req) {
+		aio_ex = talloc_get_type(smbreq->async_priv,
+					 struct aio_extra);
+	}
+
+	if (aio_ex == NULL) {
+		return false;
+	}
+
+	if (aio_ex->fsp == NULL) {
+		return false;
+	}
+
+	ret = SMB_VFS_AIO_CANCEL(aio_ex->fsp, &aio_ex->acb);
+	if (ret != AIO_CANCELED) {
+		return false;
+	}
+
+	return true;
+}
+
 /****************************************************************************
  Set up an aio request from a SMB2 read call.
 *****************************************************************************/
@@ -476,6 +507,7 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	/* We don't need talloc_move here as both aio_ex and
 	 * smbreq are children of smbreq->smb2req. */
 	aio_ex->smbreq = smbreq;
+	smbreq->async_priv = aio_ex;
 
 	DEBUG(10,("smb2: scheduled aio_read for file %s, "
 		"offset %.0f, len = %u (mid = %u)\n",
@@ -576,6 +608,7 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	/* We don't need talloc_move here as both aio_ex and
 	* smbreq are children of smbreq->smb2req. */
 	aio_ex->smbreq = smbreq;
+	smbreq->async_priv = aio_ex;
 
 	/* This should actually be improved to span the write. */
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
@@ -1037,6 +1070,11 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      size_t numtowrite)
 {
 	return NT_STATUS_RETRY;
+}
+
+bool cancel_smb2_aio(struct smb_request *smbreq)
+{
+	return false;
 }
 
 NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
