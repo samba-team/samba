@@ -165,6 +165,7 @@ static void smbd_smb2_request_write_done(struct tevent_req *subreq)
 
 struct smbd_smb2_write_state {
 	struct smbd_smb2_request *smb2req;
+	struct smb_request *smbreq;
 	files_struct *fsp;
 	bool write_through;
 	uint32_t in_length;
@@ -212,6 +213,17 @@ NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
 	return NT_STATUS_OK;
 }
 
+static bool smbd_smb2_write_cancel(struct tevent_req *req)
+{
+	struct smbd_smb2_write_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_write_state);
+
+	state->smb2req->cancelled = true;
+
+	return cancel_smb2_aio(state->smbreq);
+}
+
 static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
@@ -249,6 +261,7 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(smbreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+	state->smbreq = smbreq;
 
 	fsp = file_fsp(smbreq, (uint16_t)in_file_id_volatile);
 	if (fsp == NULL) {
@@ -302,8 +315,10 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_IS_OK(status)) {
 		/*
-		 * Doing an async write.
+		 * Doing an async write, allow this
+		 * request to be canceled
 		 */
+		tevent_req_set_cancel_fn(req, smbd_smb2_write_cancel);
 		return req;
 	}
 
