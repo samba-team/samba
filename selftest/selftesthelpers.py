@@ -159,6 +159,8 @@ def planperltestsuite(name, path):
 
 
 def planpythontestsuite(env, module, name=None, extra_path=[]):
+    if name is None:
+        name = module
     pypath = list(extra_path)
     if not has_system_subunit_run:
         pypath.extend(["%s/lib/subunit/python" % srcdir(),
