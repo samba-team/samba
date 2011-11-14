@@ -134,11 +134,9 @@ static int partition_req_callback(struct ldb_request *req,
 	struct ldb_module *module;
 	struct ldb_request *nreq;
 	int ret;
-	struct partition_private_data *data;
 	struct ldb_control *partition_ctrl;
 
 	ac = talloc_get_type(req->context, struct partition_context);
-	data = talloc_get_type(ldb_module_get_private(ac->module), struct partition_private_data);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
