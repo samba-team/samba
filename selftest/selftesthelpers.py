@@ -129,7 +129,11 @@ def plantestsuite_loadlist(name, env, cmdline):
 
 def plantestsuite_idlist(name, env, cmdline):
     print "-- TEST-IDLIST --"
-    print name
+    if env == "none":
+        fullname = name
+    else:
+        fullname = "%s(%s)" % (name, env)
+    print fullname
     print env
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
