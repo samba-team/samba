@@ -383,7 +383,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 			  * be deleted too due to deletion of object where link points and Windows do so.
 			  */
 			if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008_R2) {
-				v = ldb_msg_find_attr_as_string(msg, "isRecycled", "TRUE");
+				v = ldb_msg_find_attr_as_string(msg, "isRecycled", "FALSE");
 				/*
 				 * On Windows 2008R2 isRecycled is always present even if FL or DL are < FL 2K8R2
 				 * if it join an existing domain with deleted objets, it firsts impose to have a
