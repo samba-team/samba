@@ -32,8 +32,11 @@ struct smbldap_state;
 
 NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
 		      struct tevent_context *tevent_ctx,
-                      const char *location,
-                      struct smbldap_state **smbldap_state);
+		      const char *location,
+		      bool anon,
+		      const char *bind_dn,
+		      const char *bind_secret,
+		      struct smbldap_state **smbldap_state);
 
 void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
 void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, const DATA_BLOB *newblob);

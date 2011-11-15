@@ -29,6 +29,7 @@
 #include "passdb/pdb_ldap_util.h"
 #include "passdb/pdb_ldap_schema.h"
 #include "lib/privileges.h"
+#include "secrets.h"
 
 /*
  * Set a user's data
@@ -1591,6 +1592,9 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 	struct samu *samuser;
 	struct passwd *pwd;
 	bool is_ipa = false;
+	char *bind_dn = NULL;
+	char *bind_secret = NULL;
+	NTSTATUS status;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -1645,7 +1649,18 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 		goto failed;
 	}
 
-	if (!NT_STATUS_IS_OK(smbldap_init(tc, NULL, ldap_uri, &state))) {
+	if (!fetch_ldap_pw(&bind_dn, &bind_secret)) {
+		d_fprintf(stderr, _("Failed to retrieve LDAP password from secrets.tdb\n"));
+		goto failed;
+	}
+
+	status = smbldap_init(tc, NULL, ldap_uri, false, bind_dn, bind_secret, &state);
+
+	memset(bind_secret, '\0', strlen(bind_secret));
+	SAFE_FREE(bind_secret);
+	SAFE_FREE(bind_dn);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Unable to connect to the LDAP server.\n"));
 		goto failed;
 	}

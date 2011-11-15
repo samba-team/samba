@@ -6447,6 +6447,8 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
+	char *bind_dn = NULL;
+	char *bind_secret = NULL;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_method( pdb_method ))) {
 		return nt_status;
@@ -6489,9 +6491,17 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = smbldap_init(*pdb_method, pdb_get_tevent_context(),
-				 location, &ldap_state->smbldap_state);
+	if (!fetch_ldap_pw(&bind_dn, &bind_secret)) {
+		DEBUG(0, ("pdb_init_ldapsam_common: Failed to retrieve LDAP password from secrets.tdb\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
+	nt_status = smbldap_init(*pdb_method, pdb_get_tevent_context(),
+				 location, false, bind_dn, bind_secret,
+				 &ldap_state->smbldap_state);
+	memset(bind_secret, '\0', strlen(bind_secret));
+	SAFE_FREE(bind_secret);
+	SAFE_FREE(bind_dn);
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		return nt_status;
 	}

@@ -1703,6 +1703,9 @@ static int smbldap_state_destructor(struct smbldap_state *state)
 
 NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct tevent_context *tevent_ctx,
 		      const char *location,
+		      bool anon,
+		      const char *bind_dn,
+		      const char *bind_secret,
 		      struct smbldap_state **smbldap_state)
 {
 	*smbldap_state = talloc_zero(mem_ctx, struct smbldap_state);
