@@ -387,10 +387,6 @@ bool cancel_smb2_aio(struct smb_request *smbreq)
 	struct aio_extra *aio_ex = NULL;
 	int ret;
 
-	if (smbreq) {
-		smb2req = smbreq->smb2req;
-	}
-
 	if (smb2req) {
 		aio_ex = talloc_get_type(smbreq->async_priv,
 					 struct aio_extra);
