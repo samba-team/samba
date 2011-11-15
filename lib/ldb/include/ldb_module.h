@@ -85,10 +85,12 @@ void ldb_debug_add(struct ldb_context *ldb, const char *fmt, ...) PRINTF_ATTRIBU
 void ldb_debug_end(struct ldb_context *ldb, enum ldb_debug_level level);
 
 #define ldb_error(ldb, ecode, reason) ldb_error_at(ldb, ecode, reason, __FILE__, __LINE__)
+#define ldb_module_error(module, ecode, reason) ldb_error_at(ldb_module_get_ctx(module), ecode, reason, __FILE__, __LINE__)
 
 #define ldb_oom(ldb) ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "ldb out of memory")
 #define ldb_module_oom(module) ldb_oom(ldb_module_get_ctx(module))
 #define ldb_operr(ldb) ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "operations error")
+#define ldb_module_operr(module) ldb_error(ldb_module_get_ctx(module), LDB_ERR_OPERATIONS_ERROR, "operations error")
 
 /* The following definitions come from lib/ldb/common/ldb.c  */
 
