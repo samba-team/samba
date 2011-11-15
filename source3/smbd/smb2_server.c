@@ -517,13 +517,24 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 				struct smbd_smb2_request *outreq)
 {
 	int count, idx;
+	uint16_t total_credits = 0;
 
 	count = outreq->out.vector_count;
 
 	for (idx=1; idx < count; idx += 3) {
+		uint8_t *outhdr = (uint8_t *)outreq->out.vector[idx].iov_base;
 		smb2_set_operation_credit(outreq->sconn,
 			&inreq->in.vector[idx],
 			&outreq->out.vector[idx]);
+		/* To match Windows, count up what we
+		   just granted. */
+		total_credits += SVAL(outhdr, SMB2_HDR_CREDIT);
+		/* Set to zero in all but the last reply. */
+		if (idx + 3 < count) {
+			SSVAL(outhdr, SMB2_HDR_CREDIT, 0);
+		} else {
+			SSVAL(outhdr, SMB2_HDR_CREDIT, total_credits);
+		}
 	}
 }
 
@@ -1851,11 +1862,9 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 
-	/* Set credit for this operation (zero credits if this
+	/* Set credit for these operations (zero credits if this
 	   is a final reply for an async operation). */
-	smb2_set_operation_credit(req->sconn,
-			&req->in.vector[i],
-			&req->out.vector[i]);
+	smb2_calculate_credits(req, req);
 
 	if (req->do_signing) {
 		NTSTATUS status;
