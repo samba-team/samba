@@ -112,6 +112,7 @@ bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32_t grid, enum pdb_v
 
 /* The following definitions come from passdb/pdb_get_set.c  */
 
+bool pdb_is_password_change_time_max(time_t test_time);
 uint32_t pdb_get_acct_ctrl(const struct samu *sampass);
 time_t pdb_get_logon_time(const struct samu *sampass);
 time_t pdb_get_logoff_time(const struct samu *sampass);
