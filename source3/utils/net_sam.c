@@ -1583,7 +1583,7 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 	char *ldap_bk;
 	char *ldap_uri = NULL;
 	char *p;
-	struct smbldap_state *ls;
+	struct smbldap_state *state = NULL;
 	GROUP_MAP *gmap = NULL;
 	struct dom_sid gsid;
 	gid_t domusers_gid = -1;
@@ -1645,7 +1645,7 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 		goto failed;
 	}
 
-	if (!NT_STATUS_IS_OK(smbldap_init(tc, NULL, ldap_uri, &ls))) {
+	if (!NT_STATUS_IS_OK(smbldap_init(tc, NULL, ldap_uri, &state))) {
 		d_fprintf(stderr, _("Unable to connect to the LDAP server.\n"));
 		goto failed;
 	}
@@ -1709,7 +1709,7 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 
 		talloc_autofree_ldapmod(tc, mods);
 
-		rc = smbldap_add(ls, dn, mods);
+		rc = smbldap_add(state, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
 			d_fprintf(stderr, _("Failed to add Domain Users group "
@@ -1785,7 +1785,7 @@ domu_done:
 
 		talloc_autofree_ldapmod(tc, mods);
 
-		rc = smbldap_add(ls, dn, mods);
+		rc = smbldap_add(state, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
 			d_fprintf(stderr, _("Failed to add Domain Admins group "
@@ -1902,7 +1902,7 @@ doma_done:
 
 		talloc_autofree_ldapmod(tc, mods);
 
-		rc = smbldap_add(ls, dn, mods);
+		rc = smbldap_add(state, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
 			d_fprintf(stderr, _("Failed to add Administrator user "
@@ -2013,7 +2013,7 @@ doma_done:
 
 		talloc_autofree_ldapmod(tc, mods);
 
-		rc = smbldap_add(ls, dn, mods);
+		rc = smbldap_add(state, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
 			d_fprintf(stderr, _("Failed to add Guest user to "
@@ -2086,7 +2086,7 @@ doma_done:
 
 		talloc_autofree_ldapmod(tc, mods);
 
-		rc = smbldap_add(ls, dn, mods);
+		rc = smbldap_add(state, dn, mods);
 
 		if (rc != LDAP_SUCCESS) {
 			d_fprintf(stderr,
@@ -2099,11 +2099,11 @@ doma_done:
 
 
 done:
-	talloc_free(tc);
+	talloc_free(state);
 	return 0;
 
 failed:
-	talloc_free(tc);
+	talloc_free(state);
 	return -1;
 }
 
