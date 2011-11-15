@@ -346,8 +346,8 @@ wind_ucs2write(const uint16_t *in, size_t in_len, unsigned int *flags,
 	    return WIND_ERR_OVERRUN;
 
 	if ((*flags) & WIND_RW_LE) {
-	    p[0] = (bom >> 8) & 0xff;
-	    p[1] = (bom     ) & 0xff;
+	    p[0] = (bom     ) & 0xff;
+	    p[1] = (bom >> 8) & 0xff;
 	} else {
 	    p[1] = (bom     ) & 0xff;
 	    p[0] = (bom >> 8) & 0xff;
@@ -360,8 +360,8 @@ wind_ucs2write(const uint16_t *in, size_t in_len, unsigned int *flags,
 	if (len < 2)
 	    return WIND_ERR_OVERRUN;
 	if ((*flags) & WIND_RW_LE) {
-	    p[0] = (in[0] >> 8) & 0xff;
-	    p[1] = (in[0]     ) & 0xff;
+	    p[0] = (in[0]     ) & 0xff;
+	    p[1] = (in[0] >> 8) & 0xff;
 	} else {
 	    p[1] = (in[0]     ) & 0xff;
 	    p[0] = (in[0] >> 8) & 0xff;
