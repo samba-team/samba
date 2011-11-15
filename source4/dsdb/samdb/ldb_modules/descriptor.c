@@ -467,6 +467,8 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
 	static const char * const parent_attrs[] = { "nTSecurityDescriptor", NULL };
+	uint32_t instanceType;
+	bool isNC = false;
 
 	ldb = ldb_module_get_ctx(module);
 	dn = req->op.add.message->dn;
@@ -484,22 +486,39 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* if the object has a parent, retrieve its SD to
-	 * use for calculation. Unfortunately we do not yet have
-	 * instanceType, so we use dsdb_find_nc_root. */
-	parent_dn = ldb_dn_get_parent(req, dn);
-	if (parent_dn == NULL) {
-		return ldb_oom(ldb);
+	instanceType = ldb_msg_find_attr_as_uint(req->op.add.message, "instanceType", 0);
+
+	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
+		isNC = true;
 	}
 
-	ret = dsdb_find_nc_root(ldb, req, dn, &nc_root);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: Could not find NC root for %s\n",
-			  ldb_dn_get_linearized(dn));
-		return ret;
+	if (!isNC) {
+		ret = dsdb_find_nc_root(ldb, req, dn, &nc_root);
+		if (ret != LDB_SUCCESS) {
+			ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: Could not find NC root for %s\n",
+				ldb_dn_get_linearized(dn));
+			return ret;
+		}
+
+		if (ldb_dn_compare(dn, nc_root) == 0) {
+			DEBUG(0, ("Found DN %s being a NC by the old method\n", ldb_dn_get_linearized(dn)));
+			isNC = true;
+		}
 	}
 
-	if (ldb_dn_compare(dn, nc_root) != 0) {
+	if (isNC) {
+		DEBUG(2, ("DN: %s is a NC\n", ldb_dn_get_linearized(dn)));
+	}
+	if (!isNC) {
+		/* if the object has a parent, retrieve its SD to
+		 * use for calculation. Unfortunately we do not yet have
+		 * instanceType, so we use dsdb_find_nc_root. */
+
+		parent_dn = ldb_dn_get_parent(req, dn);
+		if (parent_dn == NULL) {
+			return ldb_oom(ldb);
+		}
+
 		/* we aren't any NC */
 		ret = dsdb_module_search_dn(module, req, &parent_res, parent_dn,
 					    parent_attrs,
