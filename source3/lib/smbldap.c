@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "smbldap.h"
-#include "secrets.h"
 #include "../libcli/security/security.h"
 #include <tevent.h>
 
@@ -953,22 +952,6 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state)
 	int rc;
 	int version;
 
-	if (!ldap_state->anonymous && !ldap_state->bind_dn) {
-		char *bind_dn = NULL;
-		char *bind_secret = NULL;
-
-		/* get the default dn and password only if they are not set already */
-		if (!fetch_ldap_pw(&bind_dn, &bind_secret)) {
-			DEBUG(0, ("ldap_connect_system: Failed to retrieve password from secrets.tdb\n"));
-			rc = LDAP_INVALID_CREDENTIALS;
-			goto done;
-		}
-		smbldap_set_creds(ldap_state, false, bind_dn, bind_secret);
-		SAFE_FREE(bind_dn);
-		memset(bind_secret, '\0', strlen(bind_secret));
-		SAFE_FREE(bind_secret);
-	}
-
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
 	   (OpenLDAP) doesnt' seem to support it */
 
@@ -1721,6 +1704,10 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct tevent_context *tevent_ctx,
 	}
 
 	(*smbldap_state)->tevent_context = tevent_ctx;
+
+	if (bind_dn && bind_secret) {
+		smbldap_set_creds(*smbldap_state, anon, bind_dn, bind_secret);
+	}
 
 	talloc_set_destructor(*smbldap_state, smbldap_state_destructor);
 	return NT_STATUS_OK;
