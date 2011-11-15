@@ -130,8 +130,9 @@ static NTSTATUS dns_process(struct dns_server *dns,
 
 		return NT_STATUS_OK;
 	}
-
-	NDR_PRINT_DEBUG(dns_name_packet, in_packet);
+	if (DEBUGLVL(2)) {
+		NDR_PRINT_DEBUG(dns_name_packet, in_packet);
+	}
 	*out_packet = *in_packet;
 	out_packet->operation |= DNS_FLAG_REPLY;
 
@@ -168,7 +169,9 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		out_packet->operation |= werr_to_dns_err(ret);
 	}
 
-	NDR_PRINT_DEBUG(dns_name_packet, out_packet);
+	if (DEBUGLVL(2)) {
+		NDR_PRINT_DEBUG(dns_name_packet, out_packet);
+	}
 	ndr_err = ndr_push_struct_blob(out, out_packet, out_packet,
 			(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
