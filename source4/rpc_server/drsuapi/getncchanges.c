@@ -283,6 +283,9 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	obj->object.attribute_ctr.num_attributes = obj->meta_data_ctr->count;
 	obj->object.attribute_ctr.attributes = talloc_array(obj, struct drsuapi_DsReplicaAttribute,
 							    obj->object.attribute_ctr.num_attributes);
+	if (obj->object.attribute_ctr.attributes == NULL) {
+		return WERR_NOMEM;
+	}
 
 	/*
 	 * Note that the meta_data array and the attributes array must
