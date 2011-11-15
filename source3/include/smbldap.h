@@ -137,9 +137,6 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state,
 			   const char *filter, const char **search_attr,
 			   LDAPMessage ** result);
 void smbldap_free_struct(struct smbldap_state **ldap_state) ;
-NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, struct tevent_context *tevent_ctx,
-		      const char *location,
-		      struct smbldap_state **smbldap_state);
 bool smbldap_has_control(LDAP *ld, const char *control);
 bool smbldap_has_extension(LDAP *ld, const char *extension);
 bool smbldap_has_naming_context(LDAP *ld, const char *naming_context);
