@@ -44,8 +44,12 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 	struct kccsrv_partition *part;
 	int ret;
 	uint32_t tombstoneLifetime;
+	bool do_fs = false;
 
+	time_t interval = lpcfg_parm_int(s->task->lp_ctx, NULL, "kccsrv",
+						    "check_deleted_full_scan_interval", 86400);
 	time_t t = time(NULL);
+
 	if (t - s->last_deleted_check < lpcfg_parm_int(s->task->lp_ctx, NULL, "kccsrv",
 						    "check_deleted_interval", 600)) {
 		return NT_STATUS_OK;
@@ -56,6 +60,22 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1,(__location__ ": Failed to get tombstone lifetime\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (s->last_full_scan_deleted_check > 0 && ((t - s->last_full_scan_deleted_check) > interval )) {
+		do_fs = true;
+		s->last_full_scan_deleted_check = t;
+	}
+
+	if (s->last_full_scan_deleted_check == 0) {
+		/*
+		 * If we never made a full scan set the last full scan event to be in the past
+		 * and that 9/10 of the full scan interval has already passed.
+		 * This is done to avoid the full scan to fire just at the begining of samba
+		 * or a couple of minutes after the start.
+		 * With this "setup" and default values of interval, the full scan will fire
+		 * 2.4 hours after the start of samba
+		 */
+		s->last_full_scan_deleted_check = t - ((9 * interval) / 10);
 	}
 
 	for (part=s->partitions; part; part=part->next) {
@@ -70,8 +90,18 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 			   container */
 			continue;
 		}
-		ret = dsdb_search(s->samdb, do_dn, &res, do_dn, LDB_SCOPE_ONELEVEL, attrs,
-				  DSDB_SEARCH_SHOW_RECYCLED, NULL);
+
+		if (!do_fs && ldb_dn_compare(ldb_get_config_basedn(s->samdb), part->dn)) {
+			ret = dsdb_search(s->samdb, do_dn, &res, do_dn, LDB_SCOPE_ONELEVEL, attrs,
+					DSDB_SEARCH_SHOW_RECYCLED, NULL);
+		} else {
+			if (do_fs) {
+				DEBUG(1, ("Doing a full scan on %s and looking for deleted object\n",
+						ldb_dn_get_linearized(part->dn)));
+			}
+			ret = dsdb_search(s->samdb, part->dn, &res, part->dn, LDB_SCOPE_SUBTREE, attrs,
+					DSDB_SEARCH_SHOW_RECYCLED, "(isDeleted=TRUE)");
+		}
 
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1,(__location__ ": Failed to search for deleted objects in %s\n",
@@ -84,6 +114,10 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 			const char *tstring;
 			time_t whenChanged = 0;
 
+			if (ldb_dn_compare(do_dn, res->msgs[i]->dn) == 0) {
+				/* Skip the Deleted Object Container */
+				continue;
+			}
 			tstring = ldb_msg_find_attr_as_string(res->msgs[i], "whenChanged", NULL);
 			if (tstring) {
 				whenChanged = ldb_string_to_time(tstring);

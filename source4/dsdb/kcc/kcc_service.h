@@ -88,6 +88,8 @@ struct kccsrv_service {
 
 	time_t last_deleted_check;
 
+	time_t last_full_scan_deleted_check;
+
 	bool am_rodc;
 
 	/* run new samba_kcc topology generator code */
