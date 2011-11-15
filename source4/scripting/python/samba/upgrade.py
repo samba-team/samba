@@ -198,15 +198,21 @@ def add_group_from_mapping_entry(samdb, groupmap, logger):
 
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, "CN=%s,CN=Users,%s" % (groupmap.nt_name, samdb.get_default_basedn()))
-        m['a01'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD, 'cn')
-        m['a02'] = ldb.MessageElement('group', ldb.FLAG_MOD_ADD, 'objectClass')
-        m['a03'] = ldb.MessageElement(ndr_pack(groupmap.sid), ldb.FLAG_MOD_ADD, 'objectSid')
-        m['a04'] = ldb.MessageElement(groupmap.comment, ldb.FLAG_MOD_ADD, 'description')
-        m['a05'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD, 'sAMAccountName')
+        m['cn'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD, 'cn')
+        m['objectClass'] = ldb.MessageElement('group', ldb.FLAG_MOD_ADD, 'objectClass')
+        m['objectSid'] = ldb.MessageElement(ndr_pack(groupmap.sid), ldb.FLAG_MOD_ADD,
+            'objectSid')
+        m['sAMAccountName'] = ldb.MessageElement(groupmap.nt_name, ldb.FLAG_MOD_ADD,
+            'sAMAccountName')
+
+        if groupmap.comment:
+            m['description'] = ldb.MessageElement(groupmap.comment, ldb.FLAG_MOD_ADD,
+                'description')
 
         # Fix up incorrect 'well known' groups that are actually builtin (per test above) to be aliases
         if groupmap.sid_name_use == lsa.SID_NAME_ALIAS or groupmap.sid_name_use == lsa.SID_NAME_WKN_GRP:
-            m['a06'] = ldb.MessageElement(str(dsdb.GTYPE_SECURITY_DOMAIN_LOCAL_GROUP), ldb.FLAG_MOD_ADD, 'groupType')
+            m['groupType'] = ldb.MessageElement(str(dsdb.GTYPE_SECURITY_DOMAIN_LOCAL_GROUP),
+                ldb.FLAG_MOD_ADD, 'groupType')
 
         try:
             samdb.add(m, controls=["relax:0"])
