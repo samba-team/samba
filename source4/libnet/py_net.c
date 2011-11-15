@@ -448,6 +448,9 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 	}
 
 	s->forest.dns_name = samdb_dn_to_dns_domain(s, ldb_get_root_basedn(samdb));
+	s->forest.root_dn_str = ldb_dn_get_linearized(ldb_get_root_basedn(samdb));
+	s->forest.config_dn_str = ldb_dn_get_linearized(ldb_get_config_basedn(samdb));
+	s->forest.schema_dn_str = ldb_dn_get_linearized(ldb_get_schema_basedn(samdb));
 
 	s->chunk.gensec_skey = &s->gensec_skey;
 	s->chunk.partition = &s->partition;
