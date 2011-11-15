@@ -2824,7 +2824,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&r->allow_password_change, pdb_get_pass_can_change_time(pw));
 
 	must_change_time = pdb_get_pass_must_change_time(pw);
-	if (must_change_time == get_time_t_max()) {
+	if (pdb_is_password_change_time_max(must_change_time)) {
 		unix_to_nt_time_abs(&force_password_change, must_change_time);
 	} else {
 		unix_to_nt_time(&force_password_change, must_change_time);

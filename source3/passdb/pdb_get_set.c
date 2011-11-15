@@ -39,6 +39,36 @@
 #define PDB_NOT_QUITE_NULL ""
 
 /*********************************************************************
+ Test if a change time is a max value. Copes with old and new values
+ of max.
+ ********************************************************************/
+
+bool pdb_is_password_change_time_max(time_t test_time)
+{
+	if (test_time == get_time_t_max()) {
+		return true;
+	}
+#if (defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T == 8))
+	if (test_time == 0x7FFFFFFFFFFFFFFFLL) {
+		return true;
+	}
+#endif
+	if (test_time == 0x7FFFFFFF) {
+		return true;
+	}
+	return false;
+}
+
+/*********************************************************************
+ Return an unchanging version of max password change time - 0x7FFFFFFF.
+ ********************************************************************/
+
+time_t pdb_password_change_time_max(void)
+{
+	return 0x7FFFFFFF;
+}
+
+/*********************************************************************
  Collection of get...() functions for struct samu.
  ********************************************************************/
 
@@ -86,7 +116,7 @@ time_t pdb_get_pass_can_change_time(const struct samu *sampass)
 	   we're trying to update this real value from the sampass
 	   to indicate that the user cannot change their password.  jmcd
 	*/
-	if (sampass->pass_can_change_time == get_time_t_max() &&
+	if (pdb_is_password_change_time_max(sampass->pass_can_change_time) &&
 	    IS_SAM_CHANGED(sampass, PDB_CANCHANGETIME))
 		return sampass->pass_can_change_time;
 
@@ -112,7 +142,7 @@ time_t pdb_get_pass_must_change_time(const struct samu *sampass)
 		return (time_t) 0;
 
 	if (sampass->acct_ctrl & ACB_PWNOEXP)
-		return get_time_t_max();
+		return pdb_password_change_time_max();
 
 	if (!pdb_get_account_policy(PDB_POLICY_MAX_PASSWORD_AGE, &expire)
 	    || expire == (uint32_t)-1 || expire == 0)
@@ -123,7 +153,7 @@ time_t pdb_get_pass_must_change_time(const struct samu *sampass)
 
 bool pdb_get_pass_can_change(const struct samu *sampass)
 {
-	if (sampass->pass_can_change_time == get_time_t_max())
+	if (pdb_is_password_change_time_max(sampass->pass_can_change_time))
 		return False;
 	return True;
 }
@@ -958,7 +988,7 @@ bool pdb_set_backend_private_data(struct samu *sampass, void *private_data,
 bool pdb_set_pass_can_change(struct samu *sampass, bool canchange)
 {
 	return pdb_set_pass_can_change_time(sampass, 
-				     canchange ? 0 : get_time_t_max(),
+				     canchange ? 0 : pdb_password_change_time_max(),
 				     PDB_CHANGED);
 }
 
