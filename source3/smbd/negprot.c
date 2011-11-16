@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "smbprofile.h"
 #include "auth/gensec/gensec.h"
+#include "../libcli/smb/smb_signing.h"
 
 extern fstring remote_proto;
 
@@ -307,6 +308,8 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	struct timespec ts;
 	ssize_t ret;
 	struct smbd_server_connection *sconn = req->sconn;
+	bool signing_enabled = false;
+	bool signing_required = false;
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
 
@@ -368,16 +371,20 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	if (lp_server_signing() != SMB_SIGNING_OFF) {
+	signing_enabled = smb_signing_is_allowed(req->sconn->smb1.signing_state);
+	signing_required = smb_signing_is_mandatory(req->sconn->smb1.signing_state);
+
+	if (signing_enabled) {
 	       	if (lp_security() >= SEC_USER) {
 			secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
 			/* No raw mode with smb signing. */
 			capabilities &= ~CAP_RAW_MODE;
-			if (lp_server_signing() == SMB_SIGNING_REQUIRED)
+			if (signing_required) {
 				secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
+			}
 		} else {
 			DEBUG(0,("reply_nt1: smb signing is incompatible with share level security !\n"));
-			if (lp_server_signing() == SMB_SIGNING_REQUIRED) {
+			if (signing_required) {
 				exit_server_cleanly("reply_nt1: smb signing required and share level security selected.");
 			}
 		}
