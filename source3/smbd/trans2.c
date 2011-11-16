@@ -6727,10 +6727,6 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)size));
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_DATA)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	return smb_set_file_size(conn, req,
 				fsp,
 				smb_fname,
