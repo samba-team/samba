@@ -6564,10 +6564,6 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	/* create time */
 	ft.create_time = convert_time_t_to_timespec(srv_make_unix_date2(pdata));
 	/* access time */
