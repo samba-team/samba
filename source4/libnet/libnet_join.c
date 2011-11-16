@@ -909,7 +909,7 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r2 = talloc(tmp_mem, struct libnet_JoinDomain);
+	r2 = talloc_zero(tmp_mem, struct libnet_JoinDomain);
 	if (!r2) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_mem);
@@ -939,7 +939,6 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 	/*
 	 * join the domain
 	 */
-	ZERO_STRUCTP(r2);
 	r2->in.domain_name	= r->in.domain_name;
 	r2->in.account_name	= account_name;
 	r2->in.netbios_name	= netbios_name;
