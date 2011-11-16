@@ -367,9 +367,8 @@ bool smb1cli_conn_encryption_on(struct smbXcli_conn *conn)
 }
 
 
-static NTSTATUS smb1cli_pull_raw_error(const uint8_t *buf)
+static NTSTATUS smb1cli_pull_raw_error(const uint8_t *hdr)
 {
-	const uint8_t *hdr = buf + NBT_HDR_SIZE;
 	uint32_t flags2 = SVAL(hdr, HDR_FLG2);
 	NTSTATUS status = NT_STATUS(IVAL(hdr, HDR_RCLS));
 
@@ -1394,7 +1393,7 @@ NTSTATUS smb1cli_req_recv(struct tevent_req *req,
 		}
 	}
 
-	status = smb1cli_pull_raw_error(state->inbuf);
+	status = smb1cli_pull_raw_error(state->inbuf+NBT_HDR_SIZE);
 
 	if (!smb1cli_have_andx_command(state->inbuf, wct_ofs, cmd)) {
 
