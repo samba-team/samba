@@ -74,7 +74,6 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 			 remote_machine, nt_errstr(result)) == -1) {
 			*err_str = NULL;
 		}
-		result = cli_nt_error(cli);
 		cli_shutdown(cli);
 		return result;
 	}
@@ -189,7 +188,6 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 				 remote_machine, nt_errstr(result)) == -1) {
 				*err_str = NULL;
 			}
-			result = cli_nt_error(cli);
 			cli_shutdown(cli);
 			return result;
 		}
