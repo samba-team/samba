@@ -6347,6 +6347,9 @@ static bool run_error_map_extract(int dummy) {
 		return False;
 	}
 
+	c_nt->map_dos_errors = false;
+	c_dos->map_dos_errors = false;
+
 	for (error=(0xc0000000 | 0x1); error < (0xc0000000| 0xFFF); error++) {
 		fstr_sprintf(user, "%X", error);
 
@@ -6359,11 +6362,11 @@ static bool run_error_map_extract(int dummy) {
 		}
 
 		/* Case #1: 32-bit NT errors */
-		if (cli_is_nt_error(c_nt)) {
-			nt_status = cli_nt_error(c_nt);
+		if (!NT_STATUS_IS_DOS(status)) {
+			nt_status = status;
 		} else {
 			printf("/** Dos error on NT connection! (%s) */\n", 
-			       cli_errstr(c_nt));
+			       nt_errstr(status));
 			nt_status = NT_STATUS(0xc0000000);
 		}
 
@@ -6376,12 +6379,13 @@ static bool run_error_map_extract(int dummy) {
 		}
 
 		/* Case #1: 32-bit NT errors */
-		if (!cli_is_dos_error(c_dos)) {
+		if (NT_STATUS_IS_DOS(status)) {
 			printf("/** NT error on DOS connection! (%s) */\n", 
-			       cli_errstr(c_dos));
+			       nt_errstr(status));
 			errnum = errclass = 0;
 		} else {
-			cli_dos_error(c_dos, &errclass, &errnum);
+			errclass = NT_STATUS_DOS_CLASS(status);
+			errnum = NT_STATUS_DOS_CODE(status);
 		}
 
 		if (NT_STATUS_V(nt_status) != error) { 
