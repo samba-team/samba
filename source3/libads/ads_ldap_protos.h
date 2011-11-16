@@ -24,10 +24,17 @@
 #ifndef _LIBADS_ADS_LDAP_PROTOS_H_
 #define _LIBADS_ADS_LDAP_PROTOS_H_
 
+#ifdef HAVE_LDAP_INIT_FD
+int ldap_init_fd(ber_socket_t fd, int proto, char *uri, LDAP **ldp);
+#endif
+
 /*
  * Prototypes for ads
  */
 
+LDAP *ldap_open_with_timeout(const char *server,
+			     struct sockaddr_storage *ss,
+			     int port, unsigned int to);
 void ads_msgfree(ADS_STRUCT *ads, LDAPMessage *msg);
 char *ads_get_dn(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, LDAPMessage *msg);
 

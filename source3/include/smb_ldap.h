@@ -49,15 +49,6 @@ typedef int ber_int_t;
 #include <ldap_pvt.h>
 #endif /* HAVE_LDAP_PVT_H */
 
-#ifdef HAVE_LDAP_INIT_FD
-int ldap_init_fd(ber_socket_t fd, int proto, char *uri, LDAP **ldp);
-#endif
-
-/* function declarations not included in proto.h */
-LDAP *ldap_open_with_timeout(const char *server,
-			     struct sockaddr_storage *ss,
-			     int port, unsigned int to);
-
 /* Solaris 8 and maybe other LDAP implementations spell this "..._INPROGRESS": */
 #if defined(LDAP_SASL_BIND_INPROGRESS) && !defined(LDAP_SASL_BIND_IN_PROGRESS)
 #define LDAP_SASL_BIND_IN_PROGRESS LDAP_SASL_BIND_INPROGRESS
