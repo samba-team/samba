@@ -382,38 +382,6 @@ static NTSTATUS smb1cli_pull_raw_error(const uint8_t *hdr)
 }
 
 /**
- * Figure out if there is an andx command behind the current one
- * @param[in] buf	The smb buffer to look at
- * @param[in] ofs	The offset to the wct field that is followed by the cmd
- * @retval Is there a command following?
- */
-
-static bool smb1cli_have_andx_command(const uint8_t *buf,
-				      uint16_t ofs,
-				      uint8_t cmd)
-{
-	uint8_t wct;
-	size_t buflen = talloc_get_size(buf);
-
-	if (!smb1cli_is_andx_req(cmd)) {
-		return false;
-	}
-
-	if ((ofs == buflen-1) || (ofs == buflen)) {
-		return false;
-	}
-
-	wct = CVAL(buf, ofs);
-	if (wct < 2) {
-		/*
-		 * Not enough space for the command and a following pointer
-		 */
-		return false;
-	}
-	return (CVAL(buf, ofs+1) != 0xff);
-}
-
-/**
  * Is the SMB command able to hold an AND_X successor
  * @param[in] cmd	The SMB command in question
  * @retval Can we add a chained request after "cmd"?
