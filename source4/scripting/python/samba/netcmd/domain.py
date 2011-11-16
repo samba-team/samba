@@ -386,7 +386,10 @@ class cmd_domain_passwordsettings(Command):
             cur_min_pwd_len = int(res[0]["minPwdLength"][0])
             # ticks -> days
             cur_min_pwd_age = int(abs(int(res[0]["minPwdAge"][0])) / (1e7 * 60 * 60 * 24))
-            cur_max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
+            if int(res[0]["maxPwdAge"][0]) == -0x8000000000000000:
+                cur_max_pwd_age = 0
+            else:
+                cur_max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
         except Exception, e:
             raise CommandError("Could not retrieve password properties!", e)
 
@@ -482,7 +485,10 @@ class cmd_domain_passwordsettings(Command):
                     raise CommandError("Maximum password age must be in the range of 0 to 999!")
 
                 # days -> ticks
-                max_pwd_age_ticks = -int(max_pwd_age * (24 * 60 * 60 * 1e7))
+                if max_pwd_age == 0:
+                    max_pwd_age_ticks = -0x8000000000000000
+                else:
+                    max_pwd_age_ticks = -int(max_pwd_age * (24 * 60 * 60 * 1e7))
 
                 m["maxPwdAge"] = ldb.MessageElement(str(max_pwd_age_ticks),
                   ldb.FLAG_MOD_REPLACE, "maxPwdAge")
