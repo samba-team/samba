@@ -173,8 +173,8 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 					       lp_workgroup()))) {
 			d_printf("session setup failed: %s\n",
 				 nt_errstr(status));
-			if (NT_STATUS_V(cli_nt_error(c)) ==
-			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_MORE_PROCESSING_REQUIRED))
 				d_printf("did you forget to run kinit?\n");
 			cli_shutdown(c);
 			return status;
