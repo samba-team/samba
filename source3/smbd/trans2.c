@@ -5773,7 +5773,7 @@ static NTSTATUS smb_set_file_full_ea_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_EA)) {
+	if (!(fsp->access_mask & FILE_WRITE_EA)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
