@@ -1553,8 +1553,7 @@ static bool tcon_devtest(struct cli_state *cli,
 			       myshare, devtype);
 			ret = False;
 		} else {
-			if (NT_STATUS_EQUAL(cli_nt_error(cli),
-					    expected_error)) {
+			if (NT_STATUS_EQUAL(status, expected_error)) {
 				ret = True;
 			} else {
 				printf("Returned unexpected error\n");
@@ -4348,17 +4347,19 @@ static bool run_deletetest(int dummy)
 	}
 
 	/* Now try open for delete access. */
-	if (NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, FILE_READ_ATTRIBUTES|DELETE_ACCESS,
-				   0, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-				   FILE_OVERWRITE_IF, 0, 0, &fnum1))) {
+	status = cli_ntcreate(cli1, fname, 0,
+			     FILE_READ_ATTRIBUTES|DELETE_ACCESS,
+			     0,
+			     FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			     FILE_OVERWRITE_IF, 0, 0, &fnum1);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("[11] open of %s succeeded should have been denied with ACCESS_DENIED!\n", fname);
 		cli_close(cli1, fnum1);
 		goto fail;
 		correct = False;
 	} else {
-		NTSTATUS nterr = cli_nt_error(cli1);
-		if (!NT_STATUS_EQUAL(nterr,NT_STATUS_ACCESS_DENIED)) {
-			printf("[11] open of %s should have been denied with ACCESS_DENIED! Got error %s\n", fname, nt_errstr(nterr));
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			printf("[11] open of %s should have been denied with ACCESS_DENIED! Got error %s\n", fname, nt_errstr(status));
 			goto fail;
 			correct = False;
 		} else {
@@ -7596,10 +7597,8 @@ static bool run_streamerror(int dummy)
 		return false;
 	}
 
-	cli_qpathinfo1(cli, streamname, &change_time, &access_time, &write_time,
-		      &size, &mode);
-	status = cli_nt_error(cli);
-
+	status = cli_qpathinfo1(cli, streamname, &change_time, &access_time,
+				&write_time, &size, &mode);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		printf("pathinfo returned %s, expected "
 		       "NT_STATUS_OBJECT_NAME_NOT_FOUND\n",
