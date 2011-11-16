@@ -769,7 +769,7 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 
 #ifdef HAVE_LDAP
 
-#include <ldap.h>
+#include "smb_ldap.h"
 
 static int get_ldap_seq(const char *server, struct sockaddr_storage *ss, int port, uint32 *seq)
 {
