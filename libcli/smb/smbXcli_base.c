@@ -146,6 +146,11 @@ struct smbXcli_req_state {
 		int chain_num;
 		int chain_length;
 		struct tevent_req **chained_requests;
+
+		uint8_t recv_cmd;
+		NTSTATUS recv_status;
+		/* always an array of 3 talloc elements */
+		struct iovec *recv_iov;
 	} smb1;
 
 	struct {
@@ -818,6 +823,14 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->conn = conn;
+
+	state->smb1.recv_cmd = 0xFF;
+	state->smb1.recv_status = NT_STATUS_INTERNAL_ERROR;
+	state->smb1.recv_iov = talloc_zero_array(state, struct iovec, 3);
+	if (state->smb1.recv_iov == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
 
 	smb1cli_req_flags(conn->protocol,
 			  conn->smb1.capabilities,
