@@ -6626,16 +6626,16 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		allocation_size = smb_roundup(conn, allocation_size);
 	}
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_DATA)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	DEBUG(10,("smb_set_file_allocation_info: file %s : setting new "
 		  "allocation size to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)allocation_size));
 
 	if (fsp && fsp->fh->fd != -1) {
 		/* Open file handle. */
+		if (!(fsp->access_mask & FILE_WRITE_DATA)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
 		/* Only change if needed. */
 		if (allocation_size != get_file_size_stat(&smb_fname->st)) {
 			if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
