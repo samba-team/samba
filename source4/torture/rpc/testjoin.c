@@ -430,10 +430,10 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	
-	tj = talloc(tctx, struct test_join);
+	tj = talloc_zero(tctx, struct test_join);
 	if (!tj) return NULL;
 
-	libnet_r = talloc(tj, struct libnet_JoinDomain);
+	libnet_r = talloc_zero(tj, struct libnet_JoinDomain);
 	if (!libnet_r) {
 		talloc_free(tj);
 		return NULL;
