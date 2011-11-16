@@ -832,8 +832,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	    cli_state_protocol(*cli) >= PROTOCOL_NT1 &&
 	    cli_state_capabilities(*cli) & CAP_EXTENDED_SECURITY)
 	{
-		ADS_STATUS ads_status;
-
 		result = get_trust_creds(domain, &machine_password,
 					 &machine_account,
 					 &machine_krb5_principal);
@@ -894,7 +892,6 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				nt_errstr(result)));
 		}
 
-		result = ads_ntstatus(ads_status);
 		if (NT_STATUS_IS_OK(result)) {
 			/* Ensure creds are stored for NTLMSSP authenticated pipe access. */
 			result = cli_init_creds(*cli, machine_account, lp_workgroup(), machine_password);
