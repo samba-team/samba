@@ -21,37 +21,9 @@
 #ifndef _SMBLDAP_H
 #define _SMBLDAP_H
 
-struct smbldap_state;
-
 #include "include/smb_ldap.h"
 
 #ifdef HAVE_LDAP
-
-/* Function declarations -- not included in proto.h so we don't
-   have to worry about LDAP structure types */
-
-NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
-		      struct tevent_context *tevent_ctx,
-		      const char *location,
-		      bool anon,
-		      const char *bind_dn,
-		      const char *bind_secret,
-		      struct smbldap_state **smbldap_state);
-
-void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
-void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, const DATA_BLOB *newblob);
-void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
-		      LDAPMod ***mods,
-		      const char *attribute, const char *newval);
-void smbldap_make_mod_blob(LDAP *ldap_struct, LDAPMessage *existing,
-			   LDAPMod ***mods,
-			   const char *attribute, const DATA_BLOB *newblob);
-bool smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
-				   const char *attribute, char *value,
-				   int max_len);
-int smbldap_modify(struct smbldap_state *ldap_state,
-                   const char *dn,
-                   LDAPMod *attrs[]);
 
 /**
  * Struct to keep the state for all the ldap stuff 
@@ -119,6 +91,28 @@ struct ldapsam_privates {
 
 /* The following definitions come from lib/smbldap.c  */
 
+NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
+		      struct tevent_context *tevent_ctx,
+		      const char *location,
+		      bool anon,
+		      const char *bind_dn,
+		      const char *bind_secret,
+		      struct smbldap_state **smbldap_state);
+
+void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
+void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, const DATA_BLOB *newblob);
+void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
+		      LDAPMod ***mods,
+		      const char *attribute, const char *newval);
+void smbldap_make_mod_blob(LDAP *ldap_struct, LDAPMessage *existing,
+			   LDAPMod ***mods,
+			   const char *attribute, const DATA_BLOB *newblob);
+bool smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
+				   const char *attribute, char *value,
+				   int max_len);
+int smbldap_modify(struct smbldap_state *ldap_state,
+                   const char *dn,
+                   LDAPMod *attrs[]);
 int smb_ldap_start_tls(LDAP *ldap_struct, int version);
 int smb_ldap_setup_full_conn(LDAP **ldap_struct, const char *uri);
 int smbldap_search(struct smbldap_state *ldap_state,
@@ -164,36 +158,5 @@ char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
 			      LDAPMessage *entry);
 
 #endif 	/* HAVE_LDAP */
-
-#define LDAP_DEFAULT_TIMEOUT   15
-#define LDAP_CONNECTION_DEFAULT_TIMEOUT 2
-#define LDAP_PAGE_SIZE 1024
-
-#define ADS_PAGE_CTL_OID 	"1.2.840.113556.1.4.319"
-
-/*
- * Work around versions of the LDAP client libs that don't have the OIDs
- * defined, or have them defined under the old name.
- * This functionality is really a factor of the server, not the client
- *
- */
-
-#if defined(LDAP_EXOP_X_MODIFY_PASSWD) && !defined(LDAP_EXOP_MODIFY_PASSWD)
-#define LDAP_EXOP_MODIFY_PASSWD LDAP_EXOP_X_MODIFY_PASSWD
-#elif !defined(LDAP_EXOP_MODIFY_PASSWD)
-#define LDAP_EXOP_MODIFY_PASSWD "1.3.6.1.4.1.4203.1.11.1"
-#endif
-
-#if defined(LDAP_EXOP_X_MODIFY_PASSWD_ID) && !defined(LDAP_EXOP_MODIFY_PASSWD_ID)
-#define LDAP_TAG_EXOP_MODIFY_PASSWD_ID LDAP_EXOP_X_MODIFY_PASSWD_ID
-#elif !defined(LDAP_EXOP_MODIFY_PASSWD_ID)
-#define LDAP_TAG_EXOP_MODIFY_PASSWD_ID        ((ber_tag_t) 0x80U)
-#endif
-
-#if defined(LDAP_EXOP_X_MODIFY_PASSWD_NEW) && !defined(LDAP_EXOP_MODIFY_PASSWD_NEW)
-#define LDAP_TAG_EXOP_MODIFY_PASSWD_NEW LDAP_EXOP_X_MODIFY_PASSWD_NEW
-#elif !defined(LDAP_EXOP_MODIFY_PASSWD_NEW)
-#define LDAP_TAG_EXOP_MODIFY_PASSWD_NEW       ((ber_tag_t) 0x82U)
-#endif
 
 #endif	/* _SMBLDAP_H */
