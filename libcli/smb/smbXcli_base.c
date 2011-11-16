@@ -143,8 +143,6 @@ struct smbXcli_req_state {
 		int iov_count;
 
 		uint32_t seqnum;
-		int chain_num;
-		int chain_length;
 		struct tevent_req **chained_requests;
 
 		uint8_t recv_cmd;
@@ -1488,8 +1486,6 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			}
 
 			state->inbuf = inbuf;
-			state->smb1.chain_num = i;
-			state->smb1.chain_length = num_chained;
 
 			/*
 			 * Note: here we use talloc_reference() in a way
@@ -1519,8 +1515,6 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	state->smb1.recv_cmd = cmd;
 	state->smb1.recv_status = status;
 	state->inbuf = talloc_move(state->smb1.recv_iov, &inbuf);
-	state->smb1.chain_num = 0;
-	state->smb1.chain_length = 1;
 
 	state->smb1.recv_iov[0] = iov[0];
 	state->smb1.recv_iov[1] = iov[1];
@@ -1537,149 +1531,148 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 }
 
 NTSTATUS smb1cli_req_recv(struct tevent_req *req,
-			  TALLOC_CTX *mem_ctx, uint8_t **pinbuf,
-			  uint8_t min_wct, uint8_t *pwct, uint16_t **pvwv,
-			  uint32_t *pnum_bytes, uint8_t **pbytes)
+			  TALLOC_CTX *mem_ctx,
+			  struct iovec **piov,
+			  uint8_t **phdr,
+			  uint8_t *pwct,
+			  uint16_t **pvwv,
+			  uint32_t *pvwv_offset,
+			  uint32_t *pnum_bytes,
+			  uint8_t **pbytes,
+			  uint32_t *pbytes_offset,
+			  uint8_t **pinbuf,
+			  const struct smb1cli_req_expected_response *expected,
+			  size_t num_expected)
 {
 	struct smbXcli_req_state *state =
 		tevent_req_data(req,
 		struct smbXcli_req_state);
 	NTSTATUS status = NT_STATUS_OK;
-	uint8_t cmd, wct;
-	uint16_t num_bytes;
-	size_t wct_ofs, bytes_offset;
-	int i;
+	struct iovec *recv_iov = NULL;
+	uint8_t *hdr = NULL;
+	uint8_t wct = 0;
+	uint32_t vwv_offset = 0;
+	uint16_t *vwv = NULL;
+	uint32_t num_bytes = 0;
+	uint32_t bytes_offset = 0;
+	uint8_t *bytes = NULL;
+	size_t i;
+	bool found_status = false;
+	bool found_size = false;
+
+	if (piov != NULL) {
+		*piov = NULL;
+	}
+	if (phdr != NULL) {
+		*phdr = 0;
+	}
+	if (pwct != NULL) {
+		*pwct = 0;
+	}
+	if (pvwv != NULL) {
+		*pvwv = NULL;
+	}
+	if (pvwv_offset != NULL) {
+		*pvwv_offset = 0;
+	}
+	if (pnum_bytes != NULL) {
+		*pnum_bytes = 0;
+	}
+	if (pbytes != NULL) {
+		*pbytes = NULL;
+	}
+	if (pbytes_offset != NULL) {
+		*pbytes_offset = 0;
+	}
+	if (pinbuf != NULL) {
+		*pinbuf = NULL;
+	}
+
+	if (state->inbuf != NULL) {
+		recv_iov = state->smb1.recv_iov;
+		hdr = (uint8_t *)recv_iov[0].iov_base;
+		wct = recv_iov[1].iov_len/2;
+		vwv = (uint16_t *)recv_iov[1].iov_base;
+		vwv_offset = PTR_DIFF(vwv, hdr);
+		num_bytes = recv_iov[2].iov_len;
+		bytes = (uint8_t *)recv_iov[2].iov_base;
+		bytes_offset = PTR_DIFF(bytes, hdr);
+	}
 
 	if (tevent_req_is_nterror(req, &status)) {
+		for (i=0; i < num_expected; i++) {
+			if (NT_STATUS_EQUAL(status, expected[i].status)) {
+				found_status = true;
+				break;
+			}
+		}
+
+		if (found_status) {
+			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		}
+
 		return status;
 	}
 
-	if (state->inbuf == NULL) {
-		if (min_wct != 0) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
-		}
-		if (pinbuf) {
-			*pinbuf = NULL;
-		}
-		if (pwct) {
-			*pwct = 0;
-		}
-		if (pvwv) {
-			*pvwv = NULL;
-		}
-		if (pnum_bytes) {
-			*pnum_bytes = 0;
-		}
-		if (pbytes) {
-			*pbytes = NULL;
-		}
-		/* This was a request without a reply */
-		return NT_STATUS_OK;
+	if (num_expected == 0) {
+		found_status = true;
+		found_size = true;
 	}
 
-	wct_ofs = NBT_HDR_SIZE + HDR_WCT;
-	cmd = CVAL(state->inbuf, NBT_HDR_SIZE + HDR_COM);
+	status = state->smb1.recv_status;
 
-	for (i=0; i<state->smb1.chain_num; i++) {
-		if (i < state->smb1.chain_num-1) {
-			if (cmd == 0xff) {
-				return NT_STATUS_REQUEST_ABORTED;
-			}
-			if (!smb1cli_is_andx_req(cmd)) {
-				return NT_STATUS_INVALID_NETWORK_RESPONSE;
-			}
+	for (i=0; i < num_expected; i++) {
+		if (!NT_STATUS_EQUAL(status, expected[i].status)) {
+			continue;
 		}
 
-		if (!smb1cli_have_andx_command(state->inbuf, wct_ofs, cmd)) {
-			/*
-			 * This request was not completed because a previous
-			 * request in the chain had received an error.
-			 */
-			return NT_STATUS_REQUEST_ABORTED;
+		found_status = true;
+		if (expected[i].wct == 0) {
+			found_size = true;
+			break;
 		}
 
-		cmd = CVAL(state->inbuf, wct_ofs + 1);
-		wct_ofs = SVAL(state->inbuf, wct_ofs + 3);
-
-		/*
-		 * Skip the all-present length field. No overflow, we've just
-		 * put a 16-bit value into a size_t.
-		 */
-		wct_ofs += 4;
-
-		if (wct_ofs+2 > talloc_get_size(state->inbuf)) {
-			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		if (expected[i].wct == wct) {
+			found_size = true;
+			break;
 		}
 	}
 
-	status = smb1cli_pull_raw_error(state->inbuf+NBT_HDR_SIZE);
-
-	if (!smb1cli_have_andx_command(state->inbuf, wct_ofs, cmd)) {
-
-		if ((cmd == SMBsesssetupX)
-		    && NT_STATUS_EQUAL(
-			    status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			/*
-			 * NT_STATUS_MORE_PROCESSING_REQUIRED is a
-			 * valid return code for session setup
-			 */
-			goto no_err;
-		}
-
-		if (NT_STATUS_IS_ERR(status)) {
-			/*
-			 * The last command takes the error code. All
-			 * further commands down the requested chain
-			 * will get a NT_STATUS_REQUEST_ABORTED.
-			 */
-			return status;
-		}
-	} else {
-		/*
-		 * Only the last request in the chain get the returned
-		 * status.
-		 */
-		status = NT_STATUS_OK;
+	if (!found_status) {
+		return status;
 	}
 
-no_err:
-
-	wct = CVAL(state->inbuf, wct_ofs);
-	bytes_offset = wct_ofs + 1 + wct * sizeof(uint16_t);
-	num_bytes = SVAL(state->inbuf, bytes_offset);
-
-	if (wct < min_wct) {
+	if (!found_size) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	/*
-	 * wct_ofs is a 16-bit value plus 4, wct is a 8-bit value, num_bytes
-	 * is a 16-bit value. So bytes_offset being size_t should be far from
-	 * wrapping.
-	 */
-	if ((bytes_offset + 2 > talloc_get_size(state->inbuf))
-	    || (bytes_offset > 0xffff)) {
-		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	if (piov != NULL) {
+		*piov = talloc_move(mem_ctx, &recv_iov);
 	}
 
+	if (phdr != NULL) {
+		*phdr = hdr;
+	}
 	if (pwct != NULL) {
 		*pwct = wct;
 	}
 	if (pvwv != NULL) {
-		*pvwv = (uint16_t *)(state->inbuf + wct_ofs + 1);
+		*pvwv = vwv;
+	}
+	if (pvwv_offset != NULL) {
+		*pvwv_offset = vwv_offset;
 	}
 	if (pnum_bytes != NULL) {
 		*pnum_bytes = num_bytes;
 	}
 	if (pbytes != NULL) {
-		*pbytes = (uint8_t *)state->inbuf + bytes_offset + 2;
+		*pbytes = bytes;
 	}
-	if ((mem_ctx != NULL) && (pinbuf != NULL)) {
-		if (state->smb1.chain_num == state->smb1.chain_length-1) {
-			*pinbuf = talloc_move(mem_ctx, &state->inbuf);
-		} else {
-			*pinbuf = state->inbuf;
-		}
+	if (pbytes_offset != NULL) {
+		*pbytes_offset = bytes_offset;
+	}
+	if (pinbuf != NULL) {
+		*pinbuf = state->inbuf;
 	}
 
 	return status;

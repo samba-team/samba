@@ -66,6 +66,11 @@ void smb1cli_req_set_mid(struct tevent_req *req, uint16_t mid);
 uint32_t smb1cli_req_seqnum(struct tevent_req *req);
 void smb1cli_req_set_seqnum(struct tevent_req *req, uint32_t seqnum);
 
+struct smb1cli_req_expected_response {
+	NTSTATUS status;
+	uint8_t wct;
+};
+
 struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct smbXcli_conn *conn,
@@ -99,9 +104,18 @@ struct tevent_req *smb1cli_req_send(TALLOC_CTX *mem_ctx,
 				    uint32_t num_bytes,
 				    const uint8_t *bytes);
 NTSTATUS smb1cli_req_recv(struct tevent_req *req,
-			  TALLOC_CTX *mem_ctx, uint8_t **pinbuf,
-			  uint8_t min_wct, uint8_t *pwct, uint16_t **pvwv,
-			  uint32_t *pnum_bytes, uint8_t **pbytes);
+			  TALLOC_CTX *mem_ctx,
+			  struct iovec **piov,
+			  uint8_t **phdr,
+			  uint8_t *pwct,
+			  uint16_t **pvwv,
+			  uint32_t *pvwv_offset,
+			  uint32_t *pnum_bytes,
+			  uint8_t **pbytes,
+			  uint32_t *pbytes_offset,
+			  uint8_t **pinbuf,
+			  const struct smb1cli_req_expected_response *expected,
+			  size_t num_expected);
 
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
