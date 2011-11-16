@@ -1768,6 +1768,13 @@ BINARY_PREREQS = bin/.dummy
 		echo "$(COMPILE_CC_PATH)" 1>&2;\
 		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
+../nsswitch/wb_common.o: ../nsswitch/wb_common.c Makefile
+	@echo Compiling $*.c
+	@$(COMPILE_CC_PATH) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC_PATH)" 1>&2;\
+		$(COMPILE_CC_PATH) >/dev/null 2>&1
+
 ### Start section of object files that require PTHREAD_CFLAGS
 ../nsswitch/wins.o: ../nsswitch/wins.c
 	@echo Compiling $*.c
