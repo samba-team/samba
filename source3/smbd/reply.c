@@ -1269,13 +1269,6 @@ void reply_setatr(struct smb_request *req)
 	mode = SVAL(req->vwv+0, 0);
 	mtime = srv_make_unix_date3(req->vwv+1);
 
-	ft.mtime = convert_time_t_to_timespec(mtime);
-	status = smb_set_file_time(conn, NULL, smb_fname, &ft, true);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		goto out;
-	}
-
 	if (mode != FILE_ATTRIBUTE_NORMAL) {
 		if (VALID_STAT_OF_DIR(smb_fname->st))
 			mode |= FILE_ATTRIBUTE_DIRECTORY;
@@ -1287,6 +1280,13 @@ void reply_setatr(struct smb_request *req)
 			reply_nterror(req, map_nt_error_from_unix(errno));
 			goto out;
 		}
+	}
+
+	ft.mtime = convert_time_t_to_timespec(mtime);
+	status = smb_set_file_time(conn, NULL, smb_fname, &ft, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto out;
 	}
 
 	reply_outbuf(req, 0, 0);
