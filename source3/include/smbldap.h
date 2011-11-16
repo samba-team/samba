@@ -25,6 +25,9 @@
 
 #ifdef HAVE_LDAP
 
+#include <talloc.h>
+#include <tevent.h>
+
 /**
  * Struct to keep the state for all the ldap stuff 
  *
