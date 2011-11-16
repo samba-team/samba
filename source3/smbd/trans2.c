@@ -50,6 +50,30 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 				const SMB_STRUCT_STAT *psbuf);
 
 /********************************************************************
+ The canonical "check access" based on object handle or path function.
+********************************************************************/
+
+NTSTATUS check_access(connection_struct *conn,
+				files_struct *fsp,
+				const struct smb_filename *smb_fname,
+				uint32_t access_mask)
+{
+	if (fsp) {
+		if (!(fsp->access_mask & access_mask)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	} else {
+		NTSTATUS status = smbd_check_access_rights(conn,
+					smb_fname,
+					access_mask);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
  Roundup a value to the nearest allocation roundup size boundary.
  Only do this for Windows clients.
 ********************************************************************/
@@ -504,14 +528,16 @@ static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, con
 NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		const struct smb_filename *smb_fname, struct ea_list *ea_list)
 {
+	NTSTATUS status;
 	char *fname = NULL;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_EA)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = check_access(conn, fsp, smb_fname, FILE_WRITE_EA);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* For now setting EAs on streams isn't supported. */
@@ -5540,6 +5566,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 /****************************************************************************
  Deal with setting the dosmode from any of the setfilepathinfo functions.
+ NB. The check for FILE_WRITE_ATTRIBUTES access on this path must have been
+ done before calling this function.
 ****************************************************************************/
 
 static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
@@ -5724,10 +5752,6 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_EA)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	status = set_ea(conn, fsp, smb_fname, ea_list);
 
 	return status;
@@ -5769,10 +5793,6 @@ static NTSTATUS smb_set_file_full_ea_info(connection_struct *conn,
 
 	if (!ea_list) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!(fsp->access_mask & FILE_WRITE_EA)) {
-		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = set_ea(conn, fsp, fsp->fsp_name, ea_list);
@@ -6514,8 +6534,9 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Set the attributes */
@@ -6554,6 +6575,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 					files_struct *fsp,
 					const struct smb_filename *smb_fname)
 {
+	NTSTATUS status;
 	struct smb_file_time ft;
 
 	ZERO_STRUCT(ft);
@@ -6572,8 +6594,9 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		smb_fname_str_dbg(smb_fname)));
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
         return smb_set_file_time(conn,
@@ -6946,8 +6969,9 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	}
 #endif
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*

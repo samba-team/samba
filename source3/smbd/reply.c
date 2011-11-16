@@ -1275,6 +1275,13 @@ void reply_setatr(struct smb_request *req)
 		else
 			mode &= ~FILE_ATTRIBUTE_DIRECTORY;
 
+		status = check_access(conn, NULL, smb_fname,
+					FILE_WRITE_ATTRIBUTES);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
+			goto out;
+		}
+
 		if (file_set_dosmode(conn, smb_fname, mode, NULL,
 				     false) != 0) {
 			reply_nterror(req, map_nt_error_from_unix(errno));
