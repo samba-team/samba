@@ -2317,7 +2317,7 @@ static PyObject *py_pdb_get_account_policy(pytalloc_Object *self)
 		type = account_policy_name_to_typenum(names[i]);
 		status = methods->get_account_policy(methods, type, &value);
 		if (NT_STATUS_IS_OK(status)) {
-			PyDict_SetItemString(py_acct_policy, names[i], PyInt_FromLong(value));
+			PyDict_SetItemString(py_acct_policy, names[i], Py_BuildValue("i", value));
 		}
 	}
 
