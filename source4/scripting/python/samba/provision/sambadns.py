@@ -49,13 +49,6 @@ def modify_ldif(ldb, ldif_file, subst_vars, controls=["relax:0"]):
     data = read_and_sub_file(ldif_file_path, subst_vars)
     ldb.modify_ldif(data, controls)
 
-def set_security_descriptor(samdb, dn_str, descriptor):
-    msg = ldb.Message()
-    msg.dn = ldb.Dn(samdb, dn_str)
-    msg["nTSecurityDescriptor"] = ldb.MessageElement(descriptor,
-            ldb.FLAG_MOD_REPLACE, "nTSecurityDescriptor")
-    samdb.modify(msg, controls=["relax:0"])
-
 def setup_ldb(ldb, ldif_path, subst_vars):
     """Import a LDIF a file into a LDB handle, optionally substituting
     variables.
@@ -224,15 +217,12 @@ class SRVRecord(dnsp.DnssrvRpcRecord):
 def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn, serverdn):
     domainzone_dn = "DC=DomainDnsZones,%s" % domaindn
     forestzone_dn = "DC=ForestDnsZones,%s" % forestdn
-
+    descriptor = get_dns_partition_descriptor(domainsid)
     add_ldif(samdb, "provision_dnszones_partitions.ldif", {
         "DOMAINZONE_DN": domainzone_dn,
         "FORESTZONE_DN": forestzone_dn,
+        "SECDESC"      : b64encode(descriptor)
         })
-
-    descriptor = get_dns_partition_descriptor(domainsid)
-    set_security_descriptor(samdb, domainzone_dn, descriptor)
-    set_security_descriptor(samdb, forestzone_dn, descriptor)
 
     domainzone_guid = get_domainguid(samdb, domainzone_dn)
     forestzone_guid = get_domainguid(samdb, forestzone_dn)
