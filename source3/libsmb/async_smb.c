@@ -897,7 +897,8 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 	}
 
 	state->cli->raw_status = cli_pull_raw_error(state->inbuf);
-	if (NT_STATUS_IS_DOS(state->cli->raw_status)) {
+	if (NT_STATUS_IS_DOS(state->cli->raw_status) &&
+	    state->cli->map_dos_errors) {
 		uint8_t eclass = NT_STATUS_DOS_CLASS(state->cli->raw_status);
 		uint16_t ecode = NT_STATUS_DOS_CODE(state->cli->raw_status);
 		/*
