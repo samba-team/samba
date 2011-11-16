@@ -821,10 +821,19 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	if (NT_STATUS_IS_OK(status)) {
 		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
-	
-	/* Grab a password of that minimum length */
-	
-	password_str = generate_random_password(tmp_ctx, MAX(8, policy_min_pw_len), 255);
+
+	if (r->in.account_pass != NULL) {
+		password_str = talloc_strdup(tmp_ctx, r->in.account_pass);
+	} else {
+		/* Grab a password of that minimum length */
+		password_str = generate_random_password(tmp_ctx,
+					MAX(8, policy_min_pw_len), 255);
+	}
+	if (!password_str) {
+		r->out.error_string = NULL;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* set full_name and reset flags */
 	ZERO_STRUCT(u_info21);
@@ -945,6 +954,7 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 	r2->in.level		= LIBNET_JOINDOMAIN_AUTOMATIC;
 	r2->in.acct_type	= acct_type;
 	r2->in.recreate_account = false;
+	r2->in.account_pass	= r->in.account_pass;
 	status = libnet_JoinDomain(ctx, r2, r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_steal(mem_ctx, r2->out.error_string);
