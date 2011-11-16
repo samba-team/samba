@@ -5440,6 +5440,8 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 
 /****************************************************************************
  Deal with setting the time from any of the setfilepathinfo functions.
+ NOTE !!!! The check for FILE_WRITE_ATTRIBUTES access must be done *before*
+ calling this function.
 ****************************************************************************/
 
 NTSTATUS smb_set_file_time(connection_struct *conn,
@@ -5456,10 +5458,6 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
-		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
@@ -6574,6 +6572,10 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		smb_fname_str_dbg(smb_fname)));
 
+	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
         return smb_set_file_time(conn,
                                 fsp,
 				smb_fname,
@@ -6943,6 +6945,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		size = get_file_size_stat(&sbuf);
 	}
 #endif
+
+	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/*
 	 * Deal with the UNIX specific mode set.

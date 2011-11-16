@@ -581,11 +581,9 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 	}
 
 	ft.mtime = fsp->close_write_time;
-	/* We must use NULL for the fsp handle here, as smb_set_file_time()
-	   checks the fsp access_mask, which may not include FILE_WRITE_ATTRIBUTES.
-	   As this is a close based update, we are not directly changing the
+	/* As this is a close based update, we are not directly changing the
 	   file attributes from a client call, but indirectly from a write. */
-	status = smb_set_file_time(fsp->conn, NULL, fsp->fsp_name, &ft, false);
+	status = smb_set_file_time(fsp->conn, fsp, fsp->fsp_name, &ft, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("update_write_time_on_close: smb_set_file_time "
 			"on file %s returned %s\n",

@@ -7952,6 +7952,11 @@ void reply_setattrE(struct smb_request *req)
 		goto out;
 	}
 
+	if (!(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		goto out;
+	}
+
 	status = smb_set_file_time(conn, fsp, fsp->fsp_name, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
