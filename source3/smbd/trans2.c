@@ -5615,10 +5615,6 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (fsp && !(fsp->access_mask & FILE_WRITE_DATA)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	DEBUG(6,("smb_set_file_size: size: %.0f ", (double)size));
 
 	if (size == get_file_size_stat(psbuf)) {
@@ -5630,6 +5626,10 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 
 	if (fsp && fsp->fh->fd != -1) {
 		/* Handle based call. */
+		if (!(fsp->access_mask & FILE_WRITE_DATA)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
 		if (vfs_set_filelen(fsp, size) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
