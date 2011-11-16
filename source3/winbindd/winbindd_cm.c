@@ -942,8 +942,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		"connection for DC %s\n",
 		controller ));
 
-	if (NT_STATUS_IS_OK(cli_session_setup(*cli, "", NULL, 0,
-					      NULL, 0, ""))) {
+	result = cli_session_setup(*cli, "", NULL, 0, NULL, 0, "");
+	if (NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("Connected anonymously\n"));
 		result = cli_init_creds(*cli, "", "", "");
 		if (!NT_STATUS_IS_OK(result)) {
@@ -952,13 +952,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 		goto session_setup_done;
 	}
 
-	result = cli_nt_error(*cli);
-
-	if (NT_STATUS_IS_OK(result))
-		result = NT_STATUS_UNSUCCESSFUL;
-
 	/* We can't session setup */
-
 	goto done;
 
  session_setup_done:
