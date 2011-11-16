@@ -67,7 +67,6 @@
 #include "../libcli/smb/smb_signing.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
-#include "smbldap.h"
 #include "../lib/util/bitmap.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
