@@ -163,12 +163,6 @@ void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
 char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
 			      LDAPMessage *entry);
 
-/* The following definitions come from lib/smbldap_util.c  */
-
-NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
-                                    LDAPMessage ** result, const char *domain_name,
-                                    bool try_add);
-
 #endif 	/* HAVE_LDAP */
 
 #define LDAP_DEFAULT_TIMEOUT   15
