@@ -90,7 +90,7 @@ class PassdbTestCase(TestCaseInTempDir):
     def test_policy(self):
         policy = self.pdb.get_account_policy()
         self.assertEquals(0, policy['bad lockout attempt'])
-        self.assertEquals(4294967295, policy['disconnect time'])
+        self.assertEquals(-1, policy['disconnect time'])
         self.assertEquals(0, policy['lockout duration'])
         self.assertEquals(999999999, policy['maximum password age'])
         self.assertEquals(0, policy['minimum password age'])
