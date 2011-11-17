@@ -78,6 +78,11 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 	} else if (ids[0].xid.type == ID_TYPE_UID) {
 		(*sec)->uid = ids[0].xid.id;
 	} else {
+		char *sid_str = dom_sid_string(mem_ctx, ids[0].sid);
+		DEBUG(0, ("Unable to convert first SID (%s) in user token to a UID.  Conversion was returned as type %d, full token:\n",
+			  sid_str, (int)ids[0].xid.type));
+		security_token_debug(0, 0, token);
+		talloc_free(sid_str);
 		return NT_STATUS_INVALID_SID;
 	}
 
@@ -87,6 +92,11 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 		(*sec)->groups[g] = ids[1].xid.id;
 		g++;
 	} else {
+		char *sid_str = dom_sid_string(mem_ctx, ids[1].sid);
+		DEBUG(0, ("Unable to convert second SID (%s) in user token to a GID.  Conversion was returned as type %d, full token:\n",
+			  sid_str, (int)ids[1].xid.type));
+		security_token_debug(0, 0, token);
+		talloc_free(sid_str);
 		return NT_STATUS_INVALID_SID;
 	}
 
@@ -96,10 +106,17 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 			(*sec)->groups[g] = ids[s].xid.id;
 			g++;
 		} else {
+			char *sid_str = dom_sid_string(mem_ctx, ids[s].sid);
+			DEBUG(0, ("Unable to convert SID (%s) at index %u in user token to a GID.  Conversion was returned as type %d, full token:\n",
+				  sid_str, (unsigned int)s, (int)ids[s].xid.type));
+			security_token_debug(0, 0, token);
+			talloc_free(sid_str);
 			return NT_STATUS_INVALID_SID;
 		}
 	}
 
+	DEBUG(5, ("Successfully converted security token to a unix token:"));
+	security_token_debug(0, 5, token);
 	TALLOC_FREE(ids);
 
 	return NT_STATUS_OK;
