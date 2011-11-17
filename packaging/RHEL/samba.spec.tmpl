@@ -1,5 +1,11 @@
 %define initdir %{_sysconfdir}/rc.d/init.d
 %define auth %(test -f /etc/pam.d/system-auth && echo /etc/pam.d/system-auth || echo)
+%define this_is_redhat  %(test -e /etc/redhat-release && echo 1 || echo 0)
+%if %{this_is_redhat} > 0
+%define rhel_ver %(lsb_release -sr)
+%else
+%define rhel_ver 0
+%endif
 
 Summary: Samba SMB client and server
 Vendor: Samba Team
@@ -28,7 +34,13 @@ Provides: samba = %{version}
 
 Prefix: /usr
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel, keyutils-devel
+BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel
+
+%if %{rhel_ver} > 4
+BuildRequires:  keyutils-libs-devel
+%else
+BuildRequires:  keyutils-devel
+%endif
 
 # Working around perl dependency problem from docs
 %define __perl_requires %{SOURCE998}
