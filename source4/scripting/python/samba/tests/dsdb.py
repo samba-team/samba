@@ -22,7 +22,7 @@
 from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
-from testtools.testcase import TestCase
+from samba.tests import TestCase
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
 import ldb
@@ -31,7 +31,6 @@ import samba
 
 
 class DsdbTests(TestCase):
-
 
     def setUp(self):
         super(DsdbTests, self).setUp()
@@ -43,10 +42,8 @@ class DsdbTests(TestCase):
         self.samdb = SamDB(os.path.join(self.baseprovpath(), "private", "sam.ldb"),
             session_info=self.session, credentials=self.creds,lp=self.lp)
 
-
     def baseprovpath(self):
         return os.path.join(os.environ['SELFTEST_PREFIX'], "dc")
-
 
     def test_get_oid_from_attrid(self):
         oid = self.samdb.get_oid_from_attid(591614)
