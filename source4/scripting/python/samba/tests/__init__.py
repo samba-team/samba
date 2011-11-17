@@ -28,6 +28,8 @@ from samba.samdb import SamDB
 import subprocess
 import tempfile
 
+samba.ensure_external_module("testtools", "testtools")
+
 # Other modules import these two classes from here, for convenience:
 from testtools.testcase import (
     TestCase as TesttoolsTestCase,
