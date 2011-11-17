@@ -233,11 +233,7 @@ install -m644 setup/samba.pamd $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/samba
 install -m755 setup/smbprint $RPM_BUILD_ROOT%{_bindir}
 install -m644 setup/smbusers $RPM_BUILD_ROOT%{_sysconfdir}/samba/smbusers
 install -m644 setup/smb.conf $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
-install -m755 source3/bin/mount.cifs $RPM_BUILD_ROOT/sbin/mount.cifs
-install -m755 source3/bin/umount.cifs $RPM_BUILD_ROOT/sbin/umount.cifs
 install -m755 source3/script/mksmbpasswd.sh $RPM_BUILD_ROOT%{_bindir}
-
-/bin/rm $RPM_BUILD_ROOT%{_sbindir}/*mount.cifs
 
 ln -s ../..%{initdir}/smb  $RPM_BUILD_ROOT%{_sbindir}/samba
 ln -s ../..%{initdir}/winbind  $RPM_BUILD_ROOT%{_sbindir}/winbind
@@ -331,9 +327,11 @@ fi
 %{_bindir}/mksmbpasswd.sh
 %{_bindir}/smbcontrol
 %{_bindir}/smbstatus
+%{_bindir}/smbta-util
 %{_bindir}/tdbbackup
 %{_bindir}/tdbtool
 %{_bindir}/tdbdump
+%{_bindir}/tdbrestore
 %{_bindir}/wbinfo
 %{_bindir}/ntlm_auth
 %{_bindir}/pdbedit
@@ -392,9 +390,6 @@ fi
 
 %files client
 %defattr(-,root,root)
-/sbin/mount.cifs
-/sbin/umount.cifs
-%{_sbindir}/cifs.upcall
 
 %{_bindir}/rpcclient
 %{_bindir}/smbcacls
@@ -410,9 +405,6 @@ fi
 %{_bindir}/net
 %{_bindir}/smbtree
 
-%{_mandir}/man8/mount.cifs.8.*
-%{_mandir}/man8/umount.cifs.8.*
-%{_mandir}/man8/cifs.upcall.8.*
 %{_mandir}/man8/smbspool.8*
 %{_mandir}/man1/smbget.1*
 %{_mandir}/man5/smbgetrc.5*
@@ -441,6 +433,7 @@ fi
 %attr(755,root,root) /%{_libarch}/libnss_winbind.so*
 %attr(755,root,root) /%{_libarch}/security/pam_winbind.so
 %attr(755,root,root) /%{_libarch}/security/pam_smbpass.so
+/usr/share/locale/de/LC_MESSAGES/net.mo
 /usr/share/locale/de/LC_MESSAGES/pam_winbind.mo
 /usr/share/locale/ar/LC_MESSAGES/pam_winbind.mo
 /usr/share/locale/cs/LC_MESSAGES/pam_winbind.mo
@@ -483,27 +476,15 @@ fi
 %{_bindir}/smbpasswd
 %{_bindir}/profiles
 
-%{_bindir}/ldbadd
-%{_bindir}/ldbdel
-%{_bindir}/ldbedit
-%{_bindir}/ldbmodify
-%{_bindir}/ldbrename
-%{_bindir}/ldbsearch
-
 %{_mandir}/man1/profiles.1*
 %{_mandir}/man1/testparm.1*
 %{_mandir}/man5/smb.conf.5*
 %{_mandir}/man5/lmhosts.5*
 %{_mandir}/man8/smbpasswd.8*
+%{_mandir}/man5/pam_winbind.conf.5.*
 %{_mandir}/man7/libsmbclient.7*
+%{_mandir}/man8/smbta-util.8*
 %{_mandir}/man8/pam_winbind.8*
-
-%{_mandir}/man1/ldbadd.1*
-%{_mandir}/man1/ldbdel.1*
-%{_mandir}/man1/ldbedit.1*
-%{_mandir}/man1/ldbmodify.1*
-%{_mandir}/man1/ldbrename.1*
-%{_mandir}/man1/ldbsearch.1*
 
 %changelog
 * Fri Jan 16 2004 Gerald (Jerry) Carter <jerry@samba,org>
