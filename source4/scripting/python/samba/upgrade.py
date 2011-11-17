@@ -91,7 +91,7 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
     :param idmapdb: Samba4 IDMAP database
     :param sid: user/group sid
     :param xid: user/group id
-    :param xid_type: type of id (UID/GID)
+    :param xid_type: type of id (ID_TYPE_UID/ID_TYPE_GID)
     :param logger: Logger object
     """
 
@@ -675,7 +675,7 @@ Please fix this account before attempting to upgrade again
     for g in grouplist:
         # Ignore uninitialized groups (gid = -1)
         if g.gid != 0xffffffff:
-            add_idmap_entry(result.idmap, g.sid, g.gid, "GID", logger)
+            add_idmap_entry(result.idmap, g.sid, g.gid, "ID_TYPE_GID", logger)
             add_group_from_mapping_entry(result.samdb, g, logger)
 
     # Export users to samba4 backend
@@ -685,7 +685,7 @@ Please fix this account before attempting to upgrade again
             continue
         s4_passdb.add_sam_account(userdata[username])
         if username in uids:
-            add_idmap_entry(result.idmap, userdata[username].user_sid, uids[username], "UID", logger)
+            add_idmap_entry(result.idmap, userdata[username].user_sid, uids[username], "ID_TYPE_UID", logger)
 
     logger.info("Adding users to groups")
     for g in grouplist:
