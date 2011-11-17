@@ -58,7 +58,7 @@ struct ctdb_event_script_state {
 	enum ctdb_eventscript_call call;
 	const char *options;
 	struct timeval timeout;
-
+	
 	unsigned int current;
 	struct ctdb_scripts_wire *scripts;
 };
@@ -742,6 +742,14 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 	/* Kill off any running monitor events to run this event. */
 	if (ctdb->current_monitor) {
+		struct ctdb_event_script_state *ms = talloc_get_type(ctdb->current_monitor, struct ctdb_event_script_state);
+
+		/* cancel it */
+		if (ms->callback != NULL) {
+			ms->callback->fn(ctdb, -ECANCELED, ms->callback->private_data);
+			talloc_free(ms->callback);
+		}
+
 		/* Discard script status so we don't save to last_status */
 		talloc_free(ctdb->current_monitor->scripts);
 		ctdb->current_monitor->scripts = NULL;
