@@ -237,7 +237,7 @@ def add_users_to_group(samdb, group, members, logger):
             samdb.modify(m)
         except ldb.LdbError, (ecode, emsg):
             if ecode == ldb.ERR_ENTRY_ALREADY_EXISTS:
-                logger.info("skipped re-adding member '%s' to group '%s': %s", member_sid, group.sid, emsg)
+                logger.debug("skipped re-adding member '%s' to group '%s': %s", member_sid, group.sid, emsg)
             elif ecode == ldb.ERR_NO_SUCH_OBJECT:
                 raise ProvisioningError("Could not add member '%s' to group '%s' as either group or user record doesn't exist: %s" % (member_sid, group.sid, emsg))
             else:
