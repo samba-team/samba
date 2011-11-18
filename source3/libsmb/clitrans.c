@@ -208,14 +208,18 @@ static void cli_trans_format(struct cli_trans_state *state, uint8_t *pwct,
 
 	switch (cmd) {
 	case SMBtrans:
-		pad[0] = 0;
-		iov[0].iov_base = (void *)pad;
-		iov[0].iov_len = 1;
-		iov[1].iov_base = (void *)state->pipe_name_conv;
-		iov[1].iov_len = state->pipe_name_conv_len;
+		if (cli_ucs2(state->cli)) {
+			pad[0] = 0;
+			iov[0].iov_base = (void *)pad;
+			iov[0].iov_len = 1;
+			param_offset += 1;
+			iov += 1;
+		}
+		iov[0].iov_base = (void *)state->pipe_name_conv;
+		iov[0].iov_len = state->pipe_name_conv_len;
 		wct = 14 + state->num_setup;
-		param_offset += iov[0].iov_len + iov[1].iov_len;
-		iov += 2;
+		param_offset += iov[0].iov_len;
+		iov += 1;
 		break;
 	case SMBtrans2:
 		pad[0] = 0;
