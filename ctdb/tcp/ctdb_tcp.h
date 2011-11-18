@@ -17,7 +17,9 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-
+#ifndef _CTDB_TCP_H
+#define _CTDB_TCP_H
+ 
 /* ctdb_tcp main state */
 struct ctdb_tcp {
 	struct ctdb_context *ctdb;
@@ -54,3 +56,5 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data);
 void ctdb_tcp_stop_connection(struct ctdb_node *node);
 
 #define CTDB_TCP_ALIGNMENT 8
+
+#endif /* _CTDB_TCP_H */

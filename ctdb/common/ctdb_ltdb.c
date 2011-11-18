@@ -295,4 +295,41 @@ void ctdb_trackingdb_traverse(struct ctdb_context *ctdb, TDB_DATA data, ctdb_tra
 	}
 }
 
+/*
+  this is the dummy null procedure that all databases support
+*/
+int ctdb_null_func(struct ctdb_call_info *call)
+{
+	return 0;
+}
+
+/*
+  this is a plain fetch procedure that all databases support
+*/
+int ctdb_fetch_func(struct ctdb_call_info *call)
+{
+	call->reply_data = &call->record_data;
+	return 0;
+}
+
+/*
+  this is a plain fetch procedure that all databases support
+  this returns the full record including the ltdb header
+*/
+int ctdb_fetch_with_header_func(struct ctdb_call_info *call)
+{
+	call->reply_data = talloc(call, TDB_DATA);
+	if (call->reply_data == NULL) {
+		return -1;
+	}
+	call->reply_data->dsize = sizeof(struct ctdb_ltdb_header) + call->record_data.dsize;
+	call->reply_data->dptr  = talloc_size(call->reply_data, call->reply_data->dsize);
+	if (call->reply_data->dptr == NULL) {
+		return -1;
+	}
+	memcpy(call->reply_data->dptr, call->header, sizeof(struct ctdb_ltdb_header));
+	memcpy(&call->reply_data->dptr[sizeof(struct ctdb_ltdb_header)], call->record_data.dptr, call->record_data.dsize);
+
+	return 0;
+}
 

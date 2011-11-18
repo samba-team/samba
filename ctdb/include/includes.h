@@ -1,3 +1,6 @@
+#ifndef _CTDB_INCLUDES_H
+#define _CTDB_INCLUDES_H
+
 #define HAVE_UNIXSOCKET 1
 
 #include "replace.h"
@@ -58,3 +61,5 @@ _PUBLIC_ int set_blocking(int fd, BOOL set);
 
 #include "lib/util/debug.h"
 #include "lib/util/util.h"
+
+#endif /* _CTDB_INCLUDES_H */

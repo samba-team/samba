@@ -978,7 +978,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 /*
   destroy a ctdb_control in client
 */
-static int ctdb_control_destructor(struct ctdb_client_control_state *state)	
+static int ctdb_client_control_destructor(struct ctdb_client_control_state *state)
 {
 	ctdb_reqid_remove(state->ctdb, state->reqid);
 	return 0;
@@ -1035,7 +1035,7 @@ struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb,
 	state->state      = CTDB_CONTROL_WAIT;
 	state->errormsg   = NULL;
 
-	talloc_set_destructor(state, ctdb_control_destructor);
+	talloc_set_destructor(state, ctdb_client_control_destructor);
 
 	len = offsetof(struct ctdb_req_control, data) + data.dsize;
 	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CONTROL, 
@@ -1880,44 +1880,6 @@ int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode)
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for reset statistics failed\n"));
 		return -1;
 	}
-	return 0;
-}
-
-/*
-  this is the dummy null procedure that all databases support
-*/
-static int ctdb_null_func(struct ctdb_call_info *call)
-{
-	return 0;
-}
-
-/*
-  this is a plain fetch procedure that all databases support
-*/
-static int ctdb_fetch_func(struct ctdb_call_info *call)
-{
-	call->reply_data = &call->record_data;
-	return 0;
-}
-
-/*
-  this is a plain fetch procedure that all databases support
-  this returns the full record including the ltdb header
-*/
-static int ctdb_fetch_with_header_func(struct ctdb_call_info *call)
-{
-	call->reply_data = talloc(call, TDB_DATA);
-	if (call->reply_data == NULL) {
-		return -1;
-	}
-	call->reply_data->dsize = sizeof(struct ctdb_ltdb_header) + call->record_data.dsize;
-	call->reply_data->dptr  = talloc_size(call->reply_data, call->reply_data->dsize);
-	if (call->reply_data->dptr == NULL) {
-		return -1;
-	}
-	memcpy(call->reply_data->dptr, call->header, sizeof(struct ctdb_ltdb_header));
-	memcpy(&call->reply_data->dptr[sizeof(struct ctdb_ltdb_header)], call->record_data.dptr, call->record_data.dsize);
-
 	return 0;
 }
 
@@ -4131,7 +4093,7 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb, 
 		struct timeval timeout, uint32_t destnode, 
 		TALLOC_CTX *mem_ctx, enum ctdb_eventscript_call type,
-		struct ctdb_scripts_wire **script_status)
+		struct ctdb_scripts_wire **scripts)
 {
 	int ret;
 	TDB_DATA outdata, indata;
@@ -4150,9 +4112,9 @@ int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
 	}
 
 	if (outdata.dsize == 0) {
-		*script_status = NULL;
+		*scripts = NULL;
 	} else {
-		*script_status = (struct ctdb_scripts_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
+		*scripts = (struct ctdb_scripts_wire *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
 		talloc_free(outdata.dptr);
 	}
 		    

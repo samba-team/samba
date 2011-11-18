@@ -1432,32 +1432,6 @@ struct ctdb_public_ip_list {
 	uint32_t pnn;
 	ctdb_sock_addr addr;
 };
-uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2);
-uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
-			   struct ctdb_public_ip_list *ips,
-			   int pnn);
-uint32_t lcp2_imbalance(struct ctdb_public_ip_list * all_ips, int pnn);
-void lcp2_init(struct ctdb_context * tmp_ctx,
-	       struct ctdb_node_map * nodemap,
-	       uint32_t mask,
-	       struct ctdb_public_ip_list *all_ips,
-	       uint32_t **lcp2_imbalances,
-	       bool **newly_healthy);
-void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
-			      struct ctdb_node_map *nodemap,
-			      uint32_t mask,
-			      struct ctdb_public_ip_list *all_ips,
-			      uint32_t *lcp2_imbalances);
-bool lcp2_failback(struct ctdb_context *ctdb,
-		   struct ctdb_node_map *nodemap,
-		   uint32_t mask,
-		   struct ctdb_public_ip_list *all_ips,
-		   uint32_t *lcp2_imbalances,
-		   bool *newly_healthy);
-void ctdb_takeover_run_core(struct ctdb_context *ctdb,
-			    struct ctdb_node_map *nodemap,
-			    struct ctdb_public_ip_list **all_ips_p);
-
 int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t pnn);
 
 typedef void (*ctdb_trackingdb_cb)(struct ctdb_context *ctdb, uint32_t pnn, void *private_data);
@@ -1471,5 +1445,11 @@ typedef void (*deferred_requeue_fn)(void *call_context, struct ctdb_req_header *
 int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context);
 
 int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
+
+int ctdb_null_func(struct ctdb_call_info *call);
+
+int ctdb_fetch_func(struct ctdb_call_info *call);
+
+int ctdb_fetch_with_header_func(struct ctdb_call_info *call);
 
 #endif

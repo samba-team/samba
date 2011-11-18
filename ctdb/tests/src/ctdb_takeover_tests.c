@@ -17,20 +17,11 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "../include/ctdb_private.h"
+#include "ctdbd_test.c"
 
 /* This is lazy... but it is test code! */
 #define CTDB_TEST_MAX_NODES 256
 #define CTDB_TEST_MAX_IPS 256
-
-/*
- * Need these, since they're defined in ctdbd.c but we can't link
- * that.
- */
-int script_log_level;
-bool fast_start;
-void ctdb_load_nodes_file(struct ctdb_context *ctdb) {}
 
 /* Format of each line is "IP pnn" - the separator has to be at least
  * 1 space (not a tab or whatever - a space!).
