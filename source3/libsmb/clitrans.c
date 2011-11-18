@@ -120,6 +120,7 @@ static NTSTATUS cli_pull_trans(uint8_t *inbuf,
 		if (wct < 18) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
+		expected_num_setup = wct - 18;
 		*ptotal_param	= IVAL(vwv, 3);
 		*ptotal_data	= IVAL(vwv, 7);
 		*pnum_param	= IVAL(vwv, 11);
@@ -129,6 +130,9 @@ static NTSTATUS cli_pull_trans(uint8_t *inbuf,
 		data_ofs	= IVAL(vwv, 27);
 		*pdata_disp	= IVAL(vwv, 31);
 		*pnum_setup	= CVAL(vwv, 35);
+		if (expected_num_setup < (*pnum_setup)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
 		*psetup		= vwv + 18;
 		break;
 
