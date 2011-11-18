@@ -105,6 +105,37 @@ static bool netlogon_samlogon_response_check(struct torture_context *tctx,
 	return true;
 }
 
+static const uint8_t nbt_netlogon_packet_data[] = {
+	0x12, 0x00, 0x00, 0x00, 0x4c, 0x00, 0x45, 0x00, 0x4e, 0x00, 0x4e, 0x00,
+	0x59, 0x00, 0x00, 0x00, 0x4c, 0x00, 0x45, 0x00, 0x4e, 0x00, 0x4e, 0x00,
+	0x59, 0x00, 0x24, 0x00, 0x00, 0x00, 0x5c, 0x4d, 0x41, 0x49, 0x4c, 0x53,
+	0x4c, 0x4f, 0x54, 0x5c, 0x4e, 0x45, 0x54, 0x5c, 0x47, 0x45, 0x54, 0x44,
+	0x43, 0x35, 0x32, 0x45, 0x41, 0x41, 0x38, 0x43, 0x30, 0x00, 0x80, 0x00,
+	0x00, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x05, 0x15, 0x00, 0x00, 0x00, 0x9c, 0x4e, 0x59, 0xff,
+	0xe1, 0xa0, 0x39, 0xac, 0x29, 0xa6, 0xe2, 0xda, 0x01, 0x00, 0x00, 0x00,
+	0xff, 0xff, 0xff, 0xff
+};
+
+static bool nbt_netlogon_packet_check(struct torture_context *tctx,
+				      struct nbt_netlogon_packet *r)
+{
+	torture_assert_int_equal(tctx, r->command, LOGON_SAM_LOGON_REQUEST, "command");
+	torture_assert_int_equal(tctx, r->req.logon.request_count, 0, "request_count");
+	torture_assert_str_equal(tctx, r->req.logon.computer_name, "LENNY", "computer_name");
+	torture_assert_str_equal(tctx, r->req.logon.user_name, "LENNY$", "user_name");
+	torture_assert_str_equal(tctx, r->req.logon.mailslot_name, "\\MAILSLOT\\NET\\GETDC52EAA8C0", "mailslot_name");
+	torture_assert_int_equal(tctx, r->req.logon.acct_control, 0x00000080, "acct_control");
+	torture_assert_int_equal(tctx, r->req.logon.sid_size, 24, "sid_size");
+	torture_assert_int_equal(tctx, r->req.logon._pad.length, 2, "_pad.length");
+	torture_assert_sid_equal(tctx, &r->req.logon.sid, dom_sid_parse_talloc(tctx, "S-1-5-21-4284042908-2889457889-3672286761"), "sid");
+	torture_assert_int_equal(tctx, r->req.logon.nt_version, NETLOGON_NT_VERSION_1, "nt_version");
+	torture_assert_int_equal(tctx, r->req.logon.lmnt_token, 0xffff, "lmnt_token");
+	torture_assert_int_equal(tctx, r->req.logon.lm20_token, 0xffff, "lm20_token");
+
+	return true;
+}
+
 struct torture_suite *ndr_nbt_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "nbt");
@@ -122,6 +153,11 @@ struct torture_suite *ndr_nbt_suite(TALLOC_CTX *ctx)
 					    netlogon_samlogon_response,
 					    data_blob_const(netlogon_samlogon_response_data, sizeof(netlogon_samlogon_response_data)),
 					    netlogon_samlogon_response_check);
+
+	torture_suite_add_ndr_pullpush_test(suite,
+					    nbt_netlogon_packet,
+					    data_blob_const(nbt_netlogon_packet_data, sizeof(nbt_netlogon_packet_data)),
+					    nbt_netlogon_packet_check);
 
 	return suite;
 }
