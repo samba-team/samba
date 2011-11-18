@@ -606,29 +606,64 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 	while (talloc_array_length(conn->pending) > 0) {
 		struct tevent_req *req;
 		struct smbXcli_req_state *state;
+		struct tevent_req **chain;
+		size_t num_chained;
+		size_t i;
 
 		req = conn->pending[0];
 		state = tevent_req_data(req, struct smbXcli_req_state);
 
-		/*
-		 * We're dead. No point waiting for trans2
-		 * replies.
-		 */
-		state->smb1.mid = 0;
+		if (state->smb1.chained_requests == NULL) {
+			/*
+			 * We're dead. No point waiting for trans2
+			 * replies.
+			 */
+			state->smb1.mid = 0;
 
-		smbXcli_req_unset_pending(req);
+			smbXcli_req_unset_pending(req);
 
-		if (NT_STATUS_IS_OK(status)) {
-			/* do not notify the callers */
+			if (NT_STATUS_IS_OK(status)) {
+				/* do not notify the callers */
+				continue;
+			}
+
+			/*
+			 * we need to defer the callback, because we may notify
+			 * more then one caller.
+			 */
+			tevent_req_defer_callback(req, state->ev);
+			tevent_req_nterror(req, status);
 			continue;
 		}
 
-		/*
-		 * we need to defer the callback, because we may notify more
-		 * then one caller.
-		 */
-		tevent_req_defer_callback(req, state->ev);
-		tevent_req_nterror(req, status);
+		chain = talloc_move(conn, &state->smb1.chained_requests);
+		num_chained = talloc_array_length(chain);
+
+		for (i=0; i<num_chained; i++) {
+			req = chain[i];
+			state = tevent_req_data(req, struct smbXcli_req_state);
+
+			/*
+			 * We're dead. No point waiting for trans2
+			 * replies.
+			 */
+			state->smb1.mid = 0;
+
+			smbXcli_req_unset_pending(req);
+
+			if (NT_STATUS_IS_OK(status)) {
+				/* do not notify the callers */
+				continue;
+			}
+
+			/*
+			 * we need to defer the callback, because we may notify
+			 * more then one caller.
+			 */
+			tevent_req_defer_callback(req, state->ev);
+			tevent_req_nterror(req, status);
+		}
+		TALLOC_FREE(chain);
 	}
 }
 
