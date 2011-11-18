@@ -1671,9 +1671,6 @@ NTSTATUS smb1cli_req_chain_submit(struct tevent_req **reqs, int num_reqs)
 	struct smbXcli_req_state *first_state =
 		tevent_req_data(reqs[0],
 		struct smbXcli_req_state);
-	struct smbXcli_req_state *last_state =
-		tevent_req_data(reqs[num_reqs-1],
-		struct smbXcli_req_state);
 	struct smbXcli_req_state *state;
 	size_t wct_offset;
 	size_t chain_padding = 0;
@@ -1719,13 +1716,13 @@ NTSTATUS smb1cli_req_chain_submit(struct tevent_req **reqs, int num_reqs)
 		iovlen += state->smb1.iov_count - 2;
 	}
 
-	iov = talloc_zero_array(last_state, struct iovec, iovlen);
+	iov = talloc_zero_array(first_state, struct iovec, iovlen);
 	if (iov == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	first_state->smb1.chained_requests = (struct tevent_req **)talloc_memdup(
-		last_state, reqs, sizeof(*reqs) * num_reqs);
+		first_state, reqs, sizeof(*reqs) * num_reqs);
 	if (first_state->smb1.chained_requests == NULL) {
 		TALLOC_FREE(iov);
 		return NT_STATUS_NO_MEMORY;
@@ -1810,17 +1807,11 @@ NTSTATUS smb1cli_req_chain_submit(struct tevent_req **reqs, int num_reqs)
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	status = smb1cli_req_writev_submit(reqs[0], last_state, iov, iovlen);
+	status = smb1cli_req_writev_submit(reqs[0], first_state, iov, iovlen);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(iov);
 		TALLOC_FREE(first_state->smb1.chained_requests);
 		return status;
-	}
-
-	for (i=0; i < (num_reqs - 1); i++) {
-		state = tevent_req_data(reqs[i], struct smbXcli_req_state);
-
-		state->smb1.seqnum = last_state->smb1.seqnum;
 	}
 
 	return NT_STATUS_OK;
