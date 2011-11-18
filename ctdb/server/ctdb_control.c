@@ -648,7 +648,10 @@ void ctdb_request_control_reply(struct ctdb_context *ctdb, struct ctdb_req_contr
 		len += strlen(errormsg);
 	}
 	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REPLY_CONTROL, len, struct ctdb_reply_control);
-	CTDB_NO_MEMORY_VOID(ctdb, r);
+	if (r == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ "Unable to allocate transport - OOM or transport is down\n"));
+		return;
+	}
 
 	r->hdr.destnode     = c->hdr.srcnode;
 	r->hdr.reqid        = c->hdr.reqid;
