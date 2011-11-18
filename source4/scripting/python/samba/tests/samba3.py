@@ -151,7 +151,7 @@ class PassdbTestCase(TestCaseInTempDir):
     def test_get_group(self):
         group = self.pdb.getgrsid(dom_sid("S-1-5-32-544"))
         self.assertEquals("Administrators", group.nt_name)
-        self.assertEquals(4294967295, group.gid)
+        self.assertEquals(-1, group.gid)
         self.assertEquals(5, group.sid_name_use)
 
     def test_groupsids(self):

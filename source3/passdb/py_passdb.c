@@ -975,7 +975,7 @@ static PyObject *py_groupmap_get_gid(PyObject *obj, void *closure)
 	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
 	PyObject *py_gid;
 
-	py_gid = PyInt_FromLong(group_map->gid);
+	py_gid = Py_BuildValue("i", group_map->gid);
 	return py_gid;
 }
 

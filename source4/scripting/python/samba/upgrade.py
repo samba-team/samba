@@ -674,7 +674,7 @@ Please fix this account before attempting to upgrade again
     logger.info("Importing groups")
     for g in grouplist:
         # Ignore uninitialized groups (gid = -1)
-        if g.gid != 0xffffffff:
+        if g.gid != -1:
             add_idmap_entry(result.idmap, g.sid, g.gid, "ID_TYPE_GID", logger)
             add_group_from_mapping_entry(result.samdb, g, logger)
 
