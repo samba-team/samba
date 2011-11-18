@@ -85,6 +85,7 @@ static NTSTATUS cli_pull_trans(uint8_t *inbuf,
 			       uint32_t *pdata_disp, uint8_t **pdata)
 {
 	uint32_t param_ofs, data_ofs;
+	uint8_t expected_num_setup;
 
 	if (expect_first_reply) {
 		if ((wct != 0) || (num_bytes != 0)) {
@@ -99,6 +100,7 @@ static NTSTATUS cli_pull_trans(uint8_t *inbuf,
 		if (wct < 10) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
+		expected_num_setup = wct - 10;
 		*ptotal_param	= SVAL(vwv + 0, 0);
 		*ptotal_data	= SVAL(vwv + 1, 0);
 		*pnum_param	= SVAL(vwv + 3, 0);
@@ -108,7 +110,7 @@ static NTSTATUS cli_pull_trans(uint8_t *inbuf,
 		data_ofs	= SVAL(vwv + 7, 0);
 		*pdata_disp	= SVAL(vwv + 8, 0);
 		*pnum_setup	= CVAL(vwv + 9, 0);
-		if (wct < 10 + (*pnum_setup)) {
+		if (expected_num_setup < (*pnum_setup)) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 		*psetup = vwv + 10;
