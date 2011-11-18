@@ -212,10 +212,10 @@ static bool tdb_data_is_empty(TDB_DATA d) {
 }
 
 static bool tdb_data_is_cstr(TDB_DATA d) {
-	if (tdb_data_is_empty(d) || (d.dptr[d.dsize-1] != '\0')) {
+	if (tdb_data_is_empty(d)) {
 		return false;
 	}
-	return rawmemchr(d.dptr, '\0') == &d.dptr[d.dsize-1];
+	return (d.dptr[d.dsize-1] == '\0');
 }
 
 static char* tdb_data_print(TALLOC_CTX *mem_ctx, TDB_DATA d)
@@ -668,7 +668,8 @@ static bool srprs_path(const char **ptr, const char* prefix, char sep,
 		return false;
 	}
 	*ppath = path;
-	*ptr = rawmemchr(pos, '\0');
+	/* We know pos ends in '\0'. */
+	*ptr = &pos[strlen(pos)];
 	return true;
 }
 
