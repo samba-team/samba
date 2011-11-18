@@ -168,6 +168,7 @@ struct smbXcli_req_state {
 		struct iovec iov[1 + 3 + MAX_SMB_IOV];
 		int iov_count;
 
+		bool one_way_seqnum;
 		uint32_t seqnum;
 		struct tevent_req **chained_requests;
 
@@ -997,8 +998,11 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 	case SMBtranss:
 	case SMBtranss2:
 	case SMBnttranss:
+		state->one_way = true;
+		break;
 	case SMBntcancel:
 		state->one_way = true;
+		state->smb1.one_way_seqnum = true;
 		break;
 	case SMBlockingX:
 		if ((wct == 8) &&
@@ -1013,7 +1017,8 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 				   struct iovec *iov, int iov_count,
-				   uint32_t *seqnum)
+				   uint32_t *seqnum,
+				   bool one_way_seqnum)
 {
 	uint8_t *buf;
 
@@ -1043,7 +1048,8 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*seqnum = smb_signing_next_seqnum(conn->smb1.signing, false);
+	*seqnum = smb_signing_next_seqnum(conn->smb1.signing,
+					  one_way_seqnum);
 	smb_signing_sign_pdu(conn->smb1.signing, buf, *seqnum);
 	memcpy(iov[1].iov_base, buf+4, iov[1].iov_len);
 
@@ -1098,7 +1104,8 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	_smb_setlen_nbt(iov[0].iov_base, smbXcli_iov_len(&iov[1], iov_count-1));
 
 	status = smb1cli_conn_signv(state->conn, iov, iov_count,
-				    &state->smb1.seqnum);
+				    &state->smb1.seqnum,
+				    state->smb1.one_way_seqnum);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
