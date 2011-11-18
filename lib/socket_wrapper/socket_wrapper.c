@@ -42,7 +42,7 @@
 #ifdef _SAMBA_BUILD_
 
 #define SOCKET_WRAPPER_NOT_REPLACE
-#include "../replace/replace.h"
+#include "replace.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/time.h"
