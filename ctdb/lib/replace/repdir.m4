@@ -1,7 +1,7 @@
 AC_CACHE_CHECK([for broken readdir],libreplace_cv_READDIR_NEEDED,[
 	AC_TRY_RUN([
 #define test_readdir_os2_delete main
-#include "$libreplacedir/tests/os2_delete.c"],
+#include "$libreplacedir/test/os2_delete.c"],
 	[libreplace_cv_READDIR_NEEDED=no],
 	[libreplace_cv_READDIR_NEEDED=yes],
 	[libreplace_cv_READDIR_NEEDED="assuming not"])
@@ -34,7 +34,7 @@ AC_CACHE_CHECK([for replacing readdir using getdirentries()],libreplace_cv_READD
 #define _LIBREPLACE_REPLACE_H
 #include "$libreplacedir/repdir_getdirentries.c"
 #define test_readdir_os2_delete main
-#include "$libreplacedir/tests/os2_delete.c"],
+#include "$libreplacedir/test/os2_delete.c"],
 	[libreplace_cv_READDIR_GETDIRENTRIES=yes],
 	[libreplace_cv_READDIR_GETDIRENTRIES=no])
 ])
@@ -57,7 +57,7 @@ AC_CACHE_CHECK([for replacing readdir using getdents()],libreplace_cv_READDIR_GE
 #error _donot_use_getdents_replacement_anymore
 #include "$libreplacedir/repdir_getdents.c"
 #define test_readdir_os2_delete main
-#include "$libreplacedir/tests/os2_delete.c"],
+#include "$libreplacedir/test/os2_delete.c"],
 	[libreplace_cv_READDIR_GETDENTS=yes],
 	[libreplace_cv_READDIR_GETDENTS=no])
 ])

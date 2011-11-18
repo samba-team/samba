@@ -388,6 +388,9 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
 	state->ctdb_db = ctdb_db;
 
 	ret = ctdb_call_local(ctdb_db, state->call, header, state, data, true);
+	if (ret != 0) {
+		DEBUG(DEBUG_DEBUG,("ctdb_call_local() failed, ignoring return code %d\n", ret));
+	}
 
 	return state;
 }
@@ -916,6 +919,9 @@ static void invoke_control_callback(struct event_context *ev, struct timed_event
 			NULL, 
 			NULL, 
 			NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_DEBUG,("ctdb_control_recv() failed, ignoring return code %d\n", ret));
+	}
 
 	talloc_free(tmp_ctx);
 }

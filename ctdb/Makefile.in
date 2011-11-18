@@ -37,7 +37,7 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
 	-DLOGDIR=\"$(logdir)\" \
-	-DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
+	-DUSE_MMAP=1 -DTEVENT_DEPRECATED_QUIET=1 @CFLAGS@ -Wno-format-zero-length $(POPT_CFLAGS)
 
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@ @CTDB_PCAP_LDFLAGS@
 
@@ -147,7 +147,7 @@ utils/smnotify/smnotify.h:  utils/smnotify/smnotify.x
 
 utils/smnotify/gen_xdr.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
-	rpcgen -c utils/smnotify/smnotify.x > utils/smnotify/gen_xdr.c 
+	rpcgen -c utils/smnotify/smnotify.x | grep -Ev '^[[:space:]]+register int32_t \*buf;' > utils/smnotify/gen_xdr.c 
 
 utils/smnotify/gen_smnotify.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@

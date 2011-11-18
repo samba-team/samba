@@ -82,7 +82,6 @@ static uint32_t tevent_sig_count(struct tevent_sigcounter s)
 static void tevent_common_signal_handler(int signum)
 {
 	char c = 0;
-	ssize_t res;
 	struct tevent_common_signal_list *sl;
 	struct tevent_context *ev = NULL;
 	int saved_errno = errno;
@@ -95,7 +94,7 @@ static void tevent_common_signal_handler(int signum)
 		if (sl->se->event_ctx && sl->se->event_ctx != ev) {
 			ev = sl->se->event_ctx;
 			/* doesn't matter if this pipe overflows */
-			res = write(ev->pipe_fds[1], &c, 1);
+			(void) write(ev->pipe_fds[1], &c, 1);
 		}
 	}
 
@@ -180,9 +179,8 @@ static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde
 				uint16_t flags, void *_private)
 {
 	char c[16];
-	ssize_t res;
 	/* its non-blocking, doesn't matter if we read too much */
-	res = read(fde->fd, c, sizeof(c));
+	(void) read(fde->fd, c, sizeof(c));
 }
 
 /*

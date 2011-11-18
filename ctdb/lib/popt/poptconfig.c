@@ -94,7 +94,8 @@ static void configLine(poptContext con, char * line)
 
 int poptReadConfigFile(poptContext con, const char * fn)
 {
-    const char * file, * chptr, * end;
+    char * file;
+    const char * chptr, * end;
     char * buf;
 /*@dependent@*/ char * dst;
     int fd, rc;

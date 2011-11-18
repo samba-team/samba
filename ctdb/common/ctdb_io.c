@@ -64,21 +64,6 @@ int ctdb_queue_length(struct ctdb_queue *queue)
 	return queue->out_queue_length;
 }
 
-static void dump_packet(unsigned char *data, size_t len)
-{
-	size_t i;
-	char *p = talloc_array(NULL, char, len*3 + 1);
-	if (!p) {
-		DEBUG(DEBUG_CRIT,("Packet talloc fail"));
-		return;
-	}
-
-	for (i = 0; i < len; i++)
-		sprintf(p + i*3, " %02x", data[i]);
-	DEBUG(DEBUG_CRIT,("Contents: %s\n", p));
-	talloc_free(p);
-}
-
 /*
   called when an incoming connection is readable
   This function MUST be safe for reentry via the queue callback!
