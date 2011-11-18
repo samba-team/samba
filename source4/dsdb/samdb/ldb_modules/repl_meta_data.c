@@ -1092,9 +1092,15 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 		return LDB_SUCCESS;
 	}
 
-	/* if the attribute's value haven't changed then return LDB_SUCCESS	*/
+	/* if the attribute's value haven't changed then return LDB_SUCCESS
+	 * Unless we have the provision control or if the attribute is
+	 * interSiteTopologyGenerator as this page explain: http://support.microsoft.com/kb/224815
+	 * this attribute is periodicaly written by the DC responsible for the intersite generation
+	 * in a given site
+	 */
 	if (old_el != NULL && ldb_msg_element_compare(el, old_el) == 0) {
-		if (!ldb_request_get_control(req, LDB_CONTROL_PROVISION_OID)) {
+		if (strcmp(el->name, "interSiteTopologyGenerator") != 0 &&
+		    !ldb_request_get_control(req, LDB_CONTROL_PROVISION_OID)) {
 			/*
 			 * allow this to make it possible for dbcheck
 			 * to rebuild broken metadata
