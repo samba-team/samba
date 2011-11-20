@@ -39,7 +39,9 @@
    is set.
 */
 
-#ifdef _SAMBA_BUILD_
+#include "config.h"
+
+#ifdef HAVE_LIBREPLACE
 
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "replace.h"
@@ -47,7 +49,7 @@
 #include "system/filesys.h"
 #include "system/time.h"
 
-#else /* _SAMBA_BUILD_ */
+#else /* HAVE_LIBREPLACE */
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -66,7 +68,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#endif
+#endif /* HAVE_LIBREPLACE */
 
 #ifndef _PUBLIC_
 #define _PUBLIC_
