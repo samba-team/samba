@@ -2107,11 +2107,6 @@ krb5_error_code smb_krb5_get_credentials(krb5_context context,
 		goto done;
 	}
 
-	ret = krb5_cc_store_cred(context, ccache, creds);
-	if (ret) {
-		goto done;
-	}
-
 	if (out_creds) {
 		*out_creds = creds;
 	}
