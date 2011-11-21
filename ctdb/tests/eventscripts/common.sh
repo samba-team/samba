@@ -460,16 +460,13 @@ rpc_set_service_failure_response ()
     # the flexibility to set the number of failures.
     _numfails="${2:-${iteration}}"
 
-    if [ -f /etc/sysconfig/nfs ]; then
-	_c="${CTDB_ETCDIR}/sysconfig/nfs"
-    elif [ -f /etc/default/nfs ]; then
-	_c="${CTDB_ETCDIR}/default/nfs"
-    elif [ -f /etc/ctdb/sysconfig/nfs ]; then
-	_c="${CTDB_ETCDIR}/ctdb/sysconfig/nfs"
-    fi
-    if [ -r "$_c" ] ; then
-	. "$_c"
-    fi
+    _etc="$CTDB_ETCDIR" # shortcut for readability
+    for _c in "$_etc/sysconfig/nfs" "$_etc/default/nfs" "$_etc/ctdb/sysconfig/nfs" ; do
+	if [ -r "$_c" ] ; then
+	    . "$_c"
+	    break
+	fi
+    done
 
     # A handy newline.  :-)
     _nl="
