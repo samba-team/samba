@@ -3060,6 +3060,8 @@ NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss
 
 	cli = cli_state_create(NULL, fd, desthost, NULL, signing_state, flags);
 	if (cli == NULL) {
+		close(fd);
+		fd = -1;
 		goto fail;
 	}
 
