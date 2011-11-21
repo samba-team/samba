@@ -845,7 +845,7 @@ static void dreplsrv_update_refs_done(struct tevent_req *subreq)
 		 * running production as this error otherwise never happen and
 		 * due to the fact the send a DsReplicaUpdateRefs after each getNcChanges
 		 */
-		if (!W_ERROR_EQUAL(werr, WERR_DS_DRA_BUSY)) {
+		if (!W_ERROR_EQUAL(r->out.result, WERR_DS_DRA_BUSY)) {
 			tevent_req_nterror(req, status);
 			return;
 		}

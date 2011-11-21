@@ -89,6 +89,14 @@ static uint32_t count_dns_rr(struct rk_resource_record *head, unsigned record_ty
 			continue;
 		}
 
+		if (rr->type == rk_ns_t_ns) {
+			/*
+			 * Record that will follow will be related to the NS
+			 * not what we are really interested with.
+			 * It's a good idea not to count them
+			 */
+			break;
+		}
 		/* we are only interested by requested record */
 		if (rr->type != record_type) {
 			continue;
@@ -232,6 +240,14 @@ static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 			/* we are only interested in the IN class */
 			if (rr->class != rk_ns_c_in) {
 				continue;
+			}
+
+			if (rr->type == rk_ns_t_ns) {
+				/*
+				 * After the record for NS will come the A or AAAA
+				 * record of the NS.
+				 */
+				break;
 			}
 
 			/* we are only interested in A and AAAA records */
