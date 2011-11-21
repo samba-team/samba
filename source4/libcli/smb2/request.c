@@ -689,6 +689,7 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	DATA_BLOB blob;
 	NTSTATUS status;
 	bool ret;
+	void *ptr = NULL;
 
 	if (str == NULL) {
 		return smb2_push_o16s16_blob(buf, ofs, data_blob(NULL, 0));
@@ -701,10 +702,11 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	}
 
 	ret = convert_string_talloc(buf->buffer, CH_UNIX, CH_UTF16, 
-				    str, strlen(str), (void **)&blob.data, &blob.length);
+				    str, strlen(str), &ptr, &blob.length);
 	if (!ret) {
 		return NT_STATUS_ILLEGAL_CHARACTER;
 	}
+	blob.data = (uint8_t *)ptr;
 
 	status = smb2_push_o16s16_blob(buf, ofs, blob);
 	data_blob_free(&blob);
