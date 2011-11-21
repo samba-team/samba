@@ -2040,7 +2040,6 @@ static bool test_stacking(struct torture_context *tctx, struct smbcli_state *cli
 	int fnum1;
 	const char *fname = BASEDIR "\\stacking.txt";
 	struct smb_lock_entry lock1;
-	struct smb_lock_entry lock2;
 
 	torture_comment(tctx, "Testing stacking:\n");
 
@@ -2062,9 +2061,6 @@ static bool test_stacking(struct torture_context *tctx, struct smbcli_state *cli
 	lock1.pid = cli->session->pid;
 	lock1.offset = 0;
 	lock1.count = 10;
-	lock2.pid = cli->session->pid - 1;
-	lock2.offset = 0;
-	lock2.count = 10;
 
 	/**
 	 * Try to take a shared lock, then stack an exclusive.

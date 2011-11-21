@@ -432,8 +432,8 @@ _PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 
 static int free_gssapi_creds(struct gssapi_creds_container *gcc)
 {
-	OM_uint32 min_stat, maj_stat;
-	maj_stat = gss_release_cred(&min_stat, &gcc->creds);
+	OM_uint32 min_stat;
+	(void)gss_release_cred(&min_stat, &gcc->creds);
 	return 0;
 }
 

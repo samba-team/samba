@@ -1482,7 +1482,7 @@ static bool test_notify_tcon(struct smbcli_state *cli, struct torture_context *t
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
-	int fnum, fnum2;
+	int fnum;
 	struct smbcli_request *req;
 	extern int torture_numops;
 	struct smbcli_tree *tree = NULL;
@@ -1511,7 +1511,6 @@ static bool test_notify_tcon(struct smbcli_state *cli, struct torture_context *t
 
 	status = smb_raw_open(cli->tree, torture, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum2 = io.ntcreatex.out.file.fnum;
 
 	/* ask for a change notify,
 	   on file or directory name changes */

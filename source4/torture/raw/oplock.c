@@ -3550,7 +3550,6 @@ static bool test_raw_oplock_brl1(struct torture_context *tctx,
 	/*int fname, f;*/
 	bool ret = true;
 	uint8_t buf[1000];
-	bool correct = true;
 	union smb_open io;
 	NTSTATUS status;
 	uint16_t fnum=0;
@@ -3602,7 +3601,6 @@ static bool test_raw_oplock_brl1(struct torture_context *tctx,
 			 sizeof(buf))
 	{
 		torture_comment(tctx, "Failed to create file\n");
-		correct = false;
 		goto done;
 	}
 
@@ -3662,7 +3660,6 @@ static bool test_raw_oplock_brl2(struct torture_context *tctx, struct smbcli_sta
 	/*int fname, f;*/
 	bool ret = true;
 	uint8_t buf[1000];
-	bool correct = true;
 	union smb_open io;
 	NTSTATUS status;
 	uint16_t fnum=0;
@@ -3715,7 +3712,6 @@ static bool test_raw_oplock_brl2(struct torture_context *tctx, struct smbcli_sta
 			 sizeof(buf))
 	{
 		torture_comment(tctx, "Failed to create file\n");
-		correct = false;
 		goto done;
 	}
 
@@ -3868,7 +3864,6 @@ static bool test_raw_oplock_brl4(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\test_batch_brl.dat";
 	bool ret = true;
 	uint8_t buf[1000];
-	bool correct = true;
 	union smb_open io;
 	NTSTATUS status;
 	uint16_t fnum = 0;
@@ -3918,7 +3913,6 @@ static bool test_raw_oplock_brl4(struct torture_context *tctx,
 			 sizeof(buf))
 	{
 		torture_comment(tctx, "Failed to create file\n");
-		correct = false;
 		goto done;
 	}
 

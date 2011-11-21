@@ -1496,8 +1496,8 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 				       struct smbcli_state *cli,
 				       struct smbcli_state *cli2)
 {
-	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
-	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
+	union smb_fileinfo finfo0, finfo1, finfo2, finfo3;
+	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4;
 	const char *fname = BASEDIR "\\torture_file3.txt";
 	int fnum1 = -1;
 	bool ret = true;
@@ -1528,14 +1528,12 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	finfo1 = finfo0;
 	finfo2 = finfo0;
 	finfo3 = finfo0;
-	finfo4 = finfo0;
 	pinfo0.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	pinfo0.basic_info.in.file.path = fname;
 	pinfo1 = pinfo0;
 	pinfo2 = pinfo0;
 	pinfo3 = pinfo0;
 	pinfo4 = pinfo0;
-	pinfo5 = pinfo0;
 
 	/* get the initial times */
 	GET_INFO_BOTH(finfo0,pinfo0);
@@ -1651,8 +1649,8 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 				        struct smbcli_state *cli,
 				        struct smbcli_state *cli2)
 {
-	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
-	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
+	union smb_fileinfo finfo0, finfo1, finfo2, finfo3;
+	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4;
 	const char *fname = BASEDIR "\\torture_file3a.txt";
 	int fnum1 = -1;
 	bool ret = true;
@@ -1684,14 +1682,12 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 	finfo1 = finfo0;
 	finfo2 = finfo0;
 	finfo3 = finfo0;
-	finfo4 = finfo0;
 	pinfo0.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	pinfo0.basic_info.in.file.path = fname;
 	pinfo1 = pinfo0;
 	pinfo2 = pinfo0;
 	pinfo3 = pinfo0;
 	pinfo4 = pinfo0;
-	pinfo5 = pinfo0;
 
 	/* get the initial times */
 	GET_INFO_BOTH(finfo0,pinfo0);
@@ -1867,8 +1863,8 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 				        struct smbcli_state *cli,
 				        struct smbcli_state *cli2)
 {
-	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
-	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
+	union smb_fileinfo finfo0, finfo1, finfo2, finfo3;
+	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4;
 	const char *fname = BASEDIR "\\torture_file3b.txt";
 	int fnum1 = -1;
 	bool ret = true;
@@ -1899,14 +1895,12 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 	finfo1 = finfo0;
 	finfo2 = finfo0;
 	finfo3 = finfo0;
-	finfo4 = finfo0;
 	pinfo0.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	pinfo0.basic_info.in.file.path = fname;
 	pinfo1 = pinfo0;
 	pinfo2 = pinfo0;
 	pinfo3 = pinfo0;
 	pinfo4 = pinfo0;
-	pinfo5 = pinfo0;
 
 	/* get the initial times */
 	GET_INFO_BOTH(finfo0,pinfo0);
@@ -2245,8 +2239,8 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 				       struct smbcli_state *cli,
 				       struct smbcli_state *cli2)
 {
-	union smb_fileinfo finfo0, finfo1, finfo2, finfo3, finfo4;
-	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4, pinfo5;
+	union smb_fileinfo finfo0, finfo1, finfo2, finfo3;
+	union smb_fileinfo pinfo0, pinfo1, pinfo2, pinfo3, pinfo4;
 	const char *fname = BASEDIR "\\torture_file4.txt";
 	int fnum1 = -1;
 	bool ret = true;
@@ -2277,14 +2271,12 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 	finfo1 = finfo0;
 	finfo2 = finfo0;
 	finfo3 = finfo0;
-	finfo4 = finfo0;
 	pinfo0.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	pinfo0.basic_info.in.file.path = fname;
 	pinfo1 = pinfo0;
 	pinfo2 = pinfo0;
 	pinfo3 = pinfo0;
 	pinfo4 = pinfo0;
-	pinfo5 = pinfo0;
 
 	/* get the initial times */
 	GET_INFO_BOTH(finfo0,pinfo0);

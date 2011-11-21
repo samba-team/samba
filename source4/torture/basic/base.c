@@ -719,15 +719,12 @@ static bool run_vuidtest(struct torture_context *tctx,
 	size_t size;
 	time_t c_time, a_time, m_time;
 
-	uint16_t orig_vuid;
 	NTSTATUS result;
 
 	smbcli_unlink(cli->tree, fname);
 
 	fnum = smbcli_open(cli->tree, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
-
-	orig_vuid = cli->session->vuid;
 
 	cli->session->vuid += 1234;
 

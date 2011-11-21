@@ -1530,7 +1530,6 @@ static bool deltest23(struct torture_context *tctx,
 	int dnum1 = -1;
 	int dnum2 = -1;
 	bool correct = true;
-	NTSTATUS status;
 
 	del_clean_area(cli1, cli2);
 
@@ -1556,7 +1555,7 @@ static bool deltest23(struct torture_context *tctx,
 	    __location__);
 
 	/* Set delete on close */
-	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, true);
+	(void)smbcli_nt_delete_on_close(cli1->tree, dnum1, true);
 
 	/* Attempt opening the directory again.  It should fail. */
 	dnum2 = smbcli_nt_create_full(cli1->tree, dname, 0,

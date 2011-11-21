@@ -448,11 +448,9 @@ static void speed_tdb(const char *tlimit)
 	_start_timer();
 	do {
 		long int r = random();
-		TDB_DATA key, dbuf;
+		TDB_DATA key;
 		key.dptr = discard_const_p(uint8_t, str);
 		key.dsize = strlen((char *)key.dptr);
-		dbuf.dptr = (uint8_t *) &r;
-		dbuf.dsize = sizeof(r);
 		tdb_fetch(tdb, key);
 		t = _end_timer();
 		ops++;

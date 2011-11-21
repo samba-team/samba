@@ -55,7 +55,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	
 	const char *machine_account;
 	const char *password;
-	const char *old_password;
 	const char *domain;
 	const char *realm;
 	enum netr_SchannelType sct;
@@ -99,7 +98,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	}
 
 	password = ldb_msg_find_attr_as_string(msg, "secret", NULL);
-	old_password = ldb_msg_find_attr_as_string(msg, "priorSecret", NULL);
 
 	machine_account = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 

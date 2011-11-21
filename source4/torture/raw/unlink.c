@@ -462,6 +462,10 @@ static bool oplock_handler_ack_to_none(struct smbcli_transport *transport,
 	sfinfo.disposition_info.in.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	req = smb_raw_setfileinfo_send(ud_cli_state->cli1->tree, &sfinfo);
+	if (!req) {
+		torture_comment(ud_cli_state->tctx, "smb_raw_setfileinfo_send "
+			"failed.");
+	}
 
 	smbcli_close(ud_cli_state->cli1->tree, fnum);
 
@@ -482,7 +486,6 @@ static bool test_unlink_defer(struct torture_context *tctx,
 	bool ret = true;
 	union smb_open io;
 	union smb_unlink unl;
-	uint16_t fnum=0;
 	struct unlink_defer_cli_state ud_cli_state = {};
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
@@ -519,7 +522,6 @@ static bool test_unlink_defer(struct torture_context *tctx,
 
 	status = smb_raw_open(cli1->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	fnum = io.ntcreatex.out.file.fnum;
 
 	/* cli2: Try to unlink it, but block on the oplock */
 	torture_comment(tctx, "Try an unlink (should defer the open\n");
