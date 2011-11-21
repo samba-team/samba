@@ -549,11 +549,12 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 	int delete_tokens_size = 0;
 	int i;
 
+	lck->num_delete_tokens = 0;
 	lck->delete_tokens = NULL;
 
 	for (i = 0; i < pdata->u.s.num_delete_token_entries; i++) {
 		uint32_t token_len;
-		struct delete_token_list *pdtl;
+		struct delete_token *pdt;
 
 		if (end_ptr - p < (sizeof(uint32_t) + sizeof(uint32_t) +
 					sizeof(uid_t) + sizeof(gid_t))) {
@@ -568,7 +569,7 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 		delete_tokens_size += token_len;
 
 		if (p + token_len > end_ptr || token_len < sizeof(token_len) +
-						sizeof(pdtl->name_hash) +
+						sizeof(pdt->name_hash) +
 						sizeof(uid_t) +
 						sizeof(gid_t)) {
 			DEBUG(0,("parse_delete_tokens_list: "
@@ -580,28 +581,34 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 
 		p += sizeof(token_len);
 
-		pdtl = talloc_zero(lck, struct delete_token_list);
-		if (pdtl == NULL) {
-			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
+		lck->delete_tokens = talloc_realloc(
+			lck, lck->delete_tokens, struct delete_token,
+			lck->num_delete_tokens+1);
+
+		if (lck->delete_tokens == NULL) {
+			DEBUG(0, ("parse_delete_tokens_list: talloc failed"));
 			return -1;
 		}
-		/* Copy out the name_hash. */
-		memcpy(&pdtl->name_hash, p, sizeof(pdtl->name_hash));
-		p += sizeof(pdtl->name_hash);
+		pdt = &lck->delete_tokens[lck->num_delete_tokens];
 
-		pdtl->delete_token = talloc_zero(pdtl, struct security_unix_token);
-		if (pdtl->delete_token == NULL) {
+		/* Copy out the name_hash. */
+		memcpy(&pdt->name_hash, p, sizeof(pdt->name_hash));
+		p += sizeof(pdt->name_hash);
+
+		pdt->delete_token = talloc_zero(
+			lck->delete_tokens, struct security_unix_token);
+		if (pdt->delete_token == NULL) {
 			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
 			return -1;
 		}
 
 		/* Copy out the uid and gid. */
-		memcpy(&pdtl->delete_token->uid, p, sizeof(uid_t));
+		memcpy(&pdt->delete_token->uid, p, sizeof(uid_t));
 		p += sizeof(uid_t);
-		memcpy(&pdtl->delete_token->gid, p, sizeof(gid_t));
+		memcpy(&pdt->delete_token->gid, p, sizeof(gid_t));
 		p += sizeof(gid_t);
 
-		token_len -= (sizeof(token_len) + sizeof(pdtl->name_hash) +
+		token_len -= (sizeof(token_len) + sizeof(pdt->name_hash) +
 				sizeof(uid_t) + sizeof(gid_t));
 
 		/* Any supplementary groups ? */
@@ -616,21 +623,22 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 				return -1;
 			}
 
-			pdtl->delete_token->ngroups = token_len / sizeof(gid_t);
-			pdtl->delete_token->groups = talloc_array(pdtl->delete_token, gid_t,
-						pdtl->delete_token->ngroups);
-			if (pdtl->delete_token->groups == NULL) {
+			pdt->delete_token->ngroups = token_len / sizeof(gid_t);
+			pdt->delete_token->groups = talloc_array(
+				pdt->delete_token, gid_t,
+				pdt->delete_token->ngroups);
+			if (pdt->delete_token->groups == NULL) {
 				DEBUG(0,("parse_delete_tokens_list: talloc failed"));
 				return -1;
 			}
 
-			for (j = 0; j < pdtl->delete_token->ngroups; j++) {
-				memcpy(&pdtl->delete_token->groups[j], p, sizeof(gid_t));
+			for (j = 0; j < pdt->delete_token->ngroups; j++) {
+				memcpy(&pdt->delete_token->groups[j], p,
+				       sizeof(gid_t));
 				p += sizeof(gid_t);
 			}
 		}
-		/* Add to the list. */
-		DLIST_ADD(lck->delete_tokens, pdtl);
+		lck->num_delete_tokens += 1;
 	}
 
 	return delete_tokens_size;
@@ -770,8 +778,6 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	ssize_t offset;
 	ssize_t sp_len, bn_len, sn_len;
 	uint32_t delete_tokens_size = 0;
-	struct delete_token_list *pdtl = NULL;
-	uint32_t num_delete_token_entries = 0;
 
 	result.dptr = NULL;
 	result.dsize = 0;
@@ -790,13 +796,14 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	bn_len = strlen(lck->base_name);
 	sn_len = lck->stream_name != NULL ? strlen(lck->stream_name) : 0;
 
-	for (pdtl = lck->delete_tokens; pdtl; pdtl = pdtl->next) {
-		num_delete_token_entries++;
-		delete_tokens_size += (sizeof(uint32_t) +
-				sizeof(uint32_t) +
-				sizeof(uid_t) +
-				sizeof(gid_t) +
-				pdtl->delete_token->ngroups*sizeof(gid_t));
+	for (i=0; i<lck->num_delete_tokens; i++) {
+		struct delete_token *pdt = &lck->delete_tokens[i];
+		delete_tokens_size +=
+			(sizeof(uint32_t) +
+			 sizeof(uint32_t) +
+			 sizeof(uid_t) +
+			 sizeof(gid_t) +
+			 pdt->delete_token->ngroups*sizeof(gid_t));
 	}
 
 	result.dsize = sizeof(*data) +
@@ -816,7 +823,7 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
 	data->u.s.old_write_time = lck->old_write_time;
 	data->u.s.changed_write_time = lck->changed_write_time;
-	data->u.s.num_delete_token_entries = num_delete_token_entries;
+	data->u.s.num_delete_token_entries = lck->num_delete_tokens;
 
 	DEBUG(10,("unparse_share_modes: owrt: %s cwrt: %s, ntok: %u, "
 		  "num: %d\n",
@@ -834,7 +841,9 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 		sizeof(struct share_mode_entry)*lck->num_share_modes;
 
 	/* Store any delete on close tokens. */
-	for (pdtl = lck->delete_tokens; pdtl; pdtl = pdtl->next) {
+
+	for (i=0; i<lck->num_delete_tokens; i++) {
+		struct delete_token *pdtl = &lck->delete_tokens[i];
 		struct security_unix_token *pdt = pdtl->delete_token;
 		uint32_t token_size = sizeof(uint32_t) +
 					sizeof(uint32_t) +
@@ -949,6 +958,7 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 	lck->id = id;
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
+	lck->num_delete_tokens = 0;
 	lck->delete_tokens = NULL;
 	ZERO_STRUCT(lck->old_write_time);
 	ZERO_STRUCT(lck->changed_write_time);
@@ -1547,20 +1557,22 @@ static bool add_delete_on_close_token(struct share_mode_lock *lck,
 			uint32_t name_hash,
 			const struct security_unix_token *tok)
 {
-	struct delete_token_list *dtl;
+	struct delete_token *tmp, *dtl;
 
-	dtl = talloc_zero(lck, struct delete_token_list);
-	if (dtl == NULL) {
+	tmp = talloc_realloc(lck, lck->delete_tokens, struct delete_token,
+			     lck->num_delete_tokens+1);
+	if (tmp == NULL) {
 		return false;
 	}
+	lck->delete_tokens = tmp;
+	dtl = &lck->delete_tokens[lck->num_delete_tokens];
 
 	dtl->name_hash = name_hash;
-	dtl->delete_token = copy_unix_token(lck, tok);
+	dtl->delete_token = copy_unix_token(lck->delete_tokens, tok);
 	if (dtl->delete_token == NULL) {
-		TALLOC_FREE(dtl);
 		return false;
 	}
-	DLIST_ADD(lck->delete_tokens, dtl);
+	lck->num_delete_tokens += 1;
 	lck->modified = true;
 	return true;
 }
@@ -1581,7 +1593,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 			bool delete_on_close,
 			const struct security_unix_token *tok)
 {
-	struct delete_token_list *dtl;
+	int i;
 	bool ret;
 
 	if (delete_on_close) {
@@ -1590,20 +1602,23 @@ void set_delete_on_close_lck(files_struct *fsp,
 		SMB_ASSERT(tok == NULL);
 	}
 
-	for (dtl = lck->delete_tokens; dtl; dtl = dtl->next) {
-		if (dtl->name_hash == fsp->name_hash) {
+	for (i=0; i<lck->num_delete_tokens; i++) {
+		struct delete_token *dt = &lck->delete_tokens[i];
+		if (dt->name_hash == fsp->name_hash) {
 			lck->modified = true;
 			if (delete_on_close == false) {
 				/* Delete this entry. */
-				DLIST_REMOVE(lck->delete_tokens, dtl);
-				TALLOC_FREE(dtl);
+				TALLOC_FREE(dt->delete_token);
+				*dt = lck->delete_tokens[
+					lck->num_delete_tokens];
+				lck->num_delete_tokens -= 1;
 				return;
 			}
 			/* Replace this token with the
 			   given tok. */
-			TALLOC_FREE(dtl->delete_token);
-			dtl->delete_token = copy_unix_token(dtl, tok);
-			SMB_ASSERT(dtl->delete_token != NULL);
+			TALLOC_FREE(dt->delete_token);
+			dt->delete_token = copy_unix_token(dt, tok);
+			SMB_ASSERT(dt->delete_token != NULL);
 		}
 	}
 
@@ -1649,16 +1664,17 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct s
 
 const struct security_unix_token *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash)
 {
-	struct delete_token_list *dtl;
+	int i;
 
 	DEBUG(10,("get_delete_on_close_token: name_hash = 0x%x\n",
 			(unsigned int)name_hash ));
 
-	for (dtl = lck->delete_tokens; dtl; dtl = dtl->next) {
+	for (i=0; i<lck->num_delete_tokens; i++) {
+		struct delete_token *dt = &lck->delete_tokens[i];
 		DEBUG(10,("get_delete_on_close_token: dtl->name_hash = 0x%x\n",
-				(unsigned int)dtl->name_hash ));
-		if (dtl->name_hash == name_hash) {
-			return dtl->delete_token;
+				(unsigned int)dt->name_hash ));
+		if (dt->name_hash == name_hash) {
+			return dt->delete_token;
 		}
 	}
 	return NULL;

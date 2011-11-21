@@ -614,8 +614,7 @@ Offset  Data			length.
 #define OP_BREAK_MSG_VNN_OFFSET 72
 #define MSG_SMB_SHARE_MODE_ENTRY_SIZE 76
 
-struct delete_token_list {
-	struct delete_token_list *next, *prev;
+struct delete_token {
 	uint32_t name_hash;
 	struct security_unix_token *delete_token;
 };
@@ -627,7 +626,8 @@ struct share_mode_lock {
 	struct file_id id;
 	int num_share_modes;
 	struct share_mode_entry *share_modes;
-	struct delete_token_list *delete_tokens;
+	int num_delete_tokens;
+	struct delete_token *delete_tokens;
 	struct timespec old_write_time;
 	struct timespec changed_write_time;
 	bool fresh;
