@@ -720,8 +720,6 @@ bld.SAMBA3_LIBRARY('pdb',
 				include/passdb.h
 				passdb/machine_sid.h
 				passdb/lookup_sid.h''',
-                   pc_files=[],
-                   vnum='0',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
