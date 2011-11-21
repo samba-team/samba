@@ -812,7 +812,7 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 
 			/*
 			 * we need to defer the callback, because we may notify
-			 * more then one caller.
+			 * more than one caller.
 			 */
 			tevent_req_defer_callback(req, state->ev);
 			tevent_req_nterror(req, status);
