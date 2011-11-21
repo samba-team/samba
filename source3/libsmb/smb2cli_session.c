@@ -241,6 +241,7 @@ NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
 }
 
 struct smb2cli_logoff_state {
+	struct cli_state *cli;
 	uint8_t fixed[4];
 };
 
@@ -258,6 +259,7 @@ struct tevent_req *smb2cli_logoff_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->cli = cli;
 	SSVAL(state->fixed, 0, 4);
 
 	subreq = smb2cli_req_send(state, ev,
@@ -281,6 +283,9 @@ static void smb2cli_logoff_done(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
+	struct smb2cli_logoff_state *state =
+		tevent_req_data(req,
+		struct smb2cli_logoff_state);
 	NTSTATUS status;
 	struct iovec *iov;
 	static const struct smb2cli_req_expected_response expected[] = {
@@ -290,9 +295,10 @@ static void smb2cli_logoff_done(struct tevent_req *subreq)
 	}
 	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
+	TALLOC_FREE(state->cli->smb2.session);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
