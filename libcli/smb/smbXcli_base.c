@@ -1351,6 +1351,9 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	const uint8_t *inhdr = inbuf + NBT_HDR_SIZE;
 	struct iovec *iov = NULL;
 	int num_iov = 0;
+	struct tevent_req **chain = NULL;
+	size_t num_chained = 0;
+	size_t num_responses = 0;
 
 	if ((IVAL(inhdr, 0) != SMB_MAGIC) /* 0xFF"SMB" */
 	    && (SVAL(inhdr, 0) != 0x45ff)) /* 0xFF"E" */ {
@@ -1441,92 +1444,92 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	cmd = CVAL(inhdr, HDR_COM);
 	status = smb1cli_pull_raw_error(inhdr);
 
-	if (state->smb1.chained_requests != NULL) {
-		struct tevent_req **chain = talloc_move(tmp_mem,
-					    &state->smb1.chained_requests);
-		size_t num_chained = talloc_array_length(chain);
-		size_t num_responses = (num_iov - 1)/2;
-
-		if (num_responses > num_chained) {
+	if (state->smb1.chained_requests == NULL) {
+		if (num_iov != 3) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 
-		for (i=0; i<num_chained; i++) {
-			size_t iov_idx = 1 + (i*2);
-			struct iovec *cur = &iov[iov_idx];
-			uint8_t *inbuf_ref;
+		smbXcli_req_unset_pending(req);
 
-			req = chain[i];
-			state = tevent_req_data(req, struct smbXcli_req_state);
+		state->smb1.recv_cmd = cmd;
+		state->smb1.recv_status = status;
+		state->inbuf = talloc_move(state->smb1.recv_iov, &inbuf);
 
-			smbXcli_req_unset_pending(req);
+		state->smb1.recv_iov[0] = iov[0];
+		state->smb1.recv_iov[1] = iov[1];
+		state->smb1.recv_iov[2] = iov[2];
 
-			/*
-			 * as we finish multiple requests here
-			 * we need to defer the callbacks as
-			 * they could destroy our current stack state.
-			 */
-			tevent_req_defer_callback(req, state->ev);
-
-			if (i >= num_responses) {
-				tevent_req_nterror(req, NT_STATUS_REQUEST_ABORTED);
-				continue;
-			}
-
-			state->smb1.recv_cmd = cmd;
-
-			if (i == (num_responses - 1)) {
-				/*
-				 * The last request in the chain gets the status
-				 */
-				state->smb1.recv_status = status;
-			} else {
-				cmd = CVAL(cur[0].iov_base, 0);
-				state->smb1.recv_status = NT_STATUS_OK;
-			}
-
-			state->inbuf = inbuf;
-
-			/*
-			 * Note: here we use talloc_reference() in a way
-			 *       that does not expose it to the caller.
-			 */
-			inbuf_ref = talloc_reference(state->smb1.recv_iov, inbuf);
-			if (tevent_req_nomem(inbuf_ref, req)) {
-				continue;
-			}
-
-			/* copy the related buffers */
-			state->smb1.recv_iov[0] = iov[0];
-			state->smb1.recv_iov[1] = cur[0];
-			state->smb1.recv_iov[2] = cur[1];
-
+		if (talloc_array_length(conn->pending) == 0) {
 			tevent_req_done(req);
+			return NT_STATUS_OK;
 		}
+
+		tevent_req_defer_callback(req, state->ev);
+		tevent_req_done(req);
 		return NT_STATUS_RETRY;
 	}
 
-	if (num_iov != 3) {
+	chain = talloc_move(tmp_mem, &state->smb1.chained_requests);
+	num_chained = talloc_array_length(chain);
+	num_responses = (num_iov - 1)/2;
+
+	if (num_responses > num_chained) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	smbXcli_req_unset_pending(req);
+	for (i=0; i<num_chained; i++) {
+		size_t iov_idx = 1 + (i*2);
+		struct iovec *cur = &iov[iov_idx];
+		uint8_t *inbuf_ref;
 
-	state->smb1.recv_cmd = cmd;
-	state->smb1.recv_status = status;
-	state->inbuf = talloc_move(state->smb1.recv_iov, &inbuf);
+		req = chain[i];
+		state = tevent_req_data(req, struct smbXcli_req_state);
 
-	state->smb1.recv_iov[0] = iov[0];
-	state->smb1.recv_iov[1] = iov[1];
-	state->smb1.recv_iov[2] = iov[2];
+		smbXcli_req_unset_pending(req);
 
-	if (talloc_array_length(conn->pending) == 0) {
+		/*
+		 * as we finish multiple requests here
+		 * we need to defer the callbacks as
+		 * they could destroy our current stack state.
+		 */
+		tevent_req_defer_callback(req, state->ev);
+
+		if (i >= num_responses) {
+			tevent_req_nterror(req, NT_STATUS_REQUEST_ABORTED);
+			continue;
+		}
+
+		state->smb1.recv_cmd = cmd;
+
+		if (i == (num_responses - 1)) {
+			/*
+			 * The last request in the chain gets the status
+			 */
+			state->smb1.recv_status = status;
+		} else {
+			cmd = CVAL(cur[0].iov_base, 0);
+			state->smb1.recv_status = NT_STATUS_OK;
+		}
+
+		state->inbuf = inbuf;
+
+		/*
+		 * Note: here we use talloc_reference() in a way
+		 *       that does not expose it to the caller.
+		 */
+		inbuf_ref = talloc_reference(state->smb1.recv_iov, inbuf);
+		if (tevent_req_nomem(inbuf_ref, req)) {
+			continue;
+		}
+
+		/* copy the related buffers */
+		state->smb1.recv_iov[0] = iov[0];
+		state->smb1.recv_iov[1] = cur[0];
+		state->smb1.recv_iov[2] = cur[1];
+
 		tevent_req_done(req);
-		return NT_STATUS_OK;
 	}
 
-	tevent_req_defer_callback(req, state->ev);
-	tevent_req_done(req);
 	return NT_STATUS_RETRY;
 }
 
