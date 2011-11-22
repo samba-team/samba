@@ -225,7 +225,7 @@ struct composite_context *smb_composite_savefile_send(struct smbcli_tree *tree,
 	if (c == NULL) goto failed;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx = tree->session->transport->socket->event.ctx;
+	c->event_ctx = tree->session->transport->ev;
 
 	state = talloc(c, struct savefile_state);
 	if (state == NULL) goto failed;

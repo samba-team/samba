@@ -548,7 +548,7 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 	struct sesssetup_state *state;
 	NTSTATUS status;
 
-	c = composite_create(session, session->transport->socket->event.ctx);
+	c = composite_create(session, session->transport->ev);
 	if (c == NULL) return NULL;
 
 	state = talloc_zero(c, struct sesssetup_state);

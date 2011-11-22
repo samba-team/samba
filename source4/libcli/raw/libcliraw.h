@@ -108,6 +108,8 @@ struct smbcli_options {
 
 /* this is the context for the client transport layer */
 struct smbcli_transport {
+	struct tevent_context *ev; /* TODO: remove this !!! */
+
 	/* socket level info */
 	struct smbcli_socket *socket;
 

@@ -358,7 +358,7 @@ bool smbcli_request_receive(struct smbcli_request *req)
 
 	/* keep receiving packets until this one is replied to */
 	while (req->state <= SMBCLI_REQUEST_RECV) {
-		if (tevent_loop_once(req->transport->socket->event.ctx) != 0) {
+		if (tevent_loop_once(req->transport->ev) != 0) {
 			return false;
 		}
 	}

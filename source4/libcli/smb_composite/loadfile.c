@@ -229,7 +229,7 @@ struct composite_context *smb_composite_loadfile_send(struct smbcli_tree *tree,
 
 	c->private_data = state;
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx = tree->session->transport->socket->event.ctx;
+	c->event_ctx = tree->session->transport->ev;
 
 	/* setup for the open */
 	state->io_open = talloc_zero(c, union smb_open);
