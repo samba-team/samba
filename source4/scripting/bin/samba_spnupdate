@@ -190,7 +190,7 @@ def call_rodc_update(d):
 
     net = Net(creds=creds, lp=lp)
     try:
-        cldap_ret = net.finddc(domain, nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+        cldap_ret = net.finddc(domain=domain, flags=nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
     except Exception, reason:
         print("Unable to find writeable DC for domain '%s' to send DRS writeSPN to : %s" % (domain, reason))
         sys.exit(1)

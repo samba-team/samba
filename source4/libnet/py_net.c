@@ -580,23 +580,31 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 /*
   find a DC given a domain name and server type
  */
-static PyObject *py_net_finddc(py_net_Object *self, PyObject *args)
+static PyObject *py_net_finddc(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
-	const char *domain_name;
+	const char *domain = NULL, *address = NULL;
 	unsigned server_type;
 	NTSTATUS status;
 	struct finddcs *io;
 	TALLOC_CTX *mem_ctx;
 	PyObject *ret;
+	const char * const kwnames[] = { "flags", "domain", "address", NULL };
 
-	if (!PyArg_ParseTuple(args, "sI", &domain_name, &server_type)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "I|ss",
+					 discard_const_p(char *, kwnames),
+					 &server_type, &domain, &address)) {
 		return NULL;
 	}
 
 	mem_ctx = talloc_new(self->mem_ctx);
 
 	io = talloc_zero(mem_ctx, struct finddcs);
-	io->in.domain_name = domain_name;
+	if (domain != NULL) {
+		io->in.domain_name = domain;
+	}
+	if (address != NULL) {
+		io->in.server_address = address;
+	}
 	io->in.minimum_dc_flags = server_type;
 
 	status = finddcs_cldap(io, io,
@@ -624,8 +632,8 @@ static const char py_net_replicate_init_doc[] = "replicate_init(samdb, lp, drspi
 static const char py_net_replicate_chunk_doc[] = "replicate_chunk(state, level, ctr, schema)\n"
 					 "Process replication for one chunk";
 
-static const char py_net_finddc_doc[] = "finddc(domain, server_type)\n"
-					 "find a DC with the specified server_type bits. Return the DNS name";
+static const char py_net_finddc_doc[] = "finddc(flags=server_type, domain=None, address=None)\n"
+					 "Find a DC with the specified 'server_type' bits. The 'domain' and/or 'address' have to be used as additional search criteria. Returns the whole netlogon struct";
 
 static PyMethodDef net_obj_methods[] = {
 	{"join_member", (PyCFunction)py_net_join_member, METH_VARARGS|METH_KEYWORDS, py_net_join_member_doc},
@@ -638,7 +646,7 @@ static PyMethodDef net_obj_methods[] = {
 	{"vampire", (PyCFunction)py_net_vampire, METH_VARARGS|METH_KEYWORDS, py_net_vampire_doc},
 	{"replicate_init", (PyCFunction)py_net_replicate_init, METH_VARARGS|METH_KEYWORDS, py_net_replicate_init_doc},
 	{"replicate_chunk", (PyCFunction)py_net_replicate_chunk, METH_VARARGS|METH_KEYWORDS, py_net_replicate_chunk_doc},
-	{"finddc", (PyCFunction)py_net_finddc, METH_VARARGS, py_net_finddc_doc},
+	{"finddc", (PyCFunction)py_net_finddc, METH_KEYWORDS, py_net_finddc_doc},
 	{ NULL }
 };
 

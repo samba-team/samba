@@ -52,10 +52,13 @@ def netcmd_dnsname(lp):
     return lp.get('netbios name').lower() + "." + lp.get('realm').lower()
 
 
-def netcmd_finddc(lp, creds):
-    '''return domain-name of a writable/ldap-capable DC for the domain.'''
+def netcmd_finddc(lp, creds, realm=None):
+    '''Return domain-name of a writable/ldap-capable DC for the default
+       domain (parameter "realm" in smb.conf) unless another realm has been
+       specified as argument'''
     net = Net(creds=creds, lp=lp)
-    realm = lp.get('realm')
-    cldap_ret = net.finddc(realm,
-                nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+    if realm is None:
+        realm = lp.get('realm')
+    cldap_ret = net.finddc(domain=realm,
+                flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
     return cldap_ret.pdc_dns_name
