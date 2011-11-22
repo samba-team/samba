@@ -902,13 +902,10 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 		seqr->seq_num++;
 		break;
 	case LDB_SEQ_HIGHEST_TIMESTAMP:
-	{
-		seqr->seq_num = (seq_num >> 24);
-		break;
+		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR, "LDB_SEQ_HIGHEST_TIMESTAMP not supported");
 	}
-	}
+
 	seqr->flags = 0;
-	seqr->flags |= LDB_SEQ_TIMESTAMP_SEQUENCE;
 	seqr->flags |= LDB_SEQ_GLOBAL_SEQUENCE;
 
 	/* send request done */
