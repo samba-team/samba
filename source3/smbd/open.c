@@ -3457,42 +3457,45 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	/*
-	 * According to the MS documentation, the only time the security
-	 * descriptor is applied to the opened file is iff we *created* the
-	 * file; an existing file stays the same.
-	 *
-	 * Also, it seems (from observation) that you can open the file with
-	 * any access mask but you can still write the sd. We need to override
-	 * the granted access before we call set_sd
-	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
-	 */
+	if ((info == FILE_WAS_CREATED) && lp_nt_acl_support(SNUM(conn)) &&
+				fsp->base_fsp == NULL) {
+		if (sd != NULL) {
+			/*
+			 * According to the MS documentation, the only time the security
+			 * descriptor is applied to the opened file is iff we *created* the
+			 * file; an existing file stays the same.
+			 *
+			 * Also, it seems (from observation) that you can open the file with
+			 * any access mask but you can still write the sd. We need to override
+			 * the granted access before we call set_sd
+			 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
+			 */
 
-	if ((sd != NULL) && (info == FILE_WAS_CREATED)
-	    && lp_nt_acl_support(SNUM(conn)) && fsp->base_fsp == NULL) {
+			uint32_t sec_info_sent;
+			uint32_t saved_access_mask = fsp->access_mask;
 
-		uint32_t sec_info_sent;
-		uint32_t saved_access_mask = fsp->access_mask;
+			sec_info_sent = get_sec_info(sd);
 
-		sec_info_sent = get_sec_info(sd);
+			fsp->access_mask = FILE_GENERIC_ALL;
 
-		fsp->access_mask = FILE_GENERIC_ALL;
+			/* Convert all the generic bits. */
+			security_acl_map_generic(sd->dacl, &file_generic_mapping);
+			security_acl_map_generic(sd->sacl, &file_generic_mapping);
 
-		/* Convert all the generic bits. */
-		security_acl_map_generic(sd->dacl, &file_generic_mapping);
-		security_acl_map_generic(sd->sacl, &file_generic_mapping);
+			if (sec_info_sent & (SECINFO_OWNER|
+						SECINFO_GROUP|
+						SECINFO_DACL|
+						SECINFO_SACL)) {
+				status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
+			}
 
-		if (sec_info_sent & (SECINFO_OWNER|
-					SECINFO_GROUP|
-					SECINFO_DACL|
-					SECINFO_SACL)) {
-			status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
-		}
+			fsp->access_mask = saved_access_mask;
 
-		fsp->access_mask = saved_access_mask;
-
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+		} else if (lp_inherit_acls(SNUM(conn))) {
+			/* Inherit from parent. */
 		}
 	}
 
