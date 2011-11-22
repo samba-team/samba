@@ -3422,6 +3422,41 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	fsp->base_fsp = base_fsp;
 
+	if ((ea_list != NULL) &&
+	    ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN))) {
+		status = set_ea(conn, fsp, fsp->fsp_name, ea_list);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+
+	if (!fsp->is_directory && S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		status = NT_STATUS_ACCESS_DENIED;
+		goto fail;
+	}
+
+	/* Save the requested allocation size. */
+	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
+		if (allocation_size
+		    && (allocation_size > fsp->fsp_name->st.st_ex_size)) {
+			fsp->initial_allocation_size = smb_roundup(
+				fsp->conn, allocation_size);
+			if (fsp->is_directory) {
+				/* Can't set allocation size on a directory. */
+				status = NT_STATUS_ACCESS_DENIED;
+				goto fail;
+			}
+			if (vfs_allocate_file_space(
+				    fsp, fsp->initial_allocation_size) == -1) {
+				status = NT_STATUS_DISK_FULL;
+				goto fail;
+			}
+		} else {
+			fsp->initial_allocation_size = smb_roundup(
+				fsp->conn, (uint64_t)fsp->fsp_name->st.st_ex_size);
+		}
+	}
+
 	/*
 	 * According to the MS documentation, the only time the security
 	 * descriptor is applied to the opened file is iff we *created* the
@@ -3458,41 +3493,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
-		}
-	}
-
-	if ((ea_list != NULL) &&
-	    ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN))) {
-		status = set_ea(conn, fsp, fsp->fsp_name, ea_list);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-	}
-
-	if (!fsp->is_directory && S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
-		status = NT_STATUS_ACCESS_DENIED;
-		goto fail;
-	}
-
-	/* Save the requested allocation size. */
-	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		if (allocation_size
-		    && (allocation_size > fsp->fsp_name->st.st_ex_size)) {
-			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, allocation_size);
-			if (fsp->is_directory) {
-				/* Can't set allocation size on a directory. */
-				status = NT_STATUS_ACCESS_DENIED;
-				goto fail;
-			}
-			if (vfs_allocate_file_space(
-				    fsp, fsp->initial_allocation_size) == -1) {
-				status = NT_STATUS_DISK_FULL;
-				goto fail;
-			}
-		} else {
-			fsp->initial_allocation_size = smb_roundup(
-				fsp->conn, (uint64_t)fsp->fsp_name->st.st_ex_size);
 		}
 	}
 
