@@ -160,7 +160,6 @@ static void wb_next_pwent_fill_done(struct tevent_req *subreq)
 					    &state->gstate->users[state->gstate->next_user],
 					    state->pw);
 		if (tevent_req_nomem(subreq, req)) {
-			tevent_req_post(req, state->ev);
 			return;
 		}
 		tevent_req_set_callback(subreq, wb_next_pwent_fill_done, req);
