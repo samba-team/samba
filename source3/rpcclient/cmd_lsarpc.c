@@ -1312,6 +1312,76 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_lsa_set_trustdominfo(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx, int argc,
+					 const char **argv)
+{
+	struct policy_handle pol, trustdom_pol;
+	NTSTATUS status, result;
+	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	union lsa_TrustedDomainInfo info;
+	struct dom_sid dom_sid;
+	enum lsa_TrustDomInfoEnum info_class = 1;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+
+	if (argc > 4 || argc < 3) {
+		printf("Usage: %s [sid] [info_class] [value]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (!string_to_sid(&dom_sid, argv[1])) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+
+	info_class = atoi(argv[2]);
+
+	switch (info_class) {
+	case 13: /* LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES */
+		info.enc_types.enc_types = atoi(argv[3]);
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = dcerpc_lsa_OpenTrustedDomain(b, mem_ctx,
+					      &pol,
+					      &dom_sid,
+					      access_mask,
+					      &trustdom_pol,
+					      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
+
+	status = dcerpc_lsa_SetInformationTrustedDomain(b, mem_ctx,
+							&trustdom_pol,
+							info_class,
+							&info,
+							&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
+ done:
+	dcerpc_lsa_Close(b, mem_ctx, &trustdom_pol, &result);
+	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
+
+	return status;
+}
+
 static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx, int argc,
 					   const char **argv) 
@@ -2224,6 +2294,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaquerytrustdominfo",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfo, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Query LSA trusted domains info (given a SID)", "" },
 	{ "lsaquerytrustdominfobyname",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfobyname, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Query LSA trusted domains info (given a name), only works for Windows > 2k", "" },
 	{ "lsaquerytrustdominfobysid",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfobysid, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Query LSA trusted domains info (given a SID)", "" },
+	{ "lsasettrustdominfo",   RPC_RTYPE_NTSTATUS, cmd_lsa_set_trustdominfo, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Set LSA trusted domain info", "" },
 	{ "getusername",          RPC_RTYPE_NTSTATUS, cmd_lsa_get_username, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Get username", "" },
 	{ "createsecret",         RPC_RTYPE_NTSTATUS, cmd_lsa_create_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Create Secret", "" },
 	{ "deletesecret",         RPC_RTYPE_NTSTATUS, cmd_lsa_delete_secret, NULL, &ndr_table_lsarpc.syntax_id, NULL, "Delete Secret", "" },
