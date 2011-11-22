@@ -3469,7 +3469,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	 */
 
 	if ((sd != NULL) && (info == FILE_WAS_CREATED)
-	    && lp_nt_acl_support(SNUM(conn))) {
+	    && lp_nt_acl_support(SNUM(conn)) && fsp->base_fsp == NULL) {
 
 		uint32_t sec_info_sent;
 		uint32_t saved_access_mask = fsp->access_mask;
