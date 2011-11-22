@@ -3185,6 +3185,109 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 	return status;
 }
 
+/*********************************************************************
+ Create a default ACL by inheriting from the parent. If no inheritance
+ from the parent available, don't set anything. This will leave the actual
+ permissions the new file or directory already got from the filesystem
+ as the NT ACL when read.
+*********************************************************************/
+
+static NTSTATUS inherit_new_acl(files_struct *fsp)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *parent_name = NULL;
+	struct security_descriptor *parent_desc = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	struct security_descriptor *psd = NULL;
+	struct dom_sid *owner_sid = NULL;
+	struct dom_sid *group_sid = NULL;
+	uint32_t security_info_sent = (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL);
+	bool inherit_owner = lp_inherit_owner(SNUM(fsp->conn));
+	bool inheritable_components = false;
+	size_t size = 0;
+
+	if (!parent_dirname(ctx, fsp->fsp_name->base_name, &parent_name, NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_GET_NT_ACL(fsp->conn,
+				parent_name,
+				(SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
+				&parent_desc);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	inheritable_components = sd_has_inheritable_components(parent_desc,
+					fsp->is_directory);
+
+	if (!inheritable_components && !inherit_owner) {
+		/* Nothing to inherit and not setting owner. */
+		return NT_STATUS_OK;
+	}
+
+	/* Create an inherited descriptor from the parent. */
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("inherit_new_acl: parent acl for %s is:\n",
+			fsp_str_dbg(fsp) ));
+		NDR_PRINT_DEBUG(security_descriptor, parent_desc);
+	}
+
+	/* Inherit from parent descriptor if "inherit owner" set. */
+	if (inherit_owner) {
+		owner_sid = parent_desc->owner_sid;
+		group_sid = parent_desc->group_sid;
+	}
+
+	if (owner_sid == NULL) {
+		owner_sid = &fsp->conn->session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	}
+	if (group_sid == NULL) {
+		group_sid = &fsp->conn->session_info->security_token->sids[PRIMARY_GROUP_SID_INDEX];
+	}
+
+	status = se_create_child_secdesc(ctx,
+			&psd,
+			&size,
+			parent_desc,
+			owner_sid,
+			group_sid,
+			fsp->is_directory);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* If inheritable_components == false,
+	   se_create_child_secdesc()
+	   creates a security desriptor with a NULL dacl
+	   entry, but with SEC_DESC_DACL_PRESENT. We need
+	   to remove that flag. */
+
+	if (!inheritable_components) {
+		security_info_sent &= ~SECINFO_DACL;
+		psd->type &= ~SEC_DESC_DACL_PRESENT;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("inherit_new_acl: child acl for %s is:\n",
+			fsp_str_dbg(fsp) ));
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
+
+	if (inherit_owner) {
+		/* We need to be root to force this. */
+		become_root();
+	}
+	status = SMB_VFS_FSET_NT_ACL(fsp,
+			security_info_sent,
+			psd);
+	if (inherit_owner) {
+		unbecome_root();
+	}
+	return status;
+}
+
 /*
  * Wrapper around open_file_ntcreate and open_directory
  */
@@ -3495,7 +3598,13 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				goto fail;
 			}
 		} else if (lp_inherit_acls(SNUM(conn))) {
-			/* Inherit from parent. */
+			/* Inherit from parent. Errors here are not fatal. */
+			status = inherit_new_acl(fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10,("inherit_new_acl: failed for %s with %s\n",
+					fsp_str_dbg(fsp),
+					nt_errstr(status) ));
+			}
 		}
 	}
 
