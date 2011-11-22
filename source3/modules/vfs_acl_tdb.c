@@ -401,7 +401,6 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
 	.disconnect = disconnect_acl_tdb,
 	.rmdir = rmdir_acl_tdb,
-	.create_file = create_file_acl_common,
 	.unlink = unlink_acl_tdb,
 	.chmod = chmod_acl_module_common,
 	.fchmod = fchmod_acl_module_common,
