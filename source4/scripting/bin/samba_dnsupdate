@@ -63,6 +63,7 @@ parser.add_option("--all-interfaces", action="store_true")
 parser.add_option("--use-file", type="string", help="Use a file, rather than real DNS calls")
 parser.add_option("--update-list", type="string", help="Add DNS names from the given file")
 parser.add_option("--fail-immediately", action='store_true', help="Exit on first failure")
+parser.add_option("--no-credentials", dest='nocreds', action='store_true', help="don't try and get credentials")
 
 creds = None
 ccachename = None
@@ -308,11 +309,16 @@ def call_nsupdate(d):
     f.close()
 
     global error_count
-    os.environ["KRB5CCNAME"] = ccachename
+    if ccachename:
+        os.environ["KRB5CCNAME"] = ccachename
     try:
         cmd = nsupdate_cmd[:]
         cmd.append(tmpfile)
-        ret = subprocess.call(cmd, shell=False, env={"KRB5CCNAME": ccachename})
+        if ccachename:
+            env = {"KRB5CCNAME": ccachename}
+        else:
+            env = {}
+        ret = subprocess.call(cmd, shell=False, env=env)
         if ret != 0:
             if opts.fail_immediately:
                 if opts.verbose:
@@ -471,7 +477,8 @@ if len(update_list) == 0:
     sys.exit(0)
 
 # get our krb5 creds
-get_credentials(lp)
+if not opts.nocreds:
+    get_credentials(lp)
 
 # ask nsupdate to add entries as needed
 for d in update_list:
