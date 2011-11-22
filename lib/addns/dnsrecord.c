@@ -309,8 +309,8 @@ DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 uint16 original_id, uint16 error,
 				 struct dns_rrec **prec)
 {
-	struct dns_buffer *buf;
-	struct dns_domain_name *algorithm;
+	struct dns_buffer *buf = NULL;
+	struct dns_domain_name *algorithm = NULL;
 	DNS_ERROR err;
 
 	if (!(buf = dns_create_buffer(mem_ctx))) {
