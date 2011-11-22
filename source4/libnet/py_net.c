@@ -353,6 +353,8 @@ static PyObject *py_net_vampire(py_net_Object *self, PyObject *args, PyObject *k
 	PyObject *ret;
 	struct libnet_Vampire r;
 
+	ZERO_STRUCT(r);
+
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|z", discard_const_p(char *, kwnames),
 	                                 &r.in.domain_name, &r.in.targetdir)) {
 		return NULL;
@@ -469,7 +471,7 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 	const char *kwnames[] = { "state", "level", "ctr",
 				  "schema", "req_level", "req",
 				  NULL };
-	PyObject *py_state, *py_ctr, *py_schema, *py_req;
+	PyObject *py_state, *py_ctr, *py_schema = Py_None, *py_req = Py_None;
 	struct replicate_state *s;
 	unsigned level;
 	unsigned req_level = 0;
