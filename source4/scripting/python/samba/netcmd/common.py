@@ -62,3 +62,12 @@ def netcmd_finddc(lp, creds, realm=None):
     cldap_ret = net.finddc(domain=realm,
                 flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
     return cldap_ret.pdc_dns_name
+
+
+def netcmd_get_domain_infos_via_cldap(lp, creds, address=None):
+    '''Return domain informations (CLDAP record) of the ldap-capable
+       DC with the specified address'''
+    net = Net(creds=creds, lp=lp)
+    cldap_ret = net.finddc(address=address,
+                flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS)
+    return cldap_ret
