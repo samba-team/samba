@@ -907,6 +907,19 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		srv_flgs |= NETLOGON_NEG_SCHANNEL;
 	}
 
+	/*
+	 * Support authenticaten of trusted domains.
+	 *
+	 * These flags are the minimum required set which works with win2k3
+	 * and win2k8.
+	 */
+	if (pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX) {
+		srv_flgs |= NETLOGON_NEG_TRANSITIVE_TRUSTS |
+			    NETLOGON_NEG_DNS_DOMAIN_TRUSTS |
+			    NETLOGON_NEG_CROSS_FOREST_TRUSTS |
+			    NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION;
+	}
+
 	switch (p->opnum) {
 		case NDR_NETR_SERVERAUTHENTICATE:
 			fn = "_netr_ServerAuthenticate";
