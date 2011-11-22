@@ -377,7 +377,7 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 	uint16 i;
 
 	err = dns_create_update(mem_ctx, zone, &req);
-	if (!ERR_DNS_IS_OK(err)) goto error;
+	if (!ERR_DNS_IS_OK(err)) return err;
 
 	err = dns_create_name_not_in_use_record(req, host, QTYPE_CNAME,	&rec);
 	if (!ERR_DNS_IS_OK(err)) goto error;
