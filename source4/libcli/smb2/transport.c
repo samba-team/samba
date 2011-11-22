@@ -438,12 +438,16 @@ static void idle_handler(struct tevent_context *ev,
 {
 	struct smb2_transport *transport = talloc_get_type(private_data,
 							   struct smb2_transport);
-	struct timeval next = timeval_add(&t, 0, transport->idle.period);
-	tevent_add_timer(transport->ev,
-			 transport,
-			 next,
-			 idle_handler, transport);
+	struct timeval next;
+
 	transport->idle.func(transport, transport->idle.private_data);
+
+	next = timeval_current_ofs_usec(transport->idle.period);
+	transport->idle.te = tevent_add_timer(transport->ev,
+					      transport,
+					      next,
+					      idle_handler,
+					      transport);
 }
 
 /*
@@ -455,12 +459,15 @@ void smb2_transport_idle_handler(struct smb2_transport *transport,
 				 uint64_t period,
 				 void *private_data)
 {
+	TALLOC_FREE(transport->idle.te);
+
 	transport->idle.func = idle_func;
 	transport->idle.private_data = private_data;
 	transport->idle.period = period;
 
-	tevent_add_timer(transport->ev,
-			 transport,
-			 timeval_current_ofs(0, period),
-			 idle_handler, transport);
+	transport->idle.te = tevent_add_timer(transport->ev,
+					      transport,
+					      timeval_current_ofs_usec(period),
+					      idle_handler,
+					      transport);
 }

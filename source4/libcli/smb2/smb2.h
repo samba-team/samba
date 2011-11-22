@@ -75,6 +75,7 @@ struct smb2_transport {
 		void (*func)(struct smb2_transport *, void *);
 		void *private_data;
 		unsigned int period;
+		struct tevent_timer *te;
 	} idle;
 
 	struct {
