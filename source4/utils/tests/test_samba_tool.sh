@@ -2,10 +2,11 @@
 # Blackbox tests for samba-tool
 
 SERVER=$1
-USERNAME=$2
-PASSWORD=$3
-DOMAIN=$4
-shift 4
+SERVER_IP=$2
+USERNAME=$3
+PASSWORD=$4
+DOMAIN=$5
+shift 5
 
 failed=0
 
@@ -35,6 +36,8 @@ testit "Test login with --machine-pass and kerberos" $VALGRIND $smbclient -c 'ls
 
 testit "time" $VALGRIND $samba_tool time $SERVER $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
 
-# FIXME: testit "domain level.show" $VALGRIND $samba_tool domain level show $CONFIGURATION
+testit "domain level.show" $VALGRIND $samba_tool domain level show
+
+testit "domain info" $VALGRIND $samba_tool domain info $SERVER_IP
 
 exit $failed
