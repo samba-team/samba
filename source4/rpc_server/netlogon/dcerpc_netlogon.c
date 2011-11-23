@@ -1791,9 +1791,23 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 		return ntstatus_to_werror(status);
 	}
 
+	/*
+	 * According to MS-NRPC 2.2.1.2.1 we should set the "DS_DNS_FOREST_ROOT"
+	 * (O) flag when the returned forest name is in DNS format. This is here
+	 * always the case (see below).
+	 */
+	response.data.nt5_ex.server_type |= DS_DNS_FOREST_ROOT;
+
 	if (r->in.flags & DS_RETURN_DNS_NAME) {
 		dc_name = response.data.nt5_ex.pdc_dns_name;
 		domain_name = response.data.nt5_ex.dns_domain;
+		/*
+		 * According to MS-NRPC 2.2.1.2.1 we should set the
+		 * "DS_DNS_CONTROLLER" (M) and "DS_DNS_DOMAIN" (N) flags when
+		 * the returned information is in DNS form.
+		 */
+		response.data.nt5_ex.server_type |=
+			DS_DNS_CONTROLLER | DS_DNS_DOMAIN;
 	} else if (r->in.flags & DS_RETURN_FLAT_NAME) {
 		dc_name = response.data.nt5_ex.pdc_name;
 		domain_name = response.data.nt5_ex.domain_name;

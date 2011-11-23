@@ -226,11 +226,6 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		DS_SERVER_DS | DS_SERVER_TIMESERV |
 		DS_SERVER_GOOD_TIMESERV;
 
-#if 0
-	/* w2k8-r2 as a DC does not claim these */
-	server_type |= DS_DNS_CONTROLLER | DS_DNS_DOMAIN;
-#endif
-
 	if (samdb_is_pdc(sam_ctx)) {
 		server_type |= DS_SERVER_PDC;
 	}
@@ -254,13 +249,6 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	if (samdb_rodc(sam_ctx, &am_rodc) == LDB_SUCCESS && !am_rodc) {
 		server_type |= DS_SERVER_WRITABLE;
 	}
-
-#if 0
-	/* w2k8-r2 as a sole DC does not claim this */
-	if (ldb_dn_compare(ldb_get_root_basedn(sam_ctx), ldb_get_default_basedn(sam_ctx)) == 0) {
-		server_type |= DS_DNS_FOREST_ROOT;
-	}
-#endif
 
 	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s",
 					   lpcfg_netbios_name(lp_ctx));
