@@ -87,8 +87,8 @@ class cmd_domain_info(Command):
 
     def run(self, address, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        res = netcmd_get_domain_infos_via_cldap(lp, None, address)
-        if res:
+        try:
+            res = netcmd_get_domain_infos_via_cldap(lp, None, address)
             print "Forest           : %s" % res.forest
             print "Domain           : %s" % res.dns_domain
             print "Netbios domain   : %s" % res.domain_name
@@ -96,6 +96,8 @@ class cmd_domain_info(Command):
             print "DC netbios name  : %s" % res.pdc_name
             print "Server site      : %s" % res.server_site
             print "Client site      : %s" % res.client_site
+        except RuntimeError:
+            raise CommandError("Invalid IP address '" + address + "'!")
 
 
 
