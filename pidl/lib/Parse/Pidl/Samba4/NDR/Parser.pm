@@ -572,7 +572,9 @@ sub ParseElementPushLevel
 		}
 	}
 
-	if ($l->{TYPE} eq "POINTER" and $deferred) {
+	if ($l->{TYPE} eq "POINTER" and $l->{POINTER_TYPE} eq "ignore") {
+		$self->pidl("/* [ignore] '$e->{NAME}' */");
+	} elsif ($l->{TYPE} eq "POINTER" and $deferred) {
 		my $rel_var_name = $var_name;
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->pidl("if ($var_name) {");
@@ -753,6 +755,8 @@ sub ParseElementPrint($$$$$)
 	my($self, $e, $ndr, $var_name, $env) = @_;
 
 	return if (has_property($e, "noprint"));
+	my $cur_depth = 0;
+	my $ignore_depth = 0xFFFF;
 
 	if ($e->{REPRESENTATION_TYPE} ne $e->{TYPE}) {
 		$self->pidl("ndr_print_$e->{REPRESENTATION_TYPE}($ndr, \"$e->{NAME}\", $var_name);");
@@ -766,8 +770,19 @@ sub ParseElementPrint($$$$$)
 	}
 
 	foreach my $l (@{$e->{LEVELS}}) {
+		$cur_depth += 1;
+
+		if ($cur_depth > $ignore_depth) {
+			next;
+		}
+
 		if ($l->{TYPE} eq "POINTER") {
 			$self->pidl("ndr_print_ptr($ndr, \"$e->{NAME}\", $var_name);");
+			if ($l->{POINTER_TYPE} eq "ignore") {
+				$self->pidl("/* [ignore] '$e->{NAME}' */");
+				$ignore_depth = $cur_depth;
+				last;
+			}
 			$self->pidl("$ndr->depth++;");
 			if ($l->{POINTER_TYPE} ne "ref") {
 				$self->pidl("if ($var_name) {");
@@ -815,7 +830,17 @@ sub ParseElementPrint($$$$$)
 	}
 
 	foreach my $l (reverse @{$e->{LEVELS}}) {
+		$cur_depth -= 1;
+
+		if ($cur_depth > $ignore_depth) {
+			next;
+		}
+
 		if ($l->{TYPE} eq "POINTER") {
+			if ($l->{POINTER_TYPE} eq "ignore") {
+				next;
+			}
+
 			if ($l->{POINTER_TYPE} ne "ref") {
 				$self->deindent;
 				$self->pidl("}");
@@ -947,6 +972,7 @@ sub ParseMemCtxPullFlags($$$$)
 	my ($self, $e, $l) = @_;
 
 	return undef unless ($l->{TYPE} eq "POINTER" or $l->{TYPE} eq "ARRAY");
+	return undef if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ignore"));
 
 	return undef unless ($l->{TYPE} ne "ARRAY" or ArrayDynamicallyAllocated($e,$l));
 	return undef if has_fast_array($e, $l);
@@ -1063,7 +1089,9 @@ sub ParseElementPullLevel
 	}
 
 	# add additional constructions
-	if ($l->{TYPE} eq "POINTER" and $deferred) {
+	if ($l->{TYPE} eq "POINTER" and $l->{POINTER_TYPE} eq "ignore") {
+		$self->pidl("/* [ignore] '$e->{NAME}' */");
+	} elsif ($l->{TYPE} eq "POINTER" and $deferred) {
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->pidl("if ($var_name) {");
 			$self->indent;
@@ -1582,6 +1610,11 @@ sub DeclareMemCtxVariables($$)
 	my ($self,$e) = @_;
 	foreach my $l (@{$e->{LEVELS}}) {
 		my $mem_flags = $self->ParseMemCtxPullFlags($e, $l);
+
+		if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ignore")) {
+			last;
+		}
+
 		if (defined($mem_flags)) {
 			$self->pidl("TALLOC_CTX *_mem_save_$e->{NAME}_$l->{LEVEL_INDEX};");
 		}
