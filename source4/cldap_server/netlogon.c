@@ -250,9 +250,13 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		server_type |= DS_SERVER_WRITABLE;
 	}
 
-	pdc_name         = talloc_asprintf(mem_ctx, "\\\\%s",
+	if (version & (NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_5EX_WITH_IP)) {
+		pdc_name = lpcfg_netbios_name(lp_ctx);
+	} else {
+		pdc_name = talloc_asprintf(mem_ctx, "\\\\%s",
 					   lpcfg_netbios_name(lp_ctx));
-	NT_STATUS_HAVE_NO_MEMORY(pdc_name);
+		NT_STATUS_HAVE_NO_MEMORY(pdc_name);
+	}
 	domain_uuid      = samdb_result_guid(dom_res->msgs[0], "objectGUID");
 	dns_domain       = lpcfg_dnsdomain(lp_ctx);
 	forest_domain    = samdb_forest_name(sam_ctx, mem_ctx);
