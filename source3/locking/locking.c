@@ -1610,7 +1610,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 				/* Delete this entry. */
 				TALLOC_FREE(dt->delete_token);
 				*dt = lck->delete_tokens[
-					lck->num_delete_tokens];
+					lck->num_delete_tokens-1];
 				lck->num_delete_tokens -= 1;
 				return;
 			}
