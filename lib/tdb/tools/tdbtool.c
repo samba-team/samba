@@ -447,7 +447,6 @@ static void speed_tdb(const char *tlimit)
 	printf("Testing fetch speed for %u seconds\n", timelimit);
 	_start_timer();
 	do {
-		long int r = random();
 		TDB_DATA key;
 		key.dptr = discard_const_p(uint8_t, str);
 		key.dsize = strlen((char *)key.dptr);
