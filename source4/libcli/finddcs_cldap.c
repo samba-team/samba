@@ -60,7 +60,6 @@ static bool finddcs_cldap_ipaddress(struct finddcs_cldap_state *state, struct fi
 
 /*
  * find a list of DCs via DNS/CLDAP
- *
  */
 struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 				      struct finddcs *io,
@@ -78,9 +77,14 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 	state->req = req;
 	state->ev = event_ctx;
 	state->minimum_dc_flags = io->in.minimum_dc_flags;
-	state->domain_name = talloc_strdup(state, io->in.domain_name);
-	if (tevent_req_nomem(state->domain_name, req)) {
-		return tevent_req_post(req, event_ctx);
+
+	if (io->in.domain_name) {
+		state->domain_name = talloc_strdup(state, io->in.domain_name);
+		if (tevent_req_nomem(state->domain_name, req)) {
+			return tevent_req_post(req, event_ctx);
+		}
+	} else {
+		state->domain_name = NULL;
 	}
 
 	if (io->in.domain_sid) {
@@ -97,17 +101,26 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 		if (!finddcs_cldap_ipaddress(state, io)) {
 			return tevent_req_post(req, event_ctx);
 		}
-	} else if (strchr(state->domain_name, '.')) {
-		/* looks like a DNS name */
-		DEBUG(4,("finddcs: searching for a DC by DNS domain %s\n", state->domain_name));
-		if (!finddcs_cldap_srv_lookup(state, io, resolve_ctx, event_ctx)) {
-			return tevent_req_post(req, event_ctx);
+	} else if (io->in.domain_name) {
+		if (strchr(state->domain_name, '.')) {
+			/* looks like a DNS name */
+			DEBUG(4,("finddcs: searching for a DC by DNS domain %s\n", state->domain_name));
+			if (!finddcs_cldap_srv_lookup(state, io, resolve_ctx,
+						      event_ctx)) {
+				return tevent_req_post(req, event_ctx);
+			}
+		} else {
+			DEBUG(4,("finddcs: searching for a DC by NBT lookup %s\n", state->domain_name));
+			if (!finddcs_cldap_nbt_lookup(state, io, resolve_ctx,
+						      event_ctx)) {
+				return tevent_req_post(req, event_ctx);
+			}
 		}
 	} else {
-		DEBUG(4,("finddcs: searching for a DC by NBT lookup %s\n", state->domain_name));
-		if (!finddcs_cldap_nbt_lookup(state, io, resolve_ctx, event_ctx)) {
-			return tevent_req_post(req, event_ctx);
-		}
+		/* either we have the domain name or the IP address */
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		DEBUG(2,("finddcs: Please specify at least the domain name or the IP address! \n"));
+		return tevent_req_post(req, event_ctx);
 	}
 
 	return req;
@@ -233,7 +246,7 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 		return;
 	}
 
-	if (strchr(state->domain_name, '.')) {
+	if ((state->domain_name != NULL) && (strchr(state->domain_name, '.'))) {
 		state->netlogon->in.realm = state->domain_name;
 	}
 	if (state->domain_sid) {
