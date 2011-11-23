@@ -678,7 +678,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	const int MAXDEVICENAME	= 32;
 
 	typedef [public,gensize] struct {
-		[charset(UTF16)] uint16 devicename[MAXDEVICENAME];
+		[charset(UTF16),to_null] uint16 devicename[MAXDEVICENAME];
 		spoolss_DeviceModeSpecVersion specversion;
 		uint16 driverversion;
 		uint16 size;
