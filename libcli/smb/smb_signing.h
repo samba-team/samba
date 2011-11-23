@@ -40,7 +40,6 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 			  uint8_t *outbuf, uint32_t seqnum);
 bool smb_signing_check_pdu(struct smb_signing_state *si,
 			   const uint8_t *inbuf, uint32_t seqnum);
-bool smb_signing_set_bsrspyl(struct smb_signing_state *si);
 bool smb_signing_activate(struct smb_signing_state *si,
 			  const DATA_BLOB user_session_key,
 			  const DATA_BLOB response);
