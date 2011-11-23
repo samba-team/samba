@@ -518,15 +518,6 @@ typedef struct {
 	fstring domain; /* domain that the client specified */
 } userdom_struct;
 
-/* used for server information: client, nameserv and ipc */
-struct server_info_struct {
-	fstring name;
-	uint32 type;
-	fstring comment;
-	fstring domain; /* used ONLY in ipc.c NOT namework.c */
-	bool server_added; /* used ONLY in ipc.c NOT namework.c */
-};
-
 /* used for network interfaces */
 struct interface {
 	struct interface *next, *prev;
