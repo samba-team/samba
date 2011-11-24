@@ -315,6 +315,7 @@ LIBNDR_OBJ = ../librpc/ndr/ndr_basic.o \
 	     ../librpc/ndr/uuid.o \
 	     ../librpc/ndr/util.o \
 	     librpc/gen_ndr/ndr_server_id.o \
+	     librpc/gen_ndr/ndr_file_id.o \
 	     librpc/gen_ndr/ndr_dcerpc.o
 
 LIBNDR_GEN_OBJ0 = librpc/gen_ndr/ndr_samr.o \
@@ -825,7 +826,7 @@ OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o \
 	     smbd/oplock_onefs.o
 
 NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o \
-	     librpc/gen_ndr/ndr_notify.o librpc/gen_ndr/ndr_file_id.o
+	     librpc/gen_ndr/ndr_notify.o
 
 FNAME_UTIL_OBJ = lib/filename_util.o
 
