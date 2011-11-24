@@ -61,9 +61,9 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_tcon(cli, share);
+	status = cli_tree_connect(cli, share, "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smb2cli_tcon returned %s\n", nt_errstr(status));
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
 	}
 
