@@ -38,6 +38,8 @@ bool run_smb2_basic(int dummy)
 	uint32_t nread;
 	uint8_t *dir_data;
 	uint32_t dir_data_length;
+	uint32_t saved_tid = 0;
+	uint64_t saved_uid = 0;
 
 	printf("Starting SMB2-BASIC\n");
 
@@ -153,6 +155,41 @@ bool run_smb2_basic(int dummy)
 	status = smb2cli_close(cli, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	saved_tid = cli->smb2.tid;
+	status = smb2cli_tdis(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_tdis returned %s\n", nt_errstr(status));
+		return false;
+	}
+	cli->smb2.tid = saved_tid;
+
+	status = smb2cli_tdis(cli);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
+		printf("2nd smb2cli_tdis returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	saved_uid = smb2cli_session_current_id(cli->smb2.session);
+	status = smb2cli_logoff(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_logoff returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	cli->smb2.session = smbXcli_session_create(cli, cli->conn);
+	if (cli->smb2.session == NULL) {
+		printf("smbXcli_session_create() returned NULL\n");
+		return false;
+	}
+
+	smb2cli_session_set_id_and_flags(cli->smb2.session, saved_uid, 0);
+
+	status = smb2cli_logoff(cli);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
+		printf("2nd smb2cli_logoff returned %s\n", nt_errstr(status));
 		return false;
 	}
 
