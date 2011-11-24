@@ -21,8 +21,6 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 
-#ifdef HAVE_GPFS
-
 #include "libcli/security/security.h"
 #include "gpfs_gpl.h"
 #include "vfs_gpfs.h"
@@ -273,66 +271,3 @@ void init_gpfs(void)
 
 	return;
 }
-
-#else
-
-int set_gpfs_lease(int snum, int leasetype)
-{
-	DEBUG(0, ("'VFS module smbgpfs loaded, without gpfs support compiled\n"));
-
-	/* We need to indicate that no GPFS is around by returning ENOSYS, so
-	 * that the normal linux kernel oplock code is called. */
-	errno = ENOSYS;
-	return -1;
-}
-
-bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
-			uint32 share_access)
-{
-	DEBUG(0, ("VFS module - smbgpfs.so loaded, without gpfs support compiled\n"));
-	/* Don't disturb but complain */
-	return True;
-}
-
-int smbd_gpfs_getacl(char *pathname, int flags, void *acl)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
-int smbd_gpfs_putacl(char *pathname, int flags, void *acl)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
-int smbd_gpfs_get_realfilename_path(char *pathname, char *fileamep,
-				    int *buflen)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
-int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
-{
-        errno = ENOSYS;
-        return -1;
-}
-
-int get_gpfs_winattrs(char *pathname,struct gpfs_winattr *attrs)
-{
-        errno = ENOSYS;
-        return -1;
-}
-
-void smbd_gpfs_lib_init()
-{
-	return;
-}
-
-void init_gpfs(void)
-{
-	return;
-}
-
-#endif /* HAVE_GPFS */
