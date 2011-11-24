@@ -273,6 +273,11 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		break;
 	}
 
+	if (lp_hideunreadable(SNUM(tcon->compat_conn)) ||
+	    lp_hideunwriteable_files(SNUM(tcon->compat_conn))) {
+		*out_share_flags |= SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM;
+	}
+
 	*out_maximal_access = tcon->compat_conn->share_access;
 
 	*out_tree_id = tcon->tid;
