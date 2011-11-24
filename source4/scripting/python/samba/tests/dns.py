@@ -94,6 +94,9 @@ class DNSTest(TestCase):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 1)
+        self.assertEquals(response.answers[0].rdata,
+                          os.getenv('DC_SERVER_IP'))
 
     def test_two_queries(self):
         "create a query packet containing two query records"
