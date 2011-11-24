@@ -1369,3 +1369,34 @@ _PUBLIC_ void ndr_print_timespec(struct ndr_print *ndr, const char *name,
 	ndr->print(ndr, "%-25s: %s.%ld", name, timestring(ndr, t->tv_sec),
 		   (long)t->tv_nsec);
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_timeval(struct ndr_push *ndr,
+					    int ndr_flags,
+					    const struct timeval *t)
+{
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, t->tv_sec));
+	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, t->tv_usec));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_timeval(struct ndr_pull *ndr,
+					    int ndr_flags,
+					    struct timeval *t)
+{
+	uint64_t secs;
+	uint32_t usecs;
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &secs));
+	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &usecs));
+	t->tv_sec = secs;
+	t->tv_usec = usecs;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_timeval(struct ndr_print *ndr, const char *name,
+				const struct timeval *t)
+{
+	ndr->print(ndr, "%-25s: %s.%ld", name, timestring(ndr, t->tv_sec),
+		   (long)t->tv_usec);
+}

@@ -636,5 +636,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull_timespec(struct ndr_pull *ndr,
 _PUBLIC_ void ndr_print_timespec(struct ndr_print *ndr, const char *name,
 				 const struct timespec *t);
 
+_PUBLIC_ enum ndr_err_code ndr_push_timeval(struct ndr_push *ndr,
+					    int ndr_flags,
+					    const struct timeval *t);
+_PUBLIC_ enum ndr_err_code ndr_pull_timeval(struct ndr_pull *ndr,
+					    int ndr_flags,
+					    struct timeval *t);
+_PUBLIC_ void ndr_print_timeval(struct ndr_print *ndr, const char *name,
+				const struct timeval *t);
+
+
 
 #endif /* __LIBNDR_H__ */
