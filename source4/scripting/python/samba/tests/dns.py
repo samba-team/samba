@@ -66,6 +66,20 @@ class DNSTest(TestCase):
         "Helper to get dns domain"
         return os.getenv('REALM', 'example.com').lower()
 
+    def dns_transaction_udp(self, packet, host=os.getenv('DC_SERVER_IP')):
+        "send a DNS query and read the reply"
+        s = None
+        try:
+            send_packet = ndr.ndr_pack(packet)
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+            s.connect((host, 53))
+            s.send(send_packet, 0)
+            recv_packet = s.recv(2048, 0)
+            return ndr.ndr_unpack(dns.name_packet, recv_packet)
+        finally:
+            if s is not None:
+                s.close()
+
     def test_one_a_query(self):
         "create a query packet containing one query record"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
@@ -98,19 +112,6 @@ class DNSTest(TestCase):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
 
-    def dns_transaction_udp(self, packet, host=os.getenv('DC_SERVER_IP')):
-        "send a DNS query and read the reply"
-        s = None
-        try:
-            send_packet = ndr.ndr_pack(packet)
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-            s.connect((host, 53))
-            s.send(send_packet, 0)
-            recv_packet = s.recv(2048, 0)
-            return ndr.ndr_unpack(dns.name_packet, recv_packet)
-        finally:
-            if s is not None:
-                s.close()
 
 if __name__ == "__main__":
     import unittest
