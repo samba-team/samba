@@ -248,7 +248,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		*out_share_type = SMB2_SHARE_TYPE_DISK;
 	}
 
-	*out_share_flags = SMB2_SHAREFLAG_ALLOW_NAMESPACE_CACHING;
+	*out_share_flags = 0;
 
 	if (lp_msdfs_root(SNUM(tcon->compat_conn)) && lp_host_msdfs()) {
 		*out_share_flags |= (SMB2_SHAREFLAG_DFS|SMB2_SHAREFLAG_DFS_ROOT);
