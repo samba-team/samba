@@ -38,6 +38,7 @@ struct gpfs_config_data {
 	bool sharemodes;
 	bool leases;
 	bool hsm;
+	bool syncio;
 };
 
 
@@ -1275,6 +1276,9 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 	config->hsm = lp_parm_bool(SNUM(handle->conn), "gpfs",
 				   "hsm", false);
 
+	config->syncio = lp_parm_bool(SNUM(handle->conn), "gpfs",
+				      "syncio", false);
+
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,
 				return -1);
@@ -1304,8 +1308,13 @@ static int vfs_gpfs_open(struct vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname, files_struct *fsp,
 			 int flags, mode_t mode)
 {
-	if (lp_parm_bool(fsp->conn->params->service, "gpfs", "syncio",
-			 false)) {
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (config->syncio) {
 		flags |= O_SYNC;
 	}
 	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
