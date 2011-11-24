@@ -2178,16 +2178,6 @@ then
 	AC_SUBST(TDBTOOL)
 	TDBTORTURE="bin/tdbtorture\$(EXEEXT)"
 	AC_SUBST(TDBTORTURE)
-	ac_cv_have_tdb_err_nesting=yes
-else
-	AC_TRY_COMPILE([#include <tdb.h>],
-		       [enum TDB_ERROR err = TDB_ERR_NESTING],
-		       ac_cv_have_tdb_err_nesting=yes,
-		       ac_cv_have_tdb_err_nesting=no)
-fi
-
-if test x"$ac_cv_have_tdb_err_nesting" = xyes; then
-   AC_DEFINE(HAVE_TDB_ERR_NESTING, 1, [Whether we have TDB_ERR_NESTING])
 fi
 
 SMB_LIBRARY(netapi, 0)

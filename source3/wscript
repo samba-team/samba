@@ -1358,11 +1358,6 @@ main() {
         msg="getcwd takes a NULL argument")
 
 
-    conf.CHECK_CODE('''enum TDB_ERROR err = TDB_ERR_NESTING''',
-		    'HAVE_TDB_ERR_NESTING',
-		    headers='tdb.h',
-		    msg='Checking whether we have TDB_ERR_NESTING')
-
     # UnixWare 7.x has its getspnam in -lgen
     conf.CHECK_FUNCS_IN('getspnam', 'gen')
     conf.CHECK_FUNCS_IN('getspnam', 'security')
