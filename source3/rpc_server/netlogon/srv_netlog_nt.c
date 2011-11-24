@@ -185,6 +185,8 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 	struct netr_NETLOGON_INFO_4 *info4;
 	const char *fn;
 	uint32_t acct_ctrl;
+	NTSTATUS status;
+	struct netr_DsRGetDCNameInfo *dc_info;
 
 	switch (p->opnum) {
 	case NDR_NETR_LOGONCONTROL:
@@ -303,12 +305,15 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 			break;
 		}
 
-		if (!get_dc_name(domain, NULL, dc_name2, &dc_ss)) {
+		status = dsgetdcname(p->mem_ctx, p->msg_ctx, domain, NULL, NULL,
+				     DS_FORCE_REDISCOVERY | DS_RETURN_FLAT_NAME,
+				     &dc_info);
+		if (!NT_STATUS_IS_OK(status)) {
 			tc_status = WERR_NO_LOGON_SERVERS;
 			break;
 		}
 
-		dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
+		dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_info->dc_unc);
 		if (!dc_name) {
 			return WERR_NOMEM;
 		}
