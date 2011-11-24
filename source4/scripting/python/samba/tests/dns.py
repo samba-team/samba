@@ -141,6 +141,20 @@ class DNSTest(TestCase):
         if dc_ipv6 is not None:
             self.assertEquals(response.answers[1].rdata, dc_ipv6)
 
+    def test_qclass_none_query(self):
+        "create a QCLASS_NONE query"
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "%s.%s" % (os.getenv('DC_SERVER'), self.get_dns_domain())
+        q = self.make_name_question(name, dns.DNS_QTYPE_ALL, dns.DNS_QCLASS_NONE)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTIMP)
+
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
