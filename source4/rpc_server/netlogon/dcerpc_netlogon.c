@@ -1296,6 +1296,11 @@ static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TAL
 		return WERR_DS_UNAVAILABLE;
 	}
 
+	/*
+	 * We assume to be a DC when we get called over NETLOGON. Hence we
+	 * get our site name always by using "samdb_server_site_name()"
+	 * and not "samdb_client_site_name()".
+	 */
 	*r->out.site = samdb_server_site_name(sam_ctx, mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(*r->out.site);
 
