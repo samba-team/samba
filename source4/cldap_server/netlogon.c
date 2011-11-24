@@ -224,7 +224,6 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		
 	server_type      = 
 		DS_SERVER_DS | DS_SERVER_TIMESERV |
-		DS_SERVER_CLOSEST |
 		DS_SERVER_GOOD_TIMESERV;
 
 #if 0
@@ -276,13 +275,17 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 					   dns_domain);
 	NT_STATUS_HAVE_NO_MEMORY(pdc_dns_name);
 	flatname         = lpcfg_workgroup(lp_ctx);
+
 	server_site      = samdb_server_site_name(sam_ctx, mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(server_site);
 	client_site      = samdb_client_site_name(sam_ctx, mem_ctx,
 						  src_address, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(client_site);
-	load_interface_list(mem_ctx, lp_ctx, &ifaces);
+	if (strcasecmp(server_site, client_site) == 0) {
+		server_type |= DS_SERVER_CLOSEST;
+	}
 
+	load_interface_list(mem_ctx, lp_ctx, &ifaces);
 	if (src_address) {
 		pdc_ip = iface_list_best_ip(ifaces, src_address);
 	} else {
