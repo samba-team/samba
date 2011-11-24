@@ -23,11 +23,13 @@
 
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
-#include "libcli/ldap/libcli_ldap.h"
+#include "libcli/ldap/ldap_client.h"
 #include "librpc/gen_ndr/netlogon.h"
-#include "torture/torture.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
+
+#include "torture/torture.h"
+#include "torture/ldap/proto.h"
 
 #define CHECK_STATUS(status, correct) torture_assert_ntstatus_equal(tctx, status, correct, "incorrect status")
 
@@ -385,90 +387,6 @@ static void cldap_dump_results(struct cldap_search *search)
 	talloc_free(ldb);
 }
 
-
-/*
-  test cldap netlogon server type flag "NBT_SERVER_FOREST_ROOT"
-*/
-static bool test_cldap_netlogon_flag_ds_dns_forest(struct torture_context *tctx,
-	const char *dest)
-{
-	struct cldap_socket *cldap;
-	NTSTATUS status;
-	struct cldap_netlogon search;
-	uint32_t server_type;
-	struct netlogon_samlogon_response n1;
-	bool result = true;
-	struct tsocket_address *dest_addr;
-	int ret;
-
-	ret = tsocket_address_inet_from_strings(tctx, "ip",
-						dest,
-						lpcfg_cldap_port(tctx->lp_ctx),
-						&dest_addr);
-	CHECK_VAL(ret, 0);
-
-	/* cldap_socket_init should now know about the dest. address */
-	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	printf("Testing netlogon server type flag NBT_SERVER_FOREST_ROOT: ");
-
-	ZERO_STRUCT(search);
-	search.in.dest_address = NULL;
-	search.in.dest_port = 0;
-	search.in.acct_control = -1;
-	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
-	search.in.map_response = true;
-
-	status = cldap_netlogon(cldap, tctx, &search);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	n1 = search.out.netlogon;
-	if (n1.ntver == NETLOGON_NT_VERSION_5)
-		server_type = n1.data.nt5.server_type;
-	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
-		server_type = n1.data.nt5_ex.server_type;
-
-	if (server_type & DS_DNS_FOREST_ROOT) {
-		struct cldap_search search2;
-		const char *attrs[] = { "defaultNamingContext", "rootDomainNamingContext", 
-			NULL };
-		struct ldb_context *ldb;
-		struct ldb_message *msg;
-
-		/* Trying to fetch the attributes "defaultNamingContext" and
-		   "rootDomainNamingContext" */
-		ZERO_STRUCT(search2);
-		search2.in.dest_address = dest;
-		search2.in.dest_port = lpcfg_cldap_port(tctx->lp_ctx);
-		search2.in.timeout = 10;
-		search2.in.retries = 3;
-		search2.in.filter = "(objectclass=*)";
-		search2.in.attributes = attrs;
-
-		status = cldap_search(cldap, tctx, &search2);
-		CHECK_STATUS(status, NT_STATUS_OK);
-
-		ldb = ldb_init(NULL, NULL);
-
-		msg = ldap_msg_to_ldb(ldb, ldb, search2.out.response);
-
-		/* Try to compare the two attributes */
-		if (ldb_msg_element_compare(ldb_msg_find_element(msg, attrs[0]),
-			ldb_msg_find_element(msg, attrs[1])))
-			result = false;
-
-		talloc_free(ldb);
-	}
-
-	if (result)
-		printf("passed\n");
-	else
-		printf("failed\n");
-
-	return result;
-}
-
 /*
   test generic cldap operations
 */
@@ -557,7 +475,6 @@ bool torture_cldap(struct torture_context *torture)
 
 	ret &= test_cldap_netlogon(torture, host);
 	ret &= test_cldap_netlogon_flags(torture, host);
-	ret &= test_cldap_netlogon_flag_ds_dns_forest(torture, host);
 	ret &= test_cldap_generic(torture, host);
 
 	return ret;
