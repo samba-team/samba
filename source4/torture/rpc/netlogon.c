@@ -2481,11 +2481,43 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "DsRGetDCName");
 	torture_assert_werr_ok(tctx, r.out.result, "DsRGetDCName");
 
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_CONTROLLER)),
+				 DS_DNS_CONTROLLER,
+				 "DsRGetDCName");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_DOMAIN)),
+				 DS_DNS_DOMAIN,
+				 "DsRGetDCName");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_FOREST_ROOT)),
+				 DS_DNS_FOREST_ROOT,
+				 "DsRGetDCName");
+
 	r.in.domain_name	= lpcfg_workgroup(tctx->lp_ctx);
+	r.in.flags		= 0;
 
 	status = dcerpc_netr_DsRGetDCName_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "DsRGetDCName");
 	torture_assert_werr_ok(tctx, r.out.result, "DsRGetDCName");
+
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_CONTROLLER)), 0,
+				 "DsRGetDCName");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_DOMAIN)), 0,
+				 "DsRGetDCName");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_FOREST_ROOT)),
+				 DS_DNS_FOREST_ROOT,
+				 "DsRGetDCName");
+
+	if (strcasecmp(info->dc_site_name, info->client_site_name) == 0) {
+		torture_assert_int_equal(tctx,
+					 (info->dc_flags & (DS_SERVER_CLOSEST)),
+					 DS_SERVER_CLOSEST,
+					 "DsRGetDCName");
+	}
 
 	return test_netr_DsRGetSiteName(p, tctx, 
 				       info->dc_unc,
@@ -2514,11 +2546,43 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx");
 
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_CONTROLLER)),
+				 DS_DNS_CONTROLLER,
+				 "DsRGetDCNameEx");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_DOMAIN)),
+				 DS_DNS_DOMAIN,
+				 "DsRGetDCNameEx");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_FOREST_ROOT)),
+				 DS_DNS_FOREST_ROOT,
+				 "DsRGetDCNameEx");
+
 	r.in.domain_name	= lpcfg_workgroup(tctx->lp_ctx);
+	r.in.flags		= 0;
 
 	status = dcerpc_netr_DsRGetDCNameEx_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx");
+
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_CONTROLLER)), 0,
+				 "DsRGetDCNameEx");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_DOMAIN)), 0,
+				 "DsRGetDCNameEx");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_FOREST_ROOT)),
+				 DS_DNS_FOREST_ROOT,
+				 "DsRGetDCNameEx");
+
+	if (strcasecmp(info->dc_site_name, info->client_site_name) == 0) {
+		torture_assert_int_equal(tctx,
+					 (info->dc_flags & (DS_SERVER_CLOSEST)),
+					 DS_SERVER_CLOSEST,
+					 "DsRGetDCNameEx");
+	}
 
 	return test_netr_DsRGetSiteName(p, tctx, info->dc_unc,
 				        info->dc_site_name);
@@ -2544,6 +2608,19 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
 
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_CONTROLLER)),
+				 DS_DNS_CONTROLLER,
+				 "DsRGetDCNameEx2");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_DOMAIN)),
+				 DS_DNS_DOMAIN,
+				 "DsRGetDCNameEx2");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_FOREST_ROOT)),
+				 DS_DNS_FOREST_ROOT,
+				 "DsRGetDCNameEx2");
+
 	r.in.server_unc		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.client_account	= NULL;
 	r.in.mask		= 0x00000000;
@@ -2560,10 +2637,29 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
 
 	r.in.domain_name	= lpcfg_workgroup(tctx->lp_ctx);
+	r.in.flags		= 0;
 
 	status = dcerpc_netr_DsRGetDCNameEx2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "netr_DsRGetDCNameEx2");
 	torture_assert_werr_ok(tctx, r.out.result, "netr_DsRGetDCNameEx2");
+
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_CONTROLLER)), 0,
+				 "DsRGetDCNameEx2");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_DOMAIN)), 0,
+				 "DsRGetDCNameEx2");
+	torture_assert_int_equal(tctx,
+				 (info->dc_flags & (DS_DNS_FOREST_ROOT)),
+				 DS_DNS_FOREST_ROOT,
+				 "DsRGetDCNameEx2");
+
+	if (strcasecmp(info->dc_site_name, info->client_site_name) == 0) {
+		torture_assert_int_equal(tctx,
+					 (info->dc_flags & (DS_SERVER_CLOSEST)),
+					 DS_SERVER_CLOSEST,
+					 "DsRGetDCNameEx2");
+	}
 
 	torture_comment(tctx, "Testing netr_DsRGetDCNameEx2 with client account\n");
 	r.in.client_account	= TEST_MACHINE_NAME"$";
