@@ -136,10 +136,5 @@ static void wb_getpwsid_done(struct tevent_req *subreq)
 
 NTSTATUS wb_getpwsid_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
