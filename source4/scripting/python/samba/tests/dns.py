@@ -115,6 +115,31 @@ class DNSTest(TestCase):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
 
+    def test_qtype_all_query(self):
+        "create a QTYPE_ALL query"
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "%s.%s" % (os.getenv('DC_SERVER'), self.get_dns_domain())
+        q = self.make_name_question(name, dns.DNS_QTYPE_ALL, dns.DNS_QCLASS_IN)
+        print "asking for ", q.name
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+
+        num_answers = 1
+        dc_ipv6 = os.getenv('DC_SERVER_IPV6')
+        if dc_ipv6 is not None:
+            num_answers += 1
+
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, num_answers)
+        self.assertEquals(response.answers[0].rdata,
+                          os.getenv('DC_SERVER_IP'))
+        if dc_ipv6 is not None:
+            self.assertEquals(response.answers[1].rdata, dc_ipv6)
 
 if __name__ == "__main__":
     import unittest
