@@ -1637,6 +1637,7 @@ IDL_FILES = librpc/idl/messaging.idl \
 	    librpc/idl/wbint.idl \
 	    librpc/idl/perfcount.idl \
 	    librpc/idl/secrets.idl \
+	    librpc/idl/open_files.idl \
 	    librpc/idl/libnet_join.idl
 
 samba3-idl::
