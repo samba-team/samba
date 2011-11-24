@@ -21,6 +21,7 @@
 #include "web/swat_proto.h"
 #include "libcli/security/security.h"
 #include "locking/proto.h"
+#include "librpc/gen_ndr/open_files.h"
 
 #define _(x) lang_msg_rotate(talloc_tos(),x)
 

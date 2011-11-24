@@ -28,6 +28,7 @@
 #include "transfer_file.h"
 #include "auth.h"
 #include "messages.h"
+#include "../librpc/gen_ndr/open_files.h"
 
 /****************************************************************************
  Run a file if it is a magic script.

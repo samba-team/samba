@@ -29,6 +29,7 @@
 #include "system/filesys.h"
 #include "smb_share_modes.h"
 #include "tdb_compat.h"
+#include "librpc/gen_ndr/open_files.h"
 #include <ccan/hash/hash.h>
 
 /* Database context handle. */
@@ -40,6 +41,35 @@ struct smbdb_ctx {
 #ifdef malloc
 #undef malloc
 #endif
+
+/*
+ * Internal structure of locking.tdb share mode db.
+ * Used by locking.c and libsmbsharemodes.c
+ */
+
+struct locking_data {
+	union {
+		struct {
+			int num_share_mode_entries;
+			struct timespec old_write_time;
+			struct timespec changed_write_time;
+			uint32 num_delete_token_entries;
+		} s;
+		struct share_mode_entry dummy; /* Needed for alignment. */
+	} u;
+	/* The following four entries are implicit
+
+	   (1) struct share_mode_entry modes[num_share_mode_entries];
+
+	   (2) A num_delete_token_entries of structs {
+		uint32_t len_delete_token;
+		char unix_token[len_delete_token] (divisible by 4).
+	   };
+
+	   (3) char share_name[];
+	   (4) char file_name[];
+        */
+};
 
 int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx, uint64_t dev,
 				uint64_t ino, uint64_t extid,

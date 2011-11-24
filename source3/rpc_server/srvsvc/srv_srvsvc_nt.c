@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../librpc/gen_ndr/open_files.h"
 #include "dbwrap/dbwrap.h"
 #include "session.h"
 #include "../lib/util/util_pw.h"

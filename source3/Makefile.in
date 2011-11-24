@@ -793,7 +793,8 @@ RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 
 RPC_CLIENT_SCHANNEL_OBJ = rpc_client/cli_pipe_schannel.o
 
-LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
+LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o \
+		librpc/gen_ndr/ndr_open_files.o
 
 PRIVILEGES_BASIC_OBJ = ../libcli/security/privileges.o
 

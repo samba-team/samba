@@ -27,6 +27,7 @@
 #include "fake_file.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "../librpc/gen_ndr/open_files.h"
 #include "auth.h"
 #include "messages.h"
 

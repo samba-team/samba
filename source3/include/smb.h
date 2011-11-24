@@ -545,25 +545,6 @@ struct pending_message_list {
 
 #include "librpc/gen_ndr/server_id.h"
 
-/* struct returned by get_share_modes */
-struct share_mode_entry {
-	struct server_id pid;
-	uint64_t op_mid;	/* For compatibility with SMB2 opens. */
-	uint16 op_type;
-	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
-	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
-	uint32 private_options;	/* NT Create options, but we only look at
-				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
-				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB for
-				 * smbstatus and swat */
-	struct timeval time;
-	struct file_id id;
-	unsigned long share_file_id;
-	uint32 uid;		/* uid of file opener. */
-	uint16 flags;		/* See SHARE_MODE_XX above. */
-	uint32_t name_hash;		/* Jenkins hash of full pathname. */
-};
-
 /* oplock break message definition - linearization of share_mode_entry.
 
 Offset  Data			length.
@@ -604,56 +585,6 @@ Offset  Data			length.
 
 #define OP_BREAK_MSG_VNN_OFFSET 72
 #define MSG_SMB_SHARE_MODE_ENTRY_SIZE 76
-
-struct delete_token {
-	uint32_t name_hash;
-	struct security_unix_token *delete_token;
-};
-
-struct share_mode_lock {
-	const char *servicepath; /* canonicalized. */
-	const char *base_name;
-	const char *stream_name;
-	struct file_id id;
-	int num_share_modes;
-	struct share_mode_entry *share_modes;
-	int num_delete_tokens;
-	struct delete_token *delete_tokens;
-	struct timespec old_write_time;
-	struct timespec changed_write_time;
-	bool fresh;
-	bool modified;
-	struct db_record *record;
-};
-
-/*
- * Internal structure of locking.tdb share mode db.
- * Used by locking.c and libsmbsharemodes.c
- */
-
-struct locking_data {
-	union {
-		struct {
-			int num_share_mode_entries;
-			struct timespec old_write_time;
-			struct timespec changed_write_time;
-			uint32 num_delete_token_entries;
-		} s;
-		struct share_mode_entry dummy; /* Needed for alignment. */
-	} u;
-	/* The following four entries are implicit
-
-	   (1) struct share_mode_entry modes[num_share_mode_entries];
-
-	   (2) A num_delete_token_entries of structs {
-		uint32_t len_delete_token;
-		char unix_token[len_delete_token] (divisible by 4).
-	   };
-
-	   (3) char share_name[];
-	   (4) char file_name[];
-        */
-};
 
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16

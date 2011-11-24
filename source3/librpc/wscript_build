@@ -15,6 +15,11 @@ bld.SAMBA3_SUBSYSTEM('NDR_MESSAGING',
 	public_deps='ndr NDR_SERVER_ID'
 	)
 
+bld.SAMBA3_SUBSYSTEM('NDR_OPEN_FILES',
+	source='gen_ndr/ndr_open_files.c',
+	public_deps='ndr NDR_SERVER_ID NDR_FILE_ID NDR_SECURITY'
+	)
+
 bld.SAMBA3_SUBSYSTEM('NDR_SECRETS',
 	source='gen_ndr/ndr_secrets.c',
 	public_deps='ndr'

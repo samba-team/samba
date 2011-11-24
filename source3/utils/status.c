@@ -39,6 +39,7 @@
 #include "session.h"
 #include "locking/proto.h"
 #include "messages.h"
+#include "librpc/gen_ndr/open_files.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
