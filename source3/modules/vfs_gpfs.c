@@ -185,7 +185,7 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 
 static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 {
-	int	i;
+	gpfs_aclCount_t i;
 	if (gacl==NULL)
 	{
 		DEBUG(0, ("gpfs acl is NULL\n"));
@@ -255,7 +255,7 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
  */
 static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 {
-	int i;
+	gpfs_aclCount_t i;
 	struct gpfs_acl *gacl = NULL;
 	DEBUG(10, ("gpfs_get_nfs4_acl invoked for %s\n", fname));
 
@@ -509,7 +509,7 @@ static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp
 static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl)
 {
 	SMB_ACL_T result;
-	int i;
+	gpfs_aclCount_t i;
 
 	result = sys_acl_init(pacl->acl_nace);
 	if (result == NULL) {
