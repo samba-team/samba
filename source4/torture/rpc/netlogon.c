@@ -40,6 +40,64 @@
 
 #define TEST_MACHINE_NAME "torturetest"
 
+static bool test_netr_broken_binding_handle(struct torture_context *tctx,
+					    struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct netr_DsRGetSiteName r;
+	const char *site = NULL;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	r.in.computer_name	= talloc_asprintf(tctx, "\\\\%s",
+						  dcerpc_server_name(p));
+	r.out.site		= &site;
+
+	torture_comment(tctx,
+			"Testing netlogon request with correct binding handle: %s\n",
+			r.in.computer_name);
+
+	status = dcerpc_netr_DsRGetSiteName_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Netlogon request with broken binding handle");
+	torture_assert_werr_ok(tctx, r.out.result,
+			       "Netlogon request with broken binding handle");
+
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx,
+			     "Skipping broken binding handle check against Samba");
+	}
+
+	r.in.computer_name	= talloc_asprintf(tctx, "\\\\\\\\%s",
+						  dcerpc_server_name(p));
+
+	torture_comment(tctx,
+			"Testing netlogon request with broken binding handle: %s\n",
+			r.in.computer_name);
+
+	status = dcerpc_netr_DsRGetSiteName_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Netlogon request with broken binding handle");
+	torture_assert_werr_equal(tctx, r.out.result,
+				  WERR_INVALID_COMPUTERNAME,
+				  "Netlogon request with broken binding handle");
+
+	r.in.computer_name	= "\\\\\\\\THIS_IS_NOT_VALID";
+
+	torture_comment(tctx,
+			"Testing netlogon request with broken binding handle: %s\n",
+			r.in.computer_name);
+
+	status = dcerpc_netr_DsRGetSiteName_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Netlogon request with broken binding handle");
+	torture_assert_werr_equal(tctx, r.out.result,
+				  WERR_INVALID_COMPUTERNAME,
+				  "Netlogon request with broken binding handle");
+
+	return true;
+}
+
 static bool test_LogonUasLogon(struct torture_context *tctx, 
 			       struct dcerpc_pipe *p)
 {
@@ -2398,17 +2456,6 @@ static bool test_netr_DsRGetSiteName(struct dcerpc_pipe *p, struct torture_conte
 	torture_assert_werr_ok(tctx, r.out.result, "DsRGetSiteName");
 	torture_assert_str_equal(tctx, expected_site, site, "netr_DsRGetSiteName");
 
-	if (torture_setting_bool(tctx, "samba4", false))
-		torture_skip(tctx, "skipping computer name check against Samba4");
-
-	r.in.computer_name		= talloc_asprintf(tctx, "\\\\%s", computer_name);
-	torture_comment(tctx, 
-			"Testing netr_DsRGetSiteName with broken computer name: %s\n", r.in.computer_name);
-
-	status = dcerpc_netr_DsRGetSiteName_r(b, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "DsRGetSiteName");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_COMPUTERNAME, "netr_DsRGetSiteName");
-
 	return true;
 }
 
@@ -3651,6 +3698,9 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
 						  &ndr_table_netlogon, TEST_MACHINE_NAME);
+
+	torture_rpc_tcase_add_test(tcase, "Broken RPC binding handle",
+				   test_netr_broken_binding_handle);
 
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogon", test_LogonUasLogon);
 	torture_rpc_tcase_add_test(tcase, "LogonUasLogoff", test_LogonUasLogoff);
