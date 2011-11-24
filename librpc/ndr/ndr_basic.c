@@ -1338,3 +1338,34 @@ _PUBLIC_ NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err)
 	/* we should map all error codes to different status codes */
 	return NT_STATUS_INVALID_PARAMETER;
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_timespec(struct ndr_push *ndr,
+					     int ndr_flags,
+					     const struct timespec *t)
+{
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, t->tv_sec));
+	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, t->tv_nsec));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_timespec(struct ndr_pull *ndr,
+					     int ndr_flags,
+					     struct timespec *t)
+{
+	uint64_t secs;
+	uint32_t nsecs;
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &secs));
+	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &nsecs));
+	t->tv_sec = secs;
+	t->tv_nsec = nsecs;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_timespec(struct ndr_print *ndr, const char *name,
+				 const struct timespec *t)
+{
+	ndr->print(ndr, "%-25s: %s.%ld", name, timestring(ndr, t->tv_sec),
+		   (long)t->tv_nsec);
+}
