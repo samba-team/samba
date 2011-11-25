@@ -236,7 +236,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	}
 
 	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
-		/* its not a deleted record */
+		/* it is not a deleted record */
 		vdata->full_skipped++;
 		return 0;
 	}
