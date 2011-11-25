@@ -353,7 +353,9 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		set_nonblocking(s);
 		set_close_on_exec(s);
 
-		ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0, &dest->ip, sizeof(dest->ip));
+		ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0,
+			     (const struct sockaddr *)&dest->ip,
+			     sizeof(dest->ip));
 		close(s);
 		if (ret != sizeof(ip4pkt)) {
 			DEBUG(DEBUG_CRIT,(__location__ " failed sendto (%s)\n", strerror(errno)));
