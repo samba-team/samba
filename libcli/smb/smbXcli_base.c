@@ -96,6 +96,8 @@ struct smbXcli_conn {
 
 		struct smb_signing_state *signing;
 		struct smb_trans_enc_state *trans_enc;
+
+		struct tevent_req *read_braw_req;
 	} smb1;
 
 	struct {
@@ -1191,6 +1193,7 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 {
 	struct tevent_req *subreq;
 	NTSTATUS status;
+	uint8_t cmd;
 	uint16_t mid;
 
 	if (!smbXcli_conn_is_connected(state->conn)) {
@@ -1215,6 +1218,14 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	}
 	if (iov[3].iov_len != sizeof(uint16_t)) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	cmd = CVAL(iov[1].iov_base, HDR_COM);
+	if (cmd == SMBreadBraw) {
+		if (smbXcli_conn_has_async_calls(state->conn)) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+		state->conn->smb1.read_braw_req = req;
 	}
 
 	if (state->smb1.mid != 0) {
@@ -1601,6 +1612,40 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	size_t num_chained = 0;
 	size_t num_responses = 0;
 
+	if (conn->smb1.read_braw_req != NULL) {
+		req = conn->smb1.read_braw_req;
+		conn->smb1.read_braw_req = NULL;
+		state = tevent_req_data(req, struct smbXcli_req_state);
+
+		smbXcli_req_unset_pending(req);
+
+		if (state->smb1.recv_iov == NULL) {
+			/*
+			 * For requests with more than
+			 * one response, we have to readd the
+			 * recv_iov array.
+			 */
+			state->smb1.recv_iov = talloc_zero_array(state,
+								 struct iovec,
+								 3);
+			if (tevent_req_nomem(state->smb1.recv_iov, req)) {
+				return NT_STATUS_OK;
+			}
+		}
+
+		state->smb1.recv_iov[0].iov_base = (void *)(inbuf + NBT_HDR_SIZE);
+		state->smb1.recv_iov[0].iov_len = smb_len_nbt(inbuf);
+		ZERO_STRUCT(state->smb1.recv_iov[1]);
+		ZERO_STRUCT(state->smb1.recv_iov[2]);
+
+		state->smb1.recv_cmd = SMBreadBraw;
+		state->smb1.recv_status = NT_STATUS_OK;
+		state->inbuf = talloc_move(state->smb1.recv_iov, &inbuf);
+
+		tevent_req_done(req);
+		return NT_STATUS_OK;
+	}
+
 	if ((IVAL(inhdr, 0) != SMB_MAGIC) /* 0xFF"SMB" */
 	    && (SVAL(inhdr, 0) != 0x45ff)) /* 0xFF"E" */ {
 		DEBUG(10, ("Got non-SMB PDU\n"));
@@ -1868,13 +1913,15 @@ NTSTATUS smb1cli_req_recv(struct tevent_req *req,
 	if (state->inbuf != NULL) {
 		recv_iov = state->smb1.recv_iov;
 		state->smb1.recv_iov = NULL;
-		hdr = (uint8_t *)recv_iov[0].iov_base;
-		wct = recv_iov[1].iov_len/2;
-		vwv = (uint16_t *)recv_iov[1].iov_base;
-		vwv_offset = PTR_DIFF(vwv, hdr);
-		num_bytes = recv_iov[2].iov_len;
-		bytes = (uint8_t *)recv_iov[2].iov_base;
-		bytes_offset = PTR_DIFF(bytes, hdr);
+		if (state->smb1.recv_cmd != SMBreadBraw) {
+			hdr = (uint8_t *)recv_iov[0].iov_base;
+			wct = recv_iov[1].iov_len/2;
+			vwv = (uint16_t *)recv_iov[1].iov_base;
+			vwv_offset = PTR_DIFF(vwv, hdr);
+			num_bytes = recv_iov[2].iov_len;
+			bytes = (uint8_t *)recv_iov[2].iov_base;
+			bytes_offset = PTR_DIFF(bytes, hdr);
+		}
 	}
 
 	if (tevent_req_is_nterror(req, &status)) {
