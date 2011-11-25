@@ -206,8 +206,8 @@ static int add_record_to_vacuum_fetch_list(struct vacuum_data *vdata,
 }
 
 
-static void ctdb_vacuum_event(struct event_context *ev, struct timed_event *te, 
-							  struct timeval t, void *private_data);
+static void ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
+			      struct timeval t, void *private_data);
 
 
 /*
