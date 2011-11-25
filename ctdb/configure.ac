@@ -35,6 +35,7 @@ case `uname` in
 esac
 
 AC_LIBREPLACE_ALL_CHECKS
+AC_LIBREPLACE_NETWORK_CHECKS
 
 if test "$ac_cv_prog_gcc" = yes; then
    CFLAGS="$CFLAGS -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings"
