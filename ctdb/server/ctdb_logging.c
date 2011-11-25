@@ -245,9 +245,8 @@ static void ctdb_syslog_log(const char *format, va_list ap)
 
 		syslog_sin.sin_family = AF_INET;
 		syslog_sin.sin_port   = htons(CTDB_PORT);
-		syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);	
+		syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-       
 		ret = sendto(syslog_fd, msg, len, 0, &syslog_sin, sizeof(syslog_sin));
 		/* no point in checking here since we cant log an error */
 
