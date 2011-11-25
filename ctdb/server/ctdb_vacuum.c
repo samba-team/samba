@@ -488,8 +488,8 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	}
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		vdata->list[i] = (struct ctdb_marshall_buffer *)
-			talloc_zero_size(vdata->list, 
-							 offsetof(struct ctdb_marshall_buffer, data));
+			talloc_zero_size(vdata->list,
+					 offsetof(struct ctdb_marshall_buffer, data));
 		if (vdata->list[i] == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 			return -1;
