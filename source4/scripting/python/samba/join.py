@@ -619,7 +619,7 @@ class dc_join(object):
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="domain controller",
                                  lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
-                                 dns_backend="BIND9_FLATFILE")
+                                 dns_backend="BIND9_DLZ")
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
     def join_replicate(ctx):

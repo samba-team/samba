@@ -626,7 +626,7 @@ Please fix this account before attempting to upgrade again
         raise ProvisioningError("Please remove duplicate sid entries before upgrade.")
 
     if serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC":
-        dns_backend = "BIND9_FLATFILE"
+        dns_backend = "BIND9_DLZ"
     else:
         dns_backend = "NONE"
 
