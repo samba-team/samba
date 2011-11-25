@@ -100,8 +100,8 @@ static char* trustdom_cache_key(const char* name)
  *         false if store attempt failed
  **/
  
-bool trustdom_cache_store(char* name, char* alt_name, const struct dom_sid *sid,
-                          time_t timeout)
+bool trustdom_cache_store(const char *name, const char *alt_name,
+			  const struct dom_sid *sid, time_t timeout)
 {
 	char *key, *alt_key;
 	fstring sid_string;
