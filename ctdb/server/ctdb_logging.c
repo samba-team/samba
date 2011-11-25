@@ -141,7 +141,9 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	syslog_sin.sin_port   = htons(CTDB_PORT);
 	syslog_sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);	
 
-	if (bind(state->syslog_fd, &syslog_sin, sizeof(syslog_sin)) == -1) {
+	if (bind(state->syslog_fd, (struct sockaddr *)&syslog_sin,
+		 sizeof(syslog_sin)) == -1)
+	{
 		if (errno == EADDRINUSE) {
 			/* this is ok, we already have a syslog daemon */
 			_exit(0);
