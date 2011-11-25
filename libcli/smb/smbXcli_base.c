@@ -447,6 +447,26 @@ uint16_t smb1cli_conn_server_security_mode(struct smbXcli_conn *conn)
 	return conn->smb1.server.security_mode;
 }
 
+bool smb1cli_conn_server_readbraw(struct smbXcli_conn *conn)
+{
+	return conn->smb1.server.readbraw;
+}
+
+bool smb1cli_conn_server_writebraw(struct smbXcli_conn *conn)
+{
+	return conn->smb1.server.writebraw;
+}
+
+bool smb1cli_conn_server_lockread(struct smbXcli_conn *conn)
+{
+	return conn->smb1.server.lockread;
+}
+
+bool smb1cli_conn_server_writeunlock(struct smbXcli_conn *conn)
+{
+	return conn->smb1.server.writeunlock;
+}
+
 int smb1cli_conn_server_time_zone(struct smbXcli_conn *conn)
 {
 	return conn->smb1.server.time_zone;

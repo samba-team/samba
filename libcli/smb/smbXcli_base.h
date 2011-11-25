@@ -59,6 +59,10 @@ uint32_t smb1cli_conn_max_xmit(struct smbXcli_conn *conn);
 uint32_t smb1cli_conn_server_session_key(struct smbXcli_conn *conn);
 const uint8_t *smb1cli_conn_server_challenge(struct smbXcli_conn *conn);
 uint16_t smb1cli_conn_server_security_mode(struct smbXcli_conn *conn);
+bool smb1cli_conn_server_readbraw(struct smbXcli_conn *conn);
+bool smb1cli_conn_server_writebraw(struct smbXcli_conn *conn);
+bool smb1cli_conn_server_lockread(struct smbXcli_conn *conn);
+bool smb1cli_conn_server_writeunlock(struct smbXcli_conn *conn);
 int smb1cli_conn_server_time_zone(struct smbXcli_conn *conn);
 
 bool smb1cli_conn_activate_signing(struct smbXcli_conn *conn,
