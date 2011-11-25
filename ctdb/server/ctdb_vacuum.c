@@ -250,7 +250,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 
 	if (lmaster == ctdb->pnn) {
 		/*
-		 * We are both lmaster and dmaster, and the record * is empty.
+		 * We are both lmaster and dmaster, and the record is empty.
 		 * So we should be able to delete it.
 		 */
 		res = add_record_to_delete_tree(vdata, key, hdr);
