@@ -28,6 +28,11 @@ case `uname` in
     CTDB_SCSI_IO=
     CTDB_PCAP_LDFLAGS=-lpcap
     ;;
+  GNU)
+    CTDB_SYSTEM_OBJ=common/system_gnu.o
+    CTDB_SCSI_IO=
+    CTDB_PCAP_LDFLAGS=-lpcap
+    ;;
   *)
     echo unknown system  cant configure
     exit
