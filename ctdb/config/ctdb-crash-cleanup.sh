@@ -13,7 +13,7 @@
 }
 
 [ ! -f "$CTDB_PUBLIC_ADDRESSES" ] && {
-	echo "No public addresses file found. Cant cleanup."
+	echo "No public addresses file found. Can't clean up."
 	exit 1
 }
 
@@ -22,7 +22,16 @@ ctdb status 2>/dev/null && {
     exit 0
 }
 
-(cat /etc/{sysconfig,default}/ctdb | egrep "^CTDB_NATGW_PUBLIC_IP" | sed -e "s/.*=//" -e "s/\/.*//";cat "$CTDB_PUBLIC_ADDRESSES" | cut -d/ -f1) | while read _IP; do
+if [ -f /etc/sysconfig/ctdb ]; then
+    CTDB_CONFIG=/etc/sysconfig/ctdb
+elif [ -f /etc/default/ctdb ]; then
+    CTDB_CONFIG=/etc/default/ctdb
+else
+    echo "CTDB config not found. Can't clean up."
+    exit 1
+fi
+
+(cat $CTDB_CONFIG | egrep "^CTDB_NATGW_PUBLIC_IP" | sed -e "s/.*=//" -e "s/\/.*//";cat "$CTDB_PUBLIC_ADDRESSES" | cut -d/ -f1) | while read _IP; do
 	_IP_HELD=`/sbin/ip addr show | grep "inet $_IP/"`
 	[ -z "$_IP_HELD" ] || {
 		_IFACE=`echo $_IP_HELD | sed -e "s/.*\s//"`
