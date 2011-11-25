@@ -222,7 +222,7 @@ tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o
 CTDB_SERVER_MOST_OBJ = $(CTDB_SERVER_OBJ:server/ctdbd.o=)
 CTDB_TEST_C = $(CTDB_SERVER_MOST_OBJ:.o=.c) tests/src/ctdbd_test.c
 CTDB_TEST_OBJ =  @TALLOC_OBJ@ @TDB_OBJ@ \
-	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @TEVENT_OBJ@
+	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @TEVENT_OBJ@ $(SOCKET_WRAPPER_OBJ)
 
 CTDB_TEST_DEPENDS = $(CTDB_TEST_OBJ) $(CTDB_SERVER_MOST_C) \
 	tests/src/ctdbd_test.c
