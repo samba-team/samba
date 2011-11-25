@@ -1118,6 +1118,7 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 				   uint32_t *seqnum,
 				   bool one_way_seqnum)
 {
+	TALLOC_CTX *frame = NULL;
 	uint8_t *buf;
 
 	/*
@@ -1141,7 +1142,9 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	buf = smbXcli_iov_concat(talloc_tos(), iov, iov_count);
+	frame = talloc_stackframe();
+
+	buf = smbXcli_iov_concat(frame, iov, iov_count);
 	if (buf == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1151,7 +1154,7 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 	smb_signing_sign_pdu(conn->smb1.signing, buf, *seqnum);
 	memcpy(iov[1].iov_base, buf+4, iov[1].iov_len);
 
-	TALLOC_FREE(buf);
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
