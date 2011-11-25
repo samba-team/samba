@@ -397,7 +397,9 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		tmpport = tmpdest->ip6.sin6_port;
 
 		tmpdest->ip6.sin6_port = 0;
-		ret = sendto(s, &ip6pkt, sizeof(ip6pkt), 0, &dest->ip6, sizeof(dest->ip6));
+		ret = sendto(s, &ip6pkt, sizeof(ip6pkt), 0,
+			     (const struct sockaddr *)&dest->ip6,
+			     sizeof(dest->ip6));
 		tmpdest->ip6.sin6_port = tmpport;
 		close(s);
 
