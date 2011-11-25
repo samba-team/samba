@@ -939,11 +939,11 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	uint32_t repack_limit = ctdb_db->ctdb->tunable.repack_limit;
 	uint32_t vacuum_limit = ctdb_db->ctdb->tunable.vacuum_limit;
 	const char *name = ctdb_db->db_name;
-	int size;
+	int freelist_size;
 	struct vacuum_data *vdata;
 
-	size = tdb_freelist_size(ctdb_db->ltdb->tdb);
-	if (size == -1) {
+	freelist_size = tdb_freelist_size(ctdb_db->ltdb->tdb);
+	if (freelist_size == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
 		return -1;
 	}
@@ -977,25 +977,26 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	/*
 	 * decide if a repack is necessary
 	 */
-	if (size < repack_limit && vdata->delete_count < vacuum_limit) {
-		update_tuning_db(ctdb_db, vdata, size);
+	if (freelist_size < repack_limit && vdata->delete_count < vacuum_limit)
+	{
+		update_tuning_db(ctdb_db, vdata, freelist_size);
 		talloc_free(vdata);
 		return 0;
 	}
 
 	DEBUG(DEBUG_INFO,("Repacking %s with %u freelist entries and %u records to delete\n", 
-			name, size, vdata->delete_count));
+			name, freelist_size, vdata->delete_count));
 
 	/*
 	 * repack and implicitely get rid of the records we can delete
 	 */
 	if (ctdb_repack_tdb(ctdb_db->ltdb->tdb, mem_ctx, vdata) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to repack '%s'\n", name));
-		update_tuning_db(ctdb_db, vdata, size);
+		update_tuning_db(ctdb_db, vdata, freelist_size);
 		talloc_free(vdata);
 		return -1;
 	}
-	update_tuning_db(ctdb_db, vdata, size);
+	update_tuning_db(ctdb_db, vdata, freelist_size);
 	talloc_free(vdata);
 
 	return 0;
