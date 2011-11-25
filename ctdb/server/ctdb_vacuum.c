@@ -435,11 +435,37 @@ done:
 	return 0;
 }
 
-/* 
- * read-only traverse the database in order to find
- * records that can be deleted and try to delete these
- * records on the other nodes
- * this executes in the child context
+/**
+ * Vacuum a DB:
+ *  - Always do the fast vacuuming run, which traverses
+ *    the in-memory delete queue: these records have been
+ *    scheduled for deletion.
+ *  - Only if explicitly requested, the database is traversed
+ *    in order to use the traditional heuristics on empty records
+ *    to trigger deletion.
+ *    This is done only every VacuumFastPathCount'th vacuuming run.
+ *
+ * The traverse runs fill two lists:
+ *
+ * - The delete_list:
+ *   This is the list of empty records the current
+ *   node is lmaster and dmaster for. These records are later
+ *   deleted first on other nodes and then locally.
+ *
+ *   The fast vacuuming run has a short cut for those records
+ *   that have never been migrated with data: these records
+ *   are immediately deleted locally, since they have left
+ *   no trace on other nodes.
+ *
+ * - The vacuum_fetch lists
+ *   (one for each other lmaster node):
+ *   The records in this list are sent for deletion to
+ *   their lmaster in a bulk VACUUM_FETCH message.
+ *
+ *   The lmaster then migrates all these records to itelf
+ *   so that they can be vacuumed there.
+ *
+ * This executes in the child context.
  */
 static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 			  struct vacuum_data *vdata,
