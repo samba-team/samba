@@ -34,10 +34,6 @@ typedef int sig_atomic_t;
 #define SIGCLD SIGCHLD
 #endif
 
-#ifndef SIGNAL_CAST
-#define SIGNAL_CAST (RETSIGTYPE (*)(int))
-#endif
-
 #ifdef SYSV_TERMIO 
 
 /* SYSTEM V TERMIO HANDLING */
@@ -99,7 +95,7 @@ static int tcsetattr(int fd, int flags, struct sgttyb *_t)
 static struct termios t;
 #endif /* SYSV_TERMIO */
 
-static void catch_signal(int signum,void (*handler)(int ))
+static void catch_signal(int signum, void (*handler)(int ))
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction act;
@@ -131,7 +127,7 @@ static int in_fd = -1;
  Signal function to tell us were ^C'ed.
 ****************************************************************/
 
-static void gotintr_sig(void)
+static void gotintr_sig(int signum)
 {
 	gotintr = 1;
 	if (in_fd != -1)
@@ -148,7 +144,7 @@ char *rep_getpass(const char *prompt)
 	size_t nread;
 
 	/* Catch problematic signals */
-	catch_signal(SIGINT, SIGNAL_CAST gotintr_sig);
+	catch_signal(SIGINT, gotintr_sig);
 
 	/* Try to write to and read from the terminal if we can.
 		If we can't open the terminal, use stderr and stdin.  */
@@ -185,7 +181,9 @@ char *rep_getpass(const char *prompt)
 	buf[0] = 0;
 	if (!gotintr) {
 		in_fd = fileno(in);
-		fgets(buf, bufsize, in);
+		if (fgets(buf, bufsize, in) == NULL) {
+			buf[0] = 0;
+		}
 	}
 	nread = strlen(buf);
 	if (nread) {
@@ -195,8 +193,9 @@ char *rep_getpass(const char *prompt)
 
 	/* Restore echoing.  */
 	if (echo_off) {
-		if (gotintr && in_fd == -1)
+		if (gotintr && in_fd == -1) {
 			in = fopen ("/dev/tty", "w+");
+		}
 		if (in != NULL)
 			tcsetattr (fileno (in), TCSANOW, &t);
 	}
@@ -208,7 +207,7 @@ char *rep_getpass(const char *prompt)
 		fclose(in);
 
 	/* Catch problematic signals */
-	catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
+	catch_signal(SIGINT, SIG_DFL);
 
 	if (gotintr) {
 		printf("Interrupted by signal.\n");

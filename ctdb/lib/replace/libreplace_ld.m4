@@ -40,7 +40,7 @@ LDFLAGS="$saved_LDFLAGS"
 AC_DEFUN([AC_LD_PICFLAG],
 [
 case "$host_os" in
-	*linux*) 
+	*linux*|*gnu*)
 		PICFLAG="-fPIC" 
 		;;
 	*solaris*)
@@ -71,13 +71,12 @@ case "$host_os" in
 		PICFLAG="-O2"
 		;;
 	*hpux*)
-		if test $ac_cv_prog_cc_Ae = yes; then
-			PICFLAG="+z +ESnolit"
-		elif test "${GCC}" = "yes"; then
+		if test "${GCC}" = "yes"; then
 			PICFLAG="-fPIC"
-		fi
-		if test "$host_cpu" = "ia64"; then
-			PICFLAG="+z"
+		elif test "$host_cpu" = "ia64"; then
+		        PICFLAG="+z"
+		elif test $ac_cv_prog_cc_Ae = yes; then
+			PICFLAG="+z +ESnolit"
 		fi
 		;;
 	*osf*)
@@ -111,7 +110,7 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_FLAGS],
 	LD_SHLIB_FLAGS="-shared"
 
 	case "$host_os" in
-		*linux*)
+		*linux*|*gnu*)
 			LD_SHLIB_FLAGS="-shared -Wl,-Bsymbolic"
 			;;
 		*solaris*)
@@ -209,7 +208,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 	AC_SUBST(SONAMEFLAG)
 	SONAMEFLAG=""
 	case "$host_os" in 
-		*linux*)
+		*linux*|*gnu*|*qnx*)
 			SONAMEFLAG="-Wl,-soname="
 			;;
 		*solaris*)
@@ -249,6 +248,22 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 		esac
 ])
 
+AC_DEFUN([AC_LD_VERSIONSCRIPT],
+[
+	AC_SUBST(VERSIONSCRIPT)
+	VERSIONSCRIPT=""
+	case "$host_os" in 
+		*linux*|*gnu*)
+			VERSIONSCRIPT="-Wl,--version-script"
+			;;
+		*solaris*)
+			if test "${GCC}" = "yes"; then
+				VERSIONSCRIPT="-Wl,--version-script"
+			fi
+			;;
+		esac
+])
+
 AC_DEFUN([AC_LIBREPLACE_MDLD],
 [
 	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_LINKER])
@@ -261,14 +276,17 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_ALLOW_UNDEF_FLAG],
 	LD_ALLOW_SHLIB_UNDEF_FLAG=""
 
 	case "$host_os" in
-		*linux*)
+		*linux*|*gnu*)
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,--allow-shlib-undefined"
 			;;
 		*osf*)
-			LD_SHLIB_ALLOW_UNDEF_FLAG="-expect_unresolved '*'"
+			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,-expect_unresolved,\"*\""
 			;;
 		*darwin*)
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-undefined dynamic_lookup"
+			;;
+		*aix*)
+			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,-bnoentry"
 			;;
 	esac
 
@@ -286,7 +304,10 @@ AC_DEFUN([AC_LIBREPLACE_MDLD_FLAGS],
 AC_DEFUN([AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR],
 [
 	case "$host_os" in
-		*linux*)
+		*linux*|*gnu*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+		;;
+		*bsd*)
 			LIB_PATH_VAR=LD_LIBRARY_PATH
 		;;
 		*solaris*)
@@ -299,13 +320,16 @@ AC_DEFUN([AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR],
 			LIB_PATH_VAR=LD_LIBRARY_PATH
 		;;
 		*aix*)
-			LIB_PATH_VAR=LIB_PATH
+			LIB_PATH_VAR=LIBPATH
 			;;
 		*irix*)
 			LIB_PATH_VAR=LD_LIBRARY_PATH
 			;;
 		*darwin*)
 			LIB_PATH_VAR=DYLD_LIBRARY_PATH
+			;;
+		*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
 			;;
 	esac
 

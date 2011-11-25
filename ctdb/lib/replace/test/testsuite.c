@@ -37,7 +37,6 @@
 #include "system/locale.h"
 #include "system/network.h"
 #include "system/passwd.h"
-#include "system/printing.h"
 #include "system/readline.h"
 #include "system/select.h"
 #include "system/shmem.h"
@@ -48,6 +47,9 @@
 #include "system/aio.h"
 
 #define TESTFILE "testfile.dat"
+
+struct torture_context;
+bool torture_local_replace(struct torture_context *ctx);
 
 /*
   test ftruncate() function
@@ -114,17 +116,31 @@ static int test_strlcpy(void)
 
 static int test_strlcat(void)
 {
-	/* FIXME */
+	char tmp[10];
+	printf("test: strlcat\n");
+	strlcpy(tmp, "", sizeof(tmp));
+	if (strlcat(tmp, "bla", 3) != 3) {
+		printf("failure: strlcat [\ninvalid return code\n]\n");
+		return false;
+	}
+	if (strcmp(tmp, "bl") != 0) {
+		printf("failure: strlcat [\nexpected \"bl\", got \"%s\"\n]\n", 
+			   tmp);
+		return false;
+	}
+
+	strlcpy(tmp, "da", sizeof(tmp));
+	if (strlcat(tmp, "me", 4) != 4) {
+		printf("failure: strlcat [\nexpected \"dam\", got \"%s\"\n]\n",
+			   tmp);
+		return false;
+	}
+
+	printf("success: strlcat\n");
 	return true;
 }
 
 static int test_mktime(void)
-{
-	/* FIXME */
-	return true;
-}
-
-static int test_innetgr(void)
 {
 	/* FIXME */
 	return true;
@@ -144,7 +160,16 @@ static int test_memmove(void)
 
 static int test_strdup(void)
 {
-	/* FIXME */
+	char *x;
+	printf("test: strdup\n");
+	x = strdup("bla");
+	if (strcmp("bla", x) != 0) {
+		printf("failure: strdup [\nfailed: expected \"bla\", got \"%s\"\n]\n",
+			   x);
+		return false;
+	}
+	free(x);
+	printf("success: strdup\n");
 	return true;
 }	
 
@@ -170,19 +195,109 @@ static int test_timegm(void)
 
 static int test_setenv(void)
 {
-	/* FIXME */
+#define TEST_SETENV(key, value, overwrite, result) do { \
+	int _ret; \
+	char *_v; \
+	_ret = setenv(key, value, overwrite); \
+	if (_ret != 0) { \
+		printf("failure: setenv [\n" \
+			"setenv(%s, %s, %d) failed\n" \
+			"]\n", \
+			key, value, overwrite); \
+		return false; \
+	} \
+	_v=getenv(key); \
+	if (!_v) { \
+		printf("failure: setenv [\n" \
+			"getenv(%s) returned NULL\n" \
+			"]\n", \
+			key); \
+		return false; \
+	} \
+	if (strcmp(result, _v) != 0) { \
+		printf("failure: setenv [\n" \
+			"getenv(%s): '%s' != '%s'\n" \
+			"]\n", \
+			key, result, _v); \
+		return false; \
+	} \
+} while(0)
+
+#define TEST_UNSETENV(key) do { \
+	char *_v; \
+	unsetenv(key); \
+	_v=getenv(key); \
+	if (_v) { \
+		printf("failure: setenv [\n" \
+			"getenv(%s): NULL != '%s'\n" \
+			"]\n", \
+			SETENVTEST_KEY, _v); \
+		return false; \
+	} \
+} while (0)
+
+#define SETENVTEST_KEY "SETENVTESTKEY"
+#define SETENVTEST_VAL "SETENVTESTVAL"
+
+	printf("test: setenv\n");
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"1", 0, SETENVTEST_VAL"1");
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"2", 0, SETENVTEST_VAL"1");
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"3", 1, SETENVTEST_VAL"3");
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"4", 1, SETENVTEST_VAL"4");
+	TEST_UNSETENV(SETENVTEST_KEY);
+	TEST_UNSETENV(SETENVTEST_KEY);
+	TEST_SETENV(SETENVTEST_KEY, SETENVTEST_VAL"5", 0, SETENVTEST_VAL"5");
+	TEST_UNSETENV(SETENVTEST_KEY);
+	TEST_UNSETENV(SETENVTEST_KEY);
+	printf("success: setenv\n");
 	return true;
 }
 
 static int test_strndup(void)
 {
-	/* FIXME */
+	char *x;
+	printf("test: strndup\n");
+	x = strndup("bla", 0);
+	if (strcmp(x, "") != 0) {
+		printf("failure: strndup [\ninvalid\n]\n");
+		return false;
+	}
+	free(x);
+	x = strndup("bla", 2);
+	if (strcmp(x, "bl") != 0) {
+		printf("failure: strndup [\ninvalid\n]\n");
+		return false;
+	}
+	free(x);
+	x = strndup("bla", 10);
+	if (strcmp(x, "bla") != 0) {
+		printf("failure: strndup [\ninvalid\n]\n");
+		return false;
+	}
+	free(x);
+	printf("success: strndup\n");
 	return true;
 }
 
 static int test_strnlen(void)
 {
-	/* FIXME */
+	printf("test: strnlen\n");
+	if (strnlen("bla", 2) != 2) {
+		printf("failure: strnlen [\nunexpected length\n]\n");
+		return false;
+	}
+
+	if (strnlen("some text\n", 0) != 0) {
+		printf("failure: strnlen [\nunexpected length\n]\n");
+		return false;
+	}
+
+	if (strnlen("some text", 20) != 9) {
+		printf("failure: strnlen [\nunexpected length\n]\n");
+		return false;
+	}
+
+	printf("success: strnlen\n");
 	return true;
 }
 
@@ -206,13 +321,43 @@ static int test_setegid(void)
 
 static int test_asprintf(void)
 {
-	/* FIXME */
+	char *x;
+	printf("test: asprintf\n");
+	if (asprintf(&x, "%d", 9) != 1) {
+		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		return false;
+	}
+	if (strcmp(x, "9") != 0) {
+		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		return false;
+	}
+	if (asprintf(&x, "dat%s", "a") != 4) {
+		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		return false;
+	}
+	if (strcmp(x, "data") != 0) {
+		printf("failure: asprintf [\ngenerate asprintf\n]\n");
+		return false;
+	}
+	printf("success: asprintf\n");
 	return true;
 }
 
 static int test_snprintf(void)
 {
-	/* FIXME */
+	char tmp[10];
+	printf("test: snprintf\n");
+	if (snprintf(tmp, 3, "foo%d", 9) != 4) {
+		printf("failure: snprintf [\nsnprintf return code failed\n]\n");
+		return false;
+	}
+
+	if (strcmp(tmp, "fo") != 0) {
+		printf("failure: snprintf [\nsnprintf failed\n]\n");
+		return false;
+	}
+
+	printf("success: snprintf\n");
 	return true;
 }
 
@@ -285,7 +430,14 @@ static int test_strerror(void)
 
 static int test_errno(void)
 {
-	/* FIXME */
+	printf("test: errno\n");
+	errno = 3;
+	if (errno != 3) {
+		printf("failure: errno [\nerrno failed\n]\n");
+		return false;
+	}
+
+	printf("success: errno\n");
 	return true;
 }
 
@@ -325,15 +477,275 @@ static int test_inet_ntoa(void)
 	return true;
 }
 
+#define TEST_STRTO_X(type,fmt,func,str,base,res,diff,rrnoo) do {\
+	type _v; \
+	char _s[64]; \
+	char *_p = NULL;\
+	char *_ep = NULL; \
+	strlcpy(_s, str, sizeof(_s));\
+	if (diff >= 0) { \
+		_ep = &_s[diff]; \
+	} \
+	errno = 0; \
+	_v = func(_s, &_p, base); \
+	if (errno != rrnoo) { \
+		printf("failure: %s [\n" \
+		       "\t%s\n" \
+		       "\t%s(\"%s\",%d,%d): " fmt " (=/!)= " fmt "\n" \
+		       "\terrno: %d != %d\n" \
+		       "]\n", \
+		        __STRING(func), __location__, __STRING(func), \
+		       str, diff, base, res, _v, rrnoo, errno); \
+		return false; \
+	} else if (_v != res) { \
+		printf("failure: %s [\n" \
+		       "\t%s\n" \
+		       "\t%s(\"%s\",%d,%d): " fmt " != " fmt "\n" \
+		       "]\n", \
+		       __STRING(func), __location__, __STRING(func), \
+		       str, diff, base, res, _v); \
+		return false; \
+	} else if (_p != _ep) { \
+		printf("failure: %s [\n" \
+		       "\t%s\n" \
+		       "\t%s(\"%s\",%d,%d): " fmt " (=/!)= " fmt "\n" \
+		       "\tptr: %p - %p = %d != %d\n" \
+		       "]\n", \
+		       __STRING(func), __location__, __STRING(func), \
+		       str, diff, base, res, _v, _ep, _p, (int)(diff - (_ep - _p)), diff); \
+		return false; \
+	} \
+} while (0)
+
 static int test_strtoll(void)
 {
-	/* FIXME */
+	printf("test: strtoll\n");
+
+#define TEST_STRTOLL(str,base,res,diff,errnoo) TEST_STRTO_X(long long int, "%lld", strtoll,str,base,res,diff,errnoo)
+
+	TEST_STRTOLL("15",	10,	15LL,	2, 0);
+	TEST_STRTOLL("  15",	10,	15LL,	4, 0);
+	TEST_STRTOLL("15",	0,	15LL,	2, 0);
+	TEST_STRTOLL(" 15 ",	0,	15LL,	3, 0);
+	TEST_STRTOLL("+15",	10,	15LL,	3, 0);
+	TEST_STRTOLL("  +15",	10,	15LL,	5, 0);
+	TEST_STRTOLL("+15",	0,	15LL,	3, 0);
+	TEST_STRTOLL(" +15 ",	0,	15LL,	4, 0);
+	TEST_STRTOLL("-15",	10,	-15LL,	3, 0);
+	TEST_STRTOLL("  -15",	10,	-15LL,	5, 0);
+	TEST_STRTOLL("-15",	0,	-15LL,	3, 0);
+	TEST_STRTOLL(" -15 ",	0,	-15LL,	4, 0);
+	TEST_STRTOLL("015",	10,	15LL,	3, 0);
+	TEST_STRTOLL("  015",	10,	15LL,	5, 0);
+	TEST_STRTOLL("015",	0,	13LL,	3, 0);
+	TEST_STRTOLL("  015",	0,	13LL,	5, 0);
+	TEST_STRTOLL("0x15",	10,	0LL,	1, 0);
+	TEST_STRTOLL("  0x15",	10,	0LL,	3, 0);
+	TEST_STRTOLL("0x15",	0,	21LL,	4, 0);
+	TEST_STRTOLL("  0x15",	0,	21LL,	6, 0);
+
+	TEST_STRTOLL("10",	16,	16LL,	2, 0);
+	TEST_STRTOLL("  10 ",	16,	16LL,	4, 0);
+	TEST_STRTOLL("0x10",	16,	16LL,	4, 0);
+	TEST_STRTOLL("0x10",	0,	16LL,	4, 0);
+	TEST_STRTOLL(" 0x10 ",	0,	16LL,	5, 0);
+	TEST_STRTOLL("+10",	16,	16LL,	3, 0);
+	TEST_STRTOLL("  +10 ",	16,	16LL,	5, 0);
+	TEST_STRTOLL("+0x10",	16,	16LL,	5, 0);
+	TEST_STRTOLL("+0x10",	0,	16LL,	5, 0);
+	TEST_STRTOLL(" +0x10 ",	0,	16LL,	6, 0);
+	TEST_STRTOLL("-10",	16,	-16LL,	3, 0);
+	TEST_STRTOLL("  -10 ",	16,	-16LL,	5, 0);
+	TEST_STRTOLL("-0x10",	16,	-16LL,	5, 0);
+	TEST_STRTOLL("-0x10",	0,	-16LL,	5, 0);
+	TEST_STRTOLL(" -0x10 ",	0,	-16LL,	6, 0);
+	TEST_STRTOLL("010",	16,	16LL,	3, 0);
+	TEST_STRTOLL("  010 ",	16,	16LL,	5, 0);
+	TEST_STRTOLL("-010",	16,	-16LL,	4, 0);
+
+	TEST_STRTOLL("11",	8,	9LL,	2, 0);
+	TEST_STRTOLL("011",	8,	9LL,	3, 0);
+	TEST_STRTOLL("011",	0,	9LL,	3, 0);
+	TEST_STRTOLL("-11",	8,	-9LL,	3, 0);
+	TEST_STRTOLL("-011",	8,	-9LL,	4, 0);
+	TEST_STRTOLL("-011",	0,	-9LL,	4, 0);
+
+	TEST_STRTOLL("011",	8,	9LL,	3, 0);
+	TEST_STRTOLL("011",	0,	9LL,	3, 0);
+	TEST_STRTOLL("-11",	8,	-9LL,	3, 0);
+	TEST_STRTOLL("-011",	8,	-9LL,	4, 0);
+	TEST_STRTOLL("-011",	0,	-9LL,	4, 0);
+
+	TEST_STRTOLL("Text",	0,	0LL,	0, 0);
+
+	TEST_STRTOLL("9223372036854775807",	10,	9223372036854775807LL,	19, 0);
+	TEST_STRTOLL("9223372036854775807",	0,	9223372036854775807LL,	19, 0);
+	TEST_STRTOLL("9223372036854775808",	0,	9223372036854775807LL,	19, ERANGE);
+	TEST_STRTOLL("9223372036854775808",	10,	9223372036854775807LL,	19, ERANGE);
+	TEST_STRTOLL("0x7FFFFFFFFFFFFFFF",	0,	9223372036854775807LL,	18, 0);
+	TEST_STRTOLL("0x7FFFFFFFFFFFFFFF",	16,	9223372036854775807LL,	18, 0);
+	TEST_STRTOLL("7FFFFFFFFFFFFFFF",	16,	9223372036854775807LL,	16, 0);
+	TEST_STRTOLL("0x8000000000000000",	0,	9223372036854775807LL,	18, ERANGE);
+	TEST_STRTOLL("0x8000000000000000",	16,	9223372036854775807LL,	18, ERANGE);
+	TEST_STRTOLL("80000000000000000",	16,	9223372036854775807LL,	17, ERANGE);
+	TEST_STRTOLL("0777777777777777777777",	0,	9223372036854775807LL,	22, 0);
+	TEST_STRTOLL("0777777777777777777777",	8,	9223372036854775807LL,	22, 0);
+	TEST_STRTOLL("777777777777777777777",	8,	9223372036854775807LL,	21, 0);
+	TEST_STRTOLL("01000000000000000000000",	0,	9223372036854775807LL,	23, ERANGE);
+	TEST_STRTOLL("01000000000000000000000",	8,	9223372036854775807LL,	23, ERANGE);
+	TEST_STRTOLL("1000000000000000000000",	8,	9223372036854775807LL,	22, ERANGE);
+
+	TEST_STRTOLL("-9223372036854775808",	10,	-9223372036854775807LL -1,	20, 0);
+	TEST_STRTOLL("-9223372036854775808",	0,	-9223372036854775807LL -1,	20, 0);
+	TEST_STRTOLL("-9223372036854775809",	0,	-9223372036854775807LL -1,	20, ERANGE);
+	TEST_STRTOLL("-9223372036854775809",	10,	-9223372036854775807LL -1,	20, ERANGE);
+	TEST_STRTOLL("-0x8000000000000000",	0,	-9223372036854775807LL -1,	19, 0);
+	TEST_STRTOLL("-0x8000000000000000",	16,	-9223372036854775807LL -1,	19, 0);
+	TEST_STRTOLL("-8000000000000000",	16,	-9223372036854775807LL -1,	17, 0);
+	TEST_STRTOLL("-0x8000000000000001",	0,	-9223372036854775807LL -1,	19, ERANGE);
+	TEST_STRTOLL("-0x8000000000000001",	16,	-9223372036854775807LL -1,	19, ERANGE);
+	TEST_STRTOLL("-80000000000000001",	16,	-9223372036854775807LL -1,	18, ERANGE);
+	TEST_STRTOLL("-01000000000000000000000",0,	-9223372036854775807LL -1,	24, 0);
+	TEST_STRTOLL("-01000000000000000000000",8,	-9223372036854775807LL -1,	24, 0);
+	TEST_STRTOLL("-1000000000000000000000",	8,	-9223372036854775807LL -1,	23, 0);
+	TEST_STRTOLL("-01000000000000000000001",0,	-9223372036854775807LL -1,	24, ERANGE);
+	TEST_STRTOLL("-01000000000000000000001",8,	-9223372036854775807LL -1,	24, ERANGE);
+	TEST_STRTOLL("-1000000000000000000001",	8,	-9223372036854775807LL -1,	23, ERANGE);
+
+	printf("success: strtoll\n");
 	return true;
 }
 
 static int test_strtoull(void)
 {
-	/* FIXME */
+	printf("test: strtoull\n");
+
+#define TEST_STRTOULL(str,base,res,diff,errnoo) TEST_STRTO_X(long long unsigned int,"%llu",strtoull,str,base,res,diff,errnoo)
+
+	TEST_STRTOULL("15",	10,	15LLU,	2, 0);
+	TEST_STRTOULL("  15",	10,	15LLU,	4, 0);
+	TEST_STRTOULL("15",	0,	15LLU,	2, 0);
+	TEST_STRTOULL(" 15 ",	0,	15LLU,	3, 0);
+	TEST_STRTOULL("+15",	10,	15LLU,	3, 0);
+	TEST_STRTOULL("  +15",	10,	15LLU,	5, 0);
+	TEST_STRTOULL("+15",	0,	15LLU,	3, 0);
+	TEST_STRTOULL(" +15 ",	0,	15LLU,	4, 0);
+	TEST_STRTOULL("-15",	10,	18446744073709551601LLU,	3, 0);
+	TEST_STRTOULL("  -15",	10,	18446744073709551601LLU,	5, 0);
+	TEST_STRTOULL("-15",	0,	18446744073709551601LLU,	3, 0);
+	TEST_STRTOULL(" -15 ",	0,	18446744073709551601LLU,	4, 0);
+	TEST_STRTOULL("015",	10,	15LLU,	3, 0);
+	TEST_STRTOULL("  015",	10,	15LLU,	5, 0);
+	TEST_STRTOULL("015",	0,	13LLU,	3, 0);
+	TEST_STRTOULL("  015",	0,	13LLU,	5, 0);
+	TEST_STRTOULL("0x15",	10,	0LLU,	1, 0);
+	TEST_STRTOULL("  0x15",	10,	0LLU,	3, 0);
+	TEST_STRTOULL("0x15",	0,	21LLU,	4, 0);
+	TEST_STRTOULL("  0x15",	0,	21LLU,	6, 0);
+
+	TEST_STRTOULL("10",	16,	16LLU,	2, 0);
+	TEST_STRTOULL("  10 ",	16,	16LLU,	4, 0);
+	TEST_STRTOULL("0x10",	16,	16LLU,	4, 0);
+	TEST_STRTOULL("0x10",	0,	16LLU,	4, 0);
+	TEST_STRTOULL(" 0x10 ",	0,	16LLU,	5, 0);
+	TEST_STRTOULL("+10",	16,	16LLU,	3, 0);
+	TEST_STRTOULL("  +10 ",	16,	16LLU,	5, 0);
+	TEST_STRTOULL("+0x10",	16,	16LLU,	5, 0);
+	TEST_STRTOULL("+0x10",	0,	16LLU,	5, 0);
+	TEST_STRTOULL(" +0x10 ",	0,	16LLU,	6, 0);
+	TEST_STRTOULL("-10",	16,	-16LLU,	3, 0);
+	TEST_STRTOULL("  -10 ",	16,	-16LLU,	5, 0);
+	TEST_STRTOULL("-0x10",	16,	-16LLU,	5, 0);
+	TEST_STRTOULL("-0x10",	0,	-16LLU,	5, 0);
+	TEST_STRTOULL(" -0x10 ",	0,	-16LLU,	6, 0);
+	TEST_STRTOULL("010",	16,	16LLU,	3, 0);
+	TEST_STRTOULL("  010 ",	16,	16LLU,	5, 0);
+	TEST_STRTOULL("-010",	16,	-16LLU,	4, 0);
+
+	TEST_STRTOULL("11",	8,	9LLU,	2, 0);
+	TEST_STRTOULL("011",	8,	9LLU,	3, 0);
+	TEST_STRTOULL("011",	0,	9LLU,	3, 0);
+	TEST_STRTOULL("-11",	8,	-9LLU,	3, 0);
+	TEST_STRTOULL("-011",	8,	-9LLU,	4, 0);
+	TEST_STRTOULL("-011",	0,	-9LLU,	4, 0);
+
+	TEST_STRTOULL("011",	8,	9LLU,	3, 0);
+	TEST_STRTOULL("011",	0,	9LLU,	3, 0);
+	TEST_STRTOULL("-11",	8,	-9LLU,	3, 0);
+	TEST_STRTOULL("-011",	8,	-9LLU,	4, 0);
+	TEST_STRTOULL("-011",	0,	-9LLU,	4, 0);
+
+	TEST_STRTOULL("Text",	0,	0LLU,	0, 0);
+
+	TEST_STRTOULL("9223372036854775807",	10,	9223372036854775807LLU,	19, 0);
+	TEST_STRTOULL("9223372036854775807",	0,	9223372036854775807LLU,	19, 0);
+	TEST_STRTOULL("9223372036854775808",	0,	9223372036854775808LLU,	19, 0);
+	TEST_STRTOULL("9223372036854775808",	10,	9223372036854775808LLU,	19, 0);
+	TEST_STRTOULL("0x7FFFFFFFFFFFFFFF",	0,	9223372036854775807LLU,	18, 0);
+	TEST_STRTOULL("0x7FFFFFFFFFFFFFFF",	16,	9223372036854775807LLU,	18, 0);
+	TEST_STRTOULL("7FFFFFFFFFFFFFFF",	16,	9223372036854775807LLU,	16, 0);
+	TEST_STRTOULL("0x8000000000000000",	0,	9223372036854775808LLU,	18, 0);
+	TEST_STRTOULL("0x8000000000000000",	16,	9223372036854775808LLU,	18, 0);
+	TEST_STRTOULL("8000000000000000",	16,	9223372036854775808LLU,	16, 0);
+	TEST_STRTOULL("0777777777777777777777",	0,	9223372036854775807LLU,	22, 0);
+	TEST_STRTOULL("0777777777777777777777",	8,	9223372036854775807LLU,	22, 0);
+	TEST_STRTOULL("777777777777777777777",	8,	9223372036854775807LLU,	21, 0);
+	TEST_STRTOULL("01000000000000000000000",0,	9223372036854775808LLU,	23, 0);
+	TEST_STRTOULL("01000000000000000000000",8,	9223372036854775808LLU,	23, 0);
+	TEST_STRTOULL("1000000000000000000000",	8,	9223372036854775808LLU,	22, 0);
+
+	TEST_STRTOULL("-9223372036854775808",	10,	9223372036854775808LLU,	20, 0);
+	TEST_STRTOULL("-9223372036854775808",	0,	9223372036854775808LLU,	20, 0);
+	TEST_STRTOULL("-9223372036854775809",	0,	9223372036854775807LLU,	20, 0);
+	TEST_STRTOULL("-9223372036854775809",	10,	9223372036854775807LLU,	20, 0);
+	TEST_STRTOULL("-0x8000000000000000",	0,	9223372036854775808LLU,	19, 0);
+	TEST_STRTOULL("-0x8000000000000000",	16,	9223372036854775808LLU,	19, 0);
+	TEST_STRTOULL("-8000000000000000",	16,	9223372036854775808LLU,	17, 0);
+	TEST_STRTOULL("-0x8000000000000001",	0,	9223372036854775807LLU,	19, 0);
+	TEST_STRTOULL("-0x8000000000000001",	16,	9223372036854775807LLU,	19, 0);
+	TEST_STRTOULL("-8000000000000001",	16,	9223372036854775807LLU,	17, 0);
+	TEST_STRTOULL("-01000000000000000000000",0,	9223372036854775808LLU,	24, 0);
+	TEST_STRTOULL("-01000000000000000000000",8,	9223372036854775808LLU,	24, 0);
+	TEST_STRTOULL("-1000000000000000000000",8,	9223372036854775808LLU,	23, 0);
+	TEST_STRTOULL("-01000000000000000000001",0,	9223372036854775807LLU,	24, 0);
+	TEST_STRTOULL("-01000000000000000000001",8,	9223372036854775807LLU,	24, 0);
+	TEST_STRTOULL("-1000000000000000000001",8,	9223372036854775807LLU,	23, 0);
+
+	TEST_STRTOULL("18446744073709551615",	0,	18446744073709551615LLU,	20, 0);
+	TEST_STRTOULL("18446744073709551615",	10,	18446744073709551615LLU,	20, 0);
+	TEST_STRTOULL("18446744073709551616",	0,	18446744073709551615LLU,	20, ERANGE);
+	TEST_STRTOULL("18446744073709551616",	10,	18446744073709551615LLU,	20, ERANGE);
+	TEST_STRTOULL("0xFFFFFFFFFFFFFFFF",	0,	18446744073709551615LLU,	18, 0);
+	TEST_STRTOULL("0xFFFFFFFFFFFFFFFF",	16,	18446744073709551615LLU,	18, 0);
+	TEST_STRTOULL("FFFFFFFFFFFFFFFF",	16,	18446744073709551615LLU,	16, 0);
+	TEST_STRTOULL("0x10000000000000000",	0,	18446744073709551615LLU,	19, ERANGE);
+	TEST_STRTOULL("0x10000000000000000",	16,	18446744073709551615LLU,	19, ERANGE);
+	TEST_STRTOULL("10000000000000000",	16,	18446744073709551615LLU,	17, ERANGE);
+	TEST_STRTOULL("01777777777777777777777",0,	18446744073709551615LLU,	23, 0);
+	TEST_STRTOULL("01777777777777777777777",8,	18446744073709551615LLU,	23, 0);
+	TEST_STRTOULL("1777777777777777777777",	8,	18446744073709551615LLU,	22, 0);
+	TEST_STRTOULL("02000000000000000000000",0,	18446744073709551615LLU,	23, ERANGE);
+	TEST_STRTOULL("02000000000000000000000",8,	18446744073709551615LLU,	23, ERANGE);
+	TEST_STRTOULL("2000000000000000000000",	8,	18446744073709551615LLU,	22, ERANGE);
+
+	TEST_STRTOULL("-18446744073709551615",	0,	1LLU,				21, 0);
+	TEST_STRTOULL("-18446744073709551615",	10,	1LLU,				21, 0);
+	TEST_STRTOULL("-18446744073709551616",	0,	18446744073709551615LLU,	21, ERANGE);
+	TEST_STRTOULL("-18446744073709551616",	10,	18446744073709551615LLU,	21, ERANGE);
+	TEST_STRTOULL("-0xFFFFFFFFFFFFFFFF",	0,	1LLU,				19, 0);
+	TEST_STRTOULL("-0xFFFFFFFFFFFFFFFF",	16,	1LLU,				19, 0);
+	TEST_STRTOULL("-FFFFFFFFFFFFFFFF",	16,	1LLU,				17, 0);
+	TEST_STRTOULL("-0x10000000000000000",	0,	18446744073709551615LLU,	20, ERANGE);
+	TEST_STRTOULL("-0x10000000000000000",	16,	18446744073709551615LLU,	20, ERANGE);
+	TEST_STRTOULL("-10000000000000000",	16,	18446744073709551615LLU,	18, ERANGE);
+	TEST_STRTOULL("-01777777777777777777777",0,	1LLU,				24, 0);
+	TEST_STRTOULL("-01777777777777777777777",8,	1LLU,				24, 0);
+	TEST_STRTOULL("-1777777777777777777777",8,	1LLU,				23, 0);
+	TEST_STRTOULL("-02000000000000000000000",0,	18446744073709551615LLU,	24, ERANGE);
+	TEST_STRTOULL("-02000000000000000000000",8,	18446744073709551615LLU,	24, ERANGE);
+	TEST_STRTOULL("-2000000000000000000000",8,	18446744073709551615LLU,	23, ERANGE);
+
+	printf("success: strtoull\n");
 	return true;
 }
 
@@ -342,7 +754,6 @@ FIXME:
 Types:
 bool
 socklen_t
-uint_t
 uint{8,16,32,64}_t
 int{8,16,32,64}_t
 intptr_t
@@ -361,19 +772,42 @@ static int test_va_copy(void)
 
 static int test_FUNCTION(void)
 {
-	/* FIXME: test __FUNCTION__ macro */
+	printf("test: FUNCTION\n");
+	if (strcmp(__FUNCTION__, "test_FUNCTION") != 0) {
+		printf("failure: FUNCTION [\nFUNCTION invalid\n]\n");
+		return false;
+	}
+	printf("success: FUNCTION\n");
 	return true;
 }
 
 static int test_MIN(void)
 {
-	/* FIXME */
+	printf("test: MIN\n");
+	if (MIN(20, 1) != 1) {
+		printf("failure: MIN [\nMIN invalid\n]\n");
+		return false;
+	}
+	if (MIN(1, 20) != 1) {
+		printf("failure: MIN [\nMIN invalid\n]\n");
+		return false;
+	}
+	printf("success: MIN\n");
 	return true;
 }
 
 static int test_MAX(void)
 {
-	/* FIXME */
+	printf("test: MAX\n");
+	if (MAX(20, 1) != 20) {
+		printf("failure: MAX [\nMAX invalid\n]\n");
+		return false;
+	}
+	if (MAX(1, 20) != 20) {
+		printf("failure: MAX [\nMAX invalid\n]\n");
+		return false;
+	}
+	printf("success: MAX\n");
 	return true;
 }
 
@@ -417,7 +851,210 @@ static int test_socketpair(void)
 	return true;
 }
 
-struct torture_context;
+extern int libreplace_test_strptime(void);
+
+static int test_strptime(void)
+{
+	return libreplace_test_strptime();
+}
+
+extern int getifaddrs_test(void);
+
+static int test_getifaddrs(void)
+{
+
+	printf("test: getifaddrs\n");
+
+	if (getifaddrs_test() != 0) {
+		printf("failure: getifaddrs\n");
+		return false;
+	}
+
+	printf("success: getifaddrs\n");
+	return true;
+}
+
+static int test_utime(void)
+{
+	struct utimbuf u;
+	struct stat st1, st2, st3;
+	int fd;
+
+	printf("test: utime\n");
+	unlink(TESTFILE);
+
+	fd = open(TESTFILE, O_RDWR|O_CREAT, 0600);
+	if (fd == -1) {
+		printf("failure: utime [\n"
+		       "creating '%s' failed - %s\n]\n",
+		       TESTFILE, strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st1) != 0) {
+		printf("failure: utime [\n"
+		       "fstat (1) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	u.actime = st1.st_atime + 300;
+	u.modtime = st1.st_mtime - 300;
+	if (utime(TESTFILE, &u) != 0) {
+		printf("failure: utime [\n"
+		       "utime(&u) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st2) != 0) {
+		printf("failure: utime [\n"
+		       "fstat (2) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	if (utime(TESTFILE, NULL) != 0) {
+		printf("failure: utime [\n"
+		       "utime(NULL) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st3) != 0) {
+		printf("failure: utime [\n"
+		       "fstat (3) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+#define CMP_VAL(a,c,b) do { \
+	if (a c b) { \
+		printf("failure: utime [\n" \
+		       "%s: %s(%d) %s %s(%d)\n]\n", \
+		       __location__, \
+		       #a, (int)a, #c, #b, (int)b); \
+		return false; \
+	} \
+} while(0)
+#define EQUAL_VAL(a,b) CMP_VAL(a,!=,b)
+#define GREATER_VAL(a,b) CMP_VAL(a,<=,b)
+#define LESSER_VAL(a,b) CMP_VAL(a,>=,b)
+
+	EQUAL_VAL(st2.st_atime, st1.st_atime + 300);
+	EQUAL_VAL(st2.st_mtime, st1.st_mtime - 300);
+	LESSER_VAL(st3.st_atime, st2.st_atime);
+	GREATER_VAL(st3.st_mtime, st2.st_mtime);
+
+#undef CMP_VAL
+#undef EQUAL_VAL
+#undef GREATER_VAL
+#undef LESSER_VAL
+
+	unlink(TESTFILE);
+	printf("success: utime\n");
+	return true;
+}
+
+static int test_utimes(void)
+{
+	struct timeval tv[2];
+	struct stat st1, st2;
+	int fd;
+
+	printf("test: utimes\n");
+	unlink(TESTFILE);
+
+	fd = open(TESTFILE, O_RDWR|O_CREAT, 0600);
+	if (fd == -1) {
+		printf("failure: utimes [\n"
+		       "creating '%s' failed - %s\n]\n",
+		       TESTFILE, strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st1) != 0) {
+		printf("failure: utimes [\n"
+		       "fstat (1) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	ZERO_STRUCT(tv);
+	tv[0].tv_sec = st1.st_atime + 300;
+	tv[1].tv_sec = st1.st_mtime - 300;
+	if (utimes(TESTFILE, tv) != 0) {
+		printf("failure: utimes [\n"
+		       "utimes(tv) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+	if (fstat(fd, &st2) != 0) {
+		printf("failure: utimes [\n"
+		       "fstat (2) failed - %s\n]\n",
+		       strerror(errno));
+		return false;
+	}
+
+#define EQUAL_VAL(a,b) do { \
+	if (a != b) { \
+		printf("failure: utimes [\n" \
+		       "%s: %s(%d) != %s(%d)\n]\n", \
+		       __location__, \
+		       #a, (int)a, #b, (int)b); \
+		return false; \
+	} \
+} while(0)
+
+	EQUAL_VAL(st2.st_atime, st1.st_atime + 300);
+	EQUAL_VAL(st2.st_mtime, st1.st_mtime - 300);
+
+#undef EQUAL_VAL
+
+	unlink(TESTFILE);
+	printf("success: utimes\n");
+	return true;
+}
+
+static int test_memmem(void)
+{
+	char *s;
+
+	printf("test: memmem\n");
+
+	s = (char *)memmem("foo", 3, "fo", 2);
+	if (strcmp(s, "foo") != 0) {
+		printf(__location__ ": Failed memmem\n");
+		return false;
+	}
+
+	s = (char *)memmem("foo", 3, "", 0);
+	/* it is allowable for this to return NULL (as happens on
+	   FreeBSD) */
+	if (s && strcmp(s, "foo") != 0) {
+		printf(__location__ ": Failed memmem\n");
+		return false;
+	}
+
+	s = (char *)memmem("foo", 4, "o", 1);
+	if (strcmp(s, "oo") != 0) {
+		printf(__location__ ": Failed memmem\n");
+		return false;
+	}
+
+	s = (char *)memmem("foobarfodx", 11, "fod", 3);
+	if (strcmp(s, "fodx") != 0) {
+		printf(__location__ ": Failed memmem\n");
+		return false;
+	}
+
+	printf("success: memmem\n");
+
+	return true;
+}
+
+
 bool torture_local_replace(struct torture_context *ctx)
 {
 	bool ret = true;
@@ -425,7 +1062,6 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_strlcpy();
 	ret &= test_strlcat();
 	ret &= test_mktime();
-	ret &= test_innetgr();
 	ret &= test_initgroups();
 	ret &= test_memmove();
 	ret &= test_strdup();
@@ -458,23 +1094,17 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_getpass();
 	ret &= test_inet_ntoa();
 	ret &= test_strtoll();
-	ret &= test_strtoll();
 	ret &= test_strtoull();
 	ret &= test_va_copy();
 	ret &= test_FUNCTION();
 	ret &= test_MIN();
 	ret &= test_MAX();
 	ret &= test_socketpair();
+	ret &= test_strptime();
+	ret &= test_getifaddrs();
+	ret &= test_utime();
+	ret &= test_utimes();
+	ret &= test_memmem();
 
 	return ret;
 }
-
-#if _SAMBA_BUILD_<4
-int main(void)
-{
-	bool ret = torture_local_replace(NULL);
-	if (ret) 
-		return 0;
-	return -1;
-}
-#endif

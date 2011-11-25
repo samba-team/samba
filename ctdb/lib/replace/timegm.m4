@@ -1,1 +1,1 @@
-AC_CHECK_FUNCS(timegm,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} timegm.o"])
+AC_CHECK_FUNCS(timegm,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/timegm.o"])

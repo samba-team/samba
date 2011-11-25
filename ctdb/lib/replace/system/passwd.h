@@ -1,17 +1,17 @@
 #ifndef _system_passwd_h
 #define _system_passwd_h
 
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    passwd system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
-   
+
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -68,15 +68,19 @@
 #endif
 
 #ifdef REPLACE_GETPASS
+#if defined(REPLACE_GETPASS_BY_GETPASSPHRASE)
+#define getpass(prompt) getpassphrase(prompt)
+#else
 #define getpass(prompt) rep_getpass(prompt)
 char *rep_getpass(const char *prompt);
+#endif
 #endif
 
 #ifndef NGROUPS_MAX
 #define NGROUPS_MAX 32 /* Guess... */
 #endif
 
-/* what is the longest significant password available on your system? 
+/* what is the longest significant password available on your system?
  Knowing this speeds up password searches a lot */
 #ifndef PASSWORD_LENGTH
 #define PASSWORD_LENGTH 8
@@ -97,10 +101,23 @@ char *rep_getpass(const char *prompt);
 #endif
 
 #ifdef NSS_WRAPPER
+#ifndef NSS_WRAPPER_DISABLE
 #ifndef NSS_WRAPPER_NOT_REPLACE
 #define NSS_WRAPPER_REPLACE
-#endif
-#include "lib/nss_wrapper/nss_wrapper.h"
-#endif
+#endif /* NSS_WRAPPER_NOT_REPLACE */
+#include "../nss_wrapper/nss_wrapper.h"
+#endif /* NSS_WRAPPER_DISABLE */
+#endif /* NSS_WRAPPER */
+
+#ifdef UID_WRAPPER
+# ifndef UID_WRAPPER_DISABLE
+#  ifndef UID_WRAPPER_NOT_REPLACE
+#   define UID_WRAPPER_REPLACE
+#  endif /* UID_WRAPPER_NOT_REPLACE */
+#  include "../uid_wrapper/uid_wrapper.h"
+# endif /* UID_WRAPPER_DISABLE */
+#else /* UID_WRAPPER */
+# define uwrap_enabled() 0
+#endif /* UID_WRAPPER */
 
 #endif

@@ -1,17 +1,14 @@
-#ifndef _system_locale_h
-#define _system_locale_h
-
-/* 
+/*
    Unix SMB/CIFS implementation.
 
-   locale include wrappers
+   libreplace tests
 
-   Copyright (C) Andrew Tridgell 2004
-   
-     ** NOTE! The following LGPL license applies to the replace
+   Copyright (C) Jelmer Vernooij 2006
+
+     ** NOTE! The following LGPL license applies to the talloc
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -24,19 +21,17 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
-
 */
 
-#ifdef HAVE_CTYPE_H
-#include <ctype.h>
-#endif
+#include "replace.h"
 
-#ifdef HAVE_LOCALE_H
-#include <locale.h>
-#endif
+struct torture_context;
+bool torture_local_replace(struct torture_context *ctx);
 
-#ifdef HAVE_LANGINFO_H
-#include <langinfo.h>
-#endif
-
-#endif
+int main(void)
+{
+	bool ret = torture_local_replace(NULL);
+	if (ret)
+		return 0;
+	return -1;
+}

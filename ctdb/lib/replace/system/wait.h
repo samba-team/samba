@@ -36,20 +36,16 @@
 #define SIGCLD SIGCHLD
 #endif
 
-#ifndef SIGNAL_CAST
-#define SIGNAL_CAST (RETSIGTYPE (*)(int))
-#endif
-
 #ifdef HAVE_SETJMP_H
 #include <setjmp.h>
 #endif
 
-#ifndef SA_RESETHAND
-#define SA_RESETHAND SA_ONESHOT
-#endif
-
 #if !defined(HAVE_SIG_ATOMIC_T_TYPE)
 typedef int sig_atomic_t;
+#endif
+
+#if !defined(HAVE_WAITPID) && defined(HAVE_WAIT4)
+int rep_waitpid(pid_t pid,int *status,int options)
 #endif
 
 #endif

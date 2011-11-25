@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
+#include "replace-test.h"
 
 #define NUM_FILES 700
 #define READDIR_SIZE 100
@@ -27,10 +28,16 @@ static int test_readdir_os2_delete_ret;
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
 
+#ifdef _WIN32
+#define mkdir(d,m) _mkdir(d)
+#endif
+
 static void cleanup(void)
 {
 	/* I'm a lazy bastard */
-	system("rm -rf " TESTDIR);
+	if (system("rm -rf " TESTDIR)) {
+		FAILED("system");
+	}
 	mkdir(TESTDIR, 0700) == 0 || FAILED("mkdir");
 }
 
@@ -39,8 +46,15 @@ static void create_files(void)
 	int i;
 	for (i=0;i<NUM_FILES;i++) {
 		char fname[40];
-		sprintf(fname, TESTDIR "/test%u.txt", i);
-		close(open(fname, O_CREAT|O_RDWR, 0600)) == 0 || FAILED("close");
+		int fd;
+		snprintf(fname, sizeof(fname), TESTDIR "/test%u.txt", i);
+		fd = open(fname, O_CREAT|O_RDWR, 0600);
+		if (fd < 0) {
+			FAILED("open");
+		}
+		if (close(fd) != 0) {
+			FAILED("close");
+		}
 	}
 }
 
@@ -66,7 +80,7 @@ static int os2_delete(DIR *d)
 	/* delete the first few */
 	for (j=0; j<MIN(i, DELETE_SIZE); j++) {
 		char fname[40];
-		sprintf(fname, TESTDIR "/%s", names[j]);
+		snprintf(fname, sizeof(fname), TESTDIR "/%s", names[j]);
 		unlink(fname) == 0 || FAILED("unlink");
 	}
 
@@ -110,6 +124,10 @@ int test_readdir_os2_delete(void)
 	fprintf(stderr, "Deleted %d files of %d\n", total_deleted, NUM_FILES);
 
 	rmdir(TESTDIR) == 0 || FAILED("rmdir");
+
+	if (system("rm -rf " TESTDIR) == -1) {
+		FAILED("system");
+	}
 
 	return test_readdir_os2_delete_ret;
 }

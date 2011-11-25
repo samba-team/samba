@@ -9,5 +9,5 @@ AC_CACHE_CHECK([whether strptime is available and works],libreplace_cv_STRPTIME_
 ])
 if test x"$libreplace_cv_STRPTIME_OK" != x"yes"; then
         AC_DEFINE(REPLACE_STRPTIME,1,[Whether strptime should be replaced])
-        LIBREPLACEOBJ="${LIBREPLACEOBJ} strptime.o"
+        LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/strptime.o"
 fi
