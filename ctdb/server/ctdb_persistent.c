@@ -938,6 +938,7 @@ static int32_t ctdb_get_db_seqnum(struct ctdb_context *ctdb,
 	TDB_DATA key;
 	TDB_DATA data;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
+	struct ctdb_ltdb_header header;
 
 	ctdb_db = find_ctdb_db(ctdb, db_id);
 	if (!ctdb_db) {
@@ -949,7 +950,7 @@ static int32_t ctdb_get_db_seqnum(struct ctdb_context *ctdb,
 	key.dptr = (uint8_t *)discard_const(keyname);
 	key.dsize = strlen(keyname) + 1;
 
-	ret = (int32_t)ctdb_ltdb_fetch(ctdb_db, key, NULL, mem_ctx, &data);
+	ret = (int32_t)ctdb_ltdb_fetch(ctdb_db, key, &header, mem_ctx, &data);
 	if (ret != 0) {
 		goto done;
 	}
