@@ -44,7 +44,7 @@ def plansmbtorturetestsuite(name, env, options, modname=None):
 def smb4torture_testsuites(prefix):
     return filter(lambda x: x.startswith(prefix), smb4torture_testsuite_list)
 
-subprocess.call([smb4torture, "-V"])
+subprocess.call([smb4torture, "-V"], stdout=sys.stderr)
 
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
@@ -58,7 +58,7 @@ if os.getenv("SELFTEST_QUICK"):
     torture_options.append("--option=torture:quick=yes")
 smb4torture += " " + " ".join(torture_options)
 
-print "OPTIONS %s" % " ".join(torture_options)
+print >>sys.stderr, "OPTIONS %s" % " ".join(torture_options)
 
 # Simple tests for LDAP and CLDAP
 for options in ['-U"$USERNAME%$PASSWORD" --option=socket:testnonblock=true', '-U"$USERNAME%$PASSWORD"', '-U"$USERNAME%$PASSWORD" -k yes', '-U"$USERNAME%$PASSWORD" -k no', '-U"$USERNAME%$PASSWORD" -k no --sign', '-U"$USERNAME%$PASSWORD" -k no --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --sign']:
