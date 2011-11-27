@@ -126,6 +126,47 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 }
 
 /*
+  Check if particular SPN exists for an account
+ */
+static bool dreplsrv_spn_exists(struct ldb_context *samdb, struct ldb_dn *ntds_dn,
+				const char *principal_name)
+{
+	TALLOC_CTX *tmp_ctx;
+	const char *attrs[] = { "serverReference", NULL };
+	const char *attrs_empty[] = { NULL };
+	int ret;
+	struct ldb_result *res;
+	struct ldb_dn *account_dn;
+
+	tmp_ctx = talloc_new(samdb);
+
+	ret = dsdb_search_dn(samdb, tmp_ctx, &res, ntds_dn, attrs, 0);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	account_dn = ldb_msg_find_attr_as_dn(samdb, tmp_ctx, res->msgs[0], "serverReference");
+	if (account_dn == NULL) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	talloc_free(res);
+
+	ret = dsdb_search(samdb, tmp_ctx, &res, account_dn, LDB_SCOPE_BASE, attrs_empty,
+			0, "servicePrincipalName=%s",
+			ldb_binary_encode_string(tmp_ctx, principal_name));
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+/*
   work out the principal to use for DRS replication connections
  */
 NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
@@ -181,15 +222,25 @@ NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 
 	hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
 	if (hostname != NULL) {
+		char *local_principal;
+
 		/*
 		  if we have the dNSHostName attribute then we can use
 		  the GC/hostname/realm SPN. All DCs should have this SPN
+
+		  Windows DC may set up it's dNSHostName before setting up
+		  GC/xx/xx SPN. So make sure it exists, before using it.
 		 */
-		*target_principal = talloc_asprintf(mem_ctx, "GC/%s/%s",
+		local_principal = talloc_asprintf(mem_ctx, "GC/%s/%s",
 						    hostname,
 						    samdb_dn_to_dns_domain(tmp_ctx, forest_dn));
-		talloc_free(tmp_ctx);
-		return NT_STATUS_OK;
+		if (dreplsrv_spn_exists(s->samdb, ntds_dn, local_principal)) {
+			*target_principal = local_principal;
+			talloc_free(tmp_ctx);
+			return NT_STATUS_OK;
+		}
+
+		talloc_free(local_principal);
 	}
 
 	/*
