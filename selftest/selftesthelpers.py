@@ -20,6 +20,7 @@
 
 import os
 import subprocess
+import sys
 
 def srcdir():
     return os.path.normpath(os.getenv("SRCDIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")))
@@ -105,7 +106,7 @@ def plantestsuite(name, env, cmdline, allow_empty_output=False):
                                                                         " ".join(filter_subunit_args),
                                                                         name)
     if allow_empty_output:
-        print "WARNING: allowing empty subunit output from %s" % name
+        print >>sys.stderr, "WARNING: allowing empty subunit output from %s" % name
 
 
 def add_prefix(prefix, support_list=False):
@@ -150,7 +151,7 @@ def skiptestsuite(name, reason):
     :param reason: Reason the test suite was skipped
     """
     # FIXME: Report this using subunit, but re-adjust the testsuite count somehow
-    print "skipping %s (%s)" % (name, reason)
+    print >>sys.stderr, "skipping %s (%s)" % (name, reason)
 
 
 def planperltestsuite(name, path):
