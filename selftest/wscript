@@ -199,7 +199,7 @@ def cmd_testonly(opt):
         print("ERROR: test failed with exit code %d" % ret)
         sys.exit(ret)
 
-    if not os.path.exists(st_done):
+    if not Options.options.LIST and not os.path.exists(st_done):
         print("ERROR: test command failed to complete")
         sys.exit(1)
 
