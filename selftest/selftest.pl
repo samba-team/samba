@@ -454,9 +454,9 @@ my $socket_wrapper_dir;
 if ($opt_socket_wrapper) {
 	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix_abs/w", $opt_socket_wrapper_pcap);
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
-} else {
+} elsif (not $opt_list) {
 	 unless ($< == 0) { 
-		 print "WARNING: Not using socket wrapper, but also not running as root. Will not be able to listen on proper ports\n";
+		 warn("not using socket wrapper, but also not running as root. Will not be able to listen on proper ports");
 	 }
 }
 
@@ -491,7 +491,7 @@ if ($opt_target eq "samba") {
 	require target::Samba;
 	$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
 } elsif ($opt_target eq "samba3") {
-	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
+	if ($opt_socket_wrapper and `$bindir/smbd -b | grep nOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
 	$testenv_default = "member";
@@ -768,13 +768,17 @@ foreach my $testsuite (@available) {
 		}
 		if ($match) {
 			if (defined($skipreason)) {
+				if (not $opt_list) {
 					Subunit::skip_testsuite($name, $skipreason);
+				}
 			} else {
 				push(@todo, $testsuite);
 			}
 		}
 	} elsif (defined($skipreason)) {
-		Subunit::skip_testsuite($name, $skipreason);
+		if (not $opt_list) {
+			Subunit::skip_testsuite($name, $skipreason);
+		}
 	} else {
 		push(@todo, $testsuite);
 	}
@@ -793,8 +797,10 @@ if (defined($restricted)) {
 
 my $suitestotal = $#todo + 1;
 
-Subunit::progress($suitestotal);
-Subunit::report_time(time());
+unless ($opt_list) {
+	Subunit::progress($suitestotal);
+	Subunit::report_time(time());
+}
 
 my $i = 0;
 $| = 1;
@@ -897,7 +903,7 @@ sub setup_env($$)
 		        $testenv_vars->{target} = $target;
 		}
 		if (not defined($testenv_vars)) {
-		        warn("$opt_target can't provide environment '$envname'");
+			warn("$opt_target can't provide environment '$envname'");
 		}
 	}
 
