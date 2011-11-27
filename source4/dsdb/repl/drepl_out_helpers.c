@@ -827,8 +827,28 @@ static void dreplsrv_update_refs_done(struct tevent_req *subreq)
 			 nt_errstr(status),
 			 r->in.req.req1.dest_dsa_dns_name,
 			 r->in.req.req1.naming_context->dn));
-		tevent_req_nterror(req, status);
-		return;
+		/*
+		 * TODO we are currently not sending the
+		 * DsReplicaUpdateRefs at the correct moment,
+		 * we do it just after a GetNcChanges which is
+		 * not always correct.
+		 * Especially when another DC is trying to demote
+		 * it will sends us a DsReplicaSync that will trigger a getNcChanges
+		 * this call will succeed but the DsRecplicaUpdateRefs that we send
+		 * just after will not because the DC is in a demote state and
+		 * will reply us a WERR_DS_DRA_BUSY, this error will cause us to
+		 * answer to the DsReplicaSync with a non OK status, the other DC
+		 * will stop the demote due to this error.
+		 * In order to cope with this we will for the moment concider
+		 * a DS_DRA_BUSY not as an error.
+		 * It's not ideal but it should not have a too huge impact for
+		 * running production as this error otherwise never happen and
+		 * due to the fact the send a DsReplicaUpdateRefs after each getNcChanges
+		 */
+		if (!W_ERROR_EQUAL(werr, WERR_DS_DRA_BUSY)) {
+			tevent_req_nterror(req, status);
+			return;
+		}
 	}
 
 	DEBUG(4,("UpdateRefs OK for %s %s\n", 
