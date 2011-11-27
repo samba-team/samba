@@ -179,18 +179,16 @@ def cmd_testonly(opt):
         cmd = '${CORE_COMMAND} --list'
     else:
         env.OPTIONS += ' --socket-wrapper'
-        cmd = '(${CORE_COMMAND} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+        cmd = '(${CORE_COMMAND} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
         if (os.environ.get('RUN_FROM_BUILD_FARM') is None and
             not Options.options.FILTERED_SUBUNIT):
-            cmd += ' | ${FORMAT_TEST_OUTPUT}'
-        else:
-            cmd += ' | ${PYTHON} -u ${srcdir}/selftest/filter-subunit'
+            cmd += ' | tee ${SELFTEST_PREFIX}/subunit | ${FORMAT_TEST_OUTPUT}'
     runcmd = EXPAND_VARIABLES(opt, cmd)
 
     print("test: running %s" % runcmd)
     ret = RUN_COMMAND(cmd, env=env)
+
     if os.path.exists(".testrepository") and not Options.options.LIST:
-        # "testr load -q" isn't
         testrcmd = 'testr load -q < ${SELFTEST_PREFIX}/subunit > /dev/null'
         runcmd = EXPAND_VARIABLES(opt, testrcmd)
         RUN_COMMAND(runcmd, env=env)
