@@ -581,6 +581,7 @@ struct ctdb_traverse_start {
 	uint32_t db_id;
 	uint32_t reqid;
 	uint64_t srvid;
+	bool withemptyrecords;
 };
 
 /*

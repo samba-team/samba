@@ -1127,6 +1127,7 @@ static void traverse_msghnd_cb(struct ctdb_connection *ctdb,
 	t.db_id = ctdb_db->id;
 	t.srvid = state->srvid;
 	t.reqid = 0;
+	t.withemptyrecords = false;
 
 	state->handle = new_ctdb_control_request(ctdb,
 				CTDB_CONTROL_TRAVERSE_START,
