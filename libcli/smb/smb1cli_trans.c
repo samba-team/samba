@@ -406,6 +406,7 @@ static void smb1cli_trans_format(struct smb1cli_trans_state *state,
 	*piov_count = iov - state->iov;
 }
 
+static bool smb1cli_trans_cancel(struct tevent_req *req);
 static void smb1cli_trans_done(struct tevent_req *subreq);
 
 struct tevent_req *smb1cli_trans_send(
@@ -536,7 +537,22 @@ struct tevent_req *smb1cli_trans_send(
 	state->primary_subreq = subreq;
 	talloc_set_destructor(state, smb1cli_trans_state_destructor);
 
+	tevent_req_set_cancel_fn(req, smb1cli_trans_cancel);
+
 	return req;
+}
+
+static bool smb1cli_trans_cancel(struct tevent_req *req)
+{
+	struct smb1cli_trans_state *state =
+		tevent_req_data(req,
+		struct smb1cli_trans_state);
+
+	if (state->primary_subreq == NULL) {
+		return false;
+	}
+
+	return tevent_req_cancel(state->primary_subreq);
 }
 
 static void smb1cli_trans_done2(struct tevent_req *subreq);
