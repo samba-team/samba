@@ -377,6 +377,7 @@ struct ctdb_dump_db_context {
 	FILE *f;
 	bool printemptyrecords;
 	bool printdatasize;
+	bool printlmaster;
 };
 
 int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p);
