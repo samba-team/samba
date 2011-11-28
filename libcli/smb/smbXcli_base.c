@@ -1062,7 +1062,7 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 	SSVAL(state->smb1.hdr, HDR_PID,     pid);
 	SSVAL(state->smb1.hdr, HDR_UID,     uid);
 	SSVAL(state->smb1.hdr, HDR_MID,     0); /* this comes later */
-	SSVAL(state->smb1.hdr, HDR_WCT,     wct);
+	SCVAL(state->smb1.hdr, HDR_WCT,     wct);
 
 	state->smb1.vwv = vwv;
 
