@@ -2266,7 +2266,7 @@ void smb2cli_req_set_notify_async(struct tevent_req *req)
 	state->smb2.notify_async = true;
 }
 
-static void smb2cli_writev_done(struct tevent_req *subreq);
+static void smb2cli_req_writev_done(struct tevent_req *subreq);
 static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 					       TALLOC_CTX *tmp_mem,
 					       uint8_t *inbuf);
@@ -2430,7 +2430,7 @@ skip_credits:
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	tevent_req_set_callback(subreq, smb2cli_writev_done, reqs[0]);
+	tevent_req_set_callback(subreq, smb2cli_req_writev_done, reqs[0]);
 	return NT_STATUS_OK;
 }
 
@@ -2479,7 +2479,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static void smb2cli_writev_done(struct tevent_req *subreq)
+static void smb2cli_req_writev_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
