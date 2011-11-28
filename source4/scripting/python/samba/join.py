@@ -48,7 +48,8 @@ class dc_join(object):
     '''perform a DC join'''
 
     def __init__(ctx, server=None, creds=None, lp=None, site=None,
-            netbios_name=None, targetdir=None, domain=None):
+            netbios_name=None, targetdir=None, domain=None,
+            machinepass=None):
         ctx.creds = creds
         ctx.lp = lp
         ctx.site = site
@@ -90,7 +91,10 @@ class dc_join(object):
         ctx.dc_dnsHostName = ctx.get_dnsHostName()
         ctx.behavior_version = ctx.get_behavior_version()
 
-        ctx.acct_pass = samba.generate_random_password(32, 40)
+        if machinepass is not None:
+            ctx.acct_pass = machinepass
+        else:
+            ctx.acct_pass = samba.generate_random_password(32, 40)
 
         # work out the DNs of all the objects we will be adding
         ctx.server_dn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (ctx.myname, ctx.site, ctx.config_dn)
