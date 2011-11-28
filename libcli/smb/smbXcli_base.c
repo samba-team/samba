@@ -164,7 +164,7 @@ struct smbXcli_req_state {
 		uint16_t *vwv;
 		uint8_t bytecount_buf[2];
 
-#define MAX_SMB_IOV 5
+#define MAX_SMB_IOV 10
 		/* length_hdr, hdr, words, byte_count, buffers */
 		struct iovec iov[1 + 3 + MAX_SMB_IOV];
 		int iov_count;
