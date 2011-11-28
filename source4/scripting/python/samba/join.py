@@ -860,10 +860,12 @@ class dc_join(object):
 
 
 def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
-              targetdir=None, domain=None, domain_critical_only=False):
+              targetdir=None, domain=None, domain_critical_only=False,
+              machinepass=None):
     """join as a RODC"""
 
-    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain)
+    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
+                  machinepass)
 
     lp.set("workgroup", ctx.domain_name)
     print("workgroup is %s" % ctx.domain_name)
@@ -912,9 +914,11 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
 
 def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
-            targetdir=None, domain=None, domain_critical_only=False):
+            targetdir=None, domain=None, domain_critical_only=False,
+            machinepass=None):
     """join as a DC"""
-    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain)
+    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
+                  machinepass)
 
     lp.set("workgroup", ctx.domain_name)
     print("workgroup is %s" % ctx.domain_name)
@@ -940,9 +944,11 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
     print "Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid)
 
 def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=None,
-                   targetdir=None, parent_domain=None, dnsdomain=None, netbios_domain=None):
+                   targetdir=None, parent_domain=None, dnsdomain=None, netbios_domain=None,
+                   machinepass=None):
     """join as a DC"""
-    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, parent_domain)
+    ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, parent_domain,
+                  machinepass)
     ctx.subdomain = True
     ctx.parent_domain_name = ctx.domain_name
     ctx.domain_name = netbios_domain
