@@ -2125,7 +2125,8 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, void *p)
 {
 	int i;
-	FILE *f = (FILE *)p;
+	struct ctdb_dump_db_context *c = (struct ctdb_dump_db_context *)p;
+	FILE *f = c->f;
 	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
 
 	fprintf(f, "key(%u) = \"", (unsigned)key.dsize);
@@ -2168,9 +2169,11 @@ int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, v
 /*
   convenience function to list all keys to stdout
  */
-int ctdb_dump_db(struct ctdb_db_context *ctdb_db, FILE *f)
+int ctdb_dump_db(struct ctdb_db_context *ctdb_db,
+		 struct ctdb_dump_db_context *ctx)
 {
-	return ctdb_traverse(ctdb_db, ctdb_dumpdb_record, f);
+	return ctdb_traverse_ext(ctdb_db, ctdb_dumpdb_record,
+				 ctx->printemptyrecords, ctx);
 }
 
 /*

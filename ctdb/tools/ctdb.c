@@ -46,6 +46,7 @@ static struct {
 	int machinereadable;
 	int verbose;
 	int maxruntime;
+	int printemptyrecords;
 } options;
 
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
@@ -2974,6 +2975,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	struct ctdb_db_context *ctdb_db;
 	int ret;
 	bool persistent;
+	struct ctdb_dump_db_context c;
 
 	if (argc < 1) {
 		usage();
@@ -2994,8 +2996,12 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
+	ZERO_STRUCT(c);
+	c.f = stdout;
+	c.printemptyrecords = (bool)options.printemptyrecords;
+
 	/* traverse and dump the cluster tdb */
-	ret = ctdb_dump_db(ctdb_db, stdout);
+	ret = ctdb_dump_db(ctdb_db, &c);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to dump database\n"));
 		DEBUG(DEBUG_ERR, ("Maybe try 'ctdb getdbstatus %s'"
@@ -3017,10 +3023,15 @@ struct cattdb_data {
 static int cattdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private_data)
 {
 	struct cattdb_data *d = private_data;
+	struct ctdb_dump_db_context c;
 
 	d->count++;
-	
-	return ctdb_dumpdb_record(d->ctdb, key, data, stdout);
+
+	ZERO_STRUCT(c);
+	c.f = stdout;
+	c.printemptyrecords = (bool)options.printemptyrecords;
+
+	return ctdb_dumpdb_record(d->ctdb, key, data, &c);
 }
 
 /*
@@ -4545,6 +4556,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 	char tbuf[100];
 	struct ctdb_rec_data *rec = NULL;
 	struct ctdb_marshall_buffer *m;
+	struct ctdb_dump_db_context c;
 
 	if (argc != 1) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
@@ -4582,6 +4594,10 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 	printf("Backup of database name:'%s' dbid:0x%x08x from @ %s\n",
 		dbhdr.name, m->db_id, tbuf);
 
+	ZERO_STRUCT(c);
+	c.f = stdout;
+	c.printemptyrecords = (bool)options.printemptyrecords;
+
 	for (i=0; i < m->count; i++) {
 		uint32_t reqid = 0;
 		TDB_DATA key, data;
@@ -4590,7 +4606,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 		rec = ctdb_marshall_loop_next(m, rec, &reqid,
 					      NULL, &key, &data);
 
-		ctdb_dumpdb_record(ctdb, key, data, stdout);
+		ctdb_dumpdb_record(ctdb, key, data, &c);
 	}
 
 	printf("Dumped %d records\n", i);
@@ -5146,6 +5162,7 @@ int main(int argc, const char *argv[])
 		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machinereadable output", NULL },
 		{ "verbose",    'v', POPT_ARG_NONE, &options.verbose, 0, "enable verbose output", NULL },
 		{ "maxruntime", 'T', POPT_ARG_INT, &options.maxruntime, 0, "die if runtime exceeds this limit (in seconds)", "integer" },
+		{ "print-emptyrecords", 0, POPT_ARG_NONE, &options.printemptyrecords, 0, "print the empty records when dumping databases (catdb, cattdb, dumpdbbackup)", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
