@@ -743,6 +743,8 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 
 void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 {
+	tevent_queue_stop(conn->outgoing);
+
 	if (conn->read_fd != -1) {
 		close(conn->read_fd);
 	}
