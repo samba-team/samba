@@ -49,6 +49,7 @@ static struct {
 	int printemptyrecords;
 	int printdatasize;
 	int printlmaster;
+	int printhash;
 } options;
 
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
@@ -3013,6 +3014,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
 	c.printlmaster = (bool)options.printlmaster;
+	c.printhash = (bool)options.printhash;
 
 	/* traverse and dump the cluster tdb */
 	ret = ctdb_dump_db(ctdb_db, &c);
@@ -3046,6 +3048,7 @@ static int cattdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
 	c.printlmaster = false;
+	c.printhash = (bool)options.printhash;
 
 	return ctdb_dumpdb_record(d->ctdb, key, data, &c);
 }
@@ -4615,6 +4618,7 @@ static int control_dumpdbbackup(struct ctdb_context *ctdb, int argc, const char 
 	c.printemptyrecords = (bool)options.printemptyrecords;
 	c.printdatasize = (bool)options.printdatasize;
 	c.printlmaster = false;
+	c.printhash = (bool)options.printhash;
 
 	for (i=0; i < m->count; i++) {
 		uint32_t reqid = 0;
@@ -5183,6 +5187,7 @@ int main(int argc, const char *argv[])
 		{ "print-emptyrecords", 0, POPT_ARG_NONE, &options.printemptyrecords, 0, "print the empty records when dumping databases (catdb, cattdb, dumpdbbackup)", NULL },
 		{ "print-datasize", 0, POPT_ARG_NONE, &options.printdatasize, 0, "do not print record data when dumping databases, only the data size", NULL },
 		{ "print-lmaster", 0, POPT_ARG_NONE, &options.printlmaster, 0, "print the record's lmaster in catdb", NULL },
+		{ "print-hash", 0, POPT_ARG_NONE, &options.printhash, 0, "print the record's hash when dumping databases", NULL },
 		POPT_TABLEEND
 	};
 	int opt;

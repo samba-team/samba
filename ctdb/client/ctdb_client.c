@@ -2146,6 +2146,10 @@ int ctdb_dumpdb_record(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data, v
 		fprintf(f, "lmaster: %u\n", ctdb_lmaster(ctdb, &key));
 	}
 
+	if (c->printhash) {
+		fprintf(f, "hash: 0x%08x\n", ctdb_hash(&key));
+	}
+
 	fprintf(f, "flags: 0x%08x", h->flags);
 	if (h->flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA) printf(" MIGRATED_WITH_DATA");
 	if (h->flags & CTDB_REC_FLAG_VACUUM_MIGRATED) printf(" VACUUM_MIGRATED");
