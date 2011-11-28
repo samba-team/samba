@@ -36,21 +36,12 @@ from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
 import common
 
-
-
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
-    binding_options = "seal"
-    if int(ctx.lp.get("log level")) >= 5:
-        binding_options += ",print"
-    binding_string = "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options)
     try:
-        ctx.drsuapi = drsuapi.drsuapi(binding_string, ctx.lp, ctx.creds)
-        (ctx.drsuapi_handle, ctx.bind_supported_extensions) = drs_utils.drs_DsBind(ctx.drsuapi)
+        (ctx.drsuapi, ctx.drsuapi_handle, ctx.bind_supported_extensions) = drs_utils.drsuapi_connect(ctx.server, ctx.lp, ctx.creds)
     except Exception, e:
         raise CommandError("DRS connection to %s failed" % ctx.server, e)
-
-
 
 def samdb_connect(ctx):
     '''make a ldap connection to the server'''
@@ -60,8 +51,6 @@ def samdb_connect(ctx):
                           credentials=ctx.creds, lp=ctx.lp)
     except Exception, e:
         raise CommandError("LDAP connection to %s failed" % ctx.server, e)
-
-
 
 def drs_errmsg(werr):
     '''return "was successful" or an error string'''
@@ -315,27 +304,22 @@ class cmd_drs_replicate(Command):
         source_dsa_guid = msg[0]['objectGUID'][0]
         dsa_options = int(attr_default(msg, 'options', 0))
 
-        nc = drsuapi.DsReplicaObjectIdentifier()
-        nc.dn = NC
 
-        req1 = drsuapi.DsReplicaSyncRequest1()
-        req1.naming_context = nc;
-        req1.options = 0
+        req_options = 0
         if not (dsa_options & dsdb.DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL):
-            req1.options |= drsuapi.DRSUAPI_DRS_WRIT_REP
+            req_options |= drsuapi.DRSUAPI_DRS_WRIT_REP
         if add_ref:
-            req1.options |= drsuapi.DRSUAPI_DRS_ADD_REF
+            req_options |= drsuapi.DRSUAPI_DRS_ADD_REF
         if sync_forced:
-            req1.options |= drsuapi.DRSUAPI_DRS_SYNC_FORCED
+            req_options |= drsuapi.DRSUAPI_DRS_SYNC_FORCED
         if sync_all:
-            req1.options |= drsuapi.DRSUAPI_DRS_SYNC_ALL
+            req_options |= drsuapi.DRSUAPI_DRS_SYNC_ALL
         if full_sync:
-            req1.options |= drsuapi.DRSUAPI_DRS_FULL_SYNC_NOW
-        req1.source_dsa_guid = misc.GUID(source_dsa_guid)
+            req_options |= drsuapi.DRSUAPI_DRS_FULL_SYNC_NOW
 
         try:
-            self.drsuapi.DsReplicaSync(self.drsuapi_handle, 1, req1)
-        except Exception, estr:
+            drs_utils.sendDsReplicaSync(self.drsuapi, self.drsuapi_handle, source_dsa_guid, NC, req_options)
+        except drs_utils.drsException, estr:
             raise CommandError("DsReplicaSync failed", estr)
         self.message("Replicate from %s to %s was successful." % (SOURCE_DC, DEST_DC))
 

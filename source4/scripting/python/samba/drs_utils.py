@@ -24,6 +24,63 @@ from samba.net import Net
 import samba, ldb
 
 
+class drsException:
+    """Base element for drs errors"""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "drsException: " + self.value
+
+
+def drsuapi_connect(server, lp, creds):
+    """
+    make a DRSUAPI connection to the server
+    :param server: the name of the server to connect to
+    :param lp: a samba line parameter object
+    :param creds: credential used for the connection
+    :return: A tuple with the drsuapi bind object, the drsuapi handle
+                and the supported extensions.
+    :raise drsException: if the connection fails
+    """
+
+    binding_options = "seal"
+    if int(lp.get("log level")) >= 5:
+        binding_options += ",print"
+    binding_string = "ncacn_ip_tcp:%s[%s]" % (server, binding_options)
+    try:
+        drsuapiBind = drsuapi.drsuapi(binding_string, lp, creds)
+        (drsuapiHandle, bindSupportedExtensions) = drs_DsBind(drsuapiBind)
+    except Exception, e:
+        raise drsException("DRS connection to %s failed" % server, e)
+
+    return (drsuapiBind, drsuapiHandle, bindSupportedExtensions)
+
+def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid, naming_context, req_option):
+    """
+    :param drsuapiBind: a drsuapi Bind object
+    :param drsuapi_handle: a drsuapi hanle on the drsuapi connection
+    :param source_dsa_guid: the guid of the source dsa for the replication
+    :param naming_context: the DN of the naming context to replicate
+    :param req_options: replication options for the DsReplicaSync call
+    :raise drsException: if any error occur while sending and receiving the reply
+                         for the dsReplicaSync
+    """
+
+    nc = drsuapi.DsReplicaObjectIdentifier()
+    nc.dn = naming_context
+
+    req1 = drsuapi.DsReplicaSyncRequest1()
+    req1.naming_context = nc;
+    req1.options = req_option
+    req1.source_dsa_guid = misc.GUID(source_dsa_guid)
+
+    try:
+        drsuapiBind.DsReplicaSync(drsuapi_handle, 1, req1)
+    except Exception, estr:
+        raise drsException("DsReplicaSync failed %s" % estr)
+
 def drs_DsBind(drs):
     '''make a DsBind call, returning the binding handle'''
     bind_info = drsuapi.DsBindInfoCtr()
