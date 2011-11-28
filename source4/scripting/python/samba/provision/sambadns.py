@@ -95,6 +95,12 @@ def get_ntdsguid(samdb, domaindn):
     ntdsguid = str(ndr_unpack(misc.GUID, res3[0]["objectGUID"][0]))
     return ntdsguid
 
+def get_dnsadmins_sid(samdb, domaindn):
+    res = samdb.search(base="CN=DnsAdmins,CN=Users,%s" % domaindn, scope=ldb.SCOPE_BASE,
+                       attrs=["objectSid"])
+    dnsadmins_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
+    return dnsadmins_sid
+
 class ARecord(dnsp.DnssrvRpcRecord):
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
         super(ARecord, self).__init__()
@@ -206,14 +212,14 @@ def add_dns_accounts(samdb, domaindn):
         "DOMAINDN": domaindn,
         })
 
-def add_dns_container(samdb, domaindn, prefix, domainsid):
+def add_dns_container(samdb, domaindn, prefix, domainsid, dnsadmins_sid):
     # CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     sddl = "O:SYG:SYD:AI" \
     "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
-    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;S-1-5-21-3468611895-2137509179-3280132445-1101)" \
+    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;%s)" \
     "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
     "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
-    "S:AI"
+    "S:AI" % dnsadmins_sid
     sec = security.descriptor.from_sddl(sddl, domainsid)
     msg = ldb.Message(ldb.Dn(samdb, "CN=MicrosoftDNS,%s,%s" % (prefix, domaindn)))
     msg["objectClass"] = ["top", "container"]
@@ -344,22 +350,21 @@ def add_host_record(samdb, container_dn, prefix, hostip, hostip6):
         msg["dnsRecord"] = ldb.MessageElement(host_records, ldb.FLAG_MOD_ADD, "dnsRecord")
         samdb.add(msg)
 
-def add_domain_record(samdb, domaindn, prefix, dnsdomain, domainsid):
+def add_domain_record(samdb, domaindn, prefix, dnsdomain, domainsid, dnsadmins_sid):
     # DC=<DNSDOMAIN>,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     sddl = "O:SYG:BAD:AI" \
-    "(D;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;S-1-5-21-3468611895-2137509179-3280132445-1103)" \
     "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
     "(A;;CC;;;AU)" \
     "(A;;RPLCLORC;;;WD)" \
     "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
     "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
-    "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;S-1-5-21-3468611895-2137509179-3280132445-1101)" \
+    "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;%s)" \
     "(A;CIID;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
     "(OA;CIID;RPWPCR;91e647de-d96f-4b70-9557-d63ff4f3ccd8;;PS)" \
     "(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
     "(A;CIID;LC;;;RU)" \
     "(A;CIID;RPWPCRCCLCLORCWOWDSDSW;;;BA)" \
-    "S:AI"
+    "S:AI" % dnsadmins_sid
     sec = security.descriptor.from_sddl(sddl, domainsid)
     msg = ldb.Message(ldb.Dn(samdb, "DC=%s,CN=MicrosoftDNS,%s,%s" % (dnsdomain, prefix, domaindn)))
     msg["objectClass"] = ["top", "dnsZone"]
@@ -843,11 +848,12 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
     # Add dns accounts (DnsAdmins, DnsUpdateProxy) in domain
     logger.info("Adding DNS accounts")
     add_dns_accounts(samdb, domaindn)
+    dnsadmins_sid = get_dnsadmins_sid(samdb, domaindn)
 
     logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % domaindn)
 
     # Set up MicrosoftDNS container
-    add_dns_container(samdb, domaindn, "CN=System", domainsid)
+    add_dns_container(samdb, domaindn, "CN=System", domainsid, dnsadmins_sid)
 
     # Add root servers
     add_rootservers(samdb, domaindn, "CN=System")
@@ -855,7 +861,7 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
     if os_level == DS_DOMAIN_FUNCTION_2000:
 
         # Add domain record
-        add_domain_record(samdb, domaindn, "CN=System", dnsdomain, domainsid)
+        add_domain_record(samdb, domaindn, "CN=System", dnsdomain, domainsid, dnsadmins_sid)
 
         # Add DNS records for a DC in domain
         add_dc_domain_records(samdb, domaindn, "CN=System", site, dnsdomain,
@@ -873,13 +879,14 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
         logger.info("Populating DomainDnsZones partition")
 
         # Set up MicrosoftDNS container
-        add_dns_container(samdb, domaindn, "DC=DomainDnsZones", domainsid)
+        add_dns_container(samdb, domaindn, "DC=DomainDnsZones", domainsid, dnsadmins_sid)
 
         # Add rootserver records
         add_rootservers(samdb, domaindn, "DC=DomainDnsZones")
 
         # Add domain record
-        add_domain_record(samdb, domaindn, "DC=DomainDnsZones", dnsdomain, domainsid)
+        add_domain_record(samdb, domaindn, "DC=DomainDnsZones", dnsdomain, domainsid,
+                          dnsadmins_sid)
 
         # Add DNS records for a DC in domain
         add_dc_domain_records(samdb, domaindn, "DC=DomainDnsZones", site, dnsdomain,
@@ -889,7 +896,7 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
         logger.info("Populating ForestDnsZones partition")
 
         # Set up MicrosoftDNS container
-        add_dns_container(samdb, forestdn, "DC=ForestDnsZones", domainsid)
+        add_dns_container(samdb, forestdn, "DC=ForestDnsZones", domainsid, dnsadmins_sid)
 
         # Add _msdcs record
         add_msdcs_record(samdb, forestdn, "DC=ForestDnsZones", dnsforest)
