@@ -1029,7 +1029,9 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 					   (gnutls_pull_func)tstream_tls_pull_function);
 	gnutls_transport_set_push_function(tlss->tls_session,
 					   (gnutls_push_func)tstream_tls_push_function);
+#if GNUTLS_VERSION_MAJOR < 3
 	gnutls_transport_set_lowat(tlss->tls_session, 0);
+#endif
 
 	tlss->handshake.req = req;
 	tstream_tls_retry_handshake(state->tls_stream);
@@ -1278,7 +1280,9 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 					   (gnutls_pull_func)tstream_tls_pull_function);
 	gnutls_transport_set_push_function(tlss->tls_session,
 					   (gnutls_push_func)tstream_tls_push_function);
+#if GNUTLS_VERSION_MAJOR < 3
 	gnutls_transport_set_lowat(tlss->tls_session, 0);
+#endif
 
 	tlss->handshake.req = req;
 	tstream_tls_retry_handshake(state->tls_stream);
