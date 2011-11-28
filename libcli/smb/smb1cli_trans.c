@@ -65,6 +65,8 @@ struct smb1cli_trans_state {
 	uint8_t zero_pad[4];
 	uint16_t vwv[32];
 
+	NTSTATUS status;
+
 	struct tevent_req *primary_subreq;
 };
 
@@ -593,6 +595,12 @@ static void smb1cli_trans_done(struct tevent_req *subreq)
 		goto fail;
 	}
 
+	if (recv_iov == NULL) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto fail;
+	}
+	state->status = status;
+
 	sent_all = ((state->param_sent == state->num_param)
 		    && (state->data_sent == state->num_data));
 
@@ -767,12 +775,17 @@ NTSTATUS smb1cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	smb1cli_trans_cleanup_primary(state);
 
 	if (tevent_req_is_nterror(req, &status)) {
+		if (!NT_STATUS_IS_ERR(status)) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		tevent_req_received(req);
 		return status;
 	}
 
 	if ((state->num_rsetup < min_setup)
 	    || (state->rparam.total < min_param)
 	    || (state->rdata.total < min_data)) {
+		tevent_req_received(req);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
@@ -801,7 +814,9 @@ NTSTATUS smb1cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(state->rdata.data);
 	}
 
-	return NT_STATUS_OK;
+	status = state->status;
+	tevent_req_received(req);
+	return status;
 }
 
 NTSTATUS smb1cli_trans(TALLOC_CTX *mem_ctx, struct smbXcli_conn *conn,
