@@ -1006,6 +1006,19 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 		TALLOC_FREE(name);
 	}
 
+	if (map->nt_name == NULL) {
+		errno = EIO;
+		goto failed;
+	}
+
+	if (map->comment == NULL) {
+		map->comment = talloc_strdup(map, "");
+	}
+	if (map->comment == NULL) {
+		errno = ENOMEM;
+		goto failed;
+	}
+
 	if (!add_mapping_entry(map, 0)) {
 		errno = EIO;
 		goto failed;
