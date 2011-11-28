@@ -27,6 +27,7 @@
 #undef ctdb_getpnn_send
 #undef ctdb_getnodemap_send
 #undef ctdb_getpublicips_send
+#undef ctdb_getdbseqnum_send
 
 bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 			   struct ctdb_request *req, uint32_t *recmaster)
@@ -199,4 +200,43 @@ void ctdb_free_publicips(struct ctdb_all_public_ips *ips)
 		return;
 	}
 	free(ips);
+}
+
+bool ctdb_getdbseqnum_recv(struct ctdb_connection *ctdb,
+			   struct ctdb_request *req, uint64_t *seqnum)
+{
+	struct ctdb_reply_control *reply;
+
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_DB_SEQNUM);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getdbseqnum_recv: status -1");
+		return false;
+	}
+
+	if (reply->datalen != sizeof(uint64_t)) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getdbseqnum wrong size of data was %d but expected %d bytes", reply->datalen, (int)sizeof(uint64_t));
+		return false;
+	}
+
+	*seqnum = *((uint64_t *)reply->data);
+
+	return true;
+}
+
+struct ctdb_request *ctdb_getdbseqnum_send(struct ctdb_connection *ctdb,
+					    uint32_t destnode,
+					    uint32_t dbid,
+					    ctdb_callback_t callback,
+					    void *private_data)
+{
+	uint64_t indata;
+
+	*((uint32_t *)&indata) = dbid;
+
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_DB_SEQNUM,
+					destnode, &indata, sizeof(uint64_t),
+					callback, private_data);
 }

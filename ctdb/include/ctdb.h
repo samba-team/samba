@@ -510,6 +510,35 @@ bool ctdb_getpnn_recv(struct ctdb_connection *ctdb,
 
 
 /**
+ * ctdb_getdbseqnum_send - read the sequence number off a db
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @dbid: database id
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_getdbseqnum_send(struct ctdb_connection *ctdb,
+		 uint32_t destnode,
+		 uint32_t dbid,
+		 ctdb_callback_t callback,
+		 void *cbdata);
+/**
+ * ctdb_getdbseqnum_recv - read the sequence number off a database
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @seqnum: a pointer to the seqnum to fill in
+ *
+ * This returns false if something went wrong, or otherwise fills in pnn.
+ */
+bool ctdb_getdbseqnum_recv(struct ctdb_connection *ctdb,
+		      struct ctdb_request *req, uint64_t *seqnum);
+
+/**
  * ctdb_getnodemap_send - read the nodemap number from a node.
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -738,6 +767,25 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 		 uint32_t *pnn);
 
 /**
+ * ctdb_getdbseqnum - read the seqnum of a database
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @dbid: database id
+ * @seqnum: sequence number for the database
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ *
+ * Returns true and fills in *pnn on success.
+ */
+bool
+ctdb_getdbseqnum(struct ctdb_connection *ctdb,
+		 uint32_t destnode,
+		 uint32_t dbid,
+		 uint64_t *seqnum);
+
+/**
  * ctdb_getrecmaster - read the recovery master of a node (synchronous)
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -888,6 +936,10 @@ void ctdb_free_publicips(struct ctdb_all_public_ips *ips);
 
 #define ctdb_getpublicips_send(ctdb, destnode, cb, cbdata)		\
 	ctdb_getpublicips_send((ctdb), (destnode),			\
+			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getdbseqnum_send(ctdb, destnode, dbid, cb, cbdata)		\
+	ctdb_getdbseqnum_send((ctdb), (destnode), (dbid),		\
 			 ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #endif

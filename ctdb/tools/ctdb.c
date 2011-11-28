@@ -4132,6 +4132,32 @@ static int control_setdbreadonly(struct ctdb_context *ctdb, int argc, const char
 }
 
 /*
+  get db seqnum
+ */
+static int control_getdbseqnum(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	bool ret;
+	uint32_t db_id;
+	uint64_t seqnum;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	db_id = strtoul(argv[0], NULL, 0);
+
+	ret = ctdb_getdbseqnum(ctdb_connection, options.pnn, db_id, &seqnum);
+	if (!ret) {
+		DEBUG(DEBUG_ERR, ("Unable to get seqnum from node."));
+		return -1;
+	}
+
+	printf("Sequence number:%lld\n", (long long)seqnum);
+
+	return 0;
+}
+
+/*
   run an eventscript on a node
  */
 static int control_eventscript(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5141,6 +5167,7 @@ static const struct {
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
+	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbid>" },
 };
 
 /*

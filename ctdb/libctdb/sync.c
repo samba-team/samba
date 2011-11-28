@@ -244,3 +244,21 @@ struct ctdb_lock *ctdb_readrecordlock(struct ctdb_connection *ctdb,
 	}
 	return rrl.lock;
 }
+
+bool ctdb_getdbseqnum(struct ctdb_connection *ctdb,
+		      uint32_t destnode, uint32_t dbid,
+		      uint64_t *seqnum)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	req = synchronous(ctdb,
+			  ctdb_getdbseqnum_send(ctdb, destnode, dbid, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_getdbseqnum_recv(ctdb, req, seqnum);
+		ctdb_request_free(req);
+	}
+	return ret;
+}
