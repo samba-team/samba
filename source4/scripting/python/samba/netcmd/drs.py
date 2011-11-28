@@ -313,7 +313,7 @@ class cmd_drs_replicate(Command):
         if len(msg) == 0:
             raise CommandError("Failed to find source NTDS DN %s" % SOURCE_DC)
         source_dsa_guid = msg[0]['objectGUID'][0]
-        options = int(attr_default(msg, 'options', 0))
+        dsa_options = int(attr_default(msg, 'options', 0))
 
         nc = drsuapi.DsReplicaObjectIdentifier()
         nc.dn = NC
@@ -321,7 +321,7 @@ class cmd_drs_replicate(Command):
         req1 = drsuapi.DsReplicaSyncRequest1()
         req1.naming_context = nc;
         req1.options = 0
-        if not (options & dsdb.DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL):
+        if not (dsa_options & dsdb.DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL):
             req1.options |= drsuapi.DRSUAPI_DRS_WRIT_REP
         if add_ref:
             req1.options |= drsuapi.DRSUAPI_DRS_ADD_REF
