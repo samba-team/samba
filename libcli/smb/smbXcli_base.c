@@ -1677,6 +1677,20 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 
 		smbXcli_req_unset_pending(req);
 
+		if (state->smb1.recv_iov == NULL) {
+			/*
+			 * For requests with more than
+			 * one response, we have to readd the
+			 * recv_iov array.
+			 */
+			state->smb1.recv_iov = talloc_zero_array(state,
+								 struct iovec,
+								 3);
+			if (tevent_req_nomem(state->smb1.recv_iov, req)) {
+				return NT_STATUS_OK;
+			}
+		}
+
 		state->smb1.recv_cmd = cmd;
 		state->smb1.recv_status = status;
 		state->inbuf = talloc_move(state->smb1.recv_iov, &inbuf);
@@ -1723,6 +1737,20 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		if (i >= num_responses) {
 			tevent_req_nterror(req, NT_STATUS_REQUEST_ABORTED);
 			continue;
+		}
+
+		if (state->smb1.recv_iov == NULL) {
+			/*
+			 * For requests with more than
+			 * one response, we have to readd the
+			 * recv_iov array.
+			 */
+			state->smb1.recv_iov = talloc_zero_array(state,
+								 struct iovec,
+								 3);
+			if (tevent_req_nomem(state->smb1.recv_iov, req)) {
+				continue;
+			}
 		}
 
 		state->smb1.recv_cmd = cmd;
@@ -1819,6 +1847,7 @@ NTSTATUS smb1cli_req_recv(struct tevent_req *req,
 
 	if (state->inbuf != NULL) {
 		recv_iov = state->smb1.recv_iov;
+		state->smb1.recv_iov = NULL;
 		hdr = (uint8_t *)recv_iov[0].iov_base;
 		wct = recv_iov[1].iov_len/2;
 		vwv = (uint16_t *)recv_iov[1].iov_base;
