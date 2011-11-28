@@ -3697,7 +3697,6 @@ static NTSTATUS smbXcli_negprot_dispatch_incoming(struct smbXcli_conn *conn,
 	struct tevent_req *subreq;
 	struct smbXcli_req_state *substate;
 	struct tevent_req *req;
-	struct smbXcli_negprot_state *state;
 	uint32_t protocol_magic = IVAL(inbuf, 4);
 
 	if (num_pending != 1) {
@@ -3707,7 +3706,6 @@ static NTSTATUS smbXcli_negprot_dispatch_incoming(struct smbXcli_conn *conn,
 	subreq = conn->pending[0];
 	substate = tevent_req_data(subreq, struct smbXcli_req_state);
 	req = tevent_req_callback_data(subreq, struct tevent_req);
-	state = tevent_req_data(req, struct smbXcli_negprot_state);
 
 	switch (protocol_magic) {
 	case SMB_MAGIC:
