@@ -69,7 +69,8 @@ static const struct {
 	{ "AllowUnhealthyDBRead", 0,  offsetof(struct ctdb_tunable, allow_unhealthy_db_read) },
 	{ "StatHistoryInterval",  1,  offsetof(struct ctdb_tunable, stat_history_interval) },
 	{ "DeferredAttachTO",  120,  offsetof(struct ctdb_tunable, deferred_attach_timeout) },
-	{ "AllowClientDBAttach", 1, offsetof(struct ctdb_tunable, allow_client_db_attach) }
+	{ "AllowClientDBAttach", 1, offsetof(struct ctdb_tunable, allow_client_db_attach) },
+	{ "RecoverPDBBySeqNum",  0, offsetof(struct ctdb_tunable, recover_pdb_by_seqnum) }
 };
 
 /*

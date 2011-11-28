@@ -528,8 +528,7 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
   pull the remote database contents from one node into the recdb
  */
 static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode, 
-				    struct tdb_wrap *recdb, uint32_t dbid,
-				    bool persistent)
+				    struct tdb_wrap *recdb, uint32_t dbid)
 {
 	int ret;
 	TDB_DATA outdata;
@@ -608,6 +607,119 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 	return 0;
 }
 
+
+struct pull_seqnum_cbdata {
+	int failed;
+	uint32_t pnn;
+	uint64_t seqnum;
+};
+
+static void pull_seqnum_cb(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+{
+	struct pull_seqnum_cbdata *cb_data = talloc_get_type(callback_data, struct pull_seqnum_cbdata);
+	uint64_t seqnum;
+
+	if (cb_data->failed != 0) {
+		DEBUG(DEBUG_ERR, ("Got seqnum from node %d but we have already failed the entire operation\n", node_pnn));
+		return;
+	}
+
+	if (res != 0) {
+		DEBUG(DEBUG_ERR, ("Error when pulling seqnum from node %d\n", node_pnn));
+		cb_data->failed = 1;
+		return;
+	}
+
+	if (outdata.dsize != sizeof(uint64_t)) {
+		DEBUG(DEBUG_ERR, ("Error when reading pull seqnum from node %d, got %d bytes but expected %d\n", node_pnn, (int)outdata.dsize, (int)sizeof(uint64_t)));
+		cb_data->failed = -1;
+		return;
+	}
+
+	seqnum = *((uint64_t *)outdata.dptr);
+
+	if (seqnum > cb_data->seqnum) {
+		cb_data->seqnum = seqnum;
+		cb_data->pnn = node_pnn;
+	}
+}
+
+static void pull_seqnum_fail_cb(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+{
+	struct pull_seqnum_cbdata *cb_data = talloc_get_type(callback_data, struct pull_seqnum_cbdata);
+
+	DEBUG(DEBUG_ERR, ("Failed to pull db seqnum from node %d\n", node_pnn));
+	cb_data->failed = 1;
+}
+
+static int pull_highest_seqnum_pdb(struct ctdb_context *ctdb,
+				struct ctdb_recoverd *rec, 
+				struct ctdb_node_map *nodemap, 
+				struct tdb_wrap *recdb, uint32_t dbid)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	uint32_t *nodes;
+	TDB_DATA data;
+	uint32_t outdata[2];
+	struct pull_seqnum_cbdata *cb_data;
+
+	DEBUG(DEBUG_NOTICE, ("Scan for highest seqnum pdb for db:0x%08x\n", dbid));
+
+	outdata[0] = dbid;
+	outdata[1] = 0;
+
+	data.dsize = sizeof(outdata);
+	data.dptr  = (uint8_t *)&outdata[0];
+
+	cb_data = talloc(tmp_ctx, struct pull_seqnum_cbdata);
+	if (cb_data == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to allocate pull highest seqnum cb_data structure\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	cb_data->failed = 0;
+	cb_data->pnn    = -1;
+	cb_data->seqnum = 0;
+	
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_DB_SEQNUM,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, data,
+					pull_seqnum_cb,
+					pull_seqnum_fail_cb,
+					cb_data) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to run async GET_DB_SEQNUM\n"));
+
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (cb_data->failed != 0) {
+		DEBUG(DEBUG_NOTICE, ("Failed to pull sequence numbers for DB 0x%08x\n", dbid));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (cb_data->seqnum == 0 || cb_data->pnn == -1) {
+		DEBUG(DEBUG_NOTICE, ("Failed to find a node with highest sequence numbers for DB 0x%08x\n", dbid));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, ("Pull persistent db:0x%08x from node %d with highest seqnum:%lld\n", dbid, cb_data->pnn, (long long)cb_data->seqnum)); 
+
+	if (pull_one_remote_database(ctdb, cb_data->pnn, recdb, dbid) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to pull higest seqnum database 0x%08x from node %d\n", dbid, cb_data->pnn));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+
 /*
   pull all the remote database contents into the recdb
  */
@@ -619,6 +731,14 @@ static int pull_remote_database(struct ctdb_context *ctdb,
 {
 	int j;
 
+	if (persistent && ctdb->tunable.recover_pdb_by_seqnum != 0) {
+		int ret;
+		ret = pull_highest_seqnum_pdb(ctdb, rec, nodemap, recdb, dbid);
+		if (ret == 0) {
+			return 0;
+		}
+	}
+
 	/* pull all records from all other nodes across onto this node
 	   (this merges based on rsn)
 	*/
@@ -627,7 +747,7 @@ static int pull_remote_database(struct ctdb_context *ctdb,
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		if (pull_one_remote_database(ctdb, nodemap->nodes[j].pnn, recdb, dbid, persistent) != 0) {
+		if (pull_one_remote_database(ctdb, nodemap->nodes[j].pnn, recdb, dbid) != 0) {
 			DEBUG(DEBUG_ERR,(__location__ " Failed to pull remote database from node %u\n", 
 				 nodemap->nodes[j].pnn));
 			ctdb_set_culprit_count(rec, nodemap->nodes[j].pnn, nodemap->num);
