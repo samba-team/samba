@@ -49,13 +49,14 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 	NTSTATUS status;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
-	const char *kwnames[] = { "domain_name", "netbios_name", "level", NULL };
+	const char *kwnames[] = { "domain_name", "netbios_name", "level", "machinepass", NULL };
 
 	ZERO_STRUCT(r);
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssi:Join", discard_const_p(char *, kwnames),
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ssi|z:Join", discard_const_p(char *, kwnames),
 					 &r.in.domain_name, &r.in.netbios_name, 
-					 &_level)) {
+					 &_level,
+					 &r.in.account_pass)) {
 		return NULL;
 	}
 	r.in.level = _level;
