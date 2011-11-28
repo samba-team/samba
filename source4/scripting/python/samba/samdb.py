@@ -829,3 +829,17 @@ accountExpires: %u
         if sd:
             m["nTSecurityDescriptor"] = ndr_pack(sd)
         self.add(m)
+
+    def sequence_number(self, seq_type):
+        """Returns the value of the sequence number according to the requested type
+        :param seq_type: type of sequence number
+         """
+        self.transaction_start()
+        try:
+            seq = super(SamDB, self).sequence_number(seq_type)
+        except Exception:
+             self.transaction_cancel()
+             raise
+        else:
+            self.transaction_commit()
+        return seq
