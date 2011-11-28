@@ -2467,10 +2467,12 @@ static void async_notify_smb(struct smbcli_request *req)
 	union smb_notify notify;
 	NTSTATUS status;
 	int i, j;
-	uint16_t tid;
+	uint16_t tid = 0;
 	struct smbcli_transport *transport = req->transport;
 
-	tid = SVAL(req->in.hdr, HDR_TID);
+	if (req->tree) {
+		tid = req->tree->tid;
+	}
 
 	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
 	status = smb_raw_changenotify_recv(req, current_op.mem_ctx, &notify);
