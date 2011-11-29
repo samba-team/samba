@@ -1131,6 +1131,7 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 	ret = get_gpfs_winattrs(discard_const_p(char, fname), &attrs);
 	TALLOC_FREE(fname);
 	if (ret == 0) {
+		smb_fname->st.st_ex_calculated_birthtime = false;
 		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
 		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
 		smb_fname->st.vfs_private = attrs.winAttrs;
@@ -1162,6 +1163,7 @@ static int vfs_gpfs_fstat(struct vfs_handle_struct *handle,
 
 	ret = smbd_fget_gpfs_winattrs(fsp->fh->fd, &attrs);
 	if (ret == 0) {
+		sbuf->st_ex_calculated_birthtime = false;
 		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
 		sbuf->st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
 	}
@@ -1197,6 +1199,7 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 	ret = get_gpfs_winattrs(discard_const_p(char, path), &attrs);
 	TALLOC_FREE(path);
 	if (ret == 0) {
+		smb_fname->st.st_ex_calculated_birthtime = false;
 		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
 		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
 		smb_fname->st.vfs_private = attrs.winAttrs;
