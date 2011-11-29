@@ -5361,7 +5361,7 @@ int main(int argc, const char *argv[])
 	ctdb_connection = ctdb_connect(socket_name,
 				       ctdb_log_file, stderr);
 	if (ctdb_connection == NULL) {
-		fprintf(stderr, "Failed to connect to daemon from libctdb\n");
+		DEBUG(DEBUG_ERR, ("Failed to connect to daemon from libctdb\n"));
 		exit(1);
 	}				
 
