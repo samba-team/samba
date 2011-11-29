@@ -122,6 +122,11 @@ class MapBaseTestCase(TestCaseInTempDir):
         os.unlink(self.ldbfile)
         os.unlink(self.samba3.file)
         os.unlink(self.samba4.file)
+        pdir = "%s.d" % self.ldbfile
+        mdata = os.path.join(pdir, "metadata.tdb")
+        if os.path.exists(mdata):
+            os.unlink(mdata)
+            os.rmdir(pdir)
         super(MapBaseTestCase, self).tearDown()
 
     def assertSidEquals(self, text, ndr_sid):
