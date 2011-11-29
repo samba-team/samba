@@ -30,6 +30,7 @@
 		<arg choice="opt">--usage</arg>
 		<arg choice="opt">-d --debug=&lt;INTEGER&gt;</arg>
 		<arg choice="opt">--socket=&lt;filename&gt;</arg>
+		<arg choice="opt">--print-emptyrecords</arg>
 	</cmdsynopsis>
 	
 </refsynopsisdiv>
@@ -119,6 +120,18 @@
             You only need to specify this parameter if you run multiple ctdb 
             daemons on the same physical host and thus can not use the default
             name for the domain socket.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--print-emptyrecords</term>
+        <listitem>
+          <para>
+            This enables printing of empty records when dumping databases
+            with the catdb, cattbd and dumpdbbackup commands. Records with
+            empty data segment are considered deleted by ctdb and cleaned
+            by the vacuuming mechanism, so this switch can come in handy for
+            debugging the vacuuming behaviour.
           </para>
         </listitem>
       </varlistentry>
