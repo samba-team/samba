@@ -5339,6 +5339,10 @@ int main(int argc, const char *argv[])
 	}
 
 	if (ctdb_commands[i].without_daemon == true) {
+		if (nodestring != NULL) {
+			DEBUG(DEBUG_ERR, ("Can't specify node(s) with \"ctdb %s\"\n", control));
+			exit(1);
+		}
 		close(2);
 	}
 
