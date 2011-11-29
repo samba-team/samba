@@ -31,6 +31,7 @@
 		<arg choice="opt">-d --debug=&lt;INTEGER&gt;</arg>
 		<arg choice="opt">--socket=&lt;filename&gt;</arg>
 		<arg choice="opt">--print-emptyrecords</arg>
+		<arg choice="opt">--print-datasize</arg>
 	</cmdsynopsis>
 	
 </refsynopsisdiv>
@@ -132,6 +133,15 @@
             empty data segment are considered deleted by ctdb and cleaned
             by the vacuuming mechanism, so this switch can come in handy for
             debugging the vacuuming behaviour.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--print-datasize</term>
+        <listitem>
+          <para>
+            This lets database dumps (catdb, cattdb, dumpdbbackup) print the
+            size of the record data instead of dumping the data contents.
           </para>
         </listitem>
       </varlistentry>
