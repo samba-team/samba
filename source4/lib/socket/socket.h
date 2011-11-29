@@ -202,6 +202,34 @@ NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   uint32_t flags, 
 			   struct tevent_context *ev);
 
+struct socket_connect_multi_ex {
+	void *private_data;
+	struct tevent_req *(*establish_send)(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct socket_context *sock,
+					     struct socket_address *addr,
+					     void *private_data);
+	NTSTATUS (*establish_recv)(struct tevent_req *req);
+};
+struct composite_context *socket_connect_multi_ex_send(TALLOC_CTX *mem_ctx,
+						       const char *server_address,
+						       int num_server_ports,
+						       uint16_t *server_ports,
+						       struct resolve_context *resolve_ctx,
+						       struct tevent_context *event_ctx,
+						       struct socket_connect_multi_ex *ex);
+NTSTATUS socket_connect_multi_ex_recv(struct composite_context *ctx,
+				      TALLOC_CTX *mem_ctx,
+				      struct socket_context **result,
+				      uint16_t *port);
+NTSTATUS socket_connect_multi_ex(TALLOC_CTX *mem_ctx, const char *server_address,
+				 int num_server_ports, uint16_t *server_ports,
+				 struct resolve_context *resolve_ctx,
+				 struct tevent_context *event_ctx,
+				 struct socket_connect_multi_ex *ex,
+				 struct socket_context **result,
+				 uint16_t *port);
+
 struct composite_context *socket_connect_multi_send(TALLOC_CTX *mem_ctx,
 						    const char *server_address,
 						    int num_server_ports,
