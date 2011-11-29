@@ -34,6 +34,7 @@
 		<arg choice="opt">--print-datasize</arg>
 		<arg choice="opt">--print-lmaster</arg>
 		<arg choice="opt">--print-hash</arg>
+		<arg choice="opt">--print-recordflags</arg>
 	</cmdsynopsis>
 	
 </refsynopsisdiv>
@@ -161,6 +162,16 @@
           <para>
             This lets database dumps (catdb, cattdb, dumpdbbackup) print the
             hash for each record.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--print-recordflags</term>
+        <listitem>
+          <para>
+            This lets catdb and dumpdbbackup print the
+            record flags for each record. Note that cattdb always
+            prints the flags.
           </para>
         </listitem>
       </varlistentry>
