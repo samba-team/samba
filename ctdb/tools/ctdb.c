@@ -5310,15 +5310,6 @@ int main(int argc, const char *argv[])
 	signal(SIGALRM, ctdb_alarm);
 	alarm(options.maxruntime);
 
-	/* setup the node number to contact */
-	if (nodestring != NULL) {
-		if (strcmp(nodestring, "all") == 0) {
-			options.pnn = CTDB_BROADCAST_ALL;
-		} else {
-			options.pnn = strtoul(nodestring, NULL, 0);
-		}
-	}
-
 	control = extra_argv[0];
 
 	ev = event_context_init(NULL);
@@ -5364,6 +5355,15 @@ int main(int argc, const char *argv[])
 		DEBUG(DEBUG_ERR, ("Failed to connect to daemon from libctdb\n"));
 		exit(1);
 	}				
+
+	/* setup the node number to contact */
+	if (nodestring != NULL) {
+		if (strcmp(nodestring, "all") == 0) {
+			options.pnn = CTDB_BROADCAST_ALL;
+		} else {
+			options.pnn = strtoul(nodestring, NULL, 0);
+		}
+	}
 
 	/* verify the node exists */
 	verify_node(ctdb);
