@@ -33,6 +33,7 @@
 		<arg choice="opt">--print-emptyrecords</arg>
 		<arg choice="opt">--print-datasize</arg>
 		<arg choice="opt">--print-lmaster</arg>
+		<arg choice="opt">--print-hash</arg>
 	</cmdsynopsis>
 	
 </refsynopsisdiv>
@@ -151,6 +152,15 @@
         <listitem>
           <para>
             This lets catdb print the lmaster for each record.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--print-hash</term>
+        <listitem>
+          <para>
+            This lets database dumps (catdb, cattdb, dumpdbbackup) print the
+            hash for each record.
           </para>
         </listitem>
       </varlistentry>
