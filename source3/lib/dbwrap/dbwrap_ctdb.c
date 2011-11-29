@@ -82,22 +82,9 @@ struct db_ctdb_rec {
 
 static NTSTATUS tdb_error_to_ntstatus(struct tdb_context *tdb)
 {
-	NTSTATUS status;
 	enum TDB_ERROR tret = tdb_error(tdb);
 
-	switch (tret) {
-	case TDB_ERR_EXISTS:
-		status = NT_STATUS_OBJECT_NAME_COLLISION;
-		break;
-	case TDB_ERR_NOEXIST:
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		break;
-	default:
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		break;
-	}
-
-	return status;
+	return map_nt_error_from_tdb(tret);
 }
 
 
