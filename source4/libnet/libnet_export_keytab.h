@@ -20,6 +20,7 @@
 struct libnet_export_keytab {
 	struct {
 		const char *keytab_name;
+		const char *principal;
 	} in;
 	struct {
 		const char *error_string;

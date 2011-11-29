@@ -45,13 +45,29 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	unlink(r->in.keytab_name);
+	if (r->in.principal) {
+		/* TODO: Find a way not to have to use a fixed list */
+		krb5_enctype enctypes[] = {
+			KRB5_ENCTYPE_DES_CBC_CRC,
+			KRB5_ENCTYPE_DES_CBC_MD5,
+			KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+			KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+			KRB5_ENCTYPE_ARCFOUR_HMAC_MD5
+		};
+		ret = kt_copy_one_principal(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name, r->in.principal, 0, enctypes);
+	} else {
+		unlink(r->in.keytab_name);
+		ret = kt_copy(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name);
+	}
 
-	ret = kt_copy(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name);
 	if(ret) {
 		r->out.error_string = smb_get_krb5_error_message(smb_krb5_context->krb5_context,
 								 ret, mem_ctx);
-		return NT_STATUS_UNSUCCESSFUL;
+		if (ret == KRB5_KT_NOTFOUND) {
+			return NT_STATUS_NO_SUCH_USER;
+		} else {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 	}
 	return NT_STATUS_OK;
 }

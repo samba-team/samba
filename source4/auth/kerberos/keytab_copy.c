@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
+ * Copyright (c) 2011 Andrew Bartlett
+ *
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,8 +37,6 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 
-static const krb5_boolean verbose_flag = FALSE;
-
 static krb5_boolean
 compare_keyblock(const krb5_keyblock *a, const krb5_keyblock *b)
 {
@@ -47,90 +47,99 @@ compare_keyblock(const krb5_keyblock *a, const krb5_keyblock *b)
     return TRUE;
 }
 
+static krb5_error_code copy_one_entry(krb5_context context, 
+				      krb5_keytab src_keytab, krb5_keytab dst_keytab, krb5_keytab_entry entry) 
+{
+    krb5_error_code ret;
+    krb5_keytab_entry dummy;
+
+    char *name_str;
+    char *etype_str;
+    ret = krb5_unparse_name (context, entry.principal, &name_str);
+    if(ret) {
+	krb5_set_error_message(context, ret, "krb5_unparse_name");
+	name_str = NULL; /* XXX */
+	return ret;
+    }
+    ret = krb5_enctype_to_string(context, entry.keyblock.keytype, &etype_str);
+    if(ret) {
+	krb5_set_error_message(context, ret, "krb5_enctype_to_string");
+	etype_str = NULL; /* XXX */
+	return ret;
+    }
+    ret = krb5_kt_get_entry(context, dst_keytab,
+			    entry.principal,
+			    entry.vno,
+			    entry.keyblock.keytype,
+			    &dummy);
+    if(ret == 0) {
+	/* this entry is already in the new keytab, so no need to
+	   copy it; if the keyblocks are not the same, something
+	   is weird, so complain about that */
+	if(!compare_keyblock(&entry.keyblock, &dummy.keyblock)) {
+		krb5_warn(context, 0, "entry with different keyvalue "
+			  "already exists for %s, keytype %s, kvno %d",
+			  name_str, etype_str, entry.vno);
+	}
+	krb5_kt_free_entry(context, &dummy);
+	krb5_kt_free_entry (context, &entry);
+	free(name_str);
+	free(etype_str);
+	return ret;
+    } else if(ret != KRB5_KT_NOTFOUND) {
+	krb5_set_error_message (context, ret, "fetching %s/%s/%u",
+				name_str, etype_str, entry.vno);
+	krb5_kt_free_entry (context, &entry);
+	free(name_str);
+	free(etype_str);
+	return ret;
+    } 
+    ret = krb5_kt_add_entry (context, dst_keytab, &entry);
+    krb5_kt_free_entry (context, &entry);
+    if (ret) {
+	krb5_set_error_message (context, ret, "adding %s/%s/%u",
+				name_str, etype_str, entry.vno);
+	free(name_str);
+	free(etype_str);
+	return ret;
+    }
+    free(name_str);
+    free(etype_str);
+    return ret;
+}
+
 krb5_error_code kt_copy (krb5_context context, const char *from, const char *to)
 {
     krb5_error_code ret;
     krb5_keytab src_keytab, dst_keytab;
     krb5_kt_cursor cursor;
-    krb5_keytab_entry entry, dummy;
+    krb5_keytab_entry entry;
 
     ret = krb5_kt_resolve (context, from, &src_keytab);
     if (ret) {
-	krb5_warn (context, ret, "resolving src keytab `%s'", from);
-	return 1;
+	krb5_set_error_message (context, ret, "resolving src keytab `%s'", from);
+	return ret;
     }
 
     ret = krb5_kt_resolve (context, to, &dst_keytab);
     if (ret) {
 	krb5_kt_close (context, src_keytab);
-	krb5_warn (context, ret, "resolving dst keytab `%s'", to);
-	return 1;
+	krb5_set_error_message (context, ret, "resolving dst keytab `%s'", to);
+	return ret;
     }
 
     ret = krb5_kt_start_seq_get (context, src_keytab, &cursor);
     if (ret) {
-	krb5_warn (context, ret, "krb5_kt_start_seq_get %s", from);
+	krb5_set_error_message (context, ret, "krb5_kt_start_seq_get %s", from);
 	goto out;
     }
 
-    if (verbose_flag)
-	fprintf(stderr, "copying %s to %s\n", from, to);
-
     while((ret = krb5_kt_next_entry(context, src_keytab,
 				    &entry, &cursor)) == 0) {
-	char *name_str;
-	char *etype_str;
-	ret = krb5_unparse_name (context, entry.principal, &name_str);
-	if(ret) {
-	    krb5_warn(context, ret, "krb5_unparse_name");
-	    name_str = NULL; /* XXX */
-	}
-	ret = krb5_enctype_to_string(context, entry.keyblock.keytype, &etype_str);
-	if(ret) {
-	    krb5_warn(context, ret, "krb5_enctype_to_string");
-	    etype_str = NULL; /* XXX */
-	}
-	ret = krb5_kt_get_entry(context, dst_keytab,
-				entry.principal,
-				entry.vno,
-				entry.keyblock.keytype,
-				&dummy);
-	if(ret == 0) {
-	    /* this entry is already in the new keytab, so no need to
-               copy it; if the keyblocks are not the same, something
-               is weird, so complain about that */
-	    if(!compare_keyblock(&entry.keyblock, &dummy.keyblock)) {
-		krb5_warnx(context, "entry with different keyvalue "
-			   "already exists for %s, keytype %s, kvno %d",
-			   name_str, etype_str, entry.vno);
-	    }
-	    krb5_kt_free_entry(context, &dummy);
-	    krb5_kt_free_entry (context, &entry);
-	    free(name_str);
-	    free(etype_str);
-	    continue;
-	} else if(ret != KRB5_KT_NOTFOUND) {
-	    krb5_warn (context, ret, "%s: fetching %s/%s/%u",
-		       to, name_str, etype_str, entry.vno);
-	    krb5_kt_free_entry (context, &entry);
-	    free(name_str);
-	    free(etype_str);
-	    break;
-	} 
-	if (verbose_flag)
-	    fprintf (stderr, "copying %s, keytype %s, kvno %d\n", name_str,
-		     etype_str, entry.vno);
-	ret = krb5_kt_add_entry (context, dst_keytab, &entry);
-	krb5_kt_free_entry (context, &entry);
+	ret = copy_one_entry(context, src_keytab, dst_keytab, entry);
 	if (ret) {
-	    krb5_warn (context, ret, "%s: adding %s/%s/%u",
-		       to, name_str, etype_str, entry.vno);
-	    free(name_str);
-	    free(etype_str);
 	    break;
 	}
-	free(name_str);
-	free(etype_str);
     }
     krb5_kt_end_seq_get (context, src_keytab, &cursor);
 
@@ -142,5 +151,69 @@ krb5_error_code kt_copy (krb5_context context, const char *from, const char *to)
     } else if (ret == 0) {
 	return EINVAL;
     }
+    return ret;
+}
+
+krb5_error_code kt_copy_one_principal (krb5_context context, const char *from, const char *to, 
+				       const char *principal, krb5_kvno kvno, krb5_enctype *enctypes)
+{
+    krb5_error_code ret;
+    krb5_keytab src_keytab, dst_keytab;
+    krb5_keytab_entry entry;
+    krb5_principal princ;
+    int i;
+    bool found_one = false;
+
+    ret = krb5_parse_name (context, principal, &princ);
+    if(ret) {
+	    krb5_set_error_message(context, ret, "krb5_unparse_name");
+	    return ret;
+    }
+
+    ret = krb5_kt_resolve (context, from, &src_keytab);
+    if (ret) {
+	krb5_set_error_message(context, ret, "resolving src keytab `%s'", from);
+	return ret;
+    }
+
+    ret = krb5_kt_resolve (context, to, &dst_keytab);
+    if (ret) {
+	krb5_kt_close (context, src_keytab);
+	krb5_set_error_message(context, ret, "resolving dst keytab `%s'", to);
+	return ret;
+    }
+
+    for (i=0; enctypes[i]; i++) {
+  	ret = krb5_kt_get_entry(context, src_keytab,
+				princ,
+				kvno,
+				enctypes[i],
+				&entry);
+	if (ret == KRB5_KT_NOTFOUND) {
+	    continue;
+	} else if (ret) {
+	    break;
+	}
+	found_one = true;
+	ret = copy_one_entry(context, src_keytab, dst_keytab, entry);
+	if (ret) {
+	    break;
+	}
+    }
+    if (ret == KRB5_KT_NOTFOUND) {
+	if (!found_one) {
+	    char *princ_string;
+	    int ret2 = krb5_unparse_name (context, princ, &princ_string);
+	    if (ret2) {
+		krb5_set_error_message(context, ret, "failed to fetch principal %s", princ_string);
+	    }
+	} else {
+	    /* Not finding an enc type is not an error, as long as we copied one for the principal */
+	    ret = 0;
+	}
+    }
+
+    krb5_kt_close (context, src_keytab);
+    krb5_kt_close (context, dst_keytab);
     return ret;
 }

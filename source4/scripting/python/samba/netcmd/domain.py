@@ -66,14 +66,15 @@ class cmd_domain_export_keytab(Command):
     synopsis = "%prog <keytab> [options]"
 
     takes_options = [
+        Option("--principal", help="extract only this principal", type=str),
         ]
 
     takes_args = ["keytab"]
 
-    def run(self, keytab, credopts=None, sambaopts=None, versionopts=None):
+    def run(self, keytab, credopts=None, sambaopts=None, versionopts=None, principal=None):
         lp = sambaopts.get_loadparm()
-        net = Net(None, lp, server=credopts.ipaddress)
-        net.export_keytab(keytab=keytab)
+        net = Net(None, lp)
+        net.export_keytab(keytab=keytab, principal=principal)
 
 class cmd_domain_info(Command):
     """Print basic info about a domain and the DC passed as parameter"""

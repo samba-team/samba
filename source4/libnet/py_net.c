@@ -188,11 +188,13 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 {
 	struct libnet_export_keytab r;
 	TALLOC_CTX *mem_ctx;
-	const char *kwnames[] = { "keytab", NULL };
+	const char *kwnames[] = { "keytab", "principal", NULL };
 	NTSTATUS status;
+	r.in.principal = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s:export_keytab", discard_const_p(char *, kwnames),
-					 &r.in.keytab_name)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|z:export_keytab", discard_const_p(char *, kwnames),
+					 &r.in.keytab_name,
+					 &r.in.principal)) {
 		return NULL;
 	}
 
