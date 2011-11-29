@@ -659,6 +659,7 @@
     This disables parts of the resilience and robustness of the cluster and should ONLY be used when the system administrator is actively monitoring the cluster, so that nodes can be enabled again.
     </para>
     </refsect2>
+
     <refsect2><title>NoIPFailback</title>
     <para>Default: 0</para>
     <para>
@@ -672,6 +673,24 @@ ctdb will try to reassign public IP addresses onto the new node as a way to dist
     When you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing IP addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. When this parameter is set, you can manually fail public IP addresses over to the new node(s) using the 'ctdb moveip' command.
     </para>
     </refsect2>
+
+    <refsect2><title>RecoverPDBBySeqNum</title>
+    <para>Default: 0</para>
+    <para>
+	When set to non-zero, this will change how the recovery process for persistent
+	databases ar performed.
+	By default, when performing a database recovery, for normal as for persistent
+	databases, recovery is record-by-record and recovery process simply collects
+	the most recent version of every individual record.
+    </para>
+    <para>
+	When set to non-zero, persistent databases will instead be recovered
+	as a whole db and not by individual records. The node that contains the highest
+	value stored in the record "__db_sequence_number__" is selected and the copy of
+	that nodes database is used as the recovered database.
+    </para>
+    </refsect2>
+
   </refsect1>
 
   <refsect1><title>LVS</title>
