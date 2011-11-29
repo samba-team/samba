@@ -340,6 +340,8 @@ def dynconfig_cflags(bld, list=None):
     override = { 'MODULESDIR'    : 'bin/modules',
                  'PYTHONDIR'     : 'bin/python',
                  'PYTHONARCHDIR' : 'bin/python',
+                 'BINDIR'        : 'bin',
+                 'SBINDIR'       : 'bin',
                  'CODEPAGEDIR'   : os.path.join(bld.env.srcdir, 'codepages'),
                  'SCRIPTSBINDIR' : os.path.join(bld.env.srcdir, 'source4/scripting/bin'),
                  'SETUPDIR'      : os.path.join(bld.env.srcdir, 'source4/setup') }
