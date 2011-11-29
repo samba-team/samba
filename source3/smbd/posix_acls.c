@@ -1130,8 +1130,8 @@ uint32_t map_canon_ace_perms(int snum,
  Map NT perms to a UNIX mode_t.
 ****************************************************************************/
 
-#define FILE_SPECIFIC_READ_BITS (FILE_READ_DATA|FILE_READ_EA|FILE_READ_ATTRIBUTES)
-#define FILE_SPECIFIC_WRITE_BITS (FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA|FILE_WRITE_ATTRIBUTES)
+#define FILE_SPECIFIC_READ_BITS (FILE_READ_DATA|FILE_READ_EA)
+#define FILE_SPECIFIC_WRITE_BITS (FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_WRITE_EA)
 #define FILE_SPECIFIC_EXECUTE_BITS (FILE_EXECUTE)
 
 static mode_t map_nt_perms( uint32 *mask, int type)
