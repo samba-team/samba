@@ -32,6 +32,7 @@
 		<arg choice="opt">--socket=&lt;filename&gt;</arg>
 		<arg choice="opt">--print-emptyrecords</arg>
 		<arg choice="opt">--print-datasize</arg>
+		<arg choice="opt">--print-lmaster</arg>
 	</cmdsynopsis>
 	
 </refsynopsisdiv>
@@ -142,6 +143,14 @@
           <para>
             This lets database dumps (catdb, cattdb, dumpdbbackup) print the
             size of the record data instead of dumping the data contents.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--print-lmaster</term>
+        <listitem>
+          <para>
+            This lets catdb print the lmaster for each record.
           </para>
         </listitem>
       </varlistentry>
