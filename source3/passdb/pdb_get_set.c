@@ -64,7 +64,7 @@ bool pdb_is_password_change_time_max(time_t test_time)
  Return an unchanging version of max password change time - 0x7FFFFFFF.
  ********************************************************************/
 
-time_t pdb_password_change_time_max(void)
+static time_t pdb_password_change_time_max(void)
 {
 	return 0x7FFFFFFF;
 }
