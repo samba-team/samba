@@ -510,6 +510,48 @@ bool ctdb_getpnn_recv(struct ctdb_connection *ctdb,
 
 
 /**
+ * ctdb_check_message_handlers_send - check a list of message_handlers
+ * if they are registered
+ * message_handlers are registered on the daemon using the
+ *   ctdb_set_message_handler_send() call
+ *
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @num: number of srvids to check
+ * @mhs: @num message_handlers values to check
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_check_message_handlers_send(struct ctdb_connection *ctdb,
+		 uint32_t destnode,
+		 uint32_t num,
+		 uint64_t *mhs,
+		 ctdb_callback_t callback,
+		 void *cbdata);
+/**
+ * ctdb_check_message_handlers_recv - read a ctdb_check_message_handlers
+ * reply from ctdbd
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @num: number of message_handlers to check
+ * @result: an array of @num uint8_t fields containing the result of the check
+ *     0: message_handler does not exist
+ *     1: message_handler exists
+ *
+ * This returns false if something went wrong, or otherwise fills in result.
+ */
+bool
+ctdb_check_message_handlers_recv(struct ctdb_connection *ctdb,
+				  struct ctdb_request *req, uint32_t num,
+				  uint8_t *result);
+
+
+/**
  * ctdb_getdbseqnum_send - read the sequence number off a db
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -767,6 +809,27 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 		 uint32_t *pnn);
 
 /**
+ * ctdb_check_message_handlers - check a list of message_handlers (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @num: number of srvids to check
+ * @mhs: @num message_handlers to check
+ * @result: an array of @num uint8_t fields containing the result of the check
+ *     0: message_handler does not exist
+ *     1: message_handler exists
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+bool
+ctdb_check_message_handlers(struct ctdb_connection *ctdb,
+			   uint32_t destnode,
+			   uint32_t num,
+			   uint64_t *mhs,
+			   uint8_t *result);
+
+/**
  * ctdb_getdbseqnum - read the seqnum of a database
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -920,6 +983,12 @@ void ctdb_free_publicips(struct ctdb_all_public_ips *ips);
 
 #define ctdb_getpnn_send(ctdb, destnode, cb, cbdata)			\
 	ctdb_getpnn_send((ctdb), (destnode),				\
+			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_check_message_handlers_send(ctdb, destnode, num, mhs,	\
+			 cb, cbdata)					\
+	ctdb_check_message_handlers_send((ctdb), (destnode), (num), 	\
+			 (mhs),						\
 			 ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #define ctdb_getrecmaster_send(ctdb, destnode, cb, cbdata)		\

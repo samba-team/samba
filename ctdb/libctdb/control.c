@@ -25,6 +25,7 @@
 #undef ctdb_getrecmaster_send
 #undef ctdb_getrecmode_send
 #undef ctdb_getpnn_send
+#undef ctdb_check_message_handlers_send
 #undef ctdb_getnodemap_send
 #undef ctdb_getpublicips_send
 #undef ctdb_getdbseqnum_send
@@ -238,5 +239,48 @@ struct ctdb_request *ctdb_getdbseqnum_send(struct ctdb_connection *ctdb,
 
 	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_DB_SEQNUM,
 					destnode, &indata, sizeof(uint64_t),
+					callback, private_data);
+}
+
+bool ctdb_check_message_handlers_recv(struct ctdb_connection *ctdb,
+				      struct ctdb_request *req,
+				      uint32_t num, uint8_t *result)
+{
+	struct ctdb_reply_control *reply;
+	int i, count;
+
+	reply = unpack_reply_control(req, CTDB_CONTROL_CHECK_SRVIDS);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_check_message_handlers_recv: status -1");
+		return false;
+	}
+	
+	count = (num + 7) / 8;
+	if (count != reply->datalen) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_check_message_handlers_recv: wrong amount of data returned, expected %d bytes for %d srvids but received %d bytes", count, num, reply->datalen);
+		return false;
+	}
+
+	for (i = 0; i < num; i++) {
+		result[i] = !!(reply->data[i / 8] & (1 << (i % 8)));
+	}
+
+	return true;
+}
+
+struct ctdb_request *
+ctdb_check_message_handlers_send(struct ctdb_connection *ctdb,
+				uint32_t destnode,
+				uint32_t num,
+				uint64_t *mhs,
+				ctdb_callback_t callback,
+				void *private_data)
+{
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_CHECK_SRVIDS,
+					destnode,
+					mhs, num * sizeof(uint64_t) ,
 					callback, private_data);
 }

@@ -136,6 +136,24 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 	return ret;
 }
 
+bool ctdb_check_message_handlers(struct ctdb_connection *ctdb,
+		      uint32_t destnode, uint32_t num,
+		      uint64_t *mhs, uint8_t *result)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	req = synchronous(ctdb,
+			  ctdb_check_message_handlers_send(ctdb, destnode, num, mhs, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_check_message_handlers_recv(ctdb, req, num, result);
+		ctdb_request_free(req);
+	}
+	return ret;
+}
+
 bool ctdb_getnodemap(struct ctdb_connection *ctdb,
 		 uint32_t destnode, struct ctdb_node_map **nodemap)
 {
