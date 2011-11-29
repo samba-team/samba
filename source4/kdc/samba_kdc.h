@@ -49,4 +49,6 @@ struct samba_kdc_entry {
 	hdb_entry_ex *entry_ex;
 };
 
+extern struct hdb_method hdb_samba4_interface;
+
 #endif /* _SAMBA_KDC_H_ */

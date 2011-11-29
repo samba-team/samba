@@ -38,7 +38,6 @@
 NTSTATUS server_service_kdc_init(void);
 
 extern struct krb5plugin_windc_ftable windc_plugin_table;
-extern struct hdb_method hdb_samba4;
 
 static NTSTATUS kdc_proxy_unavailable_error(struct kdc_server *kdc,
 					    TALLOC_CTX *mem_ctx,
@@ -1006,7 +1005,7 @@ static void kdc_task_init(struct task_server *task)
 
 	ret = krb5_plugin_register(kdc->smb_krb5_context->krb5_context,
 				   PLUGIN_TYPE_DATA, "hdb",
-				   &hdb_samba4);
+				   &hdb_samba4_interface);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to register hdb plugin", true);
 		return;

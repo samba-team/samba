@@ -5,8 +5,6 @@
 #include "kdc/samba_kdc.h"
 #include "libnet/libnet.h"
 
-extern struct hdb_method hdb_samba4;
-
 NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_export_keytab *r)
 {
 	krb5_error_code ret;
@@ -35,7 +33,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 
 	ret = krb5_plugin_register(smb_krb5_context->krb5_context, 
 				   PLUGIN_TYPE_DATA, "hdb",
-				   &hdb_samba4);
+				   &hdb_samba4_interface);
 	if(ret) {
 		return NT_STATUS_NO_MEMORY;
 	}

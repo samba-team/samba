@@ -218,35 +218,3 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 
 	return NT_STATUS_OK;
 }
-
-static krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, const char *arg)
-{
-	NTSTATUS nt_status;
-	void *ptr;
-	struct samba_kdc_base_context *base_ctx;
-
-	if (sscanf(arg, "&%p", &ptr) != 1) {
-		return EINVAL;
-	}
-	base_ctx = talloc_get_type_abort(ptr, struct samba_kdc_base_context);
-	/* The global kdc_mem_ctx and kdc_lp_ctx, Disgusting, ugly hack, but it means one less private hook */
-	nt_status = hdb_samba4_create_kdc(base_ctx, context, db);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return 0;
-	}
-	return EINVAL;
-}
-
-/* Only used in the hdb-backed keytab code
- * for a keytab of 'samba4&<address>', to find
- * kpasswd's key in the main DB, and to
- * copy all the keys into a file (libnet_keytab_export)
- *
- * The <address> is the string form of a pointer to a talloced struct hdb_samba_context
- */
-struct hdb_method hdb_samba4 = {
-	.interface_version = HDB_INTERFACE_VERSION,
-	.prefix = "samba4",
-	.create = hdb_samba4_create
-};
