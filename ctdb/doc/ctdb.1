@@ -33,7 +33,7 @@ ctdb \- clustered tdb database management utility
 .HP \w'\fBctdb\ [\ OPTIONS\ ]\ COMMAND\ \&.\&.\&.\fR\ 'u
 \fBctdb [ OPTIONS ] COMMAND \&.\&.\&.\fR
 .HP \w'\fBctdb\fR\ 'u
-\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>] [\-\-print\-emptyrecords] [\-\-print\-datasize]
+\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>] [\-\-print\-emptyrecords] [\-\-print\-datasize] [\-\-print\-lmaster]
 .SH "DESCRIPTION"
 .PP
 ctdb is a utility to view and manage a ctdb cluster\&.
@@ -91,6 +91,11 @@ This enables printing of empty records when dumping databases with the catdb, ca
 \-\-print\-datasize
 .RS 4
 This lets database dumps (catdb, cattdb, dumpdbbackup) print the size of the record data instead of dumping the data contents\&.
+.RE
+.PP
+\-\-print\-lmaster
+.RS 4
+This lets catdb print the lmaster for each record\&.
 .RE
 .SH "ADMINISTRATIVE COMMANDS"
 .PP
