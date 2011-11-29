@@ -1133,7 +1133,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 				attrs, "objectClass=dnsNode");
 	if (ldb_ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_dn_remove_child_components(dn, 1);
-		access_mask = SEC_STD_REQUIRED | SEC_ADS_CREATE_CHILD;
+		access_mask = SEC_ADS_CREATE_CHILD;
 		talloc_free(res);
 	} else if (ldb_ret == LDB_SUCCESS) {
 		access_mask = SEC_STD_REQUIRED | SEC_ADS_SELF_WRITE;
