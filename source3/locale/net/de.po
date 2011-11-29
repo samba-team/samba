@@ -2094,19 +2094,19 @@ msgstr ""
 
 #: ../../utils/net_conf.c:105
 msgid "net conf delshare <sharename>\n"
-msgstr "net conf showshare <sharename>\n"
+msgstr ""
 
 #: ../../utils/net_conf.c:114
 msgid " net conf setparm <section> <param> <value>\n"
-msgstr " net conf setparm <section> <param> <value>\n"
+msgstr ""
 
 #: ../../utils/net_conf.c:123
 msgid " net conf getparm <section> <param>\n"
-msgstr " net conf setparm <section> <param> <value>\n"
+msgstr ""
 
 #: ../../utils/net_conf.c:132
 msgid " net conf delparm <section> <param>\n"
-msgstr " net conf setparm <section> <param> <value>\n"
+msgstr ""
 
 #: ../../utils/net_conf.c:141
 msgid " net conf getincludes <section>\n"
@@ -2114,7 +2114,7 @@ msgstr ""
 
 #: ../../utils/net_conf.c:150
 msgid " net conf setincludes <section> [<filename>]*\n"
-msgstr " net conf setparm <section> <param> <value>\n"
+msgstr ""
 
 #: ../../utils/net_conf.c:159
 msgid " net conf delincludes <section>\n"
