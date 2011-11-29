@@ -5265,6 +5265,7 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct event_context *ev;
 	const char *control;
+	const char *socket_name;
 
 	setlinebuf(stdout);
 	
@@ -5344,39 +5345,36 @@ int main(int argc, const char *argv[])
 			exit(1);
 		}
 		close(2);
+		return ctdb_commands[i].fn(NULL, extra_argc-1, extra_argv+1);
 	}
 
 	/* initialise ctdb */
 	ctdb = ctdb_cmdline_client(ev, TIMELIMIT());
 
-	if (ctdb_commands[i].without_daemon == false) {
-		const char *socket_name;
+	if (ctdb == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
+		exit(1);
+	}
 
-		if (ctdb == NULL) {
-			DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
-			exit(1);
+	/* initialize a libctdb connection as well */
+	socket_name = ctdb_get_socketname(ctdb);
+	ctdb_connection = ctdb_connect(socket_name,
+				       ctdb_log_file, stderr);
+	if (ctdb_connection == NULL) {
+		fprintf(stderr, "Failed to connect to daemon from libctdb\n");
+		exit(1);
+	}				
+
+	/* verify the node exists */
+	verify_node(ctdb);
+
+	if (options.pnn == CTDB_CURRENT_NODE) {
+		int pnn;
+		pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
+		if (pnn == -1) {
+			return -1;
 		}
-
-		/* initialize a libctdb connection as well */
-		socket_name = ctdb_get_socketname(ctdb);
-		ctdb_connection = ctdb_connect(socket_name,
-					       ctdb_log_file, stderr);
-		if (ctdb_connection == NULL) {
-			fprintf(stderr, "Failed to connect to daemon from libctdb\n");
-			exit(1);
-		}				
-
-		/* verify the node exists */
-		verify_node(ctdb);
-
-		if (options.pnn == CTDB_CURRENT_NODE) {
-			int pnn;
-			pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
-			if (pnn == -1) {
-				return -1;
-			}
-			options.pnn = pnn;
-		}
+		options.pnn = pnn;
 	}
 
 	if (ctdb_commands[i].auto_all && 
