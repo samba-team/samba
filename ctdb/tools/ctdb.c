@@ -2070,40 +2070,37 @@ static int getsrvids(struct ctdb_context *ctdb, int argc, const char **argv)
  */
 static int check_srvids(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int32_t status;
-	char *errmsg;
-	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	uint64_t *ids;
+	uint8_t *result;
 	int i;
-	TDB_DATA data, outdata;
 
 	if (argc < 1) {
+		talloc_free(tmp_ctx);
 		usage();
 	}
 
-	ids = talloc_array(ctdb, uint64_t, argc);
+	ids    = talloc_array(tmp_ctx, uint64_t, argc);
+	result = talloc_array(tmp_ctx, uint8_t, argc);
 
 	for (i = 0; i < argc; i++) {
 		ids[i] = strtoull(argv[i], NULL, 0);
 	}
-	data.dptr = (uint8_t *)ids;
-	data.dsize = talloc_get_size(ids);
 
-	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_CHECK_SRVIDS,
-			   0, data, ctdb, &outdata, &status, NULL, &errmsg);
-	if (ret != 0) {
+	if (!ctdb_check_message_handlers(ctdb_connection,
+		options.pnn, argc, ids, result)) {
 		DEBUG(DEBUG_ERR, ("Unable to check server_id from node %u\n",
 				  options.pnn));
-		return ret;
+		talloc_free(tmp_ctx);
+		return -1;
 	}
+
 	for (i=0; i < argc; i++) {
-		bool exists;
-
-		exists = ((outdata.dptr[i/8] & (1<<(i%8))) != 0);
-
 		printf("Server id %d:%llu %s\n", options.pnn, (long long)ids[i],
-		       exists ? "exists" : "does not exist");
+		       result[i] ? "exists" : "does not exist");
 	}
+
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
