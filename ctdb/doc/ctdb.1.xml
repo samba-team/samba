@@ -1318,6 +1318,25 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
     </refsect2>
 
 
+    <refsect2><title>check_srvids &lt;srvid&gt; ...</title>
+      <para>
+	This command checks whether a set of srvid message ports are registered on the
+	node or not. The command takes a list of values to check.
+      </para>
+      <para>
+	Example: ctdb check_srvids 1 2 3 14765
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+Server id 0:1 does not exist
+Server id 0:2 does not exist
+Server id 0:3 does not exist
+Server id 0:14765 exists
+      </screen>
+    </refsect2>
+
   </refsect1>
 
   <refsect1><title>SEE ALSO</title>
