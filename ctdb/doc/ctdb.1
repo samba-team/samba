@@ -33,7 +33,7 @@ ctdb \- clustered tdb database management utility
 .HP \w'\fBctdb\ [\ OPTIONS\ ]\ COMMAND\ \&.\&.\&.\fR\ 'u
 \fBctdb [ OPTIONS ] COMMAND \&.\&.\&.\fR
 .HP \w'\fBctdb\fR\ 'u
-\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>] [\-\-print\-emptyrecords]
+\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>] [\-\-print\-emptyrecords] [\-\-print\-datasize]
 .SH "DESCRIPTION"
 .PP
 ctdb is a utility to view and manage a ctdb cluster\&.
@@ -86,6 +86,11 @@ You only need to specify this parameter if you run multiple ctdb daemons on the 
 \-\-print\-emptyrecords
 .RS 4
 This enables printing of empty records when dumping databases with the catdb, cattbd and dumpdbbackup commands\&. Records with empty data segment are considered deleted by ctdb and cleaned by the vacuuming mechanism, so this switch can come in handy for debugging the vacuuming behaviour\&.
+.RE
+.PP
+\-\-print\-datasize
+.RS 4
+This lets database dumps (catdb, cattdb, dumpdbbackup) print the size of the record data instead of dumping the data contents\&.
 .RE
 .SH "ADMINISTRATIVE COMMANDS"
 .PP
