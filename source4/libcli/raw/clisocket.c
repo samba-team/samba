@@ -29,6 +29,129 @@
 #include "param/param.h"
 #include "libcli/raw/raw_proto.h"
 
+/*
+  send a session request
+*/
+struct smbcli_request *smbcli_transport_connect_send(struct smbcli_transport *transport,
+						     struct nbt_name *calling, 
+						     struct nbt_name *called)
+{
+	uint8_t *p;
+	struct smbcli_request *req;
+	DATA_BLOB calling_blob, called_blob;
+	TALLOC_CTX *tmp_ctx = talloc_new(transport);
+	NTSTATUS status;
+
+	status = nbt_name_dup(transport, called, &transport->called);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+	
+	status = nbt_name_to_blob(tmp_ctx, &calling_blob, calling);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+	status = nbt_name_to_blob(tmp_ctx, &called_blob, called);
+	if (!NT_STATUS_IS_OK(status)) goto failed;
+
+  	/* allocate output buffer */
+	req = smbcli_request_setup_nonsmb(transport, 
+					  NBT_HDR_SIZE + 
+					  calling_blob.length + called_blob.length);
+	if (req == NULL) goto failed;
+
+	/* put in the destination name */
+	p = req->out.buffer + NBT_HDR_SIZE;
+	memcpy(p, called_blob.data, called_blob.length);
+	p += called_blob.length;
+
+	memcpy(p, calling_blob.data, calling_blob.length);
+	p += calling_blob.length;
+
+	_smb_setlen_nbt(req->out.buffer, PTR_DIFF(p, req->out.buffer) - NBT_HDR_SIZE);
+	SCVAL(req->out.buffer,0,0x81);
+
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
+		goto failed;
+	}
+
+	talloc_free(tmp_ctx);
+	return req;
+
+failed:
+	talloc_free(tmp_ctx);
+	return NULL;
+}
+
+/*
+  map a session request error to a NTSTATUS
+ */
+static NTSTATUS map_session_refused_error(uint8_t error)
+{
+	switch (error) {
+	case 0x80:
+	case 0x81:
+		return NT_STATUS_REMOTE_NOT_LISTENING;
+	case 0x82:
+		return NT_STATUS_RESOURCE_NAME_NOT_FOUND;
+	case 0x83:
+		return NT_STATUS_REMOTE_RESOURCES;
+	}
+	return NT_STATUS_UNEXPECTED_IO_ERROR;
+}
+
+
+/*
+  finish a smbcli_transport_connect()
+*/
+NTSTATUS smbcli_transport_connect_recv(struct smbcli_request *req)
+{
+	NTSTATUS status;
+
+	if (!smbcli_request_receive(req)) {
+		smbcli_request_destroy(req);
+		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	}
+
+	switch (CVAL(req->in.buffer,0)) {
+	case 0x82:
+		status = NT_STATUS_OK;
+		break;
+	case 0x83:
+		status = map_session_refused_error(CVAL(req->in.buffer,4));
+		break;
+	case 0x84:
+		DEBUG(1,("Warning: session retarget not supported\n"));
+		status = NT_STATUS_NOT_SUPPORTED;
+		break;
+	default:
+		status = NT_STATUS_UNEXPECTED_IO_ERROR;
+		break;
+	}
+
+	smbcli_request_destroy(req);
+	return status;
+}
+
+
+/*
+  send a session request (if needed)
+*/
+bool smbcli_transport_connect(struct smbcli_transport *transport,
+			      struct nbt_name *calling, 
+			      struct nbt_name *called)
+{
+	struct smbcli_request *req;
+	NTSTATUS status;
+
+	if (transport->socket->port == 445) {
+		return true;
+	}
+
+	req = smbcli_transport_connect_send(transport, 
+					    calling, called);
+	status = smbcli_transport_connect_recv(req);
+	return NT_STATUS_IS_OK(status);
+}
+
 struct sock_connect_state {
 	struct composite_context *ctx;
 	const char *host_name;
