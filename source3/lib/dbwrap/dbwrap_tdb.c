@@ -191,7 +191,7 @@ static NTSTATUS db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(state.result)) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return state.result;
 	}
 
 	*pdata = state.data;
