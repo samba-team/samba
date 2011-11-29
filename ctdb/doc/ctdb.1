@@ -33,7 +33,7 @@ ctdb \- clustered tdb database management utility
 .HP \w'\fBctdb\ [\ OPTIONS\ ]\ COMMAND\ \&.\&.\&.\fR\ 'u
 \fBctdb [ OPTIONS ] COMMAND \&.\&.\&.\fR
 .HP \w'\fBctdb\fR\ 'u
-\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>] [\-\-print\-emptyrecords] [\-\-print\-datasize] [\-\-print\-lmaster]
+\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>] [\-\-print\-emptyrecords] [\-\-print\-datasize] [\-\-print\-lmaster] [\-\-print\-hash]
 .SH "DESCRIPTION"
 .PP
 ctdb is a utility to view and manage a ctdb cluster\&.
@@ -96,6 +96,11 @@ This lets database dumps (catdb, cattdb, dumpdbbackup) print the size of the rec
 \-\-print\-lmaster
 .RS 4
 This lets catdb print the lmaster for each record\&.
+.RE
+.PP
+\-\-print\-hash
+.RS 4
+This lets database dumps (catdb, cattdb, dumpdbbackup) print the hash for each record\&.
 .RE
 .SH "ADMINISTRATIVE COMMANDS"
 .PP
