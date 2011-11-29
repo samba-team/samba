@@ -2,12 +2,12 @@
 .\"     Title: ctdb
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 10/12/2011
+.\"      Date: 11/29/2011
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDB" "1" "10/12/2011" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDB" "1" "11/29/2011" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -33,7 +33,7 @@ ctdb \- clustered tdb database management utility
 .HP \w'\fBctdb\ [\ OPTIONS\ ]\ COMMAND\ \&.\&.\&.\fR\ 'u
 \fBctdb [ OPTIONS ] COMMAND \&.\&.\&.\fR
 .HP \w'\fBctdb\fR\ 'u
-\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>]
+\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>] [\-\-print\-emptyrecords]
 .SH "DESCRIPTION"
 .PP
 ctdb is a utility to view and manage a ctdb cluster\&.
@@ -81,6 +81,11 @@ Change the debug level for the command\&. Default is 0\&.
 Specify the socketname to use when connecting to the local ctdb daemon\&. The default is /tmp/ctdb\&.socket \&.
 .sp
 You only need to specify this parameter if you run multiple ctdb daemons on the same physical host and thus can not use the default name for the domain socket\&.
+.RE
+.PP
+\-\-print\-emptyrecords
+.RS 4
+This enables printing of empty records when dumping databases with the catdb, cattbd and dumpdbbackup commands\&. Records with empty data segment are considered deleted by ctdb and cleaned by the vacuuming mechanism, so this switch can come in handy for debugging the vacuuming behaviour\&.
 .RE
 .SH "ADMINISTRATIVE COMMANDS"
 .PP
