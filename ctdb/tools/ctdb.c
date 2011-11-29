@@ -5329,62 +5329,6 @@ int main(int argc, const char *argv[])
 
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {
-			int j;
-
-			if (ctdb_commands[i].without_daemon == true) {
-				close(2);
-			}
-
-			/* initialise ctdb */
-			ctdb = ctdb_cmdline_client(ev, TIMELIMIT());
-
-			if (ctdb_commands[i].without_daemon == false) {
-				const char *socket_name;
-
-				if (ctdb == NULL) {
-					DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
-					exit(1);
-				}
-
-				/* initialize a libctdb connection as well */
-				socket_name = ctdb_get_socketname(ctdb);
-				ctdb_connection = ctdb_connect(socket_name,
-						       ctdb_log_file, stderr);
-				if (ctdb_connection == NULL) {
-					fprintf(stderr, "Failed to connect to daemon from libctdb\n");
-					exit(1);
-				}				
-			
-				/* verify the node exists */
-				verify_node(ctdb);
-
-				if (options.pnn == CTDB_CURRENT_NODE) {
-					int pnn;
-					pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
-					if (pnn == -1) {
-						return -1;
-					}
-					options.pnn = pnn;
-				}
-			}
-
-			if (ctdb_commands[i].auto_all && 
-			    options.pnn == CTDB_BROADCAST_ALL) {
-				uint32_t *nodes;
-				uint32_t num_nodes;
-				ret = 0;
-
-				nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-				CTDB_NO_MEMORY(ctdb, nodes);
-	
-				for (j=0;j<num_nodes;j++) {
-					options.pnn = nodes[j];
-					ret |= ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
-				}
-				talloc_free(nodes);
-			} else {
-				ret = ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
-			}
 			break;
 		}
 	}
@@ -5392,6 +5336,62 @@ int main(int argc, const char *argv[])
 	if (i == ARRAY_SIZE(ctdb_commands)) {
 		DEBUG(DEBUG_ERR, ("Unknown control '%s'\n", control));
 		exit(1);
+	}
+
+	if (ctdb_commands[i].without_daemon == true) {
+		close(2);
+	}
+
+	/* initialise ctdb */
+	ctdb = ctdb_cmdline_client(ev, TIMELIMIT());
+
+	if (ctdb_commands[i].without_daemon == false) {
+		const char *socket_name;
+
+		if (ctdb == NULL) {
+			DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
+			exit(1);
+		}
+
+		/* initialize a libctdb connection as well */
+		socket_name = ctdb_get_socketname(ctdb);
+		ctdb_connection = ctdb_connect(socket_name,
+					       ctdb_log_file, stderr);
+		if (ctdb_connection == NULL) {
+			fprintf(stderr, "Failed to connect to daemon from libctdb\n");
+			exit(1);
+		}				
+
+		/* verify the node exists */
+		verify_node(ctdb);
+
+		if (options.pnn == CTDB_CURRENT_NODE) {
+			int pnn;
+			pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
+			if (pnn == -1) {
+				return -1;
+			}
+			options.pnn = pnn;
+		}
+	}
+
+	if (ctdb_commands[i].auto_all && 
+	    options.pnn == CTDB_BROADCAST_ALL) {
+		uint32_t *nodes;
+		uint32_t num_nodes;
+		int j;
+		ret = 0;
+
+		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
+		CTDB_NO_MEMORY(ctdb, nodes);
+	
+		for (j=0;j<num_nodes;j++) {
+			options.pnn = nodes[j];
+			ret |= ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
+		}
+		talloc_free(nodes);
+	} else {
+		ret = ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
 	}
 
 	return ret;
