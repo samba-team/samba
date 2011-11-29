@@ -21,6 +21,9 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
+#include "../lib/async_req/async_sock.h"
+#include "../lib/util/tevent_ntstatus.h"
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
@@ -28,128 +31,251 @@
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "libcli/raw/raw_proto.h"
+#include "../libcli/smb/read_smb.h"
 
-/*
-  send a session request
-*/
-struct smbcli_request *smbcli_transport_connect_send(struct smbcli_transport *transport,
-						     struct nbt_name *calling, 
-						     struct nbt_name *called)
+struct smbcli_transport_connect_state {
+	struct tevent_context *ev;
+	struct smbcli_socket *sock;
+	uint8_t *request;
+	struct iovec iov;
+	uint8_t *response;
+};
+
+static void smbcli_transport_connect_writev_done(struct tevent_req *subreq);
+static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq);
+
+struct tevent_req *smbcli_transport_connect_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct smbcli_socket *sock,
+						 uint32_t timeout_msec,
+						 struct nbt_name *calling,
+						 struct nbt_name *called)
 {
-	uint8_t *p;
-	struct smbcli_request *req;
+	struct tevent_req *req;
+	struct smbcli_transport_connect_state *state;
+	struct tevent_req *subreq;
 	DATA_BLOB calling_blob, called_blob;
-	TALLOC_CTX *tmp_ctx = talloc_new(transport);
+	uint8_t *p;
 	NTSTATUS status;
 
-	status = nbt_name_dup(transport, called, &transport->called);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-	
-	status = nbt_name_to_blob(tmp_ctx, &calling_blob, calling);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbcli_transport_connect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->sock = sock;
 
-	status = nbt_name_to_blob(tmp_ctx, &called_blob, called);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
+	if (sock->port != 139) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 
-  	/* allocate output buffer */
-	req = smbcli_request_setup_nonsmb(transport, 
-					  NBT_HDR_SIZE + 
-					  calling_blob.length + called_blob.length);
-	if (req == NULL) goto failed;
+	status = nbt_name_to_blob(state, &calling_blob, calling);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	status = nbt_name_to_blob(state, &called_blob, called);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->request = talloc_array(state, uint8_t,
+				      NBT_HDR_SIZE +
+				      called_blob.length +
+				      calling_blob.length);
+	if (tevent_req_nomem(state->request, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	/* put in the destination name */
-	p = req->out.buffer + NBT_HDR_SIZE;
+	p = state->request + NBT_HDR_SIZE;
 	memcpy(p, called_blob.data, called_blob.length);
 	p += called_blob.length;
 
 	memcpy(p, calling_blob.data, calling_blob.length);
 	p += calling_blob.length;
 
-	_smb_setlen_nbt(req->out.buffer, PTR_DIFF(p, req->out.buffer) - NBT_HDR_SIZE);
-	SCVAL(req->out.buffer,0,0x81);
+	_smb_setlen_nbt(state->request,
+			PTR_DIFF(p, state->request) - NBT_HDR_SIZE);
+	SCVAL(state->request, 0, NBSSrequest);
 
-	if (!smbcli_request_send(req)) {
-		smbcli_request_destroy(req);
-		goto failed;
+	state->iov.iov_len = talloc_array_length(state->request);
+	state->iov.iov_base = (void *)state->request;
+
+	subreq = writev_send(state, ev, NULL,
+			     sock->sock->fd,
+			     true, /* err_on_readability */
+			     &state->iov, 1);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				smbcli_transport_connect_writev_done,
+				req);
+
+	if (timeout_msec > 0) {
+		struct timeval endtime;
+
+		endtime = timeval_current_ofs_msec(timeout_msec);
+		if (!tevent_req_set_endtime(req, ev, endtime)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
-	talloc_free(tmp_ctx);
 	return req;
-
-failed:
-	talloc_free(tmp_ctx);
-	return NULL;
 }
 
-/*
-  map a session request error to a NTSTATUS
- */
-static NTSTATUS map_session_refused_error(uint8_t error)
+static void smbcli_transport_connect_writev_done(struct tevent_req *subreq)
 {
-	switch (error) {
-	case 0x80:
-	case 0x81:
-		return NT_STATUS_REMOTE_NOT_LISTENING;
-	case 0x82:
-		return NT_STATUS_RESOURCE_NAME_NOT_FOUND;
-	case 0x83:
-		return NT_STATUS_REMOTE_RESOURCES;
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smbcli_transport_connect_state *state =
+		tevent_req_data(req,
+		struct smbcli_transport_connect_state);
+	ssize_t ret;
+	int err;
+
+	ret = writev_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix_common(err);
+
+		close(state->sock->sock->fd);
+		state->sock->sock->fd = -1;
+
+		tevent_req_nterror(req, status);
+		return;
 	}
-	return NT_STATUS_UNEXPECTED_IO_ERROR;
+
+	subreq = read_smb_send(state, state->ev,
+			       state->sock->sock->fd);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				smbcli_transport_connect_read_smb_done,
+				req);
 }
 
-
-/*
-  finish a smbcli_transport_connect()
-*/
-NTSTATUS smbcli_transport_connect_recv(struct smbcli_request *req)
+static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq)
 {
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smbcli_transport_connect_state *state =
+		tevent_req_data(req,
+		struct smbcli_transport_connect_state);
+	ssize_t ret;
+	int err;
 	NTSTATUS status;
+	uint8_t error;
 
-	if (!smbcli_request_receive(req)) {
-		smbcli_request_destroy(req);
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	ret = read_smb_recv(subreq, state,
+			    &state->response, &err);
+	if (ret == -1) {
+		status = map_nt_error_from_unix_common(err);
+
+		close(state->sock->sock->fd);
+		state->sock->sock->fd = -1;
+
+		tevent_req_nterror(req, status);
+		return;
 	}
 
-	switch (CVAL(req->in.buffer,0)) {
-	case 0x82:
-		status = NT_STATUS_OK;
+	if (ret < 4) {
+		close(state->sock->sock->fd);
+		state->sock->sock->fd = -1;
+
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	switch (CVAL(state->response, 0)) {
+	case NBSSpositive:
+		tevent_req_done(req);
+		return;
+
+	case NBSSnegative:
+		if (ret < 5) {
+			close(state->sock->sock->fd);
+			state->sock->sock->fd = -1;
+
+			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		error = CVAL(state->response, 4);
+		switch (error) {
+		case 0x80:
+		case 0x81:
+			status = NT_STATUS_REMOTE_NOT_LISTENING;
+			break;
+		case 0x82:
+			status = NT_STATUS_RESOURCE_NAME_NOT_FOUND;
+			break;
+		case 0x83:
+			status = NT_STATUS_REMOTE_RESOURCES;
+			break;
+		default:
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			break;
+		}
 		break;
-	case 0x83:
-		status = map_session_refused_error(CVAL(req->in.buffer,4));
-		break;
-	case 0x84:
+
+	case NBSSretarget:
 		DEBUG(1,("Warning: session retarget not supported\n"));
 		status = NT_STATUS_NOT_SUPPORTED;
 		break;
+
 	default:
-		status = NT_STATUS_UNEXPECTED_IO_ERROR;
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		break;
 	}
 
-	smbcli_request_destroy(req);
-	return status;
+	close(state->sock->sock->fd);
+	state->sock->sock->fd = -1;
+
+	tevent_req_nterror(req, status);
 }
 
-
-/*
-  send a session request (if needed)
-*/
-bool smbcli_transport_connect(struct smbcli_transport *transport,
-			      struct nbt_name *calling, 
-			      struct nbt_name *called)
+NTSTATUS smbcli_transport_connect_recv(struct tevent_req *req)
 {
-	struct smbcli_request *req;
-	NTSTATUS status;
+	return tevent_req_simple_recv_ntstatus(req);
+}
 
-	if (transport->socket->port == 445) {
-		return true;
+NTSTATUS smbcli_transport_connect(struct smbcli_socket *sock,
+				  uint32_t timeout_msec,
+				  struct nbt_name *calling,
+				  struct nbt_name *called)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool ok;
+
+	ev = tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	req = smbcli_transport_connect_send(transport, 
+	req = smbcli_transport_connect_send(frame, ev, sock,
+					    timeout_msec,
 					    calling, called);
+	if (req == NULL) {
+		goto fail;
+	}
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		status = map_nt_error_from_unix_common(errno);
+		goto fail;
+	}
 	status = smbcli_transport_connect_recv(req);
-	return NT_STATUS_IS_OK(status);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 struct sock_connect_state {

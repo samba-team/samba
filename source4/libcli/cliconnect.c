@@ -58,7 +58,17 @@ bool smbcli_transport_establish(struct smbcli_state *cli,
 				struct nbt_name *calling,
 				struct nbt_name *called)
 {
-	return smbcli_transport_connect(cli->transport, calling, called);
+	uint32_t timeout_msec = cli->transport->options.request_timeout * 1000;
+	NTSTATUS status;
+
+	status = smbcli_transport_connect(cli->transport->socket,
+					  timeout_msec,
+					  calling, called);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	return true;
 }
 
 /* wrapper around smb_raw_negotiate() */

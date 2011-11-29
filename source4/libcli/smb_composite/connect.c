@@ -52,11 +52,13 @@ struct connect_state {
 	struct smb_composite_sesssetup *io_setup;
 	struct smbcli_request *req;
 	struct composite_context *creq;
+	struct tevent_req *subreq;
 };
 
 
 static void request_handler(struct smbcli_request *);
 static void composite_handler(struct composite_context *);
+static void subreq_handler(struct tevent_req *subreq);
 
 /*
   a tree connect request has completed
@@ -301,7 +303,8 @@ static NTSTATUS connect_session_request(struct composite_context *c,
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 	NTSTATUS status;
 
-	status = smbcli_transport_connect_recv(state->req);
+	status = smbcli_transport_connect_recv(state->subreq);
+	TALLOC_FREE(state->subreq);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a negprot */
@@ -317,6 +320,7 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 	NTSTATUS status;
 	struct nbt_name calling, called;
+	uint32_t timeout_msec = io->in.options.request_timeout * 1000;
 
 	status = smbcli_sock_connect_recv(state->creq, state, &state->sock);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -340,21 +344,18 @@ static NTSTATUS connect_socket(struct composite_context *c,
 
 	nbt_choose_called_name(state, &called, io->in.called_name, NBT_NAME_SERVER);
 
-	/* we have a connected socket - next step is a session
-	   request, if needed. Port 445 doesn't need it, so it goes
-	   straight to the negprot */
-	if (state->sock->port == 445) {
-		status = nbt_name_dup(state->transport, &called, 
-				      &state->transport->called);
-		NT_STATUS_NOT_OK_RETURN(status);
-		return connect_send_negprot(c, io);
-	}
+	status = nbt_name_dup(state->transport, &called,
+			      &state->transport->called);
+	NT_STATUS_NOT_OK_RETURN(status);
 
-	state->req = smbcli_transport_connect_send(state->transport, &calling, &called);
-	NT_STATUS_HAVE_NO_MEMORY(state->req);
+	state->subreq = smbcli_transport_connect_send(state,
+						      state->transport->ev,
+						      state->transport->socket,
+						      timeout_msec,
+						      &calling, &called);
+	NT_STATUS_HAVE_NO_MEMORY(state->subreq);
 
-	state->req->async.fn = request_handler;
-	state->req->async.private_data = c;
+	tevent_req_set_callback(state->subreq, subreq_handler, c);
 	state->stage = CONNECT_SESSION_REQUEST;
 
 	return NT_STATUS_OK;
@@ -417,6 +418,17 @@ static void composite_handler(struct composite_context *creq)
 {
 	struct composite_context *c = talloc_get_type(creq->async.private_data, 
 						     struct composite_context);
+	state_handler(c);
+}
+
+/*
+  handler for completion of a tevent_req sub-request
+*/
+static void subreq_handler(struct tevent_req *subreq)
+{
+	struct composite_context *c =
+		tevent_req_callback_data(subreq,
+		struct composite_context);
 	state_handler(c);
 }
 
