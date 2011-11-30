@@ -487,7 +487,7 @@ unless ($opt_list) {
 		require target::Samba;
 		$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
 	} elsif ($opt_target eq "samba3") {
-		if ($opt_socket_wrapper and `$bindir/smbd -b | grep nOCKET_WRAPPER` eq "") {
+		if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 			die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 		}
 		$testenv_default = "member";
