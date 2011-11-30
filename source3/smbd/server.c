@@ -857,6 +857,23 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	return true;
 }
 
+
+/*
+  handle stdin becoming readable when we are in --foreground mode
+ */
+static void smbd_stdin_handler(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       uint16_t flags,
+			       void *private_data)
+{
+	char c;
+	if (read(0, &c, 1) != 1) {
+		/* we have reached EOF on stdin, which means the
+		   parent has exited. Shutdown the server */
+		exit_server_cleanly("EOF on stdin");
+	}
+}
+
 static void smbd_parent_loop(struct tevent_context *ev_ctx,
 			     struct smbd_parent_context *parent)
 {
@@ -1408,6 +1425,14 @@ extern void build_options(bool screen);
 	TALLOC_FREE(frame);
 	/* make sure we always have a valid stackframe */
 	frame = talloc_stackframe();
+
+	if (!Fork) {
+		/* if we are running in the foreground then look for
+		   EOF on stdin, and exit if it happens. This allows
+		   us to die if the parent process dies
+		*/
+		tevent_add_fd(ev_ctx, parent, 0, TEVENT_FD_READ, smbd_stdin_handler, NULL);
+	}
 
 	smbd_parent_loop(ev_ctx, parent);
 
