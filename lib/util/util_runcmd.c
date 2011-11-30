@@ -135,6 +135,10 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 		set_blocking(state->fd_stderr, false);
 		set_blocking(state->fd_stdin,  false);
 
+		smb_set_close_on_exec(state->fd_stdin);
+		smb_set_close_on_exec(state->fd_stdout);
+		smb_set_close_on_exec(state->fd_stderr);
+
 		talloc_set_destructor(state, samba_runcmd_state_destructor);
 
 		state->fde_stdout = tevent_add_fd(ev, state,
@@ -196,6 +200,10 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 	dup2(p3[0], 0);
 	dup2(p1[1], 1);
 	dup2(p2[1], 2);
+
+	close(p1[1]);
+	close(p2[1]);
+	close(p3[0]);
 
 	argv = str_list_copy(state, discard_const_p(const char *, argv0));
 	if (!argv) {
