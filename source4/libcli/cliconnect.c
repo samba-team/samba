@@ -35,36 +35,29 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 			   struct tevent_context *ev_ctx,
 			   struct resolve_context *resolve_ctx,
 			   struct smbcli_options *options,
-               const char *socket_options)
+			   const char *socket_options,
+			   struct nbt_name *calling,
+			   struct nbt_name *called)
 {
 	struct smbcli_socket *sock;
+	uint32_t timeout_msec = options->request_timeout * 1000;
+	NTSTATUS status;
 
 	sock = smbcli_sock_connect_byname(server, ports, NULL,
 					  resolve_ctx, ev_ctx,
                       socket_options);
 
 	if (sock == NULL) return false;
-	
-	cli->transport = smbcli_transport_init(sock, cli, true, options);
-	if (!cli->transport) {
-		return false;
-	}
 
-	return true;
-}
-
-/* wrapper around smbcli_transport_connect() */
-bool smbcli_transport_establish(struct smbcli_state *cli, 
-				struct nbt_name *calling,
-				struct nbt_name *called)
-{
-	uint32_t timeout_msec = cli->transport->options.request_timeout * 1000;
-	NTSTATUS status;
-
-	status = smbcli_transport_connect(cli->transport->socket,
+	status = smbcli_transport_connect(sock,
 					  timeout_msec,
 					  calling, called);
 	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	cli->transport = smbcli_transport_init(sock, cli, true, options);
+	if (!cli->transport) {
 		return false;
 	}
 

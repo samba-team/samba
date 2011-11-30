@@ -3184,6 +3184,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	struct nbt_name called, calling;
 	const char *server_name;
 	struct smbcli_state *cli;
+	bool ok;
 
 	make_nbt_name_client(&calling, netbios_name);
 
@@ -3191,17 +3192,18 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 
 	server_name = destip ? destip : desthost;
 
-	if (!(cli = smbcli_state_init(NULL)) ||
-	    !smbcli_socket_connect(cli, server_name, destports,
-				   ev_ctx, resolve_ctx, options,
-                   socket_options)) {
-		d_printf("Connection to %s failed\n", server_name);
+	cli = smbcli_state_init(NULL);
+	if (cli == NULL) {
+		d_printf("smbcli_state_init() failed\n");
 		return 1;
 	}
 
-	if (!smbcli_transport_establish(cli, &calling, &called)) {
-		d_printf("session request failed\n");
-		talloc_free(cli);
+	ok = smbcli_socket_connect(cli, server_name, destports,
+				   ev_ctx, resolve_ctx, options,
+				   socket_options,
+				   &calling, &called);
+	if (!ok) {
+		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}
 

@@ -40,6 +40,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 	struct smbcli_state *cli;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	struct smbcli_options options;
+	bool ok;
 
 	make_nbt_name_client(&calling, lpcfg_netbios_name(tctx->lp_ctx));
 
@@ -53,15 +54,14 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 
-	if (!smbcli_socket_connect(cli, host, lpcfg_smb_ports(tctx->lp_ctx), tctx->ev,
-				   lpcfg_resolve_context(tctx->lp_ctx), &options,
-                   lpcfg_socket_options(tctx->lp_ctx))) {
+	ok = smbcli_socket_connect(cli, host, lpcfg_smb_ports(tctx->lp_ctx),
+				   tctx->ev,
+				   lpcfg_resolve_context(tctx->lp_ctx),
+				   &options,
+				   lpcfg_socket_options(tctx->lp_ctx),
+				   &calling, &called);
+	if (!ok) {
 		torture_comment(tctx, "Failed to connect with %s\n", host);
-		goto failed;
-	}
-
-	if (!smbcli_transport_establish(cli, &calling, &called)) {
-		torture_comment(tctx, "%s rejected the session\n",host);
 		goto failed;
 	}
 

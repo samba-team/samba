@@ -88,10 +88,9 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 			   struct tevent_context *ev_ctx,
 			   struct resolve_context *resolve_ctx,
 			   struct smbcli_options *options,
-               const char *socket_options);
-bool smbcli_transport_establish(struct smbcli_state *cli, 
-				struct nbt_name *calling,
-				struct nbt_name *called);
+			   const char *socket_options,
+			   struct nbt_name *calling,
+			   struct nbt_name *called);
 NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol);
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
 			      struct cli_credentials *credentials,
