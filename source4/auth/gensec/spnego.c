@@ -428,6 +428,10 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		uint32_t j;
 		for (j=0; mechType && mechType[j]; j++) {
 			for (i=0; all_sec && all_sec[i].op; i++) {
+				if (strcmp(mechType[j], all_sec[i].oid) != 0) {
+					continue;
+				}
+
 				nt_status = gensec_subcontext_start(spnego_state,
 								    gensec_security,
 								    &spnego_state->sub_sec_security);
