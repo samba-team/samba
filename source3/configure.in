@@ -3871,7 +3871,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_string_to_key_salt, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_auth_con_setkey, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_auth_con_setuseruserkey, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_locate_kdc, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_permitted_enctypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_default_in_tkt_etypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_data_contents, $KRB5_LIBS)

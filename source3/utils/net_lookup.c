@@ -276,10 +276,11 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 #ifdef HAVE_KRB5
 	krb5_error_code rc;
 	krb5_context ctx;
-	struct sockaddr_in *addrs;
-	int num_kdcs,i;
-	krb5_data realm;
-	char **realms;
+	struct ip_service *kdcs;
+	const char *realm;
+	int num_kdcs = 0;
+	int i;
+	NTSTATUS status;
 
 	initialize_krb5_error_table();
 	rc = krb5_init_context(&ctx);
@@ -289,34 +290,37 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (argc>0) {
-                realm.data = CONST_DISCARD(char *, argv[0]);
-		realm.length = strlen(argv[0]);
+	if (argc > 0) {
+                realm = argv[0];
 	} else if (lp_realm() && *lp_realm()) {
-		realm.data = lp_realm();
-		realm.length = strlen((const char *)realm.data);
+		realm = lp_realm();
 	} else {
+		char **realms;
+
 		rc = krb5_get_host_realm(ctx, NULL, &realms);
 		if (rc) {
 			DEBUG(1,("krb5_gethost_realm failed (%s)\n",
 				 error_message(rc)));
 			return -1;
 		}
-		realm.data = (char *) *realms;
-		realm.length = strlen((const char *)realm.data);
+		realm = (const char *) *realms;
 	}
 
-	rc = smb_krb5_locate_kdc(ctx, &realm, (struct sockaddr **)(void *)&addrs, &num_kdcs, 0);
-	if (rc) {
-		DEBUG(1, ("smb_krb5_locate_kdc failed (%s)\n", error_message(rc)));
+	status = get_kdc_list(realm, NULL, &kdcs, &num_kdcs);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1,("get_kdc_list failed (%s)\n", nt_errstr(status)));
 		return -1;
 	}
-	for (i=0;i<num_kdcs;i++)
-		if (addrs[i].sin_family == AF_INET)
-			d_printf("%s:%hd\n", inet_ntoa(addrs[i].sin_addr),
-				 ntohs(addrs[i].sin_port));
-	return 0;
 
+	for (i = 0; i < num_kdcs; i++) {
+		char addr[INET6_ADDRSTRLEN];
+
+		print_sockaddr(addr, sizeof(addr), &kdcs[i].ss);
+
+		d_printf("%s:%hd\n", addr, kdcs[i].port);
+	}
+
+	return 0;
 #endif
 	DEBUG(1, ("No kerberos support\n"));
 	return -1;
