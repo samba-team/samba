@@ -107,6 +107,8 @@ void pidfile_create(const char *piddir, const char *name)
 		exit(1);
 	}
 
+	set_close_on_exec(fd);
+
 	if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==false) {
 		DEBUG(0,("ERROR: %s : fcntl lock of file %s failed. Error was %s\n",  
               name, pidFile, strerror(errno)));
