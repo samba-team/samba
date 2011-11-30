@@ -43,11 +43,17 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 	uint32_t timeout_msec = options->request_timeout * 1000;
 	NTSTATUS status;
 
-	sock = smbcli_sock_connect_byname(server, ports, NULL,
-					  resolve_ctx, ev_ctx,
-                      socket_options);
-
-	if (sock == NULL) return false;
+	status = smbcli_sock_connect(cli,
+				     NULL, /* host_addr */
+				     ports,
+				     server,
+				     resolve_ctx,
+				     ev_ctx,
+				     socket_options,
+				     &sock);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 
 	status = smbcli_transport_connect(sock,
 					  timeout_msec,
