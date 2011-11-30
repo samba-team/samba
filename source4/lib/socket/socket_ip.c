@@ -50,6 +50,8 @@ static NTSTATUS ipv4_init(struct socket_context *sock)
 		return map_nt_error_from_unix_common(errno);
 	}
 
+	set_close_on_exec(sock->fd);
+
 	sock->backend_name = "ipv4";
 	sock->family = AF_INET;
 
@@ -609,6 +611,8 @@ static NTSTATUS ipv6_init(struct socket_context *sock)
 	if (sock->fd == -1) {
 		return map_nt_error_from_unix_common(errno);
 	}
+
+	set_close_on_exec(sock->fd);
 
 	sock->backend_name = "ipv6";
 	sock->family = AF_INET6;
