@@ -379,11 +379,6 @@ NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 		       TALLOC_CTX *mem_ctx,
 		       struct smb_trans2 *parms);
 
-struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
-						 TALLOC_CTX *mem_ctx,
-						 struct resolve_context *resolve_ctx,
-						 struct tevent_context *event_ctx,
-						 const char *socket_options);
 void smbcli_sock_dead(struct smbcli_socket *sock);
 
 #endif /* __LIBCLI_RAW__H__ */
