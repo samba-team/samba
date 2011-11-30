@@ -26,7 +26,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--bindir=DIR] [--exeext=EXT][--target=samba|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--bindir=DIR] [--exeext=EXT][--target=samba|samba3|win] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -56,7 +56,7 @@ Executable extention
 
 Change directory to run tests in. Default is 'st'.
 
-=item I<--target samba|samba3|win|kvm>
+=item I<--target samba|samba3|win>
 
 Specify test target against which to run. Default is 'samba4'.
 
@@ -151,7 +151,6 @@ my $opt_one = 0;
 my @opt_exclude = ();
 my @opt_include = ();
 my $opt_verbose = 0;
-my $opt_image = undef;
 my $opt_testenv = 0;
 my $opt_list = 0;
 my $ldap = undef;
@@ -300,8 +299,8 @@ Usage: $Script [OPTIONS] TESTNAME-REGEX
 
 Generic options:
  --help                     this help page
- --target=samba[3]|win|kvm Samba version to target
- --testlist=FILE	    file to read available tests from
+ --target=samba[3]|win      Samba version to target
+ --testlist=FILE            file to read available tests from
 
 Paths:
  --prefix=DIR               prefix to run tests in [st]
@@ -310,16 +309,13 @@ Paths:
  --exeext=EXT               executable extention []
 
 Target Specific:
- --socket-wrapper-pcap	    save traffic to pcap directories
+ --socket-wrapper-pcap      save traffic to pcap directories
  --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
                             failed
  --socket-wrapper           enable socket wrapper
 
 Samba4 Specific:
  --ldap=openldap|fedora-ds  back samba onto specified ldap server
-
-Kvm Specific:
- --image=PATH               path to KVM image
 
 Behaviour:
  --quick                    run quick overall test
@@ -350,7 +346,6 @@ my $result = GetOptions (
 		'list' => \$opt_list,
 		'ldap:s' => \$ldap,
 		'resetup-environment' => \$opt_resetup_env,
-		'image=s' => \$opt_image,
 		'testlist=s' => \@testlists,
 		'load-list=s' => \$opt_load_list,
                 'binary-mapping=s' => \$opt_binary_mapping
@@ -504,12 +499,6 @@ unless ($opt_list) {
 		$testenv_default = "dc";
 		require target::Windows;
 		$target = new Windows();
-	} elsif ($opt_target eq "kvm") {
-		die("Kvm tests will not run with socket wrapper enabled.") 
-			if ($opt_socket_wrapper);
-		require target::Kvm;
-		die("No image specified") unless ($opt_image);
-		$target = new Kvm($opt_image, undef);
 	}
 }
 
