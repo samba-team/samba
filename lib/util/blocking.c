@@ -60,3 +60,21 @@ _PUBLIC_ int set_blocking(int fd, bool set)
 	return fcntl( fd, F_SETFL, val);
 #undef FLAG_TO_SET
 }
+
+
+_PUBLIC_ bool set_close_on_exec(int fd)
+{
+#ifdef FD_CLOEXEC
+	int val;
+
+	val = fcntl(fd, F_GETFD, 0);
+	if (val >= 0) {
+		val |= FD_CLOEXEC;
+		val = fcntl(fd, F_SETFD, val);
+		if (val != -1) {
+			return true;
+		}
+	}
+#endif
+	return false;
+}

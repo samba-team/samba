@@ -668,6 +668,11 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 _PUBLIC_ int set_blocking(int fd, bool set);
 
 /**
+   set close on exec on a file descriptor if available
+ **/
+_PUBLIC_ bool set_close_on_exec(int fd);
+
+/**
  Sleep for a specified number of milliseconds.
 **/
 _PUBLIC_ void smb_msleep(unsigned int t);
