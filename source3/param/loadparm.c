@@ -1418,7 +1418,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "max log size",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(max_log_size),
 		.special	= NULL,
@@ -1502,7 +1502,7 @@ static struct parm_struct parm_table[] = {
 
 	{
 		.label		= "allocation roundup size",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(iallocation_roundup_size),
 		.special	= NULL,
@@ -1511,7 +1511,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "aio read size",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(iAioReadSize),
 		.special	= NULL,
@@ -1520,7 +1520,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "aio write size",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(iAioWriteSize),
 		.special	= NULL,
@@ -1583,7 +1583,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "min receivefile size",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(iminreceivefile),
 		.special	= NULL,
@@ -1727,7 +1727,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "max xmit",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(max_xmit),
 		.special	= NULL,
@@ -1865,7 +1865,7 @@ static struct parm_struct parm_table[] = {
 
 	{
 		.label		= "block size",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(iBlock_size),
 		.special	= NULL,
@@ -1964,7 +1964,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "max disk size",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(maxdisksize),
 		.special	= NULL,
@@ -2054,7 +2054,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "write cache size",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(iWriteCacheSize),
 		.special	= NULL,
@@ -2117,7 +2117,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "smb2 max read",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(ismb2_max_read),
 		.special	= NULL,
@@ -2126,7 +2126,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "smb2 max write",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(ismb2_max_write),
 		.special	= NULL,
@@ -2135,7 +2135,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "smb2 max trans",
-		.type		= P_INTEGER,
+		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(ismb2_max_trans),
 		.special	= NULL,
