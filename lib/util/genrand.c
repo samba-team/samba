@@ -172,6 +172,9 @@ static int do_reseed(bool use_fd, int fd)
 	if (use_fd) {
 		if (fd == -1) {
 			fd = open( "/dev/urandom", O_RDONLY,0);
+			if (fd != -1) {
+				set_close_on_exec(fd);
+			}
 		}
 		if (fd != -1
 		    && (read(fd, seed_inbuf, sizeof(seed_inbuf)) == sizeof(seed_inbuf))) {
@@ -232,6 +235,9 @@ _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 		if (bytes_since_reseed < 40) {
 			if (urand_fd == -1) {
 				urand_fd = open( "/dev/urandom", O_RDONLY,0);
+				if (urand_fd != -1) {
+					set_close_on_exec(urand_fd);
+				}
 			}
 			if(urand_fd != -1 && (read(urand_fd, out, len) == len)) {
 				return;
@@ -269,6 +275,9 @@ _PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
 {
 	if (urand_fd == -1) {
 		urand_fd = open( "/dev/urandom", O_RDONLY,0);
+		if (urand_fd != -1) {
+			set_close_on_exec(urand_fd);
+		}
 	}
 	if(urand_fd != -1 && (read(urand_fd, out, len) == len)) {
 		return;
