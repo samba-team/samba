@@ -1545,6 +1545,35 @@ main() {
                 includes=includes,
                 msg='Checking for ctdb ipv6 support')
 
+        if have_cluster_support:
+            conf.CHECK_CODE('''
+                #define NO_CONFIG_H
+                #include "replace.h"
+                #include "system/wait.h"
+                #include "system/network.h"
+                #include <talloc.h>
+                #include <tdb.h>
+                #include <ctdb.h>
+                #include <ctdb_private.h>
+
+                int main(void)
+                {
+                    int i = (int)CTDB_CONTROL_CHECK_SRVIDS;
+                    return 0;
+                }
+                ''',
+                'HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL',
+                addmain=False,
+                includes=includes,
+		msg='Checking for CHECK_SRVIDS control')
+
+            if not conf.CONFIG_SET('HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL'):
+                if not Options.options.enable_old_ctdb:
+                    have_cluster_support = False
+                    ctdb_broken = "CHECK_SRVIDS control missing"
+                else:
+                    Logs.warn("ignoring missing CHECK_SRVIDS control (--enable-old-ctdb)")
+
     if have_cluster_support:
         Logs.info("building with cluster support")
         conf.DEFINE('CLUSTER_SUPPORT', 1);
