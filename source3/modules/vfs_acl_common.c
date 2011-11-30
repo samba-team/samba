@@ -426,9 +426,11 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		psd->group_sid = NULL;
 	}
 	if (!(security_info & SECINFO_DACL)) {
+		psd->type &= ~SEC_DESC_DACL_PRESENT;
 		psd->dacl = NULL;
 	}
 	if (!(security_info & SECINFO_SACL)) {
+		psd->type &= ~SEC_DESC_SACL_PRESENT;
 		psd->sacl = NULL;
 	}
 
