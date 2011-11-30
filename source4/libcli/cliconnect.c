@@ -39,8 +39,7 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 			   struct nbt_name *calling,
 			   struct nbt_name *called)
 {
-	struct smbcli_socket *sock;
-	uint32_t timeout_msec = options->request_timeout * 1000;
+	struct smbcli_socket *sock = NULL;
 	NTSTATUS status;
 
 	status = smbcli_sock_connect(cli,
@@ -50,14 +49,9 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 				     resolve_ctx,
 				     ev_ctx,
 				     socket_options,
+				     calling,
+				     called,
 				     &sock);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-
-	status = smbcli_transport_connect(sock,
-					  timeout_msec,
-					  calling, called);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}

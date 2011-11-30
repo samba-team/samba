@@ -35,7 +35,7 @@
 
 struct smbcli_transport_connect_state {
 	struct tevent_context *ev;
-	struct smbcli_socket *sock;
+	struct socket_context *sock;
 	uint8_t *request;
 	struct iovec iov;
 	uint8_t *response;
@@ -44,9 +44,10 @@ struct smbcli_transport_connect_state {
 static void smbcli_transport_connect_writev_done(struct tevent_req *subreq);
 static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq);
 
-struct tevent_req *smbcli_transport_connect_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *smbcli_transport_connect_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
-						 struct smbcli_socket *sock,
+						 struct socket_context *sock,
+						 uint16_t port,
 						 uint32_t timeout_msec,
 						 struct nbt_name *calling,
 						 struct nbt_name *called)
@@ -66,7 +67,7 @@ struct tevent_req *smbcli_transport_connect_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->sock = sock;
 
-	if (sock->port != 139) {
+	if (port != 139) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -105,7 +106,7 @@ struct tevent_req *smbcli_transport_connect_send(TALLOC_CTX *mem_ctx,
 	state->iov.iov_base = (void *)state->request;
 
 	subreq = writev_send(state, ev, NULL,
-			     sock->sock->fd,
+			     sock->fd,
 			     true, /* err_on_readability */
 			     &state->iov, 1);
 	if (tevent_req_nomem(subreq, req)) {
@@ -143,15 +144,15 @@ static void smbcli_transport_connect_writev_done(struct tevent_req *subreq)
 	if (ret == -1) {
 		NTSTATUS status = map_nt_error_from_unix_common(err);
 
-		close(state->sock->sock->fd);
-		state->sock->sock->fd = -1;
+		close(state->sock->fd);
+		state->sock->fd = -1;
 
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	subreq = read_smb_send(state, state->ev,
-			       state->sock->sock->fd);
+			       state->sock->fd);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -178,16 +179,16 @@ static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq)
 	if (ret == -1) {
 		status = map_nt_error_from_unix_common(err);
 
-		close(state->sock->sock->fd);
-		state->sock->sock->fd = -1;
+		close(state->sock->fd);
+		state->sock->fd = -1;
 
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (ret < 4) {
-		close(state->sock->sock->fd);
-		state->sock->sock->fd = -1;
+		close(state->sock->fd);
+		state->sock->fd = -1;
 
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
@@ -200,8 +201,8 @@ static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq)
 
 	case NBSSnegative:
 		if (ret < 5) {
-			close(state->sock->sock->fd);
-			state->sock->sock->fd = -1;
+			close(state->sock->fd);
+			state->sock->fd = -1;
 
 			tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
@@ -235,47 +236,15 @@ static void smbcli_transport_connect_read_smb_done(struct tevent_req *subreq)
 		break;
 	}
 
-	close(state->sock->sock->fd);
-	state->sock->sock->fd = -1;
+	close(state->sock->fd);
+	state->sock->fd = -1;
 
 	tevent_req_nterror(req, status);
 }
 
-NTSTATUS smbcli_transport_connect_recv(struct tevent_req *req)
+static NTSTATUS smbcli_transport_connect_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
-}
-
-NTSTATUS smbcli_transport_connect(struct smbcli_socket *sock,
-				  uint32_t timeout_msec,
-				  struct nbt_name *calling,
-				  struct nbt_name *called)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	bool ok;
-
-	ev = tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = smbcli_transport_connect_send(frame, ev, sock,
-					    timeout_msec,
-					    calling, called);
-	if (req == NULL) {
-		goto fail;
-	}
-	ok = tevent_req_poll(req, ev);
-	if (!ok) {
-		status = map_nt_error_from_unix_common(errno);
-		goto fail;
-	}
-	status = smbcli_transport_connect_recv(req);
- fail:
-	TALLOC_FREE(frame);
-	return status;
 }
 
 struct sock_connect_state {
@@ -285,12 +254,40 @@ struct sock_connect_state {
 	uint16_t *ports;
 	const char *socket_options;
 	struct smbcli_socket *result;
+	struct socket_connect_multi_ex multi_ex;
+	struct nbt_name calling;
+	struct nbt_name called;
 };
 
 /*
   connect a smbcli_socket context to an IP/port pair
   if port is 0 then choose 445 then 139
 */
+
+static struct tevent_req *smbcli_sock_establish_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct socket_context *sock,
+						     struct socket_address *addr,
+						     void *private_data)
+{
+	struct sock_connect_state *state =
+		talloc_get_type_abort(private_data,
+		struct sock_connect_state);
+	uint32_t timeout_msec = 15 * 1000;
+
+	return smbcli_transport_connect_send(state,
+					     ev,
+					     sock,
+					     addr->port,
+					     timeout_msec,
+					     &state->calling,
+					     &state->called);
+}
+
+static NTSTATUS smbcli_sock_establish_recv(struct tevent_req *req)
+{
+	return smbcli_transport_connect_recv(req);
+}
 
 static void smbcli_sock_connect_recv_conn(struct composite_context *ctx);
 
@@ -300,10 +297,13 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 						   const char *host_name,
 						   struct resolve_context *resolve_ctx,
 						   struct tevent_context *event_ctx,
-						   const char *socket_options)
+						   const char *socket_options,
+						   struct nbt_name *calling,
+						   struct nbt_name *called)
 {
 	struct composite_context *result, *ctx;
 	struct sock_connect_state *state;
+	NTSTATUS status;
 	int i;
 
 	result = talloc_zero(mem_ctx, struct composite_context);
@@ -333,10 +333,24 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 		host_addr = host_name;
 	}
 
-	ctx = socket_connect_multi_send(state, host_addr,
-					state->num_ports, state->ports,
-					resolve_ctx,
-					state->ctx->event_ctx);
+	state->multi_ex.private_data = state;
+	state->multi_ex.establish_send = smbcli_sock_establish_send;
+	state->multi_ex.establish_recv = smbcli_sock_establish_recv;
+
+	status = nbt_name_dup(state, calling, &state->calling);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+	status = nbt_name_dup(state, called, &state->called);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	ctx = socket_connect_multi_ex_send(state, host_addr,
+					   state->num_ports, state->ports,
+					   resolve_ctx,
+					   state->ctx->event_ctx,
+					   &state->multi_ex);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = smbcli_sock_connect_recv_conn;
 	ctx->async.private_data = state;
@@ -355,8 +369,8 @@ static void smbcli_sock_connect_recv_conn(struct composite_context *ctx)
 	struct socket_context *sock;
 	uint16_t port;
 
-	state->ctx->status = socket_connect_multi_recv(ctx, state, &sock,
-						       &port);
+	state->ctx->status = socket_connect_multi_ex_recv(ctx, state, &sock,
+							  &port);
 	if (!composite_is_ok(state->ctx)) return;
 
 	state->ctx->status =
@@ -406,13 +420,16 @@ NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 			     const char *host_name,
 			     struct resolve_context *resolve_ctx,
 			     struct tevent_context *event_ctx,
-				 const char *socket_options,
+			     const char *socket_options,
+			     struct nbt_name *calling,
+			     struct nbt_name *called,
 			     struct smbcli_socket **result)
 {
 	struct composite_context *c =
 		smbcli_sock_connect_send(mem_ctx, host_addr, ports, host_name,
 					 resolve_ctx,
-					 event_ctx, socket_options);
+					 event_ctx, socket_options,
+					 calling, called);
 	return smbcli_sock_connect_recv(c, mem_ctx, result);
 }
 

@@ -29,6 +29,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "auth/credentials/credentials.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 struct smb2_connect_state {
@@ -39,6 +40,7 @@ struct smb2_connect_state {
 	const char *share;
 	const char **ports;
 	const char *socket_options;
+	struct nbt_name calling, called;
 	struct gensec_settings *gensec_settings;
 	struct smbcli_options options;
 	struct smb2_transport *transport;
@@ -47,7 +49,7 @@ struct smb2_connect_state {
 	struct smb2_tree *tree;
 };
 
-static void smb2_connect_resolve_done(struct composite_context *creq);
+static void smb2_connect_socket_done(struct composite_context *creq);
 
 /*
   a composite function that does a full negprot/sesssetup/tcon, returning
@@ -66,8 +68,8 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct smb2_connect_state *state;
-	struct nbt_name name;
 	struct composite_context *creq;
+	static const char *default_ports[] = { "445", "139", NULL };
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2_connect_state);
@@ -85,52 +87,28 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	state->socket_options = socket_options;
 	state->gensec_settings = gensec_settings;
 
-	ZERO_STRUCT(name);
-	name.name = host;
+	if (state->ports == NULL) {
+		state->ports = default_ports;
+	}
 
-	creq = resolve_name_send(resolve_ctx, state, &name, ev);
+	make_nbt_name_client(&state->calling,
+			     cli_credentials_get_workstation(credentials));
+
+	nbt_choose_called_name(state, &state->called,
+			       host, NBT_NAME_SERVER);
+
+	creq = smbcli_sock_connect_send(state, NULL, state->ports,
+					state->host, state->resolve_ctx,
+					state->ev, state->socket_options,
+					&state->calling,
+					&state->called);
 	if (tevent_req_nomem(creq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	creq->async.fn = smb2_connect_resolve_done;
-	creq->async.private_data = req;
-	return req;
-}
-
-static void smb2_connect_socket_done(struct composite_context *creq);
-
-static void smb2_connect_resolve_done(struct composite_context *creq)
-{
-	struct tevent_req *req =
-		talloc_get_type_abort(creq->async.private_data,
-		struct tevent_req);
-	struct smb2_connect_state *state =
-		tevent_req_data(req,
-		struct smb2_connect_state);
-	NTSTATUS status;
-	const char *addr;
-	const char **ports;
-	const char *default_ports[] = { "445", NULL };
-
-	status = resolve_name_recv(creq, state, &addr);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	if (state->ports == NULL) {
-		ports = default_ports;
-	} else {
-		ports = state->ports;
-	}
-
-	creq = smbcli_sock_connect_send(state, addr, ports,
-					state->host, state->resolve_ctx,
-					state->ev, state->socket_options);
-	if (tevent_req_nomem(creq, req)) {
-		return;
-	}
 	creq->async.fn = smb2_connect_socket_done;
 	creq->async.private_data = req;
+
+	return req;
 }
 
 static void smb2_connect_negprot_done(struct tevent_req *subreq);
