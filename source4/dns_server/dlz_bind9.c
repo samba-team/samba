@@ -52,6 +52,8 @@ struct dlz_bind9_data {
 
 	/* Used for dynamic update */
 	struct smb_krb5_context *smb_krb5_ctx;
+	struct auth_session_info *session_info;
+	char *update_name;
 
 	/* helper functions from the dlz_dlopen driver */
 	void (*log)(int level, const char *fmt, ...);
@@ -1053,6 +1055,16 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	const char * attrs[] = { NULL };
 	uint32_t access_mask;
 
+	/* Remove cached credentials, if any */
+	if (state->session_info) {
+		talloc_free(state->session_info);
+		state->session_info = NULL;
+	}
+	if (state->update_name) {
+		talloc_free(state->update_name);
+		state->update_name = NULL;
+	}
+
 	tmp_ctx = talloc_new(NULL);
 	if (tmp_ctx == NULL) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: no memory");
@@ -1154,6 +1166,15 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 		talloc_free(tmp_ctx);
 		return false;
 	}
+
+	/* Cache session_info, so it can be used in the actual add/delete operation */
+	state->update_name = talloc_strdup(state, name);
+	if (state->update_name == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: memory allocation error");
+		talloc_free(tmp_ctx);
+		return false;
+	}
+	state->session_info = talloc_steal(state, session_info);
 
 	state->log(ISC_LOG_INFO, "samba_dlz: allowing update of signer=%s name=%s tcpaddr=%s type=%s key=%s",
 		   signer, name, tcpaddr, type, key);
@@ -1278,6 +1299,39 @@ static bool b9_record_match(struct dlz_bind9_data *state,
 	return false;
 }
 
+/*
+ * Update session_info on samdb using the cached credentials
+ */
+static bool b9_set_session_info(struct dlz_bind9_data *state, const char *name)
+{
+	int ret;
+
+	if (state->update_name == NULL || state->session_info == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: invalid credentials");
+		return false;
+	}
+
+	/* Do not use client credentials, if we not updating the client specified name */
+	if (strcmp(state->update_name, name) != 0) {
+		return true;
+	}
+
+	ret = ldb_set_opaque(state->samdb, "sessionInfo", state->session_info);
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: unable to set session info");
+		return false;
+	}
+
+	return true;
+}
+
+/*
+ * Reset session_info on samdb as system session
+ */
+static void b9_reset_session_info(struct dlz_bind9_data *state)
+{
+	ldb_set_opaque(state->samdb, "sessionInfo", system_session(state->lp));
+}
 
 /*
   add or modify a rdataset
@@ -1329,7 +1383,12 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	/* get any existing records */
 	ret = ldb_search(state->samdb, rec, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsNode");
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		if (!b9_set_session_info(state, name)) {
+			talloc_free(rec);
+			return ISC_R_FAILURE;
+		}
 		result = b9_add_record(state, name, dn, rec);
+		b9_reset_session_info(state);
 		talloc_free(rec);
 		if (result == ISC_R_SUCCESS) {
 			state->log(ISC_LOG_ERROR, "samba_dlz: added %s %s", name, rdatastr);
@@ -1383,9 +1442,16 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		return ISC_R_FAILURE;
 	}
 
+
+	if (!b9_set_session_info(state, name)) {
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
 	/* modify the record */
 	el->flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(state->samdb, res->msgs[0]);
+	b9_reset_session_info(state);
 	if (ret != LDB_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
 			   ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
@@ -1480,14 +1546,21 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	}
 	el->num_values--;
 
+	if (!b9_set_session_info(state, name)) {
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
 	if (el->num_values == 0) {
 		/* delete the record */
 		ret = ldb_delete(state->samdb, dn);
+		b9_reset_session_info(state);
 	} else {
 		/* modify the record */
 		el->flags = LDB_FLAG_MOD_REPLACE;
 		ret = ldb_modify(state->samdb, res->msgs[0]);
 	}
+	b9_reset_session_info(state);
 	if (ret != LDB_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
 			   ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
@@ -1581,6 +1654,11 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 		return ISC_R_FAILURE;
 	}
 
+	if (!b9_set_session_info(state, name)) {
+		talloc_free(tmp_ctx);
+		return ISC_R_FAILURE;
+	}
+
 	if (el->num_values == 0) {
 		/* delete the record */
 		ret = ldb_delete(state->samdb, dn);
@@ -1589,6 +1667,7 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 		el->flags = LDB_FLAG_MOD_REPLACE;
 		ret = ldb_modify(state->samdb, res->msgs[0]);
 	}
+	b9_reset_session_info(state);
 	if (ret != LDB_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to delete type %s in %s - %s",
 			   type, ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
