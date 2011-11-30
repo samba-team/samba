@@ -231,7 +231,7 @@ static int commit_open(
 		c->eof = st.st_ex_size;
         }
 
-        return 0;
+        return fd;
 }
 
 static ssize_t commit_write(
