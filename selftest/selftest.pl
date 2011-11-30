@@ -483,32 +483,34 @@ if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
     $server_maxtime = $ENV{SMBD_MAXTIME};
 }
 
-if ($opt_target eq "samba") {
-	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
-		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
+unless ($opt_list) {
+	if ($opt_target eq "samba") {
+		if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
+			die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
+		}
+		$testenv_default = "dc";
+		require target::Samba;
+		$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
+	} elsif ($opt_target eq "samba3") {
+		if ($opt_socket_wrapper and `$bindir/smbd -b | grep nOCKET_WRAPPER` eq "") {
+			die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
+		}
+		$testenv_default = "member";
+		require target::Samba3;
+		$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $exeext, $server_maxtime);
+	} elsif ($opt_target eq "win") {
+		die("Windows tests will not run with socket wrapper enabled.") 
+			if ($opt_socket_wrapper);
+		$testenv_default = "dc";
+		require target::Windows;
+		$target = new Windows();
+	} elsif ($opt_target eq "kvm") {
+		die("Kvm tests will not run with socket wrapper enabled.") 
+			if ($opt_socket_wrapper);
+		require target::Kvm;
+		die("No image specified") unless ($opt_image);
+		$target = new Kvm($opt_image, undef);
 	}
-	$testenv_default = "dc";
-	require target::Samba;
-	$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
-} elsif ($opt_target eq "samba3") {
-	if ($opt_socket_wrapper and `$bindir/smbd -b | grep nOCKET_WRAPPER` eq "") {
-		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
-	}
-	$testenv_default = "member";
-	require target::Samba3;
-	$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $exeext, $server_maxtime);
-} elsif ($opt_target eq "win") {
-	die("Windows tests will not run with socket wrapper enabled.") 
-		if ($opt_socket_wrapper);
-	$testenv_default = "dc";
-	require target::Windows;
-	$target = new Windows();
-} elsif ($opt_target eq "kvm") {
-	die("Kvm tests will not run with socket wrapper enabled.") 
-		if ($opt_socket_wrapper);
-	require target::Kvm;
-	die("No image specified") unless ($opt_image);
-	$target = new Kvm($opt_image, undef);
 }
 
 #
