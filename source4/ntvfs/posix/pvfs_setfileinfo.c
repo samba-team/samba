@@ -534,7 +534,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		}
 		mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
 		if (!(h->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
-			if (pvfs_sys_fchmod(pvfs, h->fd, mode) == -1) {
+			if (pvfs_sys_fchmod(pvfs, h->fd, mode, h->name->allow_override) == -1) {
 				return pvfs_map_errno(pvfs, errno);
 			}
 		}
@@ -859,7 +859,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	newstats.dos.attrib |= (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY);
 	if (newstats.dos.attrib != name->dos.attrib) {
 		mode_t mode = pvfs_fileperms(pvfs, newstats.dos.attrib);
-		if (pvfs_sys_chmod(pvfs, name->full_name, mode) == -1) {
+		if (pvfs_sys_chmod(pvfs, name->full_name, mode, name->allow_override) == -1) {
 			return pvfs_map_errno(pvfs, errno);
 		}
 		change_mask |= FILE_NOTIFY_CHANGE_ATTRIBUTES;

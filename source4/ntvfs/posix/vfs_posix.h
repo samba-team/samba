@@ -131,6 +131,7 @@ struct pvfs_filename {
 	bool has_wildcard;
 	bool exists;          /* true if the base filename exists */
 	bool stream_exists;   /* true if the stream exists */
+	bool allow_override;
 	struct stat st;
 	struct pvfs_dos_fileinfo dos;
 };

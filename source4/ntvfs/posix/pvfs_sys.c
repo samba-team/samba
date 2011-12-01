@@ -256,7 +256,7 @@ static int pvfs_sys_chown(struct pvfs_state *pvfs, struct pvfs_sys_ctx *ctx, con
 /*
   wrap open for system override
 */
-int pvfs_sys_open(struct pvfs_state *pvfs, const char *filename, int flags, mode_t mode)
+int pvfs_sys_open(struct pvfs_state *pvfs, const char *filename, int flags, mode_t mode, bool allow_override)
 {
 	int fd, ret;
 	struct pvfs_sys_ctx *ctx;
@@ -267,7 +267,7 @@ int pvfs_sys_open(struct pvfs_state *pvfs, const char *filename, int flags, mode
 
 	fd = open(filename, flags, mode);
 	if (fd != -1 ||
-	    !(pvfs->flags & PVFS_FLAG_PERM_OVERRIDE) ||
+	    !allow_override ||
 	    errno != EACCES) {
 		return fd;
 	}
@@ -366,7 +366,7 @@ int pvfs_sys_open(struct pvfs_state *pvfs, const char *filename, int flags, mode
 /*
   wrap unlink for system override
 */
-int pvfs_sys_unlink(struct pvfs_state *pvfs, const char *filename)
+int pvfs_sys_unlink(struct pvfs_state *pvfs, const char *filename, bool allow_override)
 {
 	int ret;
 	struct pvfs_sys_ctx *ctx;
@@ -376,7 +376,7 @@ int pvfs_sys_unlink(struct pvfs_state *pvfs, const char *filename)
 
 	ret = unlink(filename);
 	if (ret != -1 ||
-	    !(pvfs->flags & PVFS_FLAG_PERM_OVERRIDE) ||
+	    !allow_override ||
 	    errno != EACCES) {
 		return ret;
 	}
@@ -415,7 +415,7 @@ static bool contains_symlink(const char *path)
 /*
   wrap rename for system override
 */
-int pvfs_sys_rename(struct pvfs_state *pvfs, const char *name1, const char *name2)
+int pvfs_sys_rename(struct pvfs_state *pvfs, const char *name1, const char *name2, bool allow_override)
 {
 	int ret;
 	struct pvfs_sys_ctx *ctx;
@@ -425,7 +425,7 @@ int pvfs_sys_rename(struct pvfs_state *pvfs, const char *name1, const char *name
 
 	ret = rename(name1, name2);
 	if (ret != -1 ||
-	    !(pvfs->flags & PVFS_FLAG_PERM_OVERRIDE) ||
+	    !allow_override ||
 	    errno != EACCES) {
 		return ret;
 	}
@@ -480,7 +480,7 @@ int pvfs_sys_rename(struct pvfs_state *pvfs, const char *name1, const char *name
 /*
   wrap mkdir for system override
 */
-int pvfs_sys_mkdir(struct pvfs_state *pvfs, const char *dirname, mode_t mode)
+int pvfs_sys_mkdir(struct pvfs_state *pvfs, const char *dirname, mode_t mode, bool allow_override)
 {
 	int ret;
 	struct pvfs_sys_ctx *ctx;
@@ -490,7 +490,7 @@ int pvfs_sys_mkdir(struct pvfs_state *pvfs, const char *dirname, mode_t mode)
 
 	ret = mkdir(dirname, mode);
 	if (ret != -1 ||
-	    !(pvfs->flags & PVFS_FLAG_PERM_OVERRIDE) ||
+	    !allow_override ||
 	    errno != EACCES) {
 		return ret;
 	}
@@ -525,7 +525,7 @@ int pvfs_sys_mkdir(struct pvfs_state *pvfs, const char *dirname, mode_t mode)
 /*
   wrap rmdir for system override
 */
-int pvfs_sys_rmdir(struct pvfs_state *pvfs, const char *dirname)
+int pvfs_sys_rmdir(struct pvfs_state *pvfs, const char *dirname, bool allow_override)
 {
 	int ret;
 	struct pvfs_sys_ctx *ctx;
@@ -535,7 +535,7 @@ int pvfs_sys_rmdir(struct pvfs_state *pvfs, const char *dirname)
 
 	ret = rmdir(dirname);
 	if (ret != -1 ||
-	    !(pvfs->flags & PVFS_FLAG_PERM_OVERRIDE) ||
+	    !allow_override ||
 	    errno != EACCES) {
 		return ret;
 	}
@@ -563,7 +563,7 @@ int pvfs_sys_rmdir(struct pvfs_state *pvfs, const char *dirname)
 /*
   wrap fchmod for system override
 */
-int pvfs_sys_fchmod(struct pvfs_state *pvfs, int fd, mode_t mode)
+int pvfs_sys_fchmod(struct pvfs_state *pvfs, int fd, mode_t mode, bool allow_override)
 {
 	int ret;
 	struct pvfs_sys_ctx *ctx;
@@ -573,7 +573,7 @@ int pvfs_sys_fchmod(struct pvfs_state *pvfs, int fd, mode_t mode)
 
 	ret = fchmod(fd, mode);
 	if (ret != -1 ||
-	    !(pvfs->flags & PVFS_FLAG_PERM_OVERRIDE) ||
+	    !allow_override ||
 	    errno != EACCES) {
 		return ret;
 	}
@@ -602,7 +602,7 @@ int pvfs_sys_fchmod(struct pvfs_state *pvfs, int fd, mode_t mode)
 /*
   wrap chmod for system override
 */
-int pvfs_sys_chmod(struct pvfs_state *pvfs, const char *filename, mode_t mode)
+int pvfs_sys_chmod(struct pvfs_state *pvfs, const char *filename, mode_t mode, bool allow_override)
 {
 	int ret;
 	struct pvfs_sys_ctx *ctx;
@@ -612,7 +612,7 @@ int pvfs_sys_chmod(struct pvfs_state *pvfs, const char *filename, mode_t mode)
 
 	ret = chmod(filename, mode);
 	if (ret != -1 ||
-	    !(pvfs->flags & PVFS_FLAG_PERM_OVERRIDE) ||
+	    !allow_override ||
 	    errno != EACCES) {
 		return ret;
 	}

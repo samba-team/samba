@@ -518,6 +518,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs,
 
 	(*name)->exists = false;
 	(*name)->stream_exists = false;
+	(*name)->allow_override = false;
 
 	if (!(pvfs->fs_attribs & FS_ATTR_NAMED_STREAMS)) {
 		flags &= ~PVFS_RESOLVE_STREAMS;
@@ -630,6 +631,7 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	(*name)->original_name = talloc_strdup(*name, fname);
 	(*name)->stream_name = NULL;
 	(*name)->stream_id = 0;
+	(*name)->allow_override = false;
 
 	status = pvfs_fill_dos_info(pvfs, *name, flags, -1);
 
@@ -815,6 +817,7 @@ NTSTATUS pvfs_resolve_parent(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	}
 	(*name)->stream_name = NULL;
 	(*name)->stream_id = 0;
+	(*name)->allow_override = false;
 
 	status = pvfs_fill_dos_info(pvfs, *name, PVFS_RESOLVE_NO_OPENDB, -1);
 

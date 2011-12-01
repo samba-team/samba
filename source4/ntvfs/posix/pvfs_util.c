@@ -90,7 +90,8 @@ uint32_t pvfs_attrib_normalise(uint32_t attrib, mode_t mode)
 */
 NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 			struct pvfs_filename *name1, 
-			struct pvfs_filename *name2)
+			struct pvfs_filename *name2,
+			bool allow_override)
 {
 	int fd1, fd2;
 	mode_t mode;
@@ -102,13 +103,13 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fd1 = pvfs_sys_open(pvfs, name1->full_name, O_RDONLY, 0);
+	fd1 = pvfs_sys_open(pvfs, name1->full_name, O_RDONLY, 0, allow_override);
 	if (fd1 == -1) {
 		talloc_free(buf);
 		return pvfs_map_errno(pvfs, errno);
 	}
 
-	fd2 = pvfs_sys_open(pvfs, name2->full_name, O_CREAT|O_EXCL|O_WRONLY, 0);
+	fd2 = pvfs_sys_open(pvfs, name2->full_name, O_CREAT|O_EXCL|O_WRONLY, 0, allow_override);
 	if (fd2 == -1) {
 		close(fd1);
 		talloc_free(buf);
@@ -133,7 +134,7 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 			close(fd1);
 			close(fd2);
 			talloc_free(buf);
-			pvfs_sys_unlink(pvfs, name2->full_name);
+			pvfs_sys_unlink(pvfs, name2->full_name, allow_override);
 			if (ret2 == -1) {
 				return pvfs_map_errno(pvfs, errno);
 			}
@@ -145,10 +146,10 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 	close(fd1);
 
 	mode = pvfs_fileperms(pvfs, name1->dos.attrib);
-	if (pvfs_sys_fchmod(pvfs, fd2, mode) == -1) {
+	if (pvfs_sys_fchmod(pvfs, fd2, mode, allow_override) == -1) {
 		status = pvfs_map_errno(pvfs, errno);
 		close(fd2);
-		pvfs_sys_unlink(pvfs, name2->full_name);
+		pvfs_sys_unlink(pvfs, name2->full_name, allow_override);
 		return status;
 	}
 
@@ -158,7 +159,7 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 	status = pvfs_dosattrib_save(pvfs, name2, fd2);
 	if (!NT_STATUS_IS_OK(status)) {
 		close(fd2);
-		pvfs_sys_unlink(pvfs, name2->full_name);
+		pvfs_sys_unlink(pvfs, name2->full_name, allow_override);
 		return status;
 	}
 

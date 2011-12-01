@@ -643,6 +643,14 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	/* check the acl against the required access mask */
 	status = se_access_check(sd, token, *access_mask, access_mask);
 	talloc_free(acl);
+
+	/* if we used a NT acl, then allow access override if the
+	   share allows for posix permission override
+	*/
+	if (NT_STATUS_IS_OK(status)) {
+		name->allow_override = (pvfs->flags & PVFS_FLAG_PERM_OVERRIDE) != 0;
+	}
+
 done:
 	if (pvfs->ntvfs->ctx->protocol < PROTOCOL_SMB2_02) {
 		/* on SMB, this bit is always granted, even if not
@@ -771,7 +779,11 @@ NTSTATUS pvfs_access_check_parent(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	return pvfs_access_check_simple(pvfs, req, parent, access_mask);
+	status = pvfs_access_check_simple(pvfs, req, parent, access_mask);
+	if (NT_STATUS_IS_OK(status) && parent->allow_override) {
+		name->allow_override = true;
+	}
+	return status;
 }
 
 

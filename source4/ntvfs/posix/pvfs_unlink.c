@@ -123,7 +123,7 @@ static NTSTATUS pvfs_unlink_file(struct pvfs_state *pvfs,
 	}
 
 	/* finally try the actual unlink */
-	if (pvfs_sys_unlink(pvfs, name->full_name) == -1) {
+	if (pvfs_sys_unlink(pvfs, name->full_name, name->allow_override) == -1) {
 		status = pvfs_map_errno(pvfs, errno);
 	}
 
