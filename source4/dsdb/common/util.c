@@ -1306,7 +1306,7 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	}
 
 	ret = ldb_search(ldb, tmp_ctx, &root_res, ldb_dn_new(tmp_ctx, ldb, ""), LDB_SCOPE_BASE, root_attrs, NULL);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Searching for dsServiceName in rootDSE failed: %s\n", 
 			 ldb_errstring(ldb)));
 		goto failed;
