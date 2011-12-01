@@ -53,6 +53,17 @@ unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout)
 }
 
 /****************************************************************************
+ Set the 'backup_intent' flag.
+****************************************************************************/
+
+bool cli_set_backup_intent(struct cli_state *cli, bool flag)
+{
+	bool old_state = cli->backup_intent;
+	cli->backup_intent = flag;
+	return old_state;
+}
+
+/****************************************************************************
  convenience routine to find if we negotiated ucs2
 ****************************************************************************/
 

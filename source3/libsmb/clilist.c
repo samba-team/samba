@@ -585,7 +585,8 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->param, 2, state->max_matches);
 	SSVAL(state->param, 4,
 	      FLAG_TRANS2_FIND_REQUIRE_RESUME
-	      |FLAG_TRANS2_FIND_CLOSE_IF_END);
+	      |FLAG_TRANS2_FIND_CLOSE_IF_END
+	      |(cli->backup_intent ? FLAG_TRANS2_FIND_BACKUP_INTENT : 0));
 	SSVAL(state->param, 6, state->info_level);
 	SIVAL(state->param, 8, 0);
 
@@ -760,7 +761,8 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	 * continue instead. JRA
 	 */
 	SSVAL(param, 10, (FLAG_TRANS2_FIND_REQUIRE_RESUME
-			  |FLAG_TRANS2_FIND_CLOSE_IF_END));
+			  |FLAG_TRANS2_FIND_CLOSE_IF_END
+			  |(state->cli->backup_intent ? FLAG_TRANS2_FIND_BACKUP_INTENT : 0)));
 	if (last_name_raw.length) {
 		state->param = trans2_bytes_push_bytes(state->param,
 						       last_name_raw.data,

@@ -75,6 +75,7 @@ struct cli_state {
 	/* What the client requested. */
 	uint32_t requested_posix_capabilities;
 	bool dfsroot;
+	bool backup_intent;
 
 	/* the session key for this CLI, outside
 	   any per-pipe authenticaion */

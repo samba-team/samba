@@ -1813,7 +1813,8 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	SIVAL(vwv+13, 1, FileAttributes);
 	SIVAL(vwv+15, 1, ShareAccess);
 	SIVAL(vwv+17, 1, CreateDisposition);
-	SIVAL(vwv+19, 1, CreateOptions);
+	SIVAL(vwv+19, 1, CreateOptions |
+		(cli->backup_intent ? FILE_OPEN_FOR_BACKUP_INTENT : 0));
 	SIVAL(vwv+21, 1, 0x02);	/* ImpersonationLevel */
 	SCVAL(vwv+23, 1, SecurityFlags);
 
@@ -2002,7 +2003,8 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 	SIVAL(param, 20, FileAttributes);
 	SIVAL(param, 24, ShareAccess);
 	SIVAL(param, 28, CreateDisposition);
-	SIVAL(param, 32, CreateOptions);
+	SIVAL(param, 32, CreateOptions |
+		(cli->backup_intent ? FILE_OPEN_FOR_BACKUP_INTENT : 0));
 	SIVAL(param, 36, secdesc_len);
 	SIVAL(param, 40, 0);	 /* EA length*/
 	SIVAL(param, 44, converted_len);
