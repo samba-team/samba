@@ -508,32 +508,36 @@ static NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 				       uint32_t *access_mask)
 {
 	uid_t uid = geteuid();
-	uint32_t max_bits = SEC_RIGHTS_FILE_READ | SEC_FILE_ALL;
+	uint32_t max_bits = 0;
 	struct security_token *token = req->session_info->security_token;
 
 	if (pvfs_read_only(pvfs, *access_mask)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (name == NULL || uid == name->st.st_uid) {
-		max_bits |= SEC_STD_ALL;
-	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		max_bits |= SEC_STD_DELETE;
-	}
-
-	if (name == NULL ||
-	    (name->st.st_mode & S_IWOTH) ||
-	    ((name->st.st_mode & S_IWGRP) && 
-	     pvfs_group_member(pvfs, name->st.st_gid))) {
-		max_bits |= SEC_STD_ALL;
-	}
-
-	if (uwrap_enabled()) {
-		/* when running with the uid wrapper, files will be created
-		   owned by the ruid, but we may have a different simulated 
-		   euid. We need to force the permission bits as though the 
-		   files owner matches the euid */
-		max_bits |= SEC_STD_ALL;
+	if (name == NULL) {
+		max_bits |= SEC_RIGHTS_FILE_ALL | SEC_STD_ALL;
+	} else if (uid == name->st.st_uid || uwrap_enabled()) {
+		/* use the IxUSR bits */
+		if ((name->st.st_mode & S_IWUSR)) {
+			max_bits |= SEC_RIGHTS_FILE_ALL | SEC_STD_ALL;
+		} else if ((name->st.st_mode & (S_IRUSR | S_IXUSR))) {
+			max_bits |= SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_EXECUTE | SEC_STD_ALL;
+		}
+	} else if (pvfs_group_member(pvfs, name->st.st_gid)) {
+		/* use the IxGRP bits */
+		if ((name->st.st_mode & S_IWGRP)) {
+			max_bits |= SEC_RIGHTS_FILE_ALL | SEC_STD_ALL;
+		} else if ((name->st.st_mode & (S_IRGRP | S_IXGRP))) {
+			max_bits |= SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_EXECUTE | SEC_STD_ALL;
+		}
+	} else {
+		/* use the IxOTH bits */
+		if ((name->st.st_mode & S_IWOTH)) {
+			max_bits |= SEC_RIGHTS_FILE_ALL | SEC_STD_ALL;
+		} else if ((name->st.st_mode & (S_IROTH | S_IXOTH))) {
+			max_bits |= SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_EXECUTE | SEC_STD_ALL;
+		}
 	}
 
 	if (*access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
@@ -556,7 +560,7 @@ static NTSTATUS pvfs_access_check_unix(struct pvfs_state *pvfs,
 	}
 
 	if (*access_mask & ~max_bits) {
-		DEBUG(0,(__location__ " denied access to '%s' - wanted 0x%08x but got 0x%08x (missing 0x%08x)\n",
+		DEBUG(5,(__location__ " denied access to '%s' - wanted 0x%08x but got 0x%08x (missing 0x%08x)\n",
 			 name?name->full_name:"(new file)", *access_mask, max_bits, *access_mask & ~max_bits));
 		return NT_STATUS_ACCESS_DENIED;
 	}
