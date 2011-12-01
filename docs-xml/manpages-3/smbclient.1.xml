@@ -559,6 +559,17 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>backup</term>
+		<listitem><para>Toggle the state of the "backup intent" flag
+		sent to the server on directory listings and file opens. If
+		the "backup intent" flag is true, the server will try and
+		bypass some file system checks if the user has been granted
+		SE_BACKUP or SE_RESTORE privilages. This state is useful when
+		performing a backup or restore operation.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>blocksize &lt;number&gt;</term>
 		<listitem><para>Sets the blocksize parameter for a tar operation. The default is 20.
 		Causes tar file to be written out in blocksize*TBLOCK (normally 512 byte) units.

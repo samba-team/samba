@@ -88,6 +88,7 @@ static bool prompt = true;
 static bool recurse = false;
 static bool showacls = false;
 bool lowercase = false;
+static bool backup_intent = false;
 
 static struct sockaddr_storage dest_ss;
 static char dest_ss_str[INET6_ADDRSTRLEN];
@@ -3923,6 +3924,18 @@ static int cmd_archive(void)
 }
 
 /****************************************************************************
+ Toggle the backup_intent state.
+****************************************************************************/
+
+static int cmd_backup(void)
+{
+	backup_intent = !backup_intent;
+	cli_set_backup_intent(cli, backup_intent);
+	DEBUG(2,("backup intent is now %s\n",backup_intent?"on":"off"));
+	return 1;
+}
+
+/****************************************************************************
  Toggle the lowercaseflag.
 ****************************************************************************/
 
@@ -4519,6 +4532,7 @@ static struct {
    {COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
+  {"backup",cmd_backup,"toggle backup intent state",{COMPL_NONE,COMPL_NONE}},  
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
   {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
   {"case_sensitive",cmd_setcase,"toggle the case sensitive flag to server",{COMPL_NONE,COMPL_NONE}},
