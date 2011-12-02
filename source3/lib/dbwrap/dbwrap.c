@@ -110,11 +110,6 @@ TDB_DATA dbwrap_record_get_value(const struct db_record *rec)
 	return rec->value;
 }
 
-void *dbwrap_record_get_private_data(const struct db_record *rec)
-{
-	return rec->private_data;
-}
-
 NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags)
 {
 	return rec->store(rec, data, flags);
