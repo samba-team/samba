@@ -30,6 +30,8 @@ struct file_info;
 
 const char *client_get_cur_dir(void);
 const char *client_set_cur_dir(const char *newdir);
+NTSTATUS smbclient_cli_open(struct cli_state *cli, const char *fname, int flags,
+			int share_mode_in, uint16_t *pfnum);
 NTSTATUS do_list(const char *mask,
 			uint16 attribute,
 			NTSTATUS (*fn)(struct cli_state *cli_state, struct file_info *,
