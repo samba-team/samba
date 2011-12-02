@@ -460,8 +460,9 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
 	DEBUG(10, ("Got oplock async level 2 break message from pid %s: "
-		   "%s/%lu\n", server_id_str(talloc_tos(), &src),
-		   file_id_string_tos(&msg.id), msg.share_file_id));
+		   "%s/%llu\n", server_id_str(talloc_tos(), &src),
+		   file_id_string_tos(&msg.id),
+		   (unsigned long long)msg.share_file_id));
 
 	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
 
@@ -510,9 +511,10 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got oplock break message from pid %s: %s/%lu\n",
-		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
-		   msg.share_file_id));
+	DEBUG(10, ("Got oplock break message from pid %s: %s/%llu\n",
+		   server_id_str(talloc_tos(), &src),
+		   file_id_string_tos(&msg.id),
+		   (unsigned long long)msg.share_file_id));
 
 	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
 
@@ -705,9 +707,11 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 	/* De-linearize incoming message. */
 	message_to_share_mode_entry(&msg, (char *)data->data);
 
-	DEBUG(10, ("Got oplock break response from pid %s: %s/%lu mid %llu\n",
-		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
-		   msg.share_file_id, (unsigned long long)msg.op_mid));
+	DEBUG(10, ("Got oplock break response from pid %s: %s/%llu mid %llu\n",
+		   server_id_str(talloc_tos(), &src),
+		   file_id_string_tos(&msg.id),
+		   (unsigned long long)msg.share_file_id,
+		   (unsigned long long)msg.op_mid));
 
 	sconn = msg_ctx_to_sconn(msg_ctx);
 	if (sconn != NULL) {
