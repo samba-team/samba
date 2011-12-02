@@ -373,7 +373,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 				return map_nt_error_from_unix(errno);
 			}
 		}
-		is_directory = S_ISDIR(sbuf.st_ex_mode);
+		is_directory = S_ISDIR(psbuf->st_ex_mode);
 
 		if (ignore_file_system_acl) {
 			TALLOC_FREE(pdesc_next);
