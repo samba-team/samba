@@ -56,8 +56,6 @@ extern struct winbindd_methods sam_passdb_methods;
 
 static const char *non_centry_keys[] = {
 	"SEQNUM/",
-	"DR/",
-	"DE/",
 	"WINBINDD_OFFLINE",
 	WINBINDD_CACHE_VERSION_KEYSTR,
 	NULL
