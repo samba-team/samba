@@ -28,7 +28,7 @@
 #include <tevent.h>
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 /* list of registered backends */
 static struct sys_notify_backend *backends;
@@ -137,12 +137,12 @@ _PUBLIC_ NTSTATUS sys_notify_init(void)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_sys_notify_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_sys_notify_MODULES };
+	init_module_fn static_init[] = { STATIC_sys_notify_MODULES };
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 
-	samba_module_init_fns_run(static_init);
+	run_init_functions(static_init);
 	
 	return NT_STATUS_OK;
 }

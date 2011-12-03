@@ -23,7 +23,7 @@
 #include "param/param.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/smbtorture.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 _PUBLIC_ int torture_numops=10;
 _PUBLIC_ int torture_entries=1000;
@@ -48,11 +48,11 @@ _PUBLIC_ int torture_init(void)
 {
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_smbtorture_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_smbtorture_MODULES };
-	samba_module_init_fn *shared_init = samba_module_init_fns_for_subsystem(NULL, "smbtorture");
+	init_module_fn static_init[] = { STATIC_smbtorture_MODULES };
+	init_module_fn *shared_init = load_samba_modules(NULL, "smbtorture");
 
-	samba_module_init_fns_run(static_init);
-	samba_module_init_fns_run(shared_init);
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
 
 	talloc_free(shared_init);
 

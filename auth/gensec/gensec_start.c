@@ -29,7 +29,7 @@
 #include "auth/gensec/gensec.h"
 #include "lib/param/param.h"
 #include "lib/util/tsort.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 /* the list of currently registered GENSEC backends */
 static struct gensec_security_ops **generic_security_ops;
@@ -878,19 +878,19 @@ _PUBLIC_ NTSTATUS gensec_init(void)
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 #ifdef STATIC_gensec_MODULES
 	STATIC_gensec_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_gensec_MODULES };
+	init_module_fn static_init[] = { STATIC_gensec_MODULES };
 #else
-	samba_module_init_fn *static_init = NULL;
+	init_module_fn *static_init = NULL;
 #endif
-	samba_module_init_fn *shared_init;
+	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 
-	shared_init = samba_module_init_fns_for_subsystem(NULL, "gensec");
+	shared_init = load_samba_modules(NULL, "gensec");
 
-	samba_module_init_fns_run(static_init);
-	samba_module_init_fns_run(shared_init);
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
 
 	talloc_free(shared_init);
 

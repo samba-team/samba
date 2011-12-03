@@ -383,7 +383,7 @@ static struct nss_info_methods adex_nss_methods = {
  against the idmap and nss_info interfaces being in a half-registered
  state.
  **********************************************************************/
-NTSTATUS samba_module_init(void)
+NTSTATUS samba_init_module(void)
 {
 	static NTSTATUS idmap_status = NT_STATUS_UNSUCCESSFUL;
 	static NTSTATUS nss_status = NT_STATUS_UNSUCCESSFUL;

@@ -21,14 +21,14 @@
 
 #include "includes.h"
 #include "dynconfig/dynconfig.h"
-#include "lib/util/internal_module.h"
+#include "lib/util/samba_modules.h"
 #include "system/filesys.h"
 #include "system/dir.h"
 
 /**
  * Obtain the init function from a shared library file
  */
-samba_module_init_fn load_module(const char *path, bool is_probe, void **handle_out)
+init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
 {
 	void *handle;
 	void *init_fn;
@@ -57,7 +57,7 @@ samba_module_init_fn load_module(const char *path, bool is_probe, void **handle_
 		return NULL;
 	}
 
-	init_fn = (samba_module_init_fn)dlsym(handle, SAMBA_MODULE_INIT);
+	init_fn = (init_module_fn)dlsym(handle, SAMBA_INIT_MODULE);
 
 	/* we could check dlerror() to determine if it worked, because
            dlsym() can validly return NULL, but what would we do with
@@ -65,7 +65,7 @@ samba_module_init_fn load_module(const char *path, bool is_probe, void **handle_
 
 	if (init_fn == NULL) {
 		DEBUG(0, ("Unable to find %s() in %s: %s\n",
-			  SAMBA_MODULE_INIT, path, dlerror()));
+			  SAMBA_INIT_MODULE, path, dlerror()));
 		DEBUG(1, ("Loading module '%s' failed\n", path));
 		dlclose(handle);
 		return NULL;
@@ -75,20 +75,20 @@ samba_module_init_fn load_module(const char *path, bool is_probe, void **handle_
 		*handle_out = handle;
 	}
 
-	return (samba_module_init_fn)init_fn;
+	return (init_module_fn)init_fn;
 }
 
 /**
  * Obtain list of init functions from the modules in the specified
  * directory
  */
-samba_module_init_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
+static init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
 	char *filename;
 	int success = 0;
-	samba_module_init_fn *ret = talloc_array(mem_ctx, samba_module_init_fn, 2);
+	init_module_fn *ret = talloc_array(mem_ctx, init_module_fn, 2);
 
 	ret[0] = NULL;
 
@@ -106,7 +106,7 @@ samba_module_init_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 
 		ret[success] = load_module(filename, true, NULL);
 		if (ret[success]) {
-			ret = talloc_realloc(mem_ctx, ret, samba_module_init_fn, success+2);
+			ret = talloc_realloc(mem_ctx, ret, init_module_fn, success+2);
 			success++;
 			ret[success] = NULL;
 		}
@@ -119,13 +119,50 @@ samba_module_init_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
 	return ret;
 }
 
+/**
+ * Run the specified init functions.
+ *
+ * @return true if all functions ran successfully, false otherwise
+ */
+bool run_init_functions(init_module_fn *fns)
+{
+	int i;
+	bool ret = true;
+
+	if (fns == NULL)
+		return true;
+
+	for (i = 0; fns[i]; i++) { ret &= (bool)NT_STATUS_IS_OK(fns[i]()); }
+
+	return ret;
+}
+
+/**
+ * Load the initialization functions from DSO files for a specific subsystem.
+ *
+ * Will return an array of function pointers to initialization functions
+ */
+
+init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
+{
+	char *path = modules_path(mem_ctx, subsystem);
+	init_module_fn *ret;
+
+	ret = load_modules(mem_ctx, path);
+
+	talloc_free(path);
+
+	return ret;
+}
+
+
 /* Load a dynamic module.  Only log a level 0 error if we are not checking
    for the existence of a module (probling). */
 
 static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 {
 	void *handle;
-	samba_module_init_fn init;
+	init_module_fn init;
 	NTSTATUS status;
 
 	init = load_module(module_name, is_probe, &handle);

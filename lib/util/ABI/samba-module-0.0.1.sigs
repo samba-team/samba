@@ -1,2 +1,0 @@
-samba_module_init_fns_for_subsystem: samba_module_init_fn *(TALLOC_CTX *, const char *)
-samba_module_init_fns_run: bool (samba_module_init_fn *)

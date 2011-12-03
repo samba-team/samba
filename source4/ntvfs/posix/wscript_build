@@ -3,7 +3,7 @@
 bld.SAMBA_SUBSYSTEM('pvfs_acl',
 	source='pvfs_acl.c',
 	autoproto='vfs_acl_proto.h',
-	deps='events samba-module',
+	deps='events samba-modules',
 	)
 
 

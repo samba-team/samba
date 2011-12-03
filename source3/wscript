@@ -1747,7 +1747,7 @@ main() {
             conf.DEFINE('static_init_%s' % p, '{}')
         if p in shared_list:
             for entry in shared_list[p]:
-                conf.DEFINE('%s_init' % entry, 'samba_module_init')
+                conf.DEFINE('%s_init' % entry, 'samba_init_module')
                 conf.env[shared_env].append('%s' % entry)
 
     conf.SAMBA_CONFIG_H('include/config.h')

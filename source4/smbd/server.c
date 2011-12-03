@@ -42,7 +42,7 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "cluster/cluster.h"
 #include "dynconfig/dynconfig.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 /*
   recursively delete a directory tree
@@ -292,8 +292,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	poptContext pc;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_service_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_service_MODULES };
-	samba_module_init_fn *shared_init;
+	init_module_fn static_init[] = { STATIC_service_MODULES };
+	init_module_fn *shared_init;
 	struct tevent_context *event_ctx;
 	uint16_t stdin_event_flags;
 	NTSTATUS status;
@@ -409,10 +409,10 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	process_model_init(cmdline_lp_ctx); 
 
-	shared_init = samba_module_init_fns_for_subsystem(NULL, "service");
+	shared_init = load_samba_modules(NULL, "service");
 
-	samba_module_init_fns_run(static_init);
-	samba_module_init_fns_run(shared_init);
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
 
 	talloc_free(shared_init);
 	

@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "param/share.h"
 #include "param/param.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 const char *share_string_option(struct share_config *scfg, const char *opt_name, const char *defval)
 {
@@ -149,9 +149,9 @@ NTSTATUS share_init(void)
 {
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_share_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_share_MODULES };
+	init_module_fn static_init[] = { STATIC_share_MODULES };
 
-	samba_module_init_fns_run(static_init);
+	run_init_functions(static_init);
 
 	return NT_STATUS_OK;
 }

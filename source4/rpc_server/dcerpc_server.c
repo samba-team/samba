@@ -39,7 +39,7 @@
 #include "smbd/process_model.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/rpc/rpc_common.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 /* this is only used when the client asks for an unknown interface */
 #define DUMMY_ASSOC_GROUP 0x0FFFFFFF
@@ -1228,18 +1228,18 @@ void dcerpc_server_init(struct loadparm_context *lp_ctx)
 	static bool initialized;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_dcerpc_server_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_dcerpc_server_MODULES };
-	samba_module_init_fn *shared_init;
+	init_module_fn static_init[] = { STATIC_dcerpc_server_MODULES };
+	init_module_fn *shared_init;
 
 	if (initialized) {
 		return;
 	}
 	initialized = true;
 
-	shared_init = samba_module_init_fns_for_subsystem(NULL, "dcerpc_server");
+	shared_init = load_samba_modules(NULL, "dcerpc_server");
 
-	samba_module_init_fns_run(static_init);
-	samba_module_init_fns_run(shared_init);
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
 
 	talloc_free(shared_init);
 }

@@ -22,28 +22,38 @@
 #define _SAMBA_MODULES_H
 
 /* Module support */
-typedef NTSTATUS (*samba_module_init_fn) (void);
+typedef NTSTATUS (*init_module_fn) (void);
 
-NTSTATUS samba_module_init(void);
+NTSTATUS samba_init_module(void);
 
 /* this needs to be a string which is not in the C library. We
    previously used "init_module", but that meant that modules which
    did not define this function ended up calling the C library
    function init_module() which makes a system call */
-#define SAMBA_MODULE_INIT "samba_module_init"
+#define SAMBA_INIT_MODULE "samba_init_module"
+
+/**
+ * Obtain the init function from a shared library file.  
+ *
+ * The handle to dlclose() in case of error is returns in *handle if handle is not NULL
+ */
+init_module_fn load_module(const char *path, bool is_probe, void **handle);
 
 /**
  * Run the specified init functions.
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool samba_module_init_fns_run(samba_module_init_fn *fns);
+bool run_init_functions(init_module_fn *fns);
 
 /**
  * Load the initialization functions from DSO files for a specific subsystem.
  *
  * Will return an array of function pointers to initialization functions
  */
-samba_module_init_fn *samba_module_init_fns_for_subsystem(TALLOC_CTX *mem_ctx, const char *subsystem);
+init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
+
+int smb_load_modules(const char **modules);
+NTSTATUS smb_probe_module(const char *subsystem, const char *module);
 
 #endif /* _SAMBA_MODULES_H */

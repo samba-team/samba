@@ -27,7 +27,7 @@
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/wbclient/wbclient.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 /***************************************************************************
  Set a fixed challenge
@@ -660,12 +660,12 @@ _PUBLIC_ NTSTATUS auth4_init(void)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_auth4_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_auth4_MODULES };
+	init_module_fn static_init[] = { STATIC_auth4_MODULES };
 	
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	samba_module_init_fns_run(static_init);
+	run_init_functions(static_init);
 	
 	return NT_STATUS_OK;	
 }

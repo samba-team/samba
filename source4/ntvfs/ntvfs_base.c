@@ -26,7 +26,7 @@
 #include "../lib/util/dlinklist.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 /* the list of currently registered NTVFS backends, note that there
  * can be more than one backend with the same name, as long as they
@@ -230,16 +230,16 @@ NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_ntvfs_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_ntvfs_MODULES };
-	samba_module_init_fn *shared_init;
+	init_module_fn static_init[] = { STATIC_ntvfs_MODULES };
+	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	shared_init = samba_module_init_fns_for_subsystem(NULL, "ntvfs");
+	shared_init = load_samba_modules(NULL, "ntvfs");
 
-	samba_module_init_fns_run(static_init);
-	samba_module_init_fns_run(shared_init);
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
 
 	talloc_free(shared_init);
 

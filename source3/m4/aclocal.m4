@@ -25,7 +25,7 @@ AC_DEFUN(SMB_MODULE,
 	fi
 	
 	if test x"$DEST" = xSHARED; then
-		AC_DEFINE([$1][_init], [samba_module_init], [Whether to build $1 as shared module])
+		AC_DEFINE([$1][_init], [samba_init_module], [Whether to build $1 as shared module])
 		$4_MODULES="$$4_MODULES $3"
 		AC_MSG_RESULT([shared])
 		[$6]

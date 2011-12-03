@@ -27,7 +27,7 @@
 #include "ntvfs/sysdep/sys_lease.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 /* list of registered backends */
 static struct sys_lease_ops *backends;
@@ -113,12 +113,12 @@ _PUBLIC_ NTSTATUS sys_lease_init(void)
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_sys_lease_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_sys_lease_MODULES };
+	init_module_fn static_init[] = { STATIC_sys_lease_MODULES };
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 
-	samba_module_init_fns_run(static_init);
+	run_init_functions(static_init);
 
 	return NT_STATUS_OK;
 }

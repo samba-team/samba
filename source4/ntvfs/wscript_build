@@ -67,7 +67,7 @@ bld.SAMBA_MODULE('ntvfs_nbench',
 bld.SAMBA_LIBRARY('ntvfs',
                   source='ntvfs_base.c ntvfs_generic.c ntvfs_interface.c ntvfs_util.c',
                   autoproto='ntvfs_proto.h',
-                  deps='tevent samba-module',
+                  deps='tevent samba-modules',
                   private_library=True
                   )
 

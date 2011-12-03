@@ -76,7 +76,7 @@ bld.SAMBA_MODULE('process_model_onefork',
 bld.SAMBA_LIBRARY('process_model',
                   source='process_model.c',
                   autoproto='process_model_proto.h',
-                  deps='samba-util samba-hostconfig samba-module',
+                  deps='samba-util samba-hostconfig samba-modules',
                   private_library=True
                   )
 

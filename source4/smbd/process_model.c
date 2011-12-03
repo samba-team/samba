@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "smbd/process_model.h"
 #include "param/param.h"
-#include "lib/util/samba_module.h"
+#include "lib/util/samba_modules.h"
 
 /* the list of currently registered process models */
 static struct process_model {
@@ -103,8 +103,8 @@ _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 {
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
 	STATIC_process_model_MODULES_PROTO;
-	samba_module_init_fn static_init[] = { STATIC_process_model_MODULES };
-	samba_module_init_fn *shared_init;
+	init_module_fn static_init[] = { STATIC_process_model_MODULES };
+	init_module_fn *shared_init;
 	static bool initialised;
 
 	if (initialised) {
@@ -112,10 +112,10 @@ _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 	}
 	initialised = true;
 
-	shared_init = samba_module_init_fns_for_subsystem(NULL, "process_model");
+	shared_init = load_samba_modules(NULL, "process_model");
 	
-	samba_module_init_fns_run(static_init);
-	samba_module_init_fns_run(shared_init);
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
 
 	talloc_free(shared_init);
 
