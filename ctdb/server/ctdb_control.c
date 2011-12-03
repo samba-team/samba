@@ -247,6 +247,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start));
 		return ctdb_control_traverse_start(ctdb, indata, outdata, srcnode, client_id);
 
+	case CTDB_CONTROL_TRAVERSE_START_EXT:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_traverse_start_ext));
+		return ctdb_control_traverse_start_ext(ctdb, indata, outdata, srcnode, client_id);
+
 	case CTDB_CONTROL_TRAVERSE_ALL:
 		return ctdb_control_traverse_all(ctdb, indata, outdata);
 

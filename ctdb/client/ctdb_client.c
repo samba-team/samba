@@ -2059,7 +2059,7 @@ static int ctdb_traverse_ext(struct ctdb_db_context *ctdb_db,
 			     void *private_data)
 {
 	TDB_DATA data;
-	struct ctdb_traverse_start t;
+	struct ctdb_traverse_start_ext t;
 	int32_t status;
 	int ret;
 	uint64_t srvid = (getpid() | 0xFLL<<60);
@@ -2085,7 +2085,7 @@ static int ctdb_traverse_ext(struct ctdb_db_context *ctdb_db,
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_TRAVERSE_START, 0,
+	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_TRAVERSE_START_EXT, 0,
 			   data, NULL, NULL, &status, NULL, NULL);
 	if (ret != 0 || status != 0) {
 		DEBUG(DEBUG_ERR,("ctdb_traverse_all failed\n"));

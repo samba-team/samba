@@ -374,6 +374,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SCHEDULE_FOR_DELETION   = 128,
 		    CTDB_CONTROL_SET_DB_READONLY	 = 129,
 		    CTDB_CONTROL_CHECK_SRVIDS		 = 130,
+		    CTDB_CONTROL_TRAVERSE_START_EXT	 = 131,
 };
 
 /*
@@ -579,6 +580,12 @@ struct ctdb_rec_data {
 };
 
 struct ctdb_traverse_start {
+	uint32_t db_id;
+	uint32_t reqid;
+	uint64_t srvid;
+};
+
+struct ctdb_traverse_start_ext {
 	uint32_t db_id;
 	uint32_t reqid;
 	uint64_t srvid;
