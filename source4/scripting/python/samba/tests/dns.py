@@ -154,6 +154,38 @@ class DNSTest(TestCase):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTIMP)
 
+# Only returns an authority section entry in BIND and Win DNS
+# FIXME: Enable one Samba implements this feature
+#    def test_soa_hostname_query(self):
+#        "create a SOA query for a hostname"
+#        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+#        questions = []
+#
+#        name = "%s.%s" % (os.getenv('DC_SERVER'), self.get_dns_domain())
+#        q = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+#        questions.append(q)
+#
+#        self.finish_name_packet(p, questions)
+#        response = self.dns_transaction_udp(p)
+#        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+#        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+#        # We don't get SOA records for single hosts
+#        self.assertEquals(response.ancount, 0)
+
+    def test_soa_domain_query(self):
+        "create a SOA query for a domain"
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = self.get_dns_domain()
+        q = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 1)
 
 if __name__ == "__main__":
     import unittest
