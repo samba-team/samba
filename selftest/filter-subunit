@@ -17,9 +17,11 @@ parser = optparse.OptionParser("filter-subunit [options] < instream > outstream"
 parser.add_option("--expected-failures", type="string", 
 	help="File containing list of regexes matching tests to consider known "
 	     "failures")
-parser.add_option("--strip-passed-output", action="store_true", 
+parser.add_option("--flapping", type="string",
+	help="File containing list of flapping tests, of which to ignore results.")
+parser.add_option("--strip-passed-output", action="store_true",
     help="Whether to strip output from tests that passed")
-parser.add_option("--fail-immediately", action="store_true", 
+parser.add_option("--fail-immediately", action="store_true",
     help="Whether to stop on the first error", default=False)
 parser.add_option("--prefix", type="string",
 	help="Add prefix to all test names")
@@ -42,6 +44,12 @@ if opts.expected_failures:
 else:
 	expected_failures = {}
 
+
+if opts.flapping:
+	flapping = subunithelper.read_test_regexes(opts.flapping)
+else:
+	flapping = []
+
 statistics = {
 	'TESTS_UNEXPECTED_OK': 0,
 	'TESTS_EXPECTED_OK': 0,
@@ -58,7 +66,8 @@ signal.signal(signal.SIGINT, handle_sigint)
 out = subunithelper.SubunitOps(sys.stdout)
 msg_ops = subunithelper.FilterOps(out, opts.prefix, expected_failures,
 				  opts.strip_passed_output,
-				  fail_immediately=opts.fail_immediately)
+				  fail_immediately=opts.fail_immediately,
+				  flapping=flapping)
 
 try:
 	ret = subunithelper.parse_results(msg_ops, statistics, sys.stdin)

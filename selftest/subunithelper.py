@@ -288,6 +288,8 @@ class FilterOps(testtools.testresult.TestResult):
     def addFailure(self, test, details=None):
         test = self._add_prefix(test)
         xfail_reason = find_in_list(self.expected_failures, test.id())
+        if xfail_reason is None:
+            xfail_reason = find_in_list(self.flapping, test.id())
         if xfail_reason is not None:
             self.xfail_added+=1
             self.total_xfail+=1
@@ -308,7 +310,21 @@ class FilterOps(testtools.testresult.TestResult):
 
     def addSuccess(self, test, details=None):
         test = self._add_prefix(test)
-        self._ops.addSuccess(test, details)
+        xfail_reason = find_in_list(self.expected_failures, test.id())
+        if xfail_reason is not None:
+            self.uxsuccess_added += 1
+            self.total_uxsuccess += 1
+            if details is not None:
+                details = subunit.RemoteError(unicode(details[1]) + xfail_reason.decode("utf-8"))
+            else:
+                details = subunit.RemoteError(xfail_reason.decode("utf-8"))
+            self._ops.addUnexpectedSuccess(test, details)
+            if self.output:
+                self._ops.output_msg(self.output)
+            if self.fail_immediately:
+                raise ImmediateFail()
+        else:
+            self._ops.addSuccess(test, details)
         self.output = None
 
     def skip_testsuite(self, name, reason=None):
@@ -319,6 +335,7 @@ class FilterOps(testtools.testresult.TestResult):
         self.error_added = 0
         self.fail_added = 0
         self.xfail_added = 0
+        self.uxsuccess_added = 0
 
     def end_testsuite(self, name, result, reason=None):
         xfail = False
@@ -346,7 +363,8 @@ class FilterOps(testtools.testresult.TestResult):
         self._ops.end_testsuite(name, result, reason)
 
     def __init__(self, out, prefix=None, expected_failures=None,
-                 strip_ok_output=False, fail_immediately=False):
+                 strip_ok_output=False, fail_immediately=False,
+                 flapping=None):
         self._ops = out
         self.seen_output = False
         self.output = None
@@ -355,12 +373,18 @@ class FilterOps(testtools.testresult.TestResult):
             self.expected_failures = expected_failures
         else:
             self.expected_failures = {}
+        if flapping is not None:
+            self.flapping = flapping
+        else:
+            self.flapping = {}
         self.strip_ok_output = strip_ok_output
         self.xfail_added = 0
         self.fail_added = 0
+        self.uxsuccess_added = 0
         self.total_xfail = 0
         self.total_error = 0
         self.total_fail = 0
+        self.total_uxsuccess = 0
         self.error_added = 0
         self.fail_immediately = fail_immediately
 

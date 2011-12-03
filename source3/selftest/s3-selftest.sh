@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FILTER_XFAIL="${PYTHON} -u ${SELFTESTDIR}/filter-subunit --expected-failures=${SELFTESTDIR}/knownfail --expected-failures=${SELFTESTDIR}/flapping"
+FILTER_XFAIL="${PYTHON} -u ${SELFTESTDIR}/filter-subunit --expected-failures=${SELFTESTDIR}/knownfail --flapping=${SELFTESTDIR}/flapping"
 if [ "x${SUBUNIT_FORMATTER}" = x"" ]; then
 	SUBUNIT_FORMATTER="${PYTHON} -u ${SELFTESTDIR}/format-subunit --prefix=${SELFTESTPREFIX} --immediate"
 fi
