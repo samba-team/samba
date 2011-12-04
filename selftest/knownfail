@@ -71,7 +71,7 @@
 ^samba4.smb2.oplock # oplocks in the s4 SMB2 server are a mess
 ^samba4.raw.lock.*.async # bug 6960
 ^samba4.smb2.lock.*.multiple-unlock # bug 6959
-^samba4.raw.sfileinfo.*.end-of-file # bug 6962
+^samba4.raw.sfileinfo.*.end-of-file$ # bug 6962
 ^samba4.raw.oplock.*.batch22 # bug 6963
 ^samba4.raw.oplock.*.brl4 # bug 7928
 ^samba4.raw.lock.*.zerobyteread # bug 6974
