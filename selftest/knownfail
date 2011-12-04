@@ -31,7 +31,6 @@
 ^samba4.rpc.handles.*.lsarpc-shared
 ^samba4.rpc.handles.*.mixed-shared
 ^samba4.rpc.epmapper
-^samba4.rpc.drsuapi.*
 ^samba4.rpc.lsalookup
 ^samba4.rpc.cracknames
 ^samba4.rpc.netlogon.*.LogonUasLogon
