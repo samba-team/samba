@@ -588,12 +588,17 @@ static void kccsrv_periodic_run(struct kccsrv_service *service)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
-	DEBUG(4,("kccsrv_periodic_run(): simple update\n"));
+	DEBUG(4,("kccsrv_periodic_run(): update\n"));
 
 	mem_ctx = talloc_new(service);
-	status = kccsrv_simple_update(service, mem_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("kccsrv_simple_update failed - %s\n", nt_errstr(status)));
+
+        if (service->samba_kcc_code)
+		status = kccsrv_samba_kcc(service, mem_ctx);
+	else {
+		status = kccsrv_simple_update(service, mem_ctx);
+		if (!NT_STATUS_IS_OK(status))
+			DEBUG(0,("kccsrv_simple_update failed - %s\n",
+				nt_errstr(status)));
 	}
 
 	status = kccsrv_check_deleted(service, mem_ctx);
@@ -601,4 +606,63 @@ static void kccsrv_periodic_run(struct kccsrv_service *service)
 		DEBUG(0,("kccsrv_check_deleted failed - %s\n", nt_errstr(status)));
 	}
 	talloc_free(mem_ctx);
+}
+
+/* Called when samba_kcc script has finished
+ */
+static void samba_kcc_done(struct tevent_req *subreq)
+{
+        struct kccsrv_service *service =
+		tevent_req_callback_data(subreq, struct kccsrv_service);
+        int rc;
+        int sys_errno;
+
+        service->periodic.subreq = NULL;
+
+	rc = samba_runcmd_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+
+	if (rc != 0)
+		service->periodic.status =
+			map_nt_error_from_unix_common(sys_errno);
+	else
+		service->periodic.status = NT_STATUS_OK;
+
+	if (!NT_STATUS_IS_OK(service->periodic.status))
+		DEBUG(0,(__location__ ": Failed samba_kcc - %s\n",
+			nt_errstr(service->periodic.status)));
+	else
+		DEBUG(3,("Completed samba_kcc OK\n"));
+}
+
+/* Invocation of the samba_kcc python script for replication
+ * topology generation.
+ */
+NTSTATUS kccsrv_samba_kcc(struct kccsrv_service *service,
+			TALLOC_CTX *ctxp)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	const char * const *samba_kcc_command =
+		lpcfg_samba_kcc_command(service->task->lp_ctx);
+
+	/* kill any existing child */
+	TALLOC_FREE(service->periodic.subreq);
+
+	DEBUG(0,("Calling samba_kcc script\n"));
+	service->periodic.subreq = samba_runcmd_send(service,
+					service->task->event_ctx,
+					timeval_current_ofs(40, 0),
+					2, 0, samba_kcc_command, NULL);
+
+        if (service->periodic.subreq == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto xerror;
+        }
+        tevent_req_set_callback(service->periodic.subreq,
+				samba_kcc_done, service);
+
+xerror:
+	if (!NT_STATUS_IS_OK(status))
+		DEBUG(0,(__location__ ": failed - %s\n", nt_errstr(status)));
+	return status;
 }
