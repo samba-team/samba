@@ -327,7 +327,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 	DEBUGADD(3,("opening %s %s on originating server\n",
 		is_file ? "file":"dir", src_name));
 	if (is_file)
-		nt_status = cli_openx(cli_share_src, src_name, O_RDONLY, DENY_NONE, &fnum_src);
+		nt_status = cli_open(cli_share_src, src_name, O_RDONLY, DENY_NONE, &fnum_src);
 	else
 		nt_status = cli_ntcreate(cli_share_src, src_name, 0, READ_CONTROL_ACCESS, 0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0, &fnum_src);
@@ -344,7 +344,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 
 		/* open file on the destination server */
 		DEBUGADD(3,("opening file %s on destination server\n", dst_name));
-		nt_status = cli_openx(cli_share_dst, dst_name,
+		nt_status = cli_open(cli_share_dst, dst_name,
 				O_RDWR|O_CREAT|O_TRUNC, DENY_NONE, &fnum_dst);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {

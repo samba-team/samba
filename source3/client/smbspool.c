@@ -576,7 +576,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
          * Open the printer device...
          */
 
-	nt_status = cli_openx(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE,
+	nt_status = cli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE,
 			  &fnum);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: %s opening remote spool %s\n",

@@ -655,7 +655,7 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 		goto cleanup;
 	}
 
-	status = smbclient_cli_open(cli, rname, O_RDONLY, DENY_NONE, &fnum);
+	status = cli_open(cli, rname, O_RDONLY, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s opening remote file %s (%s)\n",
 				nt_errstr(status),rname, client_get_cur_dir()));
@@ -1016,7 +1016,7 @@ static int get_file(file_info2 finfo)
 		return False;
 	}
 
-	status = smbclient_cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE, &fnum);
+	status = cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("abandoning restore\n"));
 		return False;
