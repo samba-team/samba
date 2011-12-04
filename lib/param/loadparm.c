@@ -1208,6 +1208,14 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 	{
+		.label		= "samba kcc command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szSambaKCCCommand),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
 		.label		= "nsupdate command",
 		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
@@ -1439,6 +1447,7 @@ FN_GLOBAL_STRING(piddir, szPidDir)
 FN_GLOBAL_LIST(rndc_command, szRNDCCommand)
 FN_GLOBAL_LIST(dns_update_command, szDNSUpdateCommand)
 FN_GLOBAL_LIST(spn_update_command, szSPNUpdateCommand)
+FN_GLOBAL_LIST(samba_kcc_command, szSambaKCCCommand)
 FN_GLOBAL_LIST(nsupdate_command, szNSUpdateCommand)
 FN_GLOBAL_LIST(dcerpc_endpoint_servers, dcerpc_ep_servers)
 FN_GLOBAL_LIST(server_services, server_services)
@@ -3325,6 +3334,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
 	lpcfg_do_global_parameter_var(lp_ctx, "dns update command", "%s/samba_dnsupdate", dyn_SCRIPTSBINDIR);
 	lpcfg_do_global_parameter_var(lp_ctx, "spn update command", "%s/samba_spnupdate", dyn_SCRIPTSBINDIR);
+	lpcfg_do_global_parameter_var(lp_ctx, "samba kcc command",
+					"%s/samba_kcc", dyn_SCRIPTSBINDIR);
 #endif
 	lpcfg_do_global_parameter(lp_ctx, "template shell", "/bin/false");
 	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
