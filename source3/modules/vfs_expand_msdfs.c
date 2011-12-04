@@ -224,7 +224,7 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_expand_msdfs_fns = {
-	.vfs_readlink = expand_msdfs_readlink
+	.readlink_fn = expand_msdfs_readlink
 };
 
 NTSTATUS vfs_expand_msdfs_init(void);

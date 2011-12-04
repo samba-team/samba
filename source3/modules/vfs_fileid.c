@@ -254,8 +254,8 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_fileid_fns = {
 	.connect_fn = fileid_connect,
-	.disconnect = fileid_disconnect,
-	.file_id_create = fileid_file_id_create
+	.disconnect_fn = fileid_disconnect,
+	.file_id_create_fn = fileid_file_id_create
 };
 
 NTSTATUS vfs_fileid_init(void);

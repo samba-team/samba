@@ -863,13 +863,13 @@ static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_streams_depot_fns = {
-	.fs_capabilities = streams_depot_fs_capabilities,
+	.fs_capabilities_fn = streams_depot_fs_capabilities,
 	.open_fn = streams_depot_open,
-	.stat = streams_depot_stat,
-	.lstat = streams_depot_lstat,
-	.unlink = streams_depot_unlink,
-	.rename = streams_depot_rename,
-	.streaminfo = streams_depot_streaminfo,
+	.stat_fn = streams_depot_stat,
+	.lstat_fn = streams_depot_lstat,
+	.unlink_fn = streams_depot_unlink,
+	.rename_fn = streams_depot_rename,
+	.streaminfo_fn = streams_depot_streaminfo,
 };
 
 NTSTATUS vfs_streams_depot_init(void);

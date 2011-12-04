@@ -898,8 +898,8 @@ NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
 				       struct blocking_lock_record *blr)
 {
 	VFS_FIND(brl_lock_windows);
-	return handle->fns->brl_lock_windows(handle, br_lck, plock,
-					     blocking_lock, blr);
+	return handle->fns->brl_lock_windows_fn(handle, br_lck, plock,
+						blocking_lock, blr);
 }
 
 /****************************************************************************
@@ -1232,7 +1232,8 @@ bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
 				     const struct lock_struct *plock)
 {
 	VFS_FIND(brl_unlock_windows);
-	return handle->fns->brl_unlock_windows(handle, msg_ctx, br_lck, plock);
+	return handle->fns->brl_unlock_windows_fn(handle, msg_ctx, br_lck, 
+						  plock);
 }
 
 /****************************************************************************
@@ -1400,7 +1401,7 @@ bool smb_vfs_call_brl_cancel_windows(struct vfs_handle_struct *handle,
 				     struct blocking_lock_record *blr)
 {
 	VFS_FIND(brl_cancel_windows);
-	return handle->fns->brl_cancel_windows(handle, br_lck, plock, blr);
+	return handle->fns->brl_cancel_windows_fn(handle, br_lck, plock, blr);
 }
 
 /****************************************************************************

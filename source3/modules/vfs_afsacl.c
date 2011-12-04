@@ -1087,9 +1087,9 @@ static int afsacl_connect(vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_afsacl_fns = {
 	.connect_fn = afsacl_connect,
-	.fget_nt_acl = afsacl_fget_nt_acl,
-	.get_nt_acl = afsacl_get_nt_acl,
-	.fset_nt_acl = afsacl_fset_nt_acl
+	.fget_nt_acl_fn = afsacl_fget_nt_acl,
+	.get_nt_acl_fn = afsacl_get_nt_acl,
+	.fset_nt_acl_fn = afsacl_fset_nt_acl
 };
 
 NTSTATUS vfs_afsacl_init(void);

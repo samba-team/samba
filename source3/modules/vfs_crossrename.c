@@ -191,7 +191,7 @@ static int crossrename_rename(vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_crossrename_fns = {
 	.connect_fn = crossrename_connect,
-	.rename = crossrename_rename
+	.rename_fn = crossrename_rename
 };
 
 NTSTATUS vfs_crossrename_init(void);

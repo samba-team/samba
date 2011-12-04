@@ -66,8 +66,8 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_ST
 }
 
 static struct vfs_fn_pointers vfs_fake_perms_fns = {
-	.stat = fake_perms_stat,
-	.fstat = fake_perms_fstat
+	.stat_fn = fake_perms_stat,
+	.fstat_fn = fake_perms_fstat
 };
 
 NTSTATUS vfs_fake_perms_init(void);

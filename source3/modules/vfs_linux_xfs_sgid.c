@@ -95,8 +95,8 @@ static int linux_xfs_sgid_chmod_acl(vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers linux_xfs_sgid_fns = {
-	.mkdir = linux_xfs_sgid_mkdir,
-	.chmod_acl = linux_xfs_sgid_chmod_acl,
+	.mkdir_fn = linux_xfs_sgid_mkdir,
+	.chmod_acl_fn = linux_xfs_sgid_chmod_acl,
 };
 
 NTSTATUS vfs_linux_xfs_sgid_init(void);

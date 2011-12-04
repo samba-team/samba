@@ -392,14 +392,14 @@ static uint32_t tsmsm_fs_capabilities(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers tsmsm_fns = {
 	.connect_fn = tsmsm_connect,
-	.fs_capabilities = tsmsm_fs_capabilities,
-	.aio_force = tsmsm_aio_force,
+	.fs_capabilities_fn = tsmsm_fs_capabilities,
+	.aio_force_fn = tsmsm_aio_force,
 	.aio_return_fn = tsmsm_aio_return,
-	.pread = tsmsm_pread,
-	.pwrite = tsmsm_pwrite,
-	.sendfile = tsmsm_sendfile,
-	.is_offline = tsmsm_is_offline,
-	.set_offline = tsmsm_set_offline,
+	.pread_fn = tsmsm_pread,
+	.pwrite_fn = tsmsm_pwrite,
+	.sendfile_fn = tsmsm_sendfile,
+	.is_offline_fn = tsmsm_is_offline,
+	.set_offline_fn = tsmsm_set_offline,
 };
 
 NTSTATUS vfs_tsmsm_init(void);

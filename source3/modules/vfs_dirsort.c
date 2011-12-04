@@ -222,12 +222,12 @@ static void dirsort_rewinddir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 }
 
 static struct vfs_fn_pointers vfs_dirsort_fns = {
-	.opendir = dirsort_opendir,
-	.fdopendir = dirsort_fdopendir,
-	.readdir = dirsort_readdir,
-	.seekdir = dirsort_seekdir,
-	.telldir = dirsort_telldir,
-	.rewind_dir = dirsort_rewinddir,
+	.opendir_fn = dirsort_opendir,
+	.fdopendir_fn = dirsort_fdopendir,
+	.readdir_fn = dirsort_readdir,
+	.seekdir_fn = dirsort_seekdir,
+	.telldir_fn = dirsort_telldir,
+	.rewind_dir_fn = dirsort_rewinddir,
 };
 
 NTSTATUS vfs_dirsort_init(void)

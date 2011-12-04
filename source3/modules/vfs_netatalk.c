@@ -455,14 +455,14 @@ exit_lchown:
 }
 
 static struct vfs_fn_pointers vfs_netatalk_fns = {
-	.opendir = atalk_opendir,
-	.fdopendir = atalk_fdopendir,
-	.rmdir = atalk_rmdir,
-	.rename = atalk_rename,
-	.unlink = atalk_unlink,
-	.chmod = atalk_chmod,
-	.chown = atalk_chown,
-	.lchown = atalk_lchown,
+	.opendir_fn = atalk_opendir,
+	.fdopendir_fn = atalk_fdopendir,
+	.rmdir_fn = atalk_rmdir,
+	.rename_fn = atalk_rename,
+	.unlink_fn = atalk_unlink,
+	.chmod_fn = atalk_chmod,
+	.chown_fn = atalk_chown,
+	.lchown_fn = atalk_lchown,
 };
 
 NTSTATUS vfs_netatalk_init(void);

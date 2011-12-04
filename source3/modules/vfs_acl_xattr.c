@@ -201,17 +201,17 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.connect_fn = connect_acl_xattr,
-	.rmdir = rmdir_acl_common,
-	.unlink = unlink_acl_common,
-	.chmod = chmod_acl_module_common,
-	.fchmod = fchmod_acl_module_common,
-	.fget_nt_acl = fget_nt_acl_common,
-	.get_nt_acl = get_nt_acl_common,
-	.fset_nt_acl = fset_nt_acl_common,
-	.chmod_acl = chmod_acl_acl_module_common,
-	.fchmod_acl = fchmod_acl_acl_module_common,
-	.sys_acl_set_file = sys_acl_set_file_xattr,
-	.sys_acl_set_fd = sys_acl_set_fd_xattr
+	.rmdir_fn = rmdir_acl_common,
+	.unlink_fn = unlink_acl_common,
+	.chmod_fn = chmod_acl_module_common,
+	.fchmod_fn = fchmod_acl_module_common,
+	.fget_nt_acl_fn = fget_nt_acl_common,
+	.get_nt_acl_fn = get_nt_acl_common,
+	.fset_nt_acl_fn = fset_nt_acl_common,
+	.chmod_acl_fn = chmod_acl_acl_module_common,
+	.fchmod_acl_fn = fchmod_acl_acl_module_common,
+	.sys_acl_set_file_fn = sys_acl_set_file_xattr,
+	.sys_acl_set_fd_fn = sys_acl_set_fd_xattr
 };
 
 NTSTATUS vfs_acl_xattr_init(void)

@@ -81,7 +81,7 @@ static int test_get_shadow_copy_data(vfs_handle_struct *handle,
 /* VFS operations structure */
 
 static struct vfs_fn_pointers vfs_test_shadow_copy_fns = {
-	.get_shadow_copy_data = test_get_shadow_copy_data
+	.get_shadow_copy_data_fn = test_get_shadow_copy_data
 };
 
 NTSTATUS vfs_shadow_copy_test_init(void)

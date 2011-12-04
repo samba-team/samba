@@ -1042,18 +1042,18 @@ static int streams_xattr_fallocate(struct vfs_handle_struct *handle,
 
 
 static struct vfs_fn_pointers vfs_streams_xattr_fns = {
-	.fs_capabilities = streams_xattr_fs_capabilities,
+	.fs_capabilities_fn = streams_xattr_fs_capabilities,
 	.open_fn = streams_xattr_open,
-	.stat = streams_xattr_stat,
-	.fstat = streams_xattr_fstat,
-	.lstat = streams_xattr_lstat,
-	.pread = streams_xattr_pread,
-	.pwrite = streams_xattr_pwrite,
-	.unlink = streams_xattr_unlink,
-	.rename = streams_xattr_rename,
-        .ftruncate = streams_xattr_ftruncate,
-        .fallocate = streams_xattr_fallocate,
-	.streaminfo = streams_xattr_streaminfo,
+	.stat_fn = streams_xattr_stat,
+	.fstat_fn = streams_xattr_fstat,
+	.lstat_fn = streams_xattr_lstat,
+	.pread_fn = streams_xattr_pread,
+	.pwrite_fn = streams_xattr_pwrite,
+	.unlink_fn = streams_xattr_unlink,
+	.rename_fn = streams_xattr_rename,
+	.ftruncate_fn = streams_xattr_ftruncate,
+	.fallocate_fn = streams_xattr_fallocate,
+	.streaminfo_fn = streams_xattr_streaminfo,
 };
 
 NTSTATUS vfs_streams_xattr_init(void);

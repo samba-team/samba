@@ -752,11 +752,11 @@ static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count)
 #endif
 
 static struct vfs_fn_pointers solarisacl_fns = {
-	.sys_acl_get_file = solarisacl_sys_acl_get_file,
-	.sys_acl_get_fd = solarisacl_sys_acl_get_fd,
-	.sys_acl_set_file = solarisacl_sys_acl_set_file,
-	.sys_acl_set_fd = solarisacl_sys_acl_set_fd,
-	.sys_acl_delete_def_file = solarisacl_sys_acl_delete_def_file,
+	.sys_acl_get_file_fn = solarisacl_sys_acl_get_file,
+	.sys_acl_get_fd_fn = solarisacl_sys_acl_get_fd,
+	.sys_acl_set_file_fn = solarisacl_sys_acl_set_file,
+	.sys_acl_set_fd_fn = solarisacl_sys_acl_set_fd,
+	.sys_acl_delete_def_file_fn = solarisacl_sys_acl_delete_def_file,
 };
 
 NTSTATUS vfs_solarisacl_init(void);

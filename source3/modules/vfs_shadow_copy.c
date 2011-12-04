@@ -272,14 +272,14 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_shadow_copy_fns = {
-	.opendir = shadow_copy_opendir,
-	.fdopendir = shadow_copy_fdopendir,
-	.readdir = shadow_copy_readdir,
-	.seekdir = shadow_copy_seekdir,
-	.telldir = shadow_copy_telldir,
-	.rewind_dir = shadow_copy_rewinddir,
-	.closedir = shadow_copy_closedir,
-	.get_shadow_copy_data = shadow_copy_get_shadow_copy_data,
+	.opendir_fn = shadow_copy_opendir,
+	.fdopendir_fn = shadow_copy_fdopendir,
+	.readdir_fn = shadow_copy_readdir,
+	.seekdir_fn = shadow_copy_seekdir,
+	.telldir_fn = shadow_copy_telldir,
+	.rewind_dir_fn = shadow_copy_rewinddir,
+	.closedir_fn = shadow_copy_closedir,
+	.get_shadow_copy_data_fn = shadow_copy_get_shadow_copy_data,
 };
 
 NTSTATUS vfs_shadow_copy_init(void);

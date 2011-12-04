@@ -97,8 +97,8 @@ static ssize_t vfs_gpfs_hsm_notify_aio_return(struct vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_gpfs_hsm_notify_fns = {
-	.pread = vfs_gpfs_hsm_notify_pread,
-	.pwrite = vfs_gpfs_hsm_notify_pwrite,
+	.pread_fn = vfs_gpfs_hsm_notify_pread,
+	.pwrite_fn = vfs_gpfs_hsm_notify_pwrite,
 	.aio_return_fn = vfs_gpfs_hsm_notify_aio_return
 };
 

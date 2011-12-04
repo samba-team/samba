@@ -177,10 +177,10 @@ static ssize_t cprime_pread(
 }
 
 static struct vfs_fn_pointers vfs_cacheprime_fns = {
-        .sendfile = cprime_sendfile,
-        .pread = cprime_pread,
-        .vfs_read = cprime_read,
-        .connect_fn = cprime_connect,
+    .sendfile_fn = cprime_sendfile,
+    .pread_fn = cprime_pread,
+    .read_fn = cprime_read,
+    .connect_fn = cprime_connect,
 };
 
 /* -------------------------------------------------------------------------

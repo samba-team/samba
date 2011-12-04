@@ -187,7 +187,7 @@ bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 		       SMB_OFF_T count, int type)
 {
 	VFS_FIND(lock);
-	return handle->fns->lock(handle, fsp, op, offset, count, type);
+	return handle->fns->lock_fn(handle, fsp, op, offset, count, type);
 }
 
 /****************************************************************************
@@ -238,7 +238,8 @@ bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
 			  SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
 	VFS_FIND(getlock);
-	return handle->fns->getlock(handle, fsp, poffset, pcount, ptype, ppid);
+	return handle->fns->getlock_fn(handle, fsp, poffset, pcount, ptype, 
+				       ppid);
 }
 
 /****************************************************************************

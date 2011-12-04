@@ -346,18 +346,18 @@ static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t
 
 static struct vfs_fn_pointers vfs_extd_audit_fns = {
 	.connect_fn = audit_connect,
-	.disconnect = audit_disconnect,
-	.opendir = audit_opendir,
-	.mkdir = audit_mkdir,
-	.rmdir = audit_rmdir,
+	.disconnect_fn = audit_disconnect,
+	.opendir_fn = audit_opendir,
+	.mkdir_fn = audit_mkdir,
+	.rmdir_fn = audit_rmdir,
 	.open_fn = audit_open,
 	.close_fn = audit_close,
-	.rename = audit_rename,
-	.unlink = audit_unlink,
-	.chmod = audit_chmod,
-	.fchmod = audit_fchmod,
-	.chmod_acl = audit_chmod_acl,
-	.fchmod_acl = audit_fchmod_acl,
+	.rename_fn = audit_rename,
+	.unlink_fn = audit_unlink,
+	.chmod_fn = audit_chmod,
+	.fchmod_fn = audit_fchmod,
+	.chmod_acl_fn = audit_chmod_acl,
+	.fchmod_acl_fn = audit_fchmod_acl,
 };
 
 NTSTATUS vfs_extd_audit_init(void)

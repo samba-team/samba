@@ -144,14 +144,14 @@
         (create_options), (file_attributes), (oplock_request), (allocation_size), (private_flags), (sd), (ea_list), (result), (pinfo))
 
 #define SMB_VFS_CLOSE(fsp) \
-	smb_vfs_call_close_fn((fsp)->conn->vfs_handles, (fsp))
+	smb_vfs_call_close((fsp)->conn->vfs_handles, (fsp))
 #define SMB_VFS_NEXT_CLOSE(handle, fsp) \
-	smb_vfs_call_close_fn((handle)->next, (fsp))
+	smb_vfs_call_close((handle)->next, (fsp))
 
 #define SMB_VFS_READ(fsp, data, n) \
-	smb_vfs_call_vfs_read((fsp)->conn->vfs_handles, (fsp), (data), (n))
+	smb_vfs_call_read((fsp)->conn->vfs_handles, (fsp), (data), (n))
 #define SMB_VFS_NEXT_READ(handle, fsp, data, n) \
-	smb_vfs_call_vfs_read((handle)->next, (fsp), (data), (n))
+	smb_vfs_call_read((handle)->next, (fsp), (data), (n))
 
 #define SMB_VFS_PREAD(fsp, data, n, off) \
 	smb_vfs_call_pread((fsp)->conn->vfs_handles, (fsp), (data), (n), (off))
@@ -294,9 +294,9 @@
 	smb_vfs_call_symlink((handle)->next, (oldpath), (newpath))
 
 #define SMB_VFS_READLINK(conn, path, buf, bufsiz) \
-	smb_vfs_call_vfs_readlink((conn)->vfs_handles, (path), (buf), (bufsiz))
+	smb_vfs_call_readlink((conn)->vfs_handles, (path), (buf), (bufsiz))
 #define SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz) \
-	smb_vfs_call_vfs_readlink((handle)->next, (path), (buf), (bufsiz))
+	smb_vfs_call_readlink((handle)->next, (path), (buf), (bufsiz))
 
 #define SMB_VFS_LINK(conn, oldpath, newpath) \
 	smb_vfs_call_link((conn)->vfs_handles, (oldpath), (newpath))
@@ -585,9 +585,9 @@
 	smb_vfs_call_aio_write((handle)->next,(fsp),(aiocb))
 
 #define SMB_VFS_AIO_RETURN(fsp,aiocb) \
-	smb_vfs_call_aio_return_fn((fsp)->conn->vfs_handles, (fsp), (aiocb))
+	smb_vfs_call_aio_return((fsp)->conn->vfs_handles, (fsp), (aiocb))
 #define SMB_VFS_NEXT_AIO_RETURN(handle,fsp,aiocb) \
-	smb_vfs_call_aio_return_fn((handle)->next,(fsp),(aiocb))
+	smb_vfs_call_aio_return((handle)->next,(fsp),(aiocb))
 
 #define SMB_VFS_AIO_CANCEL(fsp,aiocb) \
 	smb_vfs_call_aio_cancel((fsp)->conn->vfs_handles, (fsp), (aiocb))
@@ -595,9 +595,9 @@
 	smb_vfs_call_aio_cancel((handle)->next,(fsp),(aiocb))
 
 #define SMB_VFS_AIO_ERROR(fsp,aiocb) \
-	smb_vfs_call_aio_error_fn((fsp)->conn->vfs_handles, (fsp),(aiocb))
+	smb_vfs_call_aio_error((fsp)->conn->vfs_handles, (fsp),(aiocb))
 #define SMB_VFS_NEXT_AIO_ERROR(handle,fsp,aiocb) \
-	smb_vfs_call_aio_error_fn((handle)->next,(fsp),(aiocb))
+	smb_vfs_call_aio_error((handle)->next,(fsp),(aiocb))
 
 #define SMB_VFS_AIO_FSYNC(fsp,op,aiocb) \
 	smb_vfs_call_aio_fsync((fsp)->conn->vfs_handles, (fsp), (op),(aiocb))

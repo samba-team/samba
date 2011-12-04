@@ -216,7 +216,7 @@ static int prealloc_ftruncate(vfs_handle_struct * handle,
 
 static struct vfs_fn_pointers prealloc_fns = {
 	.open_fn = prealloc_open,
-	.ftruncate = prealloc_ftruncate,
+	.ftruncate_fn = prealloc_ftruncate,
 	.connect_fn = prealloc_connect,
 };
 

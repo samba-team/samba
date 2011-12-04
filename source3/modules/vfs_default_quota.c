@@ -216,8 +216,8 @@ static int default_quota_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYP
 }
 
 static struct vfs_fn_pointers vfs_default_quota_fns = {
-	.get_quota = default_quota_get_quota,
-	.set_quota = default_quota_set_quota
+	.get_quota_fn = default_quota_get_quota,
+	.set_quota_fn = default_quota_set_quota
 };
 
 NTSTATUS vfs_default_quota_init(void);

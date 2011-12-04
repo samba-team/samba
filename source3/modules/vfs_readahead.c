@@ -169,8 +169,8 @@ static int readahead_connect(struct vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_readahead_fns = {
-	.sendfile = readahead_sendfile,
-	.pread = readahead_pread,
+	.sendfile_fn = readahead_sendfile,
+	.pread_fn = readahead_pread,
 	.connect_fn = readahead_connect
 };
 

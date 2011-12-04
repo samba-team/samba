@@ -767,16 +767,16 @@ static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 }
 
 static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
-	.getxattr = xattr_tdb_getxattr,
-	.fgetxattr = xattr_tdb_fgetxattr,
-	.setxattr = xattr_tdb_setxattr,
-	.fsetxattr = xattr_tdb_fsetxattr,
-	.listxattr = xattr_tdb_listxattr,
-	.flistxattr = xattr_tdb_flistxattr,
-	.removexattr = xattr_tdb_removexattr,
-	.fremovexattr = xattr_tdb_fremovexattr,
-	.unlink = xattr_tdb_unlink,
-	.rmdir = xattr_tdb_rmdir,
+	.getxattr_fn = xattr_tdb_getxattr,
+	.fgetxattr_fn = xattr_tdb_fgetxattr,
+	.setxattr_fn = xattr_tdb_setxattr,
+	.fsetxattr_fn = xattr_tdb_fsetxattr,
+	.listxattr_fn = xattr_tdb_listxattr,
+	.flistxattr_fn = xattr_tdb_flistxattr,
+	.removexattr_fn = xattr_tdb_removexattr,
+	.fremovexattr_fn = xattr_tdb_fremovexattr,
+	.unlink_fn = xattr_tdb_unlink,
+	.rmdir_fn = xattr_tdb_rmdir,
 	.connect_fn = xattr_tdb_connect,
 };
 

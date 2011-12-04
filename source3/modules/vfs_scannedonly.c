@@ -1016,20 +1016,20 @@ static int scannedonly_connect(struct vfs_handle_struct *handle,
 
 /* VFS operations structure */
 static struct vfs_fn_pointers vfs_scannedonly_fns = {
-	.opendir = scannedonly_opendir,
-	.fdopendir = scannedonly_fdopendir,
-	.readdir = scannedonly_readdir,
-	.seekdir = scannedonly_seekdir,
-	.telldir = scannedonly_telldir,
-	.rewind_dir = scannedonly_rewinddir,
-	.closedir = scannedonly_closedir,
-	.rmdir = scannedonly_rmdir,
-	.stat = scannedonly_stat,
-	.lstat = scannedonly_lstat,
+	.opendir_fn = scannedonly_opendir,
+	.fdopendir_fn = scannedonly_fdopendir,
+	.readdir_fn = scannedonly_readdir,
+	.seekdir_fn = scannedonly_seekdir,
+	.telldir_fn = scannedonly_telldir,
+	.rewind_dir_fn = scannedonly_rewinddir,
+	.closedir_fn = scannedonly_closedir,
+	.rmdir_fn = scannedonly_rmdir,
+	.stat_fn = scannedonly_stat,
+	.lstat_fn = scannedonly_lstat,
 	.open_fn = scannedonly_open,
 	.close_fn = scannedonly_close,
-	.rename = scannedonly_rename,
-	.unlink = scannedonly_unlink,
+	.rename_fn = scannedonly_rename,
+	.unlink_fn = scannedonly_unlink,
 	.connect_fn = scannedonly_connect
 };
 

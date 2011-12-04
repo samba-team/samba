@@ -1170,11 +1170,11 @@ static bool hpux_acl_check(HPUX_ACL_T hpux_acl, int count)
 /* VFS operations structure */
 
 static struct vfs_fn_pointers hpuxacl_fns = {
-	.sys_acl_get_file = hpuxacl_sys_acl_get_file,
-	.sys_acl_get_fd = hpuxacl_sys_acl_get_fd,
-	.sys_acl_set_file = hpuxacl_sys_acl_set_file,
-	.sys_acl_set_fd = hpuxacl_sys_acl_set_fd,
-	.sys_acl_delete_def_file = hpuxacl_sys_acl_delete_def_file,
+	.sys_acl_get_file_fn = hpuxacl_sys_acl_get_file,
+	.sys_acl_get_fd_fn = hpuxacl_sys_acl_get_fd,
+	.sys_acl_set_file_fn = hpuxacl_sys_acl_set_file,
+	.sys_acl_set_fd_fn = hpuxacl_sys_acl_set_fd,
+	.sys_acl_delete_def_file_fn = hpuxacl_sys_acl_delete_def_file,
 };
 
 NTSTATUS vfs_hpuxacl_init(void)

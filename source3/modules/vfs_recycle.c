@@ -639,7 +639,7 @@ done:
 }
 
 static struct vfs_fn_pointers vfs_recycle_fns = {
-	.unlink = recycle_unlink
+	.unlink_fn = recycle_unlink
 };
 
 NTSTATUS vfs_recycle_init(void);

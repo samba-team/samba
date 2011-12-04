@@ -487,14 +487,14 @@ int aixjfs2_sys_acl_delete_def_file(vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_aixacl2_fns = {
-	.fget_nt_acl = aixjfs2_fget_nt_acl,
-	.get_nt_acl = aixjfs2_get_nt_acl,
-	.fset_nt_acl = aixjfs2_fset_nt_acl,
-	.sys_acl_get_file = aixjfs2_sys_acl_get_file,
-	.sys_acl_get_fd = aixjfs2_sys_acl_get_fd,
-	.sys_acl_set_file = aixjfs2_sys_acl_set_file,
-	.sys_acl_set_fd = aixjfs2_sys_acl_set_fd,
-	.sys_acl_delete_def_file = aixjfs2_sys_acl_delete_def_file
+	.fget_nt_acl_fn = aixjfs2_fget_nt_acl,
+	.get_nt_acl_fn = aixjfs2_get_nt_acl,
+	.fset_nt_acl_fn = aixjfs2_fset_nt_acl,
+	.sys_acl_get_file_fn = aixjfs2_sys_acl_get_file,
+	.sys_acl_get_fd_fn = aixjfs2_sys_acl_get_fd,
+	.sys_acl_set_file_fn = aixjfs2_sys_acl_set_file,
+	.sys_acl_set_fd_fn = aixjfs2_sys_acl_set_fd,
+	.sys_acl_delete_def_file_fn = aixjfs2_sys_acl_delete_def_file
 };
 
 NTSTATUS vfs_aixacl2_init(void);

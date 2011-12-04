@@ -399,18 +399,18 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
-	.disconnect = disconnect_acl_tdb,
-	.rmdir = rmdir_acl_tdb,
-	.unlink = unlink_acl_tdb,
-	.chmod = chmod_acl_module_common,
-	.fchmod = fchmod_acl_module_common,
-	.fget_nt_acl = fget_nt_acl_common,
-	.get_nt_acl = get_nt_acl_common,
-	.fset_nt_acl = fset_nt_acl_common,
-	.chmod_acl = chmod_acl_acl_module_common,
-	.fchmod_acl = fchmod_acl_acl_module_common,
-	.sys_acl_set_file = sys_acl_set_file_tdb,
-	.sys_acl_set_fd = sys_acl_set_fd_tdb
+	.disconnect_fn = disconnect_acl_tdb,
+	.rmdir_fn = rmdir_acl_tdb,
+	.unlink_fn = unlink_acl_tdb,
+	.chmod_fn = chmod_acl_module_common,
+	.fchmod_fn = fchmod_acl_module_common,
+	.fget_nt_acl_fn = fget_nt_acl_common,
+	.get_nt_acl_fn = get_nt_acl_common,
+	.fset_nt_acl_fn = fset_nt_acl_common,
+	.chmod_acl_fn = chmod_acl_acl_module_common,
+	.fchmod_acl_fn = fchmod_acl_acl_module_common,
+	.sys_acl_set_file_fn = sys_acl_set_file_tdb,
+	.sys_acl_set_fd_fn = sys_acl_set_fd_tdb
 };
 
 NTSTATUS vfs_acl_tdb_init(void)

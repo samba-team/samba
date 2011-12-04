@@ -300,14 +300,14 @@ static int zfsacl_fail__sys_acl_delete_def_file(vfs_handle_struct *handle,
 /* VFS operations structure */
 
 static struct vfs_fn_pointers zfsacl_fns = {
-	.sys_acl_get_file = zfsacl_fail__sys_acl_get_file,
-	.sys_acl_get_fd = zfsacl_fail__sys_acl_get_fd,
-	.sys_acl_set_file = zfsacl_fail__sys_acl_set_file,
-	.sys_acl_set_fd = zfsacl_fail__sys_acl_set_fd,
-	.sys_acl_delete_def_file = zfsacl_fail__sys_acl_delete_def_file,
-	.fget_nt_acl = zfsacl_fget_nt_acl,
-	.get_nt_acl = zfsacl_get_nt_acl,
-	.fset_nt_acl = zfsacl_fset_nt_acl,
+	.sys_acl_get_file_fn = zfsacl_fail__sys_acl_get_file,
+	.sys_acl_get_fd_fn = zfsacl_fail__sys_acl_get_fd,
+	.sys_acl_set_file_fn = zfsacl_fail__sys_acl_set_file,
+	.sys_acl_set_fd_fn = zfsacl_fail__sys_acl_set_fd,
+	.sys_acl_delete_def_file_fn = zfsacl_fail__sys_acl_delete_def_file,
+	.fget_nt_acl_fn = zfsacl_fget_nt_acl,
+	.get_nt_acl_fn = zfsacl_get_nt_acl,
+	.fset_nt_acl_fn = zfsacl_fset_nt_acl,
 };
 
 NTSTATUS vfs_zfsacl_init(void);

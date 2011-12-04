@@ -301,7 +301,7 @@ static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
 /* VFS operations structure */
 
 static struct vfs_fn_pointers notify_fam_fns = {
-	.notify_watch = fam_watch,
+	.notify_watch_fn = fam_watch,
 };
 
 

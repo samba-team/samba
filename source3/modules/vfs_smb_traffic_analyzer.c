@@ -903,19 +903,19 @@ static int smb_traffic_analyzer_close(vfs_handle_struct *handle, \
 
 	
 static struct vfs_fn_pointers vfs_smb_traffic_analyzer_fns = {
-        .connect_fn = smb_traffic_analyzer_connect,
-	.vfs_read = smb_traffic_analyzer_read,
-	.pread = smb_traffic_analyzer_pread,
-	.write = smb_traffic_analyzer_write,
-	.pwrite = smb_traffic_analyzer_pwrite,
-	.mkdir = smb_traffic_analyzer_mkdir,
-	.rename = smb_traffic_analyzer_rename,
-	.chdir = smb_traffic_analyzer_chdir,
+	.connect_fn = smb_traffic_analyzer_connect,
+	.read_fn = smb_traffic_analyzer_read,
+	.pread_fn = smb_traffic_analyzer_pread,
+	.write_fn = smb_traffic_analyzer_write,
+	.pwrite_fn = smb_traffic_analyzer_pwrite,
+	.mkdir_fn = smb_traffic_analyzer_mkdir,
+	.rename_fn = smb_traffic_analyzer_rename,
+	.chdir_fn = smb_traffic_analyzer_chdir,
 	.open_fn = smb_traffic_analyzer_open,
-	.rmdir = smb_traffic_analyzer_rmdir,
+	.rmdir_fn = smb_traffic_analyzer_rmdir,
 	.close_fn = smb_traffic_analyzer_close,
-	.sendfile = smb_traffic_analyzer_sendfile,
-	.recvfile = smb_traffic_analyzer_recvfile
+	.sendfile_fn = smb_traffic_analyzer_sendfile,
+	.recvfile_fn = smb_traffic_analyzer_recvfile
 };
 
 /* Module initialization */

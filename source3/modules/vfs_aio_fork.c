@@ -879,12 +879,12 @@ static int aio_fork_suspend(struct vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_aio_fork_fns = {
-	.aio_read = aio_fork_read,
-	.aio_write = aio_fork_write,
+	.aio_read_fn = aio_fork_read,
+	.aio_write_fn = aio_fork_write,
 	.aio_return_fn = aio_fork_return_fn,
-	.aio_cancel = aio_fork_cancel,
+	.aio_cancel_fn = aio_fork_cancel,
 	.aio_error_fn = aio_fork_error_fn,
-	.aio_suspend = aio_fork_suspend,
+	.aio_suspend_fn = aio_fork_suspend,
 };
 
 NTSTATUS vfs_aio_fork_init(void);

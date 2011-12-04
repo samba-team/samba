@@ -280,14 +280,14 @@ static int syncops_connect(struct vfs_handle_struct *handle, const char *service
 
 static struct vfs_fn_pointers vfs_syncops_fns = {
 	.connect_fn = syncops_connect,
-        .mkdir = syncops_mkdir,
-        .rmdir = syncops_rmdir,
-        .open_fn = syncops_open,
-        .rename = syncops_rename,
-        .unlink = syncops_unlink,
-        .symlink = syncops_symlink,
-        .link = syncops_link,
-        .mknod = syncops_mknod,
+	.mkdir_fn = syncops_mkdir,
+	.rmdir_fn = syncops_rmdir,
+	.open_fn = syncops_open,
+	.rename_fn = syncops_rename,
+	.unlink_fn = syncops_unlink,
+	.symlink_fn = syncops_symlink,
+	.link_fn = syncops_link,
+	.mknod_fn = syncops_mknod,
 	.close_fn = syncops_close,
 };
 
