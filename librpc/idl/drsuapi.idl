@@ -58,6 +58,13 @@ interface drsuapi
 		DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP  = 0x80000000
 	} drsuapi_DrsOptions;
 
+	/* see DRS_MSG_REPMOD_V1 */
+	typedef [public,bitmap32bit] bitmap {
+		DRSUAPI_DRS_UPDATE_FLAGS              = 0x00000001,
+		DRSUAPI_DRS_UPDATE_ADDRESS            = 0x00000002,
+		DRSUAPI_DRS_UPDATE_SCHEDULE           = 0x00000004
+        } drsuapi_DrsUpdate;
+
 	/*****************/
         /* Function 0x00 */
         typedef [bitmap32bit] bitmap {
