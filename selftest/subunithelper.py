@@ -22,8 +22,9 @@ import sys
 import subunit
 import subunit.iso8601
 import testtools
+from testtools import content, content_type
 
-VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error']
+VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error', 'uxsuccess']
 
 class TestsuiteEnabledTestResult(testtools.testresult.TestResult):
 
@@ -33,7 +34,6 @@ class TestsuiteEnabledTestResult(testtools.testresult.TestResult):
 
 def parse_results(msg_ops, statistics, fh):
     exitcode = 0
-    expected_fail = 0
     open_tests = {}
 
     while fh:
@@ -111,7 +111,17 @@ def parse_results(msg_ops, statistics, fh):
                 else:
                     statistics['TESTS_EXPECTED_FAIL']+=1
                     msg_ops.addExpectedFailure(test, remote_error)
-                    expected_fail+=1
+            elif result in ("uxsuccess", ):
+                try:
+                    test = open_tests.pop(testname)
+                except KeyError:
+                    statistics['TESTS_ERROR']+=1
+                    exitcode = 1
+                    msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"Test was never started"))
+                else:
+                    statistics['TESTS_UNEXPECTED_OK']+=1
+                    msg_ops.addUnexpectedSuccess(test, remote_error)
+                    exitcode = 1
             elif result in ("failure", "fail"):
                 try:
                     test = open_tests.pop(testname)
@@ -285,6 +295,11 @@ class FilterOps(testtools.testresult.TestResult):
         self._ops.addExpectedFailure(test, details)
         self.output = None
 
+    def addUnexpectedSuccess(self, test, details=None):
+        test = self._add_prefix(test)
+        self._ops.addUnexpectedSuccess(test, details)
+        self.output = None
+
     def addFailure(self, test, details=None):
         test = self._add_prefix(test)
         xfail_reason = find_in_list(self.expected_failures, test.id())
@@ -314,10 +329,11 @@ class FilterOps(testtools.testresult.TestResult):
         if xfail_reason is not None:
             self.uxsuccess_added += 1
             self.total_uxsuccess += 1
-            if details is not None:
-                details = subunit.RemoteError(unicode(details[1]) + xfail_reason.decode("utf-8"))
-            else:
-                details = subunit.RemoteError(xfail_reason.decode("utf-8"))
+            if details is None:
+                details = {}
+            details['reason'] = content.Content(
+                content_type.ContentType("text", "plain",
+                    {"charset": "utf8"}), lambda: xfail_reason)
             self._ops.addUnexpectedSuccess(test, details)
             if self.output:
                 self._ops.output_msg(self.output)
@@ -508,10 +524,13 @@ class PlainFormatter(TestsuiteEnabledTestResult):
     def addSkip(self, test, details=None):
         self.end_test(test.id(), "skip", False, details)
 
-    def addExpectedFail(self, test, details=None):
+    def addExpectedFailure(self, test, details=None):
         self.end_test(test.id(), "xfail", False, details)
 
-    def end_test(self, testname, result, unexpected, reason=None):
+    def addUnexpectedSuccess(self, test, details=None):
+        self.end_test(test.id(), "uxsuccess", True, details)
+
+    def end_test(self, testname, result, unexpected, details=None):
         if not unexpected:
             self.test_output[self.name] = ""
             if not self.immediate:
@@ -526,17 +545,18 @@ class PlainFormatter(TestsuiteEnabledTestResult):
             self.test_output[self.name] = ""
 
         self.test_output[self.name] += "UNEXPECTED(%s): %s\n" % (result, testname)
-        if reason is not None:
-            self.test_output[self.name] += "REASON: %s\n" % (unicode(reason[1]).encode("utf-8").strip(),)
+        if details is not None:
+            self.test_output[self.name] += "REASON: %s\n" % (unicode(details[1]).encode("utf-8").strip(),)
 
         if self.immediate and not self.verbose:
-            print self.test_output[self.name]
+            sys.stdout.write(self.test_output[self.name])
             self.test_output[self.name] = ""
 
         if not self.immediate:
             sys.stdout.write({
                'error': 'E',
                'failure': 'F',
+               'uxsuccess': 'U',
                'success': 'S'}.get(result, "?"))
 
     def write_summary(self, path):
@@ -570,14 +590,16 @@ class PlainFormatter(TestsuiteEnabledTestResult):
 
         if (not self.suitesfailed and
             not self.statistics['TESTS_UNEXPECTED_FAIL'] and
+            not self.statistics['TESTS_UNEXPECTED_OK'] and
             not self.statistics['TESTS_ERROR']):
             ok = (self.statistics['TESTS_EXPECTED_OK'] +
                   self.statistics['TESTS_EXPECTED_FAIL'])
             print "\nALL OK (%d tests in %d testsuites)" % (ok, self.suites_ok)
         else:
-            print "\nFAILED (%d failures and %d errors in %d testsuites)" % (
+            print "\nFAILED (%d failures, %d errors and %d unexpected successes in %d testsuites)" % (
                 self.statistics['TESTS_UNEXPECTED_FAIL'],
                 self.statistics['TESTS_ERROR'],
+                self.statistics['TESTS_UNEXPECTED_OK'],
                 len(self.suitesfailed))
 
     def skip_testsuite(self, name, reason="UNKNOWN"):
