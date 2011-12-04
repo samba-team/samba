@@ -95,5 +95,5 @@
 #^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.*
 ^samba4.drs.fsmo.python
 ^samba4.libsmbclient.opendir.opendir # This requires netbios browsing
-^samba4.rpc.drsuapi on ncalrpc with seal,padcheck.drsuapi.DsGetDomainControllerInfo$
-^samba4.rpc.drsuapi on ncalrpc with seal,padcheck.drsuapi.DsCrackNames$
+^samba4.rpc.drsuapi .*.drsuapi.DsGetDomainControllerInfo$
+^samba4.rpc.drsuapi .*.drsuapi.DsCrackNames$
