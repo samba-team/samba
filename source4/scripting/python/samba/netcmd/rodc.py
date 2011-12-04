@@ -59,11 +59,6 @@ class cmd_rodc_preload(Command):
         return str(res[0]["dn"])
 
 
-    def get_dsServiceName(self, samdb):
-        res = samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
-        return res[0]["dsServiceName"][0]
-
-
     def run(self, account, sambaopts=None,
             credopts=None, versionopts=None, server=None):
 
@@ -83,7 +78,7 @@ class cmd_rodc_preload(Command):
                             credentials=creds, lp=lp)
 
         # work out the source and destination GUIDs
-        dc_ntds_dn = self.get_dsServiceName(samdb)
+        dc_ntds_dn = samdb.get_dsServiceName()
         res = samdb.search(base=dc_ntds_dn, scope=ldb.SCOPE_BASE, attrs=["invocationId"])
         source_dsa_invocation_id = misc.GUID(local_samdb.schema_format_value("objectGUID", res[0]["invocationId"][0]))
 

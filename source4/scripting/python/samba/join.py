@@ -87,7 +87,7 @@ class dc_join(object):
         ctx.forest_domain_name = ctx.get_forest_domain_name()
         ctx.invocation_id = misc.GUID(str(uuid.uuid4()))
 
-        ctx.dc_ntds_dn = ctx.get_dsServiceName()
+        ctx.dc_ntds_dn = ctx.samdb.get_dsServiceName()
         ctx.dc_dnsHostName = ctx.get_dnsHostName()
         ctx.behavior_version = ctx.get_behavior_version()
 
@@ -206,10 +206,6 @@ class dc_join(object):
             ctx.site = ctx.cldap_ret.client_site
         return ctx.cldap_ret.pdc_dns_name
 
-
-    def get_dsServiceName(ctx):
-        res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
-        return res[0]["dsServiceName"][0]
 
     def get_behavior_version(ctx):
         res = ctx.samdb.search(base=ctx.base_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])

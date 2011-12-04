@@ -843,3 +843,13 @@ accountExpires: %u
         else:
             self.transaction_commit()
         return seq
+
+    def get_dsServiceName(self):
+        '''get the NTDS DN from the rootDSE'''
+        res = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
+        return res[0]["dsServiceName"][0]
+
+    def get_serverName(self):
+        '''get the server DN from the rootDSE'''
+        res = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["serverName"])
+        return res[0]["serverName"][0]
