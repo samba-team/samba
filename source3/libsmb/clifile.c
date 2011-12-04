@@ -2353,6 +2353,121 @@ NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags,
 	TALLOC_FREE(frame);
 	return status;
 }
+/****************************************************************************
+ Synchronous wrapper function that does an NtCreateX open by preference
+ and falls back to openX if this fails.
+****************************************************************************/
+
+NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
+			int share_mode_in, uint16_t *pfnum)
+{
+	NTSTATUS status;
+	unsigned int openfn = 0;
+	unsigned int dos_deny = 0;
+	uint32_t access_mask, share_mode, create_disposition, create_options;
+
+	/* Do the initial mapping into OpenX parameters. */
+	if (flags & O_CREAT) {
+		openfn |= (1<<4);
+	}
+	if (!(flags & O_EXCL)) {
+		if (flags & O_TRUNC)
+			openfn |= (1<<1);
+		else
+			openfn |= (1<<0);
+	}
+
+	dos_deny = (share_mode_in<<4);
+
+	if ((flags & O_ACCMODE) == O_RDWR) {
+		dos_deny |= 2;
+	} else if ((flags & O_ACCMODE) == O_WRONLY) {
+		dos_deny |= 1;
+	}
+
+#if defined(O_SYNC)
+	if ((flags & O_SYNC) == O_SYNC) {
+		dos_deny |= (1<<14);
+	}
+#endif /* O_SYNC */
+
+	if (share_mode_in == DENY_FCB) {
+		dos_deny = 0xFF;
+	}
+
+#if 0
+	/* Hmmm. This is what I think the above code
+	   should look like if it's using the constants
+	   we #define. JRA. */
+
+	if (flags & O_CREAT) {
+		openfn |= OPENX_FILE_CREATE_IF_NOT_EXIST;
+	}
+	if (!(flags & O_EXCL)) {
+		if (flags & O_TRUNC)
+			openfn |= OPENX_FILE_EXISTS_TRUNCATE;
+		else
+			openfn |= OPENX_FILE_EXISTS_OPEN;
+	}
+
+	dos_deny = SET_DENY_MODE(share_mode_in);
+
+	if ((flags & O_ACCMODE) == O_RDWR) {
+		dos_deny |= DOS_OPEN_RDWR;
+	} else if ((flags & O_ACCMODE) == O_WRONLY) {
+		dos_deny |= DOS_OPEN_WRONLY;
+	}
+
+#if defined(O_SYNC)
+	if ((flags & O_SYNC) == O_SYNC) {
+		dos_deny |= FILE_SYNC_OPENMODE;
+	}
+#endif /* O_SYNC */
+
+	if (share_mode_in == DENY_FCB) {
+		dos_deny = 0xFF;
+	}
+#endif
+
+	if (!map_open_params_to_ntcreate(fname, dos_deny,
+					openfn, &access_mask,
+					&share_mode, &create_disposition,
+					&create_options, NULL)) {
+		goto try_openx;
+	}
+
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				access_mask,
+				0,
+				share_mode,
+				create_disposition,
+				create_options,
+				0,
+				pfnum);
+
+	/* Try and cope will all varients of "we don't do this call"
+	   and fall back to openX. */
+
+	if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_IMPLEMENTED) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_INFO_CLASS) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_PROCEDURE_NOT_FOUND) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_LEVEL) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_PARAMETER) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_DEVICE_REQUEST) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_INVALID_DEVICE_STATE) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_CTL_FILE_NOT_SUPPORTED) ||
+			NT_STATUS_EQUAL(status,NT_STATUS_UNSUCCESSFUL)) {
+		goto try_openx;
+	}
+
+	return status;
+
+  try_openx:
+
+	return cli_openx(cli, fname, flags, share_mode_in, pfnum);
+}
 
 /****************************************************************************
  Close a file.
