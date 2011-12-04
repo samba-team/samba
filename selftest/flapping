@@ -7,7 +7,7 @@
 # DO NOT ADD TESTS HERE UNLESS THEY ARE ACTUALLY FLAPPING
 #
 # It is much better to add known failing tests to 'knownfail', so the
-# test system can wwarn when they actually start passing.
+# test system can warn when they actually start passing.
 ^samba3.raw.mux.* #This test is flaky on the async lock time
 ^samba3.smbtorture_s3.*OPLOCK4 # fails sometimes on sn-devel
 ^samba4.nbt.winsreplication.owned # fails sometimes, timing related
