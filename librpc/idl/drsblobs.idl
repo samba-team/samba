@@ -151,6 +151,26 @@ interface drsblobs {
 		[in] repsFromToBlob blob
 		);
 
+	/* Replication schedule structures as defined in MS-ADTS 7.1.4.5
+         * Appears as attribute of NTDSConnection object
+         */
+	typedef [public] struct {
+		[value(0)] uint32 type;      /* always 0 */
+		uint32            offset;
+	} scheduleHeader;
+
+        typedef [public] struct {
+                uint8 slots[168];
+        } scheduleSlots;
+
+        typedef [public] struct {
+		uint32             size;
+		[value(0)] uint32  bandwidth;         /* ignored */
+		[value(1)] uint32  numberOfSchedules; /* always 1 */
+		scheduleHeader     headerArray[numberOfSchedules];
+		scheduleSlots      dataArray[numberOfSchedules];
+	} schedule;
+
 	/*
 	 * partialAttributeSet
 	 * w2k  uses version 1
