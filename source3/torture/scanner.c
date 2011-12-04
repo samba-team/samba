@@ -243,12 +243,12 @@ bool torture_trans2_scan(int dummy)
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
+	if (!NT_STATUS_IS_OK(cli_openx(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
 			 DENY_NONE, &fnum))) {
 		printf("open of %s failed\n", fname);
 		return false;
 	}
-	if (!NT_STATUS_IS_OK(cli_open(cli, "\\", O_RDONLY, DENY_NONE, &dnum))) {
+	if (!NT_STATUS_IS_OK(cli_openx(cli, "\\", O_RDONLY, DENY_NONE, &dnum))) {
 		printf("open of \\ failed\n");
 		return false;
 	}
@@ -488,9 +488,9 @@ bool torture_nttrans_scan(int dummy)
 		return False;
 	}
 
-	cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
+	cli_openx(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
 			 DENY_NONE, &fnum);
-	cli_open(cli, "\\", O_RDONLY, DENY_NONE, &dnum);
+	cli_openx(cli, "\\", O_RDONLY, DENY_NONE, &dnum);
 
 	for (op=OP_MIN; op<=OP_MAX; op++) {
 		printf("Scanning op=%d\n", op);

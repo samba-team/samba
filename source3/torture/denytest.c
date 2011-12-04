@@ -1424,7 +1424,7 @@ bool torture_denytest1(int dummy)
 
 	for (i=0;i<2;i++) {
 		cli_unlink(cli1, fnames[i], FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-		cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE, &fnum1);
+		cli_openx(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE, &fnum1);
 		cli_writeall(cli1, fnum1, 0, (const uint8_t *)fnames[i], 0,
 			     strlen(fnames[i]), NULL);
 		cli_close(cli1, fnum1);
@@ -1438,10 +1438,10 @@ bool torture_denytest1(int dummy)
 
 		progress_bar(i, ARRAY_SIZE(denytable1));
 
-		ret1 = cli_open(cli1, fname, 
+		ret1 = cli_openx(cli1, fname, 
 				 denytable1[i].mode1,
 				 denytable1[i].deny1, &fnum1);
-		ret2 = cli_open(cli1, fname, 
+		ret2 = cli_openx(cli1, fname, 
 				 denytable1[i].mode2,
 				 denytable1[i].deny2, &fnum2);
 
@@ -1522,7 +1522,7 @@ bool torture_denytest2(int dummy)
 
 	for (i=0;i<2;i++) {
 		cli_unlink(cli1, fnames[i], FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-		cli_open(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE, &fnum1);
+		cli_openx(cli1, fnames[i], O_RDWR|O_CREAT, DENY_NONE, &fnum1);
 		cli_writeall(cli1, fnum1, 0, (const uint8_t *)fnames[i], 0,
 			     strlen(fnames[i]), NULL);
 		cli_close(cli1, fnum1);
@@ -1534,10 +1534,10 @@ bool torture_denytest2(int dummy)
 
 		progress_bar(i, ARRAY_SIZE(denytable2));
 
-		ret1 = cli_open(cli1, fname, 
+		ret1 = cli_openx(cli1, fname, 
 				 denytable2[i].mode1,
 				 denytable2[i].deny1, &fnum1);
-		ret2 = cli_open(cli2, fname, 
+		ret2 = cli_openx(cli2, fname, 
 				 denytable2[i].mode2,
 				 denytable2[i].deny2, &fnum2);
 

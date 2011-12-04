@@ -610,10 +610,10 @@ static bool rw_torture(struct cli_state *c)
 
 	memset(buf, '\0', sizeof(buf));
 
-	status = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
+	status = cli_openx(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
 			 DENY_NONE, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
-		status = cli_open(c, lockfname, O_RDWR, DENY_NONE, &fnum2);
+		status = cli_openx(c, lockfname, O_RDWR, DENY_NONE, &fnum2);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n",
@@ -633,7 +633,7 @@ static bool rw_torture(struct cli_state *c)
 			return False;
 		}
 
-		status = cli_open(c, fname, O_RDWR | O_CREAT | O_TRUNC,
+		status = cli_openx(c, fname, O_RDWR | O_CREAT | O_TRUNC,
                                   DENY_ALL, &fnum);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("open failed (%s)\n", nt_errstr(status));
@@ -751,7 +751,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 			       "not exist)\n", nt_errstr(status));
 		}
 
-		status = cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL,
+		status = cli_openx(c, lockfname, O_RDWR | O_CREAT | O_EXCL,
 		                  DENY_NONE, &fnum);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("first open read/write of %s failed (%s)\n",
@@ -763,7 +763,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 	{
 		for (i = 0; i < 500 && fnum == (uint16_t)-1; i++)
 		{
-			status = cli_open(c, lockfname, O_RDONLY, 
+			status = cli_openx(c, lockfname, O_RDONLY, 
 					 DENY_NONE, &fnum);
 			if (!NT_STATUS_IS_OK(status)) {
 				break;
@@ -852,7 +852,7 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 		printf("unlink failed (%s) (normal, this file should not exist)\n", nt_errstr(status));
 	}
 
-	status = cli_open(c1, lockfname, O_RDWR | O_CREAT | O_EXCL,
+	status = cli_openx(c1, lockfname, O_RDWR | O_CREAT | O_EXCL,
 	                  DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("first open read/write of %s failed (%s)\n",
@@ -860,7 +860,7 @@ static bool rw_torture2(struct cli_state *c1, struct cli_state *c2)
 		return False;
 	}
 
-	status = cli_open(c2, lockfname, O_RDONLY, DENY_NONE, &fnum2);
+	status = cli_openx(c2, lockfname, O_RDONLY, DENY_NONE, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("second open read-only of %s failed (%s)\n",
 				lockfname, nt_errstr(status));
@@ -999,7 +999,7 @@ static bool run_readwritelarge_internal(void)
 
 	cli_unlink(cli1, lockfname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli1, lockfname, O_RDWR | O_CREAT | O_EXCL,
+	status = cli_openx(cli1, lockfname, O_RDWR | O_CREAT | O_EXCL,
 	                  DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open read/write of %s failed (%s)\n", lockfname, nt_errstr(status));
@@ -1036,7 +1036,7 @@ static bool run_readwritelarge_internal(void)
 		correct = False;
 	}
 
-	status = cli_open(cli1, lockfname, O_RDWR | O_CREAT | O_EXCL,
+	status = cli_openx(cli1, lockfname, O_RDWR | O_CREAT | O_EXCL,
 	                  DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open read/write of %s failed (%s)\n", lockfname, nt_errstr(status));
@@ -1252,20 +1252,20 @@ static bool run_locktest1(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
 	                  &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
 	}
 
-	status = cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum2);
+	status = cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open2 of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
 	}
 
-	status = cli_open(cli2, fname, O_RDWR, DENY_NONE, &fnum3);
+	status = cli_openx(cli2, fname, O_RDWR, DENY_NONE, &fnum3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open3 of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -1384,7 +1384,7 @@ static bool run_tcon_test(int dummy)
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
+	status = cli_openx(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -1655,13 +1655,13 @@ static bool run_locktest2(int dummy)
 
 	cli_setpid(cli, 1);
 
-	status = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
+	status = cli_openx(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
 	}
 
-	status = cli_open(cli, fname, O_RDWR, DENY_NONE, &fnum2);
+	status = cli_openx(cli, fname, O_RDWR, DENY_NONE, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open2 of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -1669,7 +1669,7 @@ static bool run_locktest2(int dummy)
 
 	cli_setpid(cli, 2);
 
-	status = cli_open(cli, fname, O_RDWR, DENY_NONE, &fnum3);
+	status = cli_openx(cli, fname, O_RDWR, DENY_NONE, &fnum3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open3 of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -1816,14 +1816,14 @@ static bool run_locktest3(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
 	                 &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
 	}
 
-	status = cli_open(cli2, fname, O_RDWR, DENY_NONE, &fnum2);
+	status = cli_openx(cli2, fname, O_RDWR, DENY_NONE, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open2 of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -1978,8 +1978,8 @@ static bool run_locktest4(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
-	cli_open(cli2, fname, O_RDWR, DENY_NONE, &fnum2);
+	cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
+	cli_openx(cli2, fname, O_RDWR, DENY_NONE, &fnum2);
 
 	memset(buf, 0, sizeof(buf));
 
@@ -2120,12 +2120,12 @@ static bool run_locktest4(int dummy)
 
 	cli_close(cli1, fnum1);
 	cli_close(cli2, fnum2);
-	cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
-	cli_open(cli1, fname, O_RDWR, DENY_NONE, &f);
+	cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
+	cli_openx(cli1, fname, O_RDWR, DENY_NONE, &f);
 	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 8, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_lock32(cli1, f, 0, 1, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_close(cli1, fnum1)) &&
-	      NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1)) &&
+	      NT_STATUS_IS_OK(cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1)) &&
 	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 7, 1, 0, WRITE_LOCK));
         cli_close(cli1, f);
 	cli_close(cli1, fnum1);
@@ -2167,9 +2167,9 @@ static bool run_locktest5(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
-	cli_open(cli2, fname, O_RDWR, DENY_NONE, &fnum2);
-	cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum3);
+	cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
+	cli_openx(cli2, fname, O_RDWR, DENY_NONE, &fnum2);
+	cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum3);
 
 	memset(buf, 0, sizeof(buf));
 
@@ -2185,13 +2185,13 @@ static bool run_locktest5(int dummy)
 	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 8, 0, READ_LOCK)) &&
 	      NT_STATUS_IS_OK(cli_lock32(cli1, fnum3, 0, 1, 0, READ_LOCK));
 	cli_close(cli1, fnum1);
-	cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
+	cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	status = cli_lock32(cli1, fnum1, 7, 1, 0, WRITE_LOCK);
 	ret = NT_STATUS_IS_OK(status);
 	EXPECTED(ret, True);
 	printf("this server %s the NT locking bug\n", ret ? "doesn't have" : "has");
 	cli_close(cli1, fnum1);
-	cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
+	cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	cli_unlock(cli1, fnum3, 0, 1);
 
 	ret = NT_STATUS_IS_OK(cli_lock32(cli1, fnum1, 0, 4, 0, WRITE_LOCK)) &&
@@ -2298,12 +2298,12 @@ static bool run_locktest6(int dummy)
 
 		cli_unlink(cli, fname[i], FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-		cli_open(cli, fname[i], O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+		cli_openx(cli, fname[i], O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
 		status = cli_locktype(cli, fnum, 0, 8, 0, LOCKING_ANDX_CHANGE_LOCKTYPE);
 		cli_close(cli, fnum);
 		printf("CHANGE_LOCKTYPE gave %s\n", nt_errstr(status));
 
-		cli_open(cli, fname[i], O_RDWR, DENY_NONE, &fnum);
+		cli_openx(cli, fname[i], O_RDWR, DENY_NONE, &fnum);
 		status = cli_locktype(cli, fnum, 0, 8, 0, LOCKING_ANDX_CANCEL_LOCK);
 		cli_close(cli, fnum);
 		printf("CANCEL_LOCK gave %s\n", nt_errstr(status));
@@ -2337,7 +2337,7 @@ static bool run_locktest7(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
+	cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
 
 	memset(buf, 0, sizeof(buf));
 
@@ -2514,18 +2514,18 @@ static bool run_locktest8(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_WRITE,
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_WRITE,
 			  &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "cli_open returned %s\n", nt_errstr(status));
+		d_fprintf(stderr, "cli_openx returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	memset(buf, 0, sizeof(buf));
 
-	status = cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum2);
+	status = cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "cli_open second time returned %s\n",
+		d_fprintf(stderr, "cli_openx second time returned %s\n",
 			  nt_errstr(status));
 		goto fail;
 	}
@@ -2543,9 +2543,9 @@ static bool run_locktest8(int dummy)
 		goto fail;
 	}
 
-	status = cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "cli_open third time returned %s\n",
+		d_fprintf(stderr, "cli_openx third time returned %s\n",
                           nt_errstr(status));
                 goto fail;
         }
@@ -2705,10 +2705,10 @@ static bool run_locktest9(int dummy)
 
 	cli_sockopt(cli1, sockops);
 
-	status = cli_open(cli1, fname, O_RDWR, DENY_NONE,
+	status = cli_openx(cli1, fname, O_RDWR, DENY_NONE,
 			  &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, "cli_open returned %s\n", nt_errstr(status));
+		d_fprintf(stderr, "cli_openx returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -2789,7 +2789,7 @@ static bool run_fdpasstest(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
 	                  &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
@@ -2855,7 +2855,7 @@ static bool run_fdsesstest(int dummy)
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_unlink(cli, fname1, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
+	status = cli_openx(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -2877,7 +2877,7 @@ static bool run_fdsesstest(int dummy)
 		ret = false;
 	}
 	/* Try to open a file with different vuid, samba cnum. */
-	if (NT_STATUS_IS_OK(cli_open(cli, fname1, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum2))) {
+	if (NT_STATUS_IS_OK(cli_openx(cli, fname1, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum2))) {
 		printf("create with different vuid, same cnum succeeded.\n");
 		cli_close(cli, fnum2);
 		cli_unlink(cli, fname1, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
@@ -2932,7 +2932,7 @@ static bool run_unlinktest(int dummy)
 
 	cli_setpid(cli, 1);
 
-	status = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	status = cli_openx(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -2985,7 +2985,7 @@ static bool run_maxfidtest(int dummy)
 
 	for (i=0; i<0x11000; i++) {
 		slprintf(fname,sizeof(fname)-1,"\\maxfid.%d.%d", i,(int)getpid());
-		status = cli_open(cli, fname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE,
+		status = cli_openx(cli, fname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE,
 		                  &fnums[i]);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("open of %s failed (%s)\n", 
@@ -3224,7 +3224,7 @@ static bool run_attrtest(int dummy)
 	}
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_open(cli, fname, 
+	cli_openx(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
 	cli_close(cli, fnum);
 
@@ -3306,7 +3306,7 @@ static bool run_trans2test(int dummy)
 	}
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
+	cli_openx(cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
 	status = cli_qfileinfo_basic(cli, fnum, NULL, &size, &c_time_ts,
 	                             &a_time_ts, &w_time_ts, &m_time_ts, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3331,7 +3331,7 @@ static bool run_trans2test(int dummy)
 	sleep(2);
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	status = cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE,
+	status = cli_openx(cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE,
 	                  &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
@@ -3366,7 +3366,7 @@ static bool run_trans2test(int dummy)
 
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-	cli_open(cli, fname, 
+	cli_openx(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
 	cli_close(cli, fnum);
 	status = cli_qpathinfo2(cli, fname, &c_time_ts, &a_time_ts, &w_time_ts,
@@ -3400,7 +3400,7 @@ static bool run_trans2test(int dummy)
 		correct = False;
 	}
 
-	cli_open(cli, fname2, 
+	cli_openx(cli, fname2, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
 	cli_writeall(cli, fnum,  0, (uint8_t *)&fnum, 0, sizeof(fnum), NULL);
 	cli_close(cli, fnum);
@@ -3466,7 +3466,7 @@ static bool run_w2ktest(int dummy)
 		return False;
 	}
 
-	cli_open(cli, fname, 
+	cli_openx(cli, fname, 
 			O_RDWR | O_CREAT , DENY_NONE, &fnum);
 
 	for (level = 1004; level < 1040; level++) {
@@ -3508,7 +3508,7 @@ static bool run_oplock1(int dummy)
 
 	cli1->use_oplocks = True;
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
 			  &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
@@ -3578,7 +3578,7 @@ static bool run_oplock2(int dummy)
 	cli_sockopt(cli1, sockops);
 	cli_sockopt(cli2, sockops);
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
 	                  &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
@@ -3591,7 +3591,7 @@ static bool run_oplock2(int dummy)
 
 	if (fork() == 0) {
 		/* Child code */
-		status = cli_open(cli2, fname, O_RDWR, DENY_NONE, &fnum2);
+		status = cli_openx(cli2, fname, O_RDWR, DENY_NONE, &fnum2);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("second open of %s failed (%s)\n", fname, nt_errstr(status));
 			*shared_correct = False;
@@ -3721,7 +3721,7 @@ static bool run_oplock4(int dummy)
 	cli_sockopt(cli2, sockops);
 
 	/* Create the file. */
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
 	                  &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
@@ -3742,13 +3742,13 @@ static bool run_oplock4(int dummy)
 	}
 
 	/* Prove that opening hardlinks cause deny modes to conflict. */
-	status = cli_open(cli1, fname, O_RDWR, DENY_ALL, &fnum1);
+	status = cli_openx(cli1, fname, O_RDWR, DENY_ALL, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return false;
 	}
 
-	status = cli_open(cli1, fname_ln, O_RDWR, DENY_NONE, &fnum2);
+	status = cli_openx(cli1, fname_ln, O_RDWR, DENY_NONE, &fnum2);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("open of %s succeeded - should fail with sharing violation.\n",
 			fname_ln);
@@ -3770,7 +3770,7 @@ static bool run_oplock4(int dummy)
 	cli1->use_oplocks = true;
 	cli2->use_oplocks = true;
 
-	status = cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return false;
@@ -3800,10 +3800,10 @@ static bool run_oplock4(int dummy)
 	}
 	tevent_req_set_callback(oplock_req, oplock4_got_break, state);
 
-	open_req = cli_open_send(
+	open_req = cli_openx_send(
 		talloc_tos(), ev, cli2, fname_ln, O_RDWR, DENY_NONE);
 	if (oplock_req == NULL) {
-		printf("cli_open_send failed\n");
+		printf("cli_openx_send failed\n");
 		return false;
 	}
 	tevent_req_set_callback(open_req, oplock4_got_open, state);
@@ -3889,9 +3889,9 @@ static void oplock4_got_open(struct tevent_req *req)
 		req, struct oplock4_state);
 	NTSTATUS status;
 
-	status = cli_open_recv(req, state->fnum2);
+	status = cli_openx_recv(req, state->fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_open_recv returned %s\n", nt_errstr(status));
+		printf("cli_openx_recv returned %s\n", nt_errstr(status));
 		*state->fnum2 = 0xffff;
 	}
 }
@@ -3938,7 +3938,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1))) {
+	if (NT_STATUS_IS_OK(cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1))) {
 		printf("[1] open of %s succeeded (should fail)\n", fname);
 		correct = False;
 		goto fail;
@@ -3974,7 +3974,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
+	if (NT_STATUS_IS_OK(cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
 		printf("[2] open of %s succeeded should have been deleted on close !\n", fname);
 		status = cli_close(cli1, fnum1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -4044,7 +4044,7 @@ static bool run_deletetest(int dummy)
 
 	/* This should fail - file should no longer be there. */
 
-	if (NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
+	if (NT_STATUS_IS_OK(cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
 		printf("[3] open of %s succeeded should have been deleted on close !\n", fname);
 		status = cli_close(cli1, fnum1);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -4117,7 +4117,7 @@ static bool run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT, DENY_NONE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[5] open of %s failed (%s)\n", fname, nt_errstr(status));
 		correct = False;
@@ -4207,7 +4207,7 @@ static bool run_deletetest(int dummy)
 	}
 
 	/* This next open should succeed - we reset the flag. */
-	status = cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[5] open of %s failed (%s)\n", fname, nt_errstr(status));
 		correct = False;
@@ -4278,7 +4278,7 @@ static bool run_deletetest(int dummy)
 	}
 
 	/* This should fail.. */
-	status = cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[8] open of %s succeeded should have been deleted on close !\n", fname);
 		goto fail;
@@ -4316,7 +4316,7 @@ static bool run_deletetest(int dummy)
 	}
 
 	/* This should fail.. */
-	if (NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
+	if (NT_STATUS_IS_OK(cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
 		printf("[10] open of %s succeeded should have been deleted on close !\n", fname);
 		goto fail;
 		correct = False;
@@ -4411,7 +4411,7 @@ static bool run_deletetest_ln(int dummy)
 	cli_sockopt(cli, sockops);
 
 	/* Create the file. */
-	status = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	status = cli_openx(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return false;
@@ -4867,7 +4867,7 @@ static bool run_opentest(int dummy)
 
 	cli_sockopt(cli1, sockops);
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -4885,14 +4885,14 @@ static bool run_opentest(int dummy)
 		return False;
 	}
 
-	status = cli_open(cli1, fname, O_RDONLY, DENY_WRITE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDONLY, DENY_WRITE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
 	}
 
 	/* This will fail - but the error should be ERRnoaccess, not ERRbadshare. */
-	status = cli_open(cli1, fname, O_RDWR, DENY_ALL, &fnum2);
+	status = cli_openx(cli1, fname, O_RDWR, DENY_ALL, &fnum2);
 
         if (check_error(__LINE__, status, ERRDOS, ERRnoaccess,
 			NT_STATUS_ACCESS_DENIED)) {
@@ -4907,14 +4907,14 @@ static bool run_opentest(int dummy)
 
 	cli_setatr(cli1, fname, 0, 0);
 
-	status = cli_open(cli1, fname, O_RDONLY, DENY_WRITE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDONLY, DENY_WRITE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
 	}
 
 	/* This will fail - but the error should be ERRshare. */
-	status = cli_open(cli1, fname, O_RDWR, DENY_ALL, &fnum2);
+	status = cli_openx(cli1, fname, O_RDWR, DENY_ALL, &fnum2);
 
 	if (check_error(__LINE__, status, ERRDOS, ERRbadshare,
 			NT_STATUS_SHARING_VIOLATION)) {
@@ -4932,7 +4932,7 @@ static bool run_opentest(int dummy)
 	printf("finished open test 2\n");
 
 	/* Test truncate open disposition on file opened for read. */
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(3) open (1) of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -4967,7 +4967,7 @@ static bool run_opentest(int dummy)
 	}
 
 	/* Now test if we can truncate a file opened for readonly. */
-	status = cli_open(cli1, fname, O_RDONLY|O_TRUNC, DENY_NONE, &fnum1);
+	status = cli_openx(cli1, fname, O_RDONLY|O_TRUNC, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("(3) open (2) of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -5860,7 +5860,7 @@ static bool run_dirtest(int dummy)
 	for (i=0;i<torture_numops;i++) {
 		fstring fname;
 		slprintf(fname, sizeof(fname), "\\%x", (int)random());
-		if (!NT_STATUS_IS_OK(cli_open(cli, fname, O_RDWR|O_CREAT, DENY_NONE, &fnum))) {
+		if (!NT_STATUS_IS_OK(cli_openx(cli, fname, O_RDWR|O_CREAT, DENY_NONE, &fnum))) {
 			fprintf(stderr,"Failed to open %s\n", fname);
 			return False;
 		}
@@ -5940,7 +5940,7 @@ bool torture_ioctl_test(int dummy)
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	status = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	status = cli_openx(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
 		return False;
@@ -6008,7 +6008,7 @@ bool torture_chkpath_test(int dummy)
 		return False;
 	}
 
-	status = cli_open(cli, "\\chkpath.dir\\foo.txt", O_RDWR|O_CREAT|O_EXCL,
+	status = cli_openx(cli, "\\chkpath.dir\\foo.txt", O_RDWR|O_CREAT|O_EXCL,
 			  DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open1 failed (%s)\n", nt_errstr(status));
@@ -6471,10 +6471,10 @@ static void chain1_open_completion(struct tevent_req *req)
 {
 	uint16_t fnum;
 	NTSTATUS status;
-	status = cli_open_recv(req, &fnum);
+	status = cli_openx_recv(req, &fnum);
 	TALLOC_FREE(req);
 
-	d_printf("cli_open_recv returned %s: %d\n",
+	d_printf("cli_openx_recv returned %s: %d\n",
 		 nt_errstr(status),
 		 NT_STATUS_IS_OK(status) ? fnum : -1);
 }
@@ -6520,7 +6520,7 @@ static bool run_chain1(int dummy)
 
 	cli_sockopt(cli1, sockops);
 
-	reqs[0] = cli_open_create(talloc_tos(), evt, cli1, "\\test",
+	reqs[0] = cli_openx_create(talloc_tos(), evt, cli1, "\\test",
 				  O_CREAT|O_RDWR, 0, &smbreqs[0]);
 	if (reqs[0] == NULL) return false;
 	tevent_req_set_callback(reqs[0], chain1_open_completion, NULL);
@@ -7043,9 +7043,9 @@ static bool run_mangle1(int dummy)
 	}
 	d_printf("alt_name: %s\n", alt_name);
 
-	status = cli_open(cli, alt_name, O_RDONLY, DENY_NONE, &fnum);
+	status = cli_openx(cli, alt_name, O_RDONLY, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("cli_open(%s) failed: %s\n", alt_name,
+		d_printf("cli_openx(%s) failed: %s\n", alt_name,
 			 nt_errstr(status));
 		return false;
 	}
@@ -7094,7 +7094,7 @@ static bool run_windows_write(int dummy)
 		return False;
 	}
 
-	status = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open failed (%s)\n", nt_errstr(status));
 		return False;
@@ -7539,10 +7539,10 @@ static bool run_dir_createtime(int dummy)
 	/* Sleep 3 seconds, then create a file. */
 	sleep(3);
 
-	status = cli_open(cli, fname, O_RDWR | O_CREAT | O_EXCL,
+	status = cli_openx(cli, fname, O_RDWR | O_CREAT | O_EXCL,
                          DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_open failed: %s\n", nt_errstr(status));
+		printf("cli_openx failed: %s\n", nt_errstr(status));
 		goto out;
 	}
 

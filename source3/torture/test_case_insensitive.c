@@ -49,9 +49,9 @@ bool run_case_insensitive_create(int dummy)
 		printf("cli_chkpath failed: %s\n", nt_errstr(status));
 		goto rmdir;
 	}
-	status = cli_open(cli, "x\\y", O_RDWR|O_CREAT, 0, &fnum);
+	status = cli_openx(cli, "x\\y", O_RDWR|O_CREAT, 0, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_open failed: %s\n", nt_errstr(status));
+		printf("cli_openx failed: %s\n", nt_errstr(status));
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
 			printf("Bug 8042 reappeared!!\n");

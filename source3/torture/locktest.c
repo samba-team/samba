@@ -347,7 +347,7 @@ static bool test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 		}
 		for (server=0;server<NSERVERS;server++) {
 			fnum[server][conn][f] = (uint16_t)-1;
-			if (!NT_STATUS_IS_OK(cli_open(cli[server][conn], FILENAME,
+			if (!NT_STATUS_IS_OK(cli_openx(cli[server][conn], FILENAME,
 							 O_RDWR|O_CREAT,
 							 DENY_NONE, &fnum[server][conn][f]))) {
 				printf("failed to reopen on share%d\n", server);
@@ -392,7 +392,7 @@ static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
 		fnum[server][conn][f] = (uint16_t)-1;
-		if (!NT_STATUS_IS_OK(cli_open(cli[server][conn], FILENAME,
+		if (!NT_STATUS_IS_OK(cli_openx(cli[server][conn], FILENAME,
 						 O_RDWR|O_CREAT,
 						 DENY_NONE,
 						 &fnum[server][conn][f]))) {

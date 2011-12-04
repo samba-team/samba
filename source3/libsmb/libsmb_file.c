@@ -123,7 +123,7 @@ SMBC_open_ctx(SMBCCTX *context,
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
 
-		status = cli_open(targetcli, targetpath, flags,
+		status = cli_openx(targetcli, targetpath, flags,
                                    context->internal->share_mode, &fd);
 		if (!NT_STATUS_IS_OK(status)) {
 
@@ -633,7 +633,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 srv->no_pathinfo = True;
 
                 /* Open the file */
-                if (!NT_STATUS_IS_OK(cli_open(srv->cli, path, O_RDWR, DENY_NONE, &fd))) {
+                if (!NT_STATUS_IS_OK(cli_openx(srv->cli, path, O_RDWR, DENY_NONE, &fd))) {
                         errno = SMBC_errno(context, srv->cli);
 			TALLOC_FREE(frame);
                         return -1;

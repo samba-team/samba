@@ -62,7 +62,7 @@ bool torture_utable(int dummy)
 		p[len] = 0;
 		fstrcat(fname,"_a_long_extension");
 
-		if (!NT_STATUS_IS_OK(cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
+		if (!NT_STATUS_IS_OK(cli_openx(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
 				DENY_NONE, &fnum))) {
 			continue;
 		}

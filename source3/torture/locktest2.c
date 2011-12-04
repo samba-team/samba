@@ -73,7 +73,7 @@ static int try_open(struct cli_state *c, char *nfs, int fstype, const char *fnam
 	case FSTYPE_SMB:
 		{
 			uint16_t fd;
-			if (!NT_STATUS_IS_OK(cli_open(c, fname, flags, DENY_NONE, &fd))) {
+			if (!NT_STATUS_IS_OK(cli_openx(c, fname, flags, DENY_NONE, &fd))) {
 				return -1;
 			}
 			return fd;

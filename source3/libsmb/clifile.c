@@ -2111,7 +2111,7 @@ NTSTATUS cli_nttrans_create(struct cli_state *cli,
  WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
 
-struct cli_open_state {
+struct cli_openx_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
 	const char *fname;
@@ -2123,20 +2123,20 @@ struct cli_open_state {
 	struct iovec bytes;
 };
 
-static void cli_open_done(struct tevent_req *subreq);
+static void cli_openx_done(struct tevent_req *subreq);
 static void cli_open_ntcreate_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
+struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 				   struct event_context *ev,
 				   struct cli_state *cli, const char *fname,
 				   int flags, int share_mode,
 				   struct tevent_req **psmbreq)
 {
 	struct tevent_req *req, *subreq;
-	struct cli_open_state *state;
+	struct cli_openx_state *state;
 	uint8_t *bytes;
 
-	req = tevent_req_create(mem_ctx, &state, struct cli_open_state);
+	req = tevent_req_create(mem_ctx, &state, struct cli_openx_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -2211,19 +2211,19 @@ struct tevent_req *cli_open_create(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(req);
 		return NULL;
 	}
-	tevent_req_set_callback(subreq, cli_open_done, req);
+	tevent_req_set_callback(subreq, cli_openx_done, req);
 	*psmbreq = subreq;
 	return req;
 }
 
-struct tevent_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct tevent_req *cli_openx_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				 struct cli_state *cli, const char *fname,
 				 int flags, int share_mode)
 {
 	struct tevent_req *req, *subreq;
 	NTSTATUS status;
 
-	req = cli_open_create(mem_ctx, ev, cli, fname, flags, share_mode,
+	req = cli_openx_create(mem_ctx, ev, cli, fname, flags, share_mode,
 			      &subreq);
 	if (req == NULL) {
 		return NULL;
@@ -2236,12 +2236,12 @@ struct tevent_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	return req;
 }
 
-static void cli_open_done(struct tevent_req *subreq)
+static void cli_openx_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_open_state *state = tevent_req_data(
-		req, struct cli_open_state);
+	struct cli_openx_state *state = tevent_req_data(
+		req, struct cli_openx_state);
 	uint8_t wct;
 	uint16_t *vwv;
 	uint8_t *inbuf;
@@ -2290,8 +2290,8 @@ static void cli_open_ntcreate_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_open_state *state = tevent_req_data(
-		req, struct cli_open_state);
+	struct cli_openx_state *state = tevent_req_data(
+		req, struct cli_openx_state);
 	NTSTATUS status;
 
 	status = cli_ntcreate_recv(subreq, &state->fnum);
@@ -2302,10 +2302,10 @@ static void cli_open_ntcreate_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_open_recv(struct tevent_req *req, uint16_t *pfnum)
+NTSTATUS cli_openx_recv(struct tevent_req *req, uint16_t *pfnum)
 {
-	struct cli_open_state *state = tevent_req_data(
-		req, struct cli_open_state);
+	struct cli_openx_state *state = tevent_req_data(
+		req, struct cli_openx_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -2315,7 +2315,7 @@ NTSTATUS cli_open_recv(struct tevent_req *req, uint16_t *pfnum)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
+NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags,
 	     int share_mode, uint16_t *pfnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -2337,7 +2337,7 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 		goto fail;
 	}
 
-	req = cli_open_send(frame, ev, cli, fname, flags, share_mode);
+	req = cli_openx_send(frame, ev, cli, fname, flags, share_mode);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -2348,7 +2348,7 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 		goto fail;
 	}
 
-	status = cli_open_recv(req, pfnum);
+	status = cli_openx_recv(req, pfnum);
  fail:
 	TALLOC_FREE(frame);
 	return status;

@@ -412,7 +412,7 @@ NTSTATUS smbclient_cli_open(struct cli_state *cli, const char *fname, int flags,
 
   try_openx:
 
-	return cli_open(cli, fname, flags, share_mode_in, pfnum);
+	return cli_openx(cli, fname, flags, share_mode_in, pfnum);
 }
 
 /****************************************************************************

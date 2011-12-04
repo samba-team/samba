@@ -42,7 +42,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 
 	total++;
 
-	status = cli_open(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	status = cli_openx(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
@@ -70,7 +70,7 @@ static bool test_one(struct cli_state *cli, const char *name)
 	}
 
 	/* recreate by short name */
-	status = cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	status = cli_openx(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("open2 of %s failed (%s)\n", name2, nt_errstr(status));
 		return False;

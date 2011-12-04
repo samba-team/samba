@@ -320,7 +320,7 @@ static void testpair(struct cli_state *cli, const char *mask, const char *file)
 
 	fstrcpy(res1, "---");
 
-	if (!NT_STATUS_IS_OK(cli_open(cli, file, O_CREAT|O_TRUNC|O_RDWR, 0, &fnum))) {
+	if (!NT_STATUS_IS_OK(cli_openx(cli, file, O_CREAT|O_TRUNC|O_RDWR, 0, &fnum))) {
 		DEBUG(0,("Can't create %s\n", file));
 		return;
 	}
