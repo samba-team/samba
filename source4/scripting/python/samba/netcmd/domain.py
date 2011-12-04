@@ -213,18 +213,26 @@ class cmd_domain_demote(Command):
                     server = e["dnsHostName"]
                     break
 
-        print "Using %s as partner server for the demotion" % server
         ntds_guid = samdb.get_ntds_GUID()
-        (drsuapiBind, drsuapi_handle, supportedExtensions) = drsuapi_connect(server, lp, creds)
-
-
         msg = samdb.search(base=str(samdb.get_config_basedn()), scope=ldb.SCOPE_SUBTREE,
                                 expression="(objectGUID=%s)" % ntds_guid,
                                 attrs=['options'])
         if len(msg) == 0 or "options" not in msg[0]:
             raise CommandError("Failed to find options on %s" % ntds_guid)
 
+        ntds_dn = msg[0].dn
         dsa_options = int(str(msg[0]['options']))
+
+        res = samdb.search(expression="(fSMORoleOwner=%s)" % str(ntds_dn),
+                            controls=["search_options:1:2"])
+
+        if len(res) != 0:
+            raise CommandError("Current DC is still the owner of %d role(s), use the role command to transfer roles to another DC")
+
+        print "Using %s as partner server for the demotion" % server
+        (drsuapiBind, drsuapi_handle, supportedExtensions) = drsuapi_connect(server, lp, creds)
+
+
 
 
         print "Desactivating inbound replication"
