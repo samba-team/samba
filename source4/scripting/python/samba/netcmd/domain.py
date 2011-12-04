@@ -6,6 +6,7 @@
 # Copyright Andrew Kroeger 2009
 # Copyright Jelmer Vernooij 2009
 # Copyright Giampaolo Lauria 2011
+# Copyright Matthieu Patou <mat@matws.net> 2011
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,15 +26,16 @@
 
 import samba.getopt as options
 import ldb
+import string
 import os
 import tempfile
 import logging
-from samba import Ldb
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 import samba.ntacls
 from samba.join import join_RODC, join_DC, join_subdomain
 from samba.auth import system_session
 from samba.samdb import SamDB
+from samba.dcerpc import drsuapi
 from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.netcmd import (
     Command,
@@ -45,6 +47,10 @@ from samba.netcmd.common import netcmd_get_domain_infos_via_cldap
 from samba.samba3 import Samba3
 from samba.samba3 import param as s3param
 from samba.upgrade import upgrade_from_samba3
+from samba.drs_utils import (
+                            sendDsReplicaSync, drsuapi_connect, drsException,
+                            sendRemoveDsServer)
+
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -52,6 +58,11 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2003_MIXED,
     DS_DOMAIN_FUNCTION_2008,
     DS_DOMAIN_FUNCTION_2008_R2,
+    DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL,
+    DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL,
+    UF_WORKSTATION_TRUST_ACCOUNT,
+    UF_SERVER_TRUST_ACCOUNT,
+    UF_TRUSTED_FOR_DELEGATION
     )
 
 def get_testparm_var(testparm, smbconf, varname):
@@ -166,6 +177,229 @@ class cmd_domain_join(Command):
             return
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
+
+
+
+class cmd_domain_demote(Command):
+    """Demote ourselves from the role of Domain Controller"""
+
+    synopsis = "%prog [options]"
+
+    takes_options = [
+        Option("--server", help="DC to force replication before demote", type=str),
+        Option("--targetdir", help="where provision is stored", type=str),
+        ]
+
+
+    def run(self, sambaopts=None, credopts=None,
+            versionopts=None, server=None, targetdir=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        net = Net(creds, lp, server=credopts.ipaddress)
+
+        netbios_name = lp.get("netbios name")
+        samdb = SamDB(session_info=system_session(), credentials=creds, lp=lp)
+        if not server:
+            res = samdb.search(expression='(&(objectClass=computer)(serverReferenceBL=*))', attrs=["dnsHostName", "name"])
+            if (len(res) == 0):
+                raise CommandError("Unable to search for servers")
+
+            if (len(res) == 1):
+                raise CommandError("You are the latest server in the domain")
+
+            server = None
+            for e in res:
+                if str(e["name"]).lower() != netbios_name.lower():
+                    server = e["dnsHostName"]
+                    break
+
+        print "Using %s as partner server for the demotion" % server
+        ntds_guid = samdb.get_ntds_GUID()
+        (drsuapiBind, drsuapi_handle, supportedExtensions) = drsuapi_connect(server, lp, creds)
+
+
+        msg = samdb.search(base=str(samdb.get_config_basedn()), scope=ldb.SCOPE_SUBTREE,
+                                expression="(objectGUID=%s)" % ntds_guid,
+                                attrs=['options'])
+        if len(msg) == 0 or "options" not in msg[0]:
+            raise CommandError("Failed to find options on %s" % ntds_guid)
+
+        dsa_options = int(str(msg[0]['options']))
+
+
+        print "Desactivating inbound replication"
+
+        nmsg = ldb.Message()
+        nmsg.dn = msg[0].dn
+
+        dsa_options |= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+        nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+        samdb.modify(nmsg)
+
+        if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
+
+            print "Asking partner server %s to synchronize from us" % server
+            for part in (samdb.get_schema_basedn(),
+                            samdb.get_config_basedn(),
+                            samdb.get_root_basedn()):
+                try:
+                    sendDsReplicaSync(drsuapiBind, drsuapi_handle, ntds_guid, str(part), drsuapi.DRSUAPI_DRS_WRIT_REP)
+                except drsException, e:
+                    print "Error while demoting, re-enabling inbound replication"
+                    dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                    nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                    samdb.modify(nmsg)
+                    raise CommandError("Error while sending a DsReplicaSync for partion %s" % str(part), e)
+        try:
+            remote_samdb = SamDB(url="ldap://%s" % server,
+                                session_info=system_session(),
+                                credentials=creds, lp=lp)
+
+            print "Changing userControl and container"
+            res = remote_samdb.search(base=str(remote_samdb.get_root_basedn()),
+                                expression="(&(objectClass=user)(sAMAccountName=%s$))" %
+                                            netbios_name.upper(),
+                                attrs=["userAccountControl"])
+            dc_dn = res[0].dn
+            uac = int(str(res[0]["userAccountControl"]))
+
+        except Exception, e:
+                print "Error while demoting, re-enabling inbound replication"
+                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                samdb.modify(nmsg)
+                raise CommandError("Error while changing account control", e)
+
+        if (len(res) != 1):
+            print "Error while demoting, re-enabling inbound replication"
+            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+            samdb.modify(nmsg)
+            raise CommandError("Unable to find object with samaccountName = %s$"
+                               " in the remote dc" % netbios_name.upper())
+
+        olduac = uac
+
+        uac ^= (UF_SERVER_TRUST_ACCOUNT|UF_TRUSTED_FOR_DELEGATION)
+        uac |= UF_WORKSTATION_TRUST_ACCOUNT
+
+        msg = ldb.Message()
+        msg.dn = dc_dn
+
+        msg["userAccountControl"] = ldb.MessageElement("%d" % uac,
+                                                        ldb.FLAG_MOD_REPLACE,
+                                                        "userAccountControl")
+        try:
+            remote_samdb.modify(msg)
+        except Exception, e:
+            print "Error while demoting, re-enabling inbound replication"
+            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+            samdb.modify(nmsg)
+
+            raise CommandError("Error while changing account control", e)
+
+        parent = msg.dn.parent()
+        rdn = str(res[0].dn)
+        rdn = string.replace(rdn, ",%s" % str(parent), "")
+        # Let's move to the Computer container
+        i = 0
+        newrdn = rdn
+
+        computer_dn = ldb.Dn(remote_samdb, "CN=Computers,%s" % str(remote_samdb.get_root_basedn()))
+        res = remote_samdb.search(base=computer_dn, expression=rdn, scope=ldb.SCOPE_ONELEVEL)
+
+        if (len(res) != 0):
+            res = remote_samdb.search(base=computer_dn, expression="%s-%d" % (rdn, i),
+                                        scope=ldb.SCOPE_ONELEVEL)
+            while(len(res) != 0 and i < 100):
+                i = i + 1
+                res = remote_samdb.search(base=computer_dn, expression="%s-%d" % (rdn, i),
+                                            scope=ldb.SCOPE_ONELEVEL)
+
+            if i == 100:
+                print "Error while demoting, re-enabling inbound replication"
+                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                samdb.modify(nmsg)
+
+                msg = ldb.Message()
+                msg.dn = dc_dn
+
+                msg["userAccountControl"] = ldb.MessageElement("%d" % uac,
+                                                        ldb.FLAG_MOD_REPLACE,
+                                                        "userAccountControl")
+
+                remote_samdb.modify(msg)
+
+                raise CommandError("Unable to find a slot for renaming %s,"
+                                    " all names from %s-1 to %s-%d seemed used" %
+                                    (str(dc_dn), rdn, rdn, i - 9))
+
+            newrdn = "%s-%d" % (rdn, i)
+
+        try:
+            newdn = ldb.Dn(remote_samdb, "%s,%s" % (newrdn, str(computer_dn)))
+            remote_samdb.rename(dc_dn, newdn)
+        except Exception, e:
+            print "Error while demoting, re-enabling inbound replication"
+            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+            samdb.modify(nmsg)
+
+            msg = ldb.Message()
+            msg.dn = dc_dn
+
+            msg["userAccountControl"] = ldb.MessageElement("%d" % uac,
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    "userAccountControl")
+
+            remote_samdb.modify(msg)
+            raise CommandError("Error while renaming %s to %s" % (str(dc_dn), str(newdn)), e)
+
+
+        server_dsa_dn = samdb.get_serverName()
+        domain = remote_samdb.get_root_basedn()
+
+        try:
+            sendRemoveDsServer(drsuapiBind, drsuapi_handle, server_dsa_dn, domain)
+        except drsException, e:
+            print "Error while demoting, re-enabling inbound replication"
+            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+            samdb.modify(nmsg)
+
+            msg = ldb.Message()
+            msg.dn = newdn
+
+            msg["userAccountControl"] = ldb.MessageElement("%d" % uac,
+                                                    ldb.FLAG_MOD_REPLACE,
+                                                    "userAccountControl")
+            print str(dc_dn)
+            remote_samdb.modify(msg)
+            remote_samdb.rename(newdn, dc_dn)
+            raise CommandError("Error while sending a removeDsServer", e)
+
+        for s in ("CN=Entreprise,CN=Microsoft System Volumes,CN=System,CN=Configuration",
+                  "CN=%s,CN=Microsoft System Volumes,CN=System,CN=Configuration" % lp.get("realm"),
+                  "CN=Domain System Volumes (SYSVOL share),CN=File Replication Service,CN=System"):
+            try:
+                remote_samdb.delete(ldb.Dn(remote_samdb,
+                                    "%s,%s,%s" % (str(rdn), s, str(remote_samdb.get_root_basedn()))))
+            except ldb.LdbError, l:
+                pass
+
+        for s in ("CN=Entreprise,CN=NTFRS Subscriptions",
+                  "CN=%s, CN=NTFRS Subscriptions" % lp.get("realm"),
+                  "CN=Domain system Volumes (SYSVOL Share), CN=NTFRS Subscriptions",
+                  "CN=NTFRS Subscriptions"):
+            try:
+                remote_samdb.delete(ldb.Dn(remote_samdb,
+                                    "%s,%s" % (s, str(newdn))))
+            except ldb.LdbError, l:
+                pass
+
+        print "Demote successfull"
 
 
 
@@ -650,6 +884,7 @@ class cmd_domain(SuperCommand):
     """Domain management"""
 
     subcommands = {}
+    subcommands["demote"] = cmd_domain_demote()
     subcommands["exportkeytab"] = cmd_domain_export_keytab()
     subcommands["info"] = cmd_domain_info()
     subcommands["join"] = cmd_domain_join()
