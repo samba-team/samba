@@ -65,7 +65,7 @@ def ADD_LD_LIBRARY_PATH(path):
 
 def needs_private_lib(bld, target):
     '''return True if a target links to a private library'''
-    for lib in getattr(target, "uselib_local", []):
+    for lib in target.final_libs:
         t = bld.name_to_obj(lib, bld.env)
         if t and getattr(t, 'private_library', False):
             return True
