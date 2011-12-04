@@ -22,7 +22,11 @@ import uuid
 
 from samba              import dsdb
 from samba.dcerpc       import misc
+from samba.dcerpc       import drsblobs
+from samba.dcerpc       import drsuapi
 from samba.common       import dsdb_Dn
+from samba.ndr          import ndr_unpack
+from samba.ndr          import ndr_pack
 
 class NCType:
     (unknown, schema, domain, config, application) = range(0, 5)
@@ -36,20 +40,24 @@ class NamingContext:
     def __init__(self, nc_dnstr, nc_guid=None, nc_sid=None):
         """Instantiate a NamingContext
             :param nc_dnstr: NC dn string
-            :param nc_guid: NC guid string
+            :param nc_guid: NC guid
             :param nc_sid: NC sid
         """
-        self.nc_dnstr = nc_dnstr
-        self.nc_guid  = nc_guid
-        self.nc_sid   = nc_sid
-        self.nc_type  = NCType.unknown
+        self.nc_dnstr    = nc_dnstr
+        self.nc_guid     = nc_guid
+        self.nc_sid      = nc_sid
+        self.nc_type     = NCType.unknown
         return
 
     def __str__(self):
         '''Debug dump string output of class'''
-        return "%s:\n\tdn=%s\n\tguid=%s\n\ttype=%s" % \
-               (self.__class__.__name__, self.nc_dnstr,
-                self.nc_guid, self.nc_type)
+        text = "%s:" % self.__class__.__name__
+        text = text + "\n\tnc_dnstr=%s" % self.nc_dnstr
+        text = text + "\n\tnc_guid=%s"  % str(self.nc_guid)
+        text = text + "\n\tnc_sid=%s"   % self.nc_sid
+        text = text + "\n\tnc_type=%s"  % self.nc_type
+
+        return text
 
     def is_schema(self):
         '''Return True if NC is schema'''
@@ -79,7 +87,7 @@ class NamingContext:
             self.nc_type = NCType.schema
         elif self.nc_dnstr == str(samdb.get_config_basedn()):
             self.nc_type = NCType.config
-        elif self.nc_sid != None:
+        elif self.nc_sid is not None:
             self.nc_type = NCType.domain
         else:
             self.nc_type = NCType.application
@@ -118,7 +126,6 @@ class NamingContext:
 
         return
 
-
 class NCReplica(NamingContext):
     """Class defines a naming context replica that is relative
        to a specific DSA.  This is a more specific form of
@@ -131,15 +138,18 @@ class NCReplica(NamingContext):
         """Instantiate a Naming Context Replica
             :param dsa_guid: GUID of DSA where replica appears
             :param nc_dnstr: NC dn string
-            :param nc_guid: NC guid string
+            :param nc_guid: NC guid
             :param nc_sid: NC sid
         """
-        self.rep_dsa_dnstr = dsa_dnstr
-        self.rep_dsa_guid  = dsa_guid # GUID of DSA where this appears
-        self.rep_default   = False # replica for DSA's default domain
-        self.rep_partial   = False
-        self.rep_ro        = False
-        self.rep_flags     = 0
+        self.rep_dsa_dnstr              = dsa_dnstr
+        self.rep_dsa_guid               = dsa_guid
+        self.rep_default                = False # replica for DSA's default domain
+        self.rep_partial                = False
+        self.rep_ro                     = False
+        self.rep_instantiated_flags     = 0
+
+        # RepsFromTo tuples
+        self.rep_repsFrom = []
 
         # The (is present) test is a combination of being
         # enumerated in (hasMasterNCs or msDS-hasFullReplicaNCs or
@@ -154,19 +164,25 @@ class NCReplica(NamingContext):
 
     def __str__(self):
         '''Debug dump string output of class'''
-        text = "default=%s"  % self.rep_default + \
-               ":ro=%s"      % self.rep_ro      + \
-               ":partial=%s" % self.rep_partial + \
-               ":present=%s" % self.is_present()
-        return "%s\n\tdsaguid=%s\n\t%s" % \
-               (NamingContext.__str__(self), self.rep_dsa_guid, text)
+        text = "%s:" % self.__class__.__name__
+        text = text + "\n\tdsa_dnstr=%s" % self.rep_dsa_dnstr
+        text = text + "\n\tdsa_guid=%s"  % str(self.rep_dsa_guid)
+        text = text + "\n\tdefault=%s"   % self.rep_default
+        text = text + "\n\tro=%s"        % self.rep_ro
+        text = text + "\n\tpartial=%s"   % self.rep_partial
+        text = text + "\n\tpresent=%s"   % self.is_present()
 
-    def set_replica_flags(self, flags=None):
-        '''Set or clear NC replica flags'''
+        for rep in self.rep_repsFrom:
+            text = text + "\n%s" % rep
+
+        return "%s\n%s" % (NamingContext.__str__(self), text)
+
+    def set_instantiated_flags(self, flags=None):
+        '''Set or clear NC replica instantiated flags'''
         if (flags == None):
-            self.rep_flags = 0
+            self.rep_instantiated_flags = 0
         else:
-            self.rep_flags = flags
+            self.rep_instantiated_flags = flags
         return
 
     def identify_by_dsa_attr(self, samdb, attr):
@@ -239,10 +255,90 @@ class NCReplica(NamingContext):
            set then the NC replica is not present (false)
         """
         if self.rep_present_criteria_one and \
-           self.rep_flags & dsdb.INSTANCE_TYPE_NC_GOING == 0:
+           self.rep_instantiated_flags & dsdb.INSTANCE_TYPE_NC_GOING == 0:
             return True
         return False
 
+    def load_repsFrom(self, samdb):
+        """Given an NC replica which has been discovered thru the nTDSDSA
+           database object, load the repsFrom attribute for the local replica.
+           held by my dsa.  The repsFrom attribute is not replicated so this
+           attribute is relative only to the local DSA that the samdb exists on
+        """
+        try:
+            res = samdb.search(base=self.nc_dnstr, scope=ldb.SCOPE_BASE,
+                               attrs=[ "repsFrom" ])
+
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find NC for (%s) - (%s)" % \
+                            (self.nc_dnstr, estr))
+            return
+
+        msg = res[0]
+
+        # Possibly no repsFrom if this is a singleton DC
+        if "repsFrom" in msg:
+            for value in msg["repsFrom"]:
+                rep = RepsFromTo(self.nc_dnstr, \
+                                 ndr_unpack(drsblobs.repsFromToBlob, value))
+                self.rep_repsFrom.append(rep)
+        return
+
+    def commit_repsFrom(self, samdb):
+        """Commit repsFrom to the database"""
+
+        # XXX - This is not truly correct according to the MS-TECH
+        #       docs.  To commit a repsFrom we should be using RPCs
+        #       IDL_DRSReplicaAdd, IDL_DRSReplicaModify, and
+        #       IDL_DRSReplicaDel to affect a repsFrom change.
+        #
+        #       Those RPCs are missing in samba, so I'll have to
+        #       implement them to get this to more accurately
+        #       reflect the reference docs.  As of right now this
+        #       commit to the database will work as its what the
+        #       older KCC also did
+        modify  = False
+        newreps = []
+
+        for repsFrom in self.rep_repsFrom:
+
+            # Leave out any to be deleted from
+            # replacement list
+            if repsFrom.to_be_deleted == True:
+                modify = True
+                continue
+
+            if repsFrom.is_modified():
+                modify = True
+
+            newreps.append(ndr_pack(repsFrom.ndr_blob))
+
+        # Nothing to do if no reps have been modified or
+        # need to be deleted.  Leave database record "as is"
+        if modify == False:
+            return
+
+        m    = ldb.Message()
+        m.dn = ldb.Dn(samdb, self.nc_dnstr)
+
+        m["repsFrom"] = \
+            ldb.MessageElement(newreps, ldb.FLAG_MOD_REPLACE, "repsFrom")
+
+        try:
+            samdb.modify(m)
+
+        except ldb.LdbError, estr:
+            raise Exception("Could not set repsFrom for (%s) - (%s)" % \
+                            (self.dsa_dnstr, estr))
+        return
+
+    def load_fsmo_roles(self, samdb):
+        #  XXX - to be implemented
+        return
+
+    def is_fsmo_role_owner(self, dsa_dnstr):
+        #  XXX - to be implemented
+        return False
 
 class DirectoryServiceAgent:
 
@@ -255,33 +351,50 @@ class DirectoryServiceAgent:
         self.dsa_guid      = None
         self.dsa_ivid      = None
         self.dsa_is_ro     = False
-        self.dsa_is_gc     = False
+        self.dsa_options   = 0
         self.dsa_behavior  = 0
         self.default_dnstr = None  # default domain dn string for dsa
 
-        # NCReplicas for this dsa.
+        # NCReplicas for this dsa that are "present"
         # Indexed by DN string of naming context
-        self.rep_table     = {}
+        self.current_rep_table = {}
 
-        # NTDSConnections for this dsa.
-        # Indexed by DN string of connection
+        # NCReplicas for this dsa that "should be present"
+        # Indexed by DN string of naming context
+        self.needed_rep_table = {}
+
+        # NTDSConnections for this dsa.  These are current
+        # valid connections that are committed or "to be committed"
+        # in the database.  Indexed by DN string of connection
         self.connect_table = {}
+
         return
 
     def __str__(self):
         '''Debug dump string output of class'''
-        text = ""
-        if self.dsa_dnstr:
-            text = text + "\n\tdn=%s"   % self.dsa_dnstr
-        if self.dsa_guid:
-            text = text + "\n\tguid=%s" % str(self.dsa_guid)
-        if self.dsa_ivid:
-            text = text + "\n\tivid=%s" % str(self.dsa_ivid)
 
-        text = text + "\n\tro=%s:gc=%s" % (self.dsa_is_ro, self.dsa_is_gc)
-        return "%s:%s\n%s\n%s" % (self.__class__.__name__, text,
-                                  self.dumpstr_replica_table(),
-                                  self.dumpstr_connect_table())
+        text = "%s:" % self.__class__.__name__
+        if self.dsa_dnstr is not None:
+            text = text + "\n\tdsa_dnstr=%s" % self.dsa_dnstr
+        if self.dsa_guid is not None:
+            text = text + "\n\tdsa_guid=%s"  % str(self.dsa_guid)
+        if self.dsa_ivid is not None:
+            text = text + "\n\tdsa_ivid=%s"  % str(self.dsa_ivid)
+
+        text = text + "\n\tro=%s" % self.is_ro()
+        text = text + "\n\tgc=%s" % self.is_gc()
+
+        text = text + "\ncurrent_replica_table:"
+        text = text + "\n%s" % self.dumpstr_current_replica_table()
+        text = text + "\nneeded_replica_table:"
+        text = text + "\n%s" % self.dumpstr_needed_replica_table()
+        text = text + "\nconnect_table:"
+        text = text + "\n%s" % self.dumpstr_connect_table()
+
+        return text
+
+    def get_current_replica(self, nc_dnstr):
+        return self.current_rep_table[nc_dnstr]
 
     def is_ro(self):
         '''Returns True if dsa a read only domain controller'''
@@ -289,7 +402,9 @@ class DirectoryServiceAgent:
 
     def is_gc(self):
         '''Returns True if dsa hosts a global catalog'''
-        return self.dsa_is_gc
+        if (self.options & dsdb.DS_NTDSDSA_OPT_IS_GC) != 0:
+            return True
+        return False
 
     def is_minimum_behavior(self, version):
         """Is dsa at minimum windows level greater than or
@@ -300,6 +415,27 @@ class DirectoryServiceAgent:
         if self.dsa_behavior >= version:
             return True
         return False
+
+    def should_translate_ntdsconn(self):
+        """Returns True if DSA object allows NTDSConnection
+           translation in its options.  False otherwise.
+       """
+        if (self.options & dsdb.DS_NTDSDSA_OPT_DISABLE_NTDSCONN_XLATE) != 0:
+            return False
+        return True
+
+    def get_rep_tables(self):
+        """Return DSA current and needed replica tables
+        """
+        return self.current_rep_table, self.needed_rep_table
+
+    def get_parent_dnstr(self):
+        """Drop the leading portion of the DN string
+           (e.g. CN=NTDS Settings,) which will give us
+           the parent DN string of this object
+        """
+        head, sep, tail = self.dsa_dnstr.partition(',')
+        return tail
 
     def load_dsa(self, samdb):
         """Method to load a DSA from the samdb.  Prior initialization
@@ -324,7 +460,7 @@ class DirectoryServiceAgent:
             return
 
         msg = res[0]
-        self.dsa_guid = misc.GUID(samdb.schema_format_value("objectGUID",
+        self.dsa_guid = misc.GUID(samdb.schema_format_value("objectGUID", \
                                   msg["objectGUID"][0]))
 
         # RODCs don't originate changes and thus have no invocationId,
@@ -333,11 +469,8 @@ class DirectoryServiceAgent:
             self.dsa_ivid = misc.GUID(samdb.schema_format_value("objectGUID",
                                       msg["invocationId"][0]))
 
-        if "options" in msg and \
-            ((int(msg["options"][0]) & dsdb.DS_NTDSDSA_OPT_IS_GC) != 0):
-            self.dsa_is_gc = True
-        else:
-            self.dsa_is_gc = False
+        if "options" in msg:
+            self.options = int(msg["options"][0])
 
         if "msDS-isRODC" in msg and msg["msDS-isRODC"][0] == "TRUE":
             self.dsa_is_ro = True
@@ -348,7 +481,7 @@ class DirectoryServiceAgent:
             self.dsa_behavior = int(msg['msDS-Behavior-Version'][0])
 
         # Load the NC replicas that are enumerated on this dsa
-        self.load_replica_table(samdb)
+        self.load_current_replica_table(samdb)
 
         # Load the nTDSConnection that are enumerated on this dsa
         self.load_connection_table(samdb)
@@ -356,7 +489,7 @@ class DirectoryServiceAgent:
         return
 
 
-    def load_replica_table(self, samdb):
+    def load_current_replica_table(self, samdb):
         """Method to load the NC replica's listed for DSA object. This
            method queries the samdb for (hasMasterNCs, msDS-hasMasterNCs,
            hasPartialReplicaNCs, msDS-HasDomainNCs, msDS-hasFullReplicaNCs,
@@ -373,7 +506,7 @@ class DirectoryServiceAgent:
                     # not RODC - default, config, schema, app NCs
                     "msDS-hasMasterNCs",
                     # domain NC partial replicas
-                    "hasPartialReplicANCs",
+                    "hasPartialReplicaNCs",
                     # default domain NC
                     "msDS-HasDomainNCs",
                     # RODC only - default, config, schema, app NCs
@@ -423,17 +556,17 @@ class DirectoryServiceAgent:
                         raise Exception("Missing GUID for (%s) - (%s: %s)" % \
                                         (self.dsa_dnstr, k, value))
                     else:
-                        guidstr = str(misc.GUID(guid))
+                        guid = misc.GUID(guid)
 
                     if not dnstr in tmp_table:
                         rep = NCReplica(self.dsa_dnstr, self.dsa_guid,
-                                        dnstr, guidstr, sid)
+                                        dnstr, guid, sid)
                         tmp_table[dnstr] = rep
                     else:
                         rep = tmp_table[dnstr]
 
                     if k == "msDS-HasInstantiatedNCs":
-                        rep.set_replica_flags(flags)
+                        rep.set_instantiated_flags(flags)
                         continue
 
                     rep.identify_by_dsa_attr(samdb, k)
@@ -447,7 +580,16 @@ class DirectoryServiceAgent:
             return
 
         # Assign our newly built NC replica table to this dsa
-        self.rep_table = tmp_table
+        self.current_rep_table = tmp_table
+        return
+
+    def add_needed_replica(self, rep):
+        """Method to add a NC replica that "should be present" to the
+           needed_rep_table if not already in the table
+        """
+        if not rep.nc_dnstr in self.needed_rep_table.keys():
+            self.needed_rep_table[rep.nc_dnstr] = rep
+
         return
 
     def load_connection_table(self, samdb):
@@ -480,14 +622,14 @@ class DirectoryServiceAgent:
 
     def commit_connection_table(self, samdb):
         """Method to commit any uncommitted nTDSConnections
-           that are in our table.  These would be newly identified
-           connections that are marked as (committed = False)
+           that are in our table.  These would be identified
+           connections that are marked to be added or deleted
            :param samdb: database to commit DSA connection list to
         """
         for dnstr, connect in self.connect_table.items():
             connect.commit_connection(samdb)
 
-    def add_connection_by_dnstr(self, dnstr, connect):
+    def add_connection(self, dnstr, connect):
         self.connect_table[dnstr] = connect
         return
 
@@ -502,14 +644,24 @@ class DirectoryServiceAgent:
                 return connect
         return None
 
-    def dumpstr_replica_table(self):
-        '''Debug dump string output of replica table'''
+    def dumpstr_current_replica_table(self):
+        '''Debug dump string output of current replica table'''
         text=""
-        for k in self.rep_table.keys():
+        for k in self.current_rep_table.keys():
             if text:
-                text = text + "\n%s" % self.rep_table[k]
+                text = text + "\n%s" % self.current_rep_table[k]
             else:
-                text = "%s" % self.rep_table[k]
+                text = "%s" % self.current_rep_table[k]
+        return text
+
+    def dumpstr_needed_replica_table(self):
+        '''Debug dump string output of needed replica table'''
+        text=""
+        for k in self.needed_rep_table.keys():
+            if text:
+                text = text + "\n%s" % self.needed_rep_table[k]
+            else:
+                text = "%s" % self.needed_rep_table[k]
         return text
 
     def dumpstr_connect_table(self):
@@ -526,23 +678,50 @@ class NTDSConnection():
     """Class defines a nTDSConnection found under a DSA
     """
     def __init__(self, dnstr):
-        self.dnstr       = dnstr
-        self.enabled     = False
-        self.committed   = False # appears in database
-        self.options     = 0
-        self.flags       = 0
-        self.from_dnstr  = None
-        self.schedulestr = None
+        self.dnstr           = dnstr
+        self.enabled         = False
+        self.committed       = False # new connection needs to be committed
+        self.options         = 0
+        self.flags           = 0
+        self.transport_dnstr = None
+        self.transport_guid  = None
+        self.from_dnstr      = None
+        self.from_guid       = None
+        self.schedule        = None
         return
 
     def __str__(self):
         '''Debug dump string output of NTDSConnection object'''
-        text = "%s: %s" % (self.__class__.__name__, self.dnstr)
-        text = text + "\n\tenabled: %s" % self.enabled
-        text = text + "\n\tcommitted: %s" % self.committed
-        text = text + "\n\toptions: 0x%08X" % self.options
-        text = text + "\n\tflags: 0x%08X" % self.flags
-        text = text + "\n\tfrom_dn: %s" % self.from_dnstr
+
+        text = "%s:\n\tdn=%s" % (self.__class__.__name__, self.dnstr)
+        text = text + "\n\tenabled=%s" % self.enabled
+        text = text + "\n\tcommitted=%s" % self.committed
+        text = text + "\n\toptions=0x%08X" % self.options
+        text = text + "\n\tflags=0x%08X" % self.flags
+        text = text + "\n\ttransport_dn=%s" % self.transport_dnstr
+
+        if self.transport_guid is not None:
+            text = text + "\n\ttransport_guid=%s" % str(self.transport_guid)
+
+        text = text + "\n\tfrom_dn=%s" % self.from_dnstr
+        text = text + "\n\tfrom_guid=%s" % str(self.from_guid)
+
+        if self.schedule is not None:
+            text = text + "\n\tschedule.size=%s" % self.schedule.size
+            text = text + "\n\tschedule.bandwidth=%s" % self.schedule.bandwidth
+            text = text + "\n\tschedule.numberOfSchedules=%s" % \
+                   self.schedule.numberOfSchedules
+
+            for i, header in enumerate(self.schedule.headerArray):
+                text = text + "\n\tschedule.headerArray[%d].type=%d" % \
+                       (i, header.type)
+                text = text + "\n\tschedule.headerArray[%d].offset=%d" % \
+                       (i, header.offset)
+                text = text + "\n\tschedule.dataArray[%d].slots[ " % i
+                for slot in self.schedule.dataArray[i].slots:
+                    text = text + "0x%X " % slot
+                text = text + "]"
+
         return text
 
     def load_connection(self, samdb):
@@ -551,14 +730,16 @@ class NTDSConnection():
            from the samdb.
            Raises an Exception on error.
         """
+        controls = ["extended_dn:1:1"]
         attrs = [ "options",
                   "enabledConnection",
                   "schedule",
+                  "transportType",
                   "fromServer",
                   "systemFlags" ]
         try:
             res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
-                               attrs=attrs)
+                               attrs=attrs, controls=controls)
 
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find nTDSConnection for (%s) - (%s)" % \
@@ -574,14 +755,30 @@ class NTDSConnection():
                 self.enabled = True
         if "systemFlags" in msg:
             self.flags = int(msg["systemFlags"][0])
+        if "transportType" in msg:
+            dsdn = dsdb_Dn(samdb, msg["tranportType"][0])
+            guid = dsdn.dn.get_extended_component('GUID')
+
+            assert guid is not None
+            self.transport_guid = misc.GUID(guid)
+
+            self.transport_dnstr = str(dsdn.dn)
+            assert self.transport_dnstr is not None
+
         if "schedule" in msg:
-            self.schedulestr = msg["schedule"][0]
+            self.schedule = ndr_unpack(drsblobs.replSchedule, msg["schedule"][0])
+
         if "fromServer" in msg:
             dsdn = dsdb_Dn(samdb, msg["fromServer"][0])
-            self.from_dnstr = str(dsdn.dn)
-            assert self.from_dnstr != None
+            guid = dsdn.dn.get_extended_component('GUID')
 
-        # Appears as committed in the database
+            assert guid is not None
+            self.from_guid = misc.GUID(guid)
+
+            self.from_dnstr = str(dsdn.dn)
+            assert self.from_dnstr is not None
+
+        # Was loaded from database so connection is currently committed
         self.committed = True
         return
 
@@ -589,11 +786,108 @@ class NTDSConnection():
         """Given a NTDSConnection object that is not committed in the
            sam database, perform a commit action.
         """
-        if self.committed: # nothing to do
+        # nothing to do
+        if self.committed == True:
             return
 
-        # XXX - not yet written
+        # First verify we don't have this entry to ensure nothing
+        # is programatically amiss
+        try:
+            msg = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE)
+            found = True
+
+        except ldb.LdbError, (enum, estr):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                found = False
+            else:
+                raise Exception("Unable to search for (%s) - (%s)" % \
+                                (self.dnstr, estr))
+        if found:
+            raise Exception("nTDSConnection for (%s) already exists!" % self.dnstr)
+
+        if self.enabled:
+            enablestr = "TRUE"
+        else:
+            enablestr = "FALSE"
+
+        # Prepare a message for adding to the samdb
+        m    = ldb.Message()
+        m.dn = ldb.Dn(samdb, self.dnstr)
+
+        m["objectClass"] = \
+            ldb.MessageElement("nTDSConnection", ldb.FLAG_MOD_ADD, \
+                               "objectClass")
+        m["showInAdvancedViewOnly"] = \
+            ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, \
+                               "showInAdvancedViewOnly")
+        m["enabledConnection"] = \
+            ldb.MessageElement(enablestr, ldb.FLAG_MOD_ADD, "enabledConnection")
+        m["fromServer"] = \
+            ldb.MessageElement(self.from_dnstr, ldb.FLAG_MOD_ADD, "fromServer")
+        m["options"] = \
+            ldb.MessageElement(str(self.options), ldb.FLAG_MOD_ADD, "options")
+        m["systemFlags"] = \
+            ldb.MessageElement(str(self.flags), ldb.FLAG_MOD_ADD, "systemFlags")
+
+        if self.schedule is not None:
+            m["schedule"] = \
+                ldb.MessageElement(ndr_pack(self.schedule),
+                                   ldb.FLAG_MOD_ADD, "schedule")
+        try:
+            samdb.add(m)
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Could not add nTDSConnection for (%s) - (%s)" % \
+                            (self.dnstr, estr))
+        self.committed = True
         return
+
+    def is_schedule_minimum_once_per_week(self):
+        """Returns True if our schedule includes at least one
+           replication interval within the week.  False otherwise
+        """
+        if self.schedule is None or self.schedule.dataArray[0] is None:
+            return False
+
+        for slot in self.schedule.dataArray[0].slots:
+           if (slot & 0x0F) != 0x0:
+               return True
+        return False
+
+    def convert_schedule_to_repltimes(self):
+        """Convert NTDS Connection schedule to replTime schedule.
+           NTDS Connection schedule slots are double the size of
+           the replTime slots but the top portion of the NTDS
+           Connection schedule slot (4 most significant bits in
+           uchar) are unused.  The 4 least significant bits have
+           the same (15 minute interval) bit positions as replTimes.
+           We thus pack two elements of the NTDS Connection schedule
+           slots into one element of the replTimes slot
+           If no schedule appears in NTDS Connection then a default
+           of 0x11 is set in each replTimes slot as per behaviour
+           noted in a Windows DC.  That default would cause replication
+           within the last 15 minutes of each hour.
+        """
+        times = [0x11] * 84
+
+        for i, slot in enumerate(times):
+            if self.schedule is not None and \
+               self.schedule.dataArray[0] is not None:
+                slot = (self.schedule.dataArray[0].slots[i*2] & 0xF) << 4 | \
+                       (self.schedule.dataArray[0].slots[i*2] & 0xF)
+        return times
+
+    def is_rodc_topology(self):
+        """Returns True if NTDS Connection specifies RODC
+           topology only
+        """
+        if self.options & dsdb.NTDSCONN_OPT_RODC_TOPOLOGY == 0:
+            return False
+        return True
+
+    def is_enabled(self):
+        """Returns True if NTDS Connection is enabled
+        """
+        return self.enabled
 
     def get_from_dnstr(self):
         '''Return fromServer dn string attribute'''
@@ -659,11 +953,11 @@ class Partition(NamingContext):
                     raise Exception("Missing GUID for (%s) - (%s: %s)" % \
                                     (self.partstr, k, value))
                 else:
-                    guidstr = str(misc.GUID(guid))
+                    guid = misc.GUID(guid)
 
                 if k == "nCName":
                     self.nc_dnstr = str(dsdn.dn)
-                    self.nc_guid  = guidstr
+                    self.nc_guid  = guid
                     self.nc_sid   = sid
                     continue
 
@@ -744,6 +1038,7 @@ class Site:
     def __init__(self, site_dnstr):
         self.site_dnstr   = site_dnstr
         self.site_options = 0
+        self.dsa_table    = {}
         return
 
     def load_site(self, samdb):
@@ -762,13 +1057,53 @@ class Site:
         msg = res[0]
         if "options" in msg:
             self.site_options = int(msg["options"][0])
+
+        self.load_all_dsa(samdb)
         return
 
-    def is_same_site(self, target_dsa):
-        '''Determine if target dsa is in this site'''
-        if self.site_dnstr in target_dsa.dsa_dnstr:
-            return True
-        return False
+    def load_all_dsa(self, samdb):
+        """Discover all nTDSDSA thru the sites entry and
+           instantiate and load the DSAs.  Each dsa is inserted
+           into the dsa_table by dn string.
+           Raises an Exception on error.
+        """
+        try:
+            res = samdb.search(self.site_dnstr,
+                               scope=ldb.SCOPE_SUBTREE,
+                               expression="(objectClass=nTDSDSA)")
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find nTDSDSAs - (%s)" % estr)
+
+        for msg in res:
+            dnstr = str(msg.dn)
+
+            # already loaded
+            if dnstr in self.dsa_table.keys():
+                continue
+
+            dsa = DirectoryServiceAgent(dnstr)
+
+            dsa.load_dsa(samdb)
+
+            # Assign this dsa to my dsa table
+            # and index by dsa dn
+            self.dsa_table[dnstr] = dsa
+        return
+
+    def get_dsa_by_guidstr(self, guidstr):
+        for dsa in self.dsa_table.values():
+            if str(dsa.dsa_guid) == guidstr:
+                return dsa
+        return None
+
+    def get_dsa(self, dnstr):
+        """Return a previously loaded DSA object by consulting
+           the sites dsa_table for the provided DSA dn string
+           Returns None if DSA doesn't exist
+        """
+        if dnstr in self.dsa_table.keys():
+            return self.dsa_table[dnstr]
+        return None
 
     def is_intrasite_topology_disabled(self):
         '''Returns True if intrasite topology is disabled for site'''
@@ -783,6 +1118,15 @@ class Site:
             dsdb.DS_NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED) == 0:
             return True
         return False
+
+    def __str__(self):
+        '''Debug dump string output of class'''
+        text = "%s:" % self.__class__.__name__
+        text = text + "\n\tdn=%s" % self.site_dnstr
+        text = text + "\n\toptions=0x%X" % self.site_options
+        for key, dsa in self.dsa_table.items():
+            text = text + "\n%s" % dsa
+        return text
 
 
 class GraphNode:
@@ -801,16 +1145,19 @@ class GraphNode:
         self.edge_from = []
 
     def __str__(self):
-        text = "%s: %s" % (self.__class__.__name__, self.dsa_dnstr)
-        for edge in self.edge_from:
-            text = text + "\n\tedge from: %s" % edge
+        text = "%s:" % self.__class__.__name__
+        text = text + "\n\tdsa_dnstr=%s" % self.dsa_dnstr
+        text = text + "\n\tmax_edges=%d" % self.max_edges
+
+        for i, edge in enumerate(self.edge_from):
+            text = text + "\n\tedge_from[%d]=%s" % (i, edge)
         return text
 
     def add_edge_from(self, from_dsa_dnstr):
         """Add an edge from the dsa to our graph nodes edge from list
            :param from_dsa_dnstr: the dsa that the edge emanates from
         """
-        assert from_dsa_dnstr != None
+        assert from_dsa_dnstr is not None
 
         # No edges from myself to myself
         if from_dsa_dnstr == self.dsa_dnstr:
@@ -855,8 +1202,7 @@ class GraphNode:
             #    the DC on which ri "is present".
             #
             #    c.options does not contain NTDSCONN_OPT_RODC_TOPOLOGY
-            if connect and \
-               connect.options & dsdb.NTDSCONN_OPT_RODC_TOPOLOGY == 0:
+            if connect and connect.is_rodc_topology() == False:
                 exists = True
             else:
                 exists = False
@@ -870,16 +1216,38 @@ class GraphNode:
             dnstr = "CN=%s," % str(uuid.uuid4()) + self.dsa_dnstr
 
             connect = NTDSConnection(dnstr)
-            connect.enabled    = True
-            connect.committed  = False
-            connect.from_dnstr = edge_dnstr
-            connect.options    = dsdb.NTDSCONN_OPT_IS_GENERATED
-            connect.flags      = dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME + \
-                                 dsdb.SYSTEM_FLAG_CONFIG_ALLOW_MOVE
+            connect.committed   = False
+            connect.enabled     = True
+            connect.from_dnstr  = edge_dnstr
+            connect.options     = dsdb.NTDSCONN_OPT_IS_GENERATED
+            connect.flags       = dsdb.SYSTEM_FLAG_CONFIG_ALLOW_RENAME + \
+                                  dsdb.SYSTEM_FLAG_CONFIG_ALLOW_MOVE
 
-            # XXX I need to write the schedule blob
+            # Create schedule.  Attribute valuse set according to MS-TECH
+            # intrasite connection creation document
+            connect.schedule = drsblobs.schedule()
 
-            dsa.add_connection_by_dnstr(dnstr, connect);
+            connect.schedule.size = 188
+            connect.schedule.bandwidth = 0
+            connect.schedule.numberOfSchedules = 1
+
+            header = drsblobs.scheduleHeader()
+            header.type = 0
+            header.offset = 20
+
+            connect.schedule.headerArray = [ header ]
+
+            # 168 byte instances of the 0x01 value.  The low order 4 bits
+            # of the byte equate to 15 minute intervals within a single hour.
+            # There are 168 bytes because there are 168 hours in a full week
+            # Effectively we are saying to perform replication at the end of
+            # each hour of the week
+            data = drsblobs.scheduleSlots()
+            data.slots = [ 0x01 ] * 168
+
+            connect.schedule.dataArray = [ data ]
+
+            dsa.add_connection(dnstr, connect);
 
         return
 
@@ -888,3 +1256,209 @@ class GraphNode:
         if len(self.edge_from) >= self.max_edges:
             return True
         return False
+
+class Transport():
+    """Class defines a Inter-site transport found under Sites
+    """
+    def __init__(self, dnstr):
+        self.dnstr           = dnstr
+        self.options         = 0
+        self.guid            = None
+        self.address_attr    = None
+        return
+
+    def __str__(self):
+        '''Debug dump string output of Transport object'''
+
+        text = "%s:\n\tdn=%s" % (self.__class__.__name__, self.dnstr)
+        text = text + "\n\tguid=%s" % str(self.guid)
+        text = text + "\n\toptions=%d" % self.options
+        text = text + "\n\taddress_attr=%s" % self.address_attr
+
+        return text
+
+    def load_transport(self, samdb):
+        """Given a Transport object with an prior initialization
+           for the object's DN, search for the DN and load attributes
+           from the samdb.
+           Raises an Exception on error.
+        """
+        attrs = [ "objectGUID",
+                  "options",
+                  "transportAddressAttribute" ]
+        try:
+            res = samdb.search(base=self.dnstr, scope=ldb.SCOPE_BASE,
+                               attrs=attrs)
+
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find Transport for (%s) - (%s)" % \
+                            (self.dnstr, estr))
+            return
+
+        msg = res[0]
+        self.guid = misc.GUID(samdb.schema_format_value("objectGUID",
+                              msg["objectGUID"][0]))
+
+        if "options" in msg:
+            self.options = int(msg["options"][0])
+        if "transportAddressAttribute" in msg:
+            self.address_attr = str(msg["transportAddressAttribute"][0])
+
+        return
+
+class RepsFromTo:
+    """Class encapsulation of the NDR repsFromToBlob.
+       Removes the necessity of external code having to
+       understand about other_info or manipulation of
+       update flags.
+    """
+    def __init__(self, nc_dnstr=None, ndr_blob=None):
+
+        self.__dict__['to_be_deleted'] = False
+        self.__dict__['nc_dnstr']      = nc_dnstr
+        self.__dict__['update_flags']  = 0x0
+
+        # WARNING:
+        #
+        # There is a very subtle bug here with python
+        # and our NDR code.  If you assign directly to
+        # a NDR produced struct (e.g. t_repsFrom.ctr.other_info)
+        # then a proper python GC reference count is not
+        # maintained.
+        #
+        # To work around this we maintain an internal
+        # reference to "dns_name(x)" and "other_info" elements
+        # of repsFromToBlob.  This internal reference
+        # is hidden within this class but it is why you
+        # see statements like this below:
+        #
+        #   self.__dict__['ndr_blob'].ctr.other_info = \
+        #        self.__dict__['other_info'] = drsblobs.repsFromTo1OtherInfo()
+        #
+        # That would appear to be a redundant assignment but
+        # it is necessary to hold a proper python GC reference
+        # count.
+        if ndr_blob is None:
+            self.__dict__['ndr_blob']         = drsblobs.repsFromToBlob()
+            self.__dict__['ndr_blob'].version = 0x1
+            self.__dict__['dns_name1']        = None
+            self.__dict__['dns_name2']        = None
+
+            self.__dict__['ndr_blob'].ctr.other_info = \
+                self.__dict__['other_info'] = drsblobs.repsFromTo1OtherInfo()
+
+        else:
+            self.__dict__['ndr_blob']   = ndr_blob
+            self.__dict__['other_info'] = ndr_blob.ctr.other_info
+
+            if ndr_blob.version == 0x1:
+                self.__dict__['dns_name1']  = ndr_blob.ctr.other_info.dns_name
+                self.__dict__['dns_name2']  = None
+            else:
+                self.__dict__['dns_name1']  = ndr_blob.ctr.other_info.dns_name1
+                self.__dict__['dns_name2']  = ndr_blob.ctr.other_info.dns_name2
+        return
+
+    def __str__(self):
+        '''Debug dump string output of class'''
+
+        text = "%s:" % self.__class__.__name__
+        text = text + "\n\tdnstr=%s" % self.nc_dnstr
+        text = text + "\n\tupdate_flags=0x%X" % self.update_flags
+
+        text = text + "\n\tversion=%d" % self.version
+        text = text + "\n\tsource_dsa_obj_guid=%s" % \
+               str(self.source_dsa_obj_guid)
+        text = text + "\n\tsource_dsa_invocation_id=%s" % \
+               str(self.source_dsa_invocation_id)
+        text = text + "\n\ttransport_guid=%s" % \
+               str(self.transport_guid)
+        text = text + "\n\treplica_flags=0x%X" % \
+               self.replica_flags
+        text = text + "\n\tconsecutive_sync_failures=%d" % \
+               self.consecutive_sync_failures
+        text = text + "\n\tlast_success=%s" % \
+               self.last_success
+        text = text + "\n\tlast_attempt=%s" % \
+               self.last_attempt
+        text = text + "\n\tdns_name1=%s" % \
+               str(self.dns_name1)
+        text = text + "\n\tdns_name2=%s" % \
+               str(self.dns_name2)
+        text = text + "\n\tschedule[ "
+        for slot in self.schedule:
+            text = text + "0x%X " % slot
+        text = text + "]"
+
+        return text
+
+    def __setattr__(self, item, value):
+
+        if item in [ 'schedule', 'replica_flags', 'transport_guid',     \
+                     'source_dsa_obj_guid', 'source_dsa_invocation_id', \
+                     'consecutive_sync_failures', 'last_success',       \
+                     'last_attempt' ]:
+            setattr(self.__dict__['ndr_blob'].ctr, item, value)
+
+        elif item in ['dns_name1']:
+            self.__dict__['dns_name1'] = value
+
+            if self.__dict__['ndr_blob'].version == 0x1:
+                self.__dict__['ndr_blob'].ctr.other_info.dns_name = \
+                    self.__dict__['dns_name1']
+            else:
+                self.__dict__['ndr_blob'].ctr.other_info.dns_name1 = \
+                    self.__dict__['dns_name1']
+
+        elif item in ['dns_name2']:
+            self.__dict__['dns_name2'] = value
+
+            if self.__dict__['ndr_blob'].version == 0x1:
+                raise AttributeError(item)
+            else:
+                self.__dict__['ndr_blob'].ctr.other_info.dns_name2 = \
+                    self.__dict__['dns_name2']
+
+        elif item in ['version']:
+            raise AttributeError, "Attempt to set readonly attribute %s" % item
+        else:
+            raise AttributeError, "Unknown attribute %s" % item
+
+        if item in ['replica_flags']:
+            self.__dict__['update_flags'] |= drsuapi.DRSUAPI_DRS_UPDATE_FLAGS
+        elif item in ['schedule']:
+            self.__dict__['update_flags'] |= drsuapi.DRSUAPI_DRS_UPDATE_SCHEDULE
+        else:
+            self.__dict__['update_flags'] |= drsuapi.DRSUAPI_DRS_UPDATE_ADDRESS
+
+        return
+
+    def __getattr__(self, item):
+        """Overload of RepsFromTo attribute retrieval.  Allows
+           external code to ignore substructures within the blob
+        """
+        if item in [ 'schedule', 'replica_flags', 'transport_guid',     \
+                     'source_dsa_obj_guid', 'source_dsa_invocation_id', \
+                     'consecutive_sync_failures', 'last_success',       \
+                     'last_attempt' ]:
+            return getattr(self.__dict__['ndr_blob'].ctr, item)
+
+        elif item in ['version']:
+            return self.__dict__['ndr_blob'].version
+
+        elif item in ['dns_name1']:
+            if self.__dict__['ndr_blob'].version == 0x1:
+                return self.__dict__['ndr_blob'].ctr.other_info.dns_name
+            else:
+                return self.__dict__['ndr_blob'].ctr.other_info.dns_name1
+
+        elif item in ['dns_name2']:
+            if self.__dict__['ndr_blob'].version == 0x1:
+                raise AttributeError(item)
+            else:
+                return self.__dict__['ndr_blob'].ctr.other_info.dns_name2
+
+        raise AttributeError, "Unknwown attribute %s" % item
+
+    def is_modified(self):
+        return (self.update_flags != 0x0)

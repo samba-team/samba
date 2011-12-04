@@ -20,6 +20,7 @@
 import os
 import sys
 import random
+import copy
 
 # ensure we get messages out immediately, so they get in the samba logs,
 # and don't get swallowed by a timeout
@@ -41,6 +42,7 @@ import logging
 from samba           import getopt as options
 from samba.auth      import system_session
 from samba.samdb     import SamDB
+from samba.dcerpc    import drsuapi
 from samba.kcc_utils import *
 
 class KCC:
@@ -55,12 +57,47 @@ class KCC:
            our local DCs partitions or all the partitions in
            the forest
         """
-        self.dsa_table     = {}    # dsa objects
-        self.part_table    = {}    # partition objects
-        self.site_table    = {}
+        self.part_table      = {}    # partition objects
+        self.site_table      = {}
+        self.transport_table = {}
+
         self.my_dsa_dnstr  = None  # My dsa DN
+        self.my_dsa        = None  # My dsa object
+
         self.my_site_dnstr = None
+        self.my_site       = None
+
         self.samdb         = samdb
+        return
+
+    def load_all_transports(self):
+        """Loads the inter-site transport objects for Sites
+           Raises an Exception on error
+        """
+        try:
+            res = samdb.search("CN=Inter-Site Transports,CN=Sites,%s" % \
+                               samdb.get_config_basedn(),
+                               scope=ldb.SCOPE_SUBTREE,
+                               expression="(objectClass=interSiteTransport)")
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find inter-site transports - (%s)" % estr)
+
+        for msg in res:
+            dnstr = str(msg.dn)
+
+            # already loaded
+            if dnstr in self.transport_table.keys():
+                continue
+
+            transport = Transport(dnstr)
+
+            transport.load_transport(samdb)
+
+            # Assign this transport to table
+            # and index by dn
+            self.transport_table[dnstr] = transport
+
+        return
 
     def load_my_site(self):
         """Loads the Site class for the local DSA
@@ -69,14 +106,14 @@ class KCC:
         self.my_site_dnstr = "CN=%s,CN=Sites,%s" % (samdb.server_site_name(),
                              samdb.get_config_basedn())
         site = Site(self.my_site_dnstr)
-
         site.load_site(samdb)
+
         self.site_table[self.my_site_dnstr] = site
+        self.my_site = site
+        return
 
     def load_my_dsa(self):
-        """Discover my nTDSDSA thru the rootDSE entry and
-           instantiate and load the DSA.  The dsa is inserted
-           into the dsa_table by dn string
+        """Discover my nTDSDSA dn thru the rootDSE entry
            Raises an Exception on error.
         """
         dn = ldb.Dn(self.samdb, "")
@@ -86,49 +123,10 @@ class KCC:
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find my nTDSDSA - (%s)" % estr)
 
-        dnstr = res[0]["dsServiceName"][0]
+        self.my_dsa_dnstr = res[0]["dsServiceName"][0]
+        self.my_dsa = self.my_site.get_dsa(self.my_dsa_dnstr)
 
-        # already loaded
-        if dnstr in self.dsa_table.keys():
-            return
-
-        self.my_dsa_dnstr = dnstr
-        dsa = DirectoryServiceAgent(dnstr)
-
-        dsa.load_dsa(samdb)
-
-        # Assign this dsa to my dsa table
-        # and index by dsa dn
-        self.dsa_table[dnstr] = dsa
-
-    def load_all_dsa(self):
-        """Discover all nTDSDSA thru the sites entry and
-           instantiate and load the DSAs.  Each dsa is inserted
-           into the dsa_table by dn string.
-           Raises an Exception on error.
-        """
-        try:
-            res = self.samdb.search("CN=Sites,%s" %
-                                    self.samdb.get_config_basedn(),
-                                    scope=ldb.SCOPE_SUBTREE,
-                                    expression="(objectClass=nTDSDSA)")
-        except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find nTDSDSAs - (%s)" % estr)
-
-        for msg in res:
-            dnstr = str(msg.dn)
-
-            # already loaded
-            if dnstr in self.dsa_table.keys():
-                continue
-
-            dsa = DirectoryServiceAgent(dnstr)
-
-            dsa.load_dsa(self.samdb)
-
-            # Assign this dsa to my dsa table
-            # and index by dsa dn
-            self.dsa_table[dnstr] = dsa
+        return
 
     def load_all_partitions(self):
         """Discover all NCs thru the Partitions dn and
@@ -158,16 +156,15 @@ class KCC:
             self.part_table[partstr] = part
 
     def should_be_present_test(self):
-        """Enumerate all loaded partitions and DSAs and test
-           if NC should be present as replica
+        """Enumerate all loaded partitions and DSAs in local
+           site and test if NC should be present as replica
         """
         for partdn, part in self.part_table.items():
-
-           for dsadn, dsa in self.dsa_table.items():
+            for dsadn, dsa in self.my_site.dsa_table.items():
                needed, ro, partial = part.should_be_present(dsa)
-
                logger.info("dsadn:%s\nncdn:%s\nneeded=%s:ro=%s:partial=%s\n" % \
-                           (dsa.dsa_dnstr, part.nc_dnstr, needed, ro, partial))
+                           (dsadn, part.nc_dnstr, needed, ro, partial))
+        return
 
     def refresh_failed_links_connections(self):
         # XXX - not implemented yet
@@ -186,12 +183,500 @@ class KCC:
         # XXX - not implemented yet
         return
 
-    def remove_unneeded_ntds_connections(self):
+    def remove_unneeded_ntdsconn(self):
         # XXX - not implemented yet
         return
 
-    def translate_connections(self):
-        # XXX - not implemented yet
+    def get_dsa_by_guidstr(self, guidstr):
+        """Given a DSA guid string, consule all sites looking
+           for the corresponding DSA and return it.
+        """
+        for site in self.site_table.values():
+            dsa = site.get_dsa_by_guidstr(guidstr)
+            if dsa is not None:
+                return dsa
+        return None
+
+    def get_dsa(self, dnstr):
+        """Given a DSA dn string, consule all sites looking
+           for the corresponding DSA and return it.
+        """
+        for site in self.site_table.values():
+            dsa = site.get_dsa(dnstr)
+            if dsa is not None:
+                return dsa
+        return None
+
+    def modify_repsFrom(self, n_rep, t_repsFrom, s_rep, s_dsa, cn_conn):
+        """Update t_repsFrom if necessary to satisfy requirements. Such
+           updates are typically required when the IDL_DRSGetNCChanges
+           server has moved from one site to another--for example, to
+           enable compression when the server is moved from the
+           client's site to another site.
+           :param n_rep: NC replica we need
+           :param t_repsFrom: repsFrom tuple to modify
+           :param s_rep: NC replica at source DSA
+           :param s_dsa: source DSA
+           :param cn_conn: Local DSA NTDSConnection child
+           Returns (update) bit field containing which portion of the
+           repsFrom was modified.  This bit field is suitable as input
+           to IDL_DRSReplicaModify ulModifyFields element, as it consists
+           of these bits:
+               drsuapi.DRSUAPI_DRS_UPDATE_SCHEDULE
+               drsuapi.DRSUAPI_DRS_UPDATE_FLAGS
+               drsuapi.DRSUAPI_DRS_UPDATE_ADDRESS
+        """
+        s_dnstr = s_dsa.dsa_dnstr
+        update  = 0x0
+
+        if self.my_site.get_dsa(s_dnstr) is s_dsa:
+            same_site = True
+        else:
+            same_site = False
+
+        times = cn_conn.convert_schedule_to_repltimes()
+
+        # if schedule doesn't match then update and modify
+        if times != t_repsFrom.schedule:
+            t_repsFrom.schedule = times
+
+        # Bit DRS_PER_SYNC is set in replicaFlags if and only
+        # if nTDSConnection schedule has a value v that specifies
+        # scheduled replication is to be performed at least once
+        # per week.
+        if cn_conn.is_schedule_minimum_once_per_week():
+
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_PER_SYNC) == 0x0:
+                t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_PER_SYNC
+
+        # Bit DRS_INIT_SYNC is set in t.replicaFlags if and only
+        # if the source DSA and the local DC's nTDSDSA object are
+        # in the same site or source dsa is the FSMO role owner
+        # of one or more FSMO roles in the NC replica.
+        if same_site or n_rep.is_fsmo_role_owner(s_dnstr):
+
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_INIT_SYNC) == 0x0:
+                t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_INIT_SYNC
+
+        # If bit NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT is set in
+        # cn!options, bit DRS_NEVER_NOTIFY is set in t.replicaFlags
+        # if and only if bit NTDSCONN_OPT_USE_NOTIFY is clear in
+        # cn!options. Otherwise, bit DRS_NEVER_NOTIFY is set in
+        # t.replicaFlags if and only if s and the local DC's
+        # nTDSDSA object are in different sites.
+        if (cn_conn.options & dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT) != 0x0:
+
+            if (cn_conn.option & dsdb.NTDSCONN_OPT_USE_NOTIFY) == 0x0:
+
+                if (t_repsFrom.replica_flags & \
+                    drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0:
+                    t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_NEVER_NOTIFY
+
+        elif same_site == False:
+
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0:
+                t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_NEVER_NOTIFY
+
+        # Bit DRS_USE_COMPRESSION is set in t.replicaFlags if
+        # and only if s and the local DC's nTDSDSA object are
+        # not in the same site and the
+        # NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION bit is
+        # clear in cn!options
+        if same_site == False and \
+           (cn_conn.options & \
+            dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION) == 0x0:
+
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_USE_COMPRESSION) == 0x0:
+                t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_USE_COMPRESSION
+
+        # Bit DRS_TWOWAY_SYNC is set in t.replicaFlags if and only
+        # if bit NTDSCONN_OPT_TWOWAY_SYNC is set in cn!options.
+        if (cn_conn.options & dsdb.NTDSCONN_OPT_TWOWAY_SYNC) != 0x0:
+
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_TWOWAY_SYNC) == 0x0:
+                t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_TWOWAY_SYNC
+
+        # Bits DRS_DISABLE_AUTO_SYNC and DRS_DISABLE_PERIODIC_SYNC are
+        # set in t.replicaFlags if and only if cn!enabledConnection = false.
+        if cn_conn.is_enabled() == False:
+
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_DISABLE_AUTO_SYNC) == 0x0:
+                t_repsFrom.replica_flags |= \
+                    drsuapi.DRSUAPI_DRS_DISABLE_AUTO_SYNC
+
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_DISABLE_PERIODIC_SYNC) == 0x0:
+                t_repsFrom.replica_flags |= \
+                    drsuapi.DRSUAPI_DRS_DISABLE_PERIODIC_SYNC
+
+        # If s and the local DC's nTDSDSA object are in the same site,
+        # cn!transportType has no value, or the RDN of cn!transportType
+        # is CN=IP:
+        #
+        #     Bit DRS_MAIL_REP in t.replicaFlags is clear.
+        #
+        #     t.uuidTransport = NULL GUID.
+        #
+        #     t.uuidDsa = The GUID-based DNS name of s.
+        #
+        # Otherwise:
+        #
+        #     Bit DRS_MAIL_REP in t.replicaFlags is set.
+        #
+        #     If x is the object with dsname cn!transportType,
+        #     t.uuidTransport = x!objectGUID.
+        #
+        #     Let a be the attribute identified by
+        #     x!transportAddressAttribute. If a is
+        #     the dNSHostName attribute, t.uuidDsa = the GUID-based
+        #      DNS name of s. Otherwise, t.uuidDsa = (s!parent)!a.
+        #
+        # It appears that the first statement i.e.
+        #
+        #     "If s and the local DC's nTDSDSA object are in the same
+        #      site, cn!transportType has no value, or the RDN of
+        #      cn!transportType is CN=IP:"
+        #
+        # could be a slightly tighter statement if it had an "or"
+        # between each condition.  I believe this should
+        # be interpreted as:
+        #
+        #     IF (same-site) OR (no-value) OR (type-ip)
+        #
+        # because IP should be the primary transport mechanism
+        # (even in inter-site) and the absense of the transportType
+        # attribute should always imply IP no matter if its multi-site
+        #
+        # NOTE MS-TECH INCORRECT:
+        #
+        #     All indications point to these statements above being
+        #     incorrectly stated:
+        #
+        #         t.uuidDsa = The GUID-based DNS name of s.
+        #
+        #         Let a be the attribute identified by
+        #         x!transportAddressAttribute. If a is
+        #         the dNSHostName attribute, t.uuidDsa = the GUID-based
+        #         DNS name of s. Otherwise, t.uuidDsa = (s!parent)!a.
+        #
+        #     because the uuidDSA is a GUID and not a GUID-base DNS
+        #     name.  Nor can uuidDsa hold (s!parent)!a if not
+        #     dNSHostName.  What should have been said is:
+        #
+        #         t.naDsa = The GUID-based DNS name of s
+        #
+        #     That would also be correct if transportAddressAttribute
+        #     were "mailAddress" because (naDsa) can also correctly
+        #     hold the SMTP ISM service address.
+        #
+        nastr = "%s._msdcs.%s" % (s_dsa.dsa_guid, self.samdb.forest_dns_name())
+
+        # We're not currently supporting SMTP replication
+        # so is_smtp_replication_available() is currently
+        # always returning False
+        if same_site == True or \
+           cn_conn.transport_dnstr == None or \
+           cn_conn.transport_dnstr.find("CN=IP") == 0 or \
+           is_smtp_replication_available() == False:
+
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_MAIL_REP) != 0x0:
+                t_repsFrom.replica_flags &= ~drsuapi.DRSUAPI_DRS_MAIL_REP
+
+            null_guid = misc.GUID()
+            if t_repsFrom.transport_guid is None or \
+               t_repsFrom.transport_guid != null_guid:
+                t_repsFrom.transport_guid = null_guid
+
+            # See (NOTE MS-TECH INCORRECT) above
+            if t_repsFrom.version == 0x1:
+                if t_repsFrom.dns_name1 is None or \
+                   t_repsFrom.dns_name1 != nastr:
+                    t_repsFrom.dns_name1 = nastr
+            else:
+                if t_repsFrom.dns_name1 is None or \
+                   t_repsFrom.dns_name2 is None or \
+                   t_repsFrom.dns_name1 != nastr or \
+                   t_repsFrom.dns_name2 != nastr:
+                    t_repsFrom.dns_name1 = nastr
+                    t_repsFrom.dns_name2 = nastr
+
+        else:
+            if (t_repsFrom.replica_flags & \
+                drsuapi.DRSUAPI_DRS_MAIL_REP) == 0x0:
+                t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_MAIL_REP
+
+            # We have a transport type but its not an
+            # object in the database
+            if cn_conn.transport_dnstr not in self.transport_table.keys():
+                raise Exception("Missing inter-site transport - (%s)" % \
+                                cn_conn.transport_dnstr)
+
+            x_transport = self.transport_table[cn_conn.transport_dnstr]
+
+            if t_repsFrom.transport_guid != x_transport.guid:
+                t_repsFrom.transport_guid = x_transport.guid
+
+            # See (NOTE MS-TECH INCORRECT) above
+            if x_transport.addr_attr == "dNSHostName":
+
+                if t_repsFrom.version == 0x1:
+                    if t_repsFrom.dns_name1 is None or \
+                       t_repsFrom.dns_name1 != nastr:
+                        t_repsFrom.dns_name1 = nastr
+                else:
+                    if t_repsFrom.dns_name1 is None or \
+                       t_repsFrom.dns_name2 is None or \
+                       t_repsFrom.dns_name1 != nastr or \
+                       t_repsFrom.dns_name2 != nastr:
+                        t_repsFrom.dns_name1 = nastr
+                        t_repsFrom.dns_name2 = nastr
+
+            else:
+                # MS tech specification says we retrieve the named
+                # attribute in "addr_attr" from the parent of the
+                # DSA object
+                try:
+                    pdnstr = s_dsa.get_parent_dnstr()
+                    attrs  = [ x_transport.addr_attr ]
+
+                    res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
+                                            attrs=attrs)
+                except ldb.ldbError, (enum, estr):
+                    raise Exception \
+                        ("Unable to find attr (%s) for (%s) - (%s)" % \
+                         (x_transport.addr_attr, pdnstr, estr))
+
+                msg = res[0]
+                nastr = str(msg[x_transport.addr_attr][0])
+
+                # See (NOTE MS-TECH INCORRECT) above
+                if t_repsFrom.version == 0x1:
+                    if t_repsFrom.dns_name1 is None or \
+                       t_repsFrom.dns_name1 != nastr:
+                        t_repsFrom.dns_name1 = nastr
+                else:
+                    if t_repsFrom.dns_name1 is None or \
+                       t_repsFrom.dns_name2 is None or \
+                       t_repsFrom.dns_name1 != nastr or \
+                       t_repsFrom.dns_name2 != nastr:
+
+                        t_repsFrom.dns_name1 = nastr
+                        t_repsFrom.dns_name2 = nastr
+
+        if t_repsFrom.is_modified():
+            logger.debug("modify_repsFrom(): %s" % t_repsFrom)
+        return
+
+    def translate_ntdsconn(self):
+        """This function adjusts values of repsFrom abstract attributes of NC
+           replicas on the local DC to match those implied by
+           nTDSConnection objects.
+        """
+        logger.debug("translate_ntdsconn(): enter mydsa:\n%s" % self.my_dsa)
+
+        if self.my_dsa.should_translate_ntdsconn() == False:
+            return
+
+        current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
+
+        # Filled in with replicas we currently have that need deleting
+        delete_rep_table = {}
+
+        # Table of replicas needed, combined with our local information
+        # if we already have the replica.  This may be a superset list of
+        # replicas if we need additional NC replicas that we currently
+        # don't have local copies for
+        translate_rep_table = {}
+
+        # We're using the MS notation names here to allow
+        # correlation back to the published algorithm.
+        #
+        # n_rep      - NC replica (n)
+        # t_repsFrom - tuple (t) in n!repsFrom
+        # s_dsa      - Source DSA of the replica. Defined as nTDSDSA
+        #              object (s) such that (s!objectGUID = t.uuidDsa)
+        #              In our IDL representation of repsFrom the (uuidDsa)
+        #              attribute is called (source_dsa_obj_guid)
+        # cn_conn    - (cn) is nTDSConnection object and child of the local DC's
+        #              nTDSDSA object and (cn!fromServer = s)
+        # s_rep      - source DSA replica of n
+        #
+        # Build a list of replicas that we will run translation
+        # against.  If we have the replica and its not needed
+        # then we add it to the "to be deleted" list.  Otherwise
+        # we have it and we need it so move it to the translate list
+        for dnstr, n_rep in current_rep_table.items():
+            if dnstr not in needed_rep_table.keys():
+                delete_rep_table[dnstr] = n_rep
+            else:
+                translate_rep_table[dnstr] = n_rep
+
+        # If we need the replica yet we don't have it (not in
+        # translate list) then add it
+        for dnstr, n_rep in needed_rep_table.items():
+            if dnstr not in translate_rep_table.keys():
+                translate_rep_table[dnstr] = n_rep
+
+        # Now perform the scan of replicas we'll need
+        # and compare any current repsFrom against the
+        # connections
+        for dnstr, n_rep in translate_rep_table.items():
+
+            # load any repsFrom and fsmo roles as we'll
+            # need them during connection translation
+            n_rep.load_repsFrom(self.samdb)
+            n_rep.load_fsmo_roles(self.samdb)
+
+            # Loop thru the existing repsFrom tupples (if any)
+            for i, t_repsFrom in enumerate(n_rep.rep_repsFrom):
+
+                # for each tuple t in n!repsFrom, let s be the nTDSDSA
+                # object such that s!objectGUID = t.uuidDsa
+                guidstr = str(t_repsFrom.source_dsa_obj_guid)
+                s_dsa = self.get_dsa_by_guidstr(guidstr)
+
+                # Source dsa is gone from config (strange)
+                # so cleanup stale repsFrom for unlisted DSA
+                if s_dsa is None:
+                    logger.debug("repsFrom source DSA guid (%s) not found" % \
+                                 guidstr)
+                    t_repsFrom.to_be_deleted = True
+                    continue
+
+                s_dnstr = s_dsa.dsa_dnstr
+
+                # Retrieve my DSAs connection object (if it exists)
+                # that specifies the fromServer equivalent to
+                # the DSA that is specified in the repsFrom source
+                cn_conn = self.my_dsa.get_connection_by_from_dnstr(s_dnstr)
+
+                # Let (cn) be the nTDSConnection object such that (cn)
+                # is a child of the local DC's nTDSDSA object and
+                # (cn!fromServer = s) and (cn!options) does not contain
+                # NTDSCONN_OPT_RODC_TOPOLOGY or NULL if no such (cn) exists.
+                if cn_conn and cn_conn.is_rodc_topology() == True:
+                    cn_conn = None
+
+                # KCC removes this repsFrom tuple if any of the following
+                # is true:
+                #     cn = NULL.
+                #
+                #     No NC replica of the NC "is present" on DSA that
+                #     would be source of replica
+                #
+                #     A writable replica of the NC "should be present" on
+                #     the local DC, but a partial replica "is present" on
+                #     the source DSA
+                s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
+
+                if cn_conn is None or \
+                   s_rep is None or s_rep.is_present() == False or \
+                   (n_rep.is_ro() == False and s_rep.is_partial() == True):
+
+                    t_repsFrom.to_be_deleted = True
+                    continue
+
+                # If the KCC did not remove t from n!repsFrom, it updates t
+                self.modify_repsFrom(n_rep, t_repsFrom, s_rep, s_dsa, cn_conn)
+
+            # Loop thru connections and add implied repsFrom tuples
+            # for each NTDSConnection under our local DSA if the
+            # repsFrom is not already present
+            for cn_dnstr, cn_conn in self.my_dsa.connect_table.items():
+
+                # NTDS Connection must satisfy all the following criteria
+                # to imply a repsFrom tuple is needed:
+                #
+                #    cn!enabledConnection = true.
+                #    cn!options does not contain NTDSCONN_OPT_RODC_TOPOLOGY.
+                #    cn!fromServer references an nTDSDSA object.
+                s_dsa = None
+
+                if cn_conn.is_enabled() == True and \
+                   cn_conn.is_rodc_topology() == False:
+
+                    s_dnstr = cn_conn.get_from_dnstr()
+                    if s_dnstr is not None:
+                        s_dsa = self.get_dsa(s_dnstr)
+
+                if s_dsa == None:
+                    continue
+
+                # Loop thru the existing repsFrom tupples (if any) and
+                # if we already have a tuple for this connection then
+                # no need to proceed to add.  It will have been changed
+                # to have the correct attributes above
+                for i, t_repsFrom in enumerate(n_rep.rep_repsFrom):
+
+                     guidstr = str(t_repsFrom.source_dsa_obj_guid)
+                     if s_dsa is self.get_dsa_by_guidstr(guidstr):
+                         s_dsa = None
+                         break
+
+                if s_dsa == None:
+                    continue
+
+                # Source dsa is gone from config (strange)
+                # To imply a repsFrom tuple is needed, each of these
+                # must be True:
+                #
+                #     An NC replica of the NC "is present" on the DC to
+                #     which the nTDSDSA object referenced by cn!fromServer
+                #     corresponds.
+                #
+                #     An NC replica of the NC "should be present" on
+                #     the local DC
+                s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
+
+                if s_rep is None or s_rep.is_present() == False:
+                    continue
+
+                # To imply a repsFrom tuple is needed, each of these
+                # must be True:
+                #
+                #     The NC replica on the DC referenced by cn!fromServer is
+                #     a writable replica or the NC replica that "should be
+                #     present" on the local DC is a partial replica.
+                #
+                #     The NC is not a domain NC, the NC replica that
+                #     "should be present" on the local DC is a partial
+                #     replica, cn!transportType has no value, or
+                #     cn!transportType has an RDN of CN=IP.
+                #
+                implies = (s_rep.is_ro() == False or \
+                           n_rep.is_partial() == True) \
+                          and \
+                          (n_rep.is_domain() == False or\
+                           n_rep.is_partial() == True or \
+                           cn_conn.transport_dnstr == None or \
+                           cn_conn.transport_dnstr.find("CN=IP") == 0)
+
+                if implies == False:
+                    continue
+
+                # Create a new RepsFromTo and proceed to modify
+                # it according to specification
+                t_repsFrom = RepsFromTo(n_rep.nc_dnstr)
+
+                t_repsFrom.source_dsa_obj_guid = s_dsa.dsa_guid
+
+                self.modify_repsFrom(n_rep, t_repsFrom, s_rep, s_dsa, cn_conn)
+
+                # Add to our NC repsFrom as this is newly computed
+                if t_repsFrom.is_modified():
+                    n_rep.rep_repsFrom.append(t_repsFrom)
+
+            # Commit any modified repsFrom to the NC replica
+            if opts.readonly is None:
+                n_rep.commit_repsFrom(self.samdb)
+
         return
 
     def intersite(self):
@@ -260,11 +745,13 @@ class KCC:
         # partition (NC x) then continue
         needed, ro, partial = nc_x.should_be_present(dc_local)
 
-        logger.debug("construct_intrasite_graph:\n" + \
-                     "nc_x: %s\ndc_local: %s\n" % \
-                     (nc_x, dc_local) + \
-                     "gc_only: %s\nneeded: %s\nro: %s\npartial: %s" % \
-                     (gc_only, needed, ro, partial))
+        logger.debug("construct_intrasite_graph(): enter" + \
+                     "\n\tgc_only=%d" % gc_only + \
+                     "\n\tdetect_stale=%d" % detect_stale + \
+                     "\n\tneeded=%s" % needed + \
+                     "\n\tro=%s" % ro + \
+                     "\n\tpartial=%s" % partial + \
+                     "\n%s" % nc_x)
 
         if needed == False:
             return
@@ -279,6 +766,10 @@ class KCC:
         l_of_x.rep_partial  = partial
         l_of_x.rep_ro       = ro
 
+        # Add this replica that "should be present" to the
+        # needed replica table for this DSA
+        dc_local.add_needed_replica(l_of_x)
+
         # Empty replica sequence list
         r_list = []
 
@@ -286,16 +777,16 @@ class KCC:
         # writeable NC replicas that match the naming
         # context dn for (nc_x)
         #
-        for dc_s_dn, dc_s in self.dsa_table.items():
+        for dc_s_dn, dc_s in self.my_site.dsa_table.items():
 
             # If this partition (nc_x) doesn't appear as a
             # replica (f_of_x) on (dc_s) then continue
-            if not nc_x.nc_dnstr in dc_s.rep_table.keys():
+            if not nc_x.nc_dnstr in dc_s.current_rep_table.keys():
                 continue
 
             # Pull out the NCReplica (f) of (x) with the dn
             # that matches NC (x) we are examining.
-            f_of_x = dc_s.rep_table[nc_x.nc_dnstr]
+            f_of_x = dc_s.current_rep_table[nc_x.nc_dnstr]
 
             # Replica (f) of NC (x) must be writable
             if f_of_x.is_ro() == True:
@@ -320,10 +811,9 @@ class KCC:
                 continue
 
             # DC (s) must be in the same site as the local DC
-            # This is the intra-site algorithm.  We are not
-            # replicating across multiple sites
-            if site_local.is_same_site(dc_s) == False:
-                continue
+            # as this is the intra-site algorithm. This is
+            # handled by virtue of placing DSAs in per
+            # site objects (see enclosing for() loop)
 
             # If NC (x) is intended to be read-only full replica
             # for a domain NC on the target DC then the source
@@ -361,17 +851,17 @@ class KCC:
             # Now we loop thru all the DSAs looking for
             # partial NC replicas that match the naming
             # context dn for (NC x)
-            for dc_s_dn, dc_s in self.dsa_table.items():
+            for dc_s_dn, dc_s in self.my_site.dsa_table.items():
 
                 # If this partition NC (x) doesn't appear as a
                 # replica (p) of NC (x) on the dsa DC (s) then
                 # continue
-                if not nc_x.nc_dnstr in dc_s.rep_table.keys():
+                if not nc_x.nc_dnstr in dc_s.current_rep_table.keys():
                     continue
 
                 # Pull out the NCReplica with the dn that
                 # matches NC (x) we are examining.
-                p_of_x = dsa.rep_table[nc_x.nc_dnstr]
+                p_of_x = dsa.current_rep_table[nc_x.nc_dnstr]
 
                 # Replica (p) of NC (x) must be partial
                 if p_of_x.is_partial() == False:
@@ -396,10 +886,9 @@ class KCC:
                     continue
 
                 # DC (s) must be in the same site as the local DC
-                # This is the intra-site algorithm.  We are not
-                # replicating across multiple sites
-                if site_local.is_same_site(dc_s) == False:
-                    continue
+                # as this is the intra-site algorithm. This is
+                # handled by virtue of placing DSAs in per
+                # site objects (see enclosing for() loop)
 
                 # This criteria is moot (a no-op) for this case
                 # because we are scanning for (partial = True).  The
@@ -476,7 +965,7 @@ class KCC:
         # to ri is less than n+2, the KCC adds that edge to the graph.
         i = 0
         while i < r_len:
-            dsa = self.dsa_table[graph_list[i].dsa_dnstr]
+            dsa = self.my_site.dsa_table[graph_list[i].dsa_dnstr]
             graph_list[i].add_edges_from_connections(dsa)
             i = i + 1
 
@@ -533,9 +1022,9 @@ class KCC:
            in the samdb
         """
         # Retrieve my DSA
-        mydsa = self.dsa_table[self.my_dsa_dnstr]
+        mydsa = self.my_dsa
 
-        logger.debug("intrasite enter:\nmydsa: %s" % mydsa)
+        logger.debug("intrasite(): enter mydsa:\n%s" % mydsa)
 
         # Test whether local site has topology disabled
         mysite = self.site_table[self.my_site_dnstr]
@@ -584,58 +1073,64 @@ class KCC:
                                                False)  # don't detect stale
 
         # Commit any newly created connections to the samdb
-        mydsa.commit_connection_table(self.samdb)
-
-        logger.debug("intrasite exit:\nmydsa: %s" % mydsa)
+        if opts.readonly is None:
+            mydsa.commit_connection_table(self.samdb)
 
     def run(self):
         """Method to perform a complete run of the KCC and
            produce an updated topology for subsequent NC replica
            syncronization between domain controllers
         """
-        # Setup
         try:
-            self.load_my_dsa()
-            self.load_all_dsa()
-            self.load_all_partitions()
+            # Setup
             self.load_my_site()
+            self.load_my_dsa()
+
+            self.load_all_partitions()
+            self.load_all_transports()
+
+            # These are the published steps (in order) for the
+            # MS-TECH description of the KCC algorithm
+
+            # Step 1
+            self.refresh_failed_links_connections()
+
+            # Step 2
+            self.intrasite()
+
+            # Step 3
+            self.intersite()
+
+            # Step 4
+            self.remove_unneeded_ntdsconn()
+
+            # Step 5
+            self.translate_ntdsconn()
+
+            # Step 6
+            self.remove_unneeded_failed_links_connections()
+
+            # Step 7
+            self.update_rodc_connection()
 
         except Exception, estr:
             logger.error("%s" % estr)
-            return
+            return 1
 
-        # self.should_be_present_test()
-
-        # These are the published steps (in order) for the
-        # MS description of the KCC algorithm
-
-        # Step 1
-        self.refresh_failed_links_connections()
-
-        # Step 2
-        self.intrasite()
-
-        # Step 3
-        self.intersite()
-
-        # Step 4
-        self.remove_unneeded_ntds_connections()
-
-        # Step 5
-        self.translate_connections()
-
-        # Step 6
-        self.remove_unneeded_failed_links_connections()
-
-        # Step 7
-        self.update_rodc_connection()
-
+        return 0
 
 ##################################################
 # Global Functions
 ##################################################
 def sort_replica_by_dsa_guid(rep1, rep2):
     return cmp(rep1.rep_dsa_guid, rep2.rep_dsa_guid)
+
+def is_smtp_replication_availalbe():
+    """Currently always returns false because Samba
+       doesn't implement SMTP transfer for NC changes
+       between DCs
+    """
+    return False
 
 ##################################################
 # samba_kcc entry point
@@ -649,8 +1144,11 @@ parser.add_option_group(sambaopts)
 parser.add_option_group(credopts)
 parser.add_option_group(options.VersionOptions(parser))
 
-parser.add_option("--debug", help="debug output", action="store_true")
-parser.add_option("--seed",  help="random number seed")
+parser.add_option("--readonly", \
+                  help="compute topology but do not update database", \
+                  action="store_true")
+parser.add_option("--debug",    help="debug output", action="store_true")
+parser.add_option("--seed",     help="random number seed")
 
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -683,4 +1181,6 @@ except ldb.LdbError, (num, msg):
 
 # Instantiate Knowledge Consistency Checker and perform run
 kcc = KCC(samdb)
-kcc.run()
+rc  = kcc.run()
+
+sys.exit(rc)
