@@ -36,8 +36,8 @@
 ^samba4.rpc.netlogon.*.LogonUasLogoff
 ^samba4.rpc.netlogon.*.DatabaseSync
 ^samba4.rpc.netlogon.*.DatabaseSync2
-^samba4.rpc.netlogon.*.LogonControl
-^samba4.rpc.netlogon.*.LogonControl2
+^samba4.rpc.netlogon.*.LogonControl$
+^samba4.rpc.netlogon.*.LogonControl2$
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomains
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
 ^samba4.rpc.netlogon.*.GetPassword
