@@ -63,7 +63,7 @@ else:
 if opts.flapping:
 	flapping = subunithelper.read_test_regexes(opts.flapping)
 else:
-	flapping = []
+	flapping = {}
 
 statistics = {
 	'TESTS_UNEXPECTED_OK': 0,
