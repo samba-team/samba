@@ -147,6 +147,18 @@ information.  </para>
 </varlistentry>
 
 <varlistentry>
+	<term>prefixpath=<replaceable>arg</replaceable></term>
+	<listitem>
+		<para>
+			It's possible to mount a subdirectory of a share. The preferred way
+			to do this is to append the path to the UNC when mounting. However,
+			it's also possible to do the same by setting this option and
+			providing the path there.
+		</para>
+	</listitem>
+</varlistentry>
+
+<varlistentry>
 	<term>forceuid</term>
 	<listitem>
 		<para>instructs the client to ignore any uid provided by
