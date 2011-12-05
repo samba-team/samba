@@ -68,7 +68,6 @@
 # some operations don't work over the CIFS NTVFS backend yet (eg. root_fid)
 ^samba4.ntvfs.cifs.*.base.createx_sharemodes_dir
 ^samba4.ntvfs.cifs.*.base.maximum_allowed
-^samba4.smb2.oplock # oplocks in the s4 SMB2 server are a mess
 ^samba4.raw.lock.*.async # bug 6960
 ^samba4.smb2.lock.*.multiple-unlock # bug 6959
 ^samba4.raw.sfileinfo.*.end-of-file$ # bug 6962
@@ -92,3 +91,18 @@
 ^samba4.libsmbclient.opendir.opendir # This requires netbios browsing
 ^samba4.rpc.drsuapi .*.drsuapi.DsGetDomainControllerInfo$
 ^samba4.rpc.drsuapi .*.drsuapi.DsCrackNames$
+^samba4.smb2.oplock.exclusive2$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.exclusive5$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.exclusive6$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.brl3$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.levelii500$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.brl1$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch22$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch19$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch12$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch11$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch1$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch6$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch9$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch10$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch20$ # samba 4 oplocks are a mess
