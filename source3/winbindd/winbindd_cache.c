@@ -38,7 +38,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-#define WINBINDD_CACHE_VERSION 2
+#define WINBINDD_CACHE_VER1 1 /* initial db version */
+#define WINBINDD_CACHE_VER2 2 /* second version with timeouts for NDR entries */
+
+#define WINBINDD_CACHE_VERSION WINBINDD_CACHE_VER2
 #define WINBINDD_CACHE_VERSION_KEYSTR "WINBINDD_CACHE_VERSION"
 
 extern struct winbindd_methods reconnect_methods;
@@ -4081,6 +4084,70 @@ static void validate_panic(const char *const why)
 	exit(47);
 }
 
+static int wbcache_update_centry_fn(TDB_CONTEXT *tdb,
+				    TDB_DATA key,
+				    TDB_DATA data,
+				    void *state)
+{
+	uint64_t ctimeout;
+	TDB_DATA blob;
+
+	if (is_non_centry_key(key)) {
+		return 0;
+	}
+
+	if (data.dptr == NULL || data.dsize == 0) {
+		if (tdb_delete(tdb, key) < 0) {
+			DEBUG(0, ("tdb_delete for [%s] failed!\n",
+				  key.dptr));
+			return 1;
+		}
+	}
+
+	/* add timeout to blob (uint64_t) */
+	blob.dsize = data.dsize + 8;
+
+	blob.dptr = SMB_XMALLOC_ARRAY(uint8_t, blob.dsize);
+	if (blob.dptr == NULL) {
+		return 1;
+	}
+	memset(blob.dptr, 0, blob.dsize);
+
+	/* copy status and seqnum */
+	memcpy(blob.dptr, data.dptr, 8);
+
+	/* add timeout */
+	ctimeout = lp_winbind_cache_time() + time(NULL);
+	SBVAL(blob.dptr, 8, ctimeout);
+
+	/* copy the rest */
+	memcpy(blob.dptr + 16, data.dptr + 8, data.dsize - 8);
+
+	if (tdb_store(tdb, key, blob, TDB_REPLACE) < 0) {
+		DEBUG(0, ("tdb_store to update [%s] failed!\n",
+			  key.dptr));
+		SAFE_FREE(blob.dptr);
+		return 1;
+	}
+
+	SAFE_FREE(blob.dptr);
+	return 0;
+}
+
+static bool wbcache_upgrade_v1_to_v2(TDB_CONTEXT *tdb)
+{
+	int rc;
+
+	DEBUG(1, ("Upgrade to version 2 of the winbindd_cache.tdb\n"));
+
+	rc = tdb_traverse(tdb, wbcache_update_centry_fn, NULL);
+	if (rc < 0) {
+		return false;
+	}
+
+	return true;
+}
+
 /***********************************************************************
  Try and validate every entry in the winbindd cache. If we fail here,
  delete the cache tdb and return non-zero.
@@ -4091,10 +4158,11 @@ int winbindd_validate_cache(void)
 	int ret = -1;
 	const char *tdb_path = cache_path("winbindd_cache.tdb");
 	TDB_CONTEXT *tdb = NULL;
+	uint32_t vers_id;
+	bool ok;
 
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
 	smb_panic_fn = validate_panic;
-
 
 	tdb = tdb_open_log(tdb_path, 
 			   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
@@ -4109,6 +4177,30 @@ int winbindd_validate_cache(void)
 			  "error opening/initializing tdb\n"));
 		goto done;
 	}
+
+	/* Version check and upgrade code. */
+	if (!tdb_fetch_uint32(tdb, WINBINDD_CACHE_VERSION_KEYSTR, &vers_id)) {
+		DEBUG(10, ("Fresh database\n"));
+		tdb_store_uint32(tdb, WINBINDD_CACHE_VERSION_KEYSTR, WINBINDD_CACHE_VERSION);
+		vers_id = WINBINDD_CACHE_VERSION;
+	}
+
+	if (vers_id != WINBINDD_CACHE_VERSION) {
+		if (vers_id == WINBINDD_CACHE_VER1) {
+			ok = wbcache_upgrade_v1_to_v2(tdb);
+			if (!ok) {
+				DEBUG(10, ("winbindd_validate_cache: upgrade to version 2 failed.\n"));
+				unlink(tdb_path);
+				goto done;
+			}
+
+			tdb_store_uint32(tdb,
+					 WINBINDD_CACHE_VERSION_KEYSTR,
+					 WINBINDD_CACHE_VERSION);
+			vers_id = WINBINDD_CACHE_VER2;
+		}
+	}
+
 	tdb_close(tdb);
 
 	ret = tdb_validate_and_backup(tdb_path, cache_traverse_validate_fn);
