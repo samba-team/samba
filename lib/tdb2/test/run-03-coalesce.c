@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	tdb_layout_add_freetable(layout);
 	len = 1024;
 	tdb_layout_add_free(layout, len, 0);
-	tdb = tdb_layout_get(layout);
+	tdb = tdb_layout_get(layout, &tap_log_attr);
 	ok1(tdb_check(tdb, NULL, NULL) == 0);
 	ok1(free_record_length(tdb, layout->elem[1].base.off) == len);
 
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	tdb_layout_add_freetable(layout);
 	tdb_layout_add_free(layout, 1024, 0);
 	tdb_layout_add_used(layout, key, data, 6);
-	tdb = tdb_layout_get(layout);
+	tdb = tdb_layout_get(layout, &tap_log_attr);
 	ok1(free_record_length(tdb, layout->elem[1].base.off) == 1024);
 	ok1(tdb_check(tdb, NULL, NULL) == 0);
 
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 	tdb_layout_add_freetable(layout);
 	tdb_layout_add_free(layout, 1024, 0);
 	tdb_layout_add_free(layout, 2048, 0);
-	tdb = tdb_layout_get(layout);
+	tdb = tdb_layout_get(layout, &tap_log_attr);
 	ok1(free_record_length(tdb, layout->elem[1].base.off) == 1024);
 	ok1(free_record_length(tdb, layout->elem[2].base.off) == 2048);
 	ok1(tdb_check(tdb, NULL, NULL) == 0);
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	tdb_layout_add_free(layout, 1024, 0);
 	tdb_layout_add_free(layout, 512, 0);
 	tdb_layout_add_used(layout, key, data, 6);
-	tdb = tdb_layout_get(layout);
+	tdb = tdb_layout_get(layout, &tap_log_attr);
 	ok1(free_record_length(tdb, layout->elem[1].base.off) == 1024);
 	ok1(free_record_length(tdb, layout->elem[2].base.off) == 512);
 	ok1(tdb_check(tdb, NULL, NULL) == 0);
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 	tdb_layout_add_free(layout, 1024, 0);
 	tdb_layout_add_free(layout, 512, 0);
 	tdb_layout_add_free(layout, 256, 0);
-	tdb = tdb_layout_get(layout);
+	tdb = tdb_layout_get(layout, &tap_log_attr);
 	ok1(free_record_length(tdb, layout->elem[1].base.off) == 1024);
 	ok1(free_record_length(tdb, layout->elem[2].base.off) == 512);
 	ok1(free_record_length(tdb, layout->elem[3].base.off) == 256);
