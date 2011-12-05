@@ -109,6 +109,13 @@ long _likely_trace(bool cond, bool expect,
  *	#endif
  *	}
  */
-const char *likely_stats(unsigned int min_hits, unsigned int percent);
+char *likely_stats(unsigned int min_hits, unsigned int percent);
+
+/**
+ * likely_stats_reset - free up memory of likely()/unlikely() branches.
+ *
+ * This can also plug memory leaks.
+ */
+void likely_stats_reset(void);
 #endif /* CCAN_LIKELY_DEBUG */
 #endif /* CCAN_LIKELY_H */
