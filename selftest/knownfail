@@ -76,7 +76,6 @@
 ^samba4.smb2.acls.*.generic
 ^samba4.smb2.acls.*.inheritflags
 ^samba4.smb2.acls.*.owner
-^samba4.ldap.acl.*.search.* # ACL search behaviour not enabled by default
 ^samba4.ldap.acl.*.ntSecurityDescriptor.* # ACL extended checks on search not enabled by default
 ^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.test_dirsync_deleted_items
 #^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.*
@@ -100,3 +99,10 @@
 ^samba4.smb2.oplock.batch10$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch20$ # samba 4 oplocks are a mess
 ^samba4.ntvfs.cifs.krb5.base.createx_access.createx_access$
+^samba4.ldap.acl.*.AclSearchTests.test_search_anonymous3$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search1$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search2$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search3$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search4$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search5$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search6$  # ACL search behaviour not enabled by default
