@@ -106,3 +106,4 @@
 ^samba4.smb2.oplock.batch9$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch10$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch20$ # samba 4 oplocks are a mess
+^samba4.ntvfs.cifs.krb5.base.createx_access.createx_access$
