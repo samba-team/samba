@@ -478,6 +478,9 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	}
 	va_end(ap);
 
+	/* Start logging */
+	setup_logging("samba_dlz", DEBUG_DEFAULT_STDERR);
+
 	state->ev_ctx = s4_event_context_init(state);
 	if (state->ev_ctx == NULL) {
 		result = ISC_R_NOMEMORY;
