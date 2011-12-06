@@ -155,6 +155,10 @@ class dnsobj(object):
 ################################################
 # parse a DNS line from
 def parse_dns_line(line, sub_vars):
+    if line.startswith("SRV _ldap._tcp.pdc._msdcs.") and not samdb.am_pdc():
+        if opts.verbose:
+            print "Skipping PDC entry (%s) as we are not a PDC" % line
+        return None
     subline = samba.substitute_var(line, sub_vars)
     d = dnsobj(subline)
     return d
@@ -249,12 +253,9 @@ def check_dns_name(d):
 
 ###########################################
 # get the list of substitution vars
-def get_subst_vars():
+def get_subst_vars(samdb):
     global lp, am_rodc
     vars = {}
-
-    samdb = SamDB(url=lp.samdb_url(), session_info=system_session(),
-                  lp=lp)
 
     vars['DNSDOMAIN'] = samdb.domain_dns_name()
     vars['DNSFOREST'] = samdb.forest_dns_name()
@@ -425,8 +426,11 @@ os.environ['KRB5_CONFIG'] = krb5conf
 
 file = open(dns_update_list, "r")
 
+samdb = SamDB(url=lp.samdb_url(), session_info=system_session(),
+              lp=lp)
+
 # get the substitution dictionary
-sub_vars = get_subst_vars()
+sub_vars = get_subst_vars(samdb)
 
 # build up a list of update commands to pass to nsupdate
 update_list = []
@@ -440,6 +444,8 @@ for line in file:
     if line == '' or line[0] == "#":
         continue
     d = parse_dns_line(line, sub_vars)
+    if d is None:
+        continue
     if d.type == 'A' and len(IP4s) == 0:
         continue
     if d.type == 'AAAA' and len(IP6s) == 0:
