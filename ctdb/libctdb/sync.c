@@ -280,3 +280,23 @@ bool ctdb_getdbseqnum(struct ctdb_connection *ctdb,
 	}
 	return ret;
 }
+
+bool ctdb_getifaces(struct ctdb_connection *ctdb,
+		    uint32_t destnode, struct ctdb_ifaces_list **ifaces)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	*ifaces = NULL;
+
+	req = synchronous(ctdb,
+			  ctdb_getifaces_send(ctdb, destnode, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_getifaces_recv(ctdb, req, ifaces);
+		ctdb_request_free(req);
+	}
+	return ret;
+}
+

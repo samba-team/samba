@@ -640,11 +640,11 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 				continue;
 			}
 			if (nodemap->nodes[i].flags == 0) {
-				struct ctdb_control_get_ifaces *ifaces;
+				struct ctdb_ifaces_list *ifaces;
 
-				ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(),
-							   nodemap->nodes[i].pnn,
-							   ctdb, &ifaces);
+				ret = ctdb_getifaces(ctdb_connection,
+						     nodemap->nodes[i].pnn,
+						     &ifaces);
 				if (ret == 0) {
 					for (j=0; j < ifaces->num; j++) {
 						if (ifaces->ifaces[j].link_state != 0) {
@@ -653,7 +653,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 						partially_online = 1;
 						break;
 					}
-					talloc_free(ifaces);
+					ctdb_free_ifaces(ifaces);
 				}
 			}
 			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", nodemap->nodes[i].pnn,
@@ -2311,18 +2311,14 @@ static int control_ipinfo(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_control_get_ifaces *ifaces;
+	int i;
+	struct ctdb_ifaces_list *ifaces;
 
 	/* read the public ip list from this node */
-	ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(), options.pnn,
-				   tmp_ctx, &ifaces);
-	if (ret != 0) {
+	if (!ctdb_getifaces(ctdb_connection, options.pnn, &ifaces)) {
 		DEBUG(DEBUG_ERR, ("Unable to get interfaces from node %u\n",
 				  options.pnn));
-		talloc_free(tmp_ctx);
-		return ret;
+		return -1;
 	}
 
 	if (options.machinereadable){
@@ -2345,7 +2341,7 @@ static int control_ifaces(struct ctdb_context *ctdb, int argc, const char **argv
 		}
 	}
 
-	talloc_free(tmp_ctx);
+	ctdb_free_ifaces(ifaces);
 	return 0;
 }
 

@@ -29,6 +29,7 @@
 #undef ctdb_getnodemap_send
 #undef ctdb_getpublicips_send
 #undef ctdb_getdbseqnum_send
+#undef ctdb_getifaces_send
 
 bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 			   struct ctdb_request *req, uint32_t *recmaster)
@@ -284,3 +285,73 @@ ctdb_check_message_handlers_send(struct ctdb_connection *ctdb,
 					mhs, num * sizeof(uint64_t) ,
 					callback, private_data);
 }
+
+
+bool ctdb_getifaces_recv(struct ctdb_connection *ctdb,
+			 struct ctdb_request *req,
+			 struct ctdb_ifaces_list **ifaces)
+{
+	struct ctdb_reply_control *reply;
+	struct ctdb_ifaces_list *ifc;
+	int i, len;
+
+	*ifaces = NULL;
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_IFACES);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getifaces_recv: status -1");
+		return false;
+	}
+	if (reply->datalen == 0) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getifaces_recv: returned data is 0 bytes");
+		return false;
+	}
+
+	len = offsetof(struct ctdb_ifaces_list, ifaces);
+	if (len > reply->datalen) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getifaces_recv: returned data is %d bytes but %d is minimum", reply->datalen,  (int)offsetof(struct ctdb_ifaces_list, ifaces));
+		return false;
+	}
+
+	ifc = (struct ctdb_ifaces_list *)(reply->data);
+	len += ifc->num * sizeof(struct ctdb_iface_info);
+
+	if (len != reply->datalen) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getifaces_recv: returned data is %d bytes but should be %d", reply->datalen,  len);
+		return false;
+	}
+
+	ifc = malloc(reply->datalen);
+	if (ifc == NULL) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getifaces_recv: failed to malloc buffer");
+		return false;
+	}
+	memcpy(ifc, reply->data, reply->datalen);
+
+	/* make sure we null terminate the returned strings */
+	for (i = 0; i < ifc->num; i++) {
+		ifc->ifaces[i].name[CTDB_IFACE_SIZE] = '\0';
+	}
+
+	*ifaces = ifc;
+
+	return true;
+}
+
+void ctdb_free_ifaces(struct ctdb_ifaces_list *ifaces)
+{
+	free(ifaces);
+}
+
+struct ctdb_request *ctdb_getifaces_send(struct ctdb_connection *ctdb,
+					  uint32_t destnode,
+					  ctdb_callback_t callback,
+					  void *private_data)
+{
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_IFACES,
+					destnode,
+					NULL, 0, callback, private_data);
+}
+

@@ -654,5 +654,24 @@ struct ctdb_statistics_wire {
 	struct ctdb_statistics stats[1];
 };
 
+/*
+ * wire format for interface list
+ */
+#ifdef IFNAMSIZ
+#define CTDB_IFACE_SIZE IFNAMSIZ
+#else
+#define CTDB_IFACE_SIZE 16
+#endif
+
+struct ctdb_iface_info {
+	char name[CTDB_IFACE_SIZE+2];
+	uint16_t link_state;
+	uint32_t references;
+};
+
+struct ctdb_ifaces_list {
+	uint32_t num;
+	struct ctdb_iface_info ifaces[1];
+};
 
 #endif

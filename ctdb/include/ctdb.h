@@ -613,6 +613,41 @@ bool ctdb_getnodemap_recv(struct ctdb_connection *ctdb,
 		      struct ctdb_request *req, struct ctdb_node_map **nodemap);
 
 /**
+ * ctdb_getifaces_send - read the list of interfaces from a node.
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_getifaces_send(struct ctdb_connection *ctdb,
+		 uint32_t destnode,
+		 ctdb_callback_t callback,
+		 void *cbdata);
+/**
+ * ctdb_getifaces_recv - read an ctdb_getifaces reply from ctdbd
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @ifaces: the list of interfaces 
+ *
+ * This returns false if something went wrong.
+ * If the command failed, it guarantees to set ifaces to NULL.
+ * A non-NULL value for ifaces means the command was successful.
+ *
+ * A non-NULL value of the ifaces must be release released/freed
+ * by ctdb_free_ifaces().
+ */
+bool ctdb_getifaces_recv(struct ctdb_connection *ctdb,
+		      struct ctdb_request *req, struct ctdb_ifaces_list **ifaces);
+
+/* Free a datastructure returned by ctdb_getifaces[_recv] */
+void ctdb_free_ifaces(struct ctdb_ifaces_list *ifaces);
+
+/**
  * ctdb_getpublicips_send - read the public ip list from a node.
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -898,6 +933,23 @@ bool ctdb_getrecmode(struct ctdb_connection *ctdb,
 bool ctdb_getnodemap(struct ctdb_connection *ctdb,
 		     uint32_t destnode, struct ctdb_node_map **nodemap);
 
+/**
+ * ctdb_getifaces - read the list of interfaces from a node (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @ifaces: a pointer to the ifaces to fill in
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ *
+ * Returns true and fills in *ifaces on success.
+ * A non-NULL value of the ifaces must be release released/freed
+ * by ctdb_free_ifaces().
+ */
+bool ctdb_getifaces(struct ctdb_connection *ctdb,
+		    uint32_t destnode, struct ctdb_ifaces_list **ifaces);
+
 /*
  * This function is used to release/free the nodemap structure returned
  * by ctdb_getnodemap() and ctdb_getnodemap_recv()
@@ -1009,6 +1061,10 @@ void ctdb_free_publicips(struct ctdb_all_public_ips *ips);
 
 #define ctdb_getdbseqnum_send(ctdb, destnode, dbid, cb, cbdata)		\
 	ctdb_getdbseqnum_send((ctdb), (destnode), (dbid),		\
+			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getifaces_send(ctdb, destnode, cb, cbdata)			\
+	ctdb_getifaces_send((ctdb), (destnode),				\
 			 ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #endif

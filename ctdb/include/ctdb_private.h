@@ -1079,12 +1079,6 @@ int ctdb_ctrl_get_public_ipsv4(struct ctdb_context *ctdb,
 			struct timeval timeout, uint32_t destnode, 
 			TALLOC_CTX *mem_ctx, struct ctdb_all_public_ips **ips);
 
-#ifdef IFNAMSIZ
-#define CTDB_IFACE_SIZE IFNAMSIZ
-#else
-#define CTDB_IFACE_SIZE 16
-#endif
-
 struct ctdb_control_iface_info {
 	char name[CTDB_IFACE_SIZE+2];
 	uint16_t link_state;
