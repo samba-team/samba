@@ -521,7 +521,10 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
 		
-		/* This ensures we lookup the correct entry in that keytab */
+		/* This ensures we lookup the correct entry in that
+		 * keytab.  A NULL principal is acceptable, and means
+		 * that the krb5 libs should search the keytab at
+		 * accept time for any matching key */
 		ret = principal_from_credentials(out_mem_ctx, gensec_get_credentials(gensec_security), 
 						 gensec_krb5_state->smb_krb5_context, 
 						 &server_in_keytab, &obtained, &error_string);

@@ -293,14 +293,16 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 	krb5_error_code ret;
 	const char *princ_string;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
+	*obtained = CRED_UNINITIALISED;
+
 	if (!mem_ctx) {
 		(*error_string) = error_message(ENOMEM);
 		return ENOMEM;
 	}
 	princ_string = cli_credentials_get_principal_and_obtained(credentials, mem_ctx, obtained);
 	if (!princ_string) {
-		(*error_string) = error_message(ENOMEM);
-		return ENOMEM;
+		*princ = NULL;
+		return 0;
 	}
 
 	ret = parse_principal(parent_ctx, princ_string,
@@ -357,6 +359,12 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
+	}
+
+	if (princ == NULL) {
+		(*error_string) = talloc_asprintf(credentials, "principal, username or realm was not specified in the credentials");
+		talloc_free(mem_ctx);
+		return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	}
 
 	ret = impersonate_principal_from_credentials(mem_ctx, credentials, smb_krb5_context, &impersonate_principal, error_string);
