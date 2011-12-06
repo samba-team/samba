@@ -85,6 +85,10 @@ AC_CHECK_HEADERS(pcp/pmapi.h pcp/impl.h pcp/pmda.h, [], [],
 #endif
 ]])
 
+AC_CHECK_DECL([ETIME], [],[AC_DEFINE([ETIME], ETIMEDOUT, [ETIME on non-supporting platforms])], [
+#include <errno.h>
+])
+
 AC_CHECK_FUNCS(sched_setscheduler)
 AC_CHECK_FUNCS(mlockall)
 
