@@ -1043,17 +1043,6 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 	return ISC_R_SUCCESS;
 }
 
-static char *strlower(char *str)
-{
-	int i;
-
-	for (i=0; i<strlen(str); i++) {
-		str[i] = (char) tolower(str[i]);
-	}
-
-	return str;
-}
-
 /*
   authorize a zone update
  */
@@ -1065,8 +1054,8 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	TALLOC_CTX *tmp_ctx;
 	DATA_BLOB ap_req;
 	struct cli_credentials *server_credentials;
-	char *keytab_name, *username;
-	bool ret;
+	char *keytab_name;
+	int ret;
 	int ldb_ret;
 	NTSTATUS nt_status;
 	struct gensec_security *gensec_ctx;
@@ -1104,22 +1093,17 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	cli_credentials_set_krb5_context(server_credentials, state->smb_krb5_ctx);
 	cli_credentials_set_conf(server_credentials, state->lp);
 
-	username = talloc_asprintf(tmp_ctx, "dns-%s", lpcfg_netbios_name(state->lp));
-	username = strlower(username);
-	cli_credentials_set_username(server_credentials, username, CRED_SPECIFIED);
-	talloc_free(username);
-
 	keytab_name = talloc_asprintf(tmp_ctx, "file:%s/dns.keytab",
 					lpcfg_private_dir(state->lp));
 	ret = cli_credentials_set_keytab_name(server_credentials, state->lp, keytab_name,
 						CRED_SPECIFIED);
-	talloc_free(keytab_name);
 	if (ret != 0) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: failed to obtain server credentials for %s",
-				username);
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to obtain server credentials from %s",
+			   keytab_name);
 		talloc_free(tmp_ctx);
 		return false;
 	}
+	talloc_free(keytab_name);
 
 	nt_status = gensec_server_start(tmp_ctx,
 					lpcfg_gensec_settings(tmp_ctx, state->lp),
@@ -1131,7 +1115,6 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	}
 
 	gensec_set_credentials(gensec_ctx, server_credentials);
-	gensec_set_target_service(gensec_ctx, "dns");
 
 	nt_status = gensec_start_mech_by_name(gensec_ctx, "spnego");
 	if (!NT_STATUS_IS_OK(nt_status)) {

@@ -794,9 +794,15 @@ _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	/* This creates a GSSAPI cred_id_t with the principal and keytab set */
-	maj_stat = gss_krb5_import_cred(&min_stat, NULL, princ, ktc->keytab, 
-					&gcc->creds);
+	if (obtained < CRED_SPECIFIED) {
+		/* This creates a GSSAPI cred_id_t with the principal and keytab set */
+		maj_stat = gss_krb5_import_cred(&min_stat, NULL, NULL, ktc->keytab,
+						&gcc->creds);
+	} else {
+		/* This creates a GSSAPI cred_id_t with the principal and keytab set */
+		maj_stat = gss_krb5_import_cred(&min_stat, NULL, princ, ktc->keytab,
+						&gcc->creds);
+	}
 	if (maj_stat) {
 		if (min_stat) {
 			ret = min_stat;
