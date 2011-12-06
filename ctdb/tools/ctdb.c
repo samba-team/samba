@@ -877,6 +877,51 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_node_map *nodemap=NULL;
+	uint32_t * nodes;
+	uint32_t pnn_mode, mypnn;
+
+	if (argc > 1) {
+		usage();
+	}
+
+	if (!parse_nodestring(ctdb, argc == 1 ? argv[0] : NULL, false,
+			      &nodes, &pnn_mode)) {
+		return -1;
+	}
+
+	if (options.machinereadable) {
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
+		       ":Inactive:PartiallyOnline:ThisNode:\n");
+	} else if (pnn_mode == CTDB_BROADCAST_ALL) {
+		printf("Number of nodes:%d\n", (int) talloc_array_length(nodes));
+	}
+
+	if (!ctdb_getpnn(ctdb_connection, CTDB_CURRENT_NODE, &mypnn)) {
+		DEBUG(DEBUG_ERR, ("Unable to get PNN from local node\n"));
+		return -1;
+	}
+
+	if (!ctdb_getnodemap(ctdb_connection, CTDB_CURRENT_NODE, &nodemap)) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return -1;
+	}
+
+	for (i = 0; i < talloc_array_length(nodes); i++) {
+		if (options.machinereadable) {
+			ret |= control_status_1_machine(mypnn,
+							&nodemap->nodes[nodes[i]]);
+		} else {
+			ret |= control_status_1_human(mypnn,
+						      &nodemap->nodes[nodes[i]]);
+		}
+	}
+	return ret;
+}
+
 struct natgw_node {
 	struct natgw_node *next;
 	const char *addr;
@@ -5321,6 +5366,7 @@ static const struct {
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
 	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbid>" },
+	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status" },
 };
 
 /*
