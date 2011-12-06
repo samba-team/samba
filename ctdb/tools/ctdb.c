@@ -119,6 +119,7 @@ static const char *pretty_print_flags(uint32_t flags)
  */
 static bool parse_nodestring(struct ctdb_context *ctdb,
 			     const char * nodestring,
+			     uint32_t current_pnn,
 			     bool dd_ok,
 			     uint32_t **nodes,
 			     uint32_t *pnn_mode)
@@ -201,8 +202,9 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 		/* default - no nodes specified */
 		*nodes = talloc_array(ctdb, uint32_t, 1);
 		CTDB_NOMEM_ABORT(*nodes);
+		*pnn_mode = CTDB_CURRENT_NODE;
 
-		if (!ctdb_getpnn(ctdb_connection, CTDB_CURRENT_NODE,
+		if (!ctdb_getpnn(ctdb_connection, current_pnn,
 				 &((*nodes)[0]))) {
 			return false;
 		}
@@ -847,8 +849,8 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 		usage();
 	}
 
-	if (!parse_nodestring(ctdb, argc == 1 ? argv[0] : NULL, false,
-			      &nodes, &pnn_mode)) {
+	if (!parse_nodestring(ctdb, argc == 1 ? argv[0] : NULL,
+			      options.pnn, true, &nodes, &pnn_mode)) {
 		return -1;
 	}
 
@@ -864,10 +866,12 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 		return -1;
 	}
 
-	if (!ctdb_getnodemap(ctdb_connection, CTDB_CURRENT_NODE, &nodemap)) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+	if (!ctdb_getnodemap(ctdb_connection, options.pnn, &nodemap)) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
 		return -1;
 	}
+
+	ret = 0;
 
 	for (i = 0; i < talloc_array_length(nodes); i++) {
 		if (options.machinereadable) {
@@ -5479,7 +5483,7 @@ int main(int argc, const char *argv[])
 	}				
 
 	/* setup the node number(s) to contact */
-	if (!parse_nodestring(ctdb, nodestring, true,
+	if (!parse_nodestring(ctdb, nodestring, CTDB_CURRENT_NODE, false,
 			      &options.nodes, &options.pnn)) {
 		usage();
 	}
