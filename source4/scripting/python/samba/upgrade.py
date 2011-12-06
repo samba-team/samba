@@ -636,7 +636,7 @@ Please fix this account before attempting to upgrade again
                        domainsid=str(domainsid), next_rid=next_rid,
                        dc_rid=machinerid,
                        dom_for_fun_level=dsdb.DS_DOMAIN_FUNCTION_2003,
-                       hostname=netbiosname, machinepass=machinepass,
+                       hostname=netbiosname.lower(), machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL,
                        useeadb=useeadb, dns_backend=dns_backend)
 
