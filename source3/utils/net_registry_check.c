@@ -208,10 +208,10 @@ static bool tdb_data_read_regval(TDB_DATA *buf, struct regval *result)
 }
 
 static bool tdb_data_is_cstr(TDB_DATA d) {
-	if (tdb_data_is_empty(d)) {
+	if (tdb_data_is_empty(d) || (d.dptr[d.dsize-1] != '\0')) {
 		return false;
 	}
-	return (d.dptr[d.dsize-1] == '\0');
+	return rawmemchr(d.dptr, '\0') == &d.dptr[d.dsize-1];
 }
 
 static char* tdb_data_print(TALLOC_CTX *mem_ctx, TDB_DATA d)
@@ -664,8 +664,7 @@ static bool srprs_path(const char **ptr, const char* prefix, char sep,
 		return false;
 	}
 	*ppath = path;
-	/* We know pos ends in '\0'. */
-	*ptr = &pos[strlen(pos)];
+	*ptr = rawmemchr(pos, '\0');
 	return true;
 }
 
