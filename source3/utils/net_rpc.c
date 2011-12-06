@@ -5062,7 +5062,7 @@ int net_usersidlist(struct net_context *c, int argc, const char **argv)
 
 	if (!get_user_tokens(c, &num_tokens, &tokens)) {
 		DEBUG(0, ("Could not get the user/sid list\n"));
-		return 0;
+		return -1;
 	}
 
 	for (i=0; i<num_tokens; i++) {
@@ -5071,7 +5071,7 @@ int net_usersidlist(struct net_context *c, int argc, const char **argv)
 	}
 
 	SAFE_FREE(tokens);
-	return 1;
+	return 0;
 }
 
 int net_usersidlist_usage(struct net_context *c, int argc, const char **argv)
