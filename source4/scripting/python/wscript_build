@@ -36,4 +36,4 @@ bld.SAMBA_SCRIPT('samba_python',
                  pattern='samba/**/*.py',
                  installdir='python')
 
-bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'samba/**/*.py', flat=False)
+bld.INSTALL_WILDCARD('${PYTHONDIR}', 'samba/**/*.py', flat=False)
