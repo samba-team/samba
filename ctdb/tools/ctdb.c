@@ -778,6 +778,32 @@ static bool is_partially_online(struct ctdb_node_and_flags *node)
 	return ret;
 }
 
+static int control_status_1_machine(int mypnn, struct ctdb_node_and_flags *node)
+{
+	printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", node->pnn,
+	       ctdb_addr_to_str(&node->addr),
+	       !!(node->flags&NODE_FLAGS_DISCONNECTED),
+	       !!(node->flags&NODE_FLAGS_BANNED),
+	       !!(node->flags&NODE_FLAGS_PERMANENTLY_DISABLED),
+	       !!(node->flags&NODE_FLAGS_UNHEALTHY),
+	       !!(node->flags&NODE_FLAGS_STOPPED),
+	       !!(node->flags&NODE_FLAGS_INACTIVE),
+	       is_partially_online(node) ? 1 : 0,
+	       (node->pnn == mypnn)?'Y':'N');
+
+	return node->flags;
+}
+
+static int control_status_1_human(int mypnn, struct ctdb_node_and_flags *node)
+{
+       printf("pnn:%d %-16s %s%s\n", node->pnn,
+              ctdb_addr_to_str(&node->addr),
+              is_partially_online(node) ? "PARTIALLYONLINE" : pretty_print_flags(node->flags),
+              node->pnn == mypnn?" (THIS NODE)":"");
+
+       return node->flags;
+}
+
 /*
   display remote ctdb status
  */
@@ -807,16 +833,8 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 				continue;
 			}
-			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", nodemap->nodes[i].pnn,
-				ctdb_addr_to_str(&nodemap->nodes[i].addr),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE),
-			       is_partially_online(&nodemap->nodes[i]) ? 1 : 0,
-			       (nodemap->nodes[i].pnn == mypnn)?'Y':'N');
+			(void) control_status_1_machine(mypnn,
+							&nodemap->nodes[i]);
 		}
 		return 0;
 	}
@@ -826,10 +844,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
-		printf("pnn:%d %-16s %s%s\n", nodemap->nodes[i].pnn,
-		       ctdb_addr_to_str(&nodemap->nodes[i].addr),
-		       is_partially_online(&nodemap->nodes[i]) ? "PARTIALLYONLINE" : pretty_print_flags(nodemap->nodes[i].flags),
-		       nodemap->nodes[i].pnn == mypnn?" (THIS NODE)":"");
+		(void) control_status_1_human(mypnn, &nodemap->nodes[i]);
 	}
 
 	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &vnnmap);
@@ -861,7 +876,6 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 
 	return 0;
 }
-
 
 struct natgw_node {
 	struct natgw_node *next;
