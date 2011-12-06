@@ -159,6 +159,17 @@ information.  </para>
 </varlistentry>
 
 <varlistentry>
+	<term>cifsacl</term>
+	<listitem>
+		<para>
+           This option is used to map CIFS/NTFS ACLs to/from Linux permission
+           bits, map SIDs to/from UIDs and GIDs, and get and set Security
+           Descriptors.
+		</para>
+	</listitem>
+</varlistentry>
+
+<varlistentry>
 	<term>forceuid</term>
 	<listitem>
 		<para>instructs the client to ignore any uid provided by
@@ -202,7 +213,7 @@ port 445 is tried and if no response then port 139 is tried.
 	</varlistentry>
 
         <varlistentry>
-                <term>servern=<replaceable>arg</replaceable></term>
+                <term>servernetbiosname=<replaceable>arg</replaceable></term>
 
                 <listitem><para>
 		Specify the server netbios name (RFC1001 name) to use
@@ -215,6 +226,13 @@ port 445 is tried and if no response then port 139 is tried.
                 to 15 characters long and is usually uppercased.
                 </para></listitem>
         </varlistentry>
+
+<varlistentry>
+	<term>servern=<replaceable>arg</replaceable></term>
+	<listitem>
+		<para>synonym for <emphasis>servernetbiosname=</emphasis></para>
+	</listitem>
+</varlistentry>
 
         <varlistentry>
                 <term>netbiosname=<replaceable>arg</replaceable></term>
@@ -415,6 +433,15 @@ permissions in memory that can't be stored on the server. This information can d
                 </listitem>
         </varlistentry>
 
+<varlistentry>
+	<term>ignorecase</term>
+	<listitem>
+		<para>
+		Synonym for <emphasis>nocase</emphasis>
+		</para>
+	</listitem>
+</varlistentry>
+
         <varlistentry>
                 <term>sec=</term>
                 <listitem>
@@ -547,6 +574,29 @@ permissions in memory that can't be stored on the server. This information can d
                 maximum wsize currently allowed by CIFS is 57344 (fourteen
                 4096 byte pages)</para></listitem>
 	</varlistentry>
+
+<varlistentry>
+	<term>noposixpaths</term>
+	<listitem>
+		<para>
+           If unix extensions are enabled on a share, then the client will
+           typically allow filenames to include any character besides '/' in a
+           pathname component, and will use forward slashes as a pathname
+           delimiter. This option prevents the client from attempting to
+           negotiate the use of posix-style pathnames to the server.
+		</para>
+	</listitem>
+</varlistentry>
+
+<varlistentry>
+	<term>posixpaths</term>
+	<listitem>
+		<para>
+		Inverse of <emphasis>noposixpaths</emphasis>
+		</para>
+	</listitem>
+</varlistentry>
+
 	 <varlistentry>
                 <term>--verbose</term>
                 <listitem><para>Print additional debugging information for the mount. Note that this parameter must be specified before the -o. For example:</para><para>mount -t cifs //server/share /mnt --verbose -o user=username</para></listitem>
