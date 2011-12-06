@@ -97,6 +97,12 @@ def build(bld):
                          'pytevent.c',
                          deps='tevent',
                          realname='_tevent.so')
+        # install out various python scripts for use by make test
+        bld.SAMBA_SCRIPT('tevent_python',
+                         pattern='tevent.py',
+                         installdir='python')
+
+        bld.INSTALL_WILDCARD('${PYTHONDIR}', 'tevent.py', flat=False)
 
 
 def test(ctx):
