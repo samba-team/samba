@@ -1106,7 +1106,7 @@ static void traverse_msghnd_cb(struct ctdb_connection *ctdb,
 {
 	struct ctdb_traverse_state *state = private_data;
 	struct ctdb_db *ctdb_db = state->ctdb_db;
-	struct ctdb_traverse_start_ext t;
+	struct ctdb_traverse_start t;
 
 	if (!ctdb_set_message_handler_recv(ctdb, state->handle)) {
 		DEBUG(ctdb, LOG_ERR,
@@ -1130,7 +1130,7 @@ static void traverse_msghnd_cb(struct ctdb_connection *ctdb,
 	t.withemptyrecords = false;
 
 	state->handle = new_ctdb_control_request(ctdb,
-				CTDB_CONTROL_TRAVERSE_START_EXT,
+				CTDB_CONTROL_TRAVERSE_START,
 				CTDB_CURRENT_NODE,
 				&t, sizeof(t),
 				traverse_start_cb, state);
