@@ -76,6 +76,10 @@ class SamDB(samba.Ldb):
         '''return True if we are an RODC'''
         return dsdb._am_rodc(self)
 
+    def am_pdc(self):
+        '''return True if we are an PDC emulator'''
+        return dsdb._am_pdc(self)
+
     def domain_dn(self):
         '''return the domain DN'''
         return str(self.get_default_basedn())

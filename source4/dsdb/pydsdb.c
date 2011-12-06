@@ -945,6 +945,25 @@ static PyObject *py_dsdb_am_rodc(PyObject *self, PyObject *args)
 	return PyBool_FromLong(am_rodc);
 }
 
+/*
+  call into samdb_is_pdc()
+ */
+static PyObject *py_dsdb_am_pdc(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	int ret;
+	bool am_pdc;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	am_pdc = samdb_is_pdc(ldb);
+	return PyBool_FromLong(am_pdc);
+}
+
 
 static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
@@ -996,6 +1015,9 @@ static PyMethodDef py_dsdb_methods[] = {
 		NULL },
 	{ "_am_rodc",
 		(PyCFunction)py_dsdb_am_rodc, METH_VARARGS,
+		NULL },
+	{ "_am_pdc",
+		(PyCFunction)py_dsdb_am_pdc, METH_VARARGS,
 		NULL },
 	{ "_dsdb_set_schema_from_ldif", (PyCFunction)py_dsdb_set_schema_from_ldif, METH_VARARGS,
 		NULL },
