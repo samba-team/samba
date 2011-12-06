@@ -182,6 +182,8 @@ struct ctdb_call_info {
 #define CTDB_BROADCAST_VNNMAP 0xF0000003
 /* send a broadcast to all connected nodes */
 #define CTDB_BROADCAST_CONNECTED 0xF0000004
+/* send a broadcast to selected connected nodes */
+#define CTDB_MULTICAST 0xF0000005
 
 /* the key used for transaction locking on persistent databases */
 #define CTDB_TRANSACTION_LOCK_KEY "__transaction_lock__"
