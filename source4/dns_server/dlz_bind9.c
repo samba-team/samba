@@ -35,11 +35,13 @@
 #include "gen_ndr/ndr_dnsp.h"
 #include "gen_ndr/server_id.h"
 #include "messaging/messaging.h"
+#include "lib/cmdline/popt_common.h"
 #include "dlz_minimal.h"
 
 
 struct b9_options {
 	const char *url;
+	const char *debug;
 };
 
 struct dlz_bind9_data {
@@ -437,12 +439,23 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 				  unsigned int argc, char *argv[],
 				  struct b9_options *options)
 {
-	if (argc == 2) {
-		options->url = talloc_strdup(state, argv[1]);
-		if (options->url == NULL) {
-			return ISC_R_NOMEMORY;
+	int opt;
+	poptContext pc;
+	struct poptOption long_options[] = {
+		{ "url", 'H', POPT_ARG_STRING, &options->url, 0, "database URL", "URL" },
+		{ "debug", 'd', POPT_ARG_STRING, &options->debug, 0, "debug level", "DEBUG" },
+		{ NULL }
+	};
+
+	pc = poptGetContext("dlz_bind9", argc, (const char **)argv, long_options,
+			POPT_CONTEXT_KEEP_FIRST);
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		default:
+			state->log(ISC_LOG_ERROR, "dlz_bind9: Invalid option %s: %s",
+				   poptBadOption(pc, 0), poptStrerror(opt));
+			return ISC_R_FAILURE;
 		}
-		state->log(ISC_LOG_INFO, "samba_dlz: Using samdb URL %s", options->url);
 	}
 
 	return ISC_R_SUCCESS;
@@ -478,6 +491,9 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	}
 	va_end(ap);
 
+	/* Do not install samba signal handlers */
+	fault_setup_disable();
+
 	/* Start logging */
 	setup_logging("samba_dlz", DEBUG_DEFAULT_STDERR);
 
@@ -498,6 +514,12 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		goto failed;
 	}
 
+	if (state->options.debug) {
+		lpcfg_do_global_parameter(state->lp, "log level", state->options.debug);
+	} else {
+		lpcfg_do_global_parameter(state->lp, "log level", "0");
+	}
+
 	if (smb_krb5_init_context(state, state->ev_ctx, state->lp, &state->smb_krb5_ctx) != 0) {
 		result = ISC_R_NOMEMORY;
 		goto failed;
@@ -516,9 +538,6 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 			goto failed;
 		}
 	}
-
-	/* Do not install samba signal handlers */
-	fault_setup_disable();
 
 	state->samdb = samdb_connect_url(state, state->ev_ctx, state->lp,
 					system_session(state->lp), 0, state->options.url);
