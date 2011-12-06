@@ -54,10 +54,18 @@ enum rpc_service_mode_e rpc_service_mode(const char *name)
 		pipe_name = "ntsvcs";
 	}
 
-	def = "embedded";
-	for (i = 0; rpc_service_defaults[i].name; i++) {
-		if (strcasecmp_m(pipe_name, rpc_service_defaults[i].name) == 0) {
-			def = rpc_service_defaults[i].def_mode;
+	def = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+				   "rpc_server", "default", NULL);
+	if (def == NULL) {
+		for (i = 0; rpc_service_defaults[i].name; i++) {
+			if (strcasecmp_m(pipe_name, rpc_service_defaults[i].name) == 0) {
+				def = rpc_service_defaults[i].def_mode;
+				break;
+			}
+		}
+		/* if the default is unspecified then use 'embedded' */
+		if (def == NULL) {
+			def = "embedded";
 		}
 	}
 
