@@ -34,7 +34,8 @@ from samba.netcmd import (
     SuperCommand,
     )
 from samba.samdb import SamDB
-from samba import dsdb, dcerpc
+from samba import dsdb
+from samba.dcerpc import security
 from samba.ndr import ndr_unpack
 import samba.security
 import samba.auth
@@ -43,6 +44,7 @@ from samba.netcmd.common import netcmd_finddc
 from samba import policy
 from samba import smb
 import uuid
+from samba.ntacls import dsacl2fsacl
 
 
 def samdb_connect(ctx):
@@ -336,13 +338,13 @@ class cmd_list(Command):
                         continue
 
                     secdesc_ndr = gmsg[0]['ntSecurityDescriptor'][0]
-                    secdesc = ndr_unpack(dcerpc.security.descriptor, secdesc_ndr)
+                    secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
 
                     try:
                         samba.security.access_check(secdesc, token,
-                                                    dcerpc.security.SEC_STD_READ_CONTROL |
-                                                    dcerpc.security.SEC_ADS_LIST |
-                                                    dcerpc.security.SEC_ADS_READ_PROP)
+                                                    security.SEC_STD_READ_CONTROL |
+                                                    security.SEC_ADS_LIST |
+                                                    security.SEC_ADS_READ_PROP)
                     except RuntimeError:
                         self.outf.write("Failed access check on %s\n" % msg.dn)
                         continue
@@ -406,7 +408,7 @@ class cmd_show(Command):
             raise CommandError("GPO %s does not exist" % gpo, e)
 
         secdesc_ndr = msg['ntSecurityDescriptor'][0]
-        secdesc = ndr_unpack(dcerpc.security.descriptor, secdesc_ndr)
+        secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
 
         self.outf.write("GPO          : %s\n" % msg['name'][0])
         self.outf.write("display name : %s\n" % msg['displayName'][0])
@@ -912,40 +914,10 @@ class cmd_create(Command):
         # Get new security descriptor
         msg = get_gpo_info(self.samdb, gpo=gpo)[0]
         ds_sd_ndr = msg['ntSecurityDescriptor'][0]
-        ds_sd = ndr_unpack(dcerpc.security.descriptor, ds_sd_ndr)
+        ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
 
         # Create a file system security descriptor
-        fs_sd = dcerpc.security.descriptor()
-        fs_sd.owner_sid = ds_sd.owner_sid
-        fs_sd.group_sid = ds_sd.group_sid
-        fs_sd.type = ds_sd.type
-        fs_sd.revision = ds_sd.revision
-
-        # Copy sacl
-        fs_sd.sacl = ds_sd.sacl
-
-        # Copy dacl
-        dacl = ds_sd.dacl
-        for ace in dacl.aces:
-            # Don't add the allow for SID_BUILTIN_PREW2K
-            if (not (ace.type & dcerpc.security.SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) and 
-                    ace.trustee == dcerpc.security.SID_BUILTIN_PREW2K):
-                continue
-
-            # Copy the ace from the directory server security descriptor
-            new_ace = ace
-
-            # Set specific inheritance flags for within the GPO
-            new_ace.flags |= (dcerpc.security.SEC_ACE_FLAG_OBJECT_INHERIT |
-                             dcerpc.security.SEC_ACE_FLAG_CONTAINER_INHERIT)
-            if ace.trustee == dcerpc.security.SID_CREATOR_OWNER:
-                new_ace.flags |= dcerpc.security.SEC_ACE_FLAG_INHERIT_ONLY
-
-            # Get a directory access mask from the assigned access mask on the ldap object
-            new_ace.access_mask = policy.ads_to_dir_access_mask(ace.access_mask)
-
-            # Add the ace to DACL
-            fs_sd.dacl_add(new_ace)
+        fs_sd = security.descriptor(dsacl2fsacl(ds_sd, self.samdb.get_domain_sid()))
 
         # Set ACL
         try:
