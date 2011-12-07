@@ -478,7 +478,7 @@ int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
-struct traverse_state {
+struct vacuum_traverse_state {
 	bool error;
 	struct tdb_context *dest_db;
 };
@@ -488,7 +488,7 @@ struct traverse_state {
  */
 static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *private)
 {
-	struct traverse_state *state = (struct traverse_state *)private;
+	struct vacuum_traverse_state *state = (struct vacuum_traverse_state *)private;
 	if (tdb_store(state->dest_db, key, data, TDB_INSERT) != 0) {
 		state->error = true;
 		return -1;
@@ -502,7 +502,7 @@ static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 static int ctdb_repack_tdb(struct tdb_context *tdb)
 {
 	struct tdb_context *tmp_db;
-	struct traverse_state state;
+	struct vacuum_traverse_state state;
 
 	if (tdb_transaction_start(tdb) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to start transaction\n"));
