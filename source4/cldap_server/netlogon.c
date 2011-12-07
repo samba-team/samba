@@ -61,6 +61,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	struct ldb_result *dom_res = NULL, *user_res = NULL;
 	int ret;
 	const char **services = lpcfg_server_services(lp_ctx);
+	const char **rpc_services = lpcfg_dcerpc_endpoint_servers(lp_ctx);
 	uint32_t server_type;
 	const char *pdc_name;
 	struct GUID domain_uuid;
@@ -244,6 +245,10 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	if (str_list_check(services, "kdc")) {
 		server_type |= DS_SERVER_KDC;
+	}
+
+	if (str_list_check(rpc_services, "dnsserver")) {
+		server_type |= DS_DNS_CONTROLLER;
 	}
 
 	if (samdb_rodc(sam_ctx, &am_rodc) == LDB_SUCCESS && !am_rodc) {
