@@ -32,21 +32,33 @@ struct db_tdb_ctx {
 static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag);
 static NTSTATUS db_tdb_delete(struct db_record *rec);
 
+static void db_tdb_log_key(const char *prefix, TDB_DATA key)
+{
+	size_t len;
+	char *keystr;
+
+	if (DEBUGLEVEL < 10) {
+		return;
+	}
+	len = key.dsize;
+	if (DEBUGLEVEL == 10) {
+		/*
+		 * Only fully spam at debuglevel > 10
+		 */
+		len = MIN(10, key.dsize);
+	}
+	keystr = hex_encode_talloc(talloc_tos(), (unsigned char *)(key.dptr),
+				   len);
+	DEBUG(10, ("%s key %s\n", prefix, keystr));
+	TALLOC_FREE(keystr);
+}
+
 static int db_tdb_record_destr(struct db_record* data)
 {
 	struct db_tdb_ctx *ctx =
 		talloc_get_type_abort(data->private_data, struct db_tdb_ctx);
 
-	/* This hex_encode_talloc() call allocates memory on data context. By way how current 
-	   __talloc_free() code works, it is OK to allocate in the destructor as 
-	   the children of data will be freed after call to the destructor and this 
-	   new 'child' will be caught and freed correctly.
-	 */
-	DEBUG(10, (DEBUGLEVEL > 10
-		   ? "Unlocking key %s\n" : "Unlocking key %.20s\n",
-		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
-			      data->key.dsize)));
-
+	db_tdb_log_key("Unlocking", data->key);
 	tdb_chainunlock(ctx->wtdb->tdb, data->key);
 	return 0;
 }
@@ -95,14 +107,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 						       struct db_tdb_ctx);
 	struct tdb_fetch_locked_state state;
 
-	/* Do not accidently allocate/deallocate w/o need when debug level is lower than needed */
-	if(DEBUGLEVEL >= 10) {
-		char *keystr = hex_encode_talloc(talloc_tos(), (unsigned char*)key.dptr, key.dsize);
-		DEBUG(10, (DEBUGLEVEL > 10
-			   ? "Locking key %s\n" : "Locking key %.20s\n",
-			   keystr));
-		TALLOC_FREE(keystr);
-	}
+	db_tdb_log_key("Locking", key);
 
 	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
