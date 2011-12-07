@@ -84,6 +84,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_randrec tests/bin/ctdb_persistent \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
 	tests/bin/ctdb_takeover_tests tests/bin/ctdb_update_record \
+	tests/bin/ctdb_parse_nodestring \
 	@INFINIBAND_BINS@
 
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool @CTDB_PMDA@
@@ -234,18 +235,24 @@ tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_transaction.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 CTDB_SERVER_MOST_OBJ = $(CTDB_SERVER_OBJ:server/ctdbd.o=)
-CTDB_TEST_C = $(CTDB_SERVER_MOST_OBJ:.o=.c) tests/src/ctdbd_test.c
+CTDBD_TEST_C = $(CTDB_SERVER_MOST_OBJ:.o=.c) tests/src/ctdbd_test.c
+
+CTDB_TEST_C = $(CTDB_CLIENT_OBJ:.o=.c) tools/ctdb.c tools/ctdb_vacuum.c  tests/src/ctdb_test.c
+
 CTDB_TEST_OBJ =  @TALLOC_OBJ@ @TDB_OBJ@ \
 	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @TEVENT_OBJ@ $(SOCKET_WRAPPER_OBJ)
 
-CTDB_TEST_DEPENDS = $(CTDB_TEST_OBJ) $(CTDB_SERVER_MOST_C) \
-	tests/src/ctdbd_test.c
-
-tests/src/ctdb_takeover_tests.o: tests/src/ctdb_takeover_tests.c $(CTDB_TEST_C)
+tests/src/ctdb_takeover_tests.o: tests/src/ctdb_takeover_tests.c $(CTDBD_TEST_C)
 
 tests/bin/ctdb_takeover_tests: $(CTDB_TEST_OBJ) tests/src/ctdb_takeover_tests.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_takeover_tests.o $(CTDB_TEST_OBJ) $(LIB_FLAGS)
+
+tests/src/ctdb_parse_nodestring.o: tests/src/ctdb_parse_nodestring.c tests/src/libctdb_test.c $(CTDB_TEST_C)
+
+tests/bin/ctdb_parse_nodestring: $(CTDB_TEST_OBJ) tests/src/ctdb_parse_nodestring.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_parse_nodestring.o $(CTDB_TEST_OBJ) @POPT_OBJ@ $(LIB_FLAGS)
 
 tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
