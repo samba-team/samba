@@ -761,4 +761,6 @@ void init_tevent(void)
 
 	Py_INCREF(&TeventFd_Type);
 	PyModule_AddObject(m, "Fd", (PyObject *)&TeventFd_Type);
+
+	PyModule_AddObject(m, "__version__", PyString_FromString(PACKAGE_VERSION));
 }

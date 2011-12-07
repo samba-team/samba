@@ -22,6 +22,7 @@
 #   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 
 from _tevent import (
+    __version__,
     backend_list,
     Context,
     Signal,
