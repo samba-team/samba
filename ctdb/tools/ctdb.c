@@ -73,47 +73,6 @@ static int control_version(struct ctdb_context *ctdb, int argc, const char **arg
 		abort();						\
 	}} while (0)
 
-/*
-  verify that a node exists and is reachable
- */
-static void verify_node(struct ctdb_context *ctdb)
-{
-	int ret;
-	struct ctdb_node_map *nodemap=NULL;
-
-	if (options.pnn == CTDB_CURRENT_NODE) {
-		return;
-	}
-	if (options.pnn == CTDB_BROADCAST_ALL) {
-		return;
-	}
-
-	/* verify the node exists */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		exit(10);
-	}
-	if (options.pnn >= nodemap->num) {
-		DEBUG(DEBUG_ERR, ("Node %u does not exist\n", options.pnn));
-		exit(ERR_NONODE);
-	}
-	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_DELETED) {
-		DEBUG(DEBUG_ERR, ("Node %u is DELETED\n", options.pnn));
-		exit(ERR_DISNODE);
-	}
-	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_DISCONNECTED) {
-		DEBUG(DEBUG_ERR, ("Node %u is DISCONNECTED\n", options.pnn));
-		exit(ERR_DISNODE);
-	}
-
-	/* verify we can access the node */
-	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (ret == -1) {
-		DEBUG(DEBUG_ERR,("Can not access node. Node is not operational.\n"));
-		exit(10);
-	}
-}
-
 /* Pretty print the flags to a static buffer in human-readable format.
  * This never returns NULL!
  */
@@ -5524,9 +5483,6 @@ int main(int argc, const char *argv[])
 			      &options.nodes, &options.pnn)) {
 		usage();
 	}
-
-	/* verify the node exists */
-	verify_node(ctdb);
 
 	if (options.pnn == CTDB_CURRENT_NODE) {
 		options.pnn = options.nodes[0];
