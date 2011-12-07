@@ -97,8 +97,7 @@ void ctdb_test_read_ctdb_public_ip_list(void)
 	talloc_free(tmp_ctx);
 }
 
-/* Format of each line is "IP pnn" - the separator has to be at least
- * 1 space (not a tab or whatever - a space!).
+/* Format of each line is "IP CURRENT_PNN ALLOWED_PNN,...".
  */
 static bool
 read_ctdb_public_ip_info(TALLOC_CTX *ctx,
