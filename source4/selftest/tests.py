@@ -386,7 +386,7 @@ for env in ["dc", "s4member"]:
 
 nsstest4 = binpath("nsstest")
 if os.path.exists(nsstest4):
-    plantestsuite("samba4.nss.test using winbind(s4member)", "s4member", [valgrindify(nsstest4), os.path.join(samba4bindir, "shared/libnss_winbind.so")])
+    plantestsuite("samba4.nss.test using winbind(s4member)", "s4member", [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "default/nsswitch/libnss-winbind.so")])
 else:
     skiptestsuite("samba4.nss.test using winbind(s4member)", "nsstest not available")
 
