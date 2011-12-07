@@ -885,7 +885,7 @@ class cmd_create(Command):
         except Exception, e:
             raise CommandError("Error adding GPO in AD", e)
 
-        # Add cn=User,cn=<guid>
+        # Add cn=Machine,cn=<guid>
         child_dn = gpo_dn
         child_dn.add_child(ldb.Dn(self.samdb, "CN=Machine"))
 
