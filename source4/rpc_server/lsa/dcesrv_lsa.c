@@ -1525,7 +1525,7 @@ static NTSTATUS update_trust_user(TALLOC_CTX *mem_ctx,
 	}
 
 	/* entry exists, just modify secret if any */
-	if (in->count == 0) {
+	if (in == NULL || in->count == 0) {
 		return NT_STATUS_OK;
 	}
 
@@ -1601,6 +1601,7 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	uint32_t *enc_types = NULL;
 	DATA_BLOB trustAuthIncoming, trustAuthOutgoing, auth_blob;
 	struct trustDomainPasswords auth_struct;
+	struct AuthenticationInformationArray *current_passwords = NULL;
 	NTSTATUS nt_status;
 	struct ldb_message **msgs;
 	struct ldb_message *msg;
@@ -1695,18 +1696,21 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 
 	/* TODO: should we fetch previous values from the existing entry
 	 * and append them ? */
-	if (auth_struct.incoming.count) {
+	if (auth_info_int && auth_struct.incoming.count) {
 		nt_status = get_trustauth_inout_blob(dce_call, mem_ctx,
 						     &auth_struct.incoming,
 						     &trustAuthIncoming);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
+
+		current_passwords = &auth_struct.incoming;
+
 	} else {
 		trustAuthIncoming = data_blob(NULL, 0);
 	}
 
-	if (auth_struct.outgoing.count) {
+	if (auth_info_int && auth_struct.outgoing.count) {
 		nt_status = get_trustauth_inout_blob(dce_call, mem_ctx,
 						     &auth_struct.outgoing,
 						     &trustAuthOutgoing);
@@ -1831,17 +1835,15 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	}
 	in_transaction = true;
 
-	ret = ldb_modify(p_state->sam_ldb, msg);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1,("Failed to modify trusted domain record %s: %s\n",
-			 ldb_dn_get_linearized(msg->dn),
-			 ldb_errstring(p_state->sam_ldb)));
-		if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-			nt_status = NT_STATUS_ACCESS_DENIED;
-		} else {
-			nt_status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+	if (msg->num_elements) {
+		ret = ldb_modify(p_state->sam_ldb, msg);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1,("Failed to modify trusted domain record %s: %s\n",
+				 ldb_dn_get_linearized(msg->dn),
+				 ldb_errstring(p_state->sam_ldb)));
+			nt_status = dsdb_ldb_err_to_ntstatus(ret);
+			goto done;
 		}
-		goto done;
 	}
 
 	if (add_incoming || del_incoming) {
@@ -1854,12 +1856,13 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 			goto done;
 		}
 
+		/* We use trustAuthIncoming.data to incidate that auth_struct.incoming is valid */
 		nt_status = update_trust_user(mem_ctx,
 					      p_state->sam_ldb,
 					      p_state->domain_dn,
 					      del_incoming,
 					      netbios_name,
-					      &auth_struct.incoming);
+					      current_passwords);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			goto done;
 		}
