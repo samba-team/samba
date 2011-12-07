@@ -24,6 +24,7 @@ bld.SAMBA_LIBRARY('HDB_SAMBA4_PLUGIN',
                   link_name='modules/hdb/hdb_samba4.so',
                   realname='hdb_samba4.so',
                   install_path='${MODULESDIR}/hdb',
+                  enabled = (bld.CONFIG_SET("USING_SYSTEM_KRB5") and bld.CONFIG_SET("USING_SYSTEM_HDB"))
                   )
 
 bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
