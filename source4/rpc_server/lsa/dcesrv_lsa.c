@@ -32,6 +32,7 @@
 #include "dsdb/common/util.h"
 #include "libcli/security/session.h"
 #include "kdc/kdc-policy.h"
+#include "libcli/lsarpc/util_lsarpc.h"
 
 /*
   this type allows us to distinguish handle types
@@ -1601,7 +1602,7 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	uint32_t *enc_types = NULL;
 	DATA_BLOB trustAuthIncoming, trustAuthOutgoing, auth_blob;
 	struct trustDomainPasswords auth_struct;
-	struct AuthenticationInformationArray *current_passwords = NULL;
+	struct trustAuthInOutBlob *current_passwords = NULL;
 	NTSTATUS nt_status;
 	struct ldb_message **msgs;
 	struct ldb_message *msg;
@@ -1644,8 +1645,23 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	}
 
 	if (auth_info) {
-		/* FIXME: not handled yet */
-		return NT_STATUS_INVALID_PARAMETER;
+		nt_status = auth_info_2_auth_blob(mem_ctx, auth_info,
+						  &trustAuthIncoming,
+						  &trustAuthOutgoing);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+		if (trustAuthIncoming.data) {
+			/* This does the decode of some of this twice, but it is easier that way */
+			nt_status = auth_info_2_trustauth_inout(mem_ctx,
+								auth_info->incoming_count,
+								auth_info->incoming_current_auth_info,
+								NULL,
+								&current_passwords);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
+		}
 	}
 
 	/* decode auth_info_int if set */

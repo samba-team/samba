@@ -32,7 +32,7 @@ DRSUAPI_SRC = '''${COMPRESSION_SRC}'''
 LIBCLI_SPOOLSS_SRC = '''rpc_client/cli_spoolss.c
                      rpc_client/init_spoolss.c'''
 
-LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c rpc_client/util_lsarpc.c'''
+LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c'''
 
 LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
@@ -1077,7 +1077,7 @@ bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
 
 bld.SAMBA3_LIBRARY('libcli_lsa3',
                    source=LIBCLI_LSA_SRC,
-                   deps='RPC_NDR_LSA INIT_LSA', 
+                   deps='RPC_NDR_LSA INIT_LSA UTIL_LSARPC', 
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('libcli_netlogon3',

@@ -48,7 +48,7 @@
 #include "rpc_server/srv_access_check.h"
 #include "../librpc/gen_ndr/ndr_wkssvc.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "rpc_client/util_lsarpc.h"
+#include "../libcli/lsarpc/util_lsarpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

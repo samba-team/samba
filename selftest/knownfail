@@ -106,4 +106,4 @@
 ^samba4.ldap.acl.*.AclSearchTests.test_search4$  # ACL search behaviour not enabled by default
 ^samba4.ldap.acl.*.AclSearchTests.test_search5$  # ACL search behaviour not enabled by default
 ^samba4.ldap.acl.*.AclSearchTests.test_search6$  # ACL search behaviour not enabled by default
-^samba4.rpc.lsa.forest							# Not fully provided by Samba 4
+^samba4.rpc.lsa.forest.trust #Not fully provided by Samba4

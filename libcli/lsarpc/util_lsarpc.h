@@ -17,16 +17,21 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _RPC_CLIENT_UTIL_LSARPC_H_
-#define _RPC_CLIENT_UTIL_LSARPC_H_
+#ifndef _LIBCLI_AUTH_UTIL_LSARPC_H_
+#define _LIBCLI_AUTH_UTIL_LSARPC_H_
 
-/* The following definitions come from rpc_client/util_lsarpc.c  */
+/* The following definitions come from libcli/auth/util_lsarpc.c  */
 
 NTSTATUS auth_blob_2_auth_info(TALLOC_CTX *mem_ctx,
 			       DATA_BLOB incoming, DATA_BLOB outgoing,
 			       struct lsa_TrustDomainInfoAuthInfo *auth_info);
+NTSTATUS auth_info_2_trustauth_inout(TALLOC_CTX *mem_ctx,
+				     uint32_t count,
+				     struct lsa_TrustDomainInfoBuffer *current,
+				     struct lsa_TrustDomainInfoBuffer *previous,
+				     struct trustAuthInOutBlob **iopw_out);
 NTSTATUS auth_info_2_auth_blob(TALLOC_CTX *mem_ctx,
 			       struct lsa_TrustDomainInfoAuthInfo *auth_info,
 			       DATA_BLOB *incoming, DATA_BLOB *outgoing);
 
-#endif /* _RPC_CLIENT_UTIL_LSARPC_H_ */
+#endif /* _LIBCLI_AUTH_UTIL_LSARPC_H_ */

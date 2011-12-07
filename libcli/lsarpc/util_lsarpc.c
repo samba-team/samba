@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_drsblobs.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
-#include "rpc_client/util_lsarpc.h"
+#include "libcli/lsarpc/util_lsarpc.h"
 
 static NTSTATUS ai_array_2_trust_domain_info_buffer(TALLOC_CTX *mem_ctx,
 				uint32_t count,
@@ -186,9 +186,9 @@ NTSTATUS auth_blob_2_auth_info(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS trust_domain_info_buffer_2_ai_array(TALLOC_CTX *mem_ctx,
-				uint32_t count,
-				struct lsa_TrustDomainInfoBuffer *b,
-				struct AuthenticationInformationArray *ai)
+						    uint32_t count,
+						    struct lsa_TrustDomainInfoBuffer *b,
+						    struct AuthenticationInformationArray *ai)
 {
 	NTSTATUS status;
 	int i;
@@ -250,11 +250,11 @@ fail:
 	return status;
 }
 
-static NTSTATUS auth_info_2_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
+NTSTATUS auth_info_2_trustauth_inout(TALLOC_CTX *mem_ctx,
 				     uint32_t count,
 				     struct lsa_TrustDomainInfoBuffer *current,
 				     struct lsa_TrustDomainInfoBuffer *previous,
-				     DATA_BLOB *inout_blob)
+				     struct trustAuthInOutBlob **iopw_out)
 {
 	NTSTATUS status;
 	struct trustAuthInOutBlob *iopw;
@@ -282,6 +282,30 @@ static NTSTATUS auth_info_2_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
 	} else {
 		iopw->previous.count = 0;
 		iopw->previous.array = NULL;
+	}
+
+	*iopw_out = iopw;
+
+	status = NT_STATUS_OK;
+
+done:
+	return status;
+}
+
+static NTSTATUS auth_info_2_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
+				     uint32_t count,
+				     struct lsa_TrustDomainInfoBuffer *current,
+				     struct lsa_TrustDomainInfoBuffer *previous,
+				     DATA_BLOB *inout_blob)
+{
+	NTSTATUS status;
+	struct trustAuthInOutBlob *iopw = NULL;
+	enum ndr_err_code ndr_err;
+
+	status = auth_info_2_trustauth_inout(mem_ctx, count, current, previous, &iopw);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
 	ndr_err = ndr_push_struct_blob(inout_blob, mem_ctx,

@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "librpc/gen_ndr/lsa.h"
-#include "rpc_client/util_lsarpc.h"
+#include "libcli/lsarpc/util_lsarpc.h"
 
 static bool cmp_TrustDomainInfoBuffer(struct lsa_TrustDomainInfoBuffer a,
 				      struct lsa_TrustDomainInfoBuffer b)
