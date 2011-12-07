@@ -1,5 +1,5 @@
 /* 
-   Tests for tools/ctdb.c:parse_nodestring()
+   Tests for tools/ctdb.c and libctdb stubs
 
    Copyright (C) Martin Schwenke 2011
 
@@ -90,7 +90,8 @@ static void test_parse_nodestring(const char *nodestring_s,
 
 	libctdb_test_read_nodemap(ctdb);
 
-	if (parse_nodestring(NULL, nodestring, dd_ok, &nodes, &pnn_mode)) {
+	if (parse_nodestring(NULL, nodestring, CTDB_CURRENT_NODE, dd_ok,
+			     &nodes, &pnn_mode)) {
 		print_nodes(nodes, pnn_mode);
 	}
 
