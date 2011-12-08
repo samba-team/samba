@@ -131,6 +131,8 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
             tests = ncacn_np_tests
         elif transport == "ncacn_ip_tcp":
             tests = ncacn_ip_tcp_tests
+        else:
+            raise AssertionError("invalid transport %r"% transport)
         for t in tests:
             plansmbtorturetestsuite(t, env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
         plansmbtorturetestsuite('rpc.samba3-sharesec', env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:share=tmp'], "samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions))
@@ -157,6 +159,8 @@ for transport in ["ncacn_np", "ncacn_ip_tcp"]:
         tests = slow_ncacn_np_tests
     elif transport == "ncacn_ip_tcp":
         tests = slow_ncacn_ip_tcp_tests
+    else:
+        raise AssertionError("Invalid transport %r" % transport)
     for t in tests:
         plansmbtorturetestsuite(t, env, ["%s:$SERVER" % transport, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s" % (t, transport))
 
