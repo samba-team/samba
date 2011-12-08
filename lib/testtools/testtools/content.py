@@ -148,7 +148,7 @@ def content_from_file(path, content_type=None, chunk_size=DEFAULT_CHUNK_SIZE,
     :param content_type: The type of content.  If not specified, defaults
         to UTF8-encoded text/plain.
     :param chunk_size: The size of chunks to read from the file.
-        Defaults to `DEFAULT_CHUNK_SIZE`.
+        Defaults to ``DEFAULT_CHUNK_SIZE``.
     :param buffer_now: If True, read the file from disk now and keep it in
         memory. Otherwise, only read when the content is serialized.
     """
@@ -177,7 +177,7 @@ def content_from_stream(stream, content_type=None,
     :param content_type: The type of content. If not specified, defaults
         to UTF8-encoded text/plain.
     :param chunk_size: The size of chunks to read from the file.
-        Defaults to `DEFAULT_CHUNK_SIZE`.
+        Defaults to ``DEFAULT_CHUNK_SIZE``.
     :param buffer_now: If True, reads from the stream right now. Otherwise,
         only reads when the content is serialized. Defaults to False.
     """
@@ -208,7 +208,7 @@ def attach_file(detailed, path, name=None, content_type=None,
                 chunk_size=DEFAULT_CHUNK_SIZE, buffer_now=True):
     """Attach a file to this test as a detail.
 
-    This is a convenience method wrapping around `addDetail`.
+    This is a convenience method wrapping around ``addDetail``.
 
     Note that unless 'read_now' is explicitly passed in as True, the file
     *must* exist when the test result is called with the results of this

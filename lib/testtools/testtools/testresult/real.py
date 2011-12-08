@@ -12,6 +12,7 @@ __all__ = [
 
 import datetime
 import sys
+import traceback
 import unittest
 
 from testtools.compat import all, _format_exc_info, str_is_unicode, _u
@@ -34,6 +35,9 @@ class UTC(datetime.tzinfo):
         return _ZERO
 
 utc = UTC()
+
+STDOUT_LINE = '\nStdout:\n%s'
+STDERR_LINE = '\nStderr:\n%s'
 
 
 class TestResult(unittest.TestResult):
@@ -137,22 +141,43 @@ class TestResult(unittest.TestResult):
         """
         return not (self.errors or self.failures or self.unexpectedSuccesses)
 
-    if str_is_unicode:
-        # Python 3 and IronPython strings are unicode, use parent class method
-        _exc_info_to_unicode = unittest.TestResult._exc_info_to_string
-    else:
-        # For Python 2, need to decode components of traceback according to
-        # their source, so can't use traceback.format_exception
-        # Here follows a little deep magic to copy the existing method and
-        # replace the formatter with one that returns unicode instead
-        from types import FunctionType as __F, ModuleType as __M
-        __f = unittest.TestResult._exc_info_to_string.im_func
-        __g = dict(__f.func_globals)
-        __m = __M("__fake_traceback")
-        __m.format_exception = _format_exc_info
-        __g["traceback"] = __m
-        _exc_info_to_unicode = __F(__f.func_code, __g, "_exc_info_to_unicode")
-        del __F, __M, __f, __g, __m
+    def _exc_info_to_unicode(self, err, test):
+        """Converts a sys.exc_info()-style tuple of values into a string.
+
+        Copied from Python 2.7's unittest.TestResult._exc_info_to_string.
+        """
+        exctype, value, tb = err
+        # Skip test runner traceback levels
+        while tb and self._is_relevant_tb_level(tb):
+            tb = tb.tb_next
+
+        # testtools customization. When str is unicode (e.g. IronPython,
+        # Python 3), traceback.format_exception returns unicode. For Python 2,
+        # it returns bytes. We need to guarantee unicode.
+        if str_is_unicode:
+            format_exception = traceback.format_exception
+        else:
+            format_exception = _format_exc_info
+
+        if test.failureException and isinstance(value, test.failureException):
+            # Skip assert*() traceback levels
+            length = self._count_relevant_tb_levels(tb)
+            msgLines = format_exception(exctype, value, tb, length)
+        else:
+            msgLines = format_exception(exctype, value, tb)
+
+        if getattr(self, 'buffer', None):
+            output = sys.stdout.getvalue()
+            error = sys.stderr.getvalue()
+            if output:
+                if not output.endswith('\n'):
+                    output += '\n'
+                msgLines.append(STDOUT_LINE % output)
+            if error:
+                if not error.endswith('\n'):
+                    error += '\n'
+                msgLines.append(STDERR_LINE % error)
+        return ''.join(msgLines)
 
     def _err_details_to_string(self, test, err=None, details=None):
         """Convert an error in exc_info form or a contents dict to a string."""

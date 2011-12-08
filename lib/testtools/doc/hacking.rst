@@ -147,7 +147,7 @@ Release tasks
 
 .. _PEP 8: http://www.python.org/dev/peps/pep-0008/
 .. _unittest: http://docs.python.org/library/unittest.html
-.. _~testtools-dev: https://launchpad.net/~testtools-dev
+.. _~testtools-committers: https://launchpad.net/~testtools-committers
 .. _MIT license: http://www.opensource.org/licenses/mit-license.php
 .. _Sphinx: http://sphinx.pocoo.org/
 .. _restructuredtext: http://docutils.sourceforge.net/rst.html

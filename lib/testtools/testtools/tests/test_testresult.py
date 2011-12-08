@@ -74,6 +74,13 @@ def make_failing_test():
     return Test("failed")
 
 
+def make_mismatching_test():
+    class Test(TestCase):
+        def mismatch(self):
+            self.assertEqual(1, 2)
+    return Test("mismatch")
+
+
 def make_unexpectedly_successful_test():
     class Test(TestCase):
         def succeeded(self):
@@ -414,6 +421,19 @@ class TestTestResult(TestCase):
                 '  File "...testtools...tests...test_testresult.py", line ..., in error\n'
                 '    1/0\n'
                 'ZeroDivisionError: ...\n',
+                doctest.ELLIPSIS))
+
+    def test_traceback_formatting_with_stack_hidden_mismatch(self):
+        result = self.makeResult()
+        test = make_mismatching_test()
+        run_with_stack_hidden(True, test.run, result)
+        self.assertThat(
+            result.failures[0][1],
+            DocTestMatches(
+                'Traceback (most recent call last):\n'
+                '  File "...testtools...tests...test_testresult.py", line ..., in mismatch\n'
+                '    self.assertEqual(1, 2)\n'
+                '...MismatchError: 1 != 2\n',
                 doctest.ELLIPSIS))
 
 

@@ -445,6 +445,110 @@ be able to do, if you think about it::
       self.assertThat('foo', MatchesRegex('fo+'))
 
 
+File- and path-related matchers
+-------------------------------
+
+testtools also has a number of matchers to help with asserting things about
+the state of the filesystem.
+
+PathExists
+~~~~~~~~~~
+
+Matches if a path exists::
+
+  self.assertThat('/', PathExists())
+
+
+DirExists
+~~~~~~~~~
+
+Matches if a path exists and it refers to a directory::
+
+  # This will pass on most Linux systems.
+  self.assertThat('/home/', DirExists())
+  # This will not
+  self.assertThat('/home/jml/some-file.txt', DirExists())
+
+
+FileExists
+~~~~~~~~~~
+
+Matches if a path exists and it refers to a file (as opposed to a directory)::
+
+  # This will pass on most Linux systems.
+  self.assertThat('/bin/true', FileExists())
+  # This will not.
+  self.assertThat('/home/', FileExists())
+
+
+DirContains
+~~~~~~~~~~~
+
+Matches if the given directory contains the specified files and directories.
+Say we have a directory ``foo`` that has the files ``a``, ``b`` and ``c``,
+then::
+
+  self.assertThat('foo', DirContains(['a', 'b', 'c']))
+
+will match, but::
+
+  self.assertThat('foo', DirContains(['a', 'b']))
+
+will not.
+
+The matcher sorts both the input and the list of names we get back from the
+filesystem.
+
+You can use this in a more advanced way, and match the sorted directory
+listing against an arbitrary matcher::
+
+  self.assertThat('foo', DirContains(matcher=Contains('a')))
+
+
+FileContains
+~~~~~~~~~~~~
+
+Matches if the given file has the specified contents.  Say there's a file
+called ``greetings.txt`` with the contents, ``Hello World!``::
+
+  self.assertThat('greetings.txt', FileContains("Hello World!"))
+
+will match.
+
+You can also use this in a more advanced way, and match the contents of the
+file against an arbitrary matcher::
+
+  self.assertThat('greetings.txt', FileContains(matcher=Contains('!')))
+
+
+HasPermissions
+~~~~~~~~~~~~~~
+
+Used for asserting that a file or directory has certain permissions.  Uses
+octal-mode permissions for both input and matching.  For example::
+
+  self.assertThat('/tmp', HasPermissions('1777'))
+  self.assertThat('id_rsa', HasPermissions('0600'))
+
+This is probably more useful on UNIX systems than on Windows systems.
+
+
+SamePath
+~~~~~~~~
+
+Matches if two paths actually refer to the same thing.  The paths don't have
+to exist, but if they do exist, ``SamePath`` will resolve any symlinks.::
+
+  self.assertThat('somefile', SamePath('childdir/../somefile'))
+
+
+TarballContains
+~~~~~~~~~~~~~~~
+
+Matches the contents of a tarball.  In many ways, much like ``DirContains``,
+but instead of matching on ``os.listdir`` matches on ``TarFile.getnames``.
+
+
 Combining matchers
 ------------------
 
@@ -550,7 +654,11 @@ more information in error messages is a big help.
 
 The second reason is that it is sometimes useful to give a name to a set of
 matchers. ``has_und_at_both_ends`` is a bit contrived, of course, but it is
-clear.
+clear.  The ``FileExists`` and ``DirExists`` matchers included in testtools
+are perhaps better real examples.
+
+If you want only the first mismatch to be reported, pass ``first_only=True``
+as a keyword parameter to ``MatchesAll``.
 
 
 MatchesAny
@@ -594,6 +702,9 @@ For example::
           [1, 2, 3], MatchesListwise(map(Equals, [1, 2, 3])))
 
 This is useful for writing custom, domain-specific matchers.
+
+If you want only the first mismatch to be reported, pass ``first_only=True``
+to ``MatchesListwise``.
 
 
 MatchesSetwise
@@ -643,6 +754,30 @@ object must equal each attribute of the example object.  For example::
       matcher = MatchesStructure.fromExample(foo, 'a', 'b')
 
 is exactly equivalent to ``matcher`` in the previous example.
+
+
+MatchesPredicate
+~~~~~~~~~~~~~~~~
+
+Sometimes, all you want to do is create a matcher that matches if a given
+function returns True, and mismatches if it returns False.
+
+For example, you might have an ``is_prime`` function and want to make a
+matcher based on it::
+
+  def test_prime_numbers(self):
+      IsPrime = MatchesPredicate(is_prime, '%s is not prime.')
+      self.assertThat(7, IsPrime)
+      self.assertThat(1983, IsPrime)
+      # This will fail.
+      self.assertThat(42, IsPrime)
+
+Which will produce the error message::
+
+  Traceback (most recent call last):
+    File "...", line ..., in test_prime_numbers
+      self.assertThat(42, IsPrime)
+  MismatchError: 42 is not prime.
 
 
 Raises

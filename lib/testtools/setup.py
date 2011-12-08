@@ -45,7 +45,10 @@ def get_version():
         return pkg_info_version
     revno = get_revno()
     if revno is None:
-        return "snapshot"
+        # Apparently if we just say "snapshot" then distribute won't accept it
+        # as satisfying versioned dependencies. This is a problem for the
+        # daily build version.
+        return "snapshot-%s" % (version,)
     if phase == 'alpha':
         # No idea what the next version will be
         return 'next-r%s' % revno

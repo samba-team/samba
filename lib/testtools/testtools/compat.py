@@ -128,7 +128,7 @@ else:
 
 
 def _slow_escape(text):
-    """Escape unicode `text` leaving printable characters unmodified
+    """Escape unicode ``text`` leaving printable characters unmodified
 
     The behaviour emulates the Python 3 implementation of repr, see
     unicode_repr in unicodeobject.c and isprintable definition.
@@ -158,7 +158,8 @@ def _slow_escape(text):
 
 
 def text_repr(text, multiline=None):
-    """Rich repr for `text` returning unicode, triple quoted if `multiline`"""
+    """Rich repr for ``text`` returning unicode, triple quoted if ``multiline``.
+    """
     is_py3k = sys.version_info > (3, 0)
     nl = _isbytes(text) and bytes((0xA,)) or "\n"
     if multiline is None:

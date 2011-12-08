@@ -9,7 +9,48 @@ NEXT
 Changes
 -------
 
+* ``MatchesAll`` now takes an ``first_only`` keyword argument that changes how
+  mismatches are displayed.  If you were previously passing matchers to
+  ``MatchesAll`` with keyword arguments, then this change might affect your
+  test results.  (Jonathan Lange)
+
+Improvements
+------------
+
+* Actually hide all of the testtools stack for assertion failures. The
+  previous release promised clean stack, but now we actually provide it.
+  (Jonathan Lange, #854769)
+
 * Failed equality assertions now line up. (Jonathan Lange, #879339)
+
+* ``MatchesAll`` and ``MatchesListwise`` both take a ``first_only`` keyword
+  argument.  If True, they will report only on the first mismatch they find,
+  and not continue looking for other possible mismatches.
+  (Jonathan Lange)
+
+* New matchers:
+
+  * ``DirContains`` matches the contents of a directory.
+    (Jonathan Lange, James Westby)
+
+  * ``DirExists`` matches if a directory exists.
+    (Jonathan Lange, James Westby)
+
+  * ``FileContains`` matches the contents of a file.
+    (Jonathan Lange, James Westby)
+
+  * ``FileExists`` matches if a file exists.
+    (Jonathan Lange, James Westby)
+
+  * ``HasPermissions`` matches the permissions of a file.  (Jonathan Lange)
+
+  * ``MatchesPredicate`` matches if a predicate is true.  (Jonathan Lange)
+
+  * ``PathExists`` matches if a path exists.  (Jonathan Lange, James Westby)
+
+  * ``SamePath`` matches if two paths are the same.  (Jonathan Lange)
+
+  * ``TarballContains`` matches the contents of a tarball.  (Jonathan Lange)
 
 
 0.9.12
