@@ -18,7 +18,10 @@
 */
 
 #include "includes.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_file.h"
+#include "dbwrap/dbwrap_private.h"
+#include "lib/util/tdb_wrap.h"
 
 struct db_file_ctx {
 	const char *dirname;
@@ -75,7 +78,6 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 	struct db_locked_file *file;
 	struct flock fl;
 	SMB_STRUCT_STAT statbuf;
-	ssize_t nread;
 	int ret;
 
 	SMB_ASSERT(ctx->locked_record == NULL);
@@ -151,14 +153,14 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 		return NULL;
 	}
 
-	if (sys_fstat(file->fd, &statbuf) != 0) {
+	if (sys_fstat(file->fd, &statbuf, false) != 0) {
 		DEBUG(3, ("Could not fstat %s: %s\n",
 			  file->path, strerror(errno)));
 		TALLOC_FREE(result);
 		return NULL;
 	}
 
-	if (statbuf.st_nlink == 0) {
+	if (statbuf.st_ex_nlink == 0) {
 		/* Someone has deleted it under the lock, retry */
 		TALLOC_FREE(result);
 		goto again;
@@ -167,20 +169,23 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 	result->value.dsize = 0;
 	result->value.dptr = NULL;
 
-	if (statbuf.st_size != 0) {
-		result->value.dsize = statbuf.st_size;
+	if (statbuf.st_ex_size != 0) {
+		NTSTATUS status;
+
+		result->value.dsize = statbuf.st_ex_size;
 		result->value.dptr = talloc_array(result, uint8,
-						  statbuf.st_size);
+						  statbuf.st_ex_size);
 		if (result->value.dptr == NULL) {
 			DEBUG(1, ("talloc failed\n"));
 			TALLOC_FREE(result);
 			return NULL;
 		}
 
-		nread = read_data(file->fd, (char *)result->value.dptr,
+		status = read_data(file->fd, (char *)result->value.dptr,
 				  result->value.dsize);
-		if (nread != result->value.dsize) {
-			DEBUG(3, ("read_data failed: %s\n", strerror(errno)));
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("read_data failed: %s\n",
+				  nt_errstr(status)));
 			TALLOC_FREE(result);
 			return NULL;
 		}
