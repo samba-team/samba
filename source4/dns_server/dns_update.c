@@ -140,7 +140,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 		return DNS_ERR(FORMAT_ERROR);
 	}
 
-	zone = in->questions;
+	zone = &in->questions[0];
 
 	if (zone->question_type != DNS_QTYPE_SOA) {
 		return DNS_ERR(FORMAT_ERROR);
