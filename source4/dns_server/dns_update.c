@@ -126,9 +126,9 @@ static WERROR update_prescan(const struct dns_name_question *zone,
 WERROR dns_server_process_update(struct dns_server *dns,
 				 TALLOC_CTX *mem_ctx,
 				 struct dns_name_packet *in,
-				 const struct dns_res_rec *prereqs, uint16_t prereq_count,
-				 struct dns_res_rec **updates,      uint16_t *update_count,
-				 struct dns_res_rec **additional,   uint16_t *arcount)
+				 struct dns_res_rec *prereqs,     uint16_t prereq_count,
+				 struct dns_res_rec **updates,    uint16_t *update_count,
+				 struct dns_res_rec **additional, uint16_t *arcount)
 {
 	struct dns_name_question *zone;
 	const struct dns_server_zone *z;
