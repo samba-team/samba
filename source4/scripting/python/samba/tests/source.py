@@ -26,9 +26,14 @@ import os
 import re
 import warnings
 
+import samba
+samba.ensure_external_module("pep8", "pep8")
+import pep8
+
 from samba.tests import (
     TestCase,
     )
+
 
 
 def get_python_source_files():
@@ -166,3 +171,48 @@ class TestSource(TestCase):
         if illegal_newlines:
             self.fail(self._format_message(illegal_newlines,
                 'Non-unix newlines were found in the following source files:'))
+
+    pep8_ignore = [
+        'E401',      # multiple imports on one line
+        'E501',      # line too long
+        'E251',      # no spaces around keyword / parameter equals
+        'E201',      # whitespace after '['
+        'E202',      # whitespace before ')'
+        'E302',      # expected 2 blank lines, found 1
+        'E231',      # missing whitespace after ','
+        'E225',      # missing whitespace around operator
+        'E111',      # indentation is not a multiple of four
+        'E261',      # at least two spaces before inline comment
+        'E702',      # multiple statements on one line (semicolon)
+        'E221',      # multiple spaces before operator
+        'E303',      # too many blank lines (2)
+        'E203',      # whitespace before ':'
+        'E222',      # multiple spaces after operator
+        'E301',      # expected 1 blank line, found 0
+        'E211',      # whitespace before '('
+        'E701',      # multiple statements on one line (colon)
+        ]
+
+    def test_pep8(self):
+        pep8.process_options()
+        pep8.options.repeat = True
+        pep8_errors = []
+        pep8_warnings = []
+        for fname, text in get_source_file_contents():
+            def report_error(line_number, offset, text, check):
+                code = text[:4]
+                if code in self.pep8_ignore:
+                    code = 'W' + code[1:]
+                text = code + text[4:]
+                print "%s:%s: %s" % (fname, line_number, text)
+                summary = (fname, line_number, offset, text, check)
+                if code[0] == 'W':
+                    pep8_warnings.append(summary)
+                else:
+                    pep8_errors.append(summary)
+            lines = text.splitlines(True)
+            checker = pep8.Checker(fname, lines)
+            checker.report_error = report_error
+            checker.check_all()
+        if len(pep8_errors) > 0:
+            self.fail('there were %d pep8 errors' % len(pep8_errors))
