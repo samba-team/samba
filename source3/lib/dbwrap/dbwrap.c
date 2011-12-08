@@ -135,16 +135,43 @@ struct db_record *dbwrap_fetch_locked(struct db_context *db,
 	return db->fetch_locked(db, mem_ctx, key);
 }
 
+struct dbwrap_fetch_state {
+	TALLOC_CTX *mem_ctx;
+	TDB_DATA data;
+};
+
+static void dbwrap_fetch_parser(TDB_DATA key, TDB_DATA data,
+				void *private_data)
+{
+	struct dbwrap_fetch_state *state =
+		(struct dbwrap_fetch_state *)private_data;
+
+	state->data.dsize = data.dsize;
+	state->data.dptr = (uint8_t *)talloc_memdup(state->mem_ctx, data.dptr,
+						    data.dsize);
+}
+
 NTSTATUS dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 		      TDB_DATA key, TDB_DATA *value)
 {
+	struct dbwrap_fetch_state state;
+	NTSTATUS status;
+
 	if (value == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	if (db->fetch == NULL) {
-		return dbwrap_fallback_fetch(db, mem_ctx, key, value);
+
+	state.mem_ctx = mem_ctx;
+
+	status = dbwrap_parse_record(db, key, dbwrap_fetch_parser, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	return db->fetch(db, mem_ctx, key, value);
+	if ((state.data.dsize != 0) && (state.data.dptr == NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*value = state.data;
+	return NT_STATUS_OK;
 }
 
 bool dbwrap_exists(struct db_context *db, TDB_DATA key)
