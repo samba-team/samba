@@ -59,11 +59,11 @@ static int dbwrap_fallback_exists(struct db_context *db, TDB_DATA key)
  * Fall back using fetch if no genuine parse operation is provided
  */
 
-int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
-				 int (*parser)(TDB_DATA key,
-					       TDB_DATA data,
-					       void *private_data),
-				 void *private_data)
+static int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
+					int (*parser)(TDB_DATA key,
+						      TDB_DATA data,
+						      void *private_data),
+					void *private_data)
 {
 	TDB_DATA data;
 	int res;

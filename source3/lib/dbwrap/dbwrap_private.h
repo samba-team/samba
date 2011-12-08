@@ -59,12 +59,6 @@ struct db_context {
 	bool persistent;
 };
 
-int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
-				 int (*parser)(TDB_DATA key,
-					       TDB_DATA data,
-					       void *private_data),
-				 void *private_data);
-
 int dbwrap_fallback_wipe(struct db_context *db);
 
 #endif /* __DBWRAP_PRIVATE_H__ */
