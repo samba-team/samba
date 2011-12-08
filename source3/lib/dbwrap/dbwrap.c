@@ -231,11 +231,11 @@ int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 		parser = dbwrap_null_parser;
 	}
 
-	if (db->parse_record) {
-		return db->parse_record(db, key, parser, private_data);
-	} else {
-		return dbwrap_fallback_parse_record(db, key, parser, private_data);
+	if (db->parse_record == NULL) {
+		return dbwrap_fallback_parse_record(db, key, parser,
+						    private_data);
 	}
+	return db->parse_record(db, key, parser, private_data);
 }
 
 int dbwrap_wipe(struct db_context *db)
