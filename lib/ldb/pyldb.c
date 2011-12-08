@@ -2117,6 +2117,7 @@ static PyTypeObject PyLdbModule = {
 	.tp_basicsize = sizeof(PyLdbModuleObject),
 	.tp_dealloc = (destructor)py_ldb_module_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_doc = "LDB module (extension)",
 };
 
 
@@ -2436,6 +2437,7 @@ static PyTypeObject PyLdbMessageElement = {
 	.tp_as_sequence = &py_ldb_msg_element_seq,
 	.tp_new = py_ldb_msg_element_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_doc = "An element of a Message",
 };
 
 
@@ -2836,6 +2838,7 @@ static PyTypeObject PyLdbMessage = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_iter = (getiterfunc)py_ldb_msg_iter,
 	.tp_compare = (cmpfunc)py_ldb_msg_compare,
+	.tp_doc = "A LDB Message",
 };
 
 static PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *tree)
@@ -2864,6 +2867,7 @@ static PyTypeObject PyLdbTree = {
 	.tp_basicsize = sizeof(PyLdbTreeObject),
 	.tp_dealloc = (destructor)py_ldb_tree_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_doc = "A search tree",
 };
 
 /* Ldb_module */
@@ -3247,24 +3251,25 @@ static PyObject *py_binary_decode(PyObject *self, PyObject *args)
 
 static PyMethodDef py_ldb_global_methods[] = {
 	{ "register_module", py_register_module, METH_VARARGS, 
-		"S.register_module(module) -> None\n"
+		"S.register_module(module) -> None\n\n"
 		"Register a LDB module."},
 	{ "timestring", py_timestring, METH_VARARGS, 
-		"S.timestring(int) -> string\n"
+		"S.timestring(int) -> string\n\n"
 		"Generate a LDAP time string from a UNIX timestamp" },
 	{ "string_to_time", py_string_to_time, METH_VARARGS,
-		"S.string_to_time(string) -> int\n"
+		"S.string_to_time(string) -> int\n\n"
 		"Parse a LDAP time string into a UNIX timestamp." },
 	{ "valid_attr_name", py_valid_attr_name, METH_VARARGS,
-		"S.valid_attr_name(name) -> bool\n"
+		"S.valid_attr_name(name) -> bool\n\nn"
 		"Check whether the supplied name is a valid attribute name." },
 	{ "open", (PyCFunction)py_ldb_new, METH_VARARGS|METH_KEYWORDS,
-		NULL },
+		"S.open() -> Ldb\n\n"
+		"Open a new LDB context." },
 	{ "binary_encode", py_binary_encode, METH_VARARGS,
-		"S.binary_encode(string) -> string\n"
+		"S.binary_encode(string) -> string\n\n"
 		"Perform a RFC2254 binary encoding on a string" },
 	{ "binary_decode", py_binary_decode, METH_VARARGS,
-		"S.binary_decode(string) -> string\n"
+		"S.binary_decode(string) -> string\n\n"
 		"Perform a RFC2254 binary decode on a string" },
 	{ NULL }
 };
