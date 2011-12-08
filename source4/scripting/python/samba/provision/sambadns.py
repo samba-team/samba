@@ -819,20 +819,20 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
         return
 
     # If dns_backend is BIND9_FLATFILE
-    #   Populate only CN=MicrosoftDNS,CN=System,<DOMAINDN>
+    #   Populate only CN=MicrosoftDNS,CN=System,<FORESTDN>
     #
     # If dns_backend is SAMBA_INTERNAL or BIND9_DLZ
     #   Populate DNS partitions
 
     # If os_level < 2003 (DS_DOMAIN_FUNCTION_2000)
-    #   All dns records are in CN=MicrosoftDNS,CN=System,<DOMAINDN>
+    #   All dns records are in CN=MicrosoftDNS,CN=System,<FORESTDN>
     #
     # If os_level >= 2003 (DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008,
     #                        DS_DOMAIN_FUNCTION_2008_R2)
-    #   Root server records are in CN=MicrosoftDNS,CN=System,<DOMAINDN>
-    #   Domain records are in CN=MicrosoftDNS,CN=System,<DOMAINDN>
+    #   Root server records are in CN=MicrosoftDNS,CN=System,<FORESTDN>
+    #   Domain records are in CN=MicrosoftDNS,CN=System,<FORESTDN>
     #   Domain records are in CN=MicrosoftDNS,DC=DomainDnsZones,<DOMAINDN>
-    #   Forest records are in CN=MicrosoftDNS,DC=ForestDnsZones,<DOMAINDN>
+    #   Forest records are in CN=MicrosoftDNS,DC=ForestDnsZones,<FORESTDN>
 
     domaindn = names.domaindn
     forestdn = samdb.get_root_basedn().get_linearized()
@@ -850,21 +850,21 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
     add_dns_accounts(samdb, domaindn)
     dnsadmins_sid = get_dnsadmins_sid(samdb, domaindn)
 
-    logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % domaindn)
+    logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % forestdn)
 
     # Set up MicrosoftDNS container
-    add_dns_container(samdb, domaindn, "CN=System", domainsid, dnsadmins_sid)
+    add_dns_container(samdb, forestdn, "CN=System", domainsid, dnsadmins_sid)
 
     # Add root servers
-    add_rootservers(samdb, domaindn, "CN=System")
+    add_rootservers(samdb, forestdn, "CN=System")
 
     if os_level == DS_DOMAIN_FUNCTION_2000:
 
         # Add domain record
-        add_domain_record(samdb, domaindn, "CN=System", dnsdomain, domainsid, dnsadmins_sid)
+        add_domain_record(samdb, forestdn, "CN=System", dnsdomain, domainsid, dnsadmins_sid)
 
         # Add DNS records for a DC in domain
-        add_dc_domain_records(samdb, domaindn, "CN=System", site, dnsdomain,
+        add_dc_domain_records(samdb, forestdn, "CN=System", site, dnsdomain,
                                 hostname, hostip, hostip6)
 
     elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and \
