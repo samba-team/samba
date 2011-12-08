@@ -102,7 +102,7 @@ class cmd_dbcheck(Command):
             started_transaction = True
         try:
             chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose,
-                    fix=fix, yes=yes, quiet=quiet)
+                    fix=fix, yes=yes, quiet=quiet, in_transaction=started_transaction)
 
             if reindex:
                 self.outf.write("Re-indexing...\n")

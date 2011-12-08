@@ -30,7 +30,8 @@ from samba.common import dsdb_Dn
 class dbcheck(object):
     """check a SAM database for errors"""
 
-    def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False, yes=False, quiet=False):
+    def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False, yes=False,
+                 quiet=False, in_transaction=False):
         self.samdb = samdb
         self.dict_oid_name = None
         self.samdb_schema = (samdb_schema or samdb)
@@ -48,6 +49,7 @@ class dbcheck(object):
         self.fix_time_metadata = False
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
+        self.in_transaction = in_transaction
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -423,11 +425,19 @@ class dbcheck(object):
         if '*' in attrs:
             attrs.append("replPropertyMetaData")
 
-        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
-                controls=["extended_dn:1:1", "show_recycled:1", "show_deleted:1"],
-                                attrs=attrs)
+        try:
+            res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
+                                    controls=["extended_dn:1:1", "show_recycled:1", "show_deleted:1"],
+                                    attrs=attrs)
+        except ldb.LdbError, (enum, estr):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                if self.in_transaction:
+                    self.report("ERROR: Object %s disappeared during check" % dn)
+                    return 1
+                return 0
+            raise
         if len(res) != 1:
-            self.report("Object %s disappeared during check" % dn)
+            self.report("ERROR: Object %s failed to load during check" % dn)
             return 1
         obj = res[0]
         error_count = 0
