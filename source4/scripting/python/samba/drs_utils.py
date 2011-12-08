@@ -24,7 +24,7 @@ from samba.net import Net
 import samba, ldb
 
 
-class drsException:
+class drsException(Exception):
     """Base element for drs errors"""
 
     def __init__(self, value):
@@ -35,8 +35,8 @@ class drsException:
 
 
 def drsuapi_connect(server, lp, creds):
-    """
-    make a DRSUAPI connection to the server
+    """Make a DRSUAPI connection to the server.
+
     :param server: the name of the server to connect to
     :param lp: a samba line parameter object
     :param creds: credential used for the connection
@@ -57,15 +57,18 @@ def drsuapi_connect(server, lp, creds):
 
     return (drsuapiBind, drsuapiHandle, bindSupportedExtensions)
 
-def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid, naming_context, req_option):
-    """
+
+def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid,
+        naming_context, req_option):
+    """Send DS replica sync request.
+
     :param drsuapiBind: a drsuapi Bind object
     :param drsuapi_handle: a drsuapi hanle on the drsuapi connection
     :param source_dsa_guid: the guid of the source dsa for the replication
     :param naming_context: the DN of the naming context to replicate
     :param req_options: replication options for the DsReplicaSync call
-    :raise drsException: if any error occur while sending and receiving the reply
-                         for the dsReplicaSync
+    :raise drsException: if any error occur while sending and receiving the
+        reply for the dsReplicaSync
     """
 
     nc = drsuapi.DsReplicaObjectIdentifier()
@@ -81,14 +84,17 @@ def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid, naming_conte
     except Exception, estr:
         raise drsException("DsReplicaSync failed %s" % estr)
 
+
 def sendRemoveDsServer(drsuapiBind, drsuapi_handle, server_dsa_dn, domain):
-    """
+    """Send RemoveDSServer request.
+
     :param drsuapiBind: a drsuapi Bind object
     :param drsuapi_handle: a drsuapi hanle on the drsuapi connection
-    :param server_dsa_dn: a DN object of the server's dsa that we want to demote
+    :param server_dsa_dn: a DN object of the server's dsa that we want to
+        demote
     :param domain: a DN object of the server's domain
-    :raise drsException: if any error occur while sending and receiving the reply
-                         for the DsRemoveDSServer
+    :raise drsException: if any error occur while sending and receiving the
+        reply for the DsRemoveDSServer
     """
 
     try:
@@ -100,6 +106,7 @@ def sendRemoveDsServer(drsuapiBind, drsuapi_handle, server_dsa_dn, domain):
         drsuapiBind.DsRemoveDSServer(drsuapi_handle, 1, req1)
     except Exception, estr:
         raise drsException("DsRemoveDSServer failed %s" % estr)
+
 
 def drs_DsBind(drs):
     '''make a DsBind call, returning the binding handle'''
@@ -139,7 +146,7 @@ def drs_DsBind(drs):
     return (handle, info.info.supported_extensions)
 
 
-class drs_Replicate:
+class drs_Replicate(object):
     '''DRS replication calls'''
 
     def __init__(self, binding_string, lp, creds, samdb):
@@ -238,7 +245,6 @@ class drs_Replicate:
                 if a[0] != '_':
                     setattr(req5, a, getattr(req8, a))
             req = req5
-
 
         while True:
             (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, req_level, req)
