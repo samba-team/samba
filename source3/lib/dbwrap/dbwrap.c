@@ -33,7 +33,7 @@ NTSTATUS dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 {
 	struct db_record *rec;
 
-	rec = db->fetch_locked(db, mem_ctx, key);
+	rec = dbwrap_fetch_locked(db, mem_ctx, key);
 	if (rec == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -68,7 +68,7 @@ int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
 	int res;
 	NTSTATUS status;
 
-	status = db->fetch(db, talloc_tos(), key, &data);
+	status = dbwrap_fetch(db, talloc_tos(), key, &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -81,7 +81,7 @@ int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
 
 static int delete_record(struct db_record *rec, void *data)
 {
-	NTSTATUS status = rec->delete_rec(rec);
+	NTSTATUS status = dbwrap_record_delete(rec);
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
 
@@ -154,12 +154,12 @@ NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 	struct db_record *rec;
 	NTSTATUS status;
 
-	rec = db->fetch_locked(db, talloc_tos(), key);
+	rec = dbwrap_fetch_locked(db, talloc_tos(), key);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = rec->store(rec, data, flags);
+	status = dbwrap_record_store(rec, data, flags);
 	TALLOC_FREE(rec);
 	return status;
 }
@@ -169,11 +169,11 @@ NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key)
 	struct db_record *rec;
 	NTSTATUS status;
 
-	rec = db->fetch_locked(db, talloc_tos(), key);
+	rec = dbwrap_fetch_locked(db, talloc_tos(), key);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = rec->delete_rec(rec);
+	status = dbwrap_record_delete(rec);
 	TALLOC_FREE(rec);
 	return status;
 }
