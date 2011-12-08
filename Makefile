@@ -73,3 +73,6 @@ FORCE:
 
 pydoctor:
 	$(WAF) pydoctor
+
+pep8:
+	$(WAF) pep8

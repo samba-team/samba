@@ -152,6 +152,14 @@ def pydoctor(ctx):
     print("Running: %s" % cmd)
     os.system(cmd)
 
+
+def pep8(ctx):
+    '''run pep8 validator'''
+    cmd='PYTHONPATH=bin/python pep8 -r bin/python/samba'
+    print("Running: %s" % cmd)
+    os.system(cmd)
+
+
 def wafdocs(ctx):
     '''build wafsamba apidocs'''
     from samba_utils import recursive_dirlist
