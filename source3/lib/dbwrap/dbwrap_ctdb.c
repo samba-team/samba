@@ -1196,6 +1196,24 @@ static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
+				     void (*parser)(TDB_DATA key,
+						    TDB_DATA data,
+						    void *private_data),
+				     void *private_data)
+{
+	NTSTATUS status;
+	TDB_DATA data;
+
+	status = db_ctdb_fetch(db, talloc_tos(), key, &data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	parser(key, data, private_data);
+	TALLOC_FREE(data.dptr);
+	return NT_STATUS_OK;
+}
+
 struct traverse_state {
 	struct db_context *db;
 	int (*fn)(struct db_record *rec, void *private_data);
@@ -1491,6 +1509,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	result->private_data = (void *)db_ctdb;
 	result->fetch_locked = db_ctdb_fetch_locked;
 	result->fetch = db_ctdb_fetch;
+	result->parse_record = db_ctdb_parse_record;
 	result->traverse = db_ctdb_traverse;
 	result->traverse_read = db_ctdb_traverse_read;
 	result->get_seqnum = db_ctdb_get_seqnum;
