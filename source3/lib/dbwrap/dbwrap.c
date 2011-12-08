@@ -28,8 +28,9 @@
  * Fall back using fetch_locked if no genuine fetch operation is provided
  */
 
-NTSTATUS dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			       TDB_DATA key, TDB_DATA *data)
+static NTSTATUS dbwrap_fallback_fetch(struct db_context *db,
+				      TALLOC_CTX *mem_ctx,
+				      TDB_DATA key, TDB_DATA *data)
 {
 	struct db_record *rec;
 
@@ -133,7 +134,9 @@ NTSTATUS dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	if (value == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
+	if (db->fetch == NULL) {
+		return dbwrap_fallback_fetch(db, mem_ctx, key, value);
+	}
 	return db->fetch(db, mem_ctx, key, value);
 }
 

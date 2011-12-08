@@ -59,10 +59,6 @@ struct db_context {
 	bool persistent;
 };
 
-NTSTATUS dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			       TDB_DATA key, TDB_DATA *data);
-
-
 int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
 				 int (*parser)(TDB_DATA key,
 					       TDB_DATA data,
