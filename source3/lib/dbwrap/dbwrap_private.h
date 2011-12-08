@@ -59,7 +59,5 @@ struct db_context {
 	bool persistent;
 };
 
-int dbwrap_fallback_wipe(struct db_context *db);
-
 #endif /* __DBWRAP_PRIVATE_H__ */
 

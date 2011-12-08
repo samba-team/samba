@@ -90,7 +90,7 @@ static int delete_record(struct db_record *rec, void *data)
  * Fallback wipe ipmlementation using traverse and delete if no genuine
  * wipe operation is provided
  */
-int dbwrap_fallback_wipe(struct db_context *db)
+static int dbwrap_fallback_wipe(struct db_context *db)
 {
 	NTSTATUS status = dbwrap_trans_traverse(db, &delete_record, NULL);
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
@@ -240,6 +240,9 @@ int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 
 int dbwrap_wipe(struct db_context *db)
 {
+	if (db->wipe == NULL) {
+		return dbwrap_fallback_wipe(db);
+	}
 	return db->wipe(db);
 }
 
