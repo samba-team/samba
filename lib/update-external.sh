@@ -20,4 +20,9 @@ git clone git://www.dnspython.org/dnspython.git "$WORKDIR/dnspython"
 rm -rf "$WORKDIR/dnspython/.git"
 rsync -avz --delete "$WORKDIR/dnspython/" "$TARGETDIR/dnspython/"
 
+echo "Updating pep8..."
+git clone git://github.com/jcrocholl/pep8 "$WORKDIR/pep8"
+rm -rf "$WORKDIR/pep8/.git"
+rsync -avz --delete "$WORKDIR/pep8/" "$TARGETDIR/pep8/"
+
 rm -rf "$WORKDIR"
