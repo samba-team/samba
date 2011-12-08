@@ -92,7 +92,7 @@ static int delete_record(struct db_record *rec, void *data)
  */
 static int dbwrap_fallback_wipe(struct db_context *db)
 {
-	NTSTATUS status = dbwrap_trans_traverse(db, &delete_record, NULL);
+	NTSTATUS status = dbwrap_trans_traverse(db, delete_record, NULL);
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
 
