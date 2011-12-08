@@ -330,18 +330,19 @@ static int db_rbt_wipe(struct db_context *db)
 	return 0;
 }
 
-static int db_rbt_parse_record(struct db_context *db, TDB_DATA key,
-			       int (*parser)(TDB_DATA key, TDB_DATA data,
-					     void *private_data),
-			       void *private_data)
+static NTSTATUS db_rbt_parse_record(struct db_context *db, TDB_DATA key,
+				    void (*parser)(TDB_DATA key, TDB_DATA data,
+						   void *private_data),
+				    void *private_data)
 {
 	struct db_rbt_search_result res;
 	bool found = db_rbt_search_internal(db, key, &res);
 
 	if (!found) {
-		return -1;
+		return NT_STATUS_NOT_FOUND;
 	}
-	return parser(res.key, res.val, private_data);
+	parser(res.key, res.val, private_data);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,

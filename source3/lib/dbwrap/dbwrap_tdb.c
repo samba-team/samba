@@ -218,15 +218,41 @@ static int db_tdb_wipe(struct db_context *db)
 	return tdb_wipe_all(ctx->wtdb->tdb);
 }
 
-static int db_tdb_parse(struct db_context *db, TDB_DATA key,
-			int (*parser)(TDB_DATA key, TDB_DATA data,
-				      void *private_data),
-			void *private_data)
+struct db_tdb_parse_state {
+	void (*parser)(TDB_DATA key, TDB_DATA data,
+		       void *private_data);
+	void *private_data;
+};
+
+/*
+ * tdb_parse_record expects a parser returning int, mixing up tdb and
+ * parser errors. Wrap around that by always returning 0 and have
+ * dbwrap_parse_record expect a parser returning void.
+ */
+
+static int db_tdb_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct db_tdb_parse_state *state =
+		(struct db_tdb_parse_state *)private_data;
+	state->parser(key, data, state->private_data);
+	return 0;
+}
+
+static NTSTATUS db_tdb_parse(struct db_context *db, TDB_DATA key,
+			     void (*parser)(TDB_DATA key, TDB_DATA data,
+					   void *private_data),
+			     void *private_data)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_tdb_ctx);
+	struct db_tdb_parse_state state;
+	int ret;
 
-	return tdb_parse_record(ctx->wtdb->tdb, key, parser, private_data) ? -1 : 0;
+	state.parser = parser;
+	state.private_data = private_data;
+
+	ret = tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_parser, &state);
+	return map_nt_error_from_tdb(ret);
 }
 
 static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag)

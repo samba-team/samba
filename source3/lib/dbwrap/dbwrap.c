@@ -51,32 +51,30 @@ static NTSTATUS dbwrap_fallback_fetch(struct db_context *db,
 
 static int dbwrap_fallback_exists(struct db_context *db, TDB_DATA key)
 {
-	int res = dbwrap_parse_record(db, key, NULL, NULL);
-	return  ( res == -1) ? 0 : 1;
+	NTSTATUS status = dbwrap_parse_record(db, key, NULL, NULL);
+	return NT_STATUS_IS_OK(status) ? 1 : 0;
 }
 
 /*
  * Fall back using fetch if no genuine parse operation is provided
  */
 
-static int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
-					int (*parser)(TDB_DATA key,
-						      TDB_DATA data,
-						      void *private_data),
-					void *private_data)
+static NTSTATUS dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
+					     void (*parser)(TDB_DATA key,
+							    TDB_DATA data,
+							    void *private_data),
+					     void *private_data)
 {
 	TDB_DATA data;
-	int res;
 	NTSTATUS status;
 
 	status = dbwrap_fetch(db, talloc_tos(), key, &data);
 	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
+		return status;
 	}
-
-	res = parser(key, data, private_data);
+	parser(key, data, private_data);
 	TALLOC_FREE(data.dptr);
-	return res;
+	return NT_STATUS_OK;
 }
 
 
@@ -217,15 +215,15 @@ NTSTATUS dbwrap_traverse_read(struct db_context *db,
 	return NT_STATUS_OK;
 }
 
-static int dbwrap_null_parser(TDB_DATA key, TDB_DATA val, void* data)
+static void dbwrap_null_parser(TDB_DATA key, TDB_DATA val, void* data)
 {
-	return 0;
+	return;
 }
 
-int dbwrap_parse_record(struct db_context *db, TDB_DATA key,
-			int (*parser)(TDB_DATA key, TDB_DATA data,
-				      void *private_data),
-			void *private_data)
+NTSTATUS dbwrap_parse_record(struct db_context *db, TDB_DATA key,
+			     void (*parser)(TDB_DATA key, TDB_DATA data,
+					    void *private_data),
+			     void *private_data)
 {
 	if (parser == NULL) {
 		parser = dbwrap_null_parser;

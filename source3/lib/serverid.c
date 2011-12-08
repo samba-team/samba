@@ -230,13 +230,14 @@ struct serverid_exists_state {
 	bool exists;
 };
 
-static int server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
+static void server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
 {
 	struct serverid_exists_state *state =
 		(struct serverid_exists_state *)priv;
 
 	if (data.dsize != sizeof(struct serverid_data)) {
-		return -1;
+		state->exists = false;
+		return;
 	}
 
 	/*
@@ -245,7 +246,6 @@ static int server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
 	 */
 	state->exists = (memcmp(&state->id->unique_id, data.dptr,
 				sizeof(state->id->unique_id)) == 0);
-	return 0;
 }
 
 bool serverid_exists(const struct server_id *id)
@@ -254,6 +254,7 @@ bool serverid_exists(const struct server_id *id)
 	struct serverid_exists_state state;
 	struct serverid_key key;
 	TDB_DATA tdbkey;
+	NTSTATUS status;
 
 	if (procid_is_me(id)) {
 		return true;
@@ -274,7 +275,8 @@ bool serverid_exists(const struct server_id *id)
 	state.id = id;
 	state.exists = false;
 
-	if (dbwrap_parse_record(db, tdbkey, server_exists_parse, &state) != 0) {
+	status = dbwrap_parse_record(db, tdbkey, server_exists_parse, &state);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 	return state.exists;
