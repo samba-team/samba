@@ -873,11 +873,8 @@ class cmd_create(Command):
             raise CommandError("Error adding GPO in AD", e)
 
         # Add cn=User,cn=<guid>
-        child_dn = gpo_dn
-        child_dn.add_child(ldb.Dn(self.samdb, "CN=User"))
-
         m = ldb.Message()
-        m.dn = ldb.Dn(self.samdb, child_dn.get_linearized())
+        m.dn = ldb.Dn(self.samdb, "CN=User,%s" % str(gpo_dn))
         m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
         m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
         try:
@@ -886,11 +883,8 @@ class cmd_create(Command):
             raise CommandError("Error adding GPO in AD", e)
 
         # Add cn=Machine,cn=<guid>
-        child_dn = gpo_dn
-        child_dn.add_child(ldb.Dn(self.samdb, "CN=Machine"))
-
         m = ldb.Message()
-        m.dn = ldb.Dn(self.samdb, child_dn.get_linearized())
+        m.dn = ldb.Dn(self.samdb, "CN=Machine,%s" % str(gpo_dn))
         m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
         m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
         try:
