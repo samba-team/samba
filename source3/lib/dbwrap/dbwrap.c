@@ -65,14 +65,23 @@ static NTSTATUS dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key
 							    void *private_data),
 					     void *private_data)
 {
+	struct db_record *rec;
 	TDB_DATA data;
-	NTSTATUS status;
 
-	status = dbwrap_fetch(db, talloc_tos(), key, &data);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	rec = dbwrap_fetch_locked(db, talloc_tos(), key);
+	if (rec == NULL) {
+		return NT_STATUS_NOT_FOUND;
 	}
+	data = dbwrap_record_get_value(rec);
+
+	data.dptr = talloc_memdup(talloc_tos(), data.dptr, data.dsize);
+	TALLOC_FREE(rec);
+	if (data.dptr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	parser(key, data, private_data);
+
 	TALLOC_FREE(data.dptr);
 	return NT_STATUS_OK;
 }
