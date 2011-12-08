@@ -191,7 +191,7 @@ done:
 	if ((pcap_reloaded) && (post_cache_fill_fn_handled == false)) {
 		/* cleanup old entries only if the operation was successful,
 		 * otherwise keep around the old entries until we can
-		 * successfuly reaload */
+		 * successfully reload */
 		status = printer_list_clean_old();
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to cleanup printer list!\n"));
