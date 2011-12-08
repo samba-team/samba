@@ -1508,7 +1508,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	result->private_data = (void *)db_ctdb;
 	result->fetch_locked = db_ctdb_fetch_locked;
-	result->fetch = db_ctdb_fetch;
 	result->parse_record = db_ctdb_parse_record;
 	result->traverse = db_ctdb_traverse;
 	result->traverse_read = db_ctdb_traverse_read;

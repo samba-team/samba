@@ -25,27 +25,6 @@
 #include "util_tdb.h"
 
 /*
- * Fall back using fetch_locked if no genuine fetch operation is provided
- */
-
-static NTSTATUS dbwrap_fallback_fetch(struct db_context *db,
-				      TALLOC_CTX *mem_ctx,
-				      TDB_DATA key, TDB_DATA *data)
-{
-	struct db_record *rec;
-
-	rec = dbwrap_fetch_locked(db, mem_ctx, key);
-	if (rec == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	data->dsize = rec->value.dsize;
-	data->dptr = talloc_move(mem_ctx, &rec->value.dptr);
-	TALLOC_FREE(rec);
-	return NT_STATUS_OK;
-}
-
-/*
  * Fall back using fetch if no genuine exists operation is provided
  */
 

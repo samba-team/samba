@@ -140,70 +140,6 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	return state.result;
 }
 
-struct tdb_fetch_state {
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS result;
-	TDB_DATA data;
-};
-
-static int db_tdb_fetch_parse(TDB_DATA key, TDB_DATA data,
-			      void *private_data)
-{
-	struct tdb_fetch_state *state =
-		(struct tdb_fetch_state *)private_data;
-
-	if (data.dptr == NULL) {
-		/* should not happen */
-		state->result = NT_STATUS_INTERNAL_DB_ERROR;
-		return -1;
-	}
-
-	state->data.dptr = (uint8 *)talloc_memdup(state->mem_ctx, data.dptr,
-						  data.dsize);
-	if (state->data.dptr == NULL) {
-		state->result = NT_STATUS_NO_MEMORY;
-		return -1;
-	}
-
-	state->data.dsize = data.dsize;
-	return 0;
-}
-
-static NTSTATUS db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			     TDB_DATA key, TDB_DATA *pdata)
-{
-	struct db_tdb_ctx *ctx = talloc_get_type_abort(
-		db->private_data, struct db_tdb_ctx);
-
-	struct tdb_fetch_state state;
-	int ret;
-
-	state.mem_ctx = mem_ctx;
-	state.result = NT_STATUS_OK;
-	state.data = tdb_null;
-
-	ret = tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetch_parse, &state);
-
-	if (ret != 0) {
-		NTSTATUS status;
-
-		if (!NT_STATUS_IS_OK(state.result)) {
-			/* the parser has set an error code. return it */
-			return state.result;
-		}
-
-		status = map_nt_error_from_tdb(tdb_error(ctx->wtdb->tdb));
-		return status;
-	}
-
-	if (!NT_STATUS_IS_OK(state.result)) {
-		return state.result;
-	}
-
-	*pdata = state.data;
-	return NT_STATUS_OK;
-}
-
 static int db_tdb_exists(struct db_context *db, TDB_DATA key)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(
@@ -431,7 +367,6 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	}
 
 	result->fetch_locked = db_tdb_fetch_locked;
-	result->fetch = db_tdb_fetch;
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
 	result->parse_record = db_tdb_parse;
