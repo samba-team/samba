@@ -187,6 +187,24 @@ class DNSTest(TestCase):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
 
+    def test_two_updates(self):
+        "create two update requests"
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = "%s.%s" % (os.getenv('DC_SERVER'), self.get_dns_domain())
+        u = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
+        updates.append(u)
+
+        name = self.get_dns_domain()
+        u = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
+        updates.append(u)
+
+        self.finish_name_packet(p, updates)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
