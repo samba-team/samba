@@ -73,28 +73,29 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 {
 	struct tdb_fetch_locked_state *state =
 		(struct tdb_fetch_locked_state *)private_data;
+	struct db_record *result;
 
-	state->result = (struct db_record *)talloc_size(
+	result = (struct db_record *)talloc_size(
 		state->mem_ctx,
 		sizeof(struct db_record) + key.dsize + data.dsize);
 
-	if (state->result == NULL) {
+	if (result == NULL) {
 		return 0;
 	}
+	state->result = result;
 
-	state->result->key.dsize = key.dsize;
-	state->result->key.dptr = ((uint8 *)state->result)
-		+ sizeof(struct db_record);
-	memcpy(state->result->key.dptr, key.dptr, key.dsize);
+	result->key.dsize = key.dsize;
+	result->key.dptr = ((uint8 *)result) + sizeof(struct db_record);
+	memcpy(result->key.dptr, key.dptr, key.dsize);
 
-	state->result->value.dsize = data.dsize;
+	result->value.dsize = data.dsize;
 
 	if (data.dsize > 0) {
-		state->result->value.dptr = state->result->key.dptr+key.dsize;
-		memcpy(state->result->value.dptr, data.dptr, data.dsize);
+		result->value.dptr = result->key.dptr+key.dsize;
+		memcpy(result->value.dptr, data.dptr, data.dsize);
 	}
 	else {
-		state->result->value.dptr = NULL;
+		result->value.dptr = NULL;
 	}
 
 	return 0;
