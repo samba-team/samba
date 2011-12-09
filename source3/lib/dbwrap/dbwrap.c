@@ -87,7 +87,7 @@ static int delete_record(struct db_record *rec, void *data)
 }
 
 /*
- * Fallback wipe ipmlementation using traverse and delete if no genuine
+ * Fallback wipe implementation using traverse and delete if no genuine
  * wipe operation is provided
  */
 static int dbwrap_fallback_wipe(struct db_context *db)
