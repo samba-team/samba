@@ -142,6 +142,11 @@ WERROR dns_server_process_update(struct dns_server *dns,
 
 	zone = &in->questions[0];
 
+	if (zone->question_class != DNS_QCLASS_IN &&
+	    zone->question_class != DNS_QCLASS_ANY) {
+		return DNS_ERR(NOT_IMPLEMENTED);
+	}
+
 	if (zone->question_type != DNS_QTYPE_SOA) {
 		return DNS_ERR(FORMAT_ERROR);
 	}

@@ -204,6 +204,18 @@ class DNSTest(TestCase):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
 
+    def test_update_wrong_qclass(self):
+        "create update with DNS_QCLASS_NONE"
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = self.get_dns_domain()
+        u = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_NONE)
+        updates.append(u)
+
+        self.finish_name_packet(p, updates)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTIMP)
 
 if __name__ == "__main__":
     import unittest
