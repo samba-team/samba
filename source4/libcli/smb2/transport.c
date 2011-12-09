@@ -227,6 +227,8 @@ void smb2_transport_send(struct smb2_request *req)
 	TALLOC_FREE(transport->compound.reqs);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		req->status = status;
+		req->state = SMB2_REQUEST_ERROR;
 		smbXcli_conn_disconnect(transport->conn, status);
 	}
 }
