@@ -337,6 +337,8 @@ void smbcli_transport_send(struct smbcli_request *req)
 
 	status = smb1cli_req_chain_submit(req->subreqs, num_subreqs);
 	if (!NT_STATUS_IS_OK(status)) {
+		req->status = status;
+		req->state = SMBCLI_REQUEST_ERROR;
 		smbXcli_conn_disconnect(transport->conn, status);
 	}
 }
