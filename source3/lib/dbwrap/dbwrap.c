@@ -34,38 +34,6 @@ static int dbwrap_fallback_exists(struct db_context *db, TDB_DATA key)
 	return NT_STATUS_IS_OK(status) ? 1 : 0;
 }
 
-/*
- * Fall back using fetch if no genuine parse operation is provided
- */
-
-static NTSTATUS dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
-					     void (*parser)(TDB_DATA key,
-							    TDB_DATA data,
-							    void *private_data),
-					     void *private_data)
-{
-	struct db_record *rec;
-	TDB_DATA data;
-
-	rec = dbwrap_fetch_locked(db, talloc_tos(), key);
-	if (rec == NULL) {
-		return NT_STATUS_NOT_FOUND;
-	}
-	data = dbwrap_record_get_value(rec);
-
-	data.dptr = talloc_memdup(talloc_tos(), data.dptr, data.dsize);
-	TALLOC_FREE(rec);
-	if (data.dptr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	parser(key, data, private_data);
-
-	TALLOC_FREE(data.dptr);
-	return NT_STATUS_OK;
-}
-
-
 static int delete_record(struct db_record *rec, void *data)
 {
 	NTSTATUS status = dbwrap_record_delete(rec);
@@ -242,11 +210,6 @@ NTSTATUS dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 {
 	if (parser == NULL) {
 		parser = dbwrap_null_parser;
-	}
-
-	if (db->parse_record == NULL) {
-		return dbwrap_fallback_parse_record(db, key, parser,
-						    private_data);
 	}
 	return db->parse_record(db, key, parser, private_data);
 }
