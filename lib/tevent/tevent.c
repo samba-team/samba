@@ -402,7 +402,6 @@ struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
 
 /*
   schedule an immediate event
-  return NULL on failure
 */
 void _tevent_schedule_immediate(struct tevent_immediate *im,
 				struct tevent_context *ev,
