@@ -562,7 +562,7 @@ static bool get_trust_domain_passwords_auth_blob(TALLOC_CTX *mem_ctx,
 }
 
 static bool test_validate_trust(struct torture_context *tctx,
-				struct dcerpc_binding *binding,
+				const char *binding,
 				const char *trusting_dom_name,
 				const char *trusting_dom_dns_name,
 				const char *trusted_dom_name,
@@ -580,12 +580,15 @@ static bool test_validate_trust(struct torture_context *tctx,
 
 	NTSTATUS status;
 	struct cli_credentials *credentials;
+	struct dcerpc_binding *b;
 	struct dcerpc_pipe *pipe;
 
 	struct netr_GetForestTrustInformation fr;
 	struct lsa_ForestTrustInformation *forest_trust_info;
 	int i;
 
+	status = dcerpc_parse_binding(tctx, binding, &b);
+	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
 
 	credentials = cli_credentials_init(tctx);
 	if (credentials == NULL) {
@@ -604,13 +607,13 @@ static bool test_validate_trust(struct torture_context *tctx,
 					trusted_dom_name, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);
 
-	status = dcerpc_pipe_connect_b(tctx, &pipe, binding,
+	status = dcerpc_pipe_connect_b(tctx, &pipe, b,
 				       &ndr_table_netlogon, credentials,
 				       tctx->ev, tctx->lp_ctx);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		torture_comment(tctx, "Failed to connect to remote server: %s  with %s - %s\n",
-				dcerpc_binding_string(tctx, binding),
+				binding,
 				cli_credentials_get_unparsed_name(credentials, tctx),
 				nt_errstr(status));
 		return false;
@@ -780,6 +783,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 	struct cli_credentials *dom2_credentials;
 	union lsa_PolicyInformation *dom1_info_dns = NULL;
 	union lsa_PolicyInformation *dom2_info_dns = NULL;
+	const char *binding = torture_setting_string(tctx, "binding", NULL);
 
 	torture_comment(tctx, "Testing Forest Trusts\n");
 
@@ -814,7 +818,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 		return false;
 	}
 
-	if (!test_validate_trust(tctx, p->binding,
+	if (!test_validate_trust(tctx, binding,
 				 dom1_info_dns->dns.name.string,
 				 dom1_info_dns->dns.dns_domain.string,
 				 TEST_DOM, TEST_DOM_DNS)) {
@@ -892,7 +896,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_validate_trust(tctx, p->binding,
+	if (!test_validate_trust(tctx, binding,
 				 dom1_info_dns->dns.name.string,
 				 dom1_info_dns->dns.dns_domain.string,
 				 dom2_info_dns->dns.name.string,
@@ -900,7 +904,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 		ret = false;
 	}
 
-	if (!test_validate_trust(tctx, dom2_p->binding,
+	if (!test_validate_trust(tctx, dom2_binding_string,
 				 dom2_info_dns->dns.name.string,
 				 dom2_info_dns->dns.dns_domain.string,
 				 dom1_info_dns->dns.name.string,
