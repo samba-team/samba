@@ -133,7 +133,7 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 				   dcerpc_lsa_CreateTrustedDomainEx2_r(p->binding_handle, tctx, &r),
 				   "CreateTrustedDomainEx2 failed");
 	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "CreateTrustedDomainEx failed2 - %s\n", nt_errstr(r.out.result));
+		torture_comment(tctx, "CreateTrustedDomainEx2 failed - %s\n", nt_errstr(r.out.result));
 		ret = false;
 	} else {
 
