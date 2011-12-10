@@ -118,7 +118,13 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 
 	trustinfo.trust_type = LSA_TRUST_TYPE_UPLEVEL;
 
-	trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
+	/* MS-LSAD: Section 3.1.4.7.10 makes it clear that Win2k3
+	 * functional level and above return
+	 * NT_STATUS_INVALID_DOMAIN_STATE if
+	 * TRUST_ATTRIBUTE_FOREST_TRANSITIVE or
+	 * TRUST_ATTRIBUTE_CROSS_ORGANIZATION is set here.
+	*/
+	trustinfo.trust_attributes = 0;
 
 	r.in.policy_handle = handle;
 	r.in.info = &trustinfo;
@@ -651,10 +657,10 @@ static bool test_validate_trust(struct torture_context *tctx,
 				      1, trust_info->count);
 		return false;
 	}
-	if (trust_info->data[0] != LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+	if (trust_info->data[0] != 0) {
 		torture_comment(tctx, "Unexpected result, "
 				      "expected %d, got %d.\n",
-				      LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE,
+				      0,
 				      trust_info->data[0]);
 		return false;
 	}
