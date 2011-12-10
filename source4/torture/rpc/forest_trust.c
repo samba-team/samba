@@ -309,6 +309,11 @@ static bool get_and_set_info(struct dcerpc_pipe *p,
 					      "%s but %s\n",
 					      nt_errstr(il[c].get_result),
 					      nt_errstr(qr.out.result));
+			
+			/* We may be testing a server without support for this level */
+			if (qr.in.level == LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES && NT_STATUS_EQUAL(qr.out.result, NT_STATUS_INVALID_PARAMETER)) {
+				return true;
+			}
 			return false;
 		}
 
