@@ -596,66 +596,88 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
     if targetdir is None:
         os.system(rndc + " unfreeze " + lp.get("realm"))
 
+def tdb_copy(logger, file1, file2):
+    """Copy tdb file using tdbbackup utility and rename it
+    """
+    # Find the location of tdbbackup tool
+    dirs = ["bin", samba.param.bin_dir()]
+    for d in dirs:
+        toolpath = os.path.join(d, "tdbbackup")
+        if os.path.exists(toolpath):
+            break
+    status = os.system("%s -s '.dns' %s" % (toolpath, file1))
+    if status == 0:
+        os.rename("%s.dns" % file1, file2)
+    else:
+        raise Exception("Error copying %s" % file1)
 
-def create_samdb_copy(logger, paths, names, domainsid, domainguid):
+def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
     """Create a copy of samdb and give write permissions to named for dns partitions
     """
     private_dir = paths.private_dir
     samldb_dir = os.path.join(private_dir, "sam.ldb.d")
     dns_dir = os.path.dirname(paths.dns)
     dns_samldb_dir = os.path.join(dns_dir, "sam.ldb.d")
-    domainpart_file = "%s.ldb" % names.domaindn.upper()
-    configpart_file = "%s.ldb" % names.configdn.upper()
-    schemapart_file = "%s.ldb" % names.schemadn.upper()
-    domainzone_file = "DC=DOMAINDNSZONES,%s.ldb" % names.domaindn.upper()
-    forestzone_file = "DC=FORESTDNSZONES,%s.ldb" % names.rootdn.upper()
-    metadata_file = "metadata.tdb"
 
-    # Copy config, schema partitions, create empty domain partition
+    # Find the partitions and corresponding filenames
+    partfile = {}
+    res = samdb.search(base="@PARTITION", scope=ldb.SCOPE_BASE, attrs=["partition"])
+    for tmp in res[0]["partition"]:
+        (nc, fname) = tmp.split(':')
+        partfile[nc.upper()] = fname
+
+    # Create empty domain partition
+    domaindn = names.domaindn.upper()
+    domainpart_file = os.path.join(dns_dir, partfile[domaindn])
     try:
-        shutil.copyfile(os.path.join(private_dir, "sam.ldb"),
-                        os.path.join(dns_dir, "sam.ldb"))
         os.mkdir(dns_samldb_dir)
-        file(os.path.join(dns_samldb_dir, domainpart_file), 'w').close()
-        shutil.copyfile(os.path.join(samldb_dir, configpart_file),
-                        os.path.join(dns_samldb_dir, configpart_file))
-        shutil.copyfile(os.path.join(samldb_dir, schemapart_file),
-                        os.path.join(dns_samldb_dir, schemapart_file))
-    except:
-        logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
-        raise
+        file(domainpart_file, 'w').close()
 
-    # Link metadata and dns partitions
-    try:
-        os.link(os.path.join(samldb_dir, metadata_file),
-            os.path.join(dns_samldb_dir, metadata_file))
-        os.link(os.path.join(samldb_dir, domainzone_file),
-            os.path.join(dns_samldb_dir, domainzone_file))
-        os.link(os.path.join(samldb_dir, forestzone_file),
-            os.path.join(dns_samldb_dir, forestzone_file))
-    except OSError, e:
-        try:
-            os.symlink(os.path.join(samldb_dir, metadata_file),
-                os.path.join(dns_samldb_dir, metadata_file))
-            os.symlink(os.path.join(samldb_dir, domainzone_file),
-                os.path.join(dns_samldb_dir, domainzone_file))
-            os.symlink(os.path.join(samldb_dir, forestzone_file),
-                os.path.join(dns_samldb_dir, forestzone_file))
-        except OSError, e:
-            logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
-            raise
-
-    # Fill the basedn and @OPTION records in domain partition
-    try:
-        ldb = samba.Ldb(os.path.join(dns_samldb_dir, domainpart_file))
+        # Fill the basedn and @OPTION records in domain partition
+        dom_ldb = samba.Ldb(domainpart_file)
         domainguid_line = "objectGUID: %s\n-" % domainguid
         descr = b64encode(get_domain_descriptor(domainsid))
-        setup_add_ldif(ldb, setup_path("provision_basedn.ldif"), {
+        setup_add_ldif(dom_ldb, setup_path("provision_basedn.ldif"), {
             "DOMAINDN" : names.domaindn,
             "DOMAINGUID" : domainguid_line,
             "DOMAINSID" : str(domainsid),
             "DESCRIPTOR" : descr})
-        setup_add_ldif(ldb, setup_path("provision_basedn_options.ldif"), None)
+        setup_add_ldif(dom_ldb, setup_path("provision_basedn_options.ldif"), None)
+    except:
+        logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
+        raise
+    del partfile[domaindn]
+
+    # Link dns partitions and metadata
+    domainzonedn = "DC=DOMAINDNSZONES,%s" % names.domaindn.upper()
+    forestzonedn = "DC=FORESTDNSZONES,%s" % names.rootdn.upper()
+    domainzone_file = partfile[domainzonedn]
+    forestzone_file = partfile[forestzonedn]
+    metadata_file = "metadata.tdb"
+    try:
+        os.link(os.path.join(samldb_dir, metadata_file),
+            os.path.join(dns_samldb_dir, metadata_file))
+        os.link(os.path.join(private_dir, domainzone_file),
+            os.path.join(dns_dir, domainzone_file))
+        os.link(os.path.join(private_dir, forestzone_file),
+            os.path.join(dns_dir, forestzone_file))
+    except OSError:
+        logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
+        raise
+    del partfile[domainzonedn]
+    del partfile[forestzonedn]
+
+    # Copy root, config, schema partitions (and any other if any)
+    # Since samdb is open in the current process, copy them in a child process
+    try:
+        tdb_copy(logger,
+                 os.path.join(private_dir, "sam.ldb"),
+                 os.path.join(dns_dir, "sam.ldb"))
+        for nc in partfile:
+            pfile = partfile[nc]
+            tdb_copy(logger,
+                     os.path.join(private_dir, pfile),
+                     os.path.join(dns_dir, pfile))
     except:
         logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
         raise
@@ -665,22 +687,17 @@ def create_samdb_copy(logger, paths, names, domainsid, domainguid):
         try:
             os.chown(samldb_dir, -1, paths.bind_gid)
             os.chmod(samldb_dir, 0750)
-            os.chown(os.path.join(dns_dir, "sam.ldb"), -1, paths.bind_gid)
-            os.chmod(os.path.join(dns_dir, "sam.ldb"), 0660)
-            os.chown(dns_samldb_dir, -1, paths.bind_gid)
-            os.chmod(dns_samldb_dir, 0770)
-            os.chown(os.path.join(dns_samldb_dir, domainpart_file), -1, paths.bind_gid)
-            os.chmod(os.path.join(dns_samldb_dir, domainpart_file), 0660)
-            os.chown(os.path.join(dns_samldb_dir, configpart_file), -1, paths.bind_gid)
-            os.chmod(os.path.join(dns_samldb_dir, configpart_file), 0660)
-            os.chown(os.path.join(dns_samldb_dir, schemapart_file), -1, paths.bind_gid)
-            os.chmod(os.path.join(dns_samldb_dir, schemapart_file), 0660)
-            os.chown(os.path.join(samldb_dir, metadata_file), -1, paths.bind_gid)
-            os.chmod(os.path.join(samldb_dir, metadata_file), 0660)
-            os.chown(os.path.join(samldb_dir, domainzone_file), -1, paths.bind_gid)
-            os.chmod(os.path.join(samldb_dir, domainzone_file), 0660)
-            os.chown(os.path.join(samldb_dir, forestzone_file), -1, paths.bind_gid)
-            os.chmod(os.path.join(samldb_dir, forestzone_file), 0660)
+
+            for dirname, dirs, files in os.walk(dns_dir):
+                for d in dirs:
+                    dpath = os.path.join(dirname, d)
+                    os.chown(dpath, -1, paths.bind_gid)
+                    os.chmod(dpath, 0770)
+                for f in files:
+                    if f.endswith('.ldb') or f.endswith('.tdb'):
+                        fpath = os.path.join(dirname, f)
+                        os.chown(fpath, -1, paths.bind_gid)
+                        os.chmod(fpath, 0660)
         except OSError:
             if not os.environ.has_key('SAMBA_SELFTEST'):
                 logger.error("Failed to set permissions to sam.ldb* files, fix manually")
@@ -894,7 +911,7 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
                              domainguid=domainguid, ntdsguid=names.ntdsguid)
 
         if dns_backend == "BIND9_DLZ" and os_level >= DS_DOMAIN_FUNCTION_2003:
-            create_samdb_copy(logger, paths, names, domainsid, domainguid)
+            create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid)
 
         create_named_conf(paths, realm=names.realm,
                           dnsdomain=names.dnsdomain, dns_backend=dns_backend)
