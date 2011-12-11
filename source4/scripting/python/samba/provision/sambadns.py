@@ -41,41 +41,13 @@ from samba.provision.descriptor import (
     get_domain_descriptor,
     get_dns_partition_descriptor
     )
+from samba.provision.common import (
+    setup_path,
+    setup_add_ldif,
+    setup_modify_ldif,
+    setup_ldb
+    )
 
-
-def add_ldif(ldb, ldif_file, subst_vars, controls=["relax:0"]):
-    ldif_file_path = os.path.join(samba.param.setup_dir(), ldif_file)
-    data = read_and_sub_file(ldif_file_path, subst_vars)
-    ldb.add_ldif(data, controls)
-
-def modify_ldif(ldb, ldif_file, subst_vars, controls=["relax:0"]):
-    ldif_file_path = os.path.join(samba.param.setup_dir(), ldif_file)
-    data = read_and_sub_file(ldif_file_path, subst_vars)
-    ldb.modify_ldif(data, controls)
-
-def setup_ldb(ldb, ldif_path, subst_vars):
-    """Import a LDIF a file into a LDB handle, optionally substituting
-    variables.
-
-    :note: Either all LDIF data will be added or none (using transactions).
-
-    :param ldb: LDB file to import into.
-    :param ldif_path: Path to the LDIF file.
-    :param subst_vars: Dictionary with substitution variables.
-    """
-    assert ldb is not None
-    ldb.transaction_start()
-    try:
-        add_ldif(ldb, ldif_path, subst_vars)
-    except Exception:
-        ldb.transaction_cancel()
-        raise
-    else:
-        ldb.transaction_commit()
-
-def setup_path(file):
-    """Return an absolute path to the provision tempate file specified by file"""
-    return os.path.join(samba.param.setup_dir(), file)
 
 def get_domainguid(samdb, domaindn):
     res = samdb.search(base=domaindn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
@@ -173,7 +145,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn, serverd
     domainzone_dn = "DC=DomainDnsZones,%s" % domaindn
     forestzone_dn = "DC=ForestDnsZones,%s" % forestdn
     descriptor = get_dns_partition_descriptor(domainsid)
-    add_ldif(samdb, "provision_dnszones_partitions.ldif", {
+    setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
         "DOMAINZONE_DN": domainzone_dn,
         "FORESTZONE_DN": forestzone_dn,
         "SECDESC"      : b64encode(descriptor)
@@ -188,7 +160,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn, serverd
     domainzone_dns = ldb.Dn(samdb, domainzone_dn).canonical_ex_str().strip()
     forestzone_dns = ldb.Dn(samdb, forestzone_dn).canonical_ex_str().strip()
 
-    add_ldif(samdb, "provision_dnszones_add.ldif", {
+    setup_add_ldif(samdb, setup_path("provision_dnszones_add.ldif"), {
         "DOMAINZONE_DN": domainzone_dn,
         "FORESTZONE_DN": forestzone_dn,
         "DOMAINZONE_GUID": domainzone_guid,
@@ -199,7 +171,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn, serverd
         "SERVERDN": serverdn,
         })
 
-    modify_ldif(samdb, "provision_dnszones_modify.ldif", {
+    setup_modify_ldif(samdb, setup_path("provision_dnszones_modify.ldif"), {
         "CONFIGDN": configdn,
         "SERVERDN": serverdn,
         "DOMAINZONE_DN": domainzone_dn,
@@ -208,7 +180,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn, serverd
 
 
 def add_dns_accounts(samdb, domaindn):
-    add_ldif(samdb, "provision_dns_accounts_add.ldif", {
+    setup_add_ldif(samdb, setup_path("provision_dns_accounts_add.ldif"), {
         "DOMAINDN": domaindn,
         })
 
@@ -678,12 +650,12 @@ def create_samdb_copy(logger, paths, names, domainsid, domainguid):
         ldb = samba.Ldb(os.path.join(dns_samldb_dir, domainpart_file))
         domainguid_line = "objectGUID: %s\n-" % domainguid
         descr = b64encode(get_domain_descriptor(domainsid))
-        add_ldif(ldb, "provision_basedn.ldif", {
+        setup_add_ldif(ldb, setup_path("provision_basedn.ldif"), {
             "DOMAINDN" : names.domaindn,
             "DOMAINGUID" : domainguid_line,
             "DOMAINSID" : str(domainsid),
             "DESCRIPTOR" : descr})
-        add_ldif(ldb, "provision_basedn_options.ldif", None)
+        setup_add_ldif(ldb, setup_path("provision_basedn_options.ldif"), None)
     except:
         logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
         raise

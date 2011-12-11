@@ -48,7 +48,6 @@ from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from samba import (
     Ldb,
     check_all_substituted,
-    read_and_sub_file,
     setup_file,
     substitute_var,
     valid_netbios_name,
@@ -78,7 +77,16 @@ from samba.provision.descriptor import (
     get_config_descriptor,
     get_domain_descriptor
     )
-from samba.provision.sambadns import setup_ad_dns, create_dns_update_list
+from samba.provision.common import (
+    setup_path,
+    setup_add_ldif,
+    setup_modify_ldif,
+    setup_ldb
+    )
+from samba.provision.sambadns import (
+    setup_ad_dns,
+    create_dns_update_list
+    )
 
 import samba.param
 import samba.registry
@@ -92,11 +100,6 @@ DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
 DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04fB984F9"
 DEFAULTSITE = "Default-First-Site-Name"
 LAST_PROVISION_USN_ATTRIBUTE = "lastProvisionUSN"
-
-
-def setup_path(file):
-    """Return an absolute path to the provision tempate file specified by file"""
-    return os.path.join(samba.param.setup_dir(), file)
 
 
 class ProvisionPaths(object):
@@ -400,51 +403,6 @@ def findnss(nssfn, names):
 
 findnss_uid = lambda names: findnss(pwd.getpwnam, names)[2]
 findnss_gid = lambda names: findnss(grp.getgrnam, names)[2]
-
-
-def setup_add_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
-    """Setup a ldb in the private dir.
-
-    :param ldb: LDB file to import data into
-    :param ldif_path: Path of the LDIF file to load
-    :param subst_vars: Optional variables to subsitute in LDIF.
-    :param nocontrols: Optional list of controls, can be None for no controls
-    """
-    assert isinstance(ldif_path, str)
-    data = read_and_sub_file(ldif_path, subst_vars)
-    ldb.add_ldif(data, controls)
-
-
-def setup_modify_ldif(ldb, ldif_path, subst_vars=None,controls=["relax:0"]):
-    """Modify a ldb in the private dir.
-
-    :param ldb: LDB object.
-    :param ldif_path: LDIF file path.
-    :param subst_vars: Optional dictionary with substitution variables.
-    """
-    data = read_and_sub_file(ldif_path, subst_vars)
-    ldb.modify_ldif(data, controls)
-
-
-def setup_ldb(ldb, ldif_path, subst_vars):
-    """Import a LDIF a file into a LDB handle, optionally substituting
-    variables.
-
-    :note: Either all LDIF data will be added or none (using transactions).
-
-    :param ldb: LDB file to import into.
-    :param ldif_path: Path to the LDIF file.
-    :param subst_vars: Dictionary with substitution variables.
-    """
-    assert ldb is not None
-    ldb.transaction_start()
-    try:
-        setup_add_ldif(ldb, ldif_path, subst_vars)
-    except Exception:
-        ldb.transaction_cancel()
-        raise
-    else:
-        ldb.transaction_commit()
 
 
 def provision_paths_from_lp(lp, dnsdomain):
