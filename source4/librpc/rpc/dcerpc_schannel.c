@@ -36,9 +36,11 @@ struct schannel_key_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_binding *binding;
+	bool dcerpc_schannel_auto;
 	struct cli_credentials *credentials;
 	struct netlogon_creds_CredentialState *creds;
-	uint32_t negotiate_flags;
+	uint32_t local_negotiate_flags;
+	uint32_t remote_negotiate_flags;
 	struct netr_Credential credentials1;
 	struct netr_Credential credentials2;
 	struct netr_Credential credentials3;
@@ -176,16 +178,17 @@ static void continue_srv_challenge(struct tevent_req *subreq)
 	s->a.in.secure_channel_type =
 		cli_credentials_get_secure_channel_type(s->credentials);
 	s->a.in.computer_name    = cli_credentials_get_workstation(s->credentials);
-	s->a.in.negotiate_flags  = &s->negotiate_flags;
+	s->a.in.negotiate_flags  = &s->local_negotiate_flags;
 	s->a.in.credentials      = &s->credentials3;
-	s->a.out.negotiate_flags = &s->negotiate_flags;
+	s->a.out.negotiate_flags = &s->remote_negotiate_flags;
 	s->a.out.return_credentials     = &s->credentials3;
 
 	s->creds = netlogon_creds_client_init(s, 
 					      s->a.in.account_name, 
 					      s->a.in.computer_name,
 					      &s->credentials1, &s->credentials2,
-					      s->mach_pwd, &s->credentials3, s->negotiate_flags);
+					      s->mach_pwd, &s->credentials3,
+					      s->local_negotiate_flags);
 	if (composite_nomem(s->creds, c)) {
 		return;
 	}
@@ -217,6 +220,30 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 	c->status = dcerpc_netr_ServerAuthenticate2_r_recv(subreq, s);
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
+
+	/*
+	 * Strong keys could be unsupported (NT4) or disables. So retry with the
+	 * flags returned by the server. - asn
+	 */
+	if (NT_STATUS_EQUAL(s->a.out.result, NT_STATUS_ACCESS_DENIED) &&
+	    s->dcerpc_schannel_auto &&
+	    (s->local_negotiate_flags & NETLOGON_NEG_STRONG_KEYS)) {
+		DEBUG(3, ("Server doesn't support strong keys, "
+			  "downgrade and retry!\n"));
+		s->local_negotiate_flags = s->remote_negotiate_flags;
+
+		generate_random_buffer(s->credentials1.data,
+				       sizeof(s->credentials1.data));
+
+		subreq = dcerpc_netr_ServerReqChallenge_r_send(s,
+							       c->event_ctx,
+							       s->pipe2->binding_handle,
+							       &s->r);
+		if (composite_nomem(subreq, c)) return;
+
+		tevent_req_set_callback(subreq, continue_srv_challenge, c);
+		return;
+	}
 
 	/* verify credentials */
 	if (!netlogon_creds_client_check(s->creds, s->a.out.return_credentials)) {
@@ -256,15 +283,19 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	/* store parameters in the state structure */
 	s->pipe        = p;
 	s->credentials = credentials;
+	s->local_negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
 	/* allocate credentials */
 	/* type of authentication depends on schannel type */
 	if (schannel_type == SEC_CHAN_RODC) {
-		s->negotiate_flags = NETLOGON_NEG_AUTH2_RODC_FLAGS;
-	} else if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
-		s->negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-	} else {
-		s->negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_RODC_FLAGS;
+	}
+	if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
+		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	}
+	if (s->pipe->conn->flags & DCERPC_SCHANNEL_AUTO) {
+		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+		s->dcerpc_schannel_auto = true;
 	}
 
 	/* allocate binding structure */

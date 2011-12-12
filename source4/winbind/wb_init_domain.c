@@ -154,7 +154,7 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	     (lpcfg_server_role(service->task->lp_ctx) == ROLE_DOMAIN_CONTROLLER)) &&
 	    (dom_sid_equal(state->domain->info->sid,
 			   state->service->primary_sid))) {
-		state->domain->netlogon_binding->flags |= DCERPC_SCHANNEL | DCERPC_SCHANNEL_128;
+		state->domain->netlogon_binding->flags |= DCERPC_SCHANNEL | DCERPC_SCHANNEL_AUTO;
 
 		/* For debugging, it can be a real pain if all the traffic is encrypted */
 		if (lpcfg_winbind_sealed_pipes(service->task->lp_ctx)) {
@@ -236,7 +236,7 @@ static bool retry_with_schannel(struct init_domain_state *state,
 		 * NTLMSSP binds */
 
 		/* Try again with schannel */
-		binding->flags |= DCERPC_SCHANNEL;
+		binding->flags |= DCERPC_SCHANNEL | DCERPC_SCHANNEL_AUTO;
 
 		/* Try again, likewise on the same IPC$ share, 
 		   secured with SCHANNEL */

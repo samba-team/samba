@@ -107,6 +107,9 @@ struct dcerpc_binding {
 /* specify binding interface */
 #define	DCERPC_LOCALADDRESS            (1<<22)
 
+/* handle upgrades or downgrades automatically */
+#define DCERPC_SCHANNEL_AUTO           (1<<23)
+
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
