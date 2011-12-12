@@ -2664,7 +2664,8 @@ static void smbd_echo_writer_done(struct tevent_req *req)
 	smbd_echo_activate_writer(state);
 }
 
-static bool smbd_echo_reply(uint8_t *inbuf, size_t inbuf_len,
+static bool smbd_echo_reply(struct smbd_echo_state *state,
+			    uint8_t *inbuf, size_t inbuf_len,
 			    uint32_t seqnum)
 {
 	struct smb_request req;
@@ -2685,12 +2686,12 @@ static bool smbd_echo_reply(uint8_t *inbuf, size_t inbuf_len,
 		DEBUG(10, ("Got short packet: %d bytes\n", (int)inbuf_len));
 		return false;
 	}
-	if (!valid_smb_header(smbd_server_conn, inbuf)) {
+	if (!valid_smb_header(state->sconn, inbuf)) {
 		DEBUG(10, ("Got invalid SMB header\n"));
 		return false;
 	}
 
-	if (!init_smb_request(&req, smbd_server_conn, inbuf, 0, false,
+	if (!init_smb_request(&req, state->sconn, inbuf, 0, false,
 			      seqnum)) {
 		return false;
 	}
@@ -2814,7 +2815,7 @@ static void smbd_echo_got_packet(struct tevent_req *req)
 		exit(1);
 	}
 
-	reply = smbd_echo_reply((uint8_t *)buf, buflen, seqnum);
+	reply = smbd_echo_reply(state, (uint8_t *)buf, buflen, seqnum);
 	if (!reply) {
 		size_t num_pending;
 		struct iovec *tmp;
