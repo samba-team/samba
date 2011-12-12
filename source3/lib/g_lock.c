@@ -748,7 +748,6 @@ NTSTATUS g_lock_get(struct g_lock_ctx *ctx, const char *name,
 static bool g_lock_init_all(TALLOC_CTX *mem_ctx,
 			    struct tevent_context **pev,
 			    struct messaging_context **pmsg,
-			    const struct server_id self,
 			    struct g_lock_ctx **pg_ctx)
 {
 	struct tevent_context *ev = NULL;
@@ -760,7 +759,7 @@ static bool g_lock_init_all(TALLOC_CTX *mem_ctx,
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto fail;
 	}
-	msg = messaging_init(mem_ctx, self, ev);
+	msg = messaging_init(mem_ctx, ev);
 	if (msg == NULL) {
 		d_fprintf(stderr, "ERROR: could not init messaging context\n");
 		goto fail;
@@ -783,7 +782,7 @@ fail:
 }
 
 NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
-		   struct timeval timeout, const struct server_id self,
+		   struct timeval timeout,
 		   void (*fn)(void *private_data), void *private_data)
 {
 	struct tevent_context *ev = NULL;
@@ -791,7 +790,7 @@ NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
 	struct g_lock_ctx *g_ctx = NULL;
 	NTSTATUS status;
 
-	if (!g_lock_init_all(talloc_tos(), &ev, &msg, self, &g_ctx)) {
+	if (!g_lock_init_all(talloc_tos(), &ev, &msg, &g_ctx)) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}

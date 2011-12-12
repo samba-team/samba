@@ -168,7 +168,7 @@ void start_async_dns(void)
 
 	status = reinit_after_fork(nmbd_messaging_context(),
 				   nmbd_event_context(),
-				   procid_self(), true);
+				   true);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));

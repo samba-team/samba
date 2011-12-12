@@ -457,7 +457,7 @@ int main(int argc, const char **argv)
 		goto done;
 	}
 
-	msg_ctx = messaging_init(mem_ctx, procid_self(), evt_ctx);
+	msg_ctx = messaging_init(mem_ctx, evt_ctx);
 	if (msg_ctx == NULL) {
 		d_fprintf(stderr, "ERROR: could not init messaging context\n");
 		goto done;

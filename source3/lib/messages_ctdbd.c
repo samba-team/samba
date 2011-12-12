@@ -69,7 +69,7 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 			DEBUG(0,("event_context_init failed\n"));
 		}
 
-		msg = messaging_init(NULL, procid_self(), ev);
+		msg = messaging_init(NULL, ev);
 		if (!msg) {
 			DEBUG(0,("messaging_init failed\n"));
 			return NULL;

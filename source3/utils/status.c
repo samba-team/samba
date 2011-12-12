@@ -386,8 +386,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		 * connection, usable by the db_open() calls further
 		 * down.
 		 */
-		msg_ctx = messaging_init(NULL, procid_self(),
-					 event_context_init(NULL));
+		msg_ctx = messaging_init(NULL, event_context_init(NULL));
 		if (msg_ctx == NULL) {
 			fprintf(stderr, "messaging_init failed\n");
 			ret = -1;

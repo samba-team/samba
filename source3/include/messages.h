@@ -109,7 +109,6 @@ bool message_send_all(struct messaging_context *msg_ctx,
 		      int *n_sent);
 struct event_context *messaging_event_context(struct messaging_context *msg_ctx);
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
-					 struct server_id server_id, 
 					 struct event_context *ev);
 
 struct server_id messaging_server_id(const struct messaging_context *msg_ctx);
@@ -117,8 +116,7 @@ struct server_id messaging_server_id(const struct messaging_context *msg_ctx);
 /*
  * re-init after a fork
  */
-NTSTATUS messaging_reinit(struct messaging_context *msg_ctx,
-			  struct server_id id);
+NTSTATUS messaging_reinit(struct messaging_context *msg_ctx);
 
 NTSTATUS messaging_register(struct messaging_context *msg_ctx,
 			    void *private_data,

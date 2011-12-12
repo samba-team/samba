@@ -248,7 +248,7 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 	bool ok;
 
 	status = reinit_after_fork(msg_ctx, ev_ctx,
-				   procid_self(), true);
+				   true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
@@ -883,7 +883,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 
 	status = reinit_after_fork(msg_ctx,
 				   ev_ctx,
-				   procid_self(), true);
+				   true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");

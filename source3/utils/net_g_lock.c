@@ -36,7 +36,7 @@ static bool net_g_lock_init(TALLOC_CTX *mem_ctx,
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto fail;
 	}
-	msg = messaging_init(mem_ctx, procid_self(), ev);
+	msg = messaging_init(mem_ctx, ev);
 	if (msg == NULL) {
 		d_fprintf(stderr, "ERROR: could not init messaging context\n");
 		goto fail;
@@ -91,7 +91,7 @@ static int net_g_lock_do(struct net_context *c, int argc, const char **argv)
 
 	status = g_lock_do(name, G_LOCK_WRITE,
 			   timeval_set(timeout / 1000, timeout % 1000),
-			   procid_self(), net_g_lock_do_fn, &state);
+			   net_g_lock_do_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "ERROR: g_lock_do failed: %s\n",
 			  nt_errstr(status));

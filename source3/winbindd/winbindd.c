@@ -1407,7 +1407,7 @@ int main(int argc, char **argv, char **envp)
 
 	status = reinit_after_fork(winbind_messaging_context(),
 				   winbind_event_context(),
-				   procid_self(), false);
+				   false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);

@@ -182,7 +182,6 @@ struct event_context *messaging_event_context(struct messaging_context *msg_ctx)
 }
 
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
-					 struct server_id server_id, 
 					 struct event_context *ev)
 {
 	struct messaging_context *ctx;
@@ -192,7 +191,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ctx->id = server_id;
+	ctx->id = procid_self();
 	ctx->event_ctx = ev;
 
 	status = messaging_tdb_init(ctx, ctx, &ctx->local);
@@ -237,14 +236,13 @@ struct server_id messaging_server_id(const struct messaging_context *msg_ctx)
 /*
  * re-init after a fork
  */
-NTSTATUS messaging_reinit(struct messaging_context *msg_ctx,
-			  struct server_id id)
+NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 {
 	NTSTATUS status;
 
 	TALLOC_FREE(msg_ctx->local);
 
-	msg_ctx->id = id;
+	msg_ctx->id = procid_self();
 
 	status = messaging_tdb_init(msg_ctx, msg_ctx, &msg_ctx->local);
 	if (!NT_STATUS_IS_OK(status)) {

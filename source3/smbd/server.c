@@ -451,7 +451,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 
 		status = reinit_after_fork(msg_ctx,
 					   ev,
-					   procid_self(),
 					   true);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status,
@@ -1120,7 +1119,7 @@ extern void build_options(bool screen);
 
 	status = reinit_after_fork(msg_ctx,
 				   ev_ctx,
-				   procid_self(), false);
+				   false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
