@@ -451,17 +451,27 @@ PyTypeObject PyLoadparmService = {
 
 static PyObject *py_default_path(PyObject *self)
 {
-    return PyString_FromString(lp_default_path());
+	return PyString_FromString(lp_default_path());
 }
 
 static PyObject *py_setup_dir(PyObject *self)
 {
-    return PyString_FromString(dyn_SETUPDIR);
+	return PyString_FromString(dyn_SETUPDIR);
 }
 
 static PyObject *py_modules_dir(PyObject *self)
 {
-    return PyString_FromString(dyn_MODULESDIR);
+	return PyString_FromString(dyn_MODULESDIR);
+}
+
+static PyObject *py_bin_dir(PyObject *self)
+{
+	return PyString_FromString(dyn_BINDIR);
+}
+
+static PyObject *py_sbin_dir(PyObject *self)
+{
+	return PyString_FromString(dyn_SBINDIR);
 }
 
 static PyMethodDef pyparam_methods[] = {
@@ -471,6 +481,10 @@ static PyMethodDef pyparam_methods[] = {
         "Returns the compiled in location of provision tempates." },
     { "modules_dir", (PyCFunction)py_modules_dir, METH_NOARGS,
         "Returns the compiled in location of modules." },
+    { "bin_dir", (PyCFunction)py_bin_dir, METH_NOARGS,
+	"Returns the compiled in BINDIR." },
+    { "sbin_dir", (PyCFunction)py_sbin_dir, METH_NOARGS,
+	"Returns the compiled in SBINDIR." },
     { NULL }
 };
 
