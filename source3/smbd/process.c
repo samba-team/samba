@@ -2955,6 +2955,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	socklen_t sa_socklen;
 	struct tsocket_address *local_address = NULL;
 	struct tsocket_address *remote_address = NULL;
+	const char *locaddr = NULL;
 	const char *remaddr = NULL;
 	char *rhost;
 	int ret;
@@ -3013,6 +3014,19 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->local_address = local_address;
 	sconn->remote_address = remote_address;
 
+	if (tsocket_address_is_inet(local_address, "ip")) {
+		locaddr = tsocket_address_inet_addr_string(
+				sconn->local_address,
+				talloc_tos());
+		if (locaddr == NULL) {
+			DEBUG(0,("%s: tsocket_address_inet_addr_string local failed - %s\n",
+				 __location__, strerror(errno)));
+			exit_server_cleanly("tsocket_address_inet_addr_string local failed.\n");
+		}
+	} else {
+		locaddr = "0.0.0.0";
+	}
+
 	if (tsocket_address_is_inet(remote_address, "ip")) {
 		remaddr = tsocket_address_inet_addr_string(
 				sconn->remote_address,
@@ -3050,6 +3064,10 @@ void smbd_process(struct tevent_context *ev_ctx,
 		rhost = talloc_strdup(talloc_tos(), remaddr);
 	}
 	sconn->remote_hostname = talloc_move(sconn, &rhost);
+
+	sub_set_socket_ids(remaddr,
+			   sconn->remote_hostname,
+			   locaddr);
 
 	if (!allow_access(lp_hostsdeny(-1), lp_hostsallow(-1),
 			  sconn->remote_hostname,
