@@ -1117,6 +1117,8 @@ fail:
 	return false;
 }
 
+#ifdef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
+
 bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 			  const struct server_id *pids, unsigned num_pids,
 			  bool *results)
@@ -1239,6 +1241,8 @@ fail:
 	TALLOC_FREE(vnns);
 	return result;
 }
+
+#endif /* HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL */
 
 /*
  * Get a db path
