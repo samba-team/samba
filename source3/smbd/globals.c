@@ -174,6 +174,7 @@ void smbd_init_globals(void)
 		exit_server("failed to create smbd_server_connection");
 	}
 
+	smbd_server_conn->ev_ctx = server_event_context();
 	smbd_server_conn->smb1.echo_handler.trusted_fd = -1;
 	smbd_server_conn->smb1.echo_handler.socket_lock_fd = -1;
 }
