@@ -532,6 +532,7 @@ struct interface {
 struct pending_message_list {
 	struct pending_message_list *next, *prev;
 	struct timeval request_time; /* When was this first issued? */
+	struct smbd_server_connection *sconn;
 	struct timed_event *te;
 	struct smb_perfcount_data pcd;
 	uint32_t seqnum;

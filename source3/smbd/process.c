@@ -558,6 +558,7 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 {
 	struct pending_message_list *msg = talloc_get_type(private_data,
 					   struct pending_message_list);
+	struct smbd_server_connection *sconn = msg->sconn;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	uint64_t mid = (uint64_t)SVAL(msg->buf.data,smb_mid);
 	uint8_t *inbuf;
@@ -578,14 +579,14 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 	 * re-processed in error. */
 	msg->processed = true;
 
-	process_smb(smbd_server_conn, inbuf,
+	process_smb(sconn, inbuf,
 		    msg->buf.length, 0,
 		    msg->seqnum, msg->encrypted, &msg->pcd);
 
 	/* If it's still there and was processed, remove it. */
-	msg = get_deferred_open_message_smb(smbd_server_conn, mid);
+	msg = get_deferred_open_message_smb(sconn, mid);
 	if (msg && msg->processed) {
-		remove_deferred_open_message_smb(smbd_server_conn, mid);
+		remove_deferred_open_message_smb(sconn, mid);
 	}
 }
 
@@ -608,6 +609,7 @@ static bool push_queued_message(struct smb_request *req,
 		DEBUG(0,("push_message: malloc fail (1)\n"));
 		return False;
 	}
+	msg->sconn = req->sconn;
 
 	msg->buf = data_blob_talloc(msg, req->inbuf, msg_len);
 	if(msg->buf.data == NULL) {
@@ -790,7 +792,7 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 {
 	struct pending_message_list *pml;
 
-	if (smbd_server_conn->using_smb2) {
+	if (smbreq->sconn->using_smb2) {
 		return get_deferred_open_message_state_smb2(smbreq->smb2req,
 					p_request_time,
 					pp_state);
