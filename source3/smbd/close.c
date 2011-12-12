@@ -1138,13 +1138,13 @@ void msg_close_file(struct messaging_context *msg_ctx,
 			struct server_id server_id,
 			DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn;
 	files_struct *fsp = NULL;
 	struct share_mode_entry e;
+	struct smbd_server_connection *sconn =
+		talloc_get_type(private_data,
+		struct smbd_server_connection);
 
-	sconn = msg_ctx_to_sconn(msg_ctx);
 	if (sconn == NULL) {
-		DEBUG(1, ("could not find sconn\n"));
 		return;
 	}
 

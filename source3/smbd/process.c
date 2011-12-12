@@ -3137,7 +3137,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	/* register our message handlers */
 	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
-	messaging_register(sconn->msg_ctx, NULL,
+	messaging_register(sconn->msg_ctx, sconn,
 			   MSG_SMB_CLOSE_FILE, msg_close_file);
 
 	/*
