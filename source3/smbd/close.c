@@ -289,7 +289,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	/* Ensure any pending write time updates are done. */
 	if (fsp->update_write_time_event) {
-		update_write_time_handler(server_event_context(),
+		update_write_time_handler(fsp->conn->sconn->ev_ctx,
 					fsp->update_write_time_event,
 					timeval_current(),
 					(void *)fsp);
