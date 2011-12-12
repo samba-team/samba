@@ -39,6 +39,20 @@
 
 extern bool global_machine_password_needs_changing;
 
+/* Internal message queue for deferred opens. */
+struct pending_message_list {
+	struct pending_message_list *next, *prev;
+	struct timeval request_time; /* When was this first issued? */
+	struct smbd_server_connection *sconn;
+	struct timed_event *te;
+	struct smb_perfcount_data pcd;
+	uint32_t seqnum;
+	bool encrypted;
+	bool processed;
+	DATA_BLOB buf;
+	DATA_BLOB private_data;
+};
+
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf);
 static struct pending_message_list *get_deferred_open_message_smb(
