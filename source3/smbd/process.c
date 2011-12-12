@@ -648,11 +648,11 @@ static bool push_queued_message(struct smb_request *req,
 		}
 	}
 
-	msg->te = event_add_timed(server_event_context(),
-				  msg,
-				  end_time,
-				  smbd_deferred_open_timer,
-				  msg);
+	msg->te = tevent_add_timer(msg->sconn->ev_ctx,
+				   msg,
+				   end_time,
+				   smbd_deferred_open_timer,
+				   msg);
 	if (!msg->te) {
 		DEBUG(0,("push_message: event_add_timed failed\n"));
 		TALLOC_FREE(msg);
@@ -735,11 +735,11 @@ void schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 				"scheduling mid %llu\n",
 				(unsigned long long)mid ));
 
-			te = event_add_timed(server_event_context(),
-					     pml,
-					     timeval_zero(),
-					     smbd_deferred_open_timer,
-					     pml);
+			te = tevent_add_timer(pml->sconn->ev_ctx,
+					      pml,
+					      timeval_zero(),
+					      smbd_deferred_open_timer,
+					      pml);
 			if (!te) {
 				DEBUG(10,("schedule_deferred_open_message_smb: "
 					"event_add_timed() failed, "
