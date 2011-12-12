@@ -363,26 +363,6 @@ struct ctdb_daemon_data {
 
 
 
-
-
-#define INVALID_GENERATION 1
-/* table that contains the mapping between a hash value and lmaster
- */
-struct ctdb_vnn_map {
-	uint32_t generation;
-	uint32_t size;
-	uint32_t *map;
-};
-
-/* 
-   a wire representation of the vnn map
- */
-struct ctdb_vnn_map_wire {
-	uint32_t generation;
-	uint32_t size;
-	uint32_t map[1];
-};
-
 /* a structure that contains the elements required for the write record
    control
 */

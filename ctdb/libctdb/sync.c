@@ -300,3 +300,22 @@ bool ctdb_getifaces(struct ctdb_connection *ctdb,
 	return ret;
 }
 
+bool ctdb_getvnnmap(struct ctdb_connection *ctdb,
+		    uint32_t destnode, struct ctdb_vnn_map **vnnmap)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	*vnnmap = NULL;
+
+	req = synchronous(ctdb,
+			  ctdb_getvnnmap_send(ctdb, destnode, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_getvnnmap_recv(ctdb, req, vnnmap);
+		ctdb_request_free(req);
+	}
+	return ret;
+}
+

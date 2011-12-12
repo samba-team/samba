@@ -30,6 +30,7 @@
 #undef ctdb_getpublicips_send
 #undef ctdb_getdbseqnum_send
 #undef ctdb_getifaces_send
+#undef ctdb_getvnnmap_send
 
 bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 			   struct ctdb_request *req, uint32_t *recmaster)
@@ -351,6 +352,81 @@ struct ctdb_request *ctdb_getifaces_send(struct ctdb_connection *ctdb,
 					  void *private_data)
 {
 	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_IFACES,
+					destnode,
+					NULL, 0, callback, private_data);
+}
+
+bool ctdb_getvnnmap_recv(struct ctdb_connection *ctdb,
+			 struct ctdb_request *req,
+			 struct ctdb_vnn_map **vnnmap)
+{
+	struct ctdb_reply_control *reply;
+	struct ctdb_vnn_map_wire *map;
+	struct ctdb_vnn_map *tmap;
+	int len;
+
+	*vnnmap = NULL;
+	reply = unpack_reply_control(req, CTDB_CONTROL_GETVNNMAP);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getvnnmap_recv: status -1");
+		return false;
+	}
+	if (reply->datalen == 0) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getvnnmap_recv: returned data is 0 bytes");
+		return false;
+	}
+
+	len = offsetof(struct ctdb_vnn_map_wire, map);
+	if (len > reply->datalen) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getvnnmap_recv: returned data is %d bytes but %d is minimum", reply->datalen,  (int)offsetof(struct ctdb_vnn_map_wire, map));
+		return false;
+	}
+
+	map = (struct ctdb_vnn_map_wire *)(reply->data);
+	len += map->size * sizeof(uint32_t);
+
+	if (len != reply->datalen) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getvnnmap_recv: returned data is %d bytes but should be %d", reply->datalen,  len);
+		return false;
+	}
+
+	tmap = malloc(sizeof(struct ctdb_vnn_map));
+	if (tmap == NULL) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getvnnmap_recv: failed to malloc buffer");
+		return false;
+	}
+
+	tmap->generation = map->generation;
+	tmap->size       = map->size;
+	tmap->map        = malloc(sizeof(uint32_t) * map->size);
+	if (tmap->map == NULL) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getvnnmap_recv: failed to malloc buffer");
+		free(tmap);
+		return false;
+	}
+
+	memcpy(tmap->map, map->map, sizeof(uint32_t)*map->size);
+
+	*vnnmap = tmap;
+
+	return true;
+}
+
+void ctdb_free_vnnmap(struct ctdb_vnn_map *vnnmap)
+{
+	free(vnnmap->map);
+	free(vnnmap);
+}
+
+struct ctdb_request *ctdb_getvnnmap_send(struct ctdb_connection *ctdb,
+					 uint32_t destnode,
+					 ctdb_callback_t callback,
+					 void *private_data)
+{
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GETVNNMAP,
 					destnode,
 					NULL, 0, callback, private_data);
 }

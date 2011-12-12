@@ -744,6 +744,38 @@ bool ctdb_getrecmode_recv(struct ctdb_connection *ctdb,
 			  uint32_t *recmode);
 
 /**
+ * ctdb_getvnnmap_send - read the vnn map from a node.
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_getvnnmap_send(struct ctdb_connection *ctdb,
+		    uint32_t destnode,
+		    ctdb_callback_t callback,
+		    void *cbdata);
+/**
+ * ctdb_getvnnmap_recv - read an ctdb_getvnnmap reply from ctdbd
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @vnnmap: the list of interfaces 
+ *
+ * This returns false if something went wrong.
+ * If the command failed, it guarantees to set vnnmap to NULL.
+ * A non-NULL value for vnnmap means the command was successful.
+ *
+ * A non-NULL value of the vnnmap must be released/freed
+ * by ctdb_free_vnnmap().
+ */
+bool ctdb_getvnnmap_recv(struct ctdb_connection *ctdb,
+			 struct ctdb_request *req, struct ctdb_vnn_map **vnnmap);
+
+/**
  * ctdb_cancel - cancel an uncompleted request
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @req: the uncompleted request.
@@ -989,6 +1021,29 @@ bool ctdb_getpublicips(struct ctdb_connection *ctdb,
 void ctdb_free_publicips(struct ctdb_all_public_ips *ips);
 
 
+/**
+ * ctdb_getvnnmap - read the vnn map from a node (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @vnnmap: a pointer to the vnnmap to fill in
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ *
+ * Returns true and fills in *vnnmap on success.
+ * A non-NULL value of the vnnmap must be  released/freed
+ * by ctdb_free_vnnmap().
+ */
+bool ctdb_getvnnmap(struct ctdb_connection *ctdb,
+		    uint32_t destnode, struct ctdb_vnn_map **vnnmap);
+
+/*
+ * This function is used to release/free the vnnmap structure returned
+ * by ctdb_getvnnmap() and ctdb_getvnnmap_recv()
+ */
+void ctdb_free_vnnmap(struct ctdb_vnn_map *vnnmap);
+
 /* These ugly macro wrappers make the callbacks typesafe. */
 #include <ctdb_typesafe_cb.h>
 #define ctdb_sendcb(cb, cbdata)						\
@@ -1065,6 +1120,10 @@ void ctdb_free_publicips(struct ctdb_all_public_ips *ips);
 
 #define ctdb_getifaces_send(ctdb, destnode, cb, cbdata)			\
 	ctdb_getifaces_send((ctdb), (destnode),				\
+			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getvnnmap_send(ctdb, destnode, cb, cbdata)			\
+	ctdb_getvnnmap_send((ctdb), (destnode),				\
 			 ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #endif
