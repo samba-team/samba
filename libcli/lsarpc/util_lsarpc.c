@@ -258,7 +258,6 @@ NTSTATUS auth_info_2_trustauth_inout(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct trustAuthInOutBlob *iopw;
-	enum ndr_err_code ndr_err;
 
 	iopw = talloc_zero(mem_ctx, struct trustAuthInOutBlob);
 	if (iopw == NULL) {
