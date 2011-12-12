@@ -450,15 +450,16 @@ static void received_unlock_msg(struct messaging_context *msg,
 				struct server_id server_id,
 				DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn;
+	struct smbd_server_connection *sconn =
+		talloc_get_type(private_data,
+		struct smbd_server_connection);
+
+	if (sconn == NULL) {
+		return;
+	}
 
 	DEBUG(10,("received_unlock_msg (SMB2)\n"));
 
-	sconn = msg_ctx_to_sconn(msg);
-	if (sconn == NULL) {
-		DEBUG(1, ("could not find sconn\n"));
-		return;
-	}
 	process_blocking_lock_queue_smb2(sconn, timeval_current());
 }
 
@@ -665,7 +666,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 
 	/* Ensure we'll receive messages when this is unlocked. */
 	if (!sconn->smb2.locks.blocking_lock_unlock_state) {
-		messaging_register(sconn->msg_ctx, NULL,
+		messaging_register(sconn->msg_ctx, sconn,
 				MSG_SMB_UNLOCK, received_unlock_msg);
 		sconn->smb2.locks.blocking_lock_unlock_state = true;
         }
