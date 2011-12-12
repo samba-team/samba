@@ -2382,9 +2382,9 @@ static bool keepalive_fn(const struct timeval *now, void *private_data)
 		return false;
 	}
 
-	smbd_lock_socket(smbd_server_conn);
+	smbd_lock_socket(sconn);
 	ret = send_keepalive(sconn->sock);
-	smbd_unlock_socket(smbd_server_conn);
+	smbd_unlock_socket(sconn);
 
 	if (!ret) {
 		char addr[INET6_ADDRSTRLEN];
