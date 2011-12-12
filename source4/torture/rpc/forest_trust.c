@@ -36,7 +36,6 @@
 #define TEST_DOM_DNS "torturedom.samba.example.com"
 #define TEST_DOM_SID "S-1-5-21-97398-379795-10000"
 #define TEST_MACHINE_NAME "lsatestmach"
-#define TPASS "1234567890"
 
 
 static bool test_get_policy_handle(struct torture_context *tctx,
@@ -577,7 +576,8 @@ static bool test_validate_trust(struct torture_context *tctx,
 				const char *trusting_dom_name,
 				const char *trusting_dom_dns_name,
 				const char *trusted_dom_name,
-				const char *trusted_dom_dns_name)
+				const char *trusted_dom_dns_name,
+				const char *trust_password)
 {
 	struct netr_ServerGetTrustInfo r;
 
@@ -613,7 +613,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 				   CRED_SPECIFIED);
 	cli_credentials_set_realm(credentials, trusting_dom_dns_name,
 				  CRED_SPECIFIED);
-	cli_credentials_set_password(credentials, TPASS, CRED_SPECIFIED);
+	cli_credentials_set_password(credentials, trust_password, CRED_SPECIFIED);
 	cli_credentials_set_workstation(credentials,
 					trusted_dom_name, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);
@@ -795,10 +795,14 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 	union lsa_PolicyInformation *dom1_info_dns = NULL;
 	union lsa_PolicyInformation *dom2_info_dns = NULL;
 	const char *binding = torture_setting_string(tctx, "binding", NULL);
+	char *test_password;
 
 	torture_comment(tctx, "Testing Forest Trusts\n");
 
-	if (!get_trust_domain_passwords_auth_blob(tctx, TPASS, &auth_blob)) {
+	test_password = generate_random_password(tctx, 32, 64);
+	torture_assert(tctx, test_password != NULL, "test password must be generated");
+
+	if (!get_trust_domain_passwords_auth_blob(tctx, test_password, &auth_blob)) {
 		torture_comment(tctx,
 				"get_trust_domain_passwords_auth_blob failed\n");
 		return false;
@@ -809,6 +813,8 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 	 * generate a usable blob due to errors in the IDL */
 	auth_blob.data = talloc_memdup(tctx, my_blob, sizeof(my_blob));
 	auth_blob.length = sizeof(my_blob);
+
+	test_password = "1234567890"
 #endif
 
 	domsid = dom_sid_parse_talloc(tctx, TEST_DOM_SID);
@@ -832,7 +838,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 	if (!test_validate_trust(tctx, binding,
 				 dom1_info_dns->dns.name.string,
 				 dom1_info_dns->dns.dns_domain.string,
-				 TEST_DOM, TEST_DOM_DNS)) {
+				 TEST_DOM, TEST_DOM_DNS, test_password)) {
 		ret = false;
 	}
 
@@ -911,7 +917,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 				 dom1_info_dns->dns.name.string,
 				 dom1_info_dns->dns.dns_domain.string,
 				 dom2_info_dns->dns.name.string,
-				 dom2_info_dns->dns.dns_domain.string)) {
+				 dom2_info_dns->dns.dns_domain.string, test_password)) {
 		ret = false;
 	}
 
@@ -919,7 +925,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 				 dom2_info_dns->dns.name.string,
 				 dom2_info_dns->dns.dns_domain.string,
 				 dom1_info_dns->dns.name.string,
-				 dom1_info_dns->dns.dns_domain.string)) {
+				 dom1_info_dns->dns.dns_domain.string, test_password)) {
 		ret = false;
 	}
 
