@@ -2885,7 +2885,7 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 		set_blocking(listener_pipe[1], false);
 
 		status = reinit_after_fork(sconn->msg_ctx,
-					   server_event_context(),
+					   sconn->ev_ctx,
 					   procid_self(), false);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
@@ -2905,10 +2905,10 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 	 * Without smb signing this is the same as the normal smbd
 	 * listener. This needs to change once signing comes in.
 	 */
-	sconn->smb1.echo_handler.trusted_fde = event_add_fd(server_event_context(),
+	sconn->smb1.echo_handler.trusted_fde = tevent_add_fd(sconn->ev_ctx,
 					sconn,
 					sconn->smb1.echo_handler.trusted_fd,
-					EVENT_FD_READ,
+					TEVENT_FD_READ,
 					smbd_server_echo_handler,
 					sconn);
 	if (sconn->smb1.echo_handler.trusted_fde == NULL) {
