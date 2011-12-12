@@ -87,7 +87,7 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 	}
 
 	subreq = smbd_smb2_read_send(req,
-				     req->sconn->smb2.event_ctx,
+				     req->sconn->ev_ctx,
 				     req,
 				     in_smbpid,
 				     in_file_id_volatile,

@@ -584,7 +584,6 @@ struct smbd_server_connection {
 		} locks;
 	} smb1;
 	struct {
-		struct tevent_context *event_ctx;
 		struct tevent_queue *recv_queue;
 		struct tevent_queue *send_queue;
 		struct tstream_context *stream;

@@ -98,8 +98,6 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 
 	TALLOC_FREE(sconn->smb1.fde);
 
-	sconn->smb2.event_ctx = sconn->ev_ctx;
-
 	sconn->smb2.recv_queue = tevent_queue_create(sconn, "smb2 recv queue");
 	if (sconn->smb2.recv_queue == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -803,7 +801,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 		print_req_vectors(nreq);
 	}
 	nreq->subreq = tstream_writev_queue_send(nreq,
-					nreq->sconn->smb2.event_ctx,
+					nreq->sconn->ev_ctx,
 					nreq->sconn->smb2.stream,
 					nreq->sconn->smb2.send_queue,
 					nreq->out.vector,
@@ -963,7 +961,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	}
 
 	defer_endtime = timeval_current_ofs_usec(defer_time);
-	req->async_te = tevent_add_timer(req->sconn->smb2.event_ctx,
+	req->async_te = tevent_add_timer(req->sconn->ev_ctx,
 					 req, defer_endtime,
 					 smbd_smb2_request_pending_timer,
 					 req);
@@ -1084,7 +1082,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	}
 
 	subreq = tstream_writev_queue_send(state,
-					state->sconn->smb2.event_ctx,
+					state->sconn->ev_ctx,
 					state->sconn->smb2.stream,
 					state->sconn->smb2.send_queue,
 					state->vector,
@@ -1850,7 +1848,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			return NT_STATUS_NO_MEMORY;
 		}
 		tevent_schedule_immediate(im,
-					req->sconn->smb2.event_ctx,
+					req->sconn->ev_ctx,
 					smbd_smb2_request_dispatch_immediate,
 					req);
 		return NT_STATUS_OK;
@@ -1890,7 +1888,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 
 	subreq = tstream_writev_queue_send(req,
-					   req->sconn->smb2.event_ctx,
+					   req->sconn->ev_ctx,
 					   req->sconn->smb2.stream,
 					   req->sconn->smb2.send_queue,
 					   req->out.vector,
@@ -2167,7 +2165,7 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	SBVAL(body, 0x10, file_id_volatile);
 
 	subreq = tstream_writev_queue_send(state,
-					   sconn->smb2.event_ctx,
+					   sconn->ev_ctx,
 					   sconn->smb2.stream,
 					   sconn->smb2.send_queue,
 					   &state->vector, 1);
@@ -2606,7 +2604,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 	}
 
 	/* ask for the next request */
-	subreq = smbd_smb2_request_read_send(sconn, sconn->smb2.event_ctx, sconn);
+	subreq = smbd_smb2_request_read_send(sconn, sconn->ev_ctx, sconn);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

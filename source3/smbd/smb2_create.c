@@ -227,7 +227,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	}
 
 	tsubreq = smbd_smb2_create_send(smb2req,
-				       smb2req->sconn->smb2.event_ctx,
+				       smb2req->sconn->ev_ctx,
 				       smb2req,
 				       in_oplock_level,
 				       in_impersonation_level,
@@ -1095,7 +1095,7 @@ void schedule_deferred_open_message_smb2(
 		(unsigned long long)mid ));
 
 	tevent_schedule_immediate(state->im,
-			smb2req->sconn->smb2.event_ctx,
+			smb2req->sconn->ev_ctx,
 			smbd_smb2_create_request_dispatch_immediate,
 			smb2req);
 }
@@ -1215,7 +1215,7 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 				&end_time,
 				true) ));
 
-	state->te = event_add_timed(smb2req->sconn->smb2.event_ctx,
+	state->te = tevent_add_timer(smb2req->sconn->ev_ctx,
 				state,
 				end_time,
 				smb2_deferred_open_timer,
