@@ -186,7 +186,7 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 		struct smbd_shm_signing *s;
 
 		/* setup the signing state in shared memory */
-		s = talloc_zero(server_event_context(), struct smbd_shm_signing);
+		s = talloc_zero(conn, struct smbd_shm_signing);
 		if (s == NULL) {
 			return false;
 		}
@@ -208,7 +208,7 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 		return true;
 	}
 
-	conn->smb1.signing_state = smb_signing_init(server_event_context(),
+	conn->smb1.signing_state = smb_signing_init(conn,
 						    allowed, desired, mandatory);
 	if (!conn->smb1.signing_state) {
 		return false;
