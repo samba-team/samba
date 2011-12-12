@@ -305,7 +305,7 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 		goto send;
 	}
 
-	subreq = np_read_send(req->conn, server_event_context(),
+	subreq = np_read_send(state, server_event_context(),
 			      state->handle, state->data, state->max_read);
 	if (subreq == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
