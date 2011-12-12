@@ -354,9 +354,9 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	}
 
 	fsp->oplock_timeout =
-		event_add_timed(server_event_context(), fsp,
-				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
-				oplock_timeout_handler, fsp);
+		tevent_add_timer(fsp->conn->sconn->ev_ctx, fsp,
+				 timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
+				 oplock_timeout_handler, fsp);
 
 	if (fsp->oplock_timeout == NULL) {
 		DEBUG(0, ("Could not add oplock timeout handler\n"));
