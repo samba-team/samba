@@ -770,21 +770,18 @@ static int control_status_1_human(int mypnn, struct ctdb_node_and_flags *node)
  */
 static int control_status(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret;
+	int i;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_node_map *nodemap=NULL;
-	uint32_t recmode, recmaster;
-	int mypnn;
+	uint32_t recmode, recmaster, mypnn;
 
-	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (mypnn == -1) {
+	if (!ctdb_getpnn(ctdb_connection, options.pnn, &mypnn)) {
 		return -1;
 	}
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
-	if (ret != 0) {
+	if (!ctdb_getnodemap(ctdb_connection, options.pnn, &nodemap)) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 
 	if (options.machinereadable) {
@@ -808,10 +805,9 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		(void) control_status_1_human(mypnn, &nodemap->nodes[i]);
 	}
 
-	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &vnnmap);
-	if (ret != 0) {
+	if (!ctdb_getvnnmap(ctdb_connection, options.pnn, &vnnmap)) {
 		DEBUG(DEBUG_ERR, ("Unable to get vnnmap from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 	if (vnnmap->generation == INVALID_GENERATION) {
 		printf("Generation:INVALID\n");
@@ -822,6 +818,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	for(i=0;i<vnnmap->size;i++){
 		printf("hash:%d lmaster:%d\n", i, vnnmap->map[i]);
 	}
+	ctdb_free_vnnmap(vnnmap);
 
 	if (!ctdb_getrecmode(ctdb_connection, options.pnn, &recmode)) {
 		DEBUG(DEBUG_ERR, ("Unable to get recmode from node %u\n", options.pnn));
