@@ -396,7 +396,7 @@ class dc_join(object):
         nc_list = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
 
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
+            rec["msDS-Behavior-Version"] = str(samba.dsdb.DS_DOMAIN_FUNCTION_2008_R2)
 
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-HasDomainNCs"] = ctx.base_dn
