@@ -718,7 +718,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		conn->notify_ctx = notify_init(conn,
 					       sconn_server_id(sconn),
 					       sconn->msg_ctx,
-					       server_event_context(),
+					       sconn->ev_ctx,
 					       conn);
 	}
 
