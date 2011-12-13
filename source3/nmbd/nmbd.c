@@ -459,7 +459,7 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
  The main select loop.
  **************************************************************************** */
 
-static void process(void)
+static void process(struct messaging_context *msg)
 {
 	bool run_election;
 
@@ -480,8 +480,7 @@ static void process(void)
 		 * (nmbd_packets.c)
 		 */
 
-		if (listen_for_packets(nmbd_messaging_context(),
-				       run_election)) {
+		if (listen_for_packets(msg, run_election)) {
 			TALLOC_FREE(frame);
 			return;
 		}
@@ -1013,7 +1012,7 @@ static bool open_sockets(bool isdaemon, int port)
         }
 
 	TALLOC_FREE(frame);
-	process();
+	process(nmbd_messaging_context());
 
 	kill_async_dns_child();
 	return(0);
