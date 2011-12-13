@@ -84,16 +84,6 @@ WERROR _netr_LogonControl(struct pipes_struct *p,
 	return _netr_LogonControl2Ex(p, &l);
 }
 
-/****************************************************************************
-Send a message to smbd to do a sam synchronisation
-**************************************************************************/
-
-static void send_sync_message(struct messaging_context *msg_ctx)
-{
-        DEBUG(3, ("sending sam synchronisation message\n"));
-        message_send_all(msg_ctx, MSG_SMB_SAM_SYNC, NULL, 0, NULL);
-}
-
 /*************************************************************************
  _netr_LogonControl2
  *************************************************************************/
@@ -387,10 +377,6 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
-	}
-
-        if (lp_server_role() == ROLE_DOMAIN_BDC) {
-                send_sync_message(p->msg_ctx);
 	}
 
 	return WERR_OK;
