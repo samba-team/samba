@@ -858,104 +858,6 @@ static int ctdb_repack_tdb(struct tdb_context *tdb, TALLOC_CTX *mem_ctx, struct 
 	return 0;
 }
 
-static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *vdata, uint32_t freelist)
-{
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	TDB_CONTEXT *tune_tdb;
-	TDB_DATA key, value;
-	struct vacuum_tuning_data tdata;
-	struct vacuum_tuning_data *tptr;
-	char *vac_dbname;
-	int flags;
-
-	vac_dbname = talloc_asprintf(tmp_ctx, "%s/%s.%u",
-				     ctdb_db->ctdb->db_directory_state,
-				     TUNINGDBNAME, ctdb_db->ctdb->pnn);
-	if (vac_dbname == NULL) {
-		DEBUG(DEBUG_CRIT,(__location__ " Out of memory error while allocating '%s'\n", vac_dbname));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	flags  = ctdb_db->ctdb->valgrinding ? TDB_NOMMAP : 0;
-	flags |= TDB_DISALLOW_NESTING;
-	tune_tdb = tdb_open(vac_dbname, 0,
-			    flags,
-			    O_RDWR|O_CREAT, 0600);
-	if (tune_tdb == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to create/open %s\n", TUNINGDBNAME));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-	
-	if (tdb_transaction_start(tune_tdb) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to start transaction\n"));
-		tdb_close(tune_tdb);
-		return -1;
-	}
-	key.dptr = discard_const(ctdb_db->db_name);
-	key.dsize = strlen(ctdb_db->db_name);
-	value = tdb_fetch(tune_tdb, key);
-
-	if (value.dptr != NULL && value.dsize == sizeof(struct vacuum_tuning_data)) {
-		tptr = (struct vacuum_tuning_data *)value.dptr;
-		tdata = *tptr;
-
-		/*
-		 * re-calc new vacuum interval:
-		 * in case no limit was reached we continuously increase the interval
-		 * until vacuum_max_interval is reached
-		 * in case a limit was reached we divide the current interval by 2
-		 * unless vacuum_min_interval is reached
-		 */
-		if (freelist < vdata->repack_limit &&
-		    vdata->delete_count < vdata->vacuum_limit) {
-			if (tdata.last_interval < ctdb_db->ctdb->tunable.vacuum_max_interval) {
-				tdata.new_interval = tdata.last_interval * 110 / 100;
-				DEBUG(DEBUG_INFO,("Increasing vacuum interval %u -> %u for %s\n", 
-					tdata.last_interval, tdata.new_interval, ctdb_db->db_name));
-			}
-		} else {
-			tdata.new_interval = tdata.last_interval / 2;
-			if (tdata.new_interval < ctdb_db->ctdb->tunable.vacuum_min_interval ||
-				tdata.new_interval > ctdb_db->ctdb->tunable.vacuum_max_interval) {
-				tdata.new_interval = ctdb_db->ctdb->tunable.vacuum_min_interval;
-			}		
-			DEBUG(DEBUG_INFO,("Decreasing vacuum interval %u -> %u for %s\n", 
-					 tdata.last_interval, tdata.new_interval, ctdb_db->db_name));
-		}
-		tdata.last_interval = tdata.new_interval;
-	} else {
-		DEBUG(DEBUG_DEBUG,(__location__ " Cannot find tunedb record for %s. Using default interval\n", ctdb_db->db_name));
-		tdata.last_num_repack = freelist;
-		tdata.last_num_empty = vdata->delete_count;
-		tdata.last_interval = ctdb_db->ctdb->tunable.vacuum_default_interval;
-	}
-
-	if (value.dptr != NULL) {
-		free(value.dptr);
-	}
-
-	tdata.last_start = vdata->start;
-	tdata.last_duration = timeval_elapsed(&vdata->start);
-
-	value.dptr = (unsigned char *)&tdata;
-	value.dsize = sizeof(tdata);
-
-	if (tdb_store(tune_tdb, key, value, 0) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to store tundb record for %s\n", ctdb_db->db_name));
-		tdb_transaction_cancel(tune_tdb);
-		tdb_close(tune_tdb);
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-	tdb_transaction_commit(tune_tdb);
-	tdb_close(tune_tdb);
-	talloc_free(tmp_ctx);
-
-	return 0;
-}
-
 /*
  * repack and vaccum a db
  * called from the child context
@@ -1007,7 +909,6 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	 */
 	if (freelist_size < repack_limit && vdata->delete_count < vacuum_limit)
 	{
-		update_tuning_db(ctdb_db, vdata, freelist_size);
 		talloc_free(vdata);
 		return 0;
 	}
@@ -1020,11 +921,9 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	 */
 	if (ctdb_repack_tdb(ctdb_db->ltdb->tdb, mem_ctx, vdata) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to repack '%s'\n", name));
-		update_tuning_db(ctdb_db, vdata, freelist_size);
 		talloc_free(vdata);
 		return -1;
 	}
-	update_tuning_db(ctdb_db, vdata, freelist_size);
 	talloc_free(vdata);
 
 	return 0;
