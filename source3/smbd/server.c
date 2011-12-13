@@ -117,20 +117,6 @@ static void  killkids(void)
 	if(am_parent) kill(0,SIGTERM);
 }
 
-/****************************************************************************
- Process a sam sync message - not sure whether to do this here or
- somewhere else.
-****************************************************************************/
-
-static void msg_sam_sync(struct messaging_context *msg,
-			 void *private_data,
-			 uint32_t msg_type,
-			 struct server_id server_id,
-			 DATA_BLOB *data)
-{
-        DEBUG(10, ("** sam sync message received, ignoring\n"));
-}
-
 static void msg_exit_server(struct messaging_context *msg,
 			    void *private_data,
 			    uint32_t msg_type,
@@ -748,7 +734,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
         /* Listen to messages */
 
-	messaging_register(msg_ctx, NULL, MSG_SMB_SAM_SYNC, msg_sam_sync);
 	messaging_register(msg_ctx, NULL, MSG_SHUTDOWN, msg_exit_server);
 	messaging_register(msg_ctx, ev_ctx, MSG_SMB_CONF_UPDATED,
 			   smb_conf_updated);
