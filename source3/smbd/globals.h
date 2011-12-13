@@ -117,9 +117,6 @@ struct smbd_parent_context;
 extern struct smbd_parent_context *am_parent;
 extern struct memcache *smbd_memcache_ctx;
 extern bool exit_firsttime;
-struct child_pid;
-extern struct child_pid *children;
-extern int num_children;
 
 struct tstream_context;
 struct smbd_smb2_request;

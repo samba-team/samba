@@ -43,6 +43,7 @@
 #include "lib/param/param.h"
 
 struct smbd_open_socket;
+struct smbd_child_pid;
 
 struct smbd_parent_context {
 	bool interactive;
@@ -52,6 +53,12 @@ struct smbd_parent_context {
 
 	/* the list of listening sockets */
 	struct smbd_open_socket *sockets;
+
+	/* the list of current child processes */
+	struct smbd_child_pid *children;
+	size_t num_children;
+
+	struct timed_event *cleanup_te;
 };
 
 struct smbd_open_socket {
@@ -59,6 +66,11 @@ struct smbd_open_socket {
 	struct smbd_parent_context *parent;
 	int fd;
 	struct tevent_fd *fde;
+};
+
+struct smbd_child_pid {
+	struct smbd_child_pid *prev, *next;
+	pid_t pid;
 };
 
 extern void start_epmd(struct tevent_context *ev_ctx,
@@ -183,10 +195,16 @@ NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
 				    uint32_t msg_type, DATA_BLOB* data)
 {
 	NTSTATUS status;
-	struct child_pid *child;
+	struct smbd_parent_context *parent = am_parent;
+	struct smbd_child_pid *child;
 
-	for (child = children; child != NULL; child = child->next) {
-		status = messaging_send(msg_ctx, pid_to_procid(child->pid),
+	if (parent == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	for (child = parent->children; child != NULL; child = child->next) {
+		status = messaging_send(parent->msg_ctx,
+					pid_to_procid(child->pid),
 					msg_type, data);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -212,18 +230,19 @@ static void smbd_msg_debug(struct messaging_context *msg_ctx,
 	messaging_send_to_children(msg_ctx, MSG_DEBUG, data);
 }
 
-static void add_child_pid(pid_t pid)
+static void add_child_pid(struct smbd_parent_context *parent,
+			  pid_t pid)
 {
-	struct child_pid *child;
+	struct smbd_child_pid *child;
 
-	child = SMB_MALLOC_P(struct child_pid);
+	child = talloc_zero(parent, struct smbd_child_pid);
 	if (child == NULL) {
 		DEBUG(0, ("Could not add child struct -- malloc failed\n"));
 		return;
 	}
 	child->pid = pid;
-	DLIST_ADD(children, child);
-	num_children += 1;
+	DLIST_ADD(parent->children, child);
+	parent->num_children += 1;
 }
 
 /*
@@ -242,23 +261,24 @@ static void cleanup_timeout_fn(struct event_context *event_ctx,
 				struct timeval now,
 				void *private_data)
 {
-	struct timed_event **cleanup_te = (struct timed_event **)private_data;
-	struct messaging_context *msg = smbd_messaging_context();
+	struct smbd_parent_context *parent =
+		talloc_get_type_abort(private_data,
+		struct smbd_parent_context);
+
+	parent->cleanup_te = NULL;
 
 	DEBUG(1,("Cleaning up brl and lock database after unclean shutdown\n"));
-	message_send_all(msg, MSG_SMB_UNLOCK, NULL, 0, NULL);
-	messaging_send_buf(msg, messaging_server_id(msg),
-				MSG_SMB_BRL_VALIDATE, NULL, 0);
-	/* mark the cleanup as having been done */
-	(*cleanup_te) = NULL;
+	message_send_all(parent->msg_ctx, MSG_SMB_UNLOCK, NULL, 0, NULL);
+	messaging_send_buf(parent->msg_ctx,
+			   messaging_server_id(parent->msg_ctx),
+			   MSG_SMB_BRL_VALIDATE, NULL, 0);
 }
 
-static void remove_child_pid(struct tevent_context *ev_ctx,
+static void remove_child_pid(struct smbd_parent_context *parent,
 			     pid_t pid,
 			     bool unclean_shutdown)
 {
-	struct child_pid *child;
-	static struct timed_event *cleanup_te;
+	struct smbd_child_pid *child;
 	struct server_id child_id;
 
 	if (unclean_shutdown) {
@@ -268,13 +288,14 @@ static void remove_child_pid(struct tevent_context *ev_ctx,
                 */
 		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n",
 			(unsigned int)pid));
-		if (!cleanup_te) {
+		if (parent->cleanup_te == NULL) {
 			/* call the cleanup timer, but not too often */
 			int cleanup_time = lp_parm_int(-1, "smbd", "cleanuptime", 20);
-			cleanup_te = event_add_timed(ev_ctx, NULL,
+			parent->cleanup_te = tevent_add_timer(parent->ev_ctx,
+						parent,
 						timeval_current_ofs(cleanup_time, 0),
 						cleanup_timeout_fn,
-						&cleanup_te);
+						parent);
 			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
 		}
 	}
@@ -286,12 +307,12 @@ static void remove_child_pid(struct tevent_context *ev_ctx,
 			  (int)pid));
 	}
 
-	for (child = children; child != NULL; child = child->next) {
+	for (child = parent->children; child != NULL; child = child->next) {
 		if (child->pid == pid) {
-			struct child_pid *tmp = child;
-			DLIST_REMOVE(children, child);
-			SAFE_FREE(tmp);
-			num_children -= 1;
+			struct smbd_child_pid *tmp = child;
+			DLIST_REMOVE(parent->children, child);
+			TALLOC_FREE(tmp);
+			parent->num_children -= 1;
 			return;
 		}
 	}
@@ -304,14 +325,14 @@ static void remove_child_pid(struct tevent_context *ev_ctx,
  Have we reached the process limit ?
 ****************************************************************************/
 
-static bool allowable_number_of_smbd_processes(void)
+static bool allowable_number_of_smbd_processes(struct smbd_parent_context *parent)
 {
 	int max_processes = lp_max_smbd_processes();
 
 	if (!max_processes)
 		return True;
 
-	return num_children < max_processes;
+	return parent->num_children < max_processes;
 }
 
 static void smbd_sig_chld_handler(struct tevent_context *ev,
@@ -323,6 +344,9 @@ static void smbd_sig_chld_handler(struct tevent_context *ev,
 {
 	pid_t pid;
 	int status;
+	struct smbd_parent_context *parent =
+		talloc_get_type_abort(private_data,
+		struct smbd_parent_context);
 
 	while ((pid = sys_waitpid(-1, &status, WNOHANG)) > 0) {
 		bool unclean_shutdown = False;
@@ -340,7 +364,7 @@ static void smbd_sig_chld_handler(struct tevent_context *ev,
 		if (WIFSIGNALED(status)) {
 			unclean_shutdown = True;
 		}
-		remove_child_pid(ev, pid, unclean_shutdown);
+		remove_child_pid(parent, pid, unclean_shutdown);
 	}
 }
 
@@ -399,7 +423,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		return;
 	}
 
-	if (!allowable_number_of_smbd_processes()) {
+	if (!allowable_number_of_smbd_processes(s->parent)) {
 		close(fd);
 		sconn->sock = -1;
 		return;
@@ -495,7 +519,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	sconn->sock = -1;
 
 	if (pid != 0) {
-		add_child_pid(pid);
+		add_child_pid(s->parent, pid);
 	}
 
 	/* Force parent to check log size after

@@ -1359,12 +1359,6 @@ struct smb_filename {
 	SMB_STRUCT_STAT st;
 };
 
-/* struct for maintaining the child processes that get spawned from smbd */
-struct child_pid {
-	struct child_pid *prev, *next;
-	pid_t pid;
-};
-
 /* Used to keep track of deferred opens. */
 struct deferred_open_record;
 

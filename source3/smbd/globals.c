@@ -101,8 +101,6 @@ struct kernel_oplocks *koplocks = NULL;
 struct smbd_parent_context *am_parent = NULL;
 struct memcache *smbd_memcache_ctx = NULL;
 bool exit_firsttime = true;
-struct child_pid *children = 0;
-int num_children = 0;
 
 struct smbd_server_connection *smbd_server_conn = NULL;
 
