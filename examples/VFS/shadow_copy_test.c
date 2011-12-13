@@ -18,7 +18,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "../source3/include/includes.h"
 #include "ntioctl.h"
 #include "smbd/proto.h"
 
