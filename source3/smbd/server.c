@@ -461,8 +461,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		}
 
 		smbd_setup_sig_term_handler(sconn);
-		smbd_setup_sig_hup_handler(ev,
-					   msg_ctx);
+		smbd_setup_sig_hup_handler(sconn);
 
 		if (!serverid_register(messaging_server_id(msg_ctx),
 				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD

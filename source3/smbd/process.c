@@ -899,23 +899,24 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 				  void *siginfo,
 				  void *private_data)
 {
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		private_data, struct messaging_context);
+	struct smbd_server_connection *sconn =
+		talloc_get_type_abort(private_data,
+		struct smbd_server_connection);
+
 	change_to_root_user();
 	DEBUG(1,("Reloading services after SIGHUP\n"));
-	reload_services(msg_ctx, smbd_server_conn->sock, False);
-	if (am_parent) {
-		printing_subsystem_update(ev, msg_ctx, true);
-	}
+	reload_services(sconn->msg_ctx, sconn->sock, false);
 }
 
-void smbd_setup_sig_hup_handler(struct tevent_context *ev,
-				struct messaging_context *msg_ctx)
+void smbd_setup_sig_hup_handler(struct smbd_server_connection *sconn)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(ev, ev, SIGHUP, 0, smbd_sig_hup_handler,
-			       msg_ctx);
+	se = tevent_add_signal(sconn->ev_ctx,
+			       sconn,
+			       SIGHUP, 0,
+			       smbd_sig_hup_handler,
+			       sconn);
 	if (!se) {
 		exit_server("failed to setup SIGHUP handler");
 	}
