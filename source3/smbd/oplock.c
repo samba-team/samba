@@ -487,19 +487,19 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 					 struct server_id src,
 					 DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn;
 	struct share_mode_entry msg;
 	files_struct *fsp;
 	bool break_to_level2 = False;
+	struct smbd_server_connection *sconn =
+		talloc_get_type(private_data,
+		struct smbd_server_connection);
 
-	if (data->data == NULL) {
-		DEBUG(0, ("Got NULL buffer\n"));
+	if (sconn == NULL) {
 		return;
 	}
 
-	sconn = msg_ctx_to_sconn(msg_ctx);
-	if (sconn == NULL) {
-		DEBUG(1, ("could not find sconn\n"));
+	if (data->data == NULL) {
+		DEBUG(0, ("Got NULL buffer\n"));
 		return;
 	}
 
@@ -934,7 +934,7 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 {
 	DEBUG(3,("init_oplocks: initializing messages.\n"));
 
-	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_BREAK_REQUEST,
+	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_BREAK_REQUEST,
 			   process_oplock_break_message);
 	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_ASYNC_LEVEL2_BREAK,
 			   process_oplock_async_level2_break_message);
