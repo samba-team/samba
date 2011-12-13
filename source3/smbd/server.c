@@ -274,8 +274,7 @@ static void remove_child_pid(struct tevent_context *ev_ctx,
 		}
 	}
 
-	child_id = procid_self(); /* Just initialize pid and potentially vnn */
-	child_id.pid = pid;
+	child_id = pid_to_procid(pid);
 
 	if (!serverid_deregister(child_id)) {
 		DEBUG(1, ("Could not remove pid %d from serverid.tdb\n",
