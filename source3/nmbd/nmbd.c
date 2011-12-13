@@ -923,7 +923,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	/* get broadcast messages */
 
-	if (!serverid_register(procid_self(),
+	if (!serverid_register(messaging_server_id(msg),
 				FLAG_MSG_GENERAL |
 				FLAG_MSG_NMBD |
 				FLAG_MSG_DBWRAP)) {
