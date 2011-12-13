@@ -3139,6 +3139,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
 	messaging_register(sconn->msg_ctx, sconn,
 			   MSG_SMB_CLOSE_FILE, msg_close_file);
+	messaging_register(sconn->msg_ctx, NULL,
+			   MSG_SMB_FILE_RENAME, msg_file_was_renamed);
 
 	/*
 	 * Use the default MSG_DEBUG handler to avoid rebroadcasting

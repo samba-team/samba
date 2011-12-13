@@ -749,8 +749,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 	messaging_register(msg_ctx, NULL, MSG_SMB_SAM_SYNC, msg_sam_sync);
 	messaging_register(msg_ctx, NULL, MSG_SHUTDOWN, msg_exit_server);
-	messaging_register(msg_ctx, NULL, MSG_SMB_FILE_RENAME,
-			   msg_file_was_renamed);
 	messaging_register(msg_ctx, ev_ctx, MSG_SMB_CONF_UPDATED,
 			   smb_conf_updated);
 	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
