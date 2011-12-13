@@ -477,7 +477,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		smbd_setup_sig_hup_handler(ev,
 					   msg_ctx);
 
-		if (!serverid_register(procid_self(),
+		if (!serverid_register(messaging_server_id(msg_ctx),
 				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
 				       |FLAG_MSG_DBWRAP
 				       |FLAG_MSG_PRINT_GENERAL)) {
