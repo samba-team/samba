@@ -147,16 +147,16 @@ static bool test_samr_ops(struct torture_context *tctx,
 	connect_r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	connect_r.out.connect_handle = &handle;
 
-	printf("Testing Connect and OpenDomain on BUILTIN\n");
+	torture_comment(tctx, "Testing Connect and OpenDomain on BUILTIN\n");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_Connect_r(b, tctx, &connect_r),
 		"Connect failed");
 	if (!NT_STATUS_IS_OK(connect_r.out.result)) {
 		if (NT_STATUS_EQUAL(connect_r.out.result, NT_STATUS_ACCESS_DENIED)) {
-			printf("Connect failed (expected, schannel mapped to anonymous): %s\n",
+			torture_comment(tctx, "Connect failed (expected, schannel mapped to anonymous): %s\n",
 			       nt_errstr(connect_r.out.result));
 		} else {
-			printf("Connect failed - %s\n", nt_errstr(connect_r.out.result));
+			torture_comment(tctx, "Connect failed - %s\n", nt_errstr(connect_r.out.result));
 			return false;
 		}
 	} else {
@@ -168,12 +168,12 @@ static bool test_samr_ops(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, dcerpc_samr_OpenDomain_r(b, tctx, &opendom),
 			"OpenDomain failed");
 		if (!NT_STATUS_IS_OK(opendom.out.result)) {
-			printf("OpenDomain failed - %s\n", nt_errstr(opendom.out.result));
+			torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(opendom.out.result));
 			return false;
 		}
 	}
 
-	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
+	torture_comment(tctx, "Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
 
 	/* do several ops to test credential chaining */
 	for (i=0;i<5;i++) {
@@ -181,7 +181,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 			"GetDomPwInfo failed");
 		if (!NT_STATUS_IS_OK(r.out.result)) {
 			if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED)) {
-				printf("GetDomPwInfo op %d failed - %s\n", i, nt_errstr(r.out.result));
+				torture_comment(tctx, "GetDomPwInfo op %d failed - %s\n", i, nt_errstr(r.out.result));
 				return false;
 			}
 		}
@@ -202,7 +202,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 	struct lsa_String *authority_name_p = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	printf("\nTesting GetUserName\n");
+	torture_comment(tctx, "\nTesting GetUserName\n");
 
 	r.in.system_name = "\\";
 	r.in.account_name = &account_name_p;
@@ -216,7 +216,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 	authority_name_p = *r.out.authority_name;
 
 	if (!NT_STATUS_IS_OK(r.out.result)) {
-		printf("GetUserName failed - %s\n", nt_errstr(r.out.result));
+		torture_comment(tctx, "GetUserName failed - %s\n", nt_errstr(r.out.result));
 		return false;
 	} else {
 		if (!r.out.account_name) {
@@ -224,7 +224,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 		}
 
 		if (strcmp(account_name_p->string, "ANONYMOUS LOGON") != 0) {
-			printf("GetUserName returned wrong user: %s, expected %s\n",
+			torture_comment(tctx, "GetUserName returned wrong user: %s, expected %s\n",
 			       account_name_p->string, "ANONYMOUS LOGON");
 			/* FIXME: gd */
 			if (!torture_setting_bool(tctx, "samba3", false)) {
@@ -236,7 +236,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 		}
 
 		if (strcmp(authority_name_p->string, "NT AUTHORITY") != 0) {
-			printf("GetUserName returned wrong user: %s, expected %s\n",
+			torture_comment(tctx, "GetUserName returned wrong user: %s, expected %s\n",
 			       authority_name_p->string, "NT AUTHORITY");
 			/* FIXME: gd */
 			if (!torture_setting_bool(tctx, "samba3", false)) {
@@ -245,7 +245,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 		}
 	}
 	if (!test_many_LookupSids(p, tctx, NULL)) {
-		printf("LsaLookupSids3 failed!\n");
+		torture_comment(tctx, "LsaLookupSids3 failed!\n");
 		return false;
 	}
 
@@ -478,7 +478,7 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= dcerpc_flags;
 
-	printf("Opening first connection\n");
+	torture_comment(torture, "Opening first connection\n");
 	status = dcerpc_pipe_connect_b(torture, &p1, b, &ndr_table_netlogon,
 				       credentials1, torture->ev, torture->lp_ctx);
 	torture_assert_ntstatus_ok(torture, status, "Failed to connect with schannel");
@@ -816,7 +816,7 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 
 		if (!netlogon_creds_client_check(creds_state,
 					&pwset.out.return_authenticator->cred)) {
-			printf("Credential chaining failed\n");
+			torture_comment(torture, "Credential chaining failed\n");
 		}
 
 		cli_credentials_set_password(s->wks_creds1, password,
