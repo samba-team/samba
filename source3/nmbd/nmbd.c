@@ -64,13 +64,13 @@ struct messaging_context *nmbd_messaging_context(void)
 static void terminate(void)
 {
 	DEBUG(0,("Got SIGTERM: going down...\n"));
-  
+
 	/* Write out wins.dat file if samba is a WINS server */
 	wins_write_database(0,False);
-  
+
 	/* Remove all SELF registered names from WINS */
 	release_wins_names();
-  
+
 	/* Announce all server entries as 0 time-to-live, 0 type. */
 	announce_my_servers_removed();
 
@@ -168,7 +168,7 @@ static void nmbd_terminate(struct messaging_context *msg,
 static void expire_names_and_servers(time_t t)
 {
 	static time_t lastrun = 0;
-  
+
 	if ( !lastrun )
 		lastrun = t;
 	if ( t < (lastrun + 5) )
@@ -800,11 +800,11 @@ static bool open_sockets(bool isdaemon, int port)
 	poptFreeContext(pc);
 
 	global_in_nmbd = true;
-	
+
 	StartupTime = time(NULL);
-	
+
 	sys_srandom(time(NULL) ^ sys_getpid());
-	
+
 	if (!override_logfile) {
 		char *lfile = NULL;
 		if (asprintf(&lfile, "%s/log.nmbd", get_dyn_LOGFILEBASE()) < 0) {
@@ -813,10 +813,10 @@ static bool open_sockets(bool isdaemon, int port)
 		lp_set_logfile(lfile);
 		SAFE_FREE(lfile);
 	}
-	
+
 	fault_setup();
 	dump_core_setup("nmbd", lp_logfile());
-	
+
 	/* POSIX demands that signals are inherited. If the invoking process has
 	 * these signals masked, we will have problems, as we won't receive them. */
 	BlockSignals(False, SIGHUP);
@@ -882,7 +882,7 @@ static bool open_sockets(bool isdaemon, int port)
 		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
 		is_daemon = True;
 	}
-  
+
 	if (is_daemon && !opt_interactive) {
 		DEBUG( 2, ( "Becoming a daemon.\n" ) );
 		become_daemon(Fork, no_process_group, log_stdout);
