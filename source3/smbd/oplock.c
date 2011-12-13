@@ -953,7 +953,7 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 
 	if (lp_kernel_oplocks()) {
 #if HAVE_KERNEL_OPLOCKS_IRIX
-		koplocks = irix_init_kernel_oplocks(NULL);
+		koplocks = irix_init_kernel_oplocks(sconn);
 #elif HAVE_KERNEL_OPLOCKS_LINUX
 		koplocks = linux_init_kernel_oplocks(NULL);
 #elif HAVE_ONEFS

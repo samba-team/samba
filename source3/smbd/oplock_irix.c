@@ -27,6 +27,7 @@
 
 struct irix_oplocks_context {
 	struct kernel_oplocks *ctx;
+	struct smbd_server_connection *sconn;
 	int write_fd;
 	int read_fd;
 	struct fd_event *read_fde;
@@ -184,7 +185,7 @@ static files_struct *irix_oplock_receive_message(struct kernel_oplocks *_ctx)
 
 	fileid = file_id_create_dev((SMB_DEV_T)os.os_dev,
 				    (SMB_INO_T)os.os_ino);
-	if ((fsp = file_find_di_first(smbd_server_conn, fileid)) == NULL) {
+	if ((fsp = file_find_di_first(ctx->sconn, fileid)) == NULL) {
 		DEBUG(0,("irix_oplock_receive_message: unable to find open "
 			 "file with dev = %x, inode = %.0f\n",
 			 (unsigned int)os.os_dev, (double)os.os_ino ));
@@ -285,7 +286,7 @@ static void irix_oplocks_read_fde_handler(struct event_context *ev,
 	files_struct *fsp;
 
 	fsp = irix_oplock_receive_message(ctx->ctx);
-	break_kernel_oplock(fsp->conn->sconn->msg_ctx, fsp);
+	break_kernel_oplock(ctx->sconn->msg_ctx, fsp);
 }
 
 /****************************************************************************
@@ -299,7 +300,7 @@ static const struct kernel_oplocks_ops irix_koplocks = {
 	.contend_level2_oplocks_end	= NULL,
 };
 
-struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
+struct kernel_oplocks *irix_init_kernel_oplocks(struct smbd_server_connection *sconn)
 {
 	struct kernel_oplocks *_ctx;
 	struct irix_oplocks_context *ctx;
@@ -308,7 +309,7 @@ struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 	if (!irix_oplocks_available())
 		return NULL;
 
-	_ctx = talloc_zero(mem_ctx, struct kernel_oplocks);
+	_ctx = talloc_zero(sconn, struct kernel_oplocks);
 	if (!_ctx) {
 		return NULL;
 	}
@@ -321,6 +322,7 @@ struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 	_ctx->ops = &irix_koplocks;
 	_ctx->private_data = ctx;
 	ctx->ctx = _ctx;
+	ctx->sconn = sconn;
 
 	if(pipe(pfd) != 0) {
 		talloc_free(_ctx);
@@ -332,7 +334,7 @@ struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 	ctx->read_fd = pfd[0];
 	ctx->write_fd = pfd[1];
 
-	ctx->read_fde = event_add_fd(server_event_context(),
+	ctx->read_fde = event_add_fd(sconn->ev_ctx,
 				     ctx,
 				     ctx->read_fd,
 				     EVENT_FD_READ,
