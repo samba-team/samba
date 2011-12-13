@@ -302,7 +302,7 @@ static bool test_schannel(struct torture_context *tctx,
 
 	status = dcerpc_secondary_connection(p, &p_netlogon,
 					     b);
-	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
+	torture_assert_ntstatus_ok(tctx, status, "secondary connection");
 
 	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon,
 				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
@@ -329,7 +329,7 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_secondary_connection(p, &p_lsa,
 					     b);
 
-	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
+	torture_assert_ntstatus_ok(tctx, status, "secondary connection");
 
 	status = dcerpc_bind_auth(p_lsa, &ndr_table_lsarpc,
 				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
@@ -369,7 +369,7 @@ static bool test_schannel(struct torture_context *tctx,
 
 	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2,
 					     b);
-	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
+	torture_assert_ntstatus_ok(tctx, status, "secondary connection");
 
 	/* and now setup an SCHANNEL bind on netlogon */
 	status = dcerpc_bind_auth(p_netlogon2, &ndr_table_netlogon,
