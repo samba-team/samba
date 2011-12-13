@@ -358,6 +358,7 @@ struct smbd_open_socket;
 struct smbd_parent_context {
 	bool interactive;
 
+	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 
 	/* the list of listening sockets */
@@ -1288,6 +1289,7 @@ extern void build_options(bool screen);
 		exit_server("talloc(struct smbd_parent_context) failed");
 	}
 	parent->interactive = interactive;
+	parent->ev_ctx = ev_ctx;
 	parent->msg_ctx = msg_ctx;
 	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
 		exit_server("open_sockets_smbd() failed");
