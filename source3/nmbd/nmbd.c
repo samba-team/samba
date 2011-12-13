@@ -47,16 +47,6 @@ struct event_context *nmbd_event_context(void)
 	return server_event_context();
 }
 
-static struct messaging_context *nmbd_messaging_context(void)
-{
-	struct messaging_context *msg_ctx = server_messaging_context();
-	if (likely(msg_ctx != NULL)) {
-		return msg_ctx;
-	}
-	smb_panic("Could not init nmbd's messaging context.\n");
-	return NULL;
-}
-
 /**************************************************************************** **
  Handle a SIGTERM in band.
  **************************************************************************** */
@@ -743,6 +733,7 @@ static bool open_sockets(bool isdaemon, int port)
 	poptContext pc;
 	char *p_lmhosts = NULL;
 	int opt;
+	struct messaging_context *msg;
 	enum {
 		OPT_DAEMON = 1000,
 		OPT_INTERACTIVE,
@@ -864,7 +855,8 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
-	if (nmbd_messaging_context() == NULL) {
+	msg = messaging_init(NULL, server_event_context());
+	if (msg == NULL) {
 		return 1;
 	}
 
@@ -902,15 +894,11 @@ static bool open_sockets(bool isdaemon, int port)
 		setpgid( (pid_t)0, (pid_t)0 );
 #endif
 
-	if (nmbd_messaging_context() == NULL) {
-		return 1;
-	}
-
 #ifndef SYNC_DNS
 	/* Setup the async dns. We do it here so it doesn't have all the other
 		stuff initialised and thus chewing memory and sockets */
 	if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
-		start_async_dns(nmbd_messaging_context());
+		start_async_dns(msg);
 	}
 #endif
 
@@ -920,8 +908,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	pidfile_create("nmbd");
 
-	status = reinit_after_fork(nmbd_messaging_context(),
-				   nmbd_event_context(),
+	status = reinit_after_fork(msg, nmbd_event_context(),
 				   false);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -929,9 +916,9 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
-	if (!nmbd_setup_sig_term_handler(nmbd_messaging_context()))
+	if (!nmbd_setup_sig_term_handler(msg))
 		exit(1);
-	if (!nmbd_setup_sig_hup_handler(nmbd_messaging_context()))
+	if (!nmbd_setup_sig_hup_handler(msg))
 		exit(1);
 
 	/* get broadcast messages */
@@ -944,19 +931,19 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_FORCE_ELECTION, nmbd_message_election);
+	messaging_register(msg, NULL, MSG_FORCE_ELECTION,
+			   nmbd_message_election);
 #if 0
 	/* Until winsrepl is done. */
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
+	messaging_register(msg, NULL, MSG_WINS_NEW_ENTRY,
+			   nmbd_wins_new_entry);
 #endif
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_SHUTDOWN, nmbd_terminate);
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_SMB_CONF_UPDATED, msg_reload_nmbd_services);
-	messaging_register(nmbd_messaging_context(), NULL,
-			   MSG_SEND_PACKET, msg_nmbd_send_packet);
+	messaging_register(msg, NULL, MSG_SHUTDOWN,
+			   nmbd_terminate);
+	messaging_register(msg, NULL, MSG_SMB_CONF_UPDATED,
+			   msg_reload_nmbd_services);
+	messaging_register(msg, NULL, MSG_SEND_PACKET,
+			   msg_nmbd_send_packet);
 
 	TimeInit();
 
@@ -1017,7 +1004,7 @@ static bool open_sockets(bool isdaemon, int port)
         }
 
 	TALLOC_FREE(frame);
-	process(nmbd_messaging_context());
+	process(msg);
 
 	kill_async_dns_child();
 	return(0);
