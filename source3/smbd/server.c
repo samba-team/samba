@@ -737,7 +737,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	   operations until it has gone thru a full startup, which
 	   includes checking to see that smbd is listening. */
 
-	if (!serverid_register(procid_self(),
+	if (!serverid_register(messaging_server_id(msg_ctx),
 			       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
 			       |FLAG_MSG_PRINT_GENERAL
 			       |FLAG_MSG_DBWRAP)) {
