@@ -451,7 +451,7 @@ int main(int argc, char *argv[])
 	lp_load_initial_only(get_dyn_CONFIGFILE());
 
 	/* TODO: check output */
-	reload_services(smbd_messaging_context(), -1, False);
+	reload_services(NULL, -1, False);
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
