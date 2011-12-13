@@ -344,15 +344,15 @@ static void smbd_sig_chld_handler(struct tevent_context *ev,
 	}
 }
 
-static void smbd_setup_sig_chld_handler(struct tevent_context *ev_ctx)
+static void smbd_setup_sig_chld_handler(struct smbd_parent_context *parent)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(ev_ctx,
-			       ev_ctx, /* mem_ctx */
+	se = tevent_add_signal(parent->ev_ctx,
+			       parent, /* mem_ctx */
 			       SIGCHLD, 0,
 			       smbd_sig_chld_handler,
-			       NULL);
+			       parent);
 	if (!se) {
 		exit_server("failed to setup SIGCHLD handler");
 	}
@@ -599,7 +599,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 #endif
 
 	/* Stop zombies */
-	smbd_setup_sig_chld_handler(ev_ctx);
+	smbd_setup_sig_chld_handler(parent);
 
 	/* use a reasonable default set of ports - listing on 445 and 139 */
 	if (!smb_ports) {
@@ -1311,7 +1311,7 @@ extern void build_options(bool screen);
 #endif
 
 	        /* Stop zombies */
-		smbd_setup_sig_chld_handler(ev_ctx);
+		smbd_setup_sig_chld_handler(parent);
 
 		smbd_process(ev_ctx, smbd_server_conn);
 
