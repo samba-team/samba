@@ -920,7 +920,7 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 
 static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 {
-	uint interval = ctdb_db->ctdb->tunable.vacuum_default_interval;
+	uint interval = ctdb_db->ctdb->tunable.vacuum_interval;
 
 	return interval;
 }

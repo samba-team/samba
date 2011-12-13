@@ -57,12 +57,13 @@ static const struct {
 	{ "RecLockLatencyMs",  1000,  offsetof(struct ctdb_tunable, reclock_latency_ms) },
 	{ "RecoveryDropAllIPs", 120,  offsetof(struct ctdb_tunable, recovery_drop_all_ips) },
 	{ "VerifyRecoveryLock",   1,  offsetof(struct ctdb_tunable, verify_recovery_lock) },
-	{ "VacuumDefaultInterval", 10,  offsetof(struct ctdb_tunable, vacuum_default_interval) },
+	{ "VacuumInterval",   10,  offsetof(struct ctdb_tunable, vacuum_interval) },
+	{ "VacuumDefaultInterval", 10,  offsetof(struct ctdb_tunable, vacuum_default_interval) }, /* OBSOLETE */
 	{ "VacuumMaxRunTime",     30,  offsetof(struct ctdb_tunable, vacuum_max_run_time) },
 	{ "RepackLimit",      10000,  offsetof(struct ctdb_tunable, repack_limit) },
 	{ "VacuumLimit",       5000,  offsetof(struct ctdb_tunable, vacuum_limit) },
-	{ "VacuumMinInterval",   10,  offsetof(struct ctdb_tunable, vacuum_min_interval) },
-	{ "VacuumMaxInterval",   10,  offsetof(struct ctdb_tunable, vacuum_max_interval) },
+	{ "VacuumMinInterval",   10,  offsetof(struct ctdb_tunable, vacuum_min_interval) }, /* OBSOLETE */
+	{ "VacuumMaxInterval",   10,  offsetof(struct ctdb_tunable, vacuum_max_interval) }, /* OBSOLETE */
 	{ "VacuumFastPathCount", 60, offsetof(struct ctdb_tunable, vacuum_fast_path_count) },
 	{ "MaxQueueDropMsg",  1000000, offsetof(struct ctdb_tunable, max_queue_depth_drop_msg) },
 	{ "UseStatusEvents",     0,  offsetof(struct ctdb_tunable, use_status_events_for_monitoring) },
