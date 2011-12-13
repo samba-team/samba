@@ -594,10 +594,16 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 					struct server_id src,
 					DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn;
 	struct file_id id;
 	unsigned long file_id;
 	files_struct *fsp;
+	struct smbd_server_connection *sconn =
+		talloc_get_type(private_data,
+		struct smbd_server_connection);
+
+	if (sconn == NULL) {
+		return;
+	}
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -606,12 +612,6 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 
 	if (data->length != MSG_SMB_KERNEL_BREAK_SIZE) {
 		DEBUG(0, ("Got invalid msg len %d\n", (int)data->length));
-		return;
-	}
-
-	sconn = msg_ctx_to_sconn(msg_ctx);
-	if (sconn == NULL) {
-		DEBUG(1, ("could not find sconn\n"));
 		return;
 	}
 
@@ -943,7 +943,7 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 			   process_oplock_async_level2_break_message);
 	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_BREAK_RESPONSE,
 			   process_oplock_break_response);
-	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_KERNEL_BREAK,
+	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_KERNEL_BREAK,
 			   process_kernel_oplock_break);
 	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_OPEN_RETRY,
 			   process_open_retry_message);
