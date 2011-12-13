@@ -309,7 +309,7 @@ static void oplock_break_to_none_handler(uint64_t id)
 
 	init_share_mode_entry(&sme, cb, FORCE_OPLOCK_BREAK_TO_NONE);
 	share_mode_entry_to_message(msg, &sme);
-	messaging_send_buf(smbd_messaging_context(),
+	messaging_send_buf(cb->sconn->msg_ctx,
 			   sme.pid,
 			   MSG_SMB_ASYNC_LEVEL2_BREAK,
 			   (uint8_t *)msg,
@@ -346,7 +346,7 @@ static void oplock_break_to_level_two_handler(uint64_t id)
 
 	init_share_mode_entry(&sme, cb, LEVEL_II_OPLOCK);
 	share_mode_entry_to_message(msg, &sme);
-	messaging_send_buf(smbd_messaging_context(),
+	messaging_send_buf(cb->sconn->msg_ctx,
 			  sme.pid,
 			  MSG_SMB_BREAK_REQUEST,
 			  (uint8_t *)msg,
