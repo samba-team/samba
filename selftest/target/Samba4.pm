@@ -1119,15 +1119,14 @@ sub provision_dc($$)
 				   "2008",
 				   21,
 				   "locDCpass1",
-				   undef, "netbios aliases = DC1");
+				   undef, "netbios aliases = localDC1-a");
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
 		return undef;
 	}
-
-	$ret->{NETBIOSALIAS} = "DC1";
+	$ret->{NETBIOSALIAS} = "localdc1-a";
 	$ret->{DC_SERVER} = $ret->{SERVER};
 	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
