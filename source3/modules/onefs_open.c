@@ -871,7 +871,8 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	 */
 	if (req) {
 		SMB_ASSERT(fsp_data);
-		oplock_callback_id = onefs_oplock_wait_record(req->mid);
+		oplock_callback_id = onefs_oplock_wait_record(req->sconn,
+							      req->mid);
 		if (oplock_callback_id == 0) {
 			return NT_STATUS_NO_MEMORY;
 		}

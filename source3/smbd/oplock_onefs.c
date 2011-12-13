@@ -47,6 +47,7 @@ enum onefs_callback_state {
 
 struct onefs_callback_record {
 	struct onefs_callback_record *prev, *next;
+	struct smbd_server_connection *sconn;
 	uint64_t id;
 	enum onefs_callback_state state;
 	union {
@@ -198,7 +199,8 @@ void destroy_onefs_callback_record(uint64_t id)
  *   2. OPEN_FILE: Once ifs_createfile completes, the callback record is
  *   transitioned to this state via onefs_set_oplock_callback.
  */
-uint64_t onefs_oplock_wait_record(uint64_t mid)
+uint64_t onefs_oplock_wait_record(struct smbd_server_connection *sconn,
+				  uint64_t mid)
 {
 	struct onefs_callback_record *result;
 	static uint64_t id_generator = 0;
@@ -216,6 +218,7 @@ uint64_t onefs_oplock_wait_record(uint64_t mid)
 		id_generator += 1;
 	}
 
+	result->sconn = sconn;
 	result->id = id_generator;
 
 	result->state = ONEFS_WAITING_FOR_OPLOCK;
