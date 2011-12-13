@@ -238,10 +238,11 @@ static void cleanup_timeout_fn(struct event_context *event_ctx,
 				void *private_data)
 {
 	struct timed_event **cleanup_te = (struct timed_event **)private_data;
+	struct messaging_context *msg = smbd_messaging_context();
 
 	DEBUG(1,("Cleaning up brl and lock database after unclean shutdown\n"));
-	message_send_all(smbd_messaging_context(), MSG_SMB_UNLOCK, NULL, 0, NULL);
-	messaging_send_buf(smbd_messaging_context(), procid_self(),
+	message_send_all(msg, MSG_SMB_UNLOCK, NULL, 0, NULL);
+	messaging_send_buf(msg, messaging_server_id(msg),
 				MSG_SMB_BRL_VALIDATE, NULL, 0);
 	/* mark the cleanup as having been done */
 	(*cleanup_te) = NULL;
