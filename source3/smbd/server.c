@@ -460,7 +460,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			smb_panic("reinit_after_fork() failed");
 		}
 
-		smbd_setup_sig_term_handler();
+		smbd_setup_sig_term_handler(sconn);
 		smbd_setup_sig_hup_handler(ev,
 					   msg_ctx);
 

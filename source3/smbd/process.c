@@ -878,15 +878,15 @@ static void smbd_sig_term_handler(struct tevent_context *ev,
 	exit_server_cleanly("termination signal");
 }
 
-void smbd_setup_sig_term_handler(void)
+void smbd_setup_sig_term_handler(struct smbd_server_connection *sconn)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(server_event_context(),
-			       server_event_context(),
+	se = tevent_add_signal(sconn->ev_ctx,
+			       sconn,
 			       SIGTERM, 0,
 			       smbd_sig_term_handler,
-			       NULL);
+			       sconn);
 	if (!se) {
 		exit_server("failed to setup SIGTERM handler");
 	}
