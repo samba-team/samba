@@ -80,6 +80,8 @@ struct vacuum_data {
 	uint32_t full_skipped;
 	uint32_t full_error;
 	uint32_t full_total;
+	uint32_t delete_left;
+	uint32_t delete_remote_error;
 };
 
 /* this structure contains the information for one record to be deleted */
@@ -497,6 +499,8 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	vdata->full_error = 0;
 	vdata->full_total = 0;
 	vdata->delete_count = 0;
+	vdata->delete_left = 0;
+	vdata->delete_remote_error = 0;
 
 	/* the list needs to be of length num_nodes */
 	vdata->list = talloc_array(vdata, struct ctdb_marshall_buffer *, ctdb->num_nodes);
@@ -611,6 +615,8 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		uint32_t *active_nodes;
 		int num_active_nodes;
 
+		vdata->delete_left = vdata->delete_count;
+
 		recs = talloc_zero(vdata, struct delete_records_list);
 		if (recs == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
@@ -680,6 +686,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 			while (records->count-- > 1) {
 				TDB_DATA reckey, recdata;
 				struct ctdb_ltdb_header *rechdr;
+				struct delete_record_data *dd;
 
 				reckey.dptr = &rec->data[0];
 				reckey.dsize = rec->keylen;
@@ -694,14 +701,23 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 				recdata.dptr += sizeof(*rechdr);
 				recdata.dsize -= sizeof(*rechdr);
 
-				/* 
-				 * that other node couldnt delete the record
-				 * so we should delete it and thereby remove it from the tree
-				 */
-				talloc_free(trbt_lookup32(vdata->delete_tree, ctdb_hash(&reckey)));
+				dd = (struct delete_record_data *)trbt_lookup32(
+						vdata->delete_tree,
+						ctdb_hash(&reckey));
+				if (dd != NULL) {
+					/*
+					 * The other node could not delete the
+					 * record and it is the first node that
+					 * failed. So we should remove it from
+					 * the tree and update statistics.
+					 */
+					talloc_free(dd);
+					vdata->delete_remote_error++;
+					vdata->delete_left--;
+				}
 
 				rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
-			}	    
+			}
 		}
 
 		/* free nodemap and active_nodes */
@@ -899,14 +915,14 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	/*
 	 * decide if a repack is necessary
 	 */
-	if (freelist_size < repack_limit && vdata->delete_count < vacuum_limit)
+	if (freelist_size < repack_limit && vdata->delete_left < vacuum_limit)
 	{
 		talloc_free(vdata);
 		return 0;
 	}
 
 	DEBUG(DEBUG_INFO,("Repacking %s with %u freelist entries and %u records to delete\n", 
-			name, freelist_size, vdata->delete_count));
+			name, freelist_size, vdata->delete_left));
 
 	/*
 	 * repack and implicitely get rid of the records we can delete
