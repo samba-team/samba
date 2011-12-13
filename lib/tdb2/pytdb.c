@@ -532,7 +532,7 @@ static PyMappingMethods tdb_object_mapping = {
 	.mp_ass_subscript = (objobjargproc)obj_setitem,
 };
 static PyTypeObject PyTdb = {
-	.tp_name = "Tdb",
+	.tp_name = "tdb.Tdb",
 	.tp_basicsize = sizeof(PyTdbObject),
 	.tp_methods = tdb_object_methods,
 	.tp_getset = tdb_object_getsetters,
