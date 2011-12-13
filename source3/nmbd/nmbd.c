@@ -128,13 +128,15 @@ static void nmbd_sig_hup_handler(struct tevent_context *ev,
 				 void *siginfo,
 				 void *private_data)
 {
+	struct messaging_context *msg = talloc_get_type_abort(
+		private_data, struct messaging_context);
+
 	DEBUG(0,("Got SIGHUP dumping debug info.\n"));
-	msg_reload_nmbd_services(nmbd_messaging_context(),
-				 NULL, MSG_SMB_CONF_UPDATED,
-				 procid_self(), NULL);
+	msg_reload_nmbd_services(msg, NULL, MSG_SMB_CONF_UPDATED,
+				 messaging_server_id(msg), NULL);
 }
 
-static bool nmbd_setup_sig_hup_handler(void)
+static bool nmbd_setup_sig_hup_handler(struct messaging_context *msg)
 {
 	struct tevent_signal *se;
 
@@ -142,7 +144,7 @@ static bool nmbd_setup_sig_hup_handler(void)
 			       nmbd_event_context(),
 			       SIGHUP, 0,
 			       nmbd_sig_hup_handler,
-			       NULL);
+			       msg);
 	if (!se) {
 		DEBUG(0,("failed to setup SIGHUP handler"));
 		return false;
@@ -929,7 +931,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	if (!nmbd_setup_sig_term_handler(nmbd_messaging_context()))
 		exit(1);
-	if (!nmbd_setup_sig_hup_handler())
+	if (!nmbd_setup_sig_hup_handler(nmbd_messaging_context()))
 		exit(1);
 
 	/* get broadcast messages */
