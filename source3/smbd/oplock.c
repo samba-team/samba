@@ -930,19 +930,19 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
  Setup oplocks for this process.
 ****************************************************************************/
 
-bool init_oplocks(struct messaging_context *msg_ctx)
+bool init_oplocks(struct smbd_server_connection *sconn)
 {
 	DEBUG(3,("init_oplocks: initializing messages.\n"));
 
-	messaging_register(msg_ctx, NULL, MSG_SMB_BREAK_REQUEST,
+	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_BREAK_REQUEST,
 			   process_oplock_break_message);
-	messaging_register(msg_ctx, NULL, MSG_SMB_ASYNC_LEVEL2_BREAK,
+	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_ASYNC_LEVEL2_BREAK,
 			   process_oplock_async_level2_break_message);
-	messaging_register(msg_ctx, NULL, MSG_SMB_BREAK_RESPONSE,
+	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_BREAK_RESPONSE,
 			   process_oplock_break_response);
-	messaging_register(msg_ctx, NULL, MSG_SMB_KERNEL_BREAK,
+	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_KERNEL_BREAK,
 			   process_kernel_oplock_break);
-	messaging_register(msg_ctx, NULL, MSG_SMB_OPEN_RETRY,
+	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_OPEN_RETRY,
 			   process_open_retry_message);
 
 	if (lp_kernel_oplocks()) {

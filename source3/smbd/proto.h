@@ -669,7 +669,7 @@ void smbd_contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type);
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e);
 void message_to_share_mode_entry(struct share_mode_entry *e, char *msg);
-bool init_oplocks(struct messaging_context *msg_ctx);
+bool init_oplocks(struct smbd_server_connection *sconn);
 
 /* The following definitions come from smbd/oplock_irix.c  */
 

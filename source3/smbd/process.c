@@ -3131,7 +3131,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	}
 
 	/* Setup oplocks */
-	if (!init_oplocks(sconn->msg_ctx))
+	if (!init_oplocks(sconn))
 		exit_server("Failed to init oplocks");
 
 	/* register our message handlers */
