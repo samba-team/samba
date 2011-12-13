@@ -735,11 +735,11 @@ static bool open_sockets(bool isdaemon, int port)
 
  int main(int argc, const char *argv[])
 {
-	static bool is_daemon;
-	static bool opt_interactive;
-	static bool Fork = true;
-	static bool no_process_group;
-	static bool log_stdout;
+	bool is_daemon;
+	bool opt_interactive;
+	bool Fork = true;
+	bool no_process_group;
+	bool log_stdout;
 	poptContext pc;
 	char *p_lmhosts = NULL;
 	int opt;
