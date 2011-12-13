@@ -358,6 +358,8 @@ struct smbd_open_socket;
 struct smbd_parent_context {
 	bool interactive;
 
+	struct messaging_context *msg_ctx;
+
 	/* the list of listening sockets */
 	struct smbd_open_socket *sockets;
 };
@@ -367,7 +369,6 @@ struct smbd_open_socket {
 	struct smbd_parent_context *parent;
 	int fd;
 	struct tevent_fd *fde;
-	struct messaging_context *msg_ctx;
 };
 
 static void smbd_open_socket_close_fn(struct tevent_context *ev,
@@ -386,7 +387,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 {
 	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
 				     struct smbd_open_socket);
-	struct messaging_context *msg_ctx = s->msg_ctx;
+	struct messaging_context *msg_ctx = s->parent->msg_ctx;
 	struct smbd_server_connection *sconn = msg_ctx_to_sconn(msg_ctx);
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
@@ -573,7 +574,6 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 		return false;
 	}
 
-	s->msg_ctx = msg_ctx;
 	s->fde = tevent_add_fd(ev_ctx,
 			       s,
 			       s->fd, TEVENT_FD_READ,
@@ -1288,7 +1288,7 @@ extern void build_options(bool screen);
 		exit_server("talloc(struct smbd_parent_context) failed");
 	}
 	parent->interactive = interactive;
-
+	parent->msg_ctx = msg_ctx;
 	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
 		exit_server("open_sockets_smbd() failed");
 
