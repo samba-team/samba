@@ -223,18 +223,6 @@
 	</varlistentry>
 
 	<varlistentry>
-	<term>samsync</term>
-	<listitem><para>Order smbd to synchronise sam database from PDC (being BDC). Can only be sent to <constant>smbd</constant>. </para>
-	<note><para>Not working at the moment</para></note>
-	</listitem>
-	</varlistentry>
-
-	<varlistentry>
-	<term>samrepl</term>
-	<listitem><para>Send sam replication message, with specified serial. Can only be sent to <constant>smbd</constant>. Should not be used manually.</para></listitem>
-	</varlistentry>
-
-	<varlistentry>
 	<term>dmalloc-mark</term>
 	<listitem><para>Set a mark for dmalloc. Can be sent to both smbd and nmbd. Only available if samba is built with dmalloc support. </para></listitem>
 	</varlistentry>

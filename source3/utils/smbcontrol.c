@@ -822,34 +822,6 @@ static bool do_brl_revalidate(struct messaging_context *msg_ctx,
 	return send_message(msg_ctx, pid, MSG_SMB_BRL_VALIDATE, NULL, 0);
 }
 
-/* Force a SAM synchronisation */
-
-static bool do_samsync(struct messaging_context *msg_ctx,
-		       const struct server_id pid,
-		       const int argc, const char **argv)
-{
-	if (argc != 1) {
-		fprintf(stderr, "Usage: smbcontrol <dest> samsync\n");
-		return False;
-	}
-
-	return send_message(msg_ctx, pid, MSG_SMB_SAM_SYNC, NULL, 0);
-}
-
-/* Force a SAM replication */
-
-static bool do_samrepl(struct messaging_context *msg_ctx,
-		       const struct server_id pid,
-		       const int argc, const char **argv)
-{
-	if (argc != 1) {
-		fprintf(stderr, "Usage: smbcontrol <dest> samrepl\n");
-		return False;
-	}
-
-	return send_message(msg_ctx, pid, MSG_SMB_SAM_REPL, NULL, 0);
-}
-
 /* Display talloc pool usage */
 
 static bool do_poolusage(struct messaging_context *msg_ctx,
@@ -1268,8 +1240,6 @@ static const struct {
 	{ "ip-dropped", do_ip_dropped, "Tell winbind that an IP got dropped" },
 	{ "lockretry", do_lockretry, "Force a blocking lock retry" },
 	{ "brl-revalidate", do_brl_revalidate, "Revalidate all brl entries" },
-        { "samsync", do_samsync, "Initiate SAM synchronisation" },
-        { "samrepl", do_samrepl, "Initiate SAM replication" },
 	{ "pool-usage", do_poolusage, "Display talloc memory usage" },
 	{ "dmalloc-mark", do_dmalloc_mark, "" },
 	{ "dmalloc-log-changed", do_dmalloc_changed, "" },
