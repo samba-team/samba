@@ -1021,7 +1021,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 				   : ctdb->freeze_mode[ctdb_db->priority] == CTDB_FREEZE_PENDING
 				   ? "freeze pending"
 				   : "frozen"));
-		event_add_timed(ctdb->ev, vacuum_handle, timeval_current_ofs(ctdb->tunable.vacuum_default_interval, 0), ctdb_vacuum_event, vacuum_handle);
+		event_add_timed(ctdb->ev, vacuum_handle,
+			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+			ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
 
@@ -1036,7 +1038,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	if (ret != 0) {
 		talloc_free(child_ctx);
 		DEBUG(DEBUG_ERR, ("Failed to create pipe for vacuum child process.\n"));
-		event_add_timed(ctdb->ev, vacuum_handle, timeval_current_ofs(ctdb->tunable.vacuum_default_interval, 0), ctdb_vacuum_event, vacuum_handle);
+		event_add_timed(ctdb->ev, vacuum_handle,
+			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+			ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
 
@@ -1050,7 +1054,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		close(child_ctx->fd[1]);
 		talloc_free(child_ctx);
 		DEBUG(DEBUG_ERR, ("Failed to fork vacuum child process.\n"));
-		event_add_timed(ctdb->ev, vacuum_handle, timeval_current_ofs(ctdb->tunable.vacuum_default_interval, 0), ctdb_vacuum_event, vacuum_handle);
+		event_add_timed(ctdb->ev, vacuum_handle,
+			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+			ctdb_vacuum_event, vacuum_handle);
 		return;
 	}
 
