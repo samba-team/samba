@@ -834,6 +834,34 @@ static bool init_structs(void )
 	return True;
 }
 
+static void smbd_parent_sig_term_handler(struct tevent_context *ev,
+					 struct tevent_signal *se,
+					 int signum,
+					 int count,
+					 void *siginfo,
+					 void *private_data)
+{
+	exit_server_cleanly("termination signal");
+}
+
+static void smbd_parent_sig_hup_handler(struct tevent_context *ev,
+					struct tevent_signal *se,
+					int signum,
+					int count,
+					void *siginfo,
+					void *private_data)
+{
+	struct smbd_parent_context *parent =
+		talloc_get_type_abort(private_data,
+		struct smbd_parent_context);
+
+	change_to_root_user();
+	DEBUG(1,("parent: Reloading services after SIGHUP\n"));
+	reload_services(parent->msg_ctx, -1, false);
+
+	printing_subsystem_update(parent->ev_ctx, parent->msg_ctx, true);
+}
+
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -884,6 +912,7 @@ extern void build_options(bool screen);
 	uint64_t unique_id;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct tevent_signal *se;
 
 	/*
 	 * Do this before any other talloc operation
@@ -1134,9 +1163,22 @@ extern void build_options(bool screen);
 	parent->ev_ctx = ev_ctx;
 	parent->msg_ctx = msg_ctx;
 
-	smbd_setup_sig_term_handler();
-	smbd_setup_sig_hup_handler(ev_ctx,
-				   msg_ctx);
+	se = tevent_add_signal(parent->ev_ctx,
+			       parent,
+			       SIGTERM, 0,
+			       smbd_parent_sig_term_handler,
+			       parent);
+	if (!se) {
+		exit_server("failed to setup SIGTERM handler");
+	}
+	se = tevent_add_signal(parent->ev_ctx,
+			       parent,
+			       SIGHUP, 0,
+			       smbd_parent_sig_hup_handler,
+			       parent);
+	if (!se) {
+		exit_server("failed to setup SIGHUP handler");
+	}
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 
