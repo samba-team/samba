@@ -958,7 +958,7 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 		koplocks = linux_init_kernel_oplocks(sconn);
 #elif HAVE_ONEFS
 #error Isilon, please check if the NULL context is okay here. Thanks!
-		koplocks = onefs_init_kernel_oplocks(NULL);
+		koplocks = onefs_init_kernel_oplocks(sconn);
 #endif
 	}
 

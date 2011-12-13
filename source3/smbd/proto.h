@@ -684,7 +684,7 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 
 /* The following definitions come from smbd/oplock_onefs.c  */
 
-struct kernel_oplocks *onefs_init_kernel_oplocks(TALLOC_CTX *mem_ctx);
+struct kernel_oplocks *onefs_init_kernel_oplocks(struct smbd_server_connection *sconn);
 
 /* The following definitions come from smbd/password.c  */
 
