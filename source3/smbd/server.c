@@ -42,6 +42,25 @@
 #include "lib/id_cache.h"
 #include "lib/param/param.h"
 
+struct smbd_open_socket;
+
+struct smbd_parent_context {
+	bool interactive;
+
+	struct tevent_context *ev_ctx;
+	struct messaging_context *msg_ctx;
+
+	/* the list of listening sockets */
+	struct smbd_open_socket *sockets;
+};
+
+struct smbd_open_socket {
+	struct smbd_open_socket *prev, *next;
+	struct smbd_parent_context *parent;
+	int fd;
+	struct tevent_fd *fde;
+};
+
 extern void start_epmd(struct tevent_context *ev_ctx,
 		       struct messaging_context *msg_ctx);
 
@@ -338,25 +357,6 @@ static void smbd_setup_sig_chld_handler(struct tevent_context *ev_ctx)
 		exit_server("failed to setup SIGCHLD handler");
 	}
 }
-
-struct smbd_open_socket;
-
-struct smbd_parent_context {
-	bool interactive;
-
-	struct tevent_context *ev_ctx;
-	struct messaging_context *msg_ctx;
-
-	/* the list of listening sockets */
-	struct smbd_open_socket *sockets;
-};
-
-struct smbd_open_socket {
-	struct smbd_open_socket *prev, *next;
-	struct smbd_parent_context *parent;
-	int fd;
-	struct tevent_fd *fde;
-};
 
 static void smbd_open_socket_close_fn(struct tevent_context *ev,
 				      struct tevent_fd *fde,
