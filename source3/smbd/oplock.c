@@ -729,7 +729,13 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 				       DATA_BLOB *data)
 {
 	struct share_mode_entry msg;
-	struct smbd_server_connection *sconn;
+	struct smbd_server_connection *sconn =
+		talloc_get_type(private_data,
+		struct smbd_server_connection);
+
+	if (sconn == NULL) {
+		return;
+	}
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -748,10 +754,7 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 		   server_id_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   (unsigned long long)msg.op_mid));
 
-	sconn = msg_ctx_to_sconn(msg_ctx);
-	if (sconn != NULL) {
-		schedule_deferred_open_message_smb(sconn, msg.op_mid);
-	}
+	schedule_deferred_open_message_smb(sconn, msg.op_mid);
 }
 
 /****************************************************************************
@@ -945,7 +948,7 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 			   process_oplock_break_response);
 	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_KERNEL_BREAK,
 			   process_kernel_oplock_break);
-	messaging_register(sconn->msg_ctx, NULL, MSG_SMB_OPEN_RETRY,
+	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_OPEN_RETRY,
 			   process_open_retry_message);
 
 	if (lp_kernel_oplocks()) {
