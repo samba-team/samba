@@ -952,7 +952,6 @@ static PyObject *py_dsdb_am_pdc(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
 	struct ldb_context *ldb;
-	int ret;
 	bool am_pdc;
 
 	if (!PyArg_ParseTuple(args, "O", &py_ldb))
