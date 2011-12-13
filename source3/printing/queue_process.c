@@ -274,7 +274,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 			exit(1);
 		}
 
-		if (!serverid_register(procid_self(),
+		if (!serverid_register(messaging_server_id(msg_ctx),
 				       FLAG_MSG_GENERAL |
 				       FLAG_MSG_PRINT_GENERAL)) {
 			exit(1);
