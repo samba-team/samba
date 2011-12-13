@@ -1787,7 +1787,6 @@ void unbecome_root(void);
 /* The following definitions come from lib/dummysmbd.c */
 
 int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out);
-bool conn_snum_used(struct smbd_server_connection *sconn, int snum);
 void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 			struct byte_range_lock *br_lck,
 			enum file_close_type close_type);
