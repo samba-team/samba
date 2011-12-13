@@ -95,16 +95,22 @@ static void linux_oplock_signal_handler(struct tevent_context *ev_ctx,
 					int signum, int count,
 					void *_info, void *private_data)
 {
+	struct kernel_oplocks *ctx =
+		talloc_get_type_abort(private_data,
+		struct kernel_oplocks);
+	struct smbd_server_connection *sconn =
+		talloc_get_type_abort(ctx->private_data,
+		struct smbd_server_connection);
 	siginfo_t *info = (siginfo_t *)_info;
 	int fd = info->si_fd;
 	files_struct *fsp;
 
-	fsp = file_find_fd(smbd_server_conn, fd);
+	fsp = file_find_fd(sconn, fd);
 	if (fsp == NULL) {
 		DEBUG(0,("linux_oplock_signal_handler: failed to find fsp for file fd=%d (file was closed ?)\n", fd ));
 		return;
 	}
-	break_kernel_oplock(fsp->conn->sconn->msg_ctx, fsp);
+	break_kernel_oplock(sconn->msg_ctx, fsp);
 }
 
 /****************************************************************************
@@ -192,7 +198,7 @@ static const struct kernel_oplocks_ops linux_koplocks = {
 	.contend_level2_oplocks_end	= NULL,
 };
 
-struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
+struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *sconn)
 {
 	struct kernel_oplocks *ctx;
 	struct tevent_signal *se;
@@ -202,15 +208,16 @@ struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	ctx = talloc_zero(mem_ctx, struct kernel_oplocks);
+	ctx = talloc_zero(sconn, struct kernel_oplocks);
 	if (!ctx) {
 		DEBUG(0,("Linux Kernel oplocks talloc_Zero failed\n"));
 		return NULL;
 	}
 
 	ctx->ops = &linux_koplocks;
+	ctx->private_data = sconn;
 
-	se = tevent_add_signal(server_event_context(),
+	se = tevent_add_signal(sconn->ev_ctx,
 			       ctx,
 			       RT_SIGNAL_LEASE, SA_SIGINFO,
 			       linux_oplock_signal_handler,
