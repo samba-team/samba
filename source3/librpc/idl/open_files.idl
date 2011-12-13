@@ -5,44 +5,44 @@ import "security.idl";
 import "file_id.idl";
 
 [
-    pointer_default(unique)
+	pointer_default(unique)
 ]
 
 interface open_files
 {
-    typedef [public] struct {
-	server_id	pid;
-	hyper		op_mid;
-	uint16		op_type;
-	uint32		access_mask;
-	uint32		share_access;
-	uint32		private_options;
-	timeval		time;
-	file_id		id;
-	udlong		share_file_id;
-	uint32		uid;
-	uint16		flags;
-	uint32		name_hash;
-    } share_mode_entry;
+	typedef [public] struct {
+		server_id	pid;
+		hyper		op_mid;
+		uint16		op_type;
+		uint32		access_mask;
+		uint32		share_access;
+		uint32		private_options;
+		timeval		time;
+		file_id		id;
+		udlong		share_file_id;
+		uint32		uid;
+		uint16		flags;
+		uint32		name_hash;
+	} share_mode_entry;
 
-    typedef [public] struct {
-	uint32		name_hash;
-	security_unix_token *delete_token;
-    } delete_token;
+	typedef [public] struct {
+		uint32		name_hash;
+		security_unix_token *delete_token;
+	} delete_token;
 
-    typedef [public] struct {
-	[string,charset(UTF8)] char *servicepath;
-	[string,charset(UTF8)] char *base_name;
-	[string,charset(UTF8)] char *stream_name;
-	file_id id;
-	uint32 num_share_modes;
-	[size_is(num_share_modes)] share_mode_entry share_modes[];
-	uint32 num_delete_tokens;
-	[size_is(num_delete_tokens)] delete_token delete_tokens[];
-	timespec old_write_time;
-	timespec changed_write_time;
-	uint8 fresh;
-	uint8 modified;
-	[ignore] db_record *record;
-    } share_mode_lock;
+	typedef [public] struct {
+		[string,charset(UTF8)] char *servicepath;
+		[string,charset(UTF8)] char *base_name;
+		[string,charset(UTF8)] char *stream_name;
+		file_id id;
+		uint32 num_share_modes;
+		[size_is(num_share_modes)] share_mode_entry share_modes[];
+		uint32 num_delete_tokens;
+		[size_is(num_delete_tokens)] delete_token delete_tokens[];
+		timespec old_write_time;
+		timespec changed_write_time;
+		uint8 fresh;
+		uint8 modified;
+		[ignore] db_record *record;
+	} share_mode_lock;
 }
