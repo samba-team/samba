@@ -82,6 +82,9 @@ struct vacuum_data {
 	uint32_t full_total;
 	uint32_t delete_left;
 	uint32_t delete_remote_error;
+	uint32_t delete_local_error;
+	uint32_t delete_deleted;
+	uint32_t delete_skipped;
 };
 
 /* this structure contains the information for one record to be deleted */
@@ -429,6 +432,107 @@ done:
 }
 
 /**
+ * Delete the records that we are lmaster and dmaster for and
+ * that could be deleted on all other nodes via the TRY_DELETE_RECORDS
+ * control.
+ */
+static int delete_record_traverse(void *param, void *data)
+{
+	struct delete_record_data *dd =
+		talloc_get_type(data, struct delete_record_data);
+	struct vacuum_data *vdata = talloc_get_type(param, struct vacuum_data);
+	struct ctdb_db_context *ctdb_db = dd->ctdb_db;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	int res;
+	struct ctdb_ltdb_header *header;
+	TDB_DATA tdb_data;
+	uint32_t lmaster;
+	bool deleted = false;
+
+	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
+	if (res != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Error getting chainlock.\n"));
+		vdata->delete_local_error++;
+		return 0;
+	}
+
+	/*
+	 * Verify that the record is still empty, its RSN has not
+	 * changed and that we are still its lmaster and dmaster.
+	 */
+
+	tdb_data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
+	if (tdb_data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		/* Does not exist or not a ctdb record. Skip. */
+		vdata->delete_skipped++;
+		goto done;
+	}
+
+	if (tdb_data.dsize > sizeof(struct ctdb_ltdb_header)) {
+		/* The record has been recycled (filled with data). Skip. */
+		vdata->delete_skipped++;
+		goto done;
+	}
+
+	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
+
+	if (header->dmaster != ctdb->pnn) {
+		/* The record has been migrated off the node. Skip. */
+		vdata->delete_skipped++;
+		goto done;
+	}
+
+
+	if (header->rsn != dd->hdr.rsn) {
+		/*
+		 * The record has been migrated off the node and back again.
+		 * But not requeued for deletion. Skip it.
+		 */
+		vdata->delete_skipped++;
+		goto done;
+	}
+
+	lmaster = ctdb_lmaster(ctdb_db->ctdb, &dd->key);
+
+	if (lmaster != ctdb->pnn) {
+		/* we are not lmaster - strange */
+		vdata->delete_skipped++;
+		goto done;
+	}
+
+	res = tdb_delete(ctdb_db->ltdb->tdb, dd->key);
+
+	if (res != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " Error deleting record from local "
+		       "data base.\n"));
+		vdata->delete_local_error++;
+		goto done;
+	}
+
+	deleted = true;
+
+done:
+	if (tdb_data.dptr != NULL) {
+		free(tdb_data.dptr);
+	}
+
+	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
+
+	if (deleted) {
+		/*
+		 * successfully deleted the record locally.
+		 * remove it from the list and update statistics.
+		 */
+		talloc_free(dd);
+		vdata->delete_deleted++;
+		vdata->delete_left--;
+	}
+
+	return 0;
+}
+
+/**
  * Vacuum a DB:
  *  - Always do the fast vacuuming run, which traverses
  *    the in-memory delete queue: these records have been
@@ -501,6 +605,9 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	vdata->delete_count = 0;
 	vdata->delete_left = 0;
 	vdata->delete_remote_error = 0;
+	vdata->delete_local_error = 0;
+	vdata->delete_skipped = 0;
+	vdata->delete_deleted = 0;
 
 	/* the list needs to be of length num_nodes */
 	vdata->list = talloc_array(vdata, struct ctdb_marshall_buffer *, ctdb->num_nodes);
@@ -722,16 +829,17 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 
 		/* free nodemap and active_nodes */
 		talloc_free(nodemap);
+	}
 
-		/* 
-		 * The only records remaining in the tree would be those
-		 * records where all other nodes could successfully
-		 * delete them, so we can safely delete them on the
-		 * lmaster as well. Deletion implictely happens while
-		 * we repack the database. The repack algorithm revisits 
-		 * the tree in order to find the records that don't need
-		 * to be copied / repacked.
+	if (vdata->delete_left > 0) {
+		/*
+		 * The only records remaining in the tree are those
+		 * records which all other nodes could successfully
+		 * delete, so we can safely delete them on the
+		 * lmaster as well.
 		 */
+		trbt_traversearray32(vdata->delete_tree, 1,
+				     delete_record_traverse, vdata);
 	}
 
 	/* this ensures we run our event queue */
