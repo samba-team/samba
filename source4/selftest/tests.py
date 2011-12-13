@@ -276,7 +276,8 @@ plansmbtorturetestsuite('echo.udp', 'dc:local', '//$SERVER/whatever')
 
 # Local tests
 for t in smb4torture_testsuites("local."):
-    plansmbtorturetestsuite(t, "none", "ncalrpc:")
+    #The local.resolve test needs a name to look up using real system (not emulated) name routines
+    plansmbtorturetestsuite(t, "none", "ncalrpc:localhost")
 
 # Confirm these tests with the system iconv too
 for t in ["local.convert_string_handle", "local.convert_string", "local.ndr"]:
