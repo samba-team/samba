@@ -1182,65 +1182,6 @@ bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	return True;
 }
 
-/****************************************************************************
- Check if setting delete on close is allowed on this fsp.
-****************************************************************************/
-
-NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode)
-{
-	/*
-	 * Only allow delete on close for writable files.
-	 */
-
-	if ((dosmode & FILE_ATTRIBUTE_READONLY) &&
-	    !lp_delete_readonly(SNUM(fsp->conn))) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on close "
-			  "flag set but file attribute is readonly.\n",
-			  fsp_str_dbg(fsp)));
-		return NT_STATUS_CANNOT_DELETE;
-	}
-
-	/*
-	 * Only allow delete on close for writable shares.
-	 */
-
-	if (!CAN_WRITE(fsp->conn)) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on "
-			  "close flag set but write access denied on share.\n",
-			  fsp_str_dbg(fsp)));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/*
-	 * Only allow delete on close for files/directories opened with delete
-	 * intent.
-	 */
-
-	if (!(fsp->access_mask & DELETE_ACCESS)) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on "
-			  "close flag set but delete access denied.\n",
-			  fsp_str_dbg(fsp)));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* Don't allow delete on close for non-empty directories. */
-	if (fsp->is_directory) {
-		SMB_ASSERT(!is_ntfs_stream_smb_fname(fsp->fsp_name));
-
-		/* Or the root of a share. */
-		if (ISDOT(fsp->fsp_name->base_name)) {
-			DEBUG(10,("can_set_delete_on_close: can't set delete on "
-				  "close for the root of a share.\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		return can_delete_directory(fsp->conn,
-					    fsp->fsp_name->base_name);
-	}
-
-	return NT_STATUS_OK;
-}
-
 /*************************************************************************
  Return a talloced copy of a struct security_unix_token. NULL on fail.
  (Should this be in locking.c.... ?).

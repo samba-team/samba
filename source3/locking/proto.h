@@ -172,7 +172,6 @@ void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
 			     struct server_id pid);
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
-NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
 const struct security_unix_token *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash);
 void set_delete_on_close_lck(files_struct *fsp,
 			struct share_mode_lock *lck,
