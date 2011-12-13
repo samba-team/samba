@@ -130,6 +130,18 @@ int count_current_connections( const char *sharename, bool clear  )
 	return cs.curr_connections;
 }
 
+bool connections_snum_used(struct smbd_server_connection *unused, int snum)
+{
+	int active;
+
+	active = count_current_connections(lp_servicename(snum), true);
+	if (active > 0) {
+		return true;
+	}
+
+	return false;
+}
+
 /****************************************************************************
  Claim an entry in the connections database.
 ****************************************************************************/
