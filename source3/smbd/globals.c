@@ -151,7 +151,6 @@ static const struct smbd_shim smbd_shim_fns =
 {
 	.cancel_pending_lock_requests_by_fid = smbd_cancel_pending_lock_requests_by_fid,
 	.send_stat_cache_delete_message = smbd_send_stat_cache_delete_message,
-	.can_delete_directory = smbd_can_delete_directory,
 	.change_to_root_user = smbd_change_to_root_user,
 
 	.contend_level2_oplocks_begin = smbd_contend_level2_oplocks_begin,

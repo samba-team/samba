@@ -51,15 +51,6 @@ void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 	}
 }
 
-NTSTATUS can_delete_directory(struct connection_struct *conn,
-				const char *dirname)
-{
-	if (shim.can_delete_directory) {
-		return shim.can_delete_directory(conn, dirname);
-	}
-	return NT_STATUS_OK;
-}
-
 bool change_to_root_user(void)
 {
 	if (shim.change_to_root_user) {

@@ -35,9 +35,6 @@ struct smbd_shim
 	void (*send_stat_cache_delete_message)(struct messaging_context *msg_ctx,
 					       const char *name);
 
-	NTSTATUS (*can_delete_directory)(struct connection_struct *conn,
-					 const char *dirname);
-
 	bool (*change_to_root_user)(void);
 
 	void (*contend_level2_oplocks_begin)(files_struct *fsp,

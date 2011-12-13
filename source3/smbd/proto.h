@@ -241,8 +241,6 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset);
 bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
-NTSTATUS smbd_can_delete_directory(struct connection_struct *conn,
-				const char *dirname);
 
 /* The following definitions come from smbd/dmapi.c  */
 
