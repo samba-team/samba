@@ -1415,7 +1415,7 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 			    convert_timespec_to_time_t(write_time)),
 		 file_id_string_tos(&fileid)));
 
-	lck = get_share_mode_lock(NULL, fileid, NULL, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fileid, NULL, NULL, NULL);
 	if (lck == NULL) {
 		return False;
 	}
