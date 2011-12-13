@@ -2092,7 +2092,7 @@ static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
 	/* Ensure all the usershares are loaded. */
 	become_root();
 	load_registry_shares();
-	count = load_usershare_shares(sconn, conn_snum_used);
+	count = load_usershare_shares(NULL, connections_snum_used);
 	unbecome_root();
 
 	data_len = fixed_len = string_len = 0;

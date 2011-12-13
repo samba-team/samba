@@ -1491,7 +1491,7 @@ struct junction_map *enum_msdfs_links(struct smbd_server_connection *sconn,
 	/* Ensure all the usershares are loaded. */
 	become_root();
 	load_registry_shares();
-	sharecount = load_usershare_shares(sconn, conn_snum_used);
+	sharecount = load_usershare_shares(NULL, connections_snum_used);
 	unbecome_root();
 
 	for(i=0;i < sharecount;i++) {

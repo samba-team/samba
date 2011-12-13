@@ -574,7 +574,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 
 	/* Ensure all the usershares are loaded. */
 	become_root();
-	load_usershare_shares(msg_ctx_to_sconn(p->msg_ctx), conn_snum_used);
+	load_usershare_shares(NULL, connections_snum_used);
 	load_registry_shares();
 	num_services = lp_numservices();
 	unbecome_root();
