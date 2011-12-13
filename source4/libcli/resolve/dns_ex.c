@@ -393,6 +393,12 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		c = get_a_aaaa_records(state, state->name.name, state->port);
 	}
 
+	/* This line in critical - if we return without writing to the
+	 * pipe, this is the signal that the name did not exist */
+	if (c.count == 0) {
+		goto done;
+	}
+
 	addrs = talloc_strdup(state, "");
 	if (!addrs) {
 		goto done;
@@ -521,6 +527,9 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	}
 
 	if (ret <= 0) {
+		/* The check for ret == 0 here is important, if the
+		 * name does not exist, then no bytes are written to
+		 * the pipe */
 		DEBUG(3,("dns child failed to find name '%s' of type %s\n",
 			 state->name.name, (state->flags & RESOLVE_NAME_FLAG_DNS_SRV)?"SRV":"A"));
 		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
