@@ -1126,6 +1126,14 @@ extern void build_options(bool screen);
 
 	smbd_server_conn->msg_ctx = msg_ctx;
 
+	parent = talloc_zero(ev_ctx, struct smbd_parent_context);
+	if (!parent) {
+		exit_server("talloc(struct smbd_parent_context) failed");
+	}
+	parent->interactive = interactive;
+	parent->ev_ctx = ev_ctx;
+	parent->msg_ctx = msg_ctx;
+
 	smbd_setup_sig_term_handler();
 	smbd_setup_sig_hup_handler(ev_ctx,
 				   msg_ctx);
@@ -1284,13 +1292,6 @@ extern void build_options(bool screen);
 		return(0);
 	}
 
-	parent = talloc_zero(ev_ctx, struct smbd_parent_context);
-	if (!parent) {
-		exit_server("talloc(struct smbd_parent_context) failed");
-	}
-	parent->interactive = interactive;
-	parent->ev_ctx = ev_ctx;
-	parent->msg_ctx = msg_ctx;
 	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
 		exit_server("open_sockets_smbd() failed");
 
