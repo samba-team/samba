@@ -61,7 +61,7 @@ static struct messaging_context *nmbd_messaging_context(void)
  Handle a SIGTERM in band.
  **************************************************************************** */
 
-static void terminate(void)
+static void terminate(struct messaging_context *msg)
 {
 	DEBUG(0,("Got SIGTERM: going down...\n"));
 
@@ -78,7 +78,7 @@ static void terminate(void)
 	kill_async_dns_child();
 
 	gencache_stabilize();
-	serverid_deregister(procid_self());
+	serverid_deregister(messaging_server_id(msg));
 
 	pidfile_unlink();
 
@@ -92,10 +92,13 @@ static void nmbd_sig_term_handler(struct tevent_context *ev,
 				  void *siginfo,
 				  void *private_data)
 {
-	terminate();
+	struct messaging_context *msg = talloc_get_type_abort(
+		private_data, struct messaging_context);
+
+	terminate(msg);
 }
 
-static bool nmbd_setup_sig_term_handler(void)
+static bool nmbd_setup_sig_term_handler(struct messaging_context *msg)
 {
 	struct tevent_signal *se;
 
@@ -103,7 +106,7 @@ static bool nmbd_setup_sig_term_handler(void)
 			       nmbd_event_context(),
 			       SIGTERM, 0,
 			       nmbd_sig_term_handler,
-			       NULL);
+			       msg);
 	if (!se) {
 		DEBUG(0,("failed to setup SIGTERM handler"));
 		return false;
@@ -158,7 +161,7 @@ static void nmbd_terminate(struct messaging_context *msg,
 			   struct server_id server_id,
 			   DATA_BLOB *data)
 {
-	terminate();
+	terminate(msg);
 }
 
 /**************************************************************************** **
@@ -924,7 +927,7 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
-	if (!nmbd_setup_sig_term_handler())
+	if (!nmbd_setup_sig_term_handler(nmbd_messaging_context()))
 		exit(1);
 	if (!nmbd_setup_sig_hup_handler())
 		exit(1);
