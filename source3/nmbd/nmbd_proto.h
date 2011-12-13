@@ -37,7 +37,6 @@ void kill_async_dns_child(void);
 /* The following definitions come from nmbd/nmbd.c  */
 
 struct event_context *nmbd_event_context(void);
-struct messaging_context *nmbd_messaging_context(void);
 
 /* The following definitions come from nmbd/nmbd_become_dmb.c  */
 

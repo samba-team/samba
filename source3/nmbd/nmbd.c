@@ -47,7 +47,7 @@ struct event_context *nmbd_event_context(void)
 	return server_event_context();
 }
 
-struct messaging_context *nmbd_messaging_context(void)
+static struct messaging_context *nmbd_messaging_context(void)
 {
 	struct messaging_context *msg_ctx = server_messaging_context();
 	if (likely(msg_ctx != NULL)) {
