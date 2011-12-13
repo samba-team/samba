@@ -28,8 +28,8 @@
 
 int asyncdns_fd(void);
 void kill_async_dns_child(void);
-void start_async_dns(void);
-void run_dns_queue(void);
+void start_async_dns(struct messaging_context *msg);
+void run_dns_queue(struct messaging_context *msg);
 bool queue_dns_query(struct packet_struct *p,struct nmb_name *question);
 bool queue_dns_query(struct packet_struct *p,struct nmb_name *question);
 void kill_async_dns_child(void);
@@ -264,7 +264,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 void queue_packet(struct packet_struct *packet);
 void run_packet_queue(void);
 void retransmit_or_expire_response_records(time_t t);
-bool listen_for_packets(bool run_election);
+bool listen_for_packets(struct messaging_context *msg, bool run_election);
 bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
                    const char *srcname, int src_type,
                    const char *dstname, int dest_type,

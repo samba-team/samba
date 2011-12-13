@@ -135,7 +135,7 @@ void kill_async_dns_child(void)
 /***************************************************************************
   create a child process to handle DNS lookups
   ****************************************************************************/
-void start_async_dns(void)
+void start_async_dns(struct messaging_context *msg)
 {
 	int fd1[2], fd2[2];
 	NTSTATUS status;
@@ -166,9 +166,7 @@ void start_async_dns(void)
 	CatchSignal(SIGHUP, SIG_IGN);
         CatchSignal(SIGTERM, sig_term);
 
-	status = reinit_after_fork(nmbd_messaging_context(),
-				   nmbd_event_context(),
-				   true);
+	status = reinit_after_fork(msg, nmbd_event_context(), true);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
@@ -205,7 +203,7 @@ static bool write_child(struct packet_struct *p)
 /***************************************************************************
   check the DNS queue
   ****************************************************************************/
-void run_dns_queue(void)
+void run_dns_queue(struct messaging_context *msg)
 {
 	struct query_record r;
 	struct packet_struct *p, *p2;
@@ -218,7 +216,7 @@ void run_dns_queue(void)
 	if (!process_exists_by_pid(child_pid)) {
 		close(fd_in);
 		close(fd_out);
-		start_async_dns();
+		start_async_dns(msg);
 	}
 
 	status = read_data(fd_in, (char *)&r, sizeof(r));

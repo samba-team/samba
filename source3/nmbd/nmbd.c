@@ -480,7 +480,8 @@ static void process(void)
 		 * (nmbd_packets.c)
 		 */
 
-		if(listen_for_packets(run_election)) {
+		if (listen_for_packets(nmbd_messaging_context(),
+				       run_election)) {
 			TALLOC_FREE(frame);
 			return;
 		}
@@ -905,7 +906,7 @@ static bool open_sockets(bool isdaemon, int port)
 	/* Setup the async dns. We do it here so it doesn't have all the other
 		stuff initialised and thus chewing memory and sockets */
 	if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
-		start_async_dns();
+		start_async_dns(nmbd_messaging_context());
 	}
 #endif
 

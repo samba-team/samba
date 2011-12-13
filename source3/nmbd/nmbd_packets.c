@@ -1864,7 +1864,7 @@ static void free_processed_packet_list(struct processed_packet **pp_processed_pa
   return True if the socket is dead
 ***************************************************************************/
 
-bool listen_for_packets(bool run_election)
+bool listen_for_packets(struct messaging_context *msg, bool run_election)
 {
 	static struct pollfd *fds = NULL;
 	static struct socket_attributes *attrs = NULL;
@@ -1948,7 +1948,7 @@ bool listen_for_packets(bool run_election)
 #ifndef SYNC_DNS
 	if ((dns_fd != -1) && (dns_pollidx != -1) &&
 	    (fds[dns_pollidx].revents & (POLLIN|POLLHUP|POLLERR))) {
-		run_dns_queue();
+		run_dns_queue(msg);
 	}
 #endif
 
