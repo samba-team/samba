@@ -765,7 +765,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
 	messaging_register(msg_ctx, ev_ctx, MSG_PRINTER_PCAP,
 			   smb_pcap_updated);
-	brl_register_msgs(msg_ctx);
+	messaging_register(msg_ctx, NULL, MSG_SMB_BRL_VALIDATE,
+			   brl_revalidate);
 
 	msg_idmap_register_msg(msg_ctx);
 

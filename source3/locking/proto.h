@@ -90,7 +90,11 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 					files_struct *fsp);
 struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp);
-void brl_register_msgs(struct messaging_context *msg_ctx);
+void brl_revalidate(struct messaging_context *msg_ctx,
+		    void *private_data,
+		    uint32_t msg_type,
+		    struct server_id server_id,
+		    DATA_BLOB *data);
 
 /* The following definitions come from locking/locking.c  */
 

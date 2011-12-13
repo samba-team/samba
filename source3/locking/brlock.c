@@ -1926,11 +1926,11 @@ static int compare_procids(const void *p1, const void *p2)
  * array, then qsort that array and only send to non-dupes.
  */
 
-static void brl_revalidate(struct messaging_context *msg_ctx,
-			   void *private_data,
-			   uint32_t msg_type,
-			   struct server_id server_id,
-			   DATA_BLOB *data)
+void brl_revalidate(struct messaging_context *msg_ctx,
+		    void *private_data,
+		    uint32_t msg_type,
+		    struct server_id server_id,
+		    DATA_BLOB *data)
 {
 	struct brl_revalidate_state *state;
 	uint32 i;
@@ -1972,10 +1972,4 @@ static void brl_revalidate(struct messaging_context *msg_ctx,
  done:
 	TALLOC_FREE(state);
 	return;
-}
-
-void brl_register_msgs(struct messaging_context *msg_ctx)
-{
-	messaging_register(msg_ctx, NULL, MSG_SMB_BRL_VALIDATE,
-			   brl_revalidate);
 }
