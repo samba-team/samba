@@ -670,9 +670,10 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 				return -1;
 			}
 
-			/* 
-			 * outdata countains the list of records coming back
-			 * from the node which the node could not delete
+			/*
+			 * outdata contains the list of records coming back
+			 * from the node: These are the records that the
+			 * remote node could not delete.
 			 */
 			records = (struct ctdb_marshall_buffer *)outdata.dptr;
 			rec = (struct ctdb_rec_data *)&records->data[0];
