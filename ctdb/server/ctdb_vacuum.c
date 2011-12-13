@@ -33,7 +33,6 @@
 #include "../common/rb_tree.h"
 
 #define TIMELIMIT() timeval_current_ofs(10, 0)
-#define TUNINGDBNAME "vactune.tdb"
 
 enum vacuum_child_status { VACUUM_RUNNING, VACUUM_OK, VACUUM_ERROR, VACUUM_TIMEOUT};
 
@@ -931,55 +930,7 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 
 static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	TDB_CONTEXT *tdb;
-	TDB_DATA key, value;
-	char *vac_dbname;
 	uint interval = ctdb_db->ctdb->tunable.vacuum_default_interval;
-	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	int flags;
-
-	vac_dbname = talloc_asprintf(tmp_ctx, "%s/%s.%u", ctdb->db_directory, TUNINGDBNAME, ctdb->pnn);
-	if (vac_dbname == NULL) {
-		DEBUG(DEBUG_CRIT,(__location__ " Out of memory error while allocating '%s'\n", vac_dbname));
-		talloc_free(tmp_ctx);
-		return interval;
-	}
-
-	flags  = ctdb_db->ctdb->valgrinding ? TDB_NOMMAP : 0;
-	flags |= TDB_DISALLOW_NESTING;
-	tdb = tdb_open(vac_dbname, 0,
-		       flags,
-		       O_RDWR|O_CREAT, 0600);
-	if (!tdb) {
-		DEBUG(DEBUG_ERR,("Unable to open/create database %s using default interval. Errno : %s (%d)\n", vac_dbname, strerror(errno), errno));
-		talloc_free(tmp_ctx);
-		return interval;
-	}
-
-	key.dptr = discard_const(ctdb_db->db_name);
-	key.dsize = strlen(ctdb_db->db_name);
-
-	value = tdb_fetch(tdb, key);
-
-	if (value.dptr != NULL) {
-		if (value.dsize == sizeof(struct vacuum_tuning_data)) {
-			struct vacuum_tuning_data *tptr = (struct vacuum_tuning_data *)value.dptr;
-
-			interval = tptr->new_interval;
-
-			if (interval < ctdb->tunable.vacuum_min_interval) {
-				interval = ctdb->tunable.vacuum_min_interval;
-			} 
-			if (interval > ctdb->tunable.vacuum_max_interval) {
-				interval = ctdb->tunable.vacuum_max_interval;
-			}
-		}
-		free(value.dptr);
-	}
-	tdb_close(tdb);
-
-	talloc_free(tmp_ctx);
 
 	return interval;
 }
