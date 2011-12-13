@@ -30,6 +30,63 @@ static void test_read_nodemap(void)
 	ctdb_disconnect(ctdb);
 }
 
+static void test_read_ifaces(void)
+{
+	struct ctdb_connection *ctdb = ctdb_connect("foo", NULL, NULL);
+
+	libctdb_test_read_ifaces(ctdb);
+	libctdb_test_print_ifaces(ctdb);
+
+	ctdb_disconnect(ctdb);
+}
+
+static void test_read_vnnmap(void)
+{
+	struct ctdb_connection *ctdb = ctdb_connect("foo", NULL, NULL);
+
+	libctdb_test_read_vnnmap(ctdb);
+	libctdb_test_print_vnnmap(ctdb);
+
+	ctdb_disconnect(ctdb);
+}
+
+static void test_fake_setup(void)
+{
+	bool first = true;
+	struct ctdb_connection *ctdb = ctdb_connect("foo", NULL, NULL);
+
+	libctdb_test_fake_setup(ctdb);
+
+	if (ctdb->nodemap != NULL) {
+		if (!first) {
+			printf("\n");
+		}
+		printf("NODEMAP\n");
+		libctdb_test_print_nodemap(ctdb);
+		first = false;
+	}
+
+	if (ctdb->ifaces != NULL) {
+		if (!first) {
+			printf("\n");
+		}
+		printf("IFACES\n");
+		libctdb_test_print_ifaces(ctdb);
+		first = false;
+	}
+
+	if (ctdb->vnnmap != NULL) {
+		if (!first) {
+			printf("\n");
+		}
+		printf("VNNMAP\n");
+		libctdb_test_print_vnnmap(ctdb);
+		first = false;
+	}
+
+	ctdb_disconnect(ctdb);
+}
+
 static const char * decode_pnn_mode(uint32_t pnn_mode)
 {
 	int i;
@@ -117,6 +174,12 @@ int main(int argc, const char *argv[])
 
 	if (argc == 2 && strcmp(argv[1], "read_nodemap") == 0) {
 		test_read_nodemap();
+	} else if (argc == 2 && strcmp(argv[1], "read_ifaces") == 0) {
+		test_read_ifaces();
+	} else if (argc == 2 && strcmp(argv[1], "read_vnnmap") == 0) {
+		test_read_vnnmap();
+	} else if (argc == 2 && strcmp(argv[1], "fake_setup") == 0) {
+		test_fake_setup();
 	} else if (argc == 4 && strcmp(argv[1], "parse_nodestring") == 0) {
 		test_parse_nodestring(argv[2], argv[3]);
 	} else {

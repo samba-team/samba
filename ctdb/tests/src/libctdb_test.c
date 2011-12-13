@@ -20,6 +20,8 @@
 #include <syslog.h>
 #include "ctdb.h"
 
+#define LIBCTDB_TEST_FAKESTATE "fakestate"
+
 /* Can't use the real definition, since including libctdb_private.h
  * causes macro conflicts */
 struct ctdb_connection {
@@ -50,6 +52,7 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 	       (line[0] != '\n')) {
 		uint32_t pnn, flags;
 		char *tok, *t;
+		ctdb_sock_addr saddr;
 
 		/* Get rid of pesky newline */
 		if ((t = strchr(line, '\n')) != NULL) {
@@ -59,15 +62,26 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 		/* Get PNN */
 		tok = strtok(line, " \t");
 		if (tok == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignoed \"%s\"\n", line));
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line (PNN) ignored \"%s\"\n", line));
 			continue;
 		}
 		pnn = (uint32_t)strtoul(tok, NULL, 0);
 
+		/* Get IP */
+		tok = strtok(NULL, " \t");
+		if (tok == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line (no IP) ignored \"%s\"\n", line));
+			continue;
+		}
+		if (!parse_ip(tok, NULL, 0, &saddr)) {
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line (IP) ignored \"%s\"\n", line));
+			continue;
+		}
+
 		/* Get flags */
 		tok = strtok(NULL, " \t");
 		if (tok == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignored \"%s\"\n", line));
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line (flags) ignored \"%s\"\n", line));
 			continue;
 		}
 		flags = (uint32_t)strtoul(tok, NULL, 0);
@@ -90,6 +104,7 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 
 		ctdb->nodemap->nodes[ctdb->nodemap->num].pnn = pnn;
 		ctdb->nodemap->nodes[ctdb->nodemap->num].flags = flags;
+		memcpy(&(ctdb->nodemap->nodes[ctdb->nodemap->num].addr), &saddr, sizeof(ctdb_sock_addr));
 		ctdb->nodemap->num++;
 	}
 }
@@ -143,7 +158,7 @@ void libctdb_test_read_ifaces(struct ctdb_connection *ctdb)
 		//tok = strtok(line, ":"); /* Leading colon... */
 		tok = strtok(line, ":");
 		if (tok == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignoed \"%s\"\n", line));
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignored \"%s\"\n", line));
 			continue;
 		}
 		name = tok;
@@ -400,6 +415,11 @@ struct ctdb_connection *ctdb_connect(const char *addr,
 	ctdb->recmaster = 0;
 	ctdb->ifaces = NULL;
 	ctdb->vnnmap = NULL;
+
+	/* Don't always fake up the state...  but do it on request */
+	if (strcmp(addr, LIBCTDB_TEST_FAKESTATE) == 0) {
+		libctdb_test_fake_setup(ctdb);
+	}
 
 	return ctdb;
 }
