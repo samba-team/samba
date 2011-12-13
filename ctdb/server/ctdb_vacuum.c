@@ -496,6 +496,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	vdata->full_skipped = 0;
 	vdata->full_error = 0;
 	vdata->full_total = 0;
+	vdata->delete_count = 0;
 
 	/* the list needs to be of length num_nodes */
 	vdata->list = talloc_array(vdata, struct ctdb_marshall_buffer *, ctdb->num_nodes);
