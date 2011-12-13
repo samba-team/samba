@@ -98,7 +98,7 @@ int32_t exclusive_oplocks_open = 0;
 int32_t level_II_oplocks_open = 0;
 struct kernel_oplocks *koplocks = NULL;
 
-int am_parent = 1;
+struct smbd_parent_context *am_parent = NULL;
 struct memcache *smbd_memcache_ctx = NULL;
 bool exit_firsttime = true;
 struct child_pid *children = 0;

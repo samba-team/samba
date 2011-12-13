@@ -416,7 +416,14 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		NTSTATUS status = NT_STATUS_OK;
 
 		/* Child code ... */
-		am_parent = 0;
+		am_parent = NULL;
+
+		/*
+		 * Can't use TALLOC_FREE here. Nulling out the argument to it
+		 * would overwrite memory we've just freed.
+		 */
+		talloc_free(s->parent);
+		s = NULL;
 
 		set_my_unique_id(unique_id);
 
@@ -429,13 +436,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		if (!debug_get_output_is_stdout()) {
 			close_low_fds(False); /* Don't close stderr */
 		}
-
-		/*
-		 * Can't use TALLOC_FREE here. Nulling out the argument to it
-		 * would overwrite memory we've just freed.
-		 */
-		talloc_free(s->parent);
-		s = NULL;
 
 		status = reinit_after_fork(msg_ctx,
 					   ev,
@@ -1146,6 +1146,7 @@ extern void build_options(bool screen);
 	parent->interactive = interactive;
 	parent->ev_ctx = ev_ctx;
 	parent->msg_ctx = msg_ctx;
+	am_parent = parent;
 
 	se = tevent_add_signal(parent->ev_ctx,
 			       parent,

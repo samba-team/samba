@@ -113,7 +113,8 @@ extern int32_t exclusive_oplocks_open;
 extern int32_t level_II_oplocks_open;
 extern struct kernel_oplocks *koplocks;
 
-extern int am_parent;
+struct smbd_parent_context;
+extern struct smbd_parent_context *am_parent;
 extern struct memcache *smbd_memcache_ctx;
 extern bool exit_firsttime;
 struct child_pid;
