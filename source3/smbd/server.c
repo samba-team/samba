@@ -399,7 +399,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
 				     struct smbd_open_socket);
 	struct messaging_context *msg_ctx = s->parent->msg_ctx;
-	struct smbd_server_connection *sconn = msg_ctx_to_sconn(msg_ctx);
+	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
 	int fd;
