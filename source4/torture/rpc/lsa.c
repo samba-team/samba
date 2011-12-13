@@ -753,7 +753,8 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 			return false;
 		}
 	} else if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
-		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY &&
+		   (p->binding->transport == NCACN_IP_TCP || p->binding->transport == NCALRPC)) {
 		struct lsa_LookupSids3 r;
 		struct lsa_RefDomainList *domains = NULL;
 		struct lsa_TransNameArray2 names;
