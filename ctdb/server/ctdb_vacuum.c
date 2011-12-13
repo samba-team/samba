@@ -82,16 +82,6 @@ struct vacuum_data {
 	uint32_t full_total;
 };
 
-/* tuning information stored for every db */
-struct vacuum_tuning_data {
-	uint32_t last_num_repack;
-	uint32_t last_num_empty;
-	uint32_t last_interval;
-	uint32_t new_interval;
-	struct timeval last_start;
-	double   last_duration;
-};
-
 /* this structure contains the information for one record to be deleted */
 struct delete_record_data {
 	struct ctdb_context *ctdb;
