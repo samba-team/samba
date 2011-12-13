@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    test suite for schannel operations
 
    Copyright (C) Andrew Tridgell 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -42,8 +42,8 @@
 /*
   try a netlogon SamLogon
 */
-bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx, 
-			  struct cli_credentials *credentials, 
+bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
+			  struct cli_credentials *credentials,
 			  struct netlogon_creds_CredentialState *creds)
 {
 	NTSTATUS status;
@@ -66,25 +66,25 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx, 
+	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx,
 						 &ninfo.identity_info.account_name.string,
 						 &ninfo.identity_info.domain_name.string);
-	
-	generate_random_buffer(ninfo.challenge, 
+
+	generate_random_buffer(ninfo.challenge,
 			       sizeof(ninfo.challenge));
-	chal = data_blob_const(ninfo.challenge, 
+	chal = data_blob_const(ninfo.challenge,
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials), 
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials),
 						cli_credentials_get_domain(credentials));
 
-	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx, 
-						   &flags, 
+	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
+						   &flags,
 						   chal,
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
-	torture_assert_ntstatus_ok(tctx, status, 
+	torture_assert_ntstatus_ok(tctx, status,
 				   "cli_credentials_get_ntlm_response failed");
 
 	ninfo.lm.data = lm_resp.data;
@@ -109,13 +109,13 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.out.authoritative = &authoritative;
 	r.out.flags = &_flags;
 
-	torture_comment(tctx, 
-			"Testing LogonSamLogonEx with name %s\n", 
+	torture_comment(tctx,
+			"Testing LogonSamLogonEx with name %s\n",
 			ninfo.identity_info.account_name.string);
-	
+
 	for (i=2;i<3;i++) {
 		r.in.validation_level = i;
-		
+
 		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogonEx_r(b, tctx, &r),
 			"LogonSamLogon failed");
 		torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
@@ -146,7 +146,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 	connect_r.in.system_name = 0;
 	connect_r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	connect_r.out.connect_handle = &handle;
-	
+
 	printf("Testing Connect and OpenDomain on BUILTIN\n");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_Connect_r(b, tctx, &connect_r),
@@ -164,7 +164,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 		opendom.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		opendom.in.sid = dom_sid_parse_talloc(tctx, "S-1-5-32");
 		opendom.out.domain_handle = &domain_handle;
-		
+
 		torture_assert_ntstatus_ok(tctx, dcerpc_samr_OpenDomain_r(b, tctx, &opendom),
 			"OpenDomain failed");
 		if (!NT_STATUS_IS_OK(opendom.out.result)) {
@@ -174,7 +174,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 	}
 
 	printf("Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
-	
+
 	/* do several ops to test credential chaining */
 	for (i=0;i<5;i++) {
 		torture_assert_ntstatus_ok(tctx, dcerpc_samr_GetDomPwInfo_r(b, tctx, &r),
@@ -204,7 +204,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 
 	printf("\nTesting GetUserName\n");
 
-	r.in.system_name = "\\";	
+	r.in.system_name = "\\";
 	r.in.account_name = &account_name_p;
 	r.in.authority_name = &authority_name_p;
 	r.out.account_name = &account_name_p;
@@ -222,7 +222,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 		if (!r.out.account_name) {
 			return false;
 		}
-		
+
 		if (strcmp(account_name_p->string, "ANONYMOUS LOGON") != 0) {
 			printf("GetUserName returned wrong user: %s, expected %s\n",
 			       account_name_p->string, "ANONYMOUS LOGON");
@@ -234,7 +234,7 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 		if (!authority_name_p || !authority_name_p->string) {
 			return false;
 		}
-		
+
 		if (strcmp(authority_name_p->string, "NT AUTHORITY") != 0) {
 			printf("GetUserName returned wrong user: %s, expected %s\n",
 			       authority_name_p->string, "NT AUTHORITY");
@@ -273,8 +273,8 @@ static bool test_schannel(struct torture_context *tctx,
 	struct netlogon_creds_CredentialState *creds;
 	struct cli_credentials *credentials;
 
-	join_ctx = torture_join_domain(tctx, 
-				       talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, i), 
+	join_ctx = torture_join_domain(tctx,
+				       talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, i),
 				       acct_flags, &credentials);
 	torture_assert(tctx, join_ctx != NULL, "Failed to join domain");
 
@@ -286,7 +286,7 @@ static bool test_schannel(struct torture_context *tctx,
 
 	status = dcerpc_pipe_connect_b(tctx, &p, b, &ndr_table_samr,
 				       credentials, tctx->ev, tctx->lp_ctx);
-	torture_assert_ntstatus_ok(tctx, status, 
+	torture_assert_ntstatus_ok(tctx, status,
 		"Failed to connect with schannel");
 
 	torture_assert(tctx, test_samr_ops(tctx, p->binding_handle),
@@ -300,11 +300,11 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
-	status = dcerpc_secondary_connection(p, &p_netlogon, 
+	status = dcerpc_secondary_connection(p, &p_netlogon,
 					     b);
 	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
-	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon, 
+	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon,
 				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				  DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
@@ -326,7 +326,7 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
-	status = dcerpc_secondary_connection(p, &p_lsa, 
+	status = dcerpc_secondary_connection(p, &p_lsa,
 					     b);
 
 	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
@@ -339,7 +339,7 @@ static bool test_schannel(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, status, "bind auth");
 
-	torture_assert(tctx, test_lsa_ops(tctx, p_lsa), 
+	torture_assert(tctx, test_lsa_ops(tctx, p_lsa),
 		"Failed to process schannel secured LSA ops");
 
 	/* Drop the socket, we want to start from scratch */
@@ -347,7 +347,7 @@ static bool test_schannel(struct torture_context *tctx,
 	p = NULL;
 
 	/* Now see what we are still allowed to do */
-	
+
 	status = dcerpc_parse_binding(tctx, binding, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
 
@@ -356,7 +356,7 @@ static bool test_schannel(struct torture_context *tctx,
 
 	status = dcerpc_pipe_connect_b(tctx, &p_samr2, b, &ndr_table_samr,
 				       credentials, tctx->ev, tctx->lp_ctx);
-	torture_assert_ntstatus_ok(tctx, status, 
+	torture_assert_ntstatus_ok(tctx, status,
 		"Failed to connect with schannel");
 
 	/* do a some SAMR operations.  We have *not* done a new serverauthenticate */
@@ -367,7 +367,7 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_netlogon, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm");
 
-	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2, 
+	status = dcerpc_secondary_connection(p_samr2, &p_netlogon2,
 					     b);
 	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
@@ -379,11 +379,11 @@ static bool test_schannel(struct torture_context *tctx,
 				  NULL);
 
 	torture_assert_ntstatus_ok(tctx, status, "auth failed");
-	
+
 	/* Try the schannel-only SamLogonEx operation */
-	torture_assert(tctx, test_netlogon_ex_ops(p_netlogon2, tctx, credentials, creds), 
+	torture_assert(tctx, test_netlogon_ex_ops(p_netlogon2, tctx, credentials, creds),
 		       "Failed to process schannel secured NETLOGON EX ops (on fresh connection)");
-		
+
 
 	/* And the more traditional style, proving that the
 	 * credentials chaining state is fully present */
@@ -438,7 +438,7 @@ bool torture_rpc_schannel(struct torture_context *torture)
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(tests);i++) {
-		if (!test_schannel(torture, 
+		if (!test_schannel(torture,
 				   tests[i].acct_flags, tests[i].dcerpc_flags,
 				   i)) {
 			torture_comment(torture, "Failed with acct_flags=0x%x dcerpc_flags=0x%x \n",
@@ -463,9 +463,9 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	struct cli_credentials *credentials1, *credentials2;
 	uint32_t dcerpc_flags = DCERPC_SCHANNEL | DCERPC_SIGN;
 
-	join_ctx = torture_join_domain(torture, talloc_asprintf(torture, "%s2", TEST_MACHINE_NAME), 
+	join_ctx = torture_join_domain(torture, talloc_asprintf(torture, "%s2", TEST_MACHINE_NAME),
 				       ACB_WSTRUST, &credentials1);
-	torture_assert(torture, join_ctx != NULL, 
+	torture_assert(torture, join_ctx != NULL,
 		       "Failed to join domain with acct_flags=ACB_WSTRUST");
 
 	credentials2 = (struct cli_credentials *)talloc_memdup(torture, credentials1, sizeof(*credentials1));
@@ -598,7 +598,7 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 	chal = data_blob_const(conn->ninfo.challenge,
 			       sizeof(conn->ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(conn->tmp, 
+	names_blob = NTLMv2_generate_names_blob(conn->tmp,
 						cli_credentials_get_workstation(conn->wks_creds),
 						cli_credentials_get_domain(conn->wks_creds));
 
