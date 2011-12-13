@@ -27,6 +27,7 @@ struct ctdb_connection {
 	uint32_t current_node;
 	uint32_t recmaster;
 	struct ctdb_ifaces_list *ifaces;
+	struct ctdb_vnn_map *vnnmap;
 };
 
 
@@ -38,7 +39,7 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 {
 	char line[1024];
 
-	ctdb->nodemap = (struct ctdb_node_map *) malloc(sizeof(uint32_t));
+	ctdb->nodemap = (struct ctdb_node_map *) malloc(offsetof(struct ctdb_node_map, nodes));
 	if (ctdb->nodemap == NULL) {
 		DEBUG(DEBUG_ERR, ("OOM allocating nodemap\n"));
 		exit (1);
@@ -58,7 +59,7 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 		/* Get PNN */
 		tok = strtok(line, " \t");
 		if (tok == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignoed :%s\n", line));
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignoed \"%s\"\n", line));
 			continue;
 		}
 		pnn = (uint32_t)strtoul(tok, NULL, 0);
@@ -66,7 +67,7 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 		/* Get flags */
 		tok = strtok(NULL, " \t");
 		if (tok == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignored :%s\n", line));
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignored \"%s\"\n", line));
 			continue;
 		}
 		flags = (uint32_t)strtoul(tok, NULL, 0);
@@ -81,7 +82,7 @@ void libctdb_test_read_nodemap(struct ctdb_connection *ctdb)
 			tok = strtok(NULL, " \t");
 		}
 
-		ctdb->nodemap = (struct ctdb_node_map *) realloc(ctdb->nodemap, sizeof(uint32_t) + (ctdb->nodemap->num + 1) * sizeof(struct ctdb_node_and_flags));
+		ctdb->nodemap = (struct ctdb_node_map *) realloc(ctdb->nodemap, offsetof(struct ctdb_node_map, nodes) + (ctdb->nodemap->num + 1) * sizeof(struct ctdb_node_and_flags));
 		if (ctdb->nodemap == NULL) {
 			DEBUG(DEBUG_ERR, ("OOM allocating nodemap\n"));
 			exit (1);
@@ -106,6 +107,173 @@ void libctdb_test_print_nodemap(struct ctdb_connection *ctdb)
 	}
 }
 
+/* Read interfaces information.  Same format as "ctdb ifaces -Y"
+ * output:
+ *   :Name:LinkStatus:References:
+ *   :eth2:1:4294967294
+ *   :eth1:1:4294967292
+ */
+void libctdb_test_read_ifaces(struct ctdb_connection *ctdb)
+{
+	char line[1024];
+
+	ctdb->ifaces = (struct ctdb_ifaces_list *) malloc(offsetof(struct ctdb_ifaces_list, ifaces));
+	if (ctdb->ifaces == NULL) {
+		DEBUG(DEBUG_ERR, ("OOM allocating ifaces\n"));
+		exit (1);
+	}
+	ctdb->ifaces->num = 0;
+
+	while ((fgets(line, sizeof(line), stdin) != NULL) &&
+	       (line[0] != '\n')) {
+		uint16_t link_state;
+		uint32_t references;
+		char *tok, *t, *name;
+
+		/* Get rid of pesky newline */
+		if ((t = strchr(line, '\n')) != NULL) {
+			*t = '\0';
+		}
+
+		if (strcmp(line, ":Name:LinkStatus:References:") == 0) {
+			continue;
+		}
+
+		/* name */
+		//tok = strtok(line, ":"); /* Leading colon... */
+		tok = strtok(line, ":");
+		if (tok == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignoed \"%s\"\n", line));
+			continue;
+		}
+		name = tok;
+
+		/* link_state */
+		tok = strtok(NULL, ":");
+		if (tok == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignored \"%s\"\n", line));
+			continue;
+		}
+		link_state = (uint16_t)strtoul(tok, NULL, 0);
+
+		/* references... */
+		tok = strtok(NULL, ":");
+		if (tok == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignored \"%s\"\n", line));
+			continue;
+		}
+		references = (uint32_t)strtoul(tok, NULL, 0);
+
+		ctdb->ifaces = (struct ctdb_ifaces_list *) realloc(ctdb->ifaces, offsetof(struct ctdb_ifaces_list, ifaces) + (ctdb->ifaces->num + 1) * sizeof(struct ctdb_iface_info));
+		if (ctdb->ifaces == NULL) {
+			DEBUG(DEBUG_ERR, ("OOM allocating ifaces\n"));
+			exit (1);
+		}
+
+		strcpy(&(ctdb->ifaces->ifaces[ctdb->ifaces->num].name[0]), name);
+		ctdb->ifaces->ifaces[ctdb->ifaces->num].link_state = link_state;
+		ctdb->ifaces->ifaces[ctdb->ifaces->num].references = references;
+		ctdb->ifaces->num++;
+	}
+}
+
+void libctdb_test_print_ifaces(struct ctdb_connection *ctdb)
+{
+	int i;
+
+	printf(":Name:LinkStatus:References:\n");
+	for (i = 0; i < ctdb->ifaces->num; i++) {
+		printf(":%s:%u:%u:\n",
+		       ctdb->ifaces->ifaces[i].name,
+		       ctdb->ifaces->ifaces[i].link_state,
+		       ctdb->ifaces->ifaces[i].references);
+	}
+}
+
+/* Read vnn map.
+ * output:
+ *   <GENERATION>
+ *   <LMASTER0>
+ *   <LMASTER1>
+ *   ...
+ */
+void libctdb_test_read_vnnmap(struct ctdb_connection *ctdb)
+{
+	char line[1024];
+
+	ctdb->vnnmap = (struct ctdb_vnn_map *) malloc(sizeof(struct ctdb_vnn_map));
+	if (ctdb->vnnmap == NULL) {
+		DEBUG(DEBUG_ERR, ("OOM allocating vnnmap\n"));
+		exit (1);
+	}
+	ctdb->vnnmap->generation = INVALID_GENERATION;
+	ctdb->vnnmap->size = 0;
+	ctdb->vnnmap->map = NULL;
+
+	while ((fgets(line, sizeof(line), stdin) != NULL) &&
+	       (line[0] != '\n')) {
+		uint32_t n;
+		char *t;
+
+		/* Get rid of pesky newline */
+		if ((t = strchr(line, '\n')) != NULL) {
+			*t = '\0';
+		}
+
+		n = (uint32_t) strtol(line, NULL, 0);
+
+		/* generation */
+		if (ctdb->vnnmap->generation == INVALID_GENERATION) {
+			ctdb->vnnmap->generation = n;
+			continue;
+		}
+
+		ctdb->vnnmap->map = (uint32_t *) realloc(ctdb->vnnmap->map, (ctdb->vnnmap->size + 1) * sizeof(uint32_t));
+		if (ctdb->vnnmap->map == NULL) {
+			DEBUG(DEBUG_ERR, ("OOM allocating vnnmap->map\n"));
+			exit (1);
+		}
+
+		ctdb->vnnmap->map[ctdb->vnnmap->size] = n;
+		ctdb->vnnmap->size++;
+	}
+}
+
+void libctdb_test_print_vnnmap(struct ctdb_connection *ctdb)
+{
+	int i;
+
+	printf("%d\n", ctdb->vnnmap->generation);
+	for (i = 0; i < ctdb->vnnmap->size; i++) {
+		printf("%d\n", ctdb->vnnmap->map[i]);
+	}
+}
+
+void libctdb_test_fake_setup(struct ctdb_connection *ctdb)
+{
+	char line[1024];
+
+	while (fgets(line, sizeof(line), stdin) != NULL) {
+		char *t;
+
+		/* Get rid of pesky newline */
+		if ((t = strchr(line, '\n')) != NULL) {
+			*t = '\0';
+		}
+
+		if (strcmp(line, "NODEMAP") == 0) {
+			libctdb_test_read_nodemap(ctdb);
+		} else if (strcmp(line, "IFACES") == 0) {
+			libctdb_test_read_ifaces(ctdb);
+		} else if (strcmp(line, "VNNMAP") == 0) {
+			libctdb_test_read_vnnmap(ctdb);
+		} else {
+			printf("Unknown line %s\n", line);
+			exit(1);
+		}
+	}
+}
+
 /* Stubs... */
 
 bool ctdb_getnodemap(struct ctdb_connection *ctdb,
@@ -124,7 +292,7 @@ bool ctdb_getifaces(struct ctdb_connection *ctdb,
 		    uint32_t destnode, struct ctdb_ifaces_list **ifaces)
 {
 	*ifaces = ctdb->ifaces;
-	return false; /* Not implemented */
+	return true;
 }
 
 void ctdb_free_ifaces(struct ctdb_ifaces_list *ifaces)
@@ -158,6 +326,18 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 {
 	*recmaster = ctdb->recmaster;
 	return true;
+}
+
+bool ctdb_getvnnmap(struct ctdb_connection *ctdb,
+		    uint32_t destnode, struct ctdb_vnn_map **vnnmap)
+{
+	*vnnmap = ctdb->vnnmap;
+	return true;
+}
+
+void ctdb_free_vnnmap(struct ctdb_vnn_map *vnnmap)
+{
+	return;
 }
 
 bool
@@ -218,6 +398,8 @@ struct ctdb_connection *ctdb_connect(const char *addr,
 	ctdb->nodemap = NULL;
 	ctdb->current_node = 0;
 	ctdb->recmaster = 0;
+	ctdb->ifaces = NULL;
+	ctdb->vnnmap = NULL;
 
 	return ctdb;
 }
@@ -227,5 +409,15 @@ void ctdb_disconnect(struct ctdb_connection *ctdb)
 	if (ctdb->nodemap != NULL) {
 		free(ctdb->nodemap);
 	}
+	if (ctdb->ifaces != NULL) {
+		free(ctdb->ifaces);
+	}
+	if (ctdb->vnnmap != NULL) {
+		if (ctdb->vnnmap->map != NULL) {
+			free(ctdb->vnnmap->map);
+		}
+		free(ctdb->vnnmap);
+	}
 	free(ctdb);
 }
+
