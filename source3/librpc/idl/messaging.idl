@@ -62,8 +62,8 @@ interface messaging
 		/* smbd messages */
 		/* MSG_SMB_CONF_UPDATED		= 0x0301,  Obsoleted */
 		MSG_SMB_FORCE_TDIS		= 0x0302,
-		MSG_SMB_SAM_SYNC		= 0x0303,
-		MSG_SMB_SAM_REPL		= 0x0304,
+		/* MSG_SMB_SAM_SYNC		= 0x0303,  Obsoleted */
+		/* MSG_SMB_SAM_REPL		= 0x0304,  Obsoleted */
 		MSG_SMB_UNLOCK			= 0x0305,
 		MSG_SMB_BREAK_REQUEST		= 0x0306,
 		MSG_SMB_BREAK_RESPONSE		= 0x0307,
