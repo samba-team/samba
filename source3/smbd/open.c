@@ -2992,7 +2992,6 @@ void msg_file_was_renamed(struct messaging_context *msg,
 			  struct server_id server_id,
 			  DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn;
 	files_struct *fsp;
 	char *frm = (char *)data->data;
 	struct file_id id;
@@ -3002,10 +3001,11 @@ void msg_file_was_renamed(struct messaging_context *msg,
 	struct smb_filename *smb_fname = NULL;
 	size_t sp_len, bn_len;
 	NTSTATUS status;
+	struct smbd_server_connection *sconn =
+		talloc_get_type(private_data,
+		struct smbd_server_connection);
 
-	sconn = msg_ctx_to_sconn(msg);
 	if (sconn == NULL) {
-		DEBUG(1, ("could not find sconn\n"));
 		return;
 	}
 
