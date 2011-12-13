@@ -117,16 +117,6 @@ struct smbd_server_connection *msg_ctx_to_sconn(struct messaging_context *msg_ct
 	return smbd_server_conn;
 }
 
-struct messaging_context *smbd_messaging_context(void)
-{
-	struct messaging_context *msg_ctx = server_messaging_context();
-	if (likely(msg_ctx != NULL)) {
-		return msg_ctx;
-	}
-	smb_panic("Could not init smbd's messaging context.\n");
-	return NULL;
-}
-
 struct memcache *smbd_memcache(void)
 {
 	if (!smbd_memcache_ctx) {

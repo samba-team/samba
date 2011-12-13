@@ -957,7 +957,6 @@ void init_sec_ctx(void);
 
 /* The following definitions come from smbd/server.c  */
 
-struct messaging_context *smbd_messaging_context(void);
 struct memcache *smbd_memcache(void);
 void delete_and_reload_printers(struct tevent_context *ev,
 				struct messaging_context *msg_ctx);
