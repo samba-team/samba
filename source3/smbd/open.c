@@ -1548,10 +1548,10 @@ void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 			NULL, NULL, NULL);
 	if (lck == NULL) {
 		DEBUG(0, ("could not get share mode lock\n"));
-	} else {
-		del_deferred_open_entry(lck, mid, pid);
-		TALLOC_FREE(lck);
+		return;
 	}
+	del_deferred_open_entry(lck, mid, pid);
+	TALLOC_FREE(lck);
 }
 
 /****************************************************************
