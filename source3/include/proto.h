@@ -1592,7 +1592,8 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 			struct security_descriptor **ppsd,
 			bool *pallow_guest);
 int load_usershare_service(const char *servicename);
-int load_usershare_shares(struct smbd_server_connection *sconn);
+int load_usershare_shares(struct smbd_server_connection *sconn,
+			  bool (*snumused) (struct smbd_server_connection *, int));
 void gfree_loadparm(void);
 bool lp_load(const char *pszFname,
 	     bool global_only,

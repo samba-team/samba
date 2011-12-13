@@ -8731,7 +8731,8 @@ int load_usershare_service(const char *servicename)
  been removed.
 ***************************************************************************/
 
-int load_usershare_shares(struct smbd_server_connection *sconn)
+int load_usershare_shares(struct smbd_server_connection *sconn,
+			  bool (*snumused) (struct smbd_server_connection *, int))
 {
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
@@ -8869,7 +8870,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn)
 	   not currently in use. */
 	for (iService = iNumServices - 1; iService >= 0; iService--) {
 		if (VALID(iService) && (ServicePtrs[iService]->usershare == USERSHARE_PENDING_DELETE)) {
-			if (conn_snum_used(sconn, iService)) {
+			if (snumused && snumused(sconn, iService)) {
 				continue;
 			}
 			/* Remove from the share ACL db. */
