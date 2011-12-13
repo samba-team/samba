@@ -270,7 +270,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
  * traverse the tree of records to delete and marshall them into
  * a blob
  */
-static int delete_traverse(void *param, void *data)
+static int delete_marshall_traverse(void *param, void *data)
 {
 	struct delete_record_data *dd = talloc_get_type(data, struct delete_record_data);
 	struct delete_records_list *recs = talloc_get_type(param, struct delete_records_list);
@@ -629,7 +629,8 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		 * traverse the tree of all records we want to delete and
 		 * create a blob we can send to the other nodes.
 		 */
-		trbt_traversearray32(vdata->delete_tree, 1, delete_traverse, recs);
+		trbt_traversearray32(vdata->delete_tree, 1,
+				     delete_marshall_traverse, recs);
 
 		indata.dsize = talloc_get_size(recs->records);
 		indata.dptr  = (void *)recs->records;
