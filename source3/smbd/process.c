@@ -3135,7 +3135,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("Failed to init oplocks");
 
 	/* register our message handlers */
-	messaging_register(sconn->msg_ctx, NULL,
+	messaging_register(sconn->msg_ctx, sconn,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
 	messaging_register(sconn->msg_ctx, sconn,
 			   MSG_SMB_CLOSE_FILE, msg_close_file);
