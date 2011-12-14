@@ -37,6 +37,7 @@
 #include "intl/lang_tdb.h"
 #include "../lib/crypto/md5.h"
 #include "lib/param/loadparm.h"
+#include "messages.h"
 
 static int demo_mode = False;
 static int passwd_only = False;
@@ -588,8 +589,23 @@ static int save_reload(int snum)
         }
 	iNumNonAutoPrintServices = lp_numservices();
 	if (pcap_cache_loaded()) {
-		load_printers(server_event_context(),
-			      server_messaging_context());
+		struct tevent_context *ev_ctx;
+		struct messaging_context *msg_ctx;
+
+		ev_ctx = s3_tevent_context_init(NULL);
+		if (ev_ctx == NULL) {
+			printf("s3_tevent_context_init() failed\n");
+			return 0;
+		}
+		msg_ctx = messaging_init(ev_ctx, ev_ctx);
+		if (msg_ctx == NULL) {
+			printf("messaging_init() failed\n");
+			return 0;
+		}
+
+		load_printers(ev_ctx, msg_ctx);
+
+		talloc_free(ev_ctx);
 	}
 
 	return 1;
@@ -1574,8 +1590,23 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 	load_interfaces();
 	iNumNonAutoPrintServices = lp_numservices();
 	if (pcap_cache_loaded()) {
-		load_printers(server_event_context(),
-			      server_messaging_context());
+		struct tevent_context *ev_ctx;
+		struct messaging_context *msg_ctx;
+
+		ev_ctx = s3_tevent_context_init(NULL);
+		if (ev_ctx == NULL) {
+			printf("s3_tevent_context_init() failed\n");
+			return 0;
+		}
+		msg_ctx = messaging_init(ev_ctx, ev_ctx);
+		if (msg_ctx == NULL) {
+			printf("messaging_init() failed\n");
+			return 0;
+		}
+
+		load_printers(ev_ctx, msg_ctx);
+
+		talloc_free(ev_ctx);
 	}
 
 	cgi_setup(get_dyn_SWATDIR(), !demo_mode);
