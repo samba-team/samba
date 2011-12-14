@@ -914,7 +914,7 @@ AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_hash2.o
 
-SMBD_OBJ_MAIN = smbd/server.o smbd/server_exit.o smbd/msg_idmap.o
+SMBD_OBJ_MAIN = smbd/server.o smbd/server_exit.o
 
 BUILDOPT_OBJ = smbd/build_options.o
 

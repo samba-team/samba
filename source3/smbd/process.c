@@ -36,6 +36,9 @@
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "libsmb/libsmb.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security_token.h"
+#include "lib/id_cache.h"
 
 extern bool global_machine_password_needs_changing;
 
@@ -2960,6 +2963,109 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 
 #endif
 
+static bool uid_in_use(const struct user_struct *user, uid_t uid)
+{
+	while (user) {
+		if (user->session_info &&
+		    (user->session_info->unix_token->uid == uid)) {
+			return true;
+		}
+		user = user->next;
+	}
+	return false;
+}
+
+static bool gid_in_use(const struct user_struct *user, gid_t gid)
+{
+	while (user) {
+		if (user->session_info != NULL) {
+			int i;
+			struct security_unix_token *utok;
+
+			utok = user->session_info->unix_token;
+			if (utok->gid == gid) {
+				return true;
+			}
+			for(i=0; i<utok->ngroups; i++) {
+				if (utok->groups[i] == gid) {
+					return true;
+				}
+			}
+		}
+		user = user->next;
+	}
+	return false;
+}
+
+static bool sid_in_use(const struct user_struct *user,
+		       const struct dom_sid *psid)
+{
+	while (user) {
+		struct security_token *tok;
+
+		if (user->session_info == NULL) {
+			continue;
+		}
+		tok = user->session_info->security_token;
+		if (tok == NULL) {
+			/*
+			 * Not sure session_info->security_token can
+			 * ever be NULL. This check might be not
+			 * necessary.
+			 */
+			continue;
+		}
+		if (security_token_has_sid(tok, psid)) {
+			return true;
+		}
+		user = user->next;
+	}
+	return false;
+}
+
+static bool id_in_use(const struct user_struct *user,
+		      const struct id_cache_ref *id)
+{
+	switch(id->type) {
+	case UID:
+		return uid_in_use(user, id->id.uid);
+	case GID:
+		return gid_in_use(user, id->id.gid);
+	case SID:
+		return sid_in_use(user, &id->id.sid);
+	default:
+		break;
+	}
+	return false;
+}
+
+static void smbd_id_cache_kill(struct messaging_context *msg_ctx,
+			       void *private_data,
+			       uint32_t msg_type,
+			       struct server_id server_id,
+			       DATA_BLOB* data)
+{
+	const char *msg = (data && data->data)
+		? (const char *)data->data : "<NULL>";
+	struct user_struct *validated_users;
+	struct id_cache_ref id;
+	struct smbd_server_connection *sconn =
+		talloc_get_type_abort(private_data,
+		struct smbd_server_connection);
+
+	validated_users = sconn->smb1.sessions.validated_users;
+
+	if (!id_cache_ref_parse(msg, &id)) {
+		DEBUG(0, ("Invalid ?ID: %s\n", msg));
+		return;
+	}
+
+	if (id_in_use(validated_users, &id)) {
+		exit_server_cleanly(msg);
+	}
+	id_cache_delete_from_cache(&id);
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
@@ -3142,6 +3248,11 @@ void smbd_process(struct tevent_context *ev_ctx,
 			   MSG_SMB_CLOSE_FILE, msg_close_file);
 	messaging_register(sconn->msg_ctx, sconn,
 			   MSG_SMB_FILE_RENAME, msg_file_was_renamed);
+
+	id_cache_register_msgs(sconn->msg_ctx);
+	messaging_deregister(sconn->msg_ctx, ID_CACHE_KILL, NULL);
+	messaging_register(sconn->msg_ctx, sconn,
+			   ID_CACHE_KILL, smbd_id_cache_kill);
 
 	/*
 	 * Use the default MSG_DEBUG handler to avoid rebroadcasting

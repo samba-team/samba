@@ -1182,8 +1182,4 @@ NTSTATUS vfs_streaminfo(connection_struct *conn,
 void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			   uint16_t port);
 
-/* The following definitions come from smbd/msg_idmap.c */
-
-void msg_idmap_register_msg(struct messaging_context *ctx);
-
 #endif /* _SMBD_PROTO_H_ */

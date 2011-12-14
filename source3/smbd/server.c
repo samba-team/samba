@@ -230,6 +230,48 @@ static void smbd_msg_debug(struct messaging_context *msg_ctx,
 	messaging_send_to_children(msg_ctx, MSG_DEBUG, data);
 }
 
+static void smbd_parent_id_cache_kill(struct messaging_context *msg_ctx,
+				      void *private_data,
+				      uint32_t msg_type,
+				      struct server_id server_id,
+				      DATA_BLOB* data)
+{
+	const char *msg = (data && data->data)
+		? (const char *)data->data : "<NULL>";
+	struct id_cache_ref id;
+
+	if (!id_cache_ref_parse(msg, &id)) {
+		DEBUG(0, ("Invalid ?ID: %s\n", msg));
+		return;
+	}
+
+	id_cache_delete_from_cache(&id);
+
+	messaging_send_to_children(msg_ctx, msg_type, data);
+}
+
+static void smbd_parent_id_cache_flush(struct messaging_context *ctx,
+				       void* data,
+				       uint32_t msg_type,
+				       struct server_id srv_id,
+				       DATA_BLOB* msg_data)
+{
+	id_cache_flush_message(ctx, data, msg_type, srv_id, msg_data);
+
+	messaging_send_to_children(ctx, msg_type, msg_data);
+}
+
+static void smbd_parent_id_cache_delete(struct messaging_context *ctx,
+					void* data,
+					uint32_t msg_type,
+					struct server_id srv_id,
+					DATA_BLOB* msg_data)
+{
+	id_cache_delete_message(ctx, data, msg_type, srv_id, msg_data);
+
+	messaging_send_to_children(ctx, msg_type, msg_data);
+}
+
 static void add_child_pid(struct smbd_parent_context *parent,
 			  pid_t pid)
 {
@@ -768,7 +810,12 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SMB_BRL_VALIDATE,
 			   brl_revalidate);
 
-	msg_idmap_register_msg(msg_ctx);
+	messaging_register(msg_ctx, NULL,
+			   ID_CACHE_FLUSH, smbd_parent_id_cache_flush);
+	messaging_register(msg_ctx, NULL,
+			   ID_CACHE_DELETE, smbd_parent_id_cache_delete);
+	messaging_register(msg_ctx, NULL,
+			   ID_CACHE_KILL, smbd_parent_id_cache_kill);
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
