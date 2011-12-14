@@ -1233,7 +1233,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			domain->can_do_validation6 = false;
 		}
 
-		if (domain->can_do_samlogon_ex) {
+		if (domain->can_do_samlogon_ex && domain->can_do_validation6) {
 			result = rpccli_netlogon_sam_network_logon_ex(
 					netlogon_pipe,
 					mem_ctx,
@@ -1243,7 +1243,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					domainname,	/* target domain */
 					workstation,	/* workstation */
 					chal,
-					domain->can_do_validation6 ? 6 : 3,
+					6,
 					lm_response,
 					nt_response,
 					info3);
