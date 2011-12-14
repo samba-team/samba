@@ -115,7 +115,7 @@ def dc_url(lp, creds, url=None, dc=None):
             try:
                 dc = netcmd_finddc(lp, creds)
             except Exception, e:
-                raise RunTimeError("Could not find a DC for domain", e)
+                raise RuntimeError("Could not find a DC for domain", e)
         url = 'ldap://' + dc
     return url
 
@@ -815,7 +815,7 @@ class cmd_create(Command):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
-        self.url = dc_url(self.lp, self.creds, H)
+        self.url = dc_url(self.lp, self.creds, url=H)
 
         dc_hostname = netcmd_finddc(self.lp, self.creds)
         samdb_connect(self)
@@ -853,71 +853,64 @@ class cmd_create(Command):
         except Exception, e:
             raise CommandError("Error Creating GPO files", e) 
 
-        # Add cn=<guid>
-        gpo_dn = self.samdb.get_default_basedn()
-        gpo_dn.add_child(ldb.Dn(self.samdb, "CN=Policies,CN=System"))
-        gpo_dn.add_child(ldb.Dn(self.samdb, "CN=%s" % gpo))
-
-        m = ldb.Message()
-        m.dn = ldb.Dn(self.samdb, gpo_dn.get_linearized())
-        m['a01'] = ldb.MessageElement("groupPolicyContainer", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a02'] = ldb.MessageElement(displayname, ldb.FLAG_MOD_ADD, "displayName")
-        m['a03'] = ldb.MessageElement(unc_path, ldb.FLAG_MOD_ADD, "gPCFileSysPath")
-        m['a04'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "flags")
-        m['a05'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "versionNumber")
-        m['a06'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
-        m['a07'] = ldb.MessageElement("2", ldb.FLAG_MOD_ADD, "gpcFunctionalityVersion")
-        try:
-            self.samdb.add(m)
-        except Exception, e:
-            raise CommandError("Error adding GPO in AD", e)
-
-        # Add cn=User,cn=<guid>
-        m = ldb.Message()
-        m.dn = ldb.Dn(self.samdb, "CN=User,%s" % str(gpo_dn))
-        m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
-        try:
-            self.samdb.add(m)
-        except Exception, e:
-            raise CommandError("Error adding GPO in AD", e)
-
-        # Add cn=Machine,cn=<guid>
-        m = ldb.Message()
-        m.dn = ldb.Dn(self.samdb, "CN=Machine,%s" % str(gpo_dn))
-        m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
-        m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
-        try:
-            self.samdb.add(m)
-        except Exception, e:
-            raise CommandError("Error adding GPO in AD", e)
-
-        # Copy GPO files over SMB
+        # Connect to DC over SMB
         [dom_name, service, sharepath] = parse_unc(unc_path)
         try:
             conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
         except Exception, e:
             raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
 
+        self.samdb.transaction_start()
         try:
+            # Add cn=<guid>
+            gpo_dn = self.samdb.get_default_basedn()
+            gpo_dn.add_child(ldb.Dn(self.samdb, "CN=Policies,CN=System"))
+            gpo_dn.add_child(ldb.Dn(self.samdb, "CN=%s" % gpo))
+
+            m = ldb.Message()
+            m.dn = ldb.Dn(self.samdb, gpo_dn.get_linearized())
+            m['a01'] = ldb.MessageElement("groupPolicyContainer", ldb.FLAG_MOD_ADD, "objectClass")
+            m['a02'] = ldb.MessageElement(displayname, ldb.FLAG_MOD_ADD, "displayName")
+            m['a03'] = ldb.MessageElement(unc_path, ldb.FLAG_MOD_ADD, "gPCFileSysPath")
+            m['a04'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "flags")
+            m['a05'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "versionNumber")
+            m['a06'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
+            m['a07'] = ldb.MessageElement("2", ldb.FLAG_MOD_ADD, "gpcFunctionalityVersion")
+            self.samdb.add(m)
+
+            # Add cn=User,cn=<guid>
+            m = ldb.Message()
+            m.dn = ldb.Dn(self.samdb, "CN=User,%s" % str(gpo_dn))
+            m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
+            m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
+            self.samdb.add(m)
+
+            # Add cn=Machine,cn=<guid>
+            m = ldb.Message()
+            m.dn = ldb.Dn(self.samdb, "CN=Machine,%s" % str(gpo_dn))
+            m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
+            m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
+            self.samdb.add(m)
+
+            # Copy GPO files over SMB
             create_directory_hier(conn, sharepath)
             copy_directory_local_to_remote(conn, gpodir, sharepath)
-        except Exception, e:
-            raise CommandError("Error Copying GPO to DC", e)
 
-        # Get new security descriptor
-        msg = get_gpo_info(self.samdb, gpo=gpo)[0]
-        ds_sd_ndr = msg['ntSecurityDescriptor'][0]
-        ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
+            # Get new security descriptor
+            msg = get_gpo_info(self.samdb, gpo=gpo)[0]
+            ds_sd_ndr = msg['ntSecurityDescriptor'][0]
+            ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
 
-        # Create a file system security descriptor
-        fs_sd = security.descriptor(dsacl2fsacl(ds_sd, self.samdb.get_domain_sid()))
+            # Create a file system security descriptor
+            fs_sd = security.descriptor(dsacl2fsacl(ds_sd, self.samdb.get_domain_sid()))
 
-        # Set ACL
-        try:
+            # Set ACL
             conn.set_acl(sharepath, fs_sd)
+
+            self.samdb.transaction_commit()
         except Exception, e:
-            raise CommandError("Error setting ACL on GPT", e)
+            self.samdb.transaction_cancel()
+            raise RuntimeError("Error adding GPO to AD", e)
 
         self.outf.write("GPO '%s' created as %s\n" % (displayname, gpo))
 
