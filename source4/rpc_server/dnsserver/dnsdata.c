@@ -946,7 +946,7 @@ bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRe
 			rec1->data.soa.minimum == rec2->data.soa.minimum;
 
 	case DNS_TYPE_PTR:
-		return strcmp(rec1->data.ptr, rec2->data.ptr) == 0;
+		return dns_name_equal(rec1->data.ptr, rec2->data.ptr);
 
 	case DNS_TYPE_MX:
 		return rec1->data.mx.wPriority == rec2->data.srv.wPriority &&
