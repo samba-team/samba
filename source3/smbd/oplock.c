@@ -439,12 +439,8 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 	struct share_mode_entry msg;
 	files_struct *fsp;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -491,12 +487,8 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	files_struct *fsp;
 	bool break_to_level2 = False;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -598,12 +590,8 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	unsigned long file_id;
 	files_struct *fsp;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -692,12 +680,8 @@ static void process_oplock_break_response(struct messaging_context *msg_ctx,
 {
 	struct share_mode_entry msg;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -730,12 +714,8 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 {
 	struct share_mode_entry msg;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
