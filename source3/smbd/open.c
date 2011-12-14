@@ -1275,11 +1275,9 @@ static void defer_open(struct share_mode_lock *lck,
 	for (i=0; i<lck->num_share_modes; i++) {
 		struct share_mode_entry *e = &lck->share_modes[i];
 
-		if (!is_deferred_open_entry(e)) {
-			continue;
-		}
-
-		if (procid_is_me(&e->pid) && (e->op_mid == req->mid)) {
+		if (is_deferred_open_entry(e) &&
+		    procid_is_me(&e->pid) &&
+		    (e->op_mid == req->mid)) {
 			DEBUG(0, ("Trying to defer an already deferred "
 				"request: mid=%llu, exiting\n",
 				(unsigned long long)req->mid));
