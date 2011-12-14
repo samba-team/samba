@@ -131,19 +131,6 @@ typedef union unid_t {
 
 #include "librpc/gen_ndr/security.h"
 
-/*
- * The complete list of SIDS belonging to this user.
- * Created when a vuid is registered.
- * The definition of the user_sids array is as follows :
- *
- * token->user_sids[0] = primary user SID.
- * token->user_sids[1] = primary group SID.
- * token->user_sids[2..num_sids] = supplementary group SIDS.
- */
-
-#define PRIMARY_USER_SID_INDEX 0
-#define PRIMARY_GROUP_SID_INDEX 1
-
 typedef struct write_cache {
 	SMB_OFF_T file_size;
 	SMB_OFF_T offset;
