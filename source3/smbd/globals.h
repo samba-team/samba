@@ -614,6 +614,4 @@ struct smbd_server_connection {
 
 extern struct smbd_server_connection *smbd_server_conn;
 
-struct smbd_server_connection *msg_ctx_to_sconn(struct messaging_context *msg_ctx);
-
 void smbd_init_globals(void);

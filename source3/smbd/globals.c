@@ -104,19 +104,6 @@ bool exit_firsttime = true;
 
 struct smbd_server_connection *smbd_server_conn = NULL;
 
-struct smbd_server_connection *msg_ctx_to_sconn(struct messaging_context *msg_ctx)
-{
-	struct server_id my_id, msg_id;
-
-	my_id = messaging_server_id(smbd_server_conn->msg_ctx);
-	msg_id = messaging_server_id(msg_ctx);
-
-	if (!procid_equal(&my_id, &msg_id)) {
-		return NULL;
-	}
-	return smbd_server_conn;
-}
-
 struct memcache *smbd_memcache(void)
 {
 	if (!smbd_memcache_ctx) {
