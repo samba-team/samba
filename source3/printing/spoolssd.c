@@ -489,7 +489,8 @@ static void spoolss_handle_client(struct tevent_req *req)
 extern pid_t background_lpq_updater_pid;
 static char *bq_logfile;
 
-static void check_updater_child(void)
+static void check_updater_child(struct tevent_context *ev_ctx,
+				struct messaging_context *msg_ctx)
 {
 	int status;
 	pid_t pid;
@@ -501,9 +502,7 @@ static void check_updater_child(void)
 	pid = sys_waitpid(background_lpq_updater_pid, &status, WNOHANG);
 	if (pid > 0) {
 		DEBUG(2, ("The background queue child died... Restarting!\n"));
-		pid = start_background_queue(server_event_context(),
-					     server_messaging_context(),
-					     bq_logfile);
+		pid = start_background_queue(ev_ctx, msg_ctx, bq_logfile);
 		background_lpq_updater_pid = pid;
 	}
 }
@@ -543,7 +542,7 @@ static void spoolssd_sigchld_handler(struct tevent_context *ev_ctx,
 	pfh_manage_pool(ev_ctx, msg_ctx, &pf_spoolss_cfg, spoolss_pool);
 
 	/* also check if the updater child is alive and well */
-	check_updater_child();
+	check_updater_child(ev_ctx, msg_ctx);
 }
 
 static bool spoolssd_setup_children_monitor(struct tevent_context *ev_ctx,
