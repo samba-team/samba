@@ -430,7 +430,7 @@ void break_level2_to_none_async(files_struct *fsp)
  the client for LEVEL2.
 *******************************************************************/
 
-void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
+static void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
 						      void *private_data,
 						      uint32_t msg_type,
 						      struct server_id src,
