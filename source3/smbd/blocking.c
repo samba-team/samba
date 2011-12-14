@@ -703,12 +703,8 @@ static void received_unlock_msg(struct messaging_context *msg,
 				DATA_BLOB *data)
 {
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	DEBUG(10,("received_unlock_msg\n"));
 	process_blocking_lock_queue(sconn);
@@ -832,12 +828,8 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 	const char *msg = (const char *)data->data;
 	struct blocking_lock_record *blr;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	if (data->data == NULL) {
 		smb_panic("process_blocking_lock_cancel_message: null msg");
