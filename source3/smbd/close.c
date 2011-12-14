@@ -1137,12 +1137,8 @@ void msg_close_file(struct messaging_context *msg_ctx,
 	files_struct *fsp = NULL;
 	struct share_mode_entry e;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	message_to_share_mode_entry(&e, (char *)data->data);
 
