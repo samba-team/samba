@@ -1365,7 +1365,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			domain->can_do_validation6 = false;
 		}
 
-		logon_fn = contact_domain->can_do_samlogon_ex
+		logon_fn = (contact_domain->can_do_samlogon_ex && domain->can_do_validation6)
 			? rpccli_netlogon_sam_network_logon_ex
 			: rpccli_netlogon_sam_network_logon;
 
@@ -1991,7 +1991,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			domain->can_do_validation6 = false;
 		}
 
-		logon_fn = contact_domain->can_do_samlogon_ex
+		logon_fn = (contact_domain->can_do_samlogon_ex && domain->can_do_validation6)
 			? rpccli_netlogon_sam_network_logon_ex
 			: rpccli_netlogon_sam_network_logon;
 
