@@ -38,12 +38,8 @@ void msg_force_tdis(struct messaging_context *msg,
 {
 	const char *sharename = (const char *)data->data;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	conn_force_tdis(sconn, sharename);
 }
