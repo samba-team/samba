@@ -3002,12 +3002,8 @@ void msg_file_was_renamed(struct messaging_context *msg,
 	size_t sp_len, bn_len;
 	NTSTATUS status;
 	struct smbd_server_connection *sconn =
-		talloc_get_type(private_data,
+		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	if (sconn == NULL) {
-		return;
-	}
 
 	if (data->data == NULL
 	    || data->length < MSG_FILE_RENAMED_MIN_SIZE + 2) {
