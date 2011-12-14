@@ -925,6 +925,22 @@ void smbd_setup_sig_hup_handler(struct smbd_server_connection *sconn)
 	}
 }
 
+static void smbd_conf_updated(struct messaging_context *msg,
+			      void *private_data,
+			      uint32_t msg_type,
+			      struct server_id server_id,
+			      DATA_BLOB *data)
+{
+	struct smbd_server_connection *sconn =
+		talloc_get_type_abort(private_data,
+		struct smbd_server_connection);
+
+	DEBUG(10,("smbd_conf_updated: Got message saying smb.conf was "
+		  "updated. Reloading.\n"));
+	change_to_root_user();
+	reload_services(sconn->msg_ctx, sconn->sock, False);
+}
+
 static NTSTATUS smbd_server_connection_loop_once(struct tevent_context *ev_ctx,
 						 struct smbd_server_connection *conn)
 {
@@ -3253,6 +3269,11 @@ void smbd_process(struct tevent_context *ev_ctx,
 	messaging_deregister(sconn->msg_ctx, ID_CACHE_KILL, NULL);
 	messaging_register(sconn->msg_ctx, sconn,
 			   ID_CACHE_KILL, smbd_id_cache_kill);
+
+	messaging_deregister(sconn->msg_ctx,
+			     MSG_SMB_CONF_UPDATED, sconn->ev_ctx);
+	messaging_register(sconn->msg_ctx, sconn,
+			   MSG_SMB_CONF_UPDATED, smbd_conf_updated);
 
 	/*
 	 * Use the default MSG_DEBUG handler to avoid rebroadcasting

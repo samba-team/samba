@@ -87,23 +87,20 @@ extern int dcelogin_atmost_once;
  What to do when smb.conf is updated.
  ********************************************************************/
 
-static void smb_conf_updated(struct messaging_context *msg,
-			     void *private_data,
-			     uint32_t msg_type,
-			     struct server_id server_id,
-			     DATA_BLOB *data)
+static void smbd_parent_conf_updated(struct messaging_context *msg,
+				     void *private_data,
+				     uint32_t msg_type,
+				     struct server_id server_id,
+				     DATA_BLOB *data)
 {
 	struct tevent_context *ev_ctx =
 		talloc_get_type_abort(private_data, struct tevent_context);
-	struct smbd_server_connection *sconn = msg_ctx_to_sconn(msg);
 
-	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
+	DEBUG(10,("smbd_parent_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
-	reload_services(msg, sconn->sock, False);
-	if (am_parent) {
-		printing_subsystem_update(ev_ctx, msg, false);
-	}
+	reload_services(msg, -1, false);
+	printing_subsystem_update(ev_ctx, msg, false);
 }
 
 /*******************************************************************
@@ -801,7 +798,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 	messaging_register(msg_ctx, NULL, MSG_SHUTDOWN, msg_exit_server);
 	messaging_register(msg_ctx, ev_ctx, MSG_SMB_CONF_UPDATED,
-			   smb_conf_updated);
+			   smbd_parent_conf_updated);
 	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
 			   smb_stat_cache_delete);
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
