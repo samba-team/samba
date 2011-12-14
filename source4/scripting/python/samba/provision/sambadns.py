@@ -141,6 +141,55 @@ class SRVRecord(dnsp.DnssrvRpcRecord):
         srv.wWeight = weight
         self.data = srv
 
+class TypeProperty(dnsp.DnsProperty):
+    def __init__(self, zone_type=dnsp.DNS_ZONE_TYPE_PRIMARY):
+        super(TypeProperty, self).__init__()
+        self.version = 1
+        self.id = dnsp.DSPROPERTY_ZONE_TYPE
+        self.data = zone_type
+
+class AllowUpdateProperty(dnsp.DnsProperty):
+    def __init__(self, allow_update=dnsp.DNS_ZONE_UPDATE_SECURE):
+        super(AllowUpdateProperty, self).__init__()
+        self.version = 1
+        self.id = dnsp.DSPROPERTY_ZONE_ALLOW_UPDATE
+        self.data = allow_update
+
+class SecureTimeProperty(dnsp.DnsProperty):
+    def __init__(self, secure_time=0):
+        super(SecureTimeProperty, self).__init__()
+        self.version = 1
+        self.id = dnsp.DSPROPERTY_ZONE_SECURE_TIME
+        self.data = secure_time
+
+class NorefreshIntervalProperty(dnsp.DnsProperty):
+    def __init__(self, norefresh_interval=0):
+        super(NorefreshIntervalProperty, self).__init__()
+        self.version = 1
+        self.id = dnsp.DSPROPERTY_ZONE_NOREFRESH_INTERVAL
+        self.data = norefresh_interval
+
+class RefreshIntervalProperty(dnsp.DnsProperty):
+    def __init__(self, refresh_interval=0):
+        super(RefreshIntervalProperty, self).__init__()
+        self.version = 1
+        self.id = dnsp.DSPROPERTY_ZONE_REFRESH_INTERVAL
+        self.data = refresh_interval
+
+class AgingStateProperty(dnsp.DnsProperty):
+    def __init__(self, aging_enabled=0):
+        super(AgingStateProperty, self).__init__()
+        self.version = 1
+        self.id = dnsp.DSPROPERTY_ZONE_AGING_STATE
+        self.data = aging_enabled
+
+class AgingEnabledTimeProperty(dnsp.DnsProperty):
+    def __init__(self, next_cycle_hours=0):
+        super(AgingEnabledTimeProperty, self).__init__()
+        self.version = 1;
+        self.id = dnsp.DSPROPERTY_ZONE_AGING_ENABLED_TIME
+        self.data = next_cycle_hours
+
 def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn, serverdn):
     domainzone_dn = "DC=DomainDnsZones,%s" % domaindn
     forestzone_dn = "DC=ForestDnsZones,%s" % forestdn
@@ -195,7 +244,8 @@ def add_dns_container(samdb, domaindn, prefix, domainsid, dnsadmins_sid):
     sec = security.descriptor.from_sddl(sddl, domainsid)
     msg = ldb.Message(ldb.Dn(samdb, "CN=MicrosoftDNS,%s,%s" % (prefix, domaindn)))
     msg["objectClass"] = ["top", "container"]
-    msg["nTSecurityDescriptor"] = ndr_pack(sec)
+    msg["nTSecurityDescriptor"] = ldb.MessageElement(ndr_pack(sec), ldb.FLAG_MOD_ADD,
+        "nTSecurityDescriptor")
     samdb.add(msg)
 
 def add_rootservers(samdb, domaindn, prefix):
@@ -226,8 +276,17 @@ def add_rootservers(samdb, domaindn, prefix):
 
     # Add DC=RootDNSServers,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
     msg = ldb.Message(ldb.Dn(samdb, container_dn))
+    props = []
+    props.append(ndr_pack(TypeProperty(zone_type=dnsp.DNS_ZONE_TYPE_CACHE)))
+    props.append(ndr_pack(AllowUpdateProperty(allow_update=dnsp.DNS_ZONE_UPDATE_OFF)))
+    props.append(ndr_pack(SecureTimeProperty()))
+    props.append(ndr_pack(NorefreshIntervalProperty()))
+    props.append(ndr_pack(RefreshIntervalProperty()))
+    props.append(ndr_pack(AgingStateProperty()))
+    props.append(ndr_pack(AgingEnabledTimeProperty()))
     msg["objectClass"] = ["top", "dnsZone"]
     msg["cn"] = ldb.MessageElement("Zone", ldb.FLAG_MOD_ADD, "cn")
+    msg["dNSProperty"] = ldb.MessageElement(props, ldb.FLAG_MOD_ADD, "dNSProperty")
     samdb.add(msg)
 
     # Add DC=@,DC=RootDNSServers,CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
@@ -338,9 +397,19 @@ def add_domain_record(samdb, domaindn, prefix, dnsdomain, domainsid, dnsadmins_s
     "(A;CIID;RPWPCRCCLCLORCWOWDSDSW;;;BA)" \
     "S:AI" % dnsadmins_sid
     sec = security.descriptor.from_sddl(sddl, domainsid)
+    props = []
+    props.append(ndr_pack(TypeProperty()))
+    props.append(ndr_pack(AllowUpdateProperty()))
+    props.append(ndr_pack(SecureTimeProperty()))
+    props.append(ndr_pack(NorefreshIntervalProperty(norefresh_interval=168)))
+    props.append(ndr_pack(RefreshIntervalProperty(refresh_interval=168)))
+    props.append(ndr_pack(AgingStateProperty()))
+    props.append(ndr_pack(AgingEnabledTimeProperty()))
     msg = ldb.Message(ldb.Dn(samdb, "DC=%s,CN=MicrosoftDNS,%s,%s" % (dnsdomain, prefix, domaindn)))
     msg["objectClass"] = ["top", "dnsZone"]
-    msg["ntSecurityDescriptor"] = ndr_pack(sec)
+    msg["ntSecurityDescriptor"] = ldb.MessageElement(ndr_pack(sec), ldb.FLAG_MOD_ADD,
+        "nTSecurityDescriptor")
+    msg["dNSProperty"] = ldb.MessageElement(props, ldb.FLAG_MOD_ADD, "dNSProperty")
     samdb.add(msg)
 
 def add_msdcs_record(samdb, forestdn, prefix, dnsforest):
