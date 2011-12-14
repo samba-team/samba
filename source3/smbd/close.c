@@ -156,6 +156,13 @@ static NTSTATUS close_filestruct(files_struct *fsp)
 	return status;
 }
 
+static int compare_share_mode_times(const void *p1, const void *p2)
+{
+	struct share_mode_entry *s1 = (struct share_mode_entry *)p1;
+	struct share_mode_entry *s2 = (struct share_mode_entry *)p2;
+	return timeval_compare(&s1->time, &s2->time);
+}
+
 /****************************************************************************
  If any deferred opens are waiting on this close, notify them.
 ****************************************************************************/
@@ -163,18 +170,60 @@ static NTSTATUS close_filestruct(files_struct *fsp)
 static void notify_deferred_opens(struct smbd_server_connection *sconn,
 				  struct share_mode_lock *lck)
 {
- 	int i;
+	uint32_t i, num_deferred;
+	struct share_mode_entry *deferred;
 
 	if (!should_notify_deferred_opens()) {
 		return;
 	}
 
- 	for (i=0; i<lck->num_share_modes; i++) {
- 		struct share_mode_entry *e = &lck->share_modes[i];
+	num_deferred = 0;
+	for (i=0; i<lck->num_share_modes; i++) {
+		if (is_deferred_open_entry(&lck->share_modes[i])) {
+			num_deferred += 1;
+		}
+	}
+	if (num_deferred == 0) {
+		return;
+	}
 
- 		if (!is_deferred_open_entry(e)) {
- 			continue;
- 		}
+	deferred = talloc_array(talloc_tos(), struct share_mode_entry,
+				num_deferred);
+	if (deferred == NULL) {
+		return;
+	}
+
+	num_deferred = 0;
+	for (i=0; i<lck->num_share_modes; i++) {
+ 		struct share_mode_entry *e = &lck->share_modes[i];
+		if (is_deferred_open_entry(e)) {
+			deferred[num_deferred] = *e;
+			num_deferred += 1;
+		}
+	}
+
+	/*
+	 * We need to sort the notifications by initial request time. Imagine
+	 * two opens come in asyncronously, both conflicting with the open we
+	 * just close here. If we don't sort the notifications, the one that
+	 * came in last might get the response before the one that came in
+	 * first. This is demonstrated with the smbtorture4 raw.mux test.
+	 *
+	 * As long as we had the UNUSED_SHARE_MODE_ENTRY, we happened to
+	 * survive this particular test. Without UNUSED_SHARE_MODE_ENTRY, we
+	 * shuffle the share mode entries around a bit, so that we do not
+	 * survive raw.mux anymore.
+	 *
+	 * We could have kept the ordering in del_share_mode, but as the
+	 * ordering was never formalized I think it is better to do it here
+	 * where it is necessary.
+	 */
+
+	qsort(deferred, num_deferred, sizeof(struct share_mode_entry),
+	      compare_share_mode_times);
+
+	for (i=0; i<num_deferred; i++) {
+		struct share_mode_entry *e = &deferred[i];
 
  		if (procid_is_me(&e->pid)) {
  			/*
@@ -195,6 +244,7 @@ static void notify_deferred_opens(struct smbd_server_connection *sconn,
 					   MSG_SMB_SHARE_MODE_ENTRY_SIZE);
  		}
  	}
+	TALLOC_FREE(deferred);
 }
 
 /****************************************************************************
