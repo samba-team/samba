@@ -1165,12 +1165,12 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 			found2 = false;
 			if (rin->Dword & 0x000000f0) {
 				if (rin->Dword & DNS_ZONE_REQUEST_FORWARD) {
-					if (!(z->zoneinfo->Flags & DNS_RPC_ZONE_REVERSE)) {
+					if (!(z->zoneinfo->fReverse)) {
 						found2 = true;
 					}
 				}
 				if (rin->Dword & DNS_ZONE_REQUEST_REVERSE) {
-					if (z->zoneinfo->Flags & DNS_RPC_ZONE_REVERSE) {
+					if (z->zoneinfo->fReverse) {
 						found2 = true;
 					}
 				}

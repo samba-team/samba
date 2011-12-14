@@ -159,6 +159,9 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 {
 	struct dnsserver_zoneinfo *zoneinfo;
 	uint32_t dp_flags;
+	uint32_t fReverse;
+	const char *revzone = "in-addr.arpa";
+	int len1, len2;
 
 	zoneinfo = talloc_zero(zone, struct dnsserver_zoneinfo);
 	if (zoneinfo == NULL) {
@@ -172,10 +175,18 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 		dp_flags |= DNS_DP_DOMAIN_DEFAULT;
 	}
 
+	/* If the zone name ends with in-addr.arpa, it's reverse zone */
+	fReverse = 0;
+	len1 = strlen(zone->name);
+	len2 = strlen(revzone);
+	if (len1 > len2 && strcmp(&zone->name[len1-len2], revzone) == 0) {
+		fReverse = 1;
+	}
+
 	zoneinfo->Version = 0x32;
 	zoneinfo->Flags = DNS_RPC_ZONE_DSINTEGRATED | DNS_RPC_ZONE_UPDATE_SECURE;
 	zoneinfo->dwZoneType = DNS_ZONE_TYPE_PRIMARY;
-	zoneinfo->fReverse = 0;	/* We only support forward zones for now */
+	zoneinfo->fReverse = fReverse;
 	zoneinfo->fAllowUpdate = DNS_ZONE_UPDATE_SECURE;
 	zoneinfo->fPaused = 0;
 	zoneinfo->fShutdown = 0;
