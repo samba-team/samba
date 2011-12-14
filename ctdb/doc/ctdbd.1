@@ -2,7 +2,7 @@
 .\" It was generated using the DocBook XSL Stylesheets (version 1.69.1).
 .\" Instead of manually editing it, you probably should edit the DocBook XML
 .\" source for it and then use the DocBook XSL Stylesheets to regenerate it.
-.TH "CTDBD" "1" "11/30/2011" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDBD" "1" "12/14/2011" "ctdb" "CTDB \- clustered TDB database"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -243,16 +243,62 @@ STOPPED \- A node that is stopped does not host any public ip addresses, nor is 
 .SH "PUBLIC TUNABLES"
 .PP
 These are the public tuneables that can be used to control how ctdb behaves.
+.SS "MaxRedirectCount"
+.PP
+Default: 3
+.PP
+If we are not the DMASTER and need to fetch a record across the network we first send the request to the LMASTER after which the record is passed onto the current DMASTER. If the DMASTER changes before the request has reached that node, the request will be passed onto the "next" DMASTER. For very hot records that migrate rapidly across the cluster this can cause a request to "chase" the record for many hops before it catches up with the record. this is how many hops we allow trying to chase the DMASTER before we switch back to the LMASTER again to ask for new directions.
+.PP
+When chasing a record, this is how many hops we will chase the record for before going back to the LMASTER to ask for new guidance.
+.SS "SeqnumInterval"
+.PP
+Default: 1000
+.PP
+Some databases have seqnum tracking enabled, so that samba will be able to detect asynchronously when there has been updates to the database. Everytime a database is updated its sequence number is increased.
+.PP
+This tunable is used to specify in 'ms' how frequently ctdb will send out updates to remote nodes to inform them that the sequence number is increased.
+.SS "ControlTimeout"
+.PP
+Default: 60
+.PP
+This is the default setting for timeout for when sending a control message to either the local or a remote ctdb daemon.
+.SS "TraverseTimeout"
+.PP
+Default: 20
+.PP
+This setting controls how long we allow a traverse process to run. After this timeout triggers, the main ctdb daemon will abort the traverse if it has not yet finished.
 .SS "KeepaliveInterval"
 .PP
-Default: 1
+Default: 5
 .PP
-How often should the nodes send keepalives to eachother.
+How often in seconds should the nodes send keepalives to eachother.
 .SS "KeepaliveLimit"
 .PP
 Default: 5
 .PP
 After how many keepalive intervals without any traffic should a node wait until marking the peer as DISCONNECTED.
+.PP
+If a node has hung, it can thus take KeepaliveInterval*(KeepaliveLimit+1) seconds before we determine that the node is DISCONNECTED and that we require a recovery. This limitshould not be set too high since we want a hung node to be detectec, and expunged from the cluster well before common CIFS timeouts (45\-90 seconds) kick in.
+.SS "RecoverTimeout"
+.PP
+Default: 20
+.PP
+This is the default setting for timeouts for controls when sent from the recovery daemon. We allow longer control timeouts from the recovery daemon than from normal use since the recovery dameon often use controls that can take a lot longer than normal controls.
+.SS "RecoverInterval"
+.PP
+Default: 1
+.PP
+How frequently in seconds should the recovery daemon perform the consistency checks that determine if we need to perform a recovery or not.
+.SS "ElectionTimeout"
+.PP
+Default: 3
+.PP
+When electing a new recovery master, this is how many seconds we allow the election to take before we either deem the election finished or we fail the election and start a new one.
+.SS "TakeoverTimeout"
+.PP
+Default: 9
+.PP
+This is how many seconds we allow controls to take for IP failover events.
 .SS "MonitorInterval"
 .PP
 Default: 15
@@ -268,6 +314,21 @@ How often will ctdb record and store the "tickle" information used to kickstart 
 Default: 20
 .PP
 How long should ctdb let an event script run before aborting it and marking the node unhealthy.
+.SS "EventScriptTimeoutCount"
+.PP
+Default: 1
+.PP
+How many events in a row needs to timeout before we flag the node UNHEALTHY. This setting is useful if your scripts can not be written so that they do not hang for benign reasons.
+.SS "EventScriptUnhealthyOnTimeout"
+.PP
+Default: 0
+.PP
+This setting can be be used to make ctdb never become UNHEALTHY if your eventscripts keep hanging/timing out.
+.SS "RecoveryGracePeriod"
+.PP
+Default: 120
+.PP
+During recoveries, if a node has not caused recovery failures during the last grace period, any records of transgressions that the node has caused recovery failures will be forgiven. This resets the ban\-counter back to zero for that node.
 .SS "RecoveryBanPeriod"
 .PP
 Default: 300
@@ -275,9 +336,14 @@ Default: 300
 If a node becomes banned causing repetitive recovery failures. The node will eventually become banned from the cluster. This controls how long the culprit node will be banned from the cluster before it is allowed to try to join the cluster again. Don't set to small. A node gets banned for a reason and it is usually due to real problems with the node.
 .SS "DatabaseHashSize"
 .PP
-Default: 100000
+Default: 100001
 .PP
 Size of the hash chains for the local store of the tdbs that ctdb manages.
+.SS "DatabaseMaxDead"
+.PP
+Default: 5
+.PP
+How many dead records per hashchain in the TDB database do we allow before the freelist needs to be processed.
 .SS "RerecoveryTimeout"
 .PP
 Default: 10
@@ -287,21 +353,24 @@ Once a recovery has completed, no additional recoveries are permitted until this
 .PP
 Default: 1
 .PP
-When set to 0, this disables BANNING completely in the cluster and thus nodes can not get banned, even it they break. Don't set to 0.
+When set to 0, this disables BANNING completely in the cluster and thus nodes can not get banned, even it they break. Don't set to 0 unless you know what you are doing.
 .SS "DeterministicIPs"
 .PP
-Default: 1
+Default: 0
 .PP
 When enabled, this tunable makes ctdb try to keep public IP addresses locked to specific nodes as far as possible. This makes it easier for debugging since you can know that as long as all nodes are healthy public IP X will always be hosted by node Y.
 .PP
 The cost of using deterministic IP address assignment is that it disables part of the logic where ctdb tries to reduce the number of public IP assignment changes in the cluster. This tunable may increase the number of IP failover/failbacks that are performed on the cluster by a small margin.
-.SS "DisableWhenUnhealthy"
+.SS "LCP2PublicIPs"
 .PP
-Default: 0
+Default: 1
 .PP
-When set, As soon as a node becomes unhealthy, that node will also automatically become permanently DISABLED. Once a node is DISABLED, the only way to make it participate in the cluster again and host services is by manually enabling the node again using 'ctdb enable'.
+When enabled this switches ctdb to use the LCP2 ip allocation algorithm.
+.SS "ReclockPingPeriod"
 .PP
-This disables parts of the resilience and robustness of the cluster and should ONLY be used when the system administrator is actively monitoring the cluster, so that nodes can be enabled again.
+Default: x
+.PP
+Obsolete
 .SS "NoIPFailback"
 .PP
 Default: 0
@@ -311,6 +380,65 @@ When set to 1, ctdb will not perform failback of IP addresses when a node become
 Use with caution! Normally when a node becomes available to the cluster ctdb will try to reassign public IP addresses onto the new node as a way to distribute the workload evenly across the clusternode. Ctdb tries to make sure that all running nodes have approximately the same number of public addresses it hosts.
 .PP
 When you enable this tunable, CTDB will no longer attempt to rebalance the cluster by failing IP addresses back to the new nodes. An unbalanced cluster will therefore remain unbalanced until there is manual intervention from the administrator. When this parameter is set, you can manually fail public IP addresses over to the new node(s) using the 'ctdb moveip' command.
+.SS "DisableIPFailover"
+.PP
+Default: 0
+.PP
+When enabled, ctdb weill not perform failover or failback. Even if a node fails while holding public IPs, ctdb will not recover the IPs or assign them to another node.
+.PP
+When you enable this tunable, CTDB will no longer attempt to recover the cluster by failing IP addresses over to other nodes. This leads to a service outage until the administrator has manually performed failover to replacement nodes using the 'ctdb moveip' command.
+.SS "VerboseMemoryNames"
+.PP
+Default: 0
+.PP
+This feature consumes additional memory. when used the talloc library will create more verbose names for all talloc allocated objects.
+.SS "RecdPingTimeout"
+.PP
+Default: 60
+.PP
+If the main dameon has not heard a "ping" from the recovery dameon for this many seconds, the main dameon will log a message that the recovery daemon is potentially hung.
+.SS "RecdFailCount"
+.PP
+Default: 10
+.PP
+If the recovery daemon has failed to ping the main dameon for this many consecutive intervals, the main daemon will consider the recovery daemon as hung and will try to restart it to recover.
+.SS "LogLatencyMs"
+.PP
+Default: 0
+.PP
+When set to non\-zero, this will make the main daemon log any operation that took longer than this value, in 'ms', to complete. These include "how long time a lockwait child process needed", "how long time to write to a persistent database" but also "how long did it take to get a response to a CALL from a remote node".
+.SS "RecLockLatencyMs"
+.PP
+Default: 1000
+.PP
+When using a reclock file for split brain prevention, if set to non\-zero this tunable will make the recovery dameon log a message if the fcntl() call to lock/testlock the recovery file takes longer than this number of ms.
+.SS "RecoveryDropAllIPs"
+.PP
+Default: 120
+.PP
+If we have been stuck in recovery, or stopped, or banned, mode for this many seconds we will force drop all held public addresses.
+.SS "verifyRecoveryLock"
+.PP
+Default: 1
+.PP
+Should we take a fcntl() lock on the reclock file to verify that we are the sole recovery master node on the cluster or not.
+.SS "DeferredAttachTO"
+.PP
+Default: 120
+.PP
+When databases are frozen we do not allow clients to attach to the databases. Instead of returning an error immediately to the application the attach request from the client is deferred until the database becomes available again at which stage we respond to the client.
+.PP
+This timeout controls how long we will defer the request from the client before timing it out and returning an error to the client.
+.SS "StatHistoryInterval"
+.PP
+Default: 1
+.PP
+Granularity of the statistics collected in the statistics history.
+.SS "AllowClientDBAttach"
+.PP
+Default: 1
+.PP
+When set to 0, clients are not allowed to attach to any databases. This can be used to temporarily block any new processes from attaching to and accessing the databases.
 .SS "RecoverPDBBySeqNum"
 .PP
 Default: 0
