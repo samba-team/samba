@@ -244,10 +244,6 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 			}
 		}
 	}
-	if (!test_many_LookupSids(p, tctx, NULL)) {
-		torture_comment(tctx, "LsaLookupSids3 failed!\n");
-		return false;
-	}
 
 	return ret;
 }
@@ -272,6 +268,7 @@ static bool test_schannel(struct torture_context *tctx,
 	struct dcerpc_pipe *p_lsa = NULL;
 	struct netlogon_creds_CredentialState *creds;
 	struct cli_credentials *credentials;
+	enum dcerpc_transport_t transport;
 
 	join_ctx = torture_join_domain(tctx,
 				       talloc_asprintf(tctx, "%s%d", TEST_MACHINE_NAME, i),
@@ -287,7 +284,7 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_pipe_connect_b(tctx, &p, b, &ndr_table_samr,
 				       credentials, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status,
-		"Failed to connect with schannel");
+		"Failed to connect to samr with schannel");
 
 	torture_assert(tctx, test_samr_ops(tctx, p->binding_handle),
 		       "Failed to process schannel secured SAMR ops");
@@ -326,21 +323,35 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
 
-	status = dcerpc_secondary_connection(p, &p_lsa,
-					     b);
-
-	torture_assert_ntstatus_ok(tctx, status, "secondary connection");
-
-	status = dcerpc_bind_auth(p_lsa, &ndr_table_lsarpc,
-				  credentials, lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				  DCERPC_AUTH_TYPE_SCHANNEL,
-				  dcerpc_auth_level(p->conn),
-				  NULL);
-
-	torture_assert_ntstatus_ok(tctx, status, "bind auth");
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_pipe_connect_b(tctx, &p_lsa, b, &ndr_table_lsarpc,
+				      credentials, tctx->ev, tctx->lp_ctx),
+		"failed to connect lsarpc with schannel");
 
 	torture_assert(tctx, test_lsa_ops(tctx, p_lsa),
 		"Failed to process schannel secured LSA ops");
+
+	talloc_free(p_lsa);
+	p_lsa = NULL;
+
+	/* we *MUST* use ncacn_ip_tcp for lookupsids3/lookupnames4 */
+	transport = b->transport;
+	b->transport = NCACN_IP_TCP;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx),
+		"failed to call epm map");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_pipe_connect_b(tctx, &p_lsa, b, &ndr_table_lsarpc,
+				      credentials, tctx->ev, tctx->lp_ctx),
+		"failed to connect lsarpc with schannel");
+
+	torture_assert(tctx,
+		test_many_LookupSids(p_lsa, tctx, NULL),
+		"LsaLookupSids3 failed!\n");
+
+	b->transport = transport;
 
 	/* Drop the socket, we want to start from scratch */
 	talloc_free(p);
@@ -438,6 +449,9 @@ bool torture_rpc_schannel(struct torture_context *torture)
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(tests);i++) {
+		torture_comment(torture, "Testing with acct_flags=0x%x dcerpc_flags=0x%x \n",
+		       tests[i].acct_flags, tests[i].dcerpc_flags);
+
 		if (!test_schannel(torture,
 				   tests[i].acct_flags, tests[i].dcerpc_flags,
 				   i)) {
