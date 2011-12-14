@@ -106,7 +106,8 @@ void delete_and_reload_printers(struct tevent_context *ev,
  Reload the services file.
 **************************************************************************/
 
-bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
+bool reload_services(struct smbd_server_connection *sconn,
+		     bool (*snumused) (struct smbd_server_connection *, int),
 		     bool test)
 {
 	bool ret;
@@ -125,25 +126,22 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 	if (test && !lp_file_list_changed())
 		return(True);
 
-	if (msg_ctx) {
-		lp_killunused(msg_ctx_to_sconn(msg_ctx), conn_snum_used);
-	} else {
-		lp_killunused(NULL, NULL);
-	}
+	lp_killunused(sconn, snumused);
 
 	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 
 	/* perhaps the config filename is now set */
-	if (!test)
-		reload_services(msg_ctx, smb_sock, True);
+	if (!test) {
+		reload_services(sconn, snumused, true);
+	}
 
 	reopen_logs();
 
 	load_interfaces();
 
-	if (smb_sock != -1) {
-		set_socket_options(smb_sock,"SO_KEEPALIVE");
-		set_socket_options(smb_sock, lp_socket_options());
+	if (sconn != NULL) {
+		set_socket_options(sconn->sock, "SO_KEEPALIVE");
+		set_socket_options(sconn->sock, lp_socket_options());
 	}
 
 	mangle_reset_cache();

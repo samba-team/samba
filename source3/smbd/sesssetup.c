@@ -341,7 +341,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	sub_set_smb_name(real_username);
 
 	/* reload services so that the new %U is taken into account */
-	reload_services(sconn->msg_ctx, sconn->sock, True);
+	reload_services(sconn, conn_snum_used, true);
 
 	ret = make_session_info_krb5(mem_ctx,
 				     user, domain, real_username, pw,
@@ -377,7 +377,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		ret = NT_STATUS_LOGON_FAILURE;
 	} else {
 		/* current_user_info is changed on new vuid */
-		reload_services(sconn->msg_ctx, sconn->sock, True);
+		reload_services(sconn, conn_snum_used, true);
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
@@ -462,7 +462,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 		}
 
 		/* current_user_info is changed on new vuid */
-		reload_services(sconn->msg_ctx, sconn->sock, True);
+		reload_services(sconn, conn_snum_used, true);
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
@@ -1574,7 +1574,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	sub_set_smb_name(sub_user);
 
-	reload_services(sconn->msg_ctx, sconn->sock, True);
+	reload_services(sconn, conn_snum_used, true);
 
 	if (lp_security() == SEC_SHARE) {
 		char *sub_user_mapped = NULL;
@@ -1727,7 +1727,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 
 		/* current_user_info is changed on new vuid */
-		reload_services(sconn->msg_ctx, sconn->sock, True);
+		reload_services(sconn, conn_snum_used, true);
 	}
 
 	data_blob_free(&nt_resp);

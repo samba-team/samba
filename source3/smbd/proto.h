@@ -955,7 +955,8 @@ void init_sec_ctx(void);
 struct memcache *smbd_memcache(void);
 void delete_and_reload_printers(struct tevent_context *ev,
 				struct messaging_context *msg_ctx);
-bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
+bool reload_services(struct smbd_server_connection *sconn,
+		     bool (*snumused) (struct smbd_server_connection *, int),
 		     bool test);
 void exit_server(const char *const explanation);
 void exit_server_cleanly(const char *const explanation);

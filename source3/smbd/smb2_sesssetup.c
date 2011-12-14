@@ -209,7 +209,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	sub_set_smb_name(real_username);
 
 	/* reload services so that the new %U is taken into account */
-	reload_services(smb2req->sconn->msg_ctx, smb2req->sconn->sock, true);
+	reload_services(smb2req->sconn, conn_snum_used, true);
 
 	status = make_session_info_krb5(session,
 					user, domain, real_username, pw,

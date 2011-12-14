@@ -99,7 +99,7 @@ static void smbd_parent_conf_updated(struct messaging_context *msg,
 	DEBUG(10,("smbd_parent_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
-	reload_services(msg, -1, false);
+	reload_services(NULL, NULL, false);
 	printing_subsystem_update(ev_ctx, msg, false);
 }
 
@@ -910,7 +910,7 @@ static void smbd_parent_sig_hup_handler(struct tevent_context *ev,
 
 	change_to_root_user();
 	DEBUG(1,("parent: Reloading services after SIGHUP\n"));
-	reload_services(parent->msg_ctx, -1, false);
+	reload_services(NULL, NULL, false);
 
 	printing_subsystem_update(parent->ev_ctx, parent->msg_ctx, true);
 }
@@ -1138,7 +1138,7 @@ extern void build_options(bool screen);
 	 * Reloading of the printers will not work here as we don't have a
 	 * server info and rpc services set up. It will be called later.
 	 */
-	if (!reload_services(NULL, -1, False)) {
+	if (!reload_services(NULL, NULL, false)) {
 		exit(1);
 	}
 

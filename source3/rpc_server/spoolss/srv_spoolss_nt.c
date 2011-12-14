@@ -6202,6 +6202,16 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, struct security_token *token, const
 /****************************************************************************
 ****************************************************************************/
 
+static bool spoolss_conn_snum_used(struct smbd_server_connection *sconn,
+				   int snum)
+{
+	/*
+	 * As we do not know if we are embedded in the file server process
+	 * or not, we have to pretend that all shares are in use.
+	 */
+	return true;
+}
+
 static bool add_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 			     struct spoolss_SetPrinterInfo2 *info2,
 			     const char *remote_machine,
@@ -6260,7 +6270,7 @@ static bool add_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 
 	/* reload our services immediately */
 	become_root();
-	reload_services(msg_ctx, -1, false);
+	reload_services(NULL, spoolss_conn_snum_used, false);
 	unbecome_root();
 
 	numlines = 0;
