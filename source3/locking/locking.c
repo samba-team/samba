@@ -495,12 +495,11 @@ static TDB_DATA locking_key(const struct file_id *id, struct file_id *tmp)
 
 char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 {
-	return talloc_asprintf(ctx, "share_mode_entry[%d]: %s "
+	return talloc_asprintf(ctx, "share_mode_entry[%d]: "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
 		 "access_mask = 0x%x, mid = 0x%llx, type= 0x%x, gen_id = %lu, "
 		 "uid = %u, flags = %u, file_id %s, name_hash = 0x%x",
 		 num,
-		 e->op_type == UNUSED_SHARE_MODE_ENTRY ? "UNUSED" : "",
 		 procid_str_static(&e->pid),
 		 e->share_access, e->private_options,
 		 e->access_mask, (unsigned long long)e->op_mid,
@@ -562,12 +561,16 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 		smb_panic("parse_share_modes: serverids_exist failed");
 	}
 
-	for (i = 0; i < lck->num_share_modes; i++) {
-		struct share_mode_entry *entry_p = &lck->share_modes[i];
+	i = 0;
+	while (i < lck->num_share_modes) {
+		struct share_mode_entry *e = &lck->share_modes[i];
 		if (!pid_exists[i]) {
-			entry_p->op_type = UNUSED_SHARE_MODE_ENTRY;
+			*e = lck->share_modes[lck->num_share_modes-1];
+			lck->num_share_modes -= 1;
 			lck->modified = True;
+			continue;
 		}
+		i += 1;
 	}
 	TALLOC_FREE(pid_exists);
 	TALLOC_FREE(pids);
@@ -579,19 +582,13 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
-	uint32_t i;
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10, ("unparse_share_modes:\n"));
 		NDR_PRINT_DEBUG(share_mode_lock, lck);
 	}
 
-	for (i=0; i<lck->num_share_modes; i++) {
-		if (!is_unused_share_mode_entry(&lck->share_modes[i])) {
-			break;
-		}
-	}
-	if (i == lck->num_share_modes) {
+	if (lck->num_share_modes == 0) {
 		DEBUG(10, ("No used share mode found\n"));
 		return make_tdb_data(NULL, 0);
 	}
@@ -773,6 +770,10 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(lck);
 		return NULL;
 	}
+	if (data.dptr == NULL) {
+		TALLOC_FREE(lck);
+		return NULL;
+	}
 
 	if (!fill_share_mode_lock(lck, id, NULL, NULL, data, NULL)) {
 		DEBUG(10, ("fetch_share_mode_unlocked: no share_mode record "
@@ -936,14 +937,6 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 {
 	int num_props = 0;
 
-	if (e->op_type == UNUSED_SHARE_MODE_ENTRY) {
-		/* cope with dead entries from the process not
-		   existing. These should not be considered valid,
-		   otherwise we end up doing zero timeout sharing
-		   violation */
-		return False;
-	}
-
 	num_props += ((e->op_type == NO_OPLOCK) ? 1 : 0);
 	num_props += (EXCLUSIVE_OPLOCK_TYPE(e->op_type) ? 1 : 0);
 	num_props += (LEVEL_II_OPLOCK_TYPE(e->op_type) ? 1 : 0);
@@ -955,11 +948,6 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 bool is_deferred_open_entry(const struct share_mode_entry *e)
 {
 	return (e->op_type == DEFERRED_OPEN_ENTRY);
-}
-
-bool is_unused_share_mode_entry(const struct share_mode_entry *e)
-{
-	return (e->op_type == UNUSED_SHARE_MODE_ENTRY);
 }
 
 /*******************************************************************
@@ -1006,21 +994,8 @@ static void fill_deferred_open_entry(struct share_mode_entry *e,
 static void add_share_mode_entry(struct share_mode_lock *lck,
 				 const struct share_mode_entry *entry)
 {
-	int i;
-
-	for (i=0; i<lck->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->share_modes[i];
-		if (is_unused_share_mode_entry(e)) {
-			*e = *entry;
-			break;
-		}
-	}
-
-	if (i == lck->num_share_modes) {
-		/* No unused entry found */
-		ADD_TO_ARRAY(lck, struct share_mode_entry, *entry,
-			     &lck->share_modes, &lck->num_share_modes);
-	}
+	ADD_TO_ARRAY(lck, struct share_mode_entry, *entry,
+		     &lck->share_modes, &lck->num_share_modes);
 	lck->modified = True;
 }
 
@@ -1105,8 +1080,8 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	if (e == NULL) {
 		return False;
 	}
-
-	e->op_type = UNUSED_SHARE_MODE_ENTRY;
+	*e = lck->share_modes[lck->num_share_modes-1];
+	lck->num_share_modes -= 1;
 	lck->modified = True;
 	return True;
 }
@@ -1123,8 +1098,8 @@ void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
 	if (e == NULL) {
 		return;
 	}
-
-	e->op_type = UNUSED_SHARE_MODE_ENTRY;
+	*e = lck->share_modes[lck->num_share_modes-1];
+	lck->num_share_modes -= 1;
 	lck->modified = True;
 }
 

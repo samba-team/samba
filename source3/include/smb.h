@@ -1070,11 +1070,11 @@ enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 				 * inform potential level2 holders on
 				 * write. */
 #define DEFERRED_OPEN_ENTRY 		0x20
-#define UNUSED_SHARE_MODE_ENTRY 	0x40
+/* #define UNUSED_SHARE_MODE_ENTRY 	0x40 */   /* Not used anymore */
 #define FORCE_OPLOCK_BREAK_TO_NONE 	0x80
 
 /* None of the following should ever appear in fsp->oplock_request. */
-#define SAMBA_PRIVATE_OPLOCK_MASK (INTERNAL_OPEN_ONLY|DEFERRED_OPEN_ENTRY|UNUSED_SHARE_MODE_ENTRY|FORCE_OPLOCK_BREAK_TO_NONE)
+#define SAMBA_PRIVATE_OPLOCK_MASK (INTERNAL_OPEN_ONLY|DEFERRED_OPEN_ENTRY|FORCE_OPLOCK_BREAK_TO_NONE)
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)

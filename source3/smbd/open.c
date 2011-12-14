@@ -911,8 +911,7 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 			  "share entry with an open file\n");
 	}
 
-	if (is_deferred_open_entry(share_entry) ||
-	    is_unused_share_mode_entry(share_entry)) {
+	if (is_deferred_open_entry(share_entry)) {
 		goto panic;
 	}
 
