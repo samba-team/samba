@@ -139,6 +139,8 @@ def dns_type_flag(rec_type):
         record_type = dnsp.DNS_TYPE_A
     elif rtype == 'AAAA':
         record_type = dnsp.DNS_TYPE_AAAA
+    elif rtype == 'PTR':
+        record_type = dnsp.DNS_TYPE_PTR
     elif rtype == 'NS':
         record_type = dnsp.DNS_TYPE_NS
     elif rtype == 'CNAME':
@@ -326,6 +328,10 @@ def print_dns_record(outf, rec):
     mesg = 'Unknown: '
     if rec.wType == dnsp.DNS_TYPE_A:
         mesg = 'A: %s' % (rec.data)
+    elif rec.wType == dnsp.DNS_TYPE_AAAA:
+        mesg = 'AAAA: %s' % (rec.data)
+    elif rec.wType == dnsp.DNS_TYPE_PTR:
+        mesg = 'PTR: %s' % (rec.data.str)
     elif rec.wType == dnsp.DNS_TYPE_NS:
         mesg = 'NS: %s' % (rec.data.str)
     elif rec.wType == dnsp.DNS_TYPE_CNAME:
@@ -375,6 +381,19 @@ class AAAARecord(dnsserver.DNS_RPC_RECORD):
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
         self.data = ip6_addr
+
+class PTRRecord(dnsserver.DNS_RPC_RECORD):
+    def __init__(self, ptr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
+                 node_flag=0):
+        super(PTRRecord, self).__init__()
+        self.wType = dnsp.DNS_TYPE_PTR
+        self.dwFlags = rank | node_flag
+        self.dwSerial = serial
+        self.dwTtleSeconds = ttl
+        ptr_name = dnsserver.DNS_RPC_NAME()
+        ptr_name.str = ptr
+        ptr_name.len = len(ptr)
+        self.data = ptr_name
 
 class CNameRecord(dnsserver.DNS_RPC_RECORD):
     def __init__(self, cname, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
@@ -471,11 +490,14 @@ def dns_record_match(dns_conn, server, zone, name, record_type, data):
         elif record_type == dnsp.DNS_TYPE_AAAA:
             if rec_match.data == data:
                 found = True
+        elif record_type == dnsp.DNS_TYPE_PTR:
+            if rec_match.data.str.rstrip('.') == data.rstrip('.'):
+                found = True
         elif record_type == dnsp.DNS_TYPE_CNAME:
-            if rec_match.data == data:
+            if rec_match.data.str.rstrip('.') == data.rstrip('.'):
                 found = True
         elif record_type == dnsp.DNS_TYPE_NS:
-            if rec_match.data == data:
+            if rec_match.data.str.rstrip('.') == data.rstrip('.'):
                 found = True
 
         if found:
@@ -717,7 +739,7 @@ class cmd_roothints(Command):
 class cmd_add_record(Command):
     """Add a DNS record"""
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|NS> <data>'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <data>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
 
@@ -729,6 +751,8 @@ class cmd_add_record(Command):
             rec = ARecord(data)
         elif record_type == dnsp.DNS_TYPE_AAAA:
             rec = AAAARecord(data)
+        elif record_type == dnsp.DNS_TYPE_PTR:
+            rec = PTRRecord(data)
         elif record_type == dnsp.DNS_TYPE_CNAME:
             rec = CNameRecord(data)
         elif record_type == dnsp.DNS_TYPE_NS:
@@ -760,7 +784,7 @@ class cmd_add_record(Command):
 class cmd_update_record(Command):
     """Update a DNS record"""
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|NS> <olddata> <newdata>'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <olddata> <newdata>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'olddata', 'newdata' ]
 
@@ -772,6 +796,8 @@ class cmd_update_record(Command):
             rec = ARecord(newdata)
         elif record_type == dnsp.DNS_TYPE_AAAA:
             rec = AAAARecord(newdata)
+        elif record_type == dnsp.DNS_TYPE_PTR:
+            rec = PTRRecord(newdata)
         elif record_type == dnsp.DNS_TYPE_CNAME:
             rec = CNameRecord(newdata)
         elif record_type == dnsp.DNS_TYPE_NS:
@@ -812,7 +838,7 @@ class cmd_update_record(Command):
 class cmd_delete_record(Command):
     """Delete a DNS record"""
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|NS> <data>'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <data>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
 
@@ -824,6 +850,8 @@ class cmd_delete_record(Command):
             rec = ARecord(data)
         elif record_type == dnsp.DNS_TYPE_AAAA:
             rec = AAAARecord(data)
+        elif record_type == dnsp.DNS_TYPE_PTR:
+            rec = PTRRecord(data)
         elif record_type == dnsp.DNS_TYPE_CNAME:
             rec = CNameRecord(data)
         elif record_type == dnsp.DNS_TYPE_NS:
