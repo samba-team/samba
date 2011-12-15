@@ -6,7 +6,9 @@ topinclude=os.path.join(bld.srcnode.abspath(), 'librpc/idl')
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''messaging.idl libnetapi.idl open_files.idl
-                       perfcount.idl secrets.idl libnet_join.idl''',
+                       perfcount.idl secrets.idl libnet_join.idl
+                       smbXsrv.idl
+                    ''',
                     options='--includedir=%s --header --ndr-parser' % topinclude,
                     output_dir='../gen_ndr')
 

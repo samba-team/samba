@@ -929,6 +929,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     LIBAFS
                     LIBAFS_SETTOKEN
                     RPC_SERVER
+                    NDR_SMBXSRV
                     ''',
                     private_library=True,
                     vars=locals())

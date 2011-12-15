@@ -1,0 +1,12 @@
+#include "idl_types.h"
+
+[
+	uuid("07408340-ae31-11e1-97dc-539f7fddc06f"),
+	version(0.0),
+	pointer_default(unique),
+	helpstring("smbXsrv structures")
+]
+interface smbXsrv
+{
+	void smbXsrv_dummy();
+}
