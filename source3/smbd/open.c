@@ -2376,10 +2376,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			fsp->oplock_type = NO_OPLOCK;
 		}
 
-		if (!(flags2 & O_TRUNC)) {
-			info = FILE_WAS_OPENED;
-		} else {
+		if (flags2 & O_TRUNC) {
 			info = FILE_WAS_OVERWRITTEN;
+		} else {
+			info = FILE_WAS_OPENED;
 		}
 	} else {
 		info = FILE_WAS_CREATED;
