@@ -96,7 +96,7 @@ void init_strict_lock_struct(files_struct *fsp,
 
 	plock->context.smblctx = smblctx;
         plock->context.tid = fsp->conn->cnum;
-        plock->context.pid = sconn_server_id(fsp->conn->sconn);
+        plock->context.pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
         plock->start = start;
         plock->size = size;
         plock->fnum = fsp->fnum;
@@ -198,7 +198,7 @@ NTSTATUS query_lock(files_struct *fsp,
 
 	return brl_lockquery(br_lck,
 			psmblctx,
-			sconn_server_id(fsp->conn->sconn),
+			messaging_server_id(fsp->conn->sconn->msg_ctx),
 			poffset,
 			pcount,
 			plock_type,
@@ -284,7 +284,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 	*perr = brl_lock(msg_ctx,
 			br_lck,
 			smblctx,
-			sconn_server_id(fsp->conn->sconn),
+			messaging_server_id(fsp->conn->sconn->msg_ctx),
 			offset,
 			count,
 			lock_type,
@@ -333,7 +333,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 	ok = brl_unlock(msg_ctx,
 			br_lck,
 			smblctx,
-			sconn_server_id(fsp->conn->sconn),
+			messaging_server_id(fsp->conn->sconn->msg_ctx),
 			offset,
 			count,
 			lock_flav);
@@ -383,7 +383,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 
 	ok = brl_lock_cancel(br_lck,
 			smblctx,
-			sconn_server_id(fsp->conn->sconn),
+			messaging_server_id(fsp->conn->sconn->msg_ctx),
 			offset,
 			count,
 			lock_flav,
@@ -959,7 +959,7 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 				  uid_t uid, uint64_t mid, uint16 op_type)
 {
 	ZERO_STRUCTP(e);
-	e->pid = sconn_server_id(fsp->conn->sconn);
+	e->pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
 	e->share_access = fsp->share_access;
 	e->private_options = fsp->fh->private_options;
 	e->access_mask = fsp->access_mask;
