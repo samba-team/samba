@@ -1,6 +1,20 @@
 #include "idl_types.h"
 
 import "server_id.idl";
+import "security.idl";
+import "auth.idl";
+
+/*
+ * The main server code should just work with
+ * 'struct smbXsrv_session' and never use
+ * smbXsrv_session0, smbXsrv_sessionU
+ * and smbXsrv_sessionB directly.
+ *
+ * If we need to change the smbXsrv_session,
+ * we can just point it to smbXsrv_session1
+ * and could implement transparent mapping.
+ */
+cpp_quote("#define smbXsrv_session smbXsrv_session0")
 
 [
 	uuid("07408340-ae31-11e1-97dc-539f7fddc06f"),
@@ -72,5 +86,83 @@ interface smbXsrv
 
 	void smbXsrv_version_global_decode(
 		[in] smbXsrv_version_globalB blob
+		);
+
+	/* sessions */
+
+	typedef struct {
+		server_id				server_id;
+		[charset(UTF8),string] char		local_address[];
+		[charset(UTF8),string] char		remote_address[];
+		[charset(UTF8),string] char		remote_name[];
+		[noprint] DATA_BLOB			signing_key;
+		uint32					auth_session_info_seqnum;
+	} smbXsrv_channel_global0;
+
+	typedef struct {
+		[ignore] db_record 			*db_rec;
+		uint32					session_global_id;
+		hyper					session_wire_id;
+		NTTIME					creation_time;
+		NTTIME					expiration_time;
+		/*
+		 * auth_session is NULL until the
+		 * session is valid for the first time.
+		 */
+		uint32					auth_session_info_seqnum;
+		auth_session_info			*auth_session_info;
+		uint16					connection_dialect;
+		boolean8				signing_required;
+		boolean8				encryption_required;
+		[noprint] DATA_BLOB			signing_key;
+		[noprint] DATA_BLOB			encryption_key;
+		[noprint] DATA_BLOB			decryption_key;
+		[noprint] DATA_BLOB			application_key;
+		[range(1, 1024)] uint32			num_channels;
+		smbXsrv_channel_global0			channels[num_channels];
+	} smbXsrv_session_global0;
+
+	typedef union {
+		[case(0)] smbXsrv_session_global0	*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_session_globalU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		uint32					seqnum;
+		[switch_is(version)] smbXsrv_session_globalU info;
+	} smbXsrv_session_globalB;
+
+	void smbXsrv_session_global_decode(
+		[in] smbXsrv_session_globalB blob
+		);
+
+	typedef struct {
+		[ignore] smbXsrv_session_table		*table;
+		[ignore] db_record 			*db_rec;
+		[ignore] smbXsrv_connection		*connection;
+		uint32					local_id;
+		[ref] smbXsrv_session_global0		*global;
+		NTSTATUS				status;
+		NTTIME					idle_time;
+		[ignore] gensec_security		*gensec;
+		[ignore] user_struct			*compat;
+		[ignore] smbXsrv_tcon_table		*tcon_table;
+		[ignore] smbd_smb2_session		*smb2sess;
+	} smbXsrv_session0;
+
+	typedef union {
+		[case(0)] smbXsrv_session0		*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_sessionU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		[value(0)] uint32			reserved;
+		[switch_is(version)] smbXsrv_sessionU	info;
+	} smbXsrv_sessionB;
+
+	void smbXsrv_session_decode(
+		[in] smbXsrv_sessionB blob
 		);
 }
