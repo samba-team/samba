@@ -1158,13 +1158,13 @@ static bool delay_for_batch_oplocks(files_struct *fsp,
 	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		return false;
 	}
-
-	if (batch_entry != NULL) {
-		/* Found a batch oplock */
-		send_break_message(fsp, batch_entry, mid, oplock_request);
-		return true;
+	if (batch_entry == NULL) {
+		return false;
 	}
-	return false;
+
+	/* Found a batch oplock */
+	send_break_message(fsp, batch_entry, mid, oplock_request);
+	return true;
 }
 
 static bool delay_for_exclusive_oplocks(files_struct *fsp,
