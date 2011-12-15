@@ -20,11 +20,41 @@
 #ifndef _CTDBD_TEST_C
 #define _CTDBD_TEST_C
 
+#ifdef CTDB_TEST_USE_MAIN
+
+/* Use main, stubify some stuff */
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <sys/socket.h>
+#include "lib/tevent/tevent.h"
+
+#define tevent_context_init(x) tevent_context_init_foobar(x)
+struct tevent_context *tevent_context_init_foobar(TALLOC_CTX *mem_ctx);
+#define tevent_loop_allow_nesting(x) tevent_loop_allow_nesting_foobar(x)
+void tevent_loop_allow_nesting_foobar(struct tevent_context *ev);
+#define ctdb_cmdline_client(x, y) ctdb_cmdline_client_foobar(x, y)
+#define ctdb_get_socketname(x) ctdb_get_socketname_foobar(x)
+
+#else
+
+/* Define our own main() and usage() functions */
 #define main(argc, argv) main_foobar(argc, argv)
 #define usage usage_foobar
+
+#endif /* CTDB_TEST_USE_MAIN */
+
 #include "tools/ctdb.c"
+
+#ifdef CTDB_TEST_USE_MAIN
+#undef tevent_context_init
+#undef tevent_loop_allow_nesting
+#undef ctdb_cmdline_client
+#undef ctdb_get_socketname
+#else
 #undef main
 #undef usage
+#endif /* CTDB_TEST_USE_MAIN */
+ 
 
 #undef TIMELIMIT
 #include "tools/ctdb_vacuum.c"
