@@ -196,7 +196,7 @@ AC_CACHE_CHECK([whether we have __builtin_expect],
 	       [
 	         AC_LINK_IFELSE(
 			[int main(void) {
-				return __builtin_expect(main != 0) ? 0 : 1;
+				return __builtin_expect(main != 0, 1) ? 0 : 1;
 			}],
 			samba_cv_builtin_expect=yes)
 		])
@@ -251,20 +251,21 @@ if test x"$samba_cv_builtin_choose_expr" = xyes ; then
 	     [whether we have __builtin_choose_expr])
 fi
 
-AC_CACHE_CHECK([whether we have __builtin_compound_literals],
-	       samba_cv_builtin_compound_literals,
+# We use @<:@ and @:>@ here for embedded [ and ].
+AC_CACHE_CHECK([whether we have compound literals],
+	       samba_cv_compound_literals,
 	       [
 	         AC_COMPILE_IFELSE(
 			[int main(void) {
-				int *foo = (int[]) { 1, 2, 3, 4 };
-				return foo[0] == 1 ? 0 : 1;
+				int *foo = (int@<:@@:>@) { 1, 2, 3, 4 };
+				return foo@<:@0@:>@ == 1 ? 0 : 1;
 			}],
-			samba_cv_builtin_compound_literals=yes)
+			samba_cv_compound_literals=yes)
 		])
 
-if test x"$samba_cv_builtin_compound_literals" = xyes ; then
-   AC_DEFINE(HAVE_BUILTIN_COMPOUND_LITERALS, 1,
-	     [whether we have __builtin_compound_literals])
+if test x"$samba_cv_compound_literals" = xyes ; then
+   AC_DEFINE(HAVE_COMPOUND_LITERALS, 1,
+	     [whether we have compound literals])
 fi
 
 AC_CACHE_CHECK([whether we have __builtin_have_isblank],
