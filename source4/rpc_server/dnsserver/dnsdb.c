@@ -75,6 +75,8 @@ failed:
 
 }
 
+
+/* Search for all dnsZone records */
 struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 						struct ldb_context *samdb,
 						struct dnsserver_partition *p)

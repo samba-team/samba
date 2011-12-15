@@ -1294,7 +1294,40 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 	} else if (strcasecmp(operation, "EnumZones2") == 0) {
 		valid_operation = true;
 	} else if (strcasecmp(operation, "EnumDirectoryPartitions") == 0) {
-		valid_operation = true;
+		if (typeid_in != DNSSRV_TYPEID_DWORD) {
+			return WERR_DNS_ERROR_INVALID_PROPERTY;
+		}
+
+		*typeid_out = DNSSRV_TYPEID_DP_LIST;
+		rout->DirectoryPartitionList = talloc_zero(mem_ctx, struct DNS_RPC_DP_LIST);
+
+		if (rin->Dword != 0) {
+			rout->DirectoryPartitionList->dwDpCount = 0;
+			rout->DirectoryPartitionList->DpArray = NULL;
+		} else {
+			struct DNS_RPC_DP_ENUM **dplist;
+			struct dnsserver_partition *p;
+			int pcount = 2;
+
+			dplist = talloc_zero_array(mem_ctx, struct DNS_RPC_DP_ENUM *, pcount);
+			if (dplist == NULL) {
+				return WERR_NOMEM;
+			}
+
+			p = dsstate->partitions;
+			for (i=0; i<pcount; i++) {
+				dplist[i] = talloc_zero(dplist, struct DNS_RPC_DP_ENUM);
+
+				dplist[i]->pszDpFqdn = talloc_strdup(mem_ctx, p->pszDpFqdn);
+				dplist[i]->dwFlags = p->dwDpFlags;
+				dplist[i]->dwZoneCount = p->zones_count;
+				p = p->next;
+			}
+
+			rout->DirectoryPartitionList->dwDpCount = pcount;
+			rout->DirectoryPartitionList->DpArray = dplist;
+		}
+		return WERR_OK;
 	} else if (strcasecmp(operation, "DirectoryPartitionInfo") == 0) {
 		valid_operation = true;
 	} else if (strcasecmp(operation, "Statistics") == 0) {
