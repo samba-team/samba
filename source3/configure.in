@@ -4156,6 +4156,27 @@ if test x"$with_ads_support" != x"no"; then
     found_arcfour_hmac=yes
   fi
 
+  AC_CACHE_CHECK([for ENCTYPE_AES128_CTS_HMAC_SHA1_96],
+                 samba_cv_HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_enctype enctype; enctype = ENCTYPE_AES128_CTS_HMAC_SHA1_96;],
+      samba_cv_HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96=yes,
+      samba_cv_HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96=no)])
+  if test x"$samba_cv_HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96" = x"yes"; then
+    AC_DEFINE(HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96,1,
+              [Whether the ENCTYPE_AES128_CTS_HMAC_SHA1_96 key type definition is available])
+  fi
+  AC_CACHE_CHECK([for ENCTYPE_AES256_CTS_HMAC_SHA1_96],
+                 samba_cv_HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_enctype enctype; enctype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;],
+      samba_cv_HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96=yes,
+      samba_cv_HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96=no)])
+  if test x"$samba_cv_HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96" = x"yes"; then
+    AC_DEFINE(HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96,1,
+              [Whether the ENCTYPE_AES256_CTS_HMAC_SHA1_96 key type definition is available])
+  fi
+
   AC_CACHE_CHECK([for AP_OPTS_USE_SUBKEY],
                  samba_cv_HAVE_AP_OPTS_USE_SUBKEY,[
     AC_TRY_COMPILE([#include <krb5.h>],

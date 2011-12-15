@@ -661,6 +661,8 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
         conf.CHECK_VARIABLE('KV5M_KEYTAB', headers='krb5.h')
         conf.CHECK_VARIABLE('KRB5_KU_OTHER_CKSUM', headers='krb5.h')
         conf.CHECK_VARIABLE('KRB5_KEYUSAGE_APP_DATA_CKSUM', headers='krb5.h')
+	conf.CHECK_VARIABLE('ENCTYPE_AES128_CTS_HMAC_SHA1_96', headers='krb5.h')
+	conf.CHECK_VARIABLE('ENCTYPE_AES256_CTS_HMAC_SHA1_96', headers='krb5.h')
         conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'key', headers='krb5.h',
                                     define='HAVE_KRB5_KEYTAB_ENTRY_KEY')
         conf.CHECK_STRUCTURE_MEMBER('krb5_keytab_entry', 'keyblock', headers='krb5.h',
