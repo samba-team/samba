@@ -617,6 +617,11 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 			goto failed;
 		}
 
+		/* If the node is on leaf, then add record data */
+		if (match_count+1 == ncount) {
+			tree->data = res->msgs[i];
+		}
+
 		/* Add missing name components */
 		for (level=match_count+1; level<ncount; level++) {
 			if (tree->level == rootcount+1) {
@@ -751,6 +756,11 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 
 	/* Allow empty records */
 	if (msg == NULL) {
+		return WERR_OK;
+	}
+
+	/* Do not return RR records, if the node has children */
+	if (branch_name != NULL && num_children > 0) {
 		return WERR_OK;
 	}
 
