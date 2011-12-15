@@ -84,7 +84,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_randrec tests/bin/ctdb_persistent \
 	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
 	tests/bin/ctdb_takeover_tests tests/bin/ctdb_update_record \
-	tests/bin/ctdb_tool_libctdb \
+	tests/bin/ctdb_tool_libctdb tests/bin/ctdb_tool_stubby \
 	@INFINIBAND_BINS@
 
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool @CTDB_PMDA@
@@ -253,6 +253,12 @@ tests/src/ctdb_tool_libctdb.o: tests/src/ctdb_tool_libctdb.c tests/src/libctdb_t
 tests/bin/ctdb_tool_libctdb: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_libctdb.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_libctdb.o $(CTDB_TEST_OBJ) @POPT_OBJ@ $(LIB_FLAGS)
+
+tests/src/ctdb_tool_stubby.o: tests/src/ctdb_tool_stubby.c tests/src/libctdb_test.c $(CTDB_TEST_C)
+
+tests/bin/ctdb_tool_stubby: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_stubby.o
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_stubby.o $(CTDB_TEST_OBJ) @POPT_OBJ@ $(LIB_FLAGS)
 
 tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
