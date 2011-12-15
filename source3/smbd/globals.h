@@ -19,6 +19,7 @@
 */
 
 #include "system/select.h"
+#include "librpc/gen_ndr/smbXsrv.h"
 
 #if defined(HAVE_AIO)
 struct aio_extra;
@@ -354,6 +355,8 @@ struct smbXsrv_connection {
 	struct msg_state *msg_state;
 
 	uint64_t smbd_idle_profstamp;
+
+	struct smbXsrv_session_table *session_table;
 };
 
 NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id);
@@ -361,6 +364,22 @@ uint32_t smbXsrv_version_global_current(void);
 
 NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 					enum protocol_types protocol);
+
+NTSTATUS smbXsrv_session_global_init(void);
+NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
+				NTTIME now,
+				struct smbXsrv_session **_session);
+NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session);
+NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session);
+NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_connection *conn);
+NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn);
+NTSTATUS smb1srv_session_lookup(struct smbXsrv_connection *conn,
+				uint16_t vuid, NTTIME now,
+				struct smbXsrv_session **session);
+NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn);
+NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
+				uint64_t session_id, NTTIME now,
+				struct smbXsrv_session **session);
 
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;

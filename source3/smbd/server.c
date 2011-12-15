@@ -1387,6 +1387,10 @@ extern void build_options(bool screen);
 	if (!sessionid_init()) {
 		exit(1);
 	}
+	status = smbXsrv_session_global_init();
+	if (!NT_STATUS_IS_OK(status)) {
+		exit(1);
+	}
 
 	if (!connections_init(True))
 		exit(1);
