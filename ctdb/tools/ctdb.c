@@ -5505,6 +5505,7 @@ int main(int argc, const char *argv[])
 
 	ctdb_disconnect(ctdb_connection);
 	talloc_free(ctdb);
+	(void)poptFreeContext(pc);
 
 	return ret;
 }
