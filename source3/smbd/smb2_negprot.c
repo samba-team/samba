@@ -23,6 +23,7 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/tsocket/tsocket.h"
+#include "../librpc/ndr/libndr.h"
 
 /*
  * this is the entry point if SMB2 is selected via
@@ -94,8 +95,15 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	size_t c;
 	uint16_t security_mode;
 	uint16_t dialect_count;
+	uint16_t in_security_mode;
+	uint32_t in_capabilities;
+	DATA_BLOB in_guid_blob;
+	struct GUID in_guid;
+	NTTIME in_start_time;
 	uint16_t dialect = 0;
 	uint32_t capabilities;
+	DATA_BLOB out_guid_blob;
+	struct GUID out_guid;
 	enum protocol_types protocol = PROTOCOL_NONE;
 	uint32_t max_limit;
 	uint32_t max_trans = lp_smb2_max_trans();
@@ -109,8 +117,19 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
 
 	dialect_count = SVAL(inbody, 0x02);
+
+	in_security_mode = SVAL(inbody, 0x04);
+	in_capabilities = IVAL(inbody, 0x08);
+	in_guid_blob = data_blob_const(inbody + 0x0C, 16);
+	in_start_time = BVAL(inbody, 0x1C);
+
 	if (dialect_count == 0) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
+	status = GUID_from_ndr_blob(&in_guid_blob, &in_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
 	}
 
 	expected_dyn_size = dialect_count * 2;
@@ -280,6 +299,12 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	security_buffer = data_blob_const(NULL, 0);
 #endif
 
+	out_guid_blob = data_blob_const(negprot_spnego_blob.data, 16);
+	status = GUID_from_ndr_blob(&out_guid_blob, &out_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
+	}
+
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x40);
 	if (outbody.data == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
@@ -291,7 +316,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	SSVAL(outbody.data, 0x04, dialect);	/* dialect revision */
 	SSVAL(outbody.data, 0x06, 0);		/* reserved */
 	memcpy(outbody.data + 0x08,
-	       negprot_spnego_blob.data, 16);	/* server guid */
+	       out_guid_blob.data, 16);	/* server guid */
 	SIVAL(outbody.data, 0x18,
 	      capabilities);			/* capabilities */
 	SIVAL(outbody.data, 0x1C, max_trans);	/* max transact size */
@@ -310,7 +335,34 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	req->sconn->using_smb2 = true;
 
 	if (dialect != SMB2_DIALECT_REVISION_2FF) {
-		set_Protocol(protocol);
+		struct smbXsrv_connection *conn = req->sconn->conn;
+
+		status = smbXsrv_connection_init_tables(conn, protocol);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
+
+		conn->smb2.client.capabilities = in_capabilities;
+		conn->smb2.client.security_mode = in_security_mode;
+		conn->smb2.client.guid = in_guid;
+		conn->smb2.client.num_dialects = dialect_count;
+		conn->smb2.client.dialects = talloc_array(conn,
+							  uint16_t,
+							  dialect_count);
+		if (conn->smb2.client.dialects == NULL) {
+			return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		}
+		for (c=0; c < dialect_count; c++) {
+			conn->smb2.client.dialects[c] = SVAL(indyn, c*2);
+		}
+
+		conn->smb2.server.capabilities = capabilities;
+		conn->smb2.server.security_mode = security_mode;
+		conn->smb2.server.guid = out_guid;
+		conn->smb2.server.dialect = dialect;
+		conn->smb2.server.max_trans = max_trans;
+		conn->smb2.server.max_read  = max_read;
+		conn->smb2.server.max_write = max_write;
 
 		req->sconn->smb2.max_trans = max_trans;
 		req->sconn->smb2.max_read  = max_read;

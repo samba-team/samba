@@ -326,6 +326,41 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 			char *private_data,
 			size_t priv_len);
 
+struct smbXsrv_connection {
+	struct smbd_server_connection *sconn;
+
+	const struct tsocket_address *local_address;
+	const struct tsocket_address *remote_address;
+	const char *remote_hostname;
+
+	struct tevent_context *ev_ctx;
+	struct messaging_context *msg_ctx;
+
+	enum protocol_types protocol;
+
+	struct {
+		struct {
+			uint32_t capabilities;
+			struct GUID guid;
+			uint16_t security_mode;
+			uint16_t num_dialects;
+			uint16_t *dialects;
+		} client;
+		struct {
+			uint32_t capabilities;
+			struct GUID guid;
+			uint16_t security_mode;
+			uint16_t dialect;
+			uint32_t max_trans;
+			uint32_t max_read;
+			uint32_t max_write;
+		} server;
+	} smb2;
+};
+
+NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
+					enum protocol_types protocol);
+
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
 
@@ -599,6 +634,8 @@ struct smbd_server_connection {
 		struct bitmap *credits_bitmap;
 		bool compound_related_in_progress;
 	} smb2;
+
+	struct smbXsrv_connection *conn;
 };
 
 extern struct smbd_server_connection *smbd_server_conn;

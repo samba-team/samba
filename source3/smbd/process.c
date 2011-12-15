@@ -3149,6 +3149,17 @@ static void smbd_id_cache_kill(struct messaging_context *msg_ctx,
 	id_cache_delete_from_cache(&id);
 }
 
+NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
+					enum protocol_types protocol)
+{
+	NTSTATUS status;
+
+	set_Protocol(protocol);
+	conn->protocol = protocol;
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
@@ -3166,6 +3177,12 @@ void smbd_process(struct tevent_context *ev_ctx,
 	const char *remaddr = NULL;
 	char *rhost;
 	int ret;
+
+	sconn->conn = talloc_zero(sconn, struct smbXsrv_connection);
+	if (sconn->conn == NULL) {
+		DEBUG(0,("talloc_zero(struct smbXsrv_connection)\n"));
+		exit_server_cleanly("talloc_zero(struct smbXsrv_connection).\n");
+	}
 
 	if (lp_srv_maxprotocol() >= PROTOCOL_SMB2_02) {
 		/*
@@ -3429,6 +3446,14 @@ void smbd_process(struct tevent_context *ev_ctx,
 	if (!sconn->smb1.fde) {
 		exit_server("failed to create smbd_server_connection fde");
 	}
+
+	sconn->conn->sconn = sconn;
+	sconn->conn->ev_ctx = sconn->ev_ctx;
+	sconn->conn->msg_ctx = sconn->msg_ctx;
+	sconn->conn->local_address = sconn->local_address;
+	sconn->conn->remote_address = sconn->remote_address;
+	sconn->conn->remote_hostname = sconn->remote_hostname;
+	sconn->conn->protocol = PROTOCOL_NONE;
 
 	TALLOC_FREE(frame);
 

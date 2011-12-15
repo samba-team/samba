@@ -65,7 +65,7 @@ static void reply_corep(struct smb_request *req, uint16 choice)
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf, smb_vwv0, choice);
 
-	set_Protocol(PROTOCOL_CORE);
+	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_CORE);
 }
 
 /****************************************************************************
@@ -85,7 +85,8 @@ static void reply_coreplus(struct smb_request *req, uint16 choice)
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
 	SSVAL(req->outbuf,smb_vwv1,0x1); /* user level security, don't
 					  * encrypt */
-	set_Protocol(PROTOCOL_COREPLUS);
+
+	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_COREPLUS);
 }
 
 /****************************************************************************
@@ -118,7 +119,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
-	set_Protocol(PROTOCOL_LANMAN1);
+	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_LANMAN1);
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg, FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
@@ -167,7 +168,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 		SSVAL(req->outbuf,smb_vwv11, 8);
 	}
 
-	set_Protocol(PROTOCOL_LANMAN2);
+	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_LANMAN2);
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
 	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
@@ -360,7 +361,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	SSVAL(req->outbuf,smb_vwv0,choice);
 	SCVAL(req->outbuf,smb_vwv1,secword);
 
-	set_Protocol(PROTOCOL_NT1);
+	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_NT1);
 
 	SSVAL(req->outbuf,smb_vwv1+1, lp_maxmux()); /* maxmpx */
 	SSVAL(req->outbuf,smb_vwv2+1, 1); /* num vcs */
