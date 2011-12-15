@@ -812,6 +812,9 @@ static const smb_socket_option socket_options[] = {
 #ifdef TCP_KEEPALIVE_ABORT_THRESHOLD
   {"TCP_KEEPALIVE_ABORT_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_ABORT_THRESHOLD, 0, OPT_INT},
 #endif
+#ifdef TCP_DEFER_ACCEPT
+  {"TCP_DEFER_ACCEPT", IPPROTO_TCP, TCP_DEFER_ACCEPT, 0, OPT_INT},
+#endif
   {NULL,0,0,0,0}};
 
 /****************************************************************************
