@@ -31,6 +31,7 @@
 struct dnsserver_state {
 	struct loadparm_context *lp_ctx;
 	struct ldb_context *samdb;
+	struct dnsserver_partition *partitions;
 	struct dnsserver_zone *zones;
 	int zones_count;
 	struct dnsserver_serverinfo *serverinfo;
@@ -42,7 +43,8 @@ struct dnsserver_state {
 static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_call)
 {
 	struct dnsserver_state *dsstate;
-	struct dnsserver_zone *zones, *z;
+	struct dnsserver_zone *zones, *z, *znext;
+	struct dnsserver_partition *partitions, *p;
 
 	dsstate = talloc_get_type(dce_call->context->private_data, struct dnsserver_state);
 	if (dsstate != NULL) {
@@ -72,31 +74,30 @@ static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_c
 		goto failed;
 	}
 
-	/* Search for DNS zones */
-	zones = dnsserver_db_enumerate_zones(dsstate, dsstate->samdb, true);
-	if (zones == NULL) {
+	/* Search for DNS partitions */
+	partitions = dnsserver_db_enumerate_partitions(dsstate, dsstate->serverinfo, dsstate->samdb);
+	if (partitions == NULL) {
 		goto failed;
 	}
-	for (z = zones; z; z = z->next) {
-		z->zoneinfo = dnsserver_init_zoneinfo(z, dsstate->serverinfo, true);
-		if (z->zoneinfo == NULL) {
-			goto failed;
-		}
-		DLIST_ADD_END(dsstate->zones, z, NULL);
-		dsstate->zones_count++;
-	}
+	dsstate->partitions = partitions;
 
-	zones = dnsserver_db_enumerate_zones(dsstate, dsstate->samdb, false);
-	if (zones == NULL) {
-		goto failed;
-	}
-	for (z = zones; z; z = z->next) {
-		z->zoneinfo = dnsserver_init_zoneinfo(z, dsstate->serverinfo, false);
-		if (z->zoneinfo == NULL) {
+	/* Search for DNS zones */
+	for (p = partitions; p; p = p->next) {
+		zones = dnsserver_db_enumerate_zones(dsstate, dsstate->samdb, p);
+		if (zones == NULL) {
 			goto failed;
 		}
-		DLIST_ADD_END(dsstate->zones, z, NULL);
-		dsstate->zones_count++;
+		for (z = zones; z; ) {
+			znext = z->next;
+			z->zoneinfo = dnsserver_init_zoneinfo(z, dsstate->serverinfo);
+			if (z->zoneinfo == NULL) {
+				goto failed;
+			}
+			DLIST_ADD_END(dsstate->zones, z, NULL);
+			p->zones_count++;
+			dsstate->zones_count++;
+			z = znext;
+		}
 	}
 
 	dce_call->context->private_data = dsstate;
@@ -773,8 +774,8 @@ static WERROR dnsserver_query_zone(struct dnsserver_state *dsstate,
 			r->Zone->Flags = zoneinfo->Flags;
 			r->Zone->ZoneType = zoneinfo->dwZoneType;
 			r->Zone->Version = zoneinfo->Version;
-			r->Zone->dwDpFlags = zoneinfo->dwDpFlags;
-			r->Zone->pszDpFqdn = talloc_strdup(mem_ctx, zoneinfo->pszDpFqdn);
+			r->Zone->dwDpFlags = z->partition->dwDpFlags;
+			r->Zone->pszDpFqdn = talloc_strdup(mem_ctx, z->partition->pszDpFqdn);
 		}
 		return WERR_OK;
 	}
@@ -835,8 +836,8 @@ static WERROR dnsserver_query_zone(struct dnsserver_state *dsstate,
 			r->ZoneInfoDotNet->dwForwarderTimeout = zoneinfo->dwForwarderTimeout;
 			r->ZoneInfoDotNet->fForwarderSlave = zoneinfo->fForwarderSlave;
 			r->ZoneInfoDotNet->aipLocalMasters = ip4_array_copy(mem_ctx, zoneinfo->aipLocalMasters);
-			r->ZoneInfoDotNet->dwDpFlags = zoneinfo->dwDpFlags;
-			r->ZoneInfoDotNet->pszDpFqdn = talloc_strdup(mem_ctx, zoneinfo->pszDpFqdn);
+			r->ZoneInfoDotNet->dwDpFlags = z->partition->dwDpFlags;
+			r->ZoneInfoDotNet->pszDpFqdn = talloc_strdup(mem_ctx, z->partition->pszDpFqdn);
 			r->ZoneInfoDotNet->pwszZoneDn = talloc_strdup(mem_ctx, zoneinfo->pwszZoneDn);
 			r->ZoneInfoDotNet->dwLastSuccessfulSoaCheck = zoneinfo->dwLastSuccessfulSoaCheck;
 			r->ZoneInfoDotNet->dwLastSuccessfulXfr = zoneinfo->dwLastSuccessfulXfr;
@@ -870,8 +871,8 @@ static WERROR dnsserver_query_zone(struct dnsserver_state *dsstate,
 			r->ZoneInfo->dwForwarderTimeout = zoneinfo->dwForwarderTimeout;
 			r->ZoneInfo->fForwarderSlave = zoneinfo->fForwarderSlave;
 			r->ZoneInfo->aipLocalMasters = ip4_array_to_dns_addr_array(mem_ctx, zoneinfo->aipLocalMasters);
-			r->ZoneInfo->dwDpFlags = zoneinfo->dwDpFlags;
-			r->ZoneInfo->pszDpFqdn = talloc_strdup(mem_ctx, zoneinfo->pszDpFqdn);
+			r->ZoneInfo->dwDpFlags = z->partition->dwDpFlags;
+			r->ZoneInfo->pszDpFqdn = talloc_strdup(mem_ctx, z->partition->pszDpFqdn);
 			r->ZoneInfo->pwszZoneDn = talloc_strdup(mem_ctx, zoneinfo->pwszZoneDn);
 			r->ZoneInfo->dwLastSuccessfulSoaCheck = zoneinfo->dwLastSuccessfulSoaCheck;
 			r->ZoneInfo->dwLastSuccessfulXfr = zoneinfo->dwLastSuccessfulXfr;
@@ -998,7 +999,7 @@ static WERROR dnsserver_query_zone(struct dnsserver_state *dsstate,
 		answer_string = talloc_strdup(mem_ctx, zoneinfo->pszDataFile);
 		is_string = 1;
 	} else if (strcasecmp(operation, "ApplicationDirectoryPartition") == 0) {
-		answer_string = talloc_strdup(mem_ctx, zoneinfo->pszDpFqdn);
+		answer_string = talloc_strdup(mem_ctx, z->partition->pszDpFqdn);
 		is_string = 1;
 	} else if (strcasecmp(operation, "BreakOnNameUpdate") == 0) {
 		answer_string = NULL;
@@ -1153,7 +1154,7 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 				}
 				if (rin->Dword & DNS_ZONE_REQUEST_AUTO) {
 					if (z->zoneinfo->fAutoCreated 
-						|| z->zoneinfo->dwDpFlags & DNS_DP_AUTOCREATED) {
+						|| z->partition->dwDpFlags & DNS_DP_AUTOCREATED) {
 						found1 = true;
 					}
 				}
@@ -1202,12 +1203,12 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 					}
 				}
 				if (rin->Dword & DNS_ZONE_REQUEST_DOMAIN_DP) {
-					if (!(z->zoneinfo->dwDpFlags & DNS_DP_DOMAIN_DEFAULT)) {
+					if (!(z->partition->dwDpFlags & DNS_DP_DOMAIN_DEFAULT)) {
 						found3 = true;
 					}
 				}
 				if (rin->Dword & DNS_ZONE_REQUEST_FOREST_DP) {
-					if (!(z->zoneinfo->dwDpFlags & DNS_DP_FOREST_DEFAULT)) {
+					if (!(z->partition->dwDpFlags & DNS_DP_FOREST_DEFAULT)) {
 						found3 = true;
 					}
 				}
@@ -1282,8 +1283,8 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 				rout->ZoneList->ZoneArray[i]->Flags = zlist[i]->zoneinfo->Flags;
 				rout->ZoneList->ZoneArray[i]->ZoneType = zlist[i]->zoneinfo->dwZoneType;
 				rout->ZoneList->ZoneArray[i]->Version = zlist[i]->zoneinfo->Version;
-				rout->ZoneList->ZoneArray[i]->dwDpFlags = zlist[i]->zoneinfo->dwDpFlags;
-				rout->ZoneList->ZoneArray[i]->pszDpFqdn = talloc_strdup(mem_ctx, zlist[i]->zoneinfo->pszDpFqdn);
+				rout->ZoneList->ZoneArray[i]->dwDpFlags = zlist[i]->partition->dwDpFlags;
+				rout->ZoneList->ZoneArray[i]->pszDpFqdn = talloc_strdup(mem_ctx, zlist[i]->partition->pszDpFqdn);
 			}
 			rout->ZoneList->dwRpcStructureVersion = 1;
 			rout->ZoneList->dwZoneCount = zcount;

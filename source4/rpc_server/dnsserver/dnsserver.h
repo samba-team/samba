@@ -126,8 +126,6 @@ struct dnsserver_zoneinfo {
 
 	struct IP4_ARRAY * aipLocalMasters;
 
-	uint32_t	dwDpFlags;
-	char *		pszDpFqdn;
 	char *		pwszZoneDn;
 
 	uint32_t	dwLastSuccessfulSoaCheck;
@@ -142,10 +140,20 @@ struct dnsserver_zoneinfo {
 };
 
 
+struct dnsserver_partition {
+	struct dnsserver_partition *prev, *next;
+	struct ldb_dn *partition_dn;
+	const char *pszDpFqdn;
+	uint32_t dwDpFlags;
+	bool is_forest;
+	int zones_count;
+};
+
+
 struct dnsserver_zone {
 	struct dnsserver_zone *prev, *next;
+	struct dnsserver_partition *partition;
 	const char *name;
-	struct ldb_dn *partition_dn;
 	struct ldb_dn *zone_dn;
 	struct dnsserver_zoneinfo *zoneinfo;
 };
@@ -192,8 +200,9 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 					struct loadparm_context *lp_ctx,
 					struct ldb_context *samdb);
 struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
-					struct dnsserver_serverinfo *serverinfo,
-					bool is_forest);
+					struct dnsserver_serverinfo *serverinfo);
+struct dnsserver_partition *dnsserver_find_partition(struct dnsserver_partition *partitions,
+					const char *dp_fqdn);
 struct dnsserver_zone *dnsserver_find_zone(struct dnsserver_zone *zones,
 					const char *zone_name);
 struct ldb_dn *dnsserver_name_to_dn(TALLOC_CTX *mem_ctx, struct dnsserver_zone *z,
@@ -203,9 +212,12 @@ uint32_t dnsserver_zone_to_request_filter(const char *zone);
 
 /* Database functions from dnsdb.c */
 
+struct dnsserver_partition *dnsserver_db_enumerate_partitions(TALLOC_CTX *mem_ctx,
+					struct dnsserver_serverinfo *serverinfo,
+					struct ldb_context *samdb);
 struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 					struct ldb_context *samdb,
-					bool is_forest);
+					struct dnsserver_partition *p);
 WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 					struct ldb_context *samdb,
 					struct dnsserver_zone *z,

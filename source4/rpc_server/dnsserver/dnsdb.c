@@ -23,17 +23,65 @@
 #include "dnsserver.h"
 #include "lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_dnsp.h"
+#include "dsdb/samdb/samdb.h"
+
+/* There are only 2 fixed partitions for DNS */
+struct dnsserver_partition *dnsserver_db_enumerate_partitions(TALLOC_CTX *mem_ctx,
+							struct dnsserver_serverinfo *serverinfo,
+							struct ldb_context *samdb)
+{
+	struct dnsserver_partition *partitions, *p;
+
+	partitions = NULL;
+
+	/* Domain partition */
+	p = talloc_zero(mem_ctx, struct dnsserver_partition);
+	if (p == NULL) {
+		goto failed;
+	}
+
+	p->partition_dn = ldb_dn_new(p, samdb, serverinfo->pszDomainDirectoryPartition);
+	if (p->partition_dn == NULL) {
+		goto failed;
+	}
+
+	p->pszDpFqdn = samdb_dn_to_dns_domain(p, p->partition_dn);
+	p->dwDpFlags = DNS_DP_AUTOCREATED | DNS_DP_DOMAIN_DEFAULT | DNS_DP_ENLISTED;
+	p->is_forest = false;
+
+	DLIST_ADD_END(partitions, p, NULL);
+
+	/* Forest Partition */
+	p = talloc_zero(mem_ctx, struct dnsserver_partition);
+	if (p == NULL) {
+		goto failed;
+	}
+
+	p->partition_dn = ldb_dn_new(p, samdb, serverinfo->pszForestDirectoryPartition);
+	if (p->partition_dn == NULL) {
+		goto failed;
+	}
+
+	p->pszDpFqdn = samdb_dn_to_dns_domain(p, p->partition_dn);
+	p->dwDpFlags = DNS_DP_AUTOCREATED | DNS_DP_FOREST_DEFAULT | DNS_DP_ENLISTED;
+	p->is_forest = true;
+
+	DLIST_ADD_END(partitions, p, NULL);
+
+	return partitions;
+
+failed:
+	return NULL;
+
+}
 
 struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 						struct ldb_context *samdb,
-						bool is_forest)
+						struct dnsserver_partition *p)
 {
 	TALLOC_CTX *tmp_ctx;
-	const char *domain_prefix = "DC=DomainDnsZones";
-	const char *forest_prefix = "DC=ForestDnsZones";
-	const char *prefix;
 	const char * const attrs[] = {"name", NULL};
-	struct ldb_dn *dn_base, *partition_dn, *dn;
+	struct ldb_dn *dn;
 	struct ldb_result *res;
 	struct dnsserver_zone *zones, *z;
 	int i, ret;
@@ -43,28 +91,7 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (is_forest) {
-		dn_base = ldb_get_root_basedn(samdb);
-	} else {
-		dn_base = ldb_get_default_basedn(samdb);
-	}
-
-	partition_dn = ldb_dn_copy(tmp_ctx, dn_base);
-	if (partition_dn == NULL) {
-		goto failed;
-	}
-
-	if (is_forest) {
-		prefix = forest_prefix;
-	} else {
-		prefix = domain_prefix;
-	}
-
-	if (!ldb_dn_add_child_fmt(partition_dn, "%s", prefix)) {
-		goto failed;
-	}
-
-	dn = ldb_dn_copy(tmp_ctx, partition_dn);
+	dn = ldb_dn_copy(tmp_ctx, p->partition_dn);
 	if (dn == NULL) {
 		goto failed;
 	}
@@ -73,7 +100,7 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = ldb_search(samdb, tmp_ctx, &res, dn, LDB_SCOPE_SUBTREE,
-			  attrs, "(&(objectClass=dnsZone)(!(name=RootDNSServers)))");
+			  attrs, "(objectClass=dnsZone)");
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("dnsserver: Failed to find DNS Zones in %s\n",
 			ldb_dn_get_linearized(dn)));
@@ -82,18 +109,25 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 
 	zones = NULL;
 	for(i=0; i<res->count; i++) {
+		char *name;
 		z = talloc_zero(mem_ctx, struct dnsserver_zone);
 		if (z == NULL) {
 			goto failed;
 		}
 
-		z->name = talloc_strdup(z,
+		z->partition = p;
+		name = talloc_strdup(z,
 				ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL));
-		DEBUG(2, ("dnsserver: Found DNS zone %s\n", z->name));
+		if (strcmp(name, "RootDNSServers") == 0) {
+			talloc_free(name);
+			z->name = talloc_strdup(z, ".");
+		} else {
+			z->name = name;
+		}
 		z->zone_dn = talloc_steal(z, res->msgs[i]->dn);
-		z->partition_dn = talloc_steal(z, partition_dn);
 
 		DLIST_ADD_END(zones, z, NULL);
+		DEBUG(2, ("dnsserver: Found DNS zone %s\n", z->name));
 	}
 
 	return zones;

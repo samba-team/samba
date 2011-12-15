@@ -154,11 +154,9 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 
 
 struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
-						struct dnsserver_serverinfo *serverinfo,
-						bool is_forest)
+						struct dnsserver_serverinfo *serverinfo)
 {
 	struct dnsserver_zoneinfo *zoneinfo;
-	uint32_t dp_flags;
 	uint32_t fReverse;
 	const char *revzone = "in-addr.arpa";
 	int len1, len2;
@@ -166,13 +164,6 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	zoneinfo = talloc_zero(zone, struct dnsserver_zoneinfo);
 	if (zoneinfo == NULL) {
 		return NULL;
-	}
-
-	dp_flags = DNS_DP_AUTOCREATED | DNS_DP_ENLISTED;
-	if (is_forest) {
-		dp_flags |= DNS_DP_FOREST_DEFAULT;
-	} else {
-		dp_flags |= DNS_DP_DOMAIN_DEFAULT;
 	}
 
 	/* If the zone name ends with in-addr.arpa, it's reverse zone */
@@ -184,32 +175,42 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	}
 
 	zoneinfo->Version = 0x32;
-	zoneinfo->Flags = DNS_RPC_ZONE_DSINTEGRATED | DNS_RPC_ZONE_UPDATE_SECURE;
-	zoneinfo->dwZoneType = DNS_ZONE_TYPE_PRIMARY;
+	zoneinfo->Flags = DNS_RPC_ZONE_DSINTEGRATED;
+
+	if (strcmp(zone->name, ".") == 0) {
+		zoneinfo->dwZoneType = DNS_ZONE_TYPE_CACHE;
+		zoneinfo->fAllowUpdate = DNS_ZONE_UPDATE_OFF;
+		zoneinfo->fSecureSecondaries = DNS_ZONE_SECSECURE_NO_SECURITY;
+		zoneinfo->fNotifyLevel = DNS_ZONE_NOTIFY_OFF;
+		zoneinfo->dwNoRefreshInterval = 0;
+		zoneinfo->dwRefreshInterval = 0;
+	} else {
+		zoneinfo->Flags |= DNS_RPC_ZONE_UPDATE_SECURE;
+		zoneinfo->dwZoneType = DNS_ZONE_TYPE_PRIMARY;
+		zoneinfo->fAllowUpdate = DNS_ZONE_UPDATE_SECURE;
+		zoneinfo->fSecureSecondaries = DNS_ZONE_SECSECURE_NO_XFER;
+		zoneinfo->fNotifyLevel = DNS_ZONE_NOTIFY_LIST_ONLY;
+		zoneinfo->dwNoRefreshInterval = serverinfo->dwDefaultNoRefreshInterval;
+		zoneinfo->dwRefreshInterval = serverinfo->dwDefaultRefreshInterval;
+	}
+
 	zoneinfo->fReverse = fReverse;
-	zoneinfo->fAllowUpdate = DNS_ZONE_UPDATE_SECURE;
 	zoneinfo->fPaused = 0;
 	zoneinfo->fShutdown = 0;
 	zoneinfo->fAutoCreated = 0;
 	zoneinfo->fUseDatabase = 1;
 	zoneinfo->pszDataFile = NULL;
 	zoneinfo->aipMasters = NULL;
-	zoneinfo->fSecureSecondaries = DNS_ZONE_SECSECURE_NO_XFER;
-	zoneinfo->fNotifyLevel = DNS_ZONE_NOTIFY_LIST_ONLY;
 	zoneinfo->aipSecondaries = NULL;
 	zoneinfo->aipNotify = NULL;
 	zoneinfo->fUseWins = 0;
 	zoneinfo->fUseNbstat = 0;
 	zoneinfo->fAging = 0;
-	zoneinfo->dwNoRefreshInterval = serverinfo->dwDefaultNoRefreshInterval;
-	zoneinfo->dwRefreshInterval = serverinfo->dwDefaultRefreshInterval;
 	zoneinfo->dwAvailForScavengeTime = 0;
 	zoneinfo->aipScavengeServers = NULL;
 	zoneinfo->dwForwarderTimeout = 0;
 	zoneinfo->fForwarderSlave = 0;
 	zoneinfo->aipLocalMasters = NULL;
-	zoneinfo->dwDpFlags = dp_flags;
-	zoneinfo->pszDpFqdn = samdb_dn_to_dns_domain(zone, zone->partition_dn);
 	zoneinfo->pwszZoneDn = discard_const_p(char, ldb_dn_get_linearized(zone->zone_dn));
 	zoneinfo->dwLastSuccessfulSoaCheck = 0;
 	zoneinfo->dwLastSuccessfulXfr = 0;
@@ -220,6 +221,20 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	zoneinfo->dwLastXfrResult = 0;
 
 	return zoneinfo;
+}
+
+struct dnsserver_partition *dnsserver_find_partition(struct dnsserver_partition *partitions,
+						     const char *dp_fqdn)
+{
+	struct dnsserver_partition *p = NULL;
+
+	for (p = partitions; p; p = p->next) {
+		if (strcmp(dp_fqdn, p->pszDpFqdn) == 0) {
+			break;
+		}
+	}
+
+	return p;
 }
 
 struct dnsserver_zone *dnsserver_find_zone(struct dnsserver_zone *zones, const char *zone_name)
