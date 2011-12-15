@@ -2402,10 +2402,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->oplock_type = NO_OPLOCK;
 	}
 
-	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED || info == FILE_WAS_SUPERSEDED) {
-		new_file_created = True;
-	}
-
 	set_share_mode(lck, fsp, get_current_uid(conn),
 			req ? req->mid : 0,
 		       fsp->oplock_type);
@@ -2425,6 +2421,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		/* Note that here we set the *inital* delete on close flag,
 		   not the regular one. The magic gets handled in close. */
 		fsp->initial_delete_on_close = True;
+	}
+
+	if (info == FILE_WAS_OVERWRITTEN
+	    || info == FILE_WAS_CREATED
+	    || info == FILE_WAS_SUPERSEDED) {
+		new_file_created = True;
 	}
 
 	if (new_file_created) {
