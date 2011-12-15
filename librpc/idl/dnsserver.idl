@@ -601,6 +601,13 @@ import "misc.idl", "dnsp.idl";
 	DNS_RPC_DP_REPLICA;
 #define PDNS_RPC_DP_REPLICA DNS_RPC_DP_REPLICA*
 
+	typedef [v1_enum] enum {
+		DNS_DP_OKAY                = 0x00,
+		DNS_DP_STATE_REPL_INCOMING = 0x01,
+		DNS_DP_STATE_REPL_OUTGOING = 0x02,
+		DNS_DP_STATE_UNKNOWN       = 0x03
+	} DNS_DP_STATE;
+
 	typedef struct {
 		DWORD           dwRpcStructureVersion;
 		DWORD           dwReserved0;
@@ -610,7 +617,7 @@ import "misc.idl", "dnsp.idl";
 		[string, charset(UTF16)] wchar_t *       pszCrDn;
 		DWORD           dwFlags;
 		DWORD           dwZoneCount;
-		DWORD           dwState;
+		DNS_DP_STATE    dwState;
 
 		DWORD           dwReserved[    3 ];
 		DNS_EXTENSION   pwszReserved[ 3 ];
