@@ -225,7 +225,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	status = brl_lock(req->sconn->msg_ctx,
 			br_lck,
 			smblctx,
-			sconn_server_id(req->sconn),
+			messaging_server_id(req->sconn->msg_ctx),
 			offset,
 			count,
 			lock_type == READ_LOCK ? PENDING_READ_LOCK : PENDING_WRITE_LOCK,
@@ -302,7 +302,7 @@ static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTAT
 			fsp->last_lock_failure.context.smblctx = blr->smblctx;
 			fsp->last_lock_failure.context.tid = fsp->conn->cnum;
 			fsp->last_lock_failure.context.pid =
-				sconn_server_id(fsp->conn->sconn);
+				messaging_server_id(fsp->conn->sconn->msg_ctx);
 			fsp->last_lock_failure.start = blr->offset;
 			fsp->last_lock_failure.size = blr->count;
 			fsp->last_lock_failure.fnum = fsp->fnum;
@@ -616,7 +616,7 @@ void smbd_cancel_pending_lock_requests_by_fid(files_struct *fsp,
 
 		brl_lock_cancel(br_lck,
 				blr->smblctx,
-				sconn_server_id(sconn),
+				messaging_server_id(sconn->msg_ctx),
 				blr->offset,
 				blr->count,
 				blr->lock_flav,
@@ -659,7 +659,7 @@ void remove_pending_lock_requests_by_mid_smb1(
 
 			brl_lock_cancel(br_lck,
 					blr->smblctx,
-					sconn_server_id(sconn),
+					messaging_server_id(sconn->msg_ctx),
 					blr->offset,
 					blr->count,
 					blr->lock_flav,
@@ -758,7 +758,7 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 			if (br_lck) {
 				brl_lock_cancel(br_lck,
 					blr->smblctx,
-					sconn_server_id(sconn),
+					messaging_server_id(sconn->msg_ctx),
 					blr->offset,
 					blr->count,
 					blr->lock_flav,
@@ -795,7 +795,7 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 
 				brl_lock_cancel(br_lck,
 					blr->smblctx,
-					sconn_server_id(sconn),
+					messaging_server_id(sconn->msg_ctx),
 					blr->offset,
 					blr->count,
 					blr->lock_flav,
@@ -908,7 +908,7 @@ struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
 	memcpy(msg, &blr, sizeof(blr));
 	memcpy(&msg[sizeof(blr)], &err, sizeof(NTSTATUS));
 
-	messaging_send_buf(sconn->msg_ctx, sconn_server_id(sconn),
+	messaging_send_buf(sconn->msg_ctx, messaging_server_id(sconn->msg_ctx),
 			   MSG_SMB_BLOCKING_LOCK_CANCEL,
 			   (uint8 *)&msg, sizeof(msg));
 

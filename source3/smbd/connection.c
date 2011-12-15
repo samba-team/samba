@@ -23,6 +23,7 @@
 #include "dbwrap/dbwrap.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
+#include "messages.h"
 
 /****************************************************************************
  Delete a connection record.
@@ -167,7 +168,7 @@ bool claim_connection(connection_struct *conn, const char *name)
 	/* fill in the crec */
 	ZERO_STRUCT(crec);
 	crec.magic = 0x280267;
-	crec.pid = sconn_server_id(conn->sconn);
+	crec.pid = messaging_server_id(conn->sconn->msg_ctx);
 	crec.cnum = conn->cnum;
 	crec.uid = conn->session_info->unix_token->uid;
 	crec.gid = conn->session_info->unix_token->gid;

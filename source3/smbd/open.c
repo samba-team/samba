@@ -1312,7 +1312,7 @@ static void defer_open(struct share_mode_lock *lck,
 		exit_server("push_deferred_open_message_smb failed");
 	}
 	add_deferred_open(lck, req->mid, request_time,
-			  sconn_server_id(req->sconn), state->id);
+			  messaging_server_id(req->sconn->msg_ctx), state->id);
 }
 
 
@@ -1727,7 +1727,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/* Remove the deferred open entry under lock. */
 			remove_deferred_open_entry(
 				state->id, req->mid,
-				sconn_server_id(req->sconn));
+				messaging_server_id(req->sconn->msg_ctx));
 
 			/* Ensure we don't reprocess this message. */
 			remove_deferred_open_message_smb(req->sconn, req->mid);
@@ -2500,7 +2500,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * records. */
 	if (req != NULL) {
 		del_deferred_open_entry(lck, req->mid,
-					sconn_server_id(req->sconn));
+					messaging_server_id(req->sconn->msg_ctx));
 	}
 	TALLOC_FREE(lck);
 

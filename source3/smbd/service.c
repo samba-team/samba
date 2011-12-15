@@ -29,6 +29,7 @@
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "lib/param/loadparm.h"
+#include "messages.h"
 
 extern userdom_struct current_user_info;
 
@@ -716,7 +717,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	if ((!conn->printer) && (!conn->ipc)) {
 		conn->notify_ctx = notify_init(conn,
-					       sconn_server_id(sconn),
+					       messaging_server_id(sconn->msg_ctx),
 					       sconn->msg_ctx,
 					       sconn->ev_ctx,
 					       conn);

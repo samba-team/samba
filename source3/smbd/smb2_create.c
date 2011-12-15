@@ -26,6 +26,7 @@
 #include "../libcli/smb/smb_common.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "messages.h"
 
 int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level)
 {
@@ -1168,7 +1169,7 @@ static bool smbd_smb2_create_cancel(struct tevent_req *req)
 	mid = get_mid_from_smb2req(smb2req);
 
 	remove_deferred_open_entry(state->id, mid,
-				   sconn_server_id(smb2req->sconn));
+				   messaging_server_id(smb2req->sconn->msg_ctx));
 	remove_deferred_open_message_smb2_internal(smb2req, mid);
 	smb2req->cancelled = true;
 

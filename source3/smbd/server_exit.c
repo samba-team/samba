@@ -43,6 +43,7 @@
 #include "printing/notify.h"
 #include "printing.h"
 #include "serverid.h"
+#include "messages.h"
 
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)
@@ -113,7 +114,7 @@ static void exit_server_common(enum server_exit_reason how,
 		/*
 		 * For children the parent takes care of cleaning up
 		 */
-		serverid_deregister(sconn_server_id(sconn));
+		serverid_deregister(messaging_server_id(sconn->msg_ctx));
 	}
 
 #ifdef WITH_DFS

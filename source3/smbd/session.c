@@ -34,6 +34,7 @@
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/security/security.h"
+#include "messages.h"
 
 /********************************************************************
  called when a session is created
@@ -41,7 +42,7 @@
 
 bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 {
-	struct server_id pid = sconn_server_id(sconn);
+	struct server_id pid = messaging_server_id(sconn->msg_ctx);
 	TDB_DATA data;
 	int i = 0;
 	struct sessionid sessionid;
