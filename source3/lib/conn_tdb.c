@@ -22,6 +22,7 @@
 #include "smbd/globals.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
+#include "messages.h"
 
 static struct db_context *connections_db_ctx(bool rw)
 {
@@ -59,7 +60,7 @@ struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
 	TDB_DATA key;
 
 	ZERO_STRUCT(ckey);
-	ckey.pid = sconn_server_id(conn->sconn);
+	ckey.pid = messaging_server_id(conn->sconn->msg_ctx);
 	ckey.cnum = conn->cnum;
 	strlcpy(ckey.name, name, sizeof(ckey.name));
 
