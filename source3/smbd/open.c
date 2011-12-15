@@ -1639,7 +1639,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	bool posix_open = False;
 	bool new_file_created = False;
 	bool clear_ads = false;
-	struct file_id id;
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
 	mode_t new_unx_mode = (mode_t)0;
 	mode_t unx_mode = (mode_t)0;
@@ -1650,8 +1649,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
 	char *parent_dir;
-
-	ZERO_STRUCT(id);
 
 	if (conn->printer) {
 		/*
@@ -1958,6 +1955,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		struct share_mode_entry *exclusive_entry = NULL;
 		bool got_level2_oplock = false;
 		bool got_a_none_oplock = false;
+		struct file_id id;
 
 		struct timespec old_write_time = smb_fname->st.st_ex_mtime;
 		id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
@@ -2191,6 +2189,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		bool got_level2_oplock = false;
 		bool got_a_none_oplock = false;
 		struct timespec old_write_time = smb_fname->st.st_ex_mtime;
+		struct file_id id;
 		/*
 		 * Deal with the race condition where two smbd's detect the
 		 * file doesn't exist and do the create at the same time. One
