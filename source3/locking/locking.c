@@ -29,7 +29,7 @@
    September 1997. Jeremy Allison (jallison@whistle.com). Added oplock
    support.
 
-   rewrtten completely to use new tdb code. Tridge, Dec '99
+   rewritten completely to use new tdb code. Tridge, Dec '99
 
    Added POSIX locking support. Jeremy Allison (jeremy@valinux.com), Apr. 2000.
    Added Unix Extensions POSIX locking support. Jeremy Allison Mar 2006.
