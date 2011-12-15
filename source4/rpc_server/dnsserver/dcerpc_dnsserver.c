@@ -1457,9 +1457,9 @@ static WERROR dnsserver_enumerate_root_records(struct dnsserver_state *dsstate,
 					struct DNS_RPC_RECORDS_ARRAY **buffer)
 {
 	TALLOC_CTX *tmp_ctx;
+	struct dnsserver_zone *z;
 	const char * const attrs[] = { "name", "dnsRecord", NULL };
 	struct ldb_result *res;
-	struct ldb_dn *dn;
 	struct DNS_RPC_RECORDS_ARRAY *recs;
 	char **add_names;
 	char *rname;
@@ -1470,15 +1470,12 @@ static WERROR dnsserver_enumerate_root_records(struct dnsserver_state *dsstate,
 	tmp_ctx = talloc_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-	dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(dsstate->samdb));
-	W_ERROR_HAVE_NO_MEMORY_AND_FREE(dn, tmp_ctx);
-
-	if (!ldb_dn_add_child_fmt(dn, "DC=RootDNSServers,CN=MicrosoftDNS,DC=DomainDnsZones")) {
-		talloc_free(tmp_ctx);
-		return WERR_NOMEM;
+	z = dnsserver_find_zone(dsstate->zones, ".");
+	if (z == NULL) {
+		return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
 	}
 
-	ret = ldb_search(dsstate->samdb, tmp_ctx, &res, dn,
+	ret = ldb_search(dsstate->samdb, tmp_ctx, &res, z->zone_dn,
 				LDB_SCOPE_ONELEVEL, attrs, "(&(objectClass=dnsNode)(name=@))");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -1510,7 +1507,7 @@ static WERROR dnsserver_enumerate_root_records(struct dnsserver_state *dsstate,
 	/* Add any additional records */
 	if (select_flag & DNS_RPC_VIEW_ADDITIONAL_DATA) {
 		for (i=0; i<add_count; i++) {
-			ret = ldb_search(dsstate->samdb, tmp_ctx, &res, dn,
+			ret = ldb_search(dsstate->samdb, tmp_ctx, &res, z->zone_dn,
 					LDB_SCOPE_ONELEVEL, attrs,
 					"(&(objectClass=dnsNode)(name=%s))", add_names[i]);
 			if (ret != LDB_SUCCESS || res->count == 0) {
