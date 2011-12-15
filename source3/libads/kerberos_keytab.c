@@ -261,9 +261,15 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	krb5_keytab keytab = NULL;
 	krb5_data password;
 	krb5_kvno kvno;
-        krb5_enctype enctypes[4] = {
+        krb5_enctype enctypes[6] = {
 		ENCTYPE_DES_CBC_CRC,
 		ENCTYPE_DES_CBC_MD5,
+#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+		ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+#endif
+#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+		ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+#endif
 		ENCTYPE_ARCFOUR_HMAC,
 		0
 	};
