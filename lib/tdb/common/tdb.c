@@ -473,7 +473,6 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 {
 	struct tdb_record rec;
 	tdb_off_t rec_ptr;
-	char *p = NULL;
 	int ret = -1;
 
 	/* check for it existing, on insert. */
@@ -503,18 +502,6 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 	if (flag != TDB_INSERT)
 		tdb_delete_hash(tdb, key, hash);
 
-	/* Copy key+value *before* allocating free space in case malloc
-	   fails and we are left with a dead spot in the tdb. */
-
-	if (!(p = (char *)malloc(key.dsize + dbuf.dsize))) {
-		tdb->ecode = TDB_ERR_OOM;
-		goto fail;
-	}
-
-	memcpy(p, key.dptr, key.dsize);
-	if (dbuf.dsize)
-		memcpy(p+key.dsize, dbuf.dptr, dbuf.dsize);
-
 	if (tdb->max_dead_records != 0) {
 		/*
 		 * Allow for some dead records per hash chain, look if we can
@@ -534,7 +521,10 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 			if (tdb_rec_write(tdb, rec_ptr, &rec) == -1
 			    || tdb->methods->tdb_write(
 				    tdb, rec_ptr + sizeof(rec),
-				    p, key.dsize + dbuf.dsize) == -1) {
+				    key.dptr, key.dsize) == -1
+			    || tdb->methods->tdb_write(
+				    tdb, rec_ptr + sizeof(rec) + key.dsize,
+				    dbuf.dptr, dbuf.dsize) == -1) {
 				goto fail;
 			}
 			goto done;
@@ -577,7 +567,10 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 
 	/* write out and point the top of the hash chain at it */
 	if (tdb_rec_write(tdb, rec_ptr, &rec) == -1
-	    || tdb->methods->tdb_write(tdb, rec_ptr+sizeof(rec), p, key.dsize+dbuf.dsize)==-1
+	    || tdb->methods->tdb_write(tdb, rec_ptr+sizeof(rec),
+				       key.dptr, key.dsize) == -1
+	    || tdb->methods->tdb_write(tdb, rec_ptr+sizeof(rec)+key.dsize,
+				       dbuf.dptr, dbuf.dsize) == -1
 	    || tdb_ofs_write(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1) {
 		/* Need to tdb_unallocate() here */
 		goto fail;
@@ -589,8 +582,6 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 	if (ret == 0) {
 		tdb_increment_seqnum(tdb);
 	}
-
-	SAFE_FREE(p); 
 	return ret;
 }
 
