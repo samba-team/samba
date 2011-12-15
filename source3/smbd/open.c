@@ -1084,7 +1084,7 @@ static NTSTATUS send_break_message(files_struct *fsp,
 
 static void find_oplock_types(files_struct *fsp,
 				int oplock_request,
-				struct share_mode_lock *lck,
+				const struct share_mode_lock *lck,
 				struct share_mode_entry **pp_batch,
 				struct share_mode_entry **pp_ex_or_batch,
 				bool *got_level2,
