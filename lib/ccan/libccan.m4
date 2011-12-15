@@ -236,14 +236,14 @@ if test x"$samba_cv_builtin_types_compatible_p" = xyes ; then
 	     [whether we have __builtin_types_compatible_p])
 fi
 
-AC_CACHE_CHECK([whether we have __builtin_choose_exptr],
+AC_CACHE_CHECK([whether we have __builtin_choose_expr],
 	       samba_cv_builtin_choose_expr,
 	       [
 	         AC_LINK_IFELSE(
 			[int main(void) {
 				return __builtin_choose_expr(1, 0, "garbage");
 			}],
-			samba_cv_builtin_types_choose_expr=yes)
+			samba_cv_builtin_choose_expr=yes)
 		])
 
 if test x"$samba_cv_builtin_choose_expr" = xyes ; then
