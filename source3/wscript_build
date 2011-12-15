@@ -47,7 +47,6 @@ LIB_SRC = '''
           lib/messages_ctdbd.c lib/ctdb_packet.c lib/ctdbd_conn.c
           lib/id_cache.c
           lib/talloc_dict.c
-          lib/util_sconn.c
           lib/serverid.c
           lib/util_transfer_file.c
           lib/addrchange.c

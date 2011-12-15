@@ -226,8 +226,6 @@ void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 #define smbd_server_connection_terminate(sconn, reason) \
 	smbd_server_connection_terminate_ex(sconn, reason, __location__)
 
-struct server_id sconn_server_id(const struct smbd_server_connection *sconn);
-
 const char *smb2_opcode_name(uint16_t opcode);
 bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size);
 
