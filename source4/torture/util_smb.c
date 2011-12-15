@@ -729,6 +729,14 @@ double torture_create_procs(struct torture_context *tctx,
 
 	if (synccount != torture_nprocs) {
 		printf("FAILED TO START %d CLIENTS (started %d)\n", torture_nprocs, synccount);
+
+		/* cleanup child processes */
+		for (i = 0; i < torture_nprocs; i++) {
+			if (child_status[i]) {
+				kill(child_status[i], SIGTERM);
+			}
+		}
+
 		*result = false;
 		return timeval_elapsed(&tv);
 	}
