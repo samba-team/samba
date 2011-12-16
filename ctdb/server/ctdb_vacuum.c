@@ -536,6 +536,39 @@ done:
 }
 
 /**
+ * Fast vacuuming run:
+ * Traverse the delete_queue.
+ * This fills the same lists as the database traverse.
+ */
+static void ctdb_vacuum_db_fast(struct ctdb_db_context *ctdb_db,
+				struct vacuum_data *vdata)
+{
+	trbt_traversearray32(ctdb_db->delete_queue, 1, delete_queue_traverse, vdata);
+
+	if (vdata->fast_total > 0) {
+		DEBUG(DEBUG_INFO,
+		      (__location__
+		       " fast vacuuming delete_queue traverse statistics: "
+		       "db[%s] "
+		       "total[%u] "
+		       "del[%u] "
+		       "skp[%u] "
+		       "err[%u] "
+		       "adl[%u] "
+		       "avf[%u]\n",
+		       ctdb_db->db_name,
+		       (unsigned)vdata->fast_total,
+		       (unsigned)vdata->fast_deleted,
+		       (unsigned)vdata->fast_skipped,
+		       (unsigned)vdata->fast_error,
+		       (unsigned)vdata->fast_added_to_delete_list,
+		       (unsigned)vdata->fast_added_to_vacuum_fetch_list));
+	}
+
+	return;
+}
+
+/**
  * Vacuum a DB:
  *  - Always do the fast vacuuming run, which traverses
  *    the in-memory delete queue: these records have been
@@ -631,31 +664,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		vdata->vacuum_fetch_list[i]->db_id = ctdb_db->db_id;
 	}
 
-	/*
-	 * Traverse the delete_queue.
-	 * This builds the same lists as the db traverse.
-	 */
-	trbt_traversearray32(ctdb_db->delete_queue, 1, delete_queue_traverse, vdata);
-
-	if (vdata->fast_total > 0) {
-		DEBUG(DEBUG_INFO,
-		      (__location__
-		       " fast vacuuming delete_queue traverse statistics: "
-		       "db[%s] "
-		       "total[%u] "
-		       "del[%u] "
-		       "skp[%u] "
-		       "err[%u] "
-		       "adl[%u] "
-		       "avf[%u]\n",
-		       ctdb_db->db_name,
-		       (unsigned)vdata->fast_total,
-		       (unsigned)vdata->fast_deleted,
-		       (unsigned)vdata->fast_skipped,
-		       (unsigned)vdata->fast_error,
-		       (unsigned)vdata->fast_added_to_delete_list,
-		       (unsigned)vdata->fast_added_to_vacuum_fetch_list));
-	}
+	ctdb_vacuum_db_fast(ctdb_db, vdata);
 
 	/*
 	 * read-only traverse of the database, looking for records that
