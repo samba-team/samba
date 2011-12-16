@@ -1482,11 +1482,10 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	bool file_existed,
 	uint32_t *p_access_mask)
 {
-	uint32_t access_mask = *p_access_mask;
 	NTSTATUS status;
 
 	if (get_current_uid(conn) == (uid_t)0) {
-		access_mask |= FILE_GENERIC_ALL;
+		*p_access_mask |= FILE_GENERIC_ALL;
 	} else if (file_existed) {
 		struct security_descriptor *sd;
 		uint32_t access_granted = 0;
@@ -1510,7 +1509,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 		 */
 		status = se_access_check(sd,
 					 get_current_nttok(conn),
-					 (access_mask & ~FILE_READ_ATTRIBUTES),
+					 (*p_access_mask & ~FILE_READ_ATTRIBUTES),
 					 &access_granted);
 
 		TALLOC_FREE(sd);
@@ -1523,11 +1522,10 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		access_mask = (access_granted | FILE_READ_ATTRIBUTES);
+		*p_access_mask = (access_granted | FILE_READ_ATTRIBUTES);
 	} else {
-		access_mask = FILE_GENERIC_ALL;
+		*p_access_mask = FILE_GENERIC_ALL;
 	}
-	*p_access_mask = access_mask;
 	return NT_STATUS_OK;
 }
 
