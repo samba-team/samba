@@ -615,6 +615,49 @@ static int ctdb_vacuum_db_full(struct ctdb_db_context *ctdb_db,
 }
 
 /**
+ * Process the vacuum fetch lists:
+ * For records for which we are not the lmaster, tell the lmaster to
+ * fetch the record.
+ */
+static int ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
+					   struct vacuum_data *vdata)
+{
+	int i;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+
+	for (i = 0; i < ctdb->num_nodes; i++) {
+		TDB_DATA data;
+		struct ctdb_marshall_buffer *vfl = vdata->vacuum_fetch_list[i];
+
+		if (ctdb->nodes[i]->pnn == ctdb->pnn) {
+			continue;
+		}
+
+		if (vfl->count == 0) {
+			continue;
+		}
+
+		DEBUG(DEBUG_INFO, ("Found %u records for lmaster %u in '%s'\n",
+				   vfl->count, ctdb->nodes[i]->pnn,
+				   ctdb_db->db_name));
+
+		data.dsize = talloc_get_size(vfl);
+		data.dptr  = (void *)vfl;
+		if (ctdb_client_send_message(ctdb, ctdb->nodes[i]->pnn,
+					     CTDB_SRVID_VACUUM_FETCH,
+					     data) != 0)
+		{
+			DEBUG(DEBUG_ERR, (__location__ " Failed to send vacuum "
+					  "fetch message to %u\n",
+					  ctdb->nodes[i]->pnn));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+/**
  * Vacuum a DB:
  *  - Always do the fast vacuuming run, which traverses
  *    the in-memory delete queue: these records have been
@@ -651,7 +694,6 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 			  bool full_vacuum_run)
 {
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	const char *name = ctdb_db->db_name;
 	int ret, i, pnn;
 
 	DEBUG(DEBUG_INFO, (__location__ " Entering %s vacuum run for db "
@@ -717,35 +759,10 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		return ret;
 	}
 
-	/*
-	 * For records where we are not the lmaster,
-	 * tell the lmaster to fetch the record.
-	 */
-	for (i = 0; i < ctdb->num_nodes; i++) {
-		TDB_DATA data;
-		struct ctdb_marshall_buffer *vfl = vdata->vacuum_fetch_list[i];
-
-		if (ctdb->nodes[i]->pnn == ctdb->pnn) {
-			continue;
-		}
-
-		if (vfl->count == 0) {
-			continue;
-		}
-
-		DEBUG(DEBUG_INFO, ("Found %u records for lmaster %u in '%s'\n",
-				   vfl->count, ctdb->nodes[i]->pnn,
-				   name));
-
-		data.dsize = talloc_get_size(vfl);
-		data.dptr  = (void *)vfl;
-		if (ctdb_client_send_message(ctdb, ctdb->nodes[i]->pnn, CTDB_SRVID_VACUUM_FETCH, data) != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to send vacuum "
-					  "fetch message to %u\n",
-					  ctdb->nodes[i]->pnn));
-			return -1;
-		}
-	}	
+	ret = ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
+	if (ret != 0) {
+		return ret;
+	}
 
 	/* Process all records we can delete (if any) */
 	if (vdata->delete_count > 0) {
