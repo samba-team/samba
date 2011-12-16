@@ -173,27 +173,30 @@ static int add_record_to_vacuum_fetch_list(struct vacuum_data *vdata,
 	struct ctdb_rec_data *rec;
 	uint32_t lmaster;
 	size_t old_size;
+	struct ctdb_marshall_buffer *vfl;
 
 	lmaster = ctdb_lmaster(ctdb, &key);
 
-	rec = ctdb_marshall_record(vdata->list[lmaster], ctdb->pnn, key, NULL, tdb_null);
+	vfl = vdata->list[lmaster];
+
+	rec = ctdb_marshall_record(vfl, ctdb->pnn, key, NULL, tdb_null);
 	if (rec == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		vdata->traverse_error = true;
 		return -1;
 	}
 
-	old_size = talloc_get_size(vdata->list[lmaster]);
-	vdata->list[lmaster] = talloc_realloc_size(NULL, vdata->list[lmaster],
-						   old_size + rec->length);
-	if (vdata->list[lmaster] == NULL) {
+	old_size = talloc_get_size(vfl);
+	vfl = talloc_realloc_size(NULL, vfl, old_size + rec->length);
+	if (vfl == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
 		vdata->traverse_error = true;
 		return -1;
 	}
+	vdata->vacuum_fetch_list[lmaster] = vfl;
 
-	vdata->list[lmaster]->count++;
-	memcpy(old_size+(uint8_t *)vdata->list[lmaster], rec, rec->length);
+	vfl->count++;
+	memcpy(old_size+(uint8_t *)vfl, rec, rec->length);
 	talloc_free(rec);
 
 	vdata->total++;
