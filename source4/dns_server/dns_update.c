@@ -682,11 +682,13 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	}
 
 	if (z == NULL) {
+		DEBUG(0, ("We're not authorative for this zone\n"));
 		return DNS_ERR(NOTAUTH);
 	}
 
 	if (host_part_len != 0) {
 		/* TODO: We need to delegate this one */
+		DEBUG(0, ("Would have to delegate zones.\n"));
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
@@ -700,6 +702,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	 * key-based GSSAPI, key-based bind-style TSIG and "never" as
 	 * smb.conf options. */
 	if (!update_allowed) {
+		DEBUG(0, ("Update not allowed."));
 		return DNS_ERR(REFUSED);
 	}
 
