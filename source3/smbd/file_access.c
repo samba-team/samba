@@ -40,6 +40,13 @@ bool can_access_file_acl(struct connection_struct *conn,
 		return true;
 	}
 
+	if (access_mask == DELETE_ACCESS &&
+			VALID_STAT(smb_fname->st) &&
+			S_ISLNK(smb_fname->st.st_ex_mode)) {
+		/* We can always delete a symlink. */
+		return true;
+	}
+
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 				    (OWNER_SECURITY_INFORMATION |
 				     GROUP_SECURITY_INFORMATION |
@@ -115,18 +122,10 @@ bool can_delete_file_in_directory(connection_struct *conn,
 	/* sticky bit means delete only by owner of file or by root or
 	 * by owner of directory. */
 	if (smb_fname_parent->st.st_ex_mode & S_ISVTX) {
-		if(SMB_VFS_STAT(conn, smb_fname) != 0) {
-			if (errno == ENOENT) {
-				/* If the file doesn't already exist then
-				 * yes we'll be able to delete it. */
-				ret = true;
-				goto out;
-			}
-			DEBUG(10,("can_delete_file_in_directory: can't "
-				  "stat file %s (%s)",
-				  smb_fname_str_dbg(smb_fname),
-				  strerror(errno) ));
-			ret = false;
+		if (!VALID_STAT(smb_fname->st)) {
+			/* If the file doesn't already exist then
+			 * yes we'll be able to delete it. */
+			ret = true;
 			goto out;
 		}
 
