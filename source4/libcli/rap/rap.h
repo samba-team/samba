@@ -60,9 +60,6 @@ struct rap_call {
 	const char *datadesc;
 	const char *auxdatadesc;
 
-	uint16_t status;
-	uint16_t convert;
-
 	uint16_t rcv_paramlen, rcv_datalen;
 
 	struct ndr_push *ndr_push_param;
