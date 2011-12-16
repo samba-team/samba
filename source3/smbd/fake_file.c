@@ -130,7 +130,6 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	NTSTATUS status;
 
 	status = smbd_calculate_access_mask(conn, smb_fname,
-					    false, /* fake files do not exist */
 					    access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_fake_file: smbd_calculate_access_mask "

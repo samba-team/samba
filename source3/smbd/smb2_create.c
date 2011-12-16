@@ -745,11 +745,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 				status = smbd_calculate_access_mask(smb1req->conn,
 							result->fsp_name,
-							/*
-							 * at this stage
-							 * it exists
-							 */
-							true,
 							SEC_FLAG_MAXIMUM_ALLOWED,
 							&max_access_granted);
 
