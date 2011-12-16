@@ -99,6 +99,14 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
+	if (access_mask == DELETE_ACCESS && S_ISLNK(smb_fname->st.st_ex_mode)) {
+		/* We can always delete a symlink. */
+		DEBUG(10,("smbd_check_access_rights: not checking ACL "
+			"on DELETE_ACCESS on symlink %s.\n",
+			smb_fname_str_dbg(smb_fname) ));
+		return NT_STATUS_OK;
+	}
+
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 			(SECINFO_OWNER |
 			SECINFO_GROUP |
