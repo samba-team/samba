@@ -30,18 +30,13 @@ struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16_t callno)
 {
 	struct rap_call *call;
 
-	call = talloc(mem_ctx, struct rap_call);
-
-	if (call == NULL)
+	call = talloc_zero(mem_ctx, struct rap_call);
+	if (call == NULL) {
 		return NULL;
+	}
 
 	call->callno = callno;
 	call->rcv_paramlen = 4;
-	call->rcv_datalen = 0;
-
-	call->paramdesc = NULL;
-	call->datadesc = NULL;
-	call->auxdatadesc = NULL;
 
 	call->ndr_push_param = ndr_push_init_ctx(mem_ctx);
 	call->ndr_push_param->flags = RAPNDR_FLAGS;
