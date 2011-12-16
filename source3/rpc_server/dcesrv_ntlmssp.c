@@ -53,6 +53,10 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 		gensec_want_feature(a->gensec_security, GENSEC_FEATURE_SEAL);
 	}
 
+	if (is_dcerpc) {
+		gensec_want_feature(a->gensec_security, GENSEC_FEATURE_DCE_STYLE);
+	}
+
 	status = auth_ntlmssp_start(a);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": auth_ntlmssp_start failed: %s\n",
