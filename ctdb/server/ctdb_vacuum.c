@@ -62,7 +62,7 @@ struct vacuum_data {
 	struct tdb_context *dest_db;
 	trbt_tree_t *delete_tree;
 	uint32_t delete_count;
-	struct ctdb_marshall_buffer **list;
+	struct ctdb_marshall_buffer **vacuum_fetch_list;
 	struct timeval start;
 	bool traverse_error;
 	bool vacuum;
@@ -177,7 +177,7 @@ static int add_record_to_vacuum_fetch_list(struct vacuum_data *vdata,
 
 	lmaster = ctdb_lmaster(ctdb, &key);
 
-	vfl = vdata->list[lmaster];
+	vfl = vdata->vacuum_fetch_list[lmaster];
 
 	rec = ctdb_marshall_record(vfl, ctdb->pnn, key, NULL, tdb_null);
 	if (rec == NULL) {
@@ -613,20 +613,22 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	vdata->delete_deleted = 0;
 
 	/* the list needs to be of length num_nodes */
-	vdata->list = talloc_array(vdata, struct ctdb_marshall_buffer *, ctdb->num_nodes);
-	if (vdata->list == NULL) {
+	vdata->vacuum_fetch_list = talloc_array(vdata,
+						struct ctdb_marshall_buffer *,
+						ctdb->num_nodes);
+	if (vdata->vacuum_fetch_list == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		return -1;
 	}
 	for (i = 0; i < ctdb->num_nodes; i++) {
-		vdata->list[i] = (struct ctdb_marshall_buffer *)
-			talloc_zero_size(vdata->list,
+		vdata->vacuum_fetch_list[i] = (struct ctdb_marshall_buffer *)
+			talloc_zero_size(vdata->vacuum_fetch_list,
 					 offsetof(struct ctdb_marshall_buffer, data));
-		if (vdata->list[i] == NULL) {
+		if (vdata->vacuum_fetch_list[i] == NULL) {
 			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 			return -1;
 		}
-		vdata->list[i]->db_id = ctdb_db->db_id;
+		vdata->vacuum_fetch_list[i]->db_id = ctdb_db->db_id;
 	}
 
 	/*
@@ -693,7 +695,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	 */
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		TDB_DATA data;
-		struct ctdb_marshall_buffer *vfl = vdata->list[i];
+		struct ctdb_marshall_buffer *vfl = vdata->vacuum_fetch_list[i];
 
 		if (ctdb->nodes[i]->pnn == ctdb->pnn) {
 			continue;
