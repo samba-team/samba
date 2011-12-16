@@ -1242,10 +1242,7 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 			}
 
 			rout->ZoneListW2K->ZoneArray = talloc_zero_array(mem_ctx, struct DNS_RPC_ZONE_W2K *, zcount);
-			if (rout->ZoneListW2K->ZoneArray == NULL) {
-				talloc_free(zlist);
-				return WERR_NOMEM;
-			}
+			W_ERROR_HAVE_NO_MEMORY_AND_FREE(rout->ZoneListW2K->ZoneArray, zlist);
 
 			for (i=0; i<zcount; i++) {
 				rout->ZoneListW2K->ZoneArray[i] = talloc_zero(mem_ctx, struct DNS_RPC_ZONE_W2K);
@@ -1270,10 +1267,7 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 			}
 
 			rout->ZoneList->ZoneArray = talloc_zero_array(mem_ctx, struct DNS_RPC_ZONE_DOTNET *, zcount);
-			if (rout->ZoneList->ZoneArray == NULL) {
-				talloc_free(zlist);
-				return WERR_NOMEM;
-			}
+			W_ERROR_HAVE_NO_MEMORY_AND_FREE(rout->ZoneList->ZoneArray, zlist);
 
 			for (i=0; i<zcount; i++) {
 				rout->ZoneList->ZoneArray[i] = talloc_zero(mem_ctx, struct DNS_RPC_ZONE_DOTNET);
@@ -1310,9 +1304,7 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 			int pcount = 2;
 
 			dplist = talloc_zero_array(mem_ctx, struct DNS_RPC_DP_ENUM *, pcount);
-			if (dplist == NULL) {
-				return WERR_NOMEM;
-			}
+			W_ERROR_HAVE_NO_MEMORY(dplist);
 
 			p = dsstate->partitions;
 			for (i=0; i<pcount; i++) {
