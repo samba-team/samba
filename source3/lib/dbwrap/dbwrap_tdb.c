@@ -188,7 +188,11 @@ static NTSTATUS db_tdb_parse(struct db_context *db, TDB_DATA key,
 	state.private_data = private_data;
 
 	ret = tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_parser, &state);
-	return map_nt_error_from_tdb(ret);
+
+	if (ret != 0) {
+		return map_nt_error_from_tdb(tdb_error(ctx->wtdb->tdb));
+	}
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag)
