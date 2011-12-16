@@ -238,7 +238,7 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 		 tsocket_address_string(dns_conn->conn->remote_address, call)));
 
 	/* skip length header */
-	call->in.data +=4;
+	call->in.data += 4;
 	call->in.length -= 4;
 
 	/* Call dns */
@@ -417,11 +417,11 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 	call->in.data = buf;
 	call->in.length = len;
 
-	DEBUG(10,("Received krb5 UDP packet of length %lu from %s\n",
+	DEBUG(10,("Received DNS UDP packet of length %lu from %s\n",
 		 (long)call->in.length,
 		 tsocket_address_string(call->src, call)));
 
-	/* Call krb5 */
+	/* Call dns_process */
 	status = dns_process(sock->dns_socket->dns, call, &call->in, &call->out);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(call);
