@@ -457,8 +457,3 @@ NTSTATUS auth_generic_authtype_start(struct auth_generic_state *auth_ntlmssp_sta
 
 	return NT_STATUS_OK;
 }
-
-NTSTATUS auth_ntlmssp_start(struct auth_generic_state *auth_ntlmssp_state)
-{
-	return auth_generic_start(auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
-}

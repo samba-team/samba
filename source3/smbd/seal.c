@@ -88,7 +88,7 @@ static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 
 	gensec_want_feature(auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL);
 
-	status = auth_ntlmssp_start(auth_ntlmssp_state);
+	status = auth_generic_start(auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(auth_ntlmssp_state);

@@ -383,7 +383,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 
 		gensec_want_feature(session->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
-		status = auth_ntlmssp_start(session->auth_ntlmssp_state);
+		status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -574,7 +574,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 
 		gensec_want_feature(session->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
-		status = auth_ntlmssp_start(session->auth_ntlmssp_state);
+		status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
 		if (!NT_STATUS_IS_OK(status)) {
 			data_blob_free(&auth);
 			TALLOC_FREE(session);
@@ -653,7 +653,7 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 		if (session->sconn->use_gensec_hook) {
 			status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_SPNEGO);
 		} else {
-			status = auth_ntlmssp_start(session->auth_ntlmssp_state);
+			status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
