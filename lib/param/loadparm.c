@@ -65,6 +65,7 @@
 #include "s3_param.h"
 #include "lib/util/bitmap.h"
 #include "libcli/smb/smb_constants.h"
+#include "source4/dns_server/dns_update.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -1223,6 +1224,14 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL
 	},
+	{
+		.label		= "allow dns updates",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(allow_dns_updates),
+		.special	= NULL,
+		.enum_list	= enum_dns_update_settings
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
 };
@@ -1503,6 +1512,7 @@ FN_GLOBAL_INTEGER(srv_minprotocol, srv_minprotocol)
 FN_GLOBAL_INTEGER(cli_maxprotocol, cli_maxprotocol)
 FN_GLOBAL_INTEGER(cli_minprotocol, cli_minprotocol)
 FN_GLOBAL_BOOL(paranoid_server_security, paranoid_server_security)
+FN_GLOBAL_INTEGER(allow_dns_updates, allow_dns_updates)
 
 FN_GLOBAL_INTEGER(server_signing, server_signing)
 FN_GLOBAL_INTEGER(client_signing, client_signing)
@@ -3361,6 +3371,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
 	lpcfg_do_global_parameter(lp_ctx, "nsupdate command", "/usr/bin/nsupdate -g");
+
+        lpcfg_do_global_parameter(lp_ctx, "allow dns updates", "False");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {

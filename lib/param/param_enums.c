@@ -107,3 +107,11 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{SMB_SIGNING_REQUIRED, "enforced"},
 	{-1, NULL}
 };
+
+/* DNS update options. */
+static const struct enum_list enum_dns_update_settings[] = {
+	{DNS_UPDATE_OFF, "False"},
+	{DNS_UPDATE_ON, "True"},
+	{DNS_UPDATE_SIGNED, "signed"},
+	{-1, NULL}
+};

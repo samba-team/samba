@@ -25,9 +25,12 @@
 #include "librpc/gen_ndr/ndr_dns.h"
 #include "librpc/gen_ndr/ndr_dnsp.h"
 #include <ldb.h>
+#include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
+#include "smbd/service_task.h"
 #include "dns_server/dns_server.h"
+#include "dns_server/dns_update.h"
 
 static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     const struct dns_res_rec *rrec,
@@ -653,7 +656,6 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	const struct dns_server_zone *z;
 	size_t host_part_len = 0;
 	WERROR werror = DNS_ERR(NOT_IMPLEMENTED);
-	bool update_allowed = false;
 
 	if (in->qdcount != 1) {
 		return DNS_ERR(FORMAT_ERROR);
@@ -701,7 +703,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	/* TODO: Check if update is allowed, we probably want "always",
 	 * key-based GSSAPI, key-based bind-style TSIG and "never" as
 	 * smb.conf options. */
-	if (!update_allowed) {
+	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) != DNS_UPDATE_ON) {
 		DEBUG(0, ("Update not allowed."));
 		return DNS_ERR(REFUSED);
 	}
