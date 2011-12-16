@@ -28,11 +28,30 @@ from samba.tests import TestCase
 
 class DNSTest(TestCase):
 
+    def errstr(self, errcode):
+        "Return a readable error code"
+        string_codes = [
+            "OK",
+            "FORMERR",
+            "SERVFAIL",
+            "NXDOMAIN",
+            "NOTIMP",
+            "REFUSED",
+            "YXDOMAIN",
+            "YXRRSET",
+            "NXRRSET",
+            "NOTAUTH",
+            "NOTZONE",
+        ]
+
+        return string_codes[errcode]
+
+
     def assert_dns_rcode_equals(self, packet, rcode):
         "Helper function to check return code"
         p_errcode = packet.operation & 0x000F
         self.assertEquals(p_errcode, rcode, "Expected RCODE %s, got %s" % \
-                            (rcode, p_errcode))
+                            (self.errstr(rcode), self.errstr(p_errcode)))
 
     def assert_dns_opcode_equals(self, packet, opcode):
         "Helper function to check opcode"
