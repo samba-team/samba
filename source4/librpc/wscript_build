@@ -165,7 +165,7 @@ bld.SAMBA_SUBSYSTEM('pyrpc_util',
 
 bld.SAMBA_PYTHON('python_dcerpc',
 	source='rpc/pyrpc.c',
-	public_deps='LIBCLI_SMB samba-util samba-hostconfig dcerpc-samr RPC_NDR_LSA DYNCONFIG pyrpc_util',
+	public_deps='LIBCLI_SMB samba-util samba-hostconfig dcerpc-samr RPC_NDR_LSA DYNCONFIG pyrpc_util gensec',
 	realname='samba/dcerpc/base.so'
 	)
 
