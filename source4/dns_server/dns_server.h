@@ -59,6 +59,11 @@ bool dns_name_match(const char *zone, const char *name, size_t *host_part_len);
 bool dns_name_equal(const char *name1, const char *name2);
 bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 		       struct dnsp_DnssrvRpcRecord *rec2);
+WERROR dns_lookup_records(struct dns_server *dns,
+			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn *dn,
+			  struct dnsp_DnssrvRpcRecord **records,
+			  uint16_t *rec_count);
 WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,

@@ -89,48 +89,22 @@ static WERROR handle_question(struct dns_server *dns,
 			      struct dns_res_rec **answers, uint16_t *ancount)
 {
 	struct dns_res_rec *ans;
-	struct ldb_dn *dn = NULL;
 	WERROR werror;
-	static const char * const attrs[] = { "dnsRecord", NULL};
-	int ret;
-	uint16_t ai = *ancount;
 	unsigned int ri;
-	struct ldb_message *msg = NULL;
 	struct dnsp_DnssrvRpcRecord *recs;
-	struct ldb_message_element *el;
+	uint16_t rec_count, ai = 0;
+	struct ldb_dn *dn = NULL;
 
 	werror = dns_name2dn(dns, mem_ctx, question->name, &dn);
 	W_ERROR_NOT_OK_RETURN(werror);
 
-	ret = dsdb_search_one(dns->samdb, mem_ctx, &msg, dn,
-			      LDB_SCOPE_BASE, attrs, 0, "%s", "(objectClass=dnsNode)");
-	if (ret != LDB_SUCCESS) {
-		return DNS_ERR(NAME_ERROR);
-	}
+	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rec_count);
+	W_ERROR_NOT_OK_RETURN(werror);
 
-	el = ldb_msg_find_element(msg, attrs[0]);
-	if (el == NULL) {
-		return DNS_ERR(NAME_ERROR);
-	}
-
-	recs = talloc_array(mem_ctx, struct dnsp_DnssrvRpcRecord, el->num_values);
-	for (ri = 0; ri < el->num_values; ri++) {
-		struct ldb_val *v = &el->values[ri];
-		enum ndr_err_code ndr_err;
-
-		ndr_err = ndr_pull_struct_blob(v, recs, &recs[ri],
-				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DEBUG(0, ("Failed to grab dnsp_DnssrvRpcRecord\n"));
-			return DNS_ERR(SERVER_FAILURE);
-		}
-	}
-
-	ans = talloc_realloc(mem_ctx, *answers, struct dns_res_rec,
-			     ai + el->num_values);
+	ans = talloc_zero_array(mem_ctx, struct dns_res_rec, rec_count);
 	W_ERROR_HAVE_NO_MEMORY(ans);
 
-	for (ri = 0; ri < el->num_values; ri++) {
+	for (ri = 0; ri < rec_count; ri++) {
 		if ((question->question_type != DNS_QTYPE_ALL) &&
 		    (recs[ri].wType != question->question_type)) {
 			continue;
@@ -138,7 +112,7 @@ static WERROR handle_question(struct dns_server *dns,
 		create_response_rr(question, &recs[ri], &ans, &ai);
 	}
 
-	if (*ancount == ai) {
+	if (ai == 0) {
 		return DNS_ERR(NAME_ERROR);
 	}
 
@@ -168,9 +142,6 @@ WERROR dns_server_process_query(struct dns_server *dns,
 	if (in->questions[0].question_class == DNS_QCLASS_NONE) {
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
-
-	ans = talloc_array(mem_ctx, struct dns_res_rec, 0);
-	W_ERROR_HAVE_NO_MEMORY(ans);
 
 	werror = handle_question(dns, mem_ctx, &in->questions[0], &ans, &num_answers);
 	W_ERROR_NOT_OK_GOTO(werror, query_failed);

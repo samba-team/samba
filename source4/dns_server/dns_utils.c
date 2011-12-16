@@ -163,6 +163,52 @@ bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 	return false;
 }
 
+WERROR dns_lookup_records(struct dns_server *dns,
+			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn *dn,
+			  struct dnsp_DnssrvRpcRecord **records,
+			  uint16_t *rec_count)
+{
+	static const char * const attrs[] = { "dnsRecord", NULL};
+	struct ldb_message_element *el;
+	uint16_t ri;
+	int ret;
+	struct ldb_message *msg = NULL;
+	struct dnsp_DnssrvRpcRecord *recs;
+
+	ret = dsdb_search_one(dns->samdb, mem_ctx, &msg, dn,
+			      LDB_SCOPE_BASE, attrs, 0, "%s", "(objectClass=dnsNode)");
+	if (ret != LDB_SUCCESS) {
+		/* TODO: we need to check if there's a glue record we need to
+		 * create a referral to */
+		return DNS_ERR(NAME_ERROR);
+	}
+
+	el = ldb_msg_find_element(msg, attrs[0]);
+	if (el == NULL) {
+		*records = NULL;
+		*rec_count = 0;
+		return WERR_OK;
+	}
+
+	recs = talloc_zero_array(mem_ctx, struct dnsp_DnssrvRpcRecord, el->num_values);
+	W_ERROR_HAVE_NO_MEMORY(recs);
+	for (ri = 0; ri < el->num_values; ri++) {
+		struct ldb_val *v = &el->values[ri];
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_pull_struct_blob(v, recs, &recs[ri],
+				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("Failed to grab dnsp_DnssrvRpcRecord\n"));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+	}
+	*records = recs;
+	*rec_count = el->num_values;
+	return WERR_OK;
+}
+
 WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,
