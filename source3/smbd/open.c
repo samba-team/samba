@@ -99,7 +99,9 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	if (access_mask == DELETE_ACCESS && S_ISLNK(smb_fname->st.st_ex_mode)) {
+	if (access_mask == DELETE_ACCESS &&
+			VALID_STAT(smb_fname->st) &&
+			S_ISLNK(smb_fname->st.st_ex_mode)) {
 		/* We can always delete a symlink. */
 		DEBUG(10,("smbd_check_access_rights: not checking ACL "
 			"on DELETE_ACCESS on symlink %s.\n",
