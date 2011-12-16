@@ -8007,6 +8007,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 	} else {
 		char *fname = NULL;
+		uint32_t ucf_flags = 0;
 
 		/* set path info */
 		if (total_params < 7) {
@@ -8023,10 +8024,14 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
+		if (INFO_LEVEL_IS_UNIX(info_level)) {
+			ucf_flags |= UCF_UNIX_NAME_LOOKUP;
+		}
+
 		status = filename_convert(req, conn,
 					 req->flags2 & FLAGS2_DFS_PATHNAMES,
 					 fname,
-					 0,
+					 ucf_flags,
 					 NULL,
 					 &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
