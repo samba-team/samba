@@ -344,6 +344,304 @@ done:
 	return WERR_OK;
 }
 
+
+static WERROR handle_one_update(struct dns_server *dns,
+				TALLOC_CTX *mem_ctx,
+				const struct dns_name_question *zone,
+				const struct dns_res_rec *update)
+{
+	struct dnsp_DnssrvRpcRecord *recs = NULL;
+	uint16_t rcount = 0;
+	struct ldb_dn *dn;
+	uint16_t i;
+	WERROR werror;
+	bool needs_add = false;
+
+	DEBUG(1, ("Looking at record: \n"));
+	NDR_PRINT_DEBUG(dns_res_rec, discard_const(update));
+
+	switch (update->rr_type) {
+	case DNS_QTYPE_A:
+		break;
+	case DNS_QTYPE_NS:
+		break;
+	case DNS_QTYPE_CNAME:
+		break;
+	case DNS_QTYPE_SOA:
+		break;
+	case DNS_QTYPE_PTR:
+		break;
+	case DNS_QTYPE_MX:
+		break;
+	case DNS_QTYPE_AAAA:
+		break;
+	case DNS_QTYPE_SRV:
+		break;
+	case DNS_QTYPE_TXT:
+		break;
+	default:
+		return DNS_ERR(NOT_IMPLEMENTED);
+	}
+
+	werror = dns_name2dn(dns, mem_ctx, update->name, &dn);
+	W_ERROR_NOT_OK_RETURN(werror);
+
+	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rcount);
+	if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
+		recs = NULL;
+		rcount = 0;
+		needs_add = true;
+		werror = WERR_OK;
+	}
+	W_ERROR_NOT_OK_RETURN(werror);
+
+	if (update->rr_class == zone->question_class) {
+		if (update->rr_type == DNS_QTYPE_CNAME) {
+			/*
+			 * If there is a record in the directory
+			 * that's not a CNAME, ignore update
+			 */
+			for (i = 0; i < rcount; i++) {
+				if (recs[i].wType != DNS_TYPE_CNAME) {
+					DEBUG(0, ("Skipping update\n"));
+					return WERR_OK;
+				}
+				break;
+			}
+
+			/*
+			 * There should be no entries besides one CNAME record
+			 * per name, so replace everything with the new CNAME
+			 */
+
+			rcount = 1;
+			recs = talloc_realloc(mem_ctx, recs,
+					struct dnsp_DnssrvRpcRecord, rcount);
+			W_ERROR_HAVE_NO_MEMORY(recs);
+
+			werror = dns_rr_to_dnsp(recs, update, &recs[0]);
+			W_ERROR_NOT_OK_RETURN(werror);
+
+			werror = dns_replace_records(dns, mem_ctx, dn,
+						     needs_add, recs, rcount);
+			W_ERROR_NOT_OK_RETURN(werror);
+
+			return WERR_OK;
+		} else {
+			/*
+			 * If there is a CNAME record for this name,
+			 * ignore update
+			 */
+			for (i = 0; i < rcount; i++) {
+				if (recs[i].wType == DNS_TYPE_CNAME) {
+					DEBUG(0, ("Skipping update\n"));
+					return WERR_OK;
+				}
+			}
+		}
+		if (update->rr_type == DNS_QTYPE_SOA) {
+			bool found = false;
+
+			/*
+			 * If the zone has no SOA record?? or update's
+			 * serial number is smaller than existing SOA's,
+			 * ignore update
+			 */
+			for (i = 0; i < rcount; i++) {
+				if (recs[i].wType == DNS_TYPE_SOA) {
+					uint16_t n, o;
+
+					n = update->rdata.soa_record.serial;
+					o = recs[i].data.soa.serial;
+					/*
+					 * TODO: Implement RFC 1982 comparison
+					 * logic for RFC2136
+					 */
+					if (n <= o) {
+						DEBUG(0, ("Skipping update\n"));
+						return WERR_OK;
+					}
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				DEBUG(0, ("Skipping update\n"));
+				return WERR_OK;
+			}
+
+			werror = dns_rr_to_dnsp(mem_ctx, update, &recs[i]);
+			W_ERROR_NOT_OK_RETURN(werror);
+
+			for (i++; i < rcount; i++) {
+				if (recs[i].wType != DNS_TYPE_SOA) {
+					continue;
+				}
+
+				ZERO_STRUCT(recs[i]);
+			}
+
+			werror = dns_replace_records(dns, mem_ctx, dn,
+						     needs_add, recs, rcount);
+			W_ERROR_NOT_OK_RETURN(werror);
+
+			return WERR_OK;
+		}
+
+		recs = talloc_realloc(mem_ctx, recs,
+				struct dnsp_DnssrvRpcRecord, rcount+1);
+		W_ERROR_HAVE_NO_MEMORY(recs);
+
+		werror = dns_rr_to_dnsp(recs, update, &recs[rcount]);
+		W_ERROR_NOT_OK_RETURN(werror);
+
+		for (i = 0; i < rcount; i++) {
+			if (!dns_records_match(&recs[i], &recs[rcount])) {
+				continue;
+			}
+
+			recs[i] = recs[rcount];
+
+			werror = dns_replace_records(dns, mem_ctx, dn,
+						     needs_add, recs, rcount);
+			W_ERROR_NOT_OK_RETURN(werror);
+
+			return WERR_OK;
+		}
+
+		werror = dns_replace_records(dns, mem_ctx, dn,
+					     needs_add, recs, rcount+1);
+		W_ERROR_NOT_OK_RETURN(werror);
+
+		return WERR_OK;
+	} else if (update->rr_class == DNS_QCLASS_ANY) {
+		if (update->rr_type == DNS_QTYPE_ALL) {
+			if (dns_name_equal(update->name, zone->name)) {
+				for (i = 0; i < rcount; i++) {
+
+					if (recs[i].wType == DNS_TYPE_SOA) {
+						continue;
+					}
+
+					if (recs[i].wType == DNS_TYPE_NS) {
+						continue;
+					}
+
+					ZERO_STRUCT(recs[i]);
+				}
+
+			} else {
+				for (i = 0; i < rcount; i++) {
+					ZERO_STRUCT(recs[i]);
+				}
+			}
+
+		} else if (dns_name_equal(update->name, zone->name)) {
+
+			if (update->rr_type == DNS_QTYPE_SOA) {
+				return WERR_OK;
+			}
+
+			if (update->rr_type == DNS_QTYPE_NS) {
+				return WERR_OK;
+			}
+		}
+		for (i = 0; i < rcount; i++) {
+			if (recs[i].wType == update->rr_type) {
+				ZERO_STRUCT(recs[i]);
+			}
+		}
+
+		werror = dns_replace_records(dns, mem_ctx, dn,
+					     needs_add, recs, rcount);
+		W_ERROR_NOT_OK_RETURN(werror);
+
+		return WERR_OK;
+	} else if (update->rr_class == DNS_QCLASS_NONE) {
+		struct dnsp_DnssrvRpcRecord *del_rec;
+
+		if (update->rr_type == DNS_QTYPE_SOA) {
+			return WERR_OK;
+		}
+		if (update->rr_type == DNS_QTYPE_NS) {
+			bool found = false;
+			struct dnsp_DnssrvRpcRecord *ns_rec = talloc(mem_ctx,
+						struct dnsp_DnssrvRpcRecord);
+			W_ERROR_HAVE_NO_MEMORY(ns_rec);
+
+
+			werror = dns_rr_to_dnsp(ns_rec, update, ns_rec);
+			W_ERROR_NOT_OK_RETURN(werror);
+
+			for (i = 0; i < rcount; i++) {
+				if (dns_records_match(ns_rec, &recs[i])) {
+					found = true;
+					break;
+				}
+			}
+			if (found) {
+				return WERR_OK;
+			}
+		}
+
+		del_rec = talloc(mem_ctx, struct dnsp_DnssrvRpcRecord);
+		W_ERROR_HAVE_NO_MEMORY(del_rec);
+
+		werror = dns_rr_to_dnsp(del_rec, update, del_rec);
+		W_ERROR_NOT_OK_RETURN(werror);
+
+		for (i = 0; i < rcount; i++) {
+			if (dns_records_match(del_rec, &recs[i])) {
+				ZERO_STRUCT(recs[i]);
+			}
+		}
+	}
+
+	return WERR_OK;
+}
+
+static WERROR handle_updates(struct dns_server *dns,
+			     TALLOC_CTX *mem_ctx,
+			     const struct dns_name_question *zone,
+			     const struct dns_res_rec *prereqs, uint16_t pcount,
+			     struct dns_res_rec *updates, uint16_t upd_count)
+{
+	struct ldb_dn *zone_dn = NULL;
+	WERROR werror = WERR_OK;
+	int ret;
+	uint16_t ri;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	werror = dns_name2dn(dns, tmp_ctx, zone->name, &zone_dn);
+	W_ERROR_NOT_OK_RETURN(werror);
+
+	ret = ldb_transaction_start(dns->samdb);
+	if (ret != LDB_SUCCESS) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	werror = check_prerequisites(dns, tmp_ctx, zone, prereqs, pcount);
+	W_ERROR_NOT_OK_GOTO(werror, failed);
+
+	DEBUG(0, ("update count is %u\n", upd_count));
+
+	for (ri = 0; ri < upd_count; ri++) {
+		werror = handle_one_update(dns, tmp_ctx, zone,
+					   &updates[ri]);
+		W_ERROR_NOT_OK_GOTO(werror, failed);
+	}
+
+	ldb_transaction_commit(dns->samdb);
+	TALLOC_FREE(tmp_ctx);
+	return WERR_OK;
+
+failed:
+	ldb_transaction_cancel(dns->samdb);
+	TALLOC_FREE(tmp_ctx);
+	return werror;
+
+}
+
 WERROR dns_server_process_update(struct dns_server *dns,
 				 TALLOC_CTX *mem_ctx,
 				 struct dns_name_packet *in,
@@ -408,6 +706,11 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	*update_count = in->nscount;
 	*updates = in->nsrecs;
 	werror = update_prescan(in->questions, *updates, *update_count);
+	W_ERROR_NOT_OK_RETURN(werror);
+
+
+	werror = handle_updates(dns, mem_ctx, in->questions, *prereqs,
+			        *prereq_count, *updates, *update_count);
 	W_ERROR_NOT_OK_RETURN(werror);
 
 	return werror;

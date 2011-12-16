@@ -209,6 +209,80 @@ WERROR dns_lookup_records(struct dns_server *dns,
 	return WERR_OK;
 }
 
+WERROR dns_replace_records(struct dns_server *dns,
+			   TALLOC_CTX *mem_ctx,
+			   struct ldb_dn *dn,
+			   bool needs_add,
+			   const struct dnsp_DnssrvRpcRecord *records,
+			   uint16_t rec_count)
+{
+	struct ldb_message_element *el;
+	uint16_t i;
+	int ret;
+	struct ldb_message *msg = NULL;
+
+	msg = ldb_msg_new(mem_ctx);
+	W_ERROR_HAVE_NO_MEMORY(msg);
+
+	msg->dn = dn;
+
+	ret = ldb_msg_add_empty(msg, "dnsRecord", LDB_FLAG_MOD_REPLACE, &el);
+	if (ret != LDB_SUCCESS) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	el->values = talloc_zero_array(el, struct ldb_val, rec_count);
+	if (rec_count > 0) {
+		W_ERROR_HAVE_NO_MEMORY(el->values);
+	}
+
+	for (i = 0; i < rec_count; i++) {
+		static const struct dnsp_DnssrvRpcRecord zero;
+		struct ldb_val *v = &el->values[el->num_values];
+		enum ndr_err_code ndr_err;
+
+		if (memcmp(&records[i], &zero, sizeof(zero)) == 0) {
+			continue;
+		}
+		ndr_err = ndr_push_struct_blob(v, el->values, &records[i],
+				(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("Failed to grab dnsp_DnssrvRpcRecord\n"));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+		el->num_values++;
+	}
+
+
+	if (el->num_values == 0) {
+		if (needs_add) {
+			return WERR_OK;
+		}
+		/* TODO: Delete object? */
+	}
+
+	if (needs_add) {
+		ret = ldb_msg_add_string(msg, "objectClass", "dnsNode");
+		if (ret != LDB_SUCCESS) {
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		ret = ldb_add(dns->samdb, msg);
+		if (ret != LDB_SUCCESS) {
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		return WERR_OK;
+	}
+
+	ret = ldb_modify(dns->samdb, msg);
+	if (ret != LDB_SUCCESS) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	return WERR_OK;
+}
+
 WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,
