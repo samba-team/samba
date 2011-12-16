@@ -64,6 +64,8 @@ struct rap_call {
 
 	struct ndr_push *ndr_push_param;
 	struct ndr_push *ndr_push_data;
+
+	TALLOC_CTX *pull_mem_ctx;
 	struct ndr_pull *ndr_pull_param;
 	struct ndr_pull *ndr_pull_data;
 };
