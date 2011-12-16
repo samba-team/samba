@@ -1486,7 +1486,10 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 
 	if (get_current_uid(conn) == (uid_t)0) {
 		*p_access_mask |= FILE_GENERIC_ALL;
-	} else if (file_existed) {
+		return NT_STATUS_OK;
+	}
+
+	if (file_existed) {
 		struct security_descriptor *sd;
 		uint32_t access_granted = 0;
 
@@ -1523,9 +1526,10 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 		}
 
 		*p_access_mask = (access_granted | FILE_READ_ATTRIBUTES);
-	} else {
-		*p_access_mask = FILE_GENERIC_ALL;
+		return NT_STATUS_OK;
 	}
+
+	*p_access_mask = FILE_GENERIC_ALL;
 	return NT_STATUS_OK;
 }
 
