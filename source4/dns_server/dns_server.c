@@ -147,7 +147,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		break;
 	case DNS_OPCODE_UPDATE:
 		ret = dns_server_process_update(dns, out_packet, in_packet,
-						answers, num_answers,
+						&answers, &num_answers,
 						&nsrecs,  &num_nsrecs,
 						&additional, &num_additional);
 		break;

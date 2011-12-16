@@ -50,7 +50,7 @@ WERROR dns_server_process_query(struct dns_server *dns,
 WERROR dns_server_process_update(struct dns_server *dns,
 				 TALLOC_CTX *mem_ctx,
 				 struct dns_name_packet *in,
-				 struct dns_res_rec *prereqs,     uint16_t prereq_count,
+				 struct dns_res_rec **prereqs,    uint16_t *prereq_count,
 				 struct dns_res_rec **updates,    uint16_t *update_count,
 				 struct dns_res_rec **additional, uint16_t *arcount);
 

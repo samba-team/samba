@@ -29,62 +29,185 @@
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 
-static WERROR check_prerequsites(struct dns_server *dns,
-				 TALLOC_CTX *mem_ctx,
-				 const struct dns_name_packet *in,
-				 const struct dns_res_rec *prereqs, uint16_t count)
+static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
+			     const struct dns_res_rec *rrec,
+			     struct dnsp_DnssrvRpcRecord *r);
+
+static WERROR check_one_prerequisite(struct dns_server *dns,
+				     TALLOC_CTX *mem_ctx,
+				     const struct dns_name_question *zone,
+				     const struct dns_res_rec *pr,
+				     bool *final_result)
 {
-	const struct dns_name_question *zone;
-	size_t host_part_len = 0;
+	bool match;
+	WERROR werror;
+	struct ldb_dn *dn;
 	uint16_t i;
+	bool found = false;
+	struct dnsp_DnssrvRpcRecord *rec = NULL;
+	struct dnsp_DnssrvRpcRecord *ans;
+	uint16_t acount;
 
-	zone = in->questions;
+	size_t host_part_len = 0;
 
-	for (i = 0; i < count; i++) {
-		const struct dns_res_rec *r = &prereqs[i];
-		bool match;
+	*final_result = true;
 
-		if (r->ttl != 0) {
+	if (pr->ttl != 0) {
+		return DNS_ERR(FORMAT_ERROR);
+	}
+
+	match = dns_name_match(zone->name, pr->name, &host_part_len);
+	if (!match) {
+		return DNS_ERR(NOTZONE);
+	}
+
+	werror = dns_name2dn(dns, mem_ctx, pr->name, &dn);
+	W_ERROR_NOT_OK_RETURN(werror);
+
+	if (pr->rr_class == DNS_QCLASS_ANY) {
+
+		if (pr->length != 0) {
 			return DNS_ERR(FORMAT_ERROR);
 		}
-		match = dns_name_match(zone->name, r->name, &host_part_len);
-		if (!match) {
-			/* TODO: check if we need to echo all prereqs if the
-			 * first fails */
-			return DNS_ERR(NOTZONE);
-		}
-		if (r->rr_class == DNS_QCLASS_ANY) {
-			if (r->length != 0) {
-				return DNS_ERR(FORMAT_ERROR);
-			}
-			if (r->rr_type == DNS_QTYPE_ALL) {
-				/* TODO: Check if zone has at least one RR */
+
+
+		if (pr->rr_type == DNS_QTYPE_ALL) {
+			/*
+			 */
+			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			W_ERROR_NOT_OK_RETURN(werror);
+
+			if (acount == 0) {
 				return DNS_ERR(NAME_ERROR);
-			} else {
-				/* TODO: Check if RR exists of the specified type */
+			}
+		} else {
+			/*
+			 */
+			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
+				return DNS_ERR(NXRRSET);
+			}
+			W_ERROR_NOT_OK_RETURN(werror);
+
+			for (i = 0; i < acount; i++) {
+				if (ans[i].wType == pr->rr_type) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
 				return DNS_ERR(NXRRSET);
 			}
 		}
-		if (r->rr_class == DNS_QCLASS_NONE) {
-			if (r->length != 0) {
-				return DNS_ERR(FORMAT_ERROR);
-			}
-			if (r->rr_type == DNS_QTYPE_ALL) {
-				/* TODO: Return this error if the given name exits in this zone */
+
+		/*
+		 * RFC2136 3.2.5 doesn't actually mention the need to return
+		 * OK here, but otherwise we'd always return a FORMAT_ERROR
+		 * later on. This also matches Microsoft DNS behavior.
+		 */
+		return WERR_OK;
+	}
+
+	if (pr->rr_class == DNS_QCLASS_NONE) {
+		if (pr->length != 0) {
+			return DNS_ERR(FORMAT_ERROR);
+		}
+
+		if (pr->rr_type == DNS_QTYPE_ALL) {
+			/*
+			 */
+			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			if (W_ERROR_EQUAL(werror, WERR_OK)) {
 				return DNS_ERR(YXDOMAIN);
-			} else {
-				/* TODO: Return error if there's an RRset of this type in the zone */
+			}
+		} else {
+			/*
+			 */
+			werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+			if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
+				werror = WERR_OK;
+				ans = NULL;
+				acount = 0;
+			}
+
+			for (i = 0; i < acount; i++) {
+				if (ans[i].wType == pr->rr_type) {
+					found = true;
+					break;
+				}
+			}
+			if (found) {
 				return DNS_ERR(YXRRSET);
 			}
 		}
-		if (r->rr_class == zone->question_class) {
-			/* Check if there's a RR with this */
-			return DNS_ERR(NOT_IMPLEMENTED);
-		} else {
-			return DNS_ERR(FORMAT_ERROR);
+
+		/*
+		 * RFC2136 3.2.5 doesn't actually mention the need to return
+		 * OK here, but otherwise we'd always return a FORMAT_ERROR
+		 * later on. This also matches Microsoft DNS behavior.
+		 */
+		return WERR_OK;
+	}
+
+	if (pr->rr_class != zone->question_class) {
+		return DNS_ERR(FORMAT_ERROR);
+	}
+
+	*final_result = false;
+
+	werror = dns_lookup_records(dns, mem_ctx, dn, &ans, &acount);
+	if (W_ERROR_EQUAL(werror, DNS_ERR(NAME_ERROR))) {
+		return DNS_ERR(NXRRSET);
+	}
+	W_ERROR_NOT_OK_RETURN(werror);
+
+	rec = talloc_zero(mem_ctx, struct dnsp_DnssrvRpcRecord);
+	W_ERROR_HAVE_NO_MEMORY(rec);
+
+	werror = dns_rr_to_dnsp(rec, pr, rec);
+	W_ERROR_NOT_OK_RETURN(werror);
+
+	for (i = 0; i < acount; i++) {
+		if (dns_records_match(rec, &ans[i])) {
+			found = true;
+			break;
 		}
 	}
 
+	if (!found) {
+		return DNS_ERR(NXRRSET);
+	}
+
+	return WERR_OK;
+}
+
+static WERROR check_prerequisites(struct dns_server *dns,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dns_name_question *zone,
+				  const struct dns_res_rec *prereqs, uint16_t count)
+{
+	uint16_t i;
+	WERROR final_error = WERR_OK;
+
+	for (i = 0; i < count; i++) {
+		bool final;
+		WERROR werror;
+
+		werror = check_one_prerequisite(dns, mem_ctx, zone,
+						&prereqs[i], &final);
+		if (!W_ERROR_IS_OK(werror)) {
+			if (final) {
+				return werror;
+			}
+			if (W_ERROR_IS_OK(final_error)) {
+				final_error = werror;
+			}
+		}
+	}
+
+	if (!W_ERROR_IS_OK(final_error)) {
+		return final_error;
+	}
 
 	return WERR_OK;
 }
@@ -123,10 +246,76 @@ static WERROR update_prescan(const struct dns_name_question *zone,
 	return WERR_OK;
 }
 
+static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
+			     const struct dns_res_rec *rrec,
+			     struct dnsp_DnssrvRpcRecord *r)
+{
+	if (rrec->rr_type == DNS_QTYPE_ALL) {
+		return DNS_ERR(FORMAT_ERROR);
+	}
+
+	ZERO_STRUCTP(r);
+
+	r->wType = rrec->rr_type;
+	r->dwTtlSeconds = rrec->ttl;
+	r->rank = DNS_RANK_ZONE;
+	/* TODO: Autogenerate this somehow */
+	r->dwSerial = 110;
+
+	/* If we get QCLASS_ANY, we're done here */
+	if (rrec->rr_class == DNS_QCLASS_ANY) {
+		goto done;
+	}
+
+	switch(rrec->rr_type) {
+	case DNS_QTYPE_A:
+		r->data.ipv4 = talloc_strdup(mem_ctx, rrec->rdata.ipv4_record);
+		W_ERROR_HAVE_NO_MEMORY(r->data.ipv4);
+		break;
+	case DNS_QTYPE_AAAA:
+		r->data.ipv6 = talloc_strdup(mem_ctx, rrec->rdata.ipv6_record);
+		W_ERROR_HAVE_NO_MEMORY(r->data.ipv6);
+		break;
+	case DNS_QTYPE_NS:
+		r->data.ns = talloc_strdup(mem_ctx, rrec->rdata.ns_record);
+		W_ERROR_HAVE_NO_MEMORY(r->data.ns);
+		break;
+	case DNS_QTYPE_CNAME:
+		r->data.cname = talloc_strdup(mem_ctx, rrec->rdata.cname_record);
+		W_ERROR_HAVE_NO_MEMORY(r->data.cname);
+		break;
+	case DNS_QTYPE_SRV:
+		r->data.srv.wPriority = rrec->rdata.srv_record.priority;
+		r->data.srv.wWeight = rrec->rdata.srv_record.weight;
+		r->data.srv.wPort = rrec->rdata.srv_record.port;
+		r->data.srv.nameTarget = talloc_strdup(mem_ctx,
+				rrec->rdata.srv_record.target);
+		W_ERROR_HAVE_NO_MEMORY(r->data.srv.nameTarget);
+		break;
+	case DNS_QTYPE_MX:
+		r->data.mx.wPriority = rrec->rdata.mx_record.preference;
+		r->data.mx.nameTarget = talloc_strdup(mem_ctx,
+				rrec->rdata.mx_record.exchange);
+		W_ERROR_HAVE_NO_MEMORY(r->data.mx.nameTarget);
+		break;
+	case DNS_QTYPE_TXT:
+		r->data.txt = talloc_strdup(mem_ctx, rrec->rdata.txt_record.txt);
+		W_ERROR_HAVE_NO_MEMORY(r->data.txt);
+		break;
+	default:
+		DEBUG(0, ("Got a qytpe of %d\n", rrec->rr_type));
+		return DNS_ERR(NOT_IMPLEMENTED);
+	}
+
+done:
+
+	return WERR_OK;
+}
+
 WERROR dns_server_process_update(struct dns_server *dns,
 				 TALLOC_CTX *mem_ctx,
 				 struct dns_name_packet *in,
-				 struct dns_res_rec *prereqs,     uint16_t prereq_count,
+				 struct dns_res_rec **prereqs,    uint16_t *prereq_count,
 				 struct dns_res_rec **updates,    uint16_t *update_count,
 				 struct dns_res_rec **additional, uint16_t *arcount)
 {
@@ -171,7 +360,10 @@ WERROR dns_server_process_update(struct dns_server *dns,
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
-	werror = check_prerequsites(dns, mem_ctx, in, prereqs, prereq_count);
+	*prereq_count = in->ancount;
+	*prereqs = in->answers;
+	werror = check_prerequisites(dns, mem_ctx, in->questions, *prereqs,
+				     *prereq_count);
 	W_ERROR_NOT_OK_RETURN(werror);
 
 	/* TODO: Check if update is allowed, we probably want "always",
