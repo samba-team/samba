@@ -129,6 +129,10 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netprintqgetinfo(cli->tree, tctx, &r),
 		"smbcli_rap_netprintqgetinfo failed");
+	torture_assert_werr_equal(tctx,
+				  W_ERROR(r.out.status),
+				  WERR_INVALID_PARAMETER,
+				  "smbcli_rap_netprintqgetinfo failed");
 
 	r_enum.in.level = 5;
 	r_enum.in.bufsize = 8192;
@@ -152,6 +156,9 @@ static bool test_netprintqgetinfo(struct torture_context *tctx,
 
 			torture_assert_ntstatus_ok(tctx,
 				smbcli_rap_netprintqgetinfo(cli->tree, tctx, &r),
+				"smbcli_rap_netprintqgetinfo failed");
+			torture_assert_werr_ok(tctx,
+				W_ERROR(r.out.status),
 				"smbcli_rap_netprintqgetinfo failed");
 
 			switch (r.in.level) {
