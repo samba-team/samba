@@ -40,6 +40,59 @@ struct dnsserver_state {
 
 /* Utility functions */
 
+static void dnsserver_reload_zones(struct dnsserver_state *dsstate)
+{
+	struct dnsserver_partition *p;
+	struct dnsserver_zone *zones, *z, *znext, *zmatch;
+	struct dnsserver_zone *old_list, *new_list;
+
+	old_list = dsstate->zones;
+	new_list = NULL;
+
+	for (p = dsstate->partitions; p; p = p->next) {
+		zones = dnsserver_db_enumerate_zones(dsstate, dsstate->samdb, p);
+		if (zones == NULL) {
+			continue;
+		}
+		for (z = zones; z; ) {
+			znext = z->next;
+			zmatch = dnsserver_find_zone(old_list, z->name);
+			if (zmatch == NULL) {
+				/* Missing zone */
+				z->zoneinfo = dnsserver_init_zoneinfo(z, dsstate->serverinfo);
+				if (z->zoneinfo == NULL) {
+					continue;
+				}
+				DLIST_ADD_END(new_list, z, NULL);
+				p->zones_count++;
+				dsstate->zones_count++;
+			} else {
+				/* Existing zone */
+				talloc_free(z);
+				DLIST_REMOVE(old_list, zmatch);
+				DLIST_ADD_END(new_list, zmatch, NULL);
+			}
+			z = znext;
+		}
+	}
+
+	if (new_list == NULL) {
+		return;
+	}
+
+	/* Deleted zones */
+	for (z = old_list; z; ) {
+		znext = z->next;
+		z->partition->zones_count--;
+		dsstate->zones_count--;
+		talloc_free(z);
+		z = znext;
+	}
+
+	dsstate->zones = new_list;
+}
+
+
 static struct dnsserver_state *dnsserver_connect(struct dcesrv_call_state *dce_call)
 {
 	struct dnsserver_state *dsstate;
@@ -1040,7 +1093,55 @@ static WERROR dnsserver_operate_server(struct dnsserver_state *dsstate,
 	} else if (strcasecmp(operation, "WriteDirtyZones") == 0) {
 		valid_operation = true;
 	} else if (strcasecmp(operation, "ZoneCreate") == 0) {
-		valid_operation = true;
+		struct dnsserver_zone *z, *z2;
+		WERROR status;
+
+		z = talloc_zero(mem_ctx, struct dnsserver_zone);
+		W_ERROR_HAVE_NO_MEMORY(z);
+		z->partition = talloc_zero(z, struct dnsserver_partition);
+		W_ERROR_HAVE_NO_MEMORY_AND_FREE(z->partition, z);
+		z->zoneinfo = talloc_zero(z, struct dnsserver_zoneinfo);
+		W_ERROR_HAVE_NO_MEMORY_AND_FREE(z->zoneinfo, z);
+
+		if (typeid == DNSSRV_TYPEID_ZONE_CREATE_W2K) {
+			z->name = talloc_strdup(z, r->ZoneCreateW2K->pszZoneName);
+			z->zoneinfo->dwZoneType = r->ZoneCreateW2K->dwZoneType;
+			z->zoneinfo->fAllowUpdate = r->ZoneCreateW2K->fAllowUpdate;
+			z->zoneinfo->fAging = r->ZoneCreateW2K->fAging;
+			z->zoneinfo->Flags = r->ZoneCreateW2K->dwFlags;
+		} else if (typeid == DNSSRV_TYPEID_ZONE_CREATE_DOTNET) {
+			z->name = talloc_strdup(z, r->ZoneCreateDotNet->pszZoneName);
+			z->zoneinfo->dwZoneType = r->ZoneCreateDotNet->dwZoneType;
+			z->zoneinfo->fAllowUpdate = r->ZoneCreateDotNet->fAllowUpdate;
+			z->zoneinfo->fAging = r->ZoneCreateDotNet->fAging;
+			z->zoneinfo->Flags = r->ZoneCreateDotNet->dwFlags;
+			z->partition->dwDpFlags = r->ZoneCreateDotNet->dwDpFlags;
+		} else if (typeid == DNSSRV_TYPEID_ZONE_CREATE) {
+			z->name = talloc_strdup(z, r->ZoneCreate->pszZoneName);
+			z->zoneinfo->dwZoneType = r->ZoneCreate->dwZoneType;
+			z->zoneinfo->fAllowUpdate = r->ZoneCreate->fAllowUpdate;
+			z->zoneinfo->fAging = r->ZoneCreate->fAging;
+			z->zoneinfo->Flags = r->ZoneCreate->dwFlags;
+			z->partition->dwDpFlags = r->ZoneCreate->dwDpFlags;
+		} else {
+			talloc_free(z);
+			return WERR_DNS_ERROR_INVALID_PROPERTY;
+		}
+
+		z2 = dnsserver_find_zone(dsstate->zones, z->name);
+		if (z2 != NULL) {
+			talloc_free(z);
+			return WERR_DNS_ERROR_ZONE_ALREADY_EXISTS;
+		}
+
+		status = dnsserver_db_create_zone(dsstate->samdb, dsstate->partitions, z,
+						  dsstate->lp_ctx);
+		talloc_free(z);
+
+		if (W_ERROR_IS_OK(status)) {
+			dnsserver_reload_zones(dsstate);
+		}
+		return status;
 	} else if (strcasecmp(operation, "ClearStatistics") == 0) {
 		valid_operation = true;
 	} else if (strcasecmp(operation, "EnlistDirectoryPartition") == 0) {
@@ -1390,6 +1491,14 @@ static WERROR dnsserver_operate_zone(struct dnsserver_state *dsstate,
 	bool valid_operation = false;
 
 	if (strcasecmp(operation, "ResetDwordProperty") == 0) {
+		if (typeid != DNSSRV_TYPEID_NAME_AND_PARAM) {
+			return WERR_DNS_ERROR_INVALID_PROPERTY;
+		}
+
+		/* Ignore property resets */
+		if (strcasecmp(r->NameAndParam->pszNodeName, "AllowUpdate") == 0) {
+			return WERR_OK;
+		}
 		valid_operation = true;
 	} else if (strcasecmp(operation, "ZoneTypeReset") == 0) {
 		valid_operation = true;
@@ -1410,7 +1519,15 @@ static WERROR dnsserver_operate_zone(struct dnsserver_state *dsstate,
 	} else if (strcasecmp(operation, "WriteBackFile") == 0) {
 		valid_operation = true;
 	} else if (strcasecmp(operation, "DeleteZoneFromDs") == 0) {
-		valid_operation = true;
+		WERROR status;
+		if (z == NULL) {
+			return WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST;
+		}
+		status =  dnsserver_db_delete_zone(dsstate->samdb, z);
+		if (W_ERROR_IS_OK(status)) {
+			dnsserver_reload_zones(dsstate);
+		}
+		return status;
 	} else if (strcasecmp(operation, "UpdateZoneFromDs") == 0) {
 		valid_operation = true;
 	} else if (strcasecmp(operation, "ZoneExport") == 0) {

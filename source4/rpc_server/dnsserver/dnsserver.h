@@ -249,5 +249,11 @@ WERROR dnsserver_db_delete_record(TALLOC_CTX *mem_ctx,
 					struct dnsserver_zone *z,
 					const char *node_name,
 					struct DNS_RPC_RECORD *del_record);
+WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
+				struct dnsserver_partition *partitions,
+				struct dnsserver_zone *z,
+				struct loadparm_context *lp_ctx);
+WERROR dnsserver_db_delete_zone(struct ldb_context *samdb,
+				struct dnsserver_zone *z);
 
 #endif /* __DNSSERVER_H__ */
