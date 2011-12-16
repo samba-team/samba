@@ -375,7 +375,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	} else {
 		/* Fall back to NTLMSSP. */
-		status = auth_ntlmssp_prepare(session->sconn->remote_address,
+		status = auth_generic_prepare(session->sconn->remote_address,
 					    &session->auth_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
@@ -564,7 +564,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 	}
 
 	if (session->auth_ntlmssp_state == NULL) {
-		status = auth_ntlmssp_prepare(session->sconn->remote_address,
+		status = auth_generic_prepare(session->sconn->remote_address,
 					    &session->auth_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(status)) {
 			data_blob_free(&auth);
@@ -641,7 +641,7 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 	*out_security_buffer = data_blob_null;
 
 	if (session->auth_ntlmssp_state == NULL) {
-		status = auth_ntlmssp_prepare(session->sconn->remote_address,
+		status = auth_generic_prepare(session->sconn->remote_address,
 					    &session->auth_ntlmssp_state);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);

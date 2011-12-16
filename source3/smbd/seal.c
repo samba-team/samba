@@ -80,7 +80,7 @@ static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 				  struct smb_trans_enc_state *es)
 {
 	struct auth_generic_state *auth_ntlmssp_state;
-	NTSTATUS status = auth_ntlmssp_prepare(remote_address,
+	NTSTATUS status = auth_generic_prepare(remote_address,
 					       &auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);

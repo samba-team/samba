@@ -210,7 +210,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	return nt_status;
 }
 
-NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
+NTSTATUS auth_generic_prepare(const struct tsocket_address *remote_address,
 			      struct auth_generic_state **auth_ntlmssp_state)
 {
 	struct auth_context *auth_context;
@@ -414,7 +414,7 @@ NTSTATUS auth_generic_authtype_start(struct auth_generic_state *auth_ntlmssp_sta
 
 	if (auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
 		/* The caller will then free the auth_ntlmssp_state,
-		 * undoing what was done in auth_ntlmssp_prepare().
+		 * undoing what was done in auth_generic_prepare().
 		 *
 		 * We can't do that logic here, as
 		 * auth_ntlmssp_want_feature() may have been called in
