@@ -60,7 +60,7 @@ struct vacuum_data {
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
 	struct tdb_context *dest_db;
-	trbt_tree_t *delete_tree;
+	trbt_tree_t *delete_list;
 	uint32_t delete_count;
 	struct ctdb_marshall_buffer **vacuum_fetch_list;
 	struct timeval start;
@@ -70,13 +70,13 @@ struct vacuum_data {
 	uint32_t vacuumed;
 	uint32_t copied;
 	uint32_t fast_added_to_vacuum_fetch_list;
-	uint32_t fast_added_to_delete_tree;
+	uint32_t fast_added_to_delete_list;
 	uint32_t fast_deleted;
 	uint32_t fast_skipped;
 	uint32_t fast_error;
 	uint32_t fast_total;
 	uint32_t full_added_to_vacuum_fetch_list;
-	uint32_t full_added_to_delete_tree;
+	uint32_t full_added_to_delete_list;
 	uint32_t full_skipped;
 	uint32_t full_error;
 	uint32_t full_total;
@@ -135,7 +135,7 @@ static int insert_delete_record_data_into_tree(struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int add_record_to_delete_tree(struct vacuum_data *vdata, TDB_DATA key,
+static int add_record_to_delete_list(struct vacuum_data *vdata, TDB_DATA key,
 				     struct ctdb_ltdb_header *hdr)
 {
 	struct ctdb_context *ctdb = vdata->ctdb;
@@ -145,13 +145,13 @@ static int add_record_to_delete_tree(struct vacuum_data *vdata, TDB_DATA key,
 
 	hash = ctdb_hash(&key);
 
-	if (trbt_lookup32(vdata->delete_tree, hash)) {
+	if (trbt_lookup32(vdata->delete_list, hash)) {
 		DEBUG(DEBUG_INFO, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
 		return 0;
 	}
 
 	ret = insert_delete_record_data_into_tree(ctdb, ctdb_db,
-						  vdata->delete_tree,
+						  vdata->delete_list,
 						  hdr, key);
 	if (ret != 0) {
 		return -1;
@@ -252,11 +252,11 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		 * We are both lmaster and dmaster, and the record is empty.
 		 * So we should be able to delete it.
 		 */
-		res = add_record_to_delete_tree(vdata, key, hdr);
+		res = add_record_to_delete_list(vdata, key, hdr);
 		if (res != 0) {
 			vdata->full_error++;
 		} else {
-			vdata->full_added_to_delete_tree++;
+			vdata->full_added_to_delete_list++;
 		}
 	} else {
 		/*
@@ -397,7 +397,7 @@ static int delete_queue_traverse(void *param, void *data)
 
 	/* use header->flags or dd->hdr.flags ?? */
 	if (dd->hdr.flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA) {
-		res = add_record_to_delete_tree(vdata, dd->key, &dd->hdr);
+		res = add_record_to_delete_list(vdata, dd->key, &dd->hdr);
 
 		if (res != 0) {
 			DEBUG(DEBUG_ERR,
@@ -405,7 +405,7 @@ static int delete_queue_traverse(void *param, void *data)
 			       "of records for deletion on lmaster.\n"));
 			vdata->fast_error++;
 		} else {
-			vdata->fast_added_to_delete_tree++;
+			vdata->fast_added_to_delete_list++;
 		}
 	} else {
 		res = tdb_delete(ctdb_db->ltdb->tdb, dd->key);
@@ -594,13 +594,13 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 
 	ctdb->pnn = pnn;
 
-	vdata->fast_added_to_delete_tree = 0;
+	vdata->fast_added_to_delete_list = 0;
 	vdata->fast_added_to_vacuum_fetch_list = 0;
 	vdata->fast_deleted = 0;
 	vdata->fast_skipped = 0;
 	vdata->fast_error = 0;
 	vdata->fast_total = 0;
-	vdata->full_added_to_delete_tree = 0;
+	vdata->full_added_to_delete_list = 0;
 	vdata->full_added_to_vacuum_fetch_list = 0;
 	vdata->full_skipped = 0;
 	vdata->full_error = 0;
@@ -646,14 +646,14 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		       "del[%u] "
 		       "skp[%u] "
 		       "err[%u] "
-		       "adt[%u] "
+		       "adl[%u] "
 		       "avf[%u]\n",
 		       ctdb_db->db_name,
 		       (unsigned)vdata->fast_total,
 		       (unsigned)vdata->fast_deleted,
 		       (unsigned)vdata->fast_skipped,
 		       (unsigned)vdata->fast_error,
-		       (unsigned)vdata->fast_added_to_delete_tree,
+		       (unsigned)vdata->fast_added_to_delete_list,
 		       (unsigned)vdata->fast_added_to_vacuum_fetch_list));
 	}
 
@@ -678,13 +678,13 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 			       "total[%u] "
 			       "skp[%u] "
 			       "err[%u] "
-			       "adt[%u] "
+			       "adl[%u] "
 			       "avf[%u]\n",
 			       ctdb_db->db_name,
 			       (unsigned)vdata->full_total,
 			       (unsigned)vdata->full_skipped,
 			       (unsigned)vdata->full_error,
-			       (unsigned)vdata->full_added_to_delete_tree,
+			       (unsigned)vdata->full_added_to_delete_list,
 			       (unsigned)vdata->full_added_to_vacuum_fetch_list));
 		}
 	}
@@ -748,7 +748,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		 * traverse the tree of all records we want to delete and
 		 * create a blob we can send to the other nodes.
 		 */
-		trbt_traversearray32(vdata->delete_tree, 1,
+		trbt_traversearray32(vdata->delete_list, 1,
 				     delete_marshall_traverse, recs);
 
 		indata.dsize = talloc_get_size(recs->records);
@@ -815,7 +815,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 				recdata.dsize -= sizeof(*rechdr);
 
 				dd = (struct delete_record_data *)trbt_lookup32(
-						vdata->delete_tree,
+						vdata->delete_list,
 						ctdb_hash(&reckey));
 				if (dd != NULL) {
 					/*
@@ -844,7 +844,7 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		 * delete, so we can safely delete them on the
 		 * lmaster as well.
 		 */
-		trbt_traversearray32(vdata->delete_tree, 1,
+		trbt_traversearray32(vdata->delete_list, 1,
 				     delete_record_traverse, vdata);
 	}
 
@@ -866,9 +866,9 @@ static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		uint32_t hash = ctdb_hash(&key);
 		struct delete_record_data *kd;
 		/*
-		 * check if we can ignore this record because it's in the delete_tree
+		 * check if we can ignore this record because it's in the delete_list
 		 */
-		kd = (struct delete_record_data *)trbt_lookup32(vdata->delete_tree, hash);
+		kd = (struct delete_record_data *)trbt_lookup32(vdata->delete_list, hash);
 		/*
 		 * there might be hash collisions so we have to compare the keys here to be sure
 		 */
@@ -1009,9 +1009,9 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	vdata->ctdb = ctdb_db->ctdb;
 	vdata->vacuum_limit = vacuum_limit;
 	vdata->repack_limit = repack_limit;
-	vdata->delete_tree = trbt_create(vdata, 0);
+	vdata->delete_list = trbt_create(vdata, 0);
 	vdata->ctdb_db = ctdb_db;
-	if (vdata->delete_tree == NULL) {
+	if (vdata->delete_list == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		talloc_free(vdata);
 		return -1;
