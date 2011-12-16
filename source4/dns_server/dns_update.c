@@ -227,16 +227,48 @@ static WERROR update_prescan(const struct dns_name_question *zone,
 			return DNS_ERR(NOTZONE);
 		}
 		if (zone->question_class == r->rr_class) {
-			/*TODO: also check for AXFR,MAILA,MAILB  */
 			if (r->rr_type == DNS_QTYPE_ALL) {
 				return DNS_ERR(FORMAT_ERROR);
 			}
+			if (r->rr_type == DNS_QTYPE_AXFR) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_MAILB) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_MAILA) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
 		} else if (r->rr_class == DNS_QCLASS_ANY) {
-			if (r->ttl != 0 || r->length != 0) {
+			if (r->ttl != 0) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->length != 0) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_AXFR) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_MAILB) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_MAILA) {
 				return DNS_ERR(FORMAT_ERROR);
 			}
 		} else if (r->rr_class == DNS_QCLASS_NONE) {
-			if (r->ttl != 0 || r->rr_type == DNS_QTYPE_ALL) {
+			if (r->ttl != 0) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_ALL) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_AXFR) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_MAILB) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_MAILA) {
 				return DNS_ERR(FORMAT_ERROR);
 			}
 		} else {
@@ -373,6 +405,8 @@ WERROR dns_server_process_update(struct dns_server *dns,
 		return DNS_ERR(REFUSED);
 	}
 
+	*update_count = in->nscount;
+	*updates = in->nsrecs;
 	werror = update_prescan(in->questions, *updates, *update_count);
 	W_ERROR_NOT_OK_RETURN(werror);
 

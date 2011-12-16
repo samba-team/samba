@@ -105,9 +105,10 @@ interface dns
 		DNS_QTYPE_NSEC   = 0x002F,
 		DNS_QTYPE_DNSKEY = 0x0030,
 		DNS_QTYPE_DHCID  = 0x0031,
-		DNS_QTYPE_ALL    = 0x00FF,
-		DNS_QTYPE_WINS   = 0xFF01,
-		DNS_QTYPE_WINSR  = 0xFF02
+		DNS_QTYPE_AXFR   = 0x00FC,
+		DNS_QTYPE_MAILB  = 0x00FD,
+		DNS_QTYPE_MAILA  = 0x00FE,
+		DNS_QTYPE_ALL    = 0x00FF
 	} dns_qtype;
 
 	typedef [public] struct {
