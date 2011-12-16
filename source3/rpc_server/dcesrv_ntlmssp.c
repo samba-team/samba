@@ -49,7 +49,7 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 		gensec_want_feature(a->gensec_security, GENSEC_FEATURE_SIGN);
 	}
 	if (do_seal) {
-		/* Always implies both sign and seal for ntlmssp */
+		gensec_want_feature(a->gensec_security, GENSEC_FEATURE_SIGN);
 		gensec_want_feature(a->gensec_security, GENSEC_FEATURE_SEAL);
 	}
 
