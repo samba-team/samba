@@ -1624,11 +1624,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	status = check_name(conn, smb_fname->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	if (!posix_open) {
 		new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
 		if (file_existed) {
@@ -3647,13 +3642,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			goto fail;
 		}
-	}
-
-	/* All file access must go through check_name() */
-
-	status = check_name(conn, smb_fname->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
 	}
 
 	if (stream_name && is_ntfs_default_stream_smb_fname(smb_fname)) {
