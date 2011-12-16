@@ -44,11 +44,6 @@ NTSTATUS gssapi_server_auth_start(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Let's init the gssapi machinery for this connection */
-	/* passing a NULL server name means the server will try
-	 * to accept any connection regardless of the name used as
-	 * long as it can find a decryption key */
-	/* by passing NULL, the code will attempt to set a default
-	 * keytab based on configuration options */
 	status = gse_init_server(mem_ctx, do_sign, do_seal,
 				 add_flags, &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
