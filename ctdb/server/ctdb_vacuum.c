@@ -658,113 +658,16 @@ static int ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 }
 
 /**
- * Vacuum a DB:
- *  - Always do the fast vacuuming run, which traverses
- *    the in-memory delete queue: these records have been
- *    scheduled for deletion.
- *  - Only if explicitly requested, the database is traversed
- *    in order to use the traditional heuristics on empty records
- *    to trigger deletion.
- *    This is done only every VacuumFastPathCount'th vacuuming run.
- *
- * The traverse runs fill two lists:
- *
- * - The delete_list:
- *   This is the list of empty records the current
- *   node is lmaster and dmaster for. These records are later
- *   deleted first on other nodes and then locally.
- *
- *   The fast vacuuming run has a short cut for those records
- *   that have never been migrated with data: these records
- *   are immediately deleted locally, since they have left
- *   no trace on other nodes.
- *
- * - The vacuum_fetch lists
- *   (one for each other lmaster node):
- *   The records in this list are sent for deletion to
- *   their lmaster in a bulk VACUUM_FETCH message.
- *
- *   The lmaster then migrates all these records to itelf
- *   so that they can be vacuumed there.
- *
- * This executes in the child context.
+ * Proces the delete list:
+ * Send the records to delete to all other nodes with the
+ * try_delete_records control.
  */
-static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
-			  struct vacuum_data *vdata,
-			  bool full_vacuum_run)
+static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
+				    struct vacuum_data *vdata)
 {
+	int ret, i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	int ret, i, pnn;
 
-	DEBUG(DEBUG_INFO, (__location__ " Entering %s vacuum run for db "
-			   "%s db_id[0x%08x]\n",
-			   full_vacuum_run ? "full" : "fast",
-			   ctdb_db->db_name, ctdb_db->db_id));
-
-	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &ctdb->vnn_map);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get vnnmap from local node\n"));
-		return ret;
-	}
-
-	pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Unable to get pnn from local node\n"));
-		return -1;
-	}
-
-	ctdb->pnn = pnn;
-
-	vdata->fast_added_to_delete_list = 0;
-	vdata->fast_added_to_vacuum_fetch_list = 0;
-	vdata->fast_deleted = 0;
-	vdata->fast_skipped = 0;
-	vdata->fast_error = 0;
-	vdata->fast_total = 0;
-	vdata->full_added_to_delete_list = 0;
-	vdata->full_added_to_vacuum_fetch_list = 0;
-	vdata->full_skipped = 0;
-	vdata->full_error = 0;
-	vdata->full_total = 0;
-	vdata->delete_count = 0;
-	vdata->delete_left = 0;
-	vdata->delete_remote_error = 0;
-	vdata->delete_local_error = 0;
-	vdata->delete_skipped = 0;
-	vdata->delete_deleted = 0;
-
-	/* the list needs to be of length num_nodes */
-	vdata->vacuum_fetch_list = talloc_array(vdata,
-						struct ctdb_marshall_buffer *,
-						ctdb->num_nodes);
-	if (vdata->vacuum_fetch_list == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		return -1;
-	}
-	for (i = 0; i < ctdb->num_nodes; i++) {
-		vdata->vacuum_fetch_list[i] = (struct ctdb_marshall_buffer *)
-			talloc_zero_size(vdata->vacuum_fetch_list,
-					 offsetof(struct ctdb_marshall_buffer, data));
-		if (vdata->vacuum_fetch_list[i] == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-			return -1;
-		}
-		vdata->vacuum_fetch_list[i]->db_id = ctdb_db->db_id;
-	}
-
-	ctdb_vacuum_db_fast(ctdb_db, vdata);
-
-	ret = ctdb_vacuum_db_full(ctdb_db, vdata, full_vacuum_run);
-	if (ret != 0) {
-		return ret;
-	}
-
-	ret = ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
-	if (ret != 0) {
-		return ret;
-	}
-
-	/* Process all records we can delete (if any) */
 	if (vdata->delete_count > 0) {
 		struct delete_records_list *recs;
 		TDB_DATA indata, outdata;
@@ -891,6 +794,121 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		 */
 		trbt_traversearray32(vdata->delete_list, 1,
 				     delete_record_traverse, vdata);
+	}
+
+	return 0;
+}
+
+/**
+ * Vacuum a DB:
+ *  - Always do the fast vacuuming run, which traverses
+ *    the in-memory delete queue: these records have been
+ *    scheduled for deletion.
+ *  - Only if explicitly requested, the database is traversed
+ *    in order to use the traditional heuristics on empty records
+ *    to trigger deletion.
+ *    This is done only every VacuumFastPathCount'th vacuuming run.
+ *
+ * The traverse runs fill two lists:
+ *
+ * - The delete_list:
+ *   This is the list of empty records the current
+ *   node is lmaster and dmaster for. These records are later
+ *   deleted first on other nodes and then locally.
+ *
+ *   The fast vacuuming run has a short cut for those records
+ *   that have never been migrated with data: these records
+ *   are immediately deleted locally, since they have left
+ *   no trace on other nodes.
+ *
+ * - The vacuum_fetch lists
+ *   (one for each other lmaster node):
+ *   The records in this list are sent for deletion to
+ *   their lmaster in a bulk VACUUM_FETCH message.
+ *
+ *   The lmaster then migrates all these records to itelf
+ *   so that they can be vacuumed there.
+ *
+ * This executes in the child context.
+ */
+static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
+			  struct vacuum_data *vdata,
+			  bool full_vacuum_run)
+{
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	int ret, i, pnn;
+
+	DEBUG(DEBUG_INFO, (__location__ " Entering %s vacuum run for db "
+			   "%s db_id[0x%08x]\n",
+			   full_vacuum_run ? "full" : "fast",
+			   ctdb_db->db_name, ctdb_db->db_id));
+
+	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &ctdb->vnn_map);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get vnnmap from local node\n"));
+		return ret;
+	}
+
+	pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Unable to get pnn from local node\n"));
+		return -1;
+	}
+
+	ctdb->pnn = pnn;
+
+	vdata->fast_added_to_delete_list = 0;
+	vdata->fast_added_to_vacuum_fetch_list = 0;
+	vdata->fast_deleted = 0;
+	vdata->fast_skipped = 0;
+	vdata->fast_error = 0;
+	vdata->fast_total = 0;
+	vdata->full_added_to_delete_list = 0;
+	vdata->full_added_to_vacuum_fetch_list = 0;
+	vdata->full_skipped = 0;
+	vdata->full_error = 0;
+	vdata->full_total = 0;
+	vdata->delete_count = 0;
+	vdata->delete_left = 0;
+	vdata->delete_remote_error = 0;
+	vdata->delete_local_error = 0;
+	vdata->delete_skipped = 0;
+	vdata->delete_deleted = 0;
+
+	/* the list needs to be of length num_nodes */
+	vdata->vacuum_fetch_list = talloc_array(vdata,
+						struct ctdb_marshall_buffer *,
+						ctdb->num_nodes);
+	if (vdata->vacuum_fetch_list == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return -1;
+	}
+	for (i = 0; i < ctdb->num_nodes; i++) {
+		vdata->vacuum_fetch_list[i] = (struct ctdb_marshall_buffer *)
+			talloc_zero_size(vdata->vacuum_fetch_list,
+					 offsetof(struct ctdb_marshall_buffer, data));
+		if (vdata->vacuum_fetch_list[i] == NULL) {
+			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+			return -1;
+		}
+		vdata->vacuum_fetch_list[i]->db_id = ctdb_db->db_id;
+	}
+
+	ctdb_vacuum_db_fast(ctdb_db, vdata);
+
+	ret = ctdb_vacuum_db_full(ctdb_db, vdata, full_vacuum_run);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = ctdb_process_vacuum_fetch_lists(ctdb_db, vdata);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = ctdb_process_delete_list(ctdb_db, vdata);
+	if (ret != 0) {
+		return ret;
 	}
 
 	/* this ensures we run our event queue */
