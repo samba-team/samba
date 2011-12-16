@@ -693,21 +693,22 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	 */
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		TDB_DATA data;
+		struct ctdb_marshall_buffer *vfl = vdata->list[i];
 
 		if (ctdb->nodes[i]->pnn == ctdb->pnn) {
 			continue;
 		}
 
-		if (vdata->list[i]->count == 0) {
+		if (vfl->count == 0) {
 			continue;
 		}
 
 		DEBUG(DEBUG_INFO, ("Found %u records for lmaster %u in '%s'\n",
-				   vdata->list[i]->count, ctdb->nodes[i]->pnn,
+				   vfl->count, ctdb->nodes[i]->pnn,
 				   name));
 
-		data.dsize = talloc_get_size(vdata->list[i]);
-		data.dptr  = (void *)vdata->list[i];
+		data.dsize = talloc_get_size(vfl);
+		data.dptr  = (void *)vfl;
 		if (ctdb_client_send_message(ctdb, ctdb->nodes[i]->pnn, CTDB_SRVID_VACUUM_FETCH, data) != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to send vacuum "
 					  "fetch message to %u\n",
