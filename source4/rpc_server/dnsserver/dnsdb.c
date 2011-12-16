@@ -140,6 +140,105 @@ failed:
 }
 
 
+/* Find DNS partition information */
+struct dnsserver_partition_info *dnsserver_db_partition_info(TALLOC_CTX *mem_ctx,
+							struct ldb_context *samdb,
+							struct dnsserver_partition *p)
+{
+	const char * const attrs[] = { "instanceType", "msDs-masteredBy", NULL };
+	const char * const attrs_none[] = { NULL };
+	struct ldb_result *res;
+	struct ldb_message_element *el;
+	struct ldb_dn *dn;
+	struct dnsserver_partition_info *partinfo;
+	int i, ret, instance_type;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NULL;
+	}
+
+	partinfo = talloc_zero(mem_ctx, struct dnsserver_partition_info);
+	if (partinfo == NULL) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	/* Search for the active replica and state */
+	ret = ldb_search(samdb, tmp_ctx, &res, p->partition_dn, LDB_SCOPE_BASE,
+			attrs, NULL);
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		goto failed;
+	}
+
+	/* Set the state of the partition */
+	instance_type = ldb_msg_find_attr_as_int(res->msgs[0], "instanceType", -1);
+	if (instance_type == -1) {
+		partinfo->dwState = DNS_DP_STATE_UNKNOWN;
+	} else if (instance_type & INSTANCE_TYPE_NC_COMING) {
+		partinfo->dwState = DNS_DP_STATE_REPL_INCOMING;
+	} else if (instance_type & INSTANCE_TYPE_NC_GOING) {
+		partinfo->dwState = DNS_DP_STATE_REPL_OUTGOING;
+	} else {
+		partinfo->dwState = DNS_DP_OKAY;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], "msDs-masteredBy");
+	if (el == NULL) {
+		partinfo->dwReplicaCount = 0;
+		partinfo->ReplicaArray = NULL;
+	} else {
+		partinfo->dwReplicaCount = el->num_values;
+		partinfo->ReplicaArray = talloc_zero_array(partinfo,
+							   struct DNS_RPC_DP_REPLICA *,
+							   el->num_values);
+		if (partinfo->ReplicaArray == NULL) {
+			goto failed;
+		}
+		for (i=0; i<el->num_values; i++) {
+			partinfo->ReplicaArray[i] = talloc_zero(partinfo,
+							struct DNS_RPC_DP_REPLICA);
+			if (partinfo->ReplicaArray[i] == NULL) {
+				goto failed;
+			}
+			partinfo->ReplicaArray[i]->pszReplicaDn = talloc_strdup(
+									partinfo,
+									(const char *)el->values[i].data);
+			if (partinfo->ReplicaArray[i]->pszReplicaDn == NULL) {
+				goto failed;
+			}
+		}
+	}
+	talloc_free(res);
+
+	/* Search for cross-reference object */
+	dn = ldb_dn_copy(tmp_ctx, ldb_get_config_basedn(samdb));
+	if (dn == NULL) {
+		goto failed;
+	}
+
+	ret = ldb_search(samdb, tmp_ctx, &res, dn, LDB_SCOPE_DEFAULT, attrs_none,
+			"(nCName=%s)", ldb_dn_get_linearized(p->partition_dn));
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		goto failed;
+	}
+	partinfo->pszCrDn = talloc_strdup(partinfo, ldb_dn_get_linearized(res->msgs[0]->dn));
+	if (partinfo->pszCrDn == NULL) {
+		goto failed;
+	}
+	talloc_free(res);
+
+	talloc_free(tmp_ctx);
+	return partinfo;
+
+failed:
+	talloc_free(tmp_ctx);
+	talloc_free(partinfo);
+	return NULL;
+}
+
+
 static unsigned int dnsserver_update_soa(TALLOC_CTX *mem_ctx,
 				struct ldb_context *samdb,
 				struct dnsserver_zone *z)

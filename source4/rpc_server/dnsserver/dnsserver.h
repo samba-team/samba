@@ -150,6 +150,14 @@ struct dnsserver_partition {
 };
 
 
+struct dnsserver_partition_info {
+	const char *pszCrDn;
+	uint32_t dwState;
+	uint32_t dwReplicaCount;
+	struct DNS_RPC_DP_REPLICA **ReplicaArray;
+};
+
+
 struct dnsserver_zone {
 	struct dnsserver_zone *prev, *next;
 	struct dnsserver_partition *partition;
@@ -216,6 +224,9 @@ struct dnsserver_partition *dnsserver_db_enumerate_partitions(TALLOC_CTX *mem_ct
 					struct dnsserver_serverinfo *serverinfo,
 					struct ldb_context *samdb);
 struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
+					struct ldb_context *samdb,
+					struct dnsserver_partition *p);
+struct dnsserver_partition_info *dnsserver_db_partition_info(TALLOC_CTX *mem_ctx,
 					struct ldb_context *samdb,
 					struct dnsserver_partition *p);
 WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
