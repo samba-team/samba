@@ -264,6 +264,33 @@ static PyObject *py_gensec_session_info(PyObject *self)
 	return py_session_info;
 }
 
+static PyObject *py_gensec_session_key(PyObject *self)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
+	DATA_BLOB session_key = data_blob_null;
+	static PyObject *session_key_obj = NULL;
+
+	if (security->ops == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "no mechanism selected");
+		return NULL;
+	}
+	mem_ctx = talloc_new(NULL);
+
+	status = gensec_session_key(security, mem_ctx, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	session_key_obj = PyString_FromStringAndSize((const char *)session_key.data,
+						     session_key.length);
+	talloc_free(mem_ctx);
+	return session_key_obj;
+}
+
 static PyObject *py_gensec_start_mech_by_name(PyObject *self, PyObject *args)
 {
 	char *name;
@@ -472,6 +499,8 @@ static PyMethodDef py_gensec_security_methods[] = {
 		"S.start_client(credentials)" },
 	{ "session_info", (PyCFunction)py_gensec_session_info, METH_NOARGS,
 	        "S.session_info() -> info" },
+	{ "session_key", (PyCFunction)py_gensec_session_key, METH_NOARGS,
+	        "S.session_key() -> key" },
 	{ "start_mech_by_name", (PyCFunction)py_gensec_start_mech_by_name, METH_VARARGS,
         "S.start_mech_by_name(name)" },
 	{ "start_mech_by_sasl_name", (PyCFunction)py_gensec_start_mech_by_sasl_name, METH_VARARGS,
