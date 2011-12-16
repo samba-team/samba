@@ -199,7 +199,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
-	struct auth_ntlmssp_state *auth_ntlmssp_state;
+	struct auth_generic_state *auth_ntlmssp_state;
 
 	sconn->use_gensec_hook = false;
 

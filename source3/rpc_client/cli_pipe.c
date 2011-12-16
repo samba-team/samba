@@ -2265,7 +2265,7 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 				  const char *password,
 				  struct pipe_auth_data **presult)
 {
-	struct auth_ntlmssp_state *ntlmssp_ctx;
+	struct auth_generic_state *ntlmssp_ctx;
 	struct pipe_auth_data *result;
 	NTSTATUS status;
 

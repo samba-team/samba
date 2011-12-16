@@ -211,13 +211,13 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 }
 
 NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
-			      struct auth_ntlmssp_state **auth_ntlmssp_state)
+			      struct auth_generic_state **auth_ntlmssp_state)
 {
 	struct auth_context *auth_context;
-	struct auth_ntlmssp_state *ans;
+	struct auth_generic_state *ans;
 	NTSTATUS nt_status;
 
-	ans = talloc_zero(NULL, struct auth_ntlmssp_state);
+	ans = talloc_zero(NULL, struct auth_generic_state);
 	if (!ans) {
 		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -371,7 +371,7 @@ static const struct gensec_security_ops gensec_ntlmssp3_server_ops = {
 	.priority       = GENSEC_NTLMSSP
 };
 
-NTSTATUS auth_generic_start(struct auth_ntlmssp_state *auth_ntlmssp_state, const char *oid)
+NTSTATUS auth_generic_start(struct auth_generic_state *auth_ntlmssp_state, const char *oid)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
 	NTSTATUS status;
@@ -400,7 +400,7 @@ NTSTATUS auth_generic_start(struct auth_ntlmssp_state *auth_ntlmssp_state, const
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_generic_authtype_start(struct auth_ntlmssp_state *auth_ntlmssp_state,
+NTSTATUS auth_generic_authtype_start(struct auth_generic_state *auth_ntlmssp_state,
 				     uint8_t auth_type, uint8_t auth_level)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
@@ -458,7 +458,7 @@ NTSTATUS auth_generic_authtype_start(struct auth_ntlmssp_state *auth_ntlmssp_sta
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state *auth_ntlmssp_state)
+NTSTATUS auth_ntlmssp_start(struct auth_generic_state *auth_ntlmssp_state)
 {
 	return auth_generic_start(auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
 }

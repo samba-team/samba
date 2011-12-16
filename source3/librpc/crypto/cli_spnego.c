@@ -92,7 +92,7 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 				    struct spnego_context **spnego_ctx)
 {
 	struct spnego_context *sp_ctx = NULL;
-	struct auth_ntlmssp_state *auth_ntlmssp_state;
+	struct auth_generic_state *auth_ntlmssp_state;
 	NTSTATUS status;
 
 	status = spnego_context_init(mem_ctx, do_sign, do_seal, &sp_ctx);

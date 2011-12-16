@@ -610,7 +610,7 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	DATA_BLOB blob_out = data_blob_null;
 	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	struct auth_ntlmssp_state *auth_ntlmssp_state;
+	struct auth_generic_state *auth_ntlmssp_state;
 	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_NTLM);
 
 	if (!es) {

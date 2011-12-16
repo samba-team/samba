@@ -70,10 +70,10 @@ NTSTATUS auth_netlogond_init(void);
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
 NTSTATUS auth_ntlmssp_prepare(const struct tsocket_address *remote_address,
-			      struct auth_ntlmssp_state **auth_ntlmssp_state);
-NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state *auth_ntlmssp_state);
-NTSTATUS auth_generic_start(struct auth_ntlmssp_state *auth_ntlmssp_state, const char *oid);
-NTSTATUS auth_generic_authtype_start(struct auth_ntlmssp_state *auth_ntlmssp_state, 
+			      struct auth_generic_state **auth_ntlmssp_state);
+NTSTATUS auth_ntlmssp_start(struct auth_generic_state *auth_ntlmssp_state);
+NTSTATUS auth_generic_start(struct auth_generic_state *auth_ntlmssp_state, const char *oid);
+NTSTATUS auth_generic_authtype_start(struct auth_generic_state *auth_ntlmssp_state, 
 				     uint8_t auth_type, uint8_t auth_level);
 
 

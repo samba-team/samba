@@ -26,21 +26,21 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/param/param.h"
 
-NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
+NTSTATUS auth_ntlmssp_set_username(struct auth_generic_state *ans,
 				   const char *user)
 {
 	cli_credentials_set_username(ans->credentials, user, CRED_SPECIFIED);
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_ntlmssp_set_domain(struct auth_ntlmssp_state *ans,
+NTSTATUS auth_ntlmssp_set_domain(struct auth_generic_state *ans,
 				 const char *domain)
 {
 	cli_credentials_set_domain(ans->credentials, domain, CRED_SPECIFIED);
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
+NTSTATUS auth_ntlmssp_set_password(struct auth_generic_state *ans,
 				   const char *password)
 {
 	cli_credentials_set_password(ans->credentials, password, CRED_SPECIFIED);
@@ -153,15 +153,15 @@ static const struct gensec_security_ops gensec_ntlmssp3_client_ops = {
 	.priority       = GENSEC_NTLMSSP
 };
 
-NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx, struct auth_ntlmssp_state **auth_ntlmssp_state)
+NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_state **auth_ntlmssp_state)
 {
-	struct auth_ntlmssp_state *ans;
+	struct auth_generic_state *ans;
 	NTSTATUS nt_status;
 
 	struct gensec_settings *gensec_settings;
 	struct loadparm_context *lp_ctx;
 
-	ans = talloc_zero(mem_ctx, struct auth_ntlmssp_state);
+	ans = talloc_zero(mem_ctx, struct auth_generic_state);
 	if (!ans) {
 		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -203,7 +203,7 @@ NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx, struct auth_ntlmssp_st
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_ntlmssp_client_start(struct auth_ntlmssp_state *ans)
+NTSTATUS auth_ntlmssp_client_start(struct auth_generic_state *ans)
 {
 	NTSTATUS status;
 

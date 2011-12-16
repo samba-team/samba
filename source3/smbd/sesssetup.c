@@ -420,7 +420,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 static void reply_spnego_ntlmssp(struct smb_request *req,
 				 uint16 vuid,
-				 struct auth_ntlmssp_state **auth_ntlmssp_state,
+				 struct auth_generic_state **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status,
 				 const char *OID,
 				 bool wrap)
@@ -578,7 +578,7 @@ static void reply_spnego_downgrade_to_ntlmssp(struct smb_request *req,
 static void reply_spnego_negotiate(struct smb_request *req,
 				   uint16 vuid,
 				   DATA_BLOB blob1,
-				   struct auth_ntlmssp_state **auth_ntlmssp_state)
+				   struct auth_generic_state **auth_ntlmssp_state)
 {
 	DATA_BLOB secblob;
 	DATA_BLOB chal;
@@ -665,7 +665,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 static void reply_spnego_auth(struct smb_request *req,
 			      uint16 vuid,
 			      DATA_BLOB blob1,
-			      struct auth_ntlmssp_state **auth_ntlmssp_state)
+			      struct auth_generic_state **auth_ntlmssp_state)
 {
 	DATA_BLOB auth = data_blob_null;
 	DATA_BLOB auth_reply = data_blob_null;

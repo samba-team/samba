@@ -35,7 +35,7 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 				   const struct tsocket_address *remote_address,
 				   struct gensec_security **ctx)
 {
-	struct auth_ntlmssp_state *a = NULL;
+	struct auth_generic_state *a = NULL;
 	NTSTATUS status;
 
 	status = auth_ntlmssp_prepare(remote_address, &a);

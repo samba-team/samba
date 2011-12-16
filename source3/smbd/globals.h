@@ -411,7 +411,7 @@ struct smbd_smb2_session {
 	struct smbd_server_connection *sconn;
 	NTSTATUS status;
 	uint64_t vuid;
-	struct auth_ntlmssp_state *auth_ntlmssp_state;
+	struct auth_generic_state *auth_ntlmssp_state;
 	struct auth_session_info *session_info;
 	DATA_BLOB session_key;
 	bool do_signing;

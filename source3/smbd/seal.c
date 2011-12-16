@@ -79,7 +79,7 @@ bool is_encrypted_packet(struct smbd_server_connection *sconn,
 static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 				  struct smb_trans_enc_state *es)
 {
-	struct auth_ntlmssp_state *auth_ntlmssp_state;
+	struct auth_generic_state *auth_ntlmssp_state;
 	NTSTATUS status = auth_ntlmssp_prepare(remote_address,
 					       &auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {

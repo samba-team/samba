@@ -1215,7 +1215,7 @@ typedef struct user_struct {
 
 	struct auth_session_info *session_info;
 
-	struct auth_ntlmssp_state *auth_ntlmssp_state;
+	struct auth_generic_state *auth_ntlmssp_state;
 } user_struct;
 
 /*

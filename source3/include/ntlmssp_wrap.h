@@ -23,7 +23,7 @@
 
 struct gensec_security;
 
-struct auth_ntlmssp_state {
+struct auth_generic_state {
 	/* used only by server implementation */
 	struct auth_context *auth_context;
 	
@@ -34,14 +34,14 @@ struct auth_ntlmssp_state {
 	struct gensec_security *gensec_security;
 };
 
-NTSTATUS auth_ntlmssp_set_username(struct auth_ntlmssp_state *ans,
+NTSTATUS auth_ntlmssp_set_username(struct auth_generic_state *ans,
 				   const char *user);
-NTSTATUS auth_ntlmssp_set_domain(struct auth_ntlmssp_state *ans,
+NTSTATUS auth_ntlmssp_set_domain(struct auth_generic_state *ans,
 				 const char *domain);
-NTSTATUS auth_ntlmssp_set_password(struct auth_ntlmssp_state *ans,
+NTSTATUS auth_ntlmssp_set_password(struct auth_generic_state *ans,
 				   const char *password);
 NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx,
-				     struct auth_ntlmssp_state **_ans);
-NTSTATUS auth_ntlmssp_client_start(struct auth_ntlmssp_state *ans);
+				     struct auth_generic_state **_ans);
+NTSTATUS auth_ntlmssp_client_start(struct auth_generic_state *ans);
 
 #endif /* _NTLMSSP_WRAP_ */
