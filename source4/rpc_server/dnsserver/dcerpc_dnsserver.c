@@ -1914,6 +1914,11 @@ static WERROR dcesrv_DnssrvOperation(struct dcesrv_call_state *dce_call, TALLOC_
 						r->in.dwTypeId,
 						&r->in.pData);
 	} else {
+		z = dnsserver_find_zone(dsstate->zones, r->in.pszZone);
+		if (z == NULL && request_filter == 0) {
+			return WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST;
+		}
+
 		ret = dnsserver_operate_zone(dsstate, mem_ctx, z,
 						request_filter,
 						r->in.pszOperation,
@@ -2116,6 +2121,11 @@ static WERROR dcesrv_DnssrvOperation2(struct dcesrv_call_state *dce_call, TALLOC
 						r->in.dwTypeId,
 						&r->in.pData);
 	} else {
+		z = dnsserver_find_zone(dsstate->zones, r->in.pszZone);
+		if (z == NULL && request_filter == 0) {
+			return WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST;
+		}
+
 		ret = dnsserver_operate_zone(dsstate, mem_ctx, z,
 						request_filter,
 						r->in.pszOperation,
