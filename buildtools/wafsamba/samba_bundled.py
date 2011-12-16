@@ -111,7 +111,7 @@ def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
     if onlyif:
         if not conf.CHECK_PREREQUISITES(onlyif):
             if not conf.LIB_MAY_BE_BUNDLED(libname):
-                Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
+                Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, onlyif))
                 sys.exit(1)
             conf.env[found] = False
             return False
