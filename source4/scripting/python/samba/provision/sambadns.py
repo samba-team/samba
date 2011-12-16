@@ -669,7 +669,7 @@ def tdb_copy(logger, file1, file2):
     """Copy tdb file using tdbbackup utility and rename it
     """
     # Find the location of tdbbackup tool
-    dirs = ["bin", samba.param.bin_dir()]
+    dirs = ["bin", samba.param.bin_dir()] + os.getenv('PATH').split(os.pathsep)
     for d in dirs:
         toolpath = os.path.join(d, "tdbbackup")
         if os.path.exists(toolpath):
