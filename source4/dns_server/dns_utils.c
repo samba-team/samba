@@ -100,6 +100,15 @@ bool dns_name_match(const char *zone, const char *name, size_t *host_part_len)
 	return true;
 }
 
+/* Names are equal if they match and there's nothing left over */
+bool dns_name_equal(const char *name1, const char *name2)
+{
+	size_t host_part_len;
+	bool ret = dns_name_match(name1, name2, &host_part_len);
+
+	return ret && (host_part_len == 0);
+}
+
 WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,

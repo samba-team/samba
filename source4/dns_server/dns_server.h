@@ -55,6 +55,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 
 uint8_t werr_to_dns_err(WERROR werror);
 bool dns_name_match(const char *zone, const char *name, size_t *host_part_len);
+bool dns_name_equal(const char *name1, const char *name2);
 WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,
