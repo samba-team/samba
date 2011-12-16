@@ -37,6 +37,7 @@ struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16_t callno)
 
 	call->callno = callno;
 	call->rcv_paramlen = 4;
+	call->rcv_datalen = 0;
 
 	call->paramdesc = NULL;
 	call->datadesc = NULL;
