@@ -1476,6 +1476,61 @@ static void schedule_defer_open(struct share_mode_lock *lck,
  Work out what access_mask to use from what the client sent us.
 ****************************************************************************/
 
+static NTSTATUS smbd_calculate_maximum_allowed_access(
+	connection_struct *conn,
+	const struct smb_filename *smb_fname,
+	bool file_existed,
+	uint32_t *p_access_mask)
+{
+	uint32_t access_mask = *p_access_mask;
+	NTSTATUS status;
+
+	if (get_current_uid(conn) == (uid_t)0) {
+		access_mask |= FILE_GENERIC_ALL;
+	} else if (file_existed) {
+		struct security_descriptor *sd;
+		uint32_t access_granted = 0;
+
+		status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
+					    (SECINFO_OWNER |
+					     SECINFO_GROUP |
+					     SECINFO_DACL),&sd);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("smbd_calculate_access_mask: "
+				  "Could not get acl on file %s: %s\n",
+				  smb_fname_str_dbg(smb_fname),
+				  nt_errstr(status)));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		/*
+		 * Never test FILE_READ_ATTRIBUTES. se_access_check()
+		 * also takes care of owner WRITE_DAC and READ_CONTROL.
+		 */
+		status = se_access_check(sd,
+					 get_current_nttok(conn),
+					 (access_mask & ~FILE_READ_ATTRIBUTES),
+					 &access_granted);
+
+		TALLOC_FREE(sd);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("smbd_calculate_access_mask: "
+				   "Access denied on file %s: "
+				   "when calculating maximum access\n",
+				   smb_fname_str_dbg(smb_fname)));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		access_mask = (access_granted | FILE_READ_ATTRIBUTES);
+	} else {
+		access_mask = FILE_GENERIC_ALL;
+	}
+	*p_access_mask = access_mask;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				    const struct smb_filename *smb_fname,
 				    bool file_existed,
@@ -1494,48 +1549,12 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 
 	/* Calculate MAXIMUM_ALLOWED_ACCESS if requested. */
 	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
-		if (get_current_uid(conn) == (uid_t)0) {
-			access_mask  |= FILE_GENERIC_ALL;
-		} else if (file_existed) {
 
-			struct security_descriptor *sd;
-			uint32_t access_granted = 0;
+		status = smbd_calculate_maximum_allowed_access(
+			conn, smb_fname, file_existed, &access_mask);
 
-			status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
-					(SECINFO_OWNER |
-					SECINFO_GROUP |
-					SECINFO_DACL),&sd);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10,("smbd_calculate_access_mask: "
-					"Could not get acl on file %s: %s\n",
-					smb_fname_str_dbg(smb_fname),
-					nt_errstr(status)));
-				return NT_STATUS_ACCESS_DENIED;
-			}
-
- 			/*
-			 * Never test FILE_READ_ATTRIBUTES. se_access_check()
-			 * also takes care of owner WRITE_DAC and READ_CONTROL.
-			 */
-			status = se_access_check(sd,
-					get_current_nttok(conn),
-					(access_mask & ~FILE_READ_ATTRIBUTES),
-					&access_granted);
-
-			TALLOC_FREE(sd);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("smbd_calculate_access_mask: "
-					"Access denied on file %s: "
-					"when calculating maximum access\n",
-					smb_fname_str_dbg(smb_fname)));
-				return NT_STATUS_ACCESS_DENIED;
-			}
-
-			access_mask = (access_granted | FILE_READ_ATTRIBUTES);
-		} else {
-			access_mask = FILE_GENERIC_ALL;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		access_mask &= conn->share_access;
