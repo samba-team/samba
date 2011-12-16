@@ -2559,11 +2559,6 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = check_name(conn, smb_dname->base_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	if (!parent_dirname(talloc_tos(), smb_dname->base_name, &parent_dir,
 			    NULL)) {
 		return NT_STATUS_NO_MEMORY;
