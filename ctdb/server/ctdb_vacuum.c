@@ -569,6 +569,52 @@ static void ctdb_vacuum_db_fast(struct ctdb_db_context *ctdb_db,
 }
 
 /**
+ * Full vacuum run:
+ * read-only traverse of the database, looking for records that
+ * might be able to be vacuumed.
+ *
+ * This is not done each time but only every tunable
+ * VacuumFastPathCount times.
+ */
+static int ctdb_vacuum_db_full(struct ctdb_db_context *ctdb_db,
+			       struct vacuum_data *vdata,
+			       bool full_vacuum_run)
+{
+	int ret;
+
+	if (!full_vacuum_run) {
+		return 0;
+	}
+
+	ret = tdb_traverse_read(ctdb_db->ltdb->tdb, vacuum_traverse, vdata);
+	if (ret == -1 || vdata->traverse_error) {
+		DEBUG(DEBUG_ERR, (__location__ " Traverse error in vacuuming "
+				  "'%s'\n", ctdb_db->db_name));
+		return -1;
+	}
+
+	if (vdata->full_total > 0) {
+		DEBUG(DEBUG_INFO,
+		      (__location__
+		       " full vacuuming db traverse statistics: "
+		       "db[%s] "
+		       "total[%u] "
+		       "skp[%u] "
+		       "err[%u] "
+		       "adl[%u] "
+		       "avf[%u]\n",
+		       ctdb_db->db_name,
+		       (unsigned)vdata->full_total,
+		       (unsigned)vdata->full_skipped,
+		       (unsigned)vdata->full_error,
+		       (unsigned)vdata->full_added_to_delete_list,
+		       (unsigned)vdata->full_added_to_vacuum_fetch_list));
+	}
+
+	return 0;
+}
+
+/**
  * Vacuum a DB:
  *  - Always do the fast vacuuming run, which traverses
  *    the in-memory delete queue: these records have been
@@ -666,36 +712,9 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 
 	ctdb_vacuum_db_fast(ctdb_db, vdata);
 
-	/*
-	 * read-only traverse of the database, looking for records that
-	 * might be able to be vacuumed.
-	 *
-	 * This is not done each time but only every tunable
-	 * VacuumFastPathCount times.
-	 */
-	if (full_vacuum_run) {
-		ret = tdb_traverse_read(ctdb_db->ltdb->tdb, vacuum_traverse, vdata);
-		if (ret == -1 || vdata->traverse_error) {
-			DEBUG(DEBUG_ERR,(__location__ " Traverse error in vacuuming '%s'\n", name));
-			return -1;
-		}
-		if (vdata->full_total > 0) {
-			DEBUG(DEBUG_INFO,
-			      (__location__
-			       " full vacuuming db traverse statistics: "
-			       "db[%s] "
-			       "total[%u] "
-			       "skp[%u] "
-			       "err[%u] "
-			       "adl[%u] "
-			       "avf[%u]\n",
-			       ctdb_db->db_name,
-			       (unsigned)vdata->full_total,
-			       (unsigned)vdata->full_skipped,
-			       (unsigned)vdata->full_error,
-			       (unsigned)vdata->full_added_to_delete_list,
-			       (unsigned)vdata->full_added_to_vacuum_fetch_list));
-		}
+	ret = ctdb_vacuum_db_full(ctdb_db, vdata, full_vacuum_run);
+	if (ret != 0) {
+		return ret;
 	}
 
 	/*
