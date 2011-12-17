@@ -62,7 +62,7 @@ _PUBLIC_ int set_blocking(int fd, bool set)
 }
 
 
-_PUBLIC_ bool set_close_on_exec(int fd)
+_PUBLIC_ bool smb_set_close_on_exec(int fd)
 {
 #ifdef FD_CLOEXEC
 	int val;

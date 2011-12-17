@@ -59,7 +59,7 @@ static NTSTATUS unixdom_init(struct socket_context *sock)
 
 	sock->backend_name = "unix";
 
-	set_close_on_exec(sock->fd);
+	smb_set_close_on_exec(sock->fd);
 
 	return NT_STATUS_OK;
 }
@@ -200,7 +200,7 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 		}
 	}
 
-	set_close_on_exec(new_fd);
+	smb_set_close_on_exec(new_fd);
 
 	(*new_sock) = talloc(NULL, struct socket_context);
 	if (!(*new_sock)) {

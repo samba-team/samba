@@ -670,7 +670,7 @@ _PUBLIC_ int set_blocking(int fd, bool set);
 /**
    set close on exec on a file descriptor if available
  **/
-_PUBLIC_ bool set_close_on_exec(int fd);
+_PUBLIC_ bool smb_set_close_on_exec(int fd);
 
 /**
  Sleep for a specified number of milliseconds.
