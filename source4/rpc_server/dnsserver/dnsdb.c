@@ -243,6 +243,7 @@ failed:
 }
 
 
+/* Increment serial number and update timestamp */
 static unsigned int dnsserver_update_soa(TALLOC_CTX *mem_ctx,
 				struct ldb_context *samdb,
 				struct dnsserver_zone *z)
@@ -350,6 +351,7 @@ static WERROR dnsserver_db_do_add_rec(TALLOC_CTX *mem_ctx,
 }
 
 
+/* Add dnsNode record to the database with DNS record */
 WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 					struct ldb_context *samdb,
 					struct dnsserver_zone *z,
@@ -382,6 +384,7 @@ WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 }
 
 
+/* Add a DNS record */
 WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 					struct ldb_context *samdb,
 					struct dnsserver_zone *z,
@@ -472,6 +475,8 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+
+/* Update a DNS record */
 WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 					struct ldb_context *samdb,
 					struct dnsserver_zone *z,
@@ -570,6 +575,8 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+
+/* Delete a DNS record */
 WERROR dnsserver_db_delete_record(TALLOC_CTX *mem_ctx,
 					struct ldb_context *samdb,
 					struct dnsserver_zone *z,
