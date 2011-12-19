@@ -300,15 +300,18 @@ static unsigned int dnsserver_update_soa(TALLOC_CTX *mem_ctx,
 }
 
 
+/* Add DNS record to the database */
 static WERROR dnsserver_db_do_add_rec(TALLOC_CTX *mem_ctx,
 				struct ldb_context *samdb,
 				struct ldb_dn *dn,
+				int num_rec,
 				struct dnsp_DnssrvRpcRecord *rec)
 {
 	struct ldb_message *msg;
 	struct ldb_val v;
 	int ret;
 	enum ndr_err_code ndr_err;
+	int i;
 
 	msg = ldb_msg_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(msg);
@@ -319,16 +322,18 @@ static WERROR dnsserver_db_do_add_rec(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
-	if (rec) {
-		ndr_err = ndr_push_struct_blob(&v, mem_ctx, rec,
-				(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_GENERAL_FAILURE;
-		}
+	if (num_rec > 0 && rec) {
+		for (i=0; i<num_rec; i++) {
+			ndr_err = ndr_push_struct_blob(&v, mem_ctx, &rec[i],
+					(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return WERR_GENERAL_FAILURE;
+			}
 
-		ret = ldb_msg_add_value(msg, "dnsRecord", &v, NULL);
-		if (ret != LDB_SUCCESS) {
-			return WERR_NOMEM;
+			ret = ldb_msg_add_value(msg, "dnsRecord", &v, NULL);
+			if (ret != LDB_SUCCESS) {
+				return WERR_NOMEM;
+			}
 		}
 	}
 
@@ -369,7 +374,7 @@ WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
-	return dnsserver_db_do_add_rec(mem_ctx, samdb, dn, NULL);
+	return dnsserver_db_do_add_rec(mem_ctx, samdb, dn, 0, NULL);
 }
 
 
@@ -414,7 +419,7 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 		dn = dnsserver_name_to_dn(mem_ctx, z, name);
 		W_ERROR_HAVE_NO_MEMORY(dn);
 
-		return dnsserver_db_do_add_rec(mem_ctx, samdb, dn, rec);
+		return dnsserver_db_do_add_rec(mem_ctx, samdb, dn, 1, rec);
 	}
 
 	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
