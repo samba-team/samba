@@ -180,7 +180,7 @@ struct tdb_methods {
 	int (*tdb_read)(struct tdb_context *, tdb_off_t , void *, tdb_len_t , int );
 	int (*tdb_write)(struct tdb_context *, tdb_off_t, const void *, tdb_len_t);
 	void (*next_hash_chain)(struct tdb_context *, uint32_t *);
-	int (*tdb_oob)(struct tdb_context *, tdb_off_t , int );
+	int (*tdb_oob)(struct tdb_context *, tdb_off_t , tdb_len_t, int );
 	int (*tdb_expand_file)(struct tdb_context *, tdb_off_t , tdb_off_t );
 };
 

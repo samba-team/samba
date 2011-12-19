@@ -31,19 +31,29 @@
 /* check for an out of bounds access - if it is out of bounds then
    see if the database has been expanded by someone else and expand
    if necessary 
-   note that "len" is the minimum length needed for the db
 */
-static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
+static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
+		   int probe)
 {
 	struct stat st;
-	if (len <= tdb->map_size)
+	if (len + off < len) {
+		if (!probe) {
+			/* Ensure ecode is set for log fn. */
+			tdb->ecode = TDB_ERR_IO;
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob off %d len %d wrap\n",
+				 (int)off, (int)len));
+		}
+		return -1;
+	}
+
+	if (off + len <= tdb->map_size)
 		return 0;
 	if (tdb->flags & TDB_INTERNAL) {
 		if (!probe) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %d beyond internal malloc size %d\n",
-				 (int)len, (int)tdb->map_size));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %u beyond internal malloc size %u\n",
+				 (int)(off + len), (int)tdb->map_size));
 		}
 		return -1;
 	}
@@ -53,13 +63,22 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 		return -1;
 	}
 
-	if (st.st_size < (size_t)len) {
+	if (st.st_size < (size_t)off + len) {
 		if (!probe) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %d beyond eof at %d\n",
-				 (int)len, (int)st.st_size));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %u beyond eof at %u\n",
+				 (int)(off + len), (int)st.st_size));
 		}
+		return -1;
+	}
+
+	/* Beware >4G files! */
+	if ((tdb_off_t)st.st_size != st.st_size) {
+		/* Ensure ecode is set for log fn. */
+		tdb->ecode = TDB_ERR_IO;
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_oob len %llu too large!\n",
+			 (long long)st.st_size));
 		return -1;
 	}
 
@@ -86,7 +105,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 		return -1;
 	}
 
-	if (tdb->methods->tdb_oob(tdb, off + len, 0) != 0)
+	if (tdb->methods->tdb_oob(tdb, off, len, 0) != 0)
 		return -1;
 
 	if (tdb->map_ptr) {
@@ -134,7 +153,7 @@ void *tdb_convert(void *buf, uint32_t size)
 static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf, 
 		    tdb_len_t len, int cv)
 {
-	if (tdb->methods->tdb_oob(tdb, off + len, 0) != 0) {
+	if (tdb->methods->tdb_oob(tdb, off, len, 0) != 0) {
 		return -1;
 	}
 
@@ -307,7 +326,7 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	}
 
 	/* must know about any previous expansions by another process */
-	tdb->methods->tdb_oob(tdb, tdb->map_size + 1, 1);
+	tdb->methods->tdb_oob(tdb, tdb->map_size, 1, 1);
 
 	/* limit size in order to avoid using up huge amounts of memory for
 	 * in memory tdbs if an oddball huge record creeps in */
@@ -434,7 +453,7 @@ int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 		 * Optimize by avoiding the malloc/memcpy/free, point the
 		 * parser directly at the mmap area.
 		 */
-		if (tdb->methods->tdb_oob(tdb, offset+len, 0) != 0) {
+		if (tdb->methods->tdb_oob(tdb, offset, len, 0) != 0) {
 			return -1;
 		}
 		data.dptr = offset + (unsigned char *)tdb->map_ptr;
@@ -461,7 +480,7 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *r
 		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_rec_read bad magic 0x%x at offset=%d\n", rec->magic, offset));
 		return -1;
 	}
-	return tdb->methods->tdb_oob(tdb, rec->next+sizeof(*rec), 0);
+	return tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 0);
 }
 
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)

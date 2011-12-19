@@ -385,7 +385,17 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		goto fail;
 	}
 
+	/* Beware truncation! */
 	tdb->map_size = st.st_size;
+	if (tdb->map_size != st.st_size) {
+		/* Ensure ecode is set for log fn. */
+		tdb->ecode = TDB_ERR_IO;
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
+			 "len %llu too large!\n", (long long)st.st_size));
+		errno = EIO;
+		goto fail;
+	}
+
 	tdb->device = st.st_dev;
 	tdb->inode = st.st_ino;
 	tdb_mmap(tdb);
