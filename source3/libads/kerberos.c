@@ -831,6 +831,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	int fd;
 	char *realm_upper = NULL;
 	bool result = false;
+	char *aes_enctypes = NULL;
 
 	if (!lp_create_krb5_conf()) {
 		return false;
@@ -870,15 +871,33 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		goto done;
 	}
 
-	/* FIXME: add aes here - gd */
+	aes_enctypes = talloc_strdup(fname, "");
+	if (aes_enctypes == NULL) {
+		goto done;
+	}
+
+#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+	aes_enctypes = talloc_asprintf_append(aes_enctypes, "%s", "aes256-cts-hmac-sha1-96 ");
+	if (aes_enctypes == NULL) {
+		goto done;
+	}
+#endif
+#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+	aes_enctypes = talloc_asprintf_append(aes_enctypes, "%s", "aes128-cts-hmac-sha1-96");
+	if (aes_enctypes == NULL) {
+		goto done;
+	}
+#endif
+
 	file_contents = talloc_asprintf(fname,
 					"[libdefaults]\n\tdefault_realm = %s\n"
-					"\tdefault_tgs_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"\tdefault_tkt_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"\tpreferred_enctypes = RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n\n"
+					"\tdefault_tgs_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
+					"\tdefault_tkt_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
+					"\tpreferred_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n\n"
 					"[realms]\n\t%s = {\n"
 					"\t%s\t}\n",
-					realm_upper, realm_upper, kdc_ip_string);
+					realm_upper, aes_enctypes, aes_enctypes, aes_enctypes,
+					realm_upper, kdc_ip_string);
 
 	if (!file_contents) {
 		goto done;
