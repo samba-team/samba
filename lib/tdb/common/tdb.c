@@ -124,6 +124,19 @@ tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t has
 
 static TDB_DATA _tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
 
+static int tdb_update_hash_cmp(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	TDB_DATA *dbuf = (TDB_DATA *)private_data;
+
+	if (dbuf->dsize != data.dsize) {
+		return -1;
+	}
+	if (memcmp(dbuf->dptr, data.dptr, data.dsize) != 0) {
+		return -1;
+	}
+	return 0;
+}
+
 /* update an entry in place - this only works if the new data size
    is <= the old data size and the key exists.
    on failure return -1.
@@ -141,18 +154,9 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 	 * surprisingly common (eg. with a ldb re-index). */
 	if (rec.key_len == key.dsize && 
 	    rec.data_len == dbuf.dsize &&
-	    rec.full_hash == hash) {
-		TDB_DATA data = _tdb_fetch(tdb, key);
-		if (data.dsize == dbuf.dsize &&
-		    memcmp(data.dptr, dbuf.dptr, data.dsize) == 0) {
-			if (data.dptr) {
-				free(data.dptr);
-			}
-			return 0;
-		}
-		if (data.dptr) {
-			free(data.dptr);
-		}
+	    rec.full_hash == hash &&
+	    tdb_parse_record(tdb, key, tdb_update_hash_cmp, &dbuf) == 0) {
+		return 0;
 	}
 
 	/* must be long enough key, data and tailer */
