@@ -1500,7 +1500,7 @@ static const struct {
 
 	/* These NDR encoded things we want to be able to read with --show-binary */
 	{ "dnsRecord",				LDB_SYNTAX_SAMBA_DNSRECORD },
-	{ "dnsProperty",			LDB_SYNTAX_SAMBA_DNSPROPERTY },
+	{ "dNSProperty",			LDB_SYNTAX_SAMBA_DNSPROPERTY },
 	{ "supplementalCredentials",		LDB_SYNTAX_SAMBA_SUPPLEMENTALCREDENTIALS},
 	{ "partialAttributeSet",		LDB_SYNTAX_SAMBA_PARTIALATTRIBUTESET}
 };
