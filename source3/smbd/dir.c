@@ -201,7 +201,7 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
 					      dptr->wcard, dptr->attr))) {
 					DEBUG(4,("dptr_get: Failed to open %s (%s)\n",dptr->path,
 						strerror(errno)));
-					return False;
+					return NULL;
 				}
 			}
 			DLIST_PROMOTE(sconn->searches.dirptrs,dptr);

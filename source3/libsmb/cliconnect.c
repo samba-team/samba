@@ -3037,7 +3037,7 @@ struct cli_state *get_ipc_connect_master_ip_bcast(TALLOC_CTX *ctx,
         if (!NT_STATUS_IS_OK(status)) {
                 DEBUG(99, ("No master browsers responded: %s\n",
 			   nt_errstr(status)));
-                return False;
+                return NULL;
         }
 
 	for (i = 0; i < count; i++) {

@@ -205,7 +205,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 	if (!netsamlogon_cache_init()) {
 		DEBUG(0,("netsamlogon_cache_get: cannot open %s for write!\n",
 			NETSAMLOGON_TDB));
-		return false;
+		return NULL;
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */

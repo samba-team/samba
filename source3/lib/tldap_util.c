@@ -75,7 +75,7 @@ char *tldap_talloc_single_attribute(struct tldap_message *msg,
 	size_t len;
 
 	if (!tldap_get_single_valueblob(msg, attribute, &val)) {
-		return false;
+		return NULL;
 	}
 	if (!convert_string_talloc(mem_ctx, CH_UTF8, CH_UNIX,
 				   val.data, val.length,

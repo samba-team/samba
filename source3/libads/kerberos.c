@@ -413,7 +413,7 @@ char* kerberos_secrets_fetch_des_salt( void )
 
 	if ( (key = des_salt_key()) == NULL ) {
 		DEBUG(0,("kerberos_secrets_fetch_des_salt: failed to generate key!\n"));
-		return False;
+		return NULL;
 	}
 
 	salt = (char*)secrets_fetch( key, NULL );

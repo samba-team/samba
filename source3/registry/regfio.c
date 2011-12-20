@@ -522,7 +522,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 	/* remember that the record_size is in the 4 bytes preceeding the record itself */
 
 	if ( !prs_set_offset( &hbin->ps, file->data_offset+HBIN_HDR_SIZE-sizeof(uint32) ) )
-		return False;
+		return NULL;
 
 	record_size = 0;
 	header = 0;
@@ -545,12 +545,12 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 		}
 
 		if ( !prs_set_offset( &hbin->ps, curr_off) )
-			return False;
+			return NULL;
 
 		if ( !prs_uint32( "rec_size", &hbin->ps, 0, &record_size ) )
-			return False;
+			return NULL;
 		if ( !prs_uint32( "header", &hbin->ps, 0, &header ) )
-			return False;
+			return NULL;
 		
 		SMB_ASSERT( record_size != 0 );
 
@@ -574,7 +574,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 	DEBUG(10,("read_hbin_block: free space offset == 0x%x\n", hbin->free_off));
 
 	if ( !prs_set_offset( &hbin->ps, file->data_offset+HBIN_HDR_SIZE )  )
-		return False;
+		return NULL;
 	
 	return hbin;
 }
@@ -1599,7 +1599,7 @@ done:
 	   for the record */
 
 	if ( !prs_uint32("allocated_size", &hbin->ps, 0, &size) )
-		return False;
+		return NULL;
 
 	update_free_space( hbin, size );
 	
@@ -1812,7 +1812,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 		TYPESAFE_QSORT(parent->subkeys.hashes, parent->subkey_index, hashrec_cmp);
 
 		if ( !hbin_prs_lf_records( "lf_rec", parent->subkeys.hbin, 0, parent ) )
-			return False;
+			return NULL;
 	}
 
 	/* write the security descriptor */
@@ -1964,11 +1964,11 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 	
 	prs_set_offset( &nk->hbin->ps, nk->hbin_off );
 	if ( !prs_nk_rec( "nk_rec", &nk->hbin->ps, 0, nk ) )
-		return False;
+		return NULL;
 
 	if ( nk->num_values ) {
 		if ( !hbin_prs_vk_records( "vk_records", vlist_hbin, 0, nk, file ) )
-			return False;
+			return NULL;
 	}
 
 

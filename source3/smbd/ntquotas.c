@@ -239,7 +239,7 @@ void *init_quota_handle(TALLOC_CTX *mem_ctx)
 	SMB_NTQUOTA_HANDLE *qt_handle;
 
 	if (!mem_ctx)
-		return False;
+		return NULL;
 
 	qt_handle = talloc_zero(mem_ctx,SMB_NTQUOTA_HANDLE);
 	if (qt_handle==NULL) {

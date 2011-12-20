@@ -4603,7 +4603,7 @@ struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const cha
 	DEBUG(10,("wcache_tdc_fetch_domain: Searching for domain %s\n", name));
 
 	if ( !init_wcache() ) {
-		return false;
+		return NULL;
 	}
 
 	/* fetch the list */
@@ -4653,7 +4653,7 @@ struct winbindd_tdc_domain*
 		  sid_string_dbg(sid)));
 
 	if (!init_wcache()) {
-		return false;
+		return NULL;
 	}
 
 	/* fetch the list */
