@@ -637,6 +637,89 @@ class cmd_zonelist(Command):
         print_enumzones(self.outf, typeid, res)
 
 
+class cmd_zonecreate(Command):
+    """Create a zone"""
+
+    synopsis = '%prog <server> <zone> [options]'
+
+    takes_args = [ 'server', 'zone' ]
+
+    takes_options = [
+        Option('--client-version', help='Client Version',
+                default='longhorn', metavar='w2k|dotnet|longhorn',
+                choices=['w2k','dotnet','longhorn'], dest='cli_ver')
+    ]
+
+    def run(self, server, zone, cli_ver, sambaopts=None, credopts=None,
+            versionopts=None):
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp)
+        dns_conn = dns_connect(server, self.lp, self.creds)
+
+        zone = zone.lower()
+
+        client_version = dns_client_version(cli_ver)
+        if client_version == dnsserver.DNS_CLIENT_VERSION_W2K:
+            typeid = dnsserver.DNSSRV_TYPEID_ZONE_CREATE_W2K
+            zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_W2K()
+            zone_create_info.pszZoneName = zone
+            zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
+            zone_create_info.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_SECURE
+            zone_create_info.fAging = 0
+        elif client_version == dnsserver.DNS_CLIENT_VERSION_DOTNET:
+            typeid = dnsserver.DNSSRV_TYPEID_ZONE_CREATE_DOTNET
+            zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_DOTNET()
+            zone_create_info.pszZoneName = zone
+            zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
+            zone_create_info.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_SECURE
+            zone_create_info.fAging = 0
+            zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
+        else:
+            typeid = dnsserver.DNSSRV_TYPEID_ZONE_CREATE
+            zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_LONGHORN()
+            zone_create_info.pszZoneName = zone
+            zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
+            zone_create_info.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_SECURE
+            zone_create_info.fAging = 0
+            zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
+
+        res = dns_conn.DnssrvOperation2(client_version,
+                                        0,
+                                        server,
+                                        None,
+                                        0,
+                                        'ZoneCreate',
+                                        typeid,
+                                        zone_create_info)
+        self.outf.write('Zone %s created successfully\n' % zone)
+
+
+class cmd_zonedelete(Command):
+    """Delete a zone"""
+
+    synopsis = '%prog <server> <zone> [options]'
+
+    takes_args = [ 'server', 'zone' ]
+
+    def run(self, server, zone, sambaopts=None, credopts=None, versionopts=None):
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp)
+        dns_conn = dns_connect(server, self.lp, self.creds)
+
+        zone = zone.lower()
+        res = dns_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                        0,
+                                        server,
+                                        zone,
+                                        0,
+                                        'DeleteZoneFromDs',
+                                        dnsserver.DNSSRV_TYPEID_NULL,
+                                        None)
+        self.outf.write('Zone %s delete successfully\n' % zone)
+
+
 class cmd_query(Command):
     """Query a name."""
 
@@ -887,6 +970,8 @@ class cmd_dns(SuperCommand):
     subcommands['serverinfo'] = cmd_serverinfo()
     subcommands['zoneinfo'] = cmd_zoneinfo()
     subcommands['zonelist'] = cmd_zonelist()
+    subcommands['zonecreate'] = cmd_zonecreate()
+    subcommands['zonedelete'] = cmd_zonedelete()
     subcommands['query'] = cmd_query()
     subcommands['roothints'] = cmd_roothints()
     subcommands['add'] = cmd_add_record()
