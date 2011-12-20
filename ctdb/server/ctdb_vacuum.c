@@ -741,6 +741,17 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 			 * outdata contains the list of records coming back
 			 * from the node: These are the records that the
 			 * remote node could not delete.
+			 *
+			 * NOTE: There is a problem here:
+			 *
+			 * When a node failed to delete the record, but
+			 * others succeeded, we may have created gaps in the
+			 * history of the record. Hence when a node dies, an
+			 * closed file handle might be resurrected or an open
+			 * file handle might be lost, leading to blocked access
+			 * or data corruption.
+			 *
+			 * TODO: This needs to be fixed!
 			 */
 			records = (struct ctdb_marshall_buffer *)outdata.dptr;
 			rec = (struct ctdb_rec_data *)&records->data[0];
