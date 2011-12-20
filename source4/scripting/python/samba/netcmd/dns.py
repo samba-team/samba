@@ -861,7 +861,7 @@ class cmd_add_record(Command):
                                         name,
                                         add_rec_buf,
                                         None)
-        self.outf.write('Record added succefully\n')
+        self.outf.write('Record added successfully\n')
 
 
 class cmd_update_record(Command):
