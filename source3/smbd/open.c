@@ -69,7 +69,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	NTSTATUS status;
 	struct security_descriptor *sd = NULL;
 	uint32_t rejected_share_access;
-	uint32_t rejected_mask = 0;
+	uint32_t rejected_mask = access_mask;
 
 	rejected_share_access = access_mask & ~(conn->share_access);
 
@@ -119,6 +119,11 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 			"on %s: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status)));
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			goto access_denied;
+		}
+
 		return status;
 	}
 
@@ -154,6 +159,9 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	}
 
 	/* Here we know status == NT_STATUS_ACCESS_DENIED. */
+
+  access_denied:
+
 	if ((access_mask & FILE_WRITE_ATTRIBUTES) &&
 			(rejected_mask & FILE_WRITE_ATTRIBUTES) &&
 			(lp_map_readonly(SNUM(conn)) ||
