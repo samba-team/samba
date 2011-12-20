@@ -59,6 +59,57 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                 'ServerInfo')
         self.assertEquals(dnsserver.DNSSRV_TYPEID_SERVER_INFO, typeid)
 
+    def test_operation2(self):
+        client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
+        rev_zone = '1.168.192.in-addr.arpa'
+
+        zone_create = dnsserver.DNS_RPC_ZONE_CREATE_INFO_LONGHORN()
+        zone_create.pszZoneName = rev_zone
+        zone_create.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
+        zone_create.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_SECURE
+        zone_create.fAging = 0
+        zone_create.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
+
+        # Create zone
+        self.conn.DnssrvOperation2(client_version,
+                                    0,
+                                    self.server,
+                                    None,
+                                    0,
+                                    'ZoneCreate',
+                                    dnsserver.DNSSRV_TYPEID_ZONE_CREATE,
+                                    zone_create)
+
+        request_filter = (dnsserver.DNS_ZONE_REQUEST_REVERSE |
+                            dnsserver.DNS_ZONE_REQUEST_PRIMARY)
+        typeid, zones = self.conn.DnssrvComplexOperation2(client_version,
+                                                            0,
+                                                            self.server,
+                                                            None,
+                                                            'EnumZones',
+                                                            dnsserver.DNSSRV_TYPEID_DWORD,
+                                                            request_filter)
+        self.assertEquals(1, zones.dwZoneCount)
+
+        # Delete zone
+        self.conn.DnssrvOperation2(client_version,
+                                    0,
+                                    self.server,
+                                    rev_zone,
+                                    0,
+                                    'DeleteZoneFromDs',
+                                    dnsserver.DNSSRV_TYPEID_NULL,
+                                    None)
+
+        typeid, zones = self.conn.DnssrvComplexOperation2(client_version,
+                                                            0,
+                                                            self.server,
+                                                            None,
+                                                            'EnumZones',
+                                                            dnsserver.DNSSRV_TYPEID_DWORD,
+                                                            request_filter)
+        self.assertEquals(0, zones.dwZoneCount)
+
 
     def test_complexoperation2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
