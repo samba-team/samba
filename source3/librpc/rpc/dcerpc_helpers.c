@@ -267,6 +267,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 {
 	size_t max_len;
 	size_t mod_len;
+	struct gensec_security *gensec_security;
 	struct schannel_state *schannel_auth;
 	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
@@ -315,7 +316,9 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 		}
 		switch (auth_type) {
 		case SPNEGO_NTLMSSP:
-			*auth_len = NTLMSSP_SIG_SIZE;
+			gensec_security = talloc_get_type_abort(auth_ctx,
+								struct gensec_security);
+			*auth_len = gensec_sig_size(gensec_security, max_len);
 			break;
 
 		case SPNEGO_KRB5:
@@ -334,7 +337,9 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 		break;
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		*auth_len = NTLMSSP_SIG_SIZE;
+		gensec_security = talloc_get_type_abort(auth->auth_ctx,
+							struct gensec_security);
+		*auth_len = gensec_sig_size(gensec_security, max_len);
 		break;
 
 	case DCERPC_AUTH_TYPE_SCHANNEL:
