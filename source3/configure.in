@@ -6370,6 +6370,8 @@ case "$host_os" in
 		WINBIND_NSS="../nsswitch/WINBIND"
 		WINBIND_WINS_NSS=""
 		;;
+	*darwin*)
+		;;
 	*)
 		HAVE_WINBIND=no
 		winbind_no_reason=", unsupported on $host_os"
