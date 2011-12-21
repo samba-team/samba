@@ -584,7 +584,7 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
  Handle an NTLMSSP bind auth.
 *******************************************************************/
 
-static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
+static bool pipe_auth_generic_bind(struct pipes_struct *p,
 				   TALLOC_CTX *mem_ctx,
 				   struct dcerpc_auth *auth_info,
 				   DATA_BLOB *response)
@@ -592,25 +592,15 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 	struct gensec_security *gensec_security = NULL;
         NTSTATUS status;
 
-	if (strncmp((char *)auth_info->credentials.data, "NTLMSSP", 7) != 0) {
-		DEBUG(0, ("Failed to read NTLMSSP in blob\n"));
-                return false;
-        }
-
-	/* We have an NTLMSSP blob. */
-	status = auth_generic_server_start(p,
-					   OID_NTLMSSP,
-					   (auth_info->auth_level ==
-						DCERPC_AUTH_LEVEL_INTEGRITY),
-					   (auth_info->auth_level ==
-						DCERPC_AUTH_LEVEL_PRIVACY),
-					   true,
-					   &auth_info->credentials,
-					   response,
-					   p->remote_address,
-					   &gensec_security);
+	status = auth_generic_server_authtype_start(p,
+						    auth_info->auth_type,
+						    auth_info->auth_level,
+						    &auth_info->credentials,
+						    response,
+						    p->remote_address,
+						    &gensec_security);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
-		DEBUG(0, (__location__ ": auth_ntlmssp_start failed: %s\n",
+		DEBUG(0, (__location__ ": auth_generic_server_authtype_start failed: %s\n",
 			  nt_errstr(status)));
 		return false;
 	}
@@ -619,9 +609,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
 	talloc_steal(mem_ctx, response->data);
 
 	p->auth.auth_ctx = gensec_security;
-	p->auth.auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
-
-	DEBUG(10, (__location__ ": NTLMSSP auth started\n"));
+	p->auth.auth_type = auth_info->auth_type;
 
 	return true;
 }
@@ -1000,8 +988,8 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 
 		switch (auth_type) {
 		case DCERPC_AUTH_TYPE_NTLMSSP:
-			if (!pipe_ntlmssp_auth_bind(p, pkt,
-						&auth_info, &auth_resp)) {
+			if (!pipe_auth_generic_bind(p, pkt,
+						    &auth_info, &auth_resp)) {
 				goto err_exit;
 			}
 			assoc_gid = 0x7a77;

@@ -71,7 +71,49 @@ NTSTATUS auth_generic_server_start(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	/* steal ntlmssp context too */
+	/* steal gensec context too */
+	*ctx = talloc_move(mem_ctx, &a->gensec_security);
+
+	status = NT_STATUS_OK;
+
+done:
+	TALLOC_FREE(a);
+
+	return status;
+}
+
+NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
+					    uint8_t auth_type, uint8_t auth_level,
+					    DATA_BLOB *token_in,
+					    DATA_BLOB *token_out,
+					    const struct tsocket_address *remote_address,
+					    struct gensec_security **ctx)
+{
+	struct auth_generic_state *a = NULL;
+	NTSTATUS status;
+
+	status = auth_generic_prepare(remote_address, &a);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, (__location__ ": auth_generic_prepare failed: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	status = auth_generic_authtype_start(a, auth_type, auth_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, (__location__ ": auth_generic_start failed: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	status = gensec_update(a->gensec_security, mem_ctx, NULL, *token_in, token_out);
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DEBUG(2, (__location__ ": gensec_update failed: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	/* steal gensec context too */
 	*ctx = talloc_move(mem_ctx, &a->gensec_security);
 
 	status = NT_STATUS_OK;
