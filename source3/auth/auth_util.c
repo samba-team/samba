@@ -520,7 +520,17 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 							      server_info->session_key.length);
 	}
 
-	if (session_info->security_token) {
+	/* We need to populate session_info->info with the information found in server_info->info3 */
+	status = make_user_info_SamBaseInfo(session_info, "", &server_info->info3->base,
+					    server_info->guest == false,
+					    &session_info->info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("conversion of info3 into auth_user_info failed!\n"));
+		TALLOC_FREE(session_info);
+		return status;
+	}
+
+	if (server_info->security_token) {
 		/* Just copy the token, it has already been finalised
 		 * (nasty hack to support a cached guest session_info,
 		 * and a possible strategy for auth_samba4 to pass in
@@ -543,16 +553,6 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 		*session_info_out = session_info;
 		return NT_STATUS_OK;
-	}
-
-	/* We need to populate session_info->info with the information found in server_info->info3 */
-	status = make_user_info_SamBaseInfo(session_info, "", &server_info->info3->base,
-					    server_info->guest == false,
-					    &session_info->info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("conversion of info3 into auth_user_info failed!\n"));
-		TALLOC_FREE(session_info);
-		return status;
 	}
 
 	/*
