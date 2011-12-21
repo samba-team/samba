@@ -760,7 +760,7 @@ RPC_CONFIG = rpc_server/rpc_config.o
 
 RPC_SERVICE = rpc_server/rpc_server.o
 
-RPC_CRYPTO = rpc_server/dcesrv_ntlmssp.o \
+RPC_CRYPTO = rpc_server/dcesrv_auth_generic.o \
 		rpc_server/dcesrv_gssapi.o \
 		rpc_server/dcesrv_spnego.o
 

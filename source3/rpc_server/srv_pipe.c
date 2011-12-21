@@ -33,7 +33,7 @@
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
-#include "dcesrv_ntlmssp.h"
+#include "dcesrv_auth_generic.h"
 #include "dcesrv_gssapi.h"
 #include "dcesrv_spnego.h"
 #include "rpc_server.h"
