@@ -82,7 +82,7 @@ done:
 	return status;
 }
 
-NTSTATUS ntlmssp_server_step(struct gensec_security *gensec_security,
+NTSTATUS auth_generic_server_step(struct gensec_security *gensec_security,
 			     TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *token_in,
 			     DATA_BLOB *token_out)
@@ -97,7 +97,7 @@ NTSTATUS ntlmssp_server_step(struct gensec_security *gensec_security,
 	return status;
 }
 
-NTSTATUS ntlmssp_server_check_flags(struct gensec_security *gensec_security,
+NTSTATUS auth_generic_server_check_flags(struct gensec_security *gensec_security,
 				    bool do_sign, bool do_seal)
 {
 	if (do_sign && !gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
@@ -115,7 +115,7 @@ NTSTATUS ntlmssp_server_check_flags(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ntlmssp_server_get_user_info(struct gensec_security *gensec_security,
+NTSTATUS auth_generic_server_get_user_info(struct gensec_security *gensec_security,
 				      TALLOC_CTX *mem_ctx,
 				      struct auth_session_info **session_info)
 {

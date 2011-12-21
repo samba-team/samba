@@ -155,7 +155,7 @@ NTSTATUS spnego_server_step(struct spnego_context *sp_ctx,
 					mem_ctx, &token_in, &token_out);
 			break;
 		case SPNEGO_NTLMSSP:
-			status = ntlmssp_server_step(
+			status = auth_generic_server_step(
 					sp_ctx->mech_ctx.gensec_security,
 					mem_ctx, &token_in, &token_out);
 			break;

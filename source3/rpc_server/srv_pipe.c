@@ -647,7 +647,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 	   ensure the underlying NTLMSSP flags are also set. If not we should
 	   refuse the bind. */
 
-	status = ntlmssp_server_check_flags(gensec_security,
+	status = auth_generic_server_check_flags(gensec_security,
 					    (auth_level ==
 						DCERPC_AUTH_LEVEL_INTEGRITY),
 					    (auth_level ==
@@ -660,7 +660,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(*session_info);
 
-	status = ntlmssp_server_get_user_info(gensec_security,
+	status = auth_generic_server_get_user_info(gensec_security,
 						mem_ctx, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": failed to obtain the server info "
@@ -1214,7 +1214,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
 						    struct gensec_security);
-		status = ntlmssp_server_step(gensec_security,
+		status = auth_generic_server_step(gensec_security,
 					     pkt, &auth_info.credentials,
 					     &response);
 		break;
@@ -1382,7 +1382,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 			gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
 						    struct gensec_security);
-			status = ntlmssp_server_step(gensec_security,
+			status = auth_generic_server_step(gensec_security,
 						     pkt,
 						     &auth_info.credentials,
 						     &auth_resp);

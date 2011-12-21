@@ -31,13 +31,13 @@ NTSTATUS auth_generic_server_start(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *token_out,
 				   const struct tsocket_address *remote_address,
 				   struct gensec_security **ctx);
-NTSTATUS ntlmssp_server_step(struct gensec_security *ctx,
+NTSTATUS auth_generic_server_step(struct gensec_security *ctx,
 			     TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *token_in,
 			     DATA_BLOB *token_out);
-NTSTATUS ntlmssp_server_check_flags(struct gensec_security *ctx,
+NTSTATUS auth_generic_server_check_flags(struct gensec_security *ctx,
 				    bool do_sign, bool do_seal);
-NTSTATUS ntlmssp_server_get_user_info(struct gensec_security *ctx,
+NTSTATUS auth_generic_server_get_user_info(struct gensec_security *ctx,
 				      TALLOC_CTX *mem_ctx,
 				      struct auth_session_info **session_info);
 
