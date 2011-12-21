@@ -160,4 +160,32 @@ NTSTATUS smb2cli_query_directory(struct cli_state *cli,
 				 uint8_t **data,
 				 uint32_t *data_length);
 
+struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct cli_state *cli,
+				      uint64_t in_fid_persistent,
+				      uint64_t in_fid_volatile,
+				      uint32_t in_ctl_code,
+				      uint32_t in_max_input_length,
+				      const DATA_BLOB *in_input_buffer,
+				      uint32_t in_max_output_length,
+				      const DATA_BLOB *in_output_buffer,
+				      uint32_t in_flags);
+NTSTATUS smb2cli_ioctl_recv(struct tevent_req *req,
+			    TALLOC_CTX *mem_ctx,
+			    DATA_BLOB *out_input_buffer,
+			    DATA_BLOB *out_output_buffer);
+NTSTATUS smb2cli_ioctl(struct cli_state *cli,
+		       uint64_t in_fid_persistent,
+		       uint64_t in_fid_volatile,
+		       uint32_t in_ctl_code,
+		       uint32_t in_max_input_length,
+		       const DATA_BLOB *in_input_buffer,
+		       uint32_t in_max_output_length,
+		       const DATA_BLOB *in_output_buffer,
+		       uint32_t in_flags,
+		       TALLOC_CTX *mem_ctx,
+		       DATA_BLOB *out_input_buffer,
+		       DATA_BLOB *out_output_buffer);
+
 #endif /* __SMB2CLI_H__ */
