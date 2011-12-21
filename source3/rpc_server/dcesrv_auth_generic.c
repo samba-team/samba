@@ -65,8 +65,8 @@ NTSTATUS auth_generic_server_start(TALLOC_CTX *mem_ctx,
 	}
 
 	status = gensec_update(a->gensec_security, mem_ctx, NULL, *token_in, token_out);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		DEBUG(0, (__location__ ": auth_ntlmssp_update failed: %s\n",
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		DEBUG(2, (__location__ ": gensec_update failed: %s\n",
 			  nt_errstr(status)));
 		goto done;
 	}
