@@ -126,7 +126,7 @@ struct parm_struct {
 	char *szService;						\
 	char *szInclude;						\
 	bool bWidelinks;						\
-	int bAvailable;							\
+	bool bAvailable;							\
 	struct parmlist_entry *param_opt;				\
 	struct bitmap *copymap;						\
 	char dummy[3];		/* for alignment */
