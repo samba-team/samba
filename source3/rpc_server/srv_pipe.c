@@ -633,7 +633,7 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
  the pipe struct.
 *******************************************************************/
 
-static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
+static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 				struct gensec_security *gensec_security,
 				enum dcerpc_AuthLevel auth_level,
 				struct auth_session_info **session_info)
@@ -783,7 +783,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
 							struct gensec_security);
-		if (!pipe_ntlmssp_verify_final(p, gensec_security,
+		if (!pipe_auth_generic_verify_final(p, gensec_security,
 						p->auth.auth_level,
 						&p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
@@ -827,7 +827,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 		case SPNEGO_NTLMSSP:
 			gensec_security = talloc_get_type_abort(mech_ctx,
 						struct gensec_security);
-			if (!pipe_ntlmssp_verify_final(p, gensec_security,
+			if (!pipe_auth_generic_verify_final(p, gensec_security,
 							p->auth.auth_level,
 							&p->session_info)) {
 				return NT_STATUS_ACCESS_DENIED;
