@@ -598,7 +598,8 @@ static bool pipe_ntlmssp_auth_bind(struct pipes_struct *p,
         }
 
 	/* We have an NTLMSSP blob. */
-	status = ntlmssp_server_auth_start(p,
+	status = auth_generic_server_start(p,
+					   OID_NTLMSSP,
 					   (auth_info->auth_level ==
 						DCERPC_AUTH_LEVEL_INTEGRITY),
 					   (auth_info->auth_level ==

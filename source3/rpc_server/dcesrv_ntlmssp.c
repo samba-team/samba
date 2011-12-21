@@ -25,7 +25,8 @@
 #include "auth.h"
 #include "auth/gensec/gensec.h"
 
-NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
+NTSTATUS auth_generic_server_start(TALLOC_CTX *mem_ctx,
+				   const char *oid,
 				   bool do_sign,
 				   bool do_seal,
 				   bool is_dcerpc,
@@ -56,7 +57,7 @@ NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
 		gensec_want_feature(a->gensec_security, GENSEC_FEATURE_DCE_STYLE);
 	}
 
-	status = auth_generic_start(a, GENSEC_OID_NTLMSSP);
+	status = auth_generic_start(a, oid);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": auth_generic_start failed: %s\n",
 			  nt_errstr(status)));

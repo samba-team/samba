@@ -22,7 +22,8 @@
 
 struct gensec_security;
 
-NTSTATUS ntlmssp_server_auth_start(TALLOC_CTX *mem_ctx,
+NTSTATUS auth_generic_server_start(TALLOC_CTX *mem_ctx,
+				   const char *oid,
 				   bool do_sign,
 				   bool do_seal,
 				   bool is_dcerpc,

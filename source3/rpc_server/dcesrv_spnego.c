@@ -77,7 +77,8 @@ static NTSTATUS spnego_server_mech_init(struct spnego_context *sp_ctx,
 		break;
 
 	case SPNEGO_NTLMSSP:
-		status = ntlmssp_server_auth_start(sp_ctx,
+		status = auth_generic_server_start(sp_ctx,
+						   OID_NTLMSSP,
 						   sp_ctx->do_sign,
 						   sp_ctx->do_seal,
 						   sp_ctx->is_dcerpc,
