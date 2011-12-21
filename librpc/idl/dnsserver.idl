@@ -1101,7 +1101,7 @@ import "misc.idl", "dnsp.idl";
 	DNS_RPC_ZONE_CREATE_INFO_LONGHORN;
 #define DNS_RPC_ZONE_CREATE_INFO DNS_RPC_ZONE_CREATE_INFO_LONGHORN
 
-	//   Zone export
+	/* Zone export */
 	typedef struct {
 		DWORD       dwRpcStructureVersion;
 		DWORD       dwReserved0;
