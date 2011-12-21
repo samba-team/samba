@@ -756,7 +756,7 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 				       int *numdcs )
 {
 	char *name;
-	if (sitename) {
+	if (sitename && strlen(sitename)) {
 		name = talloc_asprintf(ctx, "%s._tcp.%s._sites.%s._msdcs.%s",
 				       servicename, sitename,
 				       dc_pdc_gc_domains, realm);
