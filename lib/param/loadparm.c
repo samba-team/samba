@@ -85,7 +85,7 @@ static bool defaults_saved = false;
 	int server_role;						\
 	int security;							\
 	int domain_master;						\
-	bool domain_logons;						\
+	int domain_logons;						\
 	int bPreferredMaster;
 
 #include "param_global.h"

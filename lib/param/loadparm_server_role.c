@@ -58,7 +58,7 @@ const char* server_role_str(uint32_t role)
 /**
  * Set the server role based on security, domain logons and domain master
  */
-int lp_find_server_role(int server_role, int security, bool domain_logons, bool domain_master)
+int lp_find_server_role(int server_role, int security, int domain_logons, int domain_master)
 {
 	int role;
 
