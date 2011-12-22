@@ -950,7 +950,7 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 
         /* Only handle DOS Attributes */
         if (strcmp(name,SAMBA_XATTR_DOS_ATTRIB) != 0){
-		DEBUG(1, ("gpfs_set_xattr:name is %s\n",name));
+		DEBUG(5, ("gpfs_set_xattr:name is %s\n",name));
 		return SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags);
         }
 
@@ -1026,7 +1026,7 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
 
         /* Only handle DOS Attributes */
         if (strcmp(name,SAMBA_XATTR_DOS_ATTRIB) != 0){
-                DEBUG(1, ("gpfs_get_xattr:name is %s\n",name));
+		DEBUG(5, ("gpfs_get_xattr:name is %s\n",name));
                 return SMB_VFS_NEXT_GETXATTR(handle,path,name,value,size);
         }
 
