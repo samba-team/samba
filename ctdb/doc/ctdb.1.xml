@@ -554,7 +554,9 @@ MaxRedirectCount    = 3
 
     <refsect2><title>listvars</title>
       <para>
-        List all tuneable variables.
+      List all tuneable variables, except the values of the obsolete tunables
+      like VacuumMinInterval. The obsolete tunables can be retrieved only
+      explicitly with the "ctdb getvar" command.
       </para>
       <para>
 	Example: ctdb listvars
