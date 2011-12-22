@@ -84,7 +84,8 @@ enum protocol_types {
 	PROTOCOL_NT1,
 	PROTOCOL_SMB2_02,
 	PROTOCOL_SMB2_10,
-	PROTOCOL_SMB2_22
+	PROTOCOL_SMB2_22,
+	PROTOCOL_SMB2_24
 };
 
 enum smb_signing_setting {
