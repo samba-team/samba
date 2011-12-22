@@ -284,7 +284,6 @@ NTSTATUS finddcs_nbt_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		*num_dcs = state->num_dcs;
 		*dcs = talloc_steal(mem_ctx, state->dcs);
 	}
-	talloc_free(req);
 	return status;
 }
 
@@ -298,6 +297,7 @@ NTSTATUS finddcs_nbt(TALLOC_CTX *mem_ctx,
 		 struct imessaging_context *msg_ctx,
 		 int *num_dcs, struct nbt_dc_name **dcs)
 {
+	NTSTATUS status;
 	struct tevent_req *req = finddcs_nbt_send(mem_ctx,
 					      my_netbios_name,
 					      nbt_port,
@@ -305,5 +305,7 @@ NTSTATUS finddcs_nbt(TALLOC_CTX *mem_ctx,
 					      domain_sid,
 					      resolve_ctx,
 					      event_ctx, msg_ctx);
-	return finddcs_nbt_recv(req, mem_ctx, num_dcs, dcs);
+	status = finddcs_nbt_recv(req, mem_ctx, num_dcs, dcs);
+	talloc_free(req);
+	return status;
 }
