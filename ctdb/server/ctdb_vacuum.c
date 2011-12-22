@@ -668,6 +668,8 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	int ret, i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
+	vdata->delete_left = vdata->delete_count;
+
 	if (vdata->delete_count > 0) {
 		struct delete_records_list *recs;
 		TDB_DATA indata, outdata;
@@ -675,8 +677,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		struct ctdb_node_map *nodemap;
 		uint32_t *active_nodes;
 		int num_active_nodes;
-
-		vdata->delete_left = vdata->delete_count;
 
 		recs = talloc_zero(vdata, struct delete_records_list);
 		if (recs == NULL) {
@@ -805,6 +805,26 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		 */
 		trbt_traversearray32(vdata->delete_list, 1,
 				     delete_record_traverse, vdata);
+	}
+
+	if (vdata->delete_count > 0) {
+		DEBUG(DEBUG_INFO,
+		      (__location__
+		       " vacuum delete list statistics: "
+		       "db[%s] "
+		       "coll[%u] "
+		       "rem.err[%u] "
+		       "loc.err[%u] "
+		       "skip[%u] "
+		       "del[%u] "
+		       "left[%u]\n",
+		       ctdb_db->db_name,
+		       (unsigned)vdata->delete_count,
+		       (unsigned)vdata->delete_remote_error,
+		       (unsigned)vdata->delete_local_error,
+		       (unsigned)vdata->delete_skipped,
+		       (unsigned)vdata->delete_deleted,
+		       (unsigned)vdata->delete_left));
 	}
 
 	return 0;
