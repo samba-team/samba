@@ -25,8 +25,6 @@
 #include "gpfs_gpl.h"
 #include "vfs_gpfs.h"
 
-static bool gpfs_getrealfilename;
-
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int leaseType);
 static int (*gpfs_getacl_fn)(char *pathname, int flags, void *acl);
@@ -145,8 +143,7 @@ int smbd_gpfs_ftruncate(int fd, gpfs_off64_t length)
 int smbd_gpfs_get_realfilename_path(char *pathname, char *filenamep,
 				    int *buflen)
 {
-	if ((!gpfs_getrealfilename)
-	    || (gpfs_get_realfilename_path_fn == NULL)) {
+	if (gpfs_get_realfilename_path_fn == NULL) {
 		errno = ENOSYS;
 		return -1;
 	}
@@ -261,9 +258,6 @@ void init_gpfs(void)
         init_gpfs_function(&gpfs_get_winattrs_fn,"gpfs_get_winattrs");
 	init_gpfs_function(&gpfs_ftruncate_fn, "gpfs_ftruncate");
         init_gpfs_function(&gpfs_lib_init_fn,"gpfs_lib_init");
-
-	gpfs_getrealfilename = lp_parm_bool(-1, "gpfs", "getrealfilename",
-					    True);
 
 	return;
 }

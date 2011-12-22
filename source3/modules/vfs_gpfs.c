@@ -41,6 +41,7 @@ struct gpfs_config_data {
 	bool syncio;
 	bool winattr;
 	bool ftruncate;
+	bool getrealfilename;
 };
 
 
@@ -125,6 +126,16 @@ static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
 	char real_pathname[PATH_MAX+1];
 	int buflen;
 	bool mangled;
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (!config->getrealfilename) {
+		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
+						      mem_ctx, found_name);
+	}
 
 	mangled = mangle_is_mangled(name, handle->conn->params);
 	if (mangled) {
@@ -1362,6 +1373,9 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 
 	config->ftruncate = lp_parm_bool(SNUM(handle->conn), "gpfs",
 					 "ftruncate", true);
+
+	config->getrealfilename = lp_parm_bool(SNUM(handle->conn), "gpfs",
+					       "getrealfilename", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,
