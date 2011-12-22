@@ -858,7 +858,7 @@ static int ctdb_vacuum_init_vacuum_data(struct ctdb_db_context *ctdb_db,
 	vdata->delete_deleted = 0;
 
 	/* the list needs to be of length num_nodes */
-	vdata->vacuum_fetch_list = talloc_array(vdata,
+	vdata->vacuum_fetch_list = talloc_zero_array(vdata,
 						struct ctdb_marshall_buffer *,
 						ctdb->num_nodes);
 	if (vdata->vacuum_fetch_list == NULL) {
