@@ -921,9 +921,12 @@ trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen,
 	int (*callback)(void *param, void *data), 
 	void *param)
 {
-	if (node->left) {
+	trbt_node_t *left = node->left;
+	trbt_node_t *right = node->right;
+
+	if (left) {
 		int ret;
-		ret = trbt_traversearray32_node(node->left, keylen, callback, param);
+		ret = trbt_traversearray32_node(left, keylen, callback, param);
 		if (ret != 0) {
 			return ret;
 		}
@@ -949,10 +952,10 @@ trbt_traversearray32_node(trbt_node_t *node, uint32_t keylen,
 		}
 	}
 
-	if (node->right) {
+	if (right) {
 		int ret;
 
-		ret = trbt_traversearray32_node(node->right, keylen, callback, param);
+		ret = trbt_traversearray32_node(right, keylen, callback, param);
 		if (ret != 0) {
 			return ret;
 		}
