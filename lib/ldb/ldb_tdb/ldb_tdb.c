@@ -1418,14 +1418,8 @@ static int ltdb_handle_request(struct ldb_module *module,
 
 static int ltdb_init_rootdse(struct ldb_module *module)
 {
-	struct ldb_context *ldb;
-	int ret;
-
-	ldb = ldb_module_get_ctx(module);
-
-	ret = ldb_mod_register_control(module,
-				       LDB_CONTROL_PERMISSIVE_MODIFY_OID);
 	/* ignore errors on this - we expect it for non-sam databases */
+	ldb_mod_register_control(module, LDB_CONTROL_PERMISSIVE_MODIFY_OID);
 
 	/* there can be no module beyond the backend, just return */
 	return LDB_SUCCESS;
