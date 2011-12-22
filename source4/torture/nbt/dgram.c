@@ -246,7 +246,12 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	map_netlogon_samlogon_response(&response->data.samlogon);
 
 	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE_EX, "Got incorrect netlogon response command");
+
 	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.nt_version, NETLOGON_NT_VERSION_5EX_WITH_IP|NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_1, "Got incorrect netlogon response command");
+
+	torture_assert(tctx,
+		       strstr(response->data.samlogon.data.nt5_ex.pdc_name, "\\\\") == NULL,
+		       "PDC name should not be in UNC form");
 
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
