@@ -183,6 +183,9 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	CTDB_NO_MEMORY(ctdb, list);
 
 	for (i=1;i<ARRAY_SIZE(tunable_map);i++) {
+		if (tunable_map[i].obsolete) {
+			continue;
+		}
 		list = talloc_asprintf_append(list, ":%s", tunable_map[i].name);
 		CTDB_NO_MEMORY(ctdb, list);		
 	}
