@@ -1041,7 +1041,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 	for (i = 0; control_strings[i]; i++) {
 		ctrl[i] = ldb_parse_control_from_string(ldb, ctrl, control_strings[i]);
 		if (ctrl[i] == NULL) {
-			if( ldb_errstring == NULL ) {
+			if (ldb_errstring(ldb) == NULL) {
 				/* no controls matched, throw an error */
 				ldb_asprintf_errstring(ldb, "Invalid control name: '%s'", control_strings[i]);
 			}
