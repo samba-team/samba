@@ -40,6 +40,7 @@ struct gpfs_config_data {
 	bool hsm;
 	bool syncio;
 	bool winattr;
+	bool ftruncate;
 };
 
 
@@ -1246,6 +1247,15 @@ static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 				SMB_OFF_T len)
 {
 	int result;
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (!config->ftruncate) {
+		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
+	}
 
 	result = smbd_gpfs_ftruncate(fsp->fh->fd, len);
 	if ((result == -1) && (errno == ENOSYS)) {
@@ -1349,6 +1359,9 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 
 	config->winattr = lp_parm_bool(SNUM(handle->conn), "gpfs",
 				       "winattr", false);
+
+	config->ftruncate = lp_parm_bool(SNUM(handle->conn), "gpfs",
+					 "ftruncate", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,

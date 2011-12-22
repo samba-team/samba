@@ -26,7 +26,6 @@
 #include "vfs_gpfs.h"
 
 static bool gpfs_getrealfilename;
-static bool gpfs_do_ftruncate;
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int leaseType);
@@ -135,7 +134,7 @@ int smbd_gpfs_putacl(char *pathname, int flags, void *acl)
 
 int smbd_gpfs_ftruncate(int fd, gpfs_off64_t length)
 {
-	if (!gpfs_do_ftruncate || (gpfs_ftruncate_fn == NULL)) {
+	if (gpfs_ftruncate_fn == NULL) {
 		errno = ENOSYS;
 		return -1;
 	}
@@ -265,7 +264,6 @@ void init_gpfs(void)
 
 	gpfs_getrealfilename = lp_parm_bool(-1, "gpfs", "getrealfilename",
 					    True);
-	gpfs_do_ftruncate = lp_parm_bool(-1, "gpfs", "ftruncate", True);
 
 	return;
 }
