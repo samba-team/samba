@@ -90,8 +90,9 @@ int pthreadpool_signal_fd(struct pthreadpool *pool);
  * pthreadpool_signal_fd() is readable.
  *
  * @param[in]	pool		The pool to query for finished jobs
- * @return			The job_id of the finished job
+ * @param[out]  pjobid		The job_id of the finished job
+ * @return			success: 0, failure: errno
  */
-int pthreadpool_finished_job(struct pthreadpool *pool);
+int pthreadpool_finished_job(struct pthreadpool *pool, int *jobid);
 
 #endif

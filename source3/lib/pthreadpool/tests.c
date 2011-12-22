@@ -68,12 +68,13 @@ static int test_jobs(int num_threads, int num_jobs)
 	}
 
 	for (i=0; i<num_jobs; i++) {
-		ret = pthreadpool_finished_job(p);
-		if ((ret < 0) || (ret >= num_jobs)) {
-			fprintf(stderr, "invalid job number %d\n", ret);
+		int jobid = -1;
+		ret = pthreadpool_finished_job(p, &jobid);
+		if ((ret != 0) || (jobid >= num_jobs)) {
+			fprintf(stderr, "invalid job number %d\n", jobid);
 			return -1;
 		}
-		finished[ret] += 1;
+		finished[jobid] += 1;
 	}
 
 	for (i=0; i<num_jobs; i++) {
@@ -275,18 +276,19 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 		}
 
 		for (j=0; j<num_pools; j++) {
+			int jobid = -1;
 
 			if ((pfds[j].revents & (POLLIN|POLLHUP)) == 0) {
 				continue;
 			}
 
-			ret = pthreadpool_finished_job(pools[j]);
-			if ((ret < 0) || (ret >= num_jobs * num_threads)) {
+			ret = pthreadpool_finished_job(pools[j], &jobid);
+			if ((ret != 0) || (jobid >= num_jobs * num_threads)) {
 				fprintf(stderr, "invalid job number %d\n",
-					ret);
+					jobid);
 				return -1;
 			}
-			finished[ret] += 1;
+			finished[jobid] += 1;
 			received += 1;
 		}
 	}
