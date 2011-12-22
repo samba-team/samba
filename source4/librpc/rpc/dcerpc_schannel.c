@@ -245,6 +245,8 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 		return;
 	}
 
+	s->creds->negotiate_flags = s->remote_negotiate_flags;
+
 	/* verify credentials */
 	if (!netlogon_creds_client_check(s->creds, s->a.out.return_credentials)) {
 		composite_error(c, NT_STATUS_UNSUCCESSFUL);
