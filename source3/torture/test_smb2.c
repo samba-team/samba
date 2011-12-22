@@ -211,7 +211,7 @@ bool run_smb2_negprot(int dummy)
 	cli->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_CORE, PROTOCOL_SMB2_22);
+				 PROTOCOL_CORE, PROTOCOL_SMB2_24);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -228,6 +228,9 @@ bool run_smb2_negprot(int dummy)
 		break;
 	case PROTOCOL_SMB2_22:
 		name = "SMB2_22";
+		break;
+	case PROTOCOL_SMB2_24:
+		name = "SMB2_24";
 		break;
 	default:
 		break;
@@ -284,7 +287,7 @@ bool run_smb2_session_reconnect(int dummy)
 	cli1->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli1->conn, cli1->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_22);
+				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_24);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -362,7 +365,7 @@ bool run_smb2_session_reconnect(int dummy)
 	cli2->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli2->conn, cli2->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_22);
+				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_24);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -664,7 +667,7 @@ bool run_smb2_tcon_dependence(int dummy)
 	cli->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli->conn, cli->timeout,
-				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_22);
+				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_24);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
@@ -781,14 +784,14 @@ bool run_smb2_multi_channel(int dummy)
 	cli2->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli1->conn, cli1->timeout,
-				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_22);
+				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_24);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smbXcli_negprot(cli2->conn, cli2->timeout,
-				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_22);
+				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_24);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
 		return false;
