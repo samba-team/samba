@@ -77,6 +77,7 @@
 #define SMB2_DIALECT_REVISION_202       0x0202
 #define SMB2_DIALECT_REVISION_210       0x0210
 #define SMB2_DIALECT_REVISION_222       0x0222
+#define SMB2_DIALECT_REVISION_224       0x0224
 #define SMB2_DIALECT_REVISION_2FF       0x02FF
 
 /* SMB2 negotiate security_mode */
