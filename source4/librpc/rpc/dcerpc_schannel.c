@@ -243,7 +243,13 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 		}
 		s->dcerpc_schannel_auto = false;
 
-		if (lf & NETLOGON_NEG_STRONG_KEYS) {
+		if (lf & NETLOGON_NEG_SUPPORTS_AES)  {
+			ln = "aes";
+			if (rf & NETLOGON_NEG_SUPPORTS_AES) {
+				composite_error(c, s->a.out.result);
+				return;
+			}
+		} else if (lf & NETLOGON_NEG_STRONG_KEYS) {
 			ln = "strong";
 			if (rf & NETLOGON_NEG_STRONG_KEYS) {
 				composite_error(c, s->a.out.result);
@@ -253,7 +259,9 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 			ln = "des";
 		}
 
-		if (rf & NETLOGON_NEG_STRONG_KEYS) {
+		if (rf & NETLOGON_NEG_SUPPORTS_AES)  {
+			rn = "aes";
+		} else if (rf & NETLOGON_NEG_STRONG_KEYS) {
 			rn = "strong";
 		} else {
 			rn = "des";
@@ -324,8 +332,13 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	}
+	if (s->pipe->conn->flags & DCERPC_SCHANNEL_AES) {
+		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+		s->local_negotiate_flags |= NETLOGON_NEG_SUPPORTS_AES;
+	}
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_AUTO) {
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+		s->local_negotiate_flags |= NETLOGON_NEG_SUPPORTS_AES;
 		s->dcerpc_schannel_auto = true;
 	}
 

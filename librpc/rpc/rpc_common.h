@@ -110,6 +110,9 @@ struct dcerpc_binding {
 /* handle upgrades or downgrades automatically */
 #define DCERPC_SCHANNEL_AUTO           (1<<23)
 
+/* use aes schannel with hmac-sh256 session key */
+#define DCERPC_SCHANNEL_AES            (1<<24)
+
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
