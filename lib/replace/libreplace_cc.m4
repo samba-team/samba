@@ -102,9 +102,17 @@ case "$host_os" in
 		;;
 esac
 
+# Do not check for standards.h on darwin, we get nasty warnings on
+# OS/X Lion. Probably a positive-list of OS'es like IRIX and AIX
+# would be the better choice, but this seems to work fine
 
-
-AC_CHECK_HEADERS([standards.h])
+case "$host_os" in
+     *darwin*)
+	;;
+     *)
+        AC_CHECK_HEADERS([standards.h])
+	;;
+esac
 
 # Solaris needs HAVE_LONG_LONG defined
 AC_CHECK_TYPES(long long)
