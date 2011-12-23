@@ -404,6 +404,14 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	rec = dns_to_dnsp_copy(mem_ctx, add_record);
 	W_ERROR_HAVE_NO_MEMORY(rec);
 
+	/* Set the correct rank for the record.
+	 * FIXME: add logic to check for glue records */
+	if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_PRIMARY) {
+		rec->rank |= DNS_RANK_ZONE;
+	} else if (strcmp(z->name, ".") == 0) {
+		rec->rank |= DNS_RANK_ROOT_HINT;
+	}
+
 	serial = dnsserver_update_soa(mem_ctx, samdb, z);
 	if (serial < 0) {
 		return WERR_INTERNAL_DB_ERROR;
