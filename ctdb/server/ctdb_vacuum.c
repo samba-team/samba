@@ -1473,6 +1473,10 @@ static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
 						  ctdb_db->delete_queue,
 						  hdr, key);
 	if (ret != 0) {
+		DEBUG(DEBUG_INFO,
+		      (__location__ " schedule for deletion: error "
+		       "inserting key with hash 0x%08x into delete queue\n",
+		       hash));
 		return -1;
 	}
 
