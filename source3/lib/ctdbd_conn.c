@@ -1131,7 +1131,9 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 	int cstatus;
 	struct ctdbd_traverse_state state;
 
+	become_root();
 	status = ctdbd_init_connection(NULL, &conn);
+	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ctdbd_init_connection failed: %s\n",
 			  nt_errstr(status)));
