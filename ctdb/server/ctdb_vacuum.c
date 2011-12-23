@@ -1418,7 +1418,8 @@ static void remove_record_from_delete_queue(struct ctdb_db_context *ctdb_db,
 	hash = (uint32_t)ctdb_hash(&key);
 
 	DEBUG(DEBUG_DEBUG, (__location__
-			    " remove_record_from_delete_queue: db[%s] "
+			    " remove_record_from_delete_queue: "
+			    "db[%s] "
 			    "db_id[0x%08x] "
 			    "key_hash[0x%08x] "
 			    "lmaster[%u] "
@@ -1430,14 +1431,28 @@ static void remove_record_from_delete_queue(struct ctdb_db_context *ctdb_db,
 
 	kd = (struct delete_record_data *)trbt_lookup32(ctdb_db->delete_queue, hash);
 	if (kd == NULL) {
+		DEBUG(DEBUG_DEBUG, (__location__
+				    " remove_record_from_delete_queue: "
+				    "record not in queue (hash[0x%08x])\n.",
+				    hash));
 		return;
 	}
-	if (kd->key.dsize != key.dsize) {
+
+	if ((kd->key.dsize != key.dsize) ||
+	    (memcmp(kd->key.dptr, key.dptr, key.dsize) != 0))
+	{
+		DEBUG(DEBUG_DEBUG, (__location__
+				    " remove_record_from_delete_queue: "
+				    "hash collision for key with hash[0x%08x] "
+				    "in db[%s] - skipping\n",
+				    hash, ctdb_db->db_name));
 		return;
 	}
-	if (memcmp(kd->key.dptr, key.dptr, key.dsize) != 0) {
-		return;
-	}
+
+	DEBUG(DEBUG_DEBUG, (__location__
+			    " remove_record_from_delete_queue: "
+			    "removing key with hash[0x%08x]\n",
+			     hash));
 
 	talloc_free(kd);
 
