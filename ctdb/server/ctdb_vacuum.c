@@ -1466,13 +1466,13 @@ static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
 		{
 			DEBUG(DEBUG_INFO,
 			      (__location__ " schedule for deletion: "
-			       "hash collision (0x%08x)."
-			       " Skipping the record.\n", hash));
+			       "hash collision for key hash [0x%08x]. "
+			       "Skipping the record.\n", hash));
 			return 0;
 		} else {
 			DEBUG(DEBUG_DEBUG,
 			      (__location__ " schedule for deletion: "
-			       "updating entry for key with hash 0x%08x.\n",
+			       "updating entry for key with hash [0x%08x].\n",
 			       hash));
 		}
 	}
@@ -1483,7 +1483,7 @@ static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
 	if (ret != 0) {
 		DEBUG(DEBUG_INFO,
 		      (__location__ " schedule for deletion: error "
-		       "inserting key with hash 0x%08x into delete queue\n",
+		       "inserting key with hash [0x%08x] into delete queue\n",
 		       hash));
 		return -1;
 	}
