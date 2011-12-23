@@ -518,7 +518,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security) = talloc_zero(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
-	(*gensec_security)->max_update_size = UINT32_MAX;
+	(*gensec_security)->max_update_size = 0;
 
 	SMB_ASSERT(settings->lp_ctx != NULL);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, settings);

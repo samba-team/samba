@@ -30,6 +30,7 @@
 #include "auth/gensec/gensec_proto.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
 #include "param/param.h"
+#include "lib/util/asn1.h"
 
 _PUBLIC_ NTSTATUS gensec_spnego_init(void);
 
@@ -51,6 +52,16 @@ struct spnego_state {
 	const char *neg_oid;
 
 	DATA_BLOB mech_types;
+
+	/*
+	 * The following is used to implement
+	 * the update token fragmentation
+	 */
+	size_t in_needed;
+	DATA_BLOB in_frag;
+	size_t out_max_length;
+	DATA_BLOB out_frag;
+	NTSTATUS out_status;
 };
 
 
@@ -58,7 +69,7 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 {
 	struct spnego_state *spnego_state;
 
-	spnego_state = talloc(gensec_security, struct spnego_state);
+	spnego_state = talloc_zero(gensec_security, struct spnego_state);
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -68,6 +79,8 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->sub_sec_security = NULL;
 	spnego_state->no_response_expected = false;
 	spnego_state->mech_types = data_blob(NULL, 0);
+	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
+	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -77,7 +90,7 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 {
 	struct spnego_state *spnego_state;
 
-	spnego_state = talloc(gensec_security, struct spnego_state);		
+	spnego_state = talloc_zero(gensec_security, struct spnego_state);
 	if (!spnego_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -87,6 +100,8 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->sub_sec_security = NULL;
 	spnego_state->no_response_expected = false;
 	spnego_state->mech_types = data_blob(NULL, 0);
+	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
+	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -1130,6 +1145,193 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
+static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
+					const DATA_BLOB in, DATA_BLOB *full_in)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+	size_t expected;
+	uint8_t *buf;
+	NTSTATUS status;
+	bool ok;
+
+	*full_in = data_blob_null;
+
+	if (spnego_state->in_needed == 0) {
+		size_t size = 0;
+
+		/*
+		 * try to work out the size of the full
+		 * input token, it might be fragmented
+		 */
+		status = asn1_peek_full_tag(in,  ASN1_APPLICATION(0), &size);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			status = asn1_peek_full_tag(in, ASN1_CONTEXT(1), &size);
+		}
+
+		if (NT_STATUS_IS_OK(status) ||
+		    NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			spnego_state->in_needed = size;
+		} else {
+			/*
+			 * If it is not an asn1 message
+			 * just call the next layer.
+			 */
+			spnego_state->in_needed = in.length;
+		}
+	}
+
+	if (spnego_state->in_needed > UINT16_MAX) {
+		/*
+		 * limit the incoming message to 0xFFFF
+		 * to avoid DoS attacks.
+		 */
+		return NT_STATUS_INVALID_BUFFER_SIZE;
+	}
+
+	if ((spnego_state->in_needed > 0) && (in.length == 0)) {
+		/*
+		 * If we reach this, we know we got at least
+		 * part of an asn1 message, getting 0 means
+		 * the remote peer wants us to spin.
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	expected = spnego_state->in_needed - spnego_state->in_frag.length;
+	if (in.length > expected) {
+		/*
+		 * we got more than expected
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (in.length == spnego_state->in_needed) {
+		/*
+		 * if the in.length contains the full blob
+		 * we are done.
+		 *
+		 * Note: this implies spnego_state->in_frag.length == 0,
+		 *       but we do not need to check this explicitly
+		 *       because we already know that we did not get
+		 *       more than expected.
+		 */
+		*full_in = in;
+		return NT_STATUS_OK;
+	}
+
+	ok = data_blob_append(spnego_state, &spnego_state->in_frag,
+			      in.data, in.length);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (spnego_state->in_needed > spnego_state->in_frag.length) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	*full_in = spnego_state->in_frag;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security,
+					 TALLOC_CTX *out_mem_ctx,
+					 DATA_BLOB *_out)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+	size_t new_length;
+	uint8_t *buf;
+	DATA_BLOB out = data_blob_null;
+
+	*_out = data_blob_null;
+
+	if (spnego_state->out_frag.length == 0) {
+		return spnego_state->out_status;
+	}
+
+	/*
+	 * There is still more data to be delivered
+	 * to the remote peer.
+	 */
+
+	if (spnego_state->out_frag.length <= spnego_state->out_max_length) {
+		/*
+		 * Fast path, we can deliver everything
+		 */
+
+		*_out = spnego_state->out_frag;
+		talloc_steal(out_mem_ctx, _out->data);
+		spnego_state->out_frag = data_blob_null;
+		return spnego_state->out_status;
+	}
+
+	out = spnego_state->out_frag;
+
+	/*
+	 * copy the remaining bytes
+	 */
+	spnego_state->out_frag = data_blob_talloc(spnego_state,
+					out.data + spnego_state->out_max_length,
+					out.length - spnego_state->out_max_length);
+	if (spnego_state->out_frag.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * truncate the buffer
+	 */
+	data_blob_realloc(spnego_state, &out, spnego_state->out_max_length);
+
+	talloc_steal(out_mem_ctx, out.data);
+	*_out = out;
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
+static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_security,
+					     TALLOC_CTX *out_mem_ctx,
+					     struct tevent_context *ev,
+					     const DATA_BLOB in, DATA_BLOB *out)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+	DATA_BLOB full_in = data_blob_null;
+	NTSTATUS status;
+
+	*out = data_blob_null;
+
+	if (spnego_state->out_frag.length > 0) {
+		if (in.length > 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		return gensec_spnego_update_out(gensec_security,
+						out_mem_ctx,
+						out);
+	}
+
+	status = gensec_spnego_update_in(gensec_security,
+					 in, &full_in);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = gensec_spnego_update(gensec_security,
+				      spnego_state, ev,
+				      full_in,
+				      &spnego_state->out_frag);
+	data_blob_free(&spnego_state->in_frag);
+	spnego_state->in_needed = 0;
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return status;
+	}
+
+	spnego_state->out_status = status;
+
+	return gensec_spnego_update_out(gensec_security,
+					out_mem_ctx,
+					out);
+}
+
 static void gensec_spnego_want_feature(struct gensec_security *gensec_security,
 				       uint32_t feature)
 {
@@ -1168,7 +1370,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.oid              = gensec_spnego_oids,
 	.client_start     = gensec_spnego_client_start,
 	.server_start     = gensec_spnego_server_start,
-	.update 	  = gensec_spnego_update,
+	.update 	  = gensec_spnego_update_wrapper,
 	.seal_packet	  = gensec_spnego_seal_packet,
 	.sign_packet	  = gensec_spnego_sign_packet,
 	.sig_size	  = gensec_spnego_sig_size,
