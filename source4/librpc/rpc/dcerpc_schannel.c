@@ -221,15 +221,48 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
+	if (!NT_STATUS_EQUAL(s->a.out.result, NT_STATUS_ACCESS_DENIED) &&
+	    !NT_STATUS_IS_OK(s->a.out.result)) {
+		composite_error(c, s->a.out.result);
+		return;
+	}
+
 	/*
 	 * Strong keys could be unsupported (NT4) or disables. So retry with the
 	 * flags returned by the server. - asn
 	 */
-	if (NT_STATUS_EQUAL(s->a.out.result, NT_STATUS_ACCESS_DENIED) &&
-	    s->dcerpc_schannel_auto &&
-	    (s->local_negotiate_flags & NETLOGON_NEG_STRONG_KEYS)) {
-		DEBUG(3, ("Server doesn't support strong keys, "
-			  "downgrade and retry!\n"));
+	if (NT_STATUS_EQUAL(s->a.out.result, NT_STATUS_ACCESS_DENIED)) {
+		uint32_t lf = s->local_negotiate_flags;
+		const char *ln = NULL;
+		uint32_t rf = s->remote_negotiate_flags;
+		const char *rn = NULL;
+
+		if (!s->dcerpc_schannel_auto) {
+			composite_error(c, s->a.out.result);
+			return;
+		}
+		s->dcerpc_schannel_auto = false;
+
+		if (lf & NETLOGON_NEG_STRONG_KEYS) {
+			ln = "strong";
+			if (rf & NETLOGON_NEG_STRONG_KEYS) {
+				composite_error(c, s->a.out.result);
+				return;
+			}
+		} else {
+			ln = "des";
+		}
+
+		if (rf & NETLOGON_NEG_STRONG_KEYS) {
+			rn = "strong";
+		} else {
+			rn = "des";
+		}
+
+		DEBUG(3, ("Server doesn't support %s keys, downgrade to %s"
+			  "and retry! local[0x%08X] remote[0x%08X]\n",
+			  ln, rn, lf, rf));
+
 		s->local_negotiate_flags = s->remote_negotiate_flags;
 
 		generate_random_buffer(s->credentials1.data,
