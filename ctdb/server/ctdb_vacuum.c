@@ -333,12 +333,16 @@ static int delete_queue_traverse(void *param, void *data)
 	struct ctdb_ltdb_header *header;
 	TDB_DATA tdb_data;
 	uint32_t lmaster;
+	uint32_t hash = ctdb_hash(&(dd->key));
 
 	vdata->fast_total++;
 
 	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
 	if (res != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Error getting chainlock.\n"));
+		DEBUG(DEBUG_ERR,
+		      (__location__ " Error getting chainlock on record with "
+		       "key hash [0x%08x] on database db[%s].\n",
+		       hash, ctdb_db->db_name));
 		vdata->fast_error++;
 		return 0;
 	}
@@ -360,7 +364,6 @@ static int delete_queue_traverse(void *param, void *data)
 		/* The record has been migrated off the node. Skip. */
 		goto skipped;
 	}
-
 
 	if (header->rsn != dd->hdr.rsn) {
 		/*
@@ -412,10 +415,15 @@ static int delete_queue_traverse(void *param, void *data)
 
 		if (res != 0) {
 			DEBUG(DEBUG_ERR,
-			      (__location__ " Error deleting record from local "
-			       "data base.\n"));
+			      (__location__ " Error deleting record with key "
+			       "hash [0x%08x] from local data base db[%s].\n",
+			       hash, ctdb_db->db_name));
 			vdata->fast_error++;
 		} else {
+			DEBUG(DEBUG_DEBUG,
+			      (__location__ " Deleted record with key hash "
+			       "[0x%08x] from local data base db[%s].\n",
+			       hash, ctdb_db->db_name));
 			vdata->fast_deleted++;
 		}
 	}
