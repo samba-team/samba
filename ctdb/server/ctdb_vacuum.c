@@ -459,10 +459,14 @@ static int delete_record_traverse(void *param, void *data)
 	TDB_DATA tdb_data;
 	uint32_t lmaster;
 	bool deleted = false;
+	uint32_t hash = ctdb_hash(&(dd->key));
 
 	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
 	if (res != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Error getting chainlock.\n"));
+		DEBUG(DEBUG_ERR,
+		      (__location__ " Error getting chainlock on record with "
+		       "key hash [0x%08x] on database db[%s].\n",
+		       hash, ctdb_db->db_name));
 		vdata->delete_local_error++;
 		return 0;
 	}
@@ -515,13 +519,18 @@ static int delete_record_traverse(void *param, void *data)
 
 	if (res != 0) {
 		DEBUG(DEBUG_ERR,
-		      (__location__ " Error deleting record from local "
-		       "data base.\n"));
+		      (__location__ " Error deleting record with key hash "
+		       "[0x%08x] from local data base db[%s].\n",
+		       hash, ctdb_db->db_name));
 		vdata->delete_local_error++;
 		goto done;
 	}
 
 	deleted = true;
+
+	DEBUG(DEBUG_DEBUG,
+	      (__location__ " Deleted record with key hash [0x%08x] from "
+	       "local data base db[%s].\n", hash, ctdb_db->db_name));
 
 done:
 	if (tdb_data.dptr != NULL) {
