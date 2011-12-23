@@ -1441,7 +1441,7 @@ static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
 
 	hash = (uint32_t)ctdb_hash(&key);
 
-	DEBUG(DEBUG_INFO, (__location__ " Schedule for deletion: db[%s] "
+	DEBUG(DEBUG_INFO, (__location__ " schedule for deletion: db[%s] "
 			   "db_id[0x%08x] "
 			   "key_hash[0x%08x] "
 			   "lmaster[%u] "
@@ -1457,13 +1457,15 @@ static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
 		    (memcmp(kd->key.dptr, key.dptr, key.dsize) != 0))
 		{
 			DEBUG(DEBUG_INFO,
-			      ("schedule for deletion: Hash collision (0x%08x)."
+			      (__location__ " schedule for deletion: "
+			       "hash collision (0x%08x)."
 			       " Skipping the record.\n", hash));
 			return 0;
 		} else {
 			DEBUG(DEBUG_DEBUG,
-			      ("schedule for deletion: Overwriting entry for "
-			       "key with hash 0x%08x.\n", hash));
+			      (__location__ " schedule for deletion: "
+			       "updating entry for key with hash 0x%08x.\n",
+			       hash));
 		}
 	}
 
