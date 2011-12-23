@@ -321,16 +321,17 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	s->local_negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
 	/* allocate credentials */
-	/* type of authentication depends on schannel type */
-	if (schannel_type == SEC_CHAN_RODC) {
-		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_RODC_FLAGS;
-	}
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	}
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_AUTO) {
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 		s->dcerpc_schannel_auto = true;
+	}
+
+	/* type of authentication depends on schannel type */
+	if (schannel_type == SEC_CHAN_RODC) {
+		s->local_negotiate_flags |= NETLOGON_NEG_RODC_PASSTHROUGH;
 	}
 
 	/* allocate binding structure */
