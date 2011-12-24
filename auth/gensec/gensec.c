@@ -185,6 +185,21 @@ _PUBLIC_ NTSTATUS gensec_session_info(struct gensec_security *gensec_security,
 	return gensec_security->ops->session_info(gensec_security, mem_ctx, session_info);
 }
 
+void gensec_set_max_update_size(struct gensec_security *gensec_security,
+				uint32_t max_update_size)
+{
+	gensec_security->max_update_size = max_update_size;
+}
+
+size_t gensec_max_update_size(struct gensec_security *gensec_security)
+{
+	if (gensec_security->max_update_size == 0) {
+		return UINT32_MAX;
+	}
+
+	return gensec_security->max_update_size;
+}
+
 /**
  * Next state function for the GENSEC state machine
  *

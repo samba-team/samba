@@ -167,6 +167,7 @@ struct gensec_security {
 	enum gensec_role gensec_role;
 	bool subcontext;
 	uint32_t want_features;
+	uint32_t max_update_size;
 	uint8_t dcerpc_auth_level;
 	struct tsocket_address *local_addr, *remote_addr;
 	struct gensec_settings *settings;
@@ -223,6 +224,9 @@ NTSTATUS gensec_start_mech_by_ops(struct gensec_security *gensec_security,
 				  const struct gensec_security_ops *ops);
 NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security,
 						 const char **sasl_names);
+void gensec_set_max_update_size(struct gensec_security *gensec_security,
+				uint32_t max_update_size);
+size_t gensec_max_update_size(struct gensec_security *gensec_security);
 NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
 		       struct tevent_context *ev,
 		       const DATA_BLOB in, DATA_BLOB *out);

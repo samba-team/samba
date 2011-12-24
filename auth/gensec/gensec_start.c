@@ -518,6 +518,8 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security) = talloc_zero(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
+	(*gensec_security)->max_update_size = UINT32_MAX;
+
 	SMB_ASSERT(settings->lp_ctx != NULL);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, settings);
 
@@ -550,6 +552,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 
 	(*gensec_security)->subcontext = true;
 	(*gensec_security)->want_features = parent->want_features;
+	(*gensec_security)->max_update_size = parent->max_update_size;
 	(*gensec_security)->dcerpc_auth_level = parent->dcerpc_auth_level;
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
