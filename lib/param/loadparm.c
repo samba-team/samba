@@ -3727,7 +3727,7 @@ _PUBLIC_ char *lpcfg_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *l
 
 struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	struct gensec_settings *settings = talloc(mem_ctx, struct gensec_settings);
+	struct gensec_settings *settings = talloc_zero(mem_ctx, struct gensec_settings);
 	if (settings == NULL)
 		return NULL;
 	SMB_ASSERT(lp_ctx != NULL);

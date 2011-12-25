@@ -77,6 +77,11 @@ struct tevent_req;
 struct gensec_settings {
 	struct loadparm_context *lp_ctx;
 	const char *target_hostname;
+
+	/* this allows callers to specify a specific set of ops that
+	 * should be used, rather than those loaded by the plugin
+	 * mechanism */
+	struct gensec_security_ops **backends;
 };
 
 struct gensec_security_ops {
