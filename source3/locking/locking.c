@@ -497,7 +497,7 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 {
 	return talloc_asprintf(ctx, "share_mode_entry[%d]: "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
-		 "access_mask = 0x%x, mid = 0x%llx, type= 0x%x, gen_id = %lu, "
+		 "access_mask = 0x%x, mid = 0x%llx, type= 0x%x, gen_id = %llu, "
 		 "uid = %u, flags = %u, file_id %s, name_hash = 0x%x",
 		 num,
 		 procid_str_static(&e->pid),
