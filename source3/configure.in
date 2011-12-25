@@ -768,6 +768,14 @@ CPPFLAGS="-Iinclude $CPPFLAGS"
 AC_CHECK_HEADERS([CoreFoundation/CFStringEncodingConverter.h], [], [AC_CHECK_HEADERS([CFStringEncodingConverter.h])])
 CPPFLAGS="$old_CPPFLAGS"
 
+# To link lib/util/charset/charset_macosxfs.c, we need to tell the linker
+# about CoreFoundation
+case "$host_os" in
+    *darwin11*)
+		LDFLAGS="$LDFLAGS -framework CoreFoundation"
+	;;
+esac
+
 # In valgrind 1.0.x, it's just valgrind.h.  In 1.9.x+ there's a
 # subdirectory of headers.
 AC_CHECK_HEADERS(valgrind.h valgrind/valgrind.h valgrind/memcheck.h)
