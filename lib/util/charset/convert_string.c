@@ -179,7 +179,9 @@ bool convert_string_error_handle(struct smb_iconv_handle *ic,
 		size_t slen = srclen;
 		size_t dlen = destlen;
 		unsigned char lastp = '\0';
+#ifndef BROKEN_UNICODE_COMPOSE_CHARACTERS
 		bool ret;
+#endif
 
 		if (slen == (size_t)-1) {
 			while (dlen &&
