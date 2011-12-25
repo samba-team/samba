@@ -213,10 +213,9 @@ ssize_t sys_recvfile(int fromfd,
 	}
 
  done:
-	if (total_written < count) {
+	if (count) {
 		int saved_errno = errno;
-		if (drain_socket(fromfd, count-total_written) !=
-				count-total_written) {
+		if (drain_socket(fromfd, count) != count) {
 			/* socket is dead. */
 			return -1;
 		}
