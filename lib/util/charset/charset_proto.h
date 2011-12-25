@@ -26,11 +26,11 @@ size_t weird_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 
 size_t macosxfs_encoding_pull(
 	void *cd,				/* Encoder handle */
-	char **inbuf, size_t *inbytesleft,	/* Script string */
+	const char **inbuf, size_t *inbytesleft, /* Script string */
 	char **outbuf, size_t *outbytesleft);	/* UTF-16-LE string */
 size_t macosxfs_encoding_push(
 	void *cd,				/* Encoder handle */
-	char **inbuf, size_t *inbytesleft,	/* UTF-16-LE string */
+	const char **inbuf, size_t *inbytesleft, /* UTF-16-LE string */
 	char **outbuf, size_t *outbytesleft);	/* Script string */
 
 
