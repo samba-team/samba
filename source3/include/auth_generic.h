@@ -2,7 +2,7 @@
    NLTMSSP wrappers
 
    Copyright (C) Andrew Tridgell      2001
-   Copyright (C) Andrew Bartlett 2001-2003
+   Copyright (C) Andrew Bartlett 2001-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _NTLMSSP_WRAP_
-#define _NTLMSSP_WRAP_
+#ifndef _AUTH_GENERIC_
+#define _AUTH_GENERIC_
 
 struct gensec_security;
 
@@ -31,14 +31,18 @@ struct auth_generic_state {
 	struct gensec_security *gensec_security;
 };
 
-NTSTATUS auth_ntlmssp_set_username(struct auth_generic_state *ans,
+NTSTATUS auth_generic_set_username(struct auth_generic_state *ans,
 				   const char *user);
-NTSTATUS auth_ntlmssp_set_domain(struct auth_generic_state *ans,
+NTSTATUS auth_generic_set_domain(struct auth_generic_state *ans,
 				 const char *domain);
-NTSTATUS auth_ntlmssp_set_password(struct auth_generic_state *ans,
+NTSTATUS auth_generic_set_password(struct auth_generic_state *ans,
 				   const char *password);
-NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx,
+NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx,
 				     struct auth_generic_state **_ans);
-NTSTATUS auth_ntlmssp_client_start(struct auth_generic_state *ans);
+NTSTATUS auth_generic_client_start(struct auth_generic_state *ans, const char *oid);
 
-#endif /* _NTLMSSP_WRAP_ */
+NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
+					       uint8_t auth_type,
+					       uint8_t auth_level);
+
+#endif /* _AUTH_GENERIC_ */

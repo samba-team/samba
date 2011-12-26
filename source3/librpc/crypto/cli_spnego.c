@@ -2,6 +2,7 @@
  *  SPNEGO Encapsulation
  *  Client functions
  *  Copyright (C) Simo Sorce 2010.
+ *  Copyright (C) Andrew Bartlett 2011.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +20,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
-#include "include/ntlmssp_wrap.h"
+#include "include/auth_generic.h"
 #include "librpc/gen_ndr/ntlmssp.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "librpc/crypto/gse.h"
@@ -92,7 +93,7 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 				    struct spnego_context **spnego_ctx)
 {
 	struct spnego_context *sp_ctx = NULL;
-	struct auth_generic_state *auth_ntlmssp_state;
+	struct auth_generic_state *auth_generic_state;
 	NTSTATUS status;
 
 	status = spnego_context_init(mem_ctx, do_sign, do_seal, &sp_ctx);
@@ -101,28 +102,28 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	}
 	sp_ctx->mech = SPNEGO_NTLMSSP;
 
-	status = auth_ntlmssp_client_prepare(sp_ctx,
-					&auth_ntlmssp_state);
+	status = auth_generic_client_prepare(sp_ctx,
+					&auth_generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
 	}
 
-	status = auth_ntlmssp_set_username(auth_ntlmssp_state,
+	status = auth_generic_set_username(auth_generic_state,
 					   username);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
 	}
 
-	status = auth_ntlmssp_set_domain(auth_ntlmssp_state,
+	status = auth_generic_set_domain(auth_generic_state,
 					 domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
 	}
 
-	status = auth_ntlmssp_set_password(auth_ntlmssp_state,
+	status = auth_generic_set_password(auth_generic_state,
 					   password);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
@@ -130,21 +131,21 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	}
 
 	if (do_sign) {
-		gensec_want_feature(auth_ntlmssp_state->gensec_security,
+		gensec_want_feature(auth_generic_state->gensec_security,
 					  GENSEC_FEATURE_SIGN);
 	} else if (do_seal) {
-		gensec_want_feature(auth_ntlmssp_state->gensec_security,
+		gensec_want_feature(auth_generic_state->gensec_security,
 					  GENSEC_FEATURE_SEAL);
 	}
 
-	status = auth_ntlmssp_client_start(auth_ntlmssp_state);
+	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
 	}
 
-	sp_ctx->mech_ctx.gensec_security = talloc_move(sp_ctx, &auth_ntlmssp_state->gensec_security);
-	TALLOC_FREE(auth_ntlmssp_state);
+	sp_ctx->mech_ctx.gensec_security = talloc_move(sp_ctx, &auth_generic_state->gensec_security);
+	TALLOC_FREE(auth_generic_state);
 	*spnego_ctx = sp_ctx;
 	return NT_STATUS_OK;
 }

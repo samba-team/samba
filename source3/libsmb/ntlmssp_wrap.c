@@ -20,27 +20,27 @@
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "ntlmssp_wrap.h"
+#include "auth_generic.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/rpc/dcerpc.h"
 #include "lib/param/param.h"
 
-NTSTATUS auth_ntlmssp_set_username(struct auth_generic_state *ans,
+NTSTATUS auth_generic_set_username(struct auth_generic_state *ans,
 				   const char *user)
 {
 	cli_credentials_set_username(ans->credentials, user, CRED_SPECIFIED);
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_ntlmssp_set_domain(struct auth_generic_state *ans,
+NTSTATUS auth_generic_set_domain(struct auth_generic_state *ans,
 				 const char *domain)
 {
 	cli_credentials_set_domain(ans->credentials, domain, CRED_SPECIFIED);
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_ntlmssp_set_password(struct auth_generic_state *ans,
+NTSTATUS auth_generic_set_password(struct auth_generic_state *ans,
 				   const char *password)
 {
 	cli_credentials_set_password(ans->credentials, password, CRED_SPECIFIED);
@@ -153,7 +153,7 @@ static const struct gensec_security_ops gensec_ntlmssp3_client_ops = {
 	.priority       = GENSEC_NTLMSSP
 };
 
-NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_state **auth_ntlmssp_state)
+NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_state **auth_generic_state)
 {
 	struct auth_generic_state *ans;
 	NTSTATUS nt_status;
@@ -163,7 +163,7 @@ NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 
 	ans = talloc_zero(mem_ctx, struct auth_generic_state);
 	if (!ans) {
-		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
+		DEBUG(0,("auth_generic_start: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -207,11 +207,11 @@ NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 	talloc_unlink(ans, lp_ctx);
 	talloc_unlink(ans, gensec_settings);
 
-	*auth_ntlmssp_state = ans;
+	*auth_generic_state = ans;
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_ntlmssp_client_start(struct auth_generic_state *ans)
+NTSTATUS auth_generic_client_start(struct auth_generic_state *ans, const char *oid)
 {
 	NTSTATUS status;
 
@@ -226,7 +226,32 @@ NTSTATUS auth_ntlmssp_client_start(struct auth_generic_state *ans)
 	ans->credentials = NULL;
 
 	status = gensec_start_mech_by_oid(ans->gensec_security,
-					  GENSEC_OID_NTLMSSP);
+					  oid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
+					       uint8_t auth_type,
+					       uint8_t auth_level)
+{
+	NTSTATUS status;
+
+	/* Transfer the credentials to gensec */
+	status = gensec_set_credentials(ans->gensec_security, ans->credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set GENSEC credentials: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	talloc_unlink(ans, ans->credentials);
+	ans->credentials = NULL;
+
+	status = gensec_start_mech_by_authtype(ans->gensec_security,
+					       auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

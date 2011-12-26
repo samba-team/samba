@@ -3,6 +3,7 @@
    FS info functions
    Copyright (C) Stefan (metze) Metzmacher	2003
    Copyright (C) Jeremy Allison 2007
+   Copyright (C) Andrew Bartlett 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +27,7 @@
 #include "async_smb.h"
 #include "../libcli/smb/smb_seal.h"
 #include "trans2.h"
-#include "ntlmssp_wrap.h"
+#include "auth_generic.h"
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smbXcli_base.h"
 
@@ -610,37 +611,37 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	DATA_BLOB blob_out = data_blob_null;
 	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	struct auth_generic_state *auth_ntlmssp_state;
+	struct auth_generic_state *auth_generic_state;
 	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_NTLM);
 
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = auth_ntlmssp_client_prepare(NULL,
-					     &auth_ntlmssp_state);
+	status = auth_generic_client_prepare(NULL,
+					     &auth_generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	gensec_want_feature(auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
-	gensec_want_feature(auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL);
+	gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+	gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SEAL);
 
-	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_username(auth_ntlmssp_state, user))) {
+	if (!NT_STATUS_IS_OK(status = auth_generic_set_username(auth_generic_state, user))) {
 		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_domain(auth_ntlmssp_state, domain))) {
+	if (!NT_STATUS_IS_OK(status = auth_generic_set_domain(auth_generic_state, domain))) {
 		goto fail;
 	}
-	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_set_password(auth_ntlmssp_state, pass))) {
+	if (!NT_STATUS_IS_OK(status = auth_generic_set_password(auth_generic_state, pass))) {
 		goto fail;
 	}
 
-	if (!NT_STATUS_IS_OK(status = auth_ntlmssp_client_start(auth_ntlmssp_state))) {
+	if (!NT_STATUS_IS_OK(status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP))) {
 		goto fail;
 	}
 
 	do {
-		status = gensec_update(auth_ntlmssp_state->gensec_security, auth_ntlmssp_state,
+		status = gensec_update(auth_generic_state->gensec_security, auth_generic_state,
 				       NULL, blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		data_blob_free(&param_out);
@@ -671,13 +672,13 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 		 * es is a malloc()ed pointer, so we cannot make
 		 * gensec_security a talloc child */
 		es->s.gensec_security = talloc_move(NULL,
-					&auth_ntlmssp_state->gensec_security);
+					&auth_generic_state->gensec_security);
 		smb1cli_conn_set_encryption(cli->conn, es);
 		es = NULL;
 	}
 
   fail:
-	TALLOC_FREE(auth_ntlmssp_state);
+	TALLOC_FREE(auth_generic_state);
 	common_free_encryption_state(&es);
 	return status;
 }

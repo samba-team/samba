@@ -3,6 +3,7 @@
  *  RPC Pipe client routines
  *  Largely rewritten by Jeremy Allison		    2005.
  *  Heavily modified by Simo Sorce		    2010.
+ *  Copyright Andrew Bartlett                       2011.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,7 +27,7 @@
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "../auth/ntlmssp/ntlmssp.h"
-#include "ntlmssp_wrap.h"
+#include "auth_generic.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/crypto/gse.h"
@@ -2284,34 +2285,28 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	status = auth_ntlmssp_client_prepare(result,
+	status = auth_generic_client_prepare(result,
 					     &ntlmssp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = auth_ntlmssp_set_username(ntlmssp_ctx, username);
+	status = auth_generic_set_username(ntlmssp_ctx, username);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = auth_ntlmssp_set_domain(ntlmssp_ctx, domain);
+	status = auth_generic_set_domain(ntlmssp_ctx, domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = auth_ntlmssp_set_password(ntlmssp_ctx, password);
+	status = auth_generic_set_password(ntlmssp_ctx, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-		gensec_want_feature(ntlmssp_ctx->gensec_security, GENSEC_FEATURE_SIGN);
-	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-		gensec_want_feature(ntlmssp_ctx->gensec_security, GENSEC_FEATURE_SEAL);
-	}
-
-	status = auth_ntlmssp_client_start(ntlmssp_ctx);
+	status = auth_generic_client_start_by_authtype(ntlmssp_ctx, auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
