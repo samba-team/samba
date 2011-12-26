@@ -60,8 +60,6 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(ans);
 			return nt_status;
 		}
-		*auth_ntlmssp_state = ans;
-		return NT_STATUS_OK;
 	} else {
 		struct gensec_settings *gensec_settings;
 		struct loadparm_context *lp_ctx;
