@@ -181,6 +181,14 @@ NTSTATUS auth_ntlmssp_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 		return NT_STATUS_NO_MEMORY;
 	}
 	
+	gensec_settings->backends = talloc_zero_array(gensec_settings, struct gensec_security_ops *, 2);
+	if (gensec_settings->backends == NULL) {
+		TALLOC_FREE(ans);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	gensec_settings->backends[0] = &gensec_ntlmssp3_client_ops;
+
 	nt_status = gensec_client_start(ans, &ans->gensec_security, gensec_settings);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -217,8 +225,8 @@ NTSTATUS auth_ntlmssp_client_start(struct auth_generic_state *ans)
 	talloc_unlink(ans, ans->credentials);
 	ans->credentials = NULL;
 
-	status = gensec_start_mech_by_ops(ans->gensec_security,
-					  &gensec_ntlmssp3_client_ops);
+	status = gensec_start_mech_by_oid(ans->gensec_security,
+					  GENSEC_OID_NTLMSSP);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
