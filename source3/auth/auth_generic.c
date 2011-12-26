@@ -112,66 +112,12 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 
 NTSTATUS auth_generic_start(struct auth_generic_state *auth_ntlmssp_state, const char *oid)
 {
-	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	NTSTATUS status;
-
-	if (auth_ntlmssp_state->auth_context->gensec_start_mech_by_oid) {
-		return auth_ntlmssp_state->auth_context->gensec_start_mech_by_oid(
-				auth_ntlmssp_state->gensec_security, oid);
-	}
-
-	if (strcmp(oid, GENSEC_OID_NTLMSSP) != 0) {
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	status = gensec_start_mech_by_oid(auth_ntlmssp_state->gensec_security, oid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	gensec_ntlmssp =
-		talloc_get_type_abort(auth_ntlmssp_state->gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-
-	gensec_ntlmssp->auth_context = talloc_move(gensec_ntlmssp, &auth_ntlmssp_state->auth_context);
-
-	return NT_STATUS_OK;
+	return gensec_start_mech_by_oid(auth_ntlmssp_state->gensec_security, oid);
 }
 
 NTSTATUS auth_generic_authtype_start(struct auth_generic_state *auth_ntlmssp_state,
 				     uint8_t auth_type, uint8_t auth_level)
 {
-	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	NTSTATUS status;
-
-	if (auth_ntlmssp_state->auth_context->gensec_start_mech_by_authtype) {
-		return auth_ntlmssp_state->auth_context->gensec_start_mech_by_authtype(
-				auth_ntlmssp_state->gensec_security,
-				auth_type, auth_level);
-	}
-
-	if (auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
-		/* The caller will then free the auth_ntlmssp_state,
-		 * undoing what was done in auth_generic_prepare().
-		 *
-		 * We can't do that logic here, as
-		 * auth_ntlmssp_want_feature() may have been called in
-		 * between.
-		 */
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	status = gensec_start_mech_by_authtype(auth_ntlmssp_state->gensec_security,
-					       auth_type, auth_level);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	gensec_ntlmssp =
-		talloc_get_type_abort(auth_ntlmssp_state->gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-
-	gensec_ntlmssp->auth_context = talloc_move(gensec_ntlmssp, &auth_ntlmssp_state->auth_context);
-
-	return NT_STATUS_OK;
+	return gensec_start_mech_by_authtype(auth_ntlmssp_state->gensec_security,
+					     auth_type, auth_level);
 }

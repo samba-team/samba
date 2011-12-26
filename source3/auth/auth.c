@@ -464,8 +464,6 @@ static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
 	for (method = (*auth_context)->auth_method_list; method; method = method->next) {
 		if (method->prepare_gensec) {
 			(*auth_context)->prepare_gensec = method->prepare_gensec;
-			(*auth_context)->gensec_start_mech_by_oid = method->gensec_start_mech_by_oid;
-			(*auth_context)->gensec_start_mech_by_authtype = method->gensec_start_mech_by_authtype;
 			break;
 		}
 	}

@@ -68,11 +68,6 @@ struct auth_serversupplied_info {
 
 typedef NTSTATUS (*prepare_gensec_fn)(TALLOC_CTX *mem_ctx,
 				      struct gensec_security **gensec_context);
-typedef NTSTATUS (*gensec_start_mech_by_oid_fn)(struct gensec_security *gensec_context,
-						const char *oid_string);
-typedef NTSTATUS (*gensec_start_mech_by_authtype_fn)(struct gensec_security *gensec_context,
-						     uint8_t auth_type,
-						     uint8_t auth_level);
 
 struct auth_context {
 	DATA_BLOB challenge; 
@@ -94,8 +89,6 @@ struct auth_context {
 	NTSTATUS (*nt_status_squash)(NTSTATUS nt_status);
 
 	prepare_gensec_fn prepare_gensec;
-	gensec_start_mech_by_oid_fn gensec_start_mech_by_oid;
-	gensec_start_mech_by_authtype_fn gensec_start_mech_by_authtype;
 };
 
 typedef struct auth_methods
@@ -119,8 +112,6 @@ typedef struct auth_methods
 
 	/* Optional methods allowing this module to provide a way to get a gensec context */
 	prepare_gensec_fn prepare_gensec;
-	gensec_start_mech_by_oid_fn gensec_start_mech_by_oid;
-	gensec_start_mech_by_authtype_fn gensec_start_mech_by_authtype;
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;
 

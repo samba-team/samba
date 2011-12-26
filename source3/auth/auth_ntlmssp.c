@@ -242,6 +242,11 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 
+	nt_status = make_auth_context_subsystem(gensec_ntlmssp, &gensec_ntlmssp->auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
 	nt_status = ntlmssp_server_start(gensec_ntlmssp,
 					 is_standalone,
 					 netbios_name,

@@ -185,8 +185,6 @@ static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
 	result->name = "samba4";
 	result->auth = check_samba4_security;
 	result->prepare_gensec = prepare_gensec;
-	result->gensec_start_mech_by_oid = gensec_start_mech_by_oid;
-	result->gensec_start_mech_by_authtype = gensec_start_mech_by_authtype;
 
         *auth_method = result;
 	return NT_STATUS_OK;
