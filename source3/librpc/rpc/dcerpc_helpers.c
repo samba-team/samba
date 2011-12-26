@@ -24,8 +24,6 @@
 #include "librpc/gen_ndr/ndr_schannel.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
-#include "../auth/ntlmssp/ntlmssp.h"
-#include "ntlmssp_wrap.h"
 #include "librpc/crypto/gse.h"
 #include "librpc/crypto/spnego.h"
 #include "auth/gensec/gensec.h"
