@@ -420,7 +420,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 static void reply_spnego_ntlmssp(struct smb_request *req,
 				 uint16 vuid,
-				 struct auth_generic_state **auth_ntlmssp_state,
+				 struct gensec_security **gensec_security,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status,
 				 const char *OID,
 				 bool wrap)
@@ -431,7 +431,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	struct smbd_server_connection *sconn = req->sconn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = gensec_session_info((*auth_ntlmssp_state)->gensec_security,
+		nt_status = gensec_session_info(*gensec_security,
 						talloc_tos(),
 						&session_info);
 	}
@@ -452,7 +452,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 		if (register_existing_vuid(sconn, vuid,
 					   session_info, nullblob) !=
 					   vuid) {
-			/* The problem is, *auth_ntlmssp_state points
+			/* The problem is, *gensec_security points
 			 * into the vuser this will have
 			 * talloc_free()'ed in
 			 * register_existing_vuid() */
@@ -492,7 +492,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		/* NB. This is *NOT* an error case. JRA */
 		if (do_invalidate) {
-			TALLOC_FREE(*auth_ntlmssp_state);
+			TALLOC_FREE(*gensec_security);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				/* Kill the intermediate vuid */
 				invalidate_vuid(sconn, vuid);
@@ -578,7 +578,7 @@ static void reply_spnego_downgrade_to_ntlmssp(struct smb_request *req,
 static void reply_spnego_negotiate(struct smb_request *req,
 				   uint16 vuid,
 				   DATA_BLOB blob1,
-				   struct auth_generic_state **auth_ntlmssp_state)
+				   struct gensec_security **gensec_security)
 {
 	DATA_BLOB secblob;
 	DATA_BLOB chal;
@@ -614,7 +614,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	}
 #endif
 
-	TALLOC_FREE(*auth_ntlmssp_state);
+	TALLOC_FREE(*gensec_security);
 
 	if (kerb_mech) {
 		data_blob_free(&secblob);
@@ -626,7 +626,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	}
 
 	status = auth_generic_prepare(NULL, sconn->remote_address,
-				      auth_ntlmssp_state);
+				      gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
 		invalidate_vuid(sconn, vuid);
@@ -634,9 +634,9 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		return;
 	}
 
-	gensec_want_feature((*auth_ntlmssp_state)->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+	gensec_want_feature(*gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
-	status = auth_generic_start(*auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
+	status = gensec_start_mech_by_oid(*gensec_security, GENSEC_OID_NTLMSSP);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
 		invalidate_vuid(sconn, vuid);
@@ -644,12 +644,12 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		return;
 	}
 
-	status = gensec_update((*auth_ntlmssp_state)->gensec_security, talloc_tos(),
+	status = gensec_update(*gensec_security, talloc_tos(),
 			       NULL, secblob, &chal);
 
 	data_blob_free(&secblob);
 
-	reply_spnego_ntlmssp(req, vuid, auth_ntlmssp_state,
+	reply_spnego_ntlmssp(req, vuid, gensec_security,
 			     &chal, status, OID_NTLMSSP, true);
 
 	data_blob_free(&chal);
@@ -665,7 +665,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 static void reply_spnego_auth(struct smb_request *req,
 			      uint16 vuid,
 			      DATA_BLOB blob1,
-			      struct auth_generic_state **auth_ntlmssp_state)
+			      struct gensec_security **gensec_security)
 {
 	DATA_BLOB auth = data_blob_null;
 	DATA_BLOB auth_reply = data_blob_null;
@@ -736,9 +736,9 @@ static void reply_spnego_auth(struct smb_request *req,
 	/* If we get here it wasn't a negTokenTarg auth packet. */
 	data_blob_free(&secblob);
 
-	if (!*auth_ntlmssp_state) {
+	if (!*gensec_security) {
 		status = auth_generic_prepare(NULL, sconn->remote_address,
-					      auth_ntlmssp_state);
+					      gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Kill the intermediate vuid */
 			invalidate_vuid(sconn, vuid);
@@ -746,9 +746,9 @@ static void reply_spnego_auth(struct smb_request *req,
 			return;
 		}
 
-		gensec_want_feature((*auth_ntlmssp_state)->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(*gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
-		status = auth_generic_start(*auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
+		status = gensec_start_mech_by_oid(*gensec_security, GENSEC_OID_NTLMSSP);
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Kill the intermediate vuid */
 			invalidate_vuid(sconn, vuid);
@@ -757,7 +757,7 @@ static void reply_spnego_auth(struct smb_request *req,
 		}
 	}
 
-	status = gensec_update((*auth_ntlmssp_state)->gensec_security, talloc_tos(),
+	status = gensec_update(*gensec_security, talloc_tos(),
 			       NULL, auth, &auth_reply);
 
 	data_blob_free(&auth);
@@ -765,7 +765,7 @@ static void reply_spnego_auth(struct smb_request *req,
 	/* Don't send the mechid as we've already sent this (RFC4178). */
 
 	reply_spnego_ntlmssp(req, vuid,
-			     auth_ntlmssp_state,
+			     gensec_security,
 			     &auth_reply, status, NULL, true);
 
 	data_blob_free(&auth_reply);
@@ -1144,9 +1144,9 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	if (sconn->use_gensec_hook || ntlmssp_blob_matches_magic(&blob1)) {
 		DATA_BLOB chal;
 
-		if (!vuser->auth_ntlmssp_state) {
+		if (!vuser->gensec_security) {
 			status = auth_generic_prepare(vuser, sconn->remote_address,
-						      &vuser->auth_ntlmssp_state);
+						      &vuser->gensec_security);
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Kill the intermediate vuid */
 				invalidate_vuid(sconn, vuid);
@@ -1155,12 +1155,12 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				return;
 			}
 
-			gensec_want_feature(vuser->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+			gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
 			if (sconn->use_gensec_hook) {
-				status = auth_generic_start(vuser->auth_ntlmssp_state, GENSEC_OID_SPNEGO);
+				status = gensec_start_mech_by_oid(vuser->gensec_security, GENSEC_OID_SPNEGO);
 			} else {
-				status = auth_generic_start(vuser->auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
+				status = gensec_start_mech_by_oid(vuser->gensec_security, GENSEC_OID_NTLMSSP);
 			}
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Kill the intermediate vuid */
@@ -1171,14 +1171,14 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			}
 		}
 
-		status = gensec_update(vuser->auth_ntlmssp_state->gensec_security,
+		status = gensec_update(vuser->gensec_security,
 				       talloc_tos(), NULL,
 				       blob1, &chal);
 
 		data_blob_free(&blob1);
 
 		reply_spnego_ntlmssp(req, vuid,
-				     &vuser->auth_ntlmssp_state,
+				     &vuser->gensec_security,
 				     &chal, status, NULL, false);
 		data_blob_free(&chal);
 		return;
@@ -1189,7 +1189,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		/* its a negTokenTarg packet */
 
 		reply_spnego_negotiate(req, vuid, blob1,
-				       &vuser->auth_ntlmssp_state);
+				       &vuser->gensec_security);
 		data_blob_free(&blob1);
 		return;
 	}
@@ -1199,7 +1199,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		/* its a auth packet */
 
 		reply_spnego_auth(req, vuid, blob1,
-				  &vuser->auth_ntlmssp_state);
+				  &vuser->gensec_security);
 		data_blob_free(&blob1);
 		return;
 	}

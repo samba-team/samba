@@ -124,8 +124,8 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid)
 
 	session_yield(vuser);
 
-	if (vuser->auth_ntlmssp_state) {
-		TALLOC_FREE(vuser->auth_ntlmssp_state);
+	if (vuser->gensec_security) {
+		TALLOC_FREE(vuser->gensec_security);
 	}
 
 	DLIST_REMOVE(sconn->smb1.sessions.validated_users, vuser);

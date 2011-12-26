@@ -26,9 +26,6 @@ struct gensec_security;
 extern const struct gensec_security_ops gensec_ntlmssp3_server_ops;
 
 struct auth_generic_state {
-	/* used only by server implementation */
-	struct auth_context *auth_context;
-	
 	/* used only by the client implementation */
 	struct cli_credentials *credentials;
 

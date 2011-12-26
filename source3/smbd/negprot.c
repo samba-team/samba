@@ -199,18 +199,18 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 				   OID_NTLMSSP,
 				   NULL};
 	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
-	struct auth_generic_state *auth_ntlmssp_state;
+	struct gensec_security *gensec_security;
 
 	sconn->use_gensec_hook = false;
 
 	/* See if we can get an SPNEGO blob out of the gensec hook (if auth_samba4 is loaded) */
 	status = auth_generic_prepare(talloc_tos(),
 				      sconn->remote_address,
-				      &auth_ntlmssp_state);
+				      &gensec_security);
 	if (NT_STATUS_IS_OK(status)) {
-		status = auth_generic_start(auth_ntlmssp_state, GENSEC_OID_SPNEGO);
+		status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
 		if (NT_STATUS_IS_OK(status)) {
-			status = gensec_update(auth_ntlmssp_state->gensec_security, ctx,
+			status = gensec_update(gensec_security, ctx,
 					       NULL, data_blob_null, &blob);
 			/* If we get the list of OIDs, the 'OK' answer
 			 * is NT_STATUS_MORE_PROCESSING_REQUIRED */
@@ -218,7 +218,7 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 				sconn->use_gensec_hook = true;
 			}
 		}
-		TALLOC_FREE(auth_ntlmssp_state);
+		TALLOC_FREE(gensec_security);
 	}
 
 	sconn->smb1.negprot.spnego = true;

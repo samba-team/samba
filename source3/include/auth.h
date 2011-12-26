@@ -128,7 +128,7 @@ struct auth_init_function_entry {
 	struct auth_init_function_entry *prev, *next;
 };
 
-struct auth_generic_state;
+struct gensec_security;
 
 /* Changed from 1 -> 2 to add the logon_parameters field. */
 /* Changed from 2 -> 3 when we reworked many auth structures to use IDL or be in common with Samba4 */

@@ -73,33 +73,32 @@ bool is_encrypted_packet(struct smbd_server_connection *sconn,
 }
 
 /******************************************************************************
- Create an auth_ntlmssp_state and ensure pointer copy is correct.
+ Create an gensec_security and ensure pointer copy is correct.
 ******************************************************************************/
 
 static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 				  struct smb_trans_enc_state *es)
 {
-	struct auth_generic_state *auth_ntlmssp_state;
+	struct gensec_security *gensec_security;
 	NTSTATUS status = auth_generic_prepare(NULL, remote_address,
-					       &auth_ntlmssp_state);
+					       &gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
 
-	gensec_want_feature(auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SEAL);
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 
-	status = auth_generic_start(auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
+	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(auth_ntlmssp_state);
+		TALLOC_FREE(gensec_security);
 		return nt_status_squash(status);
 	}
 
 	/* We do not need the auth_ntlmssp layer any more, which was
 	 * allocated on NULL, so promote gensec_security to the NULL
 	 * context */
-	es->s.gensec_security = talloc_move(NULL, &auth_ntlmssp_state->gensec_security);
-	TALLOC_FREE(auth_ntlmssp_state);
+	es->s.gensec_security = gensec_security;
 
 	return status;
 }

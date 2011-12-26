@@ -33,89 +33,73 @@
 
 NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			      const struct tsocket_address *remote_address,
-			      struct auth_generic_state **auth_ntlmssp_state)
+			      struct gensec_security **gensec_security_out)
 {
+	struct gensec_security *gensec_security;
 	struct auth_context *auth_context;
-	struct auth_generic_state *ans;
 	NTSTATUS nt_status;
 
-	ans = talloc_zero(mem_ctx, struct auth_generic_state);
-	if (!ans) {
-		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	nt_status = make_auth_context_subsystem(talloc_tos(), &auth_context);
+	nt_status = make_auth_context_subsystem(tmp_ctx, &auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(ans);
+		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 	}
 
-	ans->auth_context = talloc_steal(ans, auth_context);
-
 	if (auth_context->prepare_gensec) {
-		nt_status = auth_context->prepare_gensec(ans,
-							 &ans->gensec_security);
+		nt_status = auth_context->prepare_gensec(tmp_ctx,
+							 &gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			TALLOC_FREE(ans);
+			TALLOC_FREE(tmp_ctx);
 			return nt_status;
 		}
 	} else {
 		struct gensec_settings *gensec_settings;
 		struct loadparm_context *lp_ctx;
 
-		lp_ctx = loadparm_init_s3(ans, loadparm_s3_context());
+		lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_context());
 		if (lp_ctx == NULL) {
 			DEBUG(10, ("loadparm_init_s3 failed\n"));
-			TALLOC_FREE(ans);
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INVALID_SERVER_STATE;
 		}
 
-		gensec_settings = lpcfg_gensec_settings(ans, lp_ctx);
+		gensec_settings = lpcfg_gensec_settings(tmp_ctx, lp_ctx);
 		if (lp_ctx == NULL) {
 			DEBUG(10, ("lpcfg_gensec_settings failed\n"));
-			TALLOC_FREE(ans);
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		gensec_settings->backends = talloc_zero_array(gensec_settings, struct gensec_security_ops *, 2);
 		if (gensec_settings->backends == NULL) {
-			TALLOC_FREE(ans);
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		gensec_settings->backends[0] = &gensec_ntlmssp3_server_ops;
 
-		nt_status = gensec_server_start(ans, gensec_settings,
-						NULL, &ans->gensec_security);
+		nt_status = gensec_server_start(tmp_ctx, gensec_settings,
+						NULL, &gensec_security);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			TALLOC_FREE(ans);
+			TALLOC_FREE(tmp_ctx);
 			return nt_status;
 		}
-		talloc_unlink(ans, lp_ctx);
-		talloc_unlink(ans, gensec_settings);
+		talloc_unlink(tmp_ctx, lp_ctx);
+		talloc_unlink(tmp_ctx, gensec_settings);
 	}
 
-	nt_status = gensec_set_remote_address(ans->gensec_security,
+	nt_status = gensec_set_remote_address(gensec_security,
 					      remote_address);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(ans);
+		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 	}
 
-	*auth_ntlmssp_state = ans;
+	*gensec_security_out = talloc_steal(mem_ctx, gensec_security);
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
-}
-
-NTSTATUS auth_generic_start(struct auth_generic_state *auth_ntlmssp_state, const char *oid)
-{
-	return gensec_start_mech_by_oid(auth_ntlmssp_state->gensec_security, oid);
-}
-
-NTSTATUS auth_generic_authtype_start(struct auth_generic_state *auth_ntlmssp_state,
-				     uint8_t auth_type, uint8_t auth_level)
-{
-	return gensec_start_mech_by_authtype(auth_ntlmssp_state->gensec_security,
-					     auth_type, auth_level);
 }

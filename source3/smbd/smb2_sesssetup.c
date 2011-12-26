@@ -243,7 +243,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-	session->compat_vuser->auth_ntlmssp_state = NULL;
+	session->compat_vuser->gensec_security = NULL;
 	session->compat_vuser->homes_snum = -1;
 	session->compat_vuser->session_info = session->session_info;
 	session->compat_vuser->session_keystr = NULL;
@@ -341,7 +341,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 	NTSTATUS status;
 
 	/* Ensure we have no old NTLM state around. */
-	TALLOC_FREE(session->auth_ntlmssp_state);
+	TALLOC_FREE(session->gensec_security);
 
 	status = parse_spnego_mechanisms(talloc_tos(), in_security_buffer,
 			&secblob_in, &kerb_mech);
@@ -376,19 +376,19 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 	} else {
 		/* Fall back to NTLMSSP. */
 		status = auth_generic_prepare(session, session->sconn->remote_address,
-					    &session->auth_ntlmssp_state);
+					    &session->gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
 
-		gensec_want_feature(session->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
-		status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
+		status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_NTLMSSP);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
 
-		status = gensec_update(session->auth_ntlmssp_state->gensec_security,
+		status = gensec_update(session->gensec_security,
 				       talloc_tos(), NULL,
 				       secblob_in,
 				       &chal_out);
@@ -453,7 +453,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
-	session->compat_vuser->auth_ntlmssp_state = session->auth_ntlmssp_state;
+	session->compat_vuser->gensec_security = session->gensec_security;
 	session->compat_vuser->homes_snum = -1;
 	session->compat_vuser->session_info = session->session_info;
 	session->compat_vuser->session_keystr = NULL;
@@ -560,18 +560,18 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 		data_blob_free(&secblob_in);
 	}
 
-	if (session->auth_ntlmssp_state == NULL) {
+	if (session->gensec_security == NULL) {
 		status = auth_generic_prepare(session, session->sconn->remote_address,
-					    &session->auth_ntlmssp_state);
+					    &session->gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			data_blob_free(&auth);
 			TALLOC_FREE(session);
 			return status;
 		}
 
-		gensec_want_feature(session->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
-		status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
+		status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_NTLMSSP);
 		if (!NT_STATUS_IS_OK(status)) {
 			data_blob_free(&auth);
 			TALLOC_FREE(session);
@@ -579,14 +579,14 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 		}
 	}
 
-	status = gensec_update(session->auth_ntlmssp_state->gensec_security,
+	status = gensec_update(session->gensec_security,
 			       talloc_tos(), NULL,
 			       auth,
 			       &auth_out);
 	/* If status is NT_STATUS_OK then we need to get the token.
 	 * Map to guest is now internal to auth_ntlmssp */
 	if (NT_STATUS_IS_OK(status)) {
-		status = gensec_session_info(session->auth_ntlmssp_state->gensec_security,
+		status = gensec_session_info(session->gensec_security,
 					     session,
 					     &session->session_info);
 	}
@@ -635,20 +635,20 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 
 	*out_security_buffer = data_blob_null;
 
-	if (session->auth_ntlmssp_state == NULL) {
+	if (session->gensec_security == NULL) {
 		status = auth_generic_prepare(session, session->sconn->remote_address,
-					    &session->auth_ntlmssp_state);
+					    &session->gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
 			return status;
 		}
 
-		gensec_want_feature(session->auth_ntlmssp_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 
 		if (session->sconn->use_gensec_hook) {
-			status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_SPNEGO);
+			status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_SPNEGO);
 		} else {
-			status = auth_generic_start(session->auth_ntlmssp_state, GENSEC_OID_NTLMSSP);
+			status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_NTLMSSP);
 		}
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
@@ -657,7 +657,7 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 	}
 
 	/* RAW NTLMSSP */
-	status = gensec_update(session->auth_ntlmssp_state->gensec_security,
+	status = gensec_update(session->gensec_security,
 			       smb2req, NULL,
 			       in_security_buffer,
 			       out_security_buffer);
@@ -667,7 +667,7 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 		return status;
 	}
 
-	status = gensec_session_info(session->auth_ntlmssp_state->gensec_security,
+	status = gensec_session_info(session->gensec_security,
 				     session,
 				     &session->session_info);
 
