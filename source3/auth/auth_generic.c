@@ -31,14 +31,15 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/param/param.h"
 
-NTSTATUS auth_generic_prepare(const struct tsocket_address *remote_address,
+NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
+			      const struct tsocket_address *remote_address,
 			      struct auth_generic_state **auth_ntlmssp_state)
 {
 	struct auth_context *auth_context;
 	struct auth_generic_state *ans;
 	NTSTATUS nt_status;
 
-	ans = talloc_zero(NULL, struct auth_generic_state);
+	ans = talloc_zero(mem_ctx, struct auth_generic_state);
 	if (!ans) {
 		DEBUG(0,("auth_ntlmssp_start: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;

@@ -38,7 +38,7 @@ NTSTATUS auth_generic_server_start(TALLOC_CTX *mem_ctx,
 	struct auth_generic_state *a = NULL;
 	NTSTATUS status;
 
-	status = auth_generic_prepare(remote_address, &a);
+	status = auth_generic_prepare(talloc_tos(), remote_address, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": auth_generic_prepare failed: %s\n",
 			  nt_errstr(status)));
@@ -92,7 +92,7 @@ NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
 	struct auth_generic_state *a = NULL;
 	NTSTATUS status;
 
-	status = auth_generic_prepare(remote_address, &a);
+	status = auth_generic_prepare(talloc_tos(), remote_address, &a);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": auth_generic_prepare failed: %s\n",
 			  nt_errstr(status)));

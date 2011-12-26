@@ -204,7 +204,8 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 	sconn->use_gensec_hook = false;
 
 	/* See if we can get an SPNEGO blob out of the gensec hook (if auth_samba4 is loaded) */
-	status = auth_generic_prepare(sconn->remote_address,
+	status = auth_generic_prepare(talloc_tos(),
+				      sconn->remote_address,
 				      &auth_ntlmssp_state);
 	if (NT_STATUS_IS_OK(status)) {
 		status = auth_generic_start(auth_ntlmssp_state, GENSEC_OID_SPNEGO);
