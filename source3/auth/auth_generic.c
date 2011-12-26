@@ -79,6 +79,14 @@ NTSTATUS auth_generic_prepare(const struct tsocket_address *remote_address,
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		gensec_settings->backends = talloc_zero_array(gensec_settings, struct gensec_security_ops *, 2);
+		if (gensec_settings->backends == NULL) {
+			TALLOC_FREE(ans);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		gensec_settings->backends[0] = &gensec_ntlmssp3_server_ops;
+
 		nt_status = gensec_server_start(ans, gensec_settings,
 						NULL, &ans->gensec_security);
 
@@ -115,8 +123,7 @@ NTSTATUS auth_generic_start(struct auth_generic_state *auth_ntlmssp_state, const
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	status = gensec_start_mech_by_ops(auth_ntlmssp_state->gensec_security,
-					  &gensec_ntlmssp3_server_ops);
+	status = gensec_start_mech_by_oid(auth_ntlmssp_state->gensec_security, oid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -153,28 +160,8 @@ NTSTATUS auth_generic_authtype_start(struct auth_generic_state *auth_ntlmssp_sta
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	gensec_want_feature(auth_ntlmssp_state->gensec_security,
-			    GENSEC_FEATURE_DCE_STYLE);
-	gensec_want_feature(auth_ntlmssp_state->gensec_security,
-			    GENSEC_FEATURE_ASYNC_REPLIES);
-	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-		gensec_want_feature(auth_ntlmssp_state->gensec_security,
-				    GENSEC_FEATURE_SIGN);
-	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
-		gensec_want_feature(auth_ntlmssp_state->gensec_security,
-				    GENSEC_FEATURE_SIGN);
-		gensec_want_feature(auth_ntlmssp_state->gensec_security,
-				    GENSEC_FEATURE_SEAL);
-	} else if (auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
-		/* Default features */
-	} else {
-		DEBUG(2,("auth_level %d not supported in DCE/RPC authentication\n",
-			 auth_level));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = gensec_start_mech_by_ops(auth_ntlmssp_state->gensec_security,
-					  &gensec_ntlmssp3_server_ops);
+	status = gensec_start_mech_by_authtype(auth_ntlmssp_state->gensec_security,
+					       auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
