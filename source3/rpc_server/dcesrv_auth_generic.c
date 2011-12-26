@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "rpc_server/dcesrv_auth_generic.h"
-#include "ntlmssp_wrap.h"
 #include "auth.h"
 #include "auth/gensec/gensec.h"
 

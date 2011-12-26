@@ -26,7 +26,6 @@
 #include "../libcli/auth/spnego.h"
 #include "../auth/gensec/gensec.h"
 #include "../auth/ntlmssp/ntlmssp.h"
-#include "ntlmssp_wrap.h"
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "libads/kerberos_proto.h"
 #include "../lib/util/asn1.h"

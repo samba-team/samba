@@ -24,7 +24,6 @@
 #include "../libcli/auth/spnego.h"
 #include "serverid.h"
 #include "auth.h"
-#include "ntlmssp_wrap.h"
 #include "messages.h"
 #include "smbprofile.h"
 #include "auth/gensec/gensec.h"
