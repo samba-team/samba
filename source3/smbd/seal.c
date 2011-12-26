@@ -93,9 +93,6 @@ static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 		return nt_status_squash(status);
 	}
 
-	/* We do not need the auth_ntlmssp layer any more, which was
-	 * allocated on NULL, so promote gensec_security to the NULL
-	 * context */
 	es->s.gensec_security = gensec_security;
 
 	return status;
