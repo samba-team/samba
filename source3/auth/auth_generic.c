@@ -22,11 +22,8 @@
 
 #include "includes.h"
 #include "auth.h"
-#include "../librpc/gen_ndr/netlogon.h"
-#include "../librpc/gen_ndr/dcerpc.h"
 #include "../lib/tsocket/tsocket.h"
 #include "auth/gensec/gensec.h"
-#include "librpc/rpc/dcerpc.h"
 #include "lib/param/param.h"
 
 NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
