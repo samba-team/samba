@@ -74,8 +74,8 @@ bool is_encrypted_packet(struct smbd_server_connection *sconn,
  Create an gensec_security and ensure pointer copy is correct.
 ******************************************************************************/
 
-static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
-				  struct smb_trans_enc_state *es)
+static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
+				 struct smb_trans_enc_state *es, const char *oid)
 {
 	struct gensec_security *gensec_security;
 	NTSTATUS status = auth_generic_prepare(NULL, remote_address,
@@ -86,7 +86,7 @@ static NTSTATUS make_auth_ntlmssp(const struct tsocket_address *remote_address,
 
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 
-	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
+	status = gensec_start_mech_by_oid(gensec_security, oid);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(gensec_security);
@@ -246,8 +246,8 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
 	switch (smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
 			{
-				NTSTATUS status = make_auth_ntlmssp(remote_address,
-								    es);
+				NTSTATUS status = make_auth_gensec(remote_address,
+								   es, GENSEC_OID_NTLMSSP);
 				if (!NT_STATUS_IS_OK(status)) {
 					srv_free_encryption_context(&es);
 					return status;
