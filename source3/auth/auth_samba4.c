@@ -114,7 +114,7 @@ static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_SERVER_STATE;
 	}
-	event_ctx = s4_event_context_init(mem_ctx);
+	event_ctx = s4_event_context_init(frame);
 	if (event_ctx == NULL) {
 		DEBUG(1, ("s4_event_context_init failed\n"));
 		TALLOC_FREE(frame);
