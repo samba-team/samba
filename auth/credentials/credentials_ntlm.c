@@ -174,8 +174,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 					lm_response = nt_response;
 					/* LM Key is incompatible with 'long' passwords */
 					*flags &= ~CLI_CRED_LANMAN_AUTH;
-				} else {
-					E_deshash(password, lm_hash);
+				} else if (E_deshash(password, lm_hash)) {
 					lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 					memcpy(lm_session_key.data, lm_hash, 8);
 					memset(&lm_session_key.data[8], '\0', 8);
@@ -193,8 +192,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 			*flags &= ~CLI_CRED_LANMAN_AUTH;
 
 			password = cli_credentials_get_password(cred);
-			if (password) {
-				E_deshash(password, lm_hash);
+			if (password && E_deshash(password, lm_hash)) {
 				lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 				memcpy(lm_session_key.data, lm_hash, 8);
 				memset(&lm_session_key.data[8], '\0', 8);
