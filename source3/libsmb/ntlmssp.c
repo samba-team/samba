@@ -33,7 +33,7 @@
 #include "../nsswitch/libwbclient/wbclient.h"
 
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
-				       TALLOC_CTX *out_mem_ctx, /* Unused at this time */
+				       TALLOC_CTX *out_mem_ctx,
 				       DATA_BLOB reply, DATA_BLOB *next_request);
 static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 				         TALLOC_CTX *out_mem_ctx, /* Unused at this time */
@@ -374,10 +374,21 @@ NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
  */
 
 static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
-				  TALLOC_CTX *out_mem_ctx, /* Unused at this time */
-				  DATA_BLOB reply, DATA_BLOB *next_request)
+				       TALLOC_CTX *out_mem_ctx,
+				       DATA_BLOB in, DATA_BLOB *out)
 {
+	const char *domain = ntlmssp_state->client.netbios_domain;
+	const char *workstation = ntlmssp_state->client.netbios_name;
 	NTSTATUS status;
+
+	/* These don't really matter in the initial packet, so don't panic if they are not set */
+	if (!domain) {
+		domain = "";
+	}
+
+	if (!workstation) {
+		workstation = "";
+	}
 
 	if (ntlmssp_state->unicode) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
@@ -390,15 +401,17 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	/* generate the ntlmssp negotiate packet */
-	status = msrpc_gen(ntlmssp_state, next_request, "CddAA",
+	status = msrpc_gen(out_mem_ctx,
+		  out, "CddAA",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
-		  ntlmssp_state->client.netbios_domain,
-		  ntlmssp_state->client.netbios_name);
+		  domain,
+		  workstation);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntlmssp_client_initial: failed to generate "
-			"ntlmssp negotiate packet\n"));
+			  "ntlmssp negotiate packet\n"));
 		return status;
 	}
 
@@ -407,7 +420,7 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 			talloc_tos(), struct NEGOTIATE_MESSAGE);
 		if (negotiate != NULL) {
 			status = ntlmssp_pull_NEGOTIATE_MESSAGE(
-				next_request, negotiate, negotiate);
+				out, negotiate, negotiate);
 			if (NT_STATUS_IS_OK(status)) {
 				NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE,
 						negotiate);

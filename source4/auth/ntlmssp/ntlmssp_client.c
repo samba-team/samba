@@ -32,6 +32,8 @@ struct auth_session_info;
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "auth/ntlmssp/ntlmssp_private.h"
+#include "../librpc/gen_ndr/ndr_ntlmssp.h"
+#include "../auth/ntlmssp/ntlmssp_ndr.h"
 
 /*********************************************************************
  Client side NTLMSSP
@@ -55,8 +57,8 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	const char *domain = ntlmssp_state->domain;
-	const char *workstation = cli_credentials_get_workstation(gensec_security->credentials);
+	const char *domain = ntlmssp_state->client.netbios_domain;
+	const char *workstation = ntlmssp_state->client.netbios_name;
 	NTSTATUS status;
 
 	/* These don't really matter in the initial packet, so don't panic if they are not set */
@@ -73,22 +75,38 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 	} else {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
 	}
-	
+
 	if (ntlmssp_state->use_ntlmv2) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
 	/* generate the ntlmssp negotiate packet */
-	status = msrpc_gen(out_mem_ctx, 
+	status = msrpc_gen(out_mem_ctx,
 		  out, "CddAA",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
-		  domain, 
+		  domain,
 		  workstation);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("ntlmssp_client_initial: failed to generate "
+			  "ntlmssp negotiate packet\n"));
 		return status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		struct NEGOTIATE_MESSAGE *negotiate = talloc(
+			talloc_tos(), struct NEGOTIATE_MESSAGE);
+		if (negotiate != NULL) {
+			status = ntlmssp_pull_NEGOTIATE_MESSAGE(
+				out, negotiate, negotiate);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE,
+						negotiate);
+			}
+			TALLOC_FREE(negotiate);
+		}
 	}
 
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
@@ -349,7 +367,8 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->role = NTLMSSP_CLIENT;
 
-	ntlmssp_state->domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
+	ntlmssp_state->client.netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
+	ntlmssp_state->client.netbios_name = cli_credentials_get_workstation(gensec_security->credentials);
 
 	ntlmssp_state->unicode = gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "unicode", true);
 
