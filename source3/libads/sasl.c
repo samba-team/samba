@@ -19,7 +19,8 @@
 
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
-#include "../auth/ntlmssp/ntlmssp.h"
+#include "auth/gensec/gensec.h"
+#include "auth_generic.h"
 #include "ads.h"
 #include "smb_krb5.h"
 
@@ -27,88 +28,77 @@
 
 static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 {
-	struct ntlmssp_state *ntlmssp_state =
-		(struct ntlmssp_state *)ads->ldap.wrap_private_data;
-	ADS_STATUS status;
+	struct gensec_security *gensec_security =
+		talloc_get_type_abort(ads->ldap.wrap_private_data,
+		struct gensec_security);
 	NTSTATUS nt_status;
-	DATA_BLOB sig;
-	TALLOC_CTX *frame;
-	uint8 *dptr = ads->ldap.out.buf + (4 + NTLMSSP_SIG_SIZE);
+	DATA_BLOB unwrapped, wrapped;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	frame = talloc_stackframe();
-	/* copy the data to the right location */
-	memcpy(dptr, buf, len);
+	unwrapped = data_blob_const(buf, len);
 
-	/* create the signature and may encrypt the data */
-	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
-		nt_status = ntlmssp_seal_packet(ntlmssp_state,
-						frame,
-						dptr, len,
-						dptr, len,
-						&sig);
-	} else {
-		nt_status = ntlmssp_sign_packet(ntlmssp_state,
-						frame,
-						dptr, len,
-						dptr, len,
-						&sig);
+	nt_status = gensec_wrap(gensec_security, frame, &unwrapped, &wrapped);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(frame);
+		return ADS_ERROR_NT(nt_status);
 	}
-	status = ADS_ERROR_NT(nt_status);
-	if (!ADS_ERR_OK(status)) return status;
 
-	/* copy the signature to the right location */
-	memcpy(ads->ldap.out.buf + 4,
-	       sig.data, NTLMSSP_SIG_SIZE);
+	if ((ads->ldap.out.size - 4) < wrapped.length) {
+		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+	}
 
-	TALLOC_FREE(frame);
+	/* copy the wrapped blob to the right location */
+	memcpy(ads->ldap.out.buf + 4, wrapped.data, wrapped.length);
 
 	/* set how many bytes must be written to the underlying socket */
-	ads->ldap.out.left = 4 + NTLMSSP_SIG_SIZE + len;
+	ads->ldap.out.left = 4 + wrapped.length;
+
+	TALLOC_FREE(frame);
 
 	return ADS_SUCCESS;
 }
 
 static ADS_STATUS ads_sasl_ntlmssp_unwrap(ADS_STRUCT *ads)
 {
-	struct ntlmssp_state *ntlmssp_state =
-		(struct ntlmssp_state *)ads->ldap.wrap_private_data;
-	ADS_STATUS status;
+	struct gensec_security *gensec_security =
+		talloc_get_type_abort(ads->ldap.wrap_private_data,
+		struct gensec_security);
 	NTSTATUS nt_status;
-	DATA_BLOB sig;
-	uint8 *dptr = ads->ldap.in.buf + (4 + NTLMSSP_SIG_SIZE);
-	uint32 dlen = ads->ldap.in.ofs - (4 + NTLMSSP_SIG_SIZE);
+	DATA_BLOB unwrapped, wrapped;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	/* wrap the signature into a DATA_BLOB */
-	sig = data_blob_const(ads->ldap.in.buf + 4, NTLMSSP_SIG_SIZE);
+	wrapped = data_blob_const(ads->ldap.in.buf + 4, ads->ldap.in.ofs - 4);
 
-	/* verify the signature and maybe decrypt the data */
-	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
-		nt_status = ntlmssp_unseal_packet(ntlmssp_state,
-						  dptr, dlen,
-						  dptr, dlen,
-						  &sig);
-	} else {
-		nt_status = ntlmssp_check_packet(ntlmssp_state,
-						 dptr, dlen,
-						 dptr, dlen,
-						 &sig);
+	nt_status = gensec_unwrap(gensec_security, frame, &wrapped, &unwrapped);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(frame);
+		return ADS_ERROR_NT(nt_status);
 	}
-	status = ADS_ERROR_NT(nt_status);
-	if (!ADS_ERR_OK(status)) return status;
 
-	/* set the amount of bytes for the upper layer and set the ofs to the data */
-	ads->ldap.in.left	= dlen;
-	ads->ldap.in.ofs	= 4 + NTLMSSP_SIG_SIZE;
+	if (wrapped.length < unwrapped.length) {
+		TALLOC_FREE(frame);
+		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+	}
+
+	/* copy the wrapped blob to the right location */
+	memcpy(ads->ldap.in.buf + 4, unwrapped.data, unwrapped.length);
+
+	/* set how many bytes must be written to the underlying socket */
+	ads->ldap.in.left	= unwrapped.length;
+	ads->ldap.in.ofs	= 4;
+
+	TALLOC_FREE(frame);
 
 	return ADS_SUCCESS;
 }
 
 static void ads_sasl_ntlmssp_disconnect(ADS_STRUCT *ads)
 {
-	struct ntlmssp_state *ntlmssp_state =
-		(struct ntlmssp_state *)ads->ldap.wrap_private_data;
+	struct gensec_security *gensec_security =
+		talloc_get_type_abort(ads->ldap.wrap_private_data,
+		struct gensec_security);
 
-	TALLOC_FREE(ntlmssp_state);
+	TALLOC_FREE(gensec_security);
 
 	ads->ldap.wrap_ops = NULL;
 	ads->ldap.wrap_private_data = NULL;
@@ -136,42 +126,39 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	NTSTATUS nt_status;
 	ADS_STATUS status;
 	int turn = 1;
-	uint32 features = 0;
 
-	struct ntlmssp_state *ntlmssp_state;
+	struct auth_generic_state *auth_generic_state;
 
-	nt_status = ntlmssp_client_start(NULL,
-					 lp_netbios_name(),
-					 lp_workgroup(),
-					 lp_client_ntlmv2_auth(),
-					 &ntlmssp_state);
+	nt_status = auth_generic_client_prepare(NULL, &auth_generic_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ADS_ERROR_NT(nt_status);
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_username(ntlmssp_state, ads->auth.user_name))) {
+	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_username(auth_generic_state, ads->auth.user_name))) {
 		return ADS_ERROR_NT(nt_status);
 	}
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, ads->auth.realm))) {
+	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_domain(auth_generic_state, ads->auth.realm))) {
 		return ADS_ERROR_NT(nt_status);
 	}
-	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_password(ntlmssp_state, ads->auth.password))) {
+	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_password(auth_generic_state, ads->auth.password))) {
 		return ADS_ERROR_NT(nt_status);
 	}
 
 	switch (ads->ldap.wrap_type) {
 	case ADS_SASLWRAP_TYPE_SEAL:
-		features = NTLMSSP_FEATURE_SIGN | NTLMSSP_FEATURE_SEAL;
+		gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SIGN);
+		gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SEAL);
 		break;
 	case ADS_SASLWRAP_TYPE_SIGN:
 		if (ads->auth.flags & ADS_AUTH_SASL_FORCE) {
-			features = NTLMSSP_FEATURE_SIGN;
+			gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SIGN);
 		} else {
 			/*
 			 * windows servers are broken with sign only,
 			 * so we need to use seal here too
 			 */
-			features = NTLMSSP_FEATURE_SIGN | NTLMSSP_FEATURE_SEAL;
+			gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SIGN);
+			gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SEAL);
 			ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SEAL;
 		}
 		break;
@@ -179,13 +166,16 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		break;
 	}
 
-	ntlmssp_want_feature(ntlmssp_state, features);
+	nt_status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return ADS_ERROR_NT(nt_status);
+	}
 
 	blob_in = data_blob_null;
 
 	do {
-		nt_status = ntlmssp_update(ntlmssp_state, 
-					   blob_in, &blob_out);
+		nt_status = gensec_update(auth_generic_state->gensec_security,
+					  talloc_tos(), NULL, blob_in, &blob_out);
 		data_blob_free(&blob_in);
 		if ((NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
 		     || NT_STATUS_IS_OK(nt_status))
@@ -212,7 +202,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 					ber_bvfree(scred);
 				}
 
-				TALLOC_FREE(ntlmssp_state);
+				TALLOC_FREE(auth_generic_state);
 				return ADS_ERROR(rc);
 			}
 			if (scred) {
@@ -224,7 +214,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 
 		} else {
 
-			TALLOC_FREE(ntlmssp_state);
+			TALLOC_FREE(auth_generic_state);
 			data_blob_free(&blob_out);
 			return ADS_ERROR_NT(nt_status);
 		}
@@ -236,7 +226,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			if (!spnego_parse_challenge(talloc_tos(), blob, &blob_in, 
 						    &tmp_blob)) {
 
-				TALLOC_FREE(ntlmssp_state);
+				TALLOC_FREE(auth_generic_state);
 				data_blob_free(&blob);
 				DEBUG(3,("Failed to parse challenges\n"));
 				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -246,7 +236,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 			if (!spnego_parse_auth_response(talloc_tos(), blob, nt_status, OID_NTLMSSP, 
 							&blob_in)) {
 
-				TALLOC_FREE(ntlmssp_state);
+				TALLOC_FREE(auth_generic_state);
 				data_blob_free(&blob);
 				DEBUG(3,("Failed to parse auth response\n"));
 				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -257,24 +247,23 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		turn++;
 	} while (rc == LDAP_SASL_BIND_IN_PROGRESS && !NT_STATUS_IS_OK(nt_status));
 	
-	/* we have a reference conter on ntlmssp_state, if we are signing
-	   then the state will be kept by the signing engine */
-
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		ads->ldap.out.max_unwrapped = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED - NTLMSSP_SIG_SIZE;
-		ads->ldap.out.sig_size = NTLMSSP_SIG_SIZE;
+		uint32_t sig_size = gensec_sig_size(auth_generic_state->gensec_security, 0);
+		ads->ldap.out.max_unwrapped = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED - sig_size;
+		ads->ldap.out.sig_size = sig_size;
 		ads->ldap.in.min_wrapped = ads->ldap.out.sig_size;
 		ads->ldap.in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
-		status = ads_setup_sasl_wrapping(ads, &ads_sasl_ntlmssp_ops, ntlmssp_state);
+		status = ads_setup_sasl_wrapping(ads, &ads_sasl_ntlmssp_ops, auth_generic_state->gensec_security);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
 				ads_errstr(status)));
-			TALLOC_FREE(ntlmssp_state);
+			TALLOC_FREE(auth_generic_state);
 			return status;
 		}
-	} else {
-		TALLOC_FREE(ntlmssp_state);
+		/* Only keep the gensec_security element around long-term */
+		talloc_steal(NULL, auth_generic_state->gensec_security);
 	}
+	TALLOC_FREE(auth_generic_state);
 
 	return ADS_ERROR(rc);
 }
