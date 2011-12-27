@@ -6,6 +6,7 @@
    Copyright (C) Robert O'Callahan 2006
    Copyright (C) Jeremy Allison 2006 (minor fixes to fit into Samba and
 				      protect against integer wrap).
+   Copyright (C) Andrew Bartlett 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,7 +24,8 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "../auth/ntlmssp/ntlmssp.h"
+#include "auth/gensec/gensec.h"
+#include "auth_generic.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -41,24 +43,19 @@ static bool client_can_access_ccache_entry(uid_t client_uid,
 	return False;
 }
 
-static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
-					const char *domain,
-					const unsigned char lm_hash[LM_HASH_LEN],
-					const unsigned char nt_hash[NT_HASH_LEN],
-					const DATA_BLOB initial_msg,
-					const DATA_BLOB challenge_msg,
-					DATA_BLOB *auth_msg,
-					uint8_t session_key[16])
+static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
+					    const char *domain,
+					    const char *password,
+					    const DATA_BLOB initial_msg,
+					    const DATA_BLOB challenge_msg,
+					    DATA_BLOB *auth_msg,
+					    uint8_t session_key[16])
 {
 	NTSTATUS status;
-	struct ntlmssp_state *ntlmssp_state = NULL;
-	DATA_BLOB dummy_msg, reply;
+	struct auth_generic_state *auth_generic_state = NULL;
+	DATA_BLOB dummy_msg, reply, session_key_blob;
 
-	status = ntlmssp_client_start(NULL,
-				      lp_netbios_name(),
-				      lp_workgroup(),
-				      lp_client_ntlmv2_auth(),
-				      &ntlmssp_state);
+	status = auth_generic_client_prepare(NULL, &auth_generic_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
@@ -66,7 +63,7 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 		goto done;
 	}
 
-	status = ntlmssp_set_username(ntlmssp_state, username);
+	status = auth_generic_set_username(auth_generic_state, username);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set username: %s\n",
@@ -74,7 +71,7 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 		goto done;
 	}
 
-	status = ntlmssp_set_domain(ntlmssp_state, domain);
+	status = auth_generic_set_domain(auth_generic_state, domain);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set domain: %s\n",
@@ -82,15 +79,22 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 		goto done;
 	}
 
-	status = ntlmssp_set_hashes(ntlmssp_state, lm_hash, nt_hash);
+	status = auth_generic_set_password(auth_generic_state, password);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not set hashes: %s\n",
+		DEBUG(1, ("Could not set password: %s\n",
 			nt_errstr(status)));
 		goto done;
 	}
 
-	ntlmssp_want_feature(ntlmssp_state, NTLMSSP_FEATURE_SESSION_KEY);
+	gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+
+	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not start NTLMSSP mech: %s\n",
+			nt_errstr(status)));
+		goto done;
+	}
 
 	/* We need to get our protocol handler into the right state. So first
 	   we ask it to generate the initial message. Actually the client has already
@@ -104,8 +108,8 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 	*/
 	dummy_msg = data_blob_null;
 	reply = data_blob_null;
-	status = ntlmssp_update(ntlmssp_state, dummy_msg, &reply);
-	data_blob_free(&dummy_msg);
+	status = gensec_update(auth_generic_state->gensec_security,
+			       talloc_tos(), NULL, dummy_msg, &reply);
 	data_blob_free(&reply);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -115,8 +119,8 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 	}
 
 	/* Now we are ready to handle the server's actual response. */
-	status = ntlmssp_update(ntlmssp_state, challenge_msg, &reply);
-
+	status = gensec_update(auth_generic_state->gensec_security,
+			       NULL, NULL, challenge_msg, &reply);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		DEBUG(1, ("We didn't get a response to the challenge! [%s]\n",
 			nt_errstr(status)));
@@ -124,19 +128,28 @@ static NTSTATUS do_ntlm_auth_with_hashes(const char *username,
 		goto done;
 	}
 
-	if (ntlmssp_state->session_key.length != 16) {
-		DEBUG(1, ("invalid session key length %d\n",
-			  (int)ntlmssp_state->session_key.length));
+	status = gensec_session_key(auth_generic_state->gensec_security,
+				    talloc_tos(), &session_key_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+		DEBUG(1, ("We didn't get the session key we requested! [%s]\n",
+			nt_errstr(status)));
 		data_blob_free(&reply);
 		goto done;
 	}
 
-	*auth_msg = data_blob(reply.data, reply.length);
-	memcpy(session_key, ntlmssp_state->session_key.data, 16);
+	if (session_key_blob.length != 16) {
+		DEBUG(1, ("invalid session key length %d\n",
+			  (int)session_key_blob.length));
+		data_blob_free(&reply);
+		goto done;
+	}
+	memcpy(session_key, session_key_blob.data, 16);
+	data_blob_free(&session_key_blob);
+	*auth_msg = reply;
 	status = NT_STATUS_OK;
 
 done:
-	TALLOC_FREE(ntlmssp_state);
+	TALLOC_FREE(auth_generic_state);
 	return status;
 }
 
@@ -257,8 +270,8 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 		state->request->extra_data.data + initial_blob_len,
 		state->request->data.ccache_ntlm_auth.challenge_blob_len);
 
-	result = do_ntlm_auth_with_hashes(
-		name_user, name_domain, entry->lm_hash, entry->nt_hash,
+	result = do_ntlm_auth_with_stored_pw(
+		name_user, name_domain, entry->pass,
 		initial, challenge, &auth,
 		state->response->data.ccache_ntlm_auth.session_key);
 
