@@ -1314,13 +1314,6 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	struct PAC_SIGNATURE_DATA *pac_srv_sig = NULL;
 	struct PAC_SIGNATURE_DATA *pac_kdc_sig = NULL;
 	
-	if ((gensec_gssapi_state->gss_oid->length != gss_mech_krb5->length)
-	    || (memcmp(gensec_gssapi_state->gss_oid->elements, gss_mech_krb5->elements, 
-		       gensec_gssapi_state->gss_oid->length) != 0)) {
-		DEBUG(1, ("NO session info available for this mech\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-		
 	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
