@@ -24,7 +24,8 @@
 #include "libsmb/smb2cli.h"
 #include "libcli/security/security.h"
 #include "libsmb/proto.h"
-#include "../auth/ntlmssp/ntlmssp.h"
+#include "auth/gensec/gensec.h"
+#include "auth_generic.h"
 
 extern fstring host, workgroup, share, password, username, myname;
 
@@ -273,7 +274,8 @@ bool run_smb2_session_reconnect(int dummy)
 	struct tevent_req *subreq;
 	DATA_BLOB in_blob = data_blob_null;
 	DATA_BLOB out_blob;
-	struct ntlmssp_state *ntlmssp;
+	DATA_BLOB session_key;
+	struct auth_generic_state *auth_generic_state;
 	struct iovec *recv_iov;
 	const char *hello = "Hello, world\n";
 	uint8_t *result;
@@ -371,49 +373,51 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = ntlmssp_client_start(talloc_tos(),
-				      lp_netbios_name(),
-				      lp_workgroup(),
-				      lp_client_ntlmv2_auth(),
-				      &ntlmssp);
+	status = auth_generic_client_prepare(talloc_tos(), &auth_generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_client_start returned %s\n", nt_errstr(status));
+		printf("auth_generic_client_prepare returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	ntlmssp_want_feature(ntlmssp,
-			     NTLMSSP_FEATURE_SESSION_KEY);
-	status = ntlmssp_set_username(ntlmssp, username);
+	gensec_want_feature(auth_generic_state->gensec_security,
+			    GENSEC_FEATURE_SESSION_KEY);
+	status = auth_generic_set_username(auth_generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_username returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_set_domain(ntlmssp, workgroup);
+	status = auth_generic_set_domain(auth_generic_state, workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_domain returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_set_password(ntlmssp, password);
+	status = auth_generic_set_password(auth_generic_state, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_password returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_update(ntlmssp, data_blob_null, &in_blob);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		printf("ntlmssp_update returned %s\n", nt_errstr(status));
+	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_client_start returned %s\n", nt_errstr(status));
 		return false;
 	}
-
-	cli2->smb2.session = smbXcli_session_create(cli2, cli2->conn);
 
 	ev = event_context_init(talloc_tos());
 	if (ev == NULL) {
 		printf("event_context_init() returned NULL\n");
 		return false;
 	}
+
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("gensec_update returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	cli2->smb2.session = smbXcli_session_create(cli2, cli2->conn);
 
 	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
 					    cli2->conn,
@@ -443,9 +447,9 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = ntlmssp_update(ntlmssp, out_blob, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_update returned %s\n", nt_errstr(status));
+		printf("auth_generic_update returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -477,7 +481,15 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2_signing_check_pdu(ntlmssp->session_key, recv_iov, 3);
+	status = gensec_session_key(auth_generic_state->gensec_security, talloc_tos(),
+				    &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("gensec_session_key returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = smb2_signing_check_pdu(session_key, recv_iov, 3);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("check pdu returned %s\n", nt_errstr(status));
 		return false;
@@ -543,7 +555,7 @@ bool run_smb2_session_reconnect(int dummy)
 	/* now grab the session key and try with signing */
 
 	status = smb2cli_session_update_session_key(cli2->smb2.session,
-						    ntlmssp->session_key,
+						    session_key,
 						    recv_iov);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_session_update_session_key %s\n", nt_errstr(status));
@@ -766,7 +778,8 @@ bool run_smb2_multi_channel(int dummy)
 	struct tevent_req *subreq;
 	DATA_BLOB in_blob = data_blob_null;
 	DATA_BLOB out_blob;
-	struct ntlmssp_state *ntlmssp;
+	DATA_BLOB session_key;
+	struct auth_generic_state *auth_generic_state;
 	struct iovec *recv_iov;
 	const char *hello = "Hello, world\n";
 	uint8_t *result;
@@ -823,45 +836,47 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = ntlmssp_client_start(talloc_tos(),
-				      lp_netbios_name(),
-				      lp_workgroup(),
-				      lp_client_ntlmv2_auth(),
-				      &ntlmssp);
+	status = auth_generic_client_prepare(talloc_tos(), &auth_generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_client_start returned %s\n", nt_errstr(status));
+		printf("auth_generic_client_prepare returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	ntlmssp_want_feature(ntlmssp,
-			     NTLMSSP_FEATURE_SESSION_KEY);
-	status = ntlmssp_set_username(ntlmssp, username);
+	gensec_want_feature(auth_generic_state->gensec_security,
+			    GENSEC_FEATURE_SESSION_KEY);
+	status = auth_generic_set_username(auth_generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_username returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_set_domain(ntlmssp, workgroup);
+	status = auth_generic_set_domain(auth_generic_state, workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_domain returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_set_password(ntlmssp, password);
+	status = auth_generic_set_password(auth_generic_state, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_password returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_update(ntlmssp, data_blob_null, &in_blob);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		printf("ntlmssp_update returned %s\n", nt_errstr(status));
+	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_client_start returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	ev = event_context_init(talloc_tos());
 	if (ev == NULL) {
 		printf("event_context_init() returned NULL\n");
+		return false;
+	}
+
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("gensec_update returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -893,9 +908,9 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = ntlmssp_update(ntlmssp, out_blob, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_update returned %s\n", nt_errstr(status));
+		printf("auth_generic_update returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -927,8 +942,16 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
+	status = gensec_session_key(auth_generic_state->gensec_security, talloc_tos(),
+				    &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("gensec_session_key returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_session_update_session_key(cli2->smb2.session,
-						    ntlmssp->session_key,
+						    session_key,
 						    recv_iov);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_session_update_session_key %s\n", nt_errstr(status));
@@ -1021,7 +1044,8 @@ bool run_smb2_session_reauth(int dummy)
 	struct tevent_req *subreq;
 	DATA_BLOB in_blob = data_blob_null;
 	DATA_BLOB out_blob;
-	struct ntlmssp_state *ntlmssp;
+	DATA_BLOB session_key;
+	struct auth_generic_state *auth_generic_state;
 	struct iovec *recv_iov;
 
 	printf("Starting SMB2-SESSION_REAUTH\n");
@@ -1075,45 +1099,47 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = ntlmssp_client_start(talloc_tos(),
-				      lp_netbios_name(),
-				      lp_workgroup(),
-				      lp_client_ntlmv2_auth(),
-				      &ntlmssp);
+	status = auth_generic_client_prepare(talloc_tos(), &auth_generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_client_start returned %s\n", nt_errstr(status));
+		printf("auth_generic_client_prepare returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	ntlmssp_want_feature(ntlmssp,
-			     NTLMSSP_FEATURE_SESSION_KEY);
-	status = ntlmssp_set_username(ntlmssp, username);
+	gensec_want_feature(auth_generic_state->gensec_security,
+			    GENSEC_FEATURE_SESSION_KEY);
+	status = auth_generic_set_username(auth_generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_username returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_set_domain(ntlmssp, workgroup);
+	status = auth_generic_set_domain(auth_generic_state, workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_domain returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_set_password(ntlmssp, password);
+	status = auth_generic_set_password(auth_generic_state, password);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_set_password returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
 		return false;
 	}
 
-	status = ntlmssp_update(ntlmssp, data_blob_null, &in_blob);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		printf("ntlmssp_update returned %s\n", nt_errstr(status));
+	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_client_start returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	ev = event_context_init(talloc_tos());
 	if (ev == NULL) {
 		printf("event_context_init() returned NULL\n");
+		return false;
+	}
+
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("gensec_update returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1145,9 +1171,9 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = ntlmssp_update(ntlmssp, out_blob, &in_blob);
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ntlmssp_update returned %s\n", nt_errstr(status));
+		printf("auth_generic_update returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1179,8 +1205,16 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
+	status = gensec_session_key(auth_generic_state->gensec_security, talloc_tos(),
+				    &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("gensec_session_key returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_session_update_session_key(cli->smb2.session,
-						    ntlmssp->session_key,
+						    session_key,
 						    recv_iov);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_session_update_session_key %s\n", nt_errstr(status));
