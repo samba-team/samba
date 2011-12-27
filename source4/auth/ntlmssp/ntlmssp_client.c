@@ -229,9 +229,11 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 	
 	if (!(flags & CLI_CRED_LANMAN_AUTH)) {
-		/* LM Key is still possible, just silly.  Fortunetly
-		 * we require command line options to end up here */
-		/* ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY; */
+		/* LM Key is still possible, just silly, so we do not
+		 * allow it. Fortunetly all LM crypto is off by
+		 * default and we require command line options to end
+		 * up here */
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
 	if (!(flags & CLI_CRED_NTLM2)) {
