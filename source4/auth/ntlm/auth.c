@@ -552,32 +552,6 @@ _PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-/* Create an auth context from an open LDB.
-
-   This allows us not to re-open the LDB when we need to do a some authentication logic (such as tokenGroups)
-
- */
-NTSTATUS auth_context_create_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct auth4_context **auth_ctx)
-{
-	NTSTATUS status;
-	const char **auth_methods;
-	struct loadparm_context *lp_ctx = talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"), struct loadparm_context);
-	struct tevent_context *ev = ldb_get_event_context(ldb);
-
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	auth_methods = auth_methods_from_lp(tmp_ctx, lp_ctx);
-	if (!auth_methods) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	status = auth_context_create_methods(mem_ctx, auth_methods, ev, NULL, lp_ctx, ldb, auth_ctx);
-	talloc_free(tmp_ctx);
-	return status;
-}
-
 /* the list of currently registered AUTH backends */
 static struct auth_backend {
 	const struct auth_operations *ops;

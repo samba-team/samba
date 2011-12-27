@@ -204,7 +204,6 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 			     struct imessaging_context *msg,
 			     struct loadparm_context *lp_ctx,
 			     struct auth4_context **auth_ctx);
-NTSTATUS auth_context_create_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct auth4_context **auth_ctx);
 
 NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
