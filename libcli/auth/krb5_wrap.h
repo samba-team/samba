@@ -77,3 +77,7 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 				gss_ctx_id_t gssapi_context,
 				gss_name_t gss_client_name,
 				DATA_BLOB *pac_data);
+DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8_t tok_id[2]);
+
+bool gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8_t tok_id[2]);
+bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid);
