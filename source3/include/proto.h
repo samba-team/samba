@@ -1079,9 +1079,6 @@ bool get_dc_name(const char *domain,
 /* The following definitions come from libsmb/ntlmssp.c  */
 struct ntlmssp_state;
 NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) ;
-NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
-			    const uint8_t lm_hash[16],
-			    const uint8_t nt_hash[16]) ;
 NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) ;
 NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) ;
 void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list);

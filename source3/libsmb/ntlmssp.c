@@ -109,41 +109,35 @@ NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *u
 }
 
 /**
- * Store NT and LM hashes on an NTLMSSP context - ensures they are talloc()ed
- *
- */
-NTSTATUS ntlmssp_set_hashes(struct ntlmssp_state *ntlmssp_state,
-			    const uint8_t lm_hash[16],
-			    const uint8_t nt_hash[16])
-{
-	ntlmssp_state->lm_hash = (uint8_t *)
-		talloc_memdup(ntlmssp_state, lm_hash, 16);
-	ntlmssp_state->nt_hash = (uint8_t *)
-		talloc_memdup(ntlmssp_state, nt_hash, 16);
-	if (!ntlmssp_state->lm_hash || !ntlmssp_state->nt_hash) {
-		TALLOC_FREE(ntlmssp_state->lm_hash);
-		TALLOC_FREE(ntlmssp_state->nt_hash);
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-/**
  * Converts a password to the hashes on an NTLMSSP context.
  *
  */
 NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password)
 {
+	TALLOC_FREE(ntlmssp_state->lm_hash);
+	TALLOC_FREE(ntlmssp_state->nt_hash);
 	if (!password) {
-		ntlmssp_state->lm_hash = NULL;
-		ntlmssp_state->nt_hash = NULL;
+		return NT_STATUS_OK;
 	} else {
 		uint8_t lm_hash[16];
 		uint8_t nt_hash[16];
 
-		E_deshash(password, lm_hash);
+		if (E_deshash(password, lm_hash)) {
+			ntlmssp_state->lm_hash = (uint8_t *)
+				talloc_memdup(ntlmssp_state, lm_hash, 16);
+			if (!ntlmssp_state->lm_hash) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
 		E_md4hash(password, nt_hash);
-		return ntlmssp_set_hashes(ntlmssp_state, lm_hash, nt_hash);
+
+		ntlmssp_state->nt_hash = (uint8_t *)
+			talloc_memdup(ntlmssp_state, nt_hash, 16);
+		if (!ntlmssp_state->nt_hash) {
+			TALLOC_FREE(ntlmssp_state->lm_hash);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	return NT_STATUS_OK;
 }
@@ -593,7 +587,7 @@ noccache:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!ntlmssp_state->nt_hash || !ntlmssp_state->lm_hash) {
+	if (!ntlmssp_state->nt_hash) {
 		static const uint8_t zeros[16] = {0, };
 		/* do nothing - blobs are zero length */
 
@@ -657,7 +651,7 @@ noccache:
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 	} else {
 		/* lanman auth is insecure, it may be disabled */
-		if (lp_client_lanman_auth()) {
+		if (lp_client_lanman_auth() && ntlmssp_state->lm_hash) {
 			lm_response = data_blob_talloc(ntlmssp_state,
 						       NULL, 24);
 			SMBencrypt_hash(ntlmssp_state->lm_hash,challenge_blob.data,
@@ -670,7 +664,7 @@ noccache:
 
 		session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
 		if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY)
-		    && lp_client_lanman_auth()) {
+		    && lp_client_lanman_auth() && ntlmssp_state->lm_hash) {
 			SMBsesskeygen_lm_sess_key(ntlmssp_state->lm_hash, lm_response.data,
 					session_key.data);
 			dump_data_pw("LM session key\n", session_key.data, session_key.length);
