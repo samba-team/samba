@@ -2,6 +2,8 @@
  *  GSSAPI Security Extensions
  *  RPC Pipe client and server routines
  *  Copyright (C) Simo Sorce 2010.
+ *  Copyright (C) Andrew Bartlett 2004-2011.
+ *  Copyright (C) Stefan Metzmacher <metze@samba.org> 2004-2005
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +24,10 @@
 #include "includes.h"
 #include "gse.h"
 #include "libads/kerberos_proto.h"
+#include "auth/common_auth.h"
+#include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
+#include "../librpc/gen_ndr/dcerpc.h"
 
 #if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
 
@@ -933,6 +939,440 @@ NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 done:
 	return status;
 }
+
+static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx;
+	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
+	NTSTATUS nt_status;
+	OM_uint32 want_flags = 0;
+	bool do_sign = false, do_seal = false;
+	const char *hostname = gensec_get_target_hostname(gensec_security);
+	const char *service = gensec_get_target_service(gensec_security);
+	const char *username = cli_credentials_get_username(creds);
+	const char *password = cli_credentials_get_password(creds);
+
+	if (!hostname) {
+		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (is_ipaddress(hostname)) {
+		DEBUG(2, ("Cannot do GSE to an IP address\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (strcmp(hostname, "localhost") == 0) {
+		DEBUG(2, ("GSE to 'localhost' does not make sense\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+		do_sign = true;
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+		do_seal = true;
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE) {
+		want_flags |= GSS_C_DCE_STYLE;
+	}
+
+	nt_status = gse_init_client(gensec_security, do_sign, do_seal, NULL,
+				    hostname, service,
+				    username, password, want_flags,
+				    &gse_ctx);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+	gensec_security->private_data = gse_ctx;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_gse_server_start(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx;
+	NTSTATUS nt_status;
+	OM_uint32 want_flags = 0;
+	bool do_sign = false, do_seal = false;
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+		do_sign = true;
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+		do_seal = true;
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE) {
+		want_flags |= GSS_C_DCE_STYLE;
+	}
+
+	nt_status = gse_init_server(gensec_security, do_sign, do_seal, want_flags,
+				    &gse_ctx);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+	gensec_security->private_data = gse_ctx;
+	return NT_STATUS_OK;
+}
+
+/**
+ * Check if the packet is one for this mechansim
+ *
+ * @param gensec_security GENSEC state
+ * @param in The request, as a DATA_BLOB
+ * @return Error, INVALID_PARAMETER if it's not a packet for us
+ *                or NT_STATUS_OK if the packet is ok.
+ */
+
+static NTSTATUS gensec_gse_magic(struct gensec_security *gensec_security,
+				 const DATA_BLOB *in)
+{
+	if (gensec_gssapi_check_oid(in, GENSEC_OID_KERBEROS5)) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+}
+
+
+/**
+ * Next state function for the GSE GENSEC mechanism
+ *
+ * @param gensec_gse_state GSE State
+ * @param mem_ctx The TALLOC_CTX for *out to be allocated on
+ * @param in The request, as a DATA_BLOB
+ * @param out The reply, as an talloc()ed DATA_BLOB, on *mem_ctx
+ * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent,
+ *                or NT_STATUS_OK if the user is authenticated.
+ */
+
+static NTSTATUS gensec_gse_update(struct gensec_security *gensec_security,
+				  TALLOC_CTX *mem_ctx,
+				  struct tevent_context *ev,
+				  const DATA_BLOB in, DATA_BLOB *out)
+{
+	NTSTATUS status;
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+
+	switch (gensec_security->gensec_role) {
+	case GENSEC_CLIENT:
+		status = gse_get_client_auth_token(mem_ctx, gse_ctx,
+						   &in, out);
+		break;
+	case GENSEC_SERVER:
+		status = gse_get_server_auth_token(mem_ctx, gse_ctx,
+						   &in, out);
+		break;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (gse_ctx->more_processing) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	if (gensec_security->gensec_role == GENSEC_SERVER) {
+		return gse_verify_server_auth_flags(gse_ctx);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_gse_wrap(struct gensec_security *gensec_security,
+				TALLOC_CTX *mem_ctx,
+				const DATA_BLOB *in,
+				DATA_BLOB *out)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	OM_uint32 maj_stat, min_stat;
+	gss_buffer_desc input_token, output_token;
+	int conf_state;
+	input_token.length = in->length;
+	input_token.value = in->data;
+
+	maj_stat = gss_wrap(&min_stat,
+			    gse_ctx->gss_ctx,
+			    gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
+			    GSS_C_QOP_DEFAULT,
+			    &input_token,
+			    &conf_state,
+			    &output_token);
+	if (GSS_ERROR(maj_stat)) {
+		DEBUG(0, ("gensec_gse_wrap: GSS Wrap failed: %s\n",
+			  gse_errstr(talloc_tos(), maj_stat, min_stat)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*out = data_blob_talloc(mem_ctx, output_token.value, output_token.length);
+	gss_release_buffer(&min_stat, &output_token);
+
+	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)
+	    && !conf_state) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_gse_unwrap(struct gensec_security *gensec_security,
+				     TALLOC_CTX *mem_ctx,
+				     const DATA_BLOB *in,
+				     DATA_BLOB *out)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	OM_uint32 maj_stat, min_stat;
+	gss_buffer_desc input_token, output_token;
+	int conf_state;
+	gss_qop_t qop_state;
+	input_token.length = in->length;
+	input_token.value = in->data;
+
+	maj_stat = gss_unwrap(&min_stat,
+			      gse_ctx->gss_ctx,
+			      &input_token,
+			      &output_token,
+			      &conf_state,
+			      &qop_state);
+	if (GSS_ERROR(maj_stat)) {
+		DEBUG(0, ("gensec_gse_unwrap: GSS UnWrap failed: %s\n",
+			  gse_errstr(talloc_tos(), maj_stat, min_stat)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*out = data_blob_talloc(mem_ctx, output_token.value, output_token.length);
+	gss_release_buffer(&min_stat, &output_token);
+
+	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)
+	    && !conf_state) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_gse_seal_packet(struct gensec_security *gensec_security,
+				       TALLOC_CTX *mem_ctx,
+				       uint8_t *data, size_t length,
+				       const uint8_t *whole_pdu, size_t pdu_length,
+				       DATA_BLOB *sig)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	DATA_BLOB payload = data_blob_const(data, length);
+	return gse_seal(mem_ctx, gse_ctx, &payload, sig);
+}
+
+static NTSTATUS gensec_gse_unseal_packet(struct gensec_security *gensec_security,
+					 uint8_t *data, size_t length,
+					 const uint8_t *whole_pdu, size_t pdu_length,
+					 const DATA_BLOB *sig)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	DATA_BLOB payload = data_blob_const(data, length);
+	return gse_unseal(talloc_tos() /* unused */, gse_ctx, &payload, sig);
+}
+
+static NTSTATUS gensec_gse_sign_packet(struct gensec_security *gensec_security,
+				       TALLOC_CTX *mem_ctx,
+				       const uint8_t *data, size_t length,
+				       const uint8_t *whole_pdu, size_t pdu_length,
+				       DATA_BLOB *sig)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	DATA_BLOB payload = data_blob_const(data, length);
+	return gse_sign(mem_ctx, gse_ctx, &payload, sig);
+}
+
+static NTSTATUS gensec_gse_check_packet(struct gensec_security *gensec_security,
+					const uint8_t *data, size_t length,
+					const uint8_t *whole_pdu, size_t pdu_length,
+					const DATA_BLOB *sig)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	DATA_BLOB payload = data_blob_const(data, length);
+	return gse_sigcheck(NULL, gse_ctx, &payload, sig);
+}
+
+/* Try to figure out what features we actually got on the connection */
+static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
+				    uint32_t feature)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+
+	if (feature & GENSEC_FEATURE_SIGN) {
+		return gse_ctx->ret_flags & GSS_C_INTEG_FLAG;
+	}
+	if (feature & GENSEC_FEATURE_SEAL) {
+		return gse_ctx->ret_flags & GSS_C_CONF_FLAG;
+	}
+	if (feature & GENSEC_FEATURE_SESSION_KEY) {
+		/* Only for GSE/Krb5 */
+		if (gss_oid_equal(gse_ctx->ret_mech, gss_mech_krb5)) {
+			return true;
+		}
+	}
+	if (feature & GENSEC_FEATURE_DCE_STYLE) {
+		return gse_ctx->ret_flags & GSS_C_DCE_STYLE;
+	}
+	/* We can always do async (rather than strict request/reply) packets.  */
+	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
+		return true;
+	}
+	return false;
+}
+
+/*
+ * Extract the 'sesssion key' needed by SMB signing and ncacn_np
+ * (for encrypting some passwords).
+ *
+ * This breaks all the abstractions, but what do you expect...
+ */
+static NTSTATUS gensec_gse_session_key(struct gensec_security *gensec_security,
+				       TALLOC_CTX *mem_ctx,
+				       DATA_BLOB *session_key_out)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+
+	DATA_BLOB session_key = gse_get_session_key(mem_ctx, gse_ctx);
+	if (session_key.data == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	*session_key_out = session_key;
+
+	return NT_STATUS_OK;
+}
+
+/* Get some basic (and authorization) information about the user on
+ * this session.  This uses either the PAC (if present) or a local
+ * database lookup */
+static NTSTATUS gensec_gse_session_info(struct gensec_security *gensec_security,
+					TALLOC_CTX *mem_ctx,
+					struct auth_session_info **_session_info)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	NTSTATUS nt_status;
+	TALLOC_CTX *tmp_ctx;
+	struct auth_session_info *session_info = NULL;
+	OM_uint32 maj_stat, min_stat;
+	DATA_BLOB pac_blob, *pac_blob_ptr = NULL;
+
+	gss_buffer_desc name_token;
+	char *principal_string;
+
+	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gse_session_info context");
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	maj_stat = gss_display_name(&min_stat,
+				    gse_ctx->client_name,
+				    &name_token,
+				    NULL);
+	if (GSS_ERROR(maj_stat)) {
+		DEBUG(1, ("GSS display_name failed: %s\n",
+			  gse_errstr(talloc_tos(), maj_stat, min_stat)));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_FOOBAR;
+	}
+
+	principal_string = talloc_strndup(tmp_ctx,
+					  (const char *)name_token.value,
+					  name_token.length);
+
+	gss_release_buffer(&min_stat, &name_token);
+
+	if (!principal_string) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = gssapi_obtain_pac_blob(tmp_ctx,  gse_ctx->gss_ctx,
+					   gse_ctx->client_name,
+					   &pac_blob);
+
+	/* IF we have the PAC - otherwise we need to get this
+	 * data from elsewere
+	 */
+	if (NT_STATUS_IS_OK(nt_status)) {
+		pac_blob_ptr = &pac_blob;
+	}
+	nt_status = gensec_generate_session_info_pac(tmp_ctx,
+						     gensec_security,
+						     NULL,
+						     pac_blob_ptr, principal_string,
+						     gensec_get_remote_address(gensec_security),
+						     &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	nt_status = gensec_gse_session_key(gensec_security, session_info,
+					   &session_info->session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	*_session_info = talloc_move(mem_ctx, &session_info);
+	talloc_free(tmp_ctx);
+
+	return NT_STATUS_OK;
+}
+
+static size_t gensec_gse_sig_size(struct gensec_security *gensec_security,
+				  size_t data_size)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+
+	return gse_get_signature_length(gse_ctx,
+					gensec_security->want_features & GENSEC_FEATURE_SEAL,
+					data_size);
+}
+
+static const char *gensec_gse_krb5_oids[] = {
+	GENSEC_OID_KERBEROS5_OLD,
+	GENSEC_OID_KERBEROS5,
+	NULL
+};
+
+static const struct gensec_security_ops gensec_gse_krb5_security_ops = {
+	.name		= "gse_krb5",
+	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
+	.oid            = gensec_gse_krb5_oids,
+	.client_start   = gensec_gse_client_start,
+	.server_start   = gensec_gse_server_start,
+	.magic  	= gensec_gse_magic,
+	.update 	= gensec_gse_update,
+	.session_key	= gensec_gse_session_key,
+	.session_info	= gensec_gse_session_info,
+	.sig_size	= gensec_gse_sig_size,
+	.sign_packet	= gensec_gse_sign_packet,
+	.check_packet	= gensec_gse_check_packet,
+	.seal_packet	= gensec_gse_seal_packet,
+	.unseal_packet	= gensec_gse_unseal_packet,
+	.wrap           = gensec_gse_wrap,
+	.unwrap         = gensec_gse_unwrap,
+	.have_feature   = gensec_gse_have_feature,
+	.enabled        = true,
+	.kerberos       = true,
+	.priority       = GENSEC_GSSAPI
+};
 
 #else
 
