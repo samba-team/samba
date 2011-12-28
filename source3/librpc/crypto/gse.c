@@ -690,9 +690,9 @@ NTSTATUS gse_get_client_name(struct gse_context *gse_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	*cli_name = talloc_strndup(talloc_tos(),
-					(char *)name_buffer.value,
-					name_buffer.length);
+	*cli_name = talloc_strndup(mem_ctx,
+				   (char *)name_buffer.value,
+				   name_buffer.length);
 
 	gss_maj = gss_release_buffer(&gss_min, &name_buffer);
 
