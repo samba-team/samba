@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include <ldb.h>
 #include "auth/auth_sam_reply.h"
+#include "auth/kerberos/kerberos_util.h"
 
 _PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 					   DATA_BLOB blob,

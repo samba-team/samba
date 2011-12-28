@@ -1307,15 +1307,37 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	TALLOC_CTX *mem_ctx;
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
 	OM_uint32 maj_stat, min_stat;
-	DATA_BLOB pac_blob;
-	struct PAC_SIGNATURE_DATA *pac_srv_sig = NULL;
-	struct PAC_SIGNATURE_DATA *pac_kdc_sig = NULL;
+	DATA_BLOB pac_blob, *pac_blob_ptr = NULL;
+
+	gss_buffer_desc name_token;
+	char *principal_string;
 	
 	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+	maj_stat = gss_display_name (&min_stat,
+				     gensec_gssapi_state->client_name,
+				     &name_token,
+				     NULL);
+	if (GSS_ERROR(maj_stat)) {
+		DEBUG(1, ("GSS display_name failed: %s\n",
+			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+		talloc_free(mem_ctx);
+		return NT_STATUS_FOOBAR;
+	}
+
+	principal_string = talloc_strndup(mem_ctx,
+					  (const char *)name_token.value,
+					  name_token.length);
+
+	gss_release_buffer(&min_stat, &name_token);
+
+	if (!principal_string) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	nt_status = gssapi_obtain_pac_blob(mem_ctx,  gensec_gssapi_state->gssapi_context,
 					   gensec_gssapi_state->client_name,
@@ -1326,78 +1348,14 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	 * kind... 
 	 */
 	if (NT_STATUS_IS_OK(nt_status)) {
-		pac_srv_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
-		if (!pac_srv_sig) {
-			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-		pac_kdc_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
-		if (!pac_kdc_sig) {
-			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		nt_status = kerberos_pac_blob_to_user_info_dc(mem_ctx,
-							      pac_blob,
-							      gensec_gssapi_state->smb_krb5_context->krb5_context,
-							      &user_info_dc,
-							      pac_srv_sig,
-							      pac_kdc_sig);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(mem_ctx);
-			return nt_status;
-		}
-	} else {
-		gss_buffer_desc name_token;
-		char *principal_string;
-
-		maj_stat = gss_display_name (&min_stat,
-					     gensec_gssapi_state->client_name,
-					     &name_token,
-					     NULL);
-		if (GSS_ERROR(maj_stat)) {
-			DEBUG(1, ("GSS display_name failed: %s\n", 
-				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-			talloc_free(mem_ctx);
-			return NT_STATUS_FOOBAR;
-		}
-		
-		principal_string = talloc_strndup(mem_ctx, 
-						  (const char *)name_token.value, 
-						  name_token.length);
-		
-		gss_release_buffer(&min_stat, &name_token);
-		
-		if (!principal_string) {
-			talloc_free(mem_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (gensec_security->auth_context && 
-		    !gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
-			DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s\n",
-				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-			nt_status = gensec_security->auth_context->get_user_info_dc_principal(mem_ctx,
-											     gensec_security->auth_context, 
-											     principal_string,
-											     NULL,
-											     &user_info_dc);
-			
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				talloc_free(mem_ctx);
-				return nt_status;
-			}
-		} else {
-			DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s\n",
-				  principal_string,
-				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-			return NT_STATUS_ACCESS_DENIED;
-		}
+		pac_blob_ptr = &pac_blob;
 	}
-
-	/* references the user_info_dc into the session_info */
-	nt_status = gensec_generate_session_info(mem_ctx, gensec_security,
-						 user_info_dc, &session_info);
+	nt_status = gensec_generate_session_info_pac(mem_ctx,
+						     gensec_security,
+						     gensec_gssapi_state->smb_krb5_context,
+						     pac_blob_ptr, principal_string,
+						     gensec_get_remote_address(gensec_security),
+						     &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
@@ -1407,12 +1365,6 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
-	}
-
-	/* Allow torture tests to check the PAC signatures */
-	if (session_info->torture) {
-		session_info->torture->pac_srv_sig = talloc_steal(session_info->torture, pac_srv_sig);
-		session_info->torture->pac_kdc_sig = talloc_steal(session_info->torture, pac_kdc_sig);
 	}
 
 	if (!(gensec_gssapi_state->got_flags & GSS_C_DELEG_FLAG)) {

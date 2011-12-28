@@ -618,14 +618,12 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
-	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
-	struct PAC_LOGON_INFO *logon_info;
 
 	krb5_principal client_principal;
 	char *principal_string;
 	
-	DATA_BLOB pac;
+	DATA_BLOB pac_blob, *pac_blob_ptr = NULL;
 	krb5_data pac_data;
 
 	krb5_error_code ret;
@@ -659,49 +657,15 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 						      KRB5_AUTHDATA_WIN2K_PAC, 
 						      &pac_data);
 	
-	if (ret && gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
-		DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s \n",
-			  principal_string,
-			  smb_get_krb5_error_message(context, 
-						     ret, mem_ctx)));
-		free(principal_string);
-		krb5_free_principal(context, client_principal);
-		talloc_free(mem_ctx);
-		return NT_STATUS_ACCESS_DENIED;
-	} else if (ret) {
+	if (ret) {
 		/* NO pac */
 		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
 			  smb_get_krb5_error_message(context, 
 						     ret, mem_ctx)));
-		if (gensec_security->auth_context && 
-		    !gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
-			DEBUG(1, ("Unable to find PAC for %s, resorting to local user lookup: %s",
-				  principal_string, smb_get_krb5_error_message(context, 
-						     ret, mem_ctx)));
-			nt_status = gensec_security->auth_context->get_user_info_dc_principal(mem_ctx,
-											     gensec_security->auth_context, 
-											     principal_string,
-											     NULL, &user_info_dc);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				free(principal_string);
-				krb5_free_principal(context, client_principal);
-				talloc_free(mem_ctx);
-				return nt_status;
-			}
-		} else {
-			DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access\n",
-				  principal_string));
-			free(principal_string);
-			krb5_free_principal(context, client_principal);
-			talloc_free(mem_ctx);
-			return NT_STATUS_ACCESS_DENIED;
-		}
 	} else {
 		/* Found pac */
-		union netr_Validation validation;
-
-		pac = data_blob_talloc(mem_ctx, pac_data.data, pac_data.length);
-		if (!pac.data) {
+		pac_blob = data_blob_talloc(mem_ctx, pac_data.data, pac_data.length);
+		if (!pac_blob.data) {
 			free(principal_string);
 			krb5_free_principal(context, client_principal);
 			talloc_free(mem_ctx);
@@ -709,12 +673,12 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		}
 
 		/* decode and verify the pac */
-		nt_status = kerberos_pac_logon_info(gensec_krb5_state, 
-						    pac,
-						    gensec_krb5_state->smb_krb5_context->krb5_context,
-						    NULL, gensec_krb5_state->keyblock,
-						    client_principal,
-						    gensec_krb5_state->ticket->ticket.authtime, &logon_info);
+		nt_status = kerberos_decode_pac(gensec_krb5_state,
+						pac_blob,
+						gensec_krb5_state->smb_krb5_context->krb5_context,
+						NULL, gensec_krb5_state->keyblock,
+						client_principal,
+						gensec_krb5_state->ticket->ticket.authtime, NULL);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			free(principal_string);
@@ -723,25 +687,18 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 			return nt_status;
 		}
 
-		validation.sam3 = &logon_info->info3;
-		nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
-								 NULL,
-								 3, &validation,
-								  true, /* This user was authenticated */
-								 &user_info_dc);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			free(principal_string);
-			krb5_free_principal(context, client_principal);
-			talloc_free(mem_ctx);
-			return nt_status;
-		}
+		pac_blob_ptr = &pac_blob;
 	}
+
+	nt_status = gensec_generate_session_info_pac(mem_ctx,
+						     gensec_security,
+						     gensec_krb5_state->smb_krb5_context,
+						     pac_blob_ptr, principal_string,
+						     gensec_get_remote_address(gensec_security),
+						     &session_info);
 
 	free(principal_string);
 	krb5_free_principal(context, client_principal);
-
-	/* references the user_info_dc into the session_info */
-	nt_status = gensec_generate_session_info(mem_ctx, gensec_security, user_info_dc, &session_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

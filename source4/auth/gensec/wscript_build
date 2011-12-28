@@ -2,14 +2,14 @@
 
 bld.SAMBA_SUBSYSTEM('gensec_util',
                     source='socket.c gensec_tstream.c gensec_util.c',
-                    deps='tevent-util tevent samba-util LIBTSOCKET',
+                    deps='tevent-util tevent samba-util LIBTSOCKET KERBEROS_UTIL',
                     autoproto='gensec_proto.h')
 
 bld.SAMBA_MODULE('gensec_krb5',
 	source='gensec_krb5.c',
 	subsystem='gensec',
 	init_function='gensec_krb5_init',
-	deps='samba-credentials authkrb5 auth_session com_err',
+	deps='samba-credentials authkrb5 auth_session com_err gensec_util',
 	internal_module=False,
 	)
 
@@ -18,7 +18,7 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	source='gensec_gssapi.c',
 	subsystem='gensec',
 	init_function='gensec_gssapi_init',
-	deps='gssapi samba-credentials authkrb5 com_err'
+	deps='gssapi samba-credentials authkrb5 com_err gensec_util'
 	)
 
 

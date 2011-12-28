@@ -55,6 +55,7 @@ struct auth_check_password_request;
 struct auth4_context;
 struct auth_session_info;
 struct ldb_dn;
+struct smb_krb5_context;
 
 struct auth_operations {
 	const char *name;
@@ -129,17 +130,20 @@ struct auth4_context {
 
 	NTSTATUS (*set_challenge)(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 
-	NTSTATUS (*get_user_info_dc_principal)(TALLOC_CTX *mem_ctx,
-						       struct auth4_context *auth_ctx,
-						       const char *principal,
-						       struct ldb_dn *user_dn,
-						       struct auth_user_info_dc **user_info_dc);
-
 	NTSTATUS (*generate_session_info)(TALLOC_CTX *mem_ctx,
 					  struct auth4_context *auth_context,
 					  struct auth_user_info_dc *user_info_dc,
 					  uint32_t session_info_flags,
 					  struct auth_session_info **session_info);
+
+	NTSTATUS (*generate_session_info_pac)(struct auth4_context *auth_ctx,
+					      TALLOC_CTX *mem_ctx_out,
+					      struct smb_krb5_context *smb_krb5_context,
+					      DATA_BLOB *pac_blob,
+					      const char *principal_name,
+					      const struct tsocket_address *remote_address,
+					      uint32_t session_info_flags,
+					      struct auth_session_info **session_info);
 };
 
 /* this structure is used by backends to determine the size of some critical types */

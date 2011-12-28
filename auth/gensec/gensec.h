@@ -73,6 +73,7 @@ struct cli_credentials;
 struct gensec_settings;
 struct tevent_context;
 struct tevent_req;
+struct smb_krb5_context;
 
 struct gensec_settings {
 	struct loadparm_context *lp_ctx;

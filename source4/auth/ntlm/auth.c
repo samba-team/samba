@@ -28,6 +28,16 @@
 #include "dsdb/samdb/samdb.h"
 #include "libcli/wbclient/wbclient.h"
 #include "lib/util/samba_modules.h"
+#include "auth/credentials/credentials.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
+#include "auth/kerberos/kerberos_util.h"
+
+static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
+                                                  struct auth4_context *auth_context,
+                                                  struct auth_user_info_dc *user_info_dc,
+                                                  uint32_t session_info_flags,
+						   struct auth_session_info **session_info);
 
 /***************************************************************************
  Set a fixed challenge
@@ -104,24 +114,34 @@ PAC isn't available, and for tokenGroups in the DSDB stack.
 
  Supply either a principal or a DN
 ****************************************************************************/
-_PUBLIC_ NTSTATUS auth_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
-						 struct auth4_context *auth_ctx,
-						 const char *principal,
-						 struct ldb_dn *user_dn,
-						 struct auth_user_info_dc **user_info_dc)
+static NTSTATUS auth_generate_session_info_principal(struct auth4_context *auth_ctx,
+						  TALLOC_CTX *mem_ctx,
+						  const char *principal,
+						  struct ldb_dn *user_dn,
+                                                  uint32_t session_info_flags,
+                                                  struct auth_session_info **session_info)
 {
 	NTSTATUS nt_status;
 	struct auth_method_context *method;
+	struct auth_user_info_dc *user_info_dc;
 
 	for (method = auth_ctx->methods; method; method = method->next) {
 		if (!method->ops->get_user_info_dc_principal) {
 			continue;
 		}
 
-		nt_status = method->ops->get_user_info_dc_principal(mem_ctx, auth_ctx, principal, user_dn, user_info_dc);
+		nt_status = method->ops->get_user_info_dc_principal(mem_ctx, auth_ctx, principal, user_dn, &user_info_dc);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
 			continue;
 		}
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		nt_status = auth_generate_session_info_wrapper(mem_ctx, auth_ctx,
+							       user_info_dc,
+							       session_info_flags, session_info);
+		talloc_free(user_info_dc);
 
 		return nt_status;
 	}
@@ -407,19 +427,22 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-/* Wrapper because we don't want to expose all callers to needing to
- * know that session_info is generated from the main ldb, and because
- * we need to break a depenency loop between the DCE/RPC layer and the
- * generation of unix tokens via IRPC */
+ /* Wrapper because we don't want to expose all callers to needing to
+  * know that session_info is generated from the main ldb, and because
+  * we need to break a depenency loop between the DCE/RPC layer and the
+  * generation of unix tokens via IRPC */
 static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
-						   struct auth4_context *auth_context,
-						   struct auth_user_info_dc *user_info_dc,
-						   uint32_t session_info_flags,
-						   struct auth_session_info **session_info)
+                                                  struct auth4_context *auth_context,
+                                                  struct auth_user_info_dc *user_info_dc,
+                                                  uint32_t session_info_flags,
+                                                  struct auth_session_info **session_info)
 {
 	NTSTATUS status = auth_generate_session_info(mem_ctx, auth_context->lp_ctx,
 						     auth_context->sam_ctx, user_info_dc,
 						     session_info_flags, session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if ((session_info_flags & AUTH_SESSION_INFO_UNIX_TOKEN)
 	    && NT_STATUS_IS_OK(status)) {
@@ -438,6 +461,50 @@ static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
 		}
 		TALLOC_FREE(wbc_ctx);
 	}
+	return status;
+}
+
+/* Wrapper because we don't want to expose all callers to needing to
+ * know anything about the PAC or auth subsystem internal structures
+ * before we output a struct auth session_info */
+static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
+					       TALLOC_CTX *mem_ctx_out,
+					       struct smb_krb5_context *smb_krb5_context,
+					       DATA_BLOB *pac_blob,
+					       const char *principal_name,
+					       const struct tsocket_address *remote_address,
+					       uint32_t session_info_flags,
+					       struct auth_session_info **session_info)
+{
+	NTSTATUS status;
+	struct auth_user_info_dc *user_info_dc;
+	TALLOC_CTX *mem_ctx;
+
+	if (!pac_blob) {
+		return auth_generate_session_info_principal(auth_ctx, mem_ctx_out, principal_name,
+						       NULL, session_info_flags, session_info);
+	}
+
+	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+	status = kerberos_pac_blob_to_user_info_dc(mem_ctx,
+						   *pac_blob,
+						   smb_krb5_context->krb5_context,
+						   &user_info_dc, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	if (user_info_dc->info->authenticated) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
+	status = auth_generate_session_info_wrapper(mem_ctx_out, auth_ctx,
+						    user_info_dc,
+						    session_info_flags, session_info);
+	talloc_free(mem_ctx);
 	return status;
 }
 
@@ -462,7 +529,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ctx = talloc(mem_ctx, struct auth4_context);
+	ctx = talloc_zero(mem_ctx, struct auth4_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
 	ctx->challenge.set_by		= NULL;
 	ctx->challenge.may_be_modified	= false;
@@ -499,8 +566,8 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	ctx->get_challenge = auth_get_challenge;
 	ctx->set_challenge = auth_context_set_challenge;
 	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
-	ctx->get_user_info_dc_principal = auth_get_user_info_dc_principal;
 	ctx->generate_session_info = auth_generate_session_info_wrapper;
+	ctx->generate_session_info_pac = auth_generate_session_info_pac;
 
 	*auth_ctx = ctx;
 
