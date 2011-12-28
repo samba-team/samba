@@ -205,6 +205,7 @@ static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security
 
 static NTSTATUS gensec_sasl_update(struct gensec_security *gensec_security, 
 				   TALLOC_CTX *out_mem_ctx, 
+				   struct tevent_context *ev,
 				   const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct gensec_sasl_state *gensec_sasl_state = talloc_get_type(gensec_security->private_data,
