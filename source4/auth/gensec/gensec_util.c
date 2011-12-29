@@ -56,7 +56,7 @@ NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx_out,
+NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 					  struct gensec_security *gensec_security,
 					  struct smb_krb5_context *smb_krb5_context,
 					  DATA_BLOB *pac_blob,
@@ -84,7 +84,7 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx_out,
 
 	if (gensec_security->auth_context && gensec_security->auth_context->generate_session_info_pac) {
 		return gensec_security->auth_context->generate_session_info_pac(gensec_security->auth_context,
-										mem_ctx_out,
+										mem_ctx,
 										smb_krb5_context,
 										pac_blob,
 										principal_string,
