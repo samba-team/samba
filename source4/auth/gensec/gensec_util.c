@@ -50,12 +50,8 @@ NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 										 session_info_flags,
 										 session_info);
 	} else {
-		session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
-		nt_status = auth_generate_session_info(mem_ctx,
-						       NULL,
-						       NULL,
-						       user_info_dc, session_info_flags,
-						       session_info);
+		DEBUG(0, ("Cannot generate a session_info without the auth_context\n"));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	return nt_status;
 }
