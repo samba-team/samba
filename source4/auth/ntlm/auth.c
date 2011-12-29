@@ -468,7 +468,7 @@ static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
  * know anything about the PAC or auth subsystem internal structures
  * before we output a struct auth session_info */
 static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
-					       TALLOC_CTX *mem_ctx_out,
+					       TALLOC_CTX *mem_ctx,
 					       struct smb_krb5_context *smb_krb5_context,
 					       DATA_BLOB *pac_blob,
 					       const char *principal_name,
@@ -478,22 +478,22 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 {
 	NTSTATUS status;
 	struct auth_user_info_dc *user_info_dc;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *tmp_ctx;
 
 	if (!pac_blob) {
-		return auth_generate_session_info_principal(auth_ctx, mem_ctx_out, principal_name,
+		return auth_generate_session_info_principal(auth_ctx, mem_ctx, principal_name,
 						       NULL, session_info_flags, session_info);
 	}
 
-	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
-	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gssapi_session_info context");
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	status = kerberos_pac_blob_to_user_info_dc(mem_ctx,
+	status = kerberos_pac_blob_to_user_info_dc(tmp_ctx,
 						   *pac_blob,
 						   smb_krb5_context->krb5_context,
 						   &user_info_dc, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return status;
 	}
 
@@ -501,10 +501,10 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
-	status = auth_generate_session_info_wrapper(mem_ctx_out, auth_ctx,
+	status = auth_generate_session_info_wrapper(mem_ctx, auth_ctx,
 						    user_info_dc,
 						    session_info_flags, session_info);
-	talloc_free(mem_ctx);
+	talloc_free(tmp_ctx);
 	return status;
 }
 

@@ -137,7 +137,7 @@ struct auth4_context {
 					  struct auth_session_info **session_info);
 
 	NTSTATUS (*generate_session_info_pac)(struct auth4_context *auth_ctx,
-					      TALLOC_CTX *mem_ctx_out,
+					      TALLOC_CTX *mem_ctx,
 					      struct smb_krb5_context *smb_krb5_context,
 					      DATA_BLOB *pac_blob,
 					      const char *principal_name,
