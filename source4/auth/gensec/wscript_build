@@ -2,7 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('gensec_util',
                     source='socket.c gensec_tstream.c gensec_util.c',
-                    deps='tevent-util tevent samba-util LIBTSOCKET KERBEROS_UTIL',
+                    deps='tevent-util tevent samba-util LIBTSOCKET',
                     autoproto='gensec_proto.h')
 
 bld.SAMBA_MODULE('gensec_krb5',

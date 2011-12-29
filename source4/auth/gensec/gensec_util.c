@@ -26,9 +26,6 @@
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/system_session_proto.h"
-#include "system/kerberos.h"
-#include "auth/kerberos/kerberos.h"
-#include "auth/kerberos/kerberos_util.h"
 
 NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 				      struct gensec_security *gensec_security,
@@ -71,12 +68,7 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx_out,
 					  const struct tsocket_address *remote_address,
 					  struct auth_session_info **session_info)
 {
-	NTSTATUS nt_status;
 	uint32_t session_info_flags = 0;
-	TALLOC_CTX *mem_ctx;
-	struct auth_user_info_dc *user_info_dc;
-	struct PAC_SIGNATURE_DATA *pac_srv_sig = NULL;
-	struct PAC_SIGNATURE_DATA *pac_kdc_sig = NULL;
 
 	if (gensec_security->want_features & GENSEC_FEATURE_UNIX_TOKEN) {
 		session_info_flags |= AUTH_SESSION_INFO_UNIX_TOKEN;
@@ -94,7 +86,7 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx_out,
 			  principal_string));
 	}
 
-	if (gensec_security->auth_context) {
+	if (gensec_security->auth_context && gensec_security->auth_context->generate_session_info_pac) {
 		return gensec_security->auth_context->generate_session_info_pac(gensec_security->auth_context,
 										mem_ctx_out,
 										smb_krb5_context,
@@ -103,54 +95,8 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx_out,
 										remote_address,
 										session_info_flags,
 										session_info);
-	} else if (!pac_blob) {
-		DEBUG(0, ("Cannot generate a session_info without either the PAC or the auth_context\n"));
-		return NT_STATUS_NO_SUCH_USER;
+	} else {
+		DEBUG(0, ("Cannot generate a session_info without the auth_context\n"));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
-
-	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
-	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
-
-	pac_srv_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
-	if (!pac_srv_sig) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-	pac_kdc_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
-	if (!pac_kdc_sig) {
-		talloc_free(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	nt_status = kerberos_pac_blob_to_user_info_dc(mem_ctx,
-						      *pac_blob,
-						      smb_krb5_context->krb5_context,
-						      &user_info_dc,
-						      pac_srv_sig,
-						      pac_kdc_sig);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
-		return nt_status;
-	}
-
-	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
-	nt_status = auth_generate_session_info(mem_ctx_out,
-					       NULL,
-					       NULL,
-					       user_info_dc, session_info_flags,
-					       session_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
-		return nt_status;
-	}
-
-	if ((*session_info)->torture) {
-		(*session_info)->torture->pac_srv_sig
-			= talloc_steal((*session_info)->torture, pac_srv_sig);
-		(*session_info)->torture->pac_kdc_sig
-			= talloc_steal((*session_info)->torture, pac_kdc_sig);
-	}
-
-	talloc_free(mem_ctx);
-	return nt_status;
 }

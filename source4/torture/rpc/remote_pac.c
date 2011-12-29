@@ -42,6 +42,71 @@
 #define TEST_MACHINE_NAME_S2U4SELF_BDC "tests2u4selfbdc"
 #define TEST_MACHINE_NAME_S2U4SELF_WKSTA "tests2u4selfwk"
 
+/* A helper function which avoids touching the local databases to
+ * generate the session info, as we just want to verify the PAC
+ * details, not the full local token */
+static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
+					       TALLOC_CTX *mem_ctx_out,
+					       struct smb_krb5_context *smb_krb5_context,
+					       DATA_BLOB *pac_blob,
+					       const char *principal_name,
+					       const struct tsocket_address *remote_address,
+					       uint32_t session_info_flags,
+					       struct auth_session_info **session_info)
+{
+	NTSTATUS nt_status;
+	struct auth_user_info_dc *user_info_dc;
+	struct PAC_SIGNATURE_DATA *pac_srv_sig = NULL;
+	struct PAC_SIGNATURE_DATA *pac_kdc_sig = NULL;
+	TALLOC_CTX *mem_ctx;
+	
+	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+	pac_srv_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
+	if (!pac_srv_sig) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	pac_kdc_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
+	if (!pac_kdc_sig) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = kerberos_pac_blob_to_user_info_dc(mem_ctx,
+						      *pac_blob,
+						      smb_krb5_context->krb5_context,
+						      &user_info_dc,
+						      pac_srv_sig,
+						      pac_kdc_sig);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
+
+	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+	nt_status = auth_generate_session_info(mem_ctx_out,
+					       NULL,
+					       NULL,
+					       user_info_dc, session_info_flags,
+					       session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		return nt_status;
+	}
+
+	if ((*session_info)->torture) {
+		(*session_info)->torture->pac_srv_sig
+			= talloc_steal((*session_info)->torture, pac_srv_sig);
+		(*session_info)->torture->pac_kdc_sig
+			= talloc_steal((*session_info)->torture, pac_kdc_sig);
+	}
+
+	talloc_free(mem_ctx);
+	return nt_status;
+}
+
 /* Check to see if we can pass the PAC across to the NETLOGON server for validation */
 
 /* Also happens to be a really good one-step verfication of our Kerberos stack */
@@ -73,6 +138,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	
 	enum ndr_err_code ndr_err;
 
+	struct auth4_context *auth_context;
 	struct auth_session_info *session_info;
 
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -84,6 +150,11 @@ static bool test_PACVerify(struct torture_context *tctx,
 				    &creds)) {
 		return false;
 	}
+
+	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
+	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
+
+	auth_context->generate_session_info_pac = test_generate_session_info_pac;
 
 	status = gensec_client_start(tctx, &gensec_client_context,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
@@ -99,7 +170,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	status = gensec_server_start(tctx,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				     NULL, &gensec_server_context);
+				     auth_context, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
 	status = gensec_set_credentials(gensec_server_context, credentials);
@@ -407,6 +478,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	struct gensec_security *gensec_client_context;
 	struct gensec_security *gensec_server_context;
 
+	struct auth4_context *auth_context;
 	struct auth_session_info *kinit_session_info;
 	struct auth_session_info *s2u4self_session_info;
 	struct auth_user_info_dc *netlogon_user_info_dc;
@@ -421,6 +493,11 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
+
+	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
+	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
+
+	auth_context->generate_session_info_pac = test_generate_session_info_pac;
 
 	/* First, do a normal Kerberos connection */
 
@@ -438,7 +515,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	status = gensec_server_start(tctx,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				     NULL, &gensec_server_context);
+				     auth_context, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
 	status = gensec_set_credentials(gensec_server_context, credentials);
@@ -495,7 +572,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	status = gensec_server_start(tctx,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
-				     NULL, &gensec_server_context);
+				     auth_context, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
 	status = gensec_set_credentials(gensec_server_context, credentials);
