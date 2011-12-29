@@ -35,11 +35,6 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 	int fd, num;
 	char peek[20];
 
-	/* Check for directory */
-	if (directory_exist(location)) {
-		return reg_open_directory(parent_ctx, location, root);
-	}
-
 	fd = open(location, O_RDWR);
 	if (fd == -1) {
 		if (errno == ENOENT)

@@ -375,30 +375,6 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 						test_hive_security);
 }
 
-static bool hive_setup_dir(struct torture_context *tctx, void **data)
-{
-	struct hive_key *key;
-	WERROR error;
-	char *dirname;
-	NTSTATUS status;
-
-	status = torture_temp_dir(tctx, "hive-dir", &dirname);
-	if (!NT_STATUS_IS_OK(status))
-		return false;
-
-	rmdir(dirname);
-
-	error = reg_create_directory(tctx, dirname, &key);
-	if (!W_ERROR_IS_OK(error)) {
-		fprintf(stderr, "Unable to initialize dir hive\n");
-		return false;
-	}
-
-	*data = key;
-
-	return true;
-}
-
 static bool hive_setup_ldb(struct torture_context *tctx, void **data)
 {
 	struct hive_key *key;
@@ -447,25 +423,10 @@ static bool hive_setup_regf(struct torture_context *tctx, void **data)
 	return true;
 }
 
-static bool test_dir_refuses_null_location(struct torture_context *tctx)
-{
-	torture_assert_werr_equal(tctx, WERR_INVALID_PARAM,
-				  reg_open_directory(NULL, NULL, NULL),
-				  "reg_open_directory accepts NULL location");
-	return true;
-}
-
 struct torture_suite *torture_registry_hive(TALLOC_CTX *mem_ctx)
 {
 	struct torture_tcase *tcase;
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "hive");
-
-	torture_suite_add_simple_test(suite, "dir-refuses-null-location",
-				      test_dir_refuses_null_location);
-
-	tcase = torture_suite_add_tcase(suite, "dir");
-	torture_tcase_set_fixture(tcase, hive_setup_dir, NULL);
-	tcase_add_tests(tcase);
 
 	tcase = torture_suite_add_tcase(suite, "ldb");
 	torture_tcase_set_fixture(tcase, hive_setup_ldb, NULL);
