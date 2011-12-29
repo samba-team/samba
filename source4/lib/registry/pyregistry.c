@@ -360,36 +360,6 @@ static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)
 	return pytalloc_steal(&PyRegistry, reg_ctx);
 }
 
-static PyObject *py_open_directory(PyObject *self, PyObject *args)
-{
-	char *location;
-	WERROR result;
-	struct hive_key *key;
-
-	if (!PyArg_ParseTuple(args, "s", &location))
-		return NULL;
-
-	result = reg_open_directory(NULL, location, &key);
-	PyErr_WERROR_IS_ERR_RAISE(result);
-
-	return pytalloc_steal(&PyHiveKey, key);
-}
-
-static PyObject *py_create_directory(PyObject *self, PyObject *args)
-{
-	char *location;
-	WERROR result;
-	struct hive_key *key;
-
-	if (!PyArg_ParseTuple(args, "s", &location))
-		return NULL;
-
-	result = reg_create_directory(NULL, location, &key);
-	PyErr_WERROR_IS_ERR_RAISE(result);
-
-	return pytalloc_steal(&PyHiveKey, key);
-}
-
 static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	const char *kwnames[] = { "location", "session_info", "credentials", "lp_ctx", NULL };
@@ -464,8 +434,6 @@ static PyObject *py_get_predef_name(PyObject *self, PyObject *args)
 
 static PyMethodDef py_registry_methods[] = {
 	{ "open_samba", (PyCFunction)py_open_samba, METH_VARARGS|METH_KEYWORDS, "open_samba() -> reg" },
-	{ "open_directory", py_open_directory, METH_VARARGS, "open_dir(location) -> key" },
-	{ "create_directory", py_create_directory, METH_VARARGS, "create_dir(location) -> key" },
 	{ "open_ldb", (PyCFunction)py_open_ldb_file, METH_VARARGS|METH_KEYWORDS, "open_ldb(location, session_info=None, credentials=None, loadparm_context=None) -> key" },
 	{ "open_hive", (PyCFunction)py_open_hive, METH_VARARGS|METH_KEYWORDS, "open_hive(location, session_info=None, credentials=None, loadparm_context=None) -> key" },
 	{ "str_regtype", py_str_regtype, METH_VARARGS, "str_regtype(int) -> str" },
