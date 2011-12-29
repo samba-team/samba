@@ -24,7 +24,7 @@ the functionality, that's already done in other tests.
 """
 
 from samba.credentials import Credentials
-from samba import gensec
+from samba import gensec, auth
 import samba.tests
 
 class GensecTests(samba.tests.TestCase):
@@ -56,7 +56,8 @@ class GensecTests(samba.tests.TestCase):
         self.gensec_client.want_feature(gensec.FEATURE_SEAL)
         self.gensec_client.start_mech_by_sasl_name("GSSAPI")
 
-        self.gensec_server = gensec.Security.start_server(self.settings)
+        self.gensec_server = gensec.Security.start_server(settings=self.settings, 
+                                                          auth_context=auth.AuthContext(lp_ctx=self.lp_ctx))
         creds = Credentials()
         creds.guess(self.lp_ctx)
         creds.set_machine_account(self.lp_ctx)
