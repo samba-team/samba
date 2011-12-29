@@ -612,7 +612,7 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 }
 
 static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security,
-					 TALLOC_CTX *mem_ctx_out,
+					 TALLOC_CTX *mem_ctx,
 					 struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -628,8 +628,8 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 	krb5_error_code ret;
 
-	TALLOC_CTX *mem_ctx = talloc_new(mem_ctx_out);
-	if (!mem_ctx) {
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
@@ -637,8 +637,8 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	if (ret) {
 		DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
 			  smb_get_krb5_error_message(context, 
-						     ret, mem_ctx)));
-		talloc_free(mem_ctx);
+						     ret, tmp_ctx)));
+		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
@@ -647,9 +647,9 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	if (ret) {
 		DEBUG(1, ("Unable to parse client principal: %s\n",
 			  smb_get_krb5_error_message(context, 
-						     ret, mem_ctx)));
+						     ret, tmp_ctx)));
 		krb5_free_principal(context, client_principal);
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -661,14 +661,14 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		/* NO pac */
 		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
 			  smb_get_krb5_error_message(context, 
-						     ret, mem_ctx)));
+						     ret, tmp_ctx)));
 	} else {
 		/* Found pac */
-		pac_blob = data_blob_talloc(mem_ctx, pac_data.data, pac_data.length);
+		pac_blob = data_blob_talloc(tmp_ctx, pac_data.data, pac_data.length);
 		if (!pac_blob.data) {
 			free(principal_string);
 			krb5_free_principal(context, client_principal);
-			talloc_free(mem_ctx);
+			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -683,14 +683,14 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			free(principal_string);
 			krb5_free_principal(context, client_principal);
-			talloc_free(mem_ctx);
+			talloc_free(tmp_ctx);
 			return nt_status;
 		}
 
 		pac_blob_ptr = &pac_blob;
 	}
 
-	nt_status = gensec_generate_session_info_pac(mem_ctx,
+	nt_status = gensec_generate_session_info_pac(tmp_ctx,
 						     gensec_security,
 						     gensec_krb5_state->smb_krb5_context,
 						     pac_blob_ptr, principal_string,
@@ -701,20 +701,20 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	krb5_free_principal(context, client_principal);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
 	nt_status = gensec_krb5_session_key(gensec_security, session_info, &session_info->session_key);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
-	*_session_info = talloc_steal(mem_ctx_out, session_info);
+	*_session_info = talloc_steal(mem_ctx, session_info);
 
-	talloc_free(mem_ctx);
+	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
