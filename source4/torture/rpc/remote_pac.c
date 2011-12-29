@@ -46,7 +46,7 @@
  * generate the session info, as we just want to verify the PAC
  * details, not the full local token */
 static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
-					       TALLOC_CTX *mem_ctx_out,
+					       TALLOC_CTX *mem_ctx,
 					       struct smb_krb5_context *smb_krb5_context,
 					       DATA_BLOB *pac_blob,
 					       const char *principal_name,
@@ -58,41 +58,41 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 	struct auth_user_info_dc *user_info_dc;
 	struct PAC_SIGNATURE_DATA *pac_srv_sig = NULL;
 	struct PAC_SIGNATURE_DATA *pac_kdc_sig = NULL;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *tmp_ctx;
 	
-	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
-	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gssapi_session_info context");
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	pac_srv_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
+	pac_srv_sig = talloc(tmp_ctx, struct PAC_SIGNATURE_DATA);
 	if (!pac_srv_sig) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	pac_kdc_sig = talloc(mem_ctx, struct PAC_SIGNATURE_DATA);
+	pac_kdc_sig = talloc(tmp_ctx, struct PAC_SIGNATURE_DATA);
 	if (!pac_kdc_sig) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = kerberos_pac_blob_to_user_info_dc(mem_ctx,
+	nt_status = kerberos_pac_blob_to_user_info_dc(tmp_ctx,
 						      *pac_blob,
 						      smb_krb5_context->krb5_context,
 						      &user_info_dc,
 						      pac_srv_sig,
 						      pac_kdc_sig);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
 	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
-	nt_status = auth_generate_session_info(mem_ctx_out,
+	nt_status = auth_generate_session_info(mem_ctx,
 					       NULL,
 					       NULL,
 					       user_info_dc, session_info_flags,
 					       session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
@@ -103,7 +103,7 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 			= talloc_steal((*session_info)->torture, pac_kdc_sig);
 	}
 
-	talloc_free(mem_ctx);
+	talloc_free(tmp_ctx);
 	return nt_status;
 }
 
