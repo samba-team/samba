@@ -1300,11 +1300,11 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
  * this session.  This uses either the PAC (if present) or a local
  * database lookup */
 static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_security,
-					   TALLOC_CTX *mem_ctx_out,
+					   TALLOC_CTX *mem_ctx,
 					   struct auth_session_info **_session_info) 
 {
 	NTSTATUS nt_status;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *tmp_ctx;
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 	struct auth_session_info *session_info = NULL;
@@ -1314,8 +1314,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	gss_buffer_desc name_token;
 	char *principal_string;
 	
-	mem_ctx = talloc_named(mem_ctx_out, 0, "gensec_gssapi_session_info context");
-	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gssapi_session_info context");
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	maj_stat = gss_display_name (&min_stat,
 				     gensec_gssapi_state->client_name,
@@ -1323,23 +1323,23 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 				     NULL);
 	if (GSS_ERROR(maj_stat)) {
 		DEBUG(1, ("GSS display_name failed: %s\n",
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-		talloc_free(mem_ctx);
+			  gssapi_error_string(tmp_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+		talloc_free(tmp_ctx);
 		return NT_STATUS_FOOBAR;
 	}
 
-	principal_string = talloc_strndup(mem_ctx,
+	principal_string = talloc_strndup(tmp_ctx,
 					  (const char *)name_token.value,
 					  name_token.length);
 
 	gss_release_buffer(&min_stat, &name_token);
 
 	if (!principal_string) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = gssapi_obtain_pac_blob(mem_ctx,  gensec_gssapi_state->gssapi_context,
+	nt_status = gssapi_obtain_pac_blob(tmp_ctx,  gensec_gssapi_state->gssapi_context,
 					   gensec_gssapi_state->client_name,
 					   &pac_blob);
 	
@@ -1350,20 +1350,20 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	if (NT_STATUS_IS_OK(nt_status)) {
 		pac_blob_ptr = &pac_blob;
 	}
-	nt_status = gensec_generate_session_info_pac(mem_ctx,
+	nt_status = gensec_generate_session_info_pac(tmp_ctx,
 						     gensec_security,
 						     gensec_gssapi_state->smb_krb5_context,
 						     pac_blob_ptr, principal_string,
 						     gensec_get_remote_address(gensec_security),
 						     &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
 	nt_status = gensec_gssapi_session_key(gensec_security, session_info, &session_info->session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
+		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
@@ -1376,7 +1376,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		DEBUG(10, ("gensec_gssapi: delegated credentials supplied by client\n"));
 		session_info->credentials = cli_credentials_init(session_info);
 		if (!session_info->credentials) {
-			talloc_free(mem_ctx);
+			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -1389,7 +1389,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 							   gensec_gssapi_state->delegated_cred_handle,
 							   CRED_SPECIFIED, &error_string);
 		if (ret) {
-			talloc_free(mem_ctx);
+			talloc_free(tmp_ctx);
 			DEBUG(2,("Failed to get gss creds: %s\n", error_string));
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1400,8 +1400,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		/* It has been taken from this place... */
 		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 	}
-	*_session_info = talloc_steal(mem_ctx_out, session_info);
-	talloc_free(mem_ctx);
+	*_session_info = talloc_steal(mem_ctx, session_info);
+	talloc_free(tmp_ctx);
 
 	return NT_STATUS_OK;
 }
