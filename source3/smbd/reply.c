@@ -4429,11 +4429,6 @@ void reply_write_and_X(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
 	SSVAL(req->outbuf,smb_vwv4,nwritten>>16);
 
-	if (nwritten < (ssize_t)numtowrite) {
-		SCVAL(req->outbuf,smb_rcls,ERRHRD);
-		SSVAL(req->outbuf,smb_err,ERRdiskfull);
-	}
-
 	DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
 		fsp->fnum, (int)numtowrite, (int)nwritten));
 
