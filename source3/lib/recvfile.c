@@ -29,16 +29,10 @@
  * It's safe to make direct syscalls to lseek/write here
  * as we're below the Samba vfs layer.
  *
- * If tofd is -1 we just drain the incoming socket of count
- * bytes without writing to the outgoing fd.
- * If a write fails we do the same (to cope with disk full)
- * errors.
- *
  * Returns -1 on short reads from fromfd (read error)
  * and sets errno.
  *
  * Returns number of bytes written to 'tofd'
- * or thrown away if 'tofd == -1'.
  * return != count then sets errno.
  * Returns count if complete success.
  */
@@ -95,23 +89,26 @@ static ssize_t default_sys_recvfile(int fromfd,
 
 		num_written = 0;
 
-		while (num_written < read_ret) {
+		/* Don't write any more after a write error. */
+		while (tofd != -1 && (num_written < read_ret)) {
 			ssize_t write_ret;
 
-			if (tofd == -1) {
-				write_ret = read_ret;
-			} else {
-				/* Write to file - ignore EINTR. */
-				write_ret = sys_write(tofd,
-						buffer + num_written,
-						read_ret - num_written);
+			/* Write to file - ignore EINTR. */
+			write_ret = sys_write(tofd,
+					buffer + num_written,
+					read_ret - num_written);
 
-				if (write_ret <= 0) {
-					/* write error - stop writing. */
-					tofd = -1;
-					saved_errno = errno;
-					continue;
-				}
+			if (write_ret <= 0) {
+				/* write error - stop writing. */
+				tofd = -1;
+                                if (total_written == 0) {
+					/* Ensure we return
+					   -1 if the first
+					   write failed. */
+                                        total_written = -1;
+                                }
+				saved_errno = errno;
+				break;
 			}
 
 			num_written += (size_t)write_ret;
