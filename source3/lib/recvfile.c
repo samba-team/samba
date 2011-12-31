@@ -241,9 +241,38 @@ ssize_t sys_recvfile(int fromfd,
 
 /*****************************************************************
  Throw away "count" bytes from the client socket.
+ Returns count or -1 on error.
 *****************************************************************/
 
 ssize_t drain_socket(int sockfd, size_t count)
 {
-	return default_sys_recvfile(sockfd, -1, (SMB_OFF_T)-1, count);
+	size_t total = 0;
+	size_t bufsize = MIN(TRANSFER_BUF_SIZE,count);
+	char *buffer = NULL;
+
+	if (count == 0) {
+		return 0;
+	}
+
+	buffer = SMB_MALLOC_ARRAY(char, bufsize);
+	if (buffer == NULL) {
+		return -1;
+	}
+
+	while (total < count) {
+		ssize_t read_ret;
+		size_t toread = MIN(bufsize,count - total);
+
+		/* Read from socket - ignore EINTR. */
+		read_ret = sys_read(sockfd, buffer, toread);
+		if (read_ret <= 0) {
+			/* EOF or socket error. */
+			free(buffer);
+			return -1;
+		}
+		total += read_ret;
+	}
+
+	free(buffer);
+	return count;
 }
