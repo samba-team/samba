@@ -45,11 +45,6 @@ struct loadparm_context;
 /* version 0 - till samba4 is stable - metze */
 #define AUTH4_INTERFACE_VERSION 0
 
-#define AUTH_SESSION_INFO_DEFAULT_GROUPS     0x01 /* Add the user to the default world and network groups */
-#define AUTH_SESSION_INFO_AUTHENTICATED      0x02 /* Add the user to the 'authenticated users' group */
-#define AUTH_SESSION_INFO_SIMPLE_PRIVILEGES  0x04 /* Use a trivial map between users and privilages, rather than a DB */
-#define AUTH_SESSION_INFO_UNIX_TOKEN         0x08 /* The returned token must have the unix_token and unix_info elements provided */
-
 struct auth_method_context;
 struct auth_check_password_request;
 struct auth4_context;

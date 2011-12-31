@@ -22,10 +22,7 @@
 
 #include "includes.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_proto.h"
-#include "auth/auth.h"
-#include "auth/credentials/credentials.h"
-#include "auth/system_session_proto.h"
+#include "auth/common_auth.h"
 
 NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 				      struct gensec_security *gensec_security,
