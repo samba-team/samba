@@ -65,4 +65,63 @@ struct auth_usersupplied_info
 	uint32_t flags;
 };
 
+struct auth_method_context;
+struct tevent_context;
+struct imessaging_context;
+struct loadparm_context;
+struct ldb_context;
+struct smb_krb5_context;
+
+struct auth4_context {
+	struct {
+		/* Who set this up in the first place? */
+		const char *set_by;
+
+		bool may_be_modified;
+
+		DATA_BLOB data;
+	} challenge;
+
+	/* methods, in the order they should be called */
+	struct auth_method_context *methods;
+
+	/* the event context to use for calls that can block */
+	struct tevent_context *event_ctx;
+
+	/* the messaging context which can be used by backends */
+	struct imessaging_context *msg_ctx;
+
+	/* loadparm context */
+	struct loadparm_context *lp_ctx;
+
+	/* SAM database for this local machine - to fill in local groups, or to authenticate local NTLM users */
+	struct ldb_context *sam_ctx;
+
+	NTSTATUS (*check_password)(struct auth4_context *auth_ctx,
+				   TALLOC_CTX *mem_ctx,
+				   const struct auth_usersupplied_info *user_info,
+				   struct auth_user_info_dc **user_info_dc);
+
+	NTSTATUS (*get_challenge)(struct auth4_context *auth_ctx, uint8_t chal[8]);
+
+	bool (*challenge_may_be_modified)(struct auth4_context *auth_ctx);
+
+	NTSTATUS (*set_challenge)(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by);
+
+	NTSTATUS (*generate_session_info)(TALLOC_CTX *mem_ctx,
+					  struct auth4_context *auth_context,
+					  struct auth_user_info_dc *user_info_dc,
+					  uint32_t session_info_flags,
+					  struct auth_session_info **session_info);
+
+	NTSTATUS (*generate_session_info_pac)(struct auth4_context *auth_ctx,
+					      TALLOC_CTX *mem_ctx,
+					      struct smb_krb5_context *smb_krb5_context,
+					      DATA_BLOB *pac_blob,
+					      const char *principal_name,
+					      const struct tsocket_address *remote_address,
+					      uint32_t session_info_flags,
+					      struct auth_session_info **session_info);
+};
+
 #endif
