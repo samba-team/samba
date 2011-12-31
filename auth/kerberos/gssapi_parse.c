@@ -24,8 +24,6 @@
 #include "includes.h"
 #include "../lib/util/asn1.h"
 #include "auth/gensec/gensec.h"
-#include "system/kerberos.h"
-#include "auth/kerberos/kerberos.h"
 
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
