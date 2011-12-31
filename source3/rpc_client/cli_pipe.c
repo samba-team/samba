@@ -1038,7 +1038,7 @@ static NTSTATUS create_gssapi_auth_bind_req(TALLOC_CTX *mem_ctx,
  Creates NTLMSSP auth bind.
  ********************************************************************/
 
-static NTSTATUS create_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
+static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 DATA_BLOB *auth_token)
 {
@@ -1049,16 +1049,13 @@ static NTSTATUS create_ntlmssp_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	gensec_security = talloc_get_type_abort(cli->auth->auth_ctx,
 					struct gensec_security);
 
-	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
+	DEBUG(5, ("create_generic_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
 	status = gensec_update(gensec_security, mem_ctx, NULL, null_blob, auth_token);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		data_blob_free(auth_token);
 		return status;
 	}
-
-	DEBUG(5, ("create_ntlmssp_auth_rpc_bind_req: NTLMSSP Negotiate:\n"));
-	dump_data(5, auth_token->data, auth_token->length);
 
 	return NT_STATUS_OK;
 }
@@ -1174,7 +1171,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		break;
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		ret = create_ntlmssp_auth_rpc_bind_req(cli, mem_ctx, &auth_token);
+		ret = create_generic_auth_rpc_bind_req(cli, mem_ctx, &auth_token);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
