@@ -148,13 +148,15 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	/* Try not to give the password away too easily */
 
 	if (!pass_must_change) {
-		result = cli_rpc_pipe_open_ntlmssp(cli,
-						   &ndr_table_samr.syntax_id,
-						   NCACN_NP,
-						   DCERPC_AUTH_LEVEL_PRIVACY,
-						   domain, user,
-						   old_passwd,
-						   &pipe_hnd);
+		result = cli_rpc_pipe_open_generic_auth(cli,
+							&ndr_table_samr.syntax_id,
+							NCACN_NP,
+							DCERPC_AUTH_TYPE_NTLMSSP,
+							DCERPC_AUTH_LEVEL_PRIVACY,
+							remote_machine,
+							domain, user,
+							old_passwd,
+							&pipe_hnd);
 	} else {
 		/*
 		 * If the user password must be changed the ntlmssp bind will

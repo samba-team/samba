@@ -715,10 +715,12 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			}
 			break;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
-			ntresult = cli_rpc_pipe_open_ntlmssp(
+			ntresult = cli_rpc_pipe_open_generic_auth(
 				cli, cmd_entry->interface,
 				default_transport,
+				pipe_default_auth_type,
 				pipe_default_auth_level,
+				cli_state_remote_name(cli),
 				get_cmdline_auth_info_domain(auth_info),
 				get_cmdline_auth_info_username(auth_info),
 				get_cmdline_auth_info_password(auth_info),

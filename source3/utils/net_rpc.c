@@ -200,11 +200,13 @@ int run_rpc_command(struct net_context *c,
 			}
 		} else {
 			if (conn_flags & NET_FLAGS_SEAL) {
-				nt_status = cli_rpc_pipe_open_ntlmssp(
+				nt_status = cli_rpc_pipe_open_generic_auth(
 					cli, interface,
 					(conn_flags & NET_FLAGS_TCP) ?
 					NCACN_IP_TCP : NCACN_NP,
+					DCERPC_AUTH_TYPE_NTLMSSP,
 					DCERPC_AUTH_LEVEL_PRIVACY,
+					cli_state_remote_name(cli),
 					lp_workgroup(), c->opt_user_name,
 					c->opt_password, &pipe_hnd);
 			} else {

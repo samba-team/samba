@@ -2255,15 +2255,17 @@ NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
-				  enum dcerpc_AuthType auth_type,
-				  enum dcerpc_AuthLevel auth_level,
-				  const char *domain,
-				  const char *username,
-				  const char *password,
-				  struct pipe_auth_data **presult)
+static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
+					 enum dcerpc_AuthType auth_type,
+					 enum dcerpc_AuthLevel auth_level,
+					 const char *server,
+					 const char *target_service,
+					 const char *domain,
+					 const char *username,
+					 const char *password,
+					 struct pipe_auth_data **presult)
 {
-	struct auth_generic_state *ntlmssp_ctx;
+	struct auth_generic_state *auth_generic_ctx;
 	struct pipe_auth_data *result;
 	NTSTATUS status;
 
@@ -2283,33 +2285,33 @@ static NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
 	}
 
 	status = auth_generic_client_prepare(result,
-					     &ntlmssp_ctx);
+					     &auth_generic_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = auth_generic_set_username(ntlmssp_ctx, username);
+	status = auth_generic_set_username(auth_generic_ctx, username);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = auth_generic_set_domain(ntlmssp_ctx, domain);
+	status = auth_generic_set_domain(auth_generic_ctx, domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = auth_generic_set_password(ntlmssp_ctx, password);
+	status = auth_generic_set_password(auth_generic_ctx, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = auth_generic_client_start_by_authtype(ntlmssp_ctx, auth_type, auth_level);
+	status = auth_generic_client_start_by_authtype(auth_generic_ctx, auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	result->auth_ctx = talloc_move(result, &ntlmssp_ctx->gensec_security);
-	talloc_free(ntlmssp_ctx);
+	result->auth_ctx = talloc_move(result, &auth_generic_ctx->gensec_security);
+	talloc_free(auth_generic_ctx);
 	*presult = result;
 	return NT_STATUS_OK;
 
@@ -2850,21 +2852,23 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 }
 
 /****************************************************************************
- Open a named pipe to an SMB server and bind using NTLMSSP or SPNEGO NTLMSSP
+ Open a named pipe to an SMB server and bind using the mech specified
  ****************************************************************************/
 
-NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
-				   const struct ndr_syntax_id *interface,
-				   enum dcerpc_transport_t transport,
-				   enum dcerpc_AuthLevel auth_level,
-				   const char *domain,
-				   const char *username,
-				   const char *password,
-				   struct rpc_pipe_client **presult)
+NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
+					const struct ndr_syntax_id *interface,
+					enum dcerpc_transport_t transport,
+					enum dcerpc_AuthType auth_type,
+					enum dcerpc_AuthLevel auth_level,
+					const char *server,
+					const char *domain,
+					const char *username,
+					const char *password,
+					struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth = NULL;
-	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+	const char *target_service = "cifs"; /* TODO: Determine target service from the bindings or interface table */
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
@@ -2872,25 +2876,26 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_ntlmssp_bind_data(result,
+	status = rpccli_generic_bind_data(result,
 					  auth_type, auth_level,
+					  server, target_service,
 					  domain, username, password,
 					  &auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("rpccli_ntlmssp_bind_data returned %s\n",
+		DEBUG(0, ("rpccli_generic_bind_data returned %s\n",
 			  nt_errstr(status)));
 		goto err;
 	}
 
 	status = rpc_pipe_bind(result, auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("cli_rpc_pipe_open_ntlmssp_internal: cli_rpc_pipe_bind failed with error %s\n",
+		DEBUG(0, ("cli_rpc_pipe_open_generic_auth: cli_rpc_pipe_bind failed with error %s\n",
 			nt_errstr(status) ));
 		goto err;
 	}
 
-	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to "
-		"machine %s and bound NTLMSSP as user %s\\%s.\n",
+	DEBUG(10,("cli_rpc_pipe_open_generic_auth: opened pipe %s to "
+		"machine %s and bound as user %s\\%s.\n",
 		  get_pipe_name_from_syntax(talloc_tos(), interface),
 		  result->desthost, domain, username));
 
