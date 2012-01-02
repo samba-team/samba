@@ -2305,6 +2305,16 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	status = gensec_set_target_service(auth_generic_ctx->gensec_security, target_service);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = gensec_set_target_hostname(auth_generic_ctx->gensec_security, server);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
 	status = auth_generic_client_start_by_authtype(auth_generic_ctx, auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
