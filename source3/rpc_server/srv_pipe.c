@@ -676,52 +676,11 @@ static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
-					 struct gse_context *gse_ctx,
-					 const struct tsocket_address *remote_address,
-					 struct auth_session_info **session_info)
-{
-	NTSTATUS status;
-	bool bret;
-
-	/* Finally - if the pipe negotiated integrity (sign) or privacy (seal)
-	   ensure the underlying flags are also set. If not we should
-	   refuse the bind. */
-
-	status = gssapi_server_check_flags(gse_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Requested Security Layers not honored!\n"));
-		return status;
-	}
-
-	status = gssapi_server_get_user_info(gse_ctx, mem_ctx,
-					     remote_address, session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ ": failed to obtain the server info "
-			  "for authenticated user: %s\n", nt_errstr(status)));
-		return status;
-	}
-
-	/*
-	 * We're an authenticated bind over smb, so the session key needs to
-	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
-	 * does. See the RPC-SAMBA3SESSIONKEY.
-	 */
-
-	bret = session_info_set_session_key((*session_info), generic_session_key());
-	if (!bret) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 {
 	enum spnego_mech auth_type;
 	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
-	struct gse_context *gse_ctx;
 	void *mech_ctx;
 	NTSTATUS status;
 
@@ -740,37 +699,15 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 		spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
 						   struct spnego_context);
 		status = spnego_get_negotiated_mech(spnego_ctx,
-						    &auth_type, &mech_ctx);
+						    &auth_type, &gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Bad SPNEGO state (%s)\n",
 				  nt_errstr(status)));
 			return status;
 		}
-		switch(auth_type) {
-		case SPNEGO_KRB5:
-			gse_ctx = talloc_get_type_abort(mech_ctx,
-							struct gse_context);
-			status = pipe_gssapi_verify_final(p, gse_ctx,
-							  p->remote_address,
-							  &p->session_info);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(1, ("gssapi bind failed with: %s",
-					  nt_errstr(status)));
-				return status;
-			}
-			break;
-		case SPNEGO_NTLMSSP:
-			gensec_security = talloc_get_type_abort(mech_ctx,
-						struct gensec_security);
-			if (!pipe_auth_generic_verify_final(p, gensec_security,
-							p->auth.auth_level,
-							&p->session_info)) {
-				return NT_STATUS_ACCESS_DENIED;
-			}
-			break;
-		default:
-			DEBUG(0, (__location__ ": incorrect spnego type "
-				  "(%d).\n", auth_type));
+		if (!pipe_auth_generic_verify_final(p, gensec_security,
+						    p->auth.auth_level,
+						    &p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		break;

@@ -268,10 +268,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	struct gensec_security *gensec_security;
 	struct schannel_state *schannel_auth;
 	struct spnego_context *spnego_ctx;
-	struct gse_context *gse_ctx;
 	enum spnego_mech auth_type;
-	void *auth_ctx;
-	bool seal = false;
 	NTSTATUS status;
 
 	/* no auth token cases first */
@@ -287,7 +284,6 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 		return NT_STATUS_OK;
 
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		seal = true;
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -308,30 +304,11 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
 						   struct spnego_context);
 		status = spnego_get_negotiated_mech(spnego_ctx,
-						    &auth_type, &auth_ctx);
+						    &auth_type, &gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		switch (auth_type) {
-		case SPNEGO_NTLMSSP:
-			gensec_security = talloc_get_type_abort(auth_ctx,
-								struct gensec_security);
-			*auth_len = gensec_sig_size(gensec_security, max_len);
-			break;
-
-		case SPNEGO_KRB5:
-			gse_ctx = talloc_get_type_abort(auth_ctx,
-							struct gse_context);
-			if (!gse_ctx) {
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			*auth_len = gse_get_signature_length(gse_ctx,
-							     seal, max_len);
-			break;
-
-		default:
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+		*auth_len = gensec_sig_size(gensec_security, max_len);
 		break;
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:

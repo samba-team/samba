@@ -46,44 +46,6 @@ static NTSTATUS spnego_context_init(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
-				   bool do_sign, bool do_seal,
-				   bool is_dcerpc,
-				   const char *ccache_name,
-				   const char *server,
-				   const char *service,
-				   const char *username,
-				   const char *password,
-				   struct spnego_context **spnego_ctx)
-{
-	struct spnego_context *sp_ctx = NULL;
-	uint32_t add_gss_c_flags = 0;
-	NTSTATUS status;
-
-	status = spnego_context_init(mem_ctx, do_sign, do_seal, &sp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	sp_ctx->mech = SPNEGO_KRB5;
-
-	if (is_dcerpc) {
-		add_gss_c_flags = GSS_C_DCE_STYLE;
-	}
-
-	status = gse_init_client(sp_ctx,
-				 do_sign, do_seal,
-				 ccache_name, server, service,
-				 username, password, add_gss_c_flags,
-				 &sp_ctx->mech_ctx.gssapi_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(sp_ctx);
-		return status;
-	}
-
-	*spnego_ctx = sp_ctx;
-	return NT_STATUS_OK;
-}
-
 NTSTATUS spnego_generic_init_client(TALLOC_CTX *mem_ctx,
 				    const char *oid,
 				    bool do_sign, bool do_seal,
@@ -181,7 +143,6 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB *spnego_in,
 				      DATA_BLOB *spnego_out)
 {
-	struct gse_context *gse_ctx;
 	struct gensec_security *gensec_security;
 	struct spnego_data sp_in, sp_out;
 	DATA_BLOB token_in = data_blob_null;
@@ -190,7 +151,6 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	char *principal = NULL;
 	ssize_t len_in = 0;
 	ssize_t len_out = 0;
-	bool mech_wants_more = false;
 	NTSTATUS status;
 
 	if (!spnego_in->length) {
@@ -228,37 +188,26 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 
 	switch (sp_ctx->mech) {
 	case SPNEGO_KRB5:
-
-		gse_ctx = sp_ctx->mech_ctx.gssapi_state;
-		status = gse_get_client_auth_token(mem_ctx, gse_ctx,
-						   &token_in, &token_out);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-
 		mech_oids[0] = OID_KERBEROS5;
-		mech_wants_more = gse_require_more_processing(gse_ctx);
-
 		break;
 
 	case SPNEGO_NTLMSSP:
-
-		gensec_security = sp_ctx->mech_ctx.gensec_security;
-		status = gensec_update(gensec_security, mem_ctx, NULL,
-				       token_in, &token_out);
-		if (NT_STATUS_EQUAL(status,
-				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			mech_wants_more = true;
-		} else if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-
 		mech_oids[0] = OID_NTLMSSP;
-
 		break;
 
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
+
+	gensec_security = sp_ctx->mech_ctx.gensec_security;
+	status = gensec_update(gensec_security, mem_ctx, NULL,
+			       token_in, &token_out);
+	sp_ctx->more_processing = false;
+	if (NT_STATUS_EQUAL(status,
+			    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		sp_ctx->more_processing = true;
+	} else if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -293,7 +242,7 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		if (!mech_wants_more) {
+		if (!sp_ctx->more_processing) {
 			/* we still need to get an ack from the server */
 			sp_ctx->state = SPNEGO_CONV_AUTH_CONFIRM;
 		}
@@ -317,7 +266,6 @@ done:
 
 bool spnego_require_more_processing(struct spnego_context *sp_ctx)
 {
-	struct gse_context *gse_ctx;
 
 	/* see if spnego processing itself requires more */
 	if (sp_ctx->state == SPNEGO_CONV_AUTH_MORE ||
@@ -328,10 +276,8 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx)
 	/* otherwise see if underlying mechnism does */
 	switch (sp_ctx->mech) {
 	case SPNEGO_KRB5:
-		gse_ctx = sp_ctx->mech_ctx.gssapi_state;
-		return gse_require_more_processing(gse_ctx);
 	case SPNEGO_NTLMSSP:
-		return false;
+		return sp_ctx->more_processing;
 	default:
 		DEBUG(0, ("Unsupported type in request!\n"));
 		return false;
@@ -340,12 +286,10 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx)
 
 NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 				    enum spnego_mech *type,
-				    void **auth_context)
+				    struct gensec_security **auth_context)
 {
 	switch (sp_ctx->mech) {
 	case SPNEGO_KRB5:
-		*auth_context = sp_ctx->mech_ctx.gssapi_state;
-		break;
 	case SPNEGO_NTLMSSP:
 		*auth_context = sp_ctx->mech_ctx.gensec_security;
 		break;
@@ -364,8 +308,6 @@ DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	switch (sp_ctx->mech) {
 	case SPNEGO_KRB5:
-		return gse_get_session_key(mem_ctx,
-					   sp_ctx->mech_ctx.gssapi_state);
 	case SPNEGO_NTLMSSP:
 		status = gensec_session_key(sp_ctx->mech_ctx.gensec_security, mem_ctx, &sk);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -385,9 +327,6 @@ NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
 {
 	switch(sp_ctx->mech) {
 	case SPNEGO_KRB5:
-		return gse_sign(mem_ctx,
-				sp_ctx->mech_ctx.gssapi_state,
-				data, signature);
 	case SPNEGO_NTLMSSP:
 		return gensec_sign_packet(
 			sp_ctx->mech_ctx.gensec_security,
@@ -407,9 +346,6 @@ NTSTATUS spnego_sigcheck(TALLOC_CTX *mem_ctx,
 {
 	switch(sp_ctx->mech) {
 	case SPNEGO_KRB5:
-		return gse_sigcheck(mem_ctx,
-				    sp_ctx->mech_ctx.gssapi_state,
-				    data, signature);
 	case SPNEGO_NTLMSSP:
 		return gensec_check_packet(
 			sp_ctx->mech_ctx.gensec_security,
@@ -428,9 +364,6 @@ NTSTATUS spnego_seal(TALLOC_CTX *mem_ctx,
 {
 	switch(sp_ctx->mech) {
 	case SPNEGO_KRB5:
-		return gse_seal(mem_ctx,
-				sp_ctx->mech_ctx.gssapi_state,
-				data, signature);
 	case SPNEGO_NTLMSSP:
 		return gensec_seal_packet(
 			sp_ctx->mech_ctx.gensec_security,
@@ -450,9 +383,6 @@ NTSTATUS spnego_unseal(TALLOC_CTX *mem_ctx,
 {
 	switch(sp_ctx->mech) {
 	case SPNEGO_KRB5:
-		return gse_unseal(mem_ctx,
-				    sp_ctx->mech_ctx.gssapi_state,
-				    data, signature);
 	case SPNEGO_NTLMSSP:
 		return gensec_unseal_packet(
 			sp_ctx->mech_ctx.gensec_security,

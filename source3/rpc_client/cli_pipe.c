@@ -2939,6 +2939,7 @@ NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
 	struct pipe_auth_data *auth;
 	struct spnego_context *spnego_ctx;
 	NTSTATUS status;
+	const char *target_service = "cifs"; /* TODO: Determine target service from the bindings or interface table */
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2969,15 +2970,16 @@ NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
 		goto err_out;
 	}
 
-	status = spnego_gssapi_init_client(auth,
-					   (auth->auth_level ==
+	status = spnego_generic_init_client(auth,
+					    GENSEC_OID_KERBEROS5,
+					    (auth->auth_level ==
 						DCERPC_AUTH_LEVEL_INTEGRITY),
-					   (auth->auth_level ==
+					    (auth->auth_level ==
 						DCERPC_AUTH_LEVEL_PRIVACY),
-					   true,
-					   NULL, server, "cifs",
-					   username, password,
-					   &spnego_ctx);
+					    true,
+					    server, target_service,
+					    auth->domain, auth->user_name, password,
+					    &spnego_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("spnego_init_client returned %s\n",
 			  nt_errstr(status)));

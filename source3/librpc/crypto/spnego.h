@@ -31,7 +31,6 @@ struct spnego_context {
 
 	union {
 		struct gensec_security *gensec_security;
-		struct gse_context *gssapi_state;
 	} mech_ctx;
 
 	char *oid_list[ASN1_MAX_OIDS];
@@ -50,17 +49,10 @@ struct spnego_context {
 	bool is_dcerpc;
 
 	struct tsocket_address *remote_address;
+
+	bool more_processing; /* Current mech state requires more processing */
 };
 
-NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
-				   bool do_sign, bool do_seal,
-				   bool is_dcerpc,
-				   const char *ccache_name,
-				   const char *server,
-				   const char *service,
-				   const char *username,
-				   const char *password,
-				   struct spnego_context **spengo_ctx);
 NTSTATUS spnego_generic_init_client(TALLOC_CTX *mem_ctx,
 				    const char *oid,
 				    bool do_sign, bool do_seal,
@@ -81,7 +73,7 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx);
 
 NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 				    enum spnego_mech *type,
-				    void **auth_context);
+				    struct gensec_security **auth_context);
 
 DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 				 struct spnego_context *sp_ctx);

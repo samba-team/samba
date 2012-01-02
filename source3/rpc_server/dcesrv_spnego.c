@@ -23,6 +23,7 @@
 #include "dcesrv_auth_generic.h"
 #include "dcesrv_gssapi.h"
 #include "dcesrv_spnego.h"
+#include "auth/gensec/gensec.h"
 
 static NTSTATUS spnego_init_server(TALLOC_CTX *mem_ctx,
 				   bool do_sign, bool do_seal,
@@ -55,50 +56,37 @@ static NTSTATUS spnego_server_mech_init(struct spnego_context *sp_ctx,
 					DATA_BLOB *token_out)
 {
 	struct gensec_security *gensec_security;
-	struct gse_context *gse_ctx;
 	NTSTATUS status;
+	const char *oid;
 
 	switch (sp_ctx->mech) {
 	case SPNEGO_KRB5:
-		status = gssapi_server_auth_start(sp_ctx,
-						  sp_ctx->do_sign,
-						  sp_ctx->do_seal,
-						  sp_ctx->is_dcerpc,
-						  token_in,
-						  token_out,
-						  &gse_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Failed to init gssapi server "
-				  "(%s)\n", nt_errstr(status)));
-			return status;
-		}
-
-		sp_ctx->mech_ctx.gssapi_state = gse_ctx;
+		oid = GENSEC_OID_KERBEROS5;
 		break;
-
 	case SPNEGO_NTLMSSP:
-		status = auth_generic_server_start(sp_ctx,
-						   OID_NTLMSSP,
-						   sp_ctx->do_sign,
-						   sp_ctx->do_seal,
-						   sp_ctx->is_dcerpc,
-						   token_in,
-						   token_out,
-						   sp_ctx->remote_address,
-						   &gensec_security);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Failed to init ntlmssp server "
-				  "(%s)\n", nt_errstr(status)));
-			return status;
-		}
-
-		sp_ctx->mech_ctx.gensec_security = gensec_security;
+		oid = GENSEC_OID_NTLMSSP;
 		break;
-
 	default:
 		DEBUG(3, ("No known mechanisms available\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	status = auth_generic_server_start(sp_ctx,
+					   oid,
+					   sp_ctx->do_sign,
+					   sp_ctx->do_seal,
+					   sp_ctx->is_dcerpc,
+					   token_in,
+					   token_out,
+					   sp_ctx->remote_address,
+					   &gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to init ntlmssp server "
+			  "(%s)\n", nt_errstr(status)));
+		return status;
+	}
+
+	sp_ctx->mech_ctx.gensec_security = gensec_security;
 
 	return NT_STATUS_OK;
 }
@@ -150,10 +138,6 @@ NTSTATUS spnego_server_step(struct spnego_context *sp_ctx,
 
 		switch(sp_ctx->mech) {
 		case SPNEGO_KRB5:
-			status = gssapi_server_step(
-					sp_ctx->mech_ctx.gssapi_state,
-					mem_ctx, &token_in, &token_out);
-			break;
 		case SPNEGO_NTLMSSP:
 			status = auth_generic_server_step(
 					sp_ctx->mech_ctx.gensec_security,
