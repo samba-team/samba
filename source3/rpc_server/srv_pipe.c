@@ -34,7 +34,6 @@
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "dcesrv_auth_generic.h"
-#include "dcesrv_gssapi.h"
 #include "dcesrv_spnego.h"
 #include "rpc_server.h"
 #include "rpc_dce.h"

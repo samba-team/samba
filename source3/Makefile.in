@@ -763,7 +763,6 @@ RPC_CONFIG = rpc_server/rpc_config.o
 RPC_SERVICE = rpc_server/rpc_server.o
 
 RPC_CRYPTO = rpc_server/dcesrv_auth_generic.o \
-		rpc_server/dcesrv_gssapi.o \
 		rpc_server/dcesrv_spnego.o
 
 RPC_PIPE_OBJ = rpc_server/srv_pipe.o rpc_server/srv_pipe_hnd.o \

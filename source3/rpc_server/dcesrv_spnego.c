@@ -21,7 +21,6 @@
 #include "../libcli/auth/spnego.h"
 #include "../lib/tsocket/tsocket.h"
 #include "dcesrv_auth_generic.h"
-#include "dcesrv_gssapi.h"
 #include "dcesrv_spnego.h"
 #include "auth/gensec/gensec.h"
 
