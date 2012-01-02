@@ -382,7 +382,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
  Create and add the NTLMSSP sign/seal auth data.
  ********************************************************************/
 
-static NTSTATUS add_ntlmssp_auth_footer(struct gensec_security *gensec_security,
+static NTSTATUS add_generic_auth_footer(struct gensec_security *gensec_security,
 					enum dcerpc_AuthLevel auth_level,
 					DATA_BLOB *rpc_out)
 {
@@ -450,7 +450,7 @@ static NTSTATUS add_ntlmssp_auth_footer(struct gensec_security *gensec_security,
  Check/unseal the NTLMSSP auth data. (Unseal in place).
  ********************************************************************/
 
-static NTSTATUS get_ntlmssp_auth_footer(struct gensec_security *gensec_security,
+static NTSTATUS get_generic_auth_footer(struct gensec_security *gensec_security,
 					enum dcerpc_AuthLevel auth_level,
 					DATA_BLOB *data, DATA_BLOB *full_pkt,
 					DATA_BLOB *auth_token)
@@ -809,7 +809,7 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		gensec_security = talloc_get_type_abort(auth->auth_ctx,
 						struct gensec_security);
-		status = add_ntlmssp_auth_footer(gensec_security,
+		status = add_generic_auth_footer(gensec_security,
 						 auth->auth_level,
 						 rpc_out);
 		break;
@@ -937,11 +937,11 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 
-		DEBUG(10, ("NTLMSSP auth\n"));
+		DEBUG(10, ("GENSEC auth\n"));
 
 		gensec_security = talloc_get_type_abort(auth->auth_ctx,
 						struct gensec_security);
-		status = get_ntlmssp_auth_footer(gensec_security,
+		status = get_generic_auth_footer(gensec_security,
 						 auth->auth_level,
 						 &data, &full_pkt,
 						 &auth_info.credentials);
