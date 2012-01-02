@@ -273,31 +273,13 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx)
 		return true;
 	}
 
-	/* otherwise see if underlying mechnism does */
-	switch (sp_ctx->mech) {
-	case SPNEGO_KRB5:
-	case SPNEGO_NTLMSSP:
-		return sp_ctx->more_processing;
-	default:
-		DEBUG(0, ("Unsupported type in request!\n"));
-		return false;
-	}
+	return sp_ctx->more_processing;
 }
 
 NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
-				    enum spnego_mech *type,
 				    struct gensec_security **auth_context)
 {
-	switch (sp_ctx->mech) {
-	case SPNEGO_KRB5:
-	case SPNEGO_NTLMSSP:
-		*auth_context = sp_ctx->mech_ctx.gensec_security;
-		break;
-	default:
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	*type = sp_ctx->mech;
+	*auth_context = sp_ctx->mech_ctx.gensec_security;
 	return NT_STATUS_OK;
 }
 
@@ -306,18 +288,11 @@ DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB sk;
 	NTSTATUS status;
-	switch (sp_ctx->mech) {
-	case SPNEGO_KRB5:
-	case SPNEGO_NTLMSSP:
-		status = gensec_session_key(sp_ctx->mech_ctx.gensec_security, mem_ctx, &sk);
-		if (!NT_STATUS_IS_OK(status)) {
-			return data_blob_null;
-		}
-		return sk;
-	default:
-		DEBUG(0, ("Unsupported type in request!\n"));
+	status = gensec_session_key(sp_ctx->mech_ctx.gensec_security, mem_ctx, &sk);
+	if (!NT_STATUS_IS_OK(status)) {
 		return data_blob_null;
 	}
+	return sk;
 }
 
 NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
@@ -325,18 +300,12 @@ NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
 			DATA_BLOB *data, DATA_BLOB *full_data,
 			DATA_BLOB *signature)
 {
-	switch(sp_ctx->mech) {
-	case SPNEGO_KRB5:
-	case SPNEGO_NTLMSSP:
-		return gensec_sign_packet(
-			sp_ctx->mech_ctx.gensec_security,
-			mem_ctx,
-			data->data, data->length,
-			full_data->data, full_data->length,
-			signature);
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	return gensec_sign_packet(
+		sp_ctx->mech_ctx.gensec_security,
+		mem_ctx,
+		data->data, data->length,
+		full_data->data, full_data->length,
+		signature);
 }
 
 NTSTATUS spnego_sigcheck(TALLOC_CTX *mem_ctx,
@@ -344,17 +313,11 @@ NTSTATUS spnego_sigcheck(TALLOC_CTX *mem_ctx,
 			 DATA_BLOB *data, DATA_BLOB *full_data,
 			 DATA_BLOB *signature)
 {
-	switch(sp_ctx->mech) {
-	case SPNEGO_KRB5:
-	case SPNEGO_NTLMSSP:
-		return gensec_check_packet(
-			sp_ctx->mech_ctx.gensec_security,
-			data->data, data->length,
-			full_data->data, full_data->length,
-			signature);
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	return gensec_check_packet(
+		sp_ctx->mech_ctx.gensec_security,
+		data->data, data->length,
+		full_data->data, full_data->length,
+		signature);
 }
 
 NTSTATUS spnego_seal(TALLOC_CTX *mem_ctx,
@@ -362,18 +325,12 @@ NTSTATUS spnego_seal(TALLOC_CTX *mem_ctx,
 			DATA_BLOB *data, DATA_BLOB *full_data,
 			DATA_BLOB *signature)
 {
-	switch(sp_ctx->mech) {
-	case SPNEGO_KRB5:
-	case SPNEGO_NTLMSSP:
-		return gensec_seal_packet(
-			sp_ctx->mech_ctx.gensec_security,
-			mem_ctx,
-			data->data, data->length,
-			full_data->data, full_data->length,
-			signature);
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	return gensec_seal_packet(
+		sp_ctx->mech_ctx.gensec_security,
+		mem_ctx,
+		data->data, data->length,
+		full_data->data, full_data->length,
+		signature);
 }
 
 NTSTATUS spnego_unseal(TALLOC_CTX *mem_ctx,
@@ -381,15 +338,9 @@ NTSTATUS spnego_unseal(TALLOC_CTX *mem_ctx,
 			DATA_BLOB *data, DATA_BLOB *full_data,
 			DATA_BLOB *signature)
 {
-	switch(sp_ctx->mech) {
-	case SPNEGO_KRB5:
-	case SPNEGO_NTLMSSP:
-		return gensec_unseal_packet(
-			sp_ctx->mech_ctx.gensec_security,
-			data->data, data->length,
-			full_data->data, full_data->length,
-			signature);
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	return gensec_unseal_packet(
+		sp_ctx->mech_ctx.gensec_security,
+		data->data, data->length,
+		full_data->data, full_data->length,
+		signature);
 }

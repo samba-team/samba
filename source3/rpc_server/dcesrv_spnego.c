@@ -136,18 +136,9 @@ NTSTATUS spnego_server_step(struct spnego_context *sp_ctx,
 
 	case SPNEGO_CONV_AUTH_MORE:
 
-		switch(sp_ctx->mech) {
-		case SPNEGO_KRB5:
-		case SPNEGO_NTLMSSP:
-			status = auth_generic_server_step(
-					sp_ctx->mech_ctx.gensec_security,
-					mem_ctx, &token_in, &token_out);
-			break;
-		default:
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto done;
-		}
-
+		status = auth_generic_server_step(
+			sp_ctx->mech_ctx.gensec_security,
+			mem_ctx, &token_in, &token_out);
 		break;
 
 	case SPNEGO_CONV_AUTH_DONE:

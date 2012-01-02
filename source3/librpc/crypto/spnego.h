@@ -72,7 +72,6 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 bool spnego_require_more_processing(struct spnego_context *sp_ctx);
 
 NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
-				    enum spnego_mech *type,
 				    struct gensec_security **auth_context);
 
 DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,

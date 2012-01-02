@@ -268,7 +268,6 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	struct gensec_security *gensec_security;
 	struct schannel_state *schannel_auth;
 	struct spnego_context *spnego_ctx;
-	enum spnego_mech auth_type;
 	NTSTATUS status;
 
 	/* no auth token cases first */
@@ -303,8 +302,7 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
 						   struct spnego_context);
-		status = spnego_get_negotiated_mech(spnego_ctx,
-						    &auth_type, &gensec_security);
+		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

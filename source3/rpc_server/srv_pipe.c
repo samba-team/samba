@@ -678,10 +678,8 @@ static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 {
-	enum spnego_mech auth_type;
 	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
-	void *mech_ctx;
 	NTSTATUS status;
 
 	switch (p->auth.auth_type) {
@@ -698,8 +696,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
 						   struct spnego_context);
-		status = spnego_get_negotiated_mech(spnego_ctx,
-						    &auth_type, &gensec_security);
+		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Bad SPNEGO state (%s)\n",
 				  nt_errstr(status)));
