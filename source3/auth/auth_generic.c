@@ -29,6 +29,7 @@
 #ifdef HAVE_KRB5
 #include "libcli/auth/krb5_wrap.h"
 #endif
+#include "librpc/crypto/gse.h"
 
 static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 						TALLOC_CTX *mem_ctx,
@@ -196,13 +197,17 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		gensec_settings->backends = talloc_zero_array(gensec_settings, struct gensec_security_ops *, 2);
+		gensec_settings->backends = talloc_zero_array(gensec_settings, struct gensec_security_ops *, 3);
 		if (gensec_settings->backends == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		gensec_settings->backends[0] = &gensec_ntlmssp3_server_ops;
+
+#if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
+		gensec_settings->backends[1] = &gensec_gse_krb5_security_ops;
+#endif
 
 		nt_status = gensec_server_start(tmp_ctx, gensec_settings,
 						auth4_context, &gensec_security);

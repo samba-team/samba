@@ -676,48 +676,6 @@ static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-/*******************************************************************
- Handle a GSSAPI bind auth.
-*******************************************************************/
-
-static bool pipe_gssapi_auth_bind(struct pipes_struct *p,
-				  TALLOC_CTX *mem_ctx,
-				  struct dcerpc_auth *auth_info,
-				  DATA_BLOB *response)
-{
-        NTSTATUS status;
-	struct gse_context *gse_ctx = NULL;
-
-	status = gssapi_server_auth_start(p,
-					  (auth_info->auth_level ==
-						DCERPC_AUTH_LEVEL_INTEGRITY),
-					  (auth_info->auth_level ==
-						DCERPC_AUTH_LEVEL_PRIVACY),
-					  true,
-					  &auth_info->credentials,
-					  response,
-					  &gse_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to init dcerpc gssapi server (%s)\n",
-			  nt_errstr(status)));
-		goto err;
-	}
-
-	/* Make sure data is bound to the memctx, to be freed the caller */
-	talloc_steal(mem_ctx, response->data);
-
-	p->auth.auth_ctx = gse_ctx;
-	p->auth.auth_type = DCERPC_AUTH_TYPE_KRB5;
-
-	DEBUG(10, ("KRB5 auth started\n"));
-
-	return true;
-
-err:
-	TALLOC_FREE(gse_ctx);
-	return false;
-}
-
 static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 					 struct gse_context *gse_ctx,
 					 const struct tsocket_address *remote_address,
@@ -769,24 +727,13 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 
 	switch (p->auth.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_KRB5:
 		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
 							struct gensec_security);
 		if (!pipe_auth_generic_verify_final(p, gensec_security,
 						p->auth.auth_level,
 						&p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
-		}
-		break;
-	case DCERPC_AUTH_TYPE_KRB5:
-		gse_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-						struct gse_context);
-		status = pipe_gssapi_verify_final(p, gse_ctx,
-						  p->remote_address,
-						  &p->session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("gssapi bind failed with: %s",
-				  nt_errstr(status)));
-			return status;
 		}
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
@@ -1010,8 +957,8 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			break;
 
 		case DCERPC_AUTH_TYPE_KRB5:
-			if (!pipe_gssapi_auth_bind(p, pkt,
-						&auth_info, &auth_resp)) {
+			if (!pipe_auth_generic_bind(p, pkt,
+						    &auth_info, &auth_resp)) {
 				goto err_exit;
 			}
 			break;
@@ -1154,7 +1101,6 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	DATA_BLOB response = data_blob_null;
 	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
-	struct gse_context *gse_ctx;
 	NTSTATUS status;
 
 	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
@@ -1200,18 +1146,12 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 	switch (auth_info.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_KRB5:
 		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
 						    struct gensec_security);
 		status = auth_generic_server_step(gensec_security,
 					     pkt, &auth_info.credentials,
 					     &response);
-		break;
-	case DCERPC_AUTH_TYPE_KRB5:
-		gse_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-						struct gse_context);
-		status = gssapi_server_step(gse_ctx,
-					    pkt, &auth_info.credentials,
-					    &response);
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
@@ -1273,7 +1213,6 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	int pad_len = 0;
 	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
-	struct gse_context *gse_ctx;
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
 
@@ -1360,13 +1299,6 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 			break;
 
 		case DCERPC_AUTH_TYPE_KRB5:
-			gse_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-							struct gse_context);
-			status = gssapi_server_step(gse_ctx,
-						    pkt,
-						    &auth_info.credentials,
-						    &auth_resp);
-			break;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 			gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
 						    struct gensec_security);

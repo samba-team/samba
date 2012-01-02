@@ -30,7 +30,6 @@
 #include "auth_generic.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
-#include "librpc/crypto/gse.h"
 #include "librpc/crypto/spnego.h"
 #include "rpc_dce.h"
 #include "cli_pipe.h"
@@ -1006,35 +1005,6 @@ static NTSTATUS create_spnego_auth_bind_req(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- Creates krb5 auth bind.
- ********************************************************************/
-
-static NTSTATUS create_gssapi_auth_bind_req(TALLOC_CTX *mem_ctx,
-					    struct pipe_auth_data *auth,
-					    DATA_BLOB *auth_token)
-{
-	struct gse_context *gse_ctx;
-	DATA_BLOB in_token = data_blob_null;
-	NTSTATUS status;
-
-	gse_ctx = talloc_get_type_abort(auth->auth_ctx,
-					struct gse_context);
-
-	/* Negotiate the initial auth token */
-	status = gse_get_client_auth_token(mem_ctx, gse_ctx,
-					   &in_token,
-					   auth_token);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	DEBUG(5, ("Created GSS Authentication Token:\n"));
-	dump_data(5, auth_token->data, auth_token->length);
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
  Creates NTLMSSP auth bind.
  ********************************************************************/
 
@@ -1171,6 +1141,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 		break;
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_KRB5:
 		ret = create_generic_auth_rpc_bind_req(cli, mem_ctx, &auth_token);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
@@ -1179,13 +1150,6 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		ret = create_spnego_auth_bind_req(cli, auth, &auth_token);
-		if (!NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-		break;
-
-	case DCERPC_AUTH_TYPE_KRB5:
-		ret = create_gssapi_auth_bind_req(mem_ctx, auth, &auth_token);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
@@ -1691,7 +1655,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	struct pipe_auth_data *pauth = state->cli->auth;
 	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
-	struct gse_context *gse_ctx;
 	struct ncacn_packet *pkt = NULL;
 	struct dcerpc_auth auth;
 	DATA_BLOB auth_token = data_blob_null;
@@ -1770,6 +1733,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		return;
 
 	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_KRB5:
 		gensec_security = talloc_get_type_abort(pauth->auth_ctx,
 						struct gensec_security);
 		status = gensec_update(gensec_security, state, NULL,
@@ -1805,24 +1769,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		} else {
 			status = rpc_bind_finish_send(req, state,
 							&auth_token);
-		}
-		break;
-
-	case DCERPC_AUTH_TYPE_KRB5:
-		gse_ctx = talloc_get_type_abort(pauth->auth_ctx,
-						struct gse_context);
-		status = gse_get_client_auth_token(state,
-						   gse_ctx,
-						   &auth.credentials,
-						   &auth_token);
-		if (!NT_STATUS_IS_OK(status)) {
-			break;
-		}
-
-		if (gse_require_more_processing(gse_ctx)) {
-			status = rpc_bind_next_send(req, state, &auth_token);
-		} else {
-			status = rpc_bind_finish_send(req, state, &auth_token);
 		}
 		break;
 
@@ -2980,82 +2926,6 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- Open a named pipe to an SMB server and bind using krb5 (bind type 16).
- The idea is this can be called with service_princ, username and password all
- NULL so long as the caller has a TGT.
- ****************************************************************************/
-
-NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
-				const struct ndr_syntax_id *interface,
-				enum dcerpc_transport_t transport,
-				enum dcerpc_AuthLevel auth_level,
-				const char *server,
-				const char *username,
-				const char *password,
-				struct rpc_pipe_client **presult)
-{
-	struct rpc_pipe_client *result;
-	struct pipe_auth_data *auth;
-	struct gse_context *gse_ctx;
-	NTSTATUS status;
-
-	status = cli_rpc_pipe_open(cli, transport, interface, &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	auth = talloc(result, struct pipe_auth_data);
-	if (auth == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-	auth->auth_type = DCERPC_AUTH_TYPE_KRB5;
-	auth->auth_level = auth_level;
-
-	if (!username) {
-		username = "";
-	}
-	auth->user_name = talloc_strdup(auth, username);
-	if (!auth->user_name) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-
-	/* Fixme, should we fetch/set the Realm ? */
-	auth->domain = talloc_strdup(auth, "");
-	if (!auth->domain) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-
-	status = gse_init_client(auth,
-				 (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY),
-				 (auth_level == DCERPC_AUTH_LEVEL_PRIVACY),
-				 NULL, server, "cifs", username, password,
-				 GSS_C_DCE_STYLE, &gse_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("gse_init_client returned %s\n",
-			  nt_errstr(status)));
-		goto err_out;
-	}
-	auth->auth_ctx = gse_ctx;
-
-	status = rpc_pipe_bind(result, auth);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("cli_rpc_pipe_bind failed with error %s\n",
-			  nt_errstr(status)));
-		goto err_out;
-	}
-
-	*presult = result;
-	return NT_STATUS_OK;
-
-err_out:
-	TALLOC_FREE(result);
-	return status;
-}
-
 NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
 					const struct ndr_syntax_id *interface,
 					enum dcerpc_transport_t transport,
@@ -3218,7 +3088,6 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	struct schannel_state *schannel_auth;
 	struct gensec_security *gensec_security;
 	struct spnego_context *spnego_ctx;
-	struct gse_context *gse_ctx;
 	DATA_BLOB sk = data_blob_null;
 	bool make_dup = false;
 
@@ -3246,18 +3115,13 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 		make_dup = false;
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
+	case DCERPC_AUTH_TYPE_KRB5:
 		gensec_security = talloc_get_type_abort(a->auth_ctx,
 						struct gensec_security);
 		status = gensec_session_key(gensec_security, mem_ctx, &sk);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		make_dup = false;
-		break;
-	case DCERPC_AUTH_TYPE_KRB5:
-		gse_ctx = talloc_get_type_abort(a->auth_ctx,
-						struct gse_context);
-		sk = gse_get_session_key(mem_ctx, gse_ctx);
 		make_dup = false;
 		break;
 	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:

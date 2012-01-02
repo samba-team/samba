@@ -715,6 +715,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			}
 			break;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
+		case DCERPC_AUTH_TYPE_KRB5:
 			ntresult = cli_rpc_pipe_open_generic_auth(
 				cli, cmd_entry->interface,
 				default_transport,
@@ -732,15 +733,6 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				default_transport,
 				pipe_default_auth_level,
 				get_cmdline_auth_info_domain(auth_info),
-				&cmd_entry->rpc_pipe);
-			break;
-		case DCERPC_AUTH_TYPE_KRB5:
-			ntresult = cli_rpc_pipe_open_krb5(
-				cli, cmd_entry->interface,
-				default_transport,
-				pipe_default_auth_level,
-				cli_state_remote_name(cli),
-				NULL, NULL,
 				&cmd_entry->rpc_pipe);
 			break;
 		default:
