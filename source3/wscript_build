@@ -833,7 +833,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
 
 bld.SAMBA3_SUBSYSTEM('auth_generic',
                     source='libsmb/auth_generic.c',
-                    deps='LIBNTLMSSP gensec',
+                    deps='LIBNTLMSSP gse gensec',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('libsmb',
