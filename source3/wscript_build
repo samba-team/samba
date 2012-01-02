@@ -147,8 +147,6 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
 
 LIBMSRPC_SRC = '''
                rpc_client/cli_pipe.c
-               librpc/crypto/gse_krb5.c
-               librpc/crypto/gse.c
                librpc/crypto/cli_spnego.c
                librpc/rpc/rpc_common.c
                rpc_client/rpc_transport_np.c
@@ -688,11 +686,16 @@ bld.SAMBA3_LIBRARY('nss_wins',
                   realname='libnss_wins.so.2',
                   vnum='2')
 
+bld.SAMBA3_LIBRARY('gse',
+                   source='librpc/crypto/gse_krb5.c librpc/crypto/gse.c',
+                   deps='KRB5_WRAP gensec param KRBCLIENT SECRETS3',
+                   private_library=True)
+
 bld.SAMBA3_LIBRARY('msrpc3',
                    source='${LIBMSRPC_SRC}',
                    deps='''ndr ndr-standard
                     RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
-                    LIBTSOCKET KRB5_WRAP dcerpc-binding
+                    LIBTSOCKET gse dcerpc-binding
                     libsmb''',
                    vars=locals(),
                    private_library=True)
@@ -801,7 +804,7 @@ bld.SAMBA3_LIBRARY('util_cmdline',
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     source=KRBCLIENT_SRC,
-                    public_deps='KRB5_WRAP k5crypto LIBTSOCKET CLDAP',
+                    public_deps='KRB5_WRAP k5crypto LIBTSOCKET CLDAP LIBNMB',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
@@ -1379,7 +1382,7 @@ bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,
                  deps='''tdb_compat talloc cap KRB5_WRAP k5crypto wbclient param smbd_shim
                  samba3core LIBNTLMSSP popt_samba3 asn1util LIBTSOCKET
                  pdb winbind-client LIBINIPARSER LIBADS_SERVER
-                 NDR_SAMR NDR_LSA NDR_NETLOGON cli-ldap-common LIBNMB SLCACHE SPNEGO_PARSE KRBCLIENT''',
+                 NDR_SAMR NDR_LSA NDR_NETLOGON cli-ldap-common LIBNMB SLCACHE SPNEGO_PARSE KRBCLIENT libsmb''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('timelimit',

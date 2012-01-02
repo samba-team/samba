@@ -1232,45 +1232,6 @@ static void offer_gss_spnego_mechs(void) {
 	return;
 }
 
-bool spnego_parse_krb5_wrap(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
-{
-	bool ret;
-	ASN1_DATA *data;
-	int data_remaining;
-
-	data = asn1_init(talloc_tos());
-	if (data == NULL) {
-		return false;
-	}
-
-	asn1_load(data, blob);
-	asn1_start_tag(data, ASN1_APPLICATION(0));
-	asn1_check_OID(data, OID_KERBEROS5);
-
-	data_remaining = asn1_tag_remaining(data);
-
-	if (data_remaining < 3) {
-		data->has_error = True;
-	} else {
-		asn1_read(data, tok_id, 2);
-		data_remaining -= 2;
-		*ticket = data_blob_talloc(ctx, NULL, data_remaining);
-		asn1_read(data, ticket->data, ticket->length);
-	}
-
-	asn1_end_tag(data);
-
-	ret = !data->has_error;
-
-	if (data->has_error) {
-		data_blob_free(ticket);
-	}
-
-	asn1_free(data);
-
-	return ret;
-}
-
 static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 					char *buf, int length)
 {
