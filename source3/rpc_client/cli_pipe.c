@@ -3175,7 +3175,8 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 		goto err_out;
 	}
 
-	status = spnego_ntlmssp_init_client(auth,
+	status = spnego_generic_init_client(auth,
+					    GENSEC_OID_NTLMSSP,
 					    (auth->auth_level ==
 						DCERPC_AUTH_LEVEL_INTEGRITY),
 					    (auth->auth_level ==

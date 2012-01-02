@@ -84,7 +84,8 @@ NTSTATUS spnego_gssapi_init_client(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
+NTSTATUS spnego_generic_init_client(TALLOC_CTX *mem_ctx,
+				    const char *oid,
 				    bool do_sign, bool do_seal,
 				    bool is_dcerpc,
 				    const char *domain,
@@ -100,7 +101,11 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	sp_ctx->mech = SPNEGO_NTLMSSP;
+	if (strcmp(oid, GENSEC_OID_NTLMSSP) == 0) {
+		sp_ctx->mech = SPNEGO_NTLMSSP;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	status = auth_generic_client_prepare(sp_ctx,
 					&auth_generic_state);
@@ -138,7 +143,12 @@ NTSTATUS spnego_ntlmssp_init_client(TALLOC_CTX *mem_ctx,
 					  GENSEC_FEATURE_SEAL);
 	}
 
-	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	if (is_dcerpc) {
+		gensec_want_feature(auth_generic_state->gensec_security,
+				    GENSEC_FEATURE_DCE_STYLE);
+	}
+
+	status = auth_generic_client_start(auth_generic_state, oid);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sp_ctx);
 		return status;
