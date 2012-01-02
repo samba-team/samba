@@ -105,6 +105,8 @@ NTSTATUS spnego_generic_init_client(TALLOC_CTX *mem_ctx,
 	}
 	if (strcmp(oid, GENSEC_OID_NTLMSSP) == 0) {
 		sp_ctx->mech = SPNEGO_NTLMSSP;
+	} else if (strcmp(oid, GENSEC_OID_KERBEROS5) == 0) {
+		sp_ctx->mech = SPNEGO_KRB5;
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
