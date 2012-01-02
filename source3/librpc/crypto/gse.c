@@ -227,15 +227,15 @@ err_out:
 	return status;
 }
 
-NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
-			  bool do_sign, bool do_seal,
-			  const char *ccache_name,
-			  const char *server,
-			  const char *service,
-			  const char *username,
-			  const char *password,
-			  uint32_t add_gss_c_flags,
-			  struct gse_context **_gse_ctx)
+static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
+				bool do_sign, bool do_seal,
+				const char *ccache_name,
+				const char *server,
+				const char *service,
+				const char *username,
+				const char *password,
+				uint32_t add_gss_c_flags,
+				struct gse_context **_gse_ctx)
 {
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
@@ -310,10 +310,10 @@ err_out:
 	return status;
 }
 
-NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
-				   struct gse_context *gse_ctx,
-				   DATA_BLOB *token_in,
-				   DATA_BLOB *token_out)
+static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
+					  struct gse_context *gse_ctx,
+					  DATA_BLOB *token_in,
+					  DATA_BLOB *token_out)
 {
 	OM_uint32 gss_maj, gss_min;
 	gss_buffer_desc in_data;
@@ -364,10 +364,10 @@ done:
 	return status;
 }
 
-NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
-			 bool do_sign, bool do_seal,
-			 uint32_t add_gss_c_flags,
-			 struct gse_context **_gse_ctx)
+static NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
+				bool do_sign, bool do_seal,
+				uint32_t add_gss_c_flags,
+				struct gse_context **_gse_ctx)
 {
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
@@ -459,10 +459,10 @@ done:
 	return status;
 }
 
-NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
-				   struct gse_context *gse_ctx,
-				   DATA_BLOB *token_in,
-				   DATA_BLOB *token_out)
+static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
+					  struct gse_context *gse_ctx,
+					  DATA_BLOB *token_in,
+					  DATA_BLOB *token_out)
 {
 	OM_uint32 gss_maj, gss_min;
 	gss_buffer_desc in_data;
@@ -525,7 +525,7 @@ done:
 	return status;
 }
 
-NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
+static NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
 {
 	if (!gse_ctx->authenticated) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -616,13 +616,8 @@ done:
 	return errstr;
 }
 
-bool gse_require_more_processing(struct gse_context *gse_ctx)
-{
-	return gse_ctx->more_processing;
-}
-
-DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
-				struct gse_context *gse_ctx)
+static DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
+				     struct gse_context *gse_ctx)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
@@ -671,91 +666,7 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-NTSTATUS gse_get_client_name(struct gse_context *gse_ctx,
-			     TALLOC_CTX *mem_ctx, char **cli_name)
-{
-	OM_uint32 gss_min, gss_maj;
-	gss_buffer_desc name_buffer;
-
-	if (!gse_ctx->authenticated) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (!gse_ctx->client_name) {
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	/* TODO: check OID matches KRB5 Principal Name OID ? */
-
-	gss_maj = gss_display_name(&gss_min,
-				   gse_ctx->client_name,
-				   &name_buffer, NULL);
-	if (gss_maj) {
-		DEBUG(0, ("gss_display_name failed [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	*cli_name = talloc_strndup(mem_ctx,
-				   (char *)name_buffer.value,
-				   name_buffer.length);
-
-	gss_maj = gss_release_buffer(&gss_min, &name_buffer);
-
-	if (!*cli_name) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
-			    TALLOC_CTX *mem_ctx, DATA_BLOB *pac)
-{
-	OM_uint32 gss_min, gss_maj;
-	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
-
-	if (!gse_ctx->authenticated) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	gss_maj = gss_inquire_sec_context_by_oid(
-				&gss_min, gse_ctx->gss_ctx,
-				&gse_authz_data_oid, &set);
-	if (gss_maj) {
-		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	if (set == GSS_C_NO_BUFFER_SET) {
-		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
-			  "data in results.\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	/* for now we just hope it is the first value */
-	*pac = data_blob_talloc(mem_ctx,
-				set->elements[0].value,
-				set->elements[0].length);
-
-	gss_maj = gss_release_buffer_set(&gss_min, &set);
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS gse_get_pac_blob(struct gse_context *gse_ctx,
-			  TALLOC_CTX *mem_ctx, DATA_BLOB *pac_blob)
-{
-	if (!gse_ctx->authenticated) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	return gssapi_obtain_pac_blob(mem_ctx, gse_ctx->gss_ctx,
-					gse_ctx->client_name, pac_blob);
-}
-
-size_t gse_get_signature_length(struct gse_context *gse_ctx,
+static size_t gse_get_signature_length(struct gse_context *gse_ctx,
 				int seal, size_t payload_size)
 {
 	OM_uint32 gss_min, gss_maj;
@@ -782,8 +693,8 @@ size_t gse_get_signature_length(struct gse_context *gse_ctx,
 	return iov[0].buffer.length;
 }
 
-NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-		  DATA_BLOB *data, DATA_BLOB *signature)
+static NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+			 DATA_BLOB *data, DATA_BLOB *signature)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_iov_buffer_desc iov[2];
@@ -834,8 +745,8 @@ done:
 	return status;
 }
 
-NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-		    DATA_BLOB *data, DATA_BLOB *signature)
+static NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+			   DATA_BLOB *data, DATA_BLOB *signature)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_iov_buffer_desc iov[2];
@@ -875,8 +786,8 @@ done:
 	return status;
 }
 
-NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-		  DATA_BLOB *data, DATA_BLOB *signature)
+static NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+			 DATA_BLOB *data, DATA_BLOB *signature)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_buffer_desc in_data = { 0, NULL };
@@ -912,8 +823,8 @@ done:
 	return status;
 }
 
-NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-		      DATA_BLOB *data, DATA_BLOB *signature)
+static NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
+			     DATA_BLOB *data, DATA_BLOB *signature)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_buffer_desc in_data = { 0, NULL };
@@ -1373,108 +1284,5 @@ const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI
 };
-
-#else
-
-NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
-			  bool do_sign, bool do_seal,
-			  const char *ccache_name,
-			  const char *server,
-			  const char *service,
-			  const char *username,
-			  const char *password,
-			  uint32_t add_gss_c_flags,
-			  struct gse_context **_gse_ctx)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
-				   struct gse_context *gse_ctx,
-				   DATA_BLOB *token_in,
-				   DATA_BLOB *token_out)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
-			 bool do_sign, bool do_seal,
-			 uint32_t add_gss_c_flags,
-			 struct gse_context **_gse_ctx)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
-				   struct gse_context *gse_ctx,
-				   DATA_BLOB *token_in,
-				   DATA_BLOB *token_out)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-bool gse_require_more_processing(struct gse_context *gse_ctx)
-{
-	return false;
-}
-
-DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
-			      struct gse_context *gse_ctx)
-{
-	return data_blob_null;
-}
-
-NTSTATUS gse_get_client_name(struct gse_context *gse_ctx,
-			     TALLOC_CTX *mem_ctx, char **cli_name)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_get_authz_data(struct gse_context *gse_ctx,
-			    TALLOC_CTX *mem_ctx, DATA_BLOB *pac)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_get_pac_blob(struct gse_context *gse_ctx,
-			  TALLOC_CTX *mem_ctx, DATA_BLOB *pac_blob)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-size_t gse_get_signature_length(struct gse_context *gse_ctx,
-				int seal, size_t payload_size)
-{
-	return 0;
-}
-
-NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-		  DATA_BLOB *data, DATA_BLOB *signature)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-		    DATA_BLOB *data, DATA_BLOB *signature)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-		  DATA_BLOB *data, DATA_BLOB *signature)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-		      DATA_BLOB *data, DATA_BLOB *signature)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
 
 #endif /* HAVE_KRB5 && HAVE_GSS_WRAP_IOV */
