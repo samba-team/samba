@@ -628,11 +628,26 @@ DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 	    (memcmp(set->elements[1].value,
 		    gse_sesskeytype_oid.elements,
 		    gse_sesskeytype_oid.length) != 0)) {
+#ifdef HAVE_GSSKRB5_GET_SUBKEY
+		krb5_keyblock *subkey;
+		gss_maj = gsskrb5_get_subkey(&gss_min,
+					     gse_ctx->gss_ctx,
+					     &subkey);
+		if (gss_maj != 0) {
+			DEBUG(1, ("NO session key for this mech\n"));
+			return data_blob_null;
+		}
+		ret = data_blob_talloc(mem_ctx,
+				       KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
+		krb5_free_keyblock(NULL /* should be krb5_context */, subkey);
+		return ret;
+#else
 		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
 			  "OID for data in results:\n"));
 		dump_data(1, (uint8_t *)set->elements[1].value,
 			     set->elements[1].length);
 		return data_blob_null;
+#endif
 	}
 
 	ret = data_blob_talloc(mem_ctx, set->elements[0].value,
