@@ -1351,7 +1351,7 @@ static const char *gensec_gse_krb5_oids[] = {
 	NULL
 };
 
-static const struct gensec_security_ops gensec_gse_krb5_security_ops = {
+const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.name		= "gse_krb5",
 	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
 	.oid            = gensec_gse_krb5_oids,

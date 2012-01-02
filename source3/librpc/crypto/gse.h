@@ -70,4 +70,6 @@ NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 		      DATA_BLOB *data, DATA_BLOB *signature);
 
+extern const struct gensec_security_ops gensec_gse_krb5_security_ops;
+
 #endif /* _GSE_H_ */
