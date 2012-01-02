@@ -289,6 +289,10 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	torture_assert_str_equal(tctx, response->data.samlogon.data.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
 
+	torture_assert(tctx,
+		       strstr(response->data.samlogon.data.nt5_ex.pdc_name, "\\\\") != NULL,
+		       "PDC name should be in UNC form");
+
 	join_ctx = torture_join_domain(tctx, TEST_NAME, 
 				       ACB_WSTRUST, &machine_credentials);
 
@@ -339,6 +343,10 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
 
+	torture_assert(tctx,
+		       strstr(response->data.samlogon.data.nt5_ex.pdc_name, "\\\\") != NULL,
+		       "PDC name should be in UNC form");
+
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
@@ -381,6 +389,10 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
 
+	torture_assert(tctx,
+		       strstr(response->data.samlogon.data.nt5_ex.pdc_name, "\\\\") != NULL,
+		       "PDC name should be in UNC form");
+
 	dgmslot->private_data = NULL;
 
 	ZERO_STRUCT(logon);
@@ -419,6 +431,10 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	map_netlogon_samlogon_response(&response->data.samlogon);
 
 	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN, "Got incorrect netlogon response command");
+
+	torture_assert(tctx,
+		       strstr(response->data.samlogon.data.nt5_ex.pdc_name, "\\\\") != NULL,
+		       "PDC name should be in UNC form");
 
 	torture_leave_domain(tctx, join_ctx);
 	return true;
@@ -531,6 +547,9 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	torture_assert_str_equal(tctx, response->data.samlogon.data.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
 
+	torture_assert(tctx,
+		       strstr(response->data.samlogon.data.nt5_ex.pdc_name, "\\\\") != NULL,
+		       "PDC name should be in UNC form");
 
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
@@ -575,6 +594,9 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 
 	torture_assert_str_equal(tctx, response->data.samlogon.data.nt5_ex.user_name, TEST_NAME"$", "Got incorrect user in netlogon response");
 
+	torture_assert(tctx,
+		       strstr(response->data.samlogon.data.nt5_ex.pdc_name, "\\\\") != NULL,
+		       "PDC name should be in UNC form");
 
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
