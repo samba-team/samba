@@ -1043,7 +1043,7 @@ static inline int talloc_unreference(const void *context, const void *ptr)
 */
 _PUBLIC_ int talloc_unlink(const void *context, void *ptr)
 {
-	struct talloc_chunk *tc_p, *new_p;
+	struct talloc_chunk *tc_p, *new_p, *tc_c;
 	void *new_parent;
 
 	if (ptr == NULL) {
@@ -1058,14 +1058,13 @@ _PUBLIC_ int talloc_unlink(const void *context, void *ptr)
 		return 0;
 	}
 
-	if (context == NULL) {
-		if (talloc_parent_chunk(ptr) != NULL) {
-			return -1;
-		}
+	if (context != NULL) {
+		tc_c = talloc_chunk_from_ptr(context);
 	} else {
-		if (talloc_chunk_from_ptr(context) != talloc_parent_chunk(ptr)) {
-			return -1;
-		}
+		tc_c = NULL;
+	}
+	if (tc_c != talloc_parent_chunk(ptr)) {
+		return -1;
 	}
 	
 	tc_p = talloc_chunk_from_ptr(ptr);
