@@ -29,9 +29,7 @@ enum spnego_mech {
 struct spnego_context {
 	enum spnego_mech mech;
 
-	union {
-		struct gensec_security *gensec_security;
-	} mech_ctx;
+	struct gensec_security *gensec_security;
 
 	char *oid_list[ASN1_MAX_OIDS];
 	char *mech_oid;

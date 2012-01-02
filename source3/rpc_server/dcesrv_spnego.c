@@ -86,7 +86,7 @@ static NTSTATUS spnego_server_mech_init(struct spnego_context *sp_ctx,
 		return status;
 	}
 
-	sp_ctx->mech_ctx.gensec_security = gensec_security;
+	sp_ctx->gensec_security = gensec_security;
 
 	return NT_STATUS_OK;
 }
@@ -137,7 +137,7 @@ NTSTATUS spnego_server_step(struct spnego_context *sp_ctx,
 	case SPNEGO_CONV_AUTH_MORE:
 
 		status = auth_generic_server_step(
-			sp_ctx->mech_ctx.gensec_security,
+			sp_ctx->gensec_security,
 			mem_ctx, &token_in, &token_out);
 		break;
 

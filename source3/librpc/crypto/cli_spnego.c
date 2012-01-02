@@ -132,7 +132,7 @@ NTSTATUS spnego_generic_init_client(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	sp_ctx->mech_ctx.gensec_security = talloc_move(sp_ctx, &auth_generic_state->gensec_security);
+	sp_ctx->gensec_security = talloc_move(sp_ctx, &auth_generic_state->gensec_security);
 	TALLOC_FREE(auth_generic_state);
 	*spnego_ctx = sp_ctx;
 	return NT_STATUS_OK;
@@ -200,7 +200,7 @@ NTSTATUS spnego_get_client_auth_token(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	gensec_security = sp_ctx->mech_ctx.gensec_security;
+	gensec_security = sp_ctx->gensec_security;
 	status = gensec_update(gensec_security, mem_ctx, NULL,
 			       token_in, &token_out);
 	sp_ctx->more_processing = false;
@@ -279,7 +279,7 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx)
 NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 				    struct gensec_security **auth_context)
 {
-	*auth_context = sp_ctx->mech_ctx.gensec_security;
+	*auth_context = sp_ctx->gensec_security;
 	return NT_STATUS_OK;
 }
 
@@ -288,7 +288,7 @@ DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB sk;
 	NTSTATUS status;
-	status = gensec_session_key(sp_ctx->mech_ctx.gensec_security, mem_ctx, &sk);
+	status = gensec_session_key(sp_ctx->gensec_security, mem_ctx, &sk);
 	if (!NT_STATUS_IS_OK(status)) {
 		return data_blob_null;
 	}
@@ -301,7 +301,7 @@ NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
 			DATA_BLOB *signature)
 {
 	return gensec_sign_packet(
-		sp_ctx->mech_ctx.gensec_security,
+		sp_ctx->gensec_security,
 		mem_ctx,
 		data->data, data->length,
 		full_data->data, full_data->length,
@@ -314,7 +314,7 @@ NTSTATUS spnego_sigcheck(TALLOC_CTX *mem_ctx,
 			 DATA_BLOB *signature)
 {
 	return gensec_check_packet(
-		sp_ctx->mech_ctx.gensec_security,
+		sp_ctx->gensec_security,
 		data->data, data->length,
 		full_data->data, full_data->length,
 		signature);
@@ -326,7 +326,7 @@ NTSTATUS spnego_seal(TALLOC_CTX *mem_ctx,
 			DATA_BLOB *signature)
 {
 	return gensec_seal_packet(
-		sp_ctx->mech_ctx.gensec_security,
+		sp_ctx->gensec_security,
 		mem_ctx,
 		data->data, data->length,
 		full_data->data, full_data->length,
@@ -339,7 +339,7 @@ NTSTATUS spnego_unseal(TALLOC_CTX *mem_ctx,
 			DATA_BLOB *signature)
 {
 	return gensec_unseal_packet(
-		sp_ctx->mech_ctx.gensec_security,
+		sp_ctx->gensec_security,
 		data->data, data->length,
 		full_data->data, full_data->length,
 		signature);
