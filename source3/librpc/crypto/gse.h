@@ -21,10 +21,6 @@
 
 struct gse_context;
 
-#ifndef GSS_C_DCE_STYLE
-#define GSS_C_DCE_STYLE 0x1000
-#endif
-
 extern const struct gensec_security_ops gensec_gse_krb5_security_ops;
 
 #endif /* _GSE_H_ */
