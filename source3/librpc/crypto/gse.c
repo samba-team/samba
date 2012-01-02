@@ -312,7 +312,7 @@ err_out:
 
 static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					  struct gse_context *gse_ctx,
-					  DATA_BLOB *token_in,
+					  const DATA_BLOB *token_in,
 					  DATA_BLOB *token_out)
 {
 	OM_uint32 gss_maj, gss_min;
@@ -461,7 +461,7 @@ done:
 
 static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 					  struct gse_context *gse_ctx,
-					  DATA_BLOB *token_in,
+					  const DATA_BLOB *token_in,
 					  DATA_BLOB *token_out)
 {
 	OM_uint32 gss_maj, gss_min;
@@ -746,7 +746,7 @@ done:
 }
 
 static NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-			   DATA_BLOB *data, DATA_BLOB *signature)
+			   DATA_BLOB *data, const DATA_BLOB *signature)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_iov_buffer_desc iov[2];
@@ -824,7 +824,7 @@ done:
 }
 
 static NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-			     DATA_BLOB *data, DATA_BLOB *signature)
+			     const DATA_BLOB *data, const DATA_BLOB *signature)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_buffer_desc in_data = { 0, NULL };
