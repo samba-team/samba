@@ -54,6 +54,7 @@ static void continue_secondary_connection(struct composite_context *ctx);
 static void continue_bind_auth_none(struct composite_context *ctx);
 static void continue_srv_challenge(struct tevent_req *subreq);
 static void continue_srv_auth2(struct tevent_req *subreq);
+static void continue_get_capabilities(struct tevent_req *subreq);
 
 
 /*
@@ -300,7 +301,6 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 	composite_done(c);
 }
 
-
 /*
   Initiate establishing a schannel key using netlogon challenge
   on a secondary pipe
@@ -383,6 +383,11 @@ struct auth_schannel_state {
 	const struct ndr_interface_table *table;
 	struct loadparm_context *lp_ctx;
 	uint8_t auth_level;
+	struct netlogon_creds_CredentialState *creds_state;
+	struct netr_Authenticator auth;
+	struct netr_Authenticator return_auth;
+	union netr_Capabilities capabilities;
+	struct netr_LogonGetCapabilities c;
 };
 
 
@@ -428,9 +433,113 @@ static void continue_bind_auth(struct composite_context *ctx)
 {
 	struct composite_context *c = talloc_get_type(ctx->async.private_data,
 						      struct composite_context);
+	struct auth_schannel_state *s = talloc_get_type(c->private_data,
+							struct auth_schannel_state);
+	struct tevent_req *subreq;
 
 	c->status = dcerpc_bind_auth_recv(ctx);
 	if (!composite_is_ok(c)) return;
+
+	/* if we have a AES encrypted connection, verify the capabilities */
+	if (ndr_syntax_id_equal(&s->table->syntax_id,
+				&ndr_table_netlogon.syntax_id)) {
+		ZERO_STRUCT(s->return_auth);
+
+		s->creds_state = cli_credentials_get_netlogon_creds(s->credentials);
+		if (composite_nomem(s->creds_state, c)) return;
+
+		netlogon_creds_client_authenticator(s->creds_state, &s->auth);
+
+		s->c.in.server_name = talloc_asprintf(c,
+						      "\\\\%s",
+						      dcerpc_server_name(s->pipe));
+		if (composite_nomem(s->c.in.server_name, c)) return;
+		s->c.in.computer_name         = cli_credentials_get_workstation(s->credentials);
+		s->c.in.credential            = &s->auth;
+		s->c.in.return_authenticator  = &s->return_auth;
+		s->c.in.query_level           = 1;
+
+		s->c.out.capabilities         = &s->capabilities;
+		s->c.out.return_authenticator = &s->return_auth;
+
+		DEBUG(5, ("We established a AES connection, verifying logon "
+			  "capabilities\n"));
+
+		subreq = dcerpc_netr_LogonGetCapabilities_r_send(s,
+								 c->event_ctx,
+								 s->pipe->binding_handle,
+								 &s->c);
+		if (composite_nomem(subreq, c)) return;
+
+		tevent_req_set_callback(subreq, continue_get_capabilities, c);
+		return;
+	}
+
+	composite_done(c);
+}
+
+/*
+  Stage 4 of auth_schannel: Get the Logon Capablities and verify them.
+*/
+static void continue_get_capabilities(struct tevent_req *subreq)
+{
+	struct composite_context *c;
+	struct auth_schannel_state *s;
+
+	c = tevent_req_callback_data(subreq, struct composite_context);
+	s = talloc_get_type(c->private_data, struct auth_schannel_state);
+
+	/* receive rpc request result */
+	c->status = dcerpc_netr_LogonGetCapabilities_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		if (s->creds_state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		} else {
+			/* This is probably NT */
+			composite_done(c);
+			return;
+		}
+	} else if (!composite_is_ok(c)) {
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(s->c.out.result, NT_STATUS_NOT_IMPLEMENTED)) {
+		if (s->creds_state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			/* This means AES isn't supported. */
+			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		/* This is probably an old Samba version */
+		composite_done(c);
+		return;
+	}
+
+	/* verify credentials */
+	if (!netlogon_creds_client_check(s->creds_state,
+					 &s->c.out.return_authenticator->cred)) {
+		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	if (!NT_STATUS_IS_OK(s->c.out.result)) {
+		composite_error(c, s->c.out.result);
+		return;
+	}
+
+	/* compare capabilities */
+	if (s->creds_state->negotiate_flags != s->capabilities.server_capabilities) {
+		DEBUG(2, ("The client capabilities don't match the server "
+			  "capabilities: local[0x%08X] remote[0x%08X]\n",
+			  s->creds_state->negotiate_flags,
+			  s->capabilities.server_capabilities));
+		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	/* TODO: Add downgrade dectection. */
 
 	composite_done(c);
 }
