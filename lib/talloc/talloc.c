@@ -1176,7 +1176,7 @@ _PUBLIC_ void *talloc_check_name(const void *ptr, const char *name)
 	return NULL;
 }
 
-static void talloc_abort_type_missmatch(const char *location,
+static void talloc_abort_type_mismatch(const char *location,
 					const char *name,
 					const char *expected)
 {
@@ -1199,7 +1199,7 @@ _PUBLIC_ void *_talloc_get_type_abort(const void *ptr, const char *name, const c
 	const char *pname;
 
 	if (unlikely(ptr == NULL)) {
-		talloc_abort_type_missmatch(location, NULL, name);
+		talloc_abort_type_mismatch(location, NULL, name);
 		return NULL;
 	}
 
@@ -1208,7 +1208,7 @@ _PUBLIC_ void *_talloc_get_type_abort(const void *ptr, const char *name, const c
 		return discard_const_p(void, ptr);
 	}
 
-	talloc_abort_type_missmatch(location, pname, name);
+	talloc_abort_type_mismatch(location, pname, name);
 	return NULL;
 }
 
