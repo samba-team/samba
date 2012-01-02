@@ -3143,6 +3143,8 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 	struct pipe_auth_data *auth;
 	struct spnego_context *spnego_ctx;
 	NTSTATUS status;
+	const char *server = NULL;
+	const char *target_service = "cifs"; /* TODO: Determine target service from the bindings or interface table */
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3182,6 +3184,7 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 					    (auth->auth_level ==
 						DCERPC_AUTH_LEVEL_PRIVACY),
 					    true,
+					    server, target_service,
 					    domain, username, password,
 					    &spnego_ctx);
 	if (!NT_STATUS_IS_OK(status)) {

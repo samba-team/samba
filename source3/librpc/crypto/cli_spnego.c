@@ -88,6 +88,8 @@ NTSTATUS spnego_generic_init_client(TALLOC_CTX *mem_ctx,
 				    const char *oid,
 				    bool do_sign, bool do_seal,
 				    bool is_dcerpc,
+				    const char *server,
+				    const char *target_service,
 				    const char *domain,
 				    const char *username,
 				    const char *password,
@@ -146,6 +148,18 @@ NTSTATUS spnego_generic_init_client(TALLOC_CTX *mem_ctx,
 	if (is_dcerpc) {
 		gensec_want_feature(auth_generic_state->gensec_security,
 				    GENSEC_FEATURE_DCE_STYLE);
+	}
+
+	status = gensec_set_target_service(auth_generic_state->gensec_security, target_service);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(sp_ctx);
+		return status;
+	}
+
+	status = gensec_set_target_hostname(auth_generic_state->gensec_security, server);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(sp_ctx);
+		return status;
 	}
 
 	status = auth_generic_client_start(auth_generic_state, oid);
