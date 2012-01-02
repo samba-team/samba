@@ -26,6 +26,7 @@
 #include "dbwrap/dbwrap_open.h"
 
 struct db_record {
+	struct db_context *db;
 	TDB_DATA key, value;
 	NTSTATUS (*store)(struct db_record *rec, TDB_DATA data, int flag);
 	NTSTATUS (*delete_rec)(struct db_record *rec);

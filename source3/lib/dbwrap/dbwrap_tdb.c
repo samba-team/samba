@@ -276,6 +276,7 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	rec.store = db_tdb_store;
 	rec.delete_rec = db_tdb_delete;
 	rec.private_data = ctx->db->private_data;
+	rec.db = ctx->db;
 
 	return ctx->f(&rec, ctx->private_data);
 }
@@ -316,6 +317,7 @@ static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA d
 	rec.store = db_tdb_store_deny;
 	rec.delete_rec = db_tdb_delete_deny;
 	rec.private_data = ctx->db->private_data;
+	rec.db = ctx->db;
 
 	return ctx->f(&rec, ctx->private_data);
 }

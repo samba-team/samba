@@ -37,6 +37,7 @@ struct db_record *dbwrap_fetch_locked(struct db_context *db,
 struct db_record *dbwrap_try_fetch_locked(struct db_context *db,
 					  TALLOC_CTX *mem_ctx,
 					  TDB_DATA key);
+struct db_context *dbwrap_record_get_db(struct db_record *rec);
 
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key);
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
