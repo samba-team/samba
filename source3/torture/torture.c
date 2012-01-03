@@ -3778,7 +3778,7 @@ static bool run_oplock4(int dummy)
 
 	ev = tevent_context_init(talloc_tos());
 	if (ev == NULL) {
-		printf("tevent_req_create failed\n");
+		printf("tevent_context_init failed\n");
 		return false;
 	}
 
