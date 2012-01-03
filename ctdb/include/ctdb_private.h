@@ -108,6 +108,7 @@ struct ctdb_tunable {
 	uint32_t reclock_latency_ms;
 	uint32_t recovery_drop_all_ips;
 	uint32_t verify_recovery_lock;
+	uint32_t vacuum_interval;
 	uint32_t vacuum_default_interval;
 	uint32_t vacuum_max_run_time;
 	uint32_t repack_limit;
@@ -1426,6 +1427,10 @@ int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
 int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
 					 const struct ctdb_ltdb_header *hdr,
 					 TDB_DATA key);
+
+void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
+					 const struct ctdb_ltdb_header *hdr,
+					 const TDB_DATA key);
 
 struct ctdb_ltdb_header *ctdb_header_from_record_handle(struct ctdb_record_handle *h);
 

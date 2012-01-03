@@ -3902,7 +3902,7 @@ static int control_getvar(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	printf("%-19s = %u\n", name, value);
+	printf("%-23s = %u\n", name, value);
 	return 0;
 }
 
@@ -5289,7 +5289,7 @@ static const struct {
 	{ "chksrvid",        chksrvid,			false,	false, "check if a server id exists", "<pnn> <type> <id>" },
 	{ "getsrvids",       getsrvids,			false,	false, "get a list of all server ids"},
 	{ "check_srvids",    check_srvids,		false,	false, "check if a srvid exists", "<id>+" },
-	{ "vacuum",          ctdb_vacuum,		false,	false, "vacuum the databases of empty records", "[max_records]"},
+	{ "vacuum",          ctdb_vacuum,		false,	true, "vacuum the databases of empty records", "[max_records]"},
 	{ "repack",          ctdb_repack,		false,	false, "repack all databases", "[max_freelist]"},
 	{ "listnodes",       control_listnodes,		false,	true, "list all nodes in the cluster"},
 	{ "reloadnodes",     control_reload_nodes_file,	false,	false, "reload the nodes file and restart the transport on all nodes"},

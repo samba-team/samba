@@ -22,55 +22,57 @@
 static const struct {
 	const char *name;
 	uint32_t default_v;
-	size_t offset;	
+	size_t offset;
+	bool obsolete;
 } tunable_map[] = {
-	{ "MaxRedirectCount",     3,  offsetof(struct ctdb_tunable, max_redirect_count) },
-	{ "SeqnumInterval",      1000,  offsetof(struct ctdb_tunable, seqnum_interval) },
-	{ "ControlTimeout",      60, offsetof(struct ctdb_tunable, control_timeout) },
-	{ "TraverseTimeout",     20, offsetof(struct ctdb_tunable, traverse_timeout) },
-	{ "KeepaliveInterval",    5,  offsetof(struct ctdb_tunable, keepalive_interval) },
-	{ "KeepaliveLimit",       5,  offsetof(struct ctdb_tunable, keepalive_limit) },
-	{ "RecoverTimeout",      20,  offsetof(struct ctdb_tunable, recover_timeout) },
-	{ "RecoverInterval",      1,  offsetof(struct ctdb_tunable, recover_interval) },
-	{ "ElectionTimeout",      3,  offsetof(struct ctdb_tunable, election_timeout) },
-	{ "TakeoverTimeout",      9,  offsetof(struct ctdb_tunable, takeover_timeout) },
-	{ "MonitorInterval",     15,  offsetof(struct ctdb_tunable, monitor_interval) },
-	{ "TickleUpdateInterval",20,  offsetof(struct ctdb_tunable, tickle_update_interval) },
-	{ "EventScriptTimeout",  30,  offsetof(struct ctdb_tunable, script_timeout) },
-	{ "EventScriptTimeoutCount", 1,  offsetof(struct ctdb_tunable, script_timeout_count) },
-	{ "EventScriptUnhealthyOnTimeout", 0, offsetof(struct ctdb_tunable, script_unhealthy_on_timeout) },/* OBSOLETE */
-	{ "RecoveryGracePeriod", 120,  offsetof(struct ctdb_tunable, recovery_grace_period) },
-	{ "RecoveryBanPeriod",  300,  offsetof(struct ctdb_tunable, recovery_ban_period) },
-	{ "DatabaseHashSize", 100001, offsetof(struct ctdb_tunable, database_hash_size) },
-	{ "DatabaseMaxDead",      5,  offsetof(struct ctdb_tunable, database_max_dead) },
-	{ "RerecoveryTimeout",   10,  offsetof(struct ctdb_tunable, rerecovery_timeout) },
-	{ "EnableBans",           1,  offsetof(struct ctdb_tunable, enable_bans) },
-	{ "DeterministicIPs",     0,  offsetof(struct ctdb_tunable, deterministic_public_ips) },
-	{ "LCP2PublicIPs",        1,  offsetof(struct ctdb_tunable, lcp2_public_ip_assignment) },
-	{ "ReclockPingPeriod",   60,  offsetof(struct ctdb_tunable,  reclock_ping_period) },
-	{ "NoIPFailback",         0,  offsetof(struct ctdb_tunable, no_ip_failback) },
-	{ "DisableIPFailover",    0,  offsetof(struct ctdb_tunable, disable_ip_failover) },
-	{ "VerboseMemoryNames",   0,  offsetof(struct ctdb_tunable, verbose_memory_names) },
-	{ "RecdPingTimeout",	 60,  offsetof(struct ctdb_tunable, recd_ping_timeout) },
-	{ "RecdFailCount",	 10,  offsetof(struct ctdb_tunable, recd_ping_failcount) },
-	{ "LogLatencyMs",         0,  offsetof(struct ctdb_tunable, log_latency_ms) },
-	{ "RecLockLatencyMs",  1000,  offsetof(struct ctdb_tunable, reclock_latency_ms) },
-	{ "RecoveryDropAllIPs", 120,  offsetof(struct ctdb_tunable, recovery_drop_all_ips) },
-	{ "VerifyRecoveryLock",   1,  offsetof(struct ctdb_tunable, verify_recovery_lock) },
-	{ "VacuumDefaultInterval", 10,  offsetof(struct ctdb_tunable, vacuum_default_interval) },
-	{ "VacuumMaxRunTime",     30,  offsetof(struct ctdb_tunable, vacuum_max_run_time) },
-	{ "RepackLimit",      10000,  offsetof(struct ctdb_tunable, repack_limit) },
-	{ "VacuumLimit",       5000,  offsetof(struct ctdb_tunable, vacuum_limit) },
-	{ "VacuumMinInterval",   10,  offsetof(struct ctdb_tunable, vacuum_min_interval) },
-	{ "VacuumMaxInterval",   10,  offsetof(struct ctdb_tunable, vacuum_max_interval) },
-	{ "VacuumFastPathCount", 60, offsetof(struct ctdb_tunable, vacuum_fast_path_count) },
-	{ "MaxQueueDropMsg",  1000000, offsetof(struct ctdb_tunable, max_queue_depth_drop_msg) },
-	{ "UseStatusEvents",     0,  offsetof(struct ctdb_tunable, use_status_events_for_monitoring) },
-	{ "AllowUnhealthyDBRead", 0,  offsetof(struct ctdb_tunable, allow_unhealthy_db_read) },
-	{ "StatHistoryInterval",  1,  offsetof(struct ctdb_tunable, stat_history_interval) },
-	{ "DeferredAttachTO",  120,  offsetof(struct ctdb_tunable, deferred_attach_timeout) },
-	{ "AllowClientDBAttach", 1, offsetof(struct ctdb_tunable, allow_client_db_attach) },
-	{ "RecoverPDBBySeqNum",  0, offsetof(struct ctdb_tunable, recover_pdb_by_seqnum) }
+	{ "MaxRedirectCount",     3,  offsetof(struct ctdb_tunable, max_redirect_count), false },
+	{ "SeqnumInterval",      1000,  offsetof(struct ctdb_tunable, seqnum_interval), false },
+	{ "ControlTimeout",      60, offsetof(struct ctdb_tunable, control_timeout), false },
+	{ "TraverseTimeout",     20, offsetof(struct ctdb_tunable, traverse_timeout), false },
+	{ "KeepaliveInterval",    5,  offsetof(struct ctdb_tunable, keepalive_interval), false },
+	{ "KeepaliveLimit",       5,  offsetof(struct ctdb_tunable, keepalive_limit), false },
+	{ "RecoverTimeout",      20,  offsetof(struct ctdb_tunable, recover_timeout), false },
+	{ "RecoverInterval",      1,  offsetof(struct ctdb_tunable, recover_interval), false },
+	{ "ElectionTimeout",      3,  offsetof(struct ctdb_tunable, election_timeout), false },
+	{ "TakeoverTimeout",      9,  offsetof(struct ctdb_tunable, takeover_timeout), false },
+	{ "MonitorInterval",     15,  offsetof(struct ctdb_tunable, monitor_interval), false },
+	{ "TickleUpdateInterval",20,  offsetof(struct ctdb_tunable, tickle_update_interval), false },
+	{ "EventScriptTimeout",  30,  offsetof(struct ctdb_tunable, script_timeout), false },
+	{ "EventScriptTimeoutCount", 1,  offsetof(struct ctdb_tunable, script_timeout_count), false },
+	{ "EventScriptUnhealthyOnTimeout", 0, offsetof(struct ctdb_tunable, script_unhealthy_on_timeout), true },
+	{ "RecoveryGracePeriod", 120,  offsetof(struct ctdb_tunable, recovery_grace_period), false },
+	{ "RecoveryBanPeriod",  300,  offsetof(struct ctdb_tunable, recovery_ban_period), false },
+	{ "DatabaseHashSize", 100001, offsetof(struct ctdb_tunable, database_hash_size), false },
+	{ "DatabaseMaxDead",      5,  offsetof(struct ctdb_tunable, database_max_dead), false },
+	{ "RerecoveryTimeout",   10,  offsetof(struct ctdb_tunable, rerecovery_timeout), false },
+	{ "EnableBans",           1,  offsetof(struct ctdb_tunable, enable_bans), false },
+	{ "DeterministicIPs",     0,  offsetof(struct ctdb_tunable, deterministic_public_ips), false },
+	{ "LCP2PublicIPs",        1,  offsetof(struct ctdb_tunable, lcp2_public_ip_assignment), false },
+	{ "ReclockPingPeriod",   60,  offsetof(struct ctdb_tunable,  reclock_ping_period), false },
+	{ "NoIPFailback",         0,  offsetof(struct ctdb_tunable, no_ip_failback), false },
+	{ "DisableIPFailover",    0,  offsetof(struct ctdb_tunable, disable_ip_failover), false },
+	{ "VerboseMemoryNames",   0,  offsetof(struct ctdb_tunable, verbose_memory_names), false },
+	{ "RecdPingTimeout",	 60,  offsetof(struct ctdb_tunable, recd_ping_timeout), false },
+	{ "RecdFailCount",	 10,  offsetof(struct ctdb_tunable, recd_ping_failcount), false },
+	{ "LogLatencyMs",         0,  offsetof(struct ctdb_tunable, log_latency_ms), false },
+	{ "RecLockLatencyMs",  1000,  offsetof(struct ctdb_tunable, reclock_latency_ms), false },
+	{ "RecoveryDropAllIPs", 120,  offsetof(struct ctdb_tunable, recovery_drop_all_ips), false },
+	{ "VerifyRecoveryLock",   1,  offsetof(struct ctdb_tunable, verify_recovery_lock), false },
+	{ "VacuumInterval",   10,  offsetof(struct ctdb_tunable, vacuum_interval), false },
+	{ "VacuumDefaultInterval", 10,  offsetof(struct ctdb_tunable, vacuum_default_interval), true },
+	{ "VacuumMaxRunTime",     30,  offsetof(struct ctdb_tunable, vacuum_max_run_time), false },
+	{ "RepackLimit",      10000,  offsetof(struct ctdb_tunable, repack_limit), false },
+	{ "VacuumLimit",       5000,  offsetof(struct ctdb_tunable, vacuum_limit), false },
+	{ "VacuumMinInterval",   10,  offsetof(struct ctdb_tunable, vacuum_min_interval), true },
+	{ "VacuumMaxInterval",   10,  offsetof(struct ctdb_tunable, vacuum_max_interval), true },
+	{ "VacuumFastPathCount", 60, offsetof(struct ctdb_tunable, vacuum_fast_path_count), false },
+	{ "MaxQueueDropMsg",  1000000, offsetof(struct ctdb_tunable, max_queue_depth_drop_msg), false },
+	{ "UseStatusEvents",     0,  offsetof(struct ctdb_tunable, use_status_events_for_monitoring), false },
+	{ "AllowUnhealthyDBRead", 0,  offsetof(struct ctdb_tunable, allow_unhealthy_db_read), false },
+	{ "StatHistoryInterval",  1,  offsetof(struct ctdb_tunable, stat_history_interval), false },
+	{ "DeferredAttachTO",  120,  offsetof(struct ctdb_tunable, deferred_attach_timeout), false },
+	{ "AllowClientDBAttach", 1, offsetof(struct ctdb_tunable, allow_client_db_attach), false },
+	{ "RecoverPDBBySeqNum",  0, offsetof(struct ctdb_tunable, recover_pdb_by_seqnum), false }
 };
 
 /*
@@ -181,6 +183,9 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	CTDB_NO_MEMORY(ctdb, list);
 
 	for (i=1;i<ARRAY_SIZE(tunable_map);i++) {
+		if (tunable_map[i].obsolete) {
+			continue;
+		}
 		list = talloc_asprintf_append(list, ":%s", tunable_map[i].name);
 		CTDB_NO_MEMORY(ctdb, list);		
 	}

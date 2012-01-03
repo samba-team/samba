@@ -47,14 +47,13 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 	length = MAX(length, slength);
 	size = (length+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
 
-	hdr = (struct ctdb_req_header *)talloc_size(mem_ctx, size);
+	hdr = (struct ctdb_req_header *)talloc_zero_size(mem_ctx, size);
 	if (hdr == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to allocate packet for operation %u of length %u\n",
 			 operation, (unsigned)length));
 		return NULL;
 	}
 	talloc_set_name_const(hdr, type);
-	memset(hdr, 0, slength);
 	hdr->length       = length;
 	hdr->operation    = operation;
 	hdr->ctdb_magic   = CTDB_MAGIC;
