@@ -326,7 +326,7 @@ NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					gse_ctx->gss_c_flags,
 					0, GSS_C_NO_CHANNEL_BINDINGS,
 					&in_data, NULL, &out_data,
-					NULL, NULL);
+					&gse_ctx->ret_flags, NULL);
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
