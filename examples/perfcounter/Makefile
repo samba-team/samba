@@ -26,7 +26,7 @@ TDB_OBJ = $(TDB_SRC_DIR)/common/tdb.o $(TDB_SRC_DIR)/common/dump.o \
 	$(TDB_SRC_DIR)/common/error.o $(TDB_SRC_DIR)/common/freelist.o \
 	$(TDB_SRC_DIR)/common/io.o $(TDB_SRC_DIR)/common/lock.o \
 	$(TDB_SRC_DIR)/common/open.o $(TDB_SRC_DIR)/common/transaction.o \
-	$(TDB_SRC_DIR)/common/traverse.o
+	$(TDB_SRC_DIR)/common/traverse.o $(TDB_SRC_DIR)/common/hash.o
 PERF_WRITER_OBJ = perf_writer.o perf_writer_mem.o perf_writer_util.o perf_writer_cpu.o perf_writer_process.o perf_writer_disk.o
 
 default: $(PROGS)
