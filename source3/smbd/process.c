@@ -1409,8 +1409,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
 	 * so subtract 4 from it. */
-	if (!valid_smb_header(sconn, req->inbuf)
-	    || (size < (smb_size - 4))) {
+	if ((size < (smb_size - 4)) || !valid_smb_header(sconn, req->inbuf)) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
 			 smb_len(req->inbuf)));
 		exit_server_cleanly("Non-SMB packet");
