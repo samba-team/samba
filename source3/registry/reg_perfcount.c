@@ -919,13 +919,13 @@ static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
 					   bool bigendian_data)
 {
 	smb_ucs2_t *temp = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	time_t tm;
+	size_t sz;
 
-	if (rpcstr_push_talloc(mem_ctx, &temp, "PERF")==(size_t)-1) {
-		return false;
-	}
-	if (!temp) {
-		return false;
+	sz = rpcstr_push_talloc(tmp_ctx, &temp, "PERF");
+	if ((sz == -1) || (temp == NULL)) {
+		goto err_out;
 	}
 	memcpy(block->Signature, temp, strlen_w(temp) *2);
 
@@ -942,12 +942,15 @@ static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
 	tm = time(NULL);
 	make_systemtime(&(block->SystemTime), gmtime(&tm));
 	_reg_perfcount_init_data_block_perf(block, names);
-	memset(temp, 0, sizeof(temp));
-	rpcstr_push((void *)temp, lp_netbios_name(), sizeof(temp), STR_TERMINATE);
+
+	sz = rpcstr_push_talloc(tmp_ctx, &temp, lp_netbios_name());
+	if ((sz == -1) || (temp == NULL)) {
+		goto err_out;
+	}
 	block->SystemNameLength = (strlen_w(temp) * 2) + 2;
 	block->data = talloc_zero_array(mem_ctx, uint8, block->SystemNameLength + (8 - (block->SystemNameLength % 8)));
 	if (block->data == NULL) {
-		return False;
+		goto err_out;
 	}
 	memcpy(block->data, temp, block->SystemNameLength);
 	block->SystemNameOffset = sizeof(struct PERF_DATA_BLOCK) - sizeof(block->objects) - sizeof(block->data);
@@ -955,8 +958,13 @@ static bool _reg_perfcount_init_data_block(struct PERF_DATA_BLOCK *block,
 	/* Make sure to adjust for 64-bit alignment for when we finish writing the system name,
 	   so that the PERF_OBJECT_TYPE struct comes out 64-bit aligned */
 	block->HeaderLength += 8 - (block->HeaderLength % 8);
+	talloc_free(tmp_ctx);
 
-	return True;
+	return true;
+
+err_out:
+	talloc_free(tmp_ctx);
+	return false;
 }
 
 /*********************************************************************
