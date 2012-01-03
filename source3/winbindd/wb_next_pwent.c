@@ -154,6 +154,24 @@ static void wb_next_pwent_fill_done(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 		state->gstate->next_user += 1;
 
+		if (state->gstate->next_user >= state->gstate->num_users) {
+			TALLOC_FREE(state->gstate->users);
+
+			state->gstate->domain = wb_next_find_domain(state->gstate->domain);
+			if (state->gstate->domain == NULL) {
+				tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
+				return;
+			}
+
+			subreq = wb_query_user_list_send(state, state->ev,
+					state->gstate->domain);
+			if (tevent_req_nomem(subreq, req)) {
+				return;
+			}
+			tevent_req_set_callback(subreq, wb_next_pwent_fetch_done, req);
+			return;
+		}
+
 		subreq = wb_fill_pwent_send(state,
 					    state->ev,
 					    &state->gstate->users[state->gstate->next_user],
