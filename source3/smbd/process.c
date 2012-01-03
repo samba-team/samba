@@ -1412,6 +1412,17 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	if ((size < (smb_size - 4)) || !valid_smb_header(sconn, req->inbuf)) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
 			 smb_len(req->inbuf)));
+
+		/* special magic for immediate exit */
+		if ((size == smb_size) &&
+		    (IVAL(req->inbuf, 4) == 0x74697865) &&
+		    lp_parm_bool(-1, "smbd", "suicide mode", false)) {
+			uint8_t exitcode = CVAL(req->inbuf, 8);
+			DEBUG(1, ("Exiting immediately with code %d\n",
+				  (int)exitcode));
+			exit(exitcode);
+		}
+
 		exit_server_cleanly("Non-SMB packet");
 	}
 
