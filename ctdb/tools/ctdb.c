@@ -43,6 +43,7 @@ static void usage(void);
 static struct {
 	int timelimit;
 	uint32_t pnn;
+	uint32_t *nodes;
 	int machinereadable;
 	int verbose;
 	int maxruntime;
@@ -66,46 +67,150 @@ static int control_version(struct ctdb_context *ctdb, int argc, const char **arg
 }
 #endif
 
+#define CTDB_NOMEM_ABORT(p) do { if (!(p)) {				\
+		DEBUG(DEBUG_ALERT,("ctdb fatal error: %s\n",		\
+				   "Out of memory in " __location__ ));	\
+		abort();						\
+	}} while (0)
 
-/*
-  verify that a node exists and is reachable
+/* Pretty print the flags to a static buffer in human-readable format.
+ * This never returns NULL!
  */
-static void verify_node(struct ctdb_context *ctdb)
+static const char *pretty_print_flags(uint32_t flags)
 {
-	int ret;
-	struct ctdb_node_map *nodemap=NULL;
+	int j;
+	static const struct {
+		uint32_t flag;
+		const char *name;
+	} flag_names[] = {
+		{ NODE_FLAGS_DISCONNECTED,	    "DISCONNECTED" },
+		{ NODE_FLAGS_PERMANENTLY_DISABLED,  "DISABLED" },
+		{ NODE_FLAGS_BANNED,		    "BANNED" },
+		{ NODE_FLAGS_UNHEALTHY,		    "UNHEALTHY" },
+		{ NODE_FLAGS_DELETED,		    "DELETED" },
+		{ NODE_FLAGS_STOPPED,		    "STOPPED" },
+		{ NODE_FLAGS_INACTIVE,		    "INACTIVE" },
+	};
+	static char flags_str[512]; /* Big enough to contain all flag names */
 
-	if (options.pnn == CTDB_CURRENT_NODE) {
-		return;
+	flags_str[0] = '\0';
+	for (j=0;j<ARRAY_SIZE(flag_names);j++) {
+		if (flags & flag_names[j].flag) {
+			if (flags_str[0] == '\0') {
+				(void) strcpy(flags_str, flag_names[j].name);
+			} else {
+				(void) strcat(flags_str, "|");
+				(void) strcat(flags_str, flag_names[j].name);
+			}
+		}
 	}
-	if (options.pnn == CTDB_BROADCAST_ALL) {
-		return;
+	if (flags_str[0] == '\0') {
+		(void) strcpy(flags_str, "OK");
 	}
 
-	/* verify the node exists */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+	return flags_str;
+}
+
+/* Parse a nodestring.  Parameter dd_ok controls what happens to nodes
+ * that are disconnected or deleted.  If dd_ok is true those nodes are
+ * included in the output list of nodes.  If dd_ok is false, those
+ * nodes are filtered from the "all" case and cause an error if
+ * explicitly specified.
+ */
+static bool parse_nodestring(struct ctdb_context *ctdb,
+			     const char * nodestring,
+			     bool dd_ok,
+			     uint32_t **nodes,
+			     uint32_t *pnn_mode)
+{
+	int n;
+	uint32_t i;
+	struct ctdb_node_map *nodemap;
+       
+	*nodes = NULL;
+
+	if (!ctdb_getnodemap(ctdb_connection, CTDB_CURRENT_NODE, &nodemap)) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
 		exit(10);
 	}
-	if (options.pnn >= nodemap->num) {
-		DEBUG(DEBUG_ERR, ("Node %u does not exist\n", options.pnn));
-		exit(ERR_NONODE);
-	}
-	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_DELETED) {
-		DEBUG(DEBUG_ERR, ("Node %u is DELETED\n", options.pnn));
-		exit(ERR_DISNODE);
-	}
-	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_DISCONNECTED) {
-		DEBUG(DEBUG_ERR, ("Node %u is DISCONNECTED\n", options.pnn));
-		exit(ERR_DISNODE);
+
+	if (nodestring != NULL) {
+		*nodes = talloc_array(ctdb, uint32_t, 0);
+		CTDB_NOMEM_ABORT(*nodes);
+               
+		n = 0;
+
+		if (strcmp(nodestring, "all") == 0) {
+			*pnn_mode = CTDB_BROADCAST_ALL;
+
+			/* all */
+			for (i = 0; i < nodemap->num; i++) {
+				if ((nodemap->nodes[i].flags & 
+				     (NODE_FLAGS_DISCONNECTED |
+				      NODE_FLAGS_DELETED)) && !dd_ok) {
+					continue;
+				}
+				*nodes = talloc_realloc(ctdb, *nodes,
+							uint32_t, n+1);
+				CTDB_NOMEM_ABORT(*nodes);
+				(*nodes)[n] = i;
+				n++;
+			}
+		} else {
+			/* x{,y...} */
+			char *ns, *tok;
+                       
+			ns = talloc_strdup(ctdb, nodestring);
+			tok = strtok(ns, ",");
+			while (tok != NULL) {
+				uint32_t pnn;
+				i = (uint32_t)strtoul(tok, NULL, 0);
+				if (i >= nodemap->num) {
+					DEBUG(DEBUG_ERR, ("Node %u does not exist\n", i));
+					exit(ERR_NONODE);
+				}
+				if ((nodemap->nodes[i].flags & 
+				     (NODE_FLAGS_DISCONNECTED |
+				      NODE_FLAGS_DELETED)) && !dd_ok) {
+					DEBUG(DEBUG_ERR, ("Node %u has status %s\n", i, pretty_print_flags(nodemap->nodes[i].flags)));
+					exit(ERR_DISNODE);
+				}
+				if (!ctdb_getpnn(ctdb_connection, i, &pnn)) {
+					DEBUG(DEBUG_ERR, ("Can not access node %u. Node is not operational.\n", i));
+					exit(10);
+				}
+
+				*nodes = talloc_realloc(ctdb, *nodes,
+							uint32_t, n+1);
+				CTDB_NOMEM_ABORT(*nodes);
+
+				(*nodes)[n] = i;
+				n++;
+
+				tok = strtok(NULL, ",");
+			}
+			talloc_free(ns);
+
+			if (n == 1) {
+				*pnn_mode = (*nodes)[0];
+			} else {
+				*pnn_mode = CTDB_MULTICAST;
+			}
+		}
+	} else {
+		/* default - no nodes specified */
+		*nodes = talloc_array(ctdb, uint32_t, 1);
+		CTDB_NOMEM_ABORT(*nodes);
+
+		if (!ctdb_getpnn(ctdb_connection, CTDB_CURRENT_NODE,
+				 &((*nodes)[0]))) {
+			return false;
+		}
 	}
 
-	/* verify we can access the node */
-	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (ret == -1) {
-		DEBUG(DEBUG_ERR,("Can not access node. Node is not operational.\n"));
-		exit(10);
-	}
+	ctdb_free_nodemap(nodemap);
+
+	return true;
 }
 
 /*
@@ -607,6 +712,57 @@ static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
 	return -1;
 }
 
+/* Helpers for ctdb status
+ */
+static bool is_partially_online(struct ctdb_node_and_flags *node)
+{
+	int j;
+	bool ret = false;
+
+	if (node->flags == 0) {
+		struct ctdb_ifaces_list *ifaces;
+
+		if (ctdb_getifaces(ctdb_connection, node->pnn, &ifaces)) {
+			for (j=0; j < ifaces->num; j++) {
+				if (ifaces->ifaces[j].link_state != 0) {
+					continue;
+				}
+				ret = true;
+				break;
+			}
+			ctdb_free_ifaces(ifaces);
+		}
+	}
+
+	return ret;
+}
+
+static int control_status_1_machine(int mypnn, struct ctdb_node_and_flags *node)
+{
+	printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", node->pnn,
+	       ctdb_addr_to_str(&node->addr),
+	       !!(node->flags&NODE_FLAGS_DISCONNECTED),
+	       !!(node->flags&NODE_FLAGS_BANNED),
+	       !!(node->flags&NODE_FLAGS_PERMANENTLY_DISABLED),
+	       !!(node->flags&NODE_FLAGS_UNHEALTHY),
+	       !!(node->flags&NODE_FLAGS_STOPPED),
+	       !!(node->flags&NODE_FLAGS_INACTIVE),
+	       is_partially_online(node) ? 1 : 0,
+	       (node->pnn == mypnn)?'Y':'N');
+
+	return node->flags;
+}
+
+static int control_status_1_human(int mypnn, struct ctdb_node_and_flags *node)
+{
+       printf("pnn:%d %-16s %s%s\n", node->pnn,
+              ctdb_addr_to_str(&node->addr),
+              is_partially_online(node) ? "PARTIALLYONLINE" : pretty_print_flags(node->flags),
+              node->pnn == mypnn?" (THIS NODE)":"");
+
+       return node->flags;
+}
+
 /*
   display remote ctdb status
  */
@@ -633,100 +789,21 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
 		       ":Inactive:PartiallyOnline:ThisNode:\n");
 		for (i=0;i<nodemap->num;i++) {
-			int partially_online = 0;
-			int j;
-
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 				continue;
 			}
-			if (nodemap->nodes[i].flags == 0) {
-				struct ctdb_ifaces_list *ifaces;
-
-				ret = ctdb_getifaces(ctdb_connection,
-						     nodemap->nodes[i].pnn,
-						     &ifaces);
-				if (ret == 0) {
-					for (j=0; j < ifaces->num; j++) {
-						if (ifaces->ifaces[j].link_state != 0) {
-							continue;
-						}
-						partially_online = 1;
-						break;
-					}
-					ctdb_free_ifaces(ifaces);
-				}
-			}
-			printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", nodemap->nodes[i].pnn,
-				ctdb_addr_to_str(&nodemap->nodes[i].addr),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_INACTIVE),
-			       partially_online,
-			       (nodemap->nodes[i].pnn == mypnn)?'Y':'N');
+			(void) control_status_1_machine(mypnn,
+							&nodemap->nodes[i]);
 		}
 		return 0;
 	}
 
 	printf("Number of nodes:%d\n", nodemap->num);
 	for(i=0;i<nodemap->num;i++){
-		static const struct {
-			uint32_t flag;
-			const char *name;
-		} flag_names[] = {
-			{ NODE_FLAGS_DISCONNECTED,          "DISCONNECTED" },
-			{ NODE_FLAGS_PERMANENTLY_DISABLED,  "DISABLED" },
-			{ NODE_FLAGS_BANNED,                "BANNED" },
-			{ NODE_FLAGS_UNHEALTHY,             "UNHEALTHY" },
-			{ NODE_FLAGS_DELETED,               "DELETED" },
-			{ NODE_FLAGS_STOPPED,               "STOPPED" },
-			{ NODE_FLAGS_INACTIVE,              "INACTIVE" },
-		};
-		char *flags_str = NULL;
-		int j;
-
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
-		if (nodemap->nodes[i].flags == 0) {
-			struct ctdb_control_get_ifaces *ifaces;
-
-			ret = ctdb_ctrl_get_ifaces(ctdb, TIMELIMIT(),
-						   nodemap->nodes[i].pnn,
-						   ctdb, &ifaces);
-			if (ret == 0) {
-				for (j=0; j < ifaces->num; j++) {
-					if (ifaces->ifaces[j].link_state != 0) {
-						continue;
-					}
-					flags_str = talloc_strdup(ctdb, "PARTIALLYONLINE");
-					break;
-				}
-				talloc_free(ifaces);
-			}
-		}
-		for (j=0;j<ARRAY_SIZE(flag_names);j++) {
-			if (nodemap->nodes[i].flags & flag_names[j].flag) {
-				if (flags_str == NULL) {
-					flags_str = talloc_strdup(ctdb, flag_names[j].name);
-				} else {
-					flags_str = talloc_asprintf_append(flags_str, "|%s",
-									   flag_names[j].name);
-				}
-				CTDB_NO_MEMORY_FATAL(ctdb, flags_str);
-			}
-		}
-		if (flags_str == NULL) {
-			flags_str = talloc_strdup(ctdb, "OK");
-			CTDB_NO_MEMORY_FATAL(ctdb, flags_str);
-		}
-		printf("pnn:%d %-16s %s%s\n", nodemap->nodes[i].pnn,
-		       ctdb_addr_to_str(&nodemap->nodes[i].addr),
-		       flags_str,
-		       nodemap->nodes[i].pnn == mypnn?" (THIS NODE)":"");
-		talloc_free(flags_str);
+		(void) control_status_1_human(mypnn, &nodemap->nodes[i]);
 	}
 
 	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &vnnmap);
@@ -759,6 +836,50 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_node_map *nodemap=NULL;
+	uint32_t * nodes;
+	uint32_t pnn_mode, mypnn;
+
+	if (argc > 1) {
+		usage();
+	}
+
+	if (!parse_nodestring(ctdb, argc == 1 ? argv[0] : NULL, false,
+			      &nodes, &pnn_mode)) {
+		return -1;
+	}
+
+	if (options.machinereadable) {
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
+		       ":Inactive:PartiallyOnline:ThisNode:\n");
+	} else if (pnn_mode == CTDB_BROADCAST_ALL) {
+		printf("Number of nodes:%d\n", (int) talloc_array_length(nodes));
+	}
+
+	if (!ctdb_getpnn(ctdb_connection, CTDB_CURRENT_NODE, &mypnn)) {
+		DEBUG(DEBUG_ERR, ("Unable to get PNN from local node\n"));
+		return -1;
+	}
+
+	if (!ctdb_getnodemap(ctdb_connection, CTDB_CURRENT_NODE, &nodemap)) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return -1;
+	}
+
+	for (i = 0; i < talloc_array_length(nodes); i++) {
+		if (options.machinereadable) {
+			ret |= control_status_1_machine(mypnn,
+							&nodemap->nodes[nodes[i]]);
+		} else {
+			ret |= control_status_1_human(mypnn,
+						      &nodemap->nodes[nodes[i]]);
+		}
+	}
+	return ret;
+}
 
 struct natgw_node {
 	struct natgw_node *next;
@@ -5204,6 +5325,7 @@ static const struct {
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
 	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbid>" },
+	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status" },
 };
 
 /*
@@ -5356,45 +5478,32 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}				
 
-	/* setup the node number to contact */
-	if (nodestring != NULL) {
-		if (strcmp(nodestring, "all") == 0) {
-			options.pnn = CTDB_BROADCAST_ALL;
-		} else {
-			options.pnn = strtoul(nodestring, NULL, 0);
-		}
+	/* setup the node number(s) to contact */
+	if (!parse_nodestring(ctdb, nodestring, true,
+			      &options.nodes, &options.pnn)) {
+		usage();
 	}
 
-	/* verify the node exists */
-	verify_node(ctdb);
-
 	if (options.pnn == CTDB_CURRENT_NODE) {
-		int pnn;
-		pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);		
-		if (pnn == -1) {
-			return -1;
-		}
-		options.pnn = pnn;
+		options.pnn = options.nodes[0];
 	}
 
 	if (ctdb_commands[i].auto_all && 
-	    options.pnn == CTDB_BROADCAST_ALL) {
-		uint32_t *nodes;
-		uint32_t num_nodes;
+	    ((options.pnn == CTDB_BROADCAST_ALL) ||
+	     (options.pnn == CTDB_MULTICAST))) {
 		int j;
-		ret = 0;
 
-		nodes = ctdb_get_connected_nodes(ctdb, TIMELIMIT(), ctdb, &num_nodes);
-		CTDB_NO_MEMORY(ctdb, nodes);
-	
-		for (j=0;j<num_nodes;j++) {
-			options.pnn = nodes[j];
+		ret = 0;
+		for (j = 0; j < talloc_array_length(options.nodes); j++) {
+			options.pnn = options.nodes[j];
 			ret |= ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
 		}
-		talloc_free(nodes);
 	} else {
 		ret = ctdb_commands[i].fn(ctdb, extra_argc-1, extra_argv+1);
 	}
+
+	ctdb_disconnect(ctdb_connection);
+	talloc_free(ctdb);
 
 	return ret;
 }
