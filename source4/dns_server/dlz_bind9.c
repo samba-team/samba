@@ -54,6 +54,7 @@ struct dlz_bind9_data {
 
 	/* Used for dynamic update */
 	struct smb_krb5_context *smb_krb5_ctx;
+	struct auth4_context *auth_context;
 	struct auth_session_info *session_info;
 	char *update_name;
 
@@ -463,6 +464,50 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 
 
 /*
+ * Create session info from PAC
+ * This is called as auth_context->generate_session_info_pac()
+ */
+static NTSTATUS b9_generate_session_info_pac(struct auth4_context *auth_context,
+					     TALLOC_CTX *mem_ctx,
+					     struct smb_krb5_context *smb_krb5_context,
+					     DATA_BLOB *pac_blob,
+					     const char *principal_name,
+					     const struct tsocket_address *remote_addr,
+					     uint32_t session_info_flags,
+					     struct auth_session_info **session_info)
+{
+	NTSTATUS status;
+	struct auth_user_info_dc *user_info_dc;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	status = kerberos_pac_blob_to_user_info_dc(tmp_ctx,
+						   *pac_blob,
+						   smb_krb5_context->krb5_context,
+						   &user_info_dc,
+						   NULL,
+						   NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+	status = auth_generate_session_info(mem_ctx, NULL, NULL, user_info_dc,
+					    session_info_flags, session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	talloc_free(tmp_ctx);
+	return status;
+}
+
+
+/*
   called to initialise the driver
  */
 _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
@@ -473,7 +518,6 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	const char *helper_name;
 	va_list ap;
 	isc_result_t result;
-	TALLOC_CTX *tmp_ctx;
 	struct ldb_dn *dn;
 	NTSTATUS nt_status;
 
@@ -481,8 +525,6 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	if (state == NULL) {
 		return ISC_R_NOMEMORY;
 	}
-
-	tmp_ctx = talloc_new(state);
 
 	/* fill in the helper functions */
 	va_start(ap, dbdata);
@@ -527,8 +569,14 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 
 	nt_status = gensec_init();
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return false;
+		result = ISC_R_NOMEMORY;
+		goto failed;
+	}
+
+	state->auth_context = talloc_zero(state, struct auth4_context);
+	if (state->auth_context == NULL) {
+		result = ISC_R_NOMEMORY;
+		goto failed;
 	}
 
 	if (state->options.url == NULL) {
@@ -559,9 +607,13 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	state->log(ISC_LOG_INFO, "samba_dlz: started for DN %s",
 		   ldb_dn_get_linearized(dn));
 
+	state->auth_context->event_ctx = state->ev_ctx;
+	state->auth_context->lp_ctx = state->lp;
+	state->auth_context->sam_ctx = state->samdb;
+	state->auth_context->generate_session_info_pac = b9_generate_session_info_pac;
+
 	*dbdata = state;
 
-	talloc_free(tmp_ctx);
 	return ISC_R_SUCCESS;
 
 failed:
@@ -1107,7 +1159,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 
 	nt_status = gensec_server_start(tmp_ctx,
 					lpcfg_gensec_settings(tmp_ctx, state->lp),
-					NULL, &gensec_ctx);
+					state->auth_context, &gensec_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to start gensec server");
 		talloc_free(tmp_ctx);
