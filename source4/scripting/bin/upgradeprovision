@@ -341,11 +341,11 @@ def handle_special_case(att, delta, new, old, useReplMetadata, basedn, aldb):
     :return: True to indicate that the attribute should be kept, False for
              discarding it"""
 
-    flag = delta.get(att).flags()
     # We do most of the special case handle if we do not have the
     # highest usn as otherwise the replPropertyMetaData will guide us more
     # correctly
     if not useReplMetadata:
+        flag = delta.get(att).flags()
         if (att == "sPNMappings" and flag == FLAG_MOD_REPLACE and
             ldb.Dn(aldb, "CN=Directory Service,CN=Windows NT,"
                         "CN=Services,CN=Configuration,%s" % basedn)
@@ -418,7 +418,7 @@ def handle_special_case(att, delta, new, old, useReplMetadata, basedn, aldb):
     # This is a bit of special animal as we might have added
     # already SPN entries to the list that has to be modified
     # So we go in detail to try to find out what has to be added ...
-    if (att == "servicePrincipalName" and flag == FLAG_MOD_REPLACE):
+    if (att == "servicePrincipalName" and delta.get(att).flags() == FLAG_MOD_REPLACE):
         hash = {}
         newval = []
         changeDelta = 0
@@ -763,8 +763,7 @@ def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
     :param delta: The MessageElement object that will be applied for
                    transforming the current provision"""
 
-    res = samdb.search(expression="dn=%s" % dn, base=basedn,
-                        controls=["search_options:1:2", "reveal:1"],
+    res = samdb.search(base=dn, controls=["search_options:1:2", "reveal:1"],
                         attrs=[att])
 
     blacklist = {}
@@ -772,7 +771,8 @@ def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
     newlinklist = []
     changed = False
 
-    newlinklist.extend(value)
+    for v in value:
+        newlinklist.append(str(v))
 
     for e in value:
         hash[e] = 1
@@ -796,6 +796,8 @@ def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
         delta[att] = MessageElement(newlinklist, FLAG_MOD_REPLACE, att)
     else:
         delta.remove(att)
+
+    return delta
 
 
 msg_elt_flag_strs = {
@@ -895,11 +897,12 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
         if att in forwardlinked:
             curval = current[0].get(att, ())
             refval = reference[0].get(att, ())
-            handle_links(samdb, att, basedn, current[0]["dn"],
+            delta = handle_links(samdb, att, basedn, current[0]["dn"],
                             curval, refval, delta)
             continue
 
-        if isFirst and len(delta.items())>1:
+
+        if isFirst and len(list(delta)) > 1:
             isFirst = False
             txt = "%s\n" % (str(dn))
 
@@ -1048,10 +1051,12 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
 
         delta.remove("name")
 
-        if len(delta.items()) == 1:
+        nb_items = len(list(delta))
+
+        if nb_items == 1:
             continue
 
-        if len(delta.items()) > 1 and usns is not None:
+        if nb_items > 1 and usns is not None:
             # Fetch the replPropertyMetaData
             res = samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
                                 scope=SCOPE_SUBTREE, controls=controls,
@@ -1077,7 +1082,9 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
             delta =  checkKeepAttributeOldMtd(delta, att, reference, current, basedn, samdb)
 
         delta.dn = dn
-        if len(delta.items()) >1:
+
+
+        if len(delta) >1:
             # Skip dn as the value is not really changed ...
             attributes=", ".join(delta.keys()[1:])
             modcontrols = []
