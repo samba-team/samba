@@ -590,6 +590,11 @@ sub read_pid($$)
 sub check_or_start($$$$$) {
 	my ($self, $env_vars, $nmbd, $winbindd, $smbd) = @_;
 
+	# use a pipe for stdin in the child processes. This allows
+	# those processes to monitor the pipe for EOF to ensure they
+	# exit when the test script exits
+	pipe(STDIN_READER, $env_vars->{STDIN_PIPE});
+
 	unlink($env_vars->{NMBD_TEST_LOG});
 	print "STARTING NMBD...";
 	my $pid = fork();
@@ -630,6 +635,9 @@ sub check_or_start($$$$$) {
 		if(defined($ENV{NMBD_VALGRIND})) { 
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
 		}
+
+		close($env_vars->{STDIN_PIPE});
+		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
 		exec(@preargs, Samba::bindir_path($self, "nmbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
@@ -679,6 +687,9 @@ sub check_or_start($$$$$) {
 
 		print "Starting winbindd with config $env_vars->{SERVERCONFFILE}\n";
 
+		close($env_vars->{STDIN_PIPE});
+		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
+
 		exec(@preargs, Samba::bindir_path($self, "winbindd"), "-F", "--no-process-group", "--stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 	}
 	write_pid($env_vars, "winbindd", $pid);
@@ -722,10 +733,16 @@ sub check_or_start($$$$$) {
 		if(defined($ENV{SMBD_VALGRIND})) {
 			@preargs = split(/ /,$ENV{SMBD_VALGRIND});
 		}
+
+		close($env_vars->{STDIN_PIPE});
+		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
+
 		exec(@preargs, Samba::bindir_path($self, "smbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
 	}
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
+
+	close(STDIN_READER);
 
 	return 0;
 }
