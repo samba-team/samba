@@ -2668,12 +2668,17 @@ static int py_ldb_msg_setitem(PyLdbMessageObject *self, PyObject *name, PyObject
 		/* delitem */
 		ldb_msg_remove_attr(self->msg, attr_name);
 	} else {
+		int ret;
 		struct ldb_message_element *el = PyObject_AsMessageElement(self->msg,
 									   value, 0, attr_name);
 		if (el == NULL)
 			return -1;
 		ldb_msg_remove_attr(pyldb_Message_AsMessage(self), attr_name);
-		ldb_msg_add(pyldb_Message_AsMessage(self), el, el->flags);
+		ret = ldb_msg_add(pyldb_Message_AsMessage(self), el, el->flags);
+		if (ret != LDB_SUCCESS) {
+			PyErr_SetLdbError(PyExc_LdbError, ret, NULL);
+			return -1;
+		}
 	}
 	return 0;
 }
