@@ -671,7 +671,7 @@ static DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 }
 
 static size_t gse_get_signature_length(struct gse_context *gse_ctx,
-				int seal, size_t payload_size)
+				       bool seal, size_t payload_size)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_iov_buffer_desc iov[2];
@@ -707,7 +707,7 @@ static NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	NTSTATUS status;
 
 	/* allocate the memory ourselves so we do not need to talloc_memdup */
-	signature->length = gse_get_signature_length(gse_ctx, 1, data->length);
+	signature->length = gse_get_signature_length(gse_ctx, true, data->length);
 	if (!signature->length) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
