@@ -30,6 +30,26 @@ struct wb_next_pwent_state {
 static void wb_next_pwent_fetch_done(struct tevent_req *subreq);
 static void wb_next_pwent_fill_done(struct tevent_req *subreq);
 
+static struct winbindd_domain *wb_next_find_domain(struct winbindd_domain *domain)
+{
+	if (domain == NULL) {
+		domain = domain_list();
+	} else {
+		domain = domain->next;
+	}
+
+	if ((domain != NULL)
+	    && sid_check_is_domain(&domain->sid)) {
+		domain = domain->next;
+	}
+
+	if (domain == NULL) {
+		return NULL;
+	}
+
+	return domain;
+}
+
 struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct getpwent_state *gstate,
@@ -49,17 +69,7 @@ struct tevent_req *wb_next_pwent_send(TALLOC_CTX *mem_ctx,
 	if (state->gstate->next_user >= state->gstate->num_users) {
 		TALLOC_FREE(state->gstate->users);
 
-		if (state->gstate->domain == NULL) {
-			state->gstate->domain = domain_list();
-		} else {
-			state->gstate->domain = state->gstate->domain->next;
-		}
-
-		if ((state->gstate->domain != NULL)
-		    && sid_check_is_domain(&state->gstate->domain->sid)) {
-			state->gstate->domain = state->gstate->domain->next;
-		}
-
+		state->gstate->domain = wb_next_find_domain(state->gstate->domain);
 		if (state->gstate->domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 			return tevent_req_post(req, ev);
