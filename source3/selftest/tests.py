@@ -251,7 +251,7 @@ if sub.returncode == 0:
 
 
     test = 'rpc.lsa.lookupsids'
-    auth_options = ["", "ntlm", "spnego" ]
+    auth_options = ["", "ntlm", "spnego", "spnego,ntlm" ]
     signseal_options = ["", ",connect", ",sign", ",seal"]
     smb_options = ["", ",smb2"]
     endianness_options = ["", ",bigendian"]
@@ -262,6 +262,8 @@ if sub.returncode == 0:
                     binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
                     options = binding_string + " -U$USERNAME%$PASSWORD"
                     plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+                    plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s%s] " % (a, s, z, e), "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+                                                                 "none", options, configuration])
 
             # We should try more combinations in future, but this is all
             # the pre-calculated credentials cache supports at the moment
@@ -273,6 +275,13 @@ if sub.returncode == 0:
 
             options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
             plansmbtorturetestsuite(test, "ktest", options, 'over kerberos ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+
+            auth_options2 = ["krb5", "spnego,krb5"]
+            for a in auth_options2:
+                binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
+
+                plantestsuite("samba3.blackbox.rpcclient over kerberos with ncacn_np with [%s%s%s%s] " % (a, s, z, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+                                                                                                                                  "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
 
 
 
