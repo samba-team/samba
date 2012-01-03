@@ -543,92 +543,6 @@ static NTSTATUS get_schannel_auth_footer(TALLOC_CTX *mem_ctx,
 	}
 }
 
-/*******************************************************************
- Create and add the spnego-negotiated sign/seal auth data.
- ********************************************************************/
-
-static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
-					enum dcerpc_AuthLevel auth_level,
-					DATA_BLOB *rpc_out)
-{
-	DATA_BLOB auth_blob;
-	DATA_BLOB rpc_data;
-	NTSTATUS status;
-
-	if (!spnego_ctx) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	rpc_data = data_blob_const(rpc_out->data
-					+ DCERPC_RESPONSE_LENGTH,
-				   rpc_out->length
-					- DCERPC_RESPONSE_LENGTH
-					- DCERPC_AUTH_TRAILER_LENGTH);
-
-	switch (auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		/* Data portion is encrypted. */
-		status = spnego_seal(rpc_out->data, spnego_ctx,
-				     &rpc_data, rpc_out, &auth_blob);
-		break;
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		break;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		/* Data is signed. */
-		status = spnego_sign(rpc_out->data, spnego_ctx,
-				     &rpc_data, rpc_out, &auth_blob);
-		break;
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		break;
-
-	default:
-		/* Can't happen. */
-		smb_panic("bad auth level");
-		/* Notreached. */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Finally attach the blob. */
-	if (!data_blob_append(NULL, rpc_out,
-				auth_blob.data, auth_blob.length)) {
-		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
-			  (unsigned int)auth_blob.length));
-		return NT_STATUS_NO_MEMORY;
-	}
-	data_blob_free(&auth_blob);
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS get_spnego_auth_footer(TALLOC_CTX *mem_ctx,
-					struct spnego_context *sp_ctx,
-					enum dcerpc_AuthLevel auth_level,
-					DATA_BLOB *data, DATA_BLOB *full_pkt,
-					DATA_BLOB *auth_token)
-{
-	switch (auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		/* Data portion is encrypted. */
-		return spnego_unseal(mem_ctx, sp_ctx,
-				     data, full_pkt, auth_token);
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		/* Data is signed. */
-		return spnego_sigcheck(mem_ctx, sp_ctx,
-				       data, full_pkt, auth_token);
-
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-}
-
 /**
 * @brief   Append an auth footer according to what is the current mechanism
 *
@@ -694,8 +608,14 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
 						   struct spnego_context);
-		status = add_spnego_auth_footer(spnego_ctx,
-						auth->auth_level, rpc_out);
+		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = add_generic_auth_footer(gensec_security,
+						 auth->auth_level,
+						 rpc_out);
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
@@ -810,10 +730,16 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
 						   struct spnego_context);
-		status = get_spnego_auth_footer(pkt, spnego_ctx,
-						auth->auth_level,
-						&data, &full_pkt,
-						&auth_info.credentials);
+		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = get_generic_auth_footer(gensec_security,
+						 auth->auth_level,
+						 &data, &full_pkt,
+						 &auth_info.credentials);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
