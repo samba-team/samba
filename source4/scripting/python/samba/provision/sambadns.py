@@ -144,6 +144,7 @@ class SRVRecord(dnsp.DnssrvRpcRecord):
 class TypeProperty(dnsp.DnsProperty):
     def __init__(self, zone_type=dnsp.DNS_ZONE_TYPE_PRIMARY):
         super(TypeProperty, self).__init__()
+        self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_TYPE
         self.data = zone_type
@@ -151,6 +152,7 @@ class TypeProperty(dnsp.DnsProperty):
 class AllowUpdateProperty(dnsp.DnsProperty):
     def __init__(self, allow_update=dnsp.DNS_ZONE_UPDATE_SECURE):
         super(AllowUpdateProperty, self).__init__()
+        self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_ALLOW_UPDATE
         self.data = allow_update
@@ -158,6 +160,7 @@ class AllowUpdateProperty(dnsp.DnsProperty):
 class SecureTimeProperty(dnsp.DnsProperty):
     def __init__(self, secure_time=0):
         super(SecureTimeProperty, self).__init__()
+        self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_SECURE_TIME
         self.data = secure_time
@@ -165,6 +168,7 @@ class SecureTimeProperty(dnsp.DnsProperty):
 class NorefreshIntervalProperty(dnsp.DnsProperty):
     def __init__(self, norefresh_interval=0):
         super(NorefreshIntervalProperty, self).__init__()
+        self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_NOREFRESH_INTERVAL
         self.data = norefresh_interval
@@ -172,6 +176,7 @@ class NorefreshIntervalProperty(dnsp.DnsProperty):
 class RefreshIntervalProperty(dnsp.DnsProperty):
     def __init__(self, refresh_interval=0):
         super(RefreshIntervalProperty, self).__init__()
+        self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_REFRESH_INTERVAL
         self.data = refresh_interval
@@ -179,6 +184,7 @@ class RefreshIntervalProperty(dnsp.DnsProperty):
 class AgingStateProperty(dnsp.DnsProperty):
     def __init__(self, aging_enabled=0):
         super(AgingStateProperty, self).__init__()
+        self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_AGING_STATE
         self.data = aging_enabled
@@ -186,6 +192,7 @@ class AgingStateProperty(dnsp.DnsProperty):
 class AgingEnabledTimeProperty(dnsp.DnsProperty):
     def __init__(self, next_cycle_hours=0):
         super(AgingEnabledTimeProperty, self).__init__()
+        self.wDataLength = 1
         self.version = 1;
         self.id = dnsp.DSPROPERTY_ZONE_AGING_ENABLED_TIME
         self.data = next_cycle_hours
