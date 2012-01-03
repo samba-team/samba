@@ -72,9 +72,6 @@ bool spnego_require_more_processing(struct spnego_context *sp_ctx);
 NTSTATUS spnego_get_negotiated_mech(struct spnego_context *sp_ctx,
 				    struct gensec_security **auth_context);
 
-DATA_BLOB spnego_get_session_key(TALLOC_CTX *mem_ctx,
-				 struct spnego_context *sp_ctx);
-
 NTSTATUS spnego_sign(TALLOC_CTX *mem_ctx,
 			struct spnego_context *sp_ctx,
 			DATA_BLOB *data, DATA_BLOB *full_data,

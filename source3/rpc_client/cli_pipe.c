@@ -3113,7 +3113,14 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_TYPE_SPNEGO:
 		spnego_ctx = talloc_get_type_abort(a->auth_ctx,
 						   struct spnego_context);
-		sk = spnego_get_session_key(mem_ctx, spnego_ctx);
+		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		status = gensec_session_key(gensec_security, mem_ctx, &sk);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		make_dup = false;
 		break;
 	case DCERPC_AUTH_TYPE_NTLMSSP:
