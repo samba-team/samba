@@ -3802,7 +3802,7 @@ static bool run_oplock4(int dummy)
 
 	open_req = cli_openx_send(
 		talloc_tos(), ev, cli2, fname_ln, O_RDWR, DENY_NONE);
-	if (oplock_req == NULL) {
+	if (open_req == NULL) {
 		printf("cli_openx_send failed\n");
 		return false;
 	}
