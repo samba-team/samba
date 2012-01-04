@@ -6,7 +6,7 @@ WORKDIR="`mktemp -d`"
 
 mkdir -p "$WORKDIR"
 
-svn checkout http://waf.googlecode.com/svn/branches/waf-1.5/wafadmin "$WORKDIR/wafadmin"
+git clone https://code.google.com/p/waf.waf15/ "$WORKDIR"
 
 rsync -C -avz --delete "$WORKDIR/wafadmin/" "$TARGETDIR/wafadmin/"
 
