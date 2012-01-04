@@ -204,8 +204,10 @@ static void writetarheader(int f, const char *aname, uint64_t size, time_t mtime
 
 		memset(hb.dbuf.size, 0, 4);
 		hb.dbuf.size[0]=128;
-		for (i = 8, jp=(char*)&size; i; i--)
-			hb.dbuf.size[i+3] = *(jp++);
+		for (i = 8; i; i--) {
+			hb.dbuf.size[i+3] = size & 0xff;
+			size >>= 8;
+		}
 	}
 	oct_it((uint64_t) mtime, 13, hb.dbuf.mtime);
 	memcpy(hb.dbuf.chksum, "        ", sizeof(hb.dbuf.chksum));
@@ -307,7 +309,17 @@ of link other than a GNUtar Longlink - ignoring\n"));
 	finfo->mtime_ts = finfo->ctime_ts =
 		convert_time_t_to_timespec((time_t)strtol(hb->dbuf.mtime, NULL, 8));
 	finfo->atime_ts = convert_time_t_to_timespec(time(NULL));
-	finfo->size = unoct(hb->dbuf.size, sizeof(hb->dbuf.size));
+	if ((hb->dbuf.size[0] & 0xff) == 0x80) {
+		/* This is a non-POSIX compatible extention to extract files
+			greater than 8GB. */
+		finfo->size = 0;
+		for (i = 0; i < 8; i++) {
+			finfo->size <<= 8;
+			finfo->size |= hb->dbuf.size[i+4] & 0xff;
+		}
+	} else {
+		finfo->size = unoct(hb->dbuf.size, sizeof(hb->dbuf.size));
+	}
 
 	return True;
 }
@@ -999,8 +1011,8 @@ static int skip_file(int skipsize)
 static int get_file(file_info2 finfo)
 {
 	uint16_t fnum;
-	int pos = 0, dsize = 0, bpos = 0;
-	uint64_t rsize = 0;
+	int dsize = 0, bpos = 0;
+	uint64_t rsize = 0, pos = 0;
 
 	DEBUG(5, ("get_file: file: %s, size %.0f\n", finfo.name, (double)finfo.size));
 
