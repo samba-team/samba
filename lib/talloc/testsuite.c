@@ -1315,7 +1315,8 @@ static bool test_rusty(void)
 static bool test_free_children(void)
 {
 	void *root;
-	const char *p1, *p2, *name, *name2;
+	char *p1, *p2;
+	const char *name, *name2;
 
 	talloc_enable_null_tracking();
 	root = talloc_new(NULL);
