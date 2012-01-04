@@ -123,6 +123,9 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, "");
+	torture_assert(tctx,
+		       strstr(search.out.netlogon.data.nt5_ex.pdc_name, "\\\\") != NULL,
+		       "PDC name should be in UNC form");
 
 	printf("Trying with User=Administrator\n");
 	search.in.user = "Administrator";
@@ -130,6 +133,9 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(search.out.netlogon.data.nt5_ex.command, LOGON_SAM_LOGON_USER_UNKNOWN);
 	CHECK_STRING(search.out.netlogon.data.nt5_ex.user_name, search.in.user);
+	torture_assert(tctx,
+		       strstr(search.out.netlogon.data.nt5_ex.pdc_name, "\\\\") != NULL,
+		       "PDC name should be in UNC form");
 
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 
