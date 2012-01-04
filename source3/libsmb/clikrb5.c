@@ -538,7 +538,7 @@ static krb5_error_code setup_auth_context(krb5_context context,
 	return retval;
 }
 
-#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
 static krb5_error_code create_gss_checksum(krb5_data *in_data, /* [inout] */
 						uint32_t gss_flags)
 {
@@ -690,7 +690,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		goto cleanup_creds;
 	}
 
-#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
 	{
 		uint32_t gss_flags = 0;
 
@@ -779,7 +779,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			 error_message(retval)));
 	}
 
-#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
 cleanup_data:
 #endif
 

@@ -4434,6 +4434,12 @@ if test x"$with_ads_support" != x"no"; then
     use_ads=no
   fi
 
+  if test x"$ac_cv_func_ext_krb5_fwd_tgt_creds" != x"yes"
+  then
+    AC_MSG_WARN(krb5_fwd_tgt_creds not found in -lkrb5)
+    use_ads=no
+  fi
+
   if test x"$ac_cv_func_ext_krb5_principal2salt" != x"yes" -a \
           x"$ac_cv_func_ext_krb5_get_pw_salt" != x"yes"
   then
