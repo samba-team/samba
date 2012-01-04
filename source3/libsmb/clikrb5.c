@@ -471,14 +471,10 @@ bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 				  krb5_enctype enctype1,
 				  krb5_enctype enctype2)
 {
-#if defined(HAVE_KRB5_C_ENCTYPE_COMPARE)
 	krb5_boolean similar = 0;
 
 	krb5_c_enctype_compare(context, enctype1, enctype2, &similar);
 	return similar ? True : False;
-#elif defined(HAVE_KRB5_ENCTYPES_COMPATIBLE_KEYS)
-	return krb5_enctypes_compatible_keys(context, enctype1, enctype2) ? True : False;
-#endif
 }
 
 static bool ads_cleanup_expired_creds(krb5_context context, 
