@@ -582,7 +582,7 @@ krb5_principal_get_comp_string krb5_free_unparsed_name
 krb5_free_keytab_entry_contents krb5_kt_free_entry krb5_krbhst_init
 krb5_krbhst_get_addrinfo krb5_c_enctype_compare
 krb5_crypto_init krb5_crypto_destroy krb5_decode_ap_req free_AP_REQ
-krb5_verify_checksum krb5_c_verify_checksum krb5_principal_compare_any_realm
+krb5_c_verify_checksum krb5_principal_compare_any_realm
 krb5_parse_name_norealm krb5_princ_size krb5_get_init_creds_opt_set_pac_request
 krb5_get_renewed_creds krb5_get_kdc_cred krb5_free_error_contents
 initialize_krb5_error_table krb5_get_init_creds_opt_alloc
@@ -696,14 +696,6 @@ int main(void) {
                         headers='krb5.h', lib='krb5',
                         addmain=False,
                         msg="Checking whether krb5_principal_get_realm is defined")
-        if conf.CHECK_CODE('''krb5_verify_checksum(0, 0, 0, 0, 0, 0, 0);''',
-                        'KRB5_VERIFY_CHECKSUM_ARGS',
-                        headers='krb5.h', lib='krb5',
-			msg="Checking whether krb5_verify_checksum takes 7 arguments"):
-            conf.DEFINE('KRB5_VERIFY_CHECKSUM_ARGS', '7')
-	else:
-            conf.DEFINE('KRB5_VERIFY_CHECKSUM_ARGS', '6')
-
 	conf.CHECK_CODE('''
 krb5_enctype enctype;
 enctype = ENCTYPE_ARCFOUR_HMAC_MD5;
@@ -770,9 +762,8 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
            not conf.CONFIG_SET('HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS'):
             Logs.warn("no KT_FREE_FUNCTION detected")
             use_ads=False
-        if not conf.CONFIG_SET('HAVE_KRB5_C_VERIFY_CHECKSUM') and \
-           not conf.CONFIG_SET('HAVE_KRB5_VERIFY_CHECKSUM'):
-            Logs.warn("no KRB5_VERIFY_CHECKSUM_FUNCTION detected")
+        if not conf.CONFIG_SET('HAVE_KRB5_C_VERIFY_CHECKSUM'):
+            Logs.warn("krb5_c_verify_checksum_compare not found in -lkrb5")
             use_ads=False
         if not conf.CONFIG_SET('KRB5_TICKET_HAS_KEYINFO'):
             # We only need the following functions if we can't get the enctype

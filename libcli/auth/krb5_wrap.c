@@ -241,71 +241,28 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 {
 	krb5_error_code ret;
 
-	/* verify the checksum */
+	/* verify the checksum, heimdal 0.7 and MIT krb 1.4.2 and above */
 
-	/* welcome to the wonderful world of samba's kerberos abstraction layer:
-	 * 
-	 * function			heimdal 0.6.1rc3	heimdal 0.7	MIT krb 1.4.2
-	 * -----------------------------------------------------------------------------
-	 * krb5_c_verify_checksum	-			works		works
-	 * krb5_verify_checksum		works (6 args)		works (6 args)	broken (7 args) 
-	 */
-
-#if defined(HAVE_KRB5_C_VERIFY_CHECKSUM)
-	{
-		krb5_boolean checksum_valid = false;
-		krb5_data input;
-
-		input.data = (char *)data;
-		input.length = length;
-
-		ret = krb5_c_verify_checksum(context, 
-					     keyblock, 
-					     usage,
-					     &input, 
-					     cksum,
-					     &checksum_valid);
-		if (ret) {
-			DEBUG(3,("smb_krb5_verify_checksum: krb5_c_verify_checksum() failed: %s\n", 
-				error_message(ret)));
-			return ret;
-		}
-
-		if (!checksum_valid)
-			ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	krb5_boolean checksum_valid = false;
+	krb5_data input;
+	
+	input.data = (char *)data;
+	input.length = length;
+	
+	ret = krb5_c_verify_checksum(context, 
+				     keyblock, 
+				     usage,
+				     &input, 
+				     cksum,
+				     &checksum_valid);
+	if (ret) {
+		DEBUG(3,("smb_krb5_verify_checksum: krb5_c_verify_checksum() failed: %s\n", 
+			 error_message(ret)));
+		return ret;
 	}
-
-#elif KRB5_VERIFY_CHECKSUM_ARGS == 6 && defined(HAVE_KRB5_CRYPTO_INIT) && defined(HAVE_KRB5_CRYPTO) && defined(HAVE_KRB5_CRYPTO_DESTROY)
-
-	/* Warning: MIT's krb5_verify_checksum cannot be used as it will use a key
-	 * without enctype and it ignores any key_usage types - Guenther */
-
-	{
-
-		krb5_crypto crypto;
-		ret = krb5_crypto_init(context,
-				       keyblock,
-				       0,
-				       &crypto);
-		if (ret) {
-			DEBUG(0,("smb_krb5_verify_checksum: krb5_crypto_init() failed: %s\n", 
-				error_message(ret)));
-			return ret;
-		}
-
-		ret = krb5_verify_checksum(context,
-					   crypto,
-					   usage,
-					   data,
-					   length,
-					   cksum);
-
-		krb5_crypto_destroy(context, crypto);
-	}
-
-#else
-#error UNKNOWN_KRB5_VERIFY_CHECKSUM_FUNCTION
-#endif
+	
+	if (!checksum_valid)
+		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
 
 	return ret;
 }

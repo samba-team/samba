@@ -3873,7 +3873,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_crypto_destroy, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_decode_ap_req, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(free_AP_REQ, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_verify_checksum, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_c_verify_checksum, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
@@ -4444,10 +4443,9 @@ if test x"$with_ads_support" != x"no"; then
     use_ads=no
   fi
 
-  if test x"$ac_cv_func_ext_krb5_c_verify_checksum" != x"yes" -a \
-          x"$ac_cv_func_ext_krb5_verify_checksum" != x"yes"
+  if test x"$ac_cv_func_ext_krb5_c_verify_checksum" != x"yes"
   then
-    AC_MSG_WARN(no KRB5_VERIFY_CHECKSUM_FUNCTION detected)
+    AC_MSG_WARN(krb5_c_verify_checksum not found in -lkrb5)
     use_ads=no
   fi
 
