@@ -78,6 +78,12 @@ static void queue_io_read(struct ctdb_queue *queue)
 	ssize_t nread;
 	uint8_t *data;
 
+	/* check how much data is available on the socket for immediately
+	   guaranteed nonblocking access.
+	   as long as we are careful never to try to read more than this
+	   we know all reads will be successful and will neither block
+	   nor fail with a "data not available right now" error
+	*/
 	if (ioctl(queue->fd, FIONREAD, &num_ready) != 0) {
 		return;
 	}
