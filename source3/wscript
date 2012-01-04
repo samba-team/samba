@@ -750,6 +750,12 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         if not conf.CONFIG_SET('HAVE_KRB5_C_ENCTYPE_COMPARE'):
             Logs.warn("krb5_c_enctype_compare not found in -lkrb5")
             use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_GET_HOST_REALM'):
+            Logs.warn("krb5_get_host_realm not found in -lkrb5")
+            use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_FREE_HOST_REALM'):
+            Logs.warn("krb5_free_host_realm not found in -lkrb5")
+            use_ads=False
         if not conf.CONFIG_SET('HAVE_KRB5_PRINCIPAL2SALT') and \
            not conf.CONFIG_SET('HAVE_KRB5_GET_PW_SALT'):
             Logs.warn("no CREATE_KEY_FUNCTIONS detected")

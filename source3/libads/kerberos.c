@@ -484,7 +484,6 @@ char *kerberos_get_default_realm_from_ccache(TALLOC_CTX *mem_ctx)
 
 char *kerberos_get_realm_from_hostname(TALLOC_CTX *mem_ctx, const char *hostname)
 {
-#if defined(HAVE_KRB5_GET_HOST_REALM) && defined(HAVE_KRB5_FREE_HOST_REALM)
 #if defined(HAVE_KRB5_REALM_TYPE)
 	/* Heimdal. */
 	krb5_realm *realm_list = NULL;
@@ -525,9 +524,6 @@ char *kerberos_get_realm_from_hostname(TALLOC_CTX *mem_ctx, const char *hostname
 		ctx = NULL;
 	}
 	return realm;
-#else
-	return NULL;
-#endif
 }
 
 char *kerberos_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
