@@ -554,7 +554,8 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
 
 def make_smbconf(smbconf, hostname, domain, realm, serverrole,
-                 targetdir, sid_generator="internal", eadb=False, lp=None):
+                 targetdir, sid_generator="internal", eadb=False, lp=None,
+                 server_services=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -603,6 +604,11 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
             privdir = lp.get("private dir")
         lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
 
+    if server_services is not None:
+        server_services_line = "server services = " + " ".join(server_services)
+    else:
+        server_services_line = ""
+
     if targetdir is not None:
         privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
         lockdir_line = "lock dir = " + os.path.abspath(targetdir)
@@ -632,7 +638,8 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
             "PRIVATEDIR_LINE": privatedir_line,
             "LOCKDIR_LINE": lockdir_line,
             "STATEDIR_LINE": statedir_line,
-            "CACHEDIR_LINE": cachedir_line
+            "CACHEDIR_LINE": cachedir_line,
+            "SERVER_SERVICES_LINE": server_services_line
             })
 
     # reload the smb.conf
