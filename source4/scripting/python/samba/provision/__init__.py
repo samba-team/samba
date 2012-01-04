@@ -1776,7 +1776,7 @@ def provision(logger, session_info, credentials, smbconf=None,
                 logger.info("Failed to chown %s to bind gid %u",
                             dns_keytab_path, paths.bind_gid)
 
-    logger.info("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php",
+    logger.info("A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in %s .",
             paths.phpldapadminconfig)
 
     logger.info("Once the above files are installed, your Samba4 server will be ready to use")
