@@ -88,4 +88,7 @@ class GensecTests(samba.tests.TestCase):
         test_wrapped = self.gensec_server.wrap(test_string)
         test_unwrapped = self.gensec_client.unwrap(test_wrapped)
         self.assertEqual(test_string, test_unwrapped)
-        
+
+        client_session_key = self.gensec_client.session_key()
+        server_session_key = self.gensec_server.session_key()
+        self.assertEqual(client_session_key, server_session_key)
