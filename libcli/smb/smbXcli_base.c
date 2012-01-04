@@ -424,6 +424,103 @@ const struct GUID *smbXcli_conn_server_guid(struct smbXcli_conn *conn)
 	return &conn->smb1.server.guid;
 }
 
+struct smbXcli_conn_samba_suicide_state {
+	struct smbXcli_conn *conn;
+	struct iovec iov;
+	uint8_t buf[9];
+};
+
+static void smbXcli_conn_samba_suicide_done(struct tevent_req *subreq);
+
+struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct smbXcli_conn *conn,
+						   uint8_t exitcode)
+{
+	struct tevent_req *req, *subreq;
+	struct smbXcli_conn_samba_suicide_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbXcli_conn_samba_suicide_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->conn = conn;
+	SIVAL(state->buf, 4, 0x74697865);
+	SCVAL(state->buf, 8, exitcode);
+	_smb_setlen_nbt(state->buf, sizeof(state->buf)-4);
+
+	state->iov.iov_base = state->buf;
+	state->iov.iov_len = sizeof(state->buf);
+
+	subreq = writev_send(state, ev, conn->outgoing, conn->write_fd,
+			     false, &state->iov, 1);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbXcli_conn_samba_suicide_done, req);
+	return req;
+}
+
+static void smbXcli_conn_samba_suicide_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbXcli_conn_samba_suicide_state *state = tevent_req_data(
+		req, struct smbXcli_conn_samba_suicide_state);
+	ssize_t nwritten;
+	int err;
+
+	nwritten = writev_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (nwritten == -1) {
+		NTSTATUS status = map_nt_error_from_unix_common(err);
+		smbXcli_conn_disconnect(state->conn, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS smbXcli_conn_samba_suicide_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS smbXcli_conn_samba_suicide(struct smbXcli_conn *conn,
+				    uint8_t exitcode)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool ok;
+
+	if (smbXcli_conn_has_async_calls(conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto fail;
+	}
+	ev = tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = smbXcli_conn_samba_suicide_send(frame, ev, conn, exitcode);
+	if (req == NULL) {
+		goto fail;
+	}
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		status = map_nt_error_from_unix_common(errno);
+		goto fail;
+	}
+	status = smbXcli_conn_samba_suicide_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 uint32_t smb1cli_conn_capabilities(struct smbXcli_conn *conn)
 {
 	return conn->smb1.capabilities;

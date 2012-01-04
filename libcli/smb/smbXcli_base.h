@@ -51,6 +51,14 @@ NTTIME smbXcli_conn_server_system_time(struct smbXcli_conn *conn);
 const DATA_BLOB *smbXcli_conn_server_gss_blob(struct smbXcli_conn *conn);
 const struct GUID *smbXcli_conn_server_guid(struct smbXcli_conn *conn);
 
+struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct smbXcli_conn *conn,
+						   uint8_t exitcode);
+NTSTATUS smbXcli_conn_samba_suicide_recv(struct tevent_req *req);
+NTSTATUS smbXcli_conn_samba_suicide(struct smbXcli_conn *conn,
+				    uint8_t exitcode);
+
 void smbXcli_req_unset_pending(struct tevent_req *req);
 bool smbXcli_req_set_pending(struct tevent_req *req);
 
