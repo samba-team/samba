@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "gse.h"
+#include "libads/kerberos_proto.h"
 
 #if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
 
@@ -247,15 +248,22 @@ NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	name_buffer.value = talloc_asprintf(gse_ctx,
-					    "%s@%s", service, server);
+	/* Guess the realm based on the supplied service, and avoid the GSS libs
+	   doing DNS lookups which may fail.
+
+	   TODO: Loop with the KDC on some more combinations (local
+	   realm in particular), possibly falling back to
+	   GSS_C_NT_HOSTBASED_SERVICE
+	*/
+	name_buffer.value = kerberos_get_principal_from_service_hostname(gse_ctx,
+									 service, server);
 	if (!name_buffer.value) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err_out;
 	}
 	name_buffer.length = strlen((char *)name_buffer.value);
 	gss_maj = gss_import_name(&gss_min, &name_buffer,
-				  GSS_C_NT_HOSTBASED_SERVICE,
+				  GSS_C_NT_USER_NAME,
 				  &gse_ctx->server_name);
 	if (gss_maj) {
 		DEBUG(0, ("gss_import_name failed for %s, with [%s]\n",

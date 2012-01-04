@@ -428,7 +428,7 @@ char* kerberos_secrets_fetch_des_salt( void )
  Caller must free if the return value is not NULL.
 ************************************************************************/
 
-char *kerberos_get_default_realm_from_ccache( void )
+char *kerberos_get_default_realm_from_ccache(TALLOC_CTX *mem_ctx)
 {
 	char *realm = NULL;
 	krb5_context ctx = NULL;
@@ -455,11 +455,11 @@ char *kerberos_get_default_realm_from_ccache( void )
 	}
 
 #if defined(HAVE_KRB5_PRINCIPAL_GET_REALM)
-	realm = SMB_STRDUP(krb5_principal_get_realm(ctx, princ));
+	realm = talloc_strdup(mem_ctx, krb5_principal_get_realm(ctx, princ));
 #elif defined(HAVE_KRB5_PRINC_REALM)
 	{
 		krb5_data *realm_data = krb5_princ_realm(ctx, princ);
-		realm = SMB_STRNDUP(realm_data->data, realm_data->length);
+		realm = talloc_strndup(mem_ctx, realm_data->data, realm_data->length);
 	}
 #endif
 
@@ -479,11 +479,10 @@ char *kerberos_get_default_realm_from_ccache( void )
 }
 
 /************************************************************************
- Routine to get the realm from a given DNS name. Returns malloc'ed memory.
- Caller must free() if the return value is not NULL.
+ Routine to get the realm from a given DNS name.
 ************************************************************************/
 
-char *kerberos_get_realm_from_hostname(const char *hostname)
+char *kerberos_get_realm_from_hostname(TALLOC_CTX *mem_ctx, const char *hostname)
 {
 #if defined(HAVE_KRB5_GET_HOST_REALM) && defined(HAVE_KRB5_FREE_HOST_REALM)
 #if defined(HAVE_KRB5_REALM_TYPE)
@@ -512,7 +511,7 @@ char *kerberos_get_realm_from_hostname(const char *hostname)
 	}
 
 	if (realm_list && realm_list[0]) {
-		realm = SMB_STRDUP(realm_list[0]);
+		realm = talloc_strdup(mem_ctx, realm_list[0]);
 	}
 
   out:
@@ -529,6 +528,43 @@ char *kerberos_get_realm_from_hostname(const char *hostname)
 #else
 	return NULL;
 #endif
+}
+
+char *kerberos_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
+						   const char *service,
+						   const char *remote_name)
+{
+	char *realm = NULL;
+	char *host = NULL;
+	char *principal;
+	host = strchr_m(remote_name, '.');
+	if (host) {
+		/* DNS name. */
+		realm = kerberos_get_realm_from_hostname(talloc_tos(), remote_name);
+	} else {
+		/* NetBIOS name - use our realm. */
+		realm = kerberos_get_default_realm_from_ccache(talloc_tos());
+	}
+
+	if (realm == NULL || *realm == '\0') {
+		realm = talloc_strdup(talloc_tos(), lp_realm());
+		if (!realm) {
+			return NULL;
+		}
+		DEBUG(3,("kerberos_get_principal_from_service_hostname: "
+			 "cannot get realm from, "
+			 "desthost %s or default ccache. Using default "
+			 "smb.conf realm %s\n",
+			 remote_name,
+			 realm));
+	}
+
+	principal = talloc_asprintf(mem_ctx,
+				    "%s/%s@%s",
+				    service, remote_name,
+				    realm);
+	TALLOC_FREE(realm);
+	return principal;
 }
 
 /************************************************************************

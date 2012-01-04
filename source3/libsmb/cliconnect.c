@@ -1931,56 +1931,30 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 			!is_ipaddress(remote_name) &&
 			!strequal(STAR_SMBSERVER,
 				  remote_name)) {
-			char *realm = NULL;
-			char *host = NULL;
 			DEBUG(3,("cli_session_setup_spnego: using target "
 				 "hostname not SPNEGO principal\n"));
 
-			host = strchr_m(remote_name, '.');
 			if (dest_realm) {
-				realm = SMB_STRDUP(dest_realm);
-				if (!realm) {
-					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+				char *realm = strupper_talloc(talloc_tos(), dest_realm);
+				if (realm) {
+					principal = talloc_asprintf(talloc_tos(),
+								    "cifs/%s@%s",
+								    remote_name,
+								    realm);
+					TALLOC_FREE(realm);
 				}
-				strupper_m(realm);
 			} else {
-				if (host) {
-					/* DNS name. */
-					realm = kerberos_get_realm_from_hostname(remote_name);
-				} else {
-					/* NetBIOS name - use our realm. */
-					realm = kerberos_get_default_realm_from_ccache();
-				}
+				principal = kerberos_get_principal_from_service_hostname(talloc_tos(),
+											 "cifs",
+											 remote_name);
 			}
 
-			if (realm == NULL || *realm == '\0') {
-				realm = SMB_STRDUP(lp_realm());
-				if (!realm) {
-					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-				}
-				strupper_m(realm);
-				DEBUG(3,("cli_session_setup_spnego: cannot "
-					"get realm from dest_realm %s, "
-					"desthost %s. Using default "
-					"smb.conf realm %s\n",
-					dest_realm ? dest_realm : "<null>",
-					remote_name,
-					realm));
-			}
-
-			principal = talloc_asprintf(talloc_tos(),
-						    "cifs/%s@%s",
-						    remote_name,
-						    realm);
 			if (!principal) {
-				SAFE_FREE(realm);
 				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 			}
 			DEBUG(3,("cli_session_setup_spnego: guessed "
 				"server principal=%s\n",
 				principal ? principal : "<null>"));
-
-			SAFE_FREE(realm);
 		}
 
 		if (principal) {
