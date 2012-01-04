@@ -50,7 +50,12 @@
 #include "lib/util/binsearch.h"
 #include "lib/util/tsort.h"
 
-static const uint64_t DELETED_OBJECT_CONTAINER_CHANGE_TIME = 253402127999L;
+/*
+ * It's 29/12/9999 at 23:59:59 UTC as specified in MS-ADTS 7.1.1.4.2
+ * Deleted Objects Container
+ */
+static const NTTIME DELETED_OBJECT_CONTAINER_CHANGE_TIME = 2650466015990000000ULL;
+
 struct replmd_private {
 	TALLOC_CTX *la_ctx;
 	struct la_entry *la_list;
@@ -934,10 +939,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 				 * Set the originating_change_time to 29/12/9999 at 23:59:59
 				 * as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
 				 */
-				NTTIME deleted_obj_ts;
-
-				unix_to_nt_time(&deleted_obj_ts, DELETED_OBJECT_CONTAINER_CHANGE_TIME);
-				m->originating_change_time	= deleted_obj_ts;
+				m->originating_change_time	= DELETED_OBJECT_CONTAINER_CHANGE_TIME;
 			} else {
 				m->originating_change_time	= now;
 			}
@@ -1165,10 +1167,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 			 * Set the originating_change_time to 29/12/9999 at 23:59:59
 			 * as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
 			 */
-			NTTIME deleted_obj_ts;
-
-			unix_to_nt_time(&deleted_obj_ts, DELETED_OBJECT_CONTAINER_CHANGE_TIME);
-			md1->originating_change_time	= deleted_obj_ts;
+			md1->originating_change_time	= DELETED_OBJECT_CONTAINER_CHANGE_TIME;
 		} else {
 			md1->originating_change_time	= now;
 		}
