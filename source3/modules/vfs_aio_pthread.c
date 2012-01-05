@@ -233,6 +233,12 @@ static int aio_pthread_read(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+	DEBUG(10, ("aio_pthread_read: jobid=%d pread requested "
+		"of %llu bytes at offset %llu\n",
+		pd->jobid,
+		(unsigned long long)pd->aiocb->aio_nbytes,
+		(unsigned long long)pd->aiocb->aio_offset));
+
 	return 0;
 }
 
@@ -265,6 +271,12 @@ static int aio_pthread_write(struct vfs_handle_struct *handle,
 		errno = ret;
 		return -1;
 	}
+
+	DEBUG(10, ("aio_pthread_write: jobid=%d pwrite requested "
+		"of %llu bytes at offset %llu\n",
+		pd->jobid,
+		(unsigned long long)pd->aiocb->aio_nbytes,
+		(unsigned long long)pd->aiocb->aio_offset));
 
 	return 0;
 }
@@ -322,6 +334,10 @@ static void aio_pthread_handle_completion(struct event_context *event_ctx,
 
 	aio_ex = (struct aio_extra *)pd->aiocb->aio_sigevent.sigev_value.sival_ptr;
 	smbd_aio_complete_aio_ex(aio_ex);
+
+	DEBUG(10,("aio_pthread_handle_completion: jobid %d completed\n",
+		jobid ));
+
 }
 
 /************************************************************************
