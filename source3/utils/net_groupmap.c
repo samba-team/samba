@@ -823,7 +823,7 @@ static int net_groupmap_memberships(struct net_context *c, int argc, const char 
 	     !string_to_sid(&member, argv[0]) ) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net groupmap memberof sid\n"));
+			 _("net groupmap memberships sid\n"));
 		return -1;
 	}
 
