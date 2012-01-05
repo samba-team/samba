@@ -102,5 +102,6 @@ bool run_smb2_session_reauth(int dummy);
 bool run_local_conv_auth_info(int dummy);
 bool run_local_sprintf_append(int dummy);
 bool run_cleanup1(int dummy);
+bool run_cleanup2(int dummy);
 
 #endif /* __TORTURE_H__ */

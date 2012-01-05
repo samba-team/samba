@@ -8880,6 +8880,7 @@ static struct {
 	{ "SMB2-MULTI-CHANNEL", run_smb2_multi_channel },
 	{ "SMB2-SESSION-REAUTH", run_smb2_session_reauth },
 	{ "CLEANUP1", run_cleanup1 },
+	{ "CLEANUP2", run_cleanup2 },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
