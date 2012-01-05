@@ -457,6 +457,7 @@ class SRVRecord(dnsserver.DNS_RPC_RECORD):
         srv.nameTarget.len = len(target)
         self.data = srv
 
+# Match a dns record with specified data
 def dns_record_match(dns_conn, server, zone, name, record_type, data):
     select_flags = dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA
 
@@ -474,36 +475,35 @@ def dns_record_match(dns_conn, server, zone, name, record_type, data):
     except RuntimeError, e:
         return None
 
-    rec_match = None
-    if res and res.count > 0:
-        recs = res.rec[0]
-        for rec in recs.records:
-            if rec.wType == record_type:
-                rec_match = rec
-                break
+    if not res or res.count == 0:
+        return None
 
-    if rec_match:
+    rec_match = None
+    for rec in res.rec[0].records:
+        if rec.wType != record_type:
+            continue
+
         found = False
         if record_type == dnsp.DNS_TYPE_A:
-            if rec_match.data == data:
+            if rec.data == data:
                 found = True
         elif record_type == dnsp.DNS_TYPE_AAAA:
-            if rec_match.data == data:
+            if rec.data == data:
                 found = True
         elif record_type == dnsp.DNS_TYPE_PTR:
-            if rec_match.data.str.rstrip('.') == data.rstrip('.'):
+            if rec.data.str.rstrip('.') == data.rstrip('.'):
                 found = True
         elif record_type == dnsp.DNS_TYPE_CNAME:
-            if rec_match.data.str.rstrip('.') == data.rstrip('.'):
+            if rec.data.str.rstrip('.') == data.rstrip('.'):
                 found = True
         elif record_type == dnsp.DNS_TYPE_NS:
-            if rec_match.data.str.rstrip('.') == data.rstrip('.'):
+            if rec.data.str.rstrip('.') == data.rstrip('.'):
                 found = True
-
         if found:
-            return rec_match
+            rec_match = rec
+            break
 
-    return None
+    return rec_match
 
 
 class cmd_serverinfo(Command):
