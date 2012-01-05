@@ -8879,6 +8879,7 @@ static struct {
 	{ "SMB2-TCON-DEPENDENCE", run_smb2_tcon_dependence },
 	{ "SMB2-MULTI-CHANNEL", run_smb2_multi_channel },
 	{ "SMB2-SESSION-REAUTH", run_smb2_session_reauth },
+	{ "CLEANUP1", run_cleanup1 },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
