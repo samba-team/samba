@@ -63,6 +63,7 @@ tests=[ "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7",
         "LOCAL-BASE64", "LOCAL-GENCACHE", "POSIX-APPEND",
         "CASE-INSENSITIVE-CREATE", "SMB2-BASIC", "NTTRANS-FSCTL", "SMB2-NEGPROT",
         "CLEANUP1",
+        "CLEANUP2",
         "BAD-NBT-SESSION"]
 
 for t in tests:
