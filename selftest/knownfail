@@ -6,7 +6,6 @@
 
 ^samba3.blackbox.failure.failure # this is designed to fail, for testing our test infrastructure
 .*driver.add_driver_timestamps # we only can store dates, not timestamps
-^samba3.smbtorture_s3.LOCAL-MEMCACHE #fails
 ^samba3.smbtorture_s3.LOCAL-TALLOC-DICT #fails
 ^samba3.posix_s3.nbt.dgram.*netlogon2
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3

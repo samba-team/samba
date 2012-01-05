@@ -8314,7 +8314,7 @@ static bool run_local_memcache(int dummy)
 	size_t size1, size2;
 	bool ret = false;
 
-	cache = memcache_init(NULL, 100);
+	cache = memcache_init(NULL, sizeof(void *) == 8 ? 200 : 100);
 
 	if (cache == NULL) {
 		printf("memcache_init failed\n");
