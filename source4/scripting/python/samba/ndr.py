@@ -33,15 +33,16 @@ def ndr_pack(object):
     return ndr_pack()
 
 
-def ndr_unpack(cls, data):
+def ndr_unpack(cls, data, allow_remaining=False):
     """NDR unpack an object.
 
     :param cls: Class of the object to unpack
     :param data: Buffer to unpack
+    :param allow_remaining: allows remaining data at the end (default=False)
     :return: Unpacked object
     """
     object = cls()
-    object.__ndr_unpack__(data)
+    object.__ndr_unpack__(data, allow_remaining=allow_remaining)
     return object
 
 
