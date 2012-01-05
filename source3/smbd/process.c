@@ -1407,25 +1407,6 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 	errno = 0;
 
-	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
-	 * so subtract 4 from it. */
-	if ((size < (smb_size - 4)) || !valid_smb_header(sconn, req->inbuf)) {
-		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
-			 smb_len(req->inbuf)));
-
-		/* special magic for immediate exit */
-		if ((size == smb_size) &&
-		    (IVAL(req->inbuf, 4) == 0x74697865) &&
-		    lp_parm_bool(-1, "smbd", "suicide mode", false)) {
-			uint8_t exitcode = CVAL(req->inbuf, 8);
-			DEBUG(1, ("Exiting immediately with code %d\n",
-				  (int)exitcode));
-			exit(exitcode);
-		}
-
-		exit_server_cleanly("Non-SMB packet");
-	}
-
 	if (smb_messages[type].fn == NULL) {
 		DEBUG(0,("Unknown message type %d!\n",type));
 		smb_dump("Unknown", 1, (const char *)req->inbuf, size);
@@ -1665,6 +1646,25 @@ static void process_smb(struct smbd_server_connection *sconn,
 			   Disable SMB2 from now on. */
 			sconn->using_smb2 = false;
 		}
+	}
+
+	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
+	 * so subtract 4 from it. */
+	if ((nread < (smb_size - 4)) || !valid_smb_header(sconn, inbuf)) {
+		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
+			 smb_len(inbuf)));
+
+		/* special magic for immediate exit */
+		if ((nread == 9) &&
+		    (IVAL(inbuf, 4) == 0x74697865) &&
+		    lp_parm_bool(-1, "smbd", "suicide mode", false)) {
+			uint8_t exitcode = CVAL(inbuf, 8);
+			DEBUG(1, ("Exiting immediately with code %d\n",
+				  (int)exitcode));
+			exit(exitcode);
+		}
+
+		exit_server_cleanly("Non-SMB packet");
 	}
 
 	show_msg((char *)inbuf);
