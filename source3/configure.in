@@ -1119,8 +1119,9 @@ AC_SEARCH_LIBS(backtrace_symbols, [execinfo])
 AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_LIB(exc, trace_back_stack)
 
-# check for sysctlbyname for BSD systems
+# check for sysctlbyname and sysctl for BSD systems
 AC_CHECK_FUNCS(sysctlbyname)
+AC_CHECK_FUNCS(sysctl)
 
 #################################################
 # Check to see if core dump directory is defined in linux

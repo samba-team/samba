@@ -256,7 +256,7 @@ seekdir64 select setea setenv setgidx setgroups setlocale setluid
 setmntent setpgid setpriv setproplist setsid setuidx
 setxattr shmget shm_open sigaction sigblock sigprocmask sigset
 sizeof_proplist_entry _stat __stat stat64 _stat64 __stat64 statvfs
-strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctlbyname
+strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctl sysctlbyname
 __sys_llseek syslog _telldir __telldir telldir64 textdomain timegm
 utimensat vsyslog _write __write __xstat
 ''')

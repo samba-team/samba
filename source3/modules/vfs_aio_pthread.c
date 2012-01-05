@@ -55,7 +55,17 @@ static void aio_pthread_handle_completion(struct event_context *event_ctx,
 
 static int aio_get_num_threads(void)
 {
-	return 10;
+	int num_cores = sys_get_number_of_cores();
+	DEBUG(10,("aio_get_num_threads: sys_get_number_of_cores "
+		"returned %d\n",
+		num_cores));
+	num_cores *= 2;
+	if (num_cores < 1) {
+		num_cores = 1;
+	}
+	/* Even on a single processor box give a little
+	   concurrency. */
+	return MIN(4,num_cores);
 }
 
 #if 0
@@ -102,7 +112,7 @@ static bool init_aio_threadpool(void)
 {
 	struct fd_event *sock_event = NULL;
 	int ret = 0;
-	int num_threads = aio_get_num_threads();
+	int num_threads;
 #if 0
 	struct timeval ne;
 #endif
@@ -111,6 +121,7 @@ static bool init_aio_threadpool(void)
 		return true;
 	}
 
+	num_threads = aio_get_num_threads();
 	ret = pthreadpool_init(num_threads, &pool);
 	if (ret) {
 		errno = ret;
