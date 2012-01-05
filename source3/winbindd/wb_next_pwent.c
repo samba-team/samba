@@ -43,11 +43,6 @@ static struct winbindd_domain *wb_next_find_domain(struct winbindd_domain *domai
 	    && sid_check_is_domain(&domain->sid)) {
 		domain = domain->next;
 	}
-
-	if (domain == NULL) {
-		return NULL;
-	}
-
 	return domain;
 }
 
