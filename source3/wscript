@@ -584,7 +584,7 @@ krb5_krbhst_get_addrinfo krb5_c_enctype_compare
 krb5_crypto_init krb5_crypto_destroy krb5_decode_ap_req free_AP_REQ
 krb5_c_verify_checksum krb5_principal_compare_any_realm
 krb5_parse_name_norealm krb5_princ_size krb5_get_init_creds_opt_set_pac_request
-krb5_get_renewed_creds krb5_get_kdc_cred krb5_free_error_contents
+krb5_get_renewed_creds krb5_free_error_contents
 initialize_krb5_error_table krb5_get_init_creds_opt_alloc
 krb5_get_init_creds_opt_free krb5_get_init_creds_opt_get_error
 krb5_enctype_to_string krb5_fwd_tgt_creds krb5_auth_con_set_req_cksumtype
@@ -764,6 +764,9 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
             use_ads=False
         if not conf.CONFIG_SET('KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT'):
             Logs.warn("krb5_get_init_creds_opt_free was not found or was too old in -lkrb5")
+            use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_GET_RENEWED_CREDS'):
+            Logs.warn("krb5_get_renewed_creds not found in -lkrb5")
             use_ads=False
         if not conf.CONFIG_SET('HAVE_KRB5_PRINCIPAL2SALT') and \
            not conf.CONFIG_SET('HAVE_KRB5_GET_PW_SALT'):

@@ -3879,7 +3879,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_princ_size, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_set_pac_request, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_renewed_creds, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_get_kdc_cred, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_error_contents, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(initialize_krb5_error_table, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_alloc, $KRB5_LIBS)
@@ -4439,6 +4438,12 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$smb_krb5_cv_creds_opt_free_context" != x"yes"
   then
     AC_MSG_WARN(krb5_get_init_creds_opt_free not found or was too old in -lkrb5)
+    use_ads=no
+  fi
+
+  if test x"$ac_cv_func_ext_krb5_get_renewed_creds" != x"yes"
+  then
+    AC_MSG_WARN(krb5_get_renewed_creds not found in -lkrb5)
     use_ads=no
   fi
 

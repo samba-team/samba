@@ -1156,56 +1156,11 @@ out:
 		}
 	}
 
-#ifdef HAVE_KRB5_GET_RENEWED_CREDS	/* MIT */
-	{
-		ret = krb5_get_renewed_creds(context, &creds, client, ccache, discard_const_p(char, service_string));
-		if (ret) {
-			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
-			goto done;
-		}
+	ret = krb5_get_renewed_creds(context, &creds, client, ccache, discard_const_p(char, service_string));
+	if (ret) {
+		DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
+		goto done;
 	}
-#elif defined(HAVE_KRB5_GET_KDC_CRED)	/* Heimdal */
-	{
-		krb5_kdc_flags flags;
-		krb5_realm *client_realm = NULL;
-
-		ret = krb5_copy_principal(context, client, &creds_in.client);
-		if (ret) {
-			goto done;
-		}
-
-		if (service_string) {
-			ret = smb_krb5_parse_name(context, service_string, &creds_in.server);
-			if (ret) { 
-				goto done;
-			}
-		} else {
-			/* build tgt service by default */
-			client_realm = krb5_princ_realm(context, creds_in.client);
-			if (!client_realm) {
-				ret = ENOMEM;
-				goto done;
-			}
-			ret = krb5_make_principal(context, &creds_in.server, *client_realm, KRB5_TGS_NAME, *client_realm, NULL);
-			if (ret) {
-				goto done;
-			}
-		}
-
-		flags.i = 0;
-		flags.b.renewable = flags.b.renew = True;
-
-		ret = krb5_get_kdc_cred(context, ccache, flags, NULL, NULL, &creds_in, &creds_out);
-		if (ret) {
-			DEBUG(10,("smb_krb5_renew_ticket: krb5_get_kdc_cred failed: %s\n", error_message(ret)));
-			goto done;
-		}
-
-		creds = *creds_out;
-	}
-#else
-#error NO_SUITABLE_KRB5_TICKET_RENEW_FUNCTION_AVAILABLE
-#endif
 
 	/* hm, doesn't that create a new one if the old one wasn't there? - Guenther */
 	ret = krb5_cc_initialize(context, ccache, client);
