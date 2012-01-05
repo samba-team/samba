@@ -42,10 +42,6 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 				      krb5_const_principal principal,
 				      char **unix_name);
 
-#ifndef HAVE_KRB5_SET_REAL_TIME
-krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds);
-#endif
-
 krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc);
 
 #if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)

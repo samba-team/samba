@@ -50,26 +50,6 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
 	krb5_cksumtype     cksumtype);
 #endif
 
-#ifndef HAVE_KRB5_SET_REAL_TIME
-/*
- * This function is not in the Heimdal mainline.
- */
- krb5_error_code krb5_set_real_time(krb5_context context, int32_t seconds, int32_t microseconds)
-{
-	krb5_error_code ret;
-	int32_t sec, usec;
-
-	ret = krb5_us_timeofday(context, &sec, &usec);
-	if (ret)
-		return ret;
-
-	context->kdc_sec_offset = seconds - sec;
-	context->kdc_usec_offset = microseconds - usec;
-
-	return 0;
-}
-#endif
-
 #if !defined(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES)
 
 #if defined(HAVE_KRB5_SET_DEFAULT_TGS_ENCTYPES)

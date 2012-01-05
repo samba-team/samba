@@ -573,7 +573,7 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.CHECK_FUNCS_IN('gss_wrap_iov gss_krb5_import_cred gss_get_name_attribute gss_mech_krb5 gss_oid_equal gss_inquire_sec_context_by_oid', 'gssapi gssapi_krb5 krb5')
         conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
         conf.CHECK_FUNCS('''
-krb5_set_real_time krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes
+krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes
 krb5_set_default_tgs_ktypes krb5_principal2salt krb5_use_enctype
 krb5_string_to_key krb5_get_pw_salt krb5_string_to_key_salt krb5_auth_con_setkey
 krb5_auth_con_setuseruserkey krb5_locate_kdc krb5_get_permitted_enctypes

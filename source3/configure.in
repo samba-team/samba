@@ -3848,6 +3848,12 @@ if test x"$with_ads_support" != x"no"; then
   fi
 
   AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
+  ################################################################
+  # test for AD / GSSAPI support being enabled
+  if test x"$have_gssapi" != xyes ; then
+  	AC_MSG_WARN([Samba cannot be supported without GSSAPI])
+  fi
+
   AC_CHECK_FUNC_EXT(krb5_set_default_in_tkt_etypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_tgs_enctypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_tgs_ktypes, $KRB5_LIBS)
@@ -4398,6 +4404,11 @@ if test x"$with_ads_support" != x"no"; then
   #
   if test x"$found_arcfour_hmac" != x"yes"; then
     AC_MSG_WARN(arcfour-hmac-md5 encryption type not found in -lkrb5)
+    use_ads=no
+  fi
+
+  if test x"$ac_cv_func_ext_krb5_set_real_time" != x"yes"; then
+    AC_MSG_WARN(krb5_set_real_time encryption type not found in -lkrb5)
     use_ads=no
   fi
 
