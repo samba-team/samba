@@ -187,35 +187,7 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 					  krb5_const_principal princ1, 
 					  krb5_const_principal princ2)
 {
-#ifdef HAVE_KRB5_PRINCIPAL_COMPARE_ANY_REALM
-
 	return krb5_principal_compare_any_realm(context, princ1, princ2);
-
-/* krb5_princ_size is a macro in MIT */
-#elif defined(HAVE_KRB5_PRINC_SIZE) || defined(krb5_princ_size)
-
-	int i, len1, len2;
-	const krb5_data *p1, *p2;
-
-	len1 = krb5_princ_size(context, princ1);
-	len2 = krb5_princ_size(context, princ2);
-
-	if (len1 != len2)
-		return False;
-
-	for (i = 0; i < len1; i++) {
-
-		p1 = krb5_princ_component(context, (krb5_principal)discard_const(princ1), i);
-		p2 = krb5_princ_component(context, (krb5_principal)discard_const(princ2), i);
-
-		if (p1->length != p2->length ||	memcmp(p1->data, p2->data, p1->length))
-			return False;
-	}
-
-	return True;
-#else
-#error NO_SUITABLE_PRINCIPAL_COMPARE_FUNCTION
-#endif
 }
 
  void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum,
