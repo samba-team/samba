@@ -3958,16 +3958,6 @@ if test x"$with_ads_support" != x"no"; then
 	    [Whether krb5_get_init_creds_opt_free takes a context argument])
   fi
 
-  AC_CACHE_CHECK(whether krb5_verify_checksum takes 7 arguments, smb_krb5_cv_verify_checksum, [
-    AC_TRY_COMPILE([
-	#include <krb5.h>],
-	[krb5_verify_checksum(0, 0, 0, 0, 0, 0, 0);],
-	[smb_krb5_cv_verify_checksum=7],
-	[smb_krb5_cv_verify_checksum=6],
-    )
-  ])
-  AC_DEFINE_UNQUOTED(KRB5_VERIFY_CHECKSUM_ARGS, $smb_krb5_cv_verify_checksum, [Number of arguments to krb5_verify_checksum])
-
   AC_CACHE_CHECK([for checksum in krb5_checksum],
                 samba_cv_HAVE_CHECKSUM_IN_KRB5_CHECKSUM,[
     AC_TRY_COMPILE([#include <krb5.h>],
