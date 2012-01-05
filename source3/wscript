@@ -759,6 +759,12 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         if not conf.CONFIG_SET('HAVE_KRB5_FWD_TGT_CREDS'):
             Logs.warn("krb5_fwd_tgt_creds found in -lkrb5")
             use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_GET_INIT_CREDS_OPT_ALLOC'):
+            Logs.warn("krb5_get_init_creds_opt_alloc not found in -lkrb5")
+            use_ads=False
+        if not conf.CONFIG_SET('KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT'):
+            Logs.warn("krb5_get_init_creds_opt_free was not found or was too old in -lkrb5")
+            use_ads=False
         if not conf.CONFIG_SET('HAVE_KRB5_PRINCIPAL2SALT') and \
            not conf.CONFIG_SET('HAVE_KRB5_GET_PW_SALT'):
             Logs.warn("no CREATE_KEY_FUNCTIONS detected")

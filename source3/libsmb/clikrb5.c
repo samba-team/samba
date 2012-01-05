@@ -1412,44 +1412,15 @@ done:
  krb5_error_code smb_krb5_get_init_creds_opt_alloc(krb5_context context,
 					    krb5_get_init_creds_opt **opt)
 {
-#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_ALLOC
 	/* Heimdal or modern MIT version */
 	return krb5_get_init_creds_opt_alloc(context, opt);
-#else
-	/* Historical MIT version */
-	krb5_get_init_creds_opt *my_opt;
-
-	*opt = NULL;
-
-	if ((my_opt = SMB_MALLOC_P(krb5_get_init_creds_opt)) == NULL) {
-		return ENOMEM;
-	}
-
-	krb5_get_init_creds_opt_init(my_opt);
-
-	*opt =  my_opt;
-	return 0;
-#endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_ALLOC  */
 }
 
  void smb_krb5_get_init_creds_opt_free(krb5_context context,
 				krb5_get_init_creds_opt *opt)
 {
-#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_FREE
-
-#ifdef KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT
 	/* Modern MIT or Heimdal version */
 	krb5_get_init_creds_opt_free(context, opt);
-#else
-	/* Heimdal version */
-	krb5_get_init_creds_opt_free(opt);
-#endif /* KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT */
-
-#else /* HAVE_KRB5_GET_INIT_CREDS_OPT_FREE */
-	/* Historical MIT version */
-	SAFE_FREE(opt);
-	opt = NULL;
-#endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_FREE */
 }
 
  krb5_enctype smb_get_enctype_from_kt_entry(krb5_keytab_entry *kt_entry)
