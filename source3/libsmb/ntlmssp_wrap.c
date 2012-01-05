@@ -26,27 +26,6 @@
 #include "librpc/rpc/dcerpc.h"
 #include "lib/param/param.h"
 
-NTSTATUS auth_generic_set_username(struct auth_generic_state *ans,
-				   const char *user)
-{
-	cli_credentials_set_username(ans->credentials, user, CRED_SPECIFIED);
-	return NT_STATUS_OK;
-}
-
-NTSTATUS auth_generic_set_domain(struct auth_generic_state *ans,
-				 const char *domain)
-{
-	cli_credentials_set_domain(ans->credentials, domain, CRED_SPECIFIED);
-	return NT_STATUS_OK;
-}
-
-NTSTATUS auth_generic_set_password(struct auth_generic_state *ans,
-				   const char *password)
-{
-	cli_credentials_set_password(ans->credentials, password, CRED_SPECIFIED);
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS gensec_ntlmssp3_client_update(struct gensec_security *gensec_security,
 					      TALLOC_CTX *out_mem_ctx,
 					      struct tevent_context *ev,
@@ -132,7 +111,7 @@ static const char *gensec_ntlmssp3_client_oids[] = {
 	NULL
 };
 
-static const struct gensec_security_ops gensec_ntlmssp3_client_ops = {
+const struct gensec_security_ops gensec_ntlmssp3_client_ops = {
 	.name		= "ntlmssp3_client",
 	.sasl_name	= GENSEC_SASL_NAME_NTLMSSP, /* "NTLM" */
 	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
@@ -152,109 +131,3 @@ static const struct gensec_security_ops gensec_ntlmssp3_client_ops = {
 	.enabled        = true,
 	.priority       = GENSEC_NTLMSSP
 };
-
-NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_state **auth_generic_state)
-{
-	struct auth_generic_state *ans;
-	NTSTATUS nt_status;
-
-	struct gensec_settings *gensec_settings;
-	struct loadparm_context *lp_ctx;
-
-	ans = talloc_zero(mem_ctx, struct auth_generic_state);
-	if (!ans) {
-		DEBUG(0,("auth_generic_start: talloc failed!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	lp_ctx = loadparm_init_s3(ans, loadparm_s3_context());
-	if (lp_ctx == NULL) {
-		DEBUG(10, ("loadparm_init_s3 failed\n"));
-		TALLOC_FREE(ans);
-		return NT_STATUS_INVALID_SERVER_STATE;
-	}
-	
-	gensec_settings = lpcfg_gensec_settings(ans, lp_ctx);
-	if (lp_ctx == NULL) {
-		DEBUG(10, ("lpcfg_gensec_settings failed\n"));
-		TALLOC_FREE(ans);
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	gensec_settings->backends = talloc_zero_array(gensec_settings, struct gensec_security_ops *, 2);
-	if (gensec_settings->backends == NULL) {
-		TALLOC_FREE(ans);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	gensec_settings->backends[0] = &gensec_ntlmssp3_client_ops;
-
-	nt_status = gensec_client_start(ans, &ans->gensec_security, gensec_settings);
-	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(ans);
-		return nt_status;
-	}
-
-	ans->credentials = cli_credentials_init(ans);
-	if (!ans->credentials) {
-		TALLOC_FREE(ans);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	cli_credentials_guess(ans->credentials, lp_ctx);
-
-	talloc_unlink(ans, lp_ctx);
-	talloc_unlink(ans, gensec_settings);
-
-	*auth_generic_state = ans;
-	return NT_STATUS_OK;
-}
-
-NTSTATUS auth_generic_client_start(struct auth_generic_state *ans, const char *oid)
-{
-	NTSTATUS status;
-
-	/* Transfer the credentials to gensec */
-	status = gensec_set_credentials(ans->gensec_security, ans->credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to set GENSEC credentials: %s\n", 
-			  nt_errstr(status)));
-		return status;
-	}
-	talloc_unlink(ans, ans->credentials);
-	ans->credentials = NULL;
-
-	status = gensec_start_mech_by_oid(ans->gensec_security,
-					  oid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
-					       uint8_t auth_type,
-					       uint8_t auth_level)
-{
-	NTSTATUS status;
-
-	/* Transfer the credentials to gensec */
-	status = gensec_set_credentials(ans->gensec_security, ans->credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to set GENSEC credentials: %s\n",
-			  nt_errstr(status)));
-		return status;
-	}
-	talloc_unlink(ans, ans->credentials);
-	ans->credentials = NULL;
-
-	status = gensec_start_mech_by_authtype(ans->gensec_security,
-					       auth_type, auth_level);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}

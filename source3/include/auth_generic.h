@@ -45,4 +45,6 @@ NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
 					       uint8_t auth_type,
 					       uint8_t auth_level);
 
+extern const struct gensec_security_ops gensec_ntlmssp3_client_ops;
+
 #endif /* _AUTH_GENERIC_ */

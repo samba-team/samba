@@ -555,6 +555,7 @@ LIBSMB_OBJ0 = \
 	       ../libcli/auth/ntlm_check.o \
 	       libsmb/ntlmssp.o \
 	       libsmb/ntlmssp_wrap.o \
+	       libsmb/auth_generic.o \
 	       ../auth/gensec/gensec.o \
 	       ../auth/gensec/gensec_start.o \
 	       ../auth/gensec/gensec_util.o \
