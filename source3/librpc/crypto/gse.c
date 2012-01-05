@@ -782,7 +782,7 @@ NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	OM_uint32 gss_min, gss_maj;
 	gss_iov_buffer_desc iov[2];
 	int req_seal = 1; /* setting to 1 means we request sign+seal */
-	int sealed;
+	int sealed = 1;
 	NTSTATUS status;
 
 	/* allocate the memory ourselves so we do not need to talloc_memdup */
