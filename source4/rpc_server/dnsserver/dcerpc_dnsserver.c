@@ -1852,7 +1852,12 @@ static WERROR dnsserver_update_record(struct dnsserver_state *dsstate,
 	tmp_ctx = talloc_new(mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-	name = dns_split_node_name(tmp_ctx, node_name, z->name);
+	/* If node_name is @ or zone name, dns record is @ */
+	if (strcmp(node_name, "@") == 0 || strcmp(node_name, z->name) == 0) {
+		name = talloc_strdup(tmp_ctx, "@");
+	} else {
+		name = dns_split_node_name(tmp_ctx, node_name, z->name);
+	}
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(name, tmp_ctx);
 
 	if (add_buf != NULL) {
