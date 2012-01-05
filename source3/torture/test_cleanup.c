@@ -30,7 +30,8 @@ bool run_cleanup1(int dummy)
 	uint16_t fnum;
 	NTSTATUS status;
 
-	printf("Starting cleanup1 test\n");
+	printf("CLEANUP1: Checking that a conflicting share mode is cleaned "
+	       "up\n");
 
 	if (!torture_open_connection(&cli, 0)) {
 		return false;
