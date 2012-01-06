@@ -61,6 +61,7 @@ enum commands {
 	CMD_NEXT,
 	CMD_SYSTEM,
 	CMD_CHECK,
+	CMD_REPACK,
 	CMD_QUIT,
 	CMD_HELP
 };
@@ -98,6 +99,7 @@ COMMAND_TABLE cmd_table[] = {
 	{"quit",	CMD_QUIT},
 	{"q",		CMD_QUIT},
 	{"!",		CMD_SYSTEM},
+	{"repack",	CMD_REPACK},
 	{NULL,		CMD_HELP}
 };
 
@@ -203,6 +205,7 @@ static void help(void)
 "  list                 : print the database hash table and freelist\n"
 "  free                 : print the database freelist\n"
 "  check                : check the integrity of an opened database\n"
+"  repack               : repack the database\n"
 "  speed                : perform speed tests on the database\n"
 "  ! command            : execute system command\n"
 "  1 | first            : print the first record\n"
@@ -607,6 +610,10 @@ static int do_command(void)
 		case CMD_TRANSACTION_COMMIT:
 			bIterate = 0;
 			tdb_transaction_commit(tdb);
+			return 0;
+		case CMD_REPACK:
+			bIterate = 0;
+			tdb_repack(tdb);
 			return 0;
 		case CMD_TRANSACTION_CANCEL:
 			bIterate = 0;
