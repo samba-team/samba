@@ -3520,7 +3520,7 @@ S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
 
 test:: all torture timelimit
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
-		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
+		SMBTORTURE4=$(smbtorture4_path) \
 		NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/../nsswitch/libnss_winbind.so" \
 		SELFTESTDIR="$(selftestdir)" SELFTESTPREFIX="$(selftest_prefix)" \
 		SOURCEDIR="$(srcdir)" \
