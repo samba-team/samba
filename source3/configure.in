@@ -4470,10 +4470,6 @@ if test x"$with_ads_support" != x"no"; then
 LIBS="$ac_save_LIBS"
 fi
 
-if test x"$use_ads" != xyes; then
-	smbtorture4_possible=no
-fi
-
 AC_CHECK_LIB_EXT(nscd, NSCD_LIBS, nscd_flush_cache)
 PASSDB_LIBS="$PASSDB_LIBS $NSCD_LIBS"
 
