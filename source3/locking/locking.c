@@ -503,7 +503,7 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 		 procid_str_static(&e->pid),
 		 e->share_access, e->private_options,
 		 e->access_mask, (unsigned long long)e->op_mid,
-		 e->op_type, e->share_file_id,
+		 e->op_type, (unsigned long long)e->share_file_id,
 		 (unsigned int)e->uid, (unsigned int)e->flags,
 		 file_id_string_tos(&e->id),
 		 (unsigned int)e->name_hash);
