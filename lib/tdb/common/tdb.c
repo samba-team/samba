@@ -1003,7 +1003,7 @@ bool tdb_write_all(int fd, const void *buf, size_t count)
 #ifdef TDB_TRACE
 static void tdb_trace_write(struct tdb_context *tdb, const char *str)
 {
-	if (!tdb_write_alltdb->tracefd, str, strlen(str)) {
+	if (!tdb_write_all(tdb->tracefd, str, strlen(str))) {
 		close(tdb->tracefd);
 		tdb->tracefd = -1;
 	}
