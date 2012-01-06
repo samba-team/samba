@@ -298,7 +298,7 @@ out:
 		}
 	}
 
-	SAFE_FREE(entry_princ_s);
+	TALLOC_FREE(entry_princ_s);
 
 	{
 		krb5_keytab_entry zero_kt_entry;
