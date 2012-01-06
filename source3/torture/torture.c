@@ -8515,7 +8515,7 @@ fail:
 static bool dbtrans_inc(struct db_context *db)
 {
 	struct db_record *rec;
-	uint32_t *val;
+	uint32_t val;
 	bool ret = false;
 	NTSTATUS status;
 	TDB_DATA value;
@@ -8534,12 +8534,11 @@ static bool dbtrans_inc(struct db_context *db)
 		goto fail;
 	}
 
-	val = (uint32_t *)value.dptr;
-	*val += 1;
+	memcpy(&val, value.dptr, sizeof(val));
+	val += 1;
 
-	status = dbwrap_record_store(rec, make_tdb_data((uint8_t *)val,
-					       sizeof(uint32_t)),
-			    0);
+	status = dbwrap_record_store(
+		rec, make_tdb_data((uint8_t *)&val, sizeof(val)), 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf(__location__ "store failed: %s\n",
 		       nt_errstr(status));
