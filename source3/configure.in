@@ -3901,6 +3901,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_free_host_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_krb5_import_cred, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_get_name_attribute, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(gsskrb5_extract_authz_data_from_sec_context, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_mech_krb5, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_oid_equal, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_inquire_sec_context_by_oid, $KRB5_LIBS)
@@ -4514,6 +4515,15 @@ if test x"$with_ads_support" != x"no"; then
 	use_ads=no
       fi
 
+  fi
+
+  if test x"$ac_cv_func_ext_gss_get_name_attribute" != x"yes" ; then
+    if test x"$ac_cv_func_ext_gsskrb5_extract_authz_data_from_sec_context" != x"yes" -o \
+    if test x"$ac_cv_func_ext_gss_inquire_sec_context_by_oid" != x"yes"
+    then
+      AC_MSG_WARN(need either gss_get_name_attribute or gsskrb5_extract_authz_data_from_sec_context and gss_inquire_sec_context_by_oid in -lgssapi for PAC support)
+      use_ads=no
+    fi
   fi
 
   if test x"$use_ads" = x"yes"; then
