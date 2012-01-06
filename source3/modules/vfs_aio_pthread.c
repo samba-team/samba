@@ -51,21 +51,20 @@ static void aio_pthread_handle_completion(struct event_context *event_ctx,
 
 /************************************************************************
  How many threads to initialize ?
+ 100 per process seems insane as a default until you realize that
+ (a) Threads terminate after 1 second when idle.
+ (b) Throttling is done in SMB2 via the crediting algorithm.
+ (c) SMB1 clients are limited to max_mux (50) outstanding requests and
+     Windows clients don't use this anyway.
+ Essentially we want this to be unlimited unless smb.conf says different.
 ***********************************************************************/
 
-static int aio_get_num_threads(void)
+static int aio_get_num_threads(struct vfs_handle_struct *handle)
 {
-	int num_cores = sys_get_number_of_cores();
-	DEBUG(10,("aio_get_num_threads: sys_get_number_of_cores "
-		"returned %d\n",
-		num_cores));
-	num_cores *= 2;
-	if (num_cores < 1) {
-		num_cores = 1;
-	}
-	/* Even on a single processor box give a little
-	   concurrency. */
-	return MIN(4,num_cores);
+	return lp_parm_bool(SNUM(handle->conn),
+				"aio_pthread",
+				"aio num threads",
+				100);
 }
 
 #if 0
@@ -108,7 +107,7 @@ static void idle_pool_destroy_timer(struct tevent_context *ev,
  Ensure thread pool is initialized.
 ***********************************************************************/
 
-static bool init_aio_threadpool(void)
+static bool init_aio_threadpool(struct vfs_handle_struct *handle)
 {
 	struct fd_event *sock_event = NULL;
 	int ret = 0;
@@ -121,7 +120,7 @@ static bool init_aio_threadpool(void)
 		return true;
 	}
 
-	num_threads = aio_get_num_threads();
+	num_threads = aio_get_num_threads(handle);
 	ret = pthreadpool_init(num_threads, &pool);
 	if (ret) {
 		errno = ret;
@@ -228,7 +227,7 @@ static int aio_pthread_read(struct vfs_handle_struct *handle,
 	struct aio_private_data *pd = NULL;
 	int ret;
 
-	if (!init_aio_threadpool()) {
+	if (!init_aio_threadpool(handle)) {
 		return -1;
 	}
 
@@ -265,7 +264,7 @@ static int aio_pthread_write(struct vfs_handle_struct *handle,
 	struct aio_private_data *pd = NULL;
 	int ret;
 
-	if (!init_aio_threadpool()) {
+	if (!init_aio_threadpool(handle)) {
 		return -1;
 	}
 
