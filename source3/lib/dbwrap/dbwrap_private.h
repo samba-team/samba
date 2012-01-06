@@ -23,6 +23,8 @@
 #ifndef __DBWRAP_PRIVATE_H__
 #define __DBWRAP_PRIVATE_H__
 
+#include "dbwrap/dbwrap_open.h"
+
 struct db_record {
 	TDB_DATA key, value;
 	NTSTATUS (*store)(struct db_record *rec, TDB_DATA data, int flag);

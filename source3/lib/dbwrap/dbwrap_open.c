@@ -62,11 +62,26 @@ bool db_is_local(const char *name)
 struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   const char *name,
 			   int hash_size, int tdb_flags,
-			   int open_flags, mode_t mode)
+			   int open_flags, mode_t mode,
+			   enum dbwrap_lock_order lock_order)
 {
 	struct db_context *result = NULL;
 #ifdef CLUSTER_SUPPORT
-	const char *sockname = lp_ctdbd_socket();
+	const char *sockname;
+#endif
+
+	if ((lock_order != DBWRAP_LOCK_ORDER_1) &&
+	    (lock_order != DBWRAP_LOCK_ORDER_2)) {
+		/*
+		 * Only allow 2 levels. ctdb gives us 3, and we will
+		 * have the watchers database soon.
+		 */
+		errno = EINVAL;
+		return NULL;
+	}
+
+#ifdef CLUSTER_SUPPORT
+	sockname = lp_ctdbd_socket();
 
 	if(!sockname || !*sockname) {
 		sockname = CTDB_PATH;

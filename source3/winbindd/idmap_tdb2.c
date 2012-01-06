@@ -113,7 +113,8 @@ static NTSTATUS idmap_tdb2_open_db(struct idmap_domain *dom)
 	NT_STATUS_HAVE_NO_MEMORY(db_path);
 
 	/* Open idmap repository */
-	ctx->db = db_open(ctx, db_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
+	ctx->db = db_open(ctx, db_path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644,
+			  DBWRAP_LOCK_ORDER_1);
 	TALLOC_FREE(db_path);
 
 	if (ctx->db == NULL) {

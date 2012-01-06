@@ -40,7 +40,7 @@ static struct db_context *get_printer_list_db(void)
 	}
 	db = db_open(NULL, PL_DB_NAME(), 0,
 		     TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-		     O_RDWR|O_CREAT, 0644);
+		     O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_1);
 	return db;
 }
 

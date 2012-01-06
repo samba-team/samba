@@ -75,7 +75,8 @@ bool secrets_init_path(const char *private_dir)
 	}
 
 	db_ctx = db_open(NULL, fname, 0,
-			 TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+			 TDB_DEFAULT, O_RDWR|O_CREAT, 0600,
+			 DBWRAP_LOCK_ORDER_1);
 
 	if (db_ctx == NULL) {
 		DEBUG(0,("Failed to open %s\n", fname));

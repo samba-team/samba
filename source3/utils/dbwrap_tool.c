@@ -463,7 +463,8 @@ int main(int argc, const char **argv)
 		goto done;
 	}
 
-	db = db_open(mem_ctx, dbname, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
+	db = db_open(mem_ctx, dbname, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0644,
+		     DBWRAP_LOCK_ORDER_1);
 	if (db == NULL) {
 		d_fprintf(stderr, "ERROR: could not open dbname\n");
 		goto done;

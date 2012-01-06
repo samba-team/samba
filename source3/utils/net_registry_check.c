@@ -354,7 +354,8 @@ static bool check_ctx_open_output(struct check_ctx *ctx)
 		ctx->opt.wipe = true;
 	}
 
-	ctx->odb = db_open(ctx, ctx->opt.output, 0, TDB_DEFAULT, oflags, 0644);
+	ctx->odb = db_open(ctx, ctx->opt.output, 0, TDB_DEFAULT, oflags, 0644,
+			   DBWRAP_LOCK_ORDER_1);
 	if (ctx->odb == NULL) {
 		d_fprintf(stderr,
 			  _("Could not open db (%s) for writing: %s\n"),
@@ -366,7 +367,8 @@ static bool check_ctx_open_output(struct check_ctx *ctx)
 
 
 static bool check_ctx_open_input(struct check_ctx *ctx) {
-	ctx->idb = db_open(ctx, ctx->fname, 0, TDB_DEFAULT, O_RDONLY, 0);
+	ctx->idb = db_open(ctx, ctx->fname, 0, TDB_DEFAULT, O_RDONLY, 0,
+			   DBWRAP_LOCK_ORDER_1);
 	if (ctx->idb == NULL) {
 		d_fprintf(stderr,
 			  _("Could not open db (%s) for reading: %s\n"),

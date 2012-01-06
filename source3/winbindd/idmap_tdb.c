@@ -338,7 +338,8 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 	DEBUG(10,("Opening tdbfile %s\n", tdbfile ));
 
 	/* Open idmap repository */
-	db = db_open(mem_ctx, tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
+	db = db_open(mem_ctx, tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0644,
+		     DBWRAP_LOCK_ORDER_1);
 	if (!db) {
 		DEBUG(0, ("Unable to open idmap database\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;

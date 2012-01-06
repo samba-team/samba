@@ -804,7 +804,8 @@ static bool check_open_db(struct check_ctx* ctx, const char* name, int oflags)
 		}
 	}
 
-	ctx->db = db_open(ctx, name, 0, TDB_DEFAULT, oflags, 0);
+	ctx->db = db_open(ctx, name, 0, TDB_DEFAULT, oflags, 0,
+			  DBWRAP_LOCK_ORDER_1);
 	if (ctx->db == NULL) {
 		d_fprintf(stderr,
 			  _("Could not open idmap db (%s) for writing: %s\n"),

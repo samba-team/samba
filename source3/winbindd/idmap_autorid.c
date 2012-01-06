@@ -405,7 +405,8 @@ static NTSTATUS idmap_autorid_db_init(void)
 
 	/* Open idmap repository */
 	autorid_db = db_open(NULL, state_path("autorid.tdb"), 0,
-			     TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
+			     TDB_DEFAULT, O_RDWR | O_CREAT, 0644,
+			     DBWRAP_LOCK_ORDER_1);
 
 	if (!autorid_db) {
 		DEBUG(0, ("Unable to open idmap_autorid database '%s'\n",

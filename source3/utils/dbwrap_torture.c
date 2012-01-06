@@ -308,7 +308,8 @@ int main(int argc, const char *argv[])
 		tdb_flags |= TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH;
 	}
 
-	db = db_open(mem_ctx, db_name, 0, tdb_flags,  O_RDWR | O_CREAT, 0644);
+	db = db_open(mem_ctx, db_name, 0, tdb_flags,  O_RDWR | O_CREAT, 0644,
+		     DBWRAP_LOCK_ORDER_1);
 
 	if (db == NULL) {
 		d_fprintf(stderr, "failed to open db '%s': %s\n", db_name,

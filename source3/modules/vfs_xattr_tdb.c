@@ -601,7 +601,8 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 	/* now we know dbname is not NULL */
 
 	become_root();
-	db = db_open(NULL, dbname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	db = db_open(NULL, dbname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600,
+		     DBWRAP_LOCK_ORDER_2);
 	unbecome_root();
 
 	if (db == NULL) {

@@ -455,7 +455,8 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		int result;
 		struct db_context *db;
 		db = db_open(NULL, lock_path("locking.tdb"), 0,
-			     TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDONLY, 0);
+			     TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDONLY, 0,
+			     DBWRAP_LOCK_ORDER_1);
 
 		if (!db) {
 			d_printf("%s not initialised\n",

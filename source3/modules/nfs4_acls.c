@@ -590,7 +590,8 @@ static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
 
 		become_root();
 		mapping_db = db_open(NULL, dbname, 0, TDB_DEFAULT,
-				     O_RDONLY, 0600);
+				     O_RDONLY, 0600,
+				     DBWRAP_LOCK_ORDER_1);
 		unbecome_root();
 
 		if (mapping_db == NULL) {
