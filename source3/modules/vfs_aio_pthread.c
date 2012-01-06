@@ -67,42 +67,6 @@ static int aio_get_num_threads(struct vfs_handle_struct *handle)
 				100);
 }
 
-#if 0
-/************************************************************************
- Called every 30 seconds to destroy pool if it's idle.
-***********************************************************************/
-
-static void idle_pool_destroy_timer(struct tevent_context *ev,
-			struct tevent_timer *te,
-			struct timeval current_time,
-			void *private_data)
-{
-	struct timeval ne;
-
-	TALLOC_FREE(te);
-
-	if (pool && pd_list == NULL) {
-		if (pthreadpool_destroy(pool) == 0) {
-			pool = NULL;
-		}
-		DEBUG(10,("idle_pool_destroy_timer: destroyed AIO pool.\n"));
-		return;
-	}
-
-	/* Here, the IO is still active. */
-
-	/* Set an event up for 30 seconds time - if we have
-	   no outstanding IO at this time shut the threadpool
-	   down. */
-	ne = tevent_timeval_current_ofs(30, 0);
-	tevent_add_timer(server_event_context(),
-			NULL,
-			ne,
-			idle_pool_destroy_timer,
-			NULL);
-}
-#endif
-
 /************************************************************************
  Ensure thread pool is initialized.
 ***********************************************************************/
@@ -112,9 +76,6 @@ static bool init_aio_threadpool(struct vfs_handle_struct *handle)
 	struct fd_event *sock_event = NULL;
 	int ret = 0;
 	int num_threads;
-#if 0
-	struct timeval ne;
-#endif
 
 	if (pool) {
 		return true;
@@ -138,19 +99,7 @@ static bool init_aio_threadpool(struct vfs_handle_struct *handle)
 		return false;
 	}
 
-#if 0
-	/* Set an event up for 30 seconds time - if we have
-	   no outstanding IO at this time shut the threadpool
-	   down. */
-	ne = tevent_timeval_current_ofs(30, 0);
-	tevent_add_timer(server_event_context(),
-			NULL,
-			ne,
-			idle_pool_destroy_timer,
-			NULL);
-#endif
-
-	DEBUG(10,("init_aio_threadpool: initialized with %d threads\n",
+	DEBUG(10,("init_aio_threadpool: initialized with up to %d threads\n",
 			num_threads));
 
 	return true;
