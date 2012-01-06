@@ -230,6 +230,90 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 	return ret;	
 }
 
+static bool test_trusted_domains(TALLOC_CTX *ctx,
+				 struct pdb_methods *pdb,
+				 bool *error)
+{
+	NTSTATUS rv;
+	/* test trustdom calls */
+	struct pdb_trusted_domain *td;
+	struct pdb_trusted_domain *new_td;
+	struct trustAuthInOutBlob taiob;
+	struct AuthenticationInformation aia;
+	enum ndr_err_code ndr_err;
+
+	td = talloc_zero(ctx ,struct pdb_trusted_domain);
+	if (!td) {
+		fprintf(stderr, "talloc failed\n");
+		return false;
+	}
+
+	td->domain_name = talloc_strdup(td, TRUST_DOM);
+	td->netbios_name = talloc_strdup(td, TRUST_DOM);
+	if (!td->domain_name || !td->netbios_name) {
+		fprintf(stderr, "talloc failed\n");
+		return false;
+	}
+
+	td->trust_auth_incoming = data_blob_null;
+
+	ZERO_STRUCT(taiob);
+	ZERO_STRUCT(aia);
+	taiob.count = 1;
+	taiob.current.count = 1;
+	taiob.current.array = &aia;
+	unix_to_nt_time(&aia.LastUpdateTime, time(NULL));
+	aia.AuthType = TRUST_AUTH_TYPE_CLEAR;
+	aia.AuthInfo.clear.password = (uint8_t *) talloc_strdup(ctx, TRUST_PWD);
+	aia.AuthInfo.clear.size = strlen(TRUST_PWD);
+
+	taiob.previous.count = 0;
+	taiob.previous.array = NULL;
+
+	ndr_err = ndr_push_struct_blob(&td->trust_auth_outgoing,
+					td, &taiob,
+			(ndr_push_flags_fn_t) ndr_push_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		fprintf(stderr, "ndr_push_struct_blob failed.\n");
+		return false;
+	}
+
+	td->trust_direction = LSA_TRUST_DIRECTION_OUTBOUND;
+	td->trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
+	td->trust_attributes = 0;
+	td->trust_forest_trust_info = data_blob_null;
+
+	rv = pdb->set_trusted_domain(pdb, TRUST_DOM, td);
+	if (!NT_STATUS_IS_OK(rv)) {
+		fprintf(stderr, "Error in set_trusted_domain %s\n",
+				get_friendly_nt_error_msg(rv));
+		*error = true;
+	}
+
+	rv = pdb->get_trusted_domain(pdb, ctx, TRUST_DOM, &new_td);
+	if (!NT_STATUS_IS_OK(rv)) {
+		fprintf(stderr, "Error in set_trusted_domain %s\n",
+				get_friendly_nt_error_msg(rv));
+		*error = true;
+	}
+
+	if (!strequal(td->domain_name, new_td->domain_name) ||
+	    !strequal(td->netbios_name, new_td->netbios_name) ||
+	    !dom_sid_equal(&td->security_identifier,
+			   &new_td->security_identifier) ||
+	    td->trust_direction != new_td->trust_direction ||
+	    td->trust_type != new_td->trust_type ||
+	    td->trust_attributes != new_td->trust_attributes ||
+	    td->trust_auth_incoming.length != new_td->trust_auth_incoming.length ||
+	    td->trust_forest_trust_info.length != new_td->trust_forest_trust_info.length ||
+	    data_blob_cmp(&td->trust_auth_outgoing, &new_td->trust_auth_outgoing) != 0) {
+		fprintf(stderr, "Old and new trusdet domain data do not match\n");
+		*error = true;
+	}
+
+	return true;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -254,13 +338,6 @@ int main(int argc, char **argv)
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
-
-	/* test trustdom calls */
-	struct pdb_trusted_domain *td;
-	struct pdb_trusted_domain *new_td;
-	struct trustAuthInOutBlob taiob;
-	struct AuthenticationInformation aia;
-	enum ndr_err_code ndr_err;
 
 	load_case_tables();
 
@@ -381,73 +458,11 @@ int main(int argc, char **argv)
 					get_friendly_nt_error_msg(rv));
 	}
 
-	td = talloc_zero(ctx ,struct pdb_trusted_domain);
-	if (!td) {
-		fprintf(stderr, "talloc failed\n");
-		exit(1);
-	}
-
-	td->domain_name = talloc_strdup(td, TRUST_DOM);
-	td->netbios_name = talloc_strdup(td, TRUST_DOM);
-	if (!td->domain_name || !td->netbios_name) {
-		fprintf(stderr, "talloc failed\n");
-		exit(1);
-	}
-
-	td->trust_auth_incoming = data_blob_null;
-
-	ZERO_STRUCT(taiob);
-	ZERO_STRUCT(aia);
-	taiob.count = 1;
-	taiob.current.count = 1;
-	taiob.current.array = &aia;
-	unix_to_nt_time(&aia.LastUpdateTime, time(NULL));
-	aia.AuthType = TRUST_AUTH_TYPE_CLEAR;
-	aia.AuthInfo.clear.password = (uint8_t *) talloc_strdup(ctx, TRUST_PWD);
-	aia.AuthInfo.clear.size = strlen(TRUST_PWD);
-
-	taiob.previous.count = 0;
-	taiob.previous.array = NULL;
-
-	ndr_err = ndr_push_struct_blob(&td->trust_auth_outgoing,
-					td, &taiob,
-			(ndr_push_flags_fn_t) ndr_push_trustAuthInOutBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		fprintf(stderr, "ndr_push_struct_blob failed.\n");
-		exit(1);
-	}
-
-	td->trust_direction = LSA_TRUST_DIRECTION_OUTBOUND;
-	td->trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
-	td->trust_attributes = 0;
-	td->trust_forest_trust_info = data_blob_null;
-
-	rv = pdb->set_trusted_domain(pdb, TRUST_DOM, td);
-	if (!NT_STATUS_IS_OK(rv)) {
-		fprintf(stderr, "Error in set_trusted_domain %s\n",
-				get_friendly_nt_error_msg(rv));
-		error = True;
-	}
-
-	rv = pdb->get_trusted_domain(pdb, ctx, TRUST_DOM, &new_td);
-	if (!NT_STATUS_IS_OK(rv)) {
-		fprintf(stderr, "Error in set_trusted_domain %s\n",
-				get_friendly_nt_error_msg(rv));
-		error = True;
-	}
-
-	if (!strequal(td->domain_name, new_td->domain_name) ||
-	    !strequal(td->netbios_name, new_td->netbios_name) ||
-	    !dom_sid_equal(&td->security_identifier,
-			   &new_td->security_identifier) ||
-	    td->trust_direction != new_td->trust_direction ||
-	    td->trust_type != new_td->trust_type ||
-	    td->trust_attributes != new_td->trust_attributes ||
-	    td->trust_auth_incoming.length != new_td->trust_auth_incoming.length ||
-	    td->trust_forest_trust_info.length != new_td->trust_forest_trust_info.length ||
-	    data_blob_cmp(&td->trust_auth_outgoing, &new_td->trust_auth_outgoing) != 0) {
-		fprintf(stderr, "Old and new trusdet domain data do not match\n");
-		error = True;
+	if (pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX) {
+		if (!test_trusted_domains(ctx, pdb, &error)) {
+			fprintf(stderr, "failed testing trusted domains.\n");
+			exit(1);
+		}
 	}
 
 	TALLOC_FREE(ctx);
