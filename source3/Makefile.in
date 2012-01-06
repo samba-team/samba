@@ -54,7 +54,6 @@ SMB_PASSWD_FILE=@SMB_PASSWD_FILE@
 
 selftest_prefix=@selftest_prefix@
 selftest_shrdir=@selftest_shrdir@
-smbtorture4_path=@smbtorture4_path@
 smbtorture4_option=@smbtorture4_option@
 selftest_custom_conf=@selftest_custom_conf@
 
@@ -3520,7 +3519,6 @@ S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
 
 test:: all torture timelimit
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
-		SMBTORTURE4=$(smbtorture4_path) \
 		NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/../nsswitch/libnss_winbind.so" \
 		SELFTESTDIR="$(selftestdir)" SELFTESTPREFIX="$(selftest_prefix)" \
 		SOURCEDIR="$(srcdir)" \
