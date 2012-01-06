@@ -764,7 +764,7 @@ int ads_keytab_list(const char *keytab_name)
 		goto out;
 	}
 
-	printf("Vno  Type        Principal\n");
+	printf("Vno  Type                                        Principal\n");
 
 	while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0) {
 
@@ -787,7 +787,7 @@ int ads_keytab_list(const char *keytab_name)
 			goto out;
 		}
 
-		printf("%3d  %s\t\t %s\n", kt_entry.vno, etype_s, princ_s);
+		printf("%3d  %-43s %s\n", kt_entry.vno, etype_s, princ_s);
 
 		TALLOC_FREE(princ_s);
 		SAFE_FREE(etype_s);
