@@ -52,7 +52,12 @@ bool run_cleanup1(int dummy)
 	if (!torture_open_connection(&cli, 1)) {
 		return false;
 	}
-	status = cli_openx(cli, fname, O_RDWR|O_CREAT, DENY_ALL, &fnum);
+	status = cli_ntcreate(
+		cli, fname, 0,
+		FILE_GENERIC_READ|FILE_GENERIC_WRITE|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL,
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_OPEN, FILE_DELETE_ON_CLOSE, 0, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("2nd open of %s failed (%s)\n", fname,
 		       nt_errstr(status));
@@ -60,12 +65,6 @@ bool run_cleanup1(int dummy)
 	}
 	cli_close(cli, fnum);
 
-	status = cli_unlink(cli, fname, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_unlink failed: %s\n", nt_errstr(status));
-		goto done;
-	}
-done:
 	torture_close_connection(cli);
 	return NT_STATUS_IS_OK(status);
 }
