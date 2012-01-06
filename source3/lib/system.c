@@ -2480,6 +2480,7 @@ uint32 unix_dev_minor(SMB_DEV_T dev)
 #endif
 }
 
+#if 0
 /*******************************************************************
  Return the number of CPUs.
 ********************************************************************/
@@ -2524,6 +2525,7 @@ int sys_get_number_of_cores(void)
 	}
 	return ret;
 }
+#endif
 
 #if defined(WITH_AIO)
 

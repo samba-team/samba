@@ -390,7 +390,9 @@ int sys_lsetxattr (const char *path, const char *name, const void *value, size_t
 int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags);
 uint32 unix_dev_major(SMB_DEV_T dev);
 uint32 unix_dev_minor(SMB_DEV_T dev);
+#if 0
 int sys_get_number_of_cores(void);
+#endif
 int sys_aio_read(SMB_STRUCT_AIOCB *aiocb);
 int sys_aio_write(SMB_STRUCT_AIOCB *aiocb);
 ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb);
