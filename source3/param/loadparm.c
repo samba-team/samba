@@ -8504,9 +8504,8 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 		if (NT_STATUS_IS_OK(status) &&
 		    (data.dptr != NULL) &&
-		    (data.dsize == sizeof(iService)))
-		{
-			iService = *(int *)data.dptr;
+		    (data.dsize == sizeof(iService))) {
+			memcpy(&iService, data.dptr, sizeof(iService));
 		}
 	}
 
