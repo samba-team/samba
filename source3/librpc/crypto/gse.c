@@ -675,14 +675,16 @@ static size_t gse_get_signature_length(struct gse_context *gse_ctx,
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_iov_buffer_desc iov[2];
-	uint8_t fakebuf[payload_size];
 	int sealed;
 
+	/*
+	 * gss_wrap_iov_length() only needs the type and length
+	 */
 	iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
 	iov[0].buffer.value = NULL;
 	iov[0].buffer.length = 0;
 	iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
-	iov[1].buffer.value = fakebuf;
+	iov[1].buffer.value = NULL;
 	iov[1].buffer.length = payload_size;
 
 	gss_maj = gss_wrap_iov_length(&gss_min, gse_ctx->gss_ctx,
