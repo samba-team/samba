@@ -48,6 +48,12 @@ typedef struct _GROUP_MAP {
 	char *comment;
 } GROUP_MAP;
 
+struct acct_info {
+	char *acct_name; /* account name */
+	char *acct_desc; /* account name */
+	uint32_t rid; /* domain-relative RID */
+};
+
 /* The following definitions come from groupdb/mapping.c  */
 
 NTSTATUS add_initial_entry(gid_t gid, const char *sid, enum lsa_SidType sid_name_use, const char *nt_name, const char *comment);
@@ -79,7 +85,6 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 				  const char *name, uint32_t *rid);
 NTSTATUS pdb_default_delete_alias(struct pdb_methods *methods,
 				  const struct dom_sid *sid);
-struct acct_info;
 NTSTATUS pdb_default_get_aliasinfo(struct pdb_methods *methods,
 				   const struct dom_sid *sid,
 				   struct acct_info *info);
@@ -310,12 +315,6 @@ struct samu {
 	/* maintain a copy of the user's struct passwd */
 
 	struct passwd *unix_pw;
-};
-
-struct acct_info {
-	char *acct_name; /* account name */
-	char *acct_desc; /* account name */
-	uint32_t rid; /* domain-relative RID */
 };
 
 struct samr_displayentry {
