@@ -1946,7 +1946,7 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 	}
 
 	params.account_name		= user;
-	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
+	params.level			= WBC_CHANGE_PASSWORD_LEVEL_PLAIN;
 	params.old_password.plaintext	= oldpass;
 	params.new_password.plaintext	= newpass;
 	params.flags			= flags;
