@@ -534,7 +534,8 @@ bool run_smb2_session_reconnect(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
 		printf("smb2cli_create on cli2 %s\n", nt_errstr(status));
 		return false;
 	}
