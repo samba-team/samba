@@ -1162,7 +1162,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb_compat cap popt_samba3 pdb libsmb smbd_shim
                  param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3
-                 ads SMBREADLINE trusts_util RPC_NDR_WINREG RPC_NDR_ECHO
+                 SMBREADLINE trusts_util RPC_NDR_WINREG RPC_NDR_ECHO
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
