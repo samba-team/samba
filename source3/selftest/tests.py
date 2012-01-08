@@ -291,16 +291,16 @@ for z in smb_options:
             a = ""
             binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
             options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
-            plansmbtorturetestsuite(test, "ktest", options, 'over kerberos with old ccache ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+            plansmbtorturetestsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
 
             options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
-            plansmbtorturetestsuite(test, "ktest", options, 'over kerberos ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+            plansmbtorturetestsuite(test, "ktest", options, 'krb5 ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
 
             auth_options2 = ["krb5", "spnego,krb5"]
             for a in auth_options2:
                 binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
 
-                plantestsuite("samba3.blackbox.rpcclient over kerberos with ncacn_np with [%s%s%s%s] " % (a, s, z, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+                plantestsuite("samba3.blackbox.rpcclient krb5 ncacn_np with [%s%s%s%s] " % (a, s, z, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
                                                                                                                                   "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
 
 
