@@ -710,30 +710,29 @@ static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
 	gss_buffer_desc tok_out, tok_in;
 	DATA_BLOB blob_out = data_blob_null;
 	DATA_BLOB blob_in = data_blob_null;
-	char *host_princ_s = NULL;
 	OM_uint32 ret_flags = 0;
 	NTSTATUS status = NT_STATUS_OK;
 
-	gss_OID_desc nt_hostbased_service =
-	{10, discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04")};
-
 	memset(&tok_out, '\0', sizeof(tok_out));
 
-	/* Get a ticket for the service@host */
-	if (asprintf(&host_princ_s, "%s@%s", service, host) == -1) {
+	/* Guess the realm based on the supplied service, and avoid the GSS libs
+	   doing DNS lookups which may fail.
+
+	   TODO: Loop with the KDC on some more combinations (local
+	   realm in particular), possibly falling back to
+	   GSS_C_NT_HOSTBASED_SERVICE
+	*/
+	input_name.value = kerberos_get_principal_from_service_hostname(talloc_tos(),
+									 service, host);
+	if (!input_name.value) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	input_name.value = host_princ_s;
-	input_name.length = strlen(host_princ_s) + 1;
-
-	ret = gss_import_name(&min,
-				&input_name,
-				&nt_hostbased_service,
-				&srv_name);
-
+	input_name.length = strlen((char *)input_name.value);
+	ret = gss_import_name(&min, &input_name,
+			      GSS_C_NT_USER_NAME,
+			      &srv_name);
 	if (ret != GSS_S_COMPLETE) {
-		SAFE_FREE(host_princ_s);
+		TALLOC_FREE(input_name.value);
 		return map_nt_error_from_gss(ret, min);
 	}
 
@@ -785,7 +784,7 @@ static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
 
 	data_blob_free(&blob_out);
 	data_blob_free(&blob_in);
-	SAFE_FREE(host_princ_s);
+	TALLOC_FREE(input_name.value);
 	gss_release_name(&min, &srv_name);
 	if (tok_out.value) {
 		gss_release_buffer(&min, &tok_out);
