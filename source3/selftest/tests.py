@@ -22,11 +22,28 @@ import os, sys
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
 from selftesthelpers import *
 import subprocess
-
 smb4torture = binpath("smbtorture4")
 samba3srcdir = srcdir() + "/source3"
 configuration = "--configfile=$SMB_CONF_PATH"
 scriptdir=os.path.join(samba3srcdir, "../script/tests")
+
+# see if we support ADS on the Samba3 side
+try:
+    config_h = os.environ["CONFIG_H"]
+except KeyError:
+    config_h = os.path.join(samba3srcdir, "include/autoconf/config.h")
+
+f = open(config_h, 'r')
+try:
+    have_ads_support = ("HAVE_LDAP 1" in f.read())
+finally:
+    f.close()
+
+f = open(config_h, 'r')
+try:
+    have_ads_support &= ("HAVE_KRB5 1" in f.read())
+finally:
+    f.close()
 
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
                    "--target=samba3", "--basedir=$SELFTEST_TMPDIR",
@@ -237,37 +254,37 @@ libsmbclient = ["libsmbclient"]
 
 tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt + libsmbclient
 
-if smb4torture_possible:
-    for t in tests:
-        if t == "base.delaywrite":
-            plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
-        elif t == "rap.sam":
-            plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
-        elif t == "unix.whoami":
-            plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD')
-        elif t == "raw.samba3posixtimedlock":
-            plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/s3dc/share')
-        elif t == "raw.chkpath":
-            plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
-        else:
-            plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+for t in tests:
+    if t == "base.delaywrite":
+        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
+    elif t == "rap.sam":
+        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
+    elif t == "unix.whoami":
+        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD')
+    elif t == "raw.samba3posixtimedlock":
+        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/s3dc/share')
+    elif t == "raw.chkpath":
+        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
+    else:
+        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
 
 
-    test = 'rpc.lsa.lookupsids'
-    auth_options = ["", "ntlm", "spnego", "spnego,ntlm" ]
-    signseal_options = ["", ",connect", ",sign", ",seal"]
-    smb_options = ["", ",smb2"]
-    endianness_options = ["", ",bigendian"]
-    for z in smb_options:
-        for s in signseal_options:
-            for e in endianness_options:
-                for a in auth_options:
-                    binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
-                    options = binding_string + " -U$USERNAME%$PASSWORD"
-                    plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
-                    plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s%s] " % (a, s, z, e), "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+test = 'rpc.lsa.lookupsids'
+auth_options = ["", "ntlm", "spnego", "spnego,ntlm" ]
+signseal_options = ["", ",connect", ",sign", ",seal"]
+smb_options = ["", ",smb2"]
+endianness_options = ["", ",bigendian"]
+for z in smb_options:
+    for s in signseal_options:
+        for e in endianness_options:
+            for a in auth_options:
+                binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
+                options = binding_string + " -U$USERNAME%$PASSWORD"
+                plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+                plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s%s] " % (a, s, z, e), "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
                                                                  "none", options, configuration])
 
+        if have_ads_support:
             # We should try more combinations in future, but this is all
             # the pre-calculated credentials cache supports at the moment
             e = ""
@@ -288,16 +305,16 @@ if smb4torture_possible:
 
 
 
-    for e in endianness_options:
-        for a in auth_options:
-            for s in signseal_options:
-                binding_string = "ncacn_ip_tcp:$SERVER_IP[%s%s%s]" % (a, s, e)
-                options = binding_string + " -U$USERNAME%$PASSWORD"
-                plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_ip_tcp with [%s%s%s] ' % (a, s, e))
+for e in endianness_options:
+    for a in auth_options:
+        for s in signseal_options:
+            binding_string = "ncacn_ip_tcp:$SERVER_IP[%s%s%s]" % (a, s, e)
+            options = binding_string + " -U$USERNAME%$PASSWORD"
+            plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_ip_tcp with [%s%s%s] ' % (a, s, e))
 
-    test = 'rpc.epmapper'
-    env = 's3dc:local'
-    binding_string = 'ncalrpc:'
-    options = binding_string + " -U$USERNAME%$PASSWORD"
+test = 'rpc.epmapper'
+env = 's3dc:local'
+binding_string = 'ncalrpc:'
+options = binding_string + " -U$USERNAME%$PASSWORD"
 
-    plansmbtorturetestsuite(test, env, options, 'over ncalrpc')
+plansmbtorturetestsuite(test, env, options, 'over ncalrpc')
