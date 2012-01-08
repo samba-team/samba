@@ -304,6 +304,16 @@ for z in smb_options:
                                                                                                                                   "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
 
 
+if have_ads_support:
+    plantestsuite("samba3.blackbox.smbclient_krb5 with old ccache", "ktest:local", 
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
+                   "$PREFIX/ktest/krb5_ccache-2", 
+                   binpath('smbclient3'), "$SERVER", configuration])
+
+    plantestsuite("samba3.blackbox.smbclient_krb5", "ktest:local", 
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
+                   "$PREFIX/ktest/krb5_ccache-3", 
+                   binpath('smbclient3'), "$SERVER", configuration])
 
 for e in endianness_options:
     for a in auth_options:
