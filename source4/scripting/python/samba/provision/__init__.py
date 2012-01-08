@@ -1593,6 +1593,10 @@ def provision(logger, session_info, credentials, smbconf=None,
     if not os.path.exists(os.path.dirname(smbconf)):
         os.makedirs(os.path.dirname(smbconf))
 
+    server_services = None
+    if dns_backend == "SAMBA_INTERNAL":
+        server_services = [ "+dns" ]
+
     # only install a new smb.conf if there isn't one there already
     if os.path.exists(smbconf):
         # if Samba Team members can't figure out the weird errors
@@ -1603,10 +1607,11 @@ def provision(logger, session_info, credentials, smbconf=None,
         if data is None or data == "":
             make_smbconf(smbconf, hostname, domain, realm,
                          serverrole, targetdir, sid_generator, useeadb,
-                         lp=lp)
+                         lp=lp, server_services=server_services)
     else:
         make_smbconf(smbconf, hostname, domain, realm, serverrole,
-                     targetdir, sid_generator, useeadb, lp=lp)
+                     targetdir, sid_generator, useeadb, lp=lp,
+                     server_services=server_services)
 
     if lp is None:
         lp = samba.param.LoadParm()
