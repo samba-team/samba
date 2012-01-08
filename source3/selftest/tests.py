@@ -41,10 +41,15 @@ if os.getenv("SELFTEST_QUICK"):
     torture_options.append("--option=torture:quick=yes")
 smb4torture += " " + " ".join(torture_options)
 
+sub = subprocess.Popen("%s --version 2> /dev/null" % smb4torture, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
+sub.communicate("")
+smb4torture_possible = (sub.returncode == 0)
+
 def plansmbtorturetestsuite(name, env, options, description=''):
     modname = "samba3.posix_s3.%s %s" % (name, description)
     cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
-    plantestsuite_loadlist(modname, env, cmdline)
+    if smb4torture_possible:
+        plantestsuite_loadlist(modname, env, cmdline)
 
 plantestsuite("samba3.blackbox.success", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_success.sh")])
 plantestsuite("samba3.blackbox.failure", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_failure.sh")])
@@ -232,10 +237,7 @@ libsmbclient = ["libsmbclient"]
 
 tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt + libsmbclient
 
-sub = subprocess.Popen("%s --version 2> /dev/null" % smb4torture, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
-sub.communicate("")
-
-if sub.returncode == 0:
+if smb4torture_possible:
     for t in tests:
         if t == "base.delaywrite":
             plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
