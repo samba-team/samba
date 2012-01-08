@@ -147,12 +147,12 @@ class dc_join(object):
         '''remove any DNs from a previous join'''
         try:
             # find the krbtgt link
-            print("checking samaccountname")
+            print("checking sAMAccountName")
             if ctx.subdomain:
                 res = None
             else:
                 res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
-                                       expression='samAccountName=%s' % ldb.binary_encode(ctx.samname),
+                                       expression='sAMAccountName=%s' % ldb.binary_encode(ctx.samname),
                                        attrs=["msDS-krbTgtLink"])
                 if res:
                     ctx.del_noerror(res[0].dn, recursive=True)
