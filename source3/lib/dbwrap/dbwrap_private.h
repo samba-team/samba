@@ -56,6 +56,7 @@ struct db_context {
 	int (*exists)(struct db_context *db,TDB_DATA key);
 	int (*wipe)(struct db_context *db);
 	void *private_data;
+	enum dbwrap_lock_order lock_order;
 	bool persistent;
 };
 

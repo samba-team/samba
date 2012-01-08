@@ -435,6 +435,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	result->exists = db_rbt_exists;
 	result->wipe = db_rbt_wipe;
 	result->parse_record = db_rbt_parse_record;
+	result->lock_order = 0;
 
 	return result;
 }

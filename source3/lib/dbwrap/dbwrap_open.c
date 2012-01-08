@@ -124,5 +124,8 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		result = db_open_tdb(mem_ctx, name, hash_size,
 				     tdb_flags, open_flags, mode);
 	}
+	if (result != NULL) {
+		result->lock_order = lock_order;
+	}
 	return result;
 }

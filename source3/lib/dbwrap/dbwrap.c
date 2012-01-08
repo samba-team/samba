@@ -75,11 +75,90 @@ NTSTATUS dbwrap_record_delete(struct db_record *rec)
 	return rec->delete_rec(rec);
 }
 
+struct dbwrap_lock_order_state {
+	uint8_t *plock_order_mask;
+	uint8_t bitmask;
+};
+
+static int dbwrap_lock_order_state_destructor(
+	struct dbwrap_lock_order_state *s)
+{
+	*s->plock_order_mask &= ~s->bitmask;
+	return 0;
+}
+
+static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
+	struct db_context *db, TALLOC_CTX *mem_ctx)
+{
+	/*
+	 * Store the lock_order of currently locked records as bits in
+	 * "lock_order_mask". We only use levels 1,2,3 right now, so a
+	 * single uint8_t is enough.
+	 */
+	static uint8_t lock_order_mask;
+
+	struct dbwrap_lock_order_state *state;
+	uint8_t idx;
+	int used;
+
+	if (db->lock_order == 0) {
+		/*
+		 * lock order 0 is for example for dbwrap_rbt without
+		 * real locking. Return state nevertheless to avoid
+		 * special cases.
+		 */
+		return talloc(mem_ctx, struct dbwrap_lock_order_state);
+	}
+
+	/*
+	 * We fill bits from the high bits, to be able to use
+	 * "ffs(lock_order_mask)"
+	 */
+	idx = sizeof(lock_order_mask)*8 - db->lock_order;
+
+	used = ffs(lock_order_mask);
+
+	DEBUG(1, ("used=%d, lock_order=%d, idx=%d\n", used,
+		  (int)db->lock_order, (int)idx));
+
+	if ((used != 0) && (used-1 <= idx)) {
+		DEBUG(0, ("Lock order violation: Trying %d, order_mask=%x\n",
+			  (int)db->lock_order, (int)lock_order_mask));
+		return NULL;
+	}
+
+	state = talloc(mem_ctx, struct dbwrap_lock_order_state);
+	if (state == NULL) {
+		DEBUG(1, ("talloc failed\n"));
+		return NULL;
+	}
+	state->bitmask = 1 << idx;
+	state->plock_order_mask = &lock_order_mask;
+
+	talloc_set_destructor(state, dbwrap_lock_order_state_destructor);
+	lock_order_mask |= state->bitmask;
+
+	return state;
+}
+
 struct db_record *dbwrap_fetch_locked(struct db_context *db,
 				      TALLOC_CTX *mem_ctx,
 				      TDB_DATA key)
 {
-	return db->fetch_locked(db, mem_ctx, key);
+	struct db_record *rec;
+	struct dbwrap_lock_order_state *lock_order;
+
+	lock_order = dbwrap_check_lock_order(db, talloc_tos());
+	if (lock_order == NULL) {
+		return NULL;
+	}
+	rec = db->fetch_locked(db, mem_ctx, key);
+	if (rec == NULL) {
+		TALLOC_FREE(lock_order);
+		return NULL;
+	}
+	(void)talloc_steal(rec, lock_order);
+	return rec;
 }
 
 struct dbwrap_fetch_state {
