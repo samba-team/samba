@@ -81,20 +81,6 @@ const krb5_data *krb5_princ_component(krb5_context context, krb5_principal princ
 #endif
 
 /* Samba wrapper function for krb5 functionality. */
-void setup_kaddr( krb5_address *pkaddr, struct sockaddr *paddr);
-int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
-int create_kerberos_key_from_string_direct(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype);
-krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
-krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
-void free_kerberos_etypes(krb5_context context, krb5_enctype *enctypes);
-bool get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_context, DATA_BLOB *session_key, bool remote);
-krb5_error_code ads_krb5_mk_req(krb5_context context, 
-				krb5_auth_context *auth_context, 
-				const krb5_flags ap_req_options,
-				const char *principal,
-				krb5_ccache ccache, 
-				krb5_data *outbuf);
-bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
 krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc,
 					   krb5_principal principal, const char *password,
 					   krb5_principal impersonate_principal,
@@ -107,14 +93,6 @@ krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
 					   const char *target_service,
 					   krb5_get_init_creds_opt *krb_options,
 					   time_t *expire_time, time_t *kdc_time);
-krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
-							krb5_principal host_princ,
-							int enctype);
-void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
-bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
-void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
-krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
-char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
 NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB blob,
 				 krb5_context context,
