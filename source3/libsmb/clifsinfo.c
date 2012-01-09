@@ -829,9 +829,6 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 		smb1cli_conn_set_encryption(cli->conn, es);
 		es = NULL;
 	}
-
-  fail:
-
 	common_free_encryption_state(&es);
 	return status;
 }
