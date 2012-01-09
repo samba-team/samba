@@ -810,19 +810,8 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	name_to_fqdn(fqdn, cli_state_remote_name(cli));
-	strlower_m(fqdn);
-
 	servicename = "cifs";
-	status = make_cli_gss_blob(talloc_tos(), es, servicename, fqdn, NT_STATUS_OK, blob_recv, &blob_send);
-	if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		servicename = "host";
-		status = make_cli_gss_blob(talloc_tos(), es, servicename, fqdn, NT_STATUS_OK, blob_recv, &blob_send);
-		if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			goto fail;
-		}
-	}
-
+	status = make_cli_gss_blob(talloc_tos(), es, servicename, cli_state_remote_name(cli), NT_STATUS_OK, blob_recv, &blob_send);
 	do {
 		data_blob_free(&blob_recv);
 		status = enc_blob_send_receive(cli, &blob_send, &blob_recv, &param_out);
