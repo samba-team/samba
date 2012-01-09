@@ -154,7 +154,10 @@ class BlackboxTestCase(TestCase):
 
     def check_run(self, line):
         line = self._make_cmdline(line)
-        subprocess.check_call(line, shell=True)
+        p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        retcode = p.wait()
+        if retcode:
+            raise BlackboxProcessError(retcode, line, p.stdout.read(), p.stderr.read())
 
     def check_output(self, line):
         line = self._make_cmdline(line)
