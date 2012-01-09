@@ -28,7 +28,6 @@
 _PUBLIC_ void cli_credentials_invalidate_ccache(struct cli_credentials *cred,
 				       enum credentials_obtained obtained)
 {
-	DEBUG(0, ("cli_credentials_invalidate_ccache is unimplemented in the autoconf build\n"));
 	return;
 }
 
