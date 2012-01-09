@@ -675,6 +675,11 @@ static struct share_mode_lock *fresh_share_mode_lock(
 {
 	struct share_mode_lock *lck;
 
+	if ((servicepath == NULL) || (smb_fname == NULL) ||
+	    (old_write_time == NULL)) {
+		return NULL;
+	}
+
 	lck = talloc_zero(mem_ctx, struct share_mode_lock);
 	if (lck == NULL) {
 		goto fail;
@@ -703,11 +708,11 @@ fail:
 	return NULL;
 }
 
-struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
-					    const struct file_id id,
-					    const char *servicepath,
-					    const struct smb_filename *smb_fname,
-					    const struct timespec *old_write_time)
+struct share_mode_lock *get_share_mode_lock_fresh(TALLOC_CTX *mem_ctx,
+						  const struct file_id id,
+						  const char *servicepath,
+						  const struct smb_filename *smb_fname,
+						  const struct timespec *old_write_time)
 {
 	struct share_mode_lock *lck;
 	struct file_id tmp;
@@ -735,12 +740,16 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(rec);
 		return NULL;
 	}
-
 	lck->id = id;
 	lck->record = talloc_move(lck, &rec);
 	talloc_set_destructor(lck, share_mode_lock_destructor);
-
 	return lck;
+}
+
+struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
+					    const struct file_id id)
+{
+	return get_share_mode_lock_fresh(mem_ctx, id, NULL, NULL, NULL);
 }
 
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
@@ -1260,8 +1269,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct s
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
 		  fsp_str_dbg(fsp)));
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
-				  NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
 		return False;
 	}
@@ -1314,7 +1322,7 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 			    convert_timespec_to_time_t(write_time)),
 		 file_id_string_tos(&fileid)));
 
-	lck = get_share_mode_lock(talloc_tos(), fileid, NULL, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fileid);
 	if (lck == NULL) {
 		return False;
 	}
@@ -1337,7 +1345,7 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 			    convert_timespec_to_time_t(write_time)),
 		 file_id_string_tos(&fileid)));
 
-	lck = get_share_mode_lock(talloc_tos(), fileid, NULL, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fileid);
 	if (lck == NULL) {
 		return False;
 	}

@@ -147,10 +147,13 @@ bool locking_init_readonly(void);
 bool locking_end(void);
 char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e);
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
-					    const struct file_id id,
-					    const char *servicepath,
-					    const struct smb_filename *smb_fname,
-					    const struct timespec *old_write_time);
+					    const struct file_id id);
+struct share_mode_lock *get_share_mode_lock_fresh(
+	TALLOC_CTX *mem_ctx,
+	const struct file_id id,
+	const char *servicepath,
+	const struct smb_filename *smb_fname,
+	const struct timespec *old_write_time);
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 						  const struct file_id id);
 bool rename_share_filename(struct messaging_context *msg_ctx,

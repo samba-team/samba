@@ -1584,8 +1584,7 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 				struct server_id pid)
 {
-	struct share_mode_lock *lck = get_share_mode_lock(talloc_tos(), id,
-			NULL, NULL, NULL);
+	struct share_mode_lock *lck = get_share_mode_lock(talloc_tos(), id);
 	if (lck == NULL) {
 		DEBUG(0, ("could not get share mode lock\n"));
 		return;
@@ -1629,11 +1628,8 @@ static bool acquire_ordered_locks(TALLOC_CTX *mem_ctx,
 		   lock on the brlock database. */
 	}
 
-	*p_lck = get_share_mode_lock(mem_ctx,
-				id,
-				connectpath,
-				smb_fname,
-				p_old_write_time);
+	*p_lck = get_share_mode_lock_fresh(
+		mem_ctx, id, connectpath, smb_fname, p_old_write_time);
 
 	if (*p_lck == NULL) {
 		DEBUG(0, ("Could not get share mode lock\n"));
@@ -2928,8 +2924,9 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
-				  conn->connectpath, smb_dname, &mtimespec);
+	lck = get_share_mode_lock_fresh(talloc_tos(), fsp->file_id,
+					conn->connectpath, smb_dname,
+					&mtimespec);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for "

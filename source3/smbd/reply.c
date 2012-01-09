@@ -6207,8 +6207,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		status = NT_STATUS_ACCESS_DENIED;
 	}
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL,
-				  NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
 
 	/*
 	 * We have the file open ourselves, so not being able to get the
