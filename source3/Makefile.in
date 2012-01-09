@@ -53,9 +53,6 @@ LMHOSTSFILE=@LMHOSTSFILE@
 SMB_PASSWD_FILE=@SMB_PASSWD_FILE@
 
 selftest_prefix=@selftest_prefix@
-selftest_shrdir=@selftest_shrdir@
-smbtorture4_option=@smbtorture4_option@
-selftest_custom_conf=@selftest_custom_conf@
 
 LIBS=@LIBS@
 CC=@CC@
@@ -3502,8 +3499,6 @@ test_pam_modules:: pam_modules
 ##
 ## Targets for 'make test'
 ##
-
-TEST_EXTRA_ARGS = ${smbtorture4_option} ${selftest_shrdir} ${selftest_custom_conf}
 
 valgrindtest:: all torture timelimit
 	@echo Running Test suite with valgrind
