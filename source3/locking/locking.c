@@ -513,13 +513,21 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
+static struct share_mode_lock *parse_share_modes(TALLOC_CTX *mem_ctx,
+						 const TDB_DATA dbuf)
 {
+	struct share_mode_lock *lck;
 	int i;
 	struct server_id *pids;
 	bool *pid_exists;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
+
+	lck = talloc_zero(mem_ctx, struct share_mode_lock);
+	if (lck == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		goto fail;
+	}
 
 	blob.data = dbuf.dptr;
 	blob.length = dbuf.dsize;
@@ -529,10 +537,11 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 		(ndr_pull_flags_fn_t)ndr_pull_share_mode_lock);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("ndr_pull_share_mode_lock failed\n"));
-		return false;
+		goto fail;
 	}
 
 	lck->modified = false;
+	lck->fresh = false;
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10, ("parse_share_modes:\n"));
@@ -546,19 +555,21 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 	pids = talloc_array(talloc_tos(), struct server_id,
 			    lck->num_share_modes);
 	if (pids == NULL) {
-		smb_panic("parse_share_modes: talloc_array failed");
+		DEBUG(0, ("talloc failed\n"));
+		goto fail;
 	}
 	pid_exists = talloc_array(talloc_tos(), bool, lck->num_share_modes);
 	if (pid_exists == NULL) {
-		smb_panic("parse_share_modes: talloc_array failed");
+		DEBUG(0, ("talloc failed\n"));
+		goto fail;
 	}
 
 	for (i=0; i<lck->num_share_modes; i++) {
 		pids[i] = lck->share_modes[i].pid;
 	}
-
 	if (!serverids_exist(pids, lck->num_share_modes, pid_exists)) {
-		smb_panic("parse_share_modes: serverids_exist failed");
+		DEBUG(0, ("serverid_exists failed\n"));
+		goto fail;
 	}
 
 	i = 0;
@@ -574,8 +585,10 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 	}
 	TALLOC_FREE(pid_exists);
 	TALLOC_FREE(pids);
-
-	return True;
+	return lck;
+fail:
+	TALLOC_FREE(lck);
+	return NULL;
 }
 
 static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
@@ -655,60 +668,39 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	return 0;
 }
 
-static bool fill_share_mode_lock(struct share_mode_lock *lck,
-				 struct file_id id,
-				 const char *servicepath,
-				 const struct smb_filename *smb_fname,
-				 TDB_DATA share_mode_data,
-				 const struct timespec *old_write_time)
+static struct share_mode_lock *fresh_share_mode_lock(
+	TALLOC_CTX *mem_ctx, const char *servicepath,
+	const struct smb_filename *smb_fname,
+	const struct timespec *old_write_time)
 {
-	bool fresh;
+	struct share_mode_lock *lck;
 
-	/* Ensure we set every field here as the destructor must be
-	   valid even if parse_share_modes fails. */
-
-	lck->servicepath = NULL;
-	lck->base_name = NULL;
-	lck->stream_name = NULL;
-	lck->id = id;
-	lck->num_share_modes = 0;
-	lck->share_modes = NULL;
-	lck->num_delete_tokens = 0;
-	lck->delete_tokens = NULL;
-	ZERO_STRUCT(lck->old_write_time);
-	ZERO_STRUCT(lck->changed_write_time);
-
-	fresh = (share_mode_data.dptr == NULL);
-
-	if (fresh) {
-		bool has_stream;
-		if (smb_fname == NULL || servicepath == NULL
-		    || old_write_time == NULL) {
-			return False;
-		}
-
-		has_stream = smb_fname->stream_name != NULL;
-
-		lck->base_name = talloc_strdup(lck, smb_fname->base_name);
+	lck = talloc_zero(mem_ctx, struct share_mode_lock);
+	if (lck == NULL) {
+		goto fail;
+	}
+	lck->base_name = talloc_strdup(lck, smb_fname->base_name);
+	if (lck->base_name == NULL) {
+		goto fail;
+	}
+	if (smb_fname->stream_name != NULL) {
 		lck->stream_name = talloc_strdup(lck, smb_fname->stream_name);
-		lck->servicepath = talloc_strdup(lck, servicepath);
-		if (lck->base_name == NULL ||
-		    (has_stream && lck->stream_name == NULL) ||
-		    lck->servicepath == NULL) {
-			DEBUG(0, ("talloc failed\n"));
-			return False;
-		}
-		lck->old_write_time = *old_write_time;
-		lck->modified = false;
-	} else {
-		if (!parse_share_modes(share_mode_data, lck)) {
-			DEBUG(0, ("Could not parse share modes\n"));
-			return False;
+		if (lck->stream_name == NULL) {
+			goto fail;
 		}
 	}
-	lck->fresh = fresh;
-
-	return True;
+	lck->servicepath = talloc_strdup(lck, servicepath);
+	if (lck->servicepath == NULL) {
+		goto fail;
+	}
+	lck->old_write_time = *old_write_time;
+	lck->modified = false;
+	lck->fresh = true;
+	return lck;
+fail:
+	DEBUG(0, ("talloc failed\n"));
+	TALLOC_FREE(lck);
+	return NULL;
 }
 
 struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
@@ -723,28 +715,29 @@ struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
 	TDB_DATA key = locking_key(&id, &tmp);
 	TDB_DATA value;
 
-	if (!(lck = talloc(mem_ctx, struct share_mode_lock))) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	rec = dbwrap_fetch_locked(lock_db, lck, key);
+	rec = dbwrap_fetch_locked(lock_db, mem_ctx, key);
 	if (rec == NULL) {
 		DEBUG(3, ("Could not lock share entry\n"));
-		TALLOC_FREE(lck);
 		return NULL;
 	}
 
 	value = dbwrap_record_get_value(rec);
 
-	if (!fill_share_mode_lock(lck, id, servicepath, smb_fname,
-				  value, old_write_time)) {
-		DEBUG(3, ("fill_share_mode_lock failed\n"));
-		TALLOC_FREE(lck);
+	if (value.dptr == NULL) {
+		lck = fresh_share_mode_lock(mem_ctx, servicepath, smb_fname,
+					    old_write_time);
+	} else {
+		lck = parse_share_modes(mem_ctx, value);
+	}
+
+	if (lck == NULL) {
+		DEBUG(1, ("Could not get share mode lock\n"));
+		TALLOC_FREE(rec);
 		return NULL;
 	}
 
-	lck->record = rec;
+	lck->id = id;
+	lck->record = talloc_move(lck, &rec);
 	talloc_set_destructor(lck, share_mode_lock_destructor);
 
 	return lck;
@@ -759,29 +752,19 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 	TDB_DATA data;
 	NTSTATUS status;
 
-	if (!(lck = talloc(mem_ctx, struct share_mode_lock))) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	status = dbwrap_fetch(lock_db, lck, key, &data);
+	status = dbwrap_fetch(lock_db, talloc_tos(), key, &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not fetch share entry\n"));
-		TALLOC_FREE(lck);
 		return NULL;
 	}
 	if (data.dptr == NULL) {
-		TALLOC_FREE(lck);
 		return NULL;
 	}
-
-	if (!fill_share_mode_lock(lck, id, NULL, NULL, data, NULL)) {
-		DEBUG(10, ("fetch_share_mode_unlocked: no share_mode record "
-			   "around (file not open)\n"));
-		TALLOC_FREE(lck);
-		return NULL;
+	lck = parse_share_modes(mem_ctx, data);
+	if (lck != NULL) {
+		lck->id = id;
 	}
-
+	TALLOC_FREE(data.dptr);
 	return lck;
 }
 
