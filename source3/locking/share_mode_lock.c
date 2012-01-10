@@ -306,11 +306,10 @@ fail:
 	return NULL;
 }
 
-struct share_mode_lock *get_share_mode_lock_fresh(TALLOC_CTX *mem_ctx,
-						  const struct file_id id,
-						  const char *servicepath,
-						  const struct smb_filename *smb_fname,
-						  const struct timespec *old_write_time)
+static struct share_mode_lock *get_share_mode_lock_internal(
+	TALLOC_CTX *mem_ctx, const struct file_id id,
+	const char *servicepath, const struct smb_filename *smb_fname,
+	const struct timespec *old_write_time)
 {
 	struct share_mode_lock *lck;
 	struct share_mode_data *d;
@@ -351,6 +350,59 @@ struct share_mode_lock *get_share_mode_lock_fresh(TALLOC_CTX *mem_ctx,
 	}
 	lck->data = talloc_move(lck, &d);
 	return lck;
+}
+
+/*
+ * We can only ever have one share mode locked. Users of
+ * get_share_mode_lock never see this, it will be refcounted by
+ * talloc_reference.
+ */
+static struct share_mode_lock *the_lock;
+
+static int the_lock_destructor(struct share_mode_lock *l)
+{
+	the_lock = NULL;
+	return 0;
+}
+
+struct share_mode_lock *get_share_mode_lock_fresh(
+	TALLOC_CTX *mem_ctx,
+	const struct file_id id,
+	const char *servicepath,
+	const struct smb_filename *smb_fname,
+	const struct timespec *old_write_time)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	struct share_mode_lock *lck;
+
+	if (the_lock == NULL) {
+		the_lock = get_share_mode_lock_internal(
+			frame, id, servicepath, smb_fname, old_write_time);
+		if (the_lock == NULL) {
+			goto fail;
+		}
+		talloc_set_destructor(the_lock, the_lock_destructor);
+	}
+	if (!file_id_equal(&the_lock->data->id, &id)) {
+		DEBUG(1, ("Can not lock two share modes simultaneously\n"));
+		goto fail;
+	}
+	lck = talloc(mem_ctx, struct share_mode_lock);
+	if (lck == NULL) {
+		DEBUG(1, ("talloc failed\n"));
+		goto fail;
+	}
+	if (talloc_reference(lck, the_lock) == NULL) {
+		DEBUG(1, ("talloc_reference failed\n"));
+		goto fail;
+	}
+	lck->data = the_lock->data;
+	TALLOC_FREE(frame);
+	return lck;
+fail:
+	TALLOC_FREE(frame);
+	return NULL;
 }
 
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
