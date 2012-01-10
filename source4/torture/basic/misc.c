@@ -198,7 +198,7 @@ bool torture_holdcon(struct torture_context *tctx)
 			return false;
 		}
 		if (torture_setting_bool(tctx, "progress", true)) {
-			torture_comment(tctx, "opened %d connections\r", i);
+			torture_comment(tctx, "opened %d connections\r", i+1);
 			fflush(stdout);
 		}
 	}
