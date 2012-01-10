@@ -647,17 +647,23 @@ static int rmdir_acl_common(struct vfs_handle_struct *handle,
 {
 	int ret;
 
+	/* Try the normal rmdir first. */
 	ret = SMB_VFS_NEXT_RMDIR(handle, path);
-	if (!(ret == -1 && (errno == EACCES || errno == EPERM))) {
-		DEBUG(10,("rmdir_acl_common: unlink of %s failed %s\n",
-			path,
-			strerror(errno) ));
-		return ret;
+	if (ret == 0) {
+		return 0;
+	}
+	if (errno == EACCES || errno == EPERM) {
+		/* Failed due to access denied,
+		   see if we need to root override. */
+		return acl_common_remove_object(handle,
+						path,
+						true);
 	}
 
-	return acl_common_remove_object(handle,
-					path,
-					true);
+	DEBUG(10,("rmdir_acl_common: unlink of %s failed %s\n",
+		path,
+		strerror(errno) ));
+	return -1;
 }
 
 static int unlink_acl_common(struct vfs_handle_struct *handle,
@@ -665,21 +671,28 @@ static int unlink_acl_common(struct vfs_handle_struct *handle,
 {
 	int ret;
 
+	/* Try the normal unlink first. */
 	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
-	if (!(ret == -1 && (errno == EACCES || errno == EPERM))) {
-		DEBUG(10,("unlink_acl_common: unlink of %s failed %s\n",
-			smb_fname->base_name,
-			strerror(errno) ));
-		return ret;
+	if (ret == 0) {
+		return 0;
 	}
-	/* Don't do anything fancy for streams. */
-	if (smb_fname->stream_name) {
-		return ret;
-	}
+	if (errno == EACCES || errno == EPERM) {
+		/* Failed due to access denied,
+		   see if we need to root override. */
 
-	return acl_common_remove_object(handle,
+		/* Don't do anything fancy for streams. */
+		if (smb_fname->stream_name) {
+			return -1;
+		}
+		return acl_common_remove_object(handle,
 					smb_fname->base_name,
 					false);
+	}
+
+	DEBUG(10,("unlink_acl_common: unlink of %s failed %s\n",
+		smb_fname->base_name,
+		strerror(errno) ));
+	return -1;
 }
 
 static int chmod_acl_module_common(struct vfs_handle_struct *handle,
