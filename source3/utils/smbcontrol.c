@@ -1192,6 +1192,19 @@ static bool do_reload_config(struct tevent_context *ev_ctx,
 	return send_message(msg_ctx, pid, MSG_SMB_CONF_UPDATED, NULL, 0);
 }
 
+static bool do_reload_printers(struct tevent_context *ev_ctx,
+			       struct messaging_context *msg_ctx,
+			       const struct server_id pid,
+			       const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol <dest> reload-printers\n");
+		return False;
+	}
+
+	return send_message(msg_ctx, pid, MSG_PRINTER_PCAP, NULL, 0);
+}
+
 static void my_make_nmb_name( struct nmb_name *n, const char *name, int type)
 {
 	fstring unix_name;
@@ -1274,6 +1287,7 @@ static const struct {
 	{ "shutdown", do_shutdown, "Shut down daemon" },
 	{ "drvupgrade", do_drvupgrade, "Notify a printer driver has changed" },
 	{ "reload-config", do_reload_config, "Force smbd or winbindd to reload config file"},
+	{ "reload-printers", do_reload_printers, "Force smbd to reload printers"},
 	{ "nodestatus", do_nodestatus, "Ask nmbd to do a node status request"},
 	{ "online", do_winbind_online, "Ask winbind to go into online state"},
 	{ "offline", do_winbind_offline, "Ask winbind to go into offline state"},
