@@ -76,6 +76,7 @@
 #include "../libcli/security/security.h"
 #include "passdb.h"
 #include "messages.h"
+#include "auth/gensec/gensec.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -2189,14 +2190,16 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	   authenticated SAMR pipe with sign & seal. */
-	status = cli_rpc_pipe_open_spnego_ntlmssp(conn->cli,
-						  &ndr_table_samr.syntax_id,
-						  NCACN_NP,
-						  DCERPC_AUTH_LEVEL_PRIVACY,
-						  domain_name,
-						  machine_account,
-						  machine_password,
-						  &conn->samr_pipe);
+	status = cli_rpc_pipe_open_spnego(conn->cli,
+					  &ndr_table_samr.syntax_id,
+					  NCACN_NP,
+					  GENSEC_OID_NTLMSSP,
+					  DCERPC_AUTH_LEVEL_PRIVACY,
+					  cli_state_remote_name(conn->cli),
+					  domain_name,
+					  machine_account,
+					  machine_password,
+					  &conn->samr_pipe);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR "
@@ -2427,9 +2430,11 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	 * authenticated LSA pipe with sign & seal. */
-	result = cli_rpc_pipe_open_spnego_ntlmssp
+	result = cli_rpc_pipe_open_spnego
 		(conn->cli, &ndr_table_lsarpc.syntax_id, NCACN_NP,
+		 GENSEC_OID_NTLMSSP,
 		 DCERPC_AUTH_LEVEL_PRIVACY,
+		 cli_state_remote_name(conn->cli),
 		 conn->cli->domain, conn->cli->user_name, conn->cli->password,
 		 &conn->lsa_pipe);
 

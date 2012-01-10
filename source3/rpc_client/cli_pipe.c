@@ -2926,96 +2926,21 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_rpc_pipe_open_spnego_krb5(struct cli_state *cli,
-					const struct ndr_syntax_id *interface,
-					enum dcerpc_transport_t transport,
-					enum dcerpc_AuthLevel auth_level,
-					const char *server,
-					const char *username,
-					const char *password,
-					struct rpc_pipe_client **presult)
+NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
+				  const struct ndr_syntax_id *interface,
+				  enum dcerpc_transport_t transport,
+				  const char *oid,
+				  enum dcerpc_AuthLevel auth_level,
+				  const char *server,
+				  const char *domain,
+				  const char *username,
+				  const char *password,
+				  struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth;
 	struct spnego_context *spnego_ctx;
 	NTSTATUS status;
-	const char *target_service = "cifs"; /* TODO: Determine target service from the bindings or interface table */
-
-	status = cli_rpc_pipe_open(cli, transport, interface, &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	auth = talloc(result, struct pipe_auth_data);
-	if (auth == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-	auth->auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-	auth->auth_level = auth_level;
-
-	if (!username) {
-		username = "";
-	}
-	auth->user_name = talloc_strdup(auth, username);
-	if (!auth->user_name) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-
-	/* Fixme, should we fetch/set the Realm ? */
-	auth->domain = talloc_strdup(auth, "");
-	if (!auth->domain) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-
-	status = spnego_generic_init_client(auth,
-					    GENSEC_OID_KERBEROS5,
-					    (auth->auth_level ==
-						DCERPC_AUTH_LEVEL_INTEGRITY),
-					    (auth->auth_level ==
-						DCERPC_AUTH_LEVEL_PRIVACY),
-					    true,
-					    server, target_service,
-					    auth->domain, auth->user_name, password,
-					    &spnego_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("spnego_init_client returned %s\n",
-			  nt_errstr(status)));
-		goto err_out;
-	}
-	auth->auth_ctx = spnego_ctx;
-
-	status = rpc_pipe_bind(result, auth);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("cli_rpc_pipe_bind failed with error %s\n",
-			  nt_errstr(status)));
-		goto err_out;
-	}
-
-	*presult = result;
-	return NT_STATUS_OK;
-
-err_out:
-	TALLOC_FREE(result);
-	return status;
-}
-
-NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
-					  const struct ndr_syntax_id *interface,
-					  enum dcerpc_transport_t transport,
-					  enum dcerpc_AuthLevel auth_level,
-					  const char *domain,
-					  const char *username,
-					  const char *password,
-					  struct rpc_pipe_client **presult)
-{
-	struct rpc_pipe_client *result;
-	struct pipe_auth_data *auth;
-	struct spnego_context *spnego_ctx;
-	NTSTATUS status;
-	const char *server = NULL;
 	const char *target_service = "cifs"; /* TODO: Determine target service from the bindings or interface table */
 
 	status = cli_rpc_pipe_open(cli, transport, interface, &result);
@@ -3050,7 +2975,7 @@ NTSTATUS cli_rpc_pipe_open_spnego_ntlmssp(struct cli_state *cli,
 	}
 
 	status = spnego_generic_init_client(auth,
-					    GENSEC_OID_NTLMSSP,
+					    oid,
 					    (auth->auth_level ==
 						DCERPC_AUTH_LEVEL_INTEGRITY),
 					    (auth->auth_level ==

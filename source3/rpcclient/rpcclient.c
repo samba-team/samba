@@ -31,6 +31,7 @@
 #include "../libcli/security/security.h"
 #include "passdb.h"
 #include "libsmb/libsmb.h"
+#include "auth/gensec/gensec.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
@@ -690,30 +691,29 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				&cmd_entry->rpc_pipe);
 			break;
 		case DCERPC_AUTH_TYPE_SPNEGO:
+		{
+			/* won't happen, but if it does it will fail in cli_rpc_pipe_open_spnego() eventually */
+			const char *oid = "INVALID";
 			switch (pipe_default_auth_spnego_type) {
 			case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
-				ntresult = cli_rpc_pipe_open_spnego_ntlmssp(
-						cli, cmd_entry->interface,
-						default_transport,
-						pipe_default_auth_level,
-						get_cmdline_auth_info_domain(auth_info),
-						get_cmdline_auth_info_username(auth_info),
-						get_cmdline_auth_info_password(auth_info),
-						&cmd_entry->rpc_pipe);
+				oid = GENSEC_OID_NTLMSSP;
 				break;
 			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
-				ntresult = cli_rpc_pipe_open_spnego_krb5(
-						cli, cmd_entry->interface,
-						default_transport,
-						pipe_default_auth_level,
-						cli_state_remote_name(cli),
-						NULL, NULL,
-						&cmd_entry->rpc_pipe);
+				oid = GENSEC_OID_KERBEROS5;
 				break;
-			default:
-				ntresult = NT_STATUS_INTERNAL_ERROR;
 			}
+			ntresult = cli_rpc_pipe_open_spnego(
+				cli, cmd_entry->interface,
+				default_transport,
+				oid,
+				pipe_default_auth_level,
+				cli_state_remote_name(cli),
+				get_cmdline_auth_info_domain(auth_info),
+				get_cmdline_auth_info_username(auth_info),
+				get_cmdline_auth_info_password(auth_info),
+				&cmd_entry->rpc_pipe);
 			break;
+		}
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 		case DCERPC_AUTH_TYPE_KRB5:
 			ntresult = cli_rpc_pipe_open_generic_auth(
