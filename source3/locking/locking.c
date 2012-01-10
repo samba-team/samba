@@ -513,18 +513,18 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
-static struct share_mode_lock *parse_share_modes(TALLOC_CTX *mem_ctx,
+static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 						 const TDB_DATA dbuf)
 {
-	struct share_mode_lock *lck;
+	struct share_mode_data *d;
 	int i;
 	struct server_id *pids;
 	bool *pid_exists;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 
-	lck = talloc_zero(mem_ctx, struct share_mode_lock);
-	if (lck == NULL) {
+	d = talloc_zero(mem_ctx, struct share_mode_data);
+	if (d == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
@@ -533,19 +533,18 @@ static struct share_mode_lock *parse_share_modes(TALLOC_CTX *mem_ctx,
 	blob.length = dbuf.dsize;
 
 	ndr_err = ndr_pull_struct_blob(
-		&blob, lck, lck,
-		(ndr_pull_flags_fn_t)ndr_pull_share_mode_lock);
+		&blob, d, d, (ndr_pull_flags_fn_t)ndr_pull_share_mode_data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("ndr_pull_share_mode_lock failed\n"));
 		goto fail;
 	}
 
-	lck->modified = false;
-	lck->fresh = false;
+	d->modified = false;
+	d->fresh = false;
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10, ("parse_share_modes:\n"));
-		NDR_PRINT_DEBUG(share_mode_lock, lck);
+		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
 	/*
@@ -553,62 +552,61 @@ static struct share_mode_lock *parse_share_modes(TALLOC_CTX *mem_ctx,
 	 */
 
 	pids = talloc_array(talloc_tos(), struct server_id,
-			    lck->num_share_modes);
+			    d->num_share_modes);
 	if (pids == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
-	pid_exists = talloc_array(talloc_tos(), bool, lck->num_share_modes);
+	pid_exists = talloc_array(talloc_tos(), bool, d->num_share_modes);
 	if (pid_exists == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
 
-	for (i=0; i<lck->num_share_modes; i++) {
-		pids[i] = lck->share_modes[i].pid;
+	for (i=0; i<d->num_share_modes; i++) {
+		pids[i] = d->share_modes[i].pid;
 	}
-	if (!serverids_exist(pids, lck->num_share_modes, pid_exists)) {
+	if (!serverids_exist(pids, d->num_share_modes, pid_exists)) {
 		DEBUG(0, ("serverid_exists failed\n"));
 		goto fail;
 	}
 
 	i = 0;
-	while (i < lck->num_share_modes) {
-		struct share_mode_entry *e = &lck->share_modes[i];
+	while (i < d->num_share_modes) {
+		struct share_mode_entry *e = &d->share_modes[i];
 		if (!pid_exists[i]) {
-			*e = lck->share_modes[lck->num_share_modes-1];
-			lck->num_share_modes -= 1;
-			lck->modified = True;
+			*e = d->share_modes[d->num_share_modes-1];
+			d->num_share_modes -= 1;
+			d->modified = True;
 			continue;
 		}
 		i += 1;
 	}
 	TALLOC_FREE(pid_exists);
 	TALLOC_FREE(pids);
-	return lck;
+	return d;
 fail:
-	TALLOC_FREE(lck);
+	TALLOC_FREE(d);
 	return NULL;
 }
 
-static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
+static TDB_DATA unparse_share_modes(struct share_mode_data *d)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10, ("unparse_share_modes:\n"));
-		NDR_PRINT_DEBUG(share_mode_lock, lck);
+		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
-	if (lck->num_share_modes == 0) {
+	if (d->num_share_modes == 0) {
 		DEBUG(10, ("No used share mode found\n"));
 		return make_tdb_data(NULL, 0);
 	}
 
 	ndr_err = ndr_push_struct_blob(
-		&blob, lck, lck,
-		(ndr_push_flags_fn_t)ndr_push_share_mode_lock);
+		&blob, d, d, (ndr_push_flags_fn_t)ndr_push_share_mode_data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		smb_panic("ndr_push_share_mode_lock failed");
 	}
@@ -616,22 +614,22 @@ static TDB_DATA unparse_share_modes(struct share_mode_lock *lck)
 	return make_tdb_data(blob.data, blob.length);
 }
 
-static int share_mode_lock_destructor(struct share_mode_lock *lck)
+static int share_mode_data_destructor(struct share_mode_data *d)
 {
 	NTSTATUS status;
 	TDB_DATA data;
 
-	if (!lck->modified) {
+	if (!d->modified) {
 		return 0;
 	}
 
-	data = unparse_share_modes(lck);
+	data = unparse_share_modes(d);
 
 	if (data.dptr == NULL) {
-		if (!lck->fresh) {
+		if (!d->fresh) {
 			/* There has been an entry before, delete it */
 
-			status = dbwrap_record_delete(lck->record);
+			status = dbwrap_record_delete(d->record);
 			if (!NT_STATUS_IS_OK(status)) {
 				char *errmsg;
 
@@ -650,7 +648,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		goto done;
 	}
 
-	status = dbwrap_record_store(lck->record, data, TDB_REPLACE);
+	status = dbwrap_record_store(d->record, data, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		char *errmsg;
 
@@ -668,43 +666,43 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	return 0;
 }
 
-static struct share_mode_lock *fresh_share_mode_lock(
+static struct share_mode_data *fresh_share_mode_lock(
 	TALLOC_CTX *mem_ctx, const char *servicepath,
 	const struct smb_filename *smb_fname,
 	const struct timespec *old_write_time)
 {
-	struct share_mode_lock *lck;
+	struct share_mode_data *d;
 
 	if ((servicepath == NULL) || (smb_fname == NULL) ||
 	    (old_write_time == NULL)) {
 		return NULL;
 	}
 
-	lck = talloc_zero(mem_ctx, struct share_mode_lock);
-	if (lck == NULL) {
+	d = talloc_zero(mem_ctx, struct share_mode_data);
+	if (d == NULL) {
 		goto fail;
 	}
-	lck->base_name = talloc_strdup(lck, smb_fname->base_name);
-	if (lck->base_name == NULL) {
+	d->base_name = talloc_strdup(d, smb_fname->base_name);
+	if (d->base_name == NULL) {
 		goto fail;
 	}
 	if (smb_fname->stream_name != NULL) {
-		lck->stream_name = talloc_strdup(lck, smb_fname->stream_name);
-		if (lck->stream_name == NULL) {
+		d->stream_name = talloc_strdup(d, smb_fname->stream_name);
+		if (d->stream_name == NULL) {
 			goto fail;
 		}
 	}
-	lck->servicepath = talloc_strdup(lck, servicepath);
-	if (lck->servicepath == NULL) {
+	d->servicepath = talloc_strdup(d, servicepath);
+	if (d->servicepath == NULL) {
 		goto fail;
 	}
-	lck->old_write_time = *old_write_time;
-	lck->modified = false;
-	lck->fresh = true;
-	return lck;
+	d->old_write_time = *old_write_time;
+	d->modified = false;
+	d->fresh = true;
+	return d;
 fail:
 	DEBUG(0, ("talloc failed\n"));
-	TALLOC_FREE(lck);
+	TALLOC_FREE(d);
 	return NULL;
 }
 
@@ -715,6 +713,7 @@ struct share_mode_lock *get_share_mode_lock_fresh(TALLOC_CTX *mem_ctx,
 						  const struct timespec *old_write_time)
 {
 	struct share_mode_lock *lck;
+	struct share_mode_data *d;
 	struct file_id tmp;
 	struct db_record *rec;
 	TDB_DATA key = locking_key(&id, &tmp);
@@ -729,20 +728,28 @@ struct share_mode_lock *get_share_mode_lock_fresh(TALLOC_CTX *mem_ctx,
 	value = dbwrap_record_get_value(rec);
 
 	if (value.dptr == NULL) {
-		lck = fresh_share_mode_lock(mem_ctx, servicepath, smb_fname,
-					    old_write_time);
+		d = fresh_share_mode_lock(mem_ctx, servicepath, smb_fname,
+					  old_write_time);
 	} else {
-		lck = parse_share_modes(mem_ctx, value);
+		d = parse_share_modes(mem_ctx, value);
 	}
 
-	if (lck == NULL) {
+	if (d == NULL) {
 		DEBUG(1, ("Could not get share mode lock\n"));
 		TALLOC_FREE(rec);
 		return NULL;
 	}
-	lck->id = id;
-	lck->record = talloc_move(lck, &rec);
-	talloc_set_destructor(lck, share_mode_lock_destructor);
+	d->id = id;
+	d->record = talloc_move(d, &rec);
+	talloc_set_destructor(d, share_mode_data_destructor);
+
+	lck = talloc(mem_ctx, struct share_mode_lock);
+	if (lck == NULL) {
+		DEBUG(1, ("talloc failed\n"));
+		TALLOC_FREE(d);
+		return NULL;
+	}
+	lck->data = talloc_move(lck, &d);
 	return lck;
 }
 
@@ -769,11 +776,17 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 	if (data.dptr == NULL) {
 		return NULL;
 	}
-	lck = parse_share_modes(mem_ctx, data);
-	if (lck != NULL) {
-		lck->id = id;
+	lck = talloc(mem_ctx, struct share_mode_lock);
+	if (lck == NULL) {
+		TALLOC_FREE(data.dptr);
+		return NULL;
 	}
+	lck->data = parse_share_modes(mem_ctx, data);
 	TALLOC_FREE(data.dptr);
+	if (lck->data == NULL) {
+		TALLOC_FREE(lck);
+		return NULL;
+	}
 	return lck;
 }
 
@@ -791,6 +804,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			uint32_t new_name_hash,
 			const struct smb_filename *smb_fname_dst)
 {
+	struct share_mode_data *d = lck->data;
 	size_t sp_len;
 	size_t bn_len;
 	size_t sn_len;
@@ -814,48 +828,48 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		strip_two_chars = true;
 	}
 
-	lck->servicepath = talloc_strdup(lck, servicepath);
-	lck->base_name = talloc_strdup(lck, smb_fname_dst->base_name +
+	d->servicepath = talloc_strdup(d, servicepath);
+	d->base_name = talloc_strdup(d, smb_fname_dst->base_name +
 				       (strip_two_chars ? 2 : 0));
-	lck->stream_name = talloc_strdup(lck, smb_fname_dst->stream_name);
-	if (lck->base_name == NULL ||
-	    (has_stream && lck->stream_name == NULL) ||
-	    lck->servicepath == NULL) {
+	d->stream_name = talloc_strdup(d, smb_fname_dst->stream_name);
+	if (d->base_name == NULL ||
+	    (has_stream && d->stream_name == NULL) ||
+	    d->servicepath == NULL) {
 		DEBUG(0, ("rename_share_filename: talloc failed\n"));
 		return False;
 	}
-	lck->modified = True;
+	d->modified = True;
 
-	sp_len = strlen(lck->servicepath);
-	bn_len = strlen(lck->base_name);
-	sn_len = has_stream ? strlen(lck->stream_name) : 0;
+	sp_len = strlen(d->servicepath);
+	bn_len = strlen(d->base_name);
+	sn_len = has_stream ? strlen(d->stream_name) : 0;
 
 	msg_len = MSG_FILE_RENAMED_MIN_SIZE + sp_len + 1 + bn_len + 1 +
 	    sn_len + 1;
 
 	/* Set up the name changed message. */
-	frm = talloc_array(lck, char, msg_len);
+	frm = talloc_array(d, char, msg_len);
 	if (!frm) {
 		return False;
 	}
 
-	push_file_id_24(frm, &lck->id);
+	push_file_id_24(frm, &d->id);
 
 	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
 
 	strlcpy(&frm[24],
-		lck->servicepath ? lck->servicepath : "",
+		d->servicepath ? d->servicepath : "",
 		sp_len+1);
 	strlcpy(&frm[24 + sp_len + 1],
-		lck->base_name ? lck->base_name : "",
+		d->base_name ? d->base_name : "",
 		bn_len+1);
 	strlcpy(&frm[24 + sp_len + 1 + bn_len + 1],
-		lck->stream_name ? lck->stream_name : "",
+		d->stream_name ? d->stream_name : "",
 		sn_len+1);
 
 	/* Send the messages. */
-	for (i=0; i<lck->num_share_modes; i++) {
-		struct share_mode_entry *se = &lck->share_modes[i];
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *se = &d->share_modes[i];
 		if (!is_valid_share_mode_entry(se)) {
 			continue;
 		}
@@ -877,9 +891,9 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			  "pid %s file_id %s sharepath %s base_name %s "
 			  "stream_name %s\n",
 			  procid_str_static(&se->pid),
-			  file_id_string_tos(&lck->id),
-			  lck->servicepath, lck->base_name,
-			has_stream ? lck->stream_name : ""));
+			  file_id_string_tos(&d->id),
+			  d->servicepath, d->base_name,
+			has_stream ? d->stream_name : ""));
 
 		messaging_send_buf(msg_ctx, se->pid, MSG_SMB_FILE_RENAME,
 				   (uint8 *)frm, msg_len);
@@ -914,9 +928,9 @@ void get_file_infos(struct file_id id,
 	if (write_time) {
 		struct timespec wt;
 
-		wt = lck->changed_write_time;
+		wt = lck->data->changed_write_time;
 		if (null_timespec(wt)) {
-			wt = lck->old_write_time;
+			wt = lck->data->old_write_time;
 		}
 
 		*write_time = wt;
@@ -983,12 +997,12 @@ static void fill_deferred_open_entry(struct share_mode_entry *e,
 	e->flags = 0;
 }
 
-static void add_share_mode_entry(struct share_mode_lock *lck,
+static void add_share_mode_entry(struct share_mode_data *d,
 				 const struct share_mode_entry *entry)
 {
-	ADD_TO_ARRAY(lck, struct share_mode_entry, *entry,
-		     &lck->share_modes, &lck->num_share_modes);
-	lck->modified = True;
+	ADD_TO_ARRAY(d, struct share_mode_entry, *entry,
+		     &d->share_modes, &d->num_share_modes);
+	d->modified = True;
 }
 
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
@@ -996,7 +1010,7 @@ void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 {
 	struct share_mode_entry entry;
 	fill_share_mode_entry(&entry, fsp, uid, mid, op_type);
-	add_share_mode_entry(lck, &entry);
+	add_share_mode_entry(lck->data, &entry);
 }
 
 void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
@@ -1005,7 +1019,7 @@ void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
 {
 	struct share_mode_entry entry;
 	fill_deferred_open_entry(&entry, request_time, id, pid, mid);
-	add_share_mode_entry(lck, &entry);
+	add_share_mode_entry(lck->data, &entry);
 }
 
 /*******************************************************************
@@ -1035,13 +1049,13 @@ static bool deferred_open_identical(struct share_mode_entry *e1,
 		file_id_equal(&e1->id, &e2->id));
 }
 
-static struct share_mode_entry *find_share_mode_entry(struct share_mode_lock *lck,
+static struct share_mode_entry *find_share_mode_entry(struct share_mode_data *d,
 						      struct share_mode_entry *entry)
 {
 	int i;
 
-	for (i=0; i<lck->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->share_modes[i];
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
 		if (is_valid_share_mode_entry(entry) &&
 		    is_valid_share_mode_entry(e) &&
 		    share_modes_identical(e, entry)) {
@@ -1068,13 +1082,13 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	/* Don't care about the pid owner being correct here - just a search. */
 	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
 
-	e = find_share_mode_entry(lck, &entry);
+	e = find_share_mode_entry(lck->data, &entry);
 	if (e == NULL) {
 		return False;
 	}
-	*e = lck->share_modes[lck->num_share_modes-1];
-	lck->num_share_modes -= 1;
-	lck->modified = True;
+	*e = lck->data->share_modes[lck->data->num_share_modes-1];
+	lck->data->num_share_modes -= 1;
+	lck->data->modified = True;
 	return True;
 }
 
@@ -1084,15 +1098,15 @@ void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
 	struct share_mode_entry entry, *e;
 
 	fill_deferred_open_entry(&entry, timeval_zero(),
-				 lck->id, pid, mid);
+				 lck->data->id, pid, mid);
 
-	e = find_share_mode_entry(lck, &entry);
+	e = find_share_mode_entry(lck->data, &entry);
 	if (e == NULL) {
 		return;
 	}
-	*e = lck->share_modes[lck->num_share_modes-1];
-	lck->num_share_modes -= 1;
-	lck->modified = True;
+	*e = lck->data->share_modes[lck->data->num_share_modes-1];
+	lck->data->num_share_modes -= 1;
+	lck->data->modified = True;
 }
 
 /*******************************************************************
@@ -1106,7 +1120,7 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	/* Don't care about the pid owner being correct here - just a search. */
 	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
 
-	e = find_share_mode_entry(lck, &entry);
+	e = find_share_mode_entry(lck->data, &entry);
 	if (e == NULL) {
 		return False;
 	}
@@ -1124,7 +1138,7 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	} else {
 		e->op_type = NO_OPLOCK;
 	}
-	lck->modified = True;
+	lck->data->modified = True;
 	return True;
 }
 
@@ -1139,13 +1153,13 @@ bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	/* Don't care about the pid owner being correct here - just a search. */
 	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
 
-	e = find_share_mode_entry(lck, &entry);
+	e = find_share_mode_entry(lck->data, &entry);
 	if (e == NULL) {
 		return False;
 	}
 
 	e->op_type = LEVEL_II_OPLOCK;
-	lck->modified = True;
+	lck->data->modified = True;
 	return True;
 }
 
@@ -1182,27 +1196,27 @@ static struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct
  Adds a delete on close token.
 ****************************************************************************/
 
-static bool add_delete_on_close_token(struct share_mode_lock *lck,
+static bool add_delete_on_close_token(struct share_mode_data *d,
 			uint32_t name_hash,
 			const struct security_unix_token *tok)
 {
 	struct delete_token *tmp, *dtl;
 
-	tmp = talloc_realloc(lck, lck->delete_tokens, struct delete_token,
-			     lck->num_delete_tokens+1);
+	tmp = talloc_realloc(d, d->delete_tokens, struct delete_token,
+			     d->num_delete_tokens+1);
 	if (tmp == NULL) {
 		return false;
 	}
-	lck->delete_tokens = tmp;
-	dtl = &lck->delete_tokens[lck->num_delete_tokens];
+	d->delete_tokens = tmp;
+	dtl = &d->delete_tokens[d->num_delete_tokens];
 
 	dtl->name_hash = name_hash;
-	dtl->delete_token = copy_unix_token(lck->delete_tokens, tok);
+	dtl->delete_token = copy_unix_token(d->delete_tokens, tok);
 	if (dtl->delete_token == NULL) {
 		return false;
 	}
-	lck->num_delete_tokens += 1;
-	lck->modified = true;
+	d->num_delete_tokens += 1;
+	d->modified = true;
 	return true;
 }
 
@@ -1222,6 +1236,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 			bool delete_on_close,
 			const struct security_unix_token *tok)
 {
+	struct share_mode_data *d = lck->data;
 	int i;
 	bool ret;
 
@@ -1231,16 +1246,16 @@ void set_delete_on_close_lck(files_struct *fsp,
 		SMB_ASSERT(tok == NULL);
 	}
 
-	for (i=0; i<lck->num_delete_tokens; i++) {
-		struct delete_token *dt = &lck->delete_tokens[i];
+	for (i=0; i<d->num_delete_tokens; i++) {
+		struct delete_token *dt = &d->delete_tokens[i];
 		if (dt->name_hash == fsp->name_hash) {
-			lck->modified = true;
+			d->modified = true;
 			if (delete_on_close == false) {
 				/* Delete this entry. */
 				TALLOC_FREE(dt->delete_token);
-				*dt = lck->delete_tokens[
-					lck->num_delete_tokens-1];
-				lck->num_delete_tokens -= 1;
+				*dt = d->delete_tokens[
+					d->num_delete_tokens-1];
+				d->num_delete_tokens -= 1;
 				return;
 			}
 			/* Replace this token with the
@@ -1256,7 +1271,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 		return;
 	}
 
-	ret = add_delete_on_close_token(lck, fsp->name_hash, tok);
+	ret = add_delete_on_close_token(lck->data, fsp->name_hash, tok);
 	SMB_ASSERT(ret);
 }
 
@@ -1297,8 +1312,8 @@ const struct security_unix_token *get_delete_on_close_token(struct share_mode_lo
 	DEBUG(10,("get_delete_on_close_token: name_hash = 0x%x\n",
 			(unsigned int)name_hash ));
 
-	for (i=0; i<lck->num_delete_tokens; i++) {
-		struct delete_token *dt = &lck->delete_tokens[i];
+	for (i=0; i<lck->data->num_delete_tokens; i++) {
+		struct delete_token *dt = &lck->data->delete_tokens[i];
 		DEBUG(10,("get_delete_on_close_token: dtl->name_hash = 0x%x\n",
 				(unsigned int)dt->name_hash ));
 		if (dt->name_hash == name_hash) {
@@ -1327,9 +1342,9 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 		return False;
 	}
 
-	if (timespec_compare(&lck->changed_write_time, &write_time) != 0) {
-		lck->modified = True;
-		lck->changed_write_time = write_time;
+	if (timespec_compare(&lck->data->changed_write_time, &write_time) != 0) {
+		lck->data->modified = True;
+		lck->data->changed_write_time = write_time;
 	}
 
 	TALLOC_FREE(lck);
@@ -1350,9 +1365,9 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 		return False;
 	}
 
-	if (timespec_compare(&lck->old_write_time, &write_time) != 0) {
-		lck->modified = True;
-		lck->old_write_time = write_time;
+	if (timespec_compare(&lck->data->old_write_time, &write_time) != 0) {
+		lck->data->modified = True;
+		lck->data->old_write_time = write_time;
 	}
 
 	TALLOC_FREE(lck);
@@ -1376,7 +1391,7 @@ static int traverse_fn(struct db_record *rec, void *_state)
 	TDB_DATA value;
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
-	struct share_mode_lock *lck;
+	struct share_mode_data *d;
 
 	key = dbwrap_record_get_key(rec);
 	value = dbwrap_record_get_value(rec);
@@ -1385,8 +1400,8 @@ static int traverse_fn(struct db_record *rec, void *_state)
 	if (key.dsize != sizeof(struct file_id))
 		return 0;
 
-	lck = talloc(talloc_tos(), struct share_mode_lock);
-	if (lck == NULL) {
+	d = talloc(talloc_tos(), struct share_mode_data);
+	if (d == NULL) {
 		return 0;
 	}
 
@@ -1394,18 +1409,17 @@ static int traverse_fn(struct db_record *rec, void *_state)
 	blob.length = value.dsize;
 
 	ndr_err = ndr_pull_struct_blob(
-		&blob, lck, lck,
-		(ndr_pull_flags_fn_t)ndr_pull_share_mode_lock);
+		&blob, d, d, (ndr_pull_flags_fn_t)ndr_pull_share_mode_data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("ndr_pull_share_mode_lock failed\n"));
 		return 0;
 	}
-	for (i=0; i<lck->num_share_modes; i++) {
-		state->fn(&lck->share_modes[i],
-			  lck->servicepath, lck->base_name,
+	for (i=0; i<d->num_share_modes; i++) {
+		state->fn(&d->share_modes[i],
+			  d->servicepath, d->base_name,
 			  state->private_data);
 	}
-	TALLOC_FREE(lck);
+	TALLOC_FREE(d);
 
 	return 0;
 }

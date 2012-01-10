@@ -987,7 +987,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 {
 	int i;
 
-	if(lck->num_share_modes == 0) {
+	if(lck->data->num_share_modes == 0) {
 		return NT_STATUS_OK;
 	}
 
@@ -1010,9 +1010,9 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	 */
 
 #if defined(DEVELOPER)
-	for(i = 0; i < lck->num_share_modes; i++) {
+	for(i = 0; i < lck->data->num_share_modes; i++) {
 		validate_my_share_entries(conn->sconn, i,
-					  &lck->share_modes[i]);
+					  &lck->data->share_modes[i]);
 	}
 #endif
 
@@ -1021,15 +1021,15 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	}
 
 	/* Now we check the share modes, after any oplock breaks. */
-	for(i = 0; i < lck->num_share_modes; i++) {
+	for(i = 0; i < lck->data->num_share_modes; i++) {
 
-		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
+		if (!is_valid_share_mode_entry(&lck->data->share_modes[i])) {
 			continue;
 		}
 
 		/* someone else has a share lock on it, check to see if we can
 		 * too */
-		if (share_conflict(&lck->share_modes[i],
+		if (share_conflict(&lck->data->share_modes[i],
 				   access_mask, share_access)) {
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -1115,43 +1115,43 @@ static void find_oplock_types(files_struct *fsp,
 		return;
 	}
 
-	for (i=0; i<lck->num_share_modes; i++) {
-		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
+	for (i=0; i<lck->data->num_share_modes; i++) {
+		if (!is_valid_share_mode_entry(&lck->data->share_modes[i])) {
 			continue;
 		}
 
-		if (lck->share_modes[i].op_type == NO_OPLOCK &&
-				is_stat_open(lck->share_modes[i].access_mask)) {
+		if (lck->data->share_modes[i].op_type == NO_OPLOCK &&
+				is_stat_open(lck->data->share_modes[i].access_mask)) {
 			/* We ignore stat opens in the table - they
 			   always have NO_OPLOCK and never get or
 			   cause breaks. JRA. */
 			continue;
 		}
 
-		if (BATCH_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+		if (BATCH_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
 			/* batch - can only be one. */
 			if (*pp_ex_or_batch || *pp_batch || *got_level2 || *got_no_oplock) {
 				smb_panic("Bad batch oplock entry.");
 			}
-			*pp_batch = &lck->share_modes[i];
+			*pp_batch = &lck->data->share_modes[i];
 		}
 
-		if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+		if (EXCLUSIVE_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
 			/* Exclusive or batch - can only be one. */
 			if (*pp_ex_or_batch || *got_level2 || *got_no_oplock) {
 				smb_panic("Bad exclusive or batch oplock entry.");
 			}
-			*pp_ex_or_batch = &lck->share_modes[i];
+			*pp_ex_or_batch = &lck->data->share_modes[i];
 		}
 
-		if (LEVEL_II_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+		if (LEVEL_II_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
 			if (*pp_batch || *pp_ex_or_batch) {
 				smb_panic("Bad levelII oplock entry.");
 			}
 			*got_level2 = true;
 		}
 
-		if (lck->share_modes[i].op_type == NO_OPLOCK) {
+		if (lck->data->share_modes[i].op_type == NO_OPLOCK) {
 			if (*pp_batch || *pp_ex_or_batch) {
 				smb_panic("Bad no oplock entry.");
 			}
@@ -1296,8 +1296,8 @@ static void defer_open(struct share_mode_lock *lck,
 
 	/* Paranoia check */
 
-	for (i=0; i<lck->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->share_modes[i];
+	for (i=0; i<lck->data->num_share_modes; i++) {
+		struct share_mode_entry *e = &lck->data->share_modes[i];
 
 		if (is_deferred_open_entry(e) &&
 		    procid_is_me(&e->pid) &&
@@ -1465,7 +1465,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 	   a 1 second delay for share mode conflicts. */
 
 	state.delayed_for_oplocks = True;
-	state.id = lck->id;
+	state.id = lck->data->id;
 
 	if (!request_timed_out(request_time, timeout)) {
 		defer_open(lck, request_time, timeout, req, &state);

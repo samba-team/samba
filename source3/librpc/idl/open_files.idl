@@ -44,5 +44,5 @@ interface open_files
 		uint8 fresh;
 		uint8 modified;
 		[ignore] db_record *record;
-	} share_mode_lock;
+	} share_mode_data;
 }

@@ -5855,7 +5855,7 @@ static void rename_open_files(connection_struct *conn,
 	NTSTATUS status;
 	uint32_t new_name_hash = 0;
 
-	for(fsp = file_find_di_first(conn->sconn, lck->id); fsp;
+	for(fsp = file_find_di_first(conn->sconn, lck->data->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
 		/* fsp_name is a relative path under the fsp. To change this for other
 		   sharepaths we need to manipulate relative paths. */
@@ -5881,7 +5881,7 @@ static void rename_open_files(connection_struct *conn,
 
 	if (!did_rename) {
 		DEBUG(10, ("rename_open_files: no open files on file_id %s "
-			   "for %s\n", file_id_string_tos(&lck->id),
+			   "for %s\n", file_id_string_tos(&lck->data->id),
 			   smb_fname_str_dbg(smb_fname_dst)));
 	}
 

@@ -212,11 +212,13 @@ static void print_brl(struct file_id id,
 
 	share_mode = fetch_share_mode_unlocked(NULL, id);
 	if (share_mode) {
-		bool has_stream = share_mode->stream_name != NULL;
+		bool has_stream = share_mode->data->stream_name != NULL;
 
-		fname = talloc_asprintf(NULL, "%s%s%s", share_mode->base_name,
+		fname = talloc_asprintf(NULL, "%s%s%s",
+					share_mode->data->base_name,
 					has_stream ? ":" : "",
-					has_stream ? share_mode->stream_name :
+					has_stream ?
+					share_mode->data->stream_name :
 					"");
 	} else {
 		fname = talloc_strdup(NULL, "");

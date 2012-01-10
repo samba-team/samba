@@ -766,10 +766,10 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	}
 
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
-		  lck->num_share_modes ));
+		  lck->data->num_share_modes ));
 
-	for(i = 0; i < lck->num_share_modes; i++) {
-		struct share_mode_entry *share_entry = &lck->share_modes[i];
+	for(i = 0; i < lck->data->num_share_modes; i++) {
+		struct share_mode_entry *share_entry = &lck->data->share_modes[i];
 		char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 
 		if (!is_valid_share_mode_entry(share_entry)) {

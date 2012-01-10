@@ -178,8 +178,8 @@ static void notify_deferred_opens(struct smbd_server_connection *sconn,
 	}
 
 	num_deferred = 0;
-	for (i=0; i<lck->num_share_modes; i++) {
-		if (is_deferred_open_entry(&lck->share_modes[i])) {
+	for (i=0; i<lck->data->num_share_modes; i++) {
+		if (is_deferred_open_entry(&lck->data->share_modes[i])) {
 			num_deferred += 1;
 		}
 	}
@@ -194,8 +194,8 @@ static void notify_deferred_opens(struct smbd_server_connection *sconn,
 	}
 
 	num_deferred = 0;
-	for (i=0; i<lck->num_share_modes; i++) {
- 		struct share_mode_entry *e = &lck->share_modes[i];
+	for (i=0; i<lck->data->num_share_modes; i++) {
+		struct share_mode_entry *e = &lck->data->share_modes[i];
 		if (is_deferred_open_entry(e)) {
 			deferred[num_deferred] = *e;
 			num_deferred += 1;
@@ -359,7 +359,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		DEBUG(10,("close_remove_share_mode: write time forced "
 			"for file %s\n",
 			fsp_str_dbg(fsp)));
-		set_close_write_time(fsp, lck->changed_write_time);
+		set_close_write_time(fsp, lck->data->changed_write_time);
 	} else if (fsp->update_write_time_on_close) {
 		/* Someone had a pending write. */
 		if (null_timespec(fsp->close_write_time)) {
@@ -408,8 +408,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		/* See if others still have the file open via this pathname.
 		   If this is the case, then don't delete. If all opens are
 		   POSIX delete now. */
-		for (i=0; i<lck->num_share_modes; i++) {
-			struct share_mode_entry *e = &lck->share_modes[i];
+		for (i=0; i<lck->data->num_share_modes; i++) {
+			struct share_mode_entry *e = &lck->data->share_modes[i];
 			if (is_valid_share_mode_entry(e) &&
 					e->name_hash == fsp->name_hash) {
 				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
@@ -619,7 +619,7 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 	if (lck) {
 		/* Close write times overwrite sticky write times
 		   so we must replace any sticky write time here. */
-		if (!null_timespec(lck->changed_write_time)) {
+		if (!null_timespec(lck->data->changed_write_time)) {
 			(void)set_sticky_write_time(fsp->file_id, fsp->close_write_time);
 		}
 		TALLOC_FREE(lck);
@@ -1058,8 +1058,8 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		int i;
 		/* See if others still have the dir open. If this is the
 		 * case, then don't delete. If all opens are POSIX delete now. */
-		for (i=0; i<lck->num_share_modes; i++) {
-			struct share_mode_entry *e = &lck->share_modes[i];
+		for (i=0; i<lck->data->num_share_modes; i++) {
+			struct share_mode_entry *e = &lck->data->share_modes[i];
 			if (is_valid_share_mode_entry(e) &&
 					e->name_hash == fsp->name_hash) {
 				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {

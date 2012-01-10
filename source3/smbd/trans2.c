@@ -7585,8 +7585,8 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	 * don't delete. If all opens are POSIX delete we can set the delete
 	 * on close disposition.
 	 */
-	for (i=0; i<lck->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->share_modes[i];
+	for (i=0; i<lck->data->num_share_modes; i++) {
+		struct share_mode_entry *e = &lck->data->share_modes[i];
 		if (is_valid_share_mode_entry(e)) {
 			if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
 				continue;
