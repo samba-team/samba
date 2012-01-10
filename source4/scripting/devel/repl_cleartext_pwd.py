@@ -76,15 +76,19 @@ def attid_equal(a1,a2):
 
 ########### main code ###########
 if __name__ == "__main__":
-    parser = OptionParser("repl_cleartext_pwd.py [options] server dn cookie_file cleartext_name [attid attname]")
+    parser = OptionParser("repl_cleartext_pwd.py [options] server dn cookie_file cleartext_name [attid attname attmode]")
     sambaopts = options.SambaOptions(parser)
     credopts = options.CredentialsOptions(parser)
     parser.add_option_group(credopts)
 
     (opts, args) = parser.parse_args()
 
-    if len(args) < 4 or len(args) == 5:
-        parser.error("more arguments required")
+    if len(args) == 4:
+        pass
+    elif len(args) >= 7:
+        pass
+    else:
+        parser.error("more arguments required - given=%d" % (len(args)))
 
     server = args[0]
     dn = args[1]
@@ -92,15 +96,19 @@ if __name__ == "__main__":
     if len(cookie_file) == 0:
         cookie_file = None
     cleartext_name = args[3]
-    if len(args) >= 5:
+    if len(args) >= 7:
         try:
             attid = int(args[4], 16)
         except:
             attid = int(args[4])
         attname = args[5]
+        attmode = args[6]
+        if attmode not in ["raw", "utf8"]:
+            parser.error("attmode should be 'raw' or 'utf8'")
     else:
         attid = -1
         attname = None
+        attmode = "raw"
 
     lp = sambaopts.get_loadparm()
     creds = credopts.get_credentials(lp)
@@ -252,7 +260,16 @@ if __name__ == "__main__":
                     attvals = []
                     for j in range(0, attr.value_ctr.num_values):
                         assert attr.value_ctr.values[j].blob is not None
-                        attvals.append(attr.value_ctr.values[j].blob)
+                        val_raw = attr.value_ctr.values[j].blob
+                        val = None
+                        if attmode == "utf8":
+                            val_unicode = unicode(val_raw, 'utf-16-le')
+                            val = val_unicode.encode('utf-8')
+                        elif attmode == "raw":
+                            val = val_raw
+                        else:
+                            assert False, "attmode[%s]" % attmode
+                        attvals.append(val)
                 if not attid_equal(attr.attid, drsuapi.DRSUAPI_ATTID_supplementalCredentials):
                     continue
                 assert attr.value_ctr.num_values <= 1
