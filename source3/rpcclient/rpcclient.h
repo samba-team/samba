@@ -35,7 +35,7 @@ struct cmd_set {
 	NTSTATUS (*ntfn)(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, int argc, 
 			const char **argv);
 	WERROR (*wfn)(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, int argc, const char **argv);
-	const struct ndr_syntax_id *interface;
+	const struct ndr_interface_table *table;
 	struct rpc_pipe_client *rpc_pipe;
 	const char *description;
 	const char *usage;

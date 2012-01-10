@@ -944,19 +944,19 @@ struct cmd_set srvsvc_commands[] = {
 
 	{ "SRVSVC" },
 
-	{ "srvinfo",     RPC_RTYPE_WERROR, NULL, cmd_srvsvc_srv_query_info, &ndr_table_srvsvc.syntax_id, NULL, "Server query info", "" },
-	{ "netshareenum",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum, &ndr_table_srvsvc.syntax_id, NULL, "Enumerate shares", "" },
-	{ "netshareenumall",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum_all, &ndr_table_srvsvc.syntax_id, NULL, "Enumerate all shares", "" },
-	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, &ndr_table_srvsvc.syntax_id, NULL, "Get Share Info", "" },
-	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, &ndr_table_srvsvc.syntax_id, NULL, "Set Share Info", "" },
-	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  &ndr_table_srvsvc.syntax_id, NULL, "Enumerate open files", "" },
-	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, &ndr_table_srvsvc.syntax_id, NULL, "Fetch remote time of day", "" },
-	{ "netnamevalidate", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_name_validate, &ndr_table_srvsvc.syntax_id, NULL, "Validate sharename", "" },
-	{ "netfilegetsec", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_get_sec, &ndr_table_srvsvc.syntax_id, NULL, "Get File security", "" },
-	{ "netsessdel", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_del, &ndr_table_srvsvc.syntax_id, NULL, "Delete Session", "" },
-	{ "netsessenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_enum, &ndr_table_srvsvc.syntax_id, NULL, "Enumerate Sessions", "" },
-	{ "netdiskenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_disk_enum, &ndr_table_srvsvc.syntax_id, NULL, "Enumerate Disks", "" },
-	{ "netconnenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_conn_enum, &ndr_table_srvsvc.syntax_id, NULL, "Enumerate Connections", "" },
+	{ "srvinfo",     RPC_RTYPE_WERROR, NULL, cmd_srvsvc_srv_query_info, &ndr_table_srvsvc, NULL, "Server query info", "" },
+	{ "netshareenum",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum, &ndr_table_srvsvc, NULL, "Enumerate shares", "" },
+	{ "netshareenumall",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_enum_all, &ndr_table_srvsvc, NULL, "Enumerate all shares", "" },
+	{ "netsharegetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_get_info, &ndr_table_srvsvc, NULL, "Get Share Info", "" },
+	{ "netsharesetinfo",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_share_set_info, &ndr_table_srvsvc, NULL, "Set Share Info", "" },
+	{ "netfileenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_enum,  &ndr_table_srvsvc, NULL, "Enumerate open files", "" },
+	{ "netremotetod",RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_remote_tod, &ndr_table_srvsvc, NULL, "Fetch remote time of day", "" },
+	{ "netnamevalidate", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_name_validate, &ndr_table_srvsvc, NULL, "Validate sharename", "" },
+	{ "netfilegetsec", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_file_get_sec, &ndr_table_srvsvc, NULL, "Get File security", "" },
+	{ "netsessdel", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_del, &ndr_table_srvsvc, NULL, "Delete Session", "" },
+	{ "netsessenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_sess_enum, &ndr_table_srvsvc, NULL, "Enumerate Sessions", "" },
+	{ "netdiskenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_disk_enum, &ndr_table_srvsvc, NULL, "Enumerate Disks", "" },
+	{ "netconnenum", RPC_RTYPE_WERROR, NULL, cmd_srvsvc_net_conn_enum, &ndr_table_srvsvc, NULL, "Enumerate Connections", "" },
 
 	{ NULL }
 };

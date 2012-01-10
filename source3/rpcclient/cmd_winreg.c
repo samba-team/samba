@@ -319,8 +319,8 @@ static WERROR cmd_winreg_querymultiplevalues2(struct rpc_pipe_client *cli,
 struct cmd_set winreg_commands[] = {
 
 	{ "WINREG" },
-	{ "winreg_enumkey", RPC_RTYPE_WERROR, NULL, cmd_winreg_enumkeys, &ndr_table_winreg.syntax_id, NULL, "Enumerate Keys", "" },
-	{ "querymultiplevalues", RPC_RTYPE_WERROR, NULL, cmd_winreg_querymultiplevalues, &ndr_table_winreg.syntax_id, NULL, "Query multiple values", "" },
-	{ "querymultiplevalues2", RPC_RTYPE_WERROR, NULL, cmd_winreg_querymultiplevalues2, &ndr_table_winreg.syntax_id, NULL, "Query multiple values", "" },
+	{ "winreg_enumkey", RPC_RTYPE_WERROR, NULL, cmd_winreg_enumkeys, &ndr_table_winreg, NULL, "Enumerate Keys", "" },
+	{ "querymultiplevalues", RPC_RTYPE_WERROR, NULL, cmd_winreg_querymultiplevalues, &ndr_table_winreg, NULL, "Query multiple values", "" },
+	{ "querymultiplevalues2", RPC_RTYPE_WERROR, NULL, cmd_winreg_querymultiplevalues2, &ndr_table_winreg, NULL, "Query multiple values", "" },
 	{ NULL }
 };

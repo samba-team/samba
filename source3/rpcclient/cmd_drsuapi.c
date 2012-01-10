@@ -583,8 +583,8 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 struct cmd_set drsuapi_commands[] = {
 
 	{ "DRSUAPI" },
-	{ "dscracknames", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_cracknames, &ndr_table_drsuapi.syntax_id, NULL, "Crack Name", "" },
-	{ "dsgetdcinfo", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getdcinfo, &ndr_table_drsuapi.syntax_id, NULL, "Get Domain Controller Info", "" },
-	{ "dsgetncchanges", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getncchanges, &ndr_table_drsuapi.syntax_id, NULL, "Get NC Changes", "" },
+	{ "dscracknames", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_cracknames, &ndr_table_drsuapi, NULL, "Crack Name", "" },
+	{ "dsgetdcinfo", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getdcinfo, &ndr_table_drsuapi, NULL, "Get Domain Controller Info", "" },
+	{ "dsgetncchanges", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getncchanges, &ndr_table_drsuapi, NULL, "Get NC Changes", "" },
 	{ NULL }
 };

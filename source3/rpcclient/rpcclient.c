@@ -682,12 +682,12 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	/* Open pipe */
 
-	if ((cmd_entry->interface != NULL) && (cmd_entry->rpc_pipe == NULL)) {
+	if ((cmd_entry->table != NULL) && (cmd_entry->rpc_pipe == NULL)) {
 		switch (pipe_default_auth_type) {
 		case DCERPC_AUTH_TYPE_NONE:
 			ntresult = cli_rpc_pipe_open_noauth_transport(
 				cli, default_transport,
-				cmd_entry->interface,
+				&cmd_entry->table->syntax_id,
 				&cmd_entry->rpc_pipe);
 			break;
 		case DCERPC_AUTH_TYPE_SPNEGO:
@@ -703,7 +703,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				break;
 			}
 			ntresult = cli_rpc_pipe_open_spnego(
-				cli, cmd_entry->interface,
+				cli, &cmd_entry->table->syntax_id,
 				default_transport,
 				oid,
 				pipe_default_auth_level,
@@ -717,7 +717,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 		case DCERPC_AUTH_TYPE_KRB5:
 			ntresult = cli_rpc_pipe_open_generic_auth(
-				cli, cmd_entry->interface,
+				cli, &cmd_entry->table->syntax_id,
 				default_transport,
 				pipe_default_auth_type,
 				pipe_default_auth_level,
@@ -729,7 +729,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			break;
 		case DCERPC_AUTH_TYPE_SCHANNEL:
 			ntresult = cli_rpc_pipe_open_schannel(
-				cli, cmd_entry->interface,
+				cli, &cmd_entry->table->syntax_id,
 				default_transport,
 				pipe_default_auth_level,
 				get_cmdline_auth_info_domain(auth_info),
@@ -738,21 +738,18 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		default:
 			DEBUG(0, ("Could not initialise %s. Invalid "
 				  "auth type %u\n",
-				  get_pipe_name_from_syntax(
-					  talloc_tos(),
-					  cmd_entry->interface),
+				  cmd_entry->table->name,
 				  pipe_default_auth_type ));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (!NT_STATUS_IS_OK(ntresult)) {
 			DEBUG(0, ("Could not initialise %s. Error was %s\n",
-				  get_pipe_name_from_syntax(
-					  talloc_tos(), cmd_entry->interface),
+				  cmd_entry->table->name,
 				  nt_errstr(ntresult) ));
 			return ntresult;
 		}
 
-		if (ndr_syntax_id_equal(cmd_entry->interface,
+		if (ndr_syntax_id_equal(&cmd_entry->table->syntax_id,
 					&ndr_table_netlogon.syntax_id)) {
 			uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 			enum netr_SchannelType sec_channel_type;
@@ -777,9 +774,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
-					  get_pipe_name_from_syntax(
-						  talloc_tos(),
-						  cmd_entry->interface)));
+					  cmd_entry->table->name));
 				return ntresult;
 			}
 		}

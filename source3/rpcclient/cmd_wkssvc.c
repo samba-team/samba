@@ -216,12 +216,12 @@ static WERROR cmd_wkssvc_enumerateusers(struct rpc_pipe_client *cli,
 struct cmd_set wkssvc_commands[] = {
 
 	{ "WKSSVC" },
-	{ "wkssvc_wkstagetinfo", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_wkstagetinfo, &ndr_table_wkssvc.syntax_id, NULL, "Query WKSSVC Workstation Information", "" },
-	{ "wkssvc_getjoininformation", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_getjoininformation, &ndr_table_wkssvc.syntax_id, NULL, "Query WKSSVC Join Information", "" },
-	{ "wkssvc_messagebuffersend", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_messagebuffersend, &ndr_table_wkssvc.syntax_id, NULL, "Send WKSSVC message", "" },
-	{ "wkssvc_enumeratecomputernames", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_enumeratecomputernames, &ndr_table_wkssvc.syntax_id, NULL, "Enumerate WKSSVC computer names", "" },
+	{ "wkssvc_wkstagetinfo", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_wkstagetinfo, &ndr_table_wkssvc, NULL, "Query WKSSVC Workstation Information", "" },
+	{ "wkssvc_getjoininformation", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_getjoininformation, &ndr_table_wkssvc, NULL, "Query WKSSVC Join Information", "" },
+	{ "wkssvc_messagebuffersend", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_messagebuffersend, &ndr_table_wkssvc, NULL, "Send WKSSVC message", "" },
+	{ "wkssvc_enumeratecomputernames", RPC_RTYPE_WERROR, NULL, cmd_wkssvc_enumeratecomputernames, &ndr_table_wkssvc, NULL, "Enumerate WKSSVC computer names", "" },
 	{ "wkssvc_enumerateusers", RPC_RTYPE_WERROR, NULL,
-	  cmd_wkssvc_enumerateusers, &ndr_table_wkssvc.syntax_id, NULL,
+	  cmd_wkssvc_enumerateusers, &ndr_table_wkssvc, NULL,
 	  "Enumerate WKSSVC users", "" },
 	{ NULL }
 };

@@ -555,13 +555,13 @@ static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
 
 struct cmd_set eventlog_commands[] = {
 	{ "EVENTLOG" },
-	{ "eventlog_readlog",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_readlog,		NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Read Eventlog", "" },
-	{ "eventlog_numrecord",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_numrecords,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Get number of records", "" },
-	{ "eventlog_oldestrecord",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_oldestrecord,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Get oldest record", "" },
-	{ "eventlog_reportevent",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reportevent,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event", "" },
-	{ "eventlog_reporteventsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reporteventsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event and source", "" },
-	{ "eventlog_registerevsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_registerevsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Register event source", "" },
-	{ "eventlog_backuplog",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_backuplog,		NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Backup Eventlog File", "" },
-	{ "eventlog_loginfo",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_loginfo,		NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Get Eventlog Information", "" },
+	{ "eventlog_readlog",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_readlog,		NULL,	&ndr_table_eventlog,	NULL,	"Read Eventlog", "" },
+	{ "eventlog_numrecord",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_numrecords,	NULL,	&ndr_table_eventlog,	NULL,	"Get number of records", "" },
+	{ "eventlog_oldestrecord",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_oldestrecord,	NULL,	&ndr_table_eventlog,	NULL,	"Get oldest record", "" },
+	{ "eventlog_reportevent",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reportevent,	NULL,	&ndr_table_eventlog,	NULL,	"Report event", "" },
+	{ "eventlog_reporteventsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reporteventsource,	NULL,	&ndr_table_eventlog,	NULL,	"Report event and source", "" },
+	{ "eventlog_registerevsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_registerevsource,	NULL,	&ndr_table_eventlog,	NULL,	"Register event source", "" },
+	{ "eventlog_backuplog",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_backuplog,		NULL,	&ndr_table_eventlog,	NULL,	"Backup Eventlog File", "" },
+	{ "eventlog_loginfo",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_loginfo,		NULL,	&ndr_table_eventlog,	NULL,	"Get Eventlog Information", "" },
 	{ NULL }
 };
