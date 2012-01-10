@@ -218,7 +218,7 @@ LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
 
 RPC_CLIENT_SCHANNEL_SRC = '''rpc_client/cli_pipe_schannel.c'''
 
-LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c'''
+LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c locking/share_mode_lock.c'''
 
 PRIVILEGES_SRC = '''lib/privileges.c'''
 
