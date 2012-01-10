@@ -112,7 +112,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
  * on the wire (or in the local queue). So in case the record has
  * migrated off the new destinaton of the call packet, instead of
  * going back to the LMASTER to get the new DMASTER, we try to
- * reduce rountrips by first chasing the record a couple of times
+ * reduce round-trips by first chasing the record a couple of times
  * before giving up the direct chase and finally going back to the
  * LMASTER (again). Note that this works because of this: When
  * a record is migrated off a node, then the new DMASTER is stored
