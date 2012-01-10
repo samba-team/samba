@@ -76,7 +76,7 @@ def attid_equal(a1,a2):
 
 ########### main code ###########
 if __name__ == "__main__":
-    parser = OptionParser("repl_cleartext_pwd.py [options] server dn cookie_file cleartext_name [attid attname attmode]")
+    parser = OptionParser("repl_cleartext_pwd.py [options] server dn cookie_file clear_utf8_name [attid attname attmode] [clear_utf16_name")
     sambaopts = options.SambaOptions(parser)
     credopts = options.CredentialsOptions(parser)
     parser.add_option_group(credopts)
@@ -85,7 +85,9 @@ if __name__ == "__main__":
 
     if len(args) == 4:
         pass
-    elif len(args) >= 7:
+    elif len(args) == 7:
+        pass
+    elif len(args) >= 8:
         pass
     else:
         parser.error("more arguments required - given=%d" % (len(args)))
@@ -95,7 +97,7 @@ if __name__ == "__main__":
     cookie_file = args[2]
     if len(cookie_file) == 0:
         cookie_file = None
-    cleartext_name = args[3]
+    clear_utf8_name = args[3]
     if len(args) >= 7:
         try:
             attid = int(args[4], 16)
@@ -109,6 +111,10 @@ if __name__ == "__main__":
         attid = -1
         attname = None
         attmode = "raw"
+    if len(args) >= 8:
+        clear_utf16_name = args[7]
+    else:
+        clear_utf16_name = None
 
     lp = sambaopts.get_loadparm()
     creds = credopts.get_credentials(lp)
@@ -313,10 +319,14 @@ if __name__ == "__main__":
 
             if cleartext_hex is not None:
                 cleartext_utf16 = binascii.a2b_hex(cleartext_hex)
-                cleartext_unicode = unicode(cleartext_utf16, 'utf-16-le')
-                cleartext_utf8 = cleartext_unicode.encode('utf-8')
-
-                gls.add_attr(obj.identifier.dn, cleartext_name, [cleartext_utf8])
+                if clear_utf16_name is not None:
+                    gls.add_attr(obj.identifier.dn, clear_utf16_name, [cleartext_utf16])
+                try:
+                    cleartext_unicode = unicode(cleartext_utf16, 'utf-16-le')
+                    cleartext_utf8 = cleartext_unicode.encode('utf-8')
+                    gls.add_attr(obj.identifier.dn, clear_utf8_name, [cleartext_utf8])
+                except:
+                    pass
 
                 if attvals is not None:
                     gls.add_attr(obj.identifier.dn, attname, attvals)
