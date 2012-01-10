@@ -2272,8 +2272,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	    printer_driver_files_in_use(tmp_ctx,
 					b,
 					info)) {
-		/* no idea of the correct error here */
-		status = WERR_ACCESS_DENIED;
+		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
 	}
 
