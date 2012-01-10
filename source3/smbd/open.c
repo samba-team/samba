@@ -2740,10 +2740,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	fsp->share_access = share_access;
 	fsp->fh->private_options = 0;
-	/*
-	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
-	 */
-	fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
 	fsp->print_file = NULL;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
@@ -2758,6 +2754,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	mtimespec = smb_dname->st.st_ex_mtime;
 
+	/* Temporary access mask used to open the directory fd. */
+	fsp->access_mask = FILE_READ_DATA | FILE_READ_ATTRIBUTES;
 #ifdef O_DIRECTORY
 	status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
 #else
@@ -2772,6 +2770,12 @@ static NTSTATUS open_directory(connection_struct *conn,
 		file_free(req, fsp);
 		return status;
 	}
+
+	/*
+	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
+	 * Set the real access mask for later access (possibly delete).
+	 */
+	fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
 
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
