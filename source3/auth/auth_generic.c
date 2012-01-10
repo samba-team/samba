@@ -120,7 +120,10 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 		goto done;
 	}
 
-	/* TODO: save PAC data in netsamlogon cache ? */
+	/* save the PAC data if we have it */
+	if (logon_info) {
+		netsamlogon_cache_store(ntuser, &logon_info->info3);
+	}
 
 	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,
