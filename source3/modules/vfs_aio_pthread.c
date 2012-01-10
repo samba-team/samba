@@ -42,7 +42,7 @@ struct aio_private_data {
 };
 
 /* List of outstanding requests we have. */
-struct aio_private_data *pd_list;
+static struct aio_private_data *pd_list;
 
 static void aio_pthread_handle_completion(struct event_context *event_ctx,
 				struct fd_event *event,
