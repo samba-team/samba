@@ -25,7 +25,7 @@
 #include "system/filesys.h"
 #include "system/shmem.h"
 #include "smbd/smbd.h"
-#include "pthreadpool.h"
+#include "lib/pthreadpool/pthreadpool.h"
 
 struct aio_extra;
 static struct pthreadpool *pool;
