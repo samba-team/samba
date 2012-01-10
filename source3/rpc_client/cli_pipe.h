@@ -85,7 +85,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 					    struct rpc_pipe_client **presult);
 
 NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
-					const struct ndr_syntax_id *interface,
+					const struct ndr_interface_table *table,
 					enum dcerpc_transport_t transport,
 					enum dcerpc_AuthType auth_type,
 					enum dcerpc_AuthLevel auth_level,
@@ -96,7 +96,7 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 					struct rpc_pipe_client **presult);
 
 NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
-				  const struct ndr_syntax_id *interface,
+				  const struct ndr_interface_table *table,
 				  enum dcerpc_transport_t transport,
 				  const char *oid,
 				  enum dcerpc_AuthLevel auth_level,

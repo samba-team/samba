@@ -2812,7 +2812,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
  ****************************************************************************/
 
 NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
-					const struct ndr_syntax_id *interface,
+					const struct ndr_interface_table *table,
 					enum dcerpc_transport_t transport,
 					enum dcerpc_AuthType auth_type,
 					enum dcerpc_AuthLevel auth_level,
@@ -2824,10 +2824,10 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 {
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth = NULL;
-	const char *target_service = "cifs"; /* TODO: Determine target service from the bindings or interface table */
+	const char *target_service = table->authservices->names[0];
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, transport, interface, &result);
+	status = cli_rpc_pipe_open(cli, transport, &table->syntax_id, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2851,8 +2851,7 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 	}
 
 	DEBUG(10,("cli_rpc_pipe_open_generic_auth: opened pipe %s to "
-		"machine %s and bound as user %s\\%s.\n",
-		  get_pipe_name_from_syntax(talloc_tos(), interface),
+		"machine %s and bound as user %s\\%s.\n", table->name,
 		  result->desthost, domain, username));
 
 	*presult = result;
@@ -2927,7 +2926,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 }
 
 NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
-				  const struct ndr_syntax_id *interface,
+				  const struct ndr_interface_table *table,
 				  enum dcerpc_transport_t transport,
 				  const char *oid,
 				  enum dcerpc_AuthLevel auth_level,
@@ -2941,9 +2940,9 @@ NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
 	struct pipe_auth_data *auth;
 	struct spnego_context *spnego_ctx;
 	NTSTATUS status;
-	const char *target_service = "cifs"; /* TODO: Determine target service from the bindings or interface table */
+	const char *target_service = table->authservices->names[0];
 
-	status = cli_rpc_pipe_open(cli, transport, interface, &result);
+	status = cli_rpc_pipe_open(cli, transport, &table->syntax_id, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

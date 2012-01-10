@@ -201,7 +201,7 @@ int run_rpc_command(struct net_context *c,
 		} else {
 			if (conn_flags & NET_FLAGS_SEAL) {
 				nt_status = cli_rpc_pipe_open_generic_auth(
-					cli, &table->syntax_id,
+					cli, table,
 					(conn_flags & NET_FLAGS_TCP) ?
 					NCACN_IP_TCP : NCACN_NP,
 					DCERPC_AUTH_TYPE_NTLMSSP,

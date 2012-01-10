@@ -100,7 +100,7 @@ static NTSTATUS get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open_spnego(
-		cli, &ndr_table_netlogon.syntax_id, NCACN_NP,
+		cli, &ndr_table_netlogon, NCACN_NP,
 		GENSEC_OID_NTLMSSP,
 		DCERPC_AUTH_LEVEL_PRIVACY,
 		cli_state_remote_name(cli),

@@ -2191,7 +2191,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	   authenticated SAMR pipe with sign & seal. */
 	status = cli_rpc_pipe_open_spnego(conn->cli,
-					  &ndr_table_samr.syntax_id,
+					  &ndr_table_samr,
 					  NCACN_NP,
 					  GENSEC_OID_NTLMSSP,
 					  DCERPC_AUTH_LEVEL_PRIVACY,
@@ -2431,7 +2431,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	 * authenticated LSA pipe with sign & seal. */
 	result = cli_rpc_pipe_open_spnego
-		(conn->cli, &ndr_table_lsarpc.syntax_id, NCACN_NP,
+		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
 		 GENSEC_OID_NTLMSSP,
 		 DCERPC_AUTH_LEVEL_PRIVACY,
 		 cli_state_remote_name(conn->cli),

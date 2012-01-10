@@ -149,7 +149,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 
 	if (!pass_must_change) {
 		result = cli_rpc_pipe_open_generic_auth(cli,
-							&ndr_table_samr.syntax_id,
+							&ndr_table_samr,
 							NCACN_NP,
 							DCERPC_AUTH_TYPE_NTLMSSP,
 							DCERPC_AUTH_LEVEL_PRIVACY,

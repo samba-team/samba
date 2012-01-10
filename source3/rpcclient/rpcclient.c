@@ -703,7 +703,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				break;
 			}
 			ntresult = cli_rpc_pipe_open_spnego(
-				cli, &cmd_entry->table->syntax_id,
+				cli, cmd_entry->table,
 				default_transport,
 				oid,
 				pipe_default_auth_level,
@@ -717,7 +717,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 		case DCERPC_AUTH_TYPE_KRB5:
 			ntresult = cli_rpc_pipe_open_generic_auth(
-				cli, &cmd_entry->table->syntax_id,
+				cli, cmd_entry->table,
 				default_transport,
 				pipe_default_auth_type,
 				pipe_default_auth_level,
