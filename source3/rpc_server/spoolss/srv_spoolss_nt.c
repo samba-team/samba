@@ -2264,8 +2264,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 					get_session_info_system(),
 					p->msg_ctx,
 					info)) {
-		/* no idea of the correct error here */
-		status = WERR_ACCESS_DENIED;
+		status = WERR_PRINTER_DRIVER_IN_USE;
 		goto done;
 	}
 
