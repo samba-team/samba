@@ -71,6 +71,9 @@ class globals:
            continue
         self.global_objs = {}
 
+def attid_equal(a1,a2):
+    return (a1 & 0xffffffff) == (a2 & 0xffffffff)
+
 ########### main code ###########
 if __name__ == "__main__":
     parser = OptionParser("repl_cleartext_pwd.py [options] server dn cookie_file cleartext_name [attid attname]")
@@ -90,7 +93,10 @@ if __name__ == "__main__":
         cookie_file = None
     cleartext_name = args[3]
     if len(args) >= 5:
-        attid = int(args[4])
+        try:
+            attid = int(args[4], 16)
+        except:
+            attid = int(args[4])
         attname = args[5]
     else:
         attid = -1
@@ -232,7 +238,7 @@ if __name__ == "__main__":
             is_deleted = False
             for i in range(0, obj.attribute_ctr.num_attributes):
                 attr = obj.attribute_ctr.attributes[i]
-                if attr.attid == drsuapi.DRSUAPI_ATTID_isDeleted:
+                if attid_equal(attr.attid, drsuapi.DRSUAPI_ATTID_isDeleted):
                     is_deleted = True
             if is_deleted:
                 obj_item = obj_item.next_object
@@ -242,19 +248,18 @@ if __name__ == "__main__":
             attvals = None
             for i in range(0, obj.attribute_ctr.num_attributes):
                 attr = obj.attribute_ctr.attributes[i]
-                if attr.attid == attid:
+                if attid_equal(attr.attid, attid):
                     attvals = []
                     for j in range(0, attr.value_ctr.num_values):
                         assert attr.value_ctr.values[j].blob is not None
                         attvals.append(attr.value_ctr.values[j].blob)
-                if attr.attid != drsuapi.DRSUAPI_ATTID_supplementalCredentials:
+                if not attid_equal(attr.attid, drsuapi.DRSUAPI_ATTID_supplementalCredentials):
                     continue
                 assert attr.value_ctr.num_values <= 1
                 if attr.value_ctr.num_values == 0:
                     break
                 assert attr.value_ctr.values[0].blob is not None
                 spl_crypt = attr.value_ctr.values[0].blob
-                break
 
             if spl_crypt is None:
                 obj_item = obj_item.next_object
