@@ -1800,9 +1800,6 @@ static void rpc_pipe_bind_step_two_done(struct tevent_req *subreq)
 	struct rpc_pipe_bind_state *state =
 		tevent_req_data(req,
 				struct rpc_pipe_bind_state);
-	struct schannel_state *schannel_auth =
-		talloc_get_type_abort(state->cli->auth->auth_ctx,
-				      struct schannel_state);
 	NTSTATUS status;
 
 	status = dcerpc_netr_LogonGetCapabilities_r_recv(subreq, talloc_tos());
@@ -1860,8 +1857,8 @@ static void rpc_pipe_bind_step_two_done(struct tevent_req *subreq)
 		return;
 	}
 
-	TALLOC_FREE(schannel_auth->creds);
-	schannel_auth->creds = talloc_steal(state->cli, state->creds);
+	TALLOC_FREE(state->cli->dc);
+	state->cli->dc = talloc_steal(state->cli, state->creds);
 
 	if (!NT_STATUS_IS_OK(state->r.out.result)) {
 		DEBUG(0, ("dcerpc_netr_LogonGetCapabilities_r_recv failed with %s\n",
@@ -3016,10 +3013,12 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	 * The credentials on a new netlogon pipe are the ones we are passed
 	 * in - copy them over
 	 */
-	result->dc = netlogon_creds_copy(result, *pdc);
 	if (result->dc == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		result->dc = netlogon_creds_copy(result, *pdc);
+		if (result->dc == NULL) {
+			TALLOC_FREE(result);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
