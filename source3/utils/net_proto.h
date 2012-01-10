@@ -139,7 +139,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				   const char **domain_name);
 int run_rpc_command(struct net_context *c,
 			struct cli_state *cli_arg,
-			const struct ndr_syntax_id *interface,
+		        const struct ndr_interface_table *table,
 			int conn_flags,
 			rpc_command_fn fn,
 			int argc,

@@ -2269,7 +2269,7 @@ error:
 static int rpc_conf_drop(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_drop_internal, argc, argv );
 
 }
@@ -2277,82 +2277,82 @@ static int rpc_conf_drop(struct net_context *c, int argc,
 static int rpc_conf_showshare(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_showshare_internal, argc, argv );
 }
 
 static int rpc_conf_addshare(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_addshare_internal, argc, argv );
 }
 
 static int rpc_conf_listshares(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_listshares_internal, argc, argv );
 }
 
 static int rpc_conf_list(struct net_context *c, int argc,
 			     const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_list_internal, argc, argv );
 }
 
 static int rpc_conf_import(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_import_internal, argc, argv );
 }
 static int rpc_conf_delshare(struct net_context *c, int argc,
 			     const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_delshare_internal, argc, argv );
 }
 
 static int rpc_conf_getparm(struct net_context *c, int argc,
 			     const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_getparm_internal, argc, argv );
 }
 
 static int rpc_conf_setparm(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_setparm_internal, argc, argv );
 }
 static int rpc_conf_delparm(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_delparm_internal, argc, argv );
 }
 
 static int rpc_conf_getincludes(struct net_context *c, int argc,
 			     const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_getincludes_internal, argc, argv );
 }
 
 static int rpc_conf_setincludes(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_setincludes_internal, argc, argv );
 }
 
 static int rpc_conf_delincludes(struct net_context *c, int argc,
 				const char **argv)
 {
-	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+	return run_rpc_command(c, NULL, &ndr_table_winreg, 0,
 		rpc_conf_delincludes_internal, argc, argv );
 }
 

@@ -331,7 +331,7 @@ static int net_printing_migrate(struct net_context *c,
 
 	return run_rpc_command(c,
 			       NULL,
-			       &ndr_table_winreg.syntax_id,
+			       &ndr_table_winreg,
 			       0,
 			       printing_migrate_internal,
 			       argc,

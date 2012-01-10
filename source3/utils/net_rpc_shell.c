@@ -85,7 +85,7 @@ static NTSTATUS net_sh_run(struct net_context *c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = cli_rpc_pipe_open_noauth(ctx->cli, cmd->interface,
+	status = cli_rpc_pipe_open_noauth(ctx->cli, &cmd->table->syntax_id,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not open pipe: %s\n"),
@@ -197,7 +197,7 @@ static bool net_sh_process(struct net_context *c,
 
 static struct rpc_sh_cmd sh_cmds[6] = {
 
-	{ "info", NULL, &ndr_table_samr.syntax_id, rpc_sh_info,
+	{ "info", NULL, &ndr_table_samr, rpc_sh_info,
 	  N_("Print information about the domain connected to") },
 
 	{ "rights", net_rpc_rights_cmds, 0, NULL,

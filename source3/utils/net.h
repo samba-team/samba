@@ -152,7 +152,7 @@ struct rpc_sh_cmd {
 	struct rpc_sh_cmd *(*sub)(struct net_context *c,
 				  TALLOC_CTX *mem_ctx,
 				  struct rpc_sh_ctx *ctx);
-	const struct ndr_syntax_id *interface;
+	const struct ndr_interface_table *table;
 	NTSTATUS (*fn)(struct net_context *c, TALLOC_CTX *mem_ctx,
 		       struct rpc_sh_ctx *ctx,
 		       struct rpc_pipe_client *pipe_hnd,
