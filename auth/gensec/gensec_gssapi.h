@@ -40,7 +40,7 @@ struct gensec_gssapi_state {
 	struct gss_channel_bindings_struct *input_chan_bindings;
 	gss_name_t server_name;
 	gss_name_t client_name;
-	OM_uint32 want_flags, got_flags;
+	OM_uint32 gss_want_flags, gss_got_flags;
 	gss_OID gss_oid;
 
 	struct smb_krb5_context *smb_krb5_context;

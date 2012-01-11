@@ -129,35 +129,35 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->server_name = GSS_C_NO_NAME;
 	gensec_gssapi_state->client_name = GSS_C_NO_NAME;
 	
-	gensec_gssapi_state->want_flags = 0;
+	gensec_gssapi_state->gss_want_flags = 0;
 
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "delegation_by_kdc_policy", true)) {
-		gensec_gssapi_state->want_flags |= GSS_C_DELEG_POLICY_FLAG;
+		gensec_gssapi_state->gss_want_flags |= GSS_C_DELEG_POLICY_FLAG;
 	}
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "mutual", true)) {
-		gensec_gssapi_state->want_flags |= GSS_C_MUTUAL_FLAG;
+		gensec_gssapi_state->gss_want_flags |= GSS_C_MUTUAL_FLAG;
 	}
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "delegation", true)) {
-		gensec_gssapi_state->want_flags |= GSS_C_DELEG_FLAG;
+		gensec_gssapi_state->gss_want_flags |= GSS_C_DELEG_FLAG;
 	}
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "replay", true)) {
-		gensec_gssapi_state->want_flags |= GSS_C_REPLAY_FLAG;
+		gensec_gssapi_state->gss_want_flags |= GSS_C_REPLAY_FLAG;
 	}
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "sequence", true)) {
-		gensec_gssapi_state->want_flags |= GSS_C_SEQUENCE_FLAG;
+		gensec_gssapi_state->gss_want_flags |= GSS_C_SEQUENCE_FLAG;
 	}
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
-		gensec_gssapi_state->want_flags |= GSS_C_INTEG_FLAG;
+		gensec_gssapi_state->gss_want_flags |= GSS_C_INTEG_FLAG;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-		gensec_gssapi_state->want_flags |= GSS_C_CONF_FLAG;
+		gensec_gssapi_state->gss_want_flags |= GSS_C_CONF_FLAG;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE) {
-		gensec_gssapi_state->want_flags |= GSS_C_DCE_STYLE;
+		gensec_gssapi_state->gss_want_flags |= GSS_C_DCE_STYLE;
 	}
 
-	gensec_gssapi_state->got_flags = 0;
+	gensec_gssapi_state->gss_got_flags = 0;
 
 	switch (gensec_security->ops->auth_type) {
 	case DCERPC_AUTH_TYPE_SPNEGO:
@@ -347,7 +347,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 
 	if (cli_credentials_get_impersonate_principal(creds)) {
-		gensec_gssapi_state->want_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
+		gensec_gssapi_state->gss_want_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
 	}
 
 	gensec_gssapi_state->target_principal = gensec_get_target_principal(gensec_security);
@@ -466,13 +466,13 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							&gensec_gssapi_state->gssapi_context, 
 							gensec_gssapi_state->server_name, 
 							gensec_gssapi_state->gss_oid,
-							gensec_gssapi_state->want_flags, 
+							gensec_gssapi_state->gss_want_flags, 
 							0, 
 							gensec_gssapi_state->input_chan_bindings,
 							&input_token, 
 							&gss_oid_p,
 							&output_token, 
-							&gensec_gssapi_state->got_flags, /* ret flags */
+							&gensec_gssapi_state->gss_got_flags, /* ret flags */
 							NULL);
 			if (gss_oid_p) {
 				gensec_gssapi_state->gss_oid = gss_oid_p;
@@ -499,7 +499,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							  &gensec_gssapi_state->client_name, 
 							  &gss_oid_p,
 							  &output_token, 
-							  &gensec_gssapi_state->got_flags, 
+							  &gensec_gssapi_state->gss_got_flags, 
 							  NULL, 
 							  &gensec_gssapi_state->delegated_cred_handle);
 			if (gss_oid_p) {
@@ -518,7 +518,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			*out = data_blob_talloc(out_mem_ctx, output_token.value, output_token.length);
 			gss_release_buffer(&min_stat2, &output_token);
 			
-			if (gensec_gssapi_state->got_flags & GSS_C_DELEG_FLAG) {
+			if (gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG) {
 				DEBUG(5, ("gensec_gssapi: credentials were delegated\n"));
 			} else {
 				DEBUG(5, ("gensec_gssapi: NO credentials were delegated\n"));
@@ -1204,18 +1204,18 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 		if (gensec_gssapi_state->sasl 
 		    && gensec_gssapi_state->sasl_state == STAGE_DONE) {
 			return ((gensec_gssapi_state->sasl_protection & NEG_SIGN) 
-				&& (gensec_gssapi_state->got_flags & GSS_C_INTEG_FLAG));
+				&& (gensec_gssapi_state->gss_got_flags & GSS_C_INTEG_FLAG));
 		}
-		return gensec_gssapi_state->got_flags & GSS_C_INTEG_FLAG;
+		return gensec_gssapi_state->gss_got_flags & GSS_C_INTEG_FLAG;
 	}
 	if (feature & GENSEC_FEATURE_SEAL) {
 		/* If we are going GSSAPI SASL, then we honour the second negotiation */
 		if (gensec_gssapi_state->sasl 
 		    && gensec_gssapi_state->sasl_state == STAGE_DONE) {
 			return ((gensec_gssapi_state->sasl_protection & NEG_SEAL) 
-				 && (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG));
+				 && (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG));
 		}
-		return gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG;
+		return gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG;
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		/* Only for GSSAPI/Krb5 */
@@ -1224,12 +1224,12 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
-		return gensec_gssapi_state->got_flags & GSS_C_DCE_STYLE;
+		return gensec_gssapi_state->gss_got_flags & GSS_C_DCE_STYLE;
 	}
 	if (feature & GENSEC_FEATURE_NEW_SPNEGO) {
 		NTSTATUS status;
 
-		if (!(gensec_gssapi_state->got_flags & GSS_C_INTEG_FLAG)) {
+		if (!(gensec_gssapi_state->gss_got_flags & GSS_C_INTEG_FLAG)) {
 			return false;
 		}
 
@@ -1367,7 +1367,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return nt_status;
 	}
 
-	if (!(gensec_gssapi_state->got_flags & GSS_C_DELEG_FLAG)) {
+	if (!(gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG)) {
 		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client\n"));
 	} else {
 		krb5_error_code ret;
@@ -1416,7 +1416,7 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 		return gensec_gssapi_state->sig_size;
 	}
 
-	if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
+	if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
 		gensec_gssapi_state->sig_size = 45;
 	} else {
 		gensec_gssapi_state->sig_size = 37;
@@ -1428,7 +1428,7 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 	}
 
 	if (gensec_gssapi_state->lucid->protocol == 1) {
-		if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
+		if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
 			/*
 			 * TODO: windows uses 76 here, but we don't know
 			 *       gss_wrap works with aes keys yet
@@ -1442,14 +1442,14 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 		case KEYTYPE_DES:
 		case KEYTYPE_ARCFOUR:
 		case KEYTYPE_ARCFOUR_56:
-			if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
+			if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
 				gensec_gssapi_state->sig_size = 45;
 			} else {
 				gensec_gssapi_state->sig_size = 37;
 			}
 			break;
 		case KEYTYPE_DES3:
-			if (gensec_gssapi_state->got_flags & GSS_C_CONF_FLAG) {
+			if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
 				gensec_gssapi_state->sig_size = 57;
 			} else {
 				gensec_gssapi_state->sig_size = 49;
