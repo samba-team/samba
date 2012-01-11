@@ -371,6 +371,27 @@ static PyObject *py_gensec_have_feature(PyObject *self, PyObject *args)
 	return Py_False;
 }
 
+static PyObject *py_gensec_set_max_update_size(PyObject *self, PyObject *args)
+{
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
+	unsigned int max_update_size = 0;
+
+	if (!PyArg_ParseTuple(args, "I", &max_update_size))
+		return NULL;
+
+	gensec_set_max_update_size(security, max_update_size);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_gensec_max_update_size(PyObject *self)
+{
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
+	unsigned int max_update_size = gensec_max_update_size(security);
+
+	return PyInt_FromLong(max_update_size);
+}
+
 static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 {
 	NTSTATUS status;
@@ -512,6 +533,10 @@ static PyMethodDef py_gensec_security_methods[] = {
 	  "S.want_feature(feature)\n Request that GENSEC negotiate a particular feature." },
 	{ "have_feature", (PyCFunction)py_gensec_have_feature, METH_VARARGS,
 	  "S.have_feature()\n Return True if GENSEC negotiated a particular feature." },
+	{ "set_max_update_size",  (PyCFunction)py_gensec_set_max_update_size, METH_VARARGS,
+		"S.set_max_update_size(max_size) \n Some mechs can fragment update packets, needs to be use before the mech is started." },
+	{ "max_update_size",  (PyCFunction)py_gensec_max_update_size, 0,
+		"S.max_update_size() \n Return the current max_update_size." },
 	{ "update",  (PyCFunction)py_gensec_update, METH_VARARGS,
 		"S.update(blob_in) -> (finished, blob_out)\nPerform one step in a GENSEC dance.  Repeat with new packets until finished is true or exception." },
 	{ "wrap",  (PyCFunction)py_gensec_wrap, METH_VARARGS,
