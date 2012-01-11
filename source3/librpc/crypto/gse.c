@@ -77,12 +77,12 @@ struct gse_context {
 	gss_ctx_id_t gssapi_context;
 
 	gss_OID_desc gss_mech;
-	OM_uint32 gss_c_flags;
+	OM_uint32 gss_want_flags;
 	gss_cred_id_t creds;
 	gss_name_t server_name;
 
 	gss_OID ret_mech;
-	OM_uint32 ret_flags;
+	OM_uint32 gss_got_flags;
 	gss_cred_id_t delegated_cred_handle;
 	gss_name_t client_name;
 
@@ -182,19 +182,19 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 
 	memcpy(&gse_ctx->gss_mech, gss_mech_krb5, sizeof(gss_OID_desc));
 
-	gse_ctx->gss_c_flags = GSS_C_MUTUAL_FLAG |
+	gse_ctx->gss_want_flags = GSS_C_MUTUAL_FLAG |
 				GSS_C_DELEG_FLAG |
 				GSS_C_DELEG_POLICY_FLAG |
 				GSS_C_REPLAY_FLAG |
 				GSS_C_SEQUENCE_FLAG;
 	if (do_sign) {
-		gse_ctx->gss_c_flags |= GSS_C_INTEG_FLAG;
+		gse_ctx->gss_want_flags |= GSS_C_INTEG_FLAG;
 	}
 	if (do_seal) {
-		gse_ctx->gss_c_flags |= GSS_C_CONF_FLAG;
+		gse_ctx->gss_want_flags |= GSS_C_CONF_FLAG;
 	}
 
-	gse_ctx->gss_c_flags |= add_gss_c_flags;
+	gse_ctx->gss_want_flags |= add_gss_c_flags;
 
 	/* Initialize Kerberos Context */
 	initialize_krb5_error_table();
@@ -333,10 +333,10 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					&gse_ctx->gssapi_context,
 					gse_ctx->server_name,
 					&gse_ctx->gss_mech,
-					gse_ctx->gss_c_flags,
+					gse_ctx->gss_want_flags,
 					0, GSS_C_NO_CHANNEL_BINDINGS,
 					&in_data, NULL, &out_data,
-					&gse_ctx->ret_flags, NULL);
+					&gse_ctx->gss_got_flags, NULL);
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
@@ -485,7 +485,7 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 					 &gse_ctx->client_name,
 					 &gse_ctx->ret_mech,
 					 &out_data,
-					 &gse_ctx->ret_flags, NULL,
+					 &gse_ctx->gss_got_flags, NULL,
 					 &gse_ctx->delegated_cred_handle);
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
@@ -541,8 +541,8 @@ static NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
 	}
 
 	/* GSS_C_MUTUAL_FLAG */
-	if (gse_ctx->gss_c_flags & GSS_C_MUTUAL_FLAG) {
-		if (!(gse_ctx->ret_flags & GSS_C_MUTUAL_FLAG)) {
+	if (gse_ctx->gss_want_flags & GSS_C_MUTUAL_FLAG) {
+		if (!(gse_ctx->gss_got_flags & GSS_C_MUTUAL_FLAG)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -553,15 +553,15 @@ static NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
 	/* GSS_C_SEQUENCE_FLAG */
 
 	/* GSS_C_INTEG_FLAG */
-	if (gse_ctx->gss_c_flags & GSS_C_INTEG_FLAG) {
-		if (!(gse_ctx->ret_flags & GSS_C_INTEG_FLAG)) {
+	if (gse_ctx->gss_want_flags & GSS_C_INTEG_FLAG) {
+		if (!(gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
 	/* GSS_C_CONF_FLAG */
-	if (gse_ctx->gss_c_flags & GSS_C_CONF_FLAG) {
-		if (!(gse_ctx->ret_flags & GSS_C_CONF_FLAG)) {
+	if (gse_ctx->gss_want_flags & GSS_C_CONF_FLAG) {
+		if (!(gse_ctx->gss_got_flags & GSS_C_CONF_FLAG)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -1127,10 +1127,10 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 		struct gse_context);
 
 	if (feature & GENSEC_FEATURE_SIGN) {
-		return gse_ctx->ret_flags & GSS_C_INTEG_FLAG;
+		return gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG;
 	}
 	if (feature & GENSEC_FEATURE_SEAL) {
-		return gse_ctx->ret_flags & GSS_C_CONF_FLAG;
+		return gse_ctx->gss_got_flags & GSS_C_CONF_FLAG;
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		/* Only for GSE/Krb5 */
@@ -1139,7 +1139,7 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
-		return gse_ctx->ret_flags & GSS_C_DCE_STYLE;
+		return gse_ctx->gss_got_flags & GSS_C_DCE_STYLE;
 	}
 	/* We can always do async (rather than strict request/reply) packets.  */
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
