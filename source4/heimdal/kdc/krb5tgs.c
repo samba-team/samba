@@ -284,7 +284,6 @@ check_PAC(krb5_context context,
 	  hdb_entry_ex *server,
 	  hdb_entry_ex *krbtgt,
 	  const EncryptionKey *server_check_key,
-	  const EncryptionKey *krbtgt_check_key,
 	  const EncryptionKey *server_sign_key,
 	  const EncryptionKey *krbtgt_sign_key,
 	  EncTicketPart *tkt,
@@ -330,7 +329,7 @@ check_PAC(krb5_context context,
 
 		ret = krb5_pac_verify(context, pac, tkt->authtime,
 				      client_principal,
-				      server_check_key, krbtgt_check_key);
+				      server_check_key, NULL);
 		if (ret) {
 		    krb5_pac_free(context, pac);
 		    return ret;
@@ -1525,7 +1524,6 @@ tgs_build_reply(krb5_context context,
 
     Key *tkey_check;
     Key *tkey_sign;
-    Key *tkey_krbtgt_check = NULL;
     int flags = HDB_F_FOR_TGS_REQ;
 
     memset(&sessionkey, 0, sizeof(sessionkey));
@@ -1799,13 +1797,6 @@ server_lookup:
 	goto out;
     }
 
-    /* Check if we would know the krbtgt key for the PAC.  We would
-     * only know this if the krbtgt principal was the same (ie, in our
-     * realm, regardless of KVNO) */
-    if (krb5_principal_compare(context, krbtgt_out->entry.principal, krbtgt->entry.principal)) {
-	tkey_krbtgt_check = tkey_check;
-    }
-
     ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | flags,
 			NULL, &clientdb, &client);
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
@@ -1839,7 +1830,6 @@ server_lookup:
     ret = check_PAC(context, config, cp, NULL,
 		    client, server, krbtgt,
 		    &tkey_check->key,
-		    tkey_krbtgt_check ? &tkey_krbtgt_check->key : NULL,
 		    ekey, &tkey_sign->key,
 		    tgt, &rspac, &signedpath);
     if (ret) {
@@ -2109,7 +2099,7 @@ server_lookup:
 	 */
 	ret = check_PAC(context, config, tp, dp,
 			client, server, krbtgt,
-			&clientkey->key, &tkey_check->key,
+			&clientkey->key,
 			ekey, &tkey_sign->key,
 			&adtkt, &rspac, &ad_signedpath);
 	if (ret) {
