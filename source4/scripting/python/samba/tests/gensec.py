@@ -92,3 +92,57 @@ class GensecTests(samba.tests.TestCase):
         client_session_key = self.gensec_client.session_key()
         server_session_key = self.gensec_server.session_key()
         self.assertEqual(client_session_key, server_session_key)
+
+    def test_max_update_size(self):
+        """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
+
+        """Start up a client and server GENSEC instance to test things with"""
+
+        self.gensec_client = gensec.Security.start_client(self.settings)
+        self.gensec_client.set_credentials(self.get_credentials())
+        self.gensec_client.want_feature(gensec.FEATURE_SIGN)
+        self.gensec_client.set_max_update_size(5)
+        self.gensec_client.start_mech_by_name("spnego")
+
+        self.gensec_server = gensec.Security.start_server(settings=self.settings,
+                                                          auth_context=auth.AuthContext(lp_ctx=self.lp_ctx))
+        creds = Credentials()
+        creds.guess(self.lp_ctx)
+        creds.set_machine_account(self.lp_ctx)
+        self.gensec_server.set_credentials(creds)
+        self.gensec_server.want_feature(gensec.FEATURE_SIGN)
+        self.gensec_server.set_max_update_size(5)
+        self.gensec_server.start_mech_by_name("spnego")
+
+        client_finished = False
+        server_finished = False
+        server_to_client = ""
+
+        """Run the actual call loop"""
+        i = 0
+        while client_finished == False or server_finished == False:
+            i += 1
+            if not client_finished:
+                print "running client gensec_update: %d: %r" % (len(server_to_client), server_to_client)
+                (client_finished, client_to_server) = self.gensec_client.update(server_to_client)
+            if not server_finished:
+                print "running server gensec_update: %d: %r" % (len(client_to_server), client_to_server)
+                (server_finished, server_to_client) = self.gensec_server.update(client_to_server)
+
+        """Here we expect a lot more than the typical 1 or 2 roundtrips"""
+        self.assertTrue(i > 10)
+
+        session_info = self.gensec_server.session_info()
+
+        test_string = "Hello Server"
+        test_wrapped = self.gensec_client.wrap(test_string)
+        test_unwrapped = self.gensec_server.unwrap(test_wrapped)
+        self.assertEqual(test_string, test_unwrapped)
+        test_string = "Hello Client"
+        test_wrapped = self.gensec_server.wrap(test_string)
+        test_unwrapped = self.gensec_client.unwrap(test_wrapped)
+        self.assertEqual(test_string, test_unwrapped)
+
+        client_session_key = self.gensec_client.session_key()
+        server_session_key = self.gensec_server.session_key()
+        self.assertEqual(client_session_key, server_session_key)
