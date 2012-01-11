@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import tempfile
 import sys
 import random
 import copy
@@ -35,11 +36,15 @@ os.environ["TZ"] = "GMT"
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
-import samba, ldb
 import optparse
 import logging
 
-from samba           import getopt as options
+from samba           import (getopt as options,   \
+                             Ldb,                 \
+                             ldb,                 \
+                             dsdb,                \
+                             param,               \
+                             read_and_sub_file)
 from samba.auth      import system_session
 from samba.samdb     import SamDB
 from samba.dcerpc    import drsuapi
@@ -47,19 +52,25 @@ from samba.kcc_utils import *
 
 class KCC:
     """The Knowledge Consistency Checker class.  A container for
-       objects and methods allowing a run of the KCC.  Produces
-       a set of connections in the samdb for which the Distributed
-       Replication Service can then utilize to replicate naming
-       contexts
+    objects and methods allowing a run of the KCC.  Produces
+    a set of connections in the samdb for which the Distributed
+    Replication Service can then utilize to replicate naming
+    contexts
     """
-    def __init__(self, samdb):
+    def __init__(self):
         """Initializes the partitions class which can hold
-           our local DCs partitions or all the partitions in
-           the forest
+        our local DCs partitions or all the partitions in
+        the forest
         """
         self.part_table      = {}    # partition objects
         self.site_table      = {}
         self.transport_table = {}
+        self.sitelink_table  = {}
+
+        # Used in inter-site topology computation.  A list
+        # of connections (by NTDSConnection object) that are
+        # to be kept when pruning un-needed NTDS Connections
+        self.keep_connection_list = []
 
         self.my_dsa_dnstr  = None  # My dsa DN
         self.my_dsa        = None  # My dsa object
@@ -67,18 +78,19 @@ class KCC:
         self.my_site_dnstr = None
         self.my_site       = None
 
-        self.samdb         = samdb
+        self.samdb         = None
         return
 
     def load_all_transports(self):
         """Loads the inter-site transport objects for Sites
-           Raises an Exception on error
+
+        ::returns: Raises an Exception on error
         """
         try:
-            res = samdb.search("CN=Inter-Site Transports,CN=Sites,%s" % \
-                               samdb.get_config_basedn(),
-                               scope=ldb.SCOPE_SUBTREE,
-                               expression="(objectClass=interSiteTransport)")
+            res = self.samdb.search("CN=Inter-Site Transports,CN=Sites,%s" % \
+                                    self.samdb.get_config_basedn(),
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    expression="(objectClass=interSiteTransport)")
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find inter-site transports - (%s)" % estr)
 
@@ -91,7 +103,7 @@ class KCC:
 
             transport = Transport(dnstr)
 
-            transport.load_transport(samdb)
+            transport.load_transport(self.samdb)
 
             # Assign this transport to table
             # and index by dn
@@ -99,27 +111,96 @@ class KCC:
 
         return
 
+    def load_all_sitelinks(self):
+        """Loads the inter-site siteLink objects
+
+        ::returns: Raises an Exception on error
+        """
+        try:
+            res = self.samdb.search("CN=Inter-Site Transports,CN=Sites,%s" % \
+                                    self.samdb.get_config_basedn(),
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    expression="(objectClass=siteLink)")
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find inter-site siteLinks - (%s)" % estr)
+
+        for msg in res:
+            dnstr = str(msg.dn)
+
+            # already loaded
+            if dnstr in self.sitelink_table.keys():
+                continue
+
+            sitelink = SiteLink(dnstr)
+
+            sitelink.load_sitelink(self.samdb)
+
+            # Assign this siteLink to table
+            # and index by dn
+            self.sitelink_table[dnstr] = sitelink
+
+        return
+
+    def get_sitelink(self, site1_dnstr, site2_dnstr):
+        """Return the siteLink (if it exists) that connects the
+        two input site DNs
+        """
+        for sitelink in self.sitelink_table.values():
+            if sitelink.is_sitelink(site1_dnstr, site2_dnstr):
+                return sitelink
+        return None
+
     def load_my_site(self):
         """Loads the Site class for the local DSA
-           Raises an Exception on error
+
+        ::returns: Raises an Exception on error
         """
-        self.my_site_dnstr = "CN=%s,CN=Sites,%s" % (samdb.server_site_name(),
-                             samdb.get_config_basedn())
+        self.my_site_dnstr = "CN=%s,CN=Sites,%s" % \
+                             (self.samdb.server_site_name(),
+                              self.samdb.get_config_basedn())
         site = Site(self.my_site_dnstr)
-        site.load_site(samdb)
+        site.load_site(self.samdb)
 
         self.site_table[self.my_site_dnstr] = site
         self.my_site = site
         return
 
+    def load_all_sites(self):
+        """Discover all sites and instantiate and load each
+        NTDS Site settings.
+
+        ::returns: Raises an Exception on error
+        """
+        try:
+            res = self.samdb.search("CN=Sites,%s" %
+                                    self.samdb.get_config_basedn(),
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    expression="(objectClass=site)")
+        except ldb.LdbError, (enum, estr):
+            raise Exception("Unable to find sites - (%s)" % estr)
+
+        for msg in res:
+            sitestr = str(msg.dn)
+
+            # already loaded
+            if sitestr in self.site_table.keys():
+                continue
+
+            site = Site(sitestr)
+            site.load_site(self.samdb)
+
+            self.site_table[sitestr] = site
+            return
+
     def load_my_dsa(self):
         """Discover my nTDSDSA dn thru the rootDSE entry
-           Raises an Exception on error.
+
+        ::returns: Raises an Exception on error.
         """
         dn = ldb.Dn(self.samdb, "")
         try:
-            res = samdb.search(base=dn, scope=ldb.SCOPE_BASE,
-                               attrs=["dsServiceName"])
+            res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
+                                    attrs=["dsServiceName"])
         except ldb.LdbError, (enum, estr):
             raise Exception("Unable to find my nTDSDSA - (%s)" % estr)
 
@@ -130,10 +211,12 @@ class KCC:
 
     def load_all_partitions(self):
         """Discover all NCs thru the Partitions dn and
-           instantiate and load the NCs.  Each NC is inserted
-           into the part_table by partition dn string (not
-           the nCName dn string)
-           Raises an Exception on error
+        instantiate and load the NCs.
+
+        Each NC is inserted into the part_table by partition
+        dn string (not the nCName dn string)
+
+        ::returns: Raises an Exception on error
         """
         try:
             res = self.samdb.search("CN=Partitions,%s" %
@@ -157,7 +240,7 @@ class KCC:
 
     def should_be_present_test(self):
         """Enumerate all loaded partitions and DSAs in local
-           site and test if NC should be present as replica
+        site and test if NC should be present as replica
         """
         for partdn, part in self.part_table.items():
             for dsadn, dsa in self.my_site.dsa_table.items():
@@ -172,9 +255,9 @@ class KCC:
 
     def is_stale_link_connection(self, target_dsa):
         """Returns False if no tuple z exists in the kCCFailedLinks or
-           kCCFailedConnections variables such that z.UUIDDsa is the
-           objectGUID of the target dsa, z.FailureCount > 0, and
-           the current time - z.TimeFirstFailure > 2 hours.
+        kCCFailedConnections variables such that z.UUIDDsa is the
+        objectGUID of the target dsa, z.FailureCount > 0, and
+        the current time - z.TimeFirstFailure > 2 hours.
         """
         # XXX - not implemented yet
         return False
@@ -183,13 +266,147 @@ class KCC:
         # XXX - not implemented yet
         return
 
-    def remove_unneeded_ntdsconn(self):
-        # XXX - not implemented yet
+    def remove_unneeded_ntdsconn(self, all_connected):
+        """Removes unneeded NTDS Connections after computation
+        of KCC intra and inter-site topology has finished.
+        """
+        mydsa = self.my_dsa
+
+        # Loop thru connections
+        for cn_dnstr, cn_conn in mydsa.connect_table.items():
+
+            s_dnstr = cn_conn.get_from_dnstr()
+            if s_dnstr is None:
+                cn_conn.to_be_deleted = True
+                continue
+
+            # Get the source DSA no matter what site
+            s_dsa = self.get_dsa(s_dnstr)
+
+            # Check if the DSA is in our site
+            if self.my_site.same_site(s_dsa):
+                same_site = True
+            else:
+                same_site = False
+
+            # Given an nTDSConnection object cn, if the DC with the
+            # nTDSDSA object dc that is the parent object of cn and
+            # the DC with the nTDSDA object referenced by cn!fromServer
+            # are in the same site, the KCC on dc deletes cn if all of
+            # the following are true:
+            #
+            # Bit NTDSCONN_OPT_IS_GENERATED is clear in cn!options.
+            #
+            # No site settings object s exists for the local DC's site, or
+            # bit NTDSSETTINGS_OPT_IS_TOPL_CLEANUP_DISABLED is clear in
+            # s!options.
+            #
+            # Another nTDSConnection object cn2 exists such that cn and
+            # cn2 have the same parent object, cn!fromServer = cn2!fromServer,
+            # and either
+            #
+            #     cn!whenCreated < cn2!whenCreated
+            #
+            #     cn!whenCreated = cn2!whenCreated and
+            #     cn!objectGUID < cn2!objectGUID
+            #
+            # Bit NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options
+            if same_site:
+                if cn_conn.is_generated() == False:
+                    continue
+
+                if self.my_site.is_cleanup_ntdsconn_disabled() == True:
+                    continue
+
+                # Loop thru connections looking for a duplicate that
+                # fulfills the previous criteria
+                lesser = False
+
+                for cn2_dnstr, cn2_conn in mydsa.connect_table.items():
+                    if cn2_conn is cn_conn:
+                        continue
+
+                    s2_dnstr = cn2_conn.get_from_dnstr()
+                    if s2_dnstr is None:
+                        continue
+
+                    # If the NTDS Connections has a different
+                    # fromServer field then no match
+                    if s2_dnstr != s_dnstr:
+                        continue
+
+                    lesser = (cn_conn.whenCreated < cn2_conn.whenCreated or
+                              (cn_conn.whenCreated == cn2_conn.whenCreated and
+                               cmp(cn_conn.guid, cn2_conn.guid) < 0))
+
+                    if lesser == True:
+                        break
+
+                if lesser and cn_conn.is_rodc_topology() == False:
+                    cn_conn.to_be_deleted = True
+
+            # Given an nTDSConnection object cn, if the DC with the nTDSDSA
+            # object dc that is the parent object of cn and the DC with
+            # the nTDSDSA object referenced by cn!fromServer are in
+            # different sites, a KCC acting as an ISTG in dc's site
+            # deletes cn if all of the following are true:
+            #
+            #     Bit NTDSCONN_OPT_IS_GENERATED is clear in cn!options.
+            #
+            #     cn!fromServer references an nTDSDSA object for a DC
+            #     in a site other than the local DC's site.
+            #
+            #     The keepConnections sequence returned by
+            #     CreateIntersiteConnections() does not contain
+            #     cn!objectGUID, or cn is "superseded by" (see below)
+            #     another nTDSConnection cn2 and keepConnections
+            #     contains cn2!objectGUID.
+            #
+            #     The return value of CreateIntersiteConnections()
+            #     was true.
+            #
+            #     Bit NTDSCONN_OPT_RODC_TOPOLOGY is clear in
+            #     cn!options
+            #
+            else: # different site
+
+                if mydsa.is_istg() == False:
+                    continue
+
+                if cn_conn.is_generated() == False:
+                    continue
+
+                if self.keep_connection(cn_conn) == True:
+                    continue
+
+                # XXX - To be implemented
+
+                if all_connected == False:
+                    continue
+
+                if cn_conn.is_rodc_topology() == False:
+                    cn_conn.to_be_deleted = True
+
+
+        if opts.readonly:
+            for dnstr, connect in mydsa.connect_table.items():
+                if connect.to_be_deleted == True:
+                    logger.info("TO BE DELETED:\n%s" % connect)
+                if connect.to_be_added == True:
+                    logger.info("TO BE ADDED:\n%s" % connect)
+
+            # Peform deletion from our tables but perform
+            # no database modification
+            mydsa.commit_connections(self.samdb, ro=True)
+        else:
+            # Commit any modified connections
+            mydsa.commit_connections(self.samdb)
+
         return
 
     def get_dsa_by_guidstr(self, guidstr):
         """Given a DSA guid string, consule all sites looking
-           for the corresponding DSA and return it.
+        for the corresponding DSA and return it.
         """
         for site in self.site_table.values():
             dsa = site.get_dsa_by_guidstr(guidstr)
@@ -199,7 +416,7 @@ class KCC:
 
     def get_dsa(self, dnstr):
         """Given a DSA dn string, consule all sites looking
-           for the corresponding DSA and return it.
+        for the corresponding DSA and return it.
         """
         for site in self.site_table.values():
             dsa = site.get_dsa(dnstr)
@@ -209,16 +426,18 @@ class KCC:
 
     def modify_repsFrom(self, n_rep, t_repsFrom, s_rep, s_dsa, cn_conn):
         """Update t_repsFrom if necessary to satisfy requirements. Such
-           updates are typically required when the IDL_DRSGetNCChanges
-           server has moved from one site to another--for example, to
-           enable compression when the server is moved from the
-           client's site to another site.
-           :param n_rep: NC replica we need
-           :param t_repsFrom: repsFrom tuple to modify
-           :param s_rep: NC replica at source DSA
-           :param s_dsa: source DSA
-           :param cn_conn: Local DSA NTDSConnection child
-           Returns (update) bit field containing which portion of the
+        updates are typically required when the IDL_DRSGetNCChanges
+        server has moved from one site to another--for example, to
+        enable compression when the server is moved from the
+        client's site to another site.
+
+        :param n_rep: NC replica we need
+        :param t_repsFrom: repsFrom tuple to modify
+        :param s_rep: NC replica at source DSA
+        :param s_dsa: source DSA
+        :param cn_conn: Local DSA NTDSConnection child
+
+        ::returns: (update) bit field containing which portion of the
            repsFrom was modified.  This bit field is suitable as input
            to IDL_DRSReplicaModify ulModifyFields element, as it consists
            of these bits:
@@ -229,7 +448,7 @@ class KCC:
         s_dnstr = s_dsa.dsa_dnstr
         update  = 0x0
 
-        if self.my_site.get_dsa(s_dnstr) is s_dsa:
+        if self.my_site.same_site(s_dsa):
             same_site = True
         else:
             same_site = False
@@ -424,7 +643,7 @@ class KCC:
                 t_repsFrom.transport_guid = x_transport.guid
 
             # See (NOTE MS-TECH INCORRECT) above
-            if x_transport.addr_attr == "dNSHostName":
+            if x_transport.address_attr == "dNSHostName":
 
                 if t_repsFrom.version == 0x1:
                     if t_repsFrom.dns_name1 is None or \
@@ -440,21 +659,21 @@ class KCC:
 
             else:
                 # MS tech specification says we retrieve the named
-                # attribute in "addr_attr" from the parent of the
-                # DSA object
+                # attribute in "transportAddressAttribute" from the parent of
+                # the DSA object
                 try:
                     pdnstr = s_dsa.get_parent_dnstr()
-                    attrs  = [ x_transport.addr_attr ]
+                    attrs  = [ x_transport.address_attr ]
 
                     res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
                                             attrs=attrs)
                 except ldb.ldbError, (enum, estr):
                     raise Exception \
                         ("Unable to find attr (%s) for (%s) - (%s)" % \
-                         (x_transport.addr_attr, pdnstr, estr))
+                         (x_transport.address_attr, pdnstr, estr))
 
                 msg = res[0]
-                nastr = str(msg[x_transport.addr_attr][0])
+                nastr = str(msg[x_transport.address_attr][0])
 
                 # See (NOTE MS-TECH INCORRECT) above
                 if t_repsFrom.version == 0x1:
@@ -474,26 +693,85 @@ class KCC:
             logger.debug("modify_repsFrom(): %s" % t_repsFrom)
         return
 
+    def is_repsFrom_implied(self, n_rep, cn_conn):
+        """Given a NC replica and NTDS Connection, determine if the connection
+        implies a repsFrom tuple should be present from the source DSA listed
+        in the connection to the naming context
+
+        :param n_rep: NC replica
+        :param conn: NTDS Connection
+        ::returns (True || False), source DSA:
+        """
+        # NTDS Connection must satisfy all the following criteria
+        # to imply a repsFrom tuple is needed:
+        #
+        #    cn!enabledConnection = true.
+        #    cn!options does not contain NTDSCONN_OPT_RODC_TOPOLOGY.
+        #    cn!fromServer references an nTDSDSA object.
+        s_dsa = None
+
+        if cn_conn.is_enabled() == True and \
+            cn_conn.is_rodc_topology() == False:
+
+            s_dnstr = cn_conn.get_from_dnstr()
+            if s_dnstr is not None:
+                s_dsa = self.get_dsa(s_dnstr)
+
+            # No DSA matching this source DN string?
+            if s_dsa == None:
+                return False, None
+
+        # To imply a repsFrom tuple is needed, each of these
+        # must be True:
+        #
+        #     An NC replica of the NC "is present" on the DC to
+        #     which the nTDSDSA object referenced by cn!fromServer
+        #     corresponds.
+        #
+        #     An NC replica of the NC "should be present" on
+        #     the local DC
+        s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
+
+        if s_rep is None or s_rep.is_present() == False:
+            return False, None
+
+        # To imply a repsFrom tuple is needed, each of these
+        # must be True:
+        #
+        #     The NC replica on the DC referenced by cn!fromServer is
+        #     a writable replica or the NC replica that "should be
+        #     present" on the local DC is a partial replica.
+        #
+        #     The NC is not a domain NC, the NC replica that
+        #     "should be present" on the local DC is a partial
+        #     replica, cn!transportType has no value, or
+        #     cn!transportType has an RDN of CN=IP.
+        #
+        implied = (s_rep.is_ro() == False or n_rep.is_partial() == True) and \
+                  (n_rep.is_domain() == False or \
+                   n_rep.is_partial() == True or \
+                   cn_conn.transport_dnstr == None or \
+                   cn_conn.transport_dnstr.find("CN=IP") == 0)
+
+        if implied:
+            return True, s_dsa
+        else:
+            return False, None
+
     def translate_ntdsconn(self):
         """This function adjusts values of repsFrom abstract attributes of NC
-           replicas on the local DC to match those implied by
-           nTDSConnection objects.
+        replicas on the local DC to match those implied by
+        nTDSConnection objects.
         """
-        logger.debug("translate_ntdsconn(): enter mydsa:\n%s" % self.my_dsa)
+        logger.debug("translate_ntdsconn(): enter")
 
-        if self.my_dsa.should_translate_ntdsconn() == False:
+        if self.my_dsa.is_translate_ntdsconn_disabled():
             return
 
         current_rep_table, needed_rep_table = self.my_dsa.get_rep_tables()
 
         # Filled in with replicas we currently have that need deleting
         delete_rep_table = {}
-
-        # Table of replicas needed, combined with our local information
-        # if we already have the replica.  This may be a superset list of
-        # replicas if we need additional NC replicas that we currently
-        # don't have local copies for
-        translate_rep_table = {}
 
         # We're using the MS notation names here to allow
         # correlation back to the published algorithm.
@@ -508,26 +786,16 @@ class KCC:
         #              nTDSDSA object and (cn!fromServer = s)
         # s_rep      - source DSA replica of n
         #
-        # Build a list of replicas that we will run translation
-        # against.  If we have the replica and its not needed
-        # then we add it to the "to be deleted" list.  Otherwise
-        # we have it and we need it so move it to the translate list
+        # If we have the replica and its not needed
+        # then we add it to the "to be deleted" list.
         for dnstr, n_rep in current_rep_table.items():
             if dnstr not in needed_rep_table.keys():
                 delete_rep_table[dnstr] = n_rep
-            else:
-                translate_rep_table[dnstr] = n_rep
-
-        # If we need the replica yet we don't have it (not in
-        # translate list) then add it
-        for dnstr, n_rep in needed_rep_table.items():
-            if dnstr not in translate_rep_table.keys():
-                translate_rep_table[dnstr] = n_rep
 
         # Now perform the scan of replicas we'll need
         # and compare any current repsFrom against the
         # connections
-        for dnstr, n_rep in translate_rep_table.items():
+        for dnstr, n_rep in needed_rep_table.items():
 
             # load any repsFrom and fsmo roles as we'll
             # need them during connection translation
@@ -591,22 +859,8 @@ class KCC:
             # repsFrom is not already present
             for cn_dnstr, cn_conn in self.my_dsa.connect_table.items():
 
-                # NTDS Connection must satisfy all the following criteria
-                # to imply a repsFrom tuple is needed:
-                #
-                #    cn!enabledConnection = true.
-                #    cn!options does not contain NTDSCONN_OPT_RODC_TOPOLOGY.
-                #    cn!fromServer references an nTDSDSA object.
-                s_dsa = None
-
-                if cn_conn.is_enabled() == True and \
-                   cn_conn.is_rodc_topology() == False:
-
-                    s_dnstr = cn_conn.get_from_dnstr()
-                    if s_dnstr is not None:
-                        s_dsa = self.get_dsa(s_dnstr)
-
-                if s_dsa == None:
+                implied, s_dsa = self.is_repsFrom_implied(n_rep, cn_conn)
+                if implied == False:
                     continue
 
                 # Loop thru the existing repsFrom tupples (if any) and
@@ -623,44 +877,6 @@ class KCC:
                 if s_dsa == None:
                     continue
 
-                # Source dsa is gone from config (strange)
-                # To imply a repsFrom tuple is needed, each of these
-                # must be True:
-                #
-                #     An NC replica of the NC "is present" on the DC to
-                #     which the nTDSDSA object referenced by cn!fromServer
-                #     corresponds.
-                #
-                #     An NC replica of the NC "should be present" on
-                #     the local DC
-                s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
-
-                if s_rep is None or s_rep.is_present() == False:
-                    continue
-
-                # To imply a repsFrom tuple is needed, each of these
-                # must be True:
-                #
-                #     The NC replica on the DC referenced by cn!fromServer is
-                #     a writable replica or the NC replica that "should be
-                #     present" on the local DC is a partial replica.
-                #
-                #     The NC is not a domain NC, the NC replica that
-                #     "should be present" on the local DC is a partial
-                #     replica, cn!transportType has no value, or
-                #     cn!transportType has an RDN of CN=IP.
-                #
-                implies = (s_rep.is_ro() == False or \
-                           n_rep.is_partial() == True) \
-                          and \
-                          (n_rep.is_domain() == False or\
-                           n_rep.is_partial() == True or \
-                           cn_conn.transport_dnstr == None or \
-                           cn_conn.transport_dnstr.find("CN=IP") == 0)
-
-                if implies == False:
-                    continue
-
                 # Create a new RepsFromTo and proceed to modify
                 # it according to specification
                 t_repsFrom = RepsFromTo(n_rep.nc_dnstr)
@@ -673,22 +889,648 @@ class KCC:
                 if t_repsFrom.is_modified():
                     n_rep.rep_repsFrom.append(t_repsFrom)
 
-            # Commit any modified repsFrom to the NC replica
-            if opts.readonly is None:
+            if opts.readonly:
+                # Display any to be deleted or modified repsFrom
+                text = n_rep.dumpstr_to_be_deleted()
+                if text:
+                    logger.info("TO BE DELETED:\n%s" % text)
+                text = n_rep.dumpstr_to_be_modified()
+                if text:
+                    logger.info("TO BE MODIFIED:\n%s" % text)
+
+                # Peform deletion from our tables but perform
+                # no database modification
+                n_rep.commit_repsFrom(self.samdb, ro=True)
+            else:
+                # Commit any modified repsFrom to the NC replica
                 n_rep.commit_repsFrom(self.samdb)
 
         return
 
-    def intersite(self):
-        """The head method for generating the inter-site KCC replica
-           connection graph and attendant nTDSConnection objects
-           in the samdb
+    def keep_connection(self, cn_conn):
+        """Determines if the connection is meant to be kept during the
+        pruning of unneeded connections operation.
+
+        Consults the keep_connection_list[] which was built during
+        intersite NC replica graph computation.
+
+        ::returns (True or False): if (True) connection should not be pruned
+        """
+        if cn_conn in self.keep_connection_list:
+            return True
+        return False
+
+    def merge_failed_links(self):
+        """Merge of kCCFailedLinks and kCCFailedLinks from bridgeheads.
+        The KCC on a writable DC attempts to merge the link and connection
+        failure information from bridgehead DCs in its own site to help it
+        identify failed bridgehead DCs.
+        """
+        # MS-TECH Ref 6.2.2.3.2 Merge of kCCFailedLinks and kCCFailedLinks
+        #     from Bridgeheads
+
+        # XXX - not implemented yet
+        return
+
+    def setup_graph(self):
+        """Set up a GRAPH, populated with a VERTEX for each site
+        object, a MULTIEDGE for each siteLink object, and a
+        MUTLIEDGESET for each siteLinkBridge object (or implied
+        siteLinkBridge).
+
+        ::returns: a new graph
         """
         # XXX - not implemented yet
+        return None
+
+    def get_bridgehead(self, site, part, transport, \
+                       partial_ok, detect_failed):
+        """Get a bridghead DC.
+
+        :param site: site object representing for which a bridgehead
+            DC is desired.
+        :param part: crossRef for NC to replicate.
+        :param transport: interSiteTransport object for replication
+            traffic.
+        :param partial_ok: True if a DC containing a partial
+            replica or a full replica will suffice, False if only
+            a full replica will suffice.
+        :param detect_failed: True to detect failed DCs and route
+            replication traffic around them, False to assume no DC
+            has failed.
+        ::returns: dsa object for the bridgehead DC or None
+        """
+
+        bhs = self.get_all_bridgeheads(site, part, transport, \
+                                       partial_ok, detect_failed)
+        if len(bhs) == 0:
+            logger.debug("get_bridgehead: exit\n\tsitedn=%s\n\tbhdn=None" % \
+                         site.site_dnstr)
+            return None
+        else:
+            logger.debug("get_bridgehead: exit\n\tsitedn=%s\n\tbhdn=%s" % \
+                         (site.site_dnstr, bhs[0].dsa_dnstr))
+            return bhs[0]
+
+    def get_all_bridgeheads(self, site, part, transport, \
+                            partial_ok, detect_failed):
+        """Get all bridghead DCs satisfying the given criteria
+
+        :param site: site object representing the site for which
+            bridgehead DCs are desired.
+        :param part: partition for NC to replicate.
+        :param transport: interSiteTransport object for
+            replication traffic.
+        :param partial_ok: True if a DC containing a partial
+            replica or a full replica will suffice, False if
+            only a full replica will suffice.
+        :param detect_ok: True to detect failed DCs and route
+            replication traffic around them, FALSE to assume
+            no DC has failed.
+        ::returns: list of dsa object for available bridgehead
+            DCs or None
+        """
+
+        bhs = []
+
+        logger.debug("get_all_bridgeheads: %s" % transport)
+
+        for key, dsa in site.dsa_table.items():
+
+            pdnstr = dsa.get_parent_dnstr()
+
+            # IF t!bridgeheadServerListBL has one or more values and
+            # t!bridgeheadServerListBL does not contain a reference
+            # to the parent object of dc then skip dc
+            if len(transport.bridgehead_list) != 0 and \
+               pdnstr not in transport.bridgehead_list:
+                continue
+
+            # IF dc is in the same site as the local DC
+            #    IF a replica of cr!nCName is not in the set of NC replicas
+            #    that "should be present" on dc or a partial replica of the
+            #    NC "should be present" but partialReplicasOkay = FALSE
+            #        Skip dc
+            if self.my_site.same_site(dsa):
+                needed, ro, partial = part.should_be_present(dsa)
+                if needed == False or (partial == True and partial_ok == False):
+                    continue
+
+            # ELSE
+            #     IF an NC replica of cr!nCName is not in the set of NC
+            #     replicas that "are present" on dc or a partial replica of
+            #     the NC "is present" but partialReplicasOkay = FALSE
+            #          Skip dc
+            else:
+                rep = dsa.get_current_replica(part.nc_dnstr)
+                if rep is None or (rep.is_partial() and partial_ok == False):
+                    continue
+
+            # IF AmIRODC() and cr!nCName corresponds to default NC then
+            #     Let dsaobj be the nTDSDSA object of the dc
+            #     IF  dsaobj.msDS-Behavior-Version < DS_BEHAVIOR_WIN2008
+            #         Skip dc
+            if self.my_dsa.is_ro() and part.is_default():
+                if dsa.is_minimum_behavior(DS_BEHAVIOR_WIN2008) == False:
+                    continue
+
+            # IF t!name != "IP" and the parent object of dc has no value for
+            # the attribute specified by t!transportAddressAttribute
+            #     Skip dc
+            if transport.name != "IP":
+                # MS tech specification says we retrieve the named
+                # attribute in "transportAddressAttribute" from the parent
+                # of the DSA object
+                try:
+                    attrs = [ transport.address_attr ]
+
+                    res = self.samdb.search(base=pdnstr, scope=ldb.SCOPE_BASE,
+                                            attrs=attrs)
+                except ldb.ldbError, (enum, estr):
+                    continue
+
+                msg = res[0]
+                nastr = str(msg[transport.address_attr][0])
+
+            # IF BridgeheadDCFailed(dc!objectGUID, detectFailedDCs) = TRUE
+            #     Skip dc
+            if self.is_bridgehead_failed(dsa, detect_failed) == True:
+                continue
+
+            logger.debug("get_all_bridgeheads: dsadn=%s" % dsa.dsa_dnstr)
+            bhs.append(dsa)
+
+        # IF bit NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED is set in
+        # s!options
+        #    SORT bhs such that all GC servers precede DCs that are not GC
+        #    servers, and otherwise by ascending objectGUID
+        # ELSE
+        #    SORT bhs in a random order
+        if site.is_random_bridgehead_disabled() == True:
+            bhs.sort(sort_dsa_by_gc_and_guid)
+        else:
+            random.shuffle(bhs)
+
+        return bhs
+
+
+    def is_bridgehead_failed(self, dsa, detect_failed):
+        """Determine whether a given DC is known to be in a failed state
+        ::returns: True if and only if the DC should be considered failed
+        """
+        # XXX - not implemented yet
+        return False
+
+    def create_connection(self, part, rbh, rsite, transport, \
+                          lbh, lsite, link_opt, link_sched, \
+                          partial_ok, detect_failed):
+        """Create an nTDSConnection object with the given parameters
+        if one does not already exist.
+
+        :param part: crossRef object for the NC to replicate.
+        :param rbh: nTDSDSA object for DC to act as the
+            IDL_DRSGetNCChanges server (which is in a site other
+            than the local DC's site).
+        :param rsite: site of the rbh
+        :param transport: interSiteTransport object for the transport
+            to use for replication traffic.
+        :param lbh: nTDSDSA object for DC to act as the
+            IDL_DRSGetNCChanges client (which is in the local DC's site).
+        :param lsite: site of the lbh
+        :param link_opt: Replication parameters (aggregated siteLink options, etc.)
+        :param link_sched: Schedule specifying the times at which
+            to begin replicating.
+        :partial_ok: True if bridgehead DCs containing partial
+            replicas of the NC are acceptable.
+        :param detect_failed: True to detect failed DCs and route
+            replication traffic around them, FALSE to assume no DC
+            has failed.
+        """
+        rbhs_all = self.get_all_bridgeheads(rsite, part, transport, \
+                                            partial_ok, False)
+
+        # MS-TECH says to compute rbhs_avail but then doesn't use it
+        # rbhs_avail = self.get_all_bridgeheads(rsite, part, transport, \
+        #                                        partial_ok, detect_failed)
+
+        lbhs_all = self.get_all_bridgeheads(lsite, part, transport, \
+                                            partial_ok, False)
+
+        # MS-TECH says to compute lbhs_avail but then doesn't use it
+        # lbhs_avail = self.get_all_bridgeheads(lsite, part, transport, \
+        #                                       partial_ok, detect_failed)
+
+        # FOR each nTDSConnection object cn such that the parent of cn is
+        # a DC in lbhsAll and cn!fromServer references a DC in rbhsAll
+        for ldsa in lbhs_all:
+            for cn in ldsa.connect_table.values():
+
+                rdsa = None
+                for rdsa in rbhs_all:
+                    if cn.from_dnstr == rdsa.dsa_dnstr:
+                        break
+
+                if rdsa is None:
+                    continue
+
+                # IF bit NTDSCONN_OPT_IS_GENERATED is set in cn!options and
+                # NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options and
+                # cn!transportType references t
+                if cn.is_generated() == True and \
+                   cn.is_rodc_topology() == False and \
+                   cn.transport_dnstr == transport.dnstr:
+
+                    # IF bit NTDSCONN_OPT_USER_OWNED_SCHEDULE is clear in
+                    # cn!options and cn!schedule != sch
+                    #     Perform an originating update to set cn!schedule to
+                    #     sched
+                    if cn.is_user_owned_schedule() == False and \
+                       cn.is_equivalent_schedule(link_sched) == False:
+                        cn.schedule = link_sched
+                        cn.set_modified(True)
+
+                    # IF bits NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT and
+                    # NTDSCONN_OPT_USE_NOTIFY are set in cn
+                    if cn.is_override_notify_default() == True and \
+                       cn.is_use_notify() == True:
+
+                        # IF bit NTDSSITELINK_OPT_USE_NOTIFY is clear in
+                        # ri.Options
+                        #    Perform an originating update to clear bits
+                        #    NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT and
+                        #    NTDSCONN_OPT_USE_NOTIFY in cn!options
+                        if (link_opt & dsdb.NTDSSITELINK_OPT_USE_NOTIFY) == 0:
+                            cn.options &= \
+                                ~(dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT | \
+                                  dsdb.NTDSCONN_OPT_USE_NOTIFY)
+                            cn.set_modified(True)
+
+                    # ELSE
+                    else:
+
+                        # IF bit NTDSSITELINK_OPT_USE_NOTIFY is set in
+                        # ri.Options
+                        #     Perform an originating update to set bits
+                        #     NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT and
+                        #     NTDSCONN_OPT_USE_NOTIFY in cn!options
+                        if (link_opt & dsdb.NTDSSITELINK_OPT_USE_NOTIFY) != 0:
+                            cn.options |= \
+                                (dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT | \
+                                 dsdb.NTDSCONN_OPT_USE_NOTIFY)
+                            cn.set_modified(True)
+
+
+                    # IF bit NTDSCONN_OPT_TWOWAY_SYNC is set in cn!options
+                    if cn.is_twoway_sync() == True:
+
+                        # IF bit NTDSSITELINK_OPT_TWOWAY_SYNC is clear in
+                        # ri.Options
+                        #     Perform an originating update to clear bit
+                        #     NTDSCONN_OPT_TWOWAY_SYNC in cn!options
+                        if (link_opt & dsdb.NTDSSITELINK_OPT_TWOWAY_SYNC) == 0:
+                            cn.options &= ~dsdb.NTDSCONN_OPT_TWOWAY_SYNC
+                            cn.set_modified(True)
+
+                    # ELSE
+                    else:
+
+                        # IF bit NTDSSITELINK_OPT_TWOWAY_SYNC is set in
+                        # ri.Options
+                        #     Perform an originating update to set bit
+                        #     NTDSCONN_OPT_TWOWAY_SYNC in cn!options
+                        if (link_opt & dsdb.NTDSSITELINK_OPT_TWOWAY_SYNC) != 0:
+                            cn.options |= dsdb.NTDSCONN_OPT_TWOWAY_SYNC
+                            cn.set_modified(True)
+
+
+                    # IF bit NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION is set
+                    # in cn!options
+                    if cn.is_intersite_compression_disabled() == True:
+
+                        # IF bit NTDSSITELINK_OPT_DISABLE_COMPRESSION is clear
+                        # in ri.Options
+                        #     Perform an originating update to clear bit
+                        #     NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION in
+                        #     cn!options
+                        if (link_opt & \
+                            dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) == 0:
+                            cn.options &= \
+                                ~dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
+                            cn.set_modified(True)
+
+                    # ELSE
+                    else:
+                        # IF bit NTDSSITELINK_OPT_DISABLE_COMPRESSION is set in
+                        # ri.Options
+                        #     Perform an originating update to set bit
+                        #     NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION in
+                        #     cn!options
+                        if (link_opt & \
+                            dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) != 0:
+                            cn.options |= \
+                                dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
+                            cn.set_modified(True)
+
+                    # Display any modified connection
+                    if opts.readonly:
+                        if cn.to_be_modified == True:
+                            logger.info("TO BE MODIFIED:\n%s" % cn)
+
+                        ldsa.commit_connections(self.samdb, ro=True)
+                    else:
+                        ldsa.commit_connections(self.samdb)
+        # ENDFOR
+
+        valid_connections = 0
+
+        # FOR each nTDSConnection object cn such that cn!parent is
+        # a DC in lbhsAll and cn!fromServer references a DC in rbhsAll
+        for ldsa in lbhs_all:
+            for cn in ldsa.connect_table.values():
+
+                rdsa = None
+                for rdsa in rbhs_all:
+                    if cn.from_dnstr == rdsa.dsa_dnstr:
+                        break
+
+                if rdsa is None:
+                    continue
+
+                # IF (bit NTDSCONN_OPT_IS_GENERATED is clear in cn!options or
+                # cn!transportType references t) and
+                # NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options
+                if (cn.is_generated() == False or \
+                    cn.transport_dnstr == transport.dnstr) and \
+                   cn.is_rodc_topology() == False:
+
+                    # LET rguid be the objectGUID of the nTDSDSA object
+                    # referenced by cn!fromServer
+                    # LET lguid be (cn!parent)!objectGUID
+
+                    # IF BridgeheadDCFailed(rguid, detectFailedDCs) = FALSE and
+                    # BridgeheadDCFailed(lguid, detectFailedDCs) = FALSE
+                    #     Increment cValidConnections by 1
+                    if self.is_bridgehead_failed(rdsa, detect_failed) == False and \
+                       self.is_bridgehead_failed(ldsa, detect_failed) == False:
+                        valid_connections += 1
+
+                    # IF keepConnections does not contain cn!objectGUID
+                    #     APPEND cn!objectGUID to keepConnections
+                    if self.keep_connection(cn) == False:
+                        self.keep_connection_list.append(cn)
+
+        # ENDFOR
+
+        # IF cValidConnections = 0
+        if valid_connections == 0:
+
+            # LET opt be NTDSCONN_OPT_IS_GENERATED
+            opt = dsdb.NTDSCONN_OPT_IS_GENERATED
+
+            # IF bit NTDSSITELINK_OPT_USE_NOTIFY is set in ri.Options
+            #     SET bits NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT and
+            #     NTDSCONN_OPT_USE_NOTIFY in opt
+            if (link_opt & dsdb.NTDSSITELINK_OPT_USE_NOTIFY) != 0:
+                opt |= (dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT | \
+                        dsdb.NTDSCONN_USE_NOTIFY)
+
+            # IF bit NTDSSITELINK_OPT_TWOWAY_SYNC is set in ri.Options
+            #     SET bit NTDSCONN_OPT_TWOWAY_SYNC opt
+            if (link_opt & dsdb.NTDSSITELINK_OPT_TWOWAY_SYNC) != 0:
+                opt |= dsdb.NTDSCONN_OPT_TWOWAY_SYNC
+
+            # IF bit NTDSSITELINK_OPT_DISABLE_COMPRESSION is set in
+            # ri.Options
+            #     SET bit NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION in opt
+            if (link_opt & \
+                dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) != 0:
+                opt |= dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
+
+            # Perform an originating update to create a new nTDSConnection
+            # object cn that is a child of lbh, cn!enabledConnection = TRUE,
+            # cn!options = opt, cn!transportType is a reference to t,
+            # cn!fromServer is a reference to rbh, and cn!schedule = sch
+            cn = lbh.new_connection(opt, 0, transport, lbh.dsa_dnstr, link_sched)
+
+            # Display any added connection
+            if opts.readonly:
+                if cn.to_be_added == True:
+                    logger.info("TO BE ADDED:\n%s" % cn)
+
+                    lbh.commit_connections(self.samdb, ro=True)
+            else:
+                lbh.commit_connections(self.samdb)
+
+            # APPEND cn!objectGUID to keepConnections
+            if self.keep_connection(cn) == False:
+                self.keep_connection_list.append(cn)
+
+        return
+
+
+    def create_connections(self, graph, part, detect_failed):
+        """Construct an NC replica graph for the NC identified by
+        the given crossRef, then create any additional nTDSConnection
+        objects required.
+
+        :param graph: site graph.
+        :param part: crossRef object for NC.
+        :param detect_failed:  True to detect failed DCs and route
+            replication traffic around them, False to assume no DC
+            has failed.
+
+        Modifies self.keep_connection_list by adding any connections
+        deemed to be "in use".
+
+        ::returns: (all_connected, found_failed_dc)
+        (all_connected) True if the resulting NC replica graph
+            connects all sites that need to be connected.
+        (found_failed_dc) True if one or more failed DCs were
+            detected.
+        """
+        all_connected = True
+        found_failed  = False
+
+        logger.debug("create_connections(): enter\n\tpartdn=%s\n\tdetect_failed=%s" % \
+                     (part.nc_dnstr, detect_failed))
+
+        # XXX - This is a highly abbreviated function from the MS-TECH
+        #       ref.  It creates connections between bridgeheads to all
+        #       sites that have appropriate replicas.  Thus we are not
+        #       creating a minimum cost spanning tree but instead
+        #       producing a fully connected tree.  This should produce
+        #       a full (albeit not optimal cost) replication topology.
+        my_vertex = Vertex(self.my_site, part)
+        my_vertex.color_vertex()
+
+        # No NC replicas for this NC in the site of the local DC,
+        # so no nTDSConnection objects need be created
+        if my_vertex.is_white():
+            return all_connected, found_failed
+
+        # LET partialReplicaOkay be TRUE if and only if
+        # localSiteVertex.Color = COLOR.BLACK
+        if my_vertex.is_black():
+            partial_ok = True
+        else:
+            partial_ok = False
+
+        # Utilize the IP transport only for now
+        transport = None
+        for transport in self.transport_table.values():
+            if transport.name == "IP":
+               break
+
+        if transport is None:
+            raise Exception("Unable to find inter-site transport for IP")
+
+        for rsite in self.site_table.values():
+
+            # We don't make connections to our own site as that
+            # is intrasite topology generator's job
+            if rsite is self.my_site:
+                continue
+
+            # Determine bridgehead server in remote site
+            rbh = self.get_bridgehead(rsite, part, transport,
+                                      partial_ok, detect_failed)
+
+            # RODC acts as an BH for itself
+            # IF AmIRODC() then
+            #     LET lbh be the nTDSDSA object of the local DC
+            # ELSE
+            #     LET lbh be the result of GetBridgeheadDC(localSiteVertex.ID,
+            #     cr, t, partialReplicaOkay, detectFailedDCs)
+            if self.my_dsa.is_ro():
+               lsite = self.my_site
+               lbh   = self.my_dsa
+            else:
+               lsite = self.my_site
+               lbh   = self.get_bridgehead(lsite, part, transport,
+                                           partial_ok, detect_failed)
+
+            # Find the siteLink object that enumerates the connection
+            # between the two sites if it is present
+            sitelink = self.get_sitelink(lsite.site_dnstr, rsite.site_dnstr)
+            if sitelink is None:
+                link_opt   = 0x0
+                link_sched = None
+            else:
+                link_opt   = sitelink.options
+                link_sched = sitelink.schedule
+
+            self.create_connection(part, rbh, rsite, transport,
+                                   lbh, lsite, link_opt, link_sched,
+                                   partial_ok, detect_failed)
+
+        return all_connected, found_failed
+
+    def create_intersite_connections(self):
+        """Computes an NC replica graph for each NC replica that "should be
+        present" on the local DC or "is present" on any DC in the same site
+        as the local DC. For each edge directed to an NC replica on such a
+        DC from an NC replica on a DC in another site, the KCC creates an
+        nTDSConnection object to imply that edge if one does not already
+        exist.
+
+        Modifies self.keep_connection_list - A list of nTDSConnection
+        objects for edges that are directed
+        to the local DC's site in one or more NC replica graphs.
+
+        returns: True if spanning trees were created for all NC replica
+            graphs, otherwise False.
+        """
+        all_connected = True
+        self.keep_connection_list = []
+
+        # LET crossRefList be the set containing each object o of class
+        # crossRef such that o is a child of the CN=Partitions child of the
+        # config NC
+
+        # FOR each crossRef object cr in crossRefList
+        #    IF cr!enabled has a value and is false, or if FLAG_CR_NTDS_NC
+        #        is clear in cr!systemFlags, skip cr.
+        #    LET g be the GRAPH return of SetupGraph()
+
+        for part in self.part_table.values():
+
+            if part.is_enabled() == False:
+                continue
+
+            if part.is_foreign() == True:
+                continue
+
+            graph = self.setup_graph()
+
+            # Create nTDSConnection objects, routing replication traffic
+            # around "failed" DCs.
+            found_failed = False
+
+            connected, found_failed = self.create_connections(graph, part, True)
+
+            if connected == False:
+                all_connected = False
+
+                if found_failed:
+                    # One or more failed DCs preclude use of the ideal NC
+                    # replica graph. Add connections for the ideal graph.
+                    self.create_connections(graph, part, False)
+
+        return all_connected
+
+    def intersite(self):
+        """The head method for generating the inter-site KCC replica
+        connection graph and attendant nTDSConnection objects
+        in the samdb.
+
+        Produces self.keep_connection_list[] of NTDS Connections
+        that should be kept during subsequent pruning process.
+
+        ::return (True or False):  (True) if the produced NC replica
+            graph connects all sites that need to be connected
+        """
+
+        # Retrieve my DSA
+        mydsa  = self.my_dsa
+        mysite = self.my_site
+        all_connected = True
+
+        logger.debug("intersite(): enter")
+
+        # Determine who is the ISTG
+        if opts.readonly:
+            mysite.select_istg(self.samdb, mydsa, ro=True)
+        else:
+            mysite.select_istg(self.samdb, mydsa, ro=False)
+
+        # Test whether local site has topology disabled
+        if mysite.is_intersite_topology_disabled():
+            logger.debug("intersite(): exit disabled all_connected=%d" % \
+                         all_connected)
+            return all_connected
+
+        if mydsa.is_istg() == False:
+            logger.debug("intersite(): exit not istg all_connected=%d" % \
+                         all_connected)
+            return all_connected
+
+        self.merge_failed_links()
+
+        # For each NC with an NC replica that "should be present" on the
+        # local DC or "is present" on any DC in the same site as the
+        # local DC, the KCC constructs a site graph--a precursor to an NC
+        # replica graph. The site connectivity for a site graph is defined
+        # by objects of class interSiteTransport, siteLink, and
+        # siteLinkBridge in the config NC.
+
+        all_connected = self.create_intersite_connections()
+
+        logger.debug("intersite(): exit all_connected=%d" % all_connected)
+        return all_connected
 
     def update_rodc_connection(self):
         """Runs when the local DC is an RODC and updates the RODC NTFRS
-           connection object.
+        connection object.
         """
         # Given an nTDSConnection object cn1, such that cn1.options contains
         # NTDSCONN_OPT_RODC_TOPOLOGY, and another nTDSConnection object cn2,
@@ -703,14 +1545,19 @@ class KCC:
 
         # XXX - not implemented yet
 
+        return
+
     def intrasite_max_node_edges(self, node_count):
         """Returns the maximum number of edges directed to a node in
-           the intrasite replica graph.  The KCC does not create more
-           than 50 edges directed to a single DC. To optimize replication,
-           we compute that each node should have n+2 total edges directed
-           to it such that (n) is the smallest non-negative integer
-           satisfying (node_count <= 2*(n*n) + 6*n + 7)
-           :param node_count: total number of nodes in the replica graph
+        the intrasite replica graph.
+
+        The KCC does not create more
+        than 50 edges directed to a single DC. To optimize replication,
+        we compute that each node should have n+2 total edges directed
+        to it such that (n) is the smallest non-negative integer
+        satisfying (node_count <= 2*(n*n) + 6*n + 7)
+
+        :param node_count: total number of nodes in the replica graph
         """
         n = 0
         while True:
@@ -759,7 +1606,7 @@ class KCC:
         # Create a NCReplica that matches what the local replica
         # should say.  We'll use this below in our r_list
         l_of_x = NCReplica(dc_local.dsa_dnstr, dc_local.dsa_guid, \
-                           nc_x.nc_dnstr, nc_x.nc_guid, nc_x.nc_sid)
+                           nc_x.nc_dnstr)
 
         l_of_x.identify_by_basedn(self.samdb)
 
@@ -1018,20 +1865,20 @@ class KCC:
 
     def intrasite(self):
         """The head method for generating the intra-site KCC replica
-           connection graph and attendant nTDSConnection objects
-           in the samdb
+        connection graph and attendant nTDSConnection objects
+        in the samdb
         """
         # Retrieve my DSA
         mydsa = self.my_dsa
 
-        logger.debug("intrasite(): enter mydsa:\n%s" % mydsa)
+        logger.debug("intrasite(): enter")
 
         # Test whether local site has topology disabled
         mysite = self.site_table[self.my_site_dnstr]
         if mysite.is_intrasite_topology_disabled():
             return
 
-        detect_stale = mysite.should_detect_stale()
+        detect_stale = (mysite.is_detect_stale_disabled() == False)
 
         # Loop thru all the partitions.
         for partdn, part in self.part_table.items():
@@ -1072,22 +1919,50 @@ class KCC:
                                                True, \
                                                False)  # don't detect stale
 
-        # Commit any newly created connections to the samdb
-        if opts.readonly is None:
-            mydsa.commit_connection_table(self.samdb)
+        if opts.readonly:
+            # Display any to be added or modified repsFrom
+            for dnstr, connect in mydsa.connect_table.items():
+                if connect.to_be_deleted == True:
+                    logger.info("TO BE DELETED:\n%s" % connect)
+                if connect.to_be_modified == True:
+                    logger.info("TO BE MODIFIED:\n%s" % connect)
+                if connect.to_be_added == True:
+                    logger.info("TO BE ADDED:\n%s" % connect)
 
-    def run(self):
+            mydsa.commit_connections(self.samdb, ro=True)
+        else:
+            # Commit any newly created connections to the samdb
+            mydsa.commit_connections(self.samdb)
+
+        return
+
+    def run(self, dburl, lp, creds):
         """Method to perform a complete run of the KCC and
-           produce an updated topology for subsequent NC replica
-           syncronization between domain controllers
+        produce an updated topology for subsequent NC replica
+        syncronization between domain controllers
         """
+        # We may already have a samdb setup if we are
+        # currently importing an ldif for a test run
+        if self.samdb is None:
+            try:
+                self.samdb = SamDB(url=lp.samdb_url(),
+                                   session_info=system_session(),
+                                   credentials=creds, lp=lp)
+
+            except ldb.LdbError, (num, msg):
+                logger.error("Unable to open sam database %s : %s" % \
+                             (lp.samdb_url(), msg))
+                return 1
+
         try:
             # Setup
             self.load_my_site()
             self.load_my_dsa()
 
+            self.load_all_sites()
             self.load_all_partitions()
             self.load_all_transports()
+            self.load_all_sitelinks()
 
             # These are the published steps (in order) for the
             # MS-TECH description of the KCC algorithm
@@ -1099,10 +1974,10 @@ class KCC:
             self.intrasite()
 
             # Step 3
-            self.intersite()
+            all_connected = self.intersite()
 
             # Step 4
-            self.remove_unneeded_ntdsconn()
+            self.remove_unneeded_ntdsconn(all_connected)
 
             # Step 5
             self.translate_ntdsconn()
@@ -1119,18 +1994,395 @@ class KCC:
 
         return 0
 
+    def import_ldif(self, dburl, lp, creds, ldif_file):
+        """Routine to import all objects and attributes that are relevent
+        to the KCC algorithms from a previously exported LDIF file.
+
+        The point of this function is to allow a programmer/debugger to
+        import an LDIF file with non-security relevent information that
+        was previously extracted from a DC database.  The LDIF file is used
+        to create a temporary abbreviated database.  The KCC algorithm can
+        then run against this abbreviated database for debug or test
+        verification that the topology generated is computationally the
+        same between different OSes and algorithms.
+
+        :param dburl: path to the temporary abbreviated db to create
+        :param ldif_file: path to the ldif file to import
+        """
+        if os.path.exists(dburl):
+            logger.error("Specify a database (%s) that doesn't already exist." %
+                         dburl)
+            return 1
+
+        # Use ["modules:"] as we are attempting to build a sam
+        # database as opposed to start it here.
+        self.samdb = Ldb(url=dburl, session_info=system_session(),
+                         lp=lp, options=["modules:"])
+
+        self.samdb.transaction_start()
+        try:
+            data = read_and_sub_file(ldif_file, None)
+            self.samdb.add_ldif(data, None)
+
+        except Exception, estr:
+            logger.error("%s" % estr)
+            self.samdb.transaction_cancel()
+            return 1
+        else:
+            self.samdb.transaction_commit()
+
+        self.samdb = None
+
+        # We have an abbreviated list of options here because we have built
+        # an abbreviated database.  We use the rootdse and extended-dn
+        # modules only during this re-open
+        self.samdb = SamDB(url=dburl, session_info=system_session(),
+                           credentials=creds, lp=lp,
+                           options=["modules:rootdse,extended_dn_out_ldb"])
+        return 0
+
+    def export_ldif(self, dburl, lp, creds, ldif_file):
+        """Routine to extract all objects and attributes that are relevent
+        to the KCC algorithms from a DC database.
+
+        The point of this function is to allow a programmer/debugger to
+        extract an LDIF file with non-security relevent information from
+        a DC database.  The LDIF file can then be used to "import" via
+        the import_ldif() function this file into a temporary abbreviated
+        database.  The KCC algorithm can then run against this abbreviated
+        database for debug or test verification that the topology generated
+        is computationally the same between different OSes and algorithms.
+
+        :param dburl: LDAP database URL to extract info from
+        :param ldif_file: output LDIF file name to create
+        """
+        try:
+            self.samdb = SamDB(url=dburl,
+                               session_info=system_session(),
+                               credentials=creds, lp=lp)
+        except ldb.LdbError, (enum, estr):
+            logger.error("Unable to open sam database (%s) : %s" % \
+                         (lp.samdb_url(), estr))
+            return 1
+
+        if os.path.exists(ldif_file):
+            logger.error("Specify a file (%s) that doesn't already exist." %
+                         ldif_file)
+            return 1
+
+        try:
+            f = open(ldif_file, "w")
+        except (enum, estr):
+            logger.error("Unable to open (%s) : %s" % (ldif_file, estr))
+            return 1
+
+        try:
+            # Query Partitions
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "objectSid",
+                      "Enabled",
+                      "systemFlags",
+                      "dnsRoot",
+                      "nCName",
+                      "msDS-NC-Replica-Locations",
+                      "msDS-NC-RO-Replica-Locations" ]
+
+            sstr = "CN=Partitions,%s" % self.samdb.get_config_basedn()
+            res  = self.samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
+                                     attrs=attrs,
+                                     expression="(objectClass=crossRef)")
+
+            # Write partitions output
+            write_search_result(self.samdb, f, res)
+
+            # Query cross reference container
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "fSMORoleOwner",
+                      "systemFlags",
+                      "msDS-Behavior-Version",
+                      "msDS-EnabledFeature" ]
+
+            sstr = "CN=Partitions,%s" % self.samdb.get_config_basedn()
+            res  = self.samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
+                                     attrs=attrs,
+                                     expression="(objectClass=crossRefContainer)")
+
+            # Write cross reference container output
+            write_search_result(self.samdb, f, res)
+
+            # Query Sites
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "systemFlags" ]
+
+            sstr  = "CN=Sites,%s" % self.samdb.get_config_basedn()
+            sites = self.samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
+                                      attrs=attrs,
+                                      expression="(objectClass=site)")
+
+            # Write sites output
+            write_search_result(self.samdb, f, sites)
+
+            # Query NTDS Site Settings
+            for msg in sites:
+                sitestr = str(msg.dn)
+
+                attrs = [ "objectClass",
+                          "objectGUID",
+                          "cn",
+                          "whenChanged",
+                          "interSiteTopologyGenerator",
+                          "interSiteTopologyFailover",
+                          "schedule",
+                          "options" ]
+
+                sstr = "CN=NTDS Site Settings,%s" % sitestr
+                res  = self.samdb.search(base=sstr, scope=ldb.SCOPE_BASE,
+                                         attrs=attrs)
+
+                # Write Site Settings output
+                write_search_result(self.samdb, f, res)
+
+            # Naming context list
+            nclist = []
+
+            # Query Directory Service Agents
+            for msg in sites:
+                sstr = str(msg.dn)
+
+                ncattrs = [ "hasMasterNCs",
+                            "msDS-hasMasterNCs",
+                            "hasPartialReplicaNCs",
+                            "msDS-HasDomainNCs",
+                            "msDS-hasFullReplicaNCs",
+                            "msDS-HasInstantiatedNCs" ]
+                attrs   = [ "objectClass",
+                            "objectGUID",
+                            "cn",
+                            "whenChanged",
+                            "invocationID",
+                            "options",
+                            "msDS-isRODC",
+                            "msDS-Behavior-Version" ]
+
+                res = self.samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
+                                        attrs=attrs + ncattrs,
+                                        expression="(objectClass=nTDSDSA)")
+
+                # Spin thru all the DSAs looking for NC replicas
+                # and build a list of all possible Naming Contexts
+                # for subsequent retrieval below
+                for msg in res:
+                    for k in msg.keys():
+                        if k in ncattrs:
+                            for value in msg[k]:
+                                # Some of these have binary DNs so
+                                # use dsdb_Dn to split out relevent parts
+                                dsdn  = dsdb_Dn(self.samdb, value)
+                                dnstr = str(dsdn.dn)
+                                if dnstr not in nclist:
+                                    nclist.append(dnstr)
+
+                # Write DSA output
+                write_search_result(self.samdb, f, res)
+
+            # Query NTDS Connections
+            for msg in sites:
+                sstr = str(msg.dn)
+
+                attrs = [ "objectClass",
+                          "objectGUID",
+                          "cn",
+                          "whenChanged",
+                          "options",
+                          "whenCreated",
+                          "enabledConnection",
+                          "schedule",
+                          "transportType",
+                          "fromServer",
+                          "systemFlags" ]
+
+                res = self.samdb.search(base=sstr, scope=ldb.SCOPE_SUBTREE,
+                                        attrs=attrs,
+                                        expression="(objectClass=nTDSConnection)")
+                # Write NTDS Connection output
+                write_search_result(self.samdb, f, res)
+
+
+            # Query Intersite transports
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "options",
+                      "name",
+                      "bridgeheadServerListBL",
+                      "transportAddressAttribute" ]
+
+            sstr = "CN=Inter-Site Transports,CN=Sites,%s" % \
+                   self.samdb.get_config_basedn()
+            res  = self.samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
+                                     attrs=attrs,
+                                     expression="(objectClass=interSiteTransport)")
+
+            # Write inter-site transport output
+            write_search_result(self.samdb, f, res)
+
+            # Query siteLink
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "systemFlags",
+                      "options",
+                      "schedule",
+                      "replInterval",
+                      "siteList",
+                      "cost" ]
+
+            sstr = "CN=Sites,%s" % \
+                   self.samdb.get_config_basedn()
+            res  = self.samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
+                                     attrs=attrs,
+                                     expression="(objectClass=siteLink)")
+
+            # Write siteLink output
+            write_search_result(self.samdb, f, res)
+
+            # Query siteLinkBridge
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "siteLinkList" ]
+
+            sstr = "CN=Sites,%s" % \
+                   self.samdb.get_config_basedn()
+            res  = self.samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
+                                     attrs=attrs,
+                                     expression="(objectClass=siteLinkBridge)")
+
+            # Write siteLinkBridge output
+            write_search_result(self.samdb, f, res)
+
+            # Query servers containers
+            # Needed for samdb.server_site_name()
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "systemFlags" ]
+
+            sstr = "CN=Sites,%s" % self.samdb.get_config_basedn()
+            res  = self.samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
+                                     attrs=attrs,
+                                     expression="(objectClass=serversContainer)")
+
+            # Write servers container output
+            write_search_result(self.samdb, f, res)
+
+            # Query servers
+            # Needed because some transport interfaces refer back to
+            # attributes found in the server object.   Also needed
+            # so extended-dn will be happy with dsServiceName in rootDSE
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "systemFlags",
+                      "dNSHostName",
+                      "mailAddress" ]
+
+            sstr = "CN=Sites,%s" % self.samdb.get_config_basedn()
+            res  = self.samdb.search(sstr, scope=ldb.SCOPE_SUBTREE,
+                                     attrs=attrs,
+                                     expression="(objectClass=server)")
+
+            # Write server output
+            write_search_result(self.samdb, f, res)
+
+            # Query Naming Context replicas
+            attrs = [ "objectClass",
+                      "objectGUID",
+                      "cn",
+                      "whenChanged",
+                      "objectSid",
+                      "fSMORoleOwner",
+                      "msDS-Behavior-Version",
+                      "repsFrom",
+                      "repsTo" ]
+
+            for sstr in nclist:
+                res = self.samdb.search(sstr, scope=ldb.SCOPE_BASE,
+                                        attrs=attrs)
+
+                # Write naming context output
+                write_search_result(self.samdb, f, res)
+
+            # Query rootDSE replicas
+            attrs=[ "objectClass",
+                    "objectGUID",
+                    "cn",
+                    "whenChanged",
+                    "rootDomainNamingContext",
+                    "configurationNamingContext",
+                    "schemaNamingContext",
+                    "defaultNamingContext",
+                    "dsServiceName" ]
+
+            sstr = ""
+            res  = self.samdb.search(sstr, scope=ldb.SCOPE_BASE,
+                                     attrs=attrs)
+
+            # Record the rootDSE object as a dn as it
+            # would appear in the base ldb file.  We have
+            # to save it this way because we are going to
+            # be importing as an abbreviated database.
+            res[0].dn = ldb.Dn(self.samdb, "@ROOTDSE")
+
+            # Write rootdse output
+            write_search_result(self.samdb, f, res)
+
+        except ldb.LdbError, (enum, estr):
+            logger.error("Error processing (%s) : %s" % (sstr, estr))
+            return 1
+
+        f.close()
+        return 0
+
 ##################################################
 # Global Functions
 ##################################################
 def sort_replica_by_dsa_guid(rep1, rep2):
     return cmp(rep1.rep_dsa_guid, rep2.rep_dsa_guid)
 
-def is_smtp_replication_availalbe():
+def sort_dsa_by_gc_and_guid(dsa1, dsa2):
+    if dsa1.is_gc() == True and dsa2.is_gc() == False:
+        return -1
+    if dsa1.is_gc() == False and dsa2.is_gc() == True:
+        return +1
+    return cmp(dsa1.dsa_guid, dsa2.dsa_guid)
+
+def is_smtp_replication_available():
     """Currently always returns false because Samba
-       doesn't implement SMTP transfer for NC changes
-       between DCs
+    doesn't implement SMTP transfer for NC changes
+    between DCs
     """
     return False
+
+def write_search_result(samdb, f, res):
+    for msg in res:
+        lstr = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
+        f.write("%s" % lstr)
+    return
 
 ##################################################
 # samba_kcc entry point
@@ -1147,19 +2399,46 @@ parser.add_option_group(options.VersionOptions(parser))
 parser.add_option("--readonly", \
                   help="compute topology but do not update database", \
                   action="store_true")
-parser.add_option("--debug",    help="debug output", action="store_true")
-parser.add_option("--seed",     help="random number seed")
+
+parser.add_option("--debug", \
+                  help="debug output", \
+                  action="store_true")
+
+parser.add_option("--seed", \
+                  help="random number seed", \
+                  type=str, metavar="<number>")
+
+parser.add_option("--importldif", \
+                  help="import topology ldif file", \
+                  type=str, metavar="<file>")
+
+parser.add_option("--exportldif", \
+                  help="export topology ldif file", \
+                  type=str, metavar="<file>")
+
+parser.add_option("-H", "--URL" , \
+                  help="LDB URL for database or target server", \
+                  type=str, metavar="<URL>", dest="dburl")
+
+parser.add_option("--tmpdb", \
+                  help="schemaless database file to create for ldif import", \
+                  type=str, metavar="<file>")
 
 logger = logging.getLogger("samba_kcc")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
-lp     = sambaopts.get_loadparm()
-creds  = credopts.get_credentials(lp, fallback_machine=True)
+lp    = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp, fallback_machine=True)
 
 opts, args = parser.parse_args()
 
+if opts.readonly is None:
+    opts.readonly = False
+
 if opts.debug:
     logger.setLevel(logging.DEBUG)
+elif opts.readonly:
+    logger.setLevel(logging.INFO)
 else:
     logger.setLevel(logging.WARNING)
 
@@ -1169,18 +2448,24 @@ if opts.seed:
 else:
     random.seed(0xACE5CA11)
 
-private_dir = lp.get("private dir")
-samdb_path  = os.path.join(private_dir, "samdb.ldb")
-
-try:
-    samdb = SamDB(url=lp.samdb_url(), session_info=system_session(),
-                  credentials=creds, lp=lp)
-except ldb.LdbError, (num, msg):
-    logger.info("Unable to open sam database %s : %s" % (lp.samdb_url(), msg))
-    sys.exit(1)
+if opts.dburl is None:
+    opts.dburl = lp.samdb_url()
 
 # Instantiate Knowledge Consistency Checker and perform run
-kcc = KCC(samdb)
-rc  = kcc.run()
+kcc = KCC()
 
+if opts.exportldif:
+    rc = kcc.export_ldif(opts.dburl, lp, creds, opts.exportldif)
+    sys.exit(rc)
+
+if opts.importldif:
+    if opts.tmpdb is None or opts.tmpdb.startswith('ldap'):
+        logger.error("Specify a target temp database file with --tmpdb option.")
+        sys.exit(1)
+
+    rc = kcc.import_ldif(opts.tmpdb, lp, creds, opts.importldif)
+    if rc != 0:
+        sys.exit(rc)
+
+rc = kcc.run(opts.dburl, lp, creds)
 sys.exit(rc)
