@@ -30,6 +30,8 @@
 #include "kdc/pac-glue.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "libcli/security/security.h"
+#include "dsdb/samdb/samdb.h"
 
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
@@ -143,22 +145,74 @@ bool samba_princ_needs_pac(struct hdb_entry_ex *princ)
 	return true;
 }
 
-/* Was the krbtgt an RODC (and we are not) */
-bool samba_krbtgt_was_untrusted_rodc(struct hdb_entry_ex *princ)
+/* Was the krbtgt in this DB (ie, should we check the incoming signature) and was it an RODC */
+int samba_krbtgt_is_in_db(struct hdb_entry_ex *princ, bool *is_in_db, bool *is_untrusted)
 {
-
+	NTSTATUS status;
 	struct samba_kdc_entry *p = talloc_get_type(princ->ctx, struct samba_kdc_entry);
-	int rodc_krbtgt_number;
+	int rodc_krbtgt_number, trust_direction;
+	uint32_t rid;
 
-	/* Determine if this was printed by an RODC */
-	rodc_krbtgt_number = ldb_msg_find_attr_as_int(p->msg, "msDS-SecondaryKrbTgtNumber", -1);
-	if (rodc_krbtgt_number == -1) {
-		return false;
-	} else if (rodc_krbtgt_number != p->kdc_db_ctx->my_krbtgt_number) {
-		return true;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	if (!mem_ctx) {
+		return ENOMEM;
+	}
+	
+	trust_direction = ldb_msg_find_attr_as_int(p->msg, "trustDirection", 0);
+
+	if (trust_direction != 0) {
+		/* Domain trust - we cannot check the sig, but we trust it for a correct PAC
+		   
+		   This is exactly where we should flag for SID
+		   validation when we do inter-foreest trusts
+		 */
+		talloc_free(mem_ctx);
+		*is_untrusted = false;
+		*is_in_db = false;
+		return 0;
 	}
 
-	return false;
+	/* The lack of password controls etc applies to krbtgt by
+	 * virtue of being that particular RID */
+	status = dom_sid_split_rid(NULL, samdb_result_dom_sid(mem_ctx, p->msg, "objectSid"), NULL, &rid);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return EINVAL;
+	}
+
+	rodc_krbtgt_number = ldb_msg_find_attr_as_int(p->msg, "msDS-SecondaryKrbTgtNumber", -1);
+
+	if (p->kdc_db_ctx->my_krbtgt_number == 0) {
+		if (rid == DOMAIN_RID_KRBTGT) {
+			*is_untrusted = false;
+			*is_in_db = true;
+			talloc_free(mem_ctx);
+			return 0;
+		} else if (rodc_krbtgt_number != -1) {
+			*is_in_db = true;
+			*is_untrusted = true;
+			talloc_free(mem_ctx);
+			return 0;
+		}
+	} else if ((rid != DOMAIN_RID_KRBTGT) && (rodc_krbtgt_number == p->kdc_db_ctx->my_krbtgt_number)) {
+		talloc_free(mem_ctx);
+		*is_untrusted = false;
+		*is_in_db = true;
+		return 0;
+	} else if (rid == DOMAIN_RID_KRBTGT) {
+		/* krbtgt viewed from an RODC */
+		talloc_free(mem_ctx);
+		*is_untrusted = false;
+		*is_in_db = false;
+		return 0;
+	}
+
+	/* Another RODC */
+	talloc_free(mem_ctx);
+	*is_untrusted = true;
+	*is_in_db = false;
+	return 0;
 }
 
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
@@ -208,14 +262,16 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
-				   const krb5_pac pac, DATA_BLOB *pac_blob)
+				   const krb5_pac pac, DATA_BLOB *pac_blob,
+				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
+				   struct PAC_SIGNATURE_DATA *pac_kdc_sig)
 {
 	struct auth_user_info_dc *user_info_dc;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 
 	ret = kerberos_pac_to_user_info_dc(mem_ctx, pac,
-					   context, &user_info_dc, NULL, NULL);
+					   context, &user_info_dc, pac_srv_sig, pac_kdc_sig);
 	if (ret) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -404,4 +460,38 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 	talloc_free(tmp_ctx);
 	return nt_status;
 }
+
+int kdc_check_pac(krb5_context context,
+		  DATA_BLOB srv_sig,
+		  struct PAC_SIGNATURE_DATA *kdc_sig,
+		  hdb_entry_ex *ent)
+{
+	krb5_enctype etype;
+	int ret;
+	krb5_keyblock keyblock;
+	Key *key;
+	if (kdc_sig->type == CKSUMTYPE_HMAC_MD5) {
+		etype = ETYPE_ARCFOUR_HMAC_MD5;
+	} else {
+		ret = krb5_cksumtype_to_enctype(context, 
+						kdc_sig->type,
+						&etype);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	ret = hdb_enctype2key(context, &ent->entry, etype, &key);
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	keyblock = key->key;
+
+	return check_pac_checksum(NULL, srv_sig, kdc_sig,
+				 context, &keyblock);
+}
+
+
 

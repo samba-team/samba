@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('service_kdc',
 	source='kdc.c kpasswdd.c proxy.c',
 	subsystem='service',
 	init_function='server_service_kdc_init',
-	deps='kdc HDB_SAMBA4 WDC_SAMBA4 samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET com_err samba_server_gensec',
+	deps='kdc HDB_SAMBA4 WDC_SAMBA4 samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET com_err samba_server_gensec PAC_GLUE',
 	internal_module=False,
 	)
 

@@ -32,6 +32,7 @@
 #include "lib/socket/netif.h"
 #include "param/param.h"
 #include "kdc/kdc-glue.h"
+#include "kdc/pac-glue.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/session.h"
 
@@ -777,7 +778,6 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 	return NT_STATUS_OK;
 }
 
-
 static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 				 struct kdc_check_generic_kerberos *r)
 {
@@ -786,12 +786,9 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	struct PAC_SIGNATURE_DATA kdc_sig;
 	struct kdc_server *kdc = talloc_get_type(msg->private_data, struct kdc_server);
 	enum ndr_err_code ndr_err;
-	krb5_enctype etype;
 	int ret;
 	hdb_entry_ex ent;
 	krb5_principal principal;
-	krb5_keyblock keyblock;
-	Key *key;
 
 	/* There is no reply to this request */
 	r->out.generic_reply = data_blob(NULL, 0);
@@ -816,16 +813,6 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	srv_sig = data_blob_const(pac_validate.ChecksumAndSignature.data,
 				  pac_validate.ChecksumLength);
 
-	if (pac_validate.SignatureType == CKSUMTYPE_HMAC_MD5) {
-		etype = ETYPE_ARCFOUR_HMAC_MD5;
-	} else {
-		ret = krb5_cksumtype_to_enctype(kdc->smb_krb5_context->krb5_context, pac_validate.SignatureType,
-						&etype);
-		if (ret != 0) {
-			return NT_STATUS_LOGON_FAILURE;
-		}
-	}
-
 	ret = krb5_make_principal(kdc->smb_krb5_context->krb5_context, &principal,
 				  lpcfg_realm(kdc->task->lp_ctx),
 				  "krbtgt", lpcfg_realm(kdc->task->lp_ctx),
@@ -849,21 +836,11 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	ret = hdb_enctype2key(kdc->smb_krb5_context->krb5_context, &ent.entry, etype, &key);
-
-	if (ret != 0) {
-		hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
-		krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);
-		return NT_STATUS_LOGON_FAILURE;
-	}
-
-	keyblock = key->key;
-
 	kdc_sig.type = pac_validate.SignatureType;
 	kdc_sig.signature = data_blob_const(&pac_validate.ChecksumAndSignature.data[pac_validate.ChecksumLength],
 					    pac_validate.SignatureLength);
-	ret = check_pac_checksum(msg, srv_sig, &kdc_sig,
-			   kdc->smb_krb5_context->krb5_context, &keyblock);
+
+	ret = kdc_check_pac(kdc->smb_krb5_context->krb5_context, srv_sig, &kdc_sig, &ent);
 
 	hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
 	krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);

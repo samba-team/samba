@@ -28,7 +28,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 
 bool samba_princ_needs_pac(struct hdb_entry_ex *princ);
 
-bool samba_krbtgt_was_untrusted_rodc(struct hdb_entry_ex *princ);
+int samba_krbtgt_is_in_db(struct hdb_entry_ex *princ, bool *is_in_db, bool *is_untrusted);
 
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				struct hdb_entry_ex *client,
@@ -36,7 +36,9 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
-				   const krb5_pac pac, DATA_BLOB *pac_blob);
+				   const krb5_pac pac, DATA_BLOB *pac_blob,
+				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
+				   struct PAC_SIGNATURE_DATA *pac_kdc_sig);
 
 NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				krb5_context context,
@@ -53,3 +55,7 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 				       const char *client_name,
 				       const char *workstation,
 				       bool password_change);
+int kdc_check_pac(krb5_context krb5_context,
+		  DATA_BLOB server_sig,
+		  struct PAC_SIGNATURE_DATA *kdc_sig,
+		  hdb_entry_ex *ent);
