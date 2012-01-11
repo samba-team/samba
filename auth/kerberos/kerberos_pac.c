@@ -28,8 +28,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "libcli/auth/krb5_wrap.h"
 
-krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
-					  DATA_BLOB pac_data,
+krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 					  struct PAC_SIGNATURE_DATA *sig,
 					  krb5_context context,
 					  const krb5_keyblock *keyblock)
@@ -304,8 +303,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 
 	if (service_keyblock) {
 		/* verify by service_key */
-		ret = check_pac_checksum(tmp_ctx,
-					 modified_pac_blob, srv_sig_ptr,
+		ret = check_pac_checksum(modified_pac_blob, srv_sig_ptr,
 					 context,
 					 service_keyblock);
 		if (ret) {
@@ -316,8 +314,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 
 		if (krbtgt_keyblock) {
 			/* verify the service key checksum by krbtgt_key */
-			ret = check_pac_checksum(tmp_ctx,
-						 srv_sig_ptr->signature, kdc_sig_ptr,
+			ret = check_pac_checksum(srv_sig_ptr->signature, kdc_sig_ptr,
 						 context, krbtgt_keyblock);
 			if (ret) {
 				DEBUG(1, ("PAC Decode: Failed to verify the KDC signature: %s\n",

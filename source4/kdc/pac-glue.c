@@ -489,7 +489,7 @@ int kdc_check_pac(krb5_context context,
 
 	keyblock = key->key;
 
-	return check_pac_checksum(NULL, srv_sig, kdc_sig,
+	return check_pac_checksum(srv_sig, kdc_sig,
 				 context, &keyblock);
 }
 

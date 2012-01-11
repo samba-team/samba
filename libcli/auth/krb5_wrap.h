@@ -58,8 +58,7 @@ char *gssapi_error_string(TALLOC_CTX *mem_ctx,
 			  const gss_OID mech);
 char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
 
-krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
-				   DATA_BLOB pac_data,
+krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 				   struct PAC_SIGNATURE_DATA *sig,
 				   krb5_context context,
 				   const krb5_keyblock *keyblock);
