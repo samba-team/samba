@@ -70,21 +70,22 @@ gss_OID_desc gse_authz_data_oid = {
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
 
 struct gse_context {
+	gss_ctx_id_t gssapi_context;
+	gss_name_t server_name;
+	gss_name_t client_name;
+	OM_uint32 gss_want_flags, gss_got_flags;
+
+	gss_cred_id_t delegated_cred_handle;
+
+	/* gensec_gse only */
 	krb5_context k5ctx;
 	krb5_ccache ccache;
 	krb5_keytab keytab;
 
-	gss_ctx_id_t gssapi_context;
-
 	gss_OID_desc gss_mech;
-	OM_uint32 gss_want_flags;
 	gss_cred_id_t creds;
-	gss_name_t server_name;
 
 	gss_OID ret_mech;
-	OM_uint32 gss_got_flags;
-	gss_cred_id_t delegated_cred_handle;
-	gss_name_t client_name;
 };
 
 #ifndef HAVE_GSS_OID_EQUAL
