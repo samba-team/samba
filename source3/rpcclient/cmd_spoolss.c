@@ -1928,24 +1928,24 @@ static WERROR cmd_spoolss_deletedriverex(struct rpc_pipe_client *cli,
 	uint32_t delete_flags = 0;
 
 	/* parse the command arguments */
-	if (argc < 2 || argc > 4) {
-		printf ("Usage: %s <driver> [arch] [version]\n", argv[0]);
+	if (argc < 2 || argc > 5) {
+		printf("Usage: %s <driver> [arch] [version] [flags]\n", argv[0]);
 		return WERR_OK;
 	}
 
 	if (argc >= 3)
 		arch = argv[2];
-	if (argc == 4)
-		vers = atoi (argv[3]);
-
-	if (vers >= 0) {
+	if (argc >= 4) {
+		vers = atoi(argv[3]);
 		delete_flags |= DPD_DELETE_SPECIFIC_VERSION;
 	}
+	if (argc == 5)
+		delete_flags = atoi(argv[4]);
 
 	/* delete the driver for all architectures */
 	for (i=0; archi_table[i].long_archi; i++) {
 
-		if (arch &&  !strequal( archi_table[i].long_archi, arch))
+		if (arch && !strequal(archi_table[i].long_archi, arch))
 			continue;
 
 		if (vers >= 0 && archi_table[i].version != vers)

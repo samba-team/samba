@@ -273,10 +273,13 @@ Comma Separated list of Files
 		only the entry from the server's list of drivers.
 		</para></listitem></varlistentry>
 
-		<varlistentry><term>deldriverex &lt;driver&gt; [architecture] [version]
-		</term><listitem><para>Delete the specified printer driver including driver files. 
-		You can limit this action to a specific architecture and a specific version. 
-		If no architecure is given, all driver files of that driver will be deleted. 
+		<varlistentry><term>deldriverex &lt;driver&gt; [architecture] [version] [flags]
+		</term><listitem><para>Delete the specified printer driver and optionally files
+		associated with the driver.
+		You can limit this action to a specific architecture and a specific version.
+		If no architecure is given, all driver files of that driver will be deleted.
+		<parameter>flags</parameter> correspond to numeric DPD_* values, i.e. a value
+		of 3 requests (DPD_DELETE_UNUSED_FILES | DPD_DELETE_SPECIFIC_VERSION).
 		</para></listitem></varlistentry>
 
 		<varlistentry><term>enumdata</term><listitem><para>Enumerate all 
