@@ -83,7 +83,7 @@ struct gse_context {
 
 	gss_OID ret_mech;
 	OM_uint32 ret_flags;
-	gss_cred_id_t delegated_creds;
+	gss_cred_id_t delegated_cred_handle;
 	gss_name_t client_name;
 
 	bool more_processing;
@@ -144,9 +144,9 @@ static int gse_context_destructor(void *ptr)
 		gss_maj = gss_release_cred(&gss_min,
 					   &gse_ctx->creds);
 	}
-	if (gse_ctx->delegated_creds) {
+	if (gse_ctx->delegated_cred_handle) {
 		gss_maj = gss_release_cred(&gss_min,
-					   &gse_ctx->delegated_creds);
+					   &gse_ctx->delegated_cred_handle);
 	}
 
 	/* MIT and Heimdal differ as to if you can call
@@ -486,7 +486,7 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 					 &gse_ctx->ret_mech,
 					 &out_data,
 					 &gse_ctx->ret_flags, NULL,
-					 &gse_ctx->delegated_creds);
+					 &gse_ctx->delegated_cred_handle);
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
