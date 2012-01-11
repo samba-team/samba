@@ -86,7 +86,6 @@ struct gse_context {
 	gss_cred_id_t delegated_cred_handle;
 	gss_name_t client_name;
 
-	bool more_processing;
 	bool authenticated;
 };
 
@@ -340,14 +339,11 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
-		gse_ctx->more_processing = false;
 		status = NT_STATUS_OK;
 		break;
 	case GSS_S_CONTINUE_NEEDED:
 		/* we will need a third leg */
-		gse_ctx->more_processing = true;
-		/* status = NT_STATUS_MORE_PROCESSING_REQUIRED; */
-		status = NT_STATUS_OK;
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		break;
 	default:
 		DEBUG(0, ("gss_init_sec_context failed with [%s]\n",
@@ -490,15 +486,12 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
-		gse_ctx->more_processing = false;
 		gse_ctx->authenticated = true;
 		status = NT_STATUS_OK;
 		break;
 	case GSS_S_CONTINUE_NEEDED:
 		/* we will need a third leg */
-		gse_ctx->more_processing = true;
-		/* status = NT_STATUS_MORE_PROCESSING_REQUIRED; */
-		status = NT_STATUS_OK;
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		break;
 	default:
 		DEBUG(0, ("gss_init_sec_context failed with [%s]\n",
@@ -982,9 +975,6 @@ static NTSTATUS gensec_gse_update(struct gensec_security *gensec_security,
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-	if (gse_ctx->more_processing) {
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
 
 	if (gensec_security->gensec_role == GENSEC_SERVER) {
