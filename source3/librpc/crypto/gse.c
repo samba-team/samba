@@ -74,7 +74,7 @@ struct gse_context {
 	krb5_ccache ccache;
 	krb5_keytab keytab;
 
-	gss_ctx_id_t gss_ctx;
+	gss_ctx_id_t gssapi_context;
 
 	gss_OID_desc gss_mech;
 	OM_uint32 gss_c_flags;
@@ -127,9 +127,9 @@ static int gse_context_destructor(void *ptr)
 		krb5_free_context(gse_ctx->k5ctx);
 		gse_ctx->k5ctx = NULL;
 	}
-	if (gse_ctx->gss_ctx != GSS_C_NO_CONTEXT) {
+	if (gse_ctx->gssapi_context != GSS_C_NO_CONTEXT) {
 		gss_maj = gss_delete_sec_context(&gss_min,
-						 &gse_ctx->gss_ctx,
+						 &gse_ctx->gssapi_context,
 						 GSS_C_NO_BUFFER);
 	}
 	if (gse_ctx->server_name) {
@@ -330,7 +330,7 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 
 	gss_maj = gss_init_sec_context(&gss_min,
 					gse_ctx->creds,
-					&gse_ctx->gss_ctx,
+					&gse_ctx->gssapi_context,
 					gse_ctx->server_name,
 					&gse_ctx->gss_mech,
 					gse_ctx->gss_c_flags,
@@ -478,7 +478,7 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 	in_data.length = token_in->length;
 
 	gss_maj = gss_accept_sec_context(&gss_min,
-					 &gse_ctx->gss_ctx,
+					 &gse_ctx->gssapi_context,
 					 gse_ctx->creds,
 					 &in_data,
 					 GSS_C_NO_CHANNEL_BINDINGS,
@@ -504,9 +504,9 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("gss_init_sec_context failed with [%s]\n",
 			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
 
-		if (gse_ctx->gss_ctx) {
+		if (gse_ctx->gssapi_context) {
 			gss_delete_sec_context(&gss_min,
-						&gse_ctx->gss_ctx,
+						&gse_ctx->gssapi_context,
 						GSS_C_NO_BUFFER);
 		}
 
@@ -628,7 +628,7 @@ static DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 	DATA_BLOB ret;
 
 	gss_maj = gss_inquire_sec_context_by_oid(
-				&gss_min, gse_ctx->gss_ctx,
+				&gss_min, gse_ctx->gssapi_context,
 				&gse_sesskey_inq_oid, &set);
 	if (gss_maj) {
 		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
@@ -644,7 +644,7 @@ static DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 #ifdef HAVE_GSSKRB5_GET_SUBKEY
 		krb5_keyblock *subkey;
 		gss_maj = gsskrb5_get_subkey(&gss_min,
-					     gse_ctx->gss_ctx,
+					     gse_ctx->gssapi_context,
 					     &subkey);
 		if (gss_maj != 0) {
 			DEBUG(1, ("NO session key for this mech\n"));
@@ -687,7 +687,7 @@ static size_t gse_get_signature_length(struct gse_context *gse_ctx,
 	iov[1].buffer.value = NULL;
 	iov[1].buffer.length = payload_size;
 
-	gss_maj = gss_wrap_iov_length(&gss_min, gse_ctx->gss_ctx,
+	gss_maj = gss_wrap_iov_length(&gss_min, gse_ctx->gssapi_context,
 					seal, GSS_C_QOP_DEFAULT,
 					&sealed, iov, 2);
 	if (gss_maj) {
@@ -726,7 +726,7 @@ static NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	iov[1].buffer.value = data->data;
 	iov[1].buffer.length = data->length;
 
-	gss_maj = gss_wrap_iov(&gss_min, gse_ctx->gss_ctx,
+	gss_maj = gss_wrap_iov(&gss_min, gse_ctx->gssapi_context,
 				req_seal, GSS_C_QOP_DEFAULT,
 				&sealed, iov, 2);
 	if (gss_maj) {
@@ -768,7 +768,7 @@ static NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	iov[1].buffer.value = data->data;
 	iov[1].buffer.length = data->length;
 
-	gss_maj = gss_unwrap_iov(&gss_min, gse_ctx->gss_ctx,
+	gss_maj = gss_unwrap_iov(&gss_min, gse_ctx->gssapi_context,
 				 &sealed, NULL, iov, 2);
 	if (gss_maj) {
 		DEBUG(0, ("gss_unwrap_iov failed with [%s]\n",
@@ -803,7 +803,7 @@ static NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	in_data.value = data->data;
 	in_data.length = data->length;
 
-	gss_maj = gss_get_mic(&gss_min, gse_ctx->gss_ctx,
+	gss_maj = gss_get_mic(&gss_min, gse_ctx->gssapi_context,
 			      GSS_C_QOP_DEFAULT,
 			      &in_data, &out_data);
 	if (gss_maj) {
@@ -842,7 +842,7 @@ static NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
 	in_token.value = signature->data;
 	in_token.length = signature->length;
 
-	gss_maj = gss_verify_mic(&gss_min, gse_ctx->gss_ctx,
+	gss_maj = gss_verify_mic(&gss_min, gse_ctx->gssapi_context,
 				 &in_data, &in_token, NULL);
 	if (gss_maj) {
 		DEBUG(0, ("gss_verify_mic failed with [%s]\n",
@@ -1009,7 +1009,7 @@ static NTSTATUS gensec_gse_wrap(struct gensec_security *gensec_security,
 	input_token.value = in->data;
 
 	maj_stat = gss_wrap(&min_stat,
-			    gse_ctx->gss_ctx,
+			    gse_ctx->gssapi_context,
 			    gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
 			    GSS_C_QOP_DEFAULT,
 			    &input_token,
@@ -1047,7 +1047,7 @@ static NTSTATUS gensec_gse_unwrap(struct gensec_security *gensec_security,
 	input_token.value = in->data;
 
 	maj_stat = gss_unwrap(&min_stat,
-			      gse_ctx->gss_ctx,
+			      gse_ctx->gssapi_context,
 			      &input_token,
 			      &output_token,
 			      &conf_state,
@@ -1216,7 +1216,7 @@ static NTSTATUS gensec_gse_session_info(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = gssapi_obtain_pac_blob(tmp_ctx,  gse_ctx->gss_ctx,
+	nt_status = gssapi_obtain_pac_blob(tmp_ctx,  gse_ctx->gssapi_context,
 					   gse_ctx->client_name,
 					   &pac_blob);
 
