@@ -90,13 +90,15 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
 	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
 
-	status = auth_context->get_challenge(auth_context, chal);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("auth_ntlmssp_get_challenge: failed to get challenge: %s\n",
-			nt_errstr(status)));
-		return status;
+	if (auth_context->get_challenge) {
+		status = auth_context->get_challenge(auth_context, chal);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("auth_ntlmssp_get_challenge: failed to get challenge: %s\n",
+				  nt_errstr(status)));
+			return status;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -114,7 +116,10 @@ static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
 				      struct gensec_ntlmssp_context);
 	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
 
-	return auth_context->challenge_may_be_modified(auth_context);
+	if (auth_context->challenge_may_be_modified) {
+		return auth_context->challenge_may_be_modified(auth_context);
+	}
+	return false;
 }
 
 /**
@@ -127,7 +132,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
 	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	const uint8_t *chal;
 
 	if (challenge->length != 8) {
@@ -136,10 +141,11 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 
 	chal = challenge->data;
 
-	nt_status = auth_context->set_challenge(auth_context,
-						chal,
-						"NTLMSSP callback (NTLM2)");
-
+	if (auth_context->set_challenge) {
+		nt_status = auth_context->set_challenge(auth_context,
+							chal,
+							"NTLMSSP callback (NTLM2)");
+	}
 	return nt_status;
 }
 
@@ -157,7 +163,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		talloc_get_type_abort(ntlmssp_state->callback_private,
 				      struct gensec_ntlmssp_context);
 	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	struct auth_usersupplied_info *user_info;
 
 	user_info = talloc_zero(ntlmssp_state, struct auth_usersupplied_info);
@@ -179,10 +185,12 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	user_info->password.response.nt = ntlmssp_state->nt_resp;
 	user_info->password.response.nt.data = talloc_steal(user_info, ntlmssp_state->nt_resp.data);
 
-	nt_status = auth_context->check_password(auth_context,
-						 gensec_ntlmssp,
-						 user_info,
-						 &gensec_ntlmssp->user_info_dc);
+	if (auth_context->check_password) {
+		nt_status = auth_context->check_password(auth_context,
+							 gensec_ntlmssp,
+							 user_info,
+							 &gensec_ntlmssp->user_info_dc);
+	}
 	talloc_free(user_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
