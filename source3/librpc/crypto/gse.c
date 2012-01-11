@@ -85,8 +85,6 @@ struct gse_context {
 	OM_uint32 gss_got_flags;
 	gss_cred_id_t delegated_cred_handle;
 	gss_name_t client_name;
-
-	bool authenticated;
 };
 
 #ifndef HAVE_GSS_OID_EQUAL
@@ -486,7 +484,6 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
-		gse_ctx->authenticated = true;
 		status = NT_STATUS_OK;
 		break;
 	case GSS_S_CONTINUE_NEEDED:
@@ -524,10 +521,6 @@ done:
 
 static NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
 {
-	if (!gse_ctx->authenticated) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
 	if (memcmp(gse_ctx->ret_mech,
 		   gss_mech_krb5, sizeof(gss_OID_desc)) != 0) {
 		return NT_STATUS_ACCESS_DENIED;
