@@ -37,18 +37,20 @@ enum gensec_gssapi_sasl_state
 
 struct gensec_gssapi_state {
 	gss_ctx_id_t gssapi_context;
-	struct gss_channel_bindings_struct *input_chan_bindings;
 	gss_name_t server_name;
 	gss_name_t client_name;
 	OM_uint32 gss_want_flags, gss_got_flags;
+
+	gss_cred_id_t delegated_cred_handle;
+
+	/* gensec_gssapi only */
 	gss_OID gss_oid;
 
+	struct gss_channel_bindings_struct *input_chan_bindings;
 	struct smb_krb5_context *smb_krb5_context;
 	struct gssapi_creds_container *client_cred;
 	struct gssapi_creds_container *server_cred;
 	gss_krb5_lucid_context_v1_t *lucid;
-
-	gss_cred_id_t delegated_cred_handle;
 
 	bool sasl; /* We have two different mechs in this file: One
 		    * for SASL wrapped GSSAPI and another for normal
