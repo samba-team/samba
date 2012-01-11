@@ -802,7 +802,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (pac_validate.MessageType != 3) {
+	if (pac_validate.MessageType != NETLOGON_GENERIC_KRB5_PAC_VALIDATE) {
 		/* We don't implement any other message types - such as certificate validation - yet */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
