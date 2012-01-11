@@ -2140,7 +2140,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 			/* If we already have same option, override it */
 			if (strcmp(pdata->key, data->key) == 0) {
 				talloc_free(pdata->value);
-				pdata->value = talloc_reference(pdata,
+				pdata->value = talloc_strdup(pdata,
 							     data->value);
 				not_added = false;
 				break;
@@ -2151,8 +2151,8 @@ static void copy_service(struct loadparm_service *pserviceDest,
 			paramo = talloc_zero(pserviceDest, struct parmlist_entry);
 			if (paramo == NULL)
 				smb_panic("OOM");
-			paramo->key = talloc_reference(paramo, data->key);
-			paramo->value = talloc_reference(paramo, data->value);
+			paramo->key = talloc_strdup(paramo, data->key);
+			paramo->value = talloc_strdup(paramo, data->value);
 			DLIST_ADD(pserviceDest->param_opt, paramo);
 		}
 		data = data->next;
