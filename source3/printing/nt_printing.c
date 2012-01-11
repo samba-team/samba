@@ -1493,20 +1493,30 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS driver_unlink_internals(connection_struct *conn,
-					const char *name)
+					const char *short_arch,
+					int vers,
+					const char *fname)
 {
+	TALLOC_CTX *tmp_ctx = talloc_new(conn);
 	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
+	char *print_dlr_path;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	status = create_synthetic_smb_fname(talloc_tos(), name, NULL, NULL,
-	    &smb_fname);
+	print_dlr_path = talloc_asprintf(tmp_ctx, "%s/%d/%s",
+					 short_arch, vers, fname);
+	if (print_dlr_path == NULL) {
+		goto err_out;
+	}
+
+	status = create_synthetic_smb_fname(tmp_ctx, print_dlr_path,
+					    NULL, NULL, &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto err_out;
 	}
 
 	status = unlink_internals(conn, NULL, 0, smb_fname, false);
-
-	TALLOC_FREE(smb_fname);
+err_out:
+	talloc_free(tmp_ctx);
 	return status;
 }
 
@@ -1519,9 +1529,7 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
 bool delete_driver_files(const struct auth_serversupplied_info *session_info,
 			 const struct spoolss_DriverInfo8 *r)
 {
-	int i = 0;
-	char *s;
-	const char *file;
+	const char *short_arch;
 	connection_struct *conn;
 	NTSTATUS nt_status;
 	char *oldcwd;
@@ -1572,55 +1580,40 @@ bool delete_driver_files(const struct auth_serversupplied_info *session_info,
 		goto err_out;
 	}
 
-	/* now delete the files; must strip the '\print$' string from
-	   fron of path                                                */
+	short_arch = get_short_archi(r->architecture);
+	if (short_arch == NULL) {
+		DEBUG(0, ("bad architecture %s\n", r->architecture));
+		ret = false;
+		goto err_out;
+	}
+
+	/* now delete the files */
 
 	if (r->driver_path && r->driver_path[0]) {
-		if ((s = strchr(&r->driver_path[1], '\\')) != NULL) {
-			file = s;
-			DEBUG(10,("deleting driverfile [%s]\n", s));
-			driver_unlink_internals(conn, file);
-		}
+		DEBUG(10,("deleting driverfile [%s]\n", r->driver_path));
+		driver_unlink_internals(conn, short_arch, r->version, r->driver_path);
 	}
 
 	if (r->config_file && r->config_file[0]) {
-		if ((s = strchr(&r->config_file[1], '\\')) != NULL) {
-			file = s;
-			DEBUG(10,("deleting configfile [%s]\n", s));
-			driver_unlink_internals(conn, file);
-		}
+		DEBUG(10,("deleting configfile [%s]\n", r->config_file));
+		driver_unlink_internals(conn, short_arch, r->version, r->config_file);
 	}
 
 	if (r->data_file && r->data_file[0]) {
-		if ((s = strchr(&r->data_file[1], '\\')) != NULL) {
-			file = s;
-			DEBUG(10,("deleting datafile [%s]\n", s));
-			driver_unlink_internals(conn, file);
-		}
+		DEBUG(10,("deleting datafile [%s]\n", r->data_file));
+		driver_unlink_internals(conn, short_arch, r->version, r->data_file);
 	}
 
 	if (r->help_file && r->help_file[0]) {
-		if ((s = strchr(&r->help_file[1], '\\')) != NULL) {
-			file = s;
-			DEBUG(10,("deleting helpfile [%s]\n", s));
-			driver_unlink_internals(conn, file);
-		}
+		DEBUG(10,("deleting helpfile [%s]\n", r->help_file));
+		driver_unlink_internals(conn, short_arch, r->version, r->help_file);
 	}
 
-	/* check if we are done removing files */
-
 	if (r->dependent_files) {
+		int i = 0;
 		while (r->dependent_files[i] && r->dependent_files[i][0]) {
-			char *p;
-
-			/* bypass the "\print$" portion of the path */
-
-			if ((p = strchr(r->dependent_files[i]+1, '\\')) != NULL) {
-				file = p;
-				DEBUG(10,("deleting dependent file [%s]\n", file));
-				driver_unlink_internals(conn, file);
-			}
-
+			DEBUG(10,("deleting dependent file [%s]\n", r->dependent_files[i]));
+			driver_unlink_internals(conn, short_arch, r->version, r->dependent_files[i]);
 			i++;
 		}
 	}
