@@ -41,7 +41,7 @@ NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
-	if (gensec_security->auth_context) {
+	if (gensec_security->auth_context && gensec_security->auth_context->generate_session_info) {
 		nt_status = gensec_security->auth_context->generate_session_info(mem_ctx, gensec_security->auth_context,
 										 user_info_dc,
 										 session_info_flags,
