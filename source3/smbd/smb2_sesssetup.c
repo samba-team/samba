@@ -381,6 +381,7 @@ static NTSTATUS smbd_smb2_spnego_negotiate(struct smbd_smb2_session *session,
 		}
 
 		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
 
 		status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_NTLMSSP);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -569,6 +570,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 		}
 
 		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
 
 		status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_NTLMSSP);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -643,6 +645,7 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 		}
 
 		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
 
 		if (session->sconn->use_gensec_hook) {
 			status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_SPNEGO);

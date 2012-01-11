@@ -634,6 +634,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	}
 
 	gensec_want_feature(*gensec_security, GENSEC_FEATURE_SESSION_KEY);
+	gensec_want_feature(*gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
 
 	status = gensec_start_mech_by_oid(*gensec_security, GENSEC_OID_NTLMSSP);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -746,6 +747,7 @@ static void reply_spnego_auth(struct smb_request *req,
 		}
 
 		gensec_want_feature(*gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(*gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
 
 		status = gensec_start_mech_by_oid(*gensec_security, GENSEC_OID_NTLMSSP);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1155,6 +1157,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			}
 
 			gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+			gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
 
 			if (sconn->use_gensec_hook) {
 				status = gensec_start_mech_by_oid(vuser->gensec_security, GENSEC_OID_SPNEGO);
