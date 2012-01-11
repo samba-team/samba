@@ -454,7 +454,7 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(data.dptr);
 		return NULL;
 	}
-	lck->data = parse_share_modes(mem_ctx, data);
+	lck->data = parse_share_modes(lck, data);
 	TALLOC_FREE(data.dptr);
 	if (lck->data == NULL) {
 		TALLOC_FREE(lck);
