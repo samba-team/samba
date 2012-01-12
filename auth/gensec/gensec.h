@@ -252,6 +252,23 @@ NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security,
 const char *gensec_get_name_by_oid(struct gensec_security *gensec_security, const char *oid_string);
 struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security);
 NTSTATUS gensec_init(void);
+NTSTATUS gensec_register(const struct gensec_security_ops *ops);
+const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security *gensec_security,
+							 const char *oid_string);
+const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_security *gensec_security,
+							       const char *sasl_name);
+struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gensec_security,
+						   TALLOC_CTX *mem_ctx);
+const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
+					struct gensec_security *gensec_security,
+					TALLOC_CTX *mem_ctx,
+					const char **oid_strings,
+					const char *skip);
+const char **gensec_security_oids(struct gensec_security *gensec_security,
+				  TALLOC_CTX *mem_ctx,
+				  const char *skip);
+const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx,
+				const struct gensec_security_ops_wrapper *wops);
 size_t gensec_max_input_size(struct gensec_security *gensec_security);
 size_t gensec_max_wrapped_size(struct gensec_security *gensec_security);
 NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,

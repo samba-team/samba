@@ -114,8 +114,9 @@ _PUBLIC_ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_
 	return new_gensec_list;
 }
 
-struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gensec_security,
-						   TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct gensec_security_ops **gensec_security_mechs(
+				struct gensec_security *gensec_security,
+				TALLOC_CTX *mem_ctx)
 {
 	struct gensec_security_ops **backends;
 	if (!gensec_security) {
@@ -166,8 +167,9 @@ static const struct gensec_security_ops *gensec_security_by_authtype(struct gens
 	return NULL;
 }
 
-const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security *gensec_security,
-							 const char *oid_string)
+_PUBLIC_ const struct gensec_security_ops *gensec_security_by_oid(
+				struct gensec_security *gensec_security,
+				const char *oid_string)
 {
 	int i, j;
 	struct gensec_security_ops **backends;
@@ -198,8 +200,9 @@ const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security 
 	return NULL;
 }
 
-const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_security *gensec_security,
-							       const char *sasl_name)
+_PUBLIC_ const struct gensec_security_ops *gensec_security_by_sasl_name(
+				struct gensec_security *gensec_security,
+				const char *sasl_name)
 {
 	int i;
 	struct gensec_security_ops **backends;
@@ -327,10 +330,11 @@ const struct gensec_security_ops **gensec_security_by_sasl_list(struct gensec_se
  * attached to the gensec_security, and return in our preferred order.
  */
 
-const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(struct gensec_security *gensec_security,
-								      TALLOC_CTX *mem_ctx,
-								      const char **oid_strings,
-								      const char *skip)
+_PUBLIC_ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
+					struct gensec_security *gensec_security,
+					TALLOC_CTX *mem_ctx,
+					const char **oid_strings,
+					const char *skip)
 {
 	struct gensec_security_ops_wrapper *backends_out;
 	struct gensec_security_ops **backends;
@@ -451,8 +455,8 @@ const char **gensec_security_oids_from_ops(struct gensec_security *gensec_securi
  * Return OIDS from the security subsystems listed
  */
 
-const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx,
-						   const struct gensec_security_ops_wrapper *wops)
+_PUBLIC_ const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx,
+				const struct gensec_security_ops_wrapper *wops)
 {
 	int i;
 	int j = 0;
@@ -493,9 +497,9 @@ const char **gensec_security_oids_from_ops_wrapped(TALLOC_CTX *mem_ctx,
  *
  */
 
-const char **gensec_security_oids(struct gensec_security *gensec_security,
-				  TALLOC_CTX *mem_ctx,
-				  const char *skip)
+_PUBLIC_ const char **gensec_security_oids(struct gensec_security *gensec_security,
+					   TALLOC_CTX *mem_ctx,
+					   const char *skip)
 {
 	struct gensec_security_ops **ops
 		= gensec_security_mechs(gensec_security, mem_ctx);
@@ -820,7 +824,7 @@ _PUBLIC_ NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-NTSTATUS gensec_register(const struct gensec_security_ops *ops)
+_PUBLIC_ NTSTATUS gensec_register(const struct gensec_security_ops *ops)
 {
 	if (gensec_security_by_name(NULL, ops->name) != NULL) {
 		/* its already registered! */
