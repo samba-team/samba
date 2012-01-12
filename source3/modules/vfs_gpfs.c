@@ -1264,7 +1264,8 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 	config = talloc_zero(handle->conn, struct gpfs_config_data);
 	if (!config) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
-		DEBUG(0, ("talloc_zero() failed\n")); return -1;
+		DEBUG(0, ("talloc_zero() failed\n"));
+		return -1;
 	}
 
 	config->sharemodes = lp_parm_bool(SNUM(handle->conn), "gpfs",
