@@ -2039,6 +2039,12 @@ static const struct print_architecture_table_node archi_table[]= {
 	{NULL,                   "",		-1 }
 };
 
+static const int drv_cversion[] = {SPOOLSS_DRIVER_VERSION_9X,
+				   SPOOLSS_DRIVER_VERSION_NT35,
+				   SPOOLSS_DRIVER_VERSION_NT4,
+				   SPOOLSS_DRIVER_VERSION_200X,
+				   -1};
+
 static int get_version_id(const char *arch)
 {
 	int i;
@@ -2061,11 +2067,12 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 {
 
 	struct spoolss_DriverInfo8 *info = NULL;
-	struct spoolss_DriverInfo8 *info_win2k = NULL;
 	int				version;
 	WERROR				status;
 	struct dcerpc_binding_handle *b;
 	TALLOC_CTX *tmp_ctx = NULL;
+	int i;
+	bool found;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
@@ -2101,64 +2108,98 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 		goto done;
 	}
 
-	status = winreg_get_driver(tmp_ctx, b,
-				   r->in.architecture, r->in.driver,
-				   version, &info);
-	if (!W_ERROR_IS_OK(status)) {
-		/* try for Win2k driver if "Windows NT x86" */
-
-		if ( version == 2 ) {
-			version = 3;
-
-			status = winreg_get_driver(tmp_ctx, b,
-						   r->in.architecture,
-						   r->in.driver,
-						   version, &info);
-			if (!W_ERROR_IS_OK(status)) {
-				status = WERR_UNKNOWN_PRINTER_DRIVER;
-				goto done;
-			}
+	for (found = false, i = 0; drv_cversion[i] >= 0; i++) {
+		status = winreg_get_driver(tmp_ctx, b,
+					   r->in.architecture, r->in.driver,
+					   drv_cversion[i], &info);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(5, ("skipping del of driver with version %d\n",
+				  drv_cversion[i]));
+			continue;
 		}
-		/* otherwise it was a failure */
-		else {
-			status = WERR_UNKNOWN_PRINTER_DRIVER;
+		found = true;
+
+		if (printer_driver_in_use(tmp_ctx, b, info)) {
+			status = WERR_PRINTER_DRIVER_IN_USE;
 			goto done;
 		}
 
-	}
-
-	if (printer_driver_in_use(tmp_ctx,
-				  b,
-				  info)) {
-		status = WERR_PRINTER_DRIVER_IN_USE;
-		goto done;
-	}
-
-	if (version == 2) {
-		status = winreg_get_driver(tmp_ctx, b,
-					   r->in.architecture,
-					   r->in.driver, 3, &info_win2k);
-		if (W_ERROR_IS_OK(status)) {
-			/* if we get to here, we now have 2 driver info structures to remove */
-			/* remove the Win2k driver first*/
-
-			status = winreg_del_driver(tmp_ctx, b,
-						   info_win2k, 3);
-			talloc_free(info_win2k);
-
-			/* this should not have failed---if it did, report to client */
-			if (!W_ERROR_IS_OK(status)) {
-				goto done;
-			}
+		status = winreg_del_driver(tmp_ctx, b, info, drv_cversion[i]);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0, ("failed del of driver with version %d\n",
+				  drv_cversion[i]));
+			goto done;
 		}
 	}
-
-	status = winreg_del_driver(tmp_ctx, b,
-				   info, version);
+	if (found == false) {
+		DEBUG(0, ("driver %s not found for deletion\n", r->in.driver));
+		status = WERR_UNKNOWN_PRINTER_DRIVER;
+	} else {
+		status = WERR_OK;
+	}
 
 done:
 	talloc_free(tmp_ctx);
 
+	return status;
+}
+
+static WERROR spoolss_dpd_version(TALLOC_CTX *mem_ctx,
+				  struct pipes_struct *p,
+				  struct spoolss_DeletePrinterDriverEx *r,
+				  struct dcerpc_binding_handle *b,
+				  struct spoolss_DriverInfo8 *info)
+{
+	WERROR status;
+	bool delete_files;
+
+	if (printer_driver_in_use(mem_ctx, b, info)) {
+		status = WERR_PRINTER_DRIVER_IN_USE;
+		goto done;
+	}
+
+	/*
+	 * we have a couple of cases to consider.
+	 * (1) Are any files in use?  If so and DPD_DELETE_ALL_FILES is set,
+	 *     then the delete should fail if **any** files overlap with
+	 *     other drivers
+	 * (2) If DPD_DELETE_UNUSED_FILES is set, then delete all
+	 *     non-overlapping files
+	 * (3) If neither DPD_DELETE_ALL_FILES nor DPD_DELETE_UNUSED_FILES
+	 *     are set, then do not delete any files
+	 * Refer to MSDN docs on DeletePrinterDriverEx() for details.
+	 */
+
+	delete_files = r->in.delete_flags
+			& (DPD_DELETE_ALL_FILES | DPD_DELETE_UNUSED_FILES);
+
+	/* fail if any files are in use and DPD_DELETE_ALL_FILES is set */
+
+	if (delete_files &&
+	    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
+	    printer_driver_files_in_use(mem_ctx,
+					b,
+					info)) {
+		status = WERR_PRINTER_DRIVER_IN_USE;
+		goto done;
+	}
+
+
+	status = winreg_del_driver(mem_ctx, b, info, info->version);
+	if (!W_ERROR_IS_OK(status)) {
+		goto done;
+	}
+
+	/*
+	 * now delete any associated files if delete_files is
+	 * true. Even if this part failes, we return succes
+	 * because the driver doesn not exist any more
+	 */
+	if (delete_files) {
+		delete_driver_files(get_session_info_system(), info);
+	}
+
+done:
 	return status;
 }
 
@@ -2169,13 +2210,12 @@ done:
 WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 				      struct spoolss_DeletePrinterDriverEx *r)
 {
-	struct spoolss_DriverInfo8	*info = NULL;
-	struct spoolss_DriverInfo8	*info_win2k = NULL;
-	int				version;
-	bool				delete_files;
+	struct spoolss_DriverInfo8 *info = NULL;
 	WERROR				status;
 	struct dcerpc_binding_handle *b;
 	TALLOC_CTX *tmp_ctx = NULL;
+	int i;
+	bool found;
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
@@ -2192,13 +2232,9 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	}
 
 	/* check that we have a valid driver name first */
-	if ((version = get_version_id(r->in.architecture)) == -1) {
+	if (get_version_id(r->in.architecture) == -1) {
 		/* this is what NT returns */
 		return WERR_INVALID_ENVIRONMENT;
-	}
-
-	if (r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) {
-		version = r->in.version;
 	}
 
 	tmp_ctx = talloc_new(p->mem_ctx);
@@ -2214,127 +2250,35 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		goto done;
 	}
 
-	status = winreg_get_driver(tmp_ctx, b,
-				   r->in.architecture,
-				   r->in.driver,
-				   version,
-				   &info);
-	if (!W_ERROR_IS_OK(status)) {
-		status = WERR_UNKNOWN_PRINTER_DRIVER;
+	for (found = false, i = 0; drv_cversion[i] >= 0; i++) {
+		if ((r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION)
+		 && (drv_cversion[i] != r->in.version)) {
+			continue;
+		}
 
-		/*
-		 * if the client asked for a specific version,
-		 * or this is something other than Windows NT x86,
-		 * then we've failed
-		 */
-
-		if ( (r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) || (version !=2) )
-			goto done;
-
-		/* try for Win2k driver if "Windows NT x86" */
-
-		version = 3;
+		/* check if a driver with this version exists before delete */
 		status = winreg_get_driver(tmp_ctx, b,
-					   r->in.architecture,
-					   r->in.driver,
-					   version, &info);
+					   r->in.architecture, r->in.driver,
+					   drv_cversion[i], &info);
 		if (!W_ERROR_IS_OK(status)) {
-			status = WERR_UNKNOWN_PRINTER_DRIVER;
+			DEBUG(5, ("skipping del of driver with version %d\n",
+				  drv_cversion[i]));
+			continue;
+		}
+		found = true;
+
+		status = spoolss_dpd_version(tmp_ctx, p, r, b, info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("failed to delete driver with version %d\n",
+				  drv_cversion[i]));
 			goto done;
 		}
 	}
-
-	if (printer_driver_in_use(tmp_ctx,
-				  b,
-				  info)) {
-		status = WERR_PRINTER_DRIVER_IN_USE;
-		goto done;
-	}
-
-	/*
-	 * we have a couple of cases to consider.
-	 * (1) Are any files in use?  If so and DPD_DELTE_ALL_FILE is set,
-	 *     then the delete should fail if **any** files overlap with
-	 *     other drivers
-	 * (2) If DPD_DELTE_UNUSED_FILES is sert, then delete all
-	 *     non-overlapping files
-	 * (3) If neither DPD_DELTE_ALL_FILE nor DPD_DELTE_ALL_FILES
-	 *     is set, the do not delete any files
-	 * Refer to MSDN docs on DeletePrinterDriverEx() for details.
-	 */
-
-	delete_files = r->in.delete_flags & (DPD_DELETE_ALL_FILES|DPD_DELETE_UNUSED_FILES);
-
-	/* fail if any files are in use and DPD_DELETE_ALL_FILES is set */
-
-	if (delete_files &&
-	    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
-	    printer_driver_files_in_use(tmp_ctx,
-					b,
-					info)) {
-		status = WERR_PRINTER_DRIVER_IN_USE;
-		goto done;
-	}
-
-
-	/* also check for W32X86/3 if necessary; maybe we already have? */
-
-	if ( (version == 2) && ((r->in.delete_flags & DPD_DELETE_SPECIFIC_VERSION) != DPD_DELETE_SPECIFIC_VERSION)  ) {
-		status = winreg_get_driver(tmp_ctx, b,
-					   r->in.architecture,
-					   r->in.driver, 3, &info_win2k);
-		if (W_ERROR_IS_OK(status)) {
-
-			if (delete_files &&
-			    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
-			    printer_driver_files_in_use(info,
-							b,
-							info_win2k)) {
-				/* no idea of the correct error here */
-				talloc_free(info_win2k);
-				status = WERR_ACCESS_DENIED;
-				goto done;
-			}
-
-			/* if we get to here, we now have 2 driver info structures to remove */
-			/* remove the Win2k driver first*/
-
-			status = winreg_del_driver(tmp_ctx, b,
-						   info_win2k,
-						   3);
-
-			/* this should not have failed---if it did, report to client */
-
-			if (!W_ERROR_IS_OK(status)) {
-				goto done;
-			}
-
-			/*
-			 * now delete any associated files if delete_files is
-			 * true. Even if this part failes, we return succes
-			 * because the driver doesn not exist any more
-			 */
-			if (delete_files) {
-				delete_driver_files(get_session_info_system(),
-						    info_win2k);
-			}
-		}
-	}
-
-	status = winreg_del_driver(tmp_ctx, b,
-				   info,
-				   version);
-	if (!W_ERROR_IS_OK(status)) {
-		goto done;
-	}
-
-	/*
-	 * now delete any associated files if delete_files is
-	 * true. Even if this part failes, we return succes
-	 * because the driver doesn not exist any more
-	 */
-	if (delete_files) {
-		delete_driver_files(get_session_info_system(), info);
+	if (found == false) {
+		DEBUG(0, ("driver %s not found for deletion\n", r->in.driver));
+		status = WERR_UNKNOWN_PRINTER_DRIVER;
+	} else {
+		status = WERR_OK;
 	}
 
 done:
