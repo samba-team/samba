@@ -849,7 +849,7 @@ bld.SAMBA3_SUBSYSTEM('CLDAP',
 
 bld.SAMBA3_SUBSYSTEM('SECRETS3',
                    source=SECRETS_SRC,
-                   deps='NDR_SECRETS param samba3core pdb',
+                   deps='NDR_SECRETS param samba3util dbwrap pdb',
                    vars=locals())
 
 bld.SAMBA3_LIBRARY('smbldap',
