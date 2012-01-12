@@ -181,7 +181,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 	} else {
 		struct gensec_settings *gensec_settings;
 		struct loadparm_context *lp_ctx;
-
+		size_t idx = 0;
 		struct cli_credentials *server_credentials;
 		struct auth4_context *auth4_context = talloc_zero(tmp_ctx, struct auth4_context);
 		if (auth4_context == NULL) {
@@ -205,17 +205,22 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		gensec_settings->backends = talloc_zero_array(gensec_settings, struct gensec_security_ops *, 3);
+		gensec_settings->backends = talloc_zero_array(gensec_settings,
+						struct gensec_security_ops *, 4);
 		if (gensec_settings->backends == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		gensec_settings->backends[0] = &gensec_ntlmssp3_server_ops;
+		gensec_settings->backends[idx++] = &gensec_ntlmssp3_server_ops;
 
 #if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
-		gensec_settings->backends[1] = &gensec_gse_krb5_security_ops;
+		gensec_settings->backends[idx++] = &gensec_gse_krb5_security_ops;
 #endif
+
+		gensec_init();
+		gensec_settings->backends[idx++] = gensec_security_by_oid(NULL,
+							GENSEC_OID_SPNEGO);
 
 		/*
 		 * This is anonymous for now, because we just use it
