@@ -155,7 +155,15 @@ NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
 		}
 		return STATUS_MORE_ENTRIES;
 	}
-	return packet_full_request_u32(NULL, blob, size);
+
+	if (blob.length < 4) {
+		return STATUS_MORE_ENTRIES;
+	}
+	*size = 4 + RIVAL(blob.data, 0);
+	if (*size > blob.length) {
+		return STATUS_MORE_ENTRIES;
+	}
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_socket_full_request(void *private_data, DATA_BLOB blob, size_t *size)
