@@ -434,6 +434,7 @@ static void handle_aio_completion(struct event_context *event_ctx,
 
 	aio_ex = (struct aio_extra *)child->aiocb->aio_sigevent.sigev_value.sival_ptr;
 	smbd_aio_complete_aio_ex(aio_ex);
+	TALLOC_FREE(aio_ex);
 }
 
 static int aio_child_destructor(struct aio_child *child)

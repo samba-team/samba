@@ -296,7 +296,7 @@ static void aio_pthread_handle_completion(struct event_context *event_ctx,
 
 	DEBUG(10,("aio_pthread_handle_completion: jobid %d completed\n",
 		jobid ));
-
+	TALLOC_FREE(aio_ex);
 }
 
 /************************************************************************
@@ -424,6 +424,7 @@ static void aio_pthread_handle_immediate(struct tevent_context *ctx,
 	TALLOC_FREE(pjobid);
 	aio_ex = (struct aio_extra *)pd->aiocb->aio_sigevent.sigev_value.sival_ptr;
 	smbd_aio_complete_aio_ex(aio_ex);
+	TALLOC_FREE(aio_ex);
 }
 
 /************************************************************************
