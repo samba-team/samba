@@ -190,6 +190,10 @@ fail:
 	return NULL;
 }
 
+/*******************************************************************
+ Create a storable data blob from a modified share_mode_data struct.
+********************************************************************/
+
 static TDB_DATA unparse_share_modes(struct share_mode_data *d)
 {
 	DATA_BLOB blob;
@@ -213,6 +217,10 @@ static TDB_DATA unparse_share_modes(struct share_mode_data *d)
 
 	return make_tdb_data(blob.data, blob.length);
 }
+
+/*******************************************************************
+ If modified, store the share_mode_data back into the database.
+********************************************************************/
 
 static int share_mode_data_destructor(struct share_mode_data *d)
 {
@@ -266,6 +274,11 @@ static int share_mode_data_destructor(struct share_mode_data *d)
 	return 0;
 }
 
+/*******************************************************************
+ Allocate a new share_mode_data struct, mark it unmodified.
+ fresh is set to note that currently there is no database entry.
+********************************************************************/
+
 static struct share_mode_data *fresh_share_mode_lock(
 	TALLOC_CTX *mem_ctx, const char *servicepath,
 	const struct smb_filename *smb_fname,
@@ -305,6 +318,11 @@ fail:
 	TALLOC_FREE(d);
 	return NULL;
 }
+
+/*******************************************************************
+ Either fetch a share mode from the database, or allocate a fresh
+ one if the record doesn't exist.
+********************************************************************/
 
 static struct share_mode_lock *get_share_mode_lock_internal(
 	TALLOC_CTX *mem_ctx, const struct file_id id,
@@ -365,6 +383,10 @@ static int the_lock_destructor(struct share_mode_lock *l)
 	return 0;
 }
 
+/*******************************************************************
+ Get a share_mode_lock, Reference counted to allow nexted calls.
+********************************************************************/
+
 struct share_mode_lock *get_share_mode_lock_fresh(
 	TALLOC_CTX *mem_ctx,
 	const struct file_id id,
@@ -404,6 +426,11 @@ fail:
 	TALLOC_FREE(frame);
 	return NULL;
 }
+
+/*******************************************************************
+ Get a share_mode_lock without locking the database or reference
+ counting. Used by smbstatus to display existing share modes.
+********************************************************************/
 
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 						  const struct file_id id)
