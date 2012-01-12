@@ -491,13 +491,13 @@ def dns_record_match(dns_conn, server, zone, name, record_type, data):
             if rec.data == data:
                 found = True
         elif record_type == dnsp.DNS_TYPE_PTR:
-            if rec.data.str.rstrip('.') == data.rstrip('.'):
+            if rec.data.str.rstrip('.').lower() == data.rstrip('.').lower():
                 found = True
         elif record_type == dnsp.DNS_TYPE_CNAME:
-            if rec.data.str.rstrip('.') == data.rstrip('.'):
+            if rec.data.str.rstrip('.').lower() == data.rstrip('.').lower():
                 found = True
         elif record_type == dnsp.DNS_TYPE_NS:
-            if rec.data.str.rstrip('.') == data.rstrip('.'):
+            if rec.data.str.rstrip('.').lower() == data.rstrip('.').lower():
                 found = True
         if found:
             rec_match = rec
