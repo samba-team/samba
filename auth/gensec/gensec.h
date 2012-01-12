@@ -253,6 +253,7 @@ const char *gensec_get_name_by_oid(struct gensec_security *gensec_security, cons
 struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security);
 NTSTATUS gensec_init(void);
 size_t gensec_max_input_size(struct gensec_security *gensec_security);
+size_t gensec_max_wrapped_size(struct gensec_security *gensec_security);
 NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 			      uint8_t *data, size_t length,
 			      const uint8_t *whole_pdu, size_t pdu_length,
@@ -316,6 +317,7 @@ int gensec_setting_int(struct gensec_settings *settings, const char *mechanism, 
 bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism, const char *name, bool default_value);
 
 NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal);
+const char *gensec_get_target_principal(struct gensec_security *gensec_security);
 
 NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 				      struct gensec_security *gensec_security,

@@ -111,7 +111,7 @@ _PUBLIC_ size_t gensec_sig_size(struct gensec_security *gensec_security, size_t 
 	return gensec_security->ops->sig_size(gensec_security, data_size);
 }
 
-size_t gensec_max_wrapped_size(struct gensec_security *gensec_security)
+_PUBLIC_ size_t gensec_max_wrapped_size(struct gensec_security *gensec_security)
 {
 	if (!gensec_security->ops->max_wrapped_size) {
 		return (1 << 17);
@@ -120,7 +120,7 @@ size_t gensec_max_wrapped_size(struct gensec_security *gensec_security)
 	return gensec_security->ops->max_wrapped_size(gensec_security);
 }
 
-size_t gensec_max_input_size(struct gensec_security *gensec_security)
+_PUBLIC_ size_t gensec_max_input_size(struct gensec_security *gensec_security)
 {
 	if (!gensec_security->ops->max_input_size) {
 		return (1 << 17) - gensec_sig_size(gensec_security, 1 << 17);
@@ -185,13 +185,13 @@ _PUBLIC_ NTSTATUS gensec_session_info(struct gensec_security *gensec_security,
 	return gensec_security->ops->session_info(gensec_security, mem_ctx, session_info);
 }
 
-void gensec_set_max_update_size(struct gensec_security *gensec_security,
+_PUBLIC_ void gensec_set_max_update_size(struct gensec_security *gensec_security,
 				uint32_t max_update_size)
 {
 	gensec_security->max_update_size = max_update_size;
 }
 
-size_t gensec_max_update_size(struct gensec_security *gensec_security)
+_PUBLIC_ size_t gensec_max_update_size(struct gensec_security *gensec_security)
 {
 	if (gensec_security->max_update_size == 0) {
 		return UINT32_MAX;
@@ -571,7 +571,7 @@ _PUBLIC_ NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_sec
 	return NT_STATUS_OK;
 }
 
-const char *gensec_get_target_principal(struct gensec_security *gensec_security)
+_PUBLIC_ const char *gensec_get_target_principal(struct gensec_security *gensec_security)
 {
 	if (gensec_security->target.principal) {
 		return gensec_security->target.principal;
