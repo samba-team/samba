@@ -552,6 +552,8 @@ LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) $(LIBSMB_ERR_OBJ1) \
 		 $(SECRETS_OBJ)
 
 LIBSMB_OBJ0 = \
+	       ../lib/util/asn1.o \
+	       ../libcli/auth/spnego_parse.o \
 	       ../libcli/auth/ntlm_check.o \
 	       libsmb/ntlmssp.o \
 	       libsmb/ntlmssp_wrap.o \
@@ -559,6 +561,7 @@ LIBSMB_OBJ0 = \
 	       ../auth/gensec/gensec.o \
 	       ../auth/gensec/gensec_start.o \
 	       ../auth/gensec/gensec_util.o \
+	       ../auth/gensec/spnego.o \
 	       ../auth/credentials/credentials.o \
 	       ../auth/credentials/credentials_samba3.o \
 	       ../auth/ntlmssp/ntlmssp.o \
@@ -592,8 +595,6 @@ SCHANNEL_OBJ = ../libcli/auth/credentials.o \
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clikrb5.o ../libcli/auth/krb5_wrap.o libsmb/clispnego.o \
-	     ../libcli/auth/spnego_parse.o \
-	     ../lib/util/asn1.o \
 	     libsmb/reparse_symlink.o \
 	     libsmb/clisymlink.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
@@ -1068,7 +1069,7 @@ PDBEDIT_OBJ = utils/pdbedit.o $(PASSWD_UTIL_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) \
 		$(LIBCLI_LDAP_NDR_OBJ) \
 		$(DRSUAPI_OBJ) $(LIBNDR_GEN_OBJ0) \
-		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) ../lib/util/asn1.o
+		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ)
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ1)
 
@@ -1345,7 +1346,7 @@ WINBIND_WINS_NSS_OBJ = ../nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIB_NONSMBD_OBJ) $(LIBSMB_ERR_OBJ) $(LIBNMB_OBJ)
 
 PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
-		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o ../lib/util/asn1.o
+		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
 		$(DRSUAPI_OBJ) $(LIBNDR_GEN_OBJ0) \
@@ -1525,7 +1526,7 @@ TDBTORTURE_OBJ = @tdbdir@/tools/tdbtorture.o $(LIBREPLACE_OBJ) \
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
-		../lib/util/asn1.o ../libcli/auth/spnego_parse.o libsmb/clikrb5.o ../libcli/auth/krb5_wrap.o libads/kerberos.o \
+		libsmb/clikrb5.o ../libcli/auth/krb5_wrap.o libads/kerberos.o \
 		libsmb/samlogon_cache.o \
 		$(LIBADS_SERVER_OBJ) \
 		$(PASSDB_OBJ) $(GROUPDB_OBJ) \

@@ -30,6 +30,8 @@
 #include "param/param.h"
 #include "lib/util/asn1.h"
 
+#undef strcasecmp
+
 _PUBLIC_ NTSTATUS gensec_spnego_init(void);
 
 enum spnego_state_position {
