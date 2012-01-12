@@ -204,7 +204,7 @@ char *dns_split_node_name(TALLOC_CTX *tmp_ctx, const char *node_name, const char
 		} else {
 			match = 0;
 			for (i=1; i<=zcount; i++) {
-				if (strcmp(nlist[ncount-i], zlist[zcount-i]) != 0) {
+				if (strcasecmp(nlist[ncount-i], zlist[zcount-i]) != 0) {
 					break;
 				}
 				match++;
@@ -535,7 +535,7 @@ static struct dns_tree *dns_tree_find(struct dns_tree *tree, int ncount, char **
 	if (strcmp(tree->name, "@") == 0) {
 		start = 0;
 	} else {
-		if (strcmp(tree->name, nlist[ncount-1]) != 0) {
+		if (strcasecmp(tree->name, nlist[ncount-1]) != 0) {
 			return NULL;
 		}
 		start = 1;
@@ -549,7 +549,7 @@ static struct dns_tree *dns_tree_find(struct dns_tree *tree, int ncount, char **
 		}
 		next = NULL;
 		for (j=0; j<node->num_children; j++) {
-			if (strcmp(nlist[(ncount-1)-i], node->children[j]->name) == 0) {
+			if (strcasecmp(nlist[(ncount-1)-i], node->children[j]->name) == 0) {
 				next = node->children[j];
 				*match_count = i;
 				break;
@@ -601,7 +601,7 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 		if (strcmp(ptr, "@") == 0) {
 			base->data = res->msgs[i];
 			continue;
-		} else if (strcmp(ptr, name) == 0) {
+		} else if (strcasecmp(ptr, name) == 0) {
 			base->data = res->msgs[i];
 			continue;
 		}
@@ -659,7 +659,7 @@ static void _dns_add_name(TALLOC_CTX *mem_ctx, const char *name, char ***add_nam
 	int count = *add_count;
 
 	for (i=0; i<count; i++) {
-		if (strcmp(ptr[i], name) == 0) {
+		if (strcasecmp(ptr[i], name) == 0) {
 			return;
 		}
 	}
@@ -860,14 +860,14 @@ int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m
 	if (name1[0] == '@') {
 		return -1;
 	}
-	if (search_name && strcmp(name1, search_name) == 0) {
+	if (search_name && strcasecmp(name1, search_name) == 0) {
 		return -1;
 	}
 
 	if (name2[0] == '@') {
 		return 1;
 	}
-	if (search_name && strcmp(name2, search_name) == 0) {
+	if (search_name && strcasecmp(name2, search_name) == 0) {
 		return 1;
 	}
 
@@ -877,7 +877,7 @@ int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m
 	if (ptr1 == NULL) {
 		ptr1 = name1;
 	} else {
-		if (search_name && strcmp(ptr1+1, search_name) == 0) {
+		if (search_name && strcasecmp(ptr1+1, search_name) == 0) {
 			ptr1--;
 			while (ptr1 != name1) {
 				ptr1--;
@@ -895,7 +895,7 @@ int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m
 	if (ptr2 == NULL) {
 		ptr2 = name2;
 	} else {
-		if (search_name && strcmp(ptr2+1, search_name) == 0) {
+		if (search_name && strcasecmp(ptr2+1, search_name) == 0) {
 			ptr2--;
 			while (ptr2 != name2) {
 				ptr2--;

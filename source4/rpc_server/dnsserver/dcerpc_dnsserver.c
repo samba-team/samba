@@ -1433,7 +1433,7 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 		*typeid_out = DNSSRV_TYPEID_DP_INFO;
 
 		for (p = dsstate->partitions; p; p = p->next) {
-			if (strcmp(p->pszDpFqdn, rin->String) == 0) {
+			if (strcasecmp(p->pszDpFqdn, rin->String) == 0) {
 				dpinfo = talloc_zero(mem_ctx, struct DNS_RPC_DP_INFO);
 				W_ERROR_HAVE_NO_MEMORY(dpinfo);
 
@@ -1720,7 +1720,7 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(name, tmp_ctx);
 
 	/* search all records under parent tree */
-	if (strcmp(name, z->name) == 0) {
+	if (strcasecmp(name, z->name) == 0) {
 		ret = ldb_search(dsstate->samdb, tmp_ctx, &res, z->zone_dn,
 				LDB_SCOPE_ONELEVEL, attrs, "(objectClass=dnsNode)");
 	} else {
@@ -1746,7 +1746,7 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 			(ldb_qsort_cmp_fn_t)dns_name_compare);
 
 	/* Build a tree of name components from dns name */
-	if (strcmp(name, z->name) == 0) {
+	if (strcasecmp(name, z->name) == 0) {
 		tree = dns_build_tree(tmp_ctx, "@", res);
 	} else {
 		tree = dns_build_tree(tmp_ctx, name, res);
@@ -1853,7 +1853,7 @@ static WERROR dnsserver_update_record(struct dnsserver_state *dsstate,
 	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
 	/* If node_name is @ or zone name, dns record is @ */
-	if (strcmp(node_name, "@") == 0 || strcmp(node_name, z->name) == 0) {
+	if (strcmp(node_name, "@") == 0 || strcasecmp(node_name, z->name) == 0) {
 		name = talloc_strdup(tmp_ctx, "@");
 	} else {
 		name = dns_split_node_name(tmp_ctx, node_name, z->name);

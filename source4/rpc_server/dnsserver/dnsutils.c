@@ -170,7 +170,7 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	fReverse = 0;
 	len1 = strlen(zone->name);
 	len2 = strlen(revzone);
-	if (len1 > len2 && strcmp(&zone->name[len1-len2], revzone) == 0) {
+	if (len1 > len2 && strcasecmp(&zone->name[len1-len2], revzone) == 0) {
 		fReverse = 1;
 	}
 
@@ -229,7 +229,7 @@ struct dnsserver_partition *dnsserver_find_partition(struct dnsserver_partition 
 	struct dnsserver_partition *p = NULL;
 
 	for (p = partitions; p; p = p->next) {
-		if (strcmp(dp_fqdn, p->pszDpFqdn) == 0) {
+		if (strcasecmp(dp_fqdn, p->pszDpFqdn) == 0) {
 			break;
 		}
 	}
@@ -242,7 +242,7 @@ struct dnsserver_zone *dnsserver_find_zone(struct dnsserver_zone *zones, const c
 	struct dnsserver_zone *z = NULL;
 
 	for (z = zones; z; z = z->next) {
-		if (strcmp(zone_name, z->name) == 0) {
+		if (strcasecmp(zone_name, z->name) == 0) {
 			break;
 		}
 	}
@@ -259,7 +259,7 @@ struct ldb_dn *dnsserver_name_to_dn(TALLOC_CTX *mem_ctx, struct dnsserver_zone *
 	if (dn == NULL) {
 		return NULL;
 	}
-	if (strcmp(name, z->name) == 0) {
+	if (strcasecmp(name, z->name) == 0) {
 		ret = ldb_dn_add_child_fmt(dn, "DC=@");
 	} else {
 		ret = ldb_dn_add_child_fmt(dn, "DC=%s", name);
