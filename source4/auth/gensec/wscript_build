@@ -31,15 +31,6 @@ bld.SAMBA_MODULE('cyrus_sasl',
 	)
 
 
-bld.SAMBA_MODULE('gensec_spnego',
-	source='spnego.c',
-	autoproto='spnego_proto.h',
-	subsystem='gensec',
-	init_function='gensec_spnego_init',
-	deps='asn1util samba-credentials SPNEGO_PARSE'
-	)
-
-
 bld.SAMBA_MODULE('gensec_schannel',
 	source='schannel.c',
 	subsystem='gensec',
