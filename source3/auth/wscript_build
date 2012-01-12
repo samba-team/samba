@@ -96,6 +96,7 @@ bld.SAMBA3_MODULE('auth_builtin',
 bld.SAMBA3_MODULE('auth_netlogond',
                  subsystem='auth',
                  source=AUTH_NETLOGOND_SRC,
+                 deps='TLDAP',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_netlogond'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_netlogond'))
