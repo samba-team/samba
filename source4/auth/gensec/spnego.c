@@ -1150,7 +1150,6 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	size_t expected;
-	uint8_t *buf;
 	NTSTATUS status;
 	bool ok;
 
@@ -1239,8 +1238,6 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 					 DATA_BLOB *_out)
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-	size_t new_length;
-	uint8_t *buf;
 	DATA_BLOB out = data_blob_null;
 
 	*_out = data_blob_null;
