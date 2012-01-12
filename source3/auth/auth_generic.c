@@ -30,6 +30,7 @@
 #include "libcli/auth/krb5_wrap.h"
 #endif
 #include "librpc/crypto/gse.h"
+#include "auth/credentials/credentials.h"
 
 static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 						TALLOC_CTX *mem_ctx,
@@ -175,6 +176,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		struct gensec_settings *gensec_settings;
 		struct loadparm_context *lp_ctx;
 
+		struct cli_credentials *server_credentials;
 		struct auth4_context *auth4_context = talloc_zero(tmp_ctx, struct auth4_context);
 		if (auth4_context == NULL) {
 			DEBUG(10, ("failed to allocate auth4_context failed\n"));
@@ -209,6 +211,24 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		gensec_settings->backends[1] = &gensec_gse_krb5_security_ops;
 #endif
 
+		/*
+		 * This is anonymous for now, because we just use it
+		 * to set the kerberos state at the moment
+		 */
+		server_credentials = cli_credentials_init_anon(tmp_ctx);
+		if (!server_credentials) {
+			DEBUG(0, ("auth_generic_prepare: Failed to init server credentials\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		cli_credentials_set_conf(server_credentials, lp_ctx);
+
+		if (lp_security() == SEC_ADS || USE_KERBEROS_KEYTAB) {
+			cli_credentials_set_kerberos_state(server_credentials, CRED_AUTO_USE_KERBEROS);
+		} else {
+			cli_credentials_set_kerberos_state(server_credentials, CRED_DONT_USE_KERBEROS);
+		}
+
 		nt_status = gensec_server_start(tmp_ctx, gensec_settings,
 						auth4_context, &gensec_security);
 
@@ -216,7 +236,11 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(tmp_ctx);
 			return nt_status;
 		}
+
+		gensec_set_credentials(gensec_security, server_credentials);
+
 		talloc_unlink(tmp_ctx, lp_ctx);
+		talloc_unlink(tmp_ctx, server_credentials);
 		talloc_unlink(tmp_ctx, gensec_settings);
 		talloc_unlink(tmp_ctx, auth4_context);
 	}
