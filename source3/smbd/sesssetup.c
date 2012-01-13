@@ -130,23 +130,12 @@ static NTSTATUS check_guest_password(const struct tsocket_address *remote_addres
 	return nt_status;
 }
 
-/****************************************************************************
- Send a session setup reply, wrapped in SPNEGO.
- Get vuid and check first.
- End the NTLMSSP exchange context if we are OK/complete fail
- This should be split into two functions, one to handle each
- leg of the NTLM auth steps.
-***************************************************************************/
-
-static void reply_spnego_ntlmssp(struct smb_request *req,
+static void reply_spnego_generic(struct smb_request *req,
 				 uint16 vuid,
 				 struct gensec_security **gensec_security,
-				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status,
-				 const char *OID,
-				 bool wrap)
+				 DATA_BLOB *blob, NTSTATUS nt_status)
 {
 	bool do_invalidate = true;
-	DATA_BLOB response;
 	struct auth_session_info *session_info = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 
@@ -193,18 +182,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
   out:
 
-	if (wrap) {
-		response = spnego_gen_auth_response(talloc_tos(),
-				ntlmssp_blob,
-				nt_status, OID);
-	} else {
-		response = *ntlmssp_blob;
-	}
-
-	reply_sesssetup_blob(req, response, nt_status);
-	if (wrap) {
-		data_blob_free(&response);
-	}
+	reply_sesssetup_blob(req, *blob, nt_status);
 
 	/* NT_STATUS_MORE_PROCESSING_REQUIRED from our NTLMSSP code tells us,
 	   and the other end, that we are not finished yet. */
@@ -360,9 +338,9 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	data_blob_free(&blob1);
 
-	reply_spnego_ntlmssp(req, vuid,
+	reply_spnego_generic(req, vuid,
 			     &vuser->gensec_security,
-			     &chal, status, NULL, false);
+			     &chal, status);
 	data_blob_free(&chal);
 	return;
 }
