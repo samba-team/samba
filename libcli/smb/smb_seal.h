@@ -49,9 +49,6 @@ struct smb_trans_enc_state {
         bool enc_on;
         union {
                 struct gensec_security *gensec_security;
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-                struct smb_tran_enc_state_gss *gss_state;
-#endif
         } s;
 };
 

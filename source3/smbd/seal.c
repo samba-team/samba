@@ -86,7 +86,15 @@ static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
 
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 
+	/*
+	 * We could be accessing the secrets.tdb or krb5.keytab file here.
+ 	 * ensure we have permissions to do so.
+ 	 */
+	become_root();
+
 	status = gensec_start_mech_by_oid(gensec_security, oid);
+
+	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(gensec_security);
@@ -97,114 +105,6 @@ static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
 
 	return status;
 }
-
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-
-/******************************************************************************
- Import a name.
-******************************************************************************/
-
-static NTSTATUS get_srv_gss_creds(const char *service,
-				const char *name,
-				gss_cred_usage_t cred_type,
-				gss_cred_id_t *p_srv_cred)
-{
-	OM_uint32 ret;
-	OM_uint32 min;
-	gss_name_t srv_name;
-	gss_buffer_desc input_name;
-	char *host_princ_s = NULL;
-	NTSTATUS status = NT_STATUS_OK;
-
-	gss_OID_desc nt_hostbased_service =
-	{10, discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04")};
-
-	if (asprintf(&host_princ_s, "%s@%s", service, name) == -1) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	input_name.value = host_princ_s;
-	input_name.length = strlen(host_princ_s) + 1;
-
-	ret = gss_import_name(&min,
-				&input_name,
-				&nt_hostbased_service,
-				&srv_name);
-
-	DEBUG(10,("get_srv_gss_creds: imported name %s\n",
-		host_princ_s ));
-
-	if (ret != GSS_S_COMPLETE) {
-		SAFE_FREE(host_princ_s);
-		return map_nt_error_from_gss(ret, min);
-	}
-
-	/*
-	 * We're accessing the krb5.keytab file here.
- 	 * ensure we have permissions to do so.
- 	 */
-	become_root();
-
-	ret = gss_acquire_cred(&min,
-				srv_name,
-				GSS_C_INDEFINITE,
-				GSS_C_NULL_OID_SET,
-				cred_type,
-				p_srv_cred,
-				NULL,
-				NULL);
-	unbecome_root();
-
-	if (ret != GSS_S_COMPLETE) {
-		ADS_STATUS adss = ADS_ERROR_GSS(ret, min);
-		DEBUG(10,("get_srv_gss_creds: gss_acquire_cred failed with %s\n",
-			ads_errstr(adss)));
-		status = map_nt_error_from_gss(ret, min);
-	}
-
-	SAFE_FREE(host_princ_s);
-	gss_release_name(&min, &srv_name);
-	return status;
-}
-
-/******************************************************************************
- Create a gss state.
- Try and get the cifs/server@realm principal first, then fall back to
- host/server@realm.
-******************************************************************************/
-
-static NTSTATUS make_auth_gss(struct smb_trans_enc_state *es)
-{
-	NTSTATUS status;
-	gss_cred_id_t srv_cred;
-	fstring fqdn;
-
-	name_to_fqdn(fqdn, lp_netbios_name());
-	strlower_m(fqdn);
-
-	status = get_srv_gss_creds("cifs", fqdn, GSS_C_ACCEPT, &srv_cred);
-	if (!NT_STATUS_IS_OK(status)) {
-		status = get_srv_gss_creds("host", fqdn, GSS_C_ACCEPT, &srv_cred);
-		if (!NT_STATUS_IS_OK(status)) {
-			return nt_status_squash(status);
-		}
-	}
-
-	es->s.gss_state = SMB_MALLOC_P(struct smb_tran_enc_state_gss);
-	if (!es->s.gss_state) {
-		OM_uint32 min;
-		gss_release_cred(&min, &srv_cred);
-		return NT_STATUS_NO_MEMORY;
-	}
-	ZERO_STRUCTP(es->s.gss_state);
-	es->s.gss_state->creds = srv_cred;
-
-	/* No context yet. */
-	es->s.gss_state->gss_ctx = GSS_C_NO_CONTEXT;
-
-	return NT_STATUS_OK;
-}
-#endif
 
 /******************************************************************************
  Shutdown a server encryption context.
@@ -232,6 +132,8 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
 					    enum smb_trans_enc_type smb_enc_type,
 					    struct smb_trans_enc_state **pp_es)
 {
+	NTSTATUS status;
+	const char *oid;
 	struct smb_trans_enc_state *es;
 
 	*pp_es = NULL;
@@ -245,31 +147,20 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
 	es->smb_enc_type = smb_enc_type;
 	switch (smb_enc_type) {
 		case SMB_TRANS_ENC_NTLM:
-			{
-				NTSTATUS status = make_auth_gensec(remote_address,
-								   es, GENSEC_OID_NTLMSSP);
-				if (!NT_STATUS_IS_OK(status)) {
-					srv_free_encryption_context(&es);
-					return status;
-				}
-			}
+			oid = GENSEC_OID_NTLMSSP;
 			break;
-
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		case SMB_TRANS_ENC_GSS:
-			/* Acquire our credentials by calling gss_acquire_cred here. */
-			{
-				NTSTATUS status = make_auth_gss(es);
-				if (!NT_STATUS_IS_OK(status)) {
-					srv_free_encryption_context(&es);
-					return status;
-				}
-			}
+			oid = GENSEC_OID_KERBEROS5;
 			break;
-#endif
 		default:
 			srv_free_encryption_context(&es);
 			return NT_STATUS_INVALID_PARAMETER;
+	}
+	status = make_auth_gensec(remote_address,
+				  es, oid);
+	if (!NT_STATUS_IS_OK(status)) {
+		srv_free_encryption_context(&es);
+		return status;
 	}
 	*pp_es = es;
 	return NT_STATUS_OK;
@@ -338,75 +229,35 @@ NTSTATUS srv_encrypt_buffer(struct smbd_server_connection *sconn, char *buf,
  Until success we do everything on the partial enc ctx.
 ******************************************************************************/
 
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 static NTSTATUS srv_enc_spnego_gss_negotiate(const struct tsocket_address *remote_address,
 					     unsigned char **ppdata,
 					     size_t *p_data_size,
 					     DATA_BLOB secblob)
 {
-	OM_uint32 ret;
-	OM_uint32 min;
-	OM_uint32 flags = 0;
-	gss_buffer_desc in_buf, out_buf;
-	struct smb_tran_enc_state_gss *gss_state;
-	DATA_BLOB auth_reply = data_blob_null;
-	DATA_BLOB response = data_blob_null;
 	NTSTATUS status;
+	DATA_BLOB unwrapped_response = data_blob_null;
+	DATA_BLOB response = data_blob_null;
 
-	if (!partial_srv_trans_enc_ctx) {
-		status = make_srv_encryption_context(remote_address,
-						     SMB_TRANS_ENC_GSS,
-						     &partial_srv_trans_enc_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
-	gss_state = partial_srv_trans_enc_ctx->s.gss_state;
-
-	in_buf.value = secblob.data;
-	in_buf.length = secblob.length;
-
-	out_buf.value = NULL;
-	out_buf.length = 0;
-
-	become_root();
-
-	ret = gss_accept_sec_context(&min,
-				&gss_state->gss_ctx,
-				gss_state->creds,
-				&in_buf,
-				GSS_C_NO_CHANNEL_BINDINGS,
-				NULL,
-				NULL,		/* Ignore oids. */
-				&out_buf,	/* To return. */
-				&flags,
-				NULL,		/* Ingore time. */
-				NULL);		/* Ignore delegated creds. */
-	unbecome_root();
-
-	status = gss_err_to_ntstatus(ret, min);
-	if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
+	status = make_srv_encryption_context(remote_address,
+					     SMB_TRANS_ENC_GSS,
+					     &partial_srv_trans_enc_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	/* Ensure we've got sign+seal available. */
-	if (ret == GSS_S_COMPLETE) {
-		if ((flags & (GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG)) !=
-				(GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG|GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG)) {
-			DEBUG(0,("srv_enc_spnego_gss_negotiate: quality of service not good enough "
-				"for SMB sealing.\n"));
-			gss_release_buffer(&min, &out_buf);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
+	become_root();
 
-	auth_reply = data_blob(out_buf.value, out_buf.length);
-	gss_release_buffer(&min, &out_buf);
+	status = gensec_update(partial_srv_trans_enc_ctx->s.gensec_security,
+			       talloc_tos(), NULL,
+			       secblob, &unwrapped_response);
 
-	/* Wrap in SPNEGO. */
-	response = spnego_gen_auth_response(talloc_tos(), &auth_reply, status, OID_KERBEROS5);
-	data_blob_free(&auth_reply);
+	unbecome_root();
+
+	/* status here should be NT_STATUS_MORE_PROCESSING_REQUIRED
+	 * for success ... */
+
+	response = spnego_gen_auth_response(talloc_tos(), &unwrapped_response, status, OID_KERBEROS5);
+	data_blob_free(&unwrapped_response);
 
 	SAFE_FREE(*ppdata);
 	*ppdata = (unsigned char *)memdup(response.data, response.length);
@@ -414,12 +265,10 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(const struct tsocket_address *remot
 		status = NT_STATUS_NO_MEMORY;
 	}
 	*p_data_size = response.length;
-
 	data_blob_free(&response);
 
 	return status;
 }
-#endif
 
 /******************************************************************************
  Do the NTLM SPNEGO (or raw) encryption negotiation. Parameters are in/out.
@@ -500,16 +349,10 @@ static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
 	if (kerb_mech) {
 		TALLOC_FREE(kerb_mech);
 
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
 		status = srv_enc_spnego_gss_negotiate(conn->sconn->remote_address,
 						      ppdata,
 						      p_data_size,
 						      secblob);
-#else
-		/* Currently we don't SPNEGO negotiate
-		 * back to NTLMSSP as we do in sessionsetupX. We should... */
-		return NT_STATUS_LOGON_FAILURE;
-#endif
 	} else {
 		status = srv_enc_ntlm_negotiate(conn->sconn->remote_address,
 						ppdata,

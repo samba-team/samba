@@ -169,150 +169,6 @@ static NTSTATUS common_gensec_encrypt_buffer(struct gensec_security *gensec,
 
 /******************************************************************************
  Generic code for client and server.
- gss-api decrypt an incoming buffer. We insist that the size of the
- unwrapped buffer must be smaller or identical to the incoming buffer.
-******************************************************************************/
-
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_state, char *buf)
-{
-	gss_ctx_id_t gss_ctx = gss_state->gss_ctx;
-	OM_uint32 ret = 0;
-	OM_uint32 minor = 0;
-	int flags_got = 0;
-	gss_buffer_desc in_buf, out_buf;
-	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
-
-	if (buf_len < 8) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	in_buf.value = buf + 8;
-	in_buf.length = buf_len - 8;
-
-	ret = gss_unwrap(&minor,
-			gss_ctx,
-			&in_buf,
-			&out_buf,
-			&flags_got,		/* did we get sign+seal ? */
-			(gss_qop_t *) NULL);
-
-	if (ret != GSS_S_COMPLETE) {
-		NTSTATUS status = NT_STATUS_ACCESS_DENIED;
-		char *gss_err;
-
-		gss_err = gssapi_error_string(talloc_tos(),
-					      ret, minor,
-					      GSS_C_NULL_OID);
-		DEBUG(0,("common_gss_decrypt_buffer: gss_unwrap failed. "
-			 "Error [%d/%d] - %s - %s\n",
-			 ret, minor, nt_errstr(status),
-			 gss_err ? gss_err : "<unknown>"));
-		talloc_free(gss_err);
-
-		return status;
-	}
-
-	if (out_buf.length > in_buf.length) {
-		DEBUG(0,("common_gss_decrypt_buffer: gss_unwrap size (%u) too large (%u) !\n",
-			(unsigned int)out_buf.length,
-			(unsigned int)in_buf.length ));
-		gss_release_buffer(&minor, &out_buf);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	memcpy(buf + 8, out_buf.value, out_buf.length);
-	/* Reset the length and overwrite the header. */
-	smb_setlen_nbt(buf, out_buf.length + 4);
-
-	gss_release_buffer(&minor, &out_buf);
-	return NT_STATUS_OK;
-}
-
-/******************************************************************************
- Generic code for client and server.
- gss-api encrypt an outgoing buffer. Return the alloced encrypted pointer in buf_out.
-******************************************************************************/
-
-static NTSTATUS common_gss_encrypt_buffer(struct smb_tran_enc_state_gss *gss_state,
-					uint16_t enc_ctx_num,
-					char *buf,
-					char **ppbuf_out)
-{
-	gss_ctx_id_t gss_ctx = gss_state->gss_ctx;
-	OM_uint32 ret = 0;
-	OM_uint32 minor = 0;
-	int flags_got = 0;
-	gss_buffer_desc in_buf, out_buf;
-	size_t buf_len = smb_len_nbt(buf) + 4; /* Don't forget the 4 length bytes. */
-
-	*ppbuf_out = NULL;
-
-	if (buf_len < 8) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	in_buf.value = buf + 8;
-	in_buf.length = buf_len - 8;
-
-	ret = gss_wrap(&minor,
-			gss_ctx,
-			true,			/* we want sign+seal. */
-			GSS_C_QOP_DEFAULT,
-			&in_buf,
-			&flags_got,		/* did we get sign+seal ? */
-			&out_buf);
-
-	if (ret != GSS_S_COMPLETE) {
-		NTSTATUS status = NT_STATUS_ACCESS_DENIED;
-		char *gss_err;
-
-		gss_err = gssapi_error_string(talloc_tos(),
-					      ret, minor,
-					      GSS_C_NULL_OID);
-		DEBUG(0,("common_gss_encrypt_buffer: gss_unwrap failed. "
-			 "Error [%d/%d] - %s - %s\n",
-			 ret, minor, nt_errstr(status),
-			 gss_err ? gss_err : "<unknown>"));
-		talloc_free(gss_err);
-
-		return status;
-	}
-
-	if (!flags_got) {
-		/* Sign+seal not supported. */
-		gss_release_buffer(&minor, &out_buf);
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-	/* Ya see - this is why I *hate* gss-api. I don't
-	 * want to have to malloc another buffer of the
-	 * same size + 8 bytes just to get a continuous
-	 * header + buffer, but gss won't let me pass in
-	 * a pre-allocated buffer. Bastards (and you know
-	 * who you are....). I might fix this by
-	 * going to "encrypt_and_send" passing in a file
-	 * descriptor and doing scatter-gather write with
-	 * TCP cork on Linux. But I shouldn't have to
-	 * bother :-*(. JRA.
-	 */
-
-	*ppbuf_out = (char *)malloc(out_buf.length + 8); /* We know this can't wrap. */
-	if (!*ppbuf_out) {
-		gss_release_buffer(&minor, &out_buf);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	memcpy(*ppbuf_out+8, out_buf.value, out_buf.length);
-	smb_set_enclen(*ppbuf_out, out_buf.length + 4, enc_ctx_num);
-
-	gss_release_buffer(&minor, &out_buf);
-	return NT_STATUS_OK;
-}
-#endif
-
-/******************************************************************************
- Generic code for client and server.
  Encrypt an outgoing buffer. Return the alloced encrypted pointer in buf_out.
 ******************************************************************************/
 
@@ -324,16 +180,7 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 		return NT_STATUS_OK;
 	}
 
-	switch (es->smb_enc_type) {
-		case SMB_TRANS_ENC_NTLM:
-			return common_gensec_encrypt_buffer(es->s.gensec_security, es->enc_ctx_num, buffer, buf_out);
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-		case SMB_TRANS_ENC_GSS:
-			return common_gss_encrypt_buffer(es->s.gss_state, es->enc_ctx_num, buffer, buf_out);
-#endif
-		default:
-			return NT_STATUS_NOT_SUPPORTED;
-	}
+	return common_gensec_encrypt_buffer(es->s.gensec_security, es->enc_ctx_num, buffer, buf_out);
 }
 
 /******************************************************************************
@@ -349,37 +196,8 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 		return NT_STATUS_OK;
 	}
 
-	switch (es->smb_enc_type) {
-		case SMB_TRANS_ENC_NTLM:
-			return common_gensec_decrypt_buffer(es->s.gensec_security, buf);
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-		case SMB_TRANS_ENC_GSS:
-			return common_gss_decrypt_buffer(es->s.gss_state, buf);
-#endif
-		default:
-			return NT_STATUS_NOT_SUPPORTED;
-	}
+	return common_gensec_decrypt_buffer(es->s.gensec_security, buf);
 }
-
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-/******************************************************************************
- Shutdown a gss encryption state.
-******************************************************************************/
-
-static void common_free_gss_state(struct smb_tran_enc_state_gss **pp_gss_state)
-{
-	OM_uint32 minor = 0;
-	struct smb_tran_enc_state_gss *gss_state = *pp_gss_state;
-
-	if (gss_state->creds != GSS_C_NO_CREDENTIAL) {
-		gss_release_cred(&minor, &gss_state->creds);
-	}
-	if (gss_state->gss_ctx != GSS_C_NO_CONTEXT) {
-		gss_delete_sec_context(&minor, &gss_state->gss_ctx, NULL);
-	}
-	SAFE_FREE(*pp_gss_state);
-}
-#endif
 
 /******************************************************************************
  Shutdown an encryption state.
@@ -393,19 +211,9 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 		return;
 	}
 
-	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if (es->s.gensec_security) {
-			TALLOC_FREE(es->s.gensec_security);
-		}
+	if (es->s.gensec_security) {
+		TALLOC_FREE(es->s.gensec_security);
 	}
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-	if (es->smb_enc_type == SMB_TRANS_ENC_GSS) {
-		/* Free the gss context handle. */
-		if (es->s.gss_state) {
-			common_free_gss_state(&es->s.gss_state);
-		}
-	}
-#endif
 	SAFE_FREE(es);
 	*pp_es = NULL;
 }

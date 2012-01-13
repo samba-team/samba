@@ -30,6 +30,7 @@
 #include "auth_generic.h"
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "auth/credentials/credentials.h"
 
 /****************************************************************************
  Get UNIX extensions version info.
@@ -585,16 +586,6 @@ static struct smb_trans_enc_state *make_cli_enc_state(enum smb_trans_enc_type sm
 	ZERO_STRUCTP(es);
 	es->smb_enc_type = smb_enc_type;
 
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-	if (smb_enc_type == SMB_TRANS_ENC_GSS) {
-		es->s.gss_state = SMB_MALLOC_P(struct smb_tran_enc_state_gss);
-		if (!es->s.gss_state) {
-			SAFE_FREE(es);
-			return NULL;
-		}
-		ZERO_STRUCTP(es->s.gss_state);
-	}
-#endif
 	return es;
 }
 
@@ -683,99 +674,33 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	return status;
 }
 
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-
-#ifndef SMB_GSS_REQUIRED_FLAGS
-#define SMB_GSS_REQUIRED_FLAGS (GSS_C_CONF_FLAG|GSS_C_INTEG_FLAG|GSS_C_MUTUAL_FLAG|GSS_C_REPLAY_FLAG|GSS_C_SEQUENCE_FLAG)
-#endif
-
 /******************************************************************************
  Get client gss blob to send to a server.
 ******************************************************************************/
 
 static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
-				struct smb_trans_enc_state *es,
-				const char *service,
-				const char *host,
+				struct gensec_security *gensec_security,
 				NTSTATUS status_in,
 				DATA_BLOB spnego_blob_in,
 				DATA_BLOB *p_blob_out)
 {
 	const char *krb_mechs[] = {OID_KERBEROS5, NULL};
-	OM_uint32 ret;
-	OM_uint32 min;
-	gss_name_t srv_name;
-	gss_buffer_desc input_name;
-	gss_buffer_desc *p_tok_in;
-	gss_buffer_desc tok_out, tok_in;
 	DATA_BLOB blob_out = data_blob_null;
 	DATA_BLOB blob_in = data_blob_null;
-	OM_uint32 ret_flags = 0;
 	NTSTATUS status = NT_STATUS_OK;
 
-	memset(&tok_out, '\0', sizeof(tok_out));
-
-	/* Guess the realm based on the supplied service, and avoid the GSS libs
-	   doing DNS lookups which may fail.
-
-	   TODO: Loop with the KDC on some more combinations (local
-	   realm in particular), possibly falling back to
-	   GSS_C_NT_HOSTBASED_SERVICE
-	*/
-	input_name.value = kerberos_get_principal_from_service_hostname(talloc_tos(),
-									 service, host);
-	if (!input_name.value) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	input_name.length = strlen((char *)input_name.value);
-	ret = gss_import_name(&min, &input_name,
-			      GSS_C_NT_USER_NAME,
-			      &srv_name);
-	if (ret != GSS_S_COMPLETE) {
-		TALLOC_FREE(input_name.value);
-		return map_nt_error_from_gss(ret, min);
-	}
-
 	if (spnego_blob_in.length == 0) {
-		p_tok_in = GSS_C_NO_BUFFER;
+		blob_in = spnego_blob_in;
 	} else {
 		/* Remove the SPNEGO wrapper */
 		if (!spnego_parse_auth_response(ctx, spnego_blob_in, status_in, OID_KERBEROS5, &blob_in)) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto fail;
 		}
-		tok_in.value = blob_in.data;
-		tok_in.length = blob_in.length;
-		p_tok_in = &tok_in;
 	}
 
-	ret = gss_init_sec_context(&min,
-				GSS_C_NO_CREDENTIAL, /* Use our default cred. */
-				&es->s.gss_state->gss_ctx,
-				srv_name,
-				GSS_C_NO_OID, /* default OID. */
-				GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG | GSS_C_DELEG_FLAG,
-				GSS_C_INDEFINITE,	/* requested ticket lifetime. */
-				NULL,   /* no channel bindings */
-				p_tok_in,
-				NULL,   /* ignore mech type */
-				&tok_out,
-				&ret_flags,
-				NULL);  /* ignore time_rec */
-
-	status = map_nt_error_from_gss(ret, min);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		ADS_STATUS adss = ADS_ERROR_GSS(ret, min);
-		DEBUG(10,("make_cli_gss_blob: gss_init_sec_context failed with %s\n",
-			ads_errstr(adss)));
-		goto fail;
-	}
-
-	if ((ret_flags & SMB_GSS_REQUIRED_FLAGS) != SMB_GSS_REQUIRED_FLAGS) {
-		status = NT_STATUS_ACCESS_DENIED;
-	}
-
-	blob_out = data_blob_talloc(ctx, tok_out.value, tok_out.length);
+	status = gensec_update(gensec_security, ctx,
+			       NULL, blob_in, &blob_out);
 
 	/* Wrap in an SPNEGO wrapper */
 	*p_blob_out = spnego_gen_negTokenInit(ctx, krb_mechs, &blob_out, NULL);
@@ -784,11 +709,6 @@ static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
 
 	data_blob_free(&blob_out);
 	data_blob_free(&blob_in);
-	TALLOC_FREE(input_name.value);
-	gss_release_name(&min, &srv_name);
-	if (tok_out.value) {
-		gss_release_buffer(&min, &tok_out);
-	}
 	return status;
 }
 
@@ -802,16 +722,41 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	DATA_BLOB blob_send = data_blob_null;
 	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	fstring fqdn;
-	const char *servicename;
+	struct auth_generic_state *auth_generic_state;
 	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_GSS);
 
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	servicename = "cifs";
-	status = make_cli_gss_blob(talloc_tos(), es, servicename, cli_state_remote_name(cli), NT_STATUS_OK, blob_recv, &blob_send);
+	status = auth_generic_client_prepare(NULL,
+					     &auth_generic_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+	gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SEAL);
+
+	cli_credentials_set_kerberos_state(auth_generic_state->credentials, 
+					   CRED_MUST_USE_KERBEROS);
+
+	status = gensec_set_target_service(auth_generic_state->gensec_security, "cifs");
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = gensec_set_target_hostname(auth_generic_state->gensec_security, 
+					    cli_state_remote_name(cli));
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (!NT_STATUS_IS_OK(status = auth_generic_client_start(auth_generic_state, GENSEC_OID_KERBEROS5))) {
+		goto fail;
+	}
+
+	status = make_cli_gss_blob(talloc_tos(), auth_generic_state->gensec_security, NT_STATUS_OK, blob_recv, &blob_send);
 	do {
 		data_blob_free(&blob_recv);
 		status = enc_blob_send_receive(cli, &blob_send, &blob_recv, &param_out);
@@ -819,25 +764,34 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 			es->enc_ctx_num = SVAL(param_out.data, 0);
 		}
 		data_blob_free(&blob_send);
-		status = make_cli_gss_blob(talloc_tos(), es, servicename, fqdn, status, blob_recv, &blob_send);
+		status = make_cli_gss_blob(talloc_tos(), auth_generic_state->gensec_security, status, blob_recv, &blob_send);
 	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 	data_blob_free(&blob_recv);
 
 	if (NT_STATUS_IS_OK(status)) {
+		if (!gensec_have_feature(auth_generic_state->gensec_security, 
+					 GENSEC_FEATURE_SIGN) ||
+		    !gensec_have_feature(auth_generic_state->gensec_security, 
+					 GENSEC_FEATURE_SEAL)) {
+			status = NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
 		es->enc_on = true;
 		/* Replace the old state, if any. */
+		/* We only need the gensec_security part from here.
+		 * es is a malloc()ed pointer, so we cannot make
+		 * gensec_security a talloc child */
+		es->s.gensec_security = talloc_move(NULL,
+					&auth_generic_state->gensec_security);
 		smb1cli_conn_set_encryption(cli->conn, es);
 		es = NULL;
 	}
+fail:
 	common_free_encryption_state(&es);
 	return status;
 }
-#else
-NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
-{
-	return NT_STATUS_NOT_SUPPORTED;
-}
-#endif
 
 /********************************************************************
  Ensure a connection is encrypted.
