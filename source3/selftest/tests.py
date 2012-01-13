@@ -305,7 +305,7 @@ for z in smb_options:
 
 
 if have_ads_support:
-    options_list = ["", "-E"]
+    options_list = ["", "-e"]
     for options in options_list:
         plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local", 
                       [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
