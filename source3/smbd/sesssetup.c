@@ -1023,6 +1023,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	NTSTATUS status = NT_STATUS_OK;
 	uint16 smbpid = req->smbpid;
 	struct smbd_server_connection *sconn = req->sconn;
+	DATA_BLOB chal;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -1137,81 +1138,45 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		return;
 	}
 
-	/* Handle either raw NTLMSSP or hand off the whole blob to
-	 * GENSEC.  The processing at this layer is essentially
-	 * identical regardless.  In particular, both rely only on the
-	 * status code (not the contents of the packet) and do not
-	 * wrap the result */
-	if (sconn->use_gensec_hook || ntlmssp_blob_matches_magic(&blob1)) {
-		DATA_BLOB chal;
-
-		if (!vuser->gensec_security) {
-			status = auth_generic_prepare(vuser, sconn->remote_address,
-						      &vuser->gensec_security);
-			if (!NT_STATUS_IS_OK(status)) {
-				/* Kill the intermediate vuid */
-				invalidate_vuid(sconn, vuid);
-				data_blob_free(&blob1);
-				reply_nterror(req, nt_status_squash(status));
-				return;
-			}
-
-			gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_SESSION_KEY);
-			gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
-
-			if (sconn->use_gensec_hook) {
-				status = gensec_start_mech_by_oid(vuser->gensec_security, GENSEC_OID_SPNEGO);
-			} else {
-				status = gensec_start_mech_by_oid(vuser->gensec_security, GENSEC_OID_NTLMSSP);
-			}
-			if (!NT_STATUS_IS_OK(status)) {
-				/* Kill the intermediate vuid */
-				invalidate_vuid(sconn, vuid);
-				data_blob_free(&blob1);
-				reply_nterror(req, nt_status_squash(status));
-				return;
-			}
+	if (!vuser->gensec_security) {
+		status = auth_generic_prepare(vuser, sconn->remote_address,
+					      &vuser->gensec_security);
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Kill the intermediate vuid */
+			invalidate_vuid(sconn, vuid);
+			data_blob_free(&blob1);
+			reply_nterror(req, nt_status_squash(status));
+			return;
 		}
 
-		status = gensec_update(vuser->gensec_security,
-				       talloc_tos(), NULL,
-				       blob1, &chal);
+		gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
 
-		data_blob_free(&blob1);
-
-		reply_spnego_ntlmssp(req, vuid,
-				     &vuser->gensec_security,
-				     &chal, status, NULL, false);
-		data_blob_free(&chal);
-		return;
+		if (sconn->use_gensec_hook) {
+			status = gensec_start_mech_by_oid(vuser->gensec_security, GENSEC_OID_SPNEGO);
+		} else {
+			status = gensec_start_mech_by_oid(vuser->gensec_security, GENSEC_OID_NTLMSSP);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Kill the intermediate vuid */
+			invalidate_vuid(sconn, vuid);
+			data_blob_free(&blob1);
+			reply_nterror(req, nt_status_squash(status));
+			return;
+		}
 	}
 
-	if (blob1.data[0] == ASN1_APPLICATION(0)) {
-
-		/* its a negTokenTarg packet */
-
-		reply_spnego_negotiate(req, vuid, blob1,
-				       &vuser->gensec_security);
-		data_blob_free(&blob1);
-		return;
-	}
-
-	if (blob1.data[0] == ASN1_CONTEXT(1)) {
-
-		/* its a auth packet */
-
-		reply_spnego_auth(req, vuid, blob1,
-				  &vuser->gensec_security);
-		data_blob_free(&blob1);
-		return;
-	}
-
-	/* what sort of packet is this? */
-	DEBUG(1,("Unknown packet in reply_sesssetup_and_X_spnego\n"));
+	status = gensec_update(vuser->gensec_security,
+			       talloc_tos(), NULL,
+			       blob1, &chal);
 
 	data_blob_free(&blob1);
 
-	reply_nterror(req, nt_status_squash(NT_STATUS_LOGON_FAILURE));
+	reply_spnego_ntlmssp(req, vuid,
+			     &vuser->gensec_security,
+			     &chal, status, NULL, false);
+	data_blob_free(&chal);
+	return;
 }
 
 /****************************************************************************
