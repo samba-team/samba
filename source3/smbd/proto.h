@@ -993,10 +993,6 @@ int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 
 /* The following definitions come from smbd/sesssetup.c  */
 
-NTSTATUS parse_spnego_mechanisms(TALLOC_CTX *ctx,
-		DATA_BLOB blob_in,
-		DATA_BLOB *pblob_out,
-		char **kerb_mechOID);
 void reply_sesssetup_and_X(struct smb_request *req);
 
 /* The following definitions come from smbd/share_access.c  */
