@@ -171,6 +171,7 @@ sub GetElementLevelTable($$$)
 		my $is_string = 0;
 		my $is_fixed = 0;
 		my $is_inline = 0;
+		my $is_to_null = 0;
 
 		if ($d eq "*") {
 			$is_conformant = 1;
@@ -208,6 +209,10 @@ sub GetElementLevelTable($$$)
 			delete($e->{PROPERTIES}->{string});
 		}
 
+		if (has_property($e, "to_null")) {
+			$is_to_null = 1;
+		}
+
 		push (@$order, {
 			TYPE => "ARRAY",
 			SIZE_IS => $size,
@@ -218,7 +223,8 @@ sub GetElementLevelTable($$$)
 			IS_VARYING => $is_varying,
 			IS_CONFORMANT => $is_conformant,
 			IS_FIXED => $is_fixed,
-			IS_INLINE => $is_inline
+			IS_INLINE => $is_inline,
+			IS_TO_NULL => $is_to_null
 		});
 	}
 
@@ -1099,6 +1105,7 @@ my %property_list = (
 	"noheader"		=> ["ELEMENT"],
 	"charset"		=> ["ELEMENT"],
 	"length_is"		=> ["ELEMENT"],
+	"to_null"		=> ["ELEMENT"],
 );
 
 #####################################################################
