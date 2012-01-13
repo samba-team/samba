@@ -735,6 +735,12 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 	schedule_deferred_open_message_smb(sconn, msg.op_mid);
 }
 
+struct break_to_none_state {
+	struct smbd_server_connection *sconn;
+	struct file_id id;
+};
+static void do_break_to_none(struct tevent_req *req);
+
 /****************************************************************************
  This function is called on any file modification or lock request. If a file
  is level 2 oplocked then it must tell all other level 2 holders to break to
@@ -744,8 +750,9 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
 static void contend_level2_oplocks_begin_default(files_struct *fsp,
 					      enum level2_contention_type type)
 {
-	int i;
-	struct share_mode_lock *lck;
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct tevent_req *req;
+	struct break_to_none_state *state;
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -758,11 +765,51 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	if (!LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
 		return;
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
-	if (lck == NULL) {
-		DEBUG(0,("release_level_2_oplocks_on_change: failed to lock "
-			 "share mode entry for file %s.\n", fsp_str_dbg(fsp)));
+	/*
+	 * When we get here we might have a brlock entry locked. Also
+	 * locking the share mode entry would violate the locking
+	 * order. Breaking level2 oplocks to none is asynchronous
+	 * anyway, so we postpone this into an immediate timed event.
+	 */
+
+	state = talloc(sconn, struct break_to_none_state);
+	if (state == NULL) {
+		DEBUG(1, ("talloc failed\n"));
 		return;
+	}
+	state->sconn = sconn;
+	state->id = fsp->file_id;
+
+	req = tevent_wakeup_send(state, sconn->ev_ctx, timeval_set(0, 0));
+	if (req == NULL) {
+		DEBUG(1, ("tevent_wakeup_send failed\n"));
+		TALLOC_FREE(state);
+		return;
+	}
+	tevent_req_set_callback(req, do_break_to_none, state);
+	return;
+}
+
+static void do_break_to_none(struct tevent_req *req)
+{
+	struct break_to_none_state *state = tevent_req_callback_data(
+		req, struct break_to_none_state);
+	bool ret;
+	int i;
+	struct share_mode_lock *lck;
+
+	ret = tevent_wakeup_recv(req);
+	TALLOC_FREE(req);
+	if (!ret) {
+		DEBUG(1, ("tevent_wakeup_recv failed\n"));
+		goto done;
+	}
+	lck = get_share_mode_lock(talloc_tos(), state->id);
+	if (lck == NULL) {
+		DEBUG(1, ("release_level_2_oplocks_on_change: failed to lock "
+			  "share mode entry for file %s.\n",
+			  file_id_string_tos(&state->id)));
+		goto done;
 	}
 
 	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
@@ -820,7 +867,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 
 		if (procid_is_me(&share_entry->pid)) {
 			struct files_struct *cur_fsp =
-				initial_break_processing(fsp->conn->sconn,
+				initial_break_processing(state->sconn,
 					share_entry->id,
 					share_entry->share_file_id);
 			wait_before_sending_break();
@@ -831,7 +878,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 				"Did not find fsp, ignoring\n"));
 			}
 		} else {
-			messaging_send_buf(fsp->conn->sconn->msg_ctx,
+			messaging_send_buf(state->sconn->msg_ctx,
 					share_entry->pid,
 					MSG_SMB_ASYNC_LEVEL2_BREAK,
 					(uint8 *)msg,
@@ -843,6 +890,9 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	   in the share mode lock db. */
 
 	TALLOC_FREE(lck);
+done:
+	TALLOC_FREE(state);
+	return;
 }
 
 void smbd_contend_level2_oplocks_begin(files_struct *fsp,
