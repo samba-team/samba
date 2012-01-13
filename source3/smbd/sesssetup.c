@@ -37,15 +37,6 @@
 #include "../libcli/security/security.h"
 #include "auth/gensec/gensec.h"
 
-/* For split krb5 SPNEGO blobs. */
-struct pending_auth_data {
-	struct pending_auth_data *prev, *next;
-	uint16 vuid; /* Tag for this entry. */
-	uint16 smbpid; /* Alternate tag for this entry. */
-	size_t needed_len;
-	DATA_BLOB partial_data;
-};
-
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.
 ****************************************************************************/
@@ -776,232 +767,6 @@ static void reply_spnego_auth(struct smb_request *req,
 }
 
 /****************************************************************************
- Delete an entry on the list.
-****************************************************************************/
-
-static void delete_partial_auth(struct smbd_server_connection *sconn,
-				struct pending_auth_data *pad)
-{
-	if (!pad) {
-		return;
-	}
-	DLIST_REMOVE(sconn->smb1.pd_list, pad);
-	data_blob_free(&pad->partial_data);
-	SAFE_FREE(pad);
-}
-
-/****************************************************************************
- Search for a partial SPNEGO auth fragment matching an smbpid.
-****************************************************************************/
-
-static struct pending_auth_data *get_pending_auth_data(
-		struct smbd_server_connection *sconn,
-		uint16_t smbpid)
-{
-	struct pending_auth_data *pad;
-/*
- * NOTE: using the smbpid here is completely wrong...
- *       see [MS-SMB]
- *       3.3.5.3 Receiving an SMB_COM_SESSION_SETUP_ANDX Request
- */
-	for (pad = sconn->smb1.pd_list; pad; pad = pad->next) {
-		if (pad->smbpid == smbpid) {
-			break;
-		}
-	}
-	return pad;
-}
-
-/****************************************************************************
- Check the size of an SPNEGO blob. If we need more return
- NT_STATUS_MORE_PROCESSING_REQUIRED, else return NT_STATUS_OK. Don't allow
- the blob to be more than 64k.
-****************************************************************************/
-
-static NTSTATUS check_spnego_blob_complete(struct smbd_server_connection *sconn,
-					   uint16 smbpid, uint16 vuid,
-					   DATA_BLOB *pblob)
-{
-	struct pending_auth_data *pad = NULL;
-	ASN1_DATA *data;
-	size_t needed_len = 0;
-
-	pad = get_pending_auth_data(sconn, smbpid);
-
-	/* Ensure we have some data. */
-	if (pblob->length == 0) {
-		/* Caller can cope. */
-		DEBUG(2,("check_spnego_blob_complete: zero blob length !\n"));
-		delete_partial_auth(sconn, pad);
-		return NT_STATUS_OK;
-	}
-
-	/* Were we waiting for more data ? */
-	if (pad) {
-		DATA_BLOB tmp_blob;
-		size_t copy_len = MIN(65536, pblob->length);
-
-		/* Integer wrap paranoia.... */
-
-		if (pad->partial_data.length + copy_len <
-				pad->partial_data.length ||
-		    pad->partial_data.length + copy_len < copy_len) {
-
-			DEBUG(2,("check_spnego_blob_complete: integer wrap "
-				"pad->partial_data.length = %u, "
-				"copy_len = %u\n",
-				(unsigned int)pad->partial_data.length,
-				(unsigned int)copy_len ));
-
-			delete_partial_auth(sconn, pad);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		DEBUG(10,("check_spnego_blob_complete: "
-			"pad->partial_data.length = %u, "
-			"pad->needed_len = %u, "
-			"copy_len = %u, "
-			"pblob->length = %u,\n",
-			(unsigned int)pad->partial_data.length,
-			(unsigned int)pad->needed_len,
-			(unsigned int)copy_len,
-			(unsigned int)pblob->length ));
-
-		tmp_blob = data_blob(NULL,
-				pad->partial_data.length + copy_len);
-
-		/* Concatenate the two (up to copy_len) bytes. */
-		memcpy(tmp_blob.data,
-			pad->partial_data.data,
-			pad->partial_data.length);
-		memcpy(tmp_blob.data + pad->partial_data.length,
-			pblob->data,
-			copy_len);
-
-		/* Replace the partial data. */
-		data_blob_free(&pad->partial_data);
-		pad->partial_data = tmp_blob;
-		ZERO_STRUCT(tmp_blob);
-
-		/* Are we done ? */
-		if (pblob->length >= pad->needed_len) {
-			/* Yes, replace pblob. */
-			data_blob_free(pblob);
-			*pblob = pad->partial_data;
-			ZERO_STRUCT(pad->partial_data);
-			delete_partial_auth(sconn, pad);
-			return NT_STATUS_OK;
-		}
-
-		/* Still need more data. */
-		pad->needed_len -= copy_len;
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	}
-
-	if ((pblob->data[0] != ASN1_APPLICATION(0)) &&
-	    (pblob->data[0] != ASN1_CONTEXT(1))) {
-		/* Not something we can determine the
-		 * length of.
-		 */
-		return NT_STATUS_OK;
-	}
-
-	/* This is a new SPNEGO sessionsetup - see if
-	 * the data given in this blob is enough.
-	 */
-
-	data = asn1_init(NULL);
-	if (data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	asn1_load(data, *pblob);
-	if (asn1_start_tag(data, pblob->data[0])) {
-		/* asn1_start_tag checks if the given
-		   length of the blob is enough to complete
-		   the tag. If it returns true we know
-		   there is nothing to do - the blob is
-		   complete. */
-		asn1_free(data);
-		return NT_STATUS_OK;
-	}
-
-	if (data->nesting == NULL) {
-		/* Incorrect tag, allocation failed,
-		   or reading the tag length failed.
-		   Let the caller catch. */
-		asn1_free(data);
-		return NT_STATUS_OK;
-	}
-
-	/* Here we know asn1_start_tag() has set data->has_error to true.
-	   asn1_tag_remaining() will have failed due to the given blob
-	   being too short. We need to work out how short. */
-
-	/* Integer wrap paranoia.... */
-
-	if (data->nesting->taglen + data->nesting->start < data->nesting->taglen ||
-	    data->nesting->taglen + data->nesting->start < data->nesting->start) {
-
-		DEBUG(2,("check_spnego_blob_complete: integer wrap "
-			"data.nesting->taglen = %u, "
-			"data.nesting->start = %u\n",
-			(unsigned int)data->nesting->taglen,
-			(unsigned int)data->nesting->start ));
-
-		asn1_free(data);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Total length of the needed asn1 is the tag length
-	 * plus the current offset. */
-
-	needed_len = data->nesting->taglen + data->nesting->start;
-	asn1_free(data);
-
-	DEBUG(10,("check_spnego_blob_complete: needed_len = %u, "
-		"pblob->length = %u\n",
-		(unsigned int)needed_len,
-		(unsigned int)pblob->length ));
-
-	if (needed_len <= pblob->length) {
-		/* Nothing to do - blob is complete. */
-		/* THIS SHOULD NOT HAPPEN - asn1_start_tag()
-		   above should have caught this !!! */
-		DEBUG(0,("check_spnego_blob_complete: logic "
-			"error (needed_len = %u, "
-			"pblob->length = %u).\n",
-			(unsigned int)needed_len,
-			(unsigned int)pblob->length ));
-		return NT_STATUS_OK;
-	}
-
-	/* Refuse the blob if it's bigger than 64k. */
-	if (needed_len > 65536) {
-		DEBUG(2,("check_spnego_blob_complete: needed_len "
-			"too large (%u)\n",
-			(unsigned int)needed_len ));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* We must store this blob until complete. */
-	if (!(pad = SMB_MALLOC_P(struct pending_auth_data))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	pad->needed_len = needed_len - pblob->length;
-	pad->partial_data = data_blob(pblob->data, pblob->length);
-	if (pad->partial_data.data == NULL) {
-		SAFE_FREE(pad);
-		return NT_STATUS_NO_MEMORY;
-	}
-	pad->smbpid = smbpid;
-	pad->vuid = vuid;
-	DLIST_ADD(sconn->smb1.pd_list, pad);
-
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
-}
-
-/****************************************************************************
  Reply to a session setup command.
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
@@ -1021,7 +786,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	int vuid = req->vuid;
 	user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	uint16 smbpid = req->smbpid;
 	struct smbd_server_connection *sconn = req->sconn;
 	DATA_BLOB chal;
 
@@ -1089,20 +853,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 	}
 
-	/* Did we get a valid vuid ? */
-	if (!is_partial_auth_vuid(sconn, vuid)) {
-		/* No, then try and see if this is an intermediate sessionsetup
-		 * for a large SPNEGO packet. */
-		struct pending_auth_data *pad;
-		pad = get_pending_auth_data(sconn, smbpid);
-		if (pad) {
-			DEBUG(10,("reply_sesssetup_and_X_spnego: found "
-				"pending vuid %u\n",
-				(unsigned int)pad->vuid ));
-			vuid = pad->vuid;
-		}
-	}
-
 	/* Do we have a valid vuid now ? */
 	if (!is_partial_auth_vuid(sconn, vuid)) {
 		/* No, start a new authentication setup. */
@@ -1119,23 +869,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	/* This MUST be valid. */
 	if (!vuser) {
 		smb_panic("reply_sesssetup_and_X_spnego: invalid vuid.");
-	}
-
-	/* Large (greater than 4k) SPNEGO blobs are split into multiple
-	 * sessionsetup requests as the Windows limit on the security blob
-	 * field is 4k. Bug #4400. JRA.
-	 */
-
-	status = check_spnego_blob_complete(sconn, smbpid, vuid, &blob1);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (!NT_STATUS_EQUAL(status,
-				NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			/* Real error - kill the intermediate vuid */
-			invalidate_vuid(sconn, vuid);
-		}
-		data_blob_free(&blob1);
-		reply_nterror(req, nt_status_squash(status));
-		return;
 	}
 
 	if (!vuser->gensec_security) {

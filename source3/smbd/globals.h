@@ -558,8 +558,6 @@ struct smbd_server_connection {
 			struct bitmap *bmap;
 		} tcons;
 		struct smb_signing_state *signing_state;
-		/* List to store partial SPNEGO auth fragments. */
-		struct pending_auth_data *pd_list;
 
 		struct notify_mid_map *notify_mid_maps;
 
