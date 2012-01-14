@@ -214,7 +214,7 @@ static int smbXcli_conn_destructor(struct smbXcli_conn *conn)
 	}
 
 	if (conn->smb1.trans_enc) {
-		common_free_encryption_state(&conn->smb1.trans_enc);
+		TALLOC_FREE(conn->smb1.trans_enc);
 	}
 
 	return 0;
@@ -596,7 +596,7 @@ void smb1cli_conn_set_encryption(struct smbXcli_conn *conn,
 {
 	/* Replace the old state, if any. */
 	if (conn->smb1.trans_enc) {
-		common_free_encryption_state(&conn->smb1.trans_enc);
+		TALLOC_FREE(conn->smb1.trans_enc);
 	}
 	conn->smb1.trans_enc = es;
 }

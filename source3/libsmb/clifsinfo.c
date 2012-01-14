@@ -573,22 +573,6 @@ static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA
 }
 
 /******************************************************************************
- Make a client state struct.
-******************************************************************************/
-
-static struct smb_trans_enc_state *make_cli_enc_state(void)
-{
-	struct smb_trans_enc_state *es = NULL;
-	es = SMB_MALLOC_P(struct smb_trans_enc_state);
-	if (!es) {
-		return NULL;
-	}
-	ZERO_STRUCTP(es);
-
-	return es;
-}
-
-/******************************************************************************
  Start a raw ntlmssp encryption.
 ******************************************************************************/
 
@@ -602,12 +586,11 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct auth_generic_state *auth_generic_state;
-	struct smb_trans_enc_state *es = make_cli_enc_state();
-
+	struct smb_trans_enc_state *es = talloc_zero(NULL, struct smb_trans_enc_state);
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = auth_generic_client_prepare(NULL,
+	status = auth_generic_client_prepare(es,
 					     &auth_generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -668,8 +651,7 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	}
 
   fail:
-	TALLOC_FREE(auth_generic_state);
-	common_free_encryption_state(&es);
+	TALLOC_FREE(es);
 	return status;
 }
 
@@ -684,13 +666,13 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct auth_generic_state *auth_generic_state;
-	struct smb_trans_enc_state *es = make_cli_enc_state();
+	struct smb_trans_enc_state *es = talloc_zero(NULL, struct smb_trans_enc_state);
 
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = auth_generic_client_prepare(NULL,
+	status = auth_generic_client_prepare(es,
 					     &auth_generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -747,13 +729,13 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 		/* We only need the gensec_security part from here.
 		 * es is a malloc()ed pointer, so we cannot make
 		 * gensec_security a talloc child */
-		es->gensec_security = talloc_move(NULL,
+		es->gensec_security = talloc_move(es,
 						  &auth_generic_state->gensec_security);
 		smb1cli_conn_set_encryption(cli->conn, es);
 		es = NULL;
 	}
 fail:
-	common_free_encryption_state(&es);
+	TALLOC_FREE(es);
 	return status;
 }
 

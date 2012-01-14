@@ -77,16 +77,15 @@ bool is_encrypted_packet(struct smbd_server_connection *sconn,
 static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
 				 struct smb_trans_enc_state *es)
 {
-	struct gensec_security *gensec_security;
 	NTSTATUS status;
 
-	status = auth_generic_prepare(NULL, remote_address,
-				      &gensec_security);
+	status = auth_generic_prepare(es, remote_address,
+				      &es->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
 
-	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
+	gensec_want_feature(es->gensec_security, GENSEC_FEATURE_SEAL);
 
 	/*
 	 * We could be accessing the secrets.tdb or krb5.keytab file here.
@@ -94,36 +93,15 @@ static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
  	 */
 	become_root();
 
-	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
+	status = gensec_start_mech_by_oid(es->gensec_security, GENSEC_OID_SPNEGO);
 
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(gensec_security);
 		return nt_status_squash(status);
 	}
 
-	es->gensec_security = gensec_security;
-
 	return status;
-}
-
-/******************************************************************************
- Shutdown a server encryption context.
-******************************************************************************/
-
-static void srv_free_encryption_context(struct smb_trans_enc_state **pp_es)
-{
-	struct smb_trans_enc_state *es = *pp_es;
-
-	if (!es) {
-		return;
-	}
-
-	common_free_encryption_state(&es);
-
-	SAFE_FREE(es);
-	*pp_es = NULL;
 }
 
 /******************************************************************************
@@ -139,15 +117,14 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
 	*pp_es = NULL;
 
 	ZERO_STRUCTP(partial_srv_trans_enc_ctx);
-	es = SMB_MALLOC_P(struct smb_trans_enc_state);
+	es = talloc_zero(NULL, struct smb_trans_enc_state);
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(es);
 	status = make_auth_gensec(remote_address,
 				  es);
 	if (!NT_STATUS_IS_OK(status)) {
-		srv_free_encryption_context(&es);
+		TALLOC_FREE(es);
 		return status;
 	}
 	*pp_es = es;
@@ -241,7 +218,7 @@ NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 
 	es = partial_srv_trans_enc_ctx;
 	if (!es || es->gensec_security == NULL) {
-		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+		TALLOC_FREE(partial_srv_trans_enc_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -253,7 +230,7 @@ NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 	unbecome_root();
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) &&
 	    !NT_STATUS_IS_OK(status)) {
-		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+		TALLOC_FREE(partial_srv_trans_enc_ctx);
 		return nt_status_squash(status);
 	}
 
@@ -310,7 +287,7 @@ NTSTATUS srv_encryption_start(connection_struct *conn)
 		return status;
 	}
 	/* Throw away the context we're using currently (if any). */
-	srv_free_encryption_context(&srv_trans_enc_ctx);
+	TALLOC_FREE(srv_trans_enc_ctx);
 
 	/* Steal the partial pointer. Deliberate shallow copy. */
 	srv_trans_enc_ctx = partial_srv_trans_enc_ctx;
@@ -328,6 +305,6 @@ NTSTATUS srv_encryption_start(connection_struct *conn)
 
 void server_encryption_shutdown(struct smbd_server_connection *sconn)
 {
-	srv_free_encryption_context(&partial_srv_trans_enc_ctx);
-	srv_free_encryption_context(&srv_trans_enc_ctx);
+	TALLOC_FREE(partial_srv_trans_enc_ctx);
+	TALLOC_FREE(srv_trans_enc_ctx);
 }

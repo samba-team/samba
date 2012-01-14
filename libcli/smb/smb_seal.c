@@ -200,25 +200,6 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 }
 
 /******************************************************************************
- Shutdown an encryption state.
-******************************************************************************/
-
-void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
-{
-	struct smb_trans_enc_state *es = *pp_es;
-
-	if (es == NULL) {
-		return;
-	}
-
-	if (es->gensec_security) {
-		TALLOC_FREE(es->gensec_security);
-	}
-	SAFE_FREE(es);
-	*pp_es = NULL;
-}
-
-/******************************************************************************
  Free an encryption-allocated buffer.
 ******************************************************************************/
 

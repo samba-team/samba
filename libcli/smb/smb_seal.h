@@ -32,7 +32,6 @@ NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16_t *p_enc_ctx_num);
 bool common_encryption_on(struct smb_trans_enc_state *es);
 NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, char **buf_out);
 NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf);
-void common_free_encryption_state(struct smb_trans_enc_state **pp_es);
 void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf);
 
 #endif /* _HEADER_SMB_CRYPT_H */
