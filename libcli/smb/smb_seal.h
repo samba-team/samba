@@ -22,10 +22,8 @@
 
 /* Transport encryption state. */
 enum smb_trans_enc_type {
-		SMB_TRANS_ENC_NTLM
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-		, SMB_TRANS_ENC_GSS
-#endif
+		SMB_TRANS_ENC_NTLM,
+		SMB_TRANS_ENC_GSS
 };
 
 struct smb_trans_enc_state {
