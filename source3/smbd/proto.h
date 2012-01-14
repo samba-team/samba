@@ -993,10 +993,6 @@ int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 
 /* The following definitions come from smbd/sesssetup.c  */
 
-NTSTATUS do_map_to_guest(NTSTATUS status,
-		struct auth_session_info **session_info,
-		const char *user, const char *domain);
-
 NTSTATUS parse_spnego_mechanisms(TALLOC_CTX *ctx,
 		DATA_BLOB blob_in,
 		DATA_BLOB *pblob_out,
