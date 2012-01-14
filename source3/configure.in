@@ -4575,7 +4575,7 @@ if test x"$with_dnsupdate_support" != x"no"; then
 
   ################################################################
   # first test for AD / GSSAPI support being enabled
-	if test x"$have_gssapi" != xyes ; then
+	if test x"$have_gssapi" != xyes -o x"$use_ads" != xyes ; then
 		if test x"$with_dnsupdate_support" = x"yes" ; then
 			AC_MSG_ERROR(DNS Updates support only possible with AD and GSSAPI support)
 		else
