@@ -98,6 +98,7 @@ static const struct loadparm_s3_context s3_fns =
 	.client_plaintext_auth = lp_client_plaintext_auth,
 	.client_lanman_auth = lp_client_lanman_auth,
 	.client_ntlmv2_auth = lp_client_ntlmv2_auth,
+	.client_use_spnego_principal = lp_client_use_spnego_principal,
 
 	.private_dir = lp_private_dir,
 	.ncalrpc_dir = lp_ncalrpc_dir,

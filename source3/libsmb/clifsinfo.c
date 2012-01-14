@@ -675,44 +675,6 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 }
 
 /******************************************************************************
- Get client gss blob to send to a server.
-******************************************************************************/
-
-static NTSTATUS make_cli_gss_blob(TALLOC_CTX *ctx,
-				struct gensec_security *gensec_security,
-				NTSTATUS status_in,
-				DATA_BLOB spnego_blob_in,
-				DATA_BLOB *p_blob_out)
-{
-	const char *krb_mechs[] = {OID_KERBEROS5, NULL};
-	DATA_BLOB blob_out = data_blob_null;
-	DATA_BLOB blob_in = data_blob_null;
-	NTSTATUS status = NT_STATUS_OK;
-
-	if (spnego_blob_in.length == 0) {
-		blob_in = spnego_blob_in;
-	} else {
-		/* Remove the SPNEGO wrapper */
-		if (!spnego_parse_auth_response(ctx, spnego_blob_in, status_in, OID_KERBEROS5, &blob_in)) {
-			status = NT_STATUS_UNSUCCESSFUL;
-			goto fail;
-		}
-	}
-
-	status = gensec_update(gensec_security, ctx,
-			       NULL, blob_in, &blob_out);
-
-	/* Wrap in an SPNEGO wrapper */
-	*p_blob_out = spnego_gen_negTokenInit(ctx, krb_mechs, &blob_out, NULL);
-
-  fail:
-
-	data_blob_free(&blob_out);
-	data_blob_free(&blob_in);
-	return status;
-}
-
-/******************************************************************************
  Start a SPNEGO gssapi encryption context.
 ******************************************************************************/
 
@@ -752,11 +714,13 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 		goto fail;
 	}
 
-	if (!NT_STATUS_IS_OK(status = auth_generic_client_start(auth_generic_state, GENSEC_OID_KERBEROS5))) {
+	if (!NT_STATUS_IS_OK(status = auth_generic_client_start(auth_generic_state, GENSEC_OID_SPNEGO))) {
 		goto fail;
 	}
 
-	status = make_cli_gss_blob(talloc_tos(), auth_generic_state->gensec_security, NT_STATUS_OK, blob_recv, &blob_send);
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(),
+			       NULL, blob_recv, &blob_send);
+
 	do {
 		data_blob_free(&blob_recv);
 		status = enc_blob_send_receive(cli, &blob_send, &blob_recv, &param_out);
@@ -764,7 +728,8 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 			es->enc_ctx_num = SVAL(param_out.data, 0);
 		}
 		data_blob_free(&blob_send);
-		status = make_cli_gss_blob(talloc_tos(), auth_generic_state->gensec_security, status, blob_recv, &blob_send);
+		status = gensec_update(auth_generic_state->gensec_security, talloc_tos(),
+				       NULL, blob_recv, &blob_send);
 	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 	data_blob_free(&blob_recv);
 
