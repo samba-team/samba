@@ -47,9 +47,7 @@ struct smb_trans_enc_state {
         enum smb_trans_enc_type smb_enc_type;
         uint16_t enc_ctx_num;
         bool enc_on;
-        union {
-                struct gensec_security *gensec_security;
-        } s;
+	struct gensec_security *gensec_security;
 };
 
 /* The following definitions come from smb_seal.c  */

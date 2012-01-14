@@ -101,7 +101,7 @@ static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
 		return nt_status_squash(status);
 	}
 
-	es->s.gensec_security = gensec_security;
+	es->gensec_security = gensec_security;
 
 	return status;
 }
@@ -247,7 +247,7 @@ static NTSTATUS srv_enc_spnego_gss_negotiate(const struct tsocket_address *remot
 
 	become_root();
 
-	status = gensec_update(partial_srv_trans_enc_ctx->s.gensec_security,
+	status = gensec_update(partial_srv_trans_enc_ctx->gensec_security,
 			       talloc_tos(), NULL,
 			       secblob, &unwrapped_response);
 
@@ -292,7 +292,7 @@ static NTSTATUS srv_enc_ntlm_negotiate(const struct tsocket_address *remote_addr
 		return status;
 	}
 
-	status = gensec_update(partial_srv_trans_enc_ctx->s.gensec_security,
+	status = gensec_update(partial_srv_trans_enc_ctx->gensec_security,
 			       talloc_tos(), NULL,
 			       secblob, &chal);
 
@@ -400,7 +400,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 
 	/* We must have a partial context here. */
 
-	if (!es || es->s.gensec_security == NULL || es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
+	if (!es || es->gensec_security == NULL || es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
 		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -411,7 +411,7 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = gensec_update(es->s.gensec_security, talloc_tos(), NULL, auth, &auth_reply);
+	status = gensec_update(es->gensec_security, talloc_tos(), NULL, auth, &auth_reply);
 	data_blob_free(&auth);
 
 	/* From RFC4178.
@@ -475,13 +475,13 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 	}
 
 	es = partial_srv_trans_enc_ctx;
-	if (!es || es->s.gensec_security == NULL || es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
+	if (!es || es->gensec_security == NULL || es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
 		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Second step. */
-	status = gensec_update(partial_srv_trans_enc_ctx->s.gensec_security,
+	status = gensec_update(partial_srv_trans_enc_ctx->gensec_security,
 			       talloc_tos(), NULL,
 			       blob, &response);
 
@@ -558,11 +558,11 @@ static NTSTATUS check_enc_good(struct smb_trans_enc_state *es)
 	}
 
 	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if (!gensec_have_feature(es->s.gensec_security, GENSEC_FEATURE_SIGN)) {
+		if (!gensec_have_feature(es->gensec_security, GENSEC_FEATURE_SIGN)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (!gensec_have_feature(es->s.gensec_security, GENSEC_FEATURE_SEAL)) {
+		if (!gensec_have_feature(es->gensec_security, GENSEC_FEATURE_SEAL)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}

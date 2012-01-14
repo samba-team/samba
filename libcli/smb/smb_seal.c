@@ -180,7 +180,7 @@ NTSTATUS common_encrypt_buffer(struct smb_trans_enc_state *es, char *buffer, cha
 		return NT_STATUS_OK;
 	}
 
-	return common_gensec_encrypt_buffer(es->s.gensec_security, es->enc_ctx_num, buffer, buf_out);
+	return common_gensec_encrypt_buffer(es->gensec_security, es->enc_ctx_num, buffer, buf_out);
 }
 
 /******************************************************************************
@@ -196,7 +196,7 @@ NTSTATUS common_decrypt_buffer(struct smb_trans_enc_state *es, char *buf)
 		return NT_STATUS_OK;
 	}
 
-	return common_gensec_decrypt_buffer(es->s.gensec_security, buf);
+	return common_gensec_decrypt_buffer(es->gensec_security, buf);
 }
 
 /******************************************************************************
@@ -211,8 +211,8 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 		return;
 	}
 
-	if (es->s.gensec_security) {
-		TALLOC_FREE(es->s.gensec_security);
+	if (es->gensec_security) {
+		TALLOC_FREE(es->gensec_security);
 	}
 	SAFE_FREE(es);
 	*pp_es = NULL;
