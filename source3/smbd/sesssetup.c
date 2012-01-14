@@ -73,31 +73,6 @@ static int push_signature(uint8 **outbuf)
 }
 
 /****************************************************************************
- Send a security blob via a session setup reply.
-****************************************************************************/
-
-static void reply_sesssetup_blob(struct smb_request *req,
-				 DATA_BLOB blob,
-				 NTSTATUS nt_status)
-{
-	if (!NT_STATUS_IS_OK(nt_status) &&
-	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		reply_nterror(req, nt_status_squash(nt_status));
-		return;
-	}
-
-	nt_status = nt_status_squash(nt_status);
-	SIVAL(req->outbuf, smb_rcls, NT_STATUS_V(nt_status));
-	SSVAL(req->outbuf, smb_vwv0, 0xFF); /* no chaining possible */
-	SSVAL(req->outbuf, smb_vwv3, blob.length);
-
-	if ((message_push_blob(&req->outbuf, blob) == -1)
-	    || (push_signature(&req->outbuf) == -1)) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-	}
-}
-
-/****************************************************************************
  Do a 'guest' logon, getting back the
 ****************************************************************************/
 
@@ -130,75 +105,6 @@ static NTSTATUS check_guest_password(const struct tsocket_address *remote_addres
 	return nt_status;
 }
 
-static void reply_spnego_generic(struct smb_request *req,
-				 uint16 vuid,
-				 struct gensec_security **gensec_security,
-				 DATA_BLOB *blob, NTSTATUS nt_status)
-{
-	bool do_invalidate = true;
-	struct auth_session_info *session_info = NULL;
-	struct smbd_server_connection *sconn = req->sconn;
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = gensec_session_info(*gensec_security,
-						talloc_tos(),
-						&session_info);
-	}
-
-	reply_outbuf(req, 4, 0);
-
-	SSVAL(req->outbuf, smb_uid, vuid);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		DATA_BLOB nullblob = data_blob_null;
-
-		if (!is_partial_auth_vuid(sconn, vuid)) {
-			nt_status = NT_STATUS_LOGON_FAILURE;
-			goto out;
-		}
-
-		/* register_existing_vuid keeps the server info */
-		if (register_existing_vuid(sconn, vuid,
-					   session_info, nullblob) !=
-					   vuid) {
-			/* The problem is, *gensec_security points
-			 * into the vuser this will have
-			 * talloc_free()'ed in
-			 * register_existing_vuid() */
-			do_invalidate = false;
-			nt_status = NT_STATUS_LOGON_FAILURE;
-			goto out;
-		}
-
-		/* current_user_info is changed on new vuid */
-		reload_services(sconn, conn_snum_used, true);
-
-		SSVAL(req->outbuf, smb_vwv3, 0);
-
-		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
-			SSVAL(req->outbuf,smb_vwv2,1);
-		}
-	}
-
-  out:
-
-	reply_sesssetup_blob(req, *blob, nt_status);
-
-	/* NT_STATUS_MORE_PROCESSING_REQUIRED from our NTLMSSP code tells us,
-	   and the other end, that we are not finished yet. */
-
-	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		/* NB. This is *NOT* an error case. JRA */
-		if (do_invalidate) {
-			TALLOC_FREE(*gensec_security);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				/* Kill the intermediate vuid */
-				invalidate_vuid(sconn, vuid);
-			}
-		}
-	}
-}
-
 /****************************************************************************
  Reply to a session setup command.
  conn POINTER CAN BE NULL HERE !
@@ -208,6 +114,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 {
 	const uint8 *p;
 	DATA_BLOB in_blob;
+	DATA_BLOB out_blob = data_blob_null;
 	size_t bufrem;
 	char *tmp;
 	const char *native_os;
@@ -220,7 +127,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_server_connection *sconn = req->sconn;
-	DATA_BLOB chal;
+	uint16_t action = 0;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -230,7 +137,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		if (!(global_client_caps & CAP_STATUS32)) {
 			remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
 		}
-
 	}
 
 	p = req->buf;
@@ -286,6 +192,12 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 	}
 
+	vuser = get_valid_user_struct(sconn, vuid);
+	if (vuser != NULL) {
+		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
+		return;
+	}
+
 	/* Do we have a valid vuid now ? */
 	if (!is_partial_auth_vuid(sconn, vuid)) {
 		/* No, start a new authentication setup. */
@@ -331,13 +243,70 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	status = gensec_update(vuser->gensec_security,
 			       talloc_tos(), NULL,
-			       in_blob, &chal);
+			       in_blob, &out_blob);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		/* Kill the intermediate vuid */
+		invalidate_vuid(sconn, vuid);
+		reply_nterror(req, nt_status_squash(status));
+		return;
+	}
 
-	reply_spnego_generic(req, vuid,
-			     &vuser->gensec_security,
-			     &chal, status);
-	data_blob_free(&chal);
-	return;
+	if (NT_STATUS_IS_OK(status)) {
+		struct auth_session_info *session_info = NULL;
+		int tmp_vuid;
+
+		status = gensec_session_info(vuser->gensec_security,
+					     talloc_tos(),
+					     &session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Kill the intermediate vuid */
+			data_blob_free(&out_blob);
+			invalidate_vuid(sconn, vuid);
+			reply_nterror(req, nt_status_squash(status));
+			return;
+		}
+
+		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
+			action = 1;
+		}
+
+		/* register_existing_vuid keeps the server info */
+		tmp_vuid = register_existing_vuid(sconn, vuid,
+						  session_info,
+						  data_blob_null);
+		if (tmp_vuid != vuid) {
+			data_blob_free(&out_blob);
+			invalidate_vuid(sconn, vuid);
+			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
+			return;
+		}
+
+		/* current_user_info is changed on new vuid */
+		reload_services(sconn, conn_snum_used, true);
+	}
+
+	reply_outbuf(req, 4, 0);
+
+	SSVAL(req->outbuf, smb_uid, vuid);
+	SIVAL(req->outbuf, smb_rcls, NT_STATUS_V(status));
+	SSVAL(req->outbuf, smb_vwv0, 0xFF); /* no chaining possible */
+	SSVAL(req->outbuf, smb_vwv2, action);
+	SSVAL(req->outbuf, smb_vwv3, out_blob.length);
+
+	if (message_push_blob(&req->outbuf, out_blob) == -1) {
+		data_blob_free(&out_blob);
+		invalidate_vuid(sconn, vuid);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	data_blob_free(&out_blob);
+
+	if (push_signature(&req->outbuf) == -1) {
+		invalidate_vuid(sconn, vuid);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
 }
 
 /****************************************************************************
