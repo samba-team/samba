@@ -380,7 +380,7 @@ static NTSTATUS find_forced_group(bool force_user,
 
 static NTSTATUS create_connection_session_info(struct smbd_server_connection *sconn,
 					      TALLOC_CTX *mem_ctx, int snum,
-                                              struct auth_session_info *vuid_serverinfo,
+                                              struct auth_session_info *session_info,
 					      DATA_BLOB password,
                                               struct auth_session_info **presult)
 {
@@ -388,7 +388,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
                 return make_session_info_guest(mem_ctx, presult);
         }
 
-        if (vuid_serverinfo != NULL) {
+        if (session_info != NULL) {
 
 		struct auth_session_info *result;
 
@@ -396,7 +396,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
                  * This is the normal security != share case where we have a
                  * valid vuid from the session setup.                 */
 
-		if (security_session_user_level(vuid_serverinfo, NULL) < SECURITY_USER) {
+		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
                       if (!lp_guest_ok(snum)) {
                                 DEBUG(2, ("guest user (from session setup) "
                                           "not permitted to access this share "
@@ -404,19 +404,19 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
                                 return NT_STATUS_ACCESS_DENIED;
                         }
                 } else {
-                        if (!user_ok_token(vuid_serverinfo->unix_info->unix_name,
-					   vuid_serverinfo->info->domain_name,
-                                           vuid_serverinfo->security_token, snum)) {
+                        if (!user_ok_token(session_info->unix_info->unix_name,
+					   session_info->info->domain_name,
+                                           session_info->security_token, snum)) {
                                 DEBUG(2, ("user '%s' (from session setup) not "
                                           "permitted to access this share "
                                           "(%s)\n",
-                                          vuid_serverinfo->unix_info->unix_name,
+                                          session_info->unix_info->unix_name,
                                           lp_servicename(snum)));
                                 return NT_STATUS_ACCESS_DENIED;
                         }
                 }
 
-                result = copy_session_info(mem_ctx, vuid_serverinfo);
+                result = copy_session_info(mem_ctx, session_info);
 		if (result == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
