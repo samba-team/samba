@@ -552,6 +552,17 @@ static NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
 		}
 	}
 
+	/* GSS_C_DCE_STYLE */
+	if (gse_ctx->gss_want_flags & GSS_C_DCE_STYLE) {
+		if (!(gse_ctx->gss_got_flags & GSS_C_DCE_STYLE)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		/* GSS_C_DCE_STYLE implies GSS_C_MUTUAL_FLAG */
+		if (!(gse_ctx->gss_got_flags & GSS_C_MUTUAL_FLAG)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 
