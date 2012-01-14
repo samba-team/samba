@@ -75,11 +75,13 @@ bool is_encrypted_packet(struct smbd_server_connection *sconn,
 ******************************************************************************/
 
 static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
-				 struct smb_trans_enc_state *es, const char *oid)
+				 struct smb_trans_enc_state *es)
 {
 	struct gensec_security *gensec_security;
-	NTSTATUS status = auth_generic_prepare(NULL, remote_address,
-					       &gensec_security);
+	NTSTATUS status;
+
+	status = auth_generic_prepare(NULL, remote_address,
+				      &gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);
 	}
@@ -92,7 +94,7 @@ static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
  	 */
 	become_root();
 
-	status = gensec_start_mech_by_oid(gensec_security, oid);
+	status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_SPNEGO);
 
 	unbecome_root();
 
@@ -129,11 +131,9 @@ static void srv_free_encryption_context(struct smb_trans_enc_state **pp_es)
 ******************************************************************************/
 
 static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote_address,
-					    enum smb_trans_enc_type smb_enc_type,
 					    struct smb_trans_enc_state **pp_es)
 {
 	NTSTATUS status;
-	const char *oid;
 	struct smb_trans_enc_state *es;
 
 	*pp_es = NULL;
@@ -144,20 +144,8 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
 		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(es);
-	es->smb_enc_type = smb_enc_type;
-	switch (smb_enc_type) {
-		case SMB_TRANS_ENC_NTLM:
-			oid = GENSEC_OID_NTLMSSP;
-			break;
-		case SMB_TRANS_ENC_GSS:
-			oid = GENSEC_OID_KERBEROS5;
-			break;
-		default:
-			srv_free_encryption_context(&es);
-			return NT_STATUS_INVALID_PARAMETER;
-	}
 	status = make_auth_gensec(remote_address,
-				  es, oid);
+				  es);
 	if (!NT_STATUS_IS_OK(status)) {
 		srv_free_encryption_context(&es);
 		return status;
@@ -225,231 +213,10 @@ NTSTATUS srv_encrypt_buffer(struct smbd_server_connection *sconn, char *buf,
 }
 
 /******************************************************************************
- Do the gss encryption negotiation. Parameters are in/out.
- Until success we do everything on the partial enc ctx.
-******************************************************************************/
-
-static NTSTATUS srv_enc_spnego_gss_negotiate(const struct tsocket_address *remote_address,
-					     unsigned char **ppdata,
-					     size_t *p_data_size,
-					     DATA_BLOB secblob)
-{
-	NTSTATUS status;
-	DATA_BLOB unwrapped_response = data_blob_null;
-	DATA_BLOB response = data_blob_null;
-
-	status = make_srv_encryption_context(remote_address,
-					     SMB_TRANS_ENC_GSS,
-					     &partial_srv_trans_enc_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	become_root();
-
-	status = gensec_update(partial_srv_trans_enc_ctx->gensec_security,
-			       talloc_tos(), NULL,
-			       secblob, &unwrapped_response);
-
-	unbecome_root();
-
-	/* status here should be NT_STATUS_MORE_PROCESSING_REQUIRED
-	 * for success ... */
-
-	response = spnego_gen_auth_response(talloc_tos(), &unwrapped_response, status, OID_KERBEROS5);
-	data_blob_free(&unwrapped_response);
-
-	SAFE_FREE(*ppdata);
-	*ppdata = (unsigned char *)memdup(response.data, response.length);
-	if ((*ppdata) == NULL && response.length > 0) {
-		status = NT_STATUS_NO_MEMORY;
-	}
-	*p_data_size = response.length;
-	data_blob_free(&response);
-
-	return status;
-}
-
-/******************************************************************************
- Do the NTLM SPNEGO (or raw) encryption negotiation. Parameters are in/out.
- Until success we do everything on the partial enc ctx.
-******************************************************************************/
-
-static NTSTATUS srv_enc_ntlm_negotiate(const struct tsocket_address *remote_address,
-				       unsigned char **ppdata,
-				       size_t *p_data_size,
-				       DATA_BLOB secblob,
-				       bool spnego_wrap)
-{
-	NTSTATUS status;
-	DATA_BLOB chal = data_blob_null;
-	DATA_BLOB response = data_blob_null;
-
-	status = make_srv_encryption_context(remote_address,
-					     SMB_TRANS_ENC_NTLM,
-					     &partial_srv_trans_enc_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = gensec_update(partial_srv_trans_enc_ctx->gensec_security,
-			       talloc_tos(), NULL,
-			       secblob, &chal);
-
-	/* status here should be NT_STATUS_MORE_PROCESSING_REQUIRED
-	 * for success ... */
-
-	if (spnego_wrap) {
-		response = spnego_gen_auth_response(talloc_tos(), &chal, status, OID_NTLMSSP);
-		data_blob_free(&chal);
-	} else {
-		/* Return the raw blob. */
-		response = chal;
-	}
-
-	SAFE_FREE(*ppdata);
-	*ppdata = (unsigned char *)memdup(response.data, response.length);
-	if ((*ppdata) == NULL && response.length > 0) {
-		status = NT_STATUS_NO_MEMORY;
-	}
-	*p_data_size = response.length;
-	data_blob_free(&response);
-
-	return status;
-}
-
-/******************************************************************************
  Do the SPNEGO encryption negotiation. Parameters are in/out.
- Based off code in smbd/sesssionsetup.c
- Until success we do everything on the partial enc ctx.
 ******************************************************************************/
 
-static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
-					unsigned char **ppdata,
-					size_t *p_data_size,
-					unsigned char **pparam,
-					size_t *p_param_size)
-{
-	NTSTATUS status;
-	DATA_BLOB blob = data_blob_null;
-	DATA_BLOB secblob = data_blob_null;
-	char *kerb_mech = NULL;
-
-	blob = data_blob_const(*ppdata, *p_data_size);
-
-	status = parse_spnego_mechanisms(talloc_tos(), blob, &secblob, &kerb_mech);
-	if (!NT_STATUS_IS_OK(status)) {
-		return nt_status_squash(status);
-	}
-
-	/* We should have no partial context at this point. */
-
-	srv_free_encryption_context(&partial_srv_trans_enc_ctx);
-
-	if (kerb_mech) {
-		TALLOC_FREE(kerb_mech);
-
-		status = srv_enc_spnego_gss_negotiate(conn->sconn->remote_address,
-						      ppdata,
-						      p_data_size,
-						      secblob);
-	} else {
-		status = srv_enc_ntlm_negotiate(conn->sconn->remote_address,
-						ppdata,
-						p_data_size,
-						secblob,
-						true);
-	}
-
-	data_blob_free(&secblob);
-
-	if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
-		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
-		return nt_status_squash(status);
-	}
-
-	if (NT_STATUS_IS_OK(status)) {
-		/* Return the context we're using for this encryption state. */
-		if (!(*pparam = SMB_MALLOC_ARRAY(unsigned char, 2))) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		SSVAL(*pparam,0,partial_srv_trans_enc_ctx->enc_ctx_num);
-		*p_param_size = 2;
-	}
-
-	return status;
-}
-
-/******************************************************************************
- Complete a SPNEGO encryption negotiation. Parameters are in/out.
- We only get this for a NTLM auth second stage.
-******************************************************************************/
-
-static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
-					unsigned char **ppdata,
-					size_t *p_data_size,
-					unsigned char **pparam,
-					size_t *p_param_size)
-{
-	NTSTATUS status;
-	DATA_BLOB blob = data_blob_null;
-	DATA_BLOB auth = data_blob_null;
-	DATA_BLOB auth_reply = data_blob_null;
-	DATA_BLOB response = data_blob_null;
-	struct smb_trans_enc_state *es = partial_srv_trans_enc_ctx;
-
-	/* We must have a partial context here. */
-
-	if (!es || es->gensec_security == NULL || es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
-		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	blob = data_blob_const(*ppdata, *p_data_size);
-	if (!spnego_parse_auth(talloc_tos(), blob, &auth)) {
-		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = gensec_update(es->gensec_security, talloc_tos(), NULL, auth, &auth_reply);
-	data_blob_free(&auth);
-
-	/* From RFC4178.
-	 *
-	 *    supportedMech
-	 *
-	 *          This field SHALL only be present in the first reply from the
-	 *                target.
-	 * So set mechOID to NULL here.
-	 */
-
-	response = spnego_gen_auth_response(talloc_tos(), &auth_reply, status, NULL);
-	data_blob_free(&auth_reply);
-
-	if (NT_STATUS_IS_OK(status)) {
-		/* Return the context we're using for this encryption state. */
-		if (!(*pparam = SMB_MALLOC_ARRAY(unsigned char, 2))) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		SSVAL(*pparam,0,es->enc_ctx_num);
-		*p_param_size = 2;
-	}
-
-	SAFE_FREE(*ppdata);
-	*ppdata = (unsigned char *)memdup(response.data, response.length);
-	if ((*ppdata) == NULL && response.length > 0)
-		return NT_STATUS_NO_MEMORY;
-	*p_data_size = response.length;
-	data_blob_free(&response);
-	return status;
-}
-
-/******************************************************************************
- Raw NTLM encryption negotiation. Parameters are in/out.
- This function does both steps.
-******************************************************************************/
-
-static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
+NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 					unsigned char **ppdata,
 					size_t *p_data_size,
 					unsigned char **pparam,
@@ -460,30 +227,35 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 	DATA_BLOB response = data_blob_null;
 	struct smb_trans_enc_state *es;
 
+	SAFE_FREE(*pparam);
+	*p_param_size = 0;
+
 	if (!partial_srv_trans_enc_ctx) {
 		/* This is the initial step. */
-		status = srv_enc_ntlm_negotiate(conn->sconn->remote_address,
-						ppdata,
-						p_data_size,
-						blob,
-						false);
-		if (!NT_STATUS_EQUAL(status,NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
-			srv_free_encryption_context(&partial_srv_trans_enc_ctx);
-			return nt_status_squash(status);
+		status = make_srv_encryption_context(conn->sconn->remote_address,
+					&partial_srv_trans_enc_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
-		return status;
 	}
 
 	es = partial_srv_trans_enc_ctx;
-	if (!es || es->gensec_security == NULL || es->smb_enc_type != SMB_TRANS_ENC_NTLM) {
+	if (!es || es->gensec_security == NULL) {
 		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Second step. */
-	status = gensec_update(partial_srv_trans_enc_ctx->gensec_security,
+	become_root();
+	status = gensec_update(es->gensec_security,
 			       talloc_tos(), NULL,
 			       blob, &response);
+	unbecome_root();
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) &&
+	    !NT_STATUS_IS_OK(status)) {
+		srv_free_encryption_context(&partial_srv_trans_enc_ctx);
+		return nt_status_squash(status);
+	}
 
 	if (NT_STATUS_IS_OK(status)) {
 		/* Return the context we're using for this encryption state. */
@@ -505,49 +277,6 @@ static NTSTATUS srv_enc_raw_ntlm_auth(connection_struct *conn,
 }
 
 /******************************************************************************
- Do the SPNEGO encryption negotiation. Parameters are in/out.
-******************************************************************************/
-
-NTSTATUS srv_request_encryption_setup(connection_struct *conn,
-					unsigned char **ppdata,
-					size_t *p_data_size,
-					unsigned char **pparam,
-					size_t *p_param_size)
-{
-	unsigned char *pdata = *ppdata;
-
-	SAFE_FREE(*pparam);
-	*p_param_size = 0;
-
-	if (*p_data_size < 1) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (pdata[0] == ASN1_APPLICATION(0)) {
-		/* its a negTokenTarg packet */
-		return srv_enc_spnego_negotiate(conn, ppdata, p_data_size, pparam, p_param_size);
-	}
-
-	if (pdata[0] == ASN1_CONTEXT(1)) {
-		/* It's an auth packet */
-		return srv_enc_spnego_ntlm_auth(conn, ppdata, p_data_size, pparam, p_param_size);
-	}
-
-	/* Maybe it's a raw unwrapped auth ? */
-	if (*p_data_size < 7) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (strncmp((char *)pdata, "NTLMSSP", 7) == 0) {
-		return srv_enc_raw_ntlm_auth(conn, ppdata, p_data_size, pparam, p_param_size);
-	}
-
-	DEBUG(1,("srv_request_encryption_setup: Unknown packet\n"));
-
-	return NT_STATUS_LOGON_FAILURE;
-}
-
-/******************************************************************************
  Negotiation was successful - turn on server-side encryption.
 ******************************************************************************/
 
@@ -557,17 +286,13 @@ static NTSTATUS check_enc_good(struct smb_trans_enc_state *es)
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	if (es->smb_enc_type == SMB_TRANS_ENC_NTLM) {
-		if (!gensec_have_feature(es->gensec_security, GENSEC_FEATURE_SIGN)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		if (!gensec_have_feature(es->gensec_security, GENSEC_FEATURE_SEAL)) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+	if (!gensec_have_feature(es->gensec_security, GENSEC_FEATURE_SIGN)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-	/* Todo - check gssapi case. */
 
+	if (!gensec_have_feature(es->gensec_security, GENSEC_FEATURE_SEAL)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	return NT_STATUS_OK;
 }
 
