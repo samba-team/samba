@@ -20,14 +20,6 @@
 #ifndef _HEADER_SMB_CRYPT_H
 #define _HEADER_SMB_CRYPT_H
 
-#if HAVE_GSSAPI_GSSAPI_H
-#include <gssapi/gssapi.h>
-#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
-#include <gssapi/gssapi_generic.h>
-#elif HAVE_GSSAPI_H
-#include <gssapi.h>
-#endif
-
 /* Transport encryption state. */
 enum smb_trans_enc_type {
 		SMB_TRANS_ENC_NTLM
@@ -35,13 +27,6 @@ enum smb_trans_enc_type {
 		, SMB_TRANS_ENC_GSS
 #endif
 };
-
-#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-struct smb_tran_enc_state_gss {
-        gss_ctx_id_t gss_ctx;
-        gss_cred_id_t creds;
-};
-#endif
 
 struct smb_trans_enc_state {
         enum smb_trans_enc_type smb_enc_type;
