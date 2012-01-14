@@ -207,7 +207,7 @@ static void reply_spnego_generic(struct smb_request *req,
 static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 {
 	const uint8 *p;
-	DATA_BLOB blob1;
+	DATA_BLOB in_blob;
 	size_t bufrem;
 	char *tmp;
 	const char *native_os;
@@ -243,13 +243,13 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	bufrem = smbreq_bufrem(req, p);
 	/* pull the spnego blob */
-	blob1 = data_blob(p, MIN(bufrem, data_blob_len));
+	in_blob = data_blob_const(p, MIN(bufrem, data_blob_len));
 
 #if 0
-	file_save("negotiate.dat", blob1.data, blob1.length);
+	file_save("negotiate.dat", in_blob.data, in_blob.length);
 #endif
 
-	p2 = (const char *)req->buf + blob1.length;
+	p2 = (const char *)req->buf + in_blob.length;
 
 	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
 				     STR_TERMINATE);
@@ -291,7 +291,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		/* No, start a new authentication setup. */
 		vuid = register_initial_vuid(sconn);
 		if (vuid == UID_FIELD_INVALID) {
-			data_blob_free(&blob1);
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_INVALID_PARAMETER));
 			return;
@@ -310,7 +309,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Kill the intermediate vuid */
 			invalidate_vuid(sconn, vuid);
-			data_blob_free(&blob1);
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -326,7 +324,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Kill the intermediate vuid */
 			invalidate_vuid(sconn, vuid);
-			data_blob_free(&blob1);
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -334,9 +331,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	status = gensec_update(vuser->gensec_security,
 			       talloc_tos(), NULL,
-			       blob1, &chal);
-
-	data_blob_free(&blob1);
+			       in_blob, &chal);
 
 	reply_spnego_generic(req, vuid,
 			     &vuser->gensec_security,
