@@ -350,12 +350,15 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	blob = data_blob_talloc(mem_ctx, out_data.value, out_data.length);
-	if (!blob.data) {
-		status = NT_STATUS_NO_MEMORY;
-	}
+	/* we may be told to return nothing */
+	if (out_data.length) {
+		blob = data_blob_talloc(mem_ctx, out_data.value, out_data.length);
+		if (!blob.data) {
+			status = NT_STATUS_NO_MEMORY;
+		}
 
-	gss_maj = gss_release_buffer(&gss_min, &out_data);
+		gss_maj = gss_release_buffer(&gss_min, &out_data);
+	}
 
 done:
 	*token_out = blob;
