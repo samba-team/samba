@@ -694,6 +694,38 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, int ndr_flags,
 	return NDR_ERR_SUCCESS;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_pull_charset_to_null(struct ndr_pull *ndr, int ndr_flags, const char **var, uint32_t length, uint8_t byte_mul, charset_t chset)
+{
+	size_t converted_size;
+	uint32_t str_len;
+
+	if (length == 0) {
+		*var = talloc_strdup(ndr->current_mem_ctx, "");
+		return NDR_ERR_SUCCESS;
+	}
+
+	if (NDR_BE(ndr) && chset == CH_UTF16) {
+		chset = CH_UTF16BE;
+	}
+
+	NDR_PULL_NEED_BYTES(ndr, length*byte_mul);
+
+	str_len = ndr_string_length(ndr->data+ndr->offset, byte_mul);
+	str_len = MIN(str_len, length); /* overrun protection */
+
+	if (!convert_string_talloc(ndr->current_mem_ctx, chset, CH_UNIX,
+				   ndr->data+ndr->offset, str_len*byte_mul,
+				   discard_const_p(void *, var),
+				   &converted_size, false))
+	{
+		return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
+				      "Bad character conversion");
+	}
+	NDR_CHECK(ndr_pull_advance(ndr, length*byte_mul));
+
+	return NDR_ERR_SUCCESS;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
 {
 	ssize_t ret, required;
