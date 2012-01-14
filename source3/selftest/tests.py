@@ -272,36 +272,34 @@ for t in tests:
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm" ]
 signseal_options = ["", ",connect", ",sign", ",seal"]
-smb_options = ["", ",smb2"]
 endianness_options = ["", ",bigendian"]
-for z in smb_options:
-    for s in signseal_options:
-        for e in endianness_options:
-            for a in auth_options:
-                binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
-                options = binding_string + " -U$USERNAME%$PASSWORD"
-                plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
-                plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s%s] " % (a, s, z, e), "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
-                                                                 "none", options, configuration])
+for s in signseal_options:
+    for e in endianness_options:
+        for a in auth_options:
+            binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
+            options = binding_string + " -U$USERNAME%$PASSWORD"
+            plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
+            plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s] " % (a, s, e), "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+                                                             "none", options, configuration])
 
-        if have_ads_support:
-            # We should try more combinations in future, but this is all
-            # the pre-calculated credentials cache supports at the moment
-            e = ""
-            a = ""
-            binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
-            options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
-            plansmbtorturetestsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+    if have_ads_support:
+        # We should try more combinations in future, but this is all
+        # the pre-calculated credentials cache supports at the moment
+        e = ""
+        a = ""
+        binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
+        options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
+        plansmbtorturetestsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s] ' % (a, s, e))
 
-            options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
-            plansmbtorturetestsuite(test, "ktest", options, 'krb5 ncacn_np with [%s%s%s%s] ' % (a, s, z, e))
+        options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
+        plansmbtorturetestsuite(test, "ktest", options, 'krb5 ncacn_np with [%s%s%s] ' % (a, s, e))
 
-            auth_options2 = ["krb5", "spnego,krb5"]
-            for a in auth_options2:
-                binding_string = "ncacn_np:$SERVER[%s%s%s%s]" % (a, s, z, e)
+        auth_options2 = ["krb5", "spnego,krb5"]
+        for a in auth_options2:
+            binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
 
-                plantestsuite("samba3.blackbox.rpcclient krb5 ncacn_np with [%s%s%s%s] " % (a, s, z, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
-                                                                                                                                  "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
+            plantestsuite("samba3.blackbox.rpcclient krb5 ncacn_np with [%s%s%s] " % (a, s, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+                                                                                                                              "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
 
 
 if have_ads_support:
