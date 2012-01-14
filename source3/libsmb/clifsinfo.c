@@ -576,7 +576,7 @@ static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA
  Make a client state struct.
 ******************************************************************************/
 
-static struct smb_trans_enc_state *make_cli_enc_state(enum smb_trans_enc_type smb_enc_type)
+static struct smb_trans_enc_state *make_cli_enc_state(void)
 {
 	struct smb_trans_enc_state *es = NULL;
 	es = SMB_MALLOC_P(struct smb_trans_enc_state);
@@ -584,7 +584,6 @@ static struct smb_trans_enc_state *make_cli_enc_state(enum smb_trans_enc_type sm
 		return NULL;
 	}
 	ZERO_STRUCTP(es);
-	es->smb_enc_type = smb_enc_type;
 
 	return es;
 }
@@ -603,7 +602,7 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct auth_generic_state *auth_generic_state;
-	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_NTLM);
+	struct smb_trans_enc_state *es = make_cli_enc_state();
 
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
@@ -685,7 +684,7 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	DATA_BLOB param_out = data_blob_null;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct auth_generic_state *auth_generic_state;
-	struct smb_trans_enc_state *es = make_cli_enc_state(SMB_TRANS_ENC_GSS);
+	struct smb_trans_enc_state *es = make_cli_enc_state();
 
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;

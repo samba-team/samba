@@ -20,14 +20,7 @@
 #ifndef _HEADER_SMB_CRYPT_H
 #define _HEADER_SMB_CRYPT_H
 
-/* Transport encryption state. */
-enum smb_trans_enc_type {
-		SMB_TRANS_ENC_NTLM,
-		SMB_TRANS_ENC_GSS
-};
-
 struct smb_trans_enc_state {
-        enum smb_trans_enc_type smb_enc_type;
         uint16_t enc_ctx_num;
         bool enc_on;
 	struct gensec_security *gensec_security;
