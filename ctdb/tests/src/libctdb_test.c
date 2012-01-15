@@ -289,11 +289,35 @@ void libctdb_test_fake_setup(struct ctdb_connection *ctdb)
 	}
 }
 
+/* Support... */
+static bool current_node_is_connected (struct ctdb_connection *ctdb)
+{
+	int i;
+	for (i = 0; i < ctdb->nodemap->num; i++) {
+		if (ctdb->nodemap->nodes[i].pnn == ctdb->current_node) {
+			if (ctdb->nodemap->nodes[i].flags &
+			    (NODE_FLAGS_DISCONNECTED | NODE_FLAGS_DELETED)) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+	}
+
+	/* Shouldn't really happen, so fag an error */
+	return false;
+}
+
 /* Stubs... */
 
 bool ctdb_getnodemap(struct ctdb_connection *ctdb,
 		     uint32_t destnode, struct ctdb_node_map **nodemap)
 {
+	if (!current_node_is_connected(ctdb)) {
+		*nodemap = NULL;
+		return false;
+	}
+
 	*nodemap = ctdb->nodemap;
 	return true;
 }
@@ -306,6 +330,11 @@ void ctdb_free_nodemap(struct ctdb_node_map *nodemap)
 bool ctdb_getifaces(struct ctdb_connection *ctdb,
 		    uint32_t destnode, struct ctdb_ifaces_list **ifaces)
 {
+	if (!current_node_is_connected(ctdb)) {
+		*ifaces = NULL;
+		return false;
+	}
+
 	*ifaces = ctdb->ifaces;
 	return true;
 }
@@ -319,6 +348,10 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 		 uint32_t destnode,
 		 uint32_t *pnn)
 {
+	if (!current_node_is_connected(ctdb)) {
+		return false;
+	}
+
 	if (destnode == CTDB_CURRENT_NODE) {
 		*pnn = ctdb->current_node;
 	} else {
@@ -331,6 +364,10 @@ bool ctdb_getrecmode(struct ctdb_connection *ctdb,
 		     uint32_t destnode,
 		     uint32_t *recmode)
 {
+	if (!current_node_is_connected(ctdb)) {
+		return false;
+	}
+
 	*recmode = 0;
 	return true;
 }
@@ -339,6 +376,10 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 		       uint32_t destnode,
 		       uint32_t *recmaster)
 {
+	if (!current_node_is_connected(ctdb)) {
+		return false;
+	}
+
 	*recmaster = ctdb->recmaster;
 	return true;
 }
@@ -346,6 +387,11 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 bool ctdb_getvnnmap(struct ctdb_connection *ctdb,
 		    uint32_t destnode, struct ctdb_vnn_map **vnnmap)
 {
+	if (!current_node_is_connected(ctdb)) {
+		*vnnmap = NULL;
+		return false;
+	}
+
 	*vnnmap = ctdb->vnnmap;
 	return true;
 }
