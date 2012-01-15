@@ -157,7 +157,7 @@ static void test_parse_nodestring(const char *nodestring_s,
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: ctdb_parse_nodelist <op>\n");
+	fprintf(stderr, "usage: ctdb_tool_libctdb <op>\n");
 	exit(1);
 }
 
