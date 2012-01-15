@@ -35,6 +35,10 @@ import itertools
 import socket
 import struct
 
+# For external algorithm
+import subprocess
+import re
+
 options = None
 
 def process_args(extra_options=[]):
@@ -52,6 +56,9 @@ def process_args(extra_options=[]):
     parser.add_option("-L", "--lcp2",
                       action="store_true", dest="lcp2", default=False,
                       help="use LCP2 IP rebalancing algorithm [default: %default]")
+    parser.add_option("-e", "--external",
+                      action="store_true", dest="external", default=False,
+                      help="use external test program to implement IP allocation algorithm [default: %default]")
     parser.add_option("-b", "--balance",
                       action="store_true", dest="balance", default=False,
                       help="show (im)balance information after each event")
@@ -685,10 +692,7 @@ class Cluster(object):
 
         return False
 
-
-    def ctdb_takeover_run(self):
-
-        self.events += 1
+    def ctdb_takeover_run_python(self):
 
         # Don't bother with the num_healthy stuff.  It is an
         # irrelevant detail.
@@ -752,6 +756,73 @@ class Cluster(object):
             else:
                 should_loop = self.basic_failback(retries_l)
 
+    def ctdb_takeover_run_external(self):
+
+        # Written while asleep...
+
+        # Convert the cluster state to something that be fed to
+        # ctdb_takeover_tests ctdb_takeover_run_core ...
+
+        in_lines = []
+        for ip in sorted(list(self.all_public_ips)):
+            allowed = []
+            assigned = -1
+            for (i, n) in enumerate(self.nodes):
+                if n.can_node_serve_ip(ip):
+                    allowed.append("%s" % i)
+                if ip in n.current_addresses:
+                    assigned = i
+            line = "%s\t%d\t%s" % (ip, assigned, ",".join(allowed))
+            in_lines.append(line)
+
+        nodestates = ",".join(["0" if n.healthy else "1" for n in self.nodes])
+
+        if options.lcp2:
+            os.environ["CTDB_LCP2"] = "yes"
+        if options.verbose > 1:
+            os.environ["CTDB_TEST_LOGLEVEL"] = "4"
+        elif options.verbose == 1:
+            os.environ["CTDB_TEST_LOGLEVEL"] = "3"
+        else:
+            os.environ["CTDB_TEST_LOGLEVEL"] = "0"
+
+        p = subprocess.Popen("../bin/ctdb_takeover_tests ctdb_takeover_run_core %s 2>&1" % nodestates,
+                             shell=True,
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        p.stdin.write("\n".join(in_lines))
+        p.stdin.close()
+
+        # Flush all of the assigned IPs.
+        for n in self.nodes:
+            n.current_addresses = set()
+
+        # Uses the results to populate the current_addresses for each
+        # node.
+        for line in p.stdout.read().split("\n"):
+            # Some lines are debug, some are the final IP
+            # configuration.  Let's use a gross hack that assumes any
+            # line with 2 words is IP configuration.  That will do for
+            # now.
+            words = re.split("\s+", line)
+            if len(words) == 2:
+                # Add the IP as current for the specified node.
+                self.nodes[int(words[1])].current_addresses.add(words[0])
+            else:
+                 # First 3 words are log date/time, remove them...
+                 print " ".join(words[3:])
+
+        # Now fake up the LCP calculations.
+        for n in self.nodes:
+            n.set_imbalance()
+
+    def ctdb_takeover_run(self):
+
+        self.events += 1
+
+        if options.external:
+            return self.ctdb_takeover_run_external()
+        else:
+            return self.ctdb_takeover_run_python()
 
     def recover(self):
         verbose_begin("TAKEOVER")
