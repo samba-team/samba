@@ -97,7 +97,12 @@ def process_args(extra_options=[]):
     (options, args) = parser.parse_args()
 
     if len(args) != 0:
-        parser.error("too many argumentss")
+        parser.error("too many arguments")
+
+    # Could use a callback for this or change the default, but
+    # laziness is sometimes a virtue.  ;-)
+    if options.lcp2:
+        options.deterministic_public_ips = False
 
 def print_begin(t, delim='='):
     print delim * 40
