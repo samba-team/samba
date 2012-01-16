@@ -1374,7 +1374,10 @@ PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_
 
 IDMAP_RW_OBJ = winbindd/idmap_rw.o
 
-IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_util.o $(IDMAP_RW_OBJ) @IDMAP_STATIC@
+IDMAP_TDB_COMMON_OBJ = winbindd/idmap_tdb_common.o
+
+IDMAP_OBJ     = winbindd/idmap.o winbindd/idmap_util.o $(IDMAP_RW_OBJ) \
+		$(IDMAP_TDB_COMMON_OBJ) @IDMAP_STATIC@
 
 NSS_INFO_OBJ = winbindd/nss_info.o @NSS_INFO_STATIC@
 

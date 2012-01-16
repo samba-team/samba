@@ -20,7 +20,7 @@ IDMAP_ADEX_SRC = '''idmap_adex/idmap_adex.c
 IDMAP_AUTORID_SRC = '''idmap_autorid.c'''
 
 IDMAP_RW_SRC = 'idmap_rw.c'
-IDMAP_SRC = 'idmap.c idmap_util.c ${IDMAP_RW_SRC}'
+IDMAP_SRC = 'idmap.c idmap_util.c idmap_tdb_common.c ${IDMAP_RW_SRC}'
 
 bld.SAMBA3_LIBRARY('idmap',
                    source=IDMAP_SRC,
