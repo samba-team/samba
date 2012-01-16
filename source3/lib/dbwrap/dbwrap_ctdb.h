@@ -23,11 +23,14 @@
 
 #include <talloc.h>
 
+#include "dbwrap/dbwrap_private.h"
+
 struct db_context;
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
 				int hash_size, int tdb_flags,
-				int open_flags, mode_t mode);
+				int open_flags, mode_t mode,
+				enum dbwrap_lock_order lock_order);
 
 #endif /* __DBWRAP_CTDB_H__ */
