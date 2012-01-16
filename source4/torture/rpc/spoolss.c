@@ -49,6 +49,7 @@
 #define TORTURE_DRIVER_EX_ADOBE		"torture_driver_ex_adobe"
 #define TORTURE_DRIVER_ADOBE_CUPSADDSMB	"torture_driver_adobe_cupsaddsmb"
 #define TORTURE_DRIVER_TIMESTAMPS	"torture_driver_timestamps"
+#define TORTURE_DRIVER_DELETER		"torture_driver_deleter"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
@@ -9206,6 +9207,10 @@ static bool test_add_driver_adobe(struct torture_context *tctx,
 {
 	struct torture_driver_context *d;
 
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping adobe test which only works against samba3");
+	}
+
 	d = talloc_zero(tctx, struct torture_driver_context);
 
 	d->info8.version		= SPOOLSS_DRIVER_VERSION_9X;
@@ -9371,6 +9376,62 @@ static bool test_multiple_drivers(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_del_driver_all_files(struct torture_context *tctx,
+				      struct dcerpc_pipe *p)
+{
+	struct torture_driver_context *d;
+	struct spoolss_StringArray *a;
+	uint32_t add_flags = APD_COPY_NEW_FILES;
+	uint32_t delete_flags = DPD_DELETE_ALL_FILES;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
+	d = talloc_zero(tctx, struct torture_driver_context);
+
+	d->ex				= true;
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d->info8.driver_name		= TORTURE_DRIVER_DELETER;
+	d->info8.architecture		= NULL;
+	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
+	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
+	d->info8.config_file		= talloc_strdup(d, "cupsui6.dll");
+	d->info8.help_file		= talloc_strdup(d, "pscript.hlp");
+	d->local.environment		= talloc_strdup(d, SPOOLSS_ARCHITECTURE_x64);
+	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/x64");
+
+	a				= talloc_zero(d, struct spoolss_StringArray);
+	a->string			= talloc_zero_array(a, const char *, 3);
+	a->string[0]			= talloc_strdup(a->string, "cups6.inf");
+	a->string[1]			= talloc_strdup(a->string, "cups6.ini");
+
+	d->info8.dependent_files	= a;
+	d->info8.architecture		= d->local.environment;
+
+	torture_assert(tctx,
+		fillup_printserver_info(tctx, p, d),
+		"failed to fillup printserver info");
+
+	if (!directory_exist(d->local.driver_directory)) {
+		torture_skip(tctx, "Skipping Printer Driver test as no local driver is available");
+	}
+
+	torture_assert(tctx,
+		upload_printer_driver(tctx, dcerpc_server_name(p), d),
+		"failed to upload printer driver");
+
+	torture_assert(tctx,
+		test_AddPrinterDriver_args_level_3(tctx, b, server_name_slash, &d->info8, add_flags, true, NULL),
+		"failed to add driver");
+
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx(tctx, b, server_name_slash, d->info8.driver_name, d->local.environment, delete_flags, d->info8.version),
+		"failed to delete driver");
+
+	/* TODO check all files are removed */
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "spoolss.driver");
@@ -9390,6 +9451,8 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "add_driver_timestamps", test_add_driver_timestamps);
 
 	torture_rpc_tcase_add_test(tcase, "multiple_drivers", test_multiple_drivers);
+
+	torture_rpc_tcase_add_test(tcase, "del_driver_all_files", test_del_driver_all_files);
 
 	return suite;
 }
