@@ -1439,6 +1439,9 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	char *db_path;
 	struct ctdbd_connection *conn;
 	struct loadparm_context *lp_ctx;
+	struct ctdb_db_priority prio;
+	NTSTATUS status;
+	int cstatus;
 
 	if (!lp_clustering()) {
 		DEBUG(10, ("Clustering disabled -- no ctdb\n"));
@@ -1483,6 +1486,21 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	/* honor permissions if user has specified O_CREAT */
 	if (open_flags & O_CREAT) {
 		chmod(db_path, mode);
+	}
+
+	prio.db_id = db_ctdb->db_id;
+	prio.priority = lock_order;
+
+	status = ctdbd_control_local(
+		conn, CTDB_CONTROL_SET_DB_PRIORITY, 0, 0,
+		make_tdb_data((uint8_t *)&prio, sizeof(prio)),
+		NULL, NULL, &cstatus);
+
+	if (!NT_STATUS_IS_OK(status) || (cstatus != 0)) {
+		DEBUG(1, ("CTDB_CONTROL_SET_DB_PRIORITY failed: %s, %d\n",
+			  nt_errstr(status), cstatus));
+		TALLOC_FREE(result);
+		return NULL;
 	}
 
 	lp_ctx = loadparm_init_s3(db_path, loadparm_s3_context());
