@@ -176,11 +176,6 @@ bool message_send_all(struct messaging_context *msg_ctx,
 	return true;
 }
 
-struct event_context *messaging_event_context(struct messaging_context *msg_ctx)
-{
-	return msg_ctx->event_ctx;
-}
-
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct event_context *ev)
 {

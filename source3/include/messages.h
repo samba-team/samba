@@ -107,7 +107,6 @@ bool message_send_all(struct messaging_context *msg_ctx,
 		      int msg_type,
 		      const void *buf, size_t len,
 		      int *n_sent);
-struct event_context *messaging_event_context(struct messaging_context *msg_ctx);
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct event_context *ev);
 
