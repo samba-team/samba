@@ -658,8 +658,7 @@ static bool do_printnotify(struct tevent_context *ev_ctx,
 			return False;
 		}
 
-		notify_printer_status_byname(messaging_event_context(msg_ctx),
-					     msg_ctx, argv[2],
+		notify_printer_status_byname(ev_ctx, msg_ctx, argv[2],
 					     PRINTER_STATUS_PAUSED);
 
 		goto send;
@@ -672,8 +671,7 @@ static bool do_printnotify(struct tevent_context *ev_ctx,
 			return False;
 		}
 
-		notify_printer_status_byname(messaging_event_context(msg_ctx),
-					     msg_ctx, argv[2],
+		notify_printer_status_byname(ev_ctx, msg_ctx, argv[2],
 					     PRINTER_STATUS_OK);
 
 		goto send;
@@ -690,7 +688,7 @@ static bool do_printnotify(struct tevent_context *ev_ctx,
 		jobid = atoi(argv[3]);
 
 		notify_job_status_byname(
-			messaging_event_context(msg_ctx), msg_ctx,
+			ev_ctx, msg_ctx,
 			argv[2], jobid, JOB_STATUS_PAUSED,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 
@@ -708,7 +706,7 @@ static bool do_printnotify(struct tevent_context *ev_ctx,
 		jobid = atoi(argv[3]);
 
 		notify_job_status_byname(
-			messaging_event_context(msg_ctx), msg_ctx,
+			ev_ctx, msg_ctx,
 			argv[2], jobid, JOB_STATUS_QUEUED, 
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 
@@ -726,12 +724,12 @@ static bool do_printnotify(struct tevent_context *ev_ctx,
 		jobid = atoi(argv[3]);
 
 		notify_job_status_byname(
-			messaging_event_context(msg_ctx), msg_ctx,
+			ev_ctx, msg_ctx,
 			argv[2], jobid, JOB_STATUS_DELETING,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
 
 		notify_job_status_byname(
-			messaging_event_context(msg_ctx), msg_ctx,
+			ev_ctx, msg_ctx,
 			argv[2], jobid, JOB_STATUS_DELETING|
 			JOB_STATUS_DELETED,
 			SPOOLSS_NOTIFY_MSG_UNIX_JOBID);
@@ -760,8 +758,7 @@ static bool do_printnotify(struct tevent_context *ev_ctx,
 			return False;
 		}
 
-		notify_printer_byname(messaging_event_context(msg_ctx),
-				      msg_ctx, argv[2], attribute,
+		notify_printer_byname(ev_ctx, msg_ctx, argv[2], attribute,
 				      discard_const_p(char, argv[4]));
 
 		goto send;
