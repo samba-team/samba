@@ -301,6 +301,22 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 			data_blob_free(&subblob);
 		}
 
+		if (scpp == NULL) {
+			return ldb_error(ldb,
+					 LDB_ERR_CONSTRAINT_VIOLATION,
+					 "Primary:Packages missing");
+		}
+
+		if (scpk == NULL) {
+			/*
+			 * If Primary:Kerberos is missing w2k8r2 reboots
+			 * when a password is changed.
+			 */
+			return ldb_error(ldb,
+					 LDB_ERR_CONSTRAINT_VIOLATION,
+					 "Primary:Kerberos missing");
+		}
+
 		if (scpp) {
 			struct package_PackagesBlob *p;
 			uint32_t n;
