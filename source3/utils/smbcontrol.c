@@ -85,13 +85,14 @@ static void smbcontrol_timeout(struct tevent_context *event_ctx,
 
 /* Wait for one or more reply messages */
 
-static void wait_replies(struct messaging_context *msg_ctx,
+static void wait_replies(struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
 			 bool multiple_replies)
 {
 	struct tevent_timer *te;
 	bool timed_out = False;
 
-	if (!(te = tevent_add_timer(messaging_event_context(msg_ctx), NULL,
+	if (!(te = tevent_add_timer(ev_ctx, NULL,
 				    timeval_current_ofs(timeout, 0),
 				    smbcontrol_timeout, (void *)&timed_out))) {
 		DEBUG(0, ("tevent_add_timer failed\n"));
@@ -102,7 +103,7 @@ static void wait_replies(struct messaging_context *msg_ctx,
 		int ret;
 		if (num_replies > 0 && !multiple_replies)
 			break;
-		ret = tevent_loop_once(messaging_event_context(msg_ctx));
+		ret = tevent_loop_once(ev_ctx);
 		if (ret != 0) {
 			break;
 		}
@@ -463,7 +464,7 @@ static bool do_ping(struct tevent_context *ev_ctx,
 
 	messaging_register(msg_ctx, NULL, MSG_PONG, pong_cb);
 
-	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -580,7 +581,7 @@ static bool do_profilelevel(struct tevent_context *ev_ctx,
 	messaging_register(msg_ctx, NULL, MSG_REQ_PROFILELEVEL,
 			   profilelevel_rqst);
 
-	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -611,7 +612,7 @@ static bool do_debuglevel(struct tevent_context *ev_ctx,
 
 	messaging_register(msg_ctx, NULL, MSG_DEBUGLEVEL, print_pid_string_cb);
 
-	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -857,7 +858,7 @@ static bool do_poolusage(struct tevent_context *ev_ctx,
 	if (!send_message(msg_ctx, pid, MSG_REQ_POOL_USAGE, NULL, 0))
 		return False;
 
-	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -1049,7 +1050,7 @@ static bool do_winbind_onlinestatus(struct tevent_context *ev_ctx,
 			  sizeof(myid)))
 		return False;
 
-	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -1121,7 +1122,7 @@ static bool do_winbind_dump_domain_list(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
 
 	/* No replies were received within the timeout period */
 
@@ -1170,7 +1171,7 @@ static bool do_winbind_validate_cache(struct tevent_context *ev_ctx,
 		return False;
 	}
 
-	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
 
 	if (num_replies == 0) {
 		printf("No replies received\n");
