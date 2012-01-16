@@ -140,7 +140,8 @@ static void print_string_cb(struct messaging_context *msg,
 
 /* Send no message.  Useful for testing. */
 
-static bool do_noop(struct messaging_context *msg_ctx,
+static bool do_noop(struct tevent_context *ev_ctx,
+		    struct messaging_context *msg_ctx,
 		    const struct server_id pid,
 		    const int argc, const char **argv)
 {
@@ -156,7 +157,8 @@ static bool do_noop(struct messaging_context *msg_ctx,
 
 /* Send a debug string */
 
-static bool do_debug(struct messaging_context *msg_ctx,
+static bool do_debug(struct tevent_context *ev_ctx,
+		     struct messaging_context *msg_ctx,
 		     const struct server_id pid,
 		     const int argc, const char **argv)
 {
@@ -171,7 +173,8 @@ static bool do_debug(struct messaging_context *msg_ctx,
 }
 
 
-static bool do_idmap(struct messaging_context *msg_ctx,
+static bool do_idmap(struct tevent_context *ev,
+		     struct messaging_context *msg_ctx,
 		     const struct server_id pid,
 		     const int argc, const char **argv)
 {
@@ -328,9 +331,10 @@ static int stack_trace_connection(const struct connections_key *key,
 	return 0;
 }
 
-static bool do_daemon_stack_trace(struct messaging_context *msg_ctx,
+static bool do_daemon_stack_trace(struct tevent_context *ev_ctx,
+				  struct messaging_context *msg_ctx,
 				  const struct server_id pid,
-		       const int argc, const char **argv)
+				  const int argc, const char **argv)
 {
 	pid_t	dest;
 	int	count = 0;
@@ -358,9 +362,10 @@ static bool do_daemon_stack_trace(struct messaging_context *msg_ctx,
 
 #else /* defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE) */
 
-static bool do_daemon_stack_trace(struct messaging_context *msg_ctx,
+static bool do_daemon_stack_trace(struct tevent_context *ev_ctx,
+				  struct messaging_context *msg_ctx,
 				  const struct server_id pid,
-		       const int argc, const char **argv)
+				  const int argc, const char **argv)
 {
 	fprintf(stderr,
 		"Daemon stack tracing is not supported on this platform\n");
@@ -371,9 +376,10 @@ static bool do_daemon_stack_trace(struct messaging_context *msg_ctx,
 
 /* Inject a fault (fatal signal) into a running smbd */
 
-static bool do_inject_fault(struct messaging_context *msg_ctx,
+static bool do_inject_fault(struct tevent_context *ev_ctx,
+			    struct messaging_context *msg_ctx,
 			    const struct server_id pid,
-		       const int argc, const char **argv)
+			    const int argc, const char **argv)
 {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: smbcontrol <dest> inject "
@@ -413,7 +419,8 @@ static bool do_inject_fault(struct messaging_context *msg_ctx,
 
 /* Force a browser election */
 
-static bool do_election(struct messaging_context *msg_ctx,
+static bool do_election(struct tevent_context *ev_ctx,
+			struct messaging_context *msg_ctx,
 			const struct server_id pid,
 			const int argc, const char **argv)
 {
@@ -439,7 +446,8 @@ static void pong_cb(struct messaging_context *msg,
 	num_replies++;
 }
 
-static bool do_ping(struct messaging_context *msg_ctx,
+static bool do_ping(struct tevent_context *ev_ctx,
+		    struct messaging_context *msg_ctx,
 		    const struct server_id pid,
 		    const int argc, const char **argv)
 {
@@ -469,7 +477,8 @@ static bool do_ping(struct messaging_context *msg_ctx,
 
 /* Set profiling options */
 
-static bool do_profile(struct messaging_context *msg_ctx,
+static bool do_profile(struct tevent_context *ev_ctx,
+		       struct messaging_context *msg_ctx,
 		       const struct server_id pid,
 		       const int argc, const char **argv)
 {
@@ -552,7 +561,8 @@ static void profilelevel_rqst(struct messaging_context *msg_ctx,
 	send_message(msg_ctx, pid, MSG_PROFILELEVEL, &v, sizeof(int));
 }
 
-static bool do_profilelevel(struct messaging_context *msg_ctx,
+static bool do_profilelevel(struct tevent_context *ev_ctx,
+			    struct messaging_context *msg_ctx,
 			    const struct server_id pid,
 			    const int argc, const char **argv)
 {
@@ -584,7 +594,8 @@ static bool do_profilelevel(struct messaging_context *msg_ctx,
 
 /* Display debug level settings */
 
-static bool do_debuglevel(struct messaging_context *msg_ctx,
+static bool do_debuglevel(struct tevent_context *ev_ctx,
+			  struct messaging_context *msg_ctx,
 			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
@@ -614,7 +625,8 @@ static bool do_debuglevel(struct messaging_context *msg_ctx,
 
 /* Send a print notify message */
 
-static bool do_printnotify(struct messaging_context *msg_ctx,
+static bool do_printnotify(struct tevent_context *ev_ctx,
+			   struct messaging_context *msg_ctx,
 			   const struct server_id pid,
 			   const int argc, const char **argv)
 {
@@ -764,7 +776,8 @@ send:
 
 /* Close a share */
 
-static bool do_closeshare(struct messaging_context *msg_ctx,
+static bool do_closeshare(struct tevent_context *ev_ctx,
+			  struct messaging_context *msg_ctx,
 			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
@@ -780,7 +793,8 @@ static bool do_closeshare(struct messaging_context *msg_ctx,
 
 /* Tell winbindd an IP got dropped */
 
-static bool do_ip_dropped(struct messaging_context *msg_ctx,
+static bool do_ip_dropped(struct tevent_context *ev_ctx,
+			  struct messaging_context *msg_ctx,
 			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
@@ -796,7 +810,8 @@ static bool do_ip_dropped(struct messaging_context *msg_ctx,
 
 /* force a blocking lock retry */
 
-static bool do_lockretry(struct messaging_context *msg_ctx,
+static bool do_lockretry(struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
 			 const struct server_id pid,
 			 const int argc, const char **argv)
 {
@@ -810,7 +825,8 @@ static bool do_lockretry(struct messaging_context *msg_ctx,
 
 /* force a validation of all brl entries, including re-sends. */
 
-static bool do_brl_revalidate(struct messaging_context *msg_ctx,
+static bool do_brl_revalidate(struct tevent_context *ev_ctx,
+			      struct messaging_context *msg_ctx,
 			      const struct server_id pid,
 			      const int argc, const char **argv)
 {
@@ -824,7 +840,8 @@ static bool do_brl_revalidate(struct messaging_context *msg_ctx,
 
 /* Display talloc pool usage */
 
-static bool do_poolusage(struct messaging_context *msg_ctx,
+static bool do_poolusage(struct tevent_context *ev_ctx,
+			 struct messaging_context *msg_ctx,
 			 const struct server_id pid,
 			 const int argc, const char **argv)
 {
@@ -854,7 +871,8 @@ static bool do_poolusage(struct messaging_context *msg_ctx,
 
 /* Perform a dmalloc mark */
 
-static bool do_dmalloc_mark(struct messaging_context *msg_ctx,
+static bool do_dmalloc_mark(struct tevent_context *ev_ctx,
+			    struct messaging_context *msg_ctx,
 			    const struct server_id pid,
 			    const int argc, const char **argv)
 {
@@ -868,7 +886,8 @@ static bool do_dmalloc_mark(struct messaging_context *msg_ctx,
 
 /* Perform a dmalloc changed */
 
-static bool do_dmalloc_changed(struct messaging_context *msg_ctx,
+static bool do_dmalloc_changed(struct tevent_context *ev_ctx,
+			       struct messaging_context *msg_ctx,
 			       const struct server_id pid,
 			       const int argc, const char **argv)
 {
@@ -884,7 +903,8 @@ static bool do_dmalloc_changed(struct messaging_context *msg_ctx,
 
 /* Shutdown a server process */
 
-static bool do_shutdown(struct messaging_context *msg_ctx,
+static bool do_shutdown(struct tevent_context *ev_ctx,
+			struct messaging_context *msg_ctx,
 			const struct server_id pid,
 			const int argc, const char **argv)
 {
@@ -898,7 +918,8 @@ static bool do_shutdown(struct messaging_context *msg_ctx,
 
 /* Notify a driver upgrade */
 
-static bool do_drvupgrade(struct messaging_context *msg_ctx,
+static bool do_drvupgrade(struct tevent_context *ev_ctx,
+			  struct messaging_context *msg_ctx,
 			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
@@ -912,9 +933,10 @@ static bool do_drvupgrade(struct messaging_context *msg_ctx,
 			    strlen(argv[1]) + 1);
 }
 
-static bool do_winbind_online(struct messaging_context *msg_ctx,
+static bool do_winbind_online(struct tevent_context *ev_ctx,
+			      struct messaging_context *msg_ctx,
 			      const struct server_id pid,
-			     const int argc, const char **argv)
+			      const int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
 
@@ -939,9 +961,10 @@ static bool do_winbind_online(struct messaging_context *msg_ctx,
 	return send_message(msg_ctx, pid, MSG_WINBIND_ONLINE, NULL, 0);
 }
 
-static bool do_winbind_offline(struct messaging_context *msg_ctx,
+static bool do_winbind_offline(struct tevent_context *ev_ctx,
+			       struct messaging_context *msg_ctx,
 			       const struct server_id pid,
-			     const int argc, const char **argv)
+			       const int argc, const char **argv)
 {
 	TDB_CONTEXT *tdb;
 	bool ret = False;
@@ -1005,7 +1028,8 @@ static bool do_winbind_offline(struct messaging_context *msg_ctx,
 	return ret;
 }
 
-static bool do_winbind_onlinestatus(struct messaging_context *msg_ctx,
+static bool do_winbind_onlinestatus(struct tevent_context *ev_ctx,
+				    struct messaging_context *msg_ctx,
 				    const struct server_id pid,
 				    const int argc, const char **argv)
 {
@@ -1037,7 +1061,8 @@ static bool do_winbind_onlinestatus(struct messaging_context *msg_ctx,
 	return num_replies;
 }
 
-static bool do_dump_event_list(struct messaging_context *msg_ctx,
+static bool do_dump_event_list(struct tevent_context *ev_ctx,
+			       struct messaging_context *msg_ctx,
 			       const struct server_id pid,
 			       const int argc, const char **argv)
 {
@@ -1053,7 +1078,8 @@ static bool do_dump_event_list(struct messaging_context *msg_ctx,
 	return send_message(msg_ctx, pid, MSG_DUMP_EVENT_LIST, NULL, 0);
 }
 
-static bool do_winbind_dump_domain_list(struct messaging_context *msg_ctx,
+static bool do_winbind_dump_domain_list(struct tevent_context *ev_ctx,
+					struct messaging_context *msg_ctx,
 					const struct server_id pid,
 					const int argc, const char **argv)
 {
@@ -1122,7 +1148,8 @@ static void winbind_validate_cache_cb(struct messaging_context *msg,
 	num_replies++;
 }
 
-static bool do_winbind_validate_cache(struct messaging_context *msg_ctx,
+static bool do_winbind_validate_cache(struct tevent_context *ev_ctx,
+				      struct messaging_context *msg_ctx,
 				      const struct server_id pid,
 				      const int argc, const char **argv)
 {
@@ -1154,7 +1181,8 @@ static bool do_winbind_validate_cache(struct messaging_context *msg_ctx,
 	return num_replies;
 }
 
-static bool do_reload_config(struct messaging_context *msg_ctx,
+static bool do_reload_config(struct tevent_context *ev_ctx,
+			     struct messaging_context *msg_ctx,
 			     const struct server_id pid,
 			     const int argc, const char **argv)
 {
@@ -1177,7 +1205,8 @@ static void my_make_nmb_name( struct nmb_name *n, const char *name, int type)
 	push_ascii(n->scope,  lp_netbios_scope(), 64, STR_TERMINATE);
 }
 
-static bool do_nodestatus(struct messaging_context *msg_ctx,
+static bool do_nodestatus(struct tevent_context *ev_ctx,
+			  struct messaging_context *msg_ctx,
 			  const struct server_id pid,
 			  const int argc, const char **argv)
 {
@@ -1218,7 +1247,8 @@ static bool do_nodestatus(struct messaging_context *msg_ctx,
 
 static const struct {
 	const char *name;	/* Option name */
-	bool (*fn)(struct messaging_context *msg_ctx,
+	bool (*fn)(struct tevent_context *ev_ctx,
+		   struct messaging_context *msg_ctx,
 		   const struct server_id pid,
 		   const int argc, const char **argv);
 	const char *help;	/* Short help text */
@@ -1328,7 +1358,8 @@ static struct server_id parse_dest(struct messaging_context *msg,
 
 /* Execute smbcontrol command */
 
-static bool do_command(struct messaging_context *msg_ctx,
+static bool do_command(struct tevent_context *ev_ctx,
+		       struct messaging_context *msg_ctx,
 		       int argc, const char **argv)
 {
 	const char *dest = argv[0], *command = argv[1];
@@ -1346,7 +1377,7 @@ static bool do_command(struct messaging_context *msg_ctx,
 
 	for (i = 0; msg_types[i].name; i++) {
 		if (strequal(command, msg_types[i].name))
-			return msg_types[i].fn(msg_ctx, pid,
+			return msg_types[i].fn(ev_ctx, msg_ctx, pid,
 					       argc - 1, argv + 1);
 	}
 
@@ -1454,7 +1485,7 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	ret = !do_command(msg_ctx, argc, argv);
+	ret = !do_command(evt_ctx, msg_ctx, argc, argv);
 	TALLOC_FREE(frame);
 	return ret;
 }
