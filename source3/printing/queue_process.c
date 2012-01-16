@@ -44,10 +44,16 @@ static void reload_pcap_change_notify(struct tevent_context *ev,
 	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0, NULL);
 }
 
+struct printing_queue_housekeeping_state {
+	struct tevent_context *ev;
+	struct messaging_context *msg;
+};
+
 static bool print_queue_housekeeping(const struct timeval *now, void *pvt)
 {
-	struct messaging_context *msg_ctx =
-		talloc_get_type_abort(pvt, struct messaging_context);
+	struct printing_queue_housekeeping_state *state =
+		talloc_get_type_abort(pvt,
+		struct printing_queue_housekeeping_state);
 	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
 	time_t t = time_mono(NULL);
 
@@ -58,8 +64,7 @@ static bool print_queue_housekeeping(const struct timeval *now, void *pvt)
 	if ((printcap_cache_time != 0) &&
 	    (t >= (last_printer_reload_time + printcap_cache_time))) {
 		DEBUG( 3,( "Printcap cache time expired.\n"));
-		pcap_cache_reload(messaging_event_context(msg_ctx),
-				  msg_ctx,
+		pcap_cache_reload(state->ev, state->msg,
 				  &reload_pcap_change_notify);
 		last_printer_reload_time = t;
 	}
@@ -70,12 +75,22 @@ static bool print_queue_housekeeping(const struct timeval *now, void *pvt)
 static bool printing_subsystem_queue_tasks(struct tevent_context *ev_ctx,
 					   struct messaging_context *msg_ctx)
 {
+	struct printing_queue_housekeeping_state *state;
+
+	state = talloc_zero(ev_ctx, struct printing_queue_housekeeping_state);
+	if (state == NULL) {
+		DEBUG(0,("Could not talloc printing_queue_housekeeping_state\n"));
+		return false;
+	}
+	state->ev = ev_ctx;
+	state->msg = msg_ctx;
+
 	if (!(event_add_idle(ev_ctx, NULL,
 			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 			     "print_queue_housekeeping",
 			     print_queue_housekeeping,
-			     msg_ctx))) {
-		DEBUG(0, ("Could not add print_queue_housekeeping event\n"));
+			     state))) {
+		DEBUG(0,("Could not add print_queue_housekeeping event\n"));
 		return false;
 	}
 
