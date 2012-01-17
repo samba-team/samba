@@ -8923,6 +8923,84 @@ static bool upload_printer_driver(struct torture_context *tctx,
 	return true;
 }
 
+static bool check_printer_driver_file(struct torture_context *tctx,
+				      struct smbcli_state *cli,
+				      struct torture_driver_context *d,
+				      const char *file_name)
+{
+	const char *remote_arch_dir = driver_directory_dir(d->remote.driver_directory);
+	const char *remote_name = talloc_asprintf(tctx, "%s\\%d\\%s",
+						  remote_arch_dir,
+						  d->info8.version,
+						  file_name);
+	int fnum;
+
+	torture_assert(tctx, (file_name && strlen(file_name) != 0), "invalid filename");
+
+	torture_comment(tctx, "checking for driver file at %s\n", remote_name);
+
+	fnum = smbcli_open(cli->tree, remote_name, O_RDONLY, DENY_NONE);
+	if (fnum == -1) {
+		return false;
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		smbcli_close(cli->tree, fnum),
+		"failed to close driver file");
+
+	return true;
+}
+
+static bool check_printer_driver_files(struct torture_context *tctx,
+				       const char *server_name,
+				       struct torture_driver_context *d,
+				       bool expect_exist)
+{
+	struct smbcli_state *cli;
+	const char *share_name = driver_directory_share(tctx, d->remote.driver_directory);
+	int i;
+
+	torture_assert(tctx,
+		connect_printer_driver_share(tctx, server_name, share_name, &cli),
+		"failed to connect to driver share");
+
+	torture_comment(tctx, "checking %sexistent driver files at \\\\%s\\%s\n",
+			(expect_exist ? "": "non-"),
+			server_name, share_name);
+
+	if (d->info8.driver_path && d->info8.driver_path[0]) {
+		torture_assert(tctx,
+			check_printer_driver_file(tctx, cli, d, d->info8.driver_path) == expect_exist,
+			"failed driver_path check");
+	}
+	if (d->info8.data_file && d->info8.data_file[0]) {
+		torture_assert(tctx,
+			check_printer_driver_file(tctx, cli, d, d->info8.data_file) == expect_exist,
+			"failed data_file check");
+	}
+	if (d->info8.config_file && d->info8.config_file[0]) {
+		torture_assert(tctx,
+			check_printer_driver_file(tctx, cli, d, d->info8.config_file) == expect_exist,
+			"failed config_file check");
+	}
+	if (d->info8.help_file && d->info8.help_file[0]) {
+		torture_assert(tctx,
+			check_printer_driver_file(tctx, cli, d, d->info8.help_file) == expect_exist,
+			"failed help_file check");
+	}
+	if (d->info8.dependent_files) {
+		for (i=0; d->info8.dependent_files->string && d->info8.dependent_files->string[i] != NULL; i++) {
+			torture_assert(tctx,
+				check_printer_driver_file(tctx, cli, d, d->info8.dependent_files->string[i]) == expect_exist,
+				"failed dependent_files check");
+		}
+	}
+
+	talloc_free(cli);
+
+	return true;
+}
+
 static bool remove_printer_driver_file(struct torture_context *tctx,
 				       struct smbcli_state *cli,
 				       struct torture_driver_context *d,
@@ -9427,7 +9505,9 @@ static bool test_del_driver_all_files(struct torture_context *tctx,
 		test_DeletePrinterDriverEx(tctx, b, server_name_slash, d->info8.driver_name, d->local.environment, delete_flags, d->info8.version),
 		"failed to delete driver");
 
-	/* TODO check all files are removed */
+	torture_assert(tctx,
+		check_printer_driver_files(tctx, dcerpc_server_name(p), d, false),
+		"printer driver file check failed");
 
 	return true;
 }
