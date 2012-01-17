@@ -129,3 +129,30 @@ bool sid_check_is_in_builtin(const struct dom_sid *sid)
 
 	return sid_check_is_builtin(&dom_sid);
 }
+
+/********************************************************************
+ Check if the SID is one of the well-known builtin SIDs (S-1-5-32-x)
+*********************************************************************/
+
+bool sid_check_is_wellknown_builtin(const struct dom_sid *sid)
+{
+	struct dom_sid dom_sid;
+	const struct rid_name_map *aliases = builtin_aliases;
+	uint32_t rid;
+
+	sid_copy(&dom_sid, sid);
+	sid_split_rid(&dom_sid, &rid);
+
+	if (!sid_check_is_builtin(&dom_sid)) {
+		return false;
+	}
+
+	while (aliases->name != NULL) {
+		if (aliases->rid == rid) {
+			return True;
+		}
+		aliases++;
+	}
+
+	return False;
+}

@@ -559,6 +559,7 @@ bool lookup_builtin_name(const char *name, uint32 *rid);
 const char *builtin_domain_name(void);
 bool sid_check_is_builtin(const struct dom_sid *sid);
 bool sid_check_is_in_builtin(const struct dom_sid *sid);
+bool sid_check_is_wellknown_builtin(const struct dom_sid *sid);
 
 /* The following definitions come from lib/util_file.c  */
 
