@@ -261,6 +261,13 @@
 	</varlistentry>
 
 	<varlistentry>
+	<term>reload-printers</term>
+	<listitem><para>Force smbd to reload printers. Can only be sent to
+	<constant>smbd</constant>.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
 	<term>idmap</term>
 	<listitem><para>Notify about changes of id mapping. Can be sent
 	to <constant>smbd</constant> or (not implemented yet) <constant>winbindd</constant>.
