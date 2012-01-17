@@ -2173,15 +2173,17 @@ static WERROR spoolss_dpd_version(TALLOC_CTX *mem_ctx,
 	delete_files = r->in.delete_flags
 			& (DPD_DELETE_ALL_FILES | DPD_DELETE_UNUSED_FILES);
 
-	/* fail if any files are in use and DPD_DELETE_ALL_FILES is set */
 
-	if (delete_files &&
-	    (r->in.delete_flags & DPD_DELETE_ALL_FILES) &&
-	    printer_driver_files_in_use(mem_ctx,
-					b,
-					info)) {
-		status = WERR_PRINTER_DRIVER_IN_USE;
-		goto done;
+	if (delete_files) {
+		bool in_use = printer_driver_files_in_use(mem_ctx, b, info);
+		if (in_use && (r->in.delete_flags & DPD_DELETE_ALL_FILES)) {
+			status = WERR_PRINTER_DRIVER_IN_USE;
+			goto done;
+		}
+		/*
+		 * printer_driver_files_in_use() has trimmed overlapping files
+		 * from info so they are not removed on DPD_DELETE_UNUSED_FILES
+		 */
 	}
 
 
