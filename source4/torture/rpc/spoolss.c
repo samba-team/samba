@@ -50,6 +50,7 @@
 #define TORTURE_DRIVER_ADOBE_CUPSADDSMB	"torture_driver_adobe_cupsaddsmb"
 #define TORTURE_DRIVER_TIMESTAMPS	"torture_driver_timestamps"
 #define TORTURE_DRIVER_DELETER		"torture_driver_deleter"
+#define TORTURE_DRIVER_DELETERIN	"torture_driver_deleterin"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
@@ -9502,13 +9503,127 @@ static bool test_del_driver_all_files(struct torture_context *tctx,
 		"failed to add driver");
 
 	torture_assert(tctx,
-		test_DeletePrinterDriverEx(tctx, b, server_name_slash, d->info8.driver_name, d->local.environment, delete_flags, d->info8.version),
+		test_DeletePrinterDriverEx(tctx, b, server_name_slash,
+					   d->info8.driver_name,
+					   d->local.environment,
+					   delete_flags,
+					   d->info8.version),
 		"failed to delete driver");
 
 	torture_assert(tctx,
 		check_printer_driver_files(tctx, dcerpc_server_name(p), d, false),
 		"printer driver file check failed");
 
+	talloc_free(d);
+	return true;
+}
+
+static bool test_del_driver_unused_files(struct torture_context *tctx,
+					 struct dcerpc_pipe *p)
+{
+	struct torture_driver_context *d1;
+	struct torture_driver_context *d2;
+	uint32_t add_flags = APD_COPY_NEW_FILES;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
+	d1 = talloc_zero(tctx, struct torture_driver_context);
+	d1->ex				= true;
+	d1->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d1->info8.driver_name		= TORTURE_DRIVER_DELETER;
+	d1->info8.architecture		= NULL;
+	d1->info8.driver_path		= talloc_strdup(d1, "pscript5.dll");
+	d1->info8.data_file		= talloc_strdup(d1, "cups6.ppd");
+	d1->info8.config_file		= talloc_strdup(d1, "cupsui6.dll");
+	d1->info8.help_file		= talloc_strdup(d1, "pscript.hlp");
+	d1->local.environment		= talloc_strdup(d1, SPOOLSS_ARCHITECTURE_x64);
+	d1->local.driver_directory	= talloc_strdup(d1, "/usr/share/cups/drivers/x64");
+	d1->info8.architecture		= d1->local.environment;
+
+	d2 = talloc_zero(tctx, struct torture_driver_context);
+	d2->ex				= true;
+	d2->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d2->info8.driver_name		= TORTURE_DRIVER_DELETERIN;
+	d2->info8.architecture		= NULL;
+	d2->info8.driver_path		= talloc_strdup(d2, "pscript5.dll");	/* overlapping */
+	d2->info8.data_file		= talloc_strdup(d2, "cupsps6.dll");
+	d2->info8.config_file		= talloc_strdup(d2, "cups6.ini");
+	d2->info8.help_file		= talloc_strdup(d2, "pscript.hlp");	/* overlapping */
+	d2->local.environment		= talloc_strdup(d2, SPOOLSS_ARCHITECTURE_x64);
+	d2->local.driver_directory	= talloc_strdup(d2, "/usr/share/cups/drivers/x64");
+	d2->info8.architecture		= d2->local.environment;
+
+	torture_assert(tctx,
+		fillup_printserver_info(tctx, p, d1),
+		"failed to fillup printserver info");
+	torture_assert(tctx,
+		fillup_printserver_info(tctx, p, d2),
+		"failed to fillup printserver info");
+
+	if (!directory_exist(d1->local.driver_directory)) {
+		torture_skip(tctx, "Skipping Printer Driver test as no local driver is available");
+	}
+
+	torture_assert(tctx,
+		upload_printer_driver(tctx, dcerpc_server_name(p), d1),
+		"failed to upload printer driver");
+	torture_assert(tctx,
+		test_AddPrinterDriver_args_level_3(tctx, b, server_name_slash, &d1->info8, add_flags, true, NULL),
+		"failed to add driver");
+
+	torture_assert(tctx,
+		upload_printer_driver(tctx, dcerpc_server_name(p), d2),
+		"failed to upload printer driver");
+	torture_assert(tctx,
+		test_AddPrinterDriver_args_level_3(tctx, b, server_name_slash, &d2->info8, add_flags, true, NULL),
+		"failed to add driver");
+
+	/* some files are in use by a separate driver, should fail */
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx_exp(tctx, b, server_name_slash,
+					       d1->info8.driver_name,
+					       d1->local.environment,
+					       DPD_DELETE_ALL_FILES,
+					       d1->info8.version,
+					       WERR_PRINTER_DRIVER_IN_USE),
+		"invalid delete driver response");
+
+	/* should only delete files not in use by other driver */
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx_exp(tctx, b, server_name_slash,
+					       d1->info8.driver_name,
+					       d1->local.environment,
+					       DPD_DELETE_UNUSED_FILES,
+					       d1->info8.version,
+					       WERR_OK),
+		"failed to delete driver (unused files)");
+
+	/* check non-overlapping were deleted */
+	d1->info8.driver_path = NULL;
+	d1->info8.help_file = NULL;
+	torture_assert(tctx,
+		check_printer_driver_files(tctx, dcerpc_server_name(p), d1, false),
+		"printer driver file check failed");
+	/* d2 files should be uneffected */
+	torture_assert(tctx,
+		check_printer_driver_files(tctx, dcerpc_server_name(p), d2, true),
+		"printer driver file check failed");
+
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx_exp(tctx, b, server_name_slash,
+					       d2->info8.driver_name,
+					       d2->local.environment,
+					       DPD_DELETE_ALL_FILES,
+					       d2->info8.version,
+					       WERR_OK),
+		"failed to delete driver");
+
+	torture_assert(tctx,
+		check_printer_driver_files(tctx, dcerpc_server_name(p), d2, false),
+		"printer driver file check failed");
+
+	talloc_free(d1);
+	talloc_free(d2);
 	return true;
 }
 
@@ -9533,6 +9648,8 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "multiple_drivers", test_multiple_drivers);
 
 	torture_rpc_tcase_add_test(tcase, "del_driver_all_files", test_del_driver_all_files);
+
+	torture_rpc_tcase_add_test(tcase, "del_driver_unused_files", test_del_driver_unused_files);
 
 	return suite;
 }
