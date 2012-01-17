@@ -136,6 +136,13 @@ dynconfig = {
          'STD-PATH':  '${DATADIR}/codepages',
          'FHS-PATH':  '${DATADIR}/samba/codepages',
     },
+    'PRIVATELIBDIR' : {
+         'STD-PATH':  '${LIBDIR}/private',
+         'FHS-PATH':  '${LIBDIR}/samba',
+         'OPTION':    '--with-privatelibdir',
+         'HELPTEXT':  'Which directory to use for private Samba libraries',
+         'OVERWRITE': True,
+    },
     'MODULESDIR' : {
          'STD-PATH':  '${LIBDIR}',
          'FHS-PATH':  '${LIBDIR}/samba',
@@ -249,7 +256,7 @@ def set_options(opt):
     opt.parser.formatter = SambaIndentedHelpFormatter()
     opt.parser.formatter.width=Utils.get_term_cols()
 
-    for k in ('--with-modulesdir'):
+    for k in ('--with-privatelibdir', '--with-modulesdir'):
         option = opt.parser.get_option(k)
         if option:
             opt.parser.remove_option(k)
