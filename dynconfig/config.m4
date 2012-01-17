@@ -4,10 +4,6 @@
 # ones...
 AC_PREFIX_DEFAULT(/usr/local/samba)
 
-test x"${modulesdir}" = x"" && {
-    modulesdir="\${exec_prefix}/modules"
-}
-
 BINDIR="${bindir}"
 SBINDIR="${sbindir}"
 LIBDIR="${libdir}"
@@ -23,7 +19,7 @@ AC_ARG_ENABLE(fhs,
 [AS_HELP_STRING([--enable-fhs], [Turn on FHS support (default=no)])])
 
 if test x$enable_fhs != xyes; then
-	MODULESDIR="${modulesdir}"
+	MODULESDIR="${libdir}"
 	INCLUDEDIR="${includedir}"
 	SETUPDIR="${datadir}/setup"
 	PKGCONFIGDIR="${libdir}/pkgconfig"
@@ -42,7 +38,7 @@ if test x$enable_fhs != xyes; then
 else
 	AC_DEFINE(FHS_COMPATIBLE, 1, [Whether to use fully FHS-compatible paths])
 
-	MODULESDIR="${modulesdir}/samba"
+	MODULESDIR="${libdir}/samba"
 	INCLUDEDIR="${includedir}/samba-4.0"
 	SETUPDIR="${datadir}/samba/setup"
 	PKGCONFIGDIR="${libdir}/pkgconfig"
@@ -59,6 +55,21 @@ else
 	SOCKET_DIR="\${localstatedir}/run/samba"
 	PRIVILEGED_SOCKET_DIR="\${localstatedir}/lib/samba"
 fi
+
+AC_ARG_WITH(modulesdir,
+[AS_HELP_STRING([--with-modulesdir=DIR],
+ [Which directory to use for modules ($exec_prefix/modules)])],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-modulesdir called without argument - will use default])
+  ;;
+  * )
+    MODULESDIR="$withval"
+  ;;
+  esac])
 
 AC_ARG_WITH(pammodulesdir,
 [AS_HELP_STRING([--with-pammodulesdir=DIR],

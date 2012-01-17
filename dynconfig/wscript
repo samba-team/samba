@@ -111,11 +111,6 @@ dynconfig = {
          'FHS-PATH':  '${PYTHONARCHDIR}',
          'OVERWRITE': True,
     },
-    'MODULESDIR' : {
-         'STD-PATH':  '${MODULESDIR}',
-         'FHS-PATH':  '${MODULESDIR}/samba',
-         'OVERWRITE': True,
-    },
     'INCLUDEDIR' : {
          'STD-PATH':  '${INCLUDEDIR}',
          'FHS-PATH':  '${INCLUDEDIR}/samba-4.0',
@@ -140,6 +135,13 @@ dynconfig = {
     'CODEPAGEDIR' : {
          'STD-PATH':  '${DATADIR}/codepages',
          'FHS-PATH':  '${DATADIR}/samba/codepages',
+    },
+    'MODULESDIR' : {
+         'STD-PATH':  '${LIBDIR}',
+         'FHS-PATH':  '${LIBDIR}/samba',
+         'OPTION':    '--with-modulesdir',
+         'HELPTEXT':  'Which directory to use for Samba modules',
+         'OVERWRITE': True,
     },
     'PAMMODULESDIR' : {
          'STD-PATH':  '${LIBDIR}/security',
@@ -246,6 +248,11 @@ dynconfig = {
 def set_options(opt):
     opt.parser.formatter = SambaIndentedHelpFormatter()
     opt.parser.formatter.width=Utils.get_term_cols()
+
+    for k in ('--with-modulesdir'):
+        option = opt.parser.get_option(k)
+        if option:
+            opt.parser.remove_option(k)
 
     # get all the basic GNU options from the gnu_dirs tool
 
