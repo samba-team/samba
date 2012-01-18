@@ -736,13 +736,13 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
   connecting user if appropriate.
 ****************************************************************************/
 
-connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
+static connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
+					connection_struct *conn,
 					int snum, user_struct *vuser,
 					DATA_BLOB password,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
-	connection_struct *conn = NULL;
 	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
@@ -756,13 +756,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	*pstatus = share_sanity_checks(&sconn->client_id, snum, dev);
 	if (NT_STATUS_IS_ERR(*pstatus)) {
-		goto err_root_exit;
-	}
-
-	conn = conn_new(sconn);
-	if (!conn) {
-		DEBUG(0,("Couldn't find free connection.\n"));
-		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		goto err_root_exit;
 	}
 
@@ -815,7 +808,6 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	status = set_conn_force_user_group(conn, snum);
 	if (!NT_STATUS_IS_OK(status)) {
-		conn_free(conn);
 		*pstatus = status;
 		return NULL;
 	}
@@ -1112,14 +1104,76 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (claimed_connection) {
 		yield_connection(conn, lp_servicename(snum));
 	}
-	if (conn) {
-		conn_free(conn);
-	}
 	return NULL;
 }
 
 /****************************************************************************
- Make a connection to a service.
+ Make a connection to a service from SMB1. Internal interface.
+****************************************************************************/
+
+static connection_struct *make_connection_smb1(struct smbd_server_connection *sconn,
+					int snum, user_struct *vuser,
+					DATA_BLOB password,
+					const char *pdev,
+					NTSTATUS *pstatus)
+{
+	connection_struct *ret_conn = NULL;
+	connection_struct *conn = conn_new(sconn);
+	if (!conn) {
+		DEBUG(0,("make_connection_smb1: Couldn't find free connection.\n"));
+		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
+		return NULL;
+	}
+	ret_conn = make_connection_snum(sconn,
+					conn,
+					snum,
+					vuser,
+                                        password,
+					pdev,
+					pstatus);
+	if (ret_conn != conn) {
+		conn_free(conn);
+		return NULL;
+	}
+	return conn;
+}
+
+/****************************************************************************
+ Make a connection to a service from SMB2. External SMB2 interface.
+ We must set cnum before claiming connection.
+****************************************************************************/
+
+connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
+					struct smbd_smb2_tcon *tcon,
+					user_struct *vuser,
+					DATA_BLOB password,
+					const char *pdev,
+					NTSTATUS *pstatus)
+{
+	connection_struct *ret_conn = NULL;
+	connection_struct *conn = conn_new(sconn);
+	if (!conn) {
+		DEBUG(0,("make_connection_smb2: Couldn't find free connection.\n"));
+		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
+		return NULL;
+	}
+	conn->cnum = tcon->tid;
+	ret_conn = make_connection_snum(sconn,
+					conn,
+					tcon->snum,
+					vuser,
+                                        password,
+					pdev,
+					pstatus);
+	if (ret_conn != conn) {
+		conn_free(conn);
+		return NULL;
+	}
+	return conn;
+}
+
+/****************************************************************************
+ Make a connection to a service. External SMB1 interface.
  *
  * @param service 
 ****************************************************************************/
@@ -1182,7 +1236,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 			}
 			DEBUG(5, ("making a connection to [homes] service "
 				  "created at session setup time\n"));
-			return make_connection_snum(sconn,
+			return make_connection_smb1(sconn,
 						    vuser->homes_snum,
 						    vuser, no_pw, 
 						    dev, status);
@@ -1206,7 +1260,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 				DEBUG(5, ("making a connection to 'homes' "
 					  "service %s based on "
 					  "security=share\n", service_in));
-				return make_connection_snum(sconn,
+				return make_connection_smb1(sconn,
 							    snum, NULL,
 							    password,
 							    dev, status);
@@ -1218,7 +1272,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 		DATA_BLOB no_pw = data_blob_null;
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
-		return make_connection_snum(sconn,
+		return make_connection_smb1(sconn,
 					    vuser->homes_snum,
 					    vuser, no_pw, 
 					    dev, status);
@@ -1266,7 +1320,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 
 	DEBUG(5, ("making a connection to 'normal' service %s\n", service));
 
-	return make_connection_snum(sconn, snum, vuser,
+	return make_connection_smb1(sconn, snum, vuser,
 				    password,
 				    dev, status);
 }
