@@ -4469,7 +4469,7 @@ int ctdb_ctrl_get_db_priority(struct ctdb_context *ctdb, struct timeval timeout,
 			   CTDB_CONTROL_GET_DB_PRIORITY, 0, data,
 			   tmp_ctx, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res < 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set_db_priority failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get_db_priority failed\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
