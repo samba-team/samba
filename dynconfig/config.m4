@@ -19,6 +19,10 @@ AC_ARG_ENABLE(fhs,
 [AS_HELP_STRING([--enable-fhs], [Turn on FHS support (default=no)])])
 
 if test x$enable_fhs != xyes; then
+	if test x"$prefix" = x"/usr" -o x"$prefix" = x"/usr/local"; then
+		AC_MSG_WARN([Don't install directly under /usr or /usr/local without using the FHS option (--enable-fhs)])
+		AC_MSG_ERROR([invalid --prefix=$prefix])
+	fi
 	MODULESDIR="${libdir}"
 	INCLUDEDIR="${includedir}"
 	SETUPDIR="${datadir}/setup"
