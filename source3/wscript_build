@@ -802,7 +802,25 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
-                   deps='samba3util LIBTSOCKET LIBCRYPTO NDR_MESSAGING LIBASYNC_REQ tdb-wrap3 UTIL_TDB UTIL_PW SAMBA_VERSION KRB5_WRAP flag_mapping util_reg PTHREADPOOL interfaces cap string_init param util_str CHARSET3 namearray dbwrap util_sec util_malloc memcache ccan errors3 samba-modules',
+                   deps='''
+                        samba3util
+                        LIBTSOCKET
+                        NDR_MESSAGING
+                        LIBASYNC_REQ
+                        tdb-wrap3
+                        UTIL_TDB
+                        UTIL_PW
+                        SAMBA_VERSION
+                        PTHREADPOOL
+                        interfaces
+                        param
+                        util_str
+                        dbwrap
+                        util_sec
+                        util_malloc
+                        memcache
+                        ccan
+                        errors3''',
                    vars=locals())
 
 bld.SAMBA3_LIBRARY('smbd_shim',
