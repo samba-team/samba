@@ -876,9 +876,21 @@ bld.SAMBA3_SUBSYSTEM('LIBAFS_SETTOKEN',
 
 bld.SAMBA3_LIBRARY('smbconf',
                    source=LIB_SMBCONF_SRC,
-                   deps='''LIBSMBCONF smbregistry REG_SMBCONF talloc param
-                   util_reg samba-util errors3 charset SAMBA_VERSION
-                   cli_smb_common''',
+                   deps='''
+                   CHARSET3
+                   LIBSMBCONF
+                   REG_SMBCONF
+                   SAMBA_VERSION
+                   cap
+                   charset
+                   cli_smb_common
+                   errors3
+                   param
+                   samba-util
+                   smbregistry
+                   string_init
+                   talloc
+                   util_reg''',
                    public_headers='../lib/smbconf/smbconf.h',
                    pc_files=[],
                    vnum='0')
