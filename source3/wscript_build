@@ -676,8 +676,7 @@ bld.SAMBA3_LIBRARY('smbsharemodes',
 
 bld.SAMBA3_LIBRARY('nss_wins',
                   source=WINBIND_WINS_NSS_SRC,
-                  deps='''winbind-client param libsmb smbd_shim LIBTSOCKET KRBCLIENT
-                  cap wbclient''',
+                  deps='''param libsmb LIBTSOCKET''',
                   realname='libnss_wins.so.2',
                   vnum='2')
 
