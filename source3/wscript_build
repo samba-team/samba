@@ -724,8 +724,7 @@ bld.SAMBA3_LIBRARY('pdb',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
-                    source=PARAM_UTIL_SRC,
-                    deps='samba-util')
+                    source=PARAM_UTIL_SRC)
 
 bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
                      source='param/loadparm_ctx.c',
