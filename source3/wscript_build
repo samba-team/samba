@@ -644,7 +644,7 @@ bld.SETUP_BUILD_GROUPS()
 bld.SAMBA3_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb_compat libsmb KRBCLIENT
-                    pdb param samba-util LIBMSRPC_GEN msrpc3 ads LIBNET DCUTIL NDR_LIBNETAPI
+                    pdb param samba-util ndr-standard msrpc3 ads LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL smbconf REG_SMBCONF
                     LIBCLI_SAMR libcli_lsa3 libcli_netlogon3
                     RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
@@ -657,7 +657,7 @@ bld.SAMBA3_LIBRARY('netapi',
 bld.SAMBA3_LIBRARY('smbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb_compat param libsmb KRBCLIENT pdb
-                    LIBMSRPC_GEN msrpc3 libcli_lsa3 RPC_NDR_SRVSVC popt_samba3''',
+                    ndr-standard msrpc3 libcli_lsa3 RPC_NDR_SRVSVC popt_samba3''',
                     public_headers='include/libsmbclient.h',
                     abi_directory='libsmb/ABI',
                     abi_match='smbc_*',
@@ -693,11 +693,6 @@ bld.SAMBA3_LIBRARY('msrpc3',
                     libsmb''',
                    vars=locals(),
                    private_library=True)
-
-bld.SAMBA3_SUBSYSTEM('LIBMSRPC_GEN',
-                    source='',
-                    deps='''ndr-standard NDR_DSSETUP NDR_SPOOLSS''',
-                    vars=locals())
 
 bld.SAMBA3_LIBRARY('gpo',
                    source='${LIBGPO_SRC}',
@@ -899,7 +894,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     deps='''tdb_compat tevent dl krb5 ldap gssapi gssapi_krb5
                     samba-util wbclient crypt nsl cups cap z pdb
                     param samba3core libsmb popt_samba3 KRBCLIENT AVAHI
-                    LIBMSRPC_GEN msrpc3 ads LIBADS_SERVER LIBADS_PRINTER
+                    ndr-standard msrpc3 ads LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     smbconf REG_FULL FNAME_UTIL
@@ -1145,7 +1140,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb_compat tevent cap dl z
                  wbclient pdb ldap param smbd_shim libsmb
-                 popt_samba3 KRBCLIENT LIBMSRPC_GEN msrpc3 ads LIBADS_SERVER
+                 popt_samba3 KRBCLIENT ndr-standard msrpc3 ads LIBADS_SERVER
                  SRV_NDR_WBINT RPC_NDR_WBINT NDR_WBINT LIBAFS
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
@@ -1162,7 +1157,7 @@ bld.SAMBA3_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent cap samba3core libsmb wbclient param
                  smbd_shim pdb popt_samba3 KRBCLIENT cups
-                 LIBMSRPC_GEN msrpc3 LOCKING PLAINTEXT_AUTH PRINTBASE PRINTING FNAME_UTIL
+                 ndr-standard msrpc3 LOCKING PLAINTEXT_AUTH PRINTBASE PRINTING FNAME_UTIL
                  LIBCLI_SAMR INIT_LSA PASSCHANGE''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
@@ -1171,7 +1166,7 @@ bld.SAMBA3_BINARY('web/swat',
 bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb_compat cap popt_samba3 pdb libsmb smbd_shim
-                 param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3
+                 param wbclient param KRBCLIENT ndr-standard msrpc3
                  SMBREADLINE trusts_util RPC_NDR_WINREG RPC_NDR_ECHO
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
@@ -1184,7 +1179,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
 bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
                  source=CLIENT_SRC,
                  deps='''talloc tdb_compat cap popt_samba3 pdb libsmb smbd_shim
-                 param wbclient param KRBCLIENT LIBMSRPC_GEN
+                 param wbclient param KRBCLIENT ndr-standard
                  msrpc3 SMBREADLINE smbclient RPC_NDR_SRVSVC INIT_LSA
                  cli_smb_common''',
                  vars=locals())
@@ -1192,7 +1187,7 @@ bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
 bld.SAMBA3_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb_compat netapi addns cap intl popt_samba3 pdb libsmb smbd_shim
-                 param wbclient param KRBCLIENT LIBMSRPC_GEN msrpc3 gpo ads LIBADS_SERVER LIBADS_PRINTER
+                 param wbclient param KRBCLIENT ndr-standard msrpc3 gpo ads LIBADS_SERVER LIBADS_PRINTER
                  LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPC_NDR_WINREG
@@ -1242,14 +1237,14 @@ bld.SAMBA3_BINARY('smbcontrol',
 bld.SAMBA3_BINARY('smbtree',
                  source=SMBTREE_SRC,
                  deps='''talloc tdb_compat tevent cap wbclient param smbd_shim
-                 libsmb LIBSMB_ERR popt_samba3 KRBCLIENT pdb LIBMSRPC_GEN msrpc3 PROFILE
+                 libsmb LIBSMB_ERR popt_samba3 KRBCLIENT pdb ndr-standard msrpc3 PROFILE
                  RPC_NDR_SRVSVC''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbpasswd',
                  source=SMBPASSWD_SRC,
                  deps='''talloc tdb_compat tevent cap wbclient param smbd_shim
-                 libsmb LIBSMB_ERR popt_samba3 KRBCLIENT pdb LIBMSRPC_GEN msrpc3 PASSWD_UTIL
+                 libsmb LIBSMB_ERR popt_samba3 KRBCLIENT pdb ndr-standard msrpc3 PASSWD_UTIL
                  LIBCLI_SAMR INIT_LSA PASSCHANGE''',
                  vars=locals())
 
@@ -1273,7 +1268,7 @@ bld.SAMBA3_BINARY('nmblookup' + bld.env.suffix3,
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source=SMBTORTURE_SRC,
                  deps='''talloc tdb_compat tevent cap wbclient param libsmb KRBCLIENT TLDAP
-                 smbd_shim popt_samba3 asn1util LIBTSOCKET NDR_LSA msrpc3 LIBMSRPC_GEN RPC_NDR_ECHO WB_REQTRANS libcli_lsa3''',
+                 smbd_shim popt_samba3 asn1util LIBTSOCKET NDR_LSA msrpc3 ndr-standard RPC_NDR_ECHO WB_REQTRANS libcli_lsa3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbconftort',
@@ -1300,14 +1295,14 @@ bld.SAMBA3_BINARY('msgtest',
 bld.SAMBA3_BINARY('smbcacls',
                  source=SMBCACLS_SRC,
                  deps='''talloc tdb_compat cap wbclient param libsmb KRBCLIENT
-                 smbd_shim pdb popt_samba3 LIBMSRPC_GEN
+                 smbd_shim pdb popt_samba3 ndr-standard
                  msrpc3 libcli_lsa3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbcquotas',
                  source=SMBCQUOTAS_SRC,
                  deps='''talloc tdb_compat cap wbclient param  smbd_shim libsmb KRBCLIENT
-                 popt_samba3 pdb LIBMSRPC_GEN msrpc3
+                 popt_samba3 pdb ndr-standard msrpc3
                  libcli_lsa3''',
                  vars=locals())
 
@@ -1381,7 +1376,7 @@ bld.SAMBA3_BINARY('timelimit',
 bld.SAMBA3_BINARY('rpc_open_tcp',
                  source=RPC_OPEN_TCP_SRC,
                  deps='''talloc tdb_compat tevent cap wbclient KRBCLIENT param samba3core libsmb smbd_shim
-                 LIBSMB_ERR asn1util LIBTSOCKET LIBMSRPC_GEN msrpc3''',
+                 LIBSMB_ERR asn1util LIBTSOCKET ndr-standard msrpc3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('test_lp_load',
