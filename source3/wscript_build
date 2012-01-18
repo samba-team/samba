@@ -748,7 +748,7 @@ bld.SAMBA3_PYTHON('pys3param',
     
 bld.SAMBA3_SUBSYSTEM('param_service',
                      source='param/service.c',
-                     deps = 'USER_UTIL param USER_UTIL PRINTING')
+                     deps = 'USER_UTIL param PRINTING')
 
 bld.SAMBA3_SUBSYSTEM('REGFIO',
                     source=REGFIO_SRC,
