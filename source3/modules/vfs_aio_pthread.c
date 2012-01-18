@@ -61,10 +61,8 @@ static void aio_pthread_handle_completion(struct event_context *event_ctx,
 
 static int aio_get_num_threads(struct vfs_handle_struct *handle)
 {
-	return lp_parm_bool(SNUM(handle->conn),
-				"aio_pthread",
-				"aio num threads",
-				100);
+	return lp_parm_int(SNUM(handle->conn),
+			   "aio_pthread", "aio num threads", 100);
 }
 
 /************************************************************************
