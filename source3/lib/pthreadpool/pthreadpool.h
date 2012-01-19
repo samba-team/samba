@@ -75,7 +75,7 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 /**
  * @brief Get the signalling fd from a pthreadpool
  *
- * Completion of a job is indicated by readability of the fd retuned
+ * Completion of a job is indicated by readability of the fd returned
  * by pthreadpool_signal_fd().
  *
  * @param[in]	pool		The pool in question
