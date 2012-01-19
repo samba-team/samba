@@ -25,10 +25,6 @@ SERVER_MUTEX_SRC = 'lib/server_mutex.c'
 
 PASSCHANGE_SRC = '''libsmb/passchange.c'''
 
-COMPRESSION_SRC = '../lib/compression/mszip.c'
-
-DRSUAPI_SRC = '''${COMPRESSION_SRC}'''
-
 LIBCLI_SPOOLSS_SRC = '''rpc_client/cli_spoolss.c
                      rpc_client/init_spoolss.c'''
 
@@ -841,11 +837,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                    deps='LIBNTLMSSP auth_generic CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT cli_smb_common util_cmdline tevent',
                    vars=locals(),
                    private_library=True)
-
-bld.SAMBA3_SUBSYSTEM('LIBDRSUAPI',
-                    source=DRSUAPI_SRC,
-                    deps='z LZXPRESS NDR_DRSUAPI NDR_DRSBLOBS',
-                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('CLDAP',
                     source='libads/cldap.c',

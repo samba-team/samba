@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "talloc.h"
-#include "mszip.h"
 #include "lzxpress.h"
 
 /*

@@ -291,9 +291,8 @@ LIBNDR_DRSUAPI_OBJ = ../librpc/ndr/ndr_drsuapi.o \
 
 ZLIB_OBJ = @ZLIB_OBJS@
 
-COMPRESSION_OBJ = ../lib/compression/mszip.o \
-				  ../lib/compression/lzxpress.o \
-				  $(ZLIB_OBJ)
+COMPRESSION_OBJ = ../lib/compression/lzxpress.o \
+		  $(ZLIB_OBJ)
 
 DRSUAPI_OBJ = $(LIBNDR_DRSUAPI_OBJ) \
 	      $(COMPRESSION_OBJ)
