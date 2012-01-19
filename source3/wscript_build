@@ -839,7 +839,17 @@ bld.SAMBA3_SUBSYSTEM('auth_generic',
 
 bld.SAMBA3_LIBRARY('libsmb',
                    source=LIBSMB_SRC,
-                   deps='LIBNTLMSSP auth_generic CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT cli_smb_common util_cmdline tevent',
+                   deps='''
+                   LIBNTLMSSP
+                   auth_generic
+                   CLDAP
+                   LIBNMB
+                   SPNEGO_PARSE
+                   LIBTSOCKET
+                   KRBCLIENT
+                   cli_smb_common
+                   util_cmdline
+                   tevent''',
                    vars=locals(),
                    private_library=True)
 
