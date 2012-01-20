@@ -151,6 +151,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		gensec_gssapi_state->gss_want_flags |= GSS_C_INTEG_FLAG;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+		gensec_gssapi_state->gss_want_flags |= GSS_C_INTEG_FLAG;
 		gensec_gssapi_state->gss_want_flags |= GSS_C_CONF_FLAG;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE) {
