@@ -1026,7 +1026,7 @@ bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
                     source=LIBNET_SRC,
-                    deps='NDR_LIBNET_JOIN KRB5_WRAP net_keytab',
+                    deps='NDR_LIBNET_JOIN net_keytab',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('net_keytab',
