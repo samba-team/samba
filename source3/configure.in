@@ -3844,7 +3844,6 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$have_gssapi" != x"yes"; then
      AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS,gss_display_status,[],[],have_gssapi=yes)
      AC_CHECK_LIB_EXT(gss, KRB5_LIBS,gss_display_status,[],[],have_gssapi=yes)
-     AC_CHECK_FUNC_EXT(gss_wrap_iov, $KRB5_LIBS)
   fi
   ################################################################
   # test for AD / GSSAPI support being enabled
@@ -3905,6 +3904,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(gss_mech_krb5, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_oid_equal, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_inquire_sec_context_by_oid, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(gss_wrap_iov, $KRB5_LIBS)
 
   # This is for FreeBSD (and possibly others). gss_mech_krb5 is a
   # #define to GSS_KRB5_MECHANISM, which is defined in -lgssapi_krb5
