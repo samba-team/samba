@@ -1038,7 +1038,7 @@ bld.SAMBA3_LIBRARY('net_keytab',
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                     source=LIBNET_DSSYNC_SRC,
-                    deps='LIBNET LIBCLI_DRSUAPI tdb-wrap3',
+                    deps='LIBNET RPC_NDR_DRSUAPI',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
@@ -1270,7 +1270,7 @@ bld.SAMBA3_BINARY('net',
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
                  LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
                  RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
-                 RPC_NDR_INITSHUTDOWN RPC_NDR_DRSUAPI INIT_SAMR
+                 RPC_NDR_INITSHUTDOWN INIT_SAMR
                  printing_migrate trusts_util
 		 ''',
                  vars=locals())
