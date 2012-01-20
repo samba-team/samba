@@ -169,8 +169,8 @@ out:
 #define SRV_MEM_KEYTAB_NAME "MEMORY:cifs_srv_keytab"
 #define CLEARTEXT_PRIV_ENCTYPE -99
 
-static krb5_error_code get_mem_keytab_from_secrets(krb5_context krbctx,
-						   krb5_keytab *keytab)
+static krb5_error_code fill_mem_keytab_from_secrets(krb5_context krbctx,
+						    krb5_keytab *keytab)
 {
 	krb5_error_code ret;
 	char *pwd = NULL;
@@ -193,16 +193,6 @@ static krb5_error_code get_mem_keytab_from_secrets(krb5_context krbctx,
 		return KRB5_LIBOS_CANTREADPWD;
 	}
 	pwd_len = strlen(pwd);
-
-	if (*keytab == NULL) {
-		/* create memory keytab */
-		ret = krb5_kt_resolve(krbctx, SRV_MEM_KEYTAB_NAME, keytab);
-		if (ret) {
-			DEBUG(1, (__location__ ": Failed to get memory "
-				  "keytab!\n"));
-			return ret;
-		}
-	}
 
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(kt_cursor);
@@ -331,19 +321,12 @@ out:
 		krb5_free_principal(krbctx, princ);
 	}
 
-	if (ret) {
-		if (*keytab) {
-			krb5_kt_close(krbctx, *keytab);
-			*keytab = NULL;
-		}
-	}
-
 	return ret;
 }
 
-static krb5_error_code get_mem_keytab_from_system_keytab(krb5_context krbctx,
-							 krb5_keytab *keytab,
-							 bool verify)
+static krb5_error_code fill_mem_keytab_from_system_keytab(krb5_context krbctx,
+							  krb5_keytab *keytab,
+							  bool verify)
 {
 	return KRB5_KT_NOTFOUND;
 }
@@ -357,26 +340,34 @@ krb5_error_code gse_krb5_get_server_keytab(krb5_context krbctx,
 
 	*keytab = NULL;
 
+	/* create memory keytab */
+	ret = krb5_kt_resolve(krbctx, SRV_MEM_KEYTAB_NAME, keytab);
+	if (ret) {
+		DEBUG(1, (__location__ ": Failed to get memory "
+			  "keytab!\n"));
+		return ret;
+	}
+
 	switch (lp_kerberos_method()) {
 	default:
 	case KERBEROS_VERIFY_SECRETS:
-		ret = get_mem_keytab_from_secrets(krbctx, keytab);
+		ret = fill_mem_keytab_from_secrets(krbctx, keytab);
 		break;
 	case KERBEROS_VERIFY_SYSTEM_KEYTAB:
-		ret = get_mem_keytab_from_system_keytab(krbctx, keytab, true);
+		ret = fill_mem_keytab_from_system_keytab(krbctx, keytab, true);
 		break;
 	case KERBEROS_VERIFY_DEDICATED_KEYTAB:
 		/* just use whatever keytab is configured */
-		ret = get_mem_keytab_from_system_keytab(krbctx, keytab, false);
+		ret = fill_mem_keytab_from_system_keytab(krbctx, keytab, false);
 		break;
 	case KERBEROS_VERIFY_SECRETS_AND_KEYTAB:
-		ret1 = get_mem_keytab_from_secrets(krbctx, keytab);
+		ret1 = fill_mem_keytab_from_secrets(krbctx, keytab);
 		if (ret1) {
 			DEBUG(3, (__location__ ": Warning! Unable to set mem "
 				  "keytab from secrets!\n"));
 		}
 		/* Now append system keytab keys too */
-		ret2 = get_mem_keytab_from_system_keytab(krbctx, keytab, true);
+		ret2 = fill_mem_keytab_from_system_keytab(krbctx, keytab, true);
 		if (ret2) {
 			DEBUG(3, (__location__ ": Warning! Unable to set mem "
 				  "keytab from system keytab!\n"));
@@ -387,6 +378,13 @@ krb5_error_code gse_krb5_get_server_keytab(krb5_context krbctx,
 			ret = ret1;
 		}
 		break;
+	}
+
+	if (ret) {
+		krb5_kt_close(krbctx, *keytab);
+		*keytab = NULL;
+		DEBUG(1,("%s: Error! Unable to set mem keytab - %d\n",
+			 __location__, ret));
 	}
 
 	return ret;
