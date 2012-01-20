@@ -925,18 +925,60 @@ bld.SAMBA3_LIBRARY('smbd_conn',
 
 bld.SAMBA3_LIBRARY('smbd_base',
                     source=SMBD_SRC_BASE,
-                    deps='''tdb_compat tevent dl krb5 ldap gssapi gssapi_krb5
-                    samba-util wbclient crypt nsl cups cap z pdb
-                    param samba3core libsmb popt_samba3 KRBCLIENT AVAHI
-                    ndr-standard msrpc3 ads LIBADS_SERVER LIBADS_PRINTER
-                    vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
-                    PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
-                    smbconf REG_FULL FNAME_UTIL
+                    deps='''
+                    tevent
+                    dl
+                    krb5
+                    ldap
+                    gssapi
+                    gssapi_krb5
+                    samba-util
+                    wbclient
+                    crypt
+                    nsl
+                    cups
+                    cap
+                    z
+                    pdb
+                    param
+                    samba3core
+                    libsmb
+                    popt_samba3
+                    KRBCLIENT
+                    AVAHI
+                    ndr-standard
+                    msrpc3
+                    ads
+                    LIBADS_SERVER
+                    LIBADS_PRINTER
+                    vfs
+                    vfs_default
+                    vfs_posixacl
+                    auth
+                    LOCKING
+                    LIBAFS
+                    LIBAFS_SETTOKEN
+                    PROFILE
+                    PRINTING
+                    PRINTBACKEND
+                    NDR_XATTR
+                    NDR_NOTIFY
+                    REGFIO
+                    smbconf
+                    REG_FULL
+                    FNAME_UTIL
                     NDR_OPEN_FILES
-                    LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
-                    RPC_NDR_SRVSVC npa_tstream INIT_SAMR
-                    cli_smb_common RPC_SERVER smbd_conn param_service
-                    smbd_shim NDR_DFSBLOBS
+                    libcli_lsa3
+                    cli_spoolss
+                    RPC_NDR_SRVSVC
+                    npa_tstream
+                    INIT_SAMR
+                    cli_smb_common
+                    RPC_SERVER
+                    smbd_conn
+                    param_service
+                    smbd_shim
+                    NDR_DFSBLOBS
                     ''',
                     private_library=True,
                     vars=locals())
