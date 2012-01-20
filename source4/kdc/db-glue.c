@@ -1363,7 +1363,6 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 
 	} else {
 		int lret;
-		char *filter = NULL;
 		char *short_princ;
 		const char *realm;
 		/* server as client principal case, but we must not lookup userPrincipalNames */
@@ -1386,16 +1385,18 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 				       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
 				       "(&(objectClass=user)(samAccountName=%s))",
 				       ldb_binary_encode_string(mem_ctx, short_princ));
-		free(short_princ);
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
-			DEBUG(3, ("Failed find a entry for %s\n", filter));
+			DEBUG(3, ("Failed to find an entry for %s\n", short_princ));
+			free(short_princ);
 			return HDB_ERR_NOENTRY;
 		}
 		if (lret != LDB_SUCCESS) {
-			DEBUG(3, ("Failed single search for for %s - %s\n",
-				  filter, ldb_errstring(kdc_db_ctx->samdb)));
+			DEBUG(3, ("Failed single search for %s - %s\n",
+				  short_princ, ldb_errstring(kdc_db_ctx->samdb)));
+			free(short_princ);
 			return HDB_ERR_NOENTRY;
 		}
+		free(short_princ);
 	}
 
 	return 0;
