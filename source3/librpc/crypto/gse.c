@@ -189,6 +189,7 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 		gse_ctx->gss_want_flags |= GSS_C_INTEG_FLAG;
 	}
 	if (do_seal) {
+		gse_ctx->gss_want_flags |= GSS_C_INTEG_FLAG;
 		gse_ctx->gss_want_flags |= GSS_C_CONF_FLAG;
 	}
 
@@ -546,6 +547,11 @@ static NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
 	/* GSS_C_CONF_FLAG */
 	if (gse_ctx->gss_want_flags & GSS_C_CONF_FLAG) {
 		if (!(gse_ctx->gss_got_flags & GSS_C_CONF_FLAG)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		/* GSS_C_CONF_FLAG implies GSS_C_INTEG_FLAG */
+		if (!(gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
