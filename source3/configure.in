@@ -3846,14 +3846,13 @@ if test x"$with_ads_support" != x"no"; then
      AC_CHECK_LIB_EXT(gss, KRB5_LIBS,gss_display_status,[],[],have_gssapi=yes)
      AC_CHECK_FUNC_EXT(gss_wrap_iov, $KRB5_LIBS)
   fi
-
-  AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
   ################################################################
   # test for AD / GSSAPI support being enabled
   if test x"$have_gssapi" != xyes ; then
   	AC_MSG_WARN([Samba cannot be supported without GSSAPI])
   fi
 
+  AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_in_tkt_etypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_tgs_enctypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_tgs_ktypes, $KRB5_LIBS)
