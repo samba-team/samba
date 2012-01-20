@@ -351,7 +351,9 @@ static krb5_error_code get_mem_keytab_from_system_keytab(krb5_context krbctx,
 krb5_error_code gse_krb5_get_server_keytab(krb5_context krbctx,
 					   krb5_keytab *keytab)
 {
-	krb5_error_code ret;
+	krb5_error_code ret = 0;
+	krb5_error_code ret1 = 0;
+	krb5_error_code ret2 = 0;
 
 	*keytab = NULL;
 
@@ -368,16 +370,21 @@ krb5_error_code gse_krb5_get_server_keytab(krb5_context krbctx,
 		ret = get_mem_keytab_from_system_keytab(krbctx, keytab, false);
 		break;
 	case KERBEROS_VERIFY_SECRETS_AND_KEYTAB:
-		ret = get_mem_keytab_from_secrets(krbctx, keytab);
-		if (ret) {
+		ret1 = get_mem_keytab_from_secrets(krbctx, keytab);
+		if (ret1) {
 			DEBUG(3, (__location__ ": Warning! Unable to set mem "
 				  "keytab from secrets!\n"));
 		}
 		/* Now append system keytab keys too */
-		ret = get_mem_keytab_from_system_keytab(krbctx, keytab, true);
-		if (ret) {
+		ret2 = get_mem_keytab_from_system_keytab(krbctx, keytab, true);
+		if (ret2) {
 			DEBUG(3, (__location__ ": Warning! Unable to set mem "
-				  "keytab from secrets!\n"));
+				  "keytab from system keytab!\n"));
+		}
+		if (ret1 == 0 || ret2 == 0) {
+			ret = 0;
+		} else {
+			ret = ret1;
 		}
 		break;
 	}
