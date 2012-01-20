@@ -805,10 +805,12 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         # gsskrb5_extract_authz_data_from_sec_context, but it is a
         # clue that this Heimdal, which does the PAC processing we
         # need on the standard gss_inquire_sec_context_by_oid
+        #
+        # For now do not require gsskrb5_extract_authz_data_from_sec_context,
+        # as we do not use it.
         if not conf.CONFIG_SET('HAVE_GSS_GET_NAME_ATTRIBUTE') and \
-            not (conf.CONFIG_SET('HAVE_GSSKRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT') and \
-                     conf.CONFIG_SET('HAVE_GSS_INQUIRE_SEC_CONTEXT_BY_OID')):
-            Logs.warn("need eiterh gss_get_name_attribute or gsskrb5_extract_authz_data_from_sec_context and gss_inquire_sec_context_by_oid in -lgssapi for PAC support")
+            not conf.CONFIG_SET('HAVE_GSS_INQUIRE_SEC_CONTEXT_BY_OID'):
+            Logs.warn("need eiterh gss_get_name_attribute or gss_inquire_sec_context_by_oid in -lgssapi for PAC support")
             use_ads=False
 
         if use_ads:
