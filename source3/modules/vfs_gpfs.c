@@ -232,7 +232,7 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
 	acl->acl_version = 0;
 	acl->acl_type = type;
 
-	ret = smbd_gpfs_getacl((char *)fname, GPFS_GETACL_STRUCT | GPFS_ACL_SAMBA, acl);
+	ret = smbd_gpfs_getacl((char *)fname, GPFS_GETACL_STRUCT, acl);
 	if ((ret != 0) && (errno == ENOSPC)) {
 		struct gpfs_acl *new_acl = (struct gpfs_acl *)TALLOC_SIZE(
 			mem_ctx, acl->acl_len + sizeof(struct gpfs_acl));
@@ -247,7 +247,7 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
 		new_acl->acl_type = acl->acl_type;
 		acl = new_acl;
 
-		ret = smbd_gpfs_getacl((char *)fname, GPFS_GETACL_STRUCT | GPFS_ACL_SAMBA, acl);
+		ret = smbd_gpfs_getacl((char *)fname, GPFS_GETACL_STRUCT, acl);
 	}
 	if (ret != 0)
 	{
