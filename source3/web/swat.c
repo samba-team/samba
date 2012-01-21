@@ -409,6 +409,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_INTEGER:
+	case P_BYTES:
 		printf("<input type=text size=8 name=\"parm_%s\" value=\"%d\">", make_parm_name(parm->label), *(int *)ptr);
 		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%d\'\">",
 			_("Set Default"), make_parm_name(parm->label),(int)(parm->def.ivalue));
@@ -499,6 +500,7 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 					break;
 
 				case P_INTEGER:
+				case P_BYTES:
 				case P_OCTAL:
 					if (*(int *)ptr == (int)(parm->def.ivalue)) continue;
 					break;

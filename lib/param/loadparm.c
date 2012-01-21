@@ -2099,6 +2099,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 					break;
 
 				case P_INTEGER:
+				case P_BYTES:
 				case P_OCTAL:
 				case P_ENUM:
 					*(int *)dest_ptr = *(int *)src_ptr;
