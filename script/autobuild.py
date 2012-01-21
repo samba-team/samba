@@ -504,6 +504,8 @@ while True:
             elif options.rebase_master:
                 rebase_tree(samba_master)
         except:
+            cleanup_list.append(gitroot + "/autobuild.pid")
+            cleanup()
             email_failure(-1, 'rebase', 'rebase', 'rebase', 'rebase on master failed')
             sys.exit(1)
         blist = buildlist(tasks, args)
