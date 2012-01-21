@@ -408,9 +408,11 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		psd->group_sid = NULL;
 	}
 	if (!(security_info & DACL_SECURITY_INFORMATION)) {
+		psd->type &= ~SEC_DESC_DACL_PRESENT;
 		psd->dacl = NULL;
 	}
 	if (!(security_info & SACL_SECURITY_INFORMATION)) {
+		psd->type &= ~SEC_DESC_SACL_PRESENT;
 		psd->sacl = NULL;
 	}
 
@@ -532,7 +534,8 @@ static NTSTATUS get_parent_acl_common(vfs_handle_struct *handle,
 					parent_name,
 					(SECINFO_OWNER |
 					 SECINFO_GROUP |
-					 SECINFO_DACL),
+					 SECINFO_DACL  |
+					 SECINFO_SACL),
 					pp_parent_desc);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -615,7 +618,8 @@ static int open_acl_common(vfs_handle_struct *handle,
 				fname,
 				(OWNER_SECURITY_INFORMATION |
 				 GROUP_SECURITY_INFORMATION |
-				 DACL_SECURITY_INFORMATION),
+				 DACL_SECURITY_INFORMATION  |
+				 SACL_SECURITY_INFORMATION),
 				&pdesc);
         if (NT_STATUS_IS_OK(status)) {
 		/* See if we can access it. */

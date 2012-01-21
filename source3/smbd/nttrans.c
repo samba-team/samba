@@ -1883,9 +1883,11 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		psd->group_sid = NULL;
 	}
 	if (!(security_info_wanted & SECINFO_DACL)) {
+		psd->type &= ~SEC_DESC_DACL_PRESENT;
 		psd->dacl = NULL;
 	}
 	if (!(security_info_wanted & SECINFO_SACL)) {
+		psd->type &= ~SEC_DESC_SACL_PRESENT;
 		psd->sacl = NULL;
 	}
 
