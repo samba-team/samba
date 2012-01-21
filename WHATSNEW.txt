@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.6.2
-                          , 2011
+                         January 25, 2012
                    =============================
 
 
@@ -13,7 +13,54 @@ o
 Changes since 3.6.1:
 --------------------
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 8528: Fix SEGFAULT from net registry export on not zero terminated
+      REG_SZ values.
 
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8541: readlink() on Linux clients fails if the symlink target is
+      outside of the share.
+    * BUG 8542: smbclient posix_open command fails to return correct info on
+      open file.
+    * BUG 8548: winbind_samlogon_retry_loop ignores logon_parameters flags.
+    * Add new contributing FAQ announcing acceptance of corporate (C).
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 8585: Increase a debug level.
+
+
+o   Gregor Beck <gbeck@sernet.de>
+    * BUG 8528: Fix SEGFAULT from net registry export on not zero terminated
+      REG_SZ values.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7465: Remove pointless use_memory_krb5_ccache.
+    * BUG 8176: Fix perl path.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8531: Make DSO_EXPORTS_CMD more portable.
+
+
+o   Frank Lahm <franklahm@googlemail.com>
+    * BUG 8419: Make VFS op "streaminfo" stackable.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8550: Fix setting the machine account password.
+      machine account password must be done as root.
+
+
+o   Brad Smith <brad@comstyle.com>
+    * BUG 8525: Fix bug with sys_fseek() wrapper on *BSD / OS X).
+
+
+o   Henry Wong <henry@stuffedcow.net>
+    * BUG 8384: Fix Windows XP clients crashing smbd process every once in a
+      while.
 
 
 ######################################################################
