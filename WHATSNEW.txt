@@ -24,11 +24,40 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 8542: smbclient posix_open command fails to return correct info on
       open file.
     * BUG 8548: winbind_samlogon_retry_loop ignores logon_parameters flags.
+    * BUG 8561: Password change settings not fully observed.
+    * BUG 8562: Fix double free error in talloc.
+    * BUG 8614: Ensure we correctly calculate reply credits over all returned
+      SMB2 replies.
+    * BUG 8631: POSIX ACE x permission becomes rx following mapping to and from
+      a DACL.
+    * BUG 8644: vfs_acl_xattr and vfs_acl_tdb modules can fail to add
+      inheritable entries on a directory with no stored ACL.
+    * BUG 8663: Fix deleting a symlink if the symlink target is outside of
+    * the share.
+    * BUG 8664: Fix renaming a symlink if the symlink target is outside of
+      the share.
+    * BUG 8673: Fix NT ACL issue.
+    * BUG 8674: Fix buffer overflow issue with AES encryption in samba traffic
+      analyzer.
+    * BUG 8679: recvfile code path using splice() on Linux leaves data in the
+      pipe on short write.
+    * BUG 8687: Fix typo in 'net memberships' usage.
+    * BUG 8710: Fix major leak with SMB2 in connections.tdb.
     * Add new contributing FAQ announcing acceptance of corporate (C).
 
 
 o   Christian Ambach <ambi@samba.org>
+    * BUG 8444: Add an allocation pool to idmap_autorid.
     * BUG 8585: Increase a debug level.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8623: Fix crash bug when trying to browse Samba printers.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 8580: Enable inotify if sys or kernel inotify is available.
+    * BUG 8618: Fix migrate printer code.
 
 
 o   Gregor Beck <gbeck@sernet.de>
@@ -39,19 +68,75 @@ o   Gregor Beck <gbeck@sernet.de>
 o   Günther Deschner <gd@samba.org>
     * BUG 7465: Remove pointless use_memory_krb5_ccache.
     * BUG 8176: Fix perl path.
+    * BUG 8591: Fix marshalling of samr_ChangePasswordUser3.
+    * BUG 8692: libads: Fix malloc/talloc mismatch in
+      ads_keytab_verify_ticket().
+
+
+o   David Disseldorp <ddiss@suse.de>
+    * BUG 8575: Add systemd service files.
+    * BUG 8606: Fix intermittent print job failures caused by character
+      conversion errors.
 
 
 o   Björn Jacke <bj@sernet.de>
     * BUG 8531: Make DSO_EXPORTS_CMD more portable.
+    * BUG 8616: Allow to set TCP_NODELAYACK socket option on AIX.
+    * BUG 8652: Document the "ignore system acls" option of vfs_acl_xattr and
+      vfs_acl_tdb vfs modules.
 
 
 o   Frank Lahm <franklahm@googlemail.com>
     * BUG 8419: Make VFS op "streaminfo" stackable.
 
 
+o   Volker Lendecke <vl@samba.org>
+    * BUG 8371: Make Winbind receive user/group information.
+    * BUG 8639: Fix the vfs_commit module.
+    * BUG 8686: Packet validation checks can be done before length validation
+      causing uninitialized memory read.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 5326: Fix cli_write_and_x() against OS/2 print shares.
+    * BUG 8357: Grant credits in async interim responses (SMB2).
+    * BUG 8560: Make SMB2 handle compound request headers in the same way
+      as Windows.
+    * BUG 8573: Fix alignment in the non-extended-security negprot.
+    * BUG 8586: libsmb: Only align unicode pipe_name.
+    * BUG 8579: smb2_flush: Don't send uninitialized memory.
+    * BUG 8592: Don't limit the number of open dptrs for SMB2.
+    * BUG 8593: Fix a crash bug in cldap_socket_recv_dgram().
+    * BUG 8684: Try ctdbd_init_connection() as root.
+
+
+o   Masafumi Nakayama <MASA23@jp.ibm.com>
+    * BUG 563: Fix 'smbclient tar' for files greater than 8GB on BE machines.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 8600: Make cldap work over IPv6.
+    * BUG 8674: Fix buffer overflow issue with AES encryption in samba traffic
+      analyzer.
+
+
 o   Andreas Schneider <asn@samba.org>
     * BUG 8550: Fix setting the machine account password.
       machine account password must be done as root.
+    * BUG 8575: Add systemd service files.
+    * BUG 8608: Winbind: Don't fail on users without a uid.
+    * BUG 8628: libsmb: Don't duplicate Kerberos service tickets.
+    * BUG 8643: Add an update function for Winbind cache.
+    * BUG 8678: Fix Winbind segfault if we can't map the last user.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 7705: Fix some RHEL packaging issues.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 8607: Improve configure.in so it can be used outside the Samba source
+      tree.
 
 
 o   Brad Smith <brad@comstyle.com>
