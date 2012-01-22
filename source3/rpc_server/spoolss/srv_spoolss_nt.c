@@ -2270,7 +2270,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 		found = true;
 
 		status = spoolss_dpd_version(tmp_ctx, p, r, b, info);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(0, ("failed to delete driver with version %d\n",
 				  drv_cversion[i]));
 			goto done;
