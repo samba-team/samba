@@ -6970,11 +6970,6 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	}
 #endif
 
-	status = check_access(conn, fsp, smb_fname, FILE_WRITE_ATTRIBUTES);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	/*
 	 * Deal with the UNIX specific mode set.
 	 */
