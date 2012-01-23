@@ -1281,13 +1281,31 @@ bld.SAMBA3_BINARY('web/swat',
 
 bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
-                 deps='''talloc tdb_compat cap popt_samba3 pdb libsmb smbd_shim
-                 param wbclient param KRBCLIENT ndr-standard msrpc3
-                 SMBREADLINE trusts_util RPC_NDR_WINREG RPC_NDR_ECHO
-                 RPC_CLIENT_SCHANNEL DCUTIL
-                 LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
-                 RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
-                 RPC_NDR_DRSUAPI RPC_NDR_NTSVCS RPC_NDR_EVENTLOG
+                 deps='''
+                 talloc
+                 popt_samba3
+                 pdb
+                 libsmb
+                 param
+                 ndr-standard
+                 msrpc3
+                 SMBREADLINE
+                 trusts_util
+                 RPC_NDR_WINREG
+                 RPC_NDR_ECHO
+                 RPC_CLIENT_SCHANNEL
+                 DCUTIL
+                 LIBCLI_SAMR
+                 libcli_lsa3
+                 libcli_netlogon3
+                 cli_spoolss
+                 RPC_NDR_SRVSVC
+                 RPC_NDR_WKSSVC
+                 RPC_NDR_DSSETUP
+                 RPC_NDR_DFS
+                 RPC_NDR_DRSUAPI
+                 RPC_NDR_NTSVCS
+                 RPC_NDR_EVENTLOG
                  INIT_SAMR
                  ''',
                  vars=locals())
