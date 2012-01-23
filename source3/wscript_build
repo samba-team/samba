@@ -1261,10 +1261,20 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
 
 bld.SAMBA3_BINARY('web/swat',
                  source=SWAT_SRC,
-                 deps='''talloc tevent cap samba3core libsmb wbclient param
-                 smbd_shim pdb popt_samba3 KRBCLIENT cups
-                 ndr-standard msrpc3 LOCKING PLAINTEXT_AUTH PRINTBASE PRINTING FNAME_UTIL
-                 LIBCLI_SAMR INIT_LSA PASSCHANGE''',
+                 deps='''
+                 talloc
+                 tevent
+                 samba3core
+                 libsmb
+                 param
+                 pdb
+                 popt_samba3
+                 LOCKING
+                 PLAINTEXT_AUTH
+                 PASSCHANGE
+                 PRINTBASE
+                 PRINTING
+                 cups''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
