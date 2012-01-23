@@ -1200,9 +1200,13 @@ bld.SAMBA3_BINARY('smbd/smbd',
 
 bld.SAMBA3_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
-                 deps='''talloc tdb_compat tevent z cap wbclient dl
-                 pdb param ldap smbd_shim libsmb
-                 popt_samba3 KRBCLIENT NDR_SAMR NDR_LSA PROFILE''',
+                 deps='''
+                 talloc
+                 tevent
+                 param
+                 libsmb
+                 popt_samba3
+                 PROFILE''',
                  install_path='${SBINDIR}',
                  vars=locals())
 
