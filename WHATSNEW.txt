@@ -33,6 +33,8 @@ o   Jeremy Allison <jra@samba.org>
       SMB2 replies.
     * BUG 8631: POSIX ACE x permission becomes rx following mapping to and from
       a DACL.
+    * BUG 8636: When returning an ACL without SECINFO_DACL requested, we still
+      set SEC_DESC_DACL_PRESENT in the type field.
     * BUG 8644: vfs_acl_xattr and vfs_acl_tdb modules can fail to add
       inheritable entries on a directory with no stored ACL.
     * BUG 8663: Fix deleting a symlink if the symlink target is outside of
