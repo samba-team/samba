@@ -985,7 +985,11 @@ bld.SAMBA3_LIBRARY('smbd_base',
 
 bld.SAMBA3_SUBSYSTEM('LOCKING',
                     source='${LOCKING_SRC}',
-                    deps='''tdb_compat talloc NDR_OPEN_FILES''',
+                    deps='''
+                    tdb_compat
+                    talloc
+                    NDR_OPEN_FILES
+                    FNAME_UTIL''',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('PROFILE',
