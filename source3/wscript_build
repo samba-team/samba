@@ -1056,11 +1056,6 @@ bld.SAMBA3_SUBSYSTEM('LIBNMB',
                      deps='lmhosts resolv',
                      vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('LIBNBT',
-                    source='',
-                    deps='NDR_SVCCTL ndr_nbt LIBCLI_NETLOGON',
-                    vars=locals())
-
 bld.SAMBA3_SUBSYSTEM('SERVICES',
                     source=SERVICES_SRC,
                     deps='samba-util',
