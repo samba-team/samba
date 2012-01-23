@@ -212,8 +212,6 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	if (argc >= 5)
 		sscanf(argv[4], "%x", &flags);
 
-	debug_dsdcinfo_flags(1,flags);
-
 	result = dcerpc_netr_DsRGetDCName(b, mem_ctx,
 					  server_name,
 					  domain_name,
@@ -273,8 +271,6 @@ static WERROR cmd_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
 	if (argc >= 5) {
 		sscanf(argv[4], "%x", &flags);
 	}
-
-	debug_dsdcinfo_flags(1,flags);
 
 	status = dcerpc_netr_DsRGetDCNameEx(b, mem_ctx,
 					    server_name,
@@ -346,8 +342,6 @@ static WERROR cmd_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
 	if (argc >= 7) {
 		sscanf(argv[6], "%x", &flags);
 	}
-
-	debug_dsdcinfo_flags(1,flags);
 
 	status = dcerpc_netr_DsRGetDCNameEx2(b, mem_ctx,
 					     server_name,
