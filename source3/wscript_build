@@ -1072,7 +1072,9 @@ bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
 
 bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
                     source=PASSCHANGE_SRC,
-                    deps='LIBCLI_SAMR',
+                    deps='''LIBCLI_SAMR
+                    INIT_LSA
+                    msrpc3''',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
