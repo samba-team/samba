@@ -8,10 +8,13 @@ This is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.2 include:
 
-o  
+o  Make Winbind receive user/group information (bug #8371).
+o  Several SMB2 fixes.
+
 
 Changes since 3.6.1:
 --------------------
+
 
 o   Michael Adam <obnox@samba.org>
     * BUG 8528: Fix SEGFAULT from net registry export on not zero terminated
@@ -124,7 +127,6 @@ o   Matthieu Patou <mat@matws.net>
 
 o   Andreas Schneider <asn@samba.org>
     * BUG 8550: Fix setting the machine account password.
-      machine account password must be done as root.
     * BUG 8575: Add systemd service files.
     * BUG 8608: Winbind: Don't fail on users without a uid.
     * BUG 8628: libsmb: Don't duplicate Kerberos service tickets.
