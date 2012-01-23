@@ -164,6 +164,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 
 	if ((access_mask & FILE_WRITE_ATTRIBUTES) &&
 			(rejected_mask & FILE_WRITE_ATTRIBUTES) &&
+			!lp_store_dos_attributes(SNUM(conn)) &&
 			(lp_map_readonly(SNUM(conn)) ||
 			lp_map_archive(SNUM(conn)) ||
 			lp_map_hidden(SNUM(conn)) ||
