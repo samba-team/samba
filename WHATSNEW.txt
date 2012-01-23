@@ -74,9 +74,11 @@ o   Günther Deschner <gd@samba.org>
 
 
 o   David Disseldorp <ddiss@suse.de>
+    * BUG 4942: DeletePrinterDriverEx deletes files in use.
     * BUG 8575: Add systemd service files.
     * BUG 8606: Fix intermittent print job failures caused by character
       conversion errors.
+    * BUG 8697: Make DeletePrinterDriverEx remove printer driver files.
 
 
 o   Björn Jacke <bj@sernet.de>
