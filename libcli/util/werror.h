@@ -30,9 +30,9 @@
 */
 
 #if defined(HAVE_IMMEDIATE_STRUCTURES)
-typedef struct {uint32_t v;} WERROR;
+typedef struct {uint32_t w;} WERROR;
 #define W_ERROR(x) ((WERROR) { x })
-#define W_ERROR_V(x) ((x).v)
+#define W_ERROR_V(x) ((x).w)
 #else
 typedef uint32_t WERROR;
 #define W_ERROR(x) (x)
