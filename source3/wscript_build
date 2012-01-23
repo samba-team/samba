@@ -1212,16 +1212,42 @@ bld.SAMBA3_BINARY('nmbd/nmbd',
 
 bld.SAMBA3_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
-                 deps='''talloc tdb_compat tevent cap dl z
-                 wbclient pdb ldap param smbd_shim libsmb
-                 popt_samba3 KRBCLIENT ndr-standard msrpc3 ads LIBADS_SERVER
-                 SRV_NDR_WBINT RPC_NDR_WBINT NDR_WBINT LIBAFS
-                 LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
+                 deps='''
+                 talloc
+                 tevent
+                 dl
+                 pdb
+                 ldap
+                 param
+                 libsmb
+                 popt_samba3
+                 KRBCLIENT
+                 ndr-standard
+                 msrpc3
+                 ads
+                 LIBADS_SERVER
+                 SRV_NDR_WBINT
+                 RPC_NDR_WBINT
+                 NDR_WBINT
+                 LIBAFS
+                 PROFILE
+                 SLCACHE
+                 DCUTIL
+                 idmap
+                 nss_info
                  TOKEN_UTIL
-                 LIBCLI_SAMR libcli_lsa3 libcli_netlogon3
-                 RPC_NDR_DSSETUP npa_tstream
-                 RPC_NCACN_NP RPC_PIPE_REGISTER RPC_SAMR RPC_LSARPC
-                 PAM_ERRORS WB_REQTRANS auth
+                 LIBCLI_SAMR
+                 libcli_lsa3
+                 libcli_netlogon3
+                 RPC_NDR_DSSETUP
+                 npa_tstream
+                 RPC_NCACN_NP
+                 RPC_PIPE_REGISTER
+                 RPC_SAMR
+                 RPC_LSARPC
+                 PAM_ERRORS
+                 WB_REQTRANS
+                 auth
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
