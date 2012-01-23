@@ -746,7 +746,7 @@ static uint32 get_correct_cversion(struct auth_session_info *session_info,
 		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
-	if (!NT_STATUS_IS_OK(*perr)) {
+	if (!W_ERROR_IS_OK(*perr)) {
 		cversion = -1;
 	}
 

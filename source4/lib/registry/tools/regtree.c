@@ -92,7 +92,7 @@ static void print_tree(unsigned int level, struct registry_key *p,
 	}
 
 	mem_ctx = talloc_init("sec_desc");
-	if (NT_STATUS_IS_ERR(reg_get_sec_desc(mem_ctx, p, &sec_desc))) {
+	if (!W_ERROR_IS_OK(reg_get_sec_desc(mem_ctx, p, &sec_desc))) {
 		DEBUG(0, ("Error getting security descriptor\n"));
 	}
 	talloc_free(mem_ctx);
