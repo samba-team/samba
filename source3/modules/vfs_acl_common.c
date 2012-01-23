@@ -539,7 +539,8 @@ static NTSTATUS get_parent_acl_common(vfs_handle_struct *handle,
 					parent_name,
 					(SECINFO_OWNER |
 					 SECINFO_GROUP |
-					 SECINFO_DACL),
+					 SECINFO_DACL  |
+					 SECINFO_SACL),
 					pp_parent_desc);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -622,7 +623,8 @@ static int open_acl_common(vfs_handle_struct *handle,
 				fname,
 				(SECINFO_OWNER |
 				 SECINFO_GROUP |
-				 SECINFO_DACL),
+				 SECINFO_DACL  |
+				 SECINFO_SACL),
 				&pdesc);
         if (NT_STATUS_IS_OK(status)) {
 		/* See if we can access it. */
