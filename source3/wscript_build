@@ -1602,10 +1602,14 @@ bld.SAMBA3_BINARY('versiontest',
 
 bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,
                  source=NTLM_AUTH_SRC,
-                 deps='''tdb_compat talloc cap KRB5_WRAP k5crypto wbclient param smbd_shim
-                 samba3core LIBNTLMSSP popt_samba3 asn1util LIBTSOCKET
-                 pdb winbind-client LIBINIPARSER LIBADS_SERVER
-                 NDR_SAMR NDR_LSA NDR_NETLOGON cli-ldap-common LIBNMB SLCACHE SPNEGO_PARSE KRBCLIENT libsmb''',
+                 deps='''
+                 talloc
+                 KRB5_WRAP
+                 LIBINIPARSER
+                 SLCACHE
+                 libsmb
+                 popt_samba3
+                 LIBADS_SERVER''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('timelimit',
