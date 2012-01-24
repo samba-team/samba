@@ -230,7 +230,7 @@ elif opts.use_xattrs == "auto" and not lp.get("posix:eadb"):
         samba.ntacls.setntacl(lp, file.name,
             "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
         eadb = False
-    except:
+    except Exception:
         logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
                 "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
     file.close()

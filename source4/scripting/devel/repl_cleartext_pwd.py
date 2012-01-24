@@ -101,7 +101,7 @@ if __name__ == "__main__":
     if len(args) >= 7:
         try:
             attid = int(args[4], 16)
-        except:
+        except Exception:
             attid = int(args[4])
         attname = args[5]
         attmode = args[6]
@@ -145,7 +145,7 @@ if __name__ == "__main__":
        assert store_dn == dn
        #print "%s" % ndr_print(store_hwm)
        #print "%s" % ndr_print(store_utdv)
-    except:
+    except Exception:
        store_dn = dn
        store_hwm = drsuapi.DsReplicaHighWaterMark()
        store_hwm.tmp_highest_usn  = 0
@@ -325,7 +325,7 @@ if __name__ == "__main__":
                     cleartext_unicode = unicode(cleartext_utf16, 'utf-16-le')
                     cleartext_utf8 = cleartext_unicode.encode('utf-8')
                     gls.add_attr(obj.identifier.dn, clear_utf8_name, [cleartext_utf8])
-                except:
+                except Exception:
                     pass
 
                 if attvals is not None:

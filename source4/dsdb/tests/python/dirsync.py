@@ -136,7 +136,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.sd_utils.modify_sd_on_dn(self.base_dn, self.desc_sddl)
         try:
             self.ldb_admin.deletegroup("testgroup")
-        except:
+        except Exception:
             pass
 
     #def test_dirsync_errors(self):

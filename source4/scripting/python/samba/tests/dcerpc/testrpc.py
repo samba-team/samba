@@ -61,7 +61,7 @@ class RpcTests(object):
                     print "ERROR: Failed to instantiate %s.%s" % (typename, n)
                     self.errcount += 1
                     continue
-            except:
+            except Exception:
                 print "ERROR: Failed to instantiate %s.%s" % (typename, n)
                 self.errcount += 1
                 continue

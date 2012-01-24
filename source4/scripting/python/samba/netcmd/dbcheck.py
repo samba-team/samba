@@ -112,7 +112,7 @@ class cmd_dbcheck(Command):
             else:
                 error_count = chk.check_database(DN=DN, scope=search_scope,
                         controls=controls, attrs=attrs)
-        except:
+        except Exception:
             if started_transaction:
                 samdb.transaction_cancel()
             raise

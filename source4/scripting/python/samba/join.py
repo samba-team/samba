@@ -683,7 +683,7 @@ class dc_join(object):
             ctx.destination_dsa_guid = destination_dsa_guid
 
             print "Committing SAM database"
-        except:
+        except Exception:
             ctx.local_samdb.transaction_cancel()
             raise
         else:

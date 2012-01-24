@@ -1488,14 +1488,14 @@ def copyxattrs(dir, refdir):
                     samba.xattr_native.wrap_setxattr(tgt,
                                                  xattr.XATTR_NTACL_NAME,
                                                  attribute)
-                except:
+                except Exception:
                     noxattr = 1
                 attribute = samba.xattr_native.wrap_getxattr(ref,
                                                  "system.posix_acl_access")
                 samba.xattr_native.wrap_setxattr(tgt,
                                                  "system.posix_acl_access",
                                                   attribute)
-            except:
+            except Exception:
                 continue
         for name in dirs:
             subdir=root[len(dir):]
@@ -1511,7 +1511,7 @@ def copyxattrs(dir, refdir):
                     samba.xattr_native.wrap_setxattr(tgt,
                                                  xattr.XATTR_NTACL_NAME,
                                                  attribute)
-                except:
+                except Exception:
                     noxattr = 1
                 attribute = samba.xattr_native.wrap_getxattr(ref,
                                                  "system.posix_acl_access")
@@ -1519,7 +1519,7 @@ def copyxattrs(dir, refdir):
                                                  "system.posix_acl_access",
                                                   attribute)
 
-            except:
+            except Exception:
                 continue
 
 
