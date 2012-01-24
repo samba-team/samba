@@ -1366,7 +1366,11 @@ bld.SAMBA3_BINARY('net',
 
 bld.SAMBA3_BINARY('profiles',
                  source=PROFILES_SRC,
-                 deps='''talloc tdb_compat cap tevent popt_samba3 param samba3core smbd_shim REGFIO''',
+                 deps='''
+                 talloc
+                 popt_samba3
+                 param
+                 REGFIO''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbspool',
