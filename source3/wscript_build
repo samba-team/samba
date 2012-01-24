@@ -1502,7 +1502,9 @@ bld.SAMBA3_BINARY('masktest' + bld.env.suffix3,
 
 bld.SAMBA3_BINARY('msgtest',
                  source=MSGTEST_SRC,
-                 deps='''talloc tdb_compat tevent cap param smbd_shim''',
+                 deps='''
+                 talloc
+                 param''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbcacls',
