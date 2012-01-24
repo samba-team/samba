@@ -43,6 +43,8 @@ struct gensec_gssapi_state {
 
 	gss_cred_id_t delegated_cred_handle;
 
+	gss_krb5_lucid_context_v1_t *lucid;
+
 	/* gensec_gssapi only */
 	gss_OID gss_oid;
 
@@ -50,7 +52,6 @@ struct gensec_gssapi_state {
 	struct smb_krb5_context *smb_krb5_context;
 	struct gssapi_creds_container *client_cred;
 	struct gssapi_creds_container *server_cred;
-	gss_krb5_lucid_context_v1_t *lucid;
 
 	bool sasl; /* We have two different mechs in this file: One
 		    * for SASL wrapped GSSAPI and another for normal
