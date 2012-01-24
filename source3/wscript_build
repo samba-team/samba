@@ -1494,8 +1494,10 @@ bld.SAMBA3_BINARY('replacetort',
 
 bld.SAMBA3_BINARY('masktest' + bld.env.suffix3,
                  source=MASKTEST_SRC,
-                 deps='''talloc tdb_compat cap wbclient param smbd_shim libsmb KRBCLIENT
-                 asn1util LIBTSOCKET NDR_SAMR NDR_LSA''',
+                 deps='''
+                 talloc
+                 param
+                 libsmb''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('msgtest',
