@@ -357,6 +357,15 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 		return ret;
         }
 
+	/* If we set a plaintext password, the system will
+	 * force the pwdLastSet to now() */
+	if (need_update(sam, PDB_PASSLASTSET)) {
+		dsdb_flags = DSDB_PASSWORD_BYPASS_LAST_SET;
+		
+		ret |= pdb_samba4_add_time(msg, "pwdLastSet",
+					   pdb_get_pass_last_set_time(sam));
+	}
+
 	pw = pdb_get_plaintext_passwd(sam);
 	if (need_update(sam, PDB_PLAINTEXT_PW)) {
 		if (pw == NULL) {
@@ -405,15 +414,6 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 			samdb_msg_add_delete(state->ldb, msg, msg,
 					     "supplementalCredentials");
 
-		}
-
-		/* If we set a plaintext password, the system will
-		 * force the pwdLastSet to now(), and it isn't worth
-		 * working around this for the real world use cases of
-		 * pdb_samba4 */
-		if (need_update(sam, PDB_PASSLASTSET)) {
-			ret |= pdb_samba4_add_time(msg, "pwdLastSet",
-						   pdb_get_pass_last_set_time(sam));
 		}
 
 		if (need_update(sam, PDB_PWHISTORY)) {
