@@ -1625,7 +1625,10 @@ bld.SAMBA3_BINARY('rpc_open_tcp',
 
 bld.SAMBA3_BINARY('test_lp_load',
                  source=TEST_LP_LOAD_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param  smbd_shim popt_samba3 LIBNTLMSSP''',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('dbwrap_tool',
