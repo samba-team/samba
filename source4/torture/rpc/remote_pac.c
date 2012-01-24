@@ -85,6 +85,10 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 		return nt_status;
 	}
 
+	if (user_info_dc->info->authenticated) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
 	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
 	nt_status = auth_generate_session_info(mem_ctx,
 					       NULL,
