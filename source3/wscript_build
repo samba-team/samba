@@ -643,12 +643,17 @@ bld.SETUP_BUILD_GROUPS()
 
 bld.SAMBA3_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
-                    public_deps='''talloc tdb_compat libsmb KRBCLIENT
-                    pdb param samba-util ndr-standard msrpc3 ads LIBNET DCUTIL NDR_LIBNETAPI
-                    RPC_CLIENT_SCHANNEL smbconf REG_SMBCONF
-                    LIBCLI_SAMR libcli_lsa3 libcli_netlogon3
-                    RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
-                    INIT_SAMR''',
+                    public_deps='''
+                    talloc
+                    msrpc3
+                    ads
+                    NDR_LIBNETAPI
+                    LIBNET
+                    RPC_CLIENT_SCHANNEL
+                    libcli_netlogon3
+                    LIBCLI_SAMR
+                    INIT_SAMR
+                    ''',
                     public_headers='../source3/lib/netapi/netapi.h',
                     pc_files=[],
                     vnum='0',
