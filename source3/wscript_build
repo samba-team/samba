@@ -1536,7 +1536,9 @@ bld.SAMBA3_BINARY('eventlogadm',
 
 bld.SAMBA3_BINARY('sharesec',
                  source=SHARESEC_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param smbd_shim popt_samba3''',
+                 deps='''
+                 talloc
+                 popt_samba3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('locktest' + bld.env.suffix3,
