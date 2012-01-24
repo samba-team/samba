@@ -1325,17 +1325,43 @@ bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
 
 bld.SAMBA3_BINARY('net',
                  source=NET_SRC,
-                 deps='''talloc tdb_compat netapi addns cap intl popt_samba3 pdb libsmb smbd_shim
-                 param wbclient param KRBCLIENT ndr-standard msrpc3 gpo ads LIBADS_SERVER LIBADS_PRINTER
-                 LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
-                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
-                 REGFIO NDR_NTPRINTING RPC_NDR_WINREG
-                 RPC_CLIENT_SCHANNEL TOKEN_UTIL
-                 LIBCLI_SAMR libcli_lsa3 libcli_netlogon3 cli_spoolss
-                 RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
-                 RPC_NDR_INITSHUTDOWN INIT_SAMR
-                 printing_migrate trusts_util
-		 ''',
+                 deps='''
+                 talloc
+                 netapi
+                 addns
+                 intl
+                 popt_samba3
+                 pdb
+                 libsmb
+                 param
+                 KRBCLIENT
+                 ndr-standard
+                 msrpc3
+                 gpo
+                 ads
+                 LIBADS_SERVER
+                 LIBADS_PRINTER
+                 SMBREADLINE
+                 PASSWD_UTIL
+                 LIBNET
+                 LIBNET_DSSYNC
+                 LIBNET_SAMSYNC
+                 LIBEVENTLOG
+                 REGFIO
+                 NDR_NTPRINTING
+                 RPC_NDR_WINREG
+                 RPC_CLIENT_SCHANNEL
+                 LIBCLI_SAMR
+                 libcli_lsa3
+                 libcli_netlogon3
+                 cli_spoolss
+                 RPC_NDR_SRVSVC
+                 RPC_NDR_SVCCTL
+                 RPC_NDR_DSSETUP
+                 RPC_NDR_INITSHUTDOWN
+                 INIT_SAMR
+                 printing_migrate
+                 trusts_util''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('profiles',
