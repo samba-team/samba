@@ -30,7 +30,7 @@
 
 enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS };
 
-typedef enum { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX } dbwrap_type;
+enum dbwrap_type { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX };
 
 static int dbwrap_tool_fetch_int32(struct db_context *db,
 				   const char *keyname,
@@ -299,7 +299,7 @@ static int dbwrap_tool_listkeys(struct db_context *db,
 
 struct dbwrap_op_dispatch_table {
 	enum dbwrap_op op;
-	dbwrap_type type;
+	enum dbwrap_type type;
 	int (*cmd)(struct db_context *db,
 		   const char *keyname,
 		   const char *data);
@@ -333,7 +333,7 @@ int main(int argc, const char **argv)
 	enum dbwrap_op op;
 	const char *keyname = "";
 	const char *keytype = "int32";
-	dbwrap_type type;
+	enum dbwrap_type type;
 	const char *valuestr = "0";
 
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
