@@ -77,6 +77,8 @@ struct gse_context {
 
 	gss_cred_id_t delegated_cred_handle;
 
+	gss_krb5_lucid_context_v1_t *lucid;
+
 	/* gensec_gse only */
 	krb5_context k5ctx;
 	krb5_ccache ccache;
@@ -145,6 +147,11 @@ static int gse_context_destructor(void *ptr)
 	if (gse_ctx->delegated_cred_handle) {
 		gss_maj = gss_release_cred(&gss_min,
 					   &gse_ctx->delegated_cred_handle);
+	}
+
+	if (gse_ctx->lucid) {
+		gss_krb5_free_lucid_sec_context(&gss_min, gse_ctx->lucid);
+		gse_ctx->lucid = NULL;
 	}
 
 	/* MIT and Heimdal differ as to if you can call
@@ -619,6 +626,36 @@ done:
 		gss_maj = gss_release_buffer(&gss_min, &msg_maj);
 	}
 	return errstr;
+}
+
+static NTSTATUS gse_init_lucid(struct gse_context *gse_ctx)
+{
+	OM_uint32 maj_stat, min_stat;
+	void *ptr = NULL;
+
+	if (gse_ctx->lucid) {
+		return NT_STATUS_OK;
+	}
+
+	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
+						     &gse_ctx->gssapi_context,
+						     1, &ptr);
+	if (maj_stat != GSS_S_COMPLETE) {
+		DEBUG(0,("gse_init_lucid: %s\n",
+			gse_errstr(talloc_tos(), maj_stat, min_stat)));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	gse_ctx->lucid = (gss_krb5_lucid_context_v1_t *)ptr;
+
+	if (gse_ctx->lucid->version != 1) {
+		DEBUG(0,("gse_init_lucid: lucid version[%d] != 1\n",
+			gse_ctx->lucid->version));
+		gss_krb5_free_lucid_sec_context(&min_stat, gse_ctx->lucid);
+		gse_ctx->lucid = NULL;
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
@@ -1138,6 +1175,24 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return gse_ctx->gss_got_flags & GSS_C_DCE_STYLE;
+	}
+	if (feature & GENSEC_FEATURE_NEW_SPNEGO) {
+		NTSTATUS status;
+
+		if (!(gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG)) {
+			return false;
+		}
+
+		status = gse_init_lucid(gse_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
+
+		if (gse_ctx->lucid->protocol == 1) {
+			return true;
+		}
+
+		return false;
 	}
 	/* We can always do async (rather than strict request/reply) packets.  */
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
