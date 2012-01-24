@@ -1481,7 +1481,10 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
 
 bld.SAMBA3_BINARY('smbconftort',
                  source=SMBCONFTORT_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param smbd_shim popt_samba3''',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('replacetort',
