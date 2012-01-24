@@ -1375,8 +1375,13 @@ bld.SAMBA3_BINARY('profiles',
 
 bld.SAMBA3_BINARY('smbspool',
                  source=CUPS_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient popt_samba3 param libsmb smbd_shim samba3core
-                 KRBCLIENT asn1util LIBTSOCKET NDR_SAMR NDR_LSA''',
+                 deps='''
+                 talloc
+                 tevent
+                 popt_samba3
+                 param
+                 libsmb
+                 samba3core''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('testparm',
