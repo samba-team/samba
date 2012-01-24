@@ -1459,7 +1459,11 @@ bld.SAMBA3_BINARY('smbget',
 
 bld.SAMBA3_BINARY('nmblookup' + bld.env.suffix3,
                  source=NMBLOOKUP_SRC,
-                 deps='''talloc tdb_compat tevent cap param smbd_shim popt_samba3 LIBNMB''',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3
+                 LIBNMB''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
