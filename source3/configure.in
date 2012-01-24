@@ -4517,12 +4517,13 @@ if test x"$with_ads_support" != x"no"; then
 
   fi
 
-  # for now do not require gsskrb5_extract_authz_data_from_sec_context
-  # as we do not use it
-  if test x"$ac_cv_func_ext_gss_get_name_attribute" != x"yes" -a \
-          x"$ac_cv_func_ext_gss_inquire_sec_context_by_oid" != x"yes"; then
-      AC_MSG_WARN(need either gss_get_name_attribute or gss_inquire_sec_context_by_oid in -lgssapi for PAC support)
+  if test x"$ac_cv_func_ext_gss_get_name_attribute" != x"yes" ; then
+    if test x"$ac_cv_func_ext_gsskrb5_extract_authz_data_from_sec_context" != x"yes" -o \
+            x"$ac_cv_func_ext_gss_inquire_sec_context_by_oid" != x"yes"
+    then
+      AC_MSG_WARN(need either gss_get_name_attribute or gsskrb5_extract_authz_data_from_sec_context and gss_inquire_sec_context_by_oid in -lgssapi for PAC support)
       use_ads=no
+    fi
   fi
 
   if test x"$use_ads" = x"yes"; then
