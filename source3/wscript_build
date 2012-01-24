@@ -1647,8 +1647,9 @@ bld.SAMBA3_BINARY('dbwrap_torture',
 
 bld.SAMBA3_BINARY('split_tokens',
                  source=SPLIT_TOKENS_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param smbd_shim popt_samba3
-                 LIBNTLMSSP''',
+                 deps='''
+                 talloc
+                 popt_samba3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('vlp',
