@@ -1573,8 +1573,11 @@ bld.SAMBA3_BINARY('log2pcap',
 
 bld.SAMBA3_BINARY('locktest2',
                  source=LOCKTEST2_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param KRBCLIENT libsmb smbd_shim
-                 asn1util LIBTSOCKET NDR_SAMR NDR_LSA LOCKING FNAME_UTIL''',
+                 deps='''
+                 talloc
+                 param
+                 libsmb
+                 LOCKING''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('debug2html',
