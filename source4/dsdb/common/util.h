@@ -38,6 +38,7 @@
 #define DSDB_BYPASS_PASSWORD_HASH	      0x1000
 #define DSDB_SEARCH_NO_GLOBAL_CATALOG	      0x2000
 #define DSDB_MODIFY_PARTIAL_REPLICA	      0x4000
+#define DSDB_PASSWORD_BYPASS_LAST_SET         0x8000
 
 bool is_attr_in_list(const char * const * attrs, const char *attr);
 

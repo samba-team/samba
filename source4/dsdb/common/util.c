@@ -3725,6 +3725,13 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		}
 	}
 
+	if (dsdb_flags & DSDB_PASSWORD_BYPASS_LAST_SET) {
+		ret = ldb_request_add_control(req, DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID, true, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	if (dsdb_flags & DSDB_MODIFY_PARTIAL_REPLICA) {
 		ret = ldb_request_add_control(req, DSDB_CONTROL_PARTIAL_REPLICA, false, NULL);
 		if (ret != LDB_SUCCESS) {
