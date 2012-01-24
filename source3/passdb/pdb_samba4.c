@@ -368,11 +368,19 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 
 	pw = pdb_get_plaintext_passwd(sam);
 	if (need_update(sam, PDB_PLAINTEXT_PW)) {
+		struct ldb_val pw_utf16;
 		if (pw == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
-		ret |= ldb_msg_add_string(msg, "clearTextPassword", pw);
+		if (!convert_string_talloc(msg,
+					   CH_UNIX, CH_UTF16,
+					   pw, strlen(pw),
+					   (void *)&pw_utf16.data,
+					   &pw_utf16.length)) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ret |= ldb_msg_add_value(msg, "clearTextPassword", &pw_utf16, NULL);
 	} else {
 		bool changed_lm_pw = false;
 		bool changed_nt_pw = false;
