@@ -23,6 +23,7 @@ samba4bindir="$BINDIR"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 samba_tool="$samba4bindir/samba-tool$EXEEXT"
+smbpasswd="$samba4bindir/smbpasswd$EXEEXT"
 rkpty="$samba4bindir/rkpty$EXEEXT"
 samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
 newuser="$samba_tool user create"
@@ -50,7 +51,7 @@ export CONFIG
 
 testit "reset password policies beside of minimum password age of 0 days" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=0 --max-pwd-age=default || failed=`expr $failed + 1`
 
-USERPASS=testPaSS@01%
+USERPASS=testPaSS@00%
 
 testit "create user locally" $VALGRIND $newuser $CONFIG nettestuser $USERPASS $@ || failed=`expr $failed + 1`
 
@@ -63,7 +64,7 @@ testit "kinit with user password" $samba4kinit --password-file=$PREFIX/tmpuserpa
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
-NEWUSERPASS=testPaSS@02%
+NEWUSERPASS=testPaSS@01%
 testit "change user password with 'samba-tool user password' (unforced)" $VALGRIND $samba_tool user password -W$DOMAIN -U$DOMAIN/nettestuser%$USERPASS  -k no --newpassword=$NEWUSERPASS $@ || failed=`expr $failed + 1`
 
 echo $NEWUSERPASS > ./tmpuserpassfile
@@ -74,7 +75,7 @@ test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`exp
 
 USERPASS=$NEWUSERPASS
 WEAKPASS=testpass1
-NEWUSERPASS=testPaSS@03%
+NEWUSERPASS=testPaSS@02%
 
 # password mismatch check doesn't work yet (kpasswd bug, reported to Love)
 #echo "check that password mismatch gives the right error"
@@ -133,6 +134,21 @@ testit "change user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpas
 
 test_smbclient "Test login with user kerberos (unforced)" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
 
+NEWUSERPASS=testPaSS@03%
+
+echo "set password with smbpasswd"
+cat > ./tmpsmbpasswdscript <<EOF
+expect New SMB password:
+send ${NEWUSERPASS}\n
+expect Retype new SMB password:
+send ${NEWUSERPASS}\n
+EOF
+
+testit "set user password with smbpasswd" $rkpty ./tmpsmbpasswdscript $smbpasswd -L -c $PREFIX/dc/etc/smb.conf nettestuser || failed=`expr $failed + 1`
+USERPASS=$NEWUSERPASS
+
+test_smbclient "Test login with user (ntlm)" 'ls' -k no -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
+
 
 NEWUSERPASS=testPaSS@04%
 testit "set password on user locally" $VALGRIND $samba_tool user setpassword nettestuser $CONFIG --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
@@ -159,6 +175,27 @@ expect Success
 EOF
 
 testit "change user password with kpasswd (after must change flag set)" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+USERPASS=$NEWUSERPASS
+
+test_smbclient "Test login with user kerberos" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
+
+NEWUSERPASS=testPaSS@08%
+testit "set password on user locally" $VALGRIND $samba_tool user setpassword $CONFIG nettestuser --newpassword=$NEWUSERPASS --must-change-at-next-login $@ || failed=`expr $failed + 1`
+USERPASS=$NEWUSERPASS
+
+NEWUSERPASS=testPaSS@09%
+
+cat > ./tmpsmbpasswdscript <<EOF
+expect Old SMB password:
+password ${USERPASS}\n
+expect New SMB password:
+send ${NEWUSERPASS}\n
+expect Retype new SMB password:
+send ${NEWUSERPASS}\n
+EOF
+
+testit "change user password with smbpasswd (after must change flag set)" $rkpty ./tmpsmbpasswdscript $smbpasswd -r $SERVER  -c $PREFIX/dc/etc/smb.conf -U nettestuser || failed=`expr $failed + 1`
+
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user kerberos" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS || failed=`expr $failed + 1`
@@ -192,5 +229,5 @@ testit "reset password policies" $VALGRIND $samba_tool domain passwordsettings $
 
 testit "del user" $VALGRIND $samba_tool user delete nettestuser -U"$USERNAME%$PASSWORD" -k no $@ || failed=`expr $failed + 1`
 
-rm -f tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript
+rm -f tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript tmpsmbpasswdscript
 exit $failed
