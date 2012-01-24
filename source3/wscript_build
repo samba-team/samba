@@ -1386,8 +1386,9 @@ bld.SAMBA3_BINARY('smbspool',
 
 bld.SAMBA3_BINARY('testparm',
                  source=TESTPARM_SRC,
-                 deps='''talloc tevent ldap cap 
-                 wbclient asn1util LIBTSOCKET pdb param smbd_shim
+                 deps='''
+                 talloc
+                 param
                  popt_samba3''',
                  vars=locals())
 
