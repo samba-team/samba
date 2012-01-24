@@ -117,7 +117,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
 
 bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     source=RPC_SPOOLSS_SRC,
-                    deps='cups PRINTING PRINTBACKEND LIBCLI_WINREG_INTERNAL RPC_NCACN_NP',
+                    deps='PRINTING PRINTBACKEND LIBCLI_WINREG_INTERNAL RPC_NCACN_NP',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',

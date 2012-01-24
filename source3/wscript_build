@@ -1285,7 +1285,7 @@ bld.SAMBA3_BINARY('web/swat',
                  PASSCHANGE
                  PRINTBASE
                  PRINTING
-                 cups''',
+                 ''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
