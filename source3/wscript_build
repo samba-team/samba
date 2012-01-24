@@ -1640,7 +1640,9 @@ bld.SAMBA3_BINARY('dbwrap_tool',
 
 bld.SAMBA3_BINARY('dbwrap_torture',
                  source=DBWRAP_TORTURE_SRC,
-                 deps='''talloc tdb_compat tevent cap param  smbd_shim popt_samba3''',
+                 deps='''
+                 talloc
+                 popt_samba3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('split_tokens',
