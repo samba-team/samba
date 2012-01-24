@@ -1199,39 +1199,24 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  deps='''
                  talloc
                  tevent
-                 dl
                  pdb
-                 ldap
-                 param
-                 libsmb
                  popt_samba3
-                 KRBCLIENT
-                 ndr-standard
-                 msrpc3
-                 ads
-                 LIBADS_SERVER
-                 SRV_NDR_WBINT
-                 RPC_NDR_WBINT
-                 NDR_WBINT
-                 LIBAFS
-                 PROFILE
-                 SLCACHE
-                 DCUTIL
                  idmap
+                 ads
+                 msrpc3
                  nss_info
-                 TOKEN_UTIL
+                 LIBAFS
+                 LIBADS_SERVER
                  LIBCLI_SAMR
-                 libcli_lsa3
-                 libcli_netlogon3
+                 SLCACHE
                  RPC_NDR_DSSETUP
-                 npa_tstream
-                 RPC_NCACN_NP
-                 RPC_PIPE_REGISTER
+                 RPC_NDR_WBINT
+                 SRV_NDR_WBINT
                  RPC_SAMR
                  RPC_LSARPC
-                 PAM_ERRORS
+                 RPC_NCACN_NP
+                 RPC_PIPE_REGISTER
                  WB_REQTRANS
-                 auth
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
