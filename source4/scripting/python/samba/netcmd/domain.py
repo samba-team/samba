@@ -97,7 +97,7 @@ class cmd_domain_export_keytab(Command):
 class cmd_domain_info(Command):
     """Print basic info about a domain and the DC passed as parameter"""
 
-    synopsis = "%prog domain info <ip_address> [options]"
+    synopsis = "%prog <ip_address> [options]"
 
     takes_options = [
         ]
