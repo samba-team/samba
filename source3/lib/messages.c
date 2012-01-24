@@ -281,6 +281,10 @@ NTSTATUS messaging_register(struct messaging_context *msg_ctx,
 {
 	struct messaging_callback *cb;
 
+	DEBUG(5, ("Registering messaging pointer for type %u - "
+		  "private_data=%p\n",
+		  (unsigned)msg_type, private_data));
+
 	/*
 	 * Only one callback per type
 	 */
