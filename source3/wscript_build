@@ -1468,8 +1468,15 @@ bld.SAMBA3_BINARY('nmblookup' + bld.env.suffix3,
 
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source=SMBTORTURE_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param libsmb KRBCLIENT TLDAP
-                 smbd_shim popt_samba3 asn1util LIBTSOCKET NDR_LSA msrpc3 ndr-standard RPC_NDR_ECHO WB_REQTRANS libcli_lsa3''',
+                 deps='''
+                 talloc
+                 param
+                 libsmb
+                 msrpc3
+                 TLDAP
+                 RPC_NDR_ECHO
+                 WB_REQTRANS
+                 ''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbconftort',
