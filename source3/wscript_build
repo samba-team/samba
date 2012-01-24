@@ -1618,8 +1618,9 @@ bld.SAMBA3_BINARY('timelimit',
 
 bld.SAMBA3_BINARY('rpc_open_tcp',
                  source=RPC_OPEN_TCP_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient KRBCLIENT param samba3core libsmb smbd_shim
-                 asn1util LIBTSOCKET ndr-standard msrpc3''',
+                 deps='''
+                 talloc
+                 msrpc3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('test_lp_load',
