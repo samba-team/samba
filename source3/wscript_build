@@ -1587,8 +1587,10 @@ bld.SAMBA3_BINARY('debug2html',
 
 bld.SAMBA3_BINARY('smbfilter',
                  source=SMBFILTER_SRC,
-                 deps='''talloc tevent cap wbclient param libsmb smbd_shim KRBCLIENT asn1util LIBTSOCKET
-                 NDR_SAMR NDR_LSA''',
+                 deps='''
+                 talloc
+                 param
+                 LIBNMB''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('versiontest',
