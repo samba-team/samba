@@ -494,7 +494,12 @@ static NTSTATUS b9_generate_session_info_pac(struct auth4_context *auth_context,
 		return status;
 	}
 
+	if (user_info_dc->info->authenticated) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
 	session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES;
+
 	status = auth_generate_session_info(mem_ctx, NULL, NULL, user_info_dc,
 					    session_info_flags, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
