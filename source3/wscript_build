@@ -1401,8 +1401,12 @@ bld.SAMBA3_BINARY('smbta-util',
 
 bld.SAMBA3_BINARY('smbstatus',
                  source=STATUS_SRC,
-                 deps='''talloc tdb_compat tevent cap param popt_samba3 smbd_shim
-                 LOCKING PROFILE FNAME_UTIL''',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3
+                 LOCKING
+                 PROFILE''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbcontrol',
