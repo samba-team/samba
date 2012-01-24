@@ -1432,9 +1432,12 @@ bld.SAMBA3_BINARY('smbtree',
 
 bld.SAMBA3_BINARY('smbpasswd',
                  source=SMBPASSWD_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param smbd_shim
-                 libsmb popt_samba3 KRBCLIENT pdb ndr-standard msrpc3 PASSWD_UTIL
-                 LIBCLI_SAMR INIT_LSA PASSCHANGE''',
+                 deps='''
+                 talloc
+                 param
+                 pdb
+                 PASSWD_UTIL
+                 PASSCHANGE''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('pdbedit',
