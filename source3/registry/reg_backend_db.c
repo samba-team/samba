@@ -1909,6 +1909,11 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 		goto done;
 	}
 
+	if (regval_ctr_numvals(values) == 0) {
+		WERROR werr = regdb_delete_values(db, key);
+		return werror_to_ntstatus(werr);
+	}
+
 	ZERO_STRUCT(data);
 
 	len = regdb_pack_values(values, data.dptr, data.dsize);
