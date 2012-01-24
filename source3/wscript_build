@@ -1377,7 +1377,6 @@ bld.SAMBA3_BINARY('smbspool',
                  source=CUPS_SRC,
                  deps='''
                  talloc
-                 tevent
                  popt_samba3
                  param
                  libsmb
@@ -1394,7 +1393,10 @@ bld.SAMBA3_BINARY('testparm',
 
 bld.SAMBA3_BINARY('smbta-util',
                  source=SMBTA_UTIL_SRC,
-                 deps='''talloc tdb_compat tevent cap param popt_samba3 smbd_shim''',
+                 deps='''
+                 talloc
+                 SECRETS3
+                 param''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbstatus',
