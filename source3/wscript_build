@@ -1420,8 +1420,13 @@ bld.SAMBA3_BINARY('smbcontrol',
 
 bld.SAMBA3_BINARY('smbtree',
                  source=SMBTREE_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param smbd_shim
-                 libsmb popt_samba3 KRBCLIENT pdb ndr-standard msrpc3 PROFILE
+                 deps='''
+                 talloc
+                 param
+                 libsmb
+                 msrpc3
+                 popt_samba3
+                 PROFILE
                  RPC_NDR_SRVSVC''',
                  vars=locals())
 
