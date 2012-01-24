@@ -1452,7 +1452,9 @@ bld.SAMBA3_BINARY('pdbedit',
 
 bld.SAMBA3_BINARY('smbget',
                  source=SMBGET_SRC,
-                 deps='''talloc tdb_compat smbclient popt_samba3''',
+                 deps='''
+                 talloc
+                 smbclient''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('nmblookup' + bld.env.suffix3,
