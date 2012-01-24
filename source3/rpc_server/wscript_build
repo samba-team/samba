@@ -72,7 +72,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_LSARPC',
 
 bld.SAMBA3_SUBSYSTEM('RPC_WINREG',
                     source=RPC_WINREG_SRC,
-                    deps='REGFIO REG_API_REGF NDR_PERFCOUNT',
+                    deps='REG_FULL REGFIO REG_API_REGF NDR_PERFCOUNT',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('RPC_INITSHUTDOWN',
