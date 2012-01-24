@@ -1595,7 +1595,9 @@ bld.SAMBA3_BINARY('smbfilter',
 
 bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
-                 deps='SAMBA_VERSION samba3core param',
+                 deps='''
+                 SAMBA_VERSION
+                 param''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,
