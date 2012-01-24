@@ -1560,7 +1560,10 @@ bld.SAMBA3_BINARY('pdbtest',
 
 bld.SAMBA3_BINARY('vfstest',
                  source=VFSTEST_SRC,
-                 deps='smbd_base SMBREADLINE',
+                 deps='''
+                 vfs
+                 popt_samba3
+                 SMBREADLINE''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('log2pcap',
