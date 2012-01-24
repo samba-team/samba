@@ -1528,8 +1528,10 @@ bld.SAMBA3_BINARY('smbcquotas',
 
 bld.SAMBA3_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
-                 deps='''talloc tevent cap popt_samba3 samba3core param
-                 smbd_shim pdb wbclient LIBEVENTLOG''',
+                 deps='''
+                 talloc
+                 param
+                 LIBEVENTLOG''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('sharesec',
