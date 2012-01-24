@@ -1312,9 +1312,14 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
 
 bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
                  source=CLIENT_SRC,
-                 deps='''talloc tdb_compat cap popt_samba3 pdb libsmb smbd_shim
-                 param wbclient param KRBCLIENT ndr-standard
-                 msrpc3 SMBREADLINE smbclient RPC_NDR_SRVSVC INIT_LSA
+                 deps='''
+                 talloc
+                 popt_samba3
+                 param
+                 ndr-standard
+                 SMBREADLINE
+                 smbclient
+                 RPC_NDR_SRVSVC
                  cli_smb_common''',
                  vars=locals())
 
