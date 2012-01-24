@@ -28,7 +28,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 
-typedef enum { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS } dbwrap_op;
+enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS };
 
 typedef enum { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX } dbwrap_type;
 
@@ -298,7 +298,7 @@ static int dbwrap_tool_listkeys(struct db_context *db,
 }
 
 struct dbwrap_op_dispatch_table {
-	dbwrap_op op;
+	enum dbwrap_op op;
 	dbwrap_type type;
 	int (*cmd)(struct db_context *db,
 		   const char *keyname,
@@ -330,7 +330,7 @@ int main(int argc, const char **argv)
 
 	const char *dbname;
 	const char *opname;
-	dbwrap_op op;
+	enum dbwrap_op op;
 	const char *keyname = "";
 	const char *keytype = "int32";
 	dbwrap_type type;
