@@ -493,7 +493,7 @@ while True:
         run_cmd("rm -rf %s" % test_master)
         cleanup_list.append(test_master)
         run_cmd("git clone --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
-    except:
+    except Exception:
         cleanup()
         raise
 
@@ -503,7 +503,7 @@ while True:
                 rebase_tree(options.rebase)
             elif options.rebase_master:
                 rebase_tree(samba_master)
-        except:
+        except Exception:
             cleanup_list.append(gitroot + "/autobuild.pid")
             cleanup()
             email_failure(-1, 'rebase', 'rebase', 'rebase', 'rebase on master failed')
@@ -515,7 +515,7 @@ while True:
         if status != 0 or errstr != "retry":
             break
         cleanup()
-    except:
+    except Exception:
         cleanup()
         raise
 
