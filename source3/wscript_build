@@ -1509,9 +1509,11 @@ bld.SAMBA3_BINARY('msgtest',
 
 bld.SAMBA3_BINARY('smbcacls',
                  source=SMBCACLS_SRC,
-                 deps='''talloc tdb_compat cap wbclient param libsmb KRBCLIENT
-                 smbd_shim pdb popt_samba3 ndr-standard
-                 msrpc3 libcli_lsa3''',
+                 deps='''
+                 talloc
+                 popt_samba3
+                 msrpc3
+                 libcli_lsa3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbcquotas',
