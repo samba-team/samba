@@ -1552,8 +1552,10 @@ bld.SAMBA3_BINARY('locktest' + bld.env.suffix3,
 
 bld.SAMBA3_BINARY('pdbtest',
                  source=PDBTEST_SRC,
-                 deps='''talloc tdb_compat cap wbclient param libsmb KRBCLIENT smbd_shim pdb
-                 popt_samba3 NDR_SAMR NDR_LSA''',
+                 deps='''
+                 talloc
+                 pdb
+                 popt_samba3''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('vfstest',
