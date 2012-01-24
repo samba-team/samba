@@ -1654,7 +1654,9 @@ bld.SAMBA3_BINARY('split_tokens',
 
 bld.SAMBA3_BINARY('vlp',
                  source=VLP_SRC,
-                 deps='''talloc tdb_compat PARAM_UTIL UTIL_TDB samba3core param''',
+                 deps='''
+                 talloc
+                 param''',
                  vars=locals())
 
 swat_dir = os.path.join(bld.curdir, '../swat')
