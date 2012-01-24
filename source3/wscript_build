@@ -1442,9 +1442,12 @@ bld.SAMBA3_BINARY('smbpasswd',
 
 bld.SAMBA3_BINARY('pdbedit',
                  source=PDBEDIT_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param smbd_shim
-                 LIBNTLMSSP popt_samba3 pdb
-                 PASSWD_UTIL cli-ldap-common''',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3
+                 pdb
+                 PASSWD_UTIL''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbget',
