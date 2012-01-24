@@ -1543,8 +1543,11 @@ bld.SAMBA3_BINARY('sharesec',
 
 bld.SAMBA3_BINARY('locktest' + bld.env.suffix3,
                  source=LOCKTEST_SRC,
-                 deps='''talloc tdb_compat tevent cap wbclient param KRBCLIENT libsmb smbd_shim
-                 asn1util LIBTSOCKET NDR_SAMR NDR_LSA LOCKING FNAME_UTIL''',
+                 deps='''
+                 talloc
+                 param
+                 libsmb
+                 LOCKING''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('pdbtest',
