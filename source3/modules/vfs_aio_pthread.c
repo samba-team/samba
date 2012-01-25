@@ -458,7 +458,7 @@ static void aio_pthread_handle_suspend_completion(struct event_context *event_ct
 	}
 
 	pjobid = talloc_array(NULL, int, 1);
-	if (pjobid) {
+	if (pjobid == NULL) {
 		smb_panic("aio_pthread_handle_suspend_completion: no memory.");
 	}
 
