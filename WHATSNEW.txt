@@ -48,6 +48,7 @@ o   Jeremy Allison <jra@samba.org>
       pipe on short write.
     * BUG 8687: Fix typo in 'net memberships' usage.
     * BUG 8710: Fix major leak with SMB2 in connections.tdb.
+    * Fix a crash bug in the spoolss code.
     * Add new contributing FAQ announcing acceptance of corporate (C).
 
 
