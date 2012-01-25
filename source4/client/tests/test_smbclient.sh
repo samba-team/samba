@@ -19,7 +19,7 @@ shift 5
 failed=0
 
 samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient$EXEEXT"
+smbclient="$samba4bindir/smbclient"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 

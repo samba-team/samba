@@ -34,7 +34,7 @@ check() {
 
 export PATH="$BINDIR:$PATH"
 
-ldbsearch="$VALGRIND ldbsearch$EXEEXT"
+ldbsearch="$VALGRIND ldbsearch"
 
 check "RootDSE" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
 

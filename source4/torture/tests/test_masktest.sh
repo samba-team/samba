@@ -19,7 +19,7 @@ shift 5
 failed=0
 
 samba4bindir="$BINDIR"
-masktest="$samba4bindir/masktest$EXEEXT"
+masktest="$samba4bindir/masktest"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 

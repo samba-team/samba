@@ -15,7 +15,7 @@ shift 4
 
 failed=0
 samba4bindir="$BINDIR"
-wbinfo="$VALGRIND $samba4bindir/wbinfo$EXEEXT"
+wbinfo="$VALGRIND $samba4bindir/wbinfo"
 
 . `dirname $0`/../../testprogs/blackbox/subunit.sh
 

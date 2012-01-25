@@ -19,7 +19,7 @@ shift 5
 failed=0
 
 samba4bindir="$BINDIR"
-locktest="$samba4bindir/locktest$EXEEXT"
+locktest="$samba4bindir/locktest"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 

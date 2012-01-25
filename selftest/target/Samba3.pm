@@ -12,13 +12,11 @@ use POSIX;
 use target::Samba;
 
 sub new($$) {
-	my ($classname, $bindir, $binary_mapping, $srcdir, $exeext, $server_maxtime) = @_;
-	$exeext = "" unless defined($exeext);
+	my ($classname, $bindir, $binary_mapping, $srcdir, $server_maxtime) = @_;
 	my $self = { vars => {},
 		     bindir => $bindir,
 		     binary_mapping => $binary_mapping,
 		     srcdir => $srcdir,
-		     exeext => $exeext,
 		     server_maxtime => $server_maxtime
 	};
 	bless $self;

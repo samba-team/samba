@@ -36,7 +36,7 @@ binary_mapping = {}
 def binpath(name):
     if name in binary_mapping:
         name = binary_mapping[name]
-    return os.path.join(bindir(), "%s%s" % (name, os.getenv("EXEEXT", "")))
+    return os.path.join(bindir(), name)
 
 binary_mapping_string = os.getenv("BINARY_MAPPING", None)
 if binary_mapping_string is not None:

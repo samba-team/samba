@@ -19,7 +19,7 @@ shift 5
 failed=0
 
 samba4bindir="$BINDIR"
-gentest="$samba4bindir/gentest$EXEEXT"
+gentest="$samba4bindir/gentest"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 

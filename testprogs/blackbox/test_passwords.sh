@@ -20,12 +20,12 @@ shift 6
 failed=0
 
 samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient$EXEEXT"
-samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
-samba_tool="$samba4bindir/samba-tool$EXEEXT"
-smbpasswd="$samba4bindir/smbpasswd$EXEEXT"
-rkpty="$samba4bindir/rkpty$EXEEXT"
-samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
+smbclient="$samba4bindir/smbclient"
+samba4kinit="$samba4bindir/samba4kinit"
+samba_tool="$samba4bindir/samba-tool"
+smbpasswd="$samba4bindir/smbpasswd"
+rkpty="$samba4bindir/rkpty"
+samba4kpasswd="$samba4bindir/samba4kpasswd"
 newuser="$samba_tool user create"
 
 . `dirname $0`/subunit.sh

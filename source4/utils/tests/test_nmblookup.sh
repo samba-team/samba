@@ -27,7 +27,7 @@ testit() {
 }
 
 samba4bindir="$BINDIR"
-nmblookup="$samba4bindir/nmblookup$EXEEXT"
+nmblookup="$samba4bindir/nmblookup"
 
 testit "nmblookup -U \$SERVER_IP \$SERVER" $nmblookup $TORTURE_OPTIONS -U $SERVER_IP $SERVER
 testit "nmblookup -U \$SERVER_IP \$NETBIOSNAME" $nmblookup $TORTURE_OPTIONS -U $SERVER_IP $NETBIOSNAME

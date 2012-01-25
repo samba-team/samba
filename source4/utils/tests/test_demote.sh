@@ -13,8 +13,8 @@ shift 7
 failed=0
 
 samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient$EXEEXT"
-samba_tool="$samba4bindir/samba-tool$EXEEXT"
+smbclient="$samba4bindir/smbclient"
+samba_tool="$samba4bindir/samba-tool"
 
 testit() {
 	name="$1"

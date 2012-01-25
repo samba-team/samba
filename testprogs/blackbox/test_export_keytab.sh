@@ -19,9 +19,9 @@ shift 5
 failed=0
 
 samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient$EXEEXT"
-samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
-samba_tool="$samba4bindir/samba-tool$EXEEXT"
+smbclient="$samba4bindir/smbclient"
+samba4kinit="$samba4bindir/samba4kinit"
+samba_tool="$samba4bindir/samba-tool"
 newuser="$samba_tool user create"
 
 . `dirname $0`/subunit.sh

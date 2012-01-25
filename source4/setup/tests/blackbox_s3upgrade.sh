@@ -11,9 +11,9 @@ PREFIX=`pwd`"/$1"
 shift 1
 
 samba4bindir="$BINDIR"
-samba_tool="$samba4bindir/samba-tool$EXEEXT"
-samba_net="$samba4bindir/net$EXEEXT"
-testparm="$samba4bindir/testparm$EXEEXT"
+samba_tool="$samba4bindir/samba-tool"
+samba_net="$samba4bindir/net"
+testparm="$samba4bindir/testparm"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 

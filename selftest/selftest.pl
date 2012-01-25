@@ -26,7 +26,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--bindir=DIR] [--exeext=EXT][--target=samba|samba3|win] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--bindir=DIR] [--target=samba|samba3|win] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -47,10 +47,6 @@ Source directory.
 =item I<--bindir=DIR>
 
 Built binaries directory.
-
-=item I<--exeext=EXT>
-
-Executable extention
 
 =item I<--prefix=DIR>
 
@@ -161,7 +157,6 @@ my @testlists = ();
 
 my $srcdir = ".";
 my $bindir = "./bin";
-my $exeext = "";
 my $prefix = "./st";
 
 my @includes = ();
@@ -306,7 +301,6 @@ Paths:
  --prefix=DIR               prefix to run tests in [st]
  --srcdir=DIR               source directory [.]
  --bindir=DIR               binaries directory [./bin]
- --exeext=EXT               executable extention []
 
 Target Specific:
  --socket-wrapper-pcap      save traffic to pcap directories
@@ -340,7 +334,6 @@ my $result = GetOptions (
 		'include=s' => \@opt_include,
 		'srcdir=s' => \$srcdir,
 		'bindir=s' => \$bindir,
-		'exeext=s' => \$exeext,
 		'verbose' => \$opt_verbose,
 		'testenv' => \$opt_testenv,
 		'list' => \$opt_list,
@@ -418,7 +411,6 @@ $ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
 $ENV{BINDIR} = $bindir_abs;
-$ENV{EXEEXT} = $exeext;
 
 my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
@@ -485,14 +477,14 @@ unless ($opt_list) {
 		}
 		$testenv_default = "dc";
 		require target::Samba;
-		$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $exeext, $server_maxtime);
+		$target = new Samba($bindir, \%binary_mapping, $ldap, $srcdir, $server_maxtime);
 	} elsif ($opt_target eq "samba3") {
 		if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 			die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 		}
 		$testenv_default = "member";
 		require target::Samba3;
-		$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $exeext, $server_maxtime);
+		$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $server_maxtime);
 	} elsif ($opt_target eq "win") {
 		die("Windows tests will not run with socket wrapper enabled.") 
 			if ($opt_socket_wrapper);
