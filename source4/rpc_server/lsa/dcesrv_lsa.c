@@ -983,7 +983,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	}
 
 	if (dns_name) {
-		char *dns_encoded = ldb_binary_encode_string(mem_ctx, netbios_name);
+		char *dns_encoded = ldb_binary_encode_string(mem_ctx, dns_name);
 		char *netbios_encoded = ldb_binary_encode_string(mem_ctx, netbios_name);
 		/* search for the trusted_domain record */
 		ret = gendb_search(sam_ldb,
