@@ -499,8 +499,6 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
 
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}'''
 
-# FIXME:  bigballofmud
-
 CLIENT_SRC1 = '''client/client.c client/clitar.c
                  client/dnsbrowse.c'''
 
