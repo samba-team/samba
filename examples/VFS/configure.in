@@ -164,9 +164,6 @@ fi
 #LD=ld
 #AC_PROG_LD_GNU
 
-#dnl look for executable suffix
-#AC_EXEEXT
-
 builddir=`pwd`
 AC_SUBST(builddir)
 

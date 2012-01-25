@@ -39,10 +39,6 @@ while (not eof(MAKEFILE)) {
   $_ = <MAKEFILE>;
   chomp;
   last if /^# object file lists/ ;
-  if (/^EXEEXT/) {
-    /^.*=(.*)/;
-    $EXEEXT = $1;
-  }
   if (/^srcdir/) {
     /^.*=(.*)/;
     $srcdir = $1;
@@ -367,7 +363,6 @@ sub get_line {
     s/^\s*/ /;
     substr($line,$cont,1) = $_;
   }
-  $line =~ s/\$\(EXEEXT\)/$EXEEXT/g;
   $line =~ s/\$\(srcdir\)//g;
   $line =~ s/\$\(builddir\)//g;
   $line =~ s/\$\(\S*\)\s*//g;

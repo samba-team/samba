@@ -23,7 +23,6 @@ $progs =~ s/@([^@]+)@//g;
 
 foreach(split(/bin\//, $progs)) {
 	next if($_ eq " ");
-	s/\@EXEEXT\@//g;
 	s/ //g;
 
 	$f = $_;

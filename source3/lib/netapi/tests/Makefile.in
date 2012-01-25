@@ -14,7 +14,7 @@ CMDLINE_LIBS=$(NETAPI_LIBS) @POPTLIBS@
 COMPILE_CC = $(CC) -I. $(CCFLAGS) $(PICFLAG) -c $< -o $@
 COMPILE = $(COMPILE_CC)
 
-PROGS = bin/netapitest@EXEEXT@
+PROGS = bin/netapitest
 
 all: $(PROGS)
 
@@ -46,7 +46,7 @@ CMDLINE_OBJ = common.o
 NETAPIBUFFER_OBJ = netapibuffer.o
 NETAPITEST_OBJ = netapitest.o netlocalgroup.o netuser.o netgroup.o netdisplay.o netshare.o netfile.o netserver.o $(CMDLINE_OBJ)
 
-bin/netapitest@EXEEXT@: $(BINARY_PREREQS) $(NETAPITEST_OBJ)
+bin/netapitest: $(BINARY_PREREQS) $(NETAPITEST_OBJ)
 	@echo Linking $@
 	@$(CC) $(CCFLAGS) -o $@ $(NETAPITEST_OBJ) $(LDFLAGS) $(DYNEXP) $(CMDLINE_LIBS)
 

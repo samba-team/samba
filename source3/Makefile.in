@@ -77,7 +77,6 @@ CPP=@CPP@
 CPPFLAGS=-DHAVE_CONFIG_H @CPPFLAGS@
 PICFLAG=@PICFLAG@
 
-EXEEXT=@EXEEXT@
 AR=@AR@
 LDSHFLAGS=$(PICFLAG) @LDSHFLAGS@ @RELRO_LDFLAGS@ @LDFLAGS@ -lc @LDSHFLAGS_Z_DEFS@
 LDSHFLAGS_MODULES=$(PICFLAG) @LDSHFLAGS@ @RELRO_LDFLAGS@ @LDFLAGS@ @LDSHFLAGS_Z_NODEFS@
@@ -203,34 +202,34 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 
 # Note that all executable programs now provide for an optional executable suffix.
 
-SBIN_PROGS = bin/smbd@EXEEXT@ bin/nmbd@EXEEXT@ @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
+SBIN_PROGS = bin/smbd bin/nmbd @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
 
-BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
-	bin/testparm@EXEEXT@ bin/smbstatus@EXEEXT@ bin/smbget@EXEEXT@ \
-	bin/smbta-util@EXEEXT@
-BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ $(TDBBACKUP) \
-	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ $(TDBDUMP) \
-	$(TDBRESTORE) $(TDBTOOL) bin/dbwrap_tool@EXEEXT@
-BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
-	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ bin/sharesec@EXEEXT@ \
-	bin/smbcquotas@EXEEXT@ bin/eventlogadm@EXEEXT@ 
+BIN_PROGS1 = bin/smbclient bin/net bin/smbspool \
+	bin/testparm bin/smbstatus bin/smbget \
+	bin/smbta-util
+BIN_PROGS2 = bin/smbcontrol bin/smbtree $(TDBBACKUP) \
+	bin/nmblookup bin/pdbedit $(TDBDUMP) \
+	$(TDBRESTORE) $(TDBTOOL) bin/dbwrap_tool
+BIN_PROGS3 = bin/smbpasswd bin/rpcclient bin/smbcacls \
+	bin/profiles bin/ntlm_auth bin/sharesec \
+	bin/smbcquotas bin/eventlogadm 
 
-TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
-	bin/masktest@EXEEXT@ bin/locktest@EXEEXT@ \
-	bin/locktest2@EXEEXT@ bin/nsstest@EXEEXT@ bin/vfstest@EXEEXT@ \
-	bin/pdbtest@EXEEXT@ $(TALLOCTORT) bin/replacetort@EXEEXT@ \
+TORTURE_PROGS = bin/smbtorture bin/msgtest \
+	bin/masktest bin/locktest \
+	bin/locktest2 bin/nsstest bin/vfstest \
+	bin/pdbtest $(TALLOCTORT) bin/replacetort \
 	$(TDBTORTURE) $(PTHREADPOOLTEST) \
-	bin/smbconftort@EXEEXT@ bin/vlp@EXEEXT@
+	bin/smbconftort bin/vlp
 
 BIN_PROGS = @EXTRA_BIN_PROGS@ \
 	$(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3)
 
-EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
-	$(TALLOCTORT) bin/replacetort@EXEEXT@ \
-	bin/log2pcap@EXEEXT@ \
-	bin/vlp@EXEEXT@ \
-	bin/dbwrap_tool@EXEEXT@ \
-	bin/dbwrap_torture@EXEEXT@
+EVERYTHING_PROGS = bin/debug2html bin/smbfilter \
+	$(TALLOCTORT) bin/replacetort \
+	bin/log2pcap \
+	bin/vlp \
+	bin/dbwrap_tool \
+	bin/dbwrap_torture
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -1596,41 +1595,41 @@ gpext_modules:: $(GPEXT_MODULES)
 
 torture:: SHOWFLAGS basics $(TORTURE_PROGS) @SMBTORTURE4@
 
-smbtorture : SHOWFLAGS bin/smbtorture@EXEEXT@
+smbtorture : SHOWFLAGS bin/smbtorture
 
-masktest : SHOWFLAGS bin/masktest@EXEEXT@
+masktest : SHOWFLAGS bin/masktest
 
-msgtest : SHOWFLAGS bin/msgtest@EXEEXT@
+msgtest : SHOWFLAGS bin/msgtest
 
-locktest : SHOWFLAGS bin/locktest@EXEEXT@
+locktest : SHOWFLAGS bin/locktest
 
-smbcacls : SHOWFLAGS bin/smbcacls@EXEEXT@
+smbcacls : SHOWFLAGS bin/smbcacls
 
-smbcquotas : SHOWFLAGS bin/smbcquotas@EXEEXT@
+smbcquotas : SHOWFLAGS bin/smbcquotas
 
-locktest2 : SHOWFLAGS bin/locktest2@EXEEXT@
+locktest2 : SHOWFLAGS bin/locktest2
 
-debug2html : SHOWFLAGS bin/debug2html@EXEEXT@
+debug2html : SHOWFLAGS bin/debug2html
 
-smbfilter : SHOWFLAGS bin/smbfilter@EXEEXT@
+smbfilter : SHOWFLAGS bin/smbfilter
 
-eventlogadm: SHOWFLAGS bin/eventlogadm@EXEEXT@
+eventlogadm: SHOWFLAGS bin/eventlogadm
 
-sharesec: SHOWFLAGS bin/sharesec@EXEEXT@
+sharesec: SHOWFLAGS bin/sharesec
 
 talloctort : SHOWFLAGS $(TALLOCTORT)
 
-replacetort : SHOWFLAGS bin/replacetort@EXEEXT@
+replacetort : SHOWFLAGS bin/replacetort
 
-smbconftort : SHOWFLAGS bin/smbconftort@EXEEXT@
+smbconftort : SHOWFLAGS bin/smbconftort
 
-pthreadpooltest : SHOWFLAGS bin/pthreadpooltest@EXEEXT@
+pthreadpooltest : SHOWFLAGS bin/pthreadpooltest
 
-timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
+timelimit : SHOWFLAGS bin/timelimit
 
-nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
+nsswitch : SHOWFLAGS bin/winbindd bin/wbinfo @WINBIND_NSS@ \
 	@WINBIND_WINS_NSS@ @WINBIND_KRB5_LOCATOR@ \
-	bin/pam_winbind.@SHLIBEXT@ bin/smbcontrol@EXEEXT@
+	bin/pam_winbind.@SHLIBEXT@ bin/smbcontrol
 
 wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
@@ -1844,7 +1843,7 @@ bin/.dummy:
 	  dir=bin $(MAKEDIR); fi
 	@: >> $@ || : > $@ # what a fancy emoticon!
 
-bin/smbd@EXEEXT@: $(BINARY_PREREQS) $(SMBD_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) @BUILD_POPT@
+bin/smbd: $(BINARY_PREREQS) $(SMBD_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) @BUILD_POPT@
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LDAP_LIBS) @SMBD_FAM_LIBS@ \
 		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
@@ -1852,34 +1851,34 @@ bin/smbd@EXEEXT@: $(BINARY_PREREQS) $(SMBD_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCL
 		$(POPT_LIBS) @SMBD_LIBS@ $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
 		$(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/nmbd@EXEEXT@: $(BINARY_PREREQS) $(NMBD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/nmbd: $(BINARY_PREREQS) $(NMBD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		@LIBWBCLIENT_STATIC@ $(LIBWBCLIENT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(POPT_LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(ZLIB_LIBS)
 
-bin/swat@EXEEXT@: $(BINARY_PREREQS) $(SWAT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/swat: $(BINARY_PREREQS) $(SWAT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINT_LIBS) \
 	  $(AUTH_LIBS) $(LIBS) $(PASSDB_LIBS) $(POPT_LIBS) $(KRB5LIBS) \
 	  $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/rpcclient@EXEEXT@: $(BINARY_PREREQS) $(RPCCLIENT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/rpcclient: $(BINARY_PREREQS) $(RPCCLIENT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(RPCCLIENT_OBJ) \
 		$(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) $(POPT_LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
 		$(LIBWBCLIENT_LIBS) $(ZLIB_LIBS) $(PASSDB_LIBS)
 
-bin/smbclient@EXEEXT@: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbclient: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(TERMLDFLAGS) $(TERMLIBS) $(LIBS) $(POPT_LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) $(DNSSD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) $(LIBNETAPI)
+bin/net: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) $(LIBNETAPI)
 	@echo Linking $@
 	@$(CC) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
 		$(POPT_LIBS) $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) \
@@ -1887,149 +1886,149 @@ bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(LIBNETAPI_LIBS) \
 		$(ZLIB_LIBS)
 
-bin/profiles@EXEEXT@: $(BINARY_PREREQS) $(PROFILES_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/profiles: $(BINARY_PREREQS) $(PROFILES_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(PROFILES_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/smbspool@EXEEXT@: $(BINARY_PREREQS) $(CUPS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbspool: $(BINARY_PREREQS) $(CUPS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(CUPS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
 		@LIBWBCLIENT_STATIC@ $(LIBWBCLIENT_LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
 
-bin/testparm@EXEEXT@: $(BINARY_PREREQS) $(TESTPARM_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/testparm: $(BINARY_PREREQS) $(TESTPARM_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/smbta-util@EXEEXT@: $(BINARY_PREREQS) $(SMBTA_UTIL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/smbta-util: $(BINARY_PREREQS) $(SMBTA_UTIL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBTA_UTIL_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/smbstatus@EXEEXT@: $(BINARY_PREREQS) $(STATUS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/smbstatus: $(BINARY_PREREQS) $(STATUS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/smbcontrol@EXEEXT@: $(BINARY_PREREQS) $(SMBCONTROL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/smbcontrol: $(BINARY_PREREQS) $(SMBCONTROL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -DUSING_SMBCONTROL -o $@ \
 		$(SMBCONTROL_OBJ) $(DYNEXP) $(LDFLAGS) \
 		$(LIBS) $(LDAP_LIBS) @LIBUNWIND_PTRACE@ $(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/smbtree@EXEEXT@: $(BINARY_PREREQS) $(SMBTREE_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbtree: $(BINARY_PREREQS) $(SMBTREE_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBTREE_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/smbpasswd@EXEEXT@: $(BINARY_PREREQS) $(SMBPASSWD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbpasswd: $(BINARY_PREREQS) $(SMBPASSWD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(PASSDB_LIBS) \
 		$(DYNEXP) $(LIBS) $(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/pdbedit@EXEEXT@: $(BINARY_PREREQS) $(PDBEDIT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/pdbedit: $(BINARY_PREREQS) $(PDBEDIT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(POPT_LIBS) $(PASSDB_LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) \
 		$(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/smbget@EXEEXT@: $(BINARY_PREREQS) $(SMBGET_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbget: $(BINARY_PREREQS) $(SMBGET_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBGET_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(POPT_LIBS)  $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/nmblookup@EXEEXT@: $(BINARY_PREREQS) $(NMBLOOKUP_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/nmblookup: $(BINARY_PREREQS) $(NMBLOOKUP_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(POPT_LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/smbtorture@EXEEXT@: $(BINARY_PREREQS) $(SMBTORTURE_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbtorture: $(BINARY_PREREQS) $(SMBTORTURE_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) \
 		$(LIBTDB_LIBS) $(ZLIB_LIBS) $(LIBWBCLIENT_LIBS)
 
-bin/talloctort@EXEEXT@: $(BINARY_PREREQS) $(TALLOCTORT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/talloctort: $(BINARY_PREREQS) $(TALLOCTORT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(TALLOCTORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/replacetort@EXEEXT@: $(REPLACETORT_OBJ) @BUILD_POPT@ $(LIBTALLOC)
+bin/replacetort: $(REPLACETORT_OBJ) @BUILD_POPT@ $(LIBTALLOC)
 	@echo Linking $@
 	@$(CC) -o $@ $(REPLACETORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS)
 
-bin/smbconftort@EXEEXT@: $(SMBCONFTORT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/smbconftort: $(SMBCONFTORT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBCONFTORT_OBJ) $(LDFLAGS) \
 		$(DYNEXP) $(LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/pthreadpooltest@EXEEXT@: $(PTHREADPOOLTEST_OBJ)
+bin/pthreadpooltest: $(PTHREADPOOLTEST_OBJ)
 	@echo Linking $@
 	@$(CC) -o $@ $(PTHREADPOOLTEST_OBJ) $(LDFLAGS) $(LIBS) $(PTHREAD_LDFLAGS)
 
-bin/masktest@EXEEXT@: $(BINARY_PREREQS) $(MASKTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/masktest: $(BINARY_PREREQS) $(MASKTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
 		@LIBWBCLIENT_STATIC@ $(LIBWBCLIENT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
 
-bin/msgtest@EXEEXT@: $(BINARY_PREREQS) $(MSGTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/msgtest: $(BINARY_PREREQS) $(MSGTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
 
-bin/smbcacls@EXEEXT@: $(BINARY_PREREQS) $(SMBCACLS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbcacls: $(BINARY_PREREQS) $(SMBCACLS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBCACLS_OBJ) $(DYNEXP) $(LDFLAGS) \
 		$(LIBS) $(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/smbcquotas@EXEEXT@: $(BINARY_PREREQS) $(SMBCQUOTAS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbcquotas: $(BINARY_PREREQS) $(SMBCQUOTAS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBCQUOTAS_OBJ) $(DYNEXP) $(LDFLAGS) \
 		$(LIBS) $(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/eventlogadm@EXEEXT@: $(BINARY_PREREQS) $(EVTLOGADM_OBJ) $(LIBTALLOC) $(LIBTDB)
+bin/eventlogadm: $(BINARY_PREREQS) $(EVTLOGADM_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(EVTLOGADM_OBJ) $(DYNEXP) $(LDFLAGS) \
 		$(LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/sharesec@EXEEXT@: $(BINARY_PREREQS) $(SHARESEC_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/sharesec: $(BINARY_PREREQS) $(SHARESEC_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(SHARESEC_OBJ) $(DYNEXP) $(LDFLAGS) \
 		$(LIBS) $(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/locktest@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/locktest: $(BINARY_PREREQS) $(LOCKTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(LOCKTEST_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
 		@LIBWBCLIENT_STATIC@ $(LIBWBCLIENT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
 
-bin/nsstest@EXEEXT@: $(BINARY_PREREQS) $(NSSTEST_OBJ) $(LIBTALLOC)
+bin/nsstest: $(BINARY_PREREQS) $(NSSTEST_OBJ) $(LIBTALLOC)
 	@echo Linking $@
 	@$(CC) -o $@ $(NSSTEST_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LIBTALLOC_LIBS)
 
-bin/pdbtest@EXEEXT@: $(BINARY_PREREQS) $(PDBTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/pdbtest: $(BINARY_PREREQS) $(PDBTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(PDBTEST_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) \
 		$(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/vfstest@EXEEXT@: $(BINARY_PREREQS) $(VFSTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/vfstest: $(BINARY_PREREQS) $(VFSTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(VFSTEST_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(AVAHI_LIBS) \
 		$(TERMLIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) $(DNSSD_LIBS) \
@@ -2037,24 +2036,24 @@ bin/vfstest@EXEEXT@: $(BINARY_PREREQS) $(VFSTEST_OBJ) @BUILD_POPT@ $(LIBTALLOC) 
 		@SMBD_LIBS@ $(NSCD_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
 		$(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
-bin/log2pcap@EXEEXT@: $(BINARY_PREREQS) $(LOG2PCAP_OBJ) @BUILD_POPT@ $(LIBTALLOC)
+bin/log2pcap: $(BINARY_PREREQS) $(LOG2PCAP_OBJ) @BUILD_POPT@ $(LIBTALLOC)
 	@echo Linking $@
 	@$(CC) -o $@ $(LOG2PCAP_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(POPT_LIBS) $(LIBS) $(LIBTALLOC_LIBS)
 
-bin/locktest2@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST2_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/locktest2: $(BINARY_PREREQS) $(LOCKTEST2_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(DYNEXP) \
 		@LIBWBCLIENT_STATIC@ $(LIBWBCLIENT_LIBS) \
 		$(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
 
-bin/debug2html@EXEEXT@: $(BINARY_PREREQS) $(DEBUG2HTML_OBJ) @BUILD_POPT@ $(LIBTALLOC)
+bin/debug2html: $(BINARY_PREREQS) $(DEBUG2HTML_OBJ) @BUILD_POPT@ $(LIBTALLOC)
 	@echo Linking $@
 	@$(CC) -o $@ $(DEBUG2HTML_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS)
 
-bin/smbfilter@EXEEXT@: $(BINARY_PREREQS) $(SMBFILTER_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/smbfilter: $(BINARY_PREREQS) $(SMBFILTER_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBFILTER_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
@@ -2781,14 +2780,14 @@ bin/librpc_rpcecho.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_RPCECHO_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_LIBRARY) $(RPC_RPCECHO_OBJ)
 
-bin/winbindd@EXEEXT@: $(BINARY_PREREQS) $(WINBINDD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/winbindd: $(BINARY_PREREQS) $(WINBINDD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(WINBINDD_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(AUTH_LIBS) \
 		$(PASSDB_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) \
 		$(ZLIB_LIBS)
 
-bin/vlp@EXEEXT@: $(BINARY_PREREQS) $(VLP_OBJ) $(LIBTDB) $(LIBTALLOC)
+bin/vlp: $(BINARY_PREREQS) $(VLP_OBJ) $(LIBTDB) $(LIBTALLOC)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(VLP_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(TERMLDFLAGS) $(TERMLIBS) $(LIBS) $(POPT_LIBS) \
@@ -3132,13 +3131,13 @@ bin/time_audit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TIME_AUDIT_OBJ)
 ## None here right now
 #########################################################
 
-bin/wbinfo@EXEEXT@: $(BINARY_PREREQS) $(WBINFO_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/wbinfo: $(BINARY_PREREQS) $(WBINFO_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(WBINFO_OBJ) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
 		$(LIBWBCLIENT_LIBS)
 
-bin/ntlm_auth@EXEEXT@: $(BINARY_PREREQS) $(NTLM_AUTH_OBJ) $(PARAM_OBJ) \
+bin/ntlm_auth: $(BINARY_PREREQS) $(NTLM_AUTH_OBJ) $(PARAM_OBJ) \
 	$(LIB_NONSMBD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(DYNEXP) $(NTLM_AUTH_OBJ) \
@@ -3152,47 +3151,47 @@ bin/pam_smbpass.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_SMBPASS_OBJ) $(LIBTALLOC) $(
 		$(LIBS) $(LDAP_LIBS) $(NSCD_LIBS) $(KRB5LIBS) $(ZLIB_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS)
 
-bin/tdbbackup@EXEEXT@: $(BINARY_PREREQS) $(TDBBACKUP_OBJ) $(LIBTALLOC) $(LIBTDB)
+bin/tdbbackup: $(BINARY_PREREQS) $(TDBBACKUP_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(TDBBACKUP_OBJ) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/tdbtool@EXEEXT@: $(BINARY_PREREQS) $(TDBTOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
+bin/tdbtool: $(BINARY_PREREQS) $(TDBTOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(TDBTOOL_OBJ) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/tdbdump@EXEEXT@: $(BINARY_PREREQS) $(TDBDUMP_OBJ) $(LIBTDB)
+bin/tdbdump: $(BINARY_PREREQS) $(TDBDUMP_OBJ) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(TDBDUMP_OBJ) $(DYNEXP) $(LIBTDB_LIBS) $(LIBREPLACE_LIBS)
 
-bin/tdbrestore@EXEEXT@: $(BINARY_PREREQS) $(TDBRESTORE_OBJ) $(LIBTDB)
+bin/tdbrestore: $(BINARY_PREREQS) $(TDBRESTORE_OBJ) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(TDBRESTORE_OBJ) $(DYNEXP) $(LIBTDB_LIBS) $(LIBREPLACE_LIBS)
 
-bin/tdbtorture@EXEEXT@: $(BINARY_PREREQS) $(TDBTORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
+bin/tdbtorture: $(BINARY_PREREQS) $(TDBTORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(TDBTORTURE_OBJ) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/timelimit@EXEEXT@: script/tests/timelimit.o
+bin/timelimit: script/tests/timelimit.o
 	@echo Linking $@
 	@$(CC) -o $@ $(DYNEXP) script/tests/timelimit.o
 
-bin/rpc_open_tcp@EXEEXT@: $(BINARY_PREREQS) $(RPC_OPEN_TCP_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/rpc_open_tcp: $(BINARY_PREREQS) $(RPC_OPEN_TCP_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(RPC_OPEN_TCP_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(LIBTALLOC_LIBS) $(LIBWBCLIENT_LIBS) \
 		$(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS)
 
-bin/test_lp_load@EXEEXT@: $(BINARY_PREREQS) $(TEST_LP_LOAD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/test_lp_load: $(BINARY_PREREQS) $(TEST_LP_LOAD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(TEST_LP_LOAD_OBJ) \
 		$(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) $(LIBWBCLIENT_LIBS) \
 		$(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
+bin/dbwrap_tool: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DBWRAP_TOOL_OBJ)\
 		$(LDFLAGS) $(DYNEXP) $(LIBS) \
@@ -3200,10 +3199,10 @@ bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
 		$(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-install-dbwrap_tool:: bin/dbwrap_tool@EXEEXT@
+install-dbwrap_tool:: bin/dbwrap_tool
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
 
-bin/dbwrap_torture@EXEEXT@: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
+bin/dbwrap_torture: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DBWRAP_TORTURE_OBJ)\
 		$(LDFLAGS) $(DYNEXP) $(LIBS) \
@@ -3211,10 +3210,10 @@ bin/dbwrap_torture@EXEEXT@: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
 		$(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-install-dbwrap_torture:: bin/dbwrap_torture@EXEEXT@
+install-dbwrap_torture:: bin/dbwrap_torture
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
 
-bin/split_tokens@EXEEXT@: $(BINARY_PREREQS) $(SPLIT_TOKENS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/split_tokens: $(BINARY_PREREQS) $(SPLIT_TOKENS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(SPLIT_TOKENS_OBJ) \
 		$(LDFLAGS) $(DYNEXP) \

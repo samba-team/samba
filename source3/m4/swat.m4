@@ -8,7 +8,7 @@ dnl http://www.gnu.org/licenses/
 dnl
 
 
-SWAT_SBIN_TARGETS='bin/swat$(EXEEXT)'
+SWAT_SBIN_TARGETS='bin/swat'
 SWAT_INSTALL_TARGETS=installswat
 
 AC_ARG_ENABLE(swat,

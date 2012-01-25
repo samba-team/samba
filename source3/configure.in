@@ -269,9 +269,6 @@ if test "$ac_cv_prog_gnu_ld" = "yes"; then
         fi
 fi
 
-dnl look for executable suffix
-AC_EXEEXT
-
 dnl Check if C compiler understands -c and -o at the same time
 AC_PROG_CC_C_O
 if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" = no"; then
@@ -1078,7 +1075,7 @@ AC_CHECK_FUNCS(yp_get_default_domain)
 # Check if we have execl, if not we need to compile smbrun.
 AC_CHECK_FUNCS(execl)
 if test x"$ac_cv_func_execl" = x"no"; then
-    EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun\$(EXEEXT)"
+    EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun"
 fi
 
 AC_CHECK_FUNCS(getcwd fchown chmod fchmod mknod mknod64)
@@ -2135,7 +2132,7 @@ then
 	SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CONFIGURE_CPPFLAGS} ${TALLOC_CFLAGS}"
 	AC_SUBST(LIBTALLOC_OBJ0)
 
-	TALLOCTORT="bin/talloctort\$(EXEEXT)"
+	TALLOCTORT="bin/talloctort"
 	AC_SUBST(TALLOCTORT)
 fi
 
@@ -2177,15 +2174,15 @@ then
 	SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 	SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CONFIGURE_CPPFLAGS} ${TDB_CFLAGS}"
 
-	TDBBACKUP="bin/tdbbackup\$(EXEEXT)"
+	TDBBACKUP="bin/tdbbackup"
 	AC_SUBST(TDBBACKUP)
-	TDBDUMP="bin/tdbdump\$(EXEEXT)"
+	TDBDUMP="bin/tdbdump"
 	AC_SUBST(TDBDUMP)
-	TDBRESTORE="bin/tdbrestore\$(EXEEXT)"
+	TDBRESTORE="bin/tdbrestore"
 	AC_SUBST(TDBRESTORE)
-	TDBTOOL="bin/tdbtool\$(EXEEXT)"
+	TDBTOOL="bin/tdbtool"
 	AC_SUBST(TDBTOOL)
-	TDBTORTURE="bin/tdbtorture\$(EXEEXT)"
+	TDBTORTURE="bin/tdbtorture"
 	AC_SUBST(TDBTORTURE)
 fi
 
@@ -6508,7 +6505,7 @@ if test x"$HAVE_WBCLIENT" = x"yes"; then
 	LIBWBCLIENT_LIBS="$LIBWBCLIENT_LIBS $WBCLIENT_LDFLAGS"
 	AC_MSG_RESULT(yes)
 	AC_DEFINE(WITH_WINBIND,1,[Whether to link to wbclient])
-	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo\$(EXEEXT)"
+	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo"
 else
 	if test x"$enable_developer" = x"yes" -a x"$LINK_LIBWBCLIENT" = x"STATIC" ; then
 		BUILD_LIBWBCLIENT_SHARED=no
@@ -6541,8 +6538,8 @@ if test x"$HAVE_WINBIND" = x"yes"; then
         AC_MSG_RESULT(yes)
 	AC_DEFINE(WITH_WINBIND,1,[Whether to build winbind])
 
-	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo\$(EXEEXT)"
-	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd\$(EXEEXT)"
+	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo"
+	EXTRA_SBIN_PROGS="$EXTRA_SBIN_PROGS bin/winbindd"
         if test $BLDSHARED = true -a x"$create_pam_modules" = x"yes"; then
 		PAM_MODULES="$PAM_MODULES pam_winbind"
 		INSTALL_PAM_MODULES="installpammodules"
@@ -6806,7 +6803,7 @@ if test x"$enable_pthreadpool" = x"yes" -a x"$samba_cv_HAVE_PTHREAD" = x"yes"; t
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     AC_DEFINE(WITH_PTHREADPOOL, 1, [Whether to include pthreadpool helpers])
     AC_SUBST(PTHREADPOOL_OBJ, "lib/pthreadpool/pthreadpool.o")
-    PTHREADPOOLTEST="bin/pthreadpooltest\$(EXEEXT)"
+    PTHREADPOOLTEST="bin/pthreadpooltest"
     AC_SUBST(PTHREADPOOLTEST)
     if test x"$samba_cv_HAVE_AIO" = x"yes"; then
         default_shared_modules="$default_shared_modules vfs_aio_pthread"
