@@ -152,6 +152,7 @@ static int merge_edits(struct ldb_context *ldb,
 			if (ret != -1) {
 				modifies += (unsigned int) ret;
 			} else {
+				ldb_transaction_cancel(ldb);
 				return -1;
 			}
 		}
