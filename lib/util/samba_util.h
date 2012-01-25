@@ -702,6 +702,12 @@ void dump_data_cb(const uint8_t *buf, int len,
 		  void *private_data);
 
 /**
+ * Write dump of binary data to a FILE
+ */
+void dump_data_file(const uint8_t *buf, int len, bool omit_zero_bytes,
+		    FILE *f);
+
+/**
  * Write dump of binary data to the log file.
  *
  * The data is only written if the log level is at least level.

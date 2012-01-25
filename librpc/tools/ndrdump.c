@@ -125,14 +125,9 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	return p;
 }
 
-static void printf_cb(const char *buf, void *private_data)
-{
-	printf("%s", buf);
-}
-
 static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 {
-	dump_data_cb(d, l, !force, printf_cb, NULL);
+	dump_data_file(d, l, !force, stdout);
 }
 
 static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,

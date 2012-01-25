@@ -3463,11 +3463,6 @@ static int cmd_getfacl(void)
 	return 0;
 }
 
-static void printf_cb(const char *buf, void *private_data)
-{
-	printf("%s", buf);
-}
-
 /****************************************************************************
  Get the EA list of a file
 ****************************************************************************/
@@ -3511,8 +3506,8 @@ static int cmd_geteas(void)
 
 	for (i=0; i<num_eas; i++) {
 		d_printf("%s (%d) =\n", eas[i].name, (int)eas[i].flags);
-		dump_data_cb(eas[i].value.data, eas[i].value.length, false,
-			     printf_cb, NULL);
+		dump_data_file(eas[i].value.data, eas[i].value.length, false,
+			       stdout);
 		d_printf("\n");
 	}
 

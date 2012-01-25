@@ -462,6 +462,17 @@ _PUBLIC_ void dump_data_skip_zeros(int level, const uint8_t *buf, int len)
 	dump_data_cb(buf, len, true, debugadd_cb, &level);
 }
 
+static void fprintf_cb(const char *buf, void *private_data)
+{
+	FILE *f = (FILE *)private_data;
+	fprintf(f, "%s", buf);
+}
+
+void dump_data_file(const uint8_t *buf, int len, bool omit_zero_bytes,
+		    FILE *f)
+{
+	dump_data_cb(buf, len, omit_zero_bytes, fprintf_cb, f);
+}
 
 /**
  malloc that aborts with smb_panic on fail or zero size.
