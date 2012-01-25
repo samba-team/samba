@@ -2179,7 +2179,7 @@ static WERROR spoolss_dpd_version(TALLOC_CTX *mem_ctx,
 	if (delete_files) {
 		bool in_use = printer_driver_files_in_use(mem_ctx,
 						get_session_info_system(),
-							  b,
+							  p->msg_ctx,
 							  info);
 		if (in_use && (r->in.delete_flags & DPD_DELETE_ALL_FILES)) {
 			status = WERR_PRINTER_DRIVER_IN_USE;
