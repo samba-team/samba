@@ -5,7 +5,7 @@
  *  based on the idmap_rid module, but this module defines the ranges
  *  for the domains by automatically allocating a range for each domain
  *
- *  Copyright (C) Christian Ambach, 2010-2011
+ *  Copyright (C) Christian Ambach, 2010-2012
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,8 +28,10 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "idmap.h"
+#include "idmap_rw.h"
 #include "../libcli/security/dom_sid.h"
 #include "util_tdb.h"
+#include "winbindd/idmap_tdb_common.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -154,7 +156,78 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_domain_config *dom)
 	return ret;
 }
 
+static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
+					  struct unixid *xid) {
+
+	NTSTATUS ret;
+	struct idmap_tdb_common_context *commoncfg;
+	struct autorid_global_config *globalcfg;
+	struct autorid_domain_config domaincfg;
+
+	commoncfg =
+	    talloc_get_type_abort(dom->private_data,
+				  struct idmap_tdb_common_context);
+
+	globalcfg = talloc_get_type(commoncfg->private_data,
+				    struct autorid_global_config);
+
+	/* fetch the range for the allocation pool */
+
+	ZERO_STRUCT(domaincfg);
+
+	domaincfg.globalcfg = globalcfg;
+	fstrcpy(domaincfg.sid, ALLOC_RANGE);
+
+	ret = idmap_autorid_get_domainrange(&domaincfg);
+
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(3, ("Could not determine range for allocation pool, "
+			  "check previous messages for reason\n"));
+		return ret;
+	}
+
+	ret = idmap_tdb_common_get_new_id(dom, xid);
+
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(1, ("Fatal error while allocating new ID!\n"));
+		return ret;
+	}
+
+	xid->id = globalcfg->minvalue +
+		  globalcfg->rangesize * domaincfg.domainnum +
+		  xid->id;
+
+	DEBUG(10, ("Returned new %s %d from allocation range\n",
+		   (xid->type==ID_TYPE_UID)?"uid":"gid", xid->id));
+
+	return ret;
+}
+
+/*
+ * map a SID to xid using the idmap_tdb like pool
+ */
+static NTSTATUS idmap_autorid_map_id_to_sid(struct idmap_domain *dom,
+					    struct id_map *map)
+{
+	NTSTATUS ret;
+
+	/* look out for the mapping */
+	ret = idmap_tdb_common_unixid_to_sid(dom, map);
+
+	if (NT_STATUS_IS_OK(ret)) {
+		map->status = ID_MAPPED;
+		return ret;
+	}
+
+	map->status = ID_UNKNOWN;
+
+	DEBUG(10, ("no ID->SID mapping for %d could be found\n", map->xid.id));
+
+	return ret;
+}
+
 static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
+					struct idmap_domain *dom,
 					struct id_map *map)
 {
 	uint32_t range;
@@ -201,12 +274,14 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 	if (strncmp((const char *)data.dptr,
 		    ALLOC_RANGE,
 		    strlen(ALLOC_RANGE)) == 0) {
-		/* this is from the alloc range, there is no mapping back */
-		DEBUG(5, ("id %d belongs to alloc range, cannot map back\n",
+		/*
+		 * this is from the alloc range, check if there is a mapping
+		 */
+		DEBUG(5, ("id %d belongs to allocation range, "
+			  "checking for mapping\n",
 			  map->xid.id));
 		TALLOC_FREE(data.dptr);
-		map->status = ID_UNKNOWN;
-		return NT_STATUS_OK;
+		return idmap_autorid_map_id_to_sid(dom, map);
 	}
 
 	string_to_sid(&sid, (const char *)data.dptr);
@@ -262,21 +337,29 @@ static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
 static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 					      struct id_map **ids)
 {
+	struct idmap_tdb_common_context *commoncfg;
 	struct autorid_global_config *globalcfg;
 	NTSTATUS ret;
 	int i;
+	int num_tomap = 0;
+	int num_mapped = 0;
 
 	/* initialize the status to avoid surprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
+		num_tomap++;
 	}
 
-	globalcfg = talloc_get_type(dom->private_data,
+	commoncfg =
+	    talloc_get_type_abort(dom->private_data,
+				  struct idmap_tdb_common_context);
+
+	globalcfg = talloc_get_type(commoncfg->private_data,
 				    struct autorid_global_config);
 
 	for (i = 0; ids[i]; i++) {
 
-		ret = idmap_autorid_id_to_sid(globalcfg, ids[i]);
+		ret = idmap_autorid_id_to_sid(globalcfg, dom, ids[i]);
 
 		if ((!NT_STATUS_IS_OK(ret)) &&
 		    (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED))) {
@@ -285,11 +368,76 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 				  " (%d)\n", ids[i]->xid.id));
 			goto failure;
 		}
+
+		if (NT_STATUS_IS_OK(ret) && ids[i]->status == ID_MAPPED) {
+			num_mapped++;
+		}
+
 	}
-	return NT_STATUS_OK;
+
+	if (num_tomap == num_mapped) {
+		return NT_STATUS_OK;
+	} else if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	return STATUS_SOME_UNMAPPED;
+
 
       failure:
 	return ret;
+}
+
+/*
+ * map a SID to xid using the idmap_tdb like pool
+ */
+static NTSTATUS idmap_autorid_map_sid_to_id(struct idmap_domain *dom,
+					    struct id_map *map,
+					    struct idmap_tdb_common_context *ctx)
+{
+	NTSTATUS ret;
+	int res;
+
+	/* see if we already have a mapping */
+	ret = idmap_tdb_common_sid_to_unixid(dom, map);
+
+	if (NT_STATUS_IS_OK(ret)) {
+		map->status = ID_MAPPED;
+		return ret;
+	}
+
+	/* bad things happened */
+	if (!NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
+		DEBUG(1, ("Looking up SID->ID mapping for %s failed\n",
+			  sid_string_dbg(map->sid)));
+		return ret;
+	}
+
+	DEBUG(10, ("Creating new mapping in pool for %s\n",
+		   sid_string_dbg(map->sid)));
+
+	/* create new mapping */
+	dbwrap_transaction_start(ctx->db);
+
+	ret = idmap_tdb_common_new_mapping(dom, map);
+
+	map->status = (NT_STATUS_IS_OK(ret))?ID_MAPPED:ID_UNMAPPED;
+
+	if (!NT_STATUS_IS_OK(ret)) {
+		if (dbwrap_transaction_cancel(ctx->db) != 0) {
+			smb_panic("Cancelling transaction failed");
+		}
+		return ret;
+	}
+
+	res = dbwrap_transaction_commit(ctx->db);
+	if (res == 0) {
+		return ret;
+	}
+
+	DEBUG(2, ("transaction_commit failed\n"));
+	return NT_STATUS_INTERNAL_DB_CORRUPTION;
+
 }
 
 /**********************************
@@ -299,16 +447,24 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 					      struct id_map **ids)
 {
+	struct idmap_tdb_common_context *commoncfg;
 	struct autorid_global_config *global;
 	NTSTATUS ret;
 	int i;
+	int num_tomap = 0;
+	int num_mapped = 0;
 
 	/* initialize the status to avoid surprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
+		num_tomap++;
 	}
 
-	global = talloc_get_type(dom->private_data,
+	commoncfg =
+	    talloc_get_type_abort(dom->private_data,
+				  struct idmap_tdb_common_context);
+
+	global = talloc_get_type(commoncfg->private_data,
 				 struct autorid_global_config);
 
 	for (i = 0; ids[i]; i++) {
@@ -324,6 +480,29 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 			DEBUG(4, ("Could not determine domain SID from %s, "
 				  "ignoring mapping request\n",
 				  sid_string_dbg(ids[i]->sid)));
+			continue;
+		}
+
+		/* is this a well-known SID? */
+
+		if (sid_check_is_wellknown_domain(&domainsid, NULL)) {
+
+			DEBUG(10, ("SID %s is well-known, using pool\n",
+				   sid_string_dbg(ids[i]->sid)));
+
+			ret = idmap_autorid_map_sid_to_id(dom, ids[i],
+							  commoncfg);
+
+			if (!NT_STATUS_IS_OK(ret) &&
+			    !NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
+				DEBUG(3, ("Unexpected error resolving "
+					  "SID (%s)\n",
+					  sid_string_dbg(ids[i]->sid)));
+				goto failure;
+			}
+
+			num_mapped++;
+
 			continue;
 		}
 
@@ -359,8 +538,19 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 				  sid_string_dbg(ids[i]->sid)));
 			goto failure;
 		}
+
+		if (NT_STATUS_IS_OK(ret)) {
+			num_mapped++;
+		}
 	}
-	return NT_STATUS_OK;
+
+	if (num_tomap == num_mapped) {
+		return NT_STATUS_OK;
+	} else if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	return STATUS_SOME_UNMAPPED;
 
       failure:
 	return ret;
@@ -496,6 +686,7 @@ static NTSTATUS idmap_autorid_saveconfig(struct autorid_global_config *cfg)
 
 static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 {
+	struct idmap_tdb_common_context *commonconfig;
 	struct autorid_global_config *config;
 	struct autorid_global_config *storedconfig = NULL;
 	NTSTATUS status;
@@ -508,7 +699,19 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	config = talloc_zero(dom, struct autorid_global_config);
+	commonconfig = talloc_zero(dom, struct idmap_tdb_common_context);
+	if (!commonconfig) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	commonconfig->rw_ops = talloc_zero(commonconfig, struct idmap_rw_ops);
+	if (commonconfig->rw_ops == NULL) {
+		DEBUG(0, ("Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	config = talloc_zero(commonconfig, struct autorid_global_config);
 	if (!config) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -520,7 +723,8 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	}
 
 	config->minvalue = dom->low_id;
-	config->rangesize = lp_parm_int(-1, "idmap config *", "rangesize", 100000);
+	config->rangesize = lp_parm_int(-1, "idmap config *",
+					"rangesize", 100000);
 
 	if (config->rangesize < 2000) {
 		DEBUG(1, ("autorid rangesize must be at least 2000\n"));
@@ -594,7 +798,17 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	DEBUG(5, ("%d domain ranges with a size of %d are available\n",
 		  config->maxranges, config->rangesize));
 
-	dom->private_data = config;
+	/* fill the TDB common configuration */
+	commonconfig->private_data = config;
+
+	commonconfig->db = autorid_db;
+	commonconfig->max_id = config->rangesize -1;
+	commonconfig->hwmkey_uid = ALLOC_HWM_UID;
+	commonconfig->hwmkey_gid = ALLOC_HWM_GID;
+	commonconfig->rw_ops->get_new_id = idmap_autorid_allocate_id;
+	commonconfig->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
+
+	dom->private_data = commonconfig;
 
 	goto done;
 
@@ -605,79 +819,6 @@ done:
 	talloc_free(storedconfig);
 
 	return status;
-}
-
-static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
-					  struct unixid *xid) {
-
-	NTSTATUS ret;
-	struct autorid_global_config *globalcfg;
-	struct autorid_domain_config domaincfg;
-	uint32_t hwm;
-	const char *hwmkey;
-
-	if (!strequal(dom->name, "*")) {
-		DEBUG(3, ("idmap_autorid_allocate_id: "
-			  "Refusing creation of mapping for domain'%s'. "
-			  "Currently only supported for the default "
-			  "domain \"*\".\n",
-			   dom->name));
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	if ((xid->type != ID_TYPE_UID) && (xid->type != ID_TYPE_GID)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-
-	globalcfg = talloc_get_type(dom->private_data,
-				    struct autorid_global_config);
-
-	/* fetch the range for the allocation pool */
-
-	ZERO_STRUCT(domaincfg);
-
-	domaincfg.globalcfg = globalcfg;
-	fstrcpy(domaincfg.sid, ALLOC_RANGE);
-
-	ret = idmap_autorid_get_domainrange(&domaincfg);
-
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(3, ("Could not determine range for allocation pool, "
-			  "check previous messages for reason\n"));
-		return ret;
-	}
-
-	/* fetch the current HWM */
-	hwmkey = (xid->type==ID_TYPE_UID)?ALLOC_HWM_UID:ALLOC_HWM_GID;
-
-	ret = dbwrap_fetch_uint32(autorid_db, hwmkey, &hwm);
-
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1, ("Failed to fetch current allocation HWM value: %s\n",
-			  nt_errstr(ret)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	if (hwm >= globalcfg->rangesize) {
-		DEBUG(1, ("allocation range is depleted!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = dbwrap_change_uint32_atomic(autorid_db, hwmkey, &(xid->id), 1);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1, ("Fatal error while allocating new ID!\n"));
-		return ret;
-	}
-
-	xid->id = globalcfg->minvalue +
-		  globalcfg->rangesize * domaincfg.domainnum +
-		  xid->id;
-
-	DEBUG(10, ("Returned new %s %d from allocation range\n",
-		   (xid->type==ID_TYPE_UID)?"uid":"gid", xid->id));
-
-	return ret;
 }
 
 /*
