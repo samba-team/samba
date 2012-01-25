@@ -138,7 +138,7 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 	return 0;
 }
 
-static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *session,
+static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 					struct smbd_smb2_request *smb2req,
 					uint8_t in_security_mode,
 					DATA_BLOB in_security_buffer,
@@ -212,13 +212,13 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
-					struct smbd_smb2_request *smb2req,
-					uint8_t in_security_mode,
-					DATA_BLOB in_security_buffer,
-					uint16_t *out_session_flags,
-					DATA_BLOB *out_security_buffer,
-					uint64_t *out_session_id)
+static NTSTATUS smbd_smb2_auth_generic(struct smbd_smb2_session *session,
+				       struct smbd_smb2_request *smb2req,
+				       uint8_t in_security_mode,
+				       DATA_BLOB in_security_buffer,
+				       uint16_t *out_session_flags,
+				       DATA_BLOB *out_security_buffer,
+				       uint64_t *out_session_id)
 {
 	NTSTATUS status;
 
@@ -246,11 +246,17 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 		}
 	}
 
-	/* RAW NTLMSSP */
+	become_root();
 	status = gensec_update(session->gensec_security,
 			       smb2req, NULL,
 			       in_security_buffer,
 			       out_security_buffer);
+	unbecome_root();
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) &&
+	    !NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(session);
+		return nt_status_squash(status);
+	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		*out_session_id = session->vuid;
@@ -267,12 +273,12 @@ static NTSTATUS smbd_smb2_raw_ntlmssp_auth(struct smbd_smb2_session *session,
 	}
 	*out_session_id = session->vuid;
 
-	return smbd_smb2_common_ntlmssp_auth_return(session,
-						smb2req,
-						in_security_mode,
-						in_security_buffer,
-						out_session_flags,
-						out_session_id);
+	return smbd_smb2_auth_generic_return(session,
+					     smb2req,
+					     in_security_mode,
+					     in_security_buffer,
+					     out_session_flags,
+					     out_session_id);
 }
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
@@ -331,13 +337,13 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	return smbd_smb2_raw_ntlmssp_auth(session,
-					  smb2req,
-					  in_security_mode,
-					  in_security_buffer,
-					  out_session_flags,
-					  out_security_buffer,
-					  out_session_id);
+	return smbd_smb2_auth_generic(session,
+				      smb2req,
+				      in_security_mode,
+				      in_security_buffer,
+				      out_session_flags,
+				      out_security_buffer,
+				      out_session_id);
 }
 
 NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req)
