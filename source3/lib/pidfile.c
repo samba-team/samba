@@ -30,17 +30,41 @@ static char *pidFile_name = NULL;
 
 /* return the pid in a pidfile. return 0 if the process (or pidfile)
    does not exist */
-pid_t pidfile_pid(const char *name)
+pid_t pidfile_pid(const char *program_name)
 {
 	int fd;
 	char pidstr[20];
 	pid_t pid;
 	unsigned int ret;
+	char *name;
+	const char *short_configfile;
 	char * pidFile;
 
+	/* Add a suffix to the program name if this is a process with a
+	 * none default configuration file name. */
+	if (strcmp( CONFIGFILE, get_dyn_CONFIGFILE()) == 0) {
+		name = SMB_STRDUP(program_name);
+	} else {
+		short_configfile = strrchr( get_dyn_CONFIGFILE(), '/');
+		if (short_configfile == NULL) {
+			/* conf file in current directory */
+			short_configfile = get_dyn_CONFIGFILE();
+		} else {
+			/* full/relative path provided */
+			short_configfile++;
+		}
+		if (asprintf(&name, "%s-%s", program_name,
+				short_configfile) == -1) {
+			smb_panic("asprintf failed");
+		}
+	}
+
 	if (asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name) == -1) {
+		SAFE_FREE(name);
 		return 0;
 	}
+
+	SAFE_FREE(name);
 
 	fd = sys_open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 	if (fd == -1) {
