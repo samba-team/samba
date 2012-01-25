@@ -503,7 +503,7 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		break;
 	default:
-		DEBUG(0, ("gss_init_sec_context failed with [%s]\n",
+		DEBUG(1, ("gss_init_sec_context failed with [%s]\n",
 			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
 
 		if (gse_ctx->gssapi_context) {
@@ -512,7 +512,7 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 						GSS_C_NO_BUFFER);
 		}
 
-		status = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_LOGON_FAILURE;
 		goto done;
 	}
 
