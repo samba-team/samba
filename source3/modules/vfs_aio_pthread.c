@@ -115,15 +115,29 @@ static void aio_worker(void *private_data)
 			(struct aio_private_data *)private_data;
 
 	if (pd->write_command) {
-		pd->ret_size = pwrite(pd->aiocb->aio_fildes,
+		pd->ret_size = sys_pwrite(pd->aiocb->aio_fildes,
 				(const void *)pd->aiocb->aio_buf,
 				pd->aiocb->aio_nbytes,
 				pd->aiocb->aio_offset);
+		if (pd->ret_size == -1 && errno == ESPIPE) {
+			/* Maintain the fiction that pipes can
+			   be seeked (sought?) on. */
+			pd->ret_size = sys_write(pd->aiocb->aio_fildes,
+					(const void *)pd->aiocb->aio_buf,
+					pd->aiocb->aio_nbytes);
+		}
 	} else {
-		pd->ret_size = pread(pd->aiocb->aio_fildes,
+		pd->ret_size = sys_pread(pd->aiocb->aio_fildes,
 				(void *)pd->aiocb->aio_buf,
 				pd->aiocb->aio_nbytes,
 				pd->aiocb->aio_offset);
+		if (pd->ret_size == -1 && errno == ESPIPE) {
+			/* Maintain the fiction that pipes can
+			   be seeked (sought?) on. */
+			pd->ret_size = sys_read(pd->aiocb->aio_fildes,
+					(void *)pd->aiocb->aio_buf,
+					pd->aiocb->aio_nbytes);
+		}
 	}
 	if (pd->ret_size == -1) {
 		pd->ret_errno = errno;
