@@ -261,6 +261,12 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		goto fail;
 	}
 
+	set_current_user_info(session->session_info->unix_info->sanitized_username,
+			      session->session_info->unix_info->unix_name,
+			      session->session_info->info->domain_name);
+
+	reload_services(smb2req->sconn, conn_snum_used, true);
+
 	session->status = NT_STATUS_OK;
 
 	/*
@@ -473,6 +479,11 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
+	set_current_user_info(session->session_info->unix_info->sanitized_username,
+			      session->session_info->unix_info->unix_name,
+			      session->session_info->info->domain_name);
+
+	reload_services(smb2req->sconn, conn_snum_used, true);
 
 	session->status = NT_STATUS_OK;
 
