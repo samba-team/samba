@@ -66,6 +66,7 @@ static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
 				info->si_value.sival_ptr;
 
 	smbd_aio_complete_aio_ex(aio_ex);
+	TALLOC_FREE(aio_ex);
 }
 
 
@@ -894,8 +895,6 @@ void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex)
 	if (!handle_aio_completed(aio_ex, &ret)) {
 		return;
 	}
-
-	TALLOC_FREE(aio_ex);
 }
 
 /****************************************************************************
