@@ -76,7 +76,9 @@
 <programlisting>
         <smbconfsection name="[cooldata]"/>
 	<smbconfoption name="path">/data/ice</smbconfoption>
-	<smbconfoption name="vfs objects">aio_fork</smbconfoption>
+	<smbconfoption name="aio read size">1024</smbconfoption>
+	<smbconfoption name="aio write size">1024</smbconfoption>
+	<smbconfoption name="vfs objects">aio_pthread</smbconfoption>
 </programlisting>
 
 </refsect1>
