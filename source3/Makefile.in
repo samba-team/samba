@@ -829,6 +829,7 @@ VFS_READAHEAD_OBJ = modules/vfs_readahead.o
 VFS_TSMSM_OBJ = modules/vfs_tsmsm.o
 VFS_FILEID_OBJ = modules/vfs_fileid.o
 VFS_AIO_FORK_OBJ = modules/vfs_aio_fork.o
+VFS_AIO_PTHREAD_OBJ = modules/vfs_aio_pthread.o
 VFS_PREOPEN_OBJ = modules/vfs_preopen.o
 VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
@@ -3028,6 +3029,10 @@ bin/fileid.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FILEID_OBJ)
 bin/aio_fork.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_FORK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_AIO_FORK_OBJ)
+
+bin/aio_pthread.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_PTHREAD_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_AIO_PTHREAD_OBJ)
 
 bin/preopen.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_PREOPEN_OBJ)
 	@echo "Building plugin $@"
