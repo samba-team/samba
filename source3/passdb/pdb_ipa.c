@@ -1407,6 +1407,42 @@ static NTSTATUS ipasam_create_user(struct pdb_methods *pdb_methods,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS pdb_ipa_init_secrets(struct pdb_methods *m)
+{
+#if _SAMBA_BUILD_ == 4
+	struct pdb_domain_info *dom_info;
+	bool ret;
+
+	dom_info = pdb_ipasam_get_domain_info(m, m);
+	if (!dom_info) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	secrets_clear_domain_protection(dom_info->name);
+	ret = secrets_store_domain_sid(dom_info->name,
+				       &dom_info->sid);
+	if (!ret) {
+		goto done;
+	}
+	ret = secrets_store_domain_guid(dom_info->name,
+				        &dom_info->guid);
+	if (!ret) {
+		goto done;
+	}
+	ret = secrets_mark_domain_protected(dom_info->name);
+	if (!ret) {
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(dom_info);
+	if (!ret) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+#endif
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char *location)
 {
 	struct ldapsam_privates *ldap_state;
@@ -1457,6 +1493,12 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 	(*pdb_method)->set_trusted_domain = ipasam_set_trusted_domain;
 	(*pdb_method)->del_trusted_domain = ipasam_del_trusted_domain;
 	(*pdb_method)->enum_trusted_domains = ipasam_enum_trusted_domains;
+
+	status = pdb_ipa_init_secrets(*pdb_method);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("pdb_ipa_init_secrets failed!\n"));
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }

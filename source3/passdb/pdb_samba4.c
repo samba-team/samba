@@ -34,6 +34,7 @@
 #include "source4/auth/system_session_proto.h"
 #include "lib/param/param.h"
 #include "source4/dsdb/common/util.h"
+#include "source3/include/secrets.h"
 
 struct pdb_samba4_state {
 	struct tevent_context *ev;
@@ -2195,6 +2196,42 @@ static void free_private_data(void **vp)
 	return;
 }
 
+static NTSTATUS pdb_samba4_init_secrets(struct pdb_methods *m)
+{
+#if _SAMBA_BUILD_ == 4
+	struct pdb_domain_info *dom_info;
+	bool ret;
+
+	dom_info = pdb_samba4_get_domain_info(m, m);
+	if (!dom_info) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	secrets_clear_domain_protection(dom_info->name);
+	ret = secrets_store_domain_sid(dom_info->name,
+				       &dom_info->sid);
+	if (!ret) {
+		goto done;
+	}
+	ret = secrets_store_domain_guid(dom_info->name,
+				        &dom_info->guid);
+	if (!ret) {
+		goto done;
+	}
+	ret = secrets_mark_domain_protected(dom_info->name);
+	if (!ret) {
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(dom_info);
+	if (!ret) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+#endif
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 			     const char *location)
 {
@@ -2250,6 +2287,12 @@ static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 	if (!state->idmap_ctx) {
 		DEBUG(0, ("idmap failed\n"));
 		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+
+	status = pdb_samba4_init_secrets(m);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("pdb_samba4_init_secrets failed!\n"));
 		goto fail;
 	}
 

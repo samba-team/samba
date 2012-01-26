@@ -2594,6 +2594,42 @@ done:
 	return status;
 }
 
+static NTSTATUS pdb_ads_init_secrets(struct pdb_methods *m)
+{
+#if _SAMBA_BUILD_ == 4
+	struct pdb_domain_info *dom_info;
+	bool ret;
+
+	dom_info = pdb_ads_get_domain_info(m, m);
+	if (!dom_info) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	secrets_clear_domain_protection(dom_info->name);
+	ret = secrets_store_domain_sid(dom_info->name,
+				       &dom_info->sid);
+	if (!ret) {
+		goto done;
+	}
+	ret = secrets_store_domain_guid(dom_info->name,
+				        &dom_info->guid);
+	if (!ret) {
+		goto done;
+	}
+	ret = secrets_mark_domain_protected(dom_info->name);
+	if (!ret) {
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(dom_info);
+	if (!ret) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+#endif
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_init_ads(struct pdb_methods **pdb_method,
 			     const char *location)
 {
@@ -2626,6 +2662,12 @@ static NTSTATUS pdb_init_ads(struct pdb_methods **pdb_method,
 	status = pdb_ads_connect(state, location);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("pdb_ads_connect failed: %s\n", nt_errstr(status)));
+		goto fail;
+	}
+
+	status = pdb_ads_init_secrets(m);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("pdb_ads_init_secrets failed!\n"));
 		goto fail;
 	}
 
