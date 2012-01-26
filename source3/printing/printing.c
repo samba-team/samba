@@ -373,18 +373,20 @@ done:
  unpack a pjob from a tdb buffer
 ***********************************************************************/
 
-static int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
+static int unpack_pjob(uint8 *buf, int buflen, struct printjob *pjob)
 {
 	int	len = 0;
 	int	used;
-	uint32 pjpid, pjsysjob, pjfd, pjstarttime, pjstatus;
+	uint32 pjpid, pjjobid, pjsysjob, pjfd, pjstarttime, pjstatus;
 	uint32 pjsize, pjpage_count, pjspooled, pjsmbjob;
 
-	if ( !buf || !pjob )
+	if (!buf || !pjob) {
 		return -1;
+	}
 
-	len += tdb_unpack(buf+len, buflen-len, "dddddddddfffff",
+	len += tdb_unpack(buf+len, buflen-len, "ddddddddddfffff",
 				&pjpid,
+				&pjjobid,
 				&pjsysjob,
 				&pjfd,
 				&pjstarttime,
@@ -399,8 +401,9 @@ static int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
 				pjob->clientmachine,
 				pjob->queuename);
 
-	if ( len == -1 )
+	if (len == -1) {
 		return -1;
+	}
 
         used = unpack_devicemode(NULL, buf+len, buflen-len, &pjob->devmode);
         if (used == -1) {
@@ -410,6 +413,7 @@ static int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
 	len += used;
 
 	pjob->pid = pjpid;
+	pjob->jobid = pjjobid;
 	pjob->sysjob = pjsysjob;
 	pjob->fd = pjfd;
 	pjob->starttime = pjstarttime;
@@ -463,6 +467,7 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 
 	DEBUG(10,("print_job_find: returning system job %d for jobid %u.\n",
 			(int)pjob.sysjob, (unsigned int)jobid ));
+	SMB_ASSERT(pjob.jobid == jobid);
 
 	return &pjob;
 }
@@ -489,9 +494,7 @@ static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
 		return 0;
 
 	if (state->sysjob == pjob->sysjob) {
-		uint32 jobid = IVAL(key.dptr,0);
-
-		state->sysjob_to_jobid_value = jobid;
+		state->sysjob_to_jobid_value = pjob->jobid;
 		return 1;
 	}
 
@@ -737,8 +740,9 @@ static bool pjob_store(struct tevent_context *ev,
 	do {
 		len = 0;
 		buflen = newlen;
-		len += tdb_pack(buf+len, buflen-len, "dddddddddfffff",
+		len += tdb_pack(buf+len, buflen-len, "ddddddddddfffff",
 				(uint32)pjob->pid,
+				(uint32)pjob->jobid,
 				(uint32)pjob->sysjob,
 				(uint32)pjob->fd,
 				(uint32)pjob->starttime,
@@ -875,6 +879,7 @@ static void print_unix_job(struct tevent_context *ev,
 	ZERO_STRUCT(pj);
 
 	pj.pid = (pid_t)-1;
+	pj.jobid = jobid;
 	pj.sysjob = q->job;
 	pj.fd = -1;
 	pj.starttime = old_pj ? old_pj->starttime : q->time;
@@ -921,11 +926,10 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	if (  key.dsize != sizeof(jobid) )
 		return 0;
 
-	jobid = IVAL(key.dptr, 0);
-	if ( unpack_pjob( data.dptr, data.dsize, &pjob ) == -1 )
+	if (unpack_pjob(data.dptr, data.dsize, &pjob) == -1)
 		return 0;
 	talloc_free(pjob.devmode);
-
+	jobid = pjob.jobid;
 
 	if (!pjob.smbjob) {
 		/* remove a unix job if it isn't in the system queue any more */
@@ -2825,6 +2829,7 @@ WERROR print_job_start(const struct auth_serversupplied_info *server_info,
 	ZERO_STRUCT(pjob);
 
 	pjob.pid = sys_getpid();
+	pjob.jobid = jobid;
 	pjob.sysjob = -1;
 	pjob.fd = -1;
 	pjob.starttime = time(NULL);
