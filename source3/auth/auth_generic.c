@@ -127,6 +127,12 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 		netsamlogon_cache_store(ntuser, &logon_info->info3);
 	}
 
+	/* setup the string used by %U */
+	sub_set_smb_name(username);
+
+	/* reload services so that the new %U is taken into account */
+	lp_load(get_dyn_CONFIGFILE(), false, false, true, true);
+
 	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,
 					logon_info, is_guest, is_mapped, NULL /* No session key for now, caller will sort it out */,
