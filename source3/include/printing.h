@@ -68,6 +68,7 @@ typedef struct {
 /* Information for print jobs */
 struct printjob {
 	pid_t pid; /* which process launched the job */
+	uint32_t jobid; /* the spoolss print job identifier */
 	int sysjob; /* the system (lp) job number */
 	int fd; /* file descriptor of open file if open */
 	time_t starttime; /* when the job started spooling */
@@ -123,7 +124,7 @@ extern struct printif	iprint_printif;
 #ifndef PRINT_SPOOL_PREFIX
 #define PRINT_SPOOL_PREFIX "smbprn."
 #endif
-#define PRINT_DATABASE_VERSION 7
+#define PRINT_DATABASE_VERSION 8
 
 #ifdef AIX
 #define DEFAULT_PRINTING PRINT_AIX
