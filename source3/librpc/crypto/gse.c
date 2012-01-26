@@ -44,6 +44,8 @@ struct gse_context {
 
 	gss_cred_id_t delegated_cred_handle;
 
+	NTTIME expire_time;
+
 	/* gensec_gse only */
 	krb5_context k5ctx;
 	krb5_ccache ccache;
@@ -290,6 +292,8 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	gss_buffer_desc out_data;
 	DATA_BLOB blob = data_blob_null;
 	NTSTATUS status;
+	OM_uint32 time_rec = 0;
+	struct timeval tv;
 
 	in_data.value = token_in->data;
 	in_data.length = token_in->length;
@@ -302,10 +306,13 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					gse_ctx->gss_want_flags,
 					0, GSS_C_NO_CHANNEL_BINDINGS,
 					&in_data, NULL, &out_data,
-					&gse_ctx->gss_got_flags, NULL);
+					&gse_ctx->gss_got_flags, &time_rec);
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
+		tv = timeval_current_ofs(time_rec, 0);
+		gse_ctx->expire_time = timeval_to_nttime(&tv);
+
 		status = NT_STATUS_OK;
 		break;
 	case GSS_S_CONTINUE_NEEDED:
@@ -439,6 +446,8 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 	gss_buffer_desc out_data;
 	DATA_BLOB blob = data_blob_null;
 	NTSTATUS status;
+	OM_uint32 time_rec = 0;
+	struct timeval tv;
 
 	in_data.value = token_in->data;
 	in_data.length = token_in->length;
@@ -451,11 +460,15 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 					 &gse_ctx->client_name,
 					 &gse_ctx->ret_mech,
 					 &out_data,
-					 &gse_ctx->gss_got_flags, NULL,
+					 &gse_ctx->gss_got_flags,
+					 &time_rec,
 					 &gse_ctx->delegated_cred_handle);
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
+		tv = timeval_current_ofs(time_rec, 0);
+		gse_ctx->expire_time = timeval_to_nttime(&tv);
+
 		status = NT_STATUS_OK;
 		break;
 	case GSS_S_CONTINUE_NEEDED:
