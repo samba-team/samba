@@ -16,7 +16,7 @@ AUTH_SRC = '''auth.c
 
 bld.SAMBA3_SUBSYSTEM('TOKEN_UTIL',
                     source='token_util.c',
-                    deps='samba-util',
+                    deps='samba-util pdb',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('USER_UTIL',

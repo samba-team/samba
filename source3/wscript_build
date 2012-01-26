@@ -692,7 +692,7 @@ bld.SAMBA3_LIBRARY('nss_wins',
 
 bld.SAMBA3_LIBRARY('gse',
                    source='librpc/crypto/gse_krb5.c librpc/crypto/gse.c',
-                   deps='KRB5_WRAP gensec param KRBCLIENT SECRETS3',
+                   deps='KRB5_WRAP gensec param KRBCLIENT secrets3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('msrpc3',
@@ -725,7 +725,7 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
 
 bld.SAMBA3_LIBRARY('pdb',
                    source=PASSDB_SRC,
-                   deps='SECRETS3 GROUPDB SERVER_MUTEX wbclient LIBCLI_AUTH flag_mapping',
+                   deps='secrets3 GROUPDB SERVER_MUTEX wbclient LIBCLI_AUTH flag_mapping',
                    private_library=True,
                    public_headers='''
 				include/passdb.h
@@ -800,7 +800,7 @@ bld.SAMBA3_LIBRARY('popt_samba3',
 
 bld.SAMBA3_LIBRARY('util_cmdline',
                    source='lib/util_cmdline.c',
-                   deps='SECRETS3 popt',
+                   deps='secrets3 popt',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
@@ -871,9 +871,13 @@ bld.SAMBA3_SUBSYSTEM('CLDAP',
                     deps='cli-ldap-common cli_cldap LIBTSOCKET',
                     vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('SECRETS3',
+# NOTE: The secrets3 library is a low level library used by several subsystems.
+# PLEASE DO NOT make it depend on high level libraries like PDB, if you are
+# doing that your design is wrong and needs changing. -SSS
+bld.SAMBA3_LIBRARY('secrets3',
                    source=SECRETS_SRC,
-                   deps='NDR_SECRETS param samba3util dbwrap pdb',
+                   deps='NDR_SECRETS param samba3util dbwrap',
+                   private_library=True,
                    vars=locals())
 
 bld.SAMBA3_LIBRARY('smbldap',
@@ -1010,7 +1014,7 @@ bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
                     source=LIBNET_SRC,
-                    deps='NDR_LIBNET_JOIN INIT_SAMR net_keytab',
+                    deps='NDR_LIBNET_JOIN INIT_SAMR net_keytab pdb',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('net_keytab',
@@ -1074,7 +1078,7 @@ bld.SAMBA3_SUBSYSTEM('DCUTIL',
 
 bld.SAMBA3_LIBRARY('trusts_util',
                    source='libsmb/trusts_util.c',
-                   deps='libcli_netlogon3 msrpc3',
+                   deps='libcli_netlogon3 msrpc3 pdb',
                    vars=locals(),
                    private_library=True)
 
@@ -1148,7 +1152,7 @@ bld.SAMBA3_LIBRARY('libcli_netlogon3',
 
 bld.SAMBA3_LIBRARY('cli_spoolss',
                    source=LIBCLI_SPOOLSS_SRC,
-                   deps='RPC_NDR_SPOOLSS param SECRETS3',
+                   deps='RPC_NDR_SPOOLSS param secrets3',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG',
@@ -1359,7 +1363,7 @@ bld.SAMBA3_BINARY('smbta-util',
                  source=SMBTA_UTIL_SRC,
                  deps='''
                  talloc
-                 SECRETS3
+                 secrets3
                  param''',
                  vars=locals())
 

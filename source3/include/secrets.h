@@ -39,6 +39,7 @@
    really secret. */
 #define SECRETS_DOMAIN_SID    "SECRETS/SID"
 #define SECRETS_SAM_SID       "SAM/SID"
+#define SECRETS_PROTECT_IDS   "SECRETS/PROTECT/IDS"
 
 /* The domain GUID and server GUID (NOT the same) are also not secret */
 #define SECRETS_DOMAIN_GUID   "SECRETS/DOMGUID"
@@ -88,6 +89,10 @@ void secrets_shutdown(void);
 void *secrets_fetch(const char *key, size_t *size);
 bool secrets_store(const char *key, const void *data, size_t size);
 bool secrets_delete(const char *key);
+
+/* The following definitions come from passdb/machine_account_secrets.c */
+bool secrets_mark_domain_protected(const char *domain);
+bool secrets_clear_domain_protection(const char *domain);
 bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid);
 bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid);
 bool secrets_store_domain_guid(const char *domain, struct GUID *guid);
