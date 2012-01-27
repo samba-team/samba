@@ -51,7 +51,7 @@ char *realloc_string_sub2(char *string,
 
 	s = string;
 
-	in = SMB_STRDUP(insert);
+	in = talloc_strdup(talloc_tos(), insert);
 	if (!in) {
 		DEBUG(0, ("realloc_string_sub: out of memory!\n"));
 		return NULL;
@@ -88,11 +88,11 @@ char *realloc_string_sub2(char *string,
 	while ((p = strstr_m(s,pattern))) {
 		if (ld > 0) {
 			int offset = PTR_DIFF(s,string);
-			string = (char *)SMB_REALLOC(string, ls + ld + 1);
+			string = talloc_realloc(NULL, string, char, ls + ld + 1);
 			if (!string) {
 				DEBUG(0, ("realloc_string_sub: "
 					"out of memory!\n"));
-				SAFE_FREE(in);
+				talloc_free(in);
 				return NULL;
 			}
 			p = string + offset + (p - s);
@@ -104,7 +104,7 @@ char *realloc_string_sub2(char *string,
 		s = p + li;
 		ls += ld;
 	}
-	SAFE_FREE(in);
+	talloc_free(in);
 	return string;
 }
 

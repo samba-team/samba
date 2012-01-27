@@ -24,9 +24,6 @@
 #include "secrets.h"
 #include "auth.h"
 
-static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
-			     const char *str);
-
 userdom_struct current_user_info;
 fstring remote_proto="UNKNOWN";
 
@@ -40,7 +37,7 @@ static char *local_machine;
 
 void free_local_machine_name(void)
 {
-	SAFE_FREE(local_machine);
+	TALLOC_FREE(local_machine);
 }
 
 bool set_local_machine_name(const char *local_name, bool perm)
@@ -53,24 +50,24 @@ bool set_local_machine_name(const char *local_name, bool perm)
 		return true;
 	}
 
-	tmp_local_machine = SMB_STRDUP(local_name);
+	tmp_local_machine = talloc_strdup(NULL, local_name);
 	if (!tmp_local_machine) {
 		return false;
 	}
 	trim_char(tmp_local_machine,' ',' ');
 
-	SAFE_FREE(local_machine);
+	TALLOC_FREE(local_machine);
 	len = strlen(tmp_local_machine);
-	local_machine = SMB_CALLOC_ARRAY(char, len+1);
+	local_machine = (char *)TALLOC_ZERO(NULL, len+1);
 	if (!local_machine) {
-		SAFE_FREE(tmp_local_machine);
+		TALLOC_FREE(tmp_local_machine);
 		return false;
 	}
 	/* alpha_strcpy includes the space for the terminating nul. */
 	alpha_strcpy(local_machine,tmp_local_machine,
 			SAFE_NETBIOS_CHARS,len+1);
 	strlower_m(local_machine);
-	SAFE_FREE(tmp_local_machine);
+	TALLOC_FREE(tmp_local_machine);
 
 	already_perm = perm;
 
@@ -104,17 +101,17 @@ bool set_remote_machine_name(const char *remote_name, bool perm)
 		return true;
 	}
 
-	tmp_remote_machine = SMB_STRDUP(remote_name);
+	tmp_remote_machine = talloc_strdup(NULL, remote_name);
 	if (!tmp_remote_machine) {
 		return false;
 	}
 	trim_char(tmp_remote_machine,' ',' ');
 
-	SAFE_FREE(remote_machine);
+	TALLOC_FREE(remote_machine);
 	len = strlen(tmp_remote_machine);
-	remote_machine = SMB_CALLOC_ARRAY(char, len+1);
+	remote_machine = (char *)TALLOC_ZERO(NULL, len+1);
 	if (!remote_machine) {
-		SAFE_FREE(tmp_remote_machine);
+		TALLOC_FREE(tmp_remote_machine);
 		return false;
 	}
 
@@ -122,7 +119,7 @@ bool set_remote_machine_name(const char *remote_name, bool perm)
 	alpha_strcpy(remote_machine,tmp_remote_machine,
 			SAFE_NETBIOS_CHARS,len+1);
 	strlower_m(remote_machine);
-	SAFE_FREE(tmp_remote_machine);
+	TALLOC_FREE(tmp_remote_machine);
 
 	already_perm = perm;
 
@@ -151,7 +148,7 @@ void sub_set_smb_name(const char *name)
 		return;
 	}
 
-	tmp = SMB_STRDUP(name);
+	tmp = talloc_strdup(NULL, name);
 	if (!tmp) {
 		return;
 	}
@@ -161,7 +158,7 @@ void sub_set_smb_name(const char *name)
 	len = strlen(tmp);
 
 	if (len == 0) {
-		SAFE_FREE(tmp);
+		TALLOC_FREE(tmp);
 		return;
 	}
 
@@ -174,10 +171,10 @@ void sub_set_smb_name(const char *name)
 		is_machine_account = True;
 	}
 
-	SAFE_FREE(smb_user_name);
-	smb_user_name = SMB_CALLOC_ARRAY(char, len+1);
+	TALLOC_FREE(smb_user_name);
+	smb_user_name = (char *)TALLOC_ZERO(NULL, len+1);
 	if (!smb_user_name) {
-		SAFE_FREE(tmp);
+		TALLOC_FREE(tmp);
 		return;
 	}
 
@@ -186,7 +183,7 @@ void sub_set_smb_name(const char *name)
 			SAFE_NETBIOS_CHARS,
 			len+1);
 
-	SAFE_FREE(tmp);
+	TALLOC_FREE(tmp);
 
 	if (is_machine_account) {
 		len = strlen(smb_user_name);
@@ -210,17 +207,17 @@ void sub_set_socket_ids(const char *peeraddr, const char *peername,
 
 	if (sub_peername != NULL &&
 			sub_peername != sub_peeraddr) {
-		free(discard_const_p(char,sub_peername));
+		talloc_free(discard_const_p(char,sub_peername));
 		sub_peername = NULL;
 	}
-	sub_peername = SMB_STRDUP(peername);
+	sub_peername = talloc_strdup(NULL, peername);
 	if (sub_peername == NULL) {
 		sub_peername = sub_peeraddr;
 	}
 
 	/*
 	 * Shouldn't we do the ::ffff: cancellation here as well? The
-	 * original code in alloc_sub_basic() did not do it, so I'm
+	 * original code in talloc_sub_basic() did not do it, so I'm
 	 * leaving it out here as well for compatibility.
 	 */
 	strlcpy(sub_sockaddr, sockaddr, sizeof(sub_sockaddr));
@@ -267,13 +264,14 @@ const char *get_current_username(void)
 /*******************************************************************
  Given a pointer to a %$(NAME) in p and the whole string in str
  expand it as an environment variable.
+ str must be a talloced string.
  Return a new allocated and expanded string.
  Based on code by Branko Cibej <branko.cibej@hermes.si>
  When this is called p points at the '%' character.
  May substitute multiple occurrencies of the same env var.
 ********************************************************************/
 
-static char * realloc_expand_env_var(char *str, char *p)
+static char *realloc_expand_env_var(char *str, char *p)
 {
 	char *envname;
 	char *envval;
@@ -301,7 +299,7 @@ static char * realloc_expand_env_var(char *str, char *p)
 	copylen = q - r;
 
 	/* reserve space for use later add %$() chars */
-	if ( (envname = (char *)SMB_MALLOC(copylen + 1 + 4)) == NULL ) {
+	if ( (envname = talloc_array(talloc_tos(), char, copylen + 1 + 4)) == NULL ) {
 		return NULL;
 	}
 
@@ -310,7 +308,7 @@ static char * realloc_expand_env_var(char *str, char *p)
 
 	if ((envval = getenv(envname)) == NULL) {
 		DEBUG(0,("expand_env_var: Environment variable [%s] not set\n", envname));
-		SAFE_FREE(envname);
+		TALLOC_FREE(envname);
 		return str;
 	}
 
@@ -323,7 +321,7 @@ static char * realloc_expand_env_var(char *str, char *p)
 	strncpy(envname,p,copylen);
 	envname[copylen] = '\0';
 	r = realloc_string_sub(str, envname, envval);
-	SAFE_FREE(envname);
+	TALLOC_FREE(envname);
 
 	return r;
 }
@@ -440,36 +438,22 @@ void standard_sub_basic(const char *smb_name, const char *domain_name,
 {
 	char *s;
 
-	if ( (s = alloc_sub_basic( smb_name, domain_name, str )) != NULL ) {
+	if ( (s = talloc_sub_basic(talloc_tos(), smb_name, domain_name, str )) != NULL ) {
 		strncpy( str, s, len );
 	}
 
-	SAFE_FREE( s );
+	TALLOC_FREE( s );
 }
 
 /****************************************************************************
  Do some standard substitutions in a string.
- This function will return an allocated string that have to be freed.
+ This function will return an talloced string that has to be freed.
 ****************************************************************************/
 
-char *talloc_sub_basic(TALLOC_CTX *mem_ctx, const char *smb_name,
-		       const char *domain_name, const char *str)
-{
-	char *a, *t;
-
-	if ( (a = alloc_sub_basic(smb_name, domain_name, str)) == NULL ) {
-		return NULL;
-	}
-	t = talloc_strdup(mem_ctx, a);
-	SAFE_FREE(a);
-	return t;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
-			     const char *str)
+char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
+			const char *smb_name,
+			const char *domain_name,
+			const char *str)
 {
 	char *b, *p, *s, *r, *a_string;
 	fstring pidstr, vnnstr;
@@ -479,13 +463,13 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 	/* workaround to prevent a crash while looking at bug #687 */
 
 	if (!str) {
-		DEBUG(0,("alloc_sub_basic: NULL source string!  This should not happen\n"));
+		DEBUG(0,("talloc_sub_basic: NULL source string!  This should not happen\n"));
 		return NULL;
 	}
 
-	a_string = SMB_STRDUP(str);
+	a_string = talloc_strdup(mem_ctx, str);
 	if (a_string == NULL) {
-		DEBUG(0, ("alloc_sub_basic: Out of memory!\n"));
+		DEBUG(0, ("talloc_sub_basic: Out of memory!\n"));
 		return NULL;
 	}
 
@@ -605,7 +589,7 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 	goto done;
 
 error:
-	SAFE_FREE(a_string);
+	TALLOC_FREE(a_string);
 
 done:
 	TALLOC_FREE(tmp_ctx);
@@ -706,17 +690,21 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-static char *alloc_sub_advanced(const char *servicename, const char *user, 
-			 const char *connectpath, gid_t gid, 
-			 const char *smb_name, const char *domain_name,
-			 const char *str)
+char *talloc_sub_advanced(TALLOC_CTX *ctx,
+			const char *servicename,
+			const char *user,
+			const char *connectpath,
+			gid_t gid,
+			const char *smb_name,
+			const char *domain_name,
+			const char *str)
 {
 	char *a_string, *ret_string;
 	char *b, *p, *s;
 
-	a_string = SMB_STRDUP(str);
+	a_string = talloc_strdup(talloc_tos(), str);
 	if (a_string == NULL) {
-		DEBUG(0, ("alloc_sub_advanced: Out of memory!\n"));
+		DEBUG(0, ("talloc_sub_advanced: Out of memory!\n"));
 		return NULL;
 	}
 
@@ -770,48 +758,25 @@ static char *alloc_sub_advanced(const char *servicename, const char *user,
 		}
 	}
 
-	ret_string = alloc_sub_basic(smb_name, domain_name, a_string);
-	SAFE_FREE(a_string);
+	ret_string = talloc_sub_basic(ctx, smb_name, domain_name, a_string);
+	TALLOC_FREE(a_string);
 	return ret_string;
 }
-
-/*
- * This obviously is inefficient and needs to be merged into
- * alloc_sub_advanced...
- */
-
-char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
-			  const char *servicename, const char *user,
-			  const char *connectpath, gid_t gid,
-			  const char *smb_name, const char *domain_name,
-			  const char *str)
-{
-	char *a, *t;
-
-	if (!(a = alloc_sub_advanced(servicename, user, connectpath, gid,
-				     smb_name, domain_name, str))) {
-		return NULL;
-	}
-	t = talloc_strdup(mem_ctx, a);
-	SAFE_FREE(a);
-	return t;
-}
-
 
 void standard_sub_advanced(const char *servicename, const char *user,
 			   const char *connectpath, gid_t gid,
 			   const char *smb_name, const char *domain_name,
 			   char *str, size_t len)
 {
-	char *s;
+	char *s = talloc_sub_advanced(talloc_tos(),
+				servicename, user, connectpath,
+				gid, smb_name, domain_name, str);
 
-	s = alloc_sub_advanced(servicename, user, connectpath,
-			       gid, smb_name, domain_name, str);
-
-	if ( s ) {
-		strncpy( str, s, len );
-		SAFE_FREE( s );
+	if (!s) {
+		return;
 	}
+	strlcpy( str, s, len );
+	TALLOC_FREE( s );
 }
 
 /****************************************************************************
@@ -849,7 +814,7 @@ bool str_list_sub_basic( char **list, const char *smb_name,
 		tmpstr = talloc_sub_basic(ctx, smb_name, domain_name, s);
 		if ( !tmpstr ) {
 			DEBUG(0,("str_list_sub_basic: "
-				"alloc_sub_basic() return NULL!\n"));
+				"talloc_sub_basic() return NULL!\n"));
 			return false;
 		}
 

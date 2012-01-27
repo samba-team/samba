@@ -2075,13 +2075,13 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	oldname = pdb_get_username(old_acct);
 
 	/* rename the posix user */
-	rename_script = SMB_STRDUP(lp_renameuser_script());
+	rename_script = talloc_strdup(talloc_tos(), lp_renameuser_script());
 	if (rename_script == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!(*rename_script)) {
-		SAFE_FREE(rename_script);
+		TALLOC_FREE(rename_script);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -2114,7 +2114,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	DEBUG(rc ? 0 : 3,("Running the command `%s' gave %d\n",
 			  rename_script, rc));
 
-	SAFE_FREE(rename_script);
+	TALLOC_FREE(rename_script);
 
 	if (rc == 0) {
 		smb_nscd_flush_user_cache();

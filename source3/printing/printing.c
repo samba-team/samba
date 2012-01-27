@@ -2739,9 +2739,7 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 			      path, server_info->unix_token->gid,
 			      server_info->unix_info->sanitized_username,
 			      server_info->info->domain_name,
-			      pjob.user, sizeof(pjob.user)-1);
-	/* ensure NULL termination */
-	pjob.user[sizeof(pjob.user)-1] = '\0';
+			      pjob.user, sizeof(pjob.user));
 
 	fstrcpy(pjob.queuename, lp_const_servicename(snum));
 
