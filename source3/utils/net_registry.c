@@ -1439,9 +1439,9 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			"check",
 			net_registry_check,
 			NET_TRANSPORT_LOCAL,
-			N_("Check .reg file"),
+			N_("Check a registry database"),
 			N_("net registry check\n"
-			   "    Check .reg file")
+			   "    Check a registry database")
 		},
 	{ NULL, NULL, 0, NULL, NULL }
 	};
