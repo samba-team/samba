@@ -3838,10 +3838,8 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 		/*
 		 * send a SMB2 negprot, in order to negotiate
-		 * the SMB2 dialect. This needs to use the
-		 * message id 1.
+		 * the SMB2 dialect.
 		 */
-		state->conn->smb2.mid = 1;
 		subreq = smbXcli_negprot_smb2_subreq(state);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
@@ -3921,6 +3919,11 @@ static NTSTATUS smbXcli_negprot_dispatch_incoming(struct smbXcli_conn *conn,
 			substate->smb1.recv_iov = NULL;
 		}
 
+		/*
+		 * we got an SMB2 answer, which consumed sequence number 0
+		 * so we need to use 1 as the next one
+		 */
+		conn->smb2.mid = 1;
 		tevent_req_set_callback(subreq, smbXcli_negprot_smb2_done, req);
 		conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
 		return smb2cli_conn_dispatch_incoming(conn, tmp_mem, inbuf);
