@@ -259,6 +259,48 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	talloc_free(tmp_ctx);	
 }
 
+/**
+ * open a smb2 tree connect
+ */
+bool torture_smb2_tree_connect(struct torture_context *tctx,
+			       struct smb2_session *session,
+			       TALLOC_CTX *mem_ctx,
+			       struct smb2_tree **_tree)
+{
+	NTSTATUS status;
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct smb2_tree_connect tcon;
+	struct smb2_tree *tree;
+
+	ZERO_STRUCT(tcon);
+	tcon.in.reserved = 0;
+	tcon.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	if (tcon.in.path == NULL) {
+		printf("talloc failed\n");
+		return false;
+	}
+
+	status = smb2_tree_connect(session, &tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to tree_connect to SMB2 share \\\\%s\\%s - %s\n",
+		       host, share, nt_errstr(status));
+		return false;
+	}
+
+	tree = smb2_tree_init(session, mem_ctx, true);
+	if (tree == NULL) {
+		printf("talloc failed\n");
+		return false;
+	}
+
+	tree->tid = tcon.out.tid;
+
+	*_tree = tree;
+
+	return true;
+}
+
 
 /*
   open a smb2 connection
