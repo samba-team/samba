@@ -877,7 +877,7 @@ static void print_unix_job(struct tevent_context *ev,
 	struct printjob pj, *old_pj;
 
 	if (jobid == (uint32)-1)
-		jobid = q->job + UNIX_JOB_START;
+		jobid = q->sysjob + UNIX_JOB_START;
 
 	/* Preserve the timestamp on an existing unix print job */
 
@@ -887,7 +887,7 @@ static void print_unix_job(struct tevent_context *ev,
 
 	pj.pid = (pid_t)-1;
 	pj.jobid = jobid;
-	pj.sysjob = q->job;
+	pj.sysjob = q->sysjob;
 	pj.fd = -1;
 	pj.starttime = old_pj ? old_pj->starttime : q->time;
 	pj.status = q->status;
@@ -942,7 +942,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		/* remove a unix job if it isn't in the system queue any more */
 
 		for (i=0;i<ts->qcount;i++) {
-			uint32 u_jobid = (ts->queue[i].job + UNIX_JOB_START);
+			uint32 u_jobid = (ts->queue[i].sysjob + UNIX_JOB_START);
 			if (jobid == u_jobid)
 				break;
 		}
@@ -1043,7 +1043,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	   FIXME!!! This is the only place where queue->job
 	   represents the SMB jobid      --jerry */
 
-	ts->queue[i].job = jobid;
+	ts->queue[i].sysjob = jobid;
 	ts->queue[i].size = pjob.size;
 	ts->queue[i].page_count = pjob.page_count;
 	ts->queue[i].status = pjob.status;
@@ -1194,7 +1194,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 
 		qcount++;
 		data.dsize += tdb_pack(NULL, 0, "ddddddff",
-				(uint32)queue[i].job,
+				(uint32)queue[i].sysjob,
 				(uint32)queue[i].size,
 				(uint32)queue[i].page_count,
 				(uint32)queue[i].status,
@@ -1214,7 +1214,7 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 			continue;
 
 		len += tdb_pack(data.dptr + len, data.dsize - len, "ddddddff",
-				(uint32)queue[i].job,
+				(uint32)queue[i].sysjob,
 				(uint32)queue[i].size,
 				(uint32)queue[i].page_count,
 				(uint32)queue[i].status,
@@ -1410,7 +1410,7 @@ static void print_queue_update_internal( struct tevent_context *ev,
 			continue;
 		}
 
-		pjob->sysjob = queue[i].job;
+		pjob->sysjob = queue[i].sysjob;
 
 		/* don't reset the status on jobs to be deleted */
 
@@ -2974,7 +2974,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 				&qtime,
 				queue[i].fs_user,
 				queue[i].fs_file);
-		queue[i].job = qjob;
+		queue[i].sysjob = qjob;
 		queue[i].size = qsize;
 		queue[i].page_count = qpage_count;
 		queue[i].status = qstatus;
@@ -2998,7 +2998,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		queue[total_count].job = jobid;
+		queue[total_count].sysjob = jobid;
 		queue[total_count].size = pjob->size;
 		queue[total_count].page_count = pjob->page_count;
 		queue[total_count].status = pjob->status;
@@ -3016,7 +3016,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 		bool found = false;
 
 		for (j = 0; j < total_count; j++) {
-			if (queue[j].job == jobid) {
+			if (queue[j].sysjob == jobid) {
 				found = true;
 				break;
 			}
@@ -3037,7 +3037,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 				continue;
 			}
 
-			queue[j].job = jobid;
+			queue[j].sysjob = jobid;
 			queue[j].size = pjob->size;
 			queue[j].page_count = pjob->page_count;
 			queue[j].status = pjob->status;
@@ -3239,11 +3239,11 @@ WERROR print_queue_purge(const struct auth_session_info *server_info,
 
 	for (i=0;i<njobs;i++) {
 		bool owner = is_owner(server_info, lp_const_servicename(snum),
-				      queue[i].job);
+				      queue[i].sysjob);
 
 		if (owner || can_job_admin) {
 			print_job_delete1(server_event_context(), msg_ctx,
-					  snum, queue[i].job);
+					  snum, queue[i].sysjob);
 		}
 	}
 

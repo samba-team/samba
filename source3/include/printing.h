@@ -47,7 +47,7 @@ enum {
 };
 
 typedef struct _print_queue_struct {
-	int job;		/* normally the UNIX jobid -- see note in
+	int sysjob;		/* normally the UNIX jobid -- see note in
 				   printing.c:traverse_fn_delete() */
 	int size;
 	int page_count;

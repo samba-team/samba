@@ -3228,7 +3228,7 @@ static void spoolss_notify_job_position(struct messaging_context *msg_ctx,
 					struct spoolss_PrinterInfo2 *pinfo2,
 					TALLOC_CTX *mem_ctx)
 {
-	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, queue->job);
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, queue->sysjob);
 }
 
 /*******************************************************************
@@ -3694,7 +3694,7 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 							   &queue[j], info,
 							   pinfo2, snum,
 							   &option_type,
-							   queue[j].job,
+							   queue[j].sysjob,
 							   mem_ctx);
 			}
 
@@ -6975,7 +6975,7 @@ static WERROR fill_job_info1(TALLOC_CTX *mem_ctx,
 
 	t = gmtime(&queue->time);
 
-	r->job_id		= queue->job;
+	r->job_id		= queue->sysjob;
 
 	r->printer_name		= talloc_strdup(mem_ctx, lp_servicename(snum));
 	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
@@ -7016,7 +7016,7 @@ static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
 
 	t = gmtime(&queue->time);
 
-	r->job_id		= queue->job;
+	r->job_id		= queue->sysjob;
 
 	r->printer_name		= talloc_strdup(mem_ctx, lp_servicename(snum));
 	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
@@ -7069,10 +7069,10 @@ static WERROR fill_job_info3(TALLOC_CTX *mem_ctx,
 			     int position, int snum,
 			     struct spoolss_PrinterInfo2 *pinfo2)
 {
-	r->job_id		= queue->job;
+	r->job_id		= queue->sysjob;
 	r->next_job_id		= 0;
 	if (next_queue) {
-		r->next_job_id	= next_queue->job;
+		r->next_job_id	= next_queue->sysjob;
 	}
 	r->reserved		= 0;
 
@@ -9253,7 +9253,7 @@ static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
 	bool found = false;
 
 	for (i=0; i<count; i++) {
-		if (queue[i].job == (int)jobid) {
+		if (queue[i].sysjob == (int)jobid) {
 			found = true;
 			break;
 		}
@@ -9288,7 +9288,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	WERROR result;
 
 	for (i=0; i<count; i++) {
-		if (queue[i].job == (int)jobid) {
+		if (queue[i].sysjob == (int)jobid) {
 			found = true;
 			break;
 		}
