@@ -3030,9 +3030,9 @@ bin/aio_fork.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_FORK_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_AIO_FORK_OBJ)
 
-bin/aio_pthread.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_PTHREAD_OBJ)
+bin/aio_pthread.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_PTHREAD_OBJ) lib/pthreadpool/pthreadpool.o
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_AIO_PTHREAD_OBJ)
+	@$(SHLD_MODULE) $(VFS_AIO_PTHREAD_OBJ) lib/pthreadpool/pthreadpool.o -lpthread
 
 bin/preopen.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_PREOPEN_OBJ)
 	@echo "Building plugin $@"
