@@ -199,7 +199,7 @@ static void cli_read_andx_done(struct tevent_req *subreq)
 	inbuf = cli_smb_inbuf(subreq);
 	state->buf = (uint8_t *)smb_base(inbuf) + SVAL(vwv+6, 0);
 
-	if (trans_oob(smb_len(inbuf), SVAL(vwv+6, 0), state->received)
+	if (trans_oob(smb_len_large(inbuf), SVAL(vwv+6, 0), state->received)
 	    || ((state->received != 0) && (state->buf < bytes))) {
 		DEBUG(5, ("server returned invalid read&x data offset\n"));
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
