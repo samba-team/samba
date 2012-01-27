@@ -164,7 +164,7 @@ static bool parse_lpq_bsd(char *line,print_queue_struct *buf,bool first)
 		return False;
 	}
 
-	buf->job = atoi(tok[JOBTOK]);
+	buf->sysjob = atoi(tok[JOBTOK]);
 	buf->size = atoi(tok[TOTALTOK]);
 	buf->status = strequal(tok[RANKTOK],"active")?LPQ_PRINTING:LPQ_QUEUED;
 	buf->time = time(NULL);
@@ -281,7 +281,7 @@ static bool parse_lpq_lprng(char *line,print_queue_struct *buf,bool first)
 		return False;
 	}
 
-	buf->job  = atoi(tokarr[LPRNG_JOBTOK]);
+	buf->sysjob = atoi(tokarr[LPRNG_JOBTOK]);
 	buf->size = atoi(tokarr[LPRNG_TOTALTOK]);
 
 	if (strequal(tokarr[LPRNG_RANKTOK],"active")) {
@@ -384,7 +384,7 @@ static bool parse_lpq_aix(char *line,print_queue_struct *buf,bool first)
 				}
 			}
 
-			buf->job = atoi(tok[1]);
+			buf->sysjob = atoi(tok[1]);
 			buf->status = strequal(tok[0],"HELD")?LPQ_PAUSED:LPQ_QUEUED;
 			buf->priority = 0;
 			buf->time = time(NULL);
@@ -420,7 +420,7 @@ static bool parse_lpq_aix(char *line,print_queue_struct *buf,bool first)
 			}
 		}
 
-		buf->job = atoi(tok[3]);
+		buf->sysjob = atoi(tok[3]);
 		buf->status = strequal(tok[2],"RUNNING")?LPQ_PRINTING:LPQ_QUEUED;
 		buf->priority = 0;
 		buf->time = time(NULL);
@@ -511,7 +511,7 @@ static bool parse_lpq_hpux(char *line, print_queue_struct *buf, bool first)
 
 		/* fill things from header line */
 		buf->time = jobtime;
-		buf->job = jobid;
+		buf->sysjob = jobid;
 		buf->status = jobstat;
 		buf->priority = jobprio;
 		if (jobuser) {
@@ -651,7 +651,7 @@ static bool parse_lpq_sysv(char *line,print_queue_struct *buf,bool first)
 		tok[2] = p+1;
 	}
 
-	buf->job = atoi(tok[1]);
+	buf->sysjob = atoi(tok[1]);
 	buf->size = atoi(tok[3]);
 	if (count > 7 && strequal(tok[7],"on")) {
 		buf->status = LPQ_PRINTING;
@@ -726,7 +726,7 @@ static bool parse_lpq_qnx(char *line,print_queue_struct *buf,bool first)
 		}
 	}
 
-	buf->job = atoi(tok[2]);
+	buf->sysjob = atoi(tok[2]);
 	buf->size = atoi(tok[4]);
 	buf->status = strequal(tok[3],"active")?LPQ_PRINTING:LPQ_QUEUED;
 	buf->priority = 0;
@@ -806,7 +806,7 @@ static bool parse_lpq_plp(char *line,print_queue_struct *buf,bool first)
 		}
 	}
 
-	buf->job = atoi(tok[4]);
+	buf->sysjob = atoi(tok[4]);
 
 	buf->size = atoi(tok[7]);
 	if (strchr_m(tok[7],'K')) {
@@ -896,7 +896,7 @@ static bool parse_lpq_nt(char *line,print_queue_struct *buf,bool first)
 	parse_line->space3 = '\0';
 	trim_char(parse_line->jobname, '\0', ' ');
 
-	buf->job = atoi(parse_line->jobid);
+	buf->sysjob = atoi(parse_line->jobid);
 	buf->priority = 0;
 	buf->size = atoi(parse_line->size);
 	buf->time = time(NULL);
@@ -957,7 +957,7 @@ static bool parse_lpq_os2(char *line,print_queue_struct *buf,bool first)
 	}
 
 	/* Get the jobid */
-	buf->job = atoi(parse_line->jobid);
+	buf->sysjob = atoi(parse_line->jobid);
 
 	/* Get the job name */
 	parse_line->space2[0] = '\0';
@@ -1023,7 +1023,7 @@ static bool parse_lpq_vlp(char *line,print_queue_struct *buf,bool first)
 	while(next_token_talloc(frame, &cline, &tok, NULL)) {
 		switch (toknum) {
 		case 0:
-			buf->job = atoi(tok);
+			buf->sysjob = atoi(tok);
 			break;
 		case 1:
 			buf->size = atoi(tok);

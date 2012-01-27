@@ -1243,7 +1243,7 @@ static int cups_queue_get(const char *sharename,
 				continue;
 		}
 
-		temp->job      = job_id;
+		temp->sysjob   = job_id;
 		temp->size     = job_k_octets * 1024;
 		temp->status   = job_status == IPP_JOB_PENDING ? LPQ_QUEUED :
 				 job_status == IPP_JOB_STOPPED ? LPQ_PAUSED :
