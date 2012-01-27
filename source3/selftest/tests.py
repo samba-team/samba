@@ -302,18 +302,33 @@ for s in signseal_options:
                                                                                                                               "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
 
 
-if have_ads_support:
-    options_list = ["", "-e"]
-    for options in options_list:
+options_list = ["", "-e"]
+for options in options_list:
+    if have_ads_support:
         plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local", 
                       [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
                        "$PREFIX/ktest/krb5_ccache-2", 
                        binpath('smbclient3'), "$SERVER", options, configuration])
 
-        plantestsuite("samba3.blackbox.smbclient_krb5 %s" % options, "ktest:local", 
+        plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
                       [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
-                       "$PREFIX/ktest/krb5_ccache-3", 
+                       "$PREFIX/ktest/krb5_ccache-2",
                        binpath('smbclient3'), "$SERVER", options, configuration])
+
+        plantestsuite("samba3.blackbox.smbclient_large_file %s" % options, "ktest:local",
+                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
+                       "$PREFIX/ktest/krb5_ccache-3",
+                       binpath('smbclient3'), "$SERVER", "$PREFIX", options, "-k " + configuration])
+
+        plantestsuite("samba3.blackbox.smbclient_posix_large %s krb5" % options, "ktest:local",
+                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
+                       "$PREFIX/ktest/krb5_ccache-3",
+                       binpath('smbclient3'), "$SERVER", "$PREFIX", options, "-k " + configuration])
+
+    plantestsuite("samba3.blackbox.smbclient_posix_large %s NTLM" % options, "s3dc:local",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
+                   "none",
+                   binpath('smbclient3'), "$SERVER", "$PREFIX", options, "-U$USERNAME%$PASSWORD " + configuration])
 
 for e in endianness_options:
     for a in auth_options:

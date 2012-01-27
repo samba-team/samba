@@ -485,6 +485,11 @@ $ret->{USERNAME} = KTEST\\Administrator
 	system("cp $self->{srcdir}/source3/selftest/ktest-krb5_ccache-3 $prefix/krb5_ccache-3");
 	chmod 0600, "$prefix/krb5_ccache-3";
 
+	# We need world access to this share, as otherwise the domain
+	# administrator from the AD domain provided by ktest can't
+	# access the share for tests.
+	chmod 0777, "$prefix/share";
+
 	$self->check_or_start($ret, "yes", "no", "yes");
 
 	if (not $self->wait_for_start($ret)) {
