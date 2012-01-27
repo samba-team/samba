@@ -643,6 +643,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''
                     talloc
+                    popt
                     msrpc3
                     ads
                     NDR_LIBNETAPI
@@ -1414,6 +1415,7 @@ bld.SAMBA3_BINARY('smbget',
                  source=SMBGET_SRC,
                  deps='''
                  talloc
+                 popt
                  smbclient''',
                  vars=locals())
 
