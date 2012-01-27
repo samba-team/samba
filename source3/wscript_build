@@ -839,7 +839,7 @@ bld.SAMBA3_LIBRARY('smbd_shim',
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
                     source=LIBNTLMSSP_SRC,
-                    deps='NDR_NTLMSSP NTLMSSP_COMMON',
+                    deps='NDR_NTLMSSP NTLMSSP_COMMON wbclient',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('auth_generic',
