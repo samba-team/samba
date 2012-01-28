@@ -1995,21 +1995,23 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 			continue;
 		}
 
-		if ((is_loopback_ip_v4(packet->ip) || ismyip_v4(packet->ip)) &&
-		    packet->port == client_port)
-		{
-			if (client_port == DGRAM_PORT) {
-				DEBUG(7,("discarding own dgram packet from %s:%d\n",
-					inet_ntoa(packet->ip),packet->port));
-				free_packet(packet);
-				continue;
-			}
+		if (!IS_DC) {
+			if ((is_loopback_ip_v4(packet->ip) || ismyip_v4(packet->ip)) &&
+			packet->port == client_port)
+			{
+				if (client_port == DGRAM_PORT) {
+					DEBUG(7,("discarding own dgram packet from %s:%d\n",
+						inet_ntoa(packet->ip),packet->port));
+					free_packet(packet);
+					continue;
+				}
 
-			if (packet->packet.nmb.header.nm_flags.bcast) {
-				DEBUG(7,("discarding own nmb bcast packet from %s:%d\n",
-					inet_ntoa(packet->ip),packet->port));
-				free_packet(packet);
-				continue;
+				if (packet->packet.nmb.header.nm_flags.bcast) {
+					DEBUG(7,("discarding own nmb bcast packet from %s:%d\n",
+						inet_ntoa(packet->ip),packet->port));
+					free_packet(packet);
+					continue;
+				}
 			}
 		}
 
