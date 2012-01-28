@@ -307,6 +307,15 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	return se;
 }
 
+struct tevent_se_exists {
+	struct tevent_se_exists **myself;
+};
+
+static int tevent_se_exists_destructor(struct tevent_se_exists *s)
+{
+	*s->myself = NULL;
+	return 0;
+}
 
 /*
   check if a signal is pending
@@ -335,6 +344,23 @@ int tevent_common_check_signal(struct tevent_context *ev)
 		}
 		for (sl=sig_state->sig_handlers[i];sl;sl=next) {
 			struct tevent_signal *se = sl->se;
+			struct tevent_se_exists *exists;
+
+			/*
+			 * We have to be careful to not touch "se"
+			 * after it was deleted in its handler. Thus
+			 * we allocate a child whose destructor will
+			 * tell by nulling out itself that its parent
+			 * is gone.
+			 */
+			exists = talloc(se, struct tevent_se_exists);
+			if (exists == NULL) {
+				continue;
+			}
+			exists->myself = &exists;
+			talloc_set_destructor(
+				exists, tevent_se_exists_destructor);
+
 			next = sl->next;
 #ifdef SA_SIGINFO
 			if (se->sa_flags & SA_SIGINFO) {
@@ -352,21 +378,26 @@ int tevent_common_check_signal(struct tevent_context *ev)
 					se->handler(ev, se, i, 1,
 						    (void*)&sig_state->sig_info[i][ofs], 
 						    se->private_data);
+					if (!exists) {
+						break;
+					}
 				}
 #ifdef SA_RESETHAND
-				if (se->sa_flags & SA_RESETHAND) {
+				if (exists && (se->sa_flags & SA_RESETHAND)) {
 					talloc_free(se);
 				}
 #endif
+				talloc_free(exists);
 				continue;
 			}
 #endif
 			se->handler(ev, se, i, count, NULL, se->private_data);
 #ifdef SA_RESETHAND
-			if (se->sa_flags & SA_RESETHAND) {
+			if (exists && (se->sa_flags & SA_RESETHAND)) {
 				talloc_free(se);
 			}
 #endif
+			talloc_free(exists);
 		}
 
 #ifdef SA_SIGINFO
