@@ -332,7 +332,7 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 		}
 	}
 
-	if (tdb_reopen_all(1) == -1) {
+	if (tdb_reopen_all(1) != 0) {
 		smb_panic("tdb_reopen_all failed\n");
 	}
 }
