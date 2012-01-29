@@ -88,7 +88,9 @@ bool secrets_clear_domain_protection(const char *domain)
 
 bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
 {
+#if _SAMBA_BUILD_ == 4
 	char *protect_ids;
+#endif
 	bool ret;
 
 #if _SAMBA_BUILD_ == 4
@@ -132,7 +134,9 @@ bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid)
 
 bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 {
+#if _SAMBA_BUILD_ == 4
 	char *protect_ids;
+#endif
 	fstring key;
 
 #if _SAMBA_BUILD_ == 4
