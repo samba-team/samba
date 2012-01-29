@@ -102,6 +102,9 @@ struct auth4_context {
 	/* SAM database for this local machine - to fill in local groups, or to authenticate local NTLM users */
 	struct ldb_context *sam_ctx;
 
+	/* Private data for the callbacks on this auth context */
+	void *private_data;
+
 	NTSTATUS (*check_password)(struct auth4_context *auth_ctx,
 				   TALLOC_CTX *mem_ctx,
 				   const struct auth_usersupplied_info *user_info,

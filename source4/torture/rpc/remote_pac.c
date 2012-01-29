@@ -42,6 +42,11 @@
 #define TEST_MACHINE_NAME_S2U4SELF_BDC "tests2u4selfbdc"
 #define TEST_MACHINE_NAME_S2U4SELF_WKSTA "tests2u4selfwk"
 
+struct pac_data {
+	struct PAC_SIGNATURE_DATA *pac_srv_sig;
+	struct PAC_SIGNATURE_DATA *pac_kdc_sig;
+};
+
 /* A helper function which avoids touching the local databases to
  * generate the session info, as we just want to verify the PAC
  * details, not the full local token */
@@ -56,20 +61,21 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 {
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *user_info_dc;
-	struct PAC_SIGNATURE_DATA *pac_srv_sig = NULL;
-	struct PAC_SIGNATURE_DATA *pac_kdc_sig = NULL;
 	TALLOC_CTX *tmp_ctx;
-	
+	struct pac_data *pac_data;
+
 	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gssapi_session_info context");
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	pac_srv_sig = talloc(tmp_ctx, struct PAC_SIGNATURE_DATA);
-	if (!pac_srv_sig) {
+	auth_ctx->private_data = pac_data = talloc_zero(auth_ctx, struct pac_data); 
+
+	pac_data->pac_srv_sig = talloc(tmp_ctx, struct PAC_SIGNATURE_DATA);
+	if (!pac_data->pac_srv_sig) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	pac_kdc_sig = talloc(tmp_ctx, struct PAC_SIGNATURE_DATA);
-	if (!pac_kdc_sig) {
+	pac_data->pac_kdc_sig = talloc(tmp_ctx, struct PAC_SIGNATURE_DATA);
+	if (!pac_data->pac_kdc_sig) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -78,12 +84,15 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 						      *pac_blob,
 						      smb_krb5_context->krb5_context,
 						      &user_info_dc,
-						      pac_srv_sig,
-						      pac_kdc_sig);
+						      pac_data->pac_srv_sig,
+						      pac_data->pac_kdc_sig);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
 	}
+
+	talloc_steal(pac_data, pac_data->pac_srv_sig);
+	talloc_steal(pac_data, pac_data->pac_kdc_sig);
 
 	if (user_info_dc->info->authenticated) {
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
@@ -98,13 +107,6 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
-	}
-
-	if ((*session_info)->torture) {
-		(*session_info)->torture->pac_srv_sig
-			= talloc_steal((*session_info)->torture, pac_srv_sig);
-		(*session_info)->torture->pac_kdc_sig
-			= talloc_steal((*session_info)->torture, pac_kdc_sig);
 	}
 
 	talloc_free(tmp_ctx);
@@ -144,6 +146,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	struct auth4_context *auth_context;
 	struct auth_session_info *session_info;
+	struct pac_data *pac_data;
 
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
@@ -206,22 +209,25 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	status = gensec_session_info(gensec_server_context, gensec_server_context, &session_info);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
-	torture_assert(tctx, session_info->torture != NULL, "gensec_session_info failed to fill in torture sub struct");
-	torture_assert(tctx, session_info->torture->pac_srv_sig != NULL, "pac_srv_sig not present");
-	torture_assert(tctx, session_info->torture->pac_kdc_sig != NULL, "pac_kdc_sig not present");
 
-	pac_wrapped_struct.ChecksumLength = session_info->torture->pac_srv_sig->signature.length;
-	pac_wrapped_struct.SignatureType = session_info->torture->pac_kdc_sig->type;
-	pac_wrapped_struct.SignatureLength = session_info->torture->pac_kdc_sig->signature.length;
+	pac_data = talloc_get_type(auth_context->private_data, struct pac_data);
+
+	torture_assert(tctx, pac_data != NULL, "gensec_update failed to fill in pac_data in auth_context");
+	torture_assert(tctx, pac_data->pac_srv_sig != NULL, "pac_srv_sig not present");
+	torture_assert(tctx, pac_data->pac_kdc_sig != NULL, "pac_kdc_sig not present");
+
+	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
+	pac_wrapped_struct.SignatureType = pac_data->pac_kdc_sig->type;
+	pac_wrapped_struct.SignatureLength = pac_data->pac_kdc_sig->signature.length;
 	pac_wrapped_struct.ChecksumAndSignature = payload
 		= data_blob_talloc(tmp_ctx, NULL, 
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0], 
-	       session_info->torture->pac_srv_sig->signature.data,
+	       pac_data->pac_srv_sig->signature.data,
 	       pac_wrapped_struct.ChecksumLength);
 	memcpy(&payload.data[pac_wrapped_struct.ChecksumLength], 
-	       session_info->torture->pac_kdc_sig->signature.data,
+	       pac_data->pac_kdc_sig->signature.data,
 	       pac_wrapped_struct.SignatureLength);
 
 	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
@@ -312,22 +318,22 @@ static bool test_PACVerify(struct torture_context *tctx,
 							 &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
 
-	pac_wrapped_struct.ChecksumLength = session_info->torture->pac_srv_sig->signature.length;
-	pac_wrapped_struct.SignatureType = session_info->torture->pac_kdc_sig->type;
+	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
+	pac_wrapped_struct.SignatureType = pac_data->pac_kdc_sig->type;
 	
 	/* Break the SignatureType */
 	pac_wrapped_struct.SignatureType++;
 
-	pac_wrapped_struct.SignatureLength = session_info->torture->pac_kdc_sig->signature.length;
+	pac_wrapped_struct.SignatureLength = pac_data->pac_kdc_sig->signature.length;
 	pac_wrapped_struct.ChecksumAndSignature = payload
 		= data_blob_talloc(tmp_ctx, NULL, 
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0], 
-	       session_info->torture->pac_srv_sig->signature.data,
+	       pac_data->pac_srv_sig->signature.data,
 	       pac_wrapped_struct.ChecksumLength);
 	memcpy(&payload.data[pac_wrapped_struct.ChecksumLength], 
-	       session_info->torture->pac_kdc_sig->signature.data,
+	       pac_data->pac_kdc_sig->signature.data,
 	       pac_wrapped_struct.SignatureLength);
 	
 	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
@@ -360,19 +366,19 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
 
-	pac_wrapped_struct.ChecksumLength = session_info->torture->pac_srv_sig->signature.length;
-	pac_wrapped_struct.SignatureType = session_info->torture->pac_kdc_sig->type;
-	pac_wrapped_struct.SignatureLength = session_info->torture->pac_kdc_sig->signature.length;
+	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
+	pac_wrapped_struct.SignatureType = pac_data->pac_kdc_sig->type;
+	pac_wrapped_struct.SignatureLength = pac_data->pac_kdc_sig->signature.length;
 
 	pac_wrapped_struct.ChecksumAndSignature = payload
 		= data_blob_talloc(tmp_ctx, NULL, 
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0], 
-	       session_info->torture->pac_srv_sig->signature.data,
+	       pac_data->pac_srv_sig->signature.data,
 	       pac_wrapped_struct.ChecksumLength);
 	memcpy(&payload.data[pac_wrapped_struct.ChecksumLength], 
-	       session_info->torture->pac_kdc_sig->signature.data,
+	       pac_data->pac_kdc_sig->signature.data,
 	       pac_wrapped_struct.SignatureLength);
 	
 	/* Break the signature length */
