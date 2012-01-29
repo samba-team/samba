@@ -136,7 +136,7 @@ tdb_open_compat_(const char *name, int hash_size,
 		tdb_flags &= ~TDB_VOLATILE;
 	}
 
-	if (hash_size && (tdb_flags & TDB_VERSION1)) {
+	if (hash_size && (tdb_flags & TDB_VERSION1) && (open_flags & O_CREAT)) {
 		hsize.base.attr = TDB_ATTRIBUTE_TDB1_HASHSIZE;
 		hsize.base.next = attr;
 		hsize.tdb1_hashsize.hsize = hash_size;
