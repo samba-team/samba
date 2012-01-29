@@ -64,6 +64,12 @@ static void smbd_set_server_fd(int fd)
 	 * name, default to its address.
 	 */
 
+	if (sconn->client_id.name != NULL &&
+	    sconn->client_id.name != sconn->client_id.addr) {
+		talloc_free(discard_const_p(char, sconn->client_id.name));
+		sconn->client_id.name = NULL;
+	}
+
 	client_addr(fd, sconn->client_id.addr, sizeof(sconn->client_id.addr));
 
 	name = client_name(sconn->sock);
