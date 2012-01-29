@@ -195,7 +195,7 @@ void sub_set_smb_name(const char *name)
 }
 
 static char sub_peeraddr[INET6_ADDRSTRLEN];
-static const char *sub_peername = "";
+static const char *sub_peername = NULL;
 static char sub_sockaddr[INET6_ADDRSTRLEN];
 
 void sub_set_socket_ids(const char *peeraddr, const char *peername,
@@ -208,6 +208,11 @@ void sub_set_socket_ids(const char *peeraddr, const char *peername,
 	}
 	strlcpy(sub_peeraddr, addr, sizeof(sub_peeraddr));
 
+	if (sub_peername != NULL &&
+			sub_peername != sub_peeraddr) {
+		free(discard_const_p(char,sub_peername));
+		sub_peername = NULL;
+	}
 	sub_peername = SMB_STRDUP(peername);
 	if (sub_peername == NULL) {
 		sub_peername = sub_peeraddr;
@@ -646,7 +651,7 @@ static char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			break;
 		case 'M' :
 			a_string = realloc_string_sub(a_string, "%M",
-						      sub_peername);
+						      sub_peername ? sub_peername : "");
 			break;
 		case 'R' :
 			a_string = realloc_string_sub(a_string, "%R", remote_proto);
