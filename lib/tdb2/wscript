@@ -86,6 +86,10 @@ def build(bld):
                              'tools/tdb2restore.c',
                              'tdb')
 
+            bld.SAMBA_BINARY('tdb2backup',
+                             'tools/tdb2backup.c',
+                             'tdb')
+
         bld.SAMBA_PYTHON('pytdb',
                          'pytdb.c',
                          deps='tdb',
