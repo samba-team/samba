@@ -1,4 +1,53 @@
                    =============================
+                   Release Notes for Samba 3.6.3
+                         January 29, 2012
+                   =============================
+
+
+This is a security release in order to address
+CVE-2012-0817 (Memory leak/Denial of service).
+
+o  CVE-2012-0817:
+   The Samba File Serving daemon (smbd) in Samba versions
+   3.6.0 to 3.6.2 is affected by a memory leak that can
+   cause a server denial of service.
+
+
+Changes since 3.6.2:
+--------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8724: Fix memory leak in parent smbd on connection.
+
+
+o   Ira Cooper <samba@ira.wakeful.net>
+    * BUG 8724: Fix memory leak in parent smbd on connection.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.6 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 3.6.2
                          January 25, 2012
                    =============================
@@ -174,8 +223,9 @@ database (https://bugzilla.samba.org/).
 == The Samba Team
 ======================================================================
 
-Release notes for older releases follow:
-----------------------------------------
+
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 3.6.1
