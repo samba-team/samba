@@ -18,7 +18,7 @@
  */
 
 #include "includes.h"
-#include "popt_common.h"
+#include "auth_info.h"
 
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"

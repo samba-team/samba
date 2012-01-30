@@ -643,7 +643,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''
                     talloc
-                    popt
+                    util_cmdline
                     msrpc3
                     ads
                     NDR_LIBNETAPI
@@ -800,7 +800,7 @@ bld.SAMBA3_LIBRARY('popt_samba3',
 
 bld.SAMBA3_LIBRARY('util_cmdline',
                    source='lib/util_cmdline.c',
-                   deps='secrets3 popt',
+                   deps='secrets3',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
@@ -1422,7 +1422,7 @@ bld.SAMBA3_BINARY('smbget',
                  source=SMBGET_SRC,
                  deps='''
                  talloc
-                 popt
+                 popt_samba3
                  smbclient''',
                  vars=locals())
 

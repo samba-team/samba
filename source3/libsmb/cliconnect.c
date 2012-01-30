@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "libsmb/libsmb.h"
-#include "popt_common.h"
+#include "auth_info.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"

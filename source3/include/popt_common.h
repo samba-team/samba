@@ -21,6 +21,7 @@
 #define _POPT_COMMON_H
 
 #include <popt.h>
+#include "auth_info.h"
 
 /* Common popt structures */
 extern struct poptOption popt_common_samba[];
@@ -46,19 +47,6 @@ extern const struct poptOption popt_common_dynconfig[];
     "Build-time configuration overrides:", NULL },
 #define POPT_COMMON_DEBUGLEVEL { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debuglevel, 0, "Common samba debugging:", NULL },
 #define POPT_COMMON_OPTION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_option, 0, "Common samba commandline config:", NULL },
-
-struct user_auth_info {
-	char *username;
-	char *domain;
-	char *password;
-	bool got_pass;
-	bool use_kerberos;
-	int signing_state;
-	bool smb_encrypt;
-	bool use_machine_account;
-	bool fallback_after_kerberos;
-	bool use_ccache;
-};
 
 void popt_common_set_auth_info(struct user_auth_info *auth_info);
 

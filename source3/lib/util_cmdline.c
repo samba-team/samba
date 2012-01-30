@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "popt_common.h"
+#include "auth_info.h"
 #include "secrets.h"
 
 /**************************************************************************n

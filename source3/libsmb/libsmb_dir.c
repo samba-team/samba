@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "libsmb/libsmb.h"
-#include "popt_common.h"
+#include "auth_info.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "rpc_client/cli_pipe.h"
