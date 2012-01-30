@@ -1,3 +1,3 @@
 bld.SAMBA_SUBSYSTEM('NTLMSSP_COMMON',
-                    source='gensec_ntlmssp.c ntlmssp.c ntlmssp_ndr.c ntlmssp_server.c ntlmssp_sign.c',
+                    source='gensec_ntlmssp.c ntlmssp_util.c ntlmssp_ndr.c ntlmssp_server.c ntlmssp_sign.c',
                     deps='samba-util NDR_NTLMSSP MSRPC_PARSE NTLM_CHECK')

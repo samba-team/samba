@@ -566,7 +566,7 @@ LIBSMB_OBJ0 = \
 	       ../auth/gensec/spnego.o \
 	       ../auth/credentials/credentials.o \
 	       ../auth/credentials/credentials_samba3.o \
-	       ../auth/ntlmssp/ntlmssp.o \
+	       ../auth/ntlmssp/ntlmssp_util.o \
 	       ../auth/ntlmssp/ntlmssp_sign.o \
 	       ../auth/ntlmssp/gensec_ntlmssp.o \
 	       $(LIBNDR_NTLMSSP_OBJ) \
