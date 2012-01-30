@@ -1467,22 +1467,26 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		ADS_STRUCT *ads_dns = NULL;
 
 		ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name);
-		if (ads_dns != NULL) {
-			/* kinit with the machine password */
 
-			use_in_memory_ccache();
-			if (asprintf( &ads_dns->auth.user_name, "%s$", lp_netbios_name()) == -1) {
-				goto fail;
-			}
-			ads_dns->auth.password = secrets_fetch_machine_password(
-				r->out.netbios_domain_name, NULL, NULL );
-			ads_dns->auth.realm = SMB_STRDUP( r->out.dns_domain_name );
-			strupper_m(ads_dns->auth.realm );
-			ads_kinit_password( ads_dns );
+		if (ads_dns == NULL) {
+			d_fprintf(stderr, _("DNS update failed: out of memory!\n"));
+			goto done;
 		}
 
-		if ( !ads_dns || !NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns, NULL)) ) {
-			d_fprintf( stderr, _("DNS update failed!\n") );
+		/* kinit with the machine password */
+
+		use_in_memory_ccache();
+		if (asprintf( &ads_dns->auth.user_name, "%s$", lp_netbios_name()) == -1) {
+			goto fail;
+		}
+		ads_dns->auth.password = secrets_fetch_machine_password(
+			r->out.netbios_domain_name, NULL, NULL);
+		ads_dns->auth.realm = SMB_STRDUP(r->out.dns_domain_name);
+		strupper_m(ads_dns->auth.realm);
+		ads_kinit_password(ads_dns);
+
+		if (!NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns, NULL))) {
+			d_fprintf( stderr, _("DNS update failed!\n"));
 		}
 
 		/* exit from this block using machine creds */
