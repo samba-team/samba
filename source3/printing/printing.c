@@ -1415,9 +1415,6 @@ static void print_queue_update_internal(struct tevent_context *ev,
 			continue;
 		}
 
-		/* FIXME this is already confirmed by sysjob_to_jobid_pdb() */
-		pjob->sysjob = queue[i].sysjob;
-
 		/* don't reset the status on jobs to be deleted */
 
 		if ( pjob->status != LPQ_DELETING )
