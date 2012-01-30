@@ -32,10 +32,10 @@
 #include "../lib/crypto/hmacmd5.h"
 #include "../nsswitch/libwbclient/wbclient.h"
 
-static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
+static NTSTATUS ntlmssp3_client_initial(struct ntlmssp_state *ntlmssp_state,
 				       TALLOC_CTX *out_mem_ctx,
 				       DATA_BLOB reply, DATA_BLOB *next_request);
-static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
+static NTSTATUS ntlmssp3_client_challenge(struct ntlmssp_state *ntlmssp_state,
 				         TALLOC_CTX *out_mem_ctx, /* Unused at this time */
 					 const DATA_BLOB reply, DATA_BLOB *next_request);
 /**
@@ -50,9 +50,9 @@ static const struct ntlmssp_callbacks {
 		       TALLOC_CTX *out_mem_ctx,
 		       DATA_BLOB in, DATA_BLOB *out);
 } ntlmssp_callbacks[] = {
-	{NTLMSSP_CLIENT, NTLMSSP_INITIAL, ntlmssp_client_initial},
+	{NTLMSSP_CLIENT, NTLMSSP_INITIAL, ntlmssp3_client_initial},
 	{NTLMSSP_SERVER, NTLMSSP_NEGOTIATE, ntlmssp_server_negotiate},
-	{NTLMSSP_CLIENT, NTLMSSP_CHALLENGE, ntlmssp_client_challenge},
+	{NTLMSSP_CLIENT, NTLMSSP_CHALLENGE, ntlmssp3_client_challenge},
 	{NTLMSSP_SERVER, NTLMSSP_AUTH, ntlmssp_server_auth},
 	{NTLMSSP_CLIENT, NTLMSSP_UNKNOWN, NULL},
 	{NTLMSSP_SERVER, NTLMSSP_UNKNOWN, NULL}
@@ -367,7 +367,7 @@ NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
  * @return Errors or NT_STATUS_OK.
  */
 
-static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
+static NTSTATUS ntlmssp3_client_initial(struct ntlmssp_state *ntlmssp_state,
 				       TALLOC_CTX *out_mem_ctx,
 				       DATA_BLOB in, DATA_BLOB *out)
 {
@@ -437,7 +437,7 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
  * @return Errors or NT_STATUS_OK.
  */
 
-static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
+static NTSTATUS ntlmssp3_client_challenge(struct ntlmssp_state *ntlmssp_state,
 				         TALLOC_CTX *out_mem_ctx, /* Unused at this time */
 					 const DATA_BLOB reply, DATA_BLOB *next_request)
 {

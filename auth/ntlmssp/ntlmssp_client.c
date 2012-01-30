@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 3.0
    handle NLTMSSP, client server side parsing
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -25,7 +25,6 @@ struct auth_session_info;
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "source4/auth/ntlmssp/proto.h"
 #include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
@@ -41,17 +40,17 @@ struct auth_session_info;
 
 /**
  * Next state function for the Initial packet
- * 
+ *
  * @param ntlmssp_state NTLMSSP State
  * @param out_mem_ctx The DATA_BLOB *out will be allocated on this context
  * @param in A NULL data blob (input ignored)
  * @param out The initial negotiate request to the server, as an talloc()ed DATA_BLOB, on out_mem_ctx
- * @return Errors or NT_STATUS_OK. 
+ * @return Errors or NT_STATUS_OK.
  */
 
-NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security, 
-				TALLOC_CTX *out_mem_ctx, 
-				DATA_BLOB in, DATA_BLOB *out) 
+NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
+				TALLOC_CTX *out_mem_ctx,
+				DATA_BLOB in, DATA_BLOB *out)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
@@ -116,17 +115,17 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 
 /**
  * Next state function for the Challenge Packet.  Generate an auth packet.
- * 
+ *
  * @param gensec_security GENSEC state
  * @param out_mem_ctx Memory context for *out
  * @param in The server challnege, as a DATA_BLOB.  reply.data must be NULL
  * @param out The next request (auth packet) to the server, as an allocated DATA_BLOB, on the out_mem_ctx context
- * @return Errors or NT_STATUS_OK. 
+ * @return Errors or NT_STATUS_OK.
  */
 
-NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security, 
+NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 				  TALLOC_CTX *out_mem_ctx,
-				  const DATA_BLOB in, DATA_BLOB *out) 
+				  const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
@@ -156,7 +155,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (!msrpc_parse(mem_ctx,
 			 &in, "CdBd",
 			 "NTLMSSP",
-			 &ntlmssp_command, 
+			 &ntlmssp_command,
 			 &server_domain_blob,
 			 &chal_flags)) {
 		DEBUG(1, ("Failed to parse the NTLMSSP Challenge: (#1)\n"));
@@ -165,7 +164,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	data_blob_free(&server_domain_blob);
 
 	DEBUG(3, ("Got challenge flags:\n"));
@@ -193,7 +192,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (!msrpc_parse(mem_ctx,
 			 &in, chal_parse_string,
 			 "NTLMSSP",
-			 &ntlmssp_command, 
+			 &ntlmssp_command,
 			 &server_domain,
 			 &chal_flags,
 			 &challenge_blob, 8,
@@ -221,7 +220,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	cli_credentials_get_ntlm_username_domain(gensec_security->credentials, mem_ctx, 
+	cli_credentials_get_ntlm_username_domain(gensec_security->credentials, mem_ctx,
 						 &user, &domain);
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
@@ -237,15 +236,15 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	nt_status = cli_credentials_get_ntlm_response(gensec_security->credentials, mem_ctx, 
+	nt_status = cli_credentials_get_ntlm_response(gensec_security->credentials, mem_ctx,
 						      &flags, challenge_blob, target_info,
-						      &lm_response, &nt_response, 
+						      &lm_response, &nt_response,
 						      &lm_session_key, &session_key);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
-	
+
 	if (!(flags & CLI_CRED_LANMAN_AUTH)) {
 		/* LM Key is still possible, just silly, so we do not
 		 * allow it. Fortunetly all LM crypto is off by
@@ -258,12 +257,12 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		/* NTLM2 is incompatible... */
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
-	
+
 	if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY)
 	    && lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx) && lm_session_key.length == 16) {
 		DATA_BLOB new_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 		if (lm_response.length == 24) {
-			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data, 
+			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data,
 						  new_session_key.data);
 		} else {
 			static const uint8_t zeros[24];
@@ -297,14 +296,14 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
 	/* this generates the actual auth packet */
-	nt_status = msrpc_gen(mem_ctx, 
-		       out, auth_gen_string, 
-		       "NTLMSSP", 
-		       NTLMSSP_AUTH, 
+	nt_status = msrpc_gen(mem_ctx,
+		       out, auth_gen_string,
+		       "NTLMSSP",
+		       NTLMSSP_AUTH,
 		       lm_response.data, lm_response.length,
 		       nt_response.data, nt_response.length,
-		       domain, 
-		       user, 
+		       domain,
+		       user,
 		       cli_credentials_get_workstation(gensec_security->credentials),
 		       encrypted_session_key.data, encrypted_session_key.length,
 		       ntlmssp_state->neg_flags);
@@ -329,7 +328,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (gensec_security->want_features & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL)) {
 		nt_status = ntlmssp_sign_init(ntlmssp_state);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", 
+			DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n",
 				  nt_errstr(nt_status)));
 			talloc_free(mem_ctx);
 			return nt_status;
@@ -418,10 +417,10 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		 * We need to set this to allow a later SetPassword
 		 * via the SAMR pipe to succeed. Strange.... We could
 		 * also add  NTLMSSP_NEGOTIATE_SEAL here. JRA.
-		 * 
+		 *
 		 * Without this, Windows will not create the master key
-		 * that it thinks is only used for NTLMSSP signing and 
-		 * sealing.  (It is actually pulled out and used directly) 
+		 * that it thinks is only used for NTLMSSP signing and
+		 * sealing.  (It is actually pulled out and used directly)
 		 */
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
@@ -435,4 +434,3 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	return NT_STATUS_OK;
 }
-

@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('cliauth',
                   source='',
-                  deps='NTLMSSP_COMMON MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE KRB5_WRAP errors NTLM_CHECK UTIL_LSARPC',
+                  deps='MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE KRB5_WRAP errors NTLM_CHECK UTIL_LSARPC',
                   private_library=True,
                   grouping_library=True)
 
@@ -25,7 +25,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_AUTH',
 
 bld.SAMBA_SUBSYSTEM('COMMON_SCHANNEL',
 	source='schannel_state_tdb.c schannel_sign.c',
-	deps='tdb-wrap UTIL_TDB samba-hostconfig'
+	deps='tdb-wrap UTIL_TDB samba-hostconfig NDR_NETLOGON'
 	)
 
 

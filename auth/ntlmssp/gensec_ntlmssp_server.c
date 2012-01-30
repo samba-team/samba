@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 3.0
    handle NLTMSSP, client server side parsing
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,10 +31,8 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_proto.h"
-#include "auth/auth.h"
+#include "auth/common_auth.h"
 #include "param/param.h"
-#include "source4/auth/ntlmssp/proto.h"
 
 /**
  * Next state function for the Negotiate packet (GENSEC wrapper)
@@ -79,7 +77,7 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 }
 
 /**
- * Return the challenge as determined by the authentication subsystem 
+ * Return the challenge as determined by the authentication subsystem
  * @return an 8 byte random challenge
  */
 
@@ -123,7 +121,7 @@ static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
 }
 
 /**
- * NTLM2 authentication modifies the effective challenge, 
+ * NTLM2 authentication modifies the effective challenge,
  * @param challenge The new challenge value
  */
 static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
@@ -150,7 +148,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 }
 
 /**
- * Check the password on an NTLMSSP login.  
+ * Check the password on an NTLMSSP login.
  *
  * Return the session keys used on the connection.
  */
@@ -197,11 +195,11 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 
 	talloc_steal(mem_ctx, user_session_key->data);
 	talloc_steal(mem_ctx, lm_session_key->data);
-	
+
 	return nt_status;
 }
 
-/** 
+/**
  * Return the credentials of a logged on user, including session keys
  * etc.
  *
@@ -213,7 +211,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 
 NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 				     TALLOC_CTX *mem_ctx,
-				     struct auth_session_info **session_info) 
+				     struct auth_session_info **session_info)
 {
 	NTSTATUS nt_status;
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
@@ -237,7 +235,7 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 		DEBUG(0, ("Cannot generate a session_info without the auth_context\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	
+
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	return gensec_ntlmssp_session_key(gensec_security, *session_info,
@@ -245,7 +243,7 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 }
 
 /**
- * Start NTLMSSP on the server side 
+ * Start NTLMSSP on the server side
  *
  */
 NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
@@ -354,4 +352,3 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	return NT_STATUS_OK;
 }
-

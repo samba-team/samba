@@ -2,4 +2,4 @@
 
 bld.SAMBA_SUBSYSTEM('UTIL_LSARPC',
                     source='util_lsarpc.c',
-                    deps='NDR_LSA');
+                    deps='NDR_LSA NDR_DRSBLOBS');

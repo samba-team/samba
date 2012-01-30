@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 3.0
    handle NLTMSSP, client server side parsing
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -25,16 +25,14 @@ struct auth_session_info;
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
-#include "source4/auth/ntlmssp/proto.h"
+#include "auth/ntlmssp/ntlmssp_private.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_proto.h"
-#include "auth/gensec/gensec_toplevel_proto.h"
 
 /**
  * Callbacks for NTLMSSP - for both client and server operating modes
- * 
+ *
  */
 
 static const struct ntlmssp_callbacks {
@@ -123,25 +121,25 @@ static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
 		}
 	}
 
-	DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n", 
+	DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n",
 		  ntlmssp_state->role, ntlmssp_command));
-		
+
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /**
  * Next state function for the wrapped NTLMSSP state machine
- * 
+ *
  * @param gensec_security GENSEC state, initialised to NTLMSSP
  * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
  * @param in The request, as a DATA_BLOB
  * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
- * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent, 
- *                or NT_STATUS_OK if the user is authenticated. 
+ * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent,
+ *                or NT_STATUS_OK if the user is authenticated.
  */
 
-static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security, 
-				      TALLOC_CTX *out_mem_ctx, 
+static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
+				      TALLOC_CTX *out_mem_ctx,
 				      struct tevent_context *ev,
 				      const DATA_BLOB input, DATA_BLOB *out)
 {
@@ -155,7 +153,7 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	*out = data_blob(NULL, 0);
 
 	if (!out_mem_ctx) {
-		/* if the caller doesn't want to manage/own the memory, 
+		/* if the caller doesn't want to manage/own the memory,
 		   we can put it on our context */
 		out_mem_ctx = ntlmssp_state;
 	}
@@ -165,12 +163,12 @@ static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 
 	status = ntlmssp_callbacks[i].sync_fn(gensec_security, out_mem_ctx, input, out);
 	NT_STATUS_NOT_OK_RETURN(status);
-	
+
 	return NT_STATUS_OK;
 }
 
-static const char *gensec_ntlmssp_oids[] = { 
-	GENSEC_OID_NTLMSSP, 
+static const char *gensec_ntlmssp_oids[] = {
+	GENSEC_OID_NTLMSSP,
 	NULL
 };
 

@@ -1,3 +1,18 @@
 bld.SAMBA_SUBSYSTEM('NTLMSSP_COMMON',
-                    source='gensec_ntlmssp.c ntlmssp_util.c ntlmssp_ndr.c ntlmssp_server.c ntlmssp_sign.c',
-                    deps='samba-util NDR_NTLMSSP MSRPC_PARSE NTLM_CHECK')
+                    source='''gensec_ntlmssp.c
+		    ntlmssp.c
+		    ntlmssp_util.c
+		    ntlmssp_ndr.c
+		    ntlmssp_client.c
+		    ntlmssp_server.c
+		    ntlmssp_sign.c
+		    gensec_ntlmssp_server.c''',
+                    deps='samba-util NDR_NTLMSSP MSRPC_PARSE NTLM_CHECK samba-credentials')
+
+bld.SAMBA_MODULE('gensec_ntlmssp',
+	source='''''',
+	subsystem='gensec',
+	init_function='gensec_ntlmssp_init',
+	deps='NTLMSSP_COMMON',
+	internal_module=True
+	)

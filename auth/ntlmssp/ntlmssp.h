@@ -235,3 +235,5 @@ NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
 			       TALLOC_CTX *out_mem_ctx,
 			       const DATA_BLOB *in,
 			       DATA_BLOB *out);
+
+NTSTATUS gensec_ntlmssp_init(void);

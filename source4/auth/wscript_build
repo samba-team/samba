@@ -2,7 +2,6 @@
 
 bld.RECURSE('gensec')
 bld.RECURSE('kerberos')
-bld.RECURSE('ntlmssp')
 bld.RECURSE('ntlm')
 
 bld.SAMBA_SUBSYSTEM('auth_session',
