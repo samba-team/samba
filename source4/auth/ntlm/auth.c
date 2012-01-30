@@ -36,7 +36,8 @@
 static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
                                                   struct auth4_context *auth_context,
 						   void *server_returned_info,
-                                                  uint32_t session_info_flags,
+						   const char *original_user_name,
+						   uint32_t session_info_flags,
 						   struct auth_session_info **session_info);
 
 /***************************************************************************
@@ -140,6 +141,7 @@ static NTSTATUS auth_generate_session_info_principal(struct auth4_context *auth_
 
 		nt_status = auth_generate_session_info_wrapper(mem_ctx, auth_ctx,
 							       user_info_dc,
+							       user_info_dc->info->account_name,
 							       session_info_flags, session_info);
 		talloc_free(user_info_dc);
 
@@ -466,6 +468,7 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
                                                   struct auth4_context *auth_context,
 						   void *server_returned_info,
+						   const char *original_user_name,
                                                   uint32_t session_info_flags,
                                                   struct auth_session_info **session_info)
 {
@@ -494,7 +497,7 @@ static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_SERVER_STATE;
 		}
 		status = auth_session_info_fill_unix(wbc_ctx, auth_context->lp_ctx,
-						     *session_info);
+						     original_user_name, *session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(*session_info);
 		}
@@ -542,6 +545,7 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 	status = auth_generate_session_info_wrapper(mem_ctx, auth_ctx,
 						    user_info_dc,
+						    user_info_dc->info->account_name,
 						    session_info_flags, session_info);
 	talloc_free(tmp_ctx);
 	return status;

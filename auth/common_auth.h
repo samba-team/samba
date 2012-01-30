@@ -120,6 +120,7 @@ struct auth4_context {
 	NTSTATUS (*generate_session_info)(TALLOC_CTX *mem_ctx,
 					  struct auth4_context *auth_context,
 					  void *server_returned_info,
+					  const char *original_user_name,
 					  uint32_t session_info_flags,
 					  struct auth_session_info **session_info);
 

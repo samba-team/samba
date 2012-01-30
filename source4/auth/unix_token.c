@@ -125,8 +125,9 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 /*
   Fill in the auth_user_info_unix and auth_unix_token elements in a struct session_info
 */
-NTSTATUS auth_session_info_fill_unix( struct wbc_context *wbc_ctx,
+NTSTATUS auth_session_info_fill_unix(struct wbc_context *wbc_ctx,
 				     struct loadparm_context *lp_ctx,
+				     const char *original_user_name,
 				     struct auth_session_info *session_info)
 {
 	char *su;
@@ -149,11 +150,11 @@ NTSTATUS auth_session_info_fill_unix( struct wbc_context *wbc_ctx,
 							     session_info->info->account_name);
 	NT_STATUS_HAVE_NO_MEMORY(session_info->unix_info->unix_name);
 
-	len = strlen(session_info->info->account_name) + 1;
+	len = strlen(original_user_name) + 1;
 	session_info->unix_info->sanitized_username = su = talloc_array(session_info->unix_info, char, len);
 	NT_STATUS_HAVE_NO_MEMORY(su);
 
-	alpha_strcpy(su, session_info->info->account_name,
+	alpha_strcpy(su, original_user_name,
 		     ". _-$", len);
 
 	return NT_STATUS_OK;
