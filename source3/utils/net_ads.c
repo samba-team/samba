@@ -1498,7 +1498,14 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		}
 
 		strupper_m(ads_dns->auth.realm);
-		ads_kinit_password(ads_dns);
+
+		ret = ads_kinit_password(ads_dns);
+		if (ret != 0) {
+			d_fprintf(stderr,
+				  _("DNS update failed: kinit failed: %s\n"),
+				  error_message(ret));
+			goto dns_done;
+		}
 
 		if (!NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns, NULL))) {
 			d_fprintf( stderr, _("DNS update failed!\n"));
