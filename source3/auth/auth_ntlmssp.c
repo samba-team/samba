@@ -37,10 +37,12 @@ static NTSTATUS gensec_ntlmssp3_server_session_info(struct gensec_security *gens
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
+	struct auth_serversupplied_info *server_info = talloc_get_type_abort(gensec_ntlmssp->server_returned_info, 
+									     struct auth_serversupplied_info);
 	NTSTATUS nt_status;
 
 	nt_status = create_local_token(mem_ctx,
-				       gensec_ntlmssp->server_info,
+				       server_info,
 				       &gensec_ntlmssp->ntlmssp_state->session_key,
 				       gensec_ntlmssp->ntlmssp_state->user,
 				       session_info);
@@ -137,6 +139,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		(struct gensec_ntlmssp_context *)ntlmssp_state->callback_private;
 	struct auth_usersupplied_info *user_info = NULL;
+	struct auth_serversupplied_info *server_info;
 	NTSTATUS nt_status;
 	bool username_was_mapped;
 
@@ -168,7 +171,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	user_info->logon_parameters = MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
 
 	nt_status = gensec_ntlmssp->auth_context->check_ntlm_password(gensec_ntlmssp->auth_context,
-									  user_info, &gensec_ntlmssp->server_info);
+									  user_info, &server_info);
 
 	username_was_mapped = user_info->was_mapped;
 
@@ -176,9 +179,10 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		nt_status = do_map_to_guest_server_info(nt_status,
-							&gensec_ntlmssp->server_info,
+							&server_info,
 							gensec_ntlmssp->ntlmssp_state->user,
 							gensec_ntlmssp->ntlmssp_state->domain);
+		gensec_ntlmssp->server_returned_info = server_info;
 		return nt_status;
 	}
 
@@ -186,26 +190,27 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		return nt_status;
 	}
 
-	gensec_ntlmssp->server_info->nss_token |= username_was_mapped;
+	server_info->nss_token |= username_was_mapped;
 
 	/* Clear out the session keys, and pass them to the caller.
 	 * They will not be used in this form again - instead the
 	 * NTLMSSP code will decide on the final correct session key,
 	 * and supply it to create_local_token() */
-	if (gensec_ntlmssp->server_info->session_key.length) {
+	if (server_info->session_key.length) {
 		DEBUG(10, ("Got NT session key of length %u\n",
-			(unsigned int)gensec_ntlmssp->server_info->session_key.length));
-		*session_key = gensec_ntlmssp->server_info->session_key;
-		talloc_steal(mem_ctx, gensec_ntlmssp->server_info->session_key.data);
-		gensec_ntlmssp->server_info->session_key = data_blob_null;
+			(unsigned int)server_info->session_key.length));
+		*session_key = server_info->session_key;
+		talloc_steal(mem_ctx, server_info->session_key.data);
+		server_info->session_key = data_blob_null;
 	}
-	if (gensec_ntlmssp->server_info->lm_session_key.length) {
+	if (server_info->lm_session_key.length) {
 		DEBUG(10, ("Got LM session key of length %u\n",
-			(unsigned int)gensec_ntlmssp->server_info->lm_session_key.length));
-		*lm_session_key = gensec_ntlmssp->server_info->lm_session_key;
-		talloc_steal(mem_ctx, gensec_ntlmssp->server_info->lm_session_key.data);
-		gensec_ntlmssp->server_info->lm_session_key = data_blob_null;
+			(unsigned int)server_info->lm_session_key.length));
+		*lm_session_key = server_info->lm_session_key;
+		talloc_steal(mem_ctx, server_info->lm_session_key.data);
+		server_info->lm_session_key = data_blob_null;
 	}
+	gensec_ntlmssp->server_returned_info = server_info;
 	return nt_status;
 }
 

@@ -108,7 +108,8 @@ struct auth4_context {
 	NTSTATUS (*check_password)(struct auth4_context *auth_ctx,
 				   TALLOC_CTX *mem_ctx,
 				   const struct auth_usersupplied_info *user_info,
-				   struct auth_user_info_dc **user_info_dc);
+				   void **server_returned_info,
+				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
 	NTSTATUS (*get_challenge)(struct auth4_context *auth_ctx, uint8_t chal[8]);
 
@@ -118,7 +119,7 @@ struct auth4_context {
 
 	NTSTATUS (*generate_session_info)(TALLOC_CTX *mem_ctx,
 					  struct auth4_context *auth_context,
-					  struct auth_user_info_dc *user_info_dc,
+					  void *server_returned_info,
 					  uint32_t session_info_flags,
 					  struct auth_session_info **session_info);
 

@@ -152,9 +152,15 @@ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 			     struct loadparm_context *lp_ctx,
 			     struct auth4_context **auth_ctx);
 
+NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
+			     TALLOC_CTX *mem_ctx,
+			     const struct auth_usersupplied_info *user_info, 
+			     void **server_returned_info,
+			     DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key);
+
 NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
-			     const struct auth_usersupplied_info *user_info,
+			     const struct auth_usersupplied_info *user_info, 
 			     struct auth_user_info_dc **user_info_dc);
 NTSTATUS auth4_init(void);
 NTSTATUS auth_register(const struct auth_operations *ops);

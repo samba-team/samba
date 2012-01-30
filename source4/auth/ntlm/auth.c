@@ -35,7 +35,7 @@
 
 static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
                                                   struct auth4_context *auth_context,
-                                                  struct auth_user_info_dc *user_info_dc,
+						   void *server_returned_info,
                                                   uint32_t session_info_flags,
 						   struct auth_session_info **session_info);
 
@@ -204,6 +204,38 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 
 	status = auth_check_password_recv(subreq, mem_ctx, user_info_dc);
 	TALLOC_FREE(subreq);
+
+	return status;
+}
+
+_PUBLIC_ NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
+					      TALLOC_CTX *mem_ctx,
+					      const struct auth_usersupplied_info *user_info, 
+					      void **server_returned_info,
+					      DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+{
+	struct auth_user_info_dc *user_info_dc;
+	NTSTATUS status = auth_check_password(auth_ctx, mem_ctx, user_info, &user_info_dc);
+
+	if (NT_STATUS_IS_OK(status)) {
+		*server_returned_info = user_info_dc;
+
+		if (user_session_key) {
+			DEBUG(10, ("Got NT session key of length %u\n",
+				   (unsigned)user_info_dc->user_session_key.length));
+			*user_session_key = user_info_dc->user_session_key;
+			talloc_steal(mem_ctx, user_session_key->data);
+			user_info_dc->user_session_key = data_blob_null;
+		}
+
+		if (lm_session_key) {
+			DEBUG(10, ("Got LM session key of length %u\n",
+				   (unsigned)user_info_dc->lm_session_key.length));
+			*lm_session_key = user_info_dc->lm_session_key;
+			talloc_steal(mem_ctx, lm_session_key->data);
+			user_info_dc->lm_session_key = data_blob_null;
+		}
+	}
 
 	return status;
 }
@@ -433,10 +465,11 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
   * generation of unix tokens via IRPC */
 static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
                                                   struct auth4_context *auth_context,
-                                                  struct auth_user_info_dc *user_info_dc,
+						   void *server_returned_info,
                                                   uint32_t session_info_flags,
                                                   struct auth_session_info **session_info)
 {
+	struct auth_user_info_dc *user_info_dc = talloc_get_type_abort(server_returned_info, struct auth_user_info_dc);
 	NTSTATUS status = auth_generate_session_info(mem_ctx, auth_context->lp_ctx,
 						     auth_context->sam_ctx, user_info_dc,
 						     session_info_flags, session_info);
@@ -562,7 +595,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 		DLIST_ADD_END(ctx->methods, method, struct auth_method_context *);
 	}
 
-	ctx->check_password = auth_check_password;
+	ctx->check_password = auth_check_password_wrapper;
 	ctx->get_challenge = auth_get_challenge;
 	ctx->set_challenge = auth_context_set_challenge;
 	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
