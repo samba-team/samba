@@ -219,12 +219,24 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
-	struct auth_user_info_dc *user_info_dc = talloc_get_type_abort(gensec_ntlmssp->server_returned_info,
-								       struct auth_user_info_dc);
-	nt_status = gensec_generate_session_info(mem_ctx,
-						 gensec_security,
-						 user_info_dc,
-						 session_info);
+	uint32_t session_info_flags = 0;
+
+	if (gensec_security->want_features & GENSEC_FEATURE_UNIX_TOKEN) {
+		session_info_flags |= AUTH_SESSION_INFO_UNIX_TOKEN;
+	}
+
+	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
+
+	if (gensec_security->auth_context && gensec_security->auth_context->generate_session_info) {
+		nt_status = gensec_security->auth_context->generate_session_info(mem_ctx, gensec_security->auth_context,
+										 gensec_ntlmssp->server_returned_info,
+										 session_info_flags,
+										 session_info);
+	} else {
+		DEBUG(0, ("Cannot generate a session_info without the auth_context\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	return gensec_ntlmssp_session_key(gensec_security, *session_info,

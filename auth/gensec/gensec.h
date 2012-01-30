@@ -336,11 +336,6 @@ bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism
 NTSTATUS gensec_set_target_principal(struct gensec_security *gensec_security, const char *principal);
 const char *gensec_get_target_principal(struct gensec_security *gensec_security);
 
-NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
-				      struct gensec_security *gensec_security,
-				      struct auth_user_info_dc *user_info_dc,
-				      struct auth_session_info **session_info);
-
 NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 					  struct gensec_security *gensec_security,
 					  struct smb_krb5_context *smb_krb5_context,

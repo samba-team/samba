@@ -469,10 +469,16 @@ static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
                                                   uint32_t session_info_flags,
                                                   struct auth_session_info **session_info)
 {
+	NTSTATUS status;
 	struct auth_user_info_dc *user_info_dc = talloc_get_type_abort(server_returned_info, struct auth_user_info_dc);
-	NTSTATUS status = auth_generate_session_info(mem_ctx, auth_context->lp_ctx,
-						     auth_context->sam_ctx, user_info_dc,
-						     session_info_flags, session_info);
+
+	if (user_info_dc->info->authenticated) {
+		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+	}
+
+	status = auth_generate_session_info(mem_ctx, auth_context->lp_ctx,
+					    auth_context->sam_ctx, user_info_dc,
+					    session_info_flags, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

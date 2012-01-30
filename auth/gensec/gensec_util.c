@@ -24,35 +24,6 @@
 #include "auth/gensec/gensec.h"
 #include "auth/common_auth.h"
 
-NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
-				      struct gensec_security *gensec_security,
-				      struct auth_user_info_dc *user_info_dc,
-				      struct auth_session_info **session_info)
-{
-	NTSTATUS nt_status;
-	uint32_t session_info_flags = 0;
-
-	if (gensec_security->want_features & GENSEC_FEATURE_UNIX_TOKEN) {
-		session_info_flags |= AUTH_SESSION_INFO_UNIX_TOKEN;
-	}
-
-	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
-	if (user_info_dc->info->authenticated) {
-		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
-	}
-
-	if (gensec_security->auth_context && gensec_security->auth_context->generate_session_info) {
-		nt_status = gensec_security->auth_context->generate_session_info(mem_ctx, gensec_security->auth_context,
-										 user_info_dc,
-										 session_info_flags,
-										 session_info);
-	} else {
-		DEBUG(0, ("Cannot generate a session_info without the auth_context\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	return nt_status;
-}
-
 NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 					  struct gensec_security *gensec_security,
 					  struct smb_krb5_context *smb_krb5_context,
