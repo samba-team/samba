@@ -1492,6 +1492,11 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		}
 
 		ads_dns->auth.realm = SMB_STRDUP(r->out.dns_domain_name);
+		if (ads_dns->auth.realm == NULL) {
+			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
+			goto dns_done;
+		}
+
 		strupper_m(ads_dns->auth.realm);
 		ads_kinit_password(ads_dns);
 
