@@ -1306,6 +1306,89 @@ static int net_ads_join_usage(struct net_context *c, int argc, const char **argv
 
 /*******************************************************************
  ********************************************************************/
+static void _net_ads_join_dns_updates(TALLOC_CTX *ctx, struct libnet_JoinCtx *r)
+{
+#if defined(WITH_DNS_UPDATES)
+	/*
+	 * In a clustered environment, don't do dynamic dns updates:
+	 * Registering the set of ip addresses that are assigned to
+	 * the interfaces of the node that performs the join does usually
+	 * not have the desired effect, since the local interfaces do not
+	 * carry the complete set of the cluster's public IP addresses.
+	 * And it can also contain internal addresses that should not
+	 * be visible to the outside at all.
+	 * In order to do dns updates in a clustererd setup, use
+	 * net ads dns register.
+	 */
+	if (lp_clustering()) {
+		d_fprintf(stderr, _("Not doing automatic DNS update in a "
+				    "clustered setup.\n"));
+		goto done;
+	}
+
+	if (r->out.domain_is_ad) {
+		/*
+		 * We enter this block with user creds.
+		 * kinit with the machine password to do dns update.
+		 */
+		ADS_STRUCT *ads_dns = NULL;
+		int ret;
+		NTSTATUS status;
+
+		ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name);
+
+		if (ads_dns == NULL) {
+			d_fprintf(stderr, _("DNS update failed: out of memory!\n"));
+			goto done;
+		}
+
+		use_in_memory_ccache();
+
+		ret = asprintf(&ads_dns->auth.user_name, "%s$", lp_netbios_name());
+		if (ret == -1) {
+			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
+			goto dns_done;
+		}
+
+		ads_dns->auth.password = secrets_fetch_machine_password(
+			r->out.netbios_domain_name, NULL, NULL);
+		if (ads_dns->auth.password == NULL) {
+			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
+			goto dns_done;
+		}
+
+		ads_dns->auth.realm = SMB_STRDUP(r->out.dns_domain_name);
+		if (ads_dns->auth.realm == NULL) {
+			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
+			goto dns_done;
+		}
+
+		strupper_m(ads_dns->auth.realm);
+
+		ret = ads_kinit_password(ads_dns);
+		if (ret != 0) {
+			d_fprintf(stderr,
+				  _("DNS update failed: kinit failed: %s\n"),
+				  error_message(ret));
+			goto dns_done;
+		}
+
+		status = net_update_dns(ctx, ads_dns, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf( stderr, _("DNS update failed: %s\n"),
+				  nt_errstr(status));
+		}
+
+dns_done:
+		ads_destroy(&ads_dns);
+	}
+
+done:
+#endif
+
+	return;
+}
+
 
 int net_ads_join(struct net_context *c, int argc, const char **argv)
 {
@@ -1444,83 +1527,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			r->out.netbios_domain_name);
 	}
 
-#if defined(WITH_DNS_UPDATES)
-	/*
-	 * In a clustered environment, don't do dynamic dns updates:
-	 * Registering the set of ip addresses that are assigned to
-	 * the interfaces of the node that performs the join does usually
-	 * not have the desired effect, since the local interfaces do not
-	 * carry the complete set of the cluster's public IP addresses.
-	 * And it can also contain internal addresses that should not
-	 * be visible to the outside at all.
-	 * In order to do dns updates in a clustererd setup, use
-	 * net ads dns register.
-	 */
-	if (lp_clustering()) {
-		d_fprintf(stderr, _("Not doing automatic DNS update in a "
-				    "clustered setup.\n"));
-		goto done;
-	}
-
-	if (r->out.domain_is_ad) {
-		/*
-		 * We enter this block with user creds.
-		 * kinit with the machine password to do dns update.
-		 */
-		ADS_STRUCT *ads_dns = NULL;
-		int ret;
-		NTSTATUS status;
-
-		ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name);
-
-		if (ads_dns == NULL) {
-			d_fprintf(stderr, _("DNS update failed: out of memory!\n"));
-			goto done;
-		}
-
-		use_in_memory_ccache();
-
-		ret = asprintf(&ads_dns->auth.user_name, "%s$", lp_netbios_name());
-		if (ret == -1) {
-			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
-			goto dns_done;
-		}
-
-		ads_dns->auth.password = secrets_fetch_machine_password(
-			r->out.netbios_domain_name, NULL, NULL);
-		if (ads_dns->auth.password == NULL) {
-			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
-			goto dns_done;
-		}
-
-		ads_dns->auth.realm = SMB_STRDUP(r->out.dns_domain_name);
-		if (ads_dns->auth.realm == NULL) {
-			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
-			goto dns_done;
-		}
-
-		strupper_m(ads_dns->auth.realm);
-
-		ret = ads_kinit_password(ads_dns);
-		if (ret != 0) {
-			d_fprintf(stderr,
-				  _("DNS update failed: kinit failed: %s\n"),
-				  error_message(ret));
-			goto dns_done;
-		}
-
-		status = net_update_dns(ctx, ads_dns, NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf( stderr, _("DNS update failed: %s\n"),
-				  nt_errstr(status));
-		}
-
-dns_done:
-		ads_destroy(&ads_dns);
-	}
-
-done:
-#endif
+	_net_ads_join_dns_updates(ctx, r);
 
 	TALLOC_FREE(r);
 	TALLOC_FREE( ctx );
