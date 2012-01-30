@@ -1152,22 +1152,3 @@ bool parse_lpq_entry(enum printing_types printing_type,char *line,
 	return ret;
 }
 
-/****************************************************************************
- Parse a file name from the system spooler to generate a jobid.
-****************************************************************************/
-
-uint32_t print_parse_jobid(const char *fname)
-{
-	int jobid;
-	const char *p = strstr_m(fname,PRINT_SPOOL_PREFIX);
-
-	if (!p) {
-		return (uint32_t)-1;
-	}
-	p += strlen(PRINT_SPOOL_PREFIX);
-	jobid = atoi(p);
-	if (jobid <= 0) {
-		return (uint32_t)-1;
-	}
-	return (uint32_t)jobid;
-}
