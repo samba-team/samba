@@ -512,6 +512,94 @@ done:
 	return ret;
 }
 
+/**
+ * basic test for doing a durable open:
+ * logoff, create a new session, do a durable reopen (succeeds)
+ */
+bool test_durable_open_reopen4(struct torture_context *tctx,
+			       struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io1, io2;
+	bool ret = true;
+	struct smb2_transport *transport;
+	struct smb2_tree *tree2;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_open_reopen4_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io1.in.durable_open = true;
+	io1.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+
+	status = smb2_create(tree, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io1.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.durable_open, true);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+
+	/* disconnect, reconnect and then do durable reopen */
+	transport = tree->session->transport;
+	status = smb2_logoff(tree->session);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	if (!torture_smb2_session_setup(tctx, transport, mem_ctx, &tree->session)) {
+		torture_warning(tctx, "session setup failed.\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = fname;
+	io2.in.durable_handle = h;
+
+	status = smb2_create(tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_NETWORK_NAME_DELETED);
+
+	if (!torture_smb2_tree_connect(tctx, tree->session, mem_ctx, &tree2)) {
+		torture_warning(tctx, "tree connect failed.\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = fname;
+	io2.in.durable_handle = h;
+
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	_h = io2.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.durable_open, true);
+	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree2, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 /*
    basic testing of SMB2 durable opens
    regarding the position information on the handle
@@ -986,6 +1074,7 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_open_reopen1);
 	torture_suite_add_1smb2_test(suite, "reopen2", test_durable_open_reopen2);
 	torture_suite_add_1smb2_test(suite, "reopen3", test_durable_open_reopen3);
+	torture_suite_add_1smb2_test(suite, "reopen4", test_durable_open_reopen4);
 	torture_suite_add_2smb2_test(suite, "file-position",
 	    test_durable_open_file_position);
 	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
