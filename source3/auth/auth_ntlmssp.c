@@ -186,10 +186,6 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		return nt_status;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
 	server_info->nss_token |= username_was_mapped;
 
 	/* Clear out the session keys, and pass them to the caller.
