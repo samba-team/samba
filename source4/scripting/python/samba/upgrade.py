@@ -617,7 +617,11 @@ Please fix this account before attempting to upgrade again
 
     # Check for same user sid/group sid
     group_sids = set([str(g.sid) for g in grouplist])
+    if len(grouplist) != len(group_sids):
+        raise ProvisioningError("Please remove duplicate group sid entries before upgrade.")
     user_sids = set(["%s-%u" % (domainsid, u['rid']) for u in userlist])
+    if len(userlist) != len(user_sids):
+        raise ProvisioningError("Please remove duplicate user sid entries before upgrade.")
     common_sids = group_sids.intersection(user_sids)
     if common_sids:
         logger.error("Following sids are both user and group sids:")
