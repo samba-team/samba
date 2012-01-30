@@ -101,7 +101,7 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
 		}
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /**
