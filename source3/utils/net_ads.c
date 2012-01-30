@@ -1465,6 +1465,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	if (r->out.domain_is_ad) {
 		/* We enter this block with user creds */
 		ADS_STRUCT *ads_dns = NULL;
+		int ret;
 
 		ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name);
 
@@ -1476,9 +1477,13 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		/* kinit with the machine password */
 
 		use_in_memory_ccache();
-		if (asprintf( &ads_dns->auth.user_name, "%s$", lp_netbios_name()) == -1) {
-			goto fail;
+
+		ret = asprintf(&ads_dns->auth.user_name, "%s$", lp_netbios_name());
+		if (ret == -1) {
+			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
+			goto dns_done;
 		}
+
 		ads_dns->auth.password = secrets_fetch_machine_password(
 			r->out.netbios_domain_name, NULL, NULL);
 		ads_dns->auth.realm = SMB_STRDUP(r->out.dns_domain_name);
@@ -1490,6 +1495,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		}
 
 		/* exit from this block using machine creds */
+dns_done:
 		ads_destroy(&ads_dns);
 	}
 
