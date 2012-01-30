@@ -301,6 +301,37 @@ bool torture_smb2_tree_connect(struct torture_context *tctx,
 	return true;
 }
 
+/**
+ * do a smb2 session setup (without a tree connect)
+ */
+bool torture_smb2_session_setup(struct torture_context *tctx,
+				struct smb2_transport *transport,
+				TALLOC_CTX *mem_ctx,
+				struct smb2_session **_session)
+{
+	NTSTATUS status;
+	struct smb2_session *session;
+	struct cli_credentials *credentials = cmdline_credentials;
+
+	session = smb2_session_init(transport,
+				    lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+				    mem_ctx, true);
+
+	if (session == NULL) {
+		return false;
+	}
+
+	status = smb2_session_setup_spnego(session, credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("session setup failed: %s\n", nt_errstr(status));
+		talloc_free(session);
+		return false;
+	}
+
+	*_session = session;
+
+	return true;
+}
 
 /*
   open a smb2 connection
