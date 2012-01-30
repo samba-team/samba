@@ -22,8 +22,8 @@ def set_options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('tdb2', noextension='tdb2')
     opt.RECURSE('lib/replace')
     opt.add_option('--enable-tdb2',
-                   help=("Use tdb2 API instead of tdb1 [False]"),
-                   action="store_true", dest='BUILD_TDB2', default=False)
+                   help=("Use tdb2 API instead of tdb1 [True]"),
+                   action="store_true", dest='BUILD_TDB2', default=True)
     if opt.IN_LAUNCH_DIR():
         opt.add_option('--disable-python',
                        help=("disable the pytdb module"),
