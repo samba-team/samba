@@ -506,8 +506,12 @@ class dc_join(object):
                                      domain_name=ctx.domain_name,
                                      newpassword=ctx.acct_pass)
 
-            res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-keyVersionNumber"])
-            ctx.key_version_number = int(res[0]["msDS-keyVersionNumber"][0])
+            res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE,
+                                   attrs=["msDS-KeyVersionNumber"])
+            if "msDS-KeyVersionNumber" in res[0]:
+                ctx.key_version_number = int(res[0]["msDS-KeyVersionNumber"][0])
+            else:
+                ctx.key_version_number = None
 
             print("Enabling account")
             m = ldb.Message()
