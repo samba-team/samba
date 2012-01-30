@@ -1463,7 +1463,10 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (r->out.domain_is_ad) {
-		/* We enter this block with user creds */
+		/*
+		 * We enter this block with user creds.
+		 * kinit with the machine password to do dns update.
+		 */
 		ADS_STRUCT *ads_dns = NULL;
 		int ret;
 		NTSTATUS status;
@@ -1474,8 +1477,6 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			d_fprintf(stderr, _("DNS update failed: out of memory!\n"));
 			goto done;
 		}
-
-		/* kinit with the machine password */
 
 		use_in_memory_ccache();
 
@@ -1514,7 +1515,6 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 				  nt_errstr(status));
 		}
 
-		/* exit from this block using machine creds */
 dns_done:
 		ads_destroy(&ads_dns);
 	}
