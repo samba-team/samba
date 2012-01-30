@@ -508,6 +508,18 @@ static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
 	return 0;
 }
 
+static uint32 sysjob_to_jobid_pdb(struct tdb_print_db *pdb, int sysjob)
+{
+	struct unixjob_traverse_state state;
+
+	state.sysjob = sysjob;
+	state.sysjob_to_jobid_value = (uint32)-1;
+
+	tdb_traverse(pdb->tdb, unixjob_traverse_fn, &state);
+
+	return state.sysjob_to_jobid_value;
+}
+
 /****************************************************************************
  This is a *horribly expensive call as we have to iterate through all the
  current printer tdb's. Don't do this often ! JRA.
@@ -940,11 +952,10 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 
 	if (!pjob.smbjob) {
 		/* remove a unix job if it isn't in the system queue any more */
-
 		for (i=0;i<ts->qcount;i++) {
-			uint32 u_jobid = (ts->queue[i].sysjob + UNIX_JOB_START);
-			if (jobid == u_jobid)
+			if (ts->queue[i].sysjob == pjob.sysjob) {
 				break;
+			}
 		}
 		if (i == ts->qcount) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !smbjob\n",
@@ -975,16 +986,12 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 
 	/* this check only makes sense for jobs submitted from Windows clients */
 
-	if ( pjob.smbjob ) {
+	if (pjob.smbjob) {
 		for (i=0;i<ts->qcount;i++) {
-			uint32 curr_jobid;
-
 			if ( pjob.status == LPQ_DELETED )
 				continue;
 
-			curr_jobid = print_parse_jobid(ts->queue[i].fs_file);
-
-			if (jobid == curr_jobid) {
+			if (ts->queue[i].sysjob == pjob.sysjob) {
 
 				/* try to clean up any jobs that need to be deleted */
 
@@ -1039,11 +1046,8 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		return 0;
 	}
 
-	/* Save the pjob attributes we will store.
-	   FIXME!!! This is the only place where queue->job
-	   represents the SMB jobid      --jerry */
-
-	ts->queue[i].sysjob = jobid;
+	/* Save the pjob attributes we will store. */
+	ts->queue[i].sysjob = pjob.sysjob;
 	ts->queue[i].size = pjob.size;
 	ts->queue[i].page_count = pjob.page_count;
 	ts->queue[i].status = pjob.status;
@@ -1328,11 +1332,11 @@ done:
  main work for updating the lpq cache for a printer queue
 ****************************************************************************/
 
-static void print_queue_update_internal( struct tevent_context *ev,
-					 struct messaging_context *msg_ctx,
-					 const char *sharename,
-                                         struct printif *current_printif,
-                                         char *lpq_command, char *lprm_command )
+static void print_queue_update_internal(struct tevent_context *ev,
+					struct messaging_context *msg_ctx,
+					const char *sharename,
+                                        struct printif *current_printif,
+                                        char *lpq_command, char *lprm_command)
 {
 	int i, qcount;
 	print_queue_struct *queue = NULL;
@@ -1390,8 +1394,7 @@ static void print_queue_update_internal( struct tevent_context *ev,
 	jcdata = get_jobs_added_data(pdb);
 
 	for (i=0; i<qcount; i++) {
-		uint32 jobid = print_parse_jobid(queue[i].fs_file);
-
+		uint32 jobid = sysjob_to_jobid_pdb(pdb, queue[i].sysjob);
 		if (jobid == (uint32)-1) {
 			/* assume its a unix print job */
 			print_unix_job(ev, msg_ctx,
@@ -1405,11 +1408,14 @@ static void print_queue_update_internal( struct tevent_context *ev,
 			/* err, somethings wrong. Probably smbd was restarted
 			   with jobs in the queue. All we can do is treat them
 			   like unix jobs. Pity. */
+			DEBUG(1, ("queued print job %d not found in jobs list, "
+				  "assuming unix job\n", jobid));
 			print_unix_job(ev, msg_ctx,
 				       sharename, &queue[i], jobid);
 			continue;
 		}
 
+		/* FIXME this is already confirmed by sysjob_to_jobid_pdb() */
 		pjob->sysjob = queue[i].sysjob;
 
 		/* don't reset the status on jobs to be deleted */
