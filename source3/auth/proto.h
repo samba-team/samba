@@ -67,10 +67,32 @@ NTSTATUS auth_domain_init(void);
 
 NTSTATUS auth_netlogond_init(void);
 
-/* The following definitions come from auth/auth_ntlmssp.c  */
+/* The following definitions come from auth/auth_generic.c  */
 
 NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx, const struct tsocket_address *remote_address,
 			      struct gensec_security **gensec_security_out);
+
+/* The following definitions come from auth/auth_ntlmssp.c  */
+
+NTSTATUS auth3_generate_session_info(TALLOC_CTX *mem_ctx,
+				     struct auth4_context *auth_context,
+				     void *server_returned_info,
+				     const char *original_user_name,
+				     uint32_t session_info_flags,
+				     struct auth_session_info **session_info);
+
+NTSTATUS auth3_get_challenge(struct auth4_context *auth4_context,
+			     uint8_t chal[8]);
+
+bool auth3_may_set_challenge(struct auth4_context *auth4_context);
+NTSTATUS auth3_set_challenge(struct auth4_context *auth4_context, const uint8_t *chal,
+			     const char *challenge_set_by);
+
+NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
+			      TALLOC_CTX *mem_ctx,
+			      const struct auth_usersupplied_info *user_info,
+			      void **server_returned_info,
+			      DATA_BLOB *session_key, DATA_BLOB *lm_session_key);
 
 /* The following definitions come from auth/auth_sam.c  */
 
@@ -319,5 +341,6 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				bool mapped_to_guest, bool username_was_mapped,
 				DATA_BLOB *session_key,
 				struct auth_session_info **session_info);
+
 
 #endif /* _AUTH_PROTO_H_ */

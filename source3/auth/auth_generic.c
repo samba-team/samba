@@ -190,6 +190,12 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		auth4_context->generate_session_info_pac = auth3_generate_session_info_pac;
+		auth4_context->generate_session_info = auth3_generate_session_info;
+		auth4_context->get_challenge = auth3_get_challenge;
+		auth4_context->set_challenge = auth3_set_challenge;
+		auth4_context->challenge_may_be_modified = auth3_may_set_challenge;
+		auth4_context->check_password = auth3_check_password;
+		auth4_context->private_data = talloc_steal(auth4_context, auth_context);
 
 		lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_context());
 		if (lp_ctx == NULL) {

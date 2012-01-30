@@ -32,9 +32,6 @@ struct gensec_security;
 struct ntlmssp_state;
 
 struct gensec_ntlmssp_context {
-	/* used only by s3 server implementation */
-	struct auth_context *auth_context;
-
 	/* For GENSEC users */
 	struct gensec_security *gensec_security;
 	void *server_returned_info;
