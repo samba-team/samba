@@ -1078,7 +1078,8 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
 				  state->request->data.auth.user, name_domain, name_user, name_domain));
 
-			contact_domain = find_our_domain();
+			result =  NT_STATUS_NO_SUCH_USER;
+			goto done;
 		}
 	}
 
