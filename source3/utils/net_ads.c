@@ -1466,6 +1466,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		/* We enter this block with user creds */
 		ADS_STRUCT *ads_dns = NULL;
 		int ret;
+		NTSTATUS status;
 
 		ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name);
 
@@ -1507,8 +1508,10 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			goto dns_done;
 		}
 
-		if (!NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns, NULL))) {
-			d_fprintf( stderr, _("DNS update failed!\n"));
+		status = net_update_dns(ctx, ads_dns, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf( stderr, _("DNS update failed: %s\n"),
+				  nt_errstr(status));
 		}
 
 		/* exit from this block using machine creds */
