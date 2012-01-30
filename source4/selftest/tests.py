@@ -367,6 +367,7 @@ for mech in [
         plansmbtorturetestsuite('base.xcopy', "plugin_s4_dc",
                                ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s administrator" % name)
 
+plantestsuite("samba4.blackbox.bogusdomain", "s3member", ["testprogs/blackbox/bogus.sh", "$NETBIOSNAME", "xcopy_share", '$DC_USERNAME', '$DC_PASSWORD'], allow_empty_output=True)
 for mech in [
     "-k no",
     "-k no --option=usespnego=no",
