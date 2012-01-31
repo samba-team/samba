@@ -2691,8 +2691,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 (unsigned int)file_attributes));
 
 	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) &&
-			(conn->fs_capabilities & FILE_NAMED_STREAMS) &&
-			is_ntfs_stream_smb_fname(smb_dname)) {
+	    (conn->fs_capabilities & FILE_NAMED_STREAMS) &&
+	    is_ntfs_stream_smb_fname(smb_dname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n",
 			  smb_fname_str_dbg(smb_dname)));
 		return NT_STATUS_NOT_A_DIRECTORY;
