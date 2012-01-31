@@ -657,6 +657,52 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int streams_depot_rmdir(vfs_handle_struct *handle, const char *path)
+{
+	struct smb_filename *smb_fname_base = NULL;
+	NTSTATUS status;
+	int ret = -1;
+
+	DEBUG(10, ("streams_depot_rmdir called for %s\n", path));
+
+	/*
+	 * We potentially need to delete the per-inode streams directory
+	 */
+
+	status = create_synthetic_smb_fname(talloc_tos(), path,
+					    NULL, NULL, &smb_fname_base);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	if (lp_posix_pathnames()) {
+		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_base);
+	} else {
+		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_base);
+	}
+
+	if (ret == -1) {
+		TALLOC_FREE(smb_fname_base);
+		return -1;
+	}
+
+	if (smb_fname_base->st.st_ex_nlink == 2) {
+		char *dirname = stream_dir(handle, smb_fname_base,
+					   &smb_fname_base->st, false);
+
+		if (dirname != NULL) {
+			SMB_VFS_NEXT_RMDIR(handle, dirname);
+		}
+		TALLOC_FREE(dirname);
+	}
+
+	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+
+	TALLOC_FREE(smb_fname_base);
+	return ret;
+}
+
 static int streams_depot_rename(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname_src,
 				const struct smb_filename *smb_fname_dst)
@@ -868,6 +914,7 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.stat = streams_depot_stat,
 	.lstat = streams_depot_lstat,
 	.unlink = streams_depot_unlink,
+	.rmdir = streams_depot_rmdir,
 	.rename = streams_depot_rename,
 	.streaminfo = streams_depot_streaminfo,
 };
