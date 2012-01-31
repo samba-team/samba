@@ -83,6 +83,10 @@ struct gensec_settings {
 	 * should be used, rather than those loaded by the plugin
 	 * mechanism */
 	struct gensec_security_ops **backends;
+
+	/* To fill in our own name in the NTLMSSP server */
+	const char *server_dns_domain;
+	const char *server_dns_name;
 };
 
 struct gensec_security_ops {

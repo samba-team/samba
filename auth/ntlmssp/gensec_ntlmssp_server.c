@@ -266,6 +266,10 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	NTSTATUS nt_status;
 	struct ntlmssp_state *ntlmssp_state;
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
+	const char *netbios_name;
+	const char *netbios_domain;
+	const char *dns_name;
+	const char *dns_domain;
 
 	nt_status = gensec_ntlmssp_start(gensec_security);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -339,33 +343,48 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 		ntlmssp_state->server.is_standalone = false;
 	}
 
-	ntlmssp_state->server.netbios_name = lpcfg_netbios_name(gensec_security->settings->lp_ctx);
+	netbios_name = lpcfg_netbios_name(gensec_security->settings->lp_ctx);
+	netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
 
-	ntlmssp_state->server.netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
-
-	{
+	if (gensec_security->settings->server_dns_name) {
+		dns_name = gensec_security->settings->server_dns_name;
+	} else {
 		const char *dnsdomain = lpcfg_dnsdomain(gensec_security->settings->lp_ctx);
-		char *dnsname, *lower_netbiosname;
-		lower_netbiosname = strlower_talloc(ntlmssp_state, ntlmssp_state->server.netbios_name);
+		char *lower_netbiosname;
+
+		lower_netbiosname = strlower_talloc(ntlmssp_state, netbios_name);
+		NT_STATUS_HAVE_NO_MEMORY(lower_netbiosname);
 
 		/* Find out the DNS host name */
 		if (dnsdomain && dnsdomain[0] != '\0') {
-			dnsname = talloc_asprintf(ntlmssp_state, "%s.%s",
-						  lower_netbiosname,
-						  dnsdomain);
+			dns_name = talloc_asprintf(ntlmssp_state, "%s.%s",
+						   lower_netbiosname,
+						   dnsdomain);
 			talloc_free(lower_netbiosname);
-			ntlmssp_state->server.dns_name = dnsname;
+			NT_STATUS_HAVE_NO_MEMORY(dns_name);
 		} else {
-			ntlmssp_state->server.dns_name = lower_netbiosname;
+			dns_name = lower_netbiosname;
 		}
-
-		NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_name);
-
-		ntlmssp_state->server.dns_domain
-			= talloc_strdup(ntlmssp_state,
-					lpcfg_dnsdomain(gensec_security->settings->lp_ctx));
-		NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_domain);
 	}
+
+	if (gensec_security->settings->server_dns_domain) {
+		dns_domain = gensec_security->settings->server_dns_domain;
+	} else {
+		dns_domain = lpcfg_dnsdomain(gensec_security->settings->lp_ctx);
+	}
+
+	ntlmssp_state->server.netbios_name = talloc_strdup(ntlmssp_state, netbios_name);
+	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.netbios_name);
+
+	ntlmssp_state->server.netbios_domain = talloc_strdup(ntlmssp_state, netbios_domain);
+	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.netbios_domain);
+
+	ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state, dns_name);
+	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_name);
+
+	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
+	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_domain);
 
 	return NT_STATUS_OK;
 }
+
