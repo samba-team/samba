@@ -823,7 +823,6 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend):
                     })
 
 
-
 def create_named_txt(path, realm, dnsdomain, dnsname, private_dir,
     keytab_name):
     """Write out a file containing zone statements suitable for inclusion in a
@@ -846,11 +845,87 @@ def create_named_txt(path, realm, dnsdomain, dnsname, private_dir,
 
 
 def is_valid_dns_backend(dns_backend):
-        return dns_backend in ("BIND9_FLATFILE", "BIND9_DLZ", "SAMBA_INTERNAL", "NONE")
+    return dns_backend in ("BIND9_FLATFILE", "BIND9_DLZ", "SAMBA_INTERNAL", "NONE")
 
 
 def is_valid_os_level(os_level):
     return DS_DOMAIN_FUNCTION_2000 <= os_level <= DS_DOMAIN_FUNCTION_2008_R2
+
+
+def create_dns_legacy(samdb, domainsid, forestdn, dnsadmins_sid):
+    # Set up MicrosoftDNS container
+    add_dns_container(samdb, forestdn, "CN=System", domainsid, dnsadmins_sid)
+    # Add root servers
+    add_rootservers(samdb, forestdn, "CN=System")
+
+
+def fill_dns_data_legacy(samdb, domainsid, forestdn, dnsdomain, site, hostname,
+                         hostip, hostip6):
+    # Add domain record
+    add_domain_record(samdb, forestdn, "CN=System", dnsdomain, domainsid,
+                      dnsadmins_sid)
+
+    # Add DNS records for a DC in domain
+    add_dc_domain_records(samdb, forestdn, "CN=System", site, dnsdomain,
+                          hostname, hostip, hostip6)
+
+
+def create_dns_partitions(samdb, domainsid, names, domaindn, forestdn,
+                          dnsadmins_sid):
+    # Set up additional partitions (DomainDnsZones, ForstDnsZones)
+    setup_dns_partitions(samdb, domainsid, domaindn, forestdn,
+                        names.configdn, names.serverdn)
+
+    # Set up MicrosoftDNS containers
+    add_dns_container(samdb, domaindn, "DC=DomainDnsZones", domainsid,
+                      dnsadmins_sid)
+    add_dns_container(samdb, forestdn, "DC=ForestDnsZones", domainsid,
+                      dnsadmins_sid)
+
+
+def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
+                            dnsdomain, dnsforest, hostname, hostip, hostip6,
+                            domainguid, ntdsguid, dnsadmins_sid, autofill=True):
+    """Fill data in various AD partitions
+
+    :param samdb: LDB object connected to sam.ldb file
+    :param domainsid: Domain SID (as dom_sid object)
+    :param site: Site name to create hostnames in
+    :param domaindn: DN of the domain
+    :param forestdn: DN of the forest
+    :param dnsdomain: DNS name of the domain
+    :param dnsforest: DNS name of the forest
+    :param hostname: Host name of this DC
+    :param hostip: IPv4 addresses
+    :param hostip6: IPv6 addresses
+    :param domainguid: Domain GUID
+    :param ntdsguid: NTDS GUID
+    :param dnsadmins_sid: SID for DnsAdmins group
+    :param autofill: Create DNS records (using fixed template)
+    """
+
+    ##### Set up DC=DomainDnsZones,<DOMAINDN>
+    # Add rootserver records
+    add_rootservers(samdb, domaindn, "DC=DomainDnsZones")
+
+    # Add domain record
+    add_domain_record(samdb, domaindn, "DC=DomainDnsZones", dnsdomain,
+                      domainsid, dnsadmins_sid)
+
+    # Add DNS records for a DC in domain
+    if autofill:
+        add_dc_domain_records(samdb, domaindn, "DC=DomainDnsZones", site,
+                              dnsdomain, hostname, hostip, hostip6)
+
+    ##### Set up DC=ForestDnsZones,<DOMAINDN>
+    # Add _msdcs record
+    add_msdcs_record(samdb, forestdn, "DC=ForestDnsZones", dnsforest)
+
+    # Add DNS records for a DC in forest
+    if autofill:
+        add_dc_msdcs_records(samdb, forestdn, "DC=ForestDnsZones", site,
+                             dnsforest, hostname, hostip, hostip6,
+                             domainguid, ntdsguid)
 
 
 def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_backend,
@@ -860,6 +935,7 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
 
     :param samdb: LDB object connected to sam.ldb file
     :param secretsdb: LDB object connected to secrets.ldb file
+    :param domainsid: Domain SID (as dom_sid object)
     :param names: Names shortcut
     :param paths: Paths shortcut
     :param lp: Loadparm object
@@ -883,6 +959,10 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
         logger.info("No DNS backend set, not configuring DNS")
         return
 
+    # Add dns accounts (DnsAdmins, DnsUpdateProxy) in domain
+    logger.info("Adding DNS accounts")
+    add_dns_accounts(samdb, names.domaindn)
+
     # If dns_backend is BIND9_FLATFILE
     #   Populate only CN=MicrosoftDNS,CN=System,<FORESTDN>
     #
@@ -898,7 +978,6 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
     #   Domain records are in CN=MicrosoftDNS,CN=System,<FORESTDN>
     #   Domain records are in CN=MicrosoftDNS,DC=DomainDnsZones,<DOMAINDN>
     #   Forest records are in CN=MicrosoftDNS,DC=ForestDnsZones,<FORESTDN>
-
     domaindn = names.domaindn
     forestdn = samdb.get_root_basedn().get_linearized()
 
@@ -907,68 +986,33 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
 
     hostname = names.netbiosname.lower()
 
+    dnsadmins_sid = get_dnsadmins_sid(samdb, domaindn)
     domainguid = get_domainguid(samdb, domaindn)
     ntdsguid = get_ntdsguid(samdb, domaindn)
 
-    # Add dns accounts (DnsAdmins, DnsUpdateProxy) in domain
-    logger.info("Adding DNS accounts")
-    add_dns_accounts(samdb, domaindn)
-    dnsadmins_sid = get_dnsadmins_sid(samdb, domaindn)
-
-    logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % forestdn)
-
-    # Set up MicrosoftDNS container
-    add_dns_container(samdb, forestdn, "CN=System", domainsid, dnsadmins_sid)
-
-    # Add root servers
-    add_rootservers(samdb, forestdn, "CN=System")
+    # Create CN=System
+    logger.info("Creating CN=MicrosoftDNS,CN=System,%s" % forestdn)
+    create_dns_legacy(samdb, domainsid, forestdn, dnsadmins_sid)
 
     if os_level == DS_DOMAIN_FUNCTION_2000:
-
-        # Add domain record
-        add_domain_record(samdb, forestdn, "CN=System", dnsdomain, domainsid, dnsadmins_sid)
-
-        # Add DNS records for a DC in domain
-        add_dc_domain_records(samdb, forestdn, "CN=System", site, dnsdomain,
-                                hostname, hostip, hostip6)
+        # Populating legacy dns
+        logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % forestdn)
+        fill_dns_data_legacy(samdb, domainsid, forestdn, dnsdoman, site,
+                             hostame, hostip, hostip6)
 
     elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and \
             os_level >= DS_DOMAIN_FUNCTION_2003:
 
-        # Set up additional partitions (DomainDnsZones, ForstDnsZones)
+        # Create DNS partitions
         logger.info("Creating DomainDnsZones and ForestDnsZones partitions")
-        setup_dns_partitions(samdb, domainsid, domaindn, forestdn,
-                            names.configdn, names.serverdn)
+        create_dns_partitions(samdb, domainsid, names, domaindn, forestdn,
+                              dnsadmins_sid)
 
-        ##### Set up DC=DomainDnsZones,<DOMAINDN>
-        logger.info("Populating DomainDnsZones partition")
-
-        # Set up MicrosoftDNS container
-        add_dns_container(samdb, domaindn, "DC=DomainDnsZones", domainsid, dnsadmins_sid)
-
-        # Add rootserver records
-        add_rootservers(samdb, domaindn, "DC=DomainDnsZones")
-
-        # Add domain record
-        add_domain_record(samdb, domaindn, "DC=DomainDnsZones", dnsdomain, domainsid,
-                          dnsadmins_sid)
-
-        # Add DNS records for a DC in domain
-        add_dc_domain_records(samdb, domaindn, "DC=DomainDnsZones", site, dnsdomain,
-                                hostname, hostip, hostip6)
-
-        ##### Set up DC=ForestDnsZones,<DOMAINDN>
-        logger.info("Populating ForestDnsZones partition")
-
-        # Set up MicrosoftDNS container
-        add_dns_container(samdb, forestdn, "DC=ForestDnsZones", domainsid, dnsadmins_sid)
-
-        # Add _msdcs record
-        add_msdcs_record(samdb, forestdn, "DC=ForestDnsZones", dnsforest)
-
-        # Add DNS records for a DC in forest
-        add_dc_msdcs_records(samdb, forestdn, "DC=ForestDnsZones", site, dnsforest,
-                                hostname, hostip, hostip6, domainguid, ntdsguid)
+        # Populating dns partitions
+        logger.info("Populating DomainDnsZones and ForestDnsZones partitions")
+        fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
+                                dnsdomain, dnsforest, hostname, hostip, hostip6,
+                                domainguid, ntdsguid, dnsadmins_sid)
 
     if dns_backend.startswith("BIND9_"):
         secretsdb_setup_dns(secretsdb, names,
@@ -978,8 +1022,6 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
 
         create_dns_dir(logger, paths)
 
-        # Only make a zone file on the first DC, it should be
-        # replicated with DNS replication
         if dns_backend == "BIND9_FLATFILE":
             create_zone_file(lp, logger, paths, targetdir, site=site,
                              dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
