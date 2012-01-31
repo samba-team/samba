@@ -57,26 +57,6 @@ NTSTATUS auth3_generate_session_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gensec_ntlmssp3_server_update(struct gensec_security *gensec_security,
-					      TALLOC_CTX *out_mem_ctx,
-					      struct tevent_context *ev,
-					      const DATA_BLOB request,
-					      DATA_BLOB *reply)
-{
-	NTSTATUS status;
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-
-	status = ntlmssp_update(gensec_ntlmssp->ntlmssp_state, request, reply);
-	if (NT_STATUS_IS_OK(status) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		talloc_steal(out_mem_ctx, reply->data);
-	}
-
-	return status;
-}
-
 /**
  * Return the challenge as determined by the authentication subsystem 
  * @return an 8 byte random challenge
@@ -298,7 +278,7 @@ const struct gensec_security_ops gensec_ntlmssp3_server_ops = {
 	.oid            = gensec_ntlmssp3_server_oids,
 	.server_start   = gensec_ntlmssp3_server_start,
 	.magic 	        = gensec_ntlmssp_magic,
-	.update 	= gensec_ntlmssp3_server_update,
+	.update 	= gensec_ntlmssp_update,
 	.sig_size	= gensec_ntlmssp_sig_size,
 	.sign_packet	= gensec_ntlmssp_sign_packet,
 	.check_packet	= gensec_ntlmssp_check_packet,
