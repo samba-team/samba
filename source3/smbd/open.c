@@ -2675,7 +2675,11 @@ static NTSTATUS open_directory(connection_struct *conn,
 	struct timespec mtimespec;
 	int info = 0;
 
-	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
+	if (is_ntfs_stream_smb_fname(smb_dname)) {
+		DEBUG(2, ("open_directory: %s is a stream name!\n",
+			  smb_fname_str_dbg(smb_dname)));
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
 
 	/* Ensure we have a directory attribute. */
 	file_attributes |= FILE_ATTRIBUTE_DIRECTORY;
@@ -2689,14 +2693,6 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 (unsigned int)create_options,
 		 (unsigned int)create_disposition,
 		 (unsigned int)file_attributes));
-
-	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) &&
-	    (conn->fs_capabilities & FILE_NAMED_STREAMS) &&
-	    is_ntfs_stream_smb_fname(smb_dname)) {
-		DEBUG(2, ("open_directory: %s is a stream name!\n",
-			  smb_fname_str_dbg(smb_dname)));
-		return NT_STATUS_NOT_A_DIRECTORY;
-	}
 
 	status = smbd_calculate_access_mask(conn, smb_dname,
 					    access_mask, &access_mask);
