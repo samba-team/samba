@@ -163,12 +163,18 @@ def configure(conf):
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
     conf.CHECK_FUNCS('lstat getpgrp utime utimes seteuid setreuid setresuid setegid')
     conf.CHECK_FUNCS('setregid setresgid chroot strerror vsyslog setlinebuf mktime')
-    conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4 strlcpy strlcat')
+    conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4')
     conf.CHECK_FUNCS('initgroups pread pwrite strndup strcasestr')
     conf.CHECK_FUNCS('strtok_r mkdtemp dup2 dprintf vdprintf isatty chown lchown')
     conf.CHECK_FUNCS('link readlink symlink realpath snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq')
+
+    # libbsd on some platforms provides strlcpy and strlcat
+    if not conf.CHECK_FUNCS('strlcpy strlcat'):
+        conf.CHECK_FUNCS_IN('strlcpy strlcat', 'bsd', headers='bsd/string.h',
+                checklibc=True)
+
     #Some OS (ie. freebsd) return EINVAL if the convertion could not be done, it's not what we expect
     #Let's detect those cases
     if conf.CONFIG_SET('HAVE_STRTOLL'):
@@ -206,19 +212,19 @@ def configure(conf):
     if conf.CHECK_FUNCS_IN('clock_gettime', 'rt', checklibc=True):
         for c in ['CLOCK_MONOTONIC', 'CLOCK_PROCESS_CPUTIME_ID', 'CLOCK_REALTIME']:
             conf.CHECK_CODE('''
-			    #if TIME_WITH_SYS_TIME
-			    # include <sys/time.h>
-			    # include <time.h>
-			    #else
-			    # if HAVE_SYS_TIME_H
-			    #  include <sys/time.h>
-			    # else
-			    #  include <time.h>
-			    # endif
-			    #endif
-			    clockid_t clk = %s''' % c,
-			    'HAVE_%s' % c,
-			    msg='Checking whether the clock_gettime clock ID %s is available' % c)
+                #if TIME_WITH_SYS_TIME
+                # include <sys/time.h>
+                # include <time.h>
+                #else
+                # if HAVE_SYS_TIME_H
+                #  include <sys/time.h>
+                # else
+                #  include <time.h>
+                # endif
+                #endif
+                clockid_t clk = %s''' % c,
+                'HAVE_%s' % c,
+                msg='Checking whether the clock_gettime clock ID %s is available' % c)
 
     conf.CHECK_TYPE('struct timespec', headers='sys/time.h time.h')
 
@@ -436,7 +442,7 @@ def build(bld):
                       # at the moment:
                       # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
-                      deps='crypt dl nsl socket rt')
+                      deps='crypt dl nsl socket rt bsd')
 
     bld.SAMBA_SUBSYSTEM('replace-test',
                       source='''test/testsuite.c test/strptime.c
