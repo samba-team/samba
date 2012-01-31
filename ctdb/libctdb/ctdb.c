@@ -832,13 +832,13 @@ static void readrecordlock_retry(struct ctdb_connection *ctdb,
 	struct ctdb_reply_call *reply;
 	TDB_DATA data;
 
-	/* OK, we've received reply to fetch-with-header migration */
-	reply = unpack_reply_call(req, CTDB_FETCH_WITH_HEADER_FUNC);
+	/* OK, we've received reply to fetch migration */
+	reply = unpack_reply_call(req, CTDB_FETCH_FUNC);
 	if (!reply || reply->status != 0) {
 		if (reply) {
 			DEBUG(ctdb, LOG_ERR,
 			      "ctdb_readrecordlock_async(async):"
-			      " FETCH_WITH_HEADER_FUNC returned %i", reply->status);
+			      " FETCH returned %i", reply->status);
 		}
 		lock->callback(lock->ctdb_db, NULL, tdb_null, private);
 		ctdb_request_free(req); /* Also frees lock. */
@@ -920,7 +920,7 @@ ctdb_readrecordlock_internal(struct ctdb_db *ctdb_db, TDB_DATA key,
 		req->hdr.call->flags = CTDB_IMMEDIATE_MIGRATION;
 	}
 	req->hdr.call->db_id = ctdb_db->id;
-	req->hdr.call->callid = CTDB_FETCH_WITH_HEADER_FUNC;
+	req->hdr.call->callid = CTDB_FETCH_FUNC;
 	req->hdr.call->hopcount = 0;
 	req->hdr.call->keylen = key.dsize;
 	req->hdr.call->calldatalen = 0;

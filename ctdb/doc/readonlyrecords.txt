@@ -89,7 +89,10 @@ This new database is used for tracking delegations for the records. A record in 
 This tracking database is lockless, using TDB_NOLOCK, and is only ever accessed by the main ctdbd daemon.
 The lockless nature and the fact that no other process ever access this TDB means we are guranteed non-blocking access to records in the trcking database.
 
-The ctdb_call PDU is allocated with two new flags WANT_READONLY and WITH_HEADER.
+The ctdb_call PDU is allocated with a new flags WANT_READONLY and possibly also a new callid: CTDB_FETCH_WITH_HEADER_FUNC.
+This new function returns not only the record, as CTDB_FETCH_FUNC does, but also returns the HEADER prepended to the record.
+This function is optional, clients that do not care what the header is can continue using just CTDB_FETCH_FUNC
+
 This first flag is used to explicitely requesting a read-only record from the DMASTER/LMASTER.
 The second flag is used to request that the fetch operation will return not only the data for the record but also
 the record header. 
@@ -137,7 +140,7 @@ This will change to instead do
                 goto finished
             else
                 unlock record 
-                ask ctdb for read-only copy (WANT_READONLY|WITH_HEADER)
+                ask ctdb for read-only copy (WANT_READONLY[|WITH_HEADER])
                 if failed to get read-only copy (*A)
                     ask ctdb to migrate the record onto the node
                     goto try_again

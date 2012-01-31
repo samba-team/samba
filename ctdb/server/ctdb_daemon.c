@@ -311,6 +311,10 @@ struct daemon_call_state {
 	uint32_t reqid;
 	struct ctdb_call *call;
 	struct timeval start_time;
+
+	/* readonly request ? */
+	uint32_t readonly_fetch;
+	uint32_t client_callid;
 };
 
 /* 
@@ -339,6 +343,16 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	}
 
 	length = offsetof(struct ctdb_reply_call, data) + dstate->call->reply_data.dsize;
+	/* If the client asked for readonly FETCH, we remapped this to 
+	   FETCH_WITH_HEADER when calling the daemon. So we must
+	   strip the extra header off the reply data before passing
+	   it back to the client.
+	*/
+	if (dstate->readonly_fetch
+	&& dstate->client_callid == CTDB_FETCH_FUNC) {
+		length -= sizeof(struct ctdb_ltdb_header);
+	}
+
 	r = ctdbd_allocate_pkt(client->ctdb, dstate, CTDB_REPLY_CALL, 
 			       length, struct ctdb_reply_call);
 	if (r == NULL) {
@@ -348,9 +362,19 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 		return;
 	}
 	r->hdr.reqid        = dstate->reqid;
-	r->datalen          = dstate->call->reply_data.dsize;
 	r->status           = dstate->call->status;
-	memcpy(&r->data[0], dstate->call->reply_data.dptr, r->datalen);
+
+	if (dstate->readonly_fetch
+	&& dstate->client_callid == CTDB_FETCH_FUNC) {
+		/* client only asked for a FETCH so we must strip off
+		   the extra ctdb_ltdb header
+		*/
+		r->datalen          = dstate->call->reply_data.dsize - sizeof(struct ctdb_ltdb_header);
+		memcpy(&r->data[0], dstate->call->reply_data.dptr + sizeof(struct ctdb_ltdb_header), r->datalen);
+	} else {
+		r->datalen          = dstate->call->reply_data.dsize;
+		memcpy(&r->data[0], dstate->call->reply_data.dptr, r->datalen);
+	}
 
 	res = daemon_queue_send(client, &r->hdr);
 	if (res == -1) {
@@ -738,11 +762,23 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		return;
 	}
 
+	dstate->readonly_fetch = 0;
 	call->call_id = c->callid;
 	call->key = key;
 	call->call_data.dptr = c->data + c->keylen;
 	call->call_data.dsize = c->calldatalen;
 	call->flags = c->flags;
+
+	if (c->flags & CTDB_WANT_READONLY) {
+		/* client wants readonly record, so translate this into a 
+		   fetch with header. remember what the client asked for
+		   so we can remap the reply back to the proper format for
+		   the client in the reply
+		 */
+		dstate->client_callid = call->call_id;
+		call->call_id = CTDB_FETCH_WITH_HEADER_FUNC;
+		dstate->readonly_fetch = 1;
+	}
 
 	if (header.dmaster == ctdb->pnn) {
 		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
