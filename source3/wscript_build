@@ -1134,7 +1134,7 @@ bld.SAMBA3_LIBRARY('CHARSET3',
 
 bld.SAMBA3_SUBSYSTEM('errors3',
                      source='libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c',
-                     deps='errors')
+                     deps='errors gssapi')
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
