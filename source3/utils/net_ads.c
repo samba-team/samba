@@ -1309,6 +1309,10 @@ static int net_ads_join_usage(struct net_context *c, int argc, const char **argv
 static void _net_ads_join_dns_updates(TALLOC_CTX *ctx, struct libnet_JoinCtx *r)
 {
 #if defined(WITH_DNS_UPDATES)
+	ADS_STRUCT *ads_dns = NULL;
+	int ret;
+	NTSTATUS status;
+
 	/*
 	 * In a clustered environment, don't do dynamic dns updates:
 	 * Registering the set of ip addresses that are assigned to
@@ -1323,67 +1327,64 @@ static void _net_ads_join_dns_updates(TALLOC_CTX *ctx, struct libnet_JoinCtx *r)
 	if (lp_clustering()) {
 		d_fprintf(stderr, _("Not doing automatic DNS update in a "
 				    "clustered setup.\n"));
+		return;
+	}
+
+	if (!r->out.domain_is_ad) {
+		return;
+	}
+
+	/*
+	 * We enter this block with user creds.
+	 * kinit with the machine password to do dns update.
+	 */
+
+	ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name);
+
+	if (ads_dns == NULL) {
+		d_fprintf(stderr, _("DNS update failed: out of memory!\n"));
 		goto done;
 	}
 
-	if (r->out.domain_is_ad) {
-		/*
-		 * We enter this block with user creds.
-		 * kinit with the machine password to do dns update.
-		 */
-		ADS_STRUCT *ads_dns = NULL;
-		int ret;
-		NTSTATUS status;
+	use_in_memory_ccache();
 
-		ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name);
+	ret = asprintf(&ads_dns->auth.user_name, "%s$", lp_netbios_name());
+	if (ret == -1) {
+		d_fprintf(stderr, _("DNS update failed: out of memory\n"));
+		goto done;
+	}
 
-		if (ads_dns == NULL) {
-			d_fprintf(stderr, _("DNS update failed: out of memory!\n"));
-			goto done;
-		}
+	ads_dns->auth.password = secrets_fetch_machine_password(
+		r->out.netbios_domain_name, NULL, NULL);
+	if (ads_dns->auth.password == NULL) {
+		d_fprintf(stderr, _("DNS update failed: out of memory\n"));
+		goto done;
+	}
 
-		use_in_memory_ccache();
+	ads_dns->auth.realm = SMB_STRDUP(r->out.dns_domain_name);
+	if (ads_dns->auth.realm == NULL) {
+		d_fprintf(stderr, _("DNS update failed: out of memory\n"));
+		goto done;
+	}
 
-		ret = asprintf(&ads_dns->auth.user_name, "%s$", lp_netbios_name());
-		if (ret == -1) {
-			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
-			goto dns_done;
-		}
+	strupper_m(ads_dns->auth.realm);
 
-		ads_dns->auth.password = secrets_fetch_machine_password(
-			r->out.netbios_domain_name, NULL, NULL);
-		if (ads_dns->auth.password == NULL) {
-			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
-			goto dns_done;
-		}
+	ret = ads_kinit_password(ads_dns);
+	if (ret != 0) {
+		d_fprintf(stderr,
+			  _("DNS update failed: kinit failed: %s\n"),
+			  error_message(ret));
+		goto done;
+	}
 
-		ads_dns->auth.realm = SMB_STRDUP(r->out.dns_domain_name);
-		if (ads_dns->auth.realm == NULL) {
-			d_fprintf(stderr, _("DNS update failed: out of memory\n"));
-			goto dns_done;
-		}
-
-		strupper_m(ads_dns->auth.realm);
-
-		ret = ads_kinit_password(ads_dns);
-		if (ret != 0) {
-			d_fprintf(stderr,
-				  _("DNS update failed: kinit failed: %s\n"),
-				  error_message(ret));
-			goto dns_done;
-		}
-
-		status = net_update_dns(ctx, ads_dns, NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf( stderr, _("DNS update failed: %s\n"),
-				  nt_errstr(status));
-		}
-
-dns_done:
-		ads_destroy(&ads_dns);
+	status = net_update_dns(ctx, ads_dns, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf( stderr, _("DNS update failed: %s\n"),
+			  nt_errstr(status));
 	}
 
 done:
+	ads_destroy(&ads_dns);
 #endif
 
 	return;
