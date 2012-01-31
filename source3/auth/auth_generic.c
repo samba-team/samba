@@ -183,6 +183,8 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		struct loadparm_context *lp_ctx;
 		size_t idx = 0;
 		struct cli_credentials *server_credentials;
+		const char *dns_name;
+		const char *dns_domain;
 		struct auth4_context *auth4_context = talloc_zero(tmp_ctx, struct auth4_context);
 		if (auth4_context == NULL) {
 			DEBUG(10, ("failed to allocate auth4_context failed\n"));
@@ -207,6 +209,36 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		gensec_settings = lpcfg_gensec_settings(tmp_ctx, lp_ctx);
 		if (lp_ctx == NULL) {
 			DEBUG(10, ("lpcfg_gensec_settings failed\n"));
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/*
+		 * This should be a 'netbios domain -> DNS domain'
+		 * mapping, and can currently validly return NULL on
+		 * poorly configured systems.
+		 *
+		 * This is used for the NTLMSSP server
+		 *
+		 */
+		dns_name = get_mydnsfullname();
+		if (dns_name == NULL) {
+			dns_name = "";
+		}
+
+		dns_domain = get_mydnsdomname(tmp_ctx);
+		if (dns_domain == NULL) {
+			dns_domain = "";
+		}
+
+		gensec_settings->server_dns_name = strlower_talloc(gensec_settings, dns_name);
+		if (gensec_settings->server_dns_name == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		gensec_settings->server_dns_domain = strlower_talloc(gensec_settings, dns_domain);
+		if (gensec_settings->server_dns_domain == NULL) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
