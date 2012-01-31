@@ -5032,9 +5032,13 @@ static void readline_callback(void)
 	/* Ping the server to keep the connection alive using SMBecho. */
 	memset(garbage, 0xf0, sizeof(garbage));
 	status = cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("SMBecho failed (%s). Maybe server has closed "
-			"the connection\n", nt_errstr(status)));
+	if (NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	if (!cli_state_is_connected(cli)) {
+		DEBUG(0,("SMBecho failed (%s). The connection is "
+			 "disconnected now\n", nt_errstr(status)));
 		finished = true;
 		smb_readline_done();
 	}
