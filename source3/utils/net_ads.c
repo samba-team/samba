@@ -1528,6 +1528,11 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			r->out.netbios_domain_name);
 	}
 
+	/*
+	 * We try doing the dns update (if it was compiled in).
+	 * If the dns update fails, we still consider the join
+	 * operation as succeeded if we came this far.
+	 */
 	_net_ads_join_dns_updates(ctx, r);
 
 	TALLOC_FREE(r);
