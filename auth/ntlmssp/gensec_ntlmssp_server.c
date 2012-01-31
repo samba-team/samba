@@ -238,8 +238,14 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	return gensec_ntlmssp_session_key(gensec_security, *session_info,
-					  &(*session_info)->session_key);
+	nt_status = gensec_ntlmssp_session_key(gensec_security, *session_info,
+					       &(*session_info)->session_key);
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_USER_SESSION_KEY)) {
+		(*session_info)->session_key = data_blob_null;
+		nt_status = NT_STATUS_OK;
+	}
+
+	return nt_status;
 }
 
 /**
