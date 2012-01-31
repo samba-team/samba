@@ -211,6 +211,7 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 	const char *dns_name;
 	char *dns_domain;
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
+	struct ntlmssp_state *ntlmssp_state;
 
 	if ((enum server_role)lp_server_role() == ROLE_STANDALONE) {
 		is_standalone = true;
@@ -234,16 +235,66 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 
-	nt_status = ntlmssp_server_start(gensec_ntlmssp,
-					 is_standalone,
-					 netbios_name,
-					 netbios_domain,
-					 dns_name,
-					 dns_domain,
-					 &gensec_ntlmssp->ntlmssp_state);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	if (!netbios_name) {
+		netbios_name = "";
 	}
+
+	if (!netbios_domain) {
+		netbios_domain = "";
+	}
+
+	if (!dns_domain) {
+		dns_domain = "";
+	}
+
+	if (!dns_name) {
+		dns_name = "";
+	}
+
+	ntlmssp_state = talloc_zero(gensec_ntlmssp, struct ntlmssp_state);
+	if (!ntlmssp_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ntlmssp_state->role = NTLMSSP_SERVER;
+
+	ntlmssp_state->server.is_standalone = is_standalone;
+
+	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
+
+	ntlmssp_state->allow_lm_key = lp_lanman_auth();
+
+	ntlmssp_state->neg_flags =
+		NTLMSSP_NEGOTIATE_128 |
+		NTLMSSP_NEGOTIATE_56 |
+		NTLMSSP_NEGOTIATE_VERSION |
+		NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_NEGOTIATE_NTLM2 |
+		NTLMSSP_NEGOTIATE_KEY_EXCH;
+
+	ntlmssp_state->server.netbios_name = talloc_strdup(ntlmssp_state, netbios_name);
+	if (!ntlmssp_state->server.netbios_name) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ntlmssp_state->server.netbios_domain = talloc_strdup(ntlmssp_state, netbios_domain);
+	if (!ntlmssp_state->server.netbios_domain) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state, dns_name);
+	if (!ntlmssp_state->server.dns_name) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
+	if (!ntlmssp_state->server.dns_domain) {
+		talloc_free(ntlmssp_state);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
 
 	gensec_ntlmssp->ntlmssp_state->callback_private = gensec_ntlmssp;
 
