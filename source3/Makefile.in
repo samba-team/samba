@@ -569,6 +569,7 @@ LIBSMB_OBJ0 = \
 	       ../auth/ntlmssp/ntlmssp_util.o \
 	       ../auth/ntlmssp/ntlmssp_sign.o \
 	       ../auth/ntlmssp/gensec_ntlmssp.o \
+	       ../auth/ntlmssp/gensec_ntlmssp_server.o \
 	       $(LIBNDR_NTLMSSP_OBJ) \
 	       ../auth/ntlmssp/ntlmssp_ndr.o \
 	       ../auth/ntlmssp/ntlmssp_server.o

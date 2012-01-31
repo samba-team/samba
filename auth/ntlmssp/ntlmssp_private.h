@@ -134,3 +134,34 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
  *
  */
 NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security);
+
+/**
+ * Return the challenge as determined by the authentication subsystem
+ * @return an 8 byte random challenge
+ */
+
+NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state,
+				    uint8_t chal[8]);
+
+/**
+ * Some authentication methods 'fix' the challenge, so we may not be able to set it
+ *
+ * @return If the effective challenge used by the auth subsystem may be modified
+ */
+bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state);
+
+/**
+ * NTLM2 authentication modifies the effective challenge,
+ * @param challenge The new challenge value
+ */
+NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge);
+
+/**
+ * Check the password on an NTLMSSP login.
+ *
+ * Return the session keys used on the connection.
+ */
+
+NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key);

@@ -81,8 +81,8 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
  * @return an 8 byte random challenge
  */
 
-static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state,
-					   uint8_t chal[8])
+NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state,
+				    uint8_t chal[8])
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
@@ -107,7 +107,7 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
  *
  * @return If the effective challenge used by the auth subsystem may be modified
  */
-static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
+bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
@@ -124,7 +124,7 @@ static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
  * NTLM2 authentication modifies the effective challenge,
  * @param challenge The new challenge value
  */
-static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
+NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
@@ -153,9 +153,9 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
  * Return the session keys used on the connection.
  */
 
-static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
-					    TALLOC_CTX *mem_ctx,
-					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
@@ -191,6 +191,15 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 							 user_session_key, lm_session_key);
 	}
 	talloc_free(user_info);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(5,("%s: Checking NTLMSSP password for %s\\%s failed: %s\n",
+			 __location__,
+			 user_info->client.domain_name,
+			 user_info->client.account_name,
+			 nt_errstr(nt_status)));
+	}
+
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	talloc_steal(mem_ctx, user_session_key->data);
