@@ -257,6 +257,9 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 					     talloc_tos(),
 					     &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1,("Failed to generate session_info "
+				 "(user and group token) for session setup: %s\n",
+				 nt_errstr(status)));
 			/* Kill the intermediate vuid */
 			data_blob_free(&out_blob);
 			invalidate_vuid(sconn, vuid);

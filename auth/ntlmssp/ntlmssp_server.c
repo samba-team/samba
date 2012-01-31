@@ -568,6 +568,10 @@ NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 						  &state->user_session_key,
 						  &state->lm_session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(5,("%s: Checking NTLMSSP password for %s\\%s failed: %s\n",
+			 __location__,
+			 ntlmssp_state->domain, ntlmssp_state->user,
+			 nt_errstr(nt_status)));
 		TALLOC_FREE(state);
 		return nt_status;
 	}

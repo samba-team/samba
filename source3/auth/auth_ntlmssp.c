@@ -176,6 +176,13 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 	nt_status = auth_context->check_ntlm_password(auth_context,
 						      mapped_user_info, &server_info);
 
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(5,("Checking NTLMSSP password for %s\\%s failed: %s\n",
+			 user_info->client.domain_name,
+			 user_info->client.account_name,
+			 nt_errstr(nt_status)));
+	}
+
 	username_was_mapped = mapped_user_info->was_mapped;
 
 	free_user_info(&mapped_user_info);
@@ -329,6 +336,15 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 							 user_session_key, lm_session_key);
 	}
 	talloc_free(user_info);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(5,("%s: Checking NTLMSSP password for %s\\%s failed: %s\n",
+			 __location__,
+			 user_info->client.domain_name,
+			 user_info->client.account_name,
+			 nt_errstr(nt_status)));
+	}
+
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	talloc_steal(mem_ctx, user_session_key->data);
