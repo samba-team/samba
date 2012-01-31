@@ -1304,8 +1304,7 @@ static int net_ads_join_usage(struct net_context *c, int argc, const char **argv
 	return -1;
 }
 
-/*******************************************************************
- ********************************************************************/
+
 static void _net_ads_join_dns_updates(TALLOC_CTX *ctx, struct libnet_JoinCtx *r)
 {
 #if defined(WITH_DNS_UPDATES)
