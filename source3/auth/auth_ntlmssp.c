@@ -255,6 +255,9 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 	if (!ntlmssp_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
+
+	ntlmssp_state->callback_private = gensec_ntlmssp;
 
 	ntlmssp_state->role = NTLMSSP_SERVER;
 
@@ -290,34 +293,28 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 	}
 	ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state, dns_name);
 	if (!ntlmssp_state->server.dns_name) {
-		talloc_free(ntlmssp_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
 	if (!ntlmssp_state->server.dns_domain) {
-		talloc_free(ntlmssp_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
-
-	gensec_ntlmssp->ntlmssp_state->callback_private = gensec_ntlmssp;
-
-	gensec_ntlmssp->ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
-	gensec_ntlmssp->ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
-	gensec_ntlmssp->ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
-	gensec_ntlmssp->ntlmssp_state->check_password = auth_ntlmssp_check_password;
-
-	if (gensec_ntlmssp->gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
-		gensec_ntlmssp->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
-	if (gensec_ntlmssp->gensec_security->want_features & GENSEC_FEATURE_SIGN) {
-		gensec_ntlmssp->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
-	if (gensec_ntlmssp->gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-		gensec_ntlmssp->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-		gensec_ntlmssp->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
+
+	ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
+	ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
+	ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
+	ntlmssp_state->check_password = auth_ntlmssp_check_password;
 
 	return NT_STATUS_OK;
 }
