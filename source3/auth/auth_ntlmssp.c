@@ -23,14 +23,6 @@
 
 #include "includes.h"
 #include "auth.h"
-#include "../auth/ntlmssp/ntlmssp.h"
-#include "../auth/ntlmssp/ntlmssp_private.h"
-#include "../librpc/gen_ndr/netlogon.h"
-#include "../librpc/gen_ndr/dcerpc.h"
-#include "../lib/tsocket/tsocket.h"
-#include "auth/gensec/gensec.h"
-#include "librpc/rpc/dcerpc.h"
-#include "lib/param/param.h"
 
 NTSTATUS auth3_generate_session_info(TALLOC_CTX *mem_ctx,
 				     struct auth4_context *auth_context,
@@ -201,31 +193,3 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 	*server_returned_info = talloc_steal(mem_ctx, server_info);
 	return nt_status;
 }
-
-static const char *gensec_ntlmssp3_server_oids[] = {
-	GENSEC_OID_NTLMSSP,
-	NULL
-};
-
-const struct gensec_security_ops gensec_ntlmssp3_server_ops = {
-	.name		= "ntlmssp3_server",
-	.sasl_name	= GENSEC_SASL_NAME_NTLMSSP, /* "NTLM" */
-	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
-	.oid            = gensec_ntlmssp3_server_oids,
-	.server_start   = gensec_ntlmssp_server_start,
-	.magic 	        = gensec_ntlmssp_magic,
-	.update 	= gensec_ntlmssp_update,
-	.sig_size	= gensec_ntlmssp_sig_size,
-	.sign_packet	= gensec_ntlmssp_sign_packet,
-	.check_packet	= gensec_ntlmssp_check_packet,
-	.seal_packet	= gensec_ntlmssp_seal_packet,
-	.unseal_packet	= gensec_ntlmssp_unseal_packet,
-	.wrap           = gensec_ntlmssp_wrap,
-	.unwrap         = gensec_ntlmssp_unwrap,
-	.session_key	= gensec_ntlmssp_session_key,
-	.session_info   = gensec_ntlmssp_session_info,
-	.have_feature   = gensec_ntlmssp_have_feature,
-	.enabled        = true,
-	.priority       = GENSEC_NTLMSSP
-};
-

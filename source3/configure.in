@@ -7123,8 +7123,8 @@ AC_ZLIB([ZLIB_OBJS=""], [
 	CFLAGS="-I../lib/zlib $CFLAGS"
 ])
 
-AC_DEFINE(STATIC_gensec_MODULES, [gensec_spnego_init,NULL],[gensec modules])
-AC_DEFINE(STATIC_gensec_MODULES_PROTO, [_MODULE_PROTO(gensec_spnego_init)],[gensec protos])
+AC_DEFINE(STATIC_gensec_MODULES, [gensec_spnego_init,gensec_ntlmssp_init,NULL],[gensec modules])
+AC_DEFINE(STATIC_gensec_MODULES_PROTO, [_MODULE_PROTO(gensec_spnego_init)_MODULE_PROTO(gensec_ntlmssp_init)],[gensec protos])
 
 AC_ARG_ENABLE(dmalloc, [AS_HELP_STRING([--enable-dmalloc], [Enable heap debugging [default=no]])])
 

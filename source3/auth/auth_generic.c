@@ -250,13 +250,14 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		gensec_settings->backends[idx++] = &gensec_ntlmssp3_server_ops;
+		gensec_init();
+
+		gensec_settings->backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
 
 #if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
 		gensec_settings->backends[idx++] = &gensec_gse_krb5_security_ops;
 #endif
 
-		gensec_init();
 		gensec_settings->backends[idx++] = gensec_security_by_oid(NULL,
 							GENSEC_OID_SPNEGO);
 
