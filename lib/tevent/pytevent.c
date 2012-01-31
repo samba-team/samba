@@ -331,7 +331,7 @@ static void py_tevent_signal_dealloc(TeventSignal_Object *self)
 }
 
 static PyTypeObject TeventSignal_Type = {
-	.tp_name = "Signal",
+	.tp_name = "tevent.Signal",
 	.tp_basicsize = sizeof(TeventSignal_Object),
 	.tp_dealloc = (destructor)py_tevent_signal_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
@@ -662,7 +662,7 @@ static PyObject *py_tevent_context_new(PyTypeObject *type, PyObject *args, PyObj
 }
 
 static PyTypeObject TeventContext_Type = {
-	.tp_name = "_tevent.Context",
+	.tp_name = "tevent.Context",
 	.tp_new = py_tevent_context_new,
 	.tp_basicsize = sizeof(TeventContext_Object),
 	.tp_dealloc = (destructor)py_tevent_context_dealloc,
