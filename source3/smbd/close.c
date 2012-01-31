@@ -1042,6 +1042,17 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 
 		TALLOC_FREE(lck);
 
+		if ((fsp->conn->fs_capabilities & FILE_NAMED_STREAMS)
+		    && !is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+
+			status = delete_all_streams(fsp->conn, fsp->fsp_name->base_name);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(5, ("delete_all_streams failed: %s\n",
+					  nt_errstr(status)));
+				goto out;
+			}
+		}
+
 		status = rmdir_internals(talloc_tos(), fsp);
 
 		DEBUG(5,("close_directory: %s. Delete on close was set - "
