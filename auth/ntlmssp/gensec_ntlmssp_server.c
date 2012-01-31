@@ -279,25 +279,23 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	if (!ntlmssp_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ntlmssp_state->callback_private = gensec_ntlmssp;
-
 	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
 
-	ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	ntlmssp_state->callback_private = gensec_ntlmssp;
 
 	ntlmssp_state->role = NTLMSSP_SERVER;
 
 	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
-	ntlmssp_state->allow_lm_key = (lpcfg_lanman_auth(gensec_security->settings->lp_ctx)
-					  && gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "allow_lm_key", false));
+	if (lpcfg_lanman_auth(gensec_security->settings->lp_ctx) &&
+	    gensec_setting_bool(gensec_security->settings,
+				"ntlmssp_server", "allow_lm_key", false))
+	{
+		ntlmssp_state->allow_lm_key = true;
+	}
 
 	ntlmssp_state->neg_flags =
 		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION;
-
-	ntlmssp_state->lm_resp = data_blob(NULL, 0);
-	ntlmssp_state->nt_resp = data_blob(NULL, 0);
 
 	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "128bit", true)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;
@@ -334,6 +332,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	ntlmssp_state->check_password = auth_ntlmssp_check_password;
+
 	if (lpcfg_server_role(gensec_security->settings->lp_ctx) == ROLE_STANDALONE) {
 		ntlmssp_state->server.is_standalone = true;
 	} else {
