@@ -202,132 +202,6 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 	return nt_status;
 }
 
-static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_security)
-{
-	NTSTATUS nt_status;
-	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	struct ntlmssp_state *ntlmssp_state;
-	const char *netbios_name;
-	const char *netbios_domain;
-	const char *dns_name;
-	const char *dns_domain;
-
-	nt_status = gensec_ntlmssp_start(gensec_security);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	gensec_ntlmssp =
-		talloc_get_type_abort(gensec_security->private_data,
-				      struct gensec_ntlmssp_context);
-
-	ntlmssp_state = talloc_zero(gensec_ntlmssp, struct ntlmssp_state);
-	if (!ntlmssp_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
-
-	ntlmssp_state->callback_private = gensec_ntlmssp;
-
-	ntlmssp_state->role = NTLMSSP_SERVER;
-
-	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
-
-	if (lpcfg_lanman_auth(gensec_security->settings->lp_ctx) &&
-	    gensec_setting_bool(gensec_security->settings,
-				"ntlmssp_server", "allow_lm_key", false))
-	{
-		ntlmssp_state->allow_lm_key = true;
-	}
-
-	ntlmssp_state->neg_flags =
-		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION;
-
-	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "128bit", true)) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;
-	}
-
-	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "56bit", true)) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;
-	}
-
-	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "keyexchange", true)) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
-	}
-
-	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "alwayssign", true)) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
-	}
-
-	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "ntlm2", true)) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
-	}
-
-	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-	}
-	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-	}
-	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
-	}
-
-	ntlmssp_state->get_challenge = auth_ntlmssp_get_challenge;
-	ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
-	ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
-	ntlmssp_state->check_password = auth_ntlmssp_check_password;
-
-	if (lpcfg_server_role(gensec_security->settings->lp_ctx) == ROLE_STANDALONE) {
-		ntlmssp_state->server.is_standalone = true;
-	} else {
-		ntlmssp_state->server.is_standalone = false;
-	}
-
-	netbios_name = lpcfg_netbios_name(gensec_security->settings->lp_ctx);
-	netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
-
-	if (gensec_security->settings->server_dns_name) {
-		dns_name = gensec_security->settings->server_dns_name;
-	} else {
-		const char *dnsdomain = lpcfg_dnsdomain(gensec_security->settings->lp_ctx);
-		char *lower_netbiosname;
-
-		lower_netbiosname = strlower_talloc(ntlmssp_state, netbios_name);
-		NT_STATUS_HAVE_NO_MEMORY(lower_netbiosname);
-
-		/* Find out the DNS host name */
-		if (dnsdomain && dnsdomain[0] != '\0') {
-			dns_name = talloc_asprintf(ntlmssp_state, "%s.%s",
-						   lower_netbiosname,
-						   dnsdomain);
-			talloc_free(lower_netbiosname);
-			NT_STATUS_HAVE_NO_MEMORY(dns_name);
-		} else {
-			dns_name = lower_netbiosname;
-		}
-	}
-
-	if (gensec_security->settings->server_dns_domain) {
-		dns_domain = gensec_security->settings->server_dns_domain;
-	} else {
-		dns_domain = lpcfg_dnsdomain(gensec_security->settings->lp_ctx);
-	}
-
-	ntlmssp_state->server.netbios_name = talloc_strdup(ntlmssp_state, netbios_name);
-	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.netbios_name);
-
-	ntlmssp_state->server.netbios_domain = talloc_strdup(ntlmssp_state, netbios_domain);
-	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.netbios_domain);
-
-	ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state, dns_name);
-	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_name);
-
-	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
-	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_domain);
-
-	return NT_STATUS_OK;
-}
-
 static const char *gensec_ntlmssp3_server_oids[] = {
 	GENSEC_OID_NTLMSSP,
 	NULL
@@ -338,7 +212,7 @@ const struct gensec_security_ops gensec_ntlmssp3_server_ops = {
 	.sasl_name	= GENSEC_SASL_NAME_NTLMSSP, /* "NTLM" */
 	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
 	.oid            = gensec_ntlmssp3_server_oids,
-	.server_start   = gensec_ntlmssp3_server_start,
+	.server_start   = gensec_ntlmssp_server_start,
 	.magic 	        = gensec_ntlmssp_magic,
 	.update 	= gensec_ntlmssp_update,
 	.sig_size	= gensec_ntlmssp_sig_size,
