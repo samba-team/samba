@@ -205,22 +205,11 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_security)
 {
 	NTSTATUS nt_status;
-	bool is_standalone;
-	const char *netbios_name;
-	const char *netbios_domain;
 	const char *dns_name;
 	char *dns_domain;
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
 	struct ntlmssp_state *ntlmssp_state;
 
-	if ((enum server_role)lp_server_role() == ROLE_STANDALONE) {
-		is_standalone = true;
-	} else {
-		is_standalone = false;
-	}
-
-	netbios_name = lp_netbios_name();
-	netbios_domain = lp_workgroup();
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dns_domain = get_mydnsdomname(talloc_tos());
 	if (dns_domain) {
@@ -234,14 +223,6 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 	gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
-
-	if (!netbios_name) {
-		netbios_name = "";
-	}
-
-	if (!netbios_domain) {
-		netbios_domain = "";
-	}
 
 	if (!dns_domain) {
 		dns_domain = "";
@@ -261,8 +242,6 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 
 	ntlmssp_state->role = NTLMSSP_SERVER;
 
-	ntlmssp_state->server.is_standalone = is_standalone;
-
 	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
 	if (lpcfg_lanman_auth(gensec_security->settings->lp_ctx) &&
@@ -281,16 +260,6 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 		NTLMSSP_NEGOTIATE_NTLM2 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH;
 
-	ntlmssp_state->server.netbios_name = talloc_strdup(ntlmssp_state, netbios_name);
-	if (!ntlmssp_state->server.netbios_name) {
-		talloc_free(ntlmssp_state);
-		return NT_STATUS_NO_MEMORY;
-	}
-	ntlmssp_state->server.netbios_domain = talloc_strdup(ntlmssp_state, netbios_domain);
-	if (!ntlmssp_state->server.netbios_domain) {
-		talloc_free(ntlmssp_state);
-		return NT_STATUS_NO_MEMORY;
-	}
 	ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state, dns_name);
 	if (!ntlmssp_state->server.dns_name) {
 		return NT_STATUS_NO_MEMORY;
@@ -315,6 +284,16 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 	ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	ntlmssp_state->check_password = auth_ntlmssp_check_password;
+
+	if (lpcfg_server_role(gensec_security->settings->lp_ctx) == ROLE_STANDALONE) {
+		ntlmssp_state->server.is_standalone = true;
+	} else {
+		ntlmssp_state->server.is_standalone = false;
+	}
+
+	ntlmssp_state->server.netbios_name = lpcfg_netbios_name(gensec_security->settings->lp_ctx);
+
+	ntlmssp_state->server.netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
 
 	return NT_STATUS_OK;
 }
