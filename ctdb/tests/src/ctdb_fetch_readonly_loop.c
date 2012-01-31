@@ -18,6 +18,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <time.h>
 #include "includes.h"
 #include "lib/tevent/tevent.h"
 #include "system/filesys.h"
@@ -38,6 +39,7 @@ static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev)
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA key, data;
 	struct ctdb_record_handle *h;
+	static time_t t = 0, t2;
 
 	key.dptr = discard_const(TESTKEY);
 	key.dsize = strlen(TESTKEY);
@@ -53,7 +55,15 @@ static void fetch_lock_once(struct ctdb_context *ctdb, struct event_context *ev)
 	}
 
 	count++;
-	printf("%d   data:%.*s\n", (int)count, (int)data.dsize, data.dptr);
+	t2 = time(NULL);
+	if (t != 0 && t != t2) {
+		static int last_count = 0;
+
+		printf("count : %d\n", count - last_count);
+		last_count = count;
+	}
+	t = t2;
+
 	talloc_free(tmp_ctx);
 }
 
@@ -127,7 +137,6 @@ int main(int argc, const char *argv[])
 
 	while (1) {
 		fetch_lock_once(ctdb, ev);
-		usleep(10000);
 	}
 
 	return 0;
