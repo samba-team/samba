@@ -564,6 +564,7 @@ LIBSMB_OBJ0 = \
 	       ../auth/gensec/gensec_util.o \
 	       ../auth/gensec/spnego.o \
 	       ../auth/credentials/credentials.o \
+	       ../auth/credentials/credentials_ntlm.o \
 	       ../auth/credentials/credentials_samba3.o \
 	       ../auth/ntlmssp/ntlmssp_util.o \
 	       ../auth/ntlmssp/ntlmssp_sign.o \
