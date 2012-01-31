@@ -67,6 +67,7 @@
 #include <compat.h>
 #endif
 
+#if !defined(getpass)
 #ifdef REPLACE_GETPASS
 #if defined(REPLACE_GETPASS_BY_GETPASSPHRASE)
 #define getpass(prompt) getpassphrase(prompt)
@@ -75,6 +76,7 @@
 char *rep_getpass(const char *prompt);
 #endif
 #endif
+#endif 
 
 #ifndef NGROUPS_MAX
 #define NGROUPS_MAX 32 /* Guess... */
