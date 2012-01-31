@@ -3832,7 +3832,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		}
 	}
 
-	if (stream_name && is_ntfs_default_stream_smb_fname(smb_fname)) {
+	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
 		int ret;
 		smb_fname->stream_name = NULL;
 		/* We have to handle this error here. */
