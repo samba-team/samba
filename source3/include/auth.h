@@ -86,7 +86,6 @@ struct auth_context {
 	NTSTATUS (*check_ntlm_password)(const struct auth_context *auth_context,
 					const struct auth_usersupplied_info *user_info, 
 					struct auth_serversupplied_info **server_info);
-	NTSTATUS (*nt_status_squash)(NTSTATUS nt_status);
 
 	prepare_gensec_fn prepare_gensec;
 };
