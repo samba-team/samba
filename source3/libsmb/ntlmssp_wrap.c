@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "auth/ntlmssp/ntlmssp_private.h"
 #include "auth_generic.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"

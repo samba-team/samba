@@ -22,23 +22,12 @@
 
 #include "../librpc/gen_ndr/ntlmssp.h"
 
-NTSTATUS gensec_ntlmssp_init(void);
-
 struct auth_context;
 struct auth_serversupplied_info;
 struct tsocket_address;
 struct auth_user_info_dc;
 struct gensec_security;
 struct ntlmssp_state;
-
-struct gensec_ntlmssp_context {
-	/* For GENSEC users */
-	struct gensec_security *gensec_security;
-	void *server_returned_info;
-
-	/* used by both client and server implementation */
-	struct ntlmssp_state *ntlmssp_state;
-};
 
 /* NTLMSSP mode */
 enum ntlmssp_role
@@ -189,51 +178,7 @@ NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_stae,
 NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);
 
 bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob);
-/* The following definitions come from ../source4/auth/ntlmssp/ntlmssp.c  */
 
-
-/**
- * Return the NTLMSSP master session key
- *
- * @param ntlmssp_state NTLMSSP State
- */
-NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security,
-			      const DATA_BLOB *first_packet);
-bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
-				 uint32_t feature);
-NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security,
-				    TALLOC_CTX *mem_ctx,
-				    DATA_BLOB *session_key);
-NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security);
-
-/* The following definitions come from ../source4/auth/ntlmssp/ntlmssp_sign.c  */
-
-NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
-				    TALLOC_CTX *sig_mem_ctx,
-				    const uint8_t *data, size_t length,
-				    const uint8_t *whole_pdu, size_t pdu_length,
-				    DATA_BLOB *sig);
-NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
-				     const uint8_t *data, size_t length,
-				     const uint8_t *whole_pdu, size_t pdu_length,
-				     const DATA_BLOB *sig);
-NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
-				    TALLOC_CTX *sig_mem_ctx,
-				    uint8_t *data, size_t length,
-				    const uint8_t *whole_pdu, size_t pdu_length,
-				    DATA_BLOB *sig);
-NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
-				      uint8_t *data, size_t length,
-				      const uint8_t *whole_pdu, size_t pdu_length,
-				      const DATA_BLOB *sig);
-size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security, size_t data_size) ;
-NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security,
-			     TALLOC_CTX *out_mem_ctx,
-			     const DATA_BLOB *in,
-			     DATA_BLOB *out);
-NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
-			       TALLOC_CTX *out_mem_ctx,
-			       const DATA_BLOB *in,
-			       DATA_BLOB *out);
+/* The following definitions come from auth/ntlmssp/gensec_ntlmssp.c  */
 
 NTSTATUS gensec_ntlmssp_init(void);

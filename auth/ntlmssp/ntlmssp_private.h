@@ -41,6 +41,15 @@ union ntlmssp_crypt_state {
 	} ntlm2;
 };
 
+struct gensec_ntlmssp_context {
+	/* For GENSEC users */
+	struct gensec_security *gensec_security;
+	void *server_returned_info;
+
+	/* used by both client and server implementation */
+	struct ntlmssp_state *ntlmssp_state;
+};
+
 /* The following definitions come from auth/ntlmssp.c  */
 
 NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
@@ -94,7 +103,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 				  const DATA_BLOB in, DATA_BLOB *out) ;
 NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security);
 
-/* The following definitions come from auth/ntlmssp/ntlmssp_server.c  */
+/* The following definitions come from auth/ntlmssp/gensec_ntlmssp_server.c  */
 
 
 /**
@@ -124,6 +133,12 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 				    const DATA_BLOB in, DATA_BLOB *out);
 
 /**
+ * Start NTLMSSP on the server side
+ *
+ */
+NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security);
+
+/**
  * Return the credentials of a logged on user, including session keys
  * etc.
  *
@@ -136,39 +151,47 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 				     TALLOC_CTX *mem_ctx,
 				     struct auth_session_info **session_info) ;
 
+/* The following definitions come from auth/ntlmssp/gensec_ntlmssp.c  */
+
+NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security,
+				    TALLOC_CTX *sig_mem_ctx,
+				    const uint8_t *data, size_t length,
+				    const uint8_t *whole_pdu, size_t pdu_length,
+				    DATA_BLOB *sig);
+NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security,
+				     const uint8_t *data, size_t length,
+				     const uint8_t *whole_pdu, size_t pdu_length,
+				     const DATA_BLOB *sig);
+NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
+				    TALLOC_CTX *sig_mem_ctx,
+				    uint8_t *data, size_t length,
+				    const uint8_t *whole_pdu, size_t pdu_length,
+				    DATA_BLOB *sig);
+NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security,
+				      uint8_t *data, size_t length,
+				      const uint8_t *whole_pdu, size_t pdu_length,
+				      const DATA_BLOB *sig);
+size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security, size_t data_size) ;
+NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security,
+			     TALLOC_CTX *out_mem_ctx,
+			     const DATA_BLOB *in,
+			     DATA_BLOB *out);
+NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security,
+			       TALLOC_CTX *out_mem_ctx,
+			       const DATA_BLOB *in,
+			       DATA_BLOB *out);
+
 /**
- * Start NTLMSSP on the server side
+ * Return the NTLMSSP master session key
  *
+ * @param ntlmssp_state NTLMSSP State
  */
-NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security);
+NTSTATUS gensec_ntlmssp_magic(struct gensec_security *gensec_security,
+			      const DATA_BLOB *first_packet);
+bool gensec_ntlmssp_have_feature(struct gensec_security *gensec_security,
+				 uint32_t feature);
+NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *session_key);
+NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security);
 
-/**
- * Return the challenge as determined by the authentication subsystem
- * @return an 8 byte random challenge
- */
-
-NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state,
-				    uint8_t chal[8]);
-
-/**
- * Some authentication methods 'fix' the challenge, so we may not be able to set it
- *
- * @return If the effective challenge used by the auth subsystem may be modified
- */
-bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state);
-
-/**
- * NTLM2 authentication modifies the effective challenge,
- * @param challenge The new challenge value
- */
-NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge);
-
-/**
- * Check the password on an NTLMSSP login.
- *
- * Return the session keys used on the connection.
- */
-
-NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
-				     TALLOC_CTX *mem_ctx,
-				     DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key);

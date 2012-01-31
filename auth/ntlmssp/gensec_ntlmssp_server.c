@@ -81,8 +81,8 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
  * @return an 8 byte random challenge
  */
 
-NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state,
-				    uint8_t chal[8])
+static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state,
+					   uint8_t chal[8])
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
@@ -107,7 +107,7 @@ NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state,
  *
  * @return If the effective challenge used by the auth subsystem may be modified
  */
-bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
+static bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
@@ -124,7 +124,7 @@ bool auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
  * NTLM2 authentication modifies the effective challenge,
  * @param challenge The new challenge value
  */
-NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
+static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,
@@ -153,9 +153,9 @@ NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BL
  * Return the session keys used on the connection.
  */
 
-NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
-				     TALLOC_CTX *mem_ctx,
-				     DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
+					    TALLOC_CTX *mem_ctx,
+					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(ntlmssp_state->callback_private,

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "auth/gensec/gensec.h"
 #include "auth/ntlmssp/ntlmssp.h"
+#include "auth/ntlmssp/ntlmssp_private.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
 #include "param/param.h"
