@@ -251,15 +251,6 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 		ntlmssp_state->allow_lm_key = true;
 	}
 
-	ntlmssp_state->neg_flags =
-		NTLMSSP_NEGOTIATE_128 |
-		NTLMSSP_NEGOTIATE_56 |
-		NTLMSSP_NEGOTIATE_VERSION |
-		NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
-		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_NEGOTIATE_NTLM2 |
-		NTLMSSP_NEGOTIATE_KEY_EXCH;
-
 	ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state, dns_name);
 	if (!ntlmssp_state->server.dns_name) {
 		return NT_STATUS_NO_MEMORY;
@@ -267,6 +258,29 @@ static NTSTATUS gensec_ntlmssp3_server_start(struct gensec_security *gensec_secu
 	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
 	if (!ntlmssp_state->server.dns_domain) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	ntlmssp_state->neg_flags =
+		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION;
+
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "128bit", true)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;
+	}
+
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "56bit", true)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;
+	}
+
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "keyexchange", true)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;
+	}
+
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "alwayssign", true)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+	}
+
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "ntlm2", true)) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
