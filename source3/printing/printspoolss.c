@@ -82,7 +82,8 @@ NTSTATUS print_spool_open(files_struct *fsp,
 		}
 	}
 
-	/* Ok, now we have to open an actual file.
+	/*
+	 * Ok, now we have to open an actual file.
 	 * Here is the reason:
 	 * We want to write the spool job to this file in
 	 * smbd for scalability reason (and also because
@@ -92,9 +93,13 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	 * to spoolss in output_file so it can monitor and
 	 * take over once we call EndDocPrinter().
 	 * Of course we will not start writing until
-	 * StartDocPrinter() actually gives the ok. */
+	 * StartDocPrinter() actually gives the ok.
+	 * smbd spooler files do not include a print jobid
+	 * path component, as the jobid is only known after
+	 * calling StartDocPrinter().
+	 */
 
-	pf->filename = talloc_asprintf(pf, "%s/%s.XXXXXX",
+	pf->filename = talloc_asprintf(pf, "%s/%sXXXXXX",
 					lp_pathname(SNUM(fsp->conn)),
 					PRINT_SPOOL_PREFIX);
 	if (!pf->filename) {
