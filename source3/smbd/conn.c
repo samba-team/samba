@@ -66,7 +66,7 @@ bool conn_snum_used(struct smbd_server_connection *sconn,
 			for (ptcon = sess->tcons.list; ptcon; ptcon = ptcon->next) {
 				if (ptcon->compat_conn &&
 						ptcon->compat_conn->params &&
-						(ptcon->compat_conn->params->service = snum)) {
+						(ptcon->compat_conn->params->service == snum)) {
 					return true;
 				}
 			}
