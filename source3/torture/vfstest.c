@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
 {
 	char *cmdstr = NULL;
 	struct cmd_set	**cmd_set;
-	struct vfs_state vfs;
+	struct vfs_state vfs = { 0, };
 	int i;
 	char *filename = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -469,7 +469,7 @@ int main(int argc, char *argv[])
 	/* some basic initialization stuff */
 	sec_init();
 	vfs.conn = talloc_zero(NULL, connection_struct);
-	vfs.conn->params = talloc(vfs.conn, struct share_params);
+	vfs.conn->params = talloc_zero(vfs.conn, struct share_params);
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
 
