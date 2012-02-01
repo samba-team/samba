@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    VFS module tester
 
@@ -13,12 +13,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -45,11 +45,11 @@ static char **completion_fn(const char *text, int start, int end)
 	int i, count=0;
 	struct cmd_list *commands = cmd_list;
 
-	if (start) 
+	if (start)
 		return NULL;
 
 	/* make sure we have a list of valid commands */
-	if (!commands) 
+	if (!commands)
 		return NULL;
 
 	matches = SMB_MALLOC_ARRAY(char *, MAX_COMPLETIONS);
@@ -58,25 +58,24 @@ static char **completion_fn(const char *text, int start, int end)
 	matches[count++] = SMB_STRDUP(text);
 	if (!matches[0]) return NULL;
 
-	while (commands && count < MAX_COMPLETIONS-1) 
+	while (commands && count < MAX_COMPLETIONS-1)
 	{
 		if (!commands->cmd_set)
 			break;
-		
+
 		for (i=0; commands->cmd_set[i].name; i++)
 		{
 			if ((strncmp(text, commands->cmd_set[i].name, strlen(text)) == 0) &&
-				commands->cmd_set[i].fn) 
+				commands->cmd_set[i].fn)
 			{
 				matches[count] = SMB_STRDUP(commands->cmd_set[i].name);
-				if (!matches[count]) 
+				if (!matches[count])
 					return NULL;
 				count++;
 			}
 		}
-		
+
 		commands = commands->next;
-		
 	}
 
 	if (count == 2) {
@@ -121,7 +120,7 @@ static NTSTATUS cmd_conf(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	printf("\"%s\" successfully loaded\n", argv[1]);
 	return NT_STATUS_OK;
 }
-	
+
 /* Display help on commands */
 static NTSTATUS cmd_help(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 			 int argc, const char **argv)
@@ -139,7 +138,7 @@ static NTSTATUS cmd_help(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 
 	if (argc == 2) {
 		for (tmp = cmd_list; tmp; tmp = tmp->next) {
-			
+
 			tmp_set = tmp->cmd_set;
 
 			while(tmp_set->name) {
@@ -442,7 +441,7 @@ int main(int argc, char *argv[])
 
 	pc = poptGetContext("vfstest", argc, (const char **) argv,
 			    long_options, 0);
-	
+
 	while(poptGetNextOpt(pc) != -1);
 
 
@@ -456,7 +455,7 @@ int main(int argc, char *argv[])
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
 	setup_logging("vfstest", DEBUG_STDOUT);
-	
+
 	/* Load command lists */
 
 	cmd_set = vfstest_command_list;

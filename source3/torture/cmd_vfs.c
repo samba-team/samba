@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    VFS module functions
 
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,7 +31,7 @@ static const char *null_string = "";
 static NTSTATUS cmd_load_module(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int i;
-	
+
 	if (argc < 2) {
 		printf("Usage: load <modules>\n");
 		return NT_STATUS_OK;
@@ -207,7 +207,7 @@ static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		printf("mkdir error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
 	printf("mkdir: ok\n");
 	return NT_STATUS_OK;
 }
@@ -216,7 +216,7 @@ static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int ret;
-	
+
 	if (vfs->currentdir == NULL) {
 		printf("closedir: failure (no directory open)\n");
 		return NT_STATUS_UNSUCCESSFUL;
@@ -441,7 +441,7 @@ static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	vfs->data_size = size;
-	
+
 	rsize = SMB_VFS_READ(vfs->files[fd], vfs->data, size);
 	if (rsize == -1) {
 		printf("read: error=%d (%s)\n", errno, strerror(errno));
@@ -781,7 +781,7 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	printf("  Modify: %s", ctime(&tmp_time));
 	tmp_time = convert_timespec_to_time_t(st.st_ex_ctime);
 	printf("  Change: %s", ctime(&tmp_time));
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -970,7 +970,7 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	long count;
 	int type;
 	const char *typestr;
-	
+
 	if (argc != 6) {
 		printf("Usage: lock <fd> <op> <offset> <count> <type>\n");
                 printf("  ops: G = F_GETLK\n");
@@ -1103,7 +1103,7 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	mode_t mode;
 	unsigned int dev_val;
 	SMB_DEV_T dev;
-	
+
 	if (argc != 4) {
 		printf("Usage: mknod <path> <mode> <dev>\n");
 		printf("  mode is octal\n");
