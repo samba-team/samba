@@ -1453,7 +1453,7 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		b9_reset_session_info(state);
 		talloc_free(rec);
 		if (result == ISC_R_SUCCESS) {
-			state->log(ISC_LOG_ERROR, "samba_dlz: added %s %s", name, rdatastr);
+			state->log(ISC_LOG_INFO, "samba_dlz: added %s %s", name, rdatastr);
 		}
 		return result;
 	}
@@ -1543,7 +1543,7 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	enum ndr_err_code ndr_err;
 
 	if (state->transaction_token != (void*)version) {
-		state->log(ISC_LOG_INFO, "samba_dlz: bad transaction version");
+		state->log(ISC_LOG_ERROR, "samba_dlz: bad transaction version");
 		return ISC_R_FAILURE;
 	}
 
@@ -1553,7 +1553,7 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	}
 
 	if (!b9_parse(state, rdatastr, rec)) {
-		state->log(ISC_LOG_INFO, "samba_dlz: failed to parse rdataset '%s'", rdatastr);
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse rdataset '%s'", rdatastr);
 		talloc_free(rec);
 		return ISC_R_FAILURE;
 	}
@@ -1652,12 +1652,12 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 	bool found = false;
 
 	if (state->transaction_token != (void*)version) {
-		state->log(ISC_LOG_INFO, "samba_dlz: bad transaction version");
+		state->log(ISC_LOG_ERROR, "samba_dlz: bad transaction version");
 		return ISC_R_FAILURE;
 	}
 
 	if (!b9_dns_type(type, &dns_type)) {
-		state->log(ISC_LOG_INFO, "samba_dlz: bad dns type %s in delete", type);
+		state->log(ISC_LOG_ERROR, "samba_dlz: bad dns type %s in delete", type);
 		return ISC_R_FAILURE;
 	}
 
