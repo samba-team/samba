@@ -376,7 +376,6 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 						struct dreplsrv_partition *p,
 						struct dreplsrv_partition_source_dsa **listp,
 						struct dreplsrv_partition_source_dsa *check_list,
-						struct dreplsrv_partition_source_dsa **oldlist,
 						const struct ldb_val *val)
 {
 	WERROR status;
@@ -414,16 +413,14 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	}
 
 	/* re-use an existing source if found */
-	for (s2=*oldlist; s2; s2=s2->next) {
+	for (s2=*listp; s2; s2=s2->next) {
 		if (GUID_compare(&s2->repsFrom1->source_dsa_obj_guid, 
 				 &source->repsFrom1->source_dsa_obj_guid) == 0) {
 			talloc_free(s2->repsFrom1->other_info);
 			*s2->repsFrom1 = *source->repsFrom1;
 			talloc_steal(s2, s2->repsFrom1->other_info);
 			talloc_free(source);
-			source = s2;
-			DLIST_REMOVE(*oldlist, s2);
-			break;
+			return WERR_OK;
 		}
 	}
 
@@ -569,7 +566,6 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 		NULL
 	};
 	struct ldb_dn *dn;
-	struct dreplsrv_partition_source_dsa *src, *oldsources, *oldnotifies;
 
 	DEBUG(4, ("dreplsrv_refresh_partition(%s)\n",
 		ldb_dn_get_linearized(p->dn)));
@@ -611,49 +607,19 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 
 	status = WERR_OK;
 
-	oldsources = p->sources;
-	p->sources = NULL;
 	if (r != NULL && (orf_el = ldb_msg_find_element(r->msgs[0], "repsFrom"))) {
 		for (i=0; i < orf_el->num_values; i++) {
 			status = dreplsrv_partition_add_source_dsa(s, p, &p->sources,
-								   NULL, &oldsources,
-								   &orf_el->values[i]);
+								   NULL, &orf_el->values[i]);
 			W_ERROR_NOT_OK_GOTO_DONE(status);
-		}
-	} else {
-		if (r != NULL && p->sources) {
-			DEBUG(0, ("repsFrom do not exists or is empty\n"));
 		}
 	}
 
-	oldnotifies = p->notifies;
-	p->notifies = NULL;
 	if (r != NULL && (orf_el = ldb_msg_find_element(r->msgs[0], "repsTo"))) {
 		for (i=0; i < orf_el->num_values; i++) {
 			status = dreplsrv_partition_add_source_dsa(s, p, &p->notifies,
-								   p->sources,
-								   &oldnotifies,
-								   &orf_el->values[i]);
+								   p->sources, &orf_el->values[i]);
 			W_ERROR_NOT_OK_GOTO_DONE(status);
-		}
-	}
-
-	if (oldsources) {
-		src = oldsources;
-		while(src) {
-			struct dreplsrv_partition_source_dsa *tmp = src->next;
-			talloc_free(src);
-			src = tmp;
-		}
-	}
-
-
-	if (oldnotifies) {
-		src = oldnotifies;
-		while(src) {
-			struct dreplsrv_partition_source_dsa *tmp = src->next;
-			talloc_free(src);
-			src = tmp;
 		}
 	}
 
