@@ -67,14 +67,9 @@ static uint32_t hash_fn(DATA_BLOB key)
  * an option to put in a special ACL entry for a non-existing group.
  */
 
-static bool file_is_valid(vfs_handle_struct *handle, const char *path,
-			  bool check_valid)
+static bool file_is_valid(vfs_handle_struct *handle, const char *path)
 {
 	char buf;
-
-	if (!check_valid) {
-		return true;
-	}
 
 	DEBUG(10, ("file_is_valid (%s) called\n", path));
 
@@ -92,15 +87,10 @@ static bool file_is_valid(vfs_handle_struct *handle, const char *path,
 	return true;
 }
 
-static bool mark_file_valid(vfs_handle_struct *handle, const char *path,
-			    bool check_valid)
+static bool mark_file_valid(vfs_handle_struct *handle, const char *path)
 {
 	char buf = '1';
 	int ret;
-
-	if (!check_valid) {
-		return true;
-	}
 
 	DEBUG(10, ("marking file %s as valid\n", path));
 
@@ -214,7 +204,8 @@ static char *stream_dir(vfs_handle_struct *handle,
 			goto fail;
 		}
 
-		if (file_is_valid(handle, smb_fname->base_name, check_valid)) {
+		if (!check_valid ||
+		    file_is_valid(handle, smb_fname->base_name)) {
 			return result;
 		}
 
@@ -294,7 +285,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if (!mark_file_valid(handle, smb_fname->base_name, check_valid)) {
+	if (check_valid && !mark_file_valid(handle, smb_fname->base_name)) {
 		goto fail;
 	}
 
