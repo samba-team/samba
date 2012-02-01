@@ -422,6 +422,7 @@ int main(int argc, char *argv[])
 	struct vfs_state vfs = { 0, };
 	int i;
 	char *filename = NULL;
+	char cwd[MAXPATHLEN];
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* make sure the vars that get altered (4th field) are in
@@ -470,6 +471,7 @@ int main(int argc, char *argv[])
 	sec_init();
 	vfs.conn = talloc_zero(NULL, connection_struct);
 	vfs.conn->params = talloc_zero(vfs.conn, struct share_params);
+	set_conn_connectpath(vfs.conn, getcwd(cwd, sizeof(cwd)));
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
 
