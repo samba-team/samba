@@ -417,11 +417,11 @@ int last_message = -1;
 
 int main(int argc, char *argv[])
 {
-	static char		*cmdstr = NULL;
-	struct cmd_set 		**cmd_set;
-	static struct vfs_state vfs;
+	char *cmdstr = NULL;
+	struct cmd_set	**cmd_set;
+	struct vfs_state vfs;
 	int i;
-	static char		*filename = NULL;
+	char *filename = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* make sure the vars that get altered (4th field) are in
