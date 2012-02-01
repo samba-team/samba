@@ -529,7 +529,7 @@ static NTSTATUS wbcsids_to_samr_RidWithAttributeArray(
 				const struct wbcSidWithAttr *sids,
 				size_t num_sids)
 {
-	unsigned int i;
+	unsigned int i, j = 0;
 	bool ok;
 
 	groups->rids = talloc_array(mem_ctx,
@@ -542,15 +542,16 @@ static NTSTATUS wbcsids_to_samr_RidWithAttributeArray(
 	for (i = 0; i < num_sids; i++) {
 		ok = sid_peek_check_rid(domain_sid,
 					(const struct dom_sid *)&sids[i].sid,
-					&groups->rids[i].rid);
+					&groups->rids[j].rid);
 		if (!ok) continue;
 
-		groups->rids[i].attributes = SE_GROUP_MANDATORY |
+		groups->rids[j].attributes = SE_GROUP_MANDATORY |
 					     SE_GROUP_ENABLED_BY_DEFAULT |
 					     SE_GROUP_ENABLED;
-		groups->count++;
+		j++;
 	}
 
+	groups->count = j;
 	return NT_STATUS_OK;
 }
 
