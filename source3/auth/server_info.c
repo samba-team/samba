@@ -555,6 +555,48 @@ static NTSTATUS wbcsids_to_samr_RidWithAttributeArray(
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS wbcsids_to_netr_SidAttrArray(
+				const struct dom_sid *domain_sid,
+				const struct wbcSidWithAttr *sids,
+				size_t num_sids,
+				TALLOC_CTX *mem_ctx,
+				struct netr_SidAttr **_info3_sids,
+				uint32_t *info3_num_sids)
+{
+	unsigned int i, j = 0;
+	struct netr_SidAttr *info3_sids;
+
+	info3_sids = talloc_array(mem_ctx, struct netr_SidAttr, num_sids);
+	if (info3_sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* a wbcDomainSid is the same as a dom_sid */
+	for (i = 0; i < num_sids; i++) {
+		const struct dom_sid *sid;
+
+		sid = (const struct dom_sid *)&sids[i].sid;
+
+		if (dom_sid_in_domain(domain_sid, sid)) {
+			continue;
+		}
+
+		info3_sids[j].sid = dom_sid_dup(info3_sids, sid);
+		if (info3_sids[j].sid == NULL) {
+			talloc_free(info3_sids);
+			return NT_STATUS_NO_MEMORY;
+		}
+		info3_sids[j].attributes = SE_GROUP_MANDATORY |
+					   SE_GROUP_ENABLED_BY_DEFAULT |
+					   SE_GROUP_ENABLED;
+		j++;
+	}
+
+	*info3_num_sids = j;
+	*_info3_sids = info3_sids;
+	return NT_STATUS_OK;
+}
+
 struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 					const struct wbcAuthUserInfo *info)
 {
@@ -632,6 +674,17 @@ struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 						       &domain_sid,
 						       &info->sids[1],
 						       info->num_sids - 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info3);
+		return NULL;
+	}
+
+	status = wbcsids_to_netr_SidAttrArray(&domain_sid,
+					      &info->sids[1],
+					      info->num_sids - 1,
+					      info3,
+					      &info3->sids,
+					      &info3->sidcount);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(info3);
 		return NULL;
