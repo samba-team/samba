@@ -473,7 +473,7 @@ int main(int argc, char *argv[])
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
 
-	/* some advanced initiliazation stuff */
+	/* some advanced initialization stuff */
 	smbd_vfs_init(vfs.conn);
 
 	/* Do we have a file input? */
