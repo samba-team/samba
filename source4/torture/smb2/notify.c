@@ -845,7 +845,6 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	uint32_t mask;
 	int i;
 	char c = 1;
-	struct timeval tv;
 	union smb_setfileinfo sinfo;
 
 	smb2_deltree(tree1, BASEDIR);
@@ -853,7 +852,6 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 
 	torture_comment(torture, "TESTING CHANGE NOTIFY COMPLETION FILTERS\n");
 
-	tv = timeval_current_ofs(1000, 0);
 
 	/*
 	  get a handle on the directory
