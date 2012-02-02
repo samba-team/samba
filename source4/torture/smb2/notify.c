@@ -1804,6 +1804,10 @@ static struct smb2_tree *secondary_tcon(struct smb2_tree *tree,
 	torture_comment(tctx,
 		"create a second tree context on the same session\n");
 	tree1 = smb2_tree_init(tree->session, tctx, false);
+	if (tree1 == NULL) {
+		torture_comment(tctx, "Out of memory\n");
+		return NULL;
+	}
 
 	ZERO_STRUCT(tcon.smb2);
 	tcon.generic.level = RAW_TCON_SMB2;
