@@ -1,6 +1,6 @@
 #!/bin/sh
 rm -r .streams
-../../bin/vfstest -s smb.conf -f vfstest.cmd
+../../../bin/vfstest -s smb.conf -f vfstest.cmd
 NUM=`find .streams | wc -l`
 if [ $NUM -ne 3 ] ; then
     echo "streams_depot left ${NUM} in .streams, expected 3"
