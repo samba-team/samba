@@ -478,6 +478,10 @@ int main(int argc, char *argv[])
 	/* some advanced initialization stuff */
 	smbd_vfs_init(vfs.conn);
 
+	if (!posix_locking_init(false)) {
+		return 1;
+	}
+
 	/* Do we have a file input? */
 	if (filename && filename[0]) {
 		process_file(&vfs, filename);
