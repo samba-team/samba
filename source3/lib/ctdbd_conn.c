@@ -1391,7 +1391,7 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
 }
 
 /*
- * remotely fetch a record without locking it or forcing a migration
+ * remotely fetch a record (read-only)
  */
 NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
 		     TDB_DATA key, TALLOC_CTX *mem_ctx, TDB_DATA *data)
@@ -1407,7 +1407,7 @@ NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
 	req.hdr.ctdb_version = CTDB_VERSION;
 	req.hdr.operation    = CTDB_REQ_CALL;
 	req.hdr.reqid        = ctdbd_next_reqid(conn);
-	req.flags            = 0;
+	req.flags            = CTDB_WANT_READONLY;
 	req.callid           = CTDB_FETCH_FUNC;
 	req.db_id            = db_id;
 	req.keylen           = key.dsize;
