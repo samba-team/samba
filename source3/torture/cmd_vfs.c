@@ -1182,6 +1182,52 @@ static NTSTATUS cmd_getxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_listxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+			      int argc, const char **argv)
+{
+	char *buf, *p;
+	ssize_t ret;
+
+	if (argc != 2) {
+		printf("Usage: listxattr <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	buf = NULL;
+
+	ret = SMB_VFS_LISTXATTR(vfs->conn, argv[1], buf, talloc_get_size(buf));
+	if (ret == -1) {
+		int err = errno;
+		printf("listxattr returned (%s)\n", strerror(err));
+		return map_nt_error_from_unix(err);
+	}
+	buf = talloc_array(mem_ctx, char, ret);
+	if (buf == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = SMB_VFS_LISTXATTR(vfs->conn, argv[1], buf, talloc_get_size(buf));
+	if (ret == -1) {
+		int err = errno;
+		printf("listxattr returned (%s)\n", strerror(err));
+		return map_nt_error_from_unix(err);
+	}
+	if (ret == 0) {
+		return NT_STATUS_OK;
+	}
+	if (buf[ret-1] != '\0') {
+		printf("listxattr returned non 0-terminated strings\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	p = buf;
+	while (p < buf+ret) {
+		printf("%s\n", p);
+		p = strchr(p, 0);
+		p += 1;
+	}
+	return NT_STATUS_OK;
+}
+
 struct cmd_set vfs_commands[] = {
 
 	{ "VFS Commands" },
@@ -1224,5 +1270,7 @@ struct cmd_set vfs_commands[] = {
 	{ "realpath",   cmd_realpath,   "VFS realpath()",    "realpath <path>" },
 	{ "getxattr", cmd_getxattr, "VFS getxattr()",
 	  "getxattr <path> <name>" },
+	{ "listxattr", cmd_listxattr, "VFS listxattr()",
+	  "listxattr <path>" },
 	{ NULL }
 };
