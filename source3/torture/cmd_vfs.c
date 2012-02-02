@@ -329,7 +329,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 	fsp->conn = vfs->conn;
 
-	status = create_synthetic_smb_fname_split(mem_ctx, argv[1], NULL,
+	status = create_synthetic_smb_fname_split(NULL, argv[1], NULL,
 						  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		SAFE_FREE(fsp);
