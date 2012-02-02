@@ -1001,6 +1001,27 @@ static int db_ctdb_record_destr(struct db_record* data)
 	return 0;
 }
 
+/* Do I own this record? */
+static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
+{
+	struct ctdb_ltdb_header *hdr;
+
+	if (ctdb_data.dptr == NULL)
+		return false;
+
+	if (ctdb_data.dsize < sizeof(struct ctdb_ltdb_header))
+		return false;
+
+	hdr = (struct ctdb_ltdb_header *)ctdb_data.dptr;
+	if (hdr->dmaster != get_my_vnn()) {
+		/* If we're not dmaster, it must be r/o copy. */
+		return read_only && (hdr->flags & CTDB_REC_RO_HAVE_READONLY);
+	}
+
+	/* If we want write access, noone can have r/o copies. */
+	return read_only || !(hdr->flags & CTDB_REC_RO_HAVE_DELEGATIONS);
+}
+
 static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 					       TALLOC_CTX *mem_ctx,
 					       TDB_DATA key)
@@ -1064,9 +1085,7 @@ again:
 	 * take the shortcut and just return it.
 	 */
 
-	if ((ctdb_data.dptr == NULL) ||
-	    (ctdb_data.dsize < sizeof(struct ctdb_ltdb_header)) ||
-	    ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster != get_my_vnn()
+	if (!db_ctdb_own_record(ctdb_data, false)
 #if 0
 	    || (random() % 2 != 0)
 #endif
@@ -1077,10 +1096,11 @@ again:
 
 		migrate_attempts += 1;
 
-		DEBUG(10, ("ctdb_data.dptr = %p, dmaster = %u (%u)\n",
+		DEBUG(10, ("ctdb_data.dptr = %p, dmaster = %u (%u) %u\n",
 			   ctdb_data.dptr, ctdb_data.dptr ?
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster : -1,
-			   get_my_vnn()));
+			   get_my_vnn(),
+			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags));
 
 		status = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
 				       key);
@@ -1164,10 +1184,7 @@ static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	 * take the shortcut and just return it.
 	 * we bypass the dmaster check for persistent databases
 	 */
-	if ((ctdb_data.dptr != NULL) &&
-	    (ctdb_data.dsize >= sizeof(struct ctdb_ltdb_header)) &&
-	    ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster == get_my_vnn())
-	{
+	if (db_ctdb_own_record(ctdb_data, true)) {
 		/* we are the dmaster - avoid the ctdb protocol op */
 
 		data->dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header);
