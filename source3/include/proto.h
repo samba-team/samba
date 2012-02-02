@@ -925,7 +925,6 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 /* The following definitions come from libsmb/errormap.c  */
 
 NTSTATUS dos_to_ntstatus(uint8 eclass, uint32 ecode);
-NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor);
 
 /* The following definitions come from libsmb/namecache.c  */
 
