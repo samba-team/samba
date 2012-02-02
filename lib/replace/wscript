@@ -452,6 +452,9 @@ def build(bld):
     if not bld.CONFIG_SET('HAVE_INET_NTOP'):     REPLACE_SOURCE += ' inet_ntop.c'
     if not bld.CONFIG_SET('HAVE_INET_PTON'):     REPLACE_SOURCE += ' inet_pton.c'
 
+    extra_libs = ''
+    if bld.CONFIG_SET('HAVE_LIBBSD'): extra_libs += ' bsd'
+
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
                       group='base_libraries',
@@ -461,7 +464,7 @@ def build(bld):
                       # at the moment:
                       # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
-                      deps='crypt dl nsl socket rt bsd')
+                      deps='crypt dl nsl socket rt' + extra_libs)
 
     bld.SAMBA_SUBSYSTEM('replace-test',
                       source='''test/testsuite.c test/strptime.c
