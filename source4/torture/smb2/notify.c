@@ -1812,7 +1812,7 @@ static struct smb2_tree *secondary_tcon(struct smb2_tree *tree,
 	ZERO_STRUCT(tcon.smb2);
 	tcon.generic.level = RAW_TCON_SMB2;
 	tcon.smb2.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
-	status = smb2_tree_connect(tree, &(tcon.smb2));
+	status = smb2_tree_connect(tree->session, &(tcon.smb2));
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tree1);
 		torture_comment(tctx,"Failed to create secondary tree\n");

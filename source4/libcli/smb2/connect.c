@@ -214,7 +214,7 @@ static void smb2_connect_session_done(struct tevent_req *subreq)
 		return;
 	}
 
-	smb2req = smb2_tree_connect_send(state->tree, &state->tcon);
+	smb2req = smb2_tree_connect_send(state->session, &state->tcon);
 	if (tevent_req_nomem(smb2req, req)) {
 		return;
 	}

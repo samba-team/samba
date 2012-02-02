@@ -46,17 +46,17 @@ struct smb2_tree *smb2_tree_init(struct smb2_session *session,
 /*
   send a tree connect
 */
-struct smb2_request *smb2_tree_connect_send(struct smb2_tree *tree, 
+struct smb2_request *smb2_tree_connect_send(struct smb2_session *session,
 					    struct smb2_tree_connect *io)
 {
 	struct smb2_request *req;
 	NTSTATUS status;
 
-	req = smb2_request_init(tree->session->transport, SMB2_OP_TCON, 
+	req = smb2_request_init(session->transport, SMB2_OP_TCON,
 				0x08, true, 0);
 	if (req == NULL) return NULL;
 
-	req->session = tree->session;
+	req->session = session;
 
 	SSVAL(req->out.body, 0x02, io->in.reserved);
 	status = smb2_push_o16s16_string(&req->out, 0x04, io->in.path);
@@ -104,8 +104,8 @@ NTSTATUS smb2_tree_connect_recv(struct smb2_request *req, struct smb2_tree_conne
 /*
   sync tree connect request
 */
-NTSTATUS smb2_tree_connect(struct smb2_tree *tree, struct smb2_tree_connect *io)
+NTSTATUS smb2_tree_connect(struct smb2_session *session, struct smb2_tree_connect *io)
 {
-	struct smb2_request *req = smb2_tree_connect_send(tree, io);
+	struct smb2_request *req = smb2_tree_connect_send(session, io);
 	return smb2_tree_connect_recv(req, io);
 }
