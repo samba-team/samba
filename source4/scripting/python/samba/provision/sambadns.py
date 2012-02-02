@@ -54,19 +54,6 @@ def get_domainguid(samdb, domaindn):
     domainguid =  str(ndr_unpack(misc.GUID, res[0]["objectGUID"][0]))
     return domainguid
 
-def get_ntdsguid(samdb, domaindn):
-    configdn = samdb.get_config_basedn()
-
-    res1 = samdb.search(base="OU=Domain Controllers,%s" % domaindn, scope=ldb.SCOPE_ONELEVEL,
-                        attrs=["dNSHostName"])
-
-    res2 = samdb.search(expression="serverReference=%s" % res1[0].dn, base=configdn)
-
-    res3 = samdb.search(base="CN=NTDS Settings,%s" % res2[0].dn, scope=ldb.SCOPE_BASE,
-                        attrs=["objectGUID"])
-    ntdsguid = str(ndr_unpack(misc.GUID, res3[0]["objectGUID"][0]))
-    return ntdsguid
-
 def get_dnsadmins_sid(samdb, domaindn):
     res = samdb.search(base="CN=DnsAdmins,CN=Users,%s" % domaindn, scope=ldb.SCOPE_BASE,
                        attrs=["objectSid"])
@@ -988,7 +975,6 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
 
     dnsadmins_sid = get_dnsadmins_sid(samdb, domaindn)
     domainguid = get_domainguid(samdb, domaindn)
-    ntdsguid = get_ntdsguid(samdb, domaindn)
 
     # Create CN=System
     logger.info("Creating CN=MicrosoftDNS,CN=System,%s" % forestdn)
@@ -1012,7 +998,7 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
         logger.info("Populating DomainDnsZones and ForestDnsZones partitions")
         fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
                                 dnsdomain, dnsforest, hostname, hostip, hostip6,
-                                domainguid, ntdsguid, dnsadmins_sid)
+                                domainguid, names.ntdsguid, dnsadmins_sid)
 
     if dns_backend.startswith("BIND9_"):
         secretsdb_setup_dns(secretsdb, names,
