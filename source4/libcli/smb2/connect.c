@@ -202,11 +202,6 @@ static void smb2_connect_session_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->tree = smb2_tree_init(state->session, state, true);
-	if (tevent_req_nomem(state->tree, req)) {
-		return;
-	}
-
 	state->tcon.in.reserved = 0;
 	state->tcon.in.path     = talloc_asprintf(state, "\\\\%s\\%s",
 						  state->host, state->share);
@@ -234,6 +229,11 @@ static void smb2_connect_tcon_done(struct smb2_request *smb2req)
 
 	status = smb2_tree_connect_recv(smb2req, &state->tcon);
 	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->tree = smb2_tree_init(state->session, state, true);
+	if (tevent_req_nomem(state->tree, req)) {
 		return;
 	}
 
