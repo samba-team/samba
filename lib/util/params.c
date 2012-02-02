@@ -556,7 +556,7 @@ bool pm_process( const char *FileName,
   else                                        /* If we don't have a buffer   */
     {                                         /* allocate one, then parse,   */
     InFile->bSize = BUFR_INC;                         /* then free.                  */
-    InFile->bufr = talloc_array(InFile, char, InFile->bSize );
+    InFile->bufr = talloc_zero_array(InFile, char, InFile->bSize );
     if( NULL == InFile->bufr )
       {
       DEBUG(0,("%s memory allocation failure.\n", func));
