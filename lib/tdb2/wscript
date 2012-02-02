@@ -24,6 +24,9 @@ def set_options(opt):
     opt.add_option('--enable-tdb2',
                    help=("Use tdb2 API instead of tdb1 [True]"),
                    action="store_true", dest='BUILD_TDB2', default=True)
+    opt.add_option('--disable-tdb2',
+                   help=("Use old tdb1 API instead of tdb2"),
+                   action="store_false", dest='BUILD_TDB2')
     if opt.IN_LAUNCH_DIR():
         opt.add_option('--disable-python',
                        help=("disable the pytdb module"),
