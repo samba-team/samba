@@ -1253,6 +1253,25 @@ static NTSTATUS cmd_setxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_removexattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+				int argc, const char **argv)
+{
+	ssize_t ret;
+
+	if (argc != 3) {
+		printf("Usage: removexattr <path> <xattr>\n");
+		return NT_STATUS_OK;
+	}
+
+	ret = SMB_VFS_REMOVEXATTR(vfs->conn, argv[1], argv[2]);
+	if (ret == -1) {
+		int err = errno;
+		printf("removexattr returned (%s)\n", strerror(err));
+		return map_nt_error_from_unix(err);
+	}
+	return NT_STATUS_OK;
+}
+
 struct cmd_set vfs_commands[] = {
 
 	{ "VFS Commands" },
@@ -1299,5 +1318,7 @@ struct cmd_set vfs_commands[] = {
 	  "listxattr <path>" },
 	{ "setxattr", cmd_setxattr, "VFS setxattr()",
 	  "setxattr <path> <name> <value> [<flags>]" },
+	{ "removexattr", cmd_removexattr, "VFS removexattr()",
+	  "removexattr <path> <name>\n" },
 	{ NULL }
 };
