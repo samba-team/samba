@@ -38,17 +38,25 @@ if not os.getenv("SELFTEST_VERBOSE"):
 torture_options.append("--format=subunit")
 if os.getenv("SELFTEST_QUICK"):
     torture_options.append("--option=torture:quick=yes")
+
+smb4torture_testsuite_list = subprocess.Popen([smb4torture, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
+
 smb4torture += " " + " ".join(torture_options)
 
 sub = subprocess.Popen("%s --version 2> /dev/null" % smb4torture, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
 sub.communicate("")
 smb4torture_possible = (sub.returncode == 0)
 
+
+def smb4torture_testsuites(prefix):
+    return filter(lambda x: x.startswith(prefix), smb4torture_testsuite_list)
+
 def plansmbtorturetestsuite(name, env, options, description=''):
     modname = "samba3.%s %s" % (name, description)
     cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
     if smb4torture_possible:
         plantestsuite_loadlist(modname, env, cmdline)
+
 
 plantestsuite("samba3.blackbox.success", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_success.sh")])
 plantestsuite("samba3.blackbox.failure", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_failure.sh")])
@@ -213,8 +221,7 @@ raw = ["raw.acls", "raw.chkpath", "raw.close", "raw.composite", "raw.context", "
        "raw.bench-oplock", "raw.bench-lock", "raw.bench-open", "raw.bench-tcon",
        "raw.samba3checkfsp", "raw.samba3closeerr", "raw.samba3oplocklogoff"]
 
-smb2 = ["smb2.lock", "smb2.read", "smb2.compound", "smb2.connect", "smb2.scan", "smb2.scanfind",
-        "smb2.bench-oplock", "smb2.rename"]
+smb2 = smb4torture_testsuites("smb2.")
 
 rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sharesec",
        "rpc.samba3.spoolss", "rpc.samba3.wkssvc", "rpc.samba3.winreg",
