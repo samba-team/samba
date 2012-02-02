@@ -1228,6 +1228,31 @@ static NTSTATUS cmd_listxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_setxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+			     int argc, const char **argv)
+{
+	ssize_t ret;
+	int flags = 0;
+
+	if ((argc < 4) || (argc > 5)) {
+		printf("Usage: setxattr <path> <xattr> <value> [flags]\n");
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 5) {
+		flags = atoi(argv[4]);
+	}
+
+	ret = SMB_VFS_SETXATTR(vfs->conn, argv[1], argv[2],
+			       argv[3], strlen(argv[3]), flags);
+	if (ret == -1) {
+		int err = errno;
+		printf("setxattr returned (%s)\n", strerror(err));
+		return map_nt_error_from_unix(err);
+	}
+	return NT_STATUS_OK;
+}
+
 struct cmd_set vfs_commands[] = {
 
 	{ "VFS Commands" },
@@ -1272,5 +1297,7 @@ struct cmd_set vfs_commands[] = {
 	  "getxattr <path> <name>" },
 	{ "listxattr", cmd_listxattr, "VFS listxattr()",
 	  "listxattr <path>" },
+	{ "setxattr", cmd_setxattr, "VFS setxattr()",
+	  "setxattr <path> <name> <value> [<flags>]" },
 	{ NULL }
 };
