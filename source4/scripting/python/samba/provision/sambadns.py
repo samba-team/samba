@@ -128,6 +128,15 @@ class SRVRecord(dnsp.DnssrvRpcRecord):
         srv.wWeight = weight
         self.data = srv
 
+class TXTRecord(dnsp.DnssrvRpcRecord):
+    def __init__(self, txt, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
+        super(TXTRecord, self).__init__()
+        self.wType = dnsp.DNS_TYPE_TXT
+        self.rank = rank
+        self.dwSerial = serial
+        self.dwTtlSeconds = ttl
+        self.data = txt
+
 class TypeProperty(dnsp.DnsProperty):
     def __init__(self, zone_type=dnsp.DNS_ZONE_TYPE_PRIMARY):
         super(TypeProperty, self).__init__()
