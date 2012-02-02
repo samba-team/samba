@@ -1797,7 +1797,7 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 	int i, t, len;
 	char *buf;
 	/* Iterate through extattr(2) namespaces */
-	for(t = 0; t < (sizeof(extattr)/sizeof(extattr[0])); t++) {
+	for(t = 0; t < ARRAY_SIZE(extattr); t++) {
 		switch(type) {
 #if defined(HAVE_EXTATTR_LIST_FILE)
 			case 0:
