@@ -426,7 +426,7 @@ static ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 	if (len > size) {
 		TALLOC_FREE(attribs);
 		errno = ERANGE;
-		return -1;
+		return len;
 	}
 
 	len = 0;
