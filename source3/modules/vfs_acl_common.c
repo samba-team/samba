@@ -480,6 +480,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	struct security_descriptor *pdesc_next = NULL;
 	struct security_descriptor *psd = NULL;
 	uint8_t hash[XATTR_SD_HASH_SIZE];
+	bool chown_needed = false;
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
@@ -502,9 +503,17 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	psd->type = orig_psd->type | SEC_DESC_SELF_RELATIVE;
 
 	if ((security_info_sent & SECINFO_OWNER) && (orig_psd->owner_sid != NULL)) {
+		if (!dom_sid_equal(orig_psd->owner_sid, psd->owner_sid)) {
+			/* We're changing the owner. */
+			chown_needed = true;
+		}
 		psd->owner_sid = orig_psd->owner_sid;
 	}
 	if ((security_info_sent & SECINFO_GROUP) && (orig_psd->group_sid != NULL)) {
+		if (!dom_sid_equal(orig_psd->group_sid, psd->group_sid)) {
+			/* We're changing the group. */
+			chown_needed = true;
+		}
 		psd->group_sid = orig_psd->group_sid;
 	}
 	if (security_info_sent & SECINFO_DACL) {
@@ -518,7 +527,33 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			return status;
+		}
+		/* We got access denied here. If we're already root,
+		   or we didn't need to do a chown, or the fsp isn't
+		   open with WRITE_OWNER access, just return. */
+		if (get_current_uid(handle->conn) == 0 ||
+				chown_needed == false ||
+				!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		DEBUG(10,("fset_nt_acl_common: overriding chown on file %s "
+			"for sid %s\n",
+			fsp_str_dbg(fsp),
+			sid_string_tos(psd->owner_sid)
+			));
+
+		/* Ok, we failed to chown and we have
+		   SEC_STD_WRITE_OWNER access - override. */
+		become_root();
+		status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp,
+				security_info_sent, psd);
+		unbecome_root();
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/* Get the full underlying sd, then hash. */
