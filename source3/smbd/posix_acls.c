@@ -201,7 +201,7 @@ static char *create_pai_buf_v2(canon_ace *file_ace_list,
 	*store_size = PAI_V2_ENTRIES_BASE +
 		((num_entries + num_def_entries)*PAI_V2_ENTRY_LENGTH);
 
-	pai_buf = (char *)SMB_MALLOC(*store_size);
+	pai_buf = talloc_array(talloc_tos(), char, *store_size);
 	if (!pai_buf) {
 		return NULL;
 	}
@@ -283,7 +283,7 @@ static void store_inheritance_attributes(files_struct *fsp,
 				       pai_buf, store_size, 0);
 	}
 
-	SAFE_FREE(pai_buf);
+	TALLOC_FREE(pai_buf);
 
 	DEBUG(10,("store_inheritance_attribute: type 0x%x for file %s\n",
 		(unsigned int)sd_type,
@@ -304,13 +304,13 @@ static void free_inherited_info(struct pai_val *pal)
 		struct pai_entry *paie, *paie_next;
 		for (paie = pal->entry_list; paie; paie = paie_next) {
 			paie_next = paie->next;
-			SAFE_FREE(paie);
+			TALLOC_FREE(paie);
 		}
 		for (paie = pal->def_entry_list; paie; paie = paie_next) {
 			paie_next = paie->next;
-			SAFE_FREE(paie);
+			TALLOC_FREE(paie);
 		}
-		SAFE_FREE(pal);
+		TALLOC_FREE(pal);
 	}
 }
 
@@ -440,14 +440,14 @@ static const char *create_pai_v1_entries(struct pai_val *paiv,
 	int i;
 
 	for (i = 0; i < paiv->num_entries; i++) {
-		struct pai_entry *paie = SMB_MALLOC_P(struct pai_entry);
+		struct pai_entry *paie = talloc(talloc_tos(), struct pai_entry);
 		if (!paie) {
 			return NULL;
 		}
 
 		paie->ace_flags = SEC_ACE_FLAG_INHERITED_ACE;
 		if (!get_pai_owner_type(paie, entry_offset)) {
-			SAFE_FREE(paie);
+			TALLOC_FREE(paie);
 			return NULL;
 		}
 
@@ -474,7 +474,7 @@ static struct pai_val *create_pai_val_v1(const char *buf, size_t size)
 		return NULL;
 	}
 
-	paiv = SMB_MALLOC_P(struct pai_val);
+	paiv = talloc(talloc_tos(), struct pai_val);
 	if (!paiv) {
 		return NULL;
 	}
@@ -518,7 +518,7 @@ static const char *create_pai_v2_entries(struct pai_val *paiv,
 	unsigned int i;
 
 	for (i = 0; i < num_entries; i++) {
-		struct pai_entry *paie = SMB_MALLOC_P(struct pai_entry);
+		struct pai_entry *paie = talloc(talloc_tos(), struct pai_entry);
 		if (!paie) {
 			return NULL;
 		}
@@ -526,7 +526,7 @@ static const char *create_pai_v2_entries(struct pai_val *paiv,
 		paie->ace_flags = CVAL(entry_offset,0);
 
 		if (!get_pai_owner_type(paie, entry_offset+1)) {
-			SAFE_FREE(paie);
+			TALLOC_FREE(paie);
 			return NULL;
 		}
 		if (!def_entry) {
@@ -552,7 +552,7 @@ static struct pai_val *create_pai_val_v2(const char *buf, size_t size)
 		return NULL;
 	}
 
-	paiv = SMB_MALLOC_P(struct pai_val);
+	paiv = talloc(talloc_tos(), struct pai_val);
 	if (!paiv) {
 		return NULL;
 	}
@@ -619,7 +619,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 		return NULL;
 	}
 
-	if ((pai_buf = (char *)SMB_MALLOC(pai_buf_size)) == NULL) {
+	if ((pai_buf = talloc_array(talloc_tos(), char, pai_buf_size)) == NULL) {
 		return NULL;
 	}
 
@@ -640,11 +640,11 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 			}
 			/* Buffer too small - enlarge it. */
 			pai_buf_size *= 2;
-			SAFE_FREE(pai_buf);
+			TALLOC_FREE(pai_buf);
 			if (pai_buf_size > 1024*1024) {
 				return NULL; /* Limit malloc to 1mb. */
 			}
-			if ((pai_buf = (char *)SMB_MALLOC(pai_buf_size)) == NULL)
+			if ((pai_buf = talloc_array(talloc_tos(), char, pai_buf_size)) == NULL)
 				return NULL;
 		}
 	} while (ret == -1);
@@ -661,7 +661,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 		if (errno != ENOSYS)
 			DEBUG(10,("load_inherited_info: Error %s\n", strerror(errno) ));
 #endif
-		SAFE_FREE(pai_buf);
+		TALLOC_FREE(pai_buf);
 		return NULL;
 	}
 
@@ -672,7 +672,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 			  (unsigned int)paiv->sd_type, fsp_str_dbg(fsp)));
 	}
 
-	SAFE_FREE(pai_buf);
+	TALLOC_FREE(pai_buf);
 	return paiv;
 }
 
@@ -692,7 +692,7 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
 		return NULL;
 	}
 
-	if ((pai_buf = (char *)SMB_MALLOC(pai_buf_size)) == NULL) {
+	if ((pai_buf = talloc_array(talloc_tos(), char, pai_buf_size)) == NULL) {
 		return NULL;
 	}
 
@@ -707,11 +707,11 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
 			}
 			/* Buffer too small - enlarge it. */
 			pai_buf_size *= 2;
-			SAFE_FREE(pai_buf);
+			TALLOC_FREE(pai_buf);
 			if (pai_buf_size > 1024*1024) {
 				return NULL; /* Limit malloc to 1mb. */
 			}
-			if ((pai_buf = (char *)SMB_MALLOC(pai_buf_size)) == NULL)
+			if ((pai_buf = talloc_array(talloc_tos(), char, pai_buf_size)) == NULL)
 				return NULL;
 		}
 	} while (ret == -1);
@@ -727,7 +727,7 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
 		if (errno != ENOSYS)
 			DEBUG(10,("load_inherited_info: Error %s\n", strerror(errno) ));
 #endif
-		SAFE_FREE(pai_buf);
+		TALLOC_FREE(pai_buf);
 		return NULL;
 	}
 
@@ -739,7 +739,7 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
 			fname));
 	}
 
-	SAFE_FREE(pai_buf);
+	TALLOC_FREE(pai_buf);
 	return paiv;
 }
 
@@ -773,7 +773,7 @@ static void free_canon_ace_list( canon_ace *l_head )
 	for (list = l_head; list; list = next) {
 		next = list->next;
 		DLIST_REMOVE(l_head, list);
-		SAFE_FREE(list);
+		TALLOC_FREE(list);
 	}
 }
 
@@ -783,7 +783,7 @@ static void free_canon_ace_list( canon_ace *l_head )
 
 static canon_ace *dup_canon_ace( canon_ace *src_ace)
 {
-	canon_ace *dst_ace = SMB_MALLOC_P(canon_ace);
+	canon_ace *dst_ace = talloc(talloc_tos(), canon_ace);
 
 	if (dst_ace == NULL)
 		return NULL;
@@ -977,7 +977,7 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 				curr_ace_outer->perms |= curr_ace->perms;
 				curr_ace_outer->ace_flags |= curr_ace->ace_flags;
 				DLIST_REMOVE(l_head, curr_ace);
-				SAFE_FREE(curr_ace);
+				TALLOC_FREE(curr_ace);
 				curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
 			}
 		}
@@ -1022,7 +1022,7 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 					 */
 
 					DLIST_REMOVE(l_head, curr_ace);
-					SAFE_FREE(curr_ace);
+					TALLOC_FREE(curr_ace);
 					curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
 
 				} else {
@@ -1038,7 +1038,7 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 					 */
 
 					DLIST_REMOVE(l_head, curr_ace_outer);
-					SAFE_FREE(curr_ace_outer);
+					TALLOC_FREE(curr_ace_outer);
 					break;
 				}
 			}
@@ -1398,7 +1398,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 	}
 
 	if (!got_user) {
-		if ((pace = SMB_MALLOC_P(canon_ace)) == NULL) {
+		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
 		}
@@ -1446,7 +1446,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 	}
 
 	if (!got_grp) {
-		if ((pace = SMB_MALLOC_P(canon_ace)) == NULL) {
+		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
 		}
@@ -1472,7 +1472,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 	}
 
 	if (!got_other) {
-		if ((pace = SMB_MALLOC_P(canon_ace)) == NULL) {
+		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
 		}
@@ -1643,7 +1643,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 		 * Create a canon_ace entry representing this NT DACL ACE.
 		 */
 
-		if ((current_ace = SMB_MALLOC_P(canon_ace)) == NULL) {
+		if ((current_ace = talloc(talloc_tos(), canon_ace)) == NULL) {
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
 			DEBUG(0,("create_canon_ace_lists: malloc fail.\n"));
@@ -1716,7 +1716,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 				DEBUG(10, ("create_canon_ace_lists: ignoring "
 					   "non-mappable SID %s\n",
 					   sid_string_dbg(&psa->trustee)));
-				SAFE_FREE(current_ace);
+				TALLOC_FREE(current_ace);
 				continue;
 			}
 
@@ -1724,7 +1724,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 				DEBUG(10, ("create_canon_ace_lists: ignoring "
 					"unknown or foreign SID %s\n",
 					sid_string_dbg(&psa->trustee)));
-				SAFE_FREE(current_ace);
+				TALLOC_FREE(current_ace);
 				continue;
 			}
 
@@ -1733,7 +1733,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 			DEBUG(0, ("create_canon_ace_lists: unable to map SID "
 				  "%s to uid or gid.\n",
 				  sid_string_dbg(&current_ace->trustee)));
-			SAFE_FREE(current_ace);
+			TALLOC_FREE(current_ace);
 			return False;
 		}
 
@@ -1907,7 +1907,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 		 * Free if ACE was not added.
 		 */
 
-		SAFE_FREE(current_ace);
+		TALLOC_FREE(current_ace);
 	}
 
 	if (fsp->is_directory && all_aces_are_inherit_only) {
@@ -2505,7 +2505,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 		 * Add this entry to the list.
 		 */
 
-		if ((ace = SMB_MALLOC_P(canon_ace)) == NULL)
+		if ((ace = talloc(talloc_tos(), canon_ace)) == NULL)
 			goto fail;
 
 		ZERO_STRUCTP(ace);
@@ -3189,12 +3189,12 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 				ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
 				if (ace && !ace->perms) {
 					DLIST_REMOVE(dir_ace, ace);
-					SAFE_FREE(ace);
+					TALLOC_FREE(ace);
 
 					ace = canon_ace_entry_for(file_ace, SMB_ACL_OTHER, NULL);
 					if (ace && !ace->perms) {
 						DLIST_REMOVE(file_ace, ace);
-						SAFE_FREE(ace);
+						TALLOC_FREE(ace);
 					}
 				}
 
@@ -3211,14 +3211,14 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 				ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
 				if (ace && !ace->perms) {
 					DLIST_REMOVE(dir_ace, ace);
-					SAFE_FREE(ace);
+					TALLOC_FREE(ace);
 				}
 #endif
 
 				ace = canon_ace_entry_for(file_ace, SMB_ACL_GROUP_OBJ, NULL);
 				if (ace && !ace->perms) {
 					DLIST_REMOVE(file_ace, ace);
-					SAFE_FREE(ace);
+					TALLOC_FREE(ace);
 				}
 			}
 
@@ -3226,7 +3226,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			num_def_acls = count_canon_ace_list(dir_ace);
 
 			/* Allocate the ace list. */
-			if ((nt_ace_list = SMB_MALLOC_ARRAY(struct security_ace,num_acls + num_profile_acls + num_def_acls)) == NULL) {
+			if ((nt_ace_list = talloc_array(talloc_tos(), struct security_ace,num_acls + num_profile_acls + num_def_acls)) == NULL) {
 				DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
 				goto done;
 			}
@@ -3360,7 +3360,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	free_canon_ace_list(file_ace);
 	free_canon_ace_list(dir_ace);
 	free_inherited_info(pal);
-	SAFE_FREE(nt_ace_list);
+	TALLOC_FREE(nt_ace_list);
 
 	return NT_STATUS_OK;
 }
