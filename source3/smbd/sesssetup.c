@@ -77,31 +77,33 @@ static int push_signature(uint8 **outbuf)
 ****************************************************************************/
 
 static NTSTATUS check_guest_password(const struct tsocket_address *remote_address,
-				     struct auth_serversupplied_info **server_info)
+				     TALLOC_CTX *mem_ctx, 
+				     struct auth_session_info **session_info)
 {
-	struct auth_context *auth_context;
+	struct auth4_context *auth_context;
 	struct auth_usersupplied_info *user_info = NULL;
-
+	uint8_t chal[8];
 	NTSTATUS nt_status;
-	static unsigned char chal[8] = { 0, };
 
 	DEBUG(3,("Got anonymous request\n"));
 
-	nt_status = make_auth_context_fixed(talloc_tos(), &auth_context, chal);
+	nt_status = make_auth4_context(talloc_tos(), &auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
+
+	auth_context->get_ntlm_challenge(auth_context,
+					 chal);
 
 	if (!make_user_info_guest(remote_address, &user_info)) {
 		TALLOC_FREE(auth_context);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = auth_context->check_ntlm_password(auth_context,
-						user_info,
-						server_info);
-	TALLOC_FREE(auth_context);
+	nt_status = auth_check_password_session_info(auth_context, 
+						     mem_ctx, user_info, session_info);
 	free_user_info(&user_info);
+	TALLOC_FREE(auth_context);
 	return nt_status;
 }
 
@@ -396,7 +398,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	const char *native_lanman;
 	const char *primary_domain;
 	struct auth_usersupplied_info *user_info = NULL;
-	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	uint16 smb_flag2 = req->flags2;
 
@@ -671,10 +672,10 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (!*user) {
 
-		nt_status = check_guest_password(sconn->remote_address, &server_info);
+		nt_status = check_guest_password(sconn->remote_address, req, &session_info);
 
 	} else if (doencrypt) {
-		struct auth_context *negprot_auth_context = NULL;
+		struct auth4_context *negprot_auth_context = NULL;
 		negprot_auth_context = sconn->smb1.negprot.auth_context;
 		if (!negprot_auth_context) {
 			DEBUG(0, ("reply_sesssetup_and_X:  Attempted encrypted "
@@ -689,15 +690,13 @@ void reply_sesssetup_and_X(struct smb_request *req)
 						sconn->remote_address,
 						lm_resp, nt_resp);
 		if (NT_STATUS_IS_OK(nt_status)) {
-			nt_status = negprot_auth_context->check_ntlm_password(
-					negprot_auth_context,
-					user_info,
-					&server_info);
+			nt_status = auth_check_password_session_info(negprot_auth_context, 
+								     req, user_info, &session_info);
 		}
 	} else {
-		struct auth_context *plaintext_auth_context = NULL;
+		struct auth4_context *plaintext_auth_context = NULL;
 
-		nt_status = make_auth_context_subsystem(
+		nt_status = make_auth4_context(
 			talloc_tos(), &plaintext_auth_context);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
@@ -715,38 +714,16 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			}
 
 			if (NT_STATUS_IS_OK(nt_status)) {
-				nt_status = plaintext_auth_context->check_ntlm_password(
-						plaintext_auth_context,
-						user_info,
-						&server_info);
-
-				TALLOC_FREE(plaintext_auth_context);
+				nt_status = auth_check_password_session_info(plaintext_auth_context, 
+									     req, user_info, &session_info);
 			}
+			TALLOC_FREE(plaintext_auth_context);
 		}
 	}
 
 	free_user_info(&user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		nt_status = do_map_to_guest_server_info(nt_status, &server_info,
-							user, domain);
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		data_blob_free(&nt_resp);
-		data_blob_free(&lm_resp);
-		data_blob_clear_free(&plaintext_password);
-		reply_nterror(req, nt_status_squash(nt_status));
-		END_PROFILE(SMBsesssetupX);
-		return;
-	}
-
-	nt_status = create_local_token(req, server_info, NULL, sub_user, &session_info);
-	TALLOC_FREE(server_info);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(10, ("create_local_token failed: %s\n",
-			   nt_errstr(nt_status)));
 		data_blob_free(&nt_resp);
 		data_blob_free(&lm_resp);
 		data_blob_clear_free(&plaintext_password);

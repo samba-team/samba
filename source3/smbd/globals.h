@@ -509,7 +509,7 @@ struct smbd_server_connection {
 		struct {
 			bool encrypted_passwords;
 			bool spnego;
-			struct auth_context *auth_context;
+			struct auth4_context *auth_context;
 			bool done;
 			/*
 			 * Size of the data we can receive. Set by us.

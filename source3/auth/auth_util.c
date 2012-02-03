@@ -347,8 +347,8 @@ bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 		return false;
 	}
 
-	ret = make_user_info_map(
-		user_info, smb_name, client_domain, 
+	ret = make_user_info(
+		user_info, smb_name, smb_name, client_domain, client_domain, 
 		get_remote_machine_name(),
 		remote_address,
 		local_lm_blob.data ? &local_lm_blob : NULL,
@@ -376,14 +376,14 @@ NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info,
 				      const struct tsocket_address *remote_address,
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
-	return make_user_info_map(user_info, smb_name, 
-				  client_domain, 
-				  get_remote_machine_name(),
-				  remote_address,
-				  lm_resp.data && (lm_resp.length > 0) ? &lm_resp : NULL,
-				  nt_resp.data && (nt_resp.length > 0) ? &nt_resp : NULL,
-				  NULL, NULL, NULL,
-				  AUTH_PASSWORD_RESPONSE);
+	return make_user_info(user_info, smb_name, smb_name, 
+			      client_domain, client_domain, 
+			      get_remote_machine_name(),
+			      remote_address,
+			      lm_resp.data && (lm_resp.length > 0) ? &lm_resp : NULL,
+			      nt_resp.data && (nt_resp.length > 0) ? &nt_resp : NULL,
+			      NULL, NULL, NULL,
+			      AUTH_PASSWORD_RESPONSE);
 }
 
 /****************************************************************************
