@@ -73,6 +73,11 @@ NTSTATUS make_auth4_context(TALLOC_CTX *mem_ctx, struct auth4_context **auth4_co
 NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx, const struct tsocket_address *remote_address,
 			      struct gensec_security **gensec_security_out);
 
+NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
+					  TALLOC_CTX *mem_ctx,
+					  struct auth_usersupplied_info *user_info,
+					  struct auth_session_info **session_info);
+
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
 NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,

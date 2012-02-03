@@ -346,3 +346,29 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
+
+NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
+					  TALLOC_CTX *mem_ctx,
+					  struct auth_usersupplied_info *user_info,
+					  struct auth_session_info **session_info)
+{
+	NTSTATUS nt_status;
+	void *server_info;
+
+	nt_status = auth_context->check_ntlm_password(auth_context,
+						      talloc_tos(),
+						      user_info,
+						      &server_info, NULL, NULL);
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		nt_status = auth_context->generate_session_info(auth_context,
+								mem_ctx,
+								server_info,
+								user_info->client.account_name,
+								AUTH_SESSION_INFO_UNIX_TOKEN |
+								AUTH_SESSION_INFO_DEFAULT_GROUPS,
+								session_info);
+		TALLOC_FREE(server_info);
+	}
+	return nt_status;
+}
