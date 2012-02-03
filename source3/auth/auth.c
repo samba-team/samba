@@ -78,8 +78,8 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
  Returns a const char of length 8 bytes.
 ****************************************************************************/
 
-static NTSTATUS get_ntlm_challenge(struct auth_context *auth_context,
-			       uint8_t chal[8])
+NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
+				 uint8_t chal[8])
 {
 	DATA_BLOB challenge = data_blob_null;
 	const char *challenge_set_by = NULL;
@@ -202,9 +202,9 @@ static bool check_domain_match(const char *user, const char *domain)
  *
  **/
 
-static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
-				    const struct auth_usersupplied_info *user_info, 
-				    struct auth_serversupplied_info **server_info)
+NTSTATUS auth_check_ntlm_password(const struct auth_context *auth_context,
+				  const struct auth_usersupplied_info *user_info, 
+				  struct auth_serversupplied_info **server_info)
 {
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
@@ -365,9 +365,6 @@ static NTSTATUS make_auth_context(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("make_auth_context: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ctx->check_ntlm_password = check_ntlm_password;
-	ctx->get_ntlm_challenge = get_ntlm_challenge;
 
 	talloc_set_destructor((TALLOC_CTX *)ctx, auth_context_destructor);
 

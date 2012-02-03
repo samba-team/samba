@@ -44,6 +44,46 @@ NTSTATUS make_auth_context_fixed(TALLOC_CTX *mem_ctx,
 				 struct auth_context **auth_context,
 				 uchar chal[8]) ;
 
+/****************************************************************************
+ Try to get a challenge out of the various authentication modules.
+ Returns a const char of length 8 bytes.
+****************************************************************************/
+
+NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
+				 uint8_t chal[8]);
+
+/**
+ * Check a user's Plaintext, LM or NTLM password.
+ *
+ * Check a user's password, as given in the user_info struct and return various
+ * interesting details in the server_info struct.
+ *
+ * This function does NOT need to be in a become_root()/unbecome_root() pair
+ * as it makes the calls itself when needed.
+ *
+ * The return value takes precedence over the contents of the server_info 
+ * struct.  When the return is other than NT_STATUS_OK the contents 
+ * of that structure is undefined.
+ *
+ * @param user_info Contains the user supplied components, including the passwords.
+ *                  Must be created with make_user_info() or one of its wrappers.
+ *
+ * @param auth_context Supplies the challenges and some other data. 
+ *                  Must be created with make_auth_context(), and the challenges should be 
+ *                  filled in, either at creation or by calling the challenge geneation 
+ *                  function auth_get_challenge().  
+ *
+ * @param server_info If successful, contains information about the authentication, 
+ *                    including a struct samu struct describing the user.
+ *
+ * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
+ *
+ **/
+
+NTSTATUS auth_check_ntlm_password(const struct auth_context *auth_context,
+				  const struct auth_usersupplied_info *user_info, 
+				  struct auth_serversupplied_info **server_info);
+
 /* The following definitions come from auth/auth_builtin.c  */
 
 NTSTATUS auth_builtin_init(void);

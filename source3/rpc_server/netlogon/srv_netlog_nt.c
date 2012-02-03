@@ -1584,7 +1584,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 			return status;
 		}
 
-		auth_context->get_ntlm_challenge(auth_context, chal);
+		auth_get_ntlm_challenge(auth_context, chal);
 
 		if (!make_user_info_netlogon_interactive(&user_info,
 							 nt_username, nt_domain,
@@ -1605,7 +1605,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	} /* end switch */
 
 	if ( NT_STATUS_IS_OK(status) ) {
-		status = auth_context->check_ntlm_password(auth_context,
+		status = auth_check_ntlm_password(auth_context,
 			user_info, &server_info);
 	}
 
