@@ -8693,6 +8693,26 @@ fail:
 	return result;
 }
 
+static bool run_local_hex_encode_buf(int dummy)
+{
+	char buf[17];
+	uint8_t src[8];
+	int i;
+
+	for (i=0; i<sizeof(src); i++) {
+		src[i] = i;
+	}
+	hex_encode_buf(buf, src, sizeof(src));
+	if (strcmp(buf, "0001020304050607") != 0) {
+	       	return false;
+	}
+	hex_encode_buf(buf, NULL, 0);
+	if (buf[0] != '\0') {
+		return false;
+	}
+	return true;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -8895,6 +8915,7 @@ static struct {
 	{ "LOCAL-CONVERT-STRING", run_local_convert_string, 0},
 	{ "LOCAL-CONV-AUTH-INFO", run_local_conv_auth_info, 0},
 	{ "LOCAL-sprintf_append", run_local_sprintf_append, 0},
+	{ "LOCAL-hex_encode_buf", run_local_hex_encode_buf, 0},
 	{NULL, NULL, 0}};
 
 

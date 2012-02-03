@@ -262,6 +262,11 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t 
 _PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex) ;
 
 /**
+ * Print a buf in hex. Assumes dst is at least (srclen*2)+1 large.
+ */
+_PUBLIC_ void hex_encode_buf(char *dst, const uint8_t *src, size_t srclen);
+
+/**
  * Routine to print a buffer as HEX digits, into an allocated string.
  */
 _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer);

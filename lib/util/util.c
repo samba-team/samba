@@ -758,20 +758,31 @@ _PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *s
 	return ret_blob;
 }
 
+/**
+ * Print a buf in hex. Assumes dst is at least (srclen*2)+1 large.
+ */
+_PUBLIC_ void hex_encode_buf(char *dst, const uint8_t *src, size_t srclen)
+{
+	size_t i;
+	for (i=0; i<srclen; i++) {
+		snprintf(dst + i*2, 3, "%02X", src[i]);
+	}
+	/*
+	 * Ensure 0-termination for 0-length buffers
+	 */
+	dst[srclen*2] = '\0';
+}
 
 /**
  * Routine to print a buffer as HEX digits, into an allocated string.
  */
 _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
 {
-	int i;
 	char *hex_buffer;
 
 	*out_hex_buffer = malloc_array_p(char, (len*2)+1);
 	hex_buffer = *out_hex_buffer;
-
-	for (i = 0; i < len; i++)
-		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
+	hex_encode_buf(hex_buffer, buff_in, len);
 }
 
 /**
@@ -779,17 +790,13 @@ _PUBLIC_ void hex_encode(const unsigned char *buff_in, size_t len, char **out_he
  */
 _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len)
 {
-	int i;
 	char *hex_buffer;
 
 	hex_buffer = talloc_array(mem_ctx, char, (len*2)+1);
 	if (!hex_buffer) {
 		return NULL;
 	}
-
-	for (i = 0; i < len; i++)
-		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
-
+	hex_encode_buf(hex_buffer, buff_in, len);
 	talloc_set_name_const(hex_buffer, hex_buffer);
 	return hex_buffer;
 }

@@ -107,6 +107,7 @@ local_tests=[
 	"LOCAL-TEVENT-SELECT",
 	"LOCAL-CONVERT-STRING",
 	"LOCAL-CONV-AUTH-INFO",
+	"LOCAL-hex_encode_buf",
 	"LOCAL-sprintf_append"]
 
 for t in local_tests:
