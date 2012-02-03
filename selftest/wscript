@@ -183,6 +183,8 @@ def cmd_testonly(opt):
         if (os.environ.get('RUN_FROM_BUILD_FARM') is None and
             not Options.options.FILTERED_SUBUNIT):
             cmd += ' | tee ${SELFTEST_PREFIX}/subunit | ${FORMAT_TEST_OUTPUT}'
+        else:
+            cmd += ' | ${FILTER_OPTIONS}'
     runcmd = EXPAND_VARIABLES(opt, cmd)
 
     print("test: running %s" % runcmd)
