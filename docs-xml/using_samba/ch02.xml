@@ -269,12 +269,6 @@ docs/textdocs/UNIX_INSTALL.txt</programlisting>
 </varlistentry>
 
 
-<varlistentry><term><literal>--with-smbmount</literal></term>
-<listitem><para>Include <emphasis>smbmount</emphasis>
-<indexterm id="ch02-idx-947366-0"><primary>smbmount, support for</primary></indexterm> support, which is for <indexterm id="ch02-idx-947367-0"><primary>Linux</primary><secondary>submount and</secondary></indexterm>Linux only. This feature wasn't being maintained at the time the book was written, so the Samba team made it an optional feature and provided <emphasis>smbwrapper</emphasis> instead. The <emphasis>smbwrapper</emphasis> feature works on more Unix platforms than <emphasis>smbmount</emphasis>, so you'll usually want to use <literal>--with-smbwrapper</literal> instead of this option.</para></listitem>
-</varlistentry>
-
-
 <varlistentry><term><literal>--with-pam</literal></term>
 <listitem><para>Include support for <indexterm id="ch02-idx-947368-0"><primary>pluggable authentication modules (PAM)</primary><secondary>support for</secondary></indexterm>
 <indexterm id="ch02-idx-947368-1"><primary>PAM (pluggable authentication modules)</primary><secondary>support for</secondary></indexterm>pluggable authentication modules (PAM), an authentication feature common in the Linux operating system.</para></listitem>

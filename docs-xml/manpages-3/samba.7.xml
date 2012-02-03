@@ -244,16 +244,6 @@
 		</para></listitem></varlistentry>
 
 		<varlistentry>
-			<term>
-<citerefentry><refentrytitle>smbmount</refentrytitle><manvolnum>8</manvolnum></citerefentry>, 
-<citerefentry><refentrytitle>smbumount</refentrytitle><manvolnum>8</manvolnum></citerefentry>, 
-<citerefentry><refentrytitle>smbmnt</refentrytitle><manvolnum>8</manvolnum></citerefentry></term>
-		<listitem><para><command>smbmount</command>,<command>smbumount</command> and <command>smbmnt</command> are commands that can be used to 
-		mount CIFS/SMB shares on Linux.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term><citerefentry><refentrytitle>smbcquotas</refentrytitle>
 		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para><command>smbcquotas</command> is a tool that 
