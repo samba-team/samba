@@ -69,6 +69,9 @@ struct auth_serversupplied_info {
 typedef NTSTATUS (*prepare_gensec_fn)(TALLOC_CTX *mem_ctx,
 				      struct gensec_security **gensec_context);
 
+typedef NTSTATUS (*make_auth4_context_fn)(TALLOC_CTX *mem_ctx,
+					  struct auth4_context **auth4_context);
+
 struct auth_context {
 	DATA_BLOB challenge; 
 
@@ -88,6 +91,7 @@ struct auth_context {
 					struct auth_serversupplied_info **server_info);
 
 	prepare_gensec_fn prepare_gensec;
+	make_auth4_context_fn make_auth4_context;
 };
 
 typedef struct auth_methods
@@ -109,8 +113,9 @@ typedef struct auth_methods
 			      void **my_private_data, 
 			      TALLOC_CTX *mem_ctx);
 
-	/* Optional methods allowing this module to provide a way to get a gensec context */
+	/* Optional methods allowing this module to provide a way to get a gensec context and an auth4_context */
 	prepare_gensec_fn prepare_gensec;
+	make_auth4_context_fn make_auth4_context;
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;
 

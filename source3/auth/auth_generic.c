@@ -154,6 +154,54 @@ done:
 	return status;
 }
 
+static struct auth4_context *make_auth4_context_s3(TALLOC_CTX *mem_ctx, struct auth_context *auth_context)
+{
+	struct auth4_context *auth4_context = talloc_zero(mem_ctx, struct auth4_context);
+	if (auth4_context == NULL) {
+		DEBUG(10, ("failed to allocate auth4_context failed\n"));
+		return NULL;
+	}
+	auth4_context->generate_session_info_pac = auth3_generate_session_info_pac;
+	auth4_context->generate_session_info = auth3_generate_session_info;
+	auth4_context->get_challenge = auth3_get_challenge;
+	auth4_context->set_challenge = auth3_set_challenge;
+	auth4_context->challenge_may_be_modified = auth3_may_set_challenge;
+	auth4_context->check_password = auth3_check_password;
+	auth4_context->private_data = talloc_steal(auth4_context, auth_context);
+	return auth4_context;
+}
+
+NTSTATUS make_auth4_context(TALLOC_CTX *mem_ctx, struct auth4_context **auth4_context_out)
+{
+	struct auth_context *auth_context;
+	NTSTATUS nt_status;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	nt_status = make_auth_context_subsystem(tmp_ctx, &auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
+
+	if (auth_context->make_auth4_context) {
+		nt_status = auth_context->make_auth4_context(mem_ctx, auth4_context_out);
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+
+	} else {
+		struct auth4_context *auth4_context = make_auth4_context_s3(tmp_ctx, auth_context);
+		if (auth4_context == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*auth4_context_out = talloc_steal(mem_ctx, auth4_context);
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+}
+
 NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			      const struct tsocket_address *remote_address,
 			      struct gensec_security **gensec_security_out)
@@ -185,19 +233,11 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 		struct cli_credentials *server_credentials;
 		const char *dns_name;
 		const char *dns_domain;
-		struct auth4_context *auth4_context = talloc_zero(tmp_ctx, struct auth4_context);
+		struct auth4_context *auth4_context = make_auth4_context_s3(tmp_ctx, auth_context);
 		if (auth4_context == NULL) {
-			DEBUG(10, ("failed to allocate auth4_context failed\n"));
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-		auth4_context->generate_session_info_pac = auth3_generate_session_info_pac;
-		auth4_context->generate_session_info = auth3_generate_session_info;
-		auth4_context->get_challenge = auth3_get_challenge;
-		auth4_context->set_challenge = auth3_set_challenge;
-		auth4_context->challenge_may_be_modified = auth3_may_set_challenge;
-		auth4_context->check_password = auth3_check_password;
-		auth4_context->private_data = talloc_steal(auth4_context, auth_context);
 
 		lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_context());
 		if (lp_ctx == NULL) {

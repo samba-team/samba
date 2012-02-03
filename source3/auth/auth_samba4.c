@@ -169,6 +169,59 @@ static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+/* Hook to allow handling of NTLM authentication for AD operation
+ * without directly linking the s4 auth stack */
+static NTSTATUS make_auth4_context_s4(TALLOC_CTX *mem_ctx,
+				      struct auth4_context **auth4_context)
+{
+	NTSTATUS status;
+	struct loadparm_context *lp_ctx;
+	struct tevent_context *event_ctx;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct imessaging_context *msg_ctx;
+
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(1, ("loadparm_init_s3 failed\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+	event_ctx = s4_event_context_init(frame);
+	if (event_ctx == NULL) {
+		DEBUG(1, ("s4_event_context_init failed\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+
+	msg_ctx = imessaging_client_init(frame,
+					 lp_ctx,
+					 event_ctx);
+	if (msg_ctx == NULL) {
+		DEBUG(1, ("imessaging_init failed\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+
+	status = auth_context_create(mem_ctx,
+					event_ctx,
+					msg_ctx,
+					lp_ctx,
+					auth4_context);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start auth server code: %s\n", nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	talloc_reparent(frame, *auth4_context, msg_ctx);
+	talloc_reparent(frame, *auth4_context, event_ctx);
+	talloc_reparent(frame, *auth4_context, lp_ctx);
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /* module initialisation */
 static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
 				    const char *param,
@@ -185,6 +238,7 @@ static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
 	result->name = "samba4";
 	result->auth = check_samba4_security;
 	result->prepare_gensec = prepare_gensec;
+	result->make_auth4_context = make_auth4_context_s4;
 
         *auth_method = result;
 	return NT_STATUS_OK;
