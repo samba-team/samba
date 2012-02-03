@@ -193,16 +193,9 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 #ifdef DEVELOPER
 	size_t slen;
 #endif
-	const char *OIDs_krb5[] = {OID_KERBEROS5,
-				   OID_KERBEROS5_OLD,
-				   OID_NTLMSSP,
-				   NULL};
-	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
 	struct gensec_security *gensec_security;
 
-	sconn->use_gensec_hook = false;
-
-	/* See if we can get an SPNEGO blob out of the gensec hook (if auth_samba4 is loaded) */
+	/* See if we can get an SPNEGO blob */
 	status = auth_generic_prepare(talloc_tos(),
 				      sconn->remote_address,
 				      &gensec_security);
@@ -213,8 +206,9 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 					       NULL, data_blob_null, &blob);
 			/* If we get the list of OIDs, the 'OK' answer
 			 * is NT_STATUS_MORE_PROCESSING_REQUIRED */
-			if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-				sconn->use_gensec_hook = true;
+			if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+				DEBUG(0, ("Failed to start SPNEGO handler for negprot OID list!\n"));
+				blob = data_blob_null;
 			}
 		}
 		TALLOC_FREE(gensec_security);
@@ -234,32 +228,6 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 	   for details. JRA.
 
 	*/
-
-	if (sconn->use_gensec_hook) {
-		/* blob initialised above */
-	} else if (lp_security() != SEC_ADS && !USE_KERBEROS_KEYTAB) {
-#if 0
-		/* Code for PocketPC client */
-		blob = data_blob(guid, 16);
-#else
-		/* Code for standalone WXP client */
-		blob = spnego_gen_negTokenInit(ctx, OIDs_ntlm, NULL, "NONE");
-#endif
-	} else if (!lp_send_spnego_principal()) {
-		/* By default, Windows 2008 and later sends not_defined_in_RFC4178@please_ignore */
-		blob = spnego_gen_negTokenInit(ctx, OIDs_krb5, NULL, ADS_IGNORE_PRINCIPAL);
-	} else {
-		fstring myname;
-		char *host_princ_s = NULL;
-		name_to_fqdn(myname, lp_netbios_name());
-		strlower_m(myname);
-		if (asprintf(&host_princ_s, "cifs/%s@%s", myname, lp_realm())
-		    == -1) {
-			return data_blob_null;
-		}
-		blob = spnego_gen_negTokenInit(ctx, OIDs_krb5, NULL, host_princ_s);
-		SAFE_FREE(host_princ_s);
-	}
 
 	if (blob.length == 0 || blob.data == NULL) {
 		return data_blob_null;

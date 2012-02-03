@@ -466,9 +466,6 @@ struct smbd_server_connection {
 	unsigned long file_gen_counter;
 	int first_file;
 
-	/* Try GENSEC hook */
-	bool use_gensec_hook;
-
 	/* number of open connections (tcons) */
 	int num_tcons_open;
 

@@ -235,11 +235,7 @@ static NTSTATUS smbd_smb2_auth_generic(struct smbd_smb2_session *session,
 		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_SESSION_KEY);
 		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
 
-		if (session->sconn->use_gensec_hook) {
-			status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_SPNEGO);
-		} else {
-			status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_NTLMSSP);
-		}
+		status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_SPNEGO);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
 			return status;
