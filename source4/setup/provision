@@ -223,9 +223,9 @@ if opts.use_xattrs == "yes":
     eadb = False
 elif opts.use_xattrs == "auto" and not lp.get("posix:eadb"):
     if opts.targetdir:
-        file = tempfile.NamedTemporaryFile(prefix=os.path.abspath(opts.targetdir))
+        file = tempfile.NamedTemporaryFile(dir=os.path.abspath(opts.targetdir))
     else:
-        file = tempfile.NamedTemporaryFile(prefix=os.path.abspath(os.path.dirname(lp.get("private dir"))))
+        file = tempfile.NamedTemporaryFile(dir=os.path.abspath(os.path.dirname(lp.get("private dir"))))
     try:
         samba.ntacls.setntacl(lp, file.name,
             "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
