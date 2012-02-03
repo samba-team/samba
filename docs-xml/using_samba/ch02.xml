@@ -235,14 +235,6 @@ docs/textdocs/UNIX_INSTALL.txt</programlisting>
 <indexterm id="ch02-idx-947349-1"><primary>disabling/enabling features</primary></indexterm>Each of these options enable or disable various features. You typically enable a feature by specifying the <literal>--with-</literal><replaceable>feature</replaceable> option, which will cause the feature to be compiled and installed. Likewise, if you specify a <literal>--without-</literal><replaceable>feature</replaceable> option, the feature will be disabled. As of Samba 2.0.5, each of the following features is disabled by default:</para>
 
 
-<variablelist>
-<varlistentry><term><literal>--with-smbwrapper</literal></term>
-<listitem><para>Include SMB <indexterm id="ch02-idx-947350-0"><primary>SMB (Server Message Block)</primary><secondary>wrapper support</secondary></indexterm>
-<indexterm id="ch02-idx-947350-1"><primary>wrapper support for SMB (Server Message Block)</primary></indexterm>wrapper support, which allows executables on the Unix side to access <indexterm id="ch02-idx-947351-0"><primary>SMB/CIFS protocol</primary><secondary>filesystems</secondary></indexterm>SMB/CIFS filesystems as if they were regular Unix filesystems. We recommend using this option. However, at this time this book went to press, there were several incompatibilities between the <filename>smbwrapper</filename>
-<indexterm id="ch02-idx-947352-0"><primary>smbwrapper package</primary></indexterm> package and the GNU <filename>libc</filename> version 2.1, and it would not compile on Red Hat 6.0. Look for more information on these incompatibilities on the Samba home page.</para></listitem>
-</varlistentry>
-
-
 <varlistentry><term><literal>--with-afs</literal></term>
 <listitem><para>Include support of the <indexterm id="ch02-idx-947353-0"><primary>Andrew Filesystem</primary><see>AFS files</see></indexterm>Andrew Filesystem from <indexterm id="ch02-idx-947354-0"><primary>Carnegie Mellon University</primary></indexterm>Carnegie Mellon University. If you're going to serve <indexterm id="ch02-idx-947355-0"><primary>AFS files, support for</primary></indexterm>AFS files via Samba, we recommend compiling Samba once first without enabling this feature to ensure that everything runs smoothly. Once that version is working smoothly, recompile Samba with this feature enabled and compare any errors you might receive against the previous setup.</para></listitem>
 </varlistentry>

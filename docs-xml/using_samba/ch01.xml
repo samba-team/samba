@@ -1516,17 +1516,6 @@ SIMPLE           &lt;1E&gt;  GROUP       Registered
 
 
 
-<sect2 role="" label="1.7.6" id="ch01-SECT-7.6">
-<title>Smbwrapper</title>
-
-
-<para>Finally, there is an entirely new version of the Unix client called <firstterm>smbwrapper</firstterm>
-<indexterm id="ch01-idx-951955-0"><primary>smbwrapper client</primary></indexterm>. Instead of a kernel module that allows Linux to act as a Samba client, there is now a command-line entry to load the library that provides a complete SMB filesystem on some brands of Unix. Once loaded, the command <literal>ls</literal> <literal>/smb</literal> will list all the machines in your workgroup, and <literal>cd</literal> <literal>/smb/</literal><replaceable>server_name</replaceable><literal>/</literal><replaceable>share_name</replaceable> will take you to a particular <indexterm id="ch01-idx-951956-0"><primary>shares</primary></indexterm>
-<indexterm id="ch01-idx-951956-1"><primary>shared directory/resources</primary><see>shares</see></indexterm>share (shared directory), similar to the <indexterm id="ch01-idx-951957-0"><primary>Network File System (NFS)</primary></indexterm>
-<indexterm id="ch01-idx-951957-1"><primary>NFS (Network File System)</primary></indexterm>Network File System (NFS). As of this writing, <emphasis>smbwrapper</emphasis> currently runs on Linux, Solaris, SunOS 4, IRIX, and OSF/1, and is expected to run on several more operating systems in the near future.</para>
-</sect2>
-</sect1>
-
 
 
 
