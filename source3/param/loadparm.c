@@ -935,15 +935,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "send spnego principal",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(send_spnego_principal),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
 		.label		= "username",
 		.type		= P_STRING,
 		.p_class	= P_LOCAL,
@@ -5258,7 +5249,6 @@ FN_GLOBAL_BOOL(lp_unix_extensions, bUnixExtensions)
 FN_GLOBAL_BOOL(lp_use_spnego, bUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego, bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego_principal, client_use_spnego_principal)
-FN_GLOBAL_BOOL(lp_send_spnego_principal, send_spnego_principal)
 FN_GLOBAL_BOOL(lp_hostname_lookups, bHostnameLookups)
 FN_GLOBAL_CONST_STRING(lp_dedicated_keytab_file, szDedicatedKeytabFile)
 FN_GLOBAL_INTEGER(lp_kerberos_method, iKerberosMethod)

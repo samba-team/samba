@@ -1277,7 +1277,6 @@ bool lp_unix_extensions(void);
 bool lp_use_spnego(void);
 bool lp_client_use_spnego(void);
 bool lp_client_use_spnego_principal(void);
-bool lp_send_spnego_principal(void);
 bool lp_hostname_lookups(void);
 bool lp_change_notify(const struct share_params *p );
 bool lp_kernel_change_notify(const struct share_params *p );
