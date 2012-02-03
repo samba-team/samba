@@ -1453,7 +1453,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		ZERO_STRUCTP(pace);
 		pace->type = SMB_ACL_GROUP_OBJ;
 		pace->owner_type = GID_ACE;
-		pace->unix_ug.uid = pst->st_ex_gid;
+		pace->unix_ug.gid = pst->st_ex_gid;
 		pace->trustee = *pfile_grp_sid;
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
