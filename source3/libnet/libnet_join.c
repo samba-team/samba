@@ -1892,7 +1892,6 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 		if (!valid_security) {
 			const char *sec = NULL;
 			switch (lp_security()) {
-			case SEC_SHARE: sec = "share"; break;
 			case SEC_USER:  sec = "user"; break;
 			case SEC_DOMAIN: sec = "domain"; break;
 			case SEC_ADS: sec = "ads"; break;

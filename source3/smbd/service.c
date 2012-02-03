@@ -381,7 +381,6 @@ static NTSTATUS find_forced_group(bool force_user,
 static NTSTATUS create_connection_session_info(struct smbd_server_connection *sconn,
 					      TALLOC_CTX *mem_ctx, int snum,
                                               struct auth_session_info *session_info,
-					      DATA_BLOB password,
                                               struct auth_session_info **presult)
 {
         if (lp_guest_only(snum)) {
@@ -425,29 +424,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
 		return NT_STATUS_OK;
         }
 
-        if (lp_security() == SEC_SHARE) {
-
-                fstring user;
-		bool guest;
-
-                /* add the sharename as a possible user name if we
-                   are in share mode security */
-
-                add_session_user(sconn, lp_servicename(snum));
-
-                /* shall we let them in? */
-
-                if (!authorise_login(sconn, snum,user,password,&guest)) {
-                        DEBUG( 2, ( "Invalid username/password for [%s]\n",
-                                    lp_servicename(snum)) );
-			return NT_STATUS_WRONG_PASSWORD;
-                }
-
-		return make_session_info_from_username(mem_ctx, user, guest,
-						       presult);
-        }
-
-	DEBUG(0, ("invalid VUID (vuser) but not in security=share\n"));
+	DEBUG(0, ("invalid VUID (vuser)\n"));
 	return NT_STATUS_ACCESS_DENIED;
 }
 
@@ -557,7 +534,6 @@ static void create_share_access_mask(connection_struct *conn, int snum)
 static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 					connection_struct *conn,
 					int snum, user_struct *vuser,
-					DATA_BLOB password,
 					const char *pdev)
 {
 	struct smb_filename *smb_fname_cpath = NULL;
@@ -582,7 +558,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	conn->params->service = snum;
 
 	status = create_connection_session_info(sconn,
-		conn, snum, vuser ? vuser->session_info : NULL, password,
+		conn, snum, vuser ? vuser->session_info : NULL,
 		&conn->session_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -591,11 +567,9 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		goto err_root_exit;
 	}
 
-	if ((lp_guest_only(snum)) || (lp_security() == SEC_SHARE)) {
+	if (lp_guest_only(snum)) {
 		conn->force_user = true;
 	}
-
-	add_session_user(sconn, conn->session_info->unix_info->unix_name);
 
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
@@ -630,7 +604,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		goto err_root_exit;
 	}
 
-	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
+	conn->vuid = vuser->vuid;
 
 	{
 		char *s = talloc_sub_advanced(talloc_tos(),
@@ -930,7 +904,6 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 
 static connection_struct *make_connection_smb1(struct smbd_server_connection *sconn,
 					int snum, user_struct *vuser,
-					DATA_BLOB password,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
@@ -944,7 +917,6 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 					conn,
 					snum,
 					vuser,
-                                        password,
 					pdev);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
 		conn_free(conn);
@@ -961,7 +933,6 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 					struct smbd_smb2_tcon *tcon,
 					user_struct *vuser,
-					DATA_BLOB password,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
@@ -976,7 +947,6 @@ connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 					conn,
 					tcon->snum,
 					vuser,
-                                        password,
 					pdev);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
 		conn_free(conn);
@@ -992,7 +962,7 @@ connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 ****************************************************************************/
 
 connection_struct *make_connection(struct smbd_server_connection *sconn,
-				   const char *service_in, DATA_BLOB password,
+				   const char *service_in,
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status)
 {
@@ -1017,14 +987,12 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 		return NULL;
 	}
 
-	if(lp_security() != SEC_SHARE) {
-		vuser = get_valid_user_struct(sconn, vuid);
-		if (!vuser) {
-			DEBUG(1,("make_connection: refusing to connect with "
-				 "no session setup\n"));
-			*status = NT_STATUS_ACCESS_DENIED;
-			return NULL;
-		}
+	vuser = get_valid_user_struct(sconn, vuid);
+	if (!vuser) {
+		DEBUG(1,("make_connection: refusing to connect with "
+			 "no session setup\n"));
+		*status = NT_STATUS_ACCESS_DENIED;
+		return NULL;
 	}
 
 	/* Logic to try and connect to the correct [homes] share, preferably
@@ -1037,57 +1005,28 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 	*/
 
 	if (strequal(service_in,HOMES_NAME)) {
-		if(lp_security() != SEC_SHARE) {
-			DATA_BLOB no_pw = data_blob_null;
-			if (vuser->homes_snum == -1) {
-				DEBUG(2, ("[homes] share not available for "
-					  "this user because it was not found "
-					  "or created at session setup "
-					  "time\n"));
-				*status = NT_STATUS_BAD_NETWORK_NAME;
-				return NULL;
-			}
-			DEBUG(5, ("making a connection to [homes] service "
-				  "created at session setup time\n"));
-			return make_connection_smb1(sconn,
-						    vuser->homes_snum,
-						    vuser, no_pw, 
-						    dev, status);
-		} else {
-			/* Security = share. Try with
-			 * current_user_info.smb_name as the username.  */
-			if (*current_user_info.smb_name) {
-				char *unix_username = NULL;
-				(void)map_username(talloc_tos(),
-						current_user_info.smb_name,
-						&unix_username);
-				snum = find_service(talloc_tos(),
-						unix_username,
-						&unix_username);
-				if (!unix_username) {
-					*status = NT_STATUS_NO_MEMORY;
-				}
-				return NULL;
-			}
-			if (snum != -1) {
-				DEBUG(5, ("making a connection to 'homes' "
-					  "service %s based on "
-					  "security=share\n", service_in));
-				return make_connection_smb1(sconn,
-							    snum, NULL,
-							    password,
-							    dev, status);
-			}
+		if (vuser->homes_snum == -1) {
+			DEBUG(2, ("[homes] share not available for "
+				  "this user because it was not found "
+				  "or created at session setup "
+				  "time\n"));
+			*status = NT_STATUS_BAD_NETWORK_NAME;
+			return NULL;
 		}
-	} else if ((lp_security() != SEC_SHARE) && (vuser->homes_snum != -1)
+		DEBUG(5, ("making a connection to [homes] service "
+			  "created at session setup time\n"));
+		return make_connection_smb1(sconn,
+					    vuser->homes_snum,
+					    vuser,
+					    dev, status);
+	} else if ((vuser->homes_snum != -1)
 		   && strequal(service_in,
 			       lp_servicename(vuser->homes_snum))) {
-		DATA_BLOB no_pw = data_blob_null;
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
 		return make_connection_smb1(sconn,
 					    vuser->homes_snum,
-					    vuser, no_pw, 
+					    vuser,
 					    dev, status);
 	}
 
@@ -1134,7 +1073,6 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 	DEBUG(5, ("making a connection to 'normal' service %s\n", service));
 
 	return make_connection_smb1(sconn, snum, vuser,
-				    password,
 				    dev, status);
 }
 

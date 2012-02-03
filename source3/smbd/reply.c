@@ -599,13 +599,6 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 			break;
 		}
 
-		/* only add the client's machine name to the list
-		   of possibly valid usernames if we are operating
-		   in share mode security */
-		if (lp_security() == SEC_SHARE) {
-			add_session_user(sconn, get_remote_machine_name());
-		}
-
 		reload_services(sconn, conn_snum_used, true);
 		reopen_logs();
 
@@ -656,7 +649,6 @@ void reply_tcon(struct smb_request *req)
 	int pwlen=0;
 	NTSTATUS nt_status;
 	const char *p;
-	DATA_BLOB password_blob;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smbd_server_connection *sconn = req->sconn;
 
@@ -688,13 +680,9 @@ void reply_tcon(struct smb_request *req)
 		service = service_buf;
 	}
 
-	password_blob = data_blob(password, pwlen+1);
-
-	conn = make_connection(sconn,service,password_blob,dev,
+	conn = make_connection(sconn,service,dev,
 			       req->vuid,&nt_status);
 	req->conn = conn;
-
-	data_blob_clear_free(&password_blob);
 
 	if (!conn) {
 		reply_nterror(req, nt_status);
@@ -723,7 +711,6 @@ void reply_tcon_and_X(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	const char *service = NULL;
-	DATA_BLOB password;
 	TALLOC_CTX *ctx = talloc_tos();
 	/* what the cleint thinks the device is */
 	char *client_devicetype = NULL;
@@ -761,27 +748,14 @@ void reply_tcon_and_X(struct smb_request *req)
 	}
 
 	if (sconn->smb1.negprot.encrypted_passwords) {
-		password = data_blob_talloc(talloc_tos(), req->buf, passlen);
-		if (lp_security() == SEC_SHARE) {
-			/*
-			 * Security = share always has a pad byte
-			 * after the password.
-			 */
-			p = (const char *)req->buf + passlen + 1;
-		} else {
-			p = (const char *)req->buf + passlen;
-		}
+		p = (const char *)req->buf + passlen;
 	} else {
-		password = data_blob_talloc(talloc_tos(), req->buf, passlen+1);
-		/* Ensure correct termination */
-		password.data[passlen]=0;
 		p = (const char *)req->buf + passlen + 1;
 	}
 
 	p += srvstr_pull_req_talloc(ctx, req, &path, p, STR_TERMINATE);
 
 	if (path == NULL) {
-		data_blob_clear_free(&password);
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtconX);
 		return;
@@ -794,7 +768,6 @@ void reply_tcon_and_X(struct smb_request *req)
 	if (*path=='\\') {
 		q = strchr_m(path+2,'\\');
 		if (!q) {
-			data_blob_clear_free(&password);
 			reply_nterror(req, NT_STATUS_BAD_NETWORK_NAME);
 			END_PROFILE(SMBtconX);
 			return;
@@ -809,7 +782,6 @@ void reply_tcon_and_X(struct smb_request *req)
 				MIN(6, smbreq_bufrem(req, p)), STR_ASCII);
 
 	if (client_devicetype == NULL) {
-		data_blob_clear_free(&password);
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtconX);
 		return;
@@ -817,11 +789,9 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	DEBUG(4,("Client requested device type [%s] for share [%s]\n", client_devicetype, service));
 
-	conn = make_connection(sconn, service, password, client_devicetype,
+	conn = make_connection(sconn, service, client_devicetype,
 			       req->vuid, &nt_status);
 	req->conn =conn;
-
-	data_blob_clear_free(&password);
 
 	if (!conn) {
 		reply_nterror(req, nt_status);
@@ -2117,7 +2087,7 @@ void reply_ulogoffX(struct smb_request *req)
 
 	/* in user level security we are supposed to close any files
 		open by this user */
-	if ((vuser != NULL) && (lp_security() != SEC_SHARE)) {
+	if (vuser != NULL) {
 		file_close_user(sconn, req->vuid);
 	}
 

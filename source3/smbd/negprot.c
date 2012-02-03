@@ -299,7 +299,6 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	   supports it and we can do encrypted passwords */
 
 	if (sconn->smb1.negprot.encrypted_passwords &&
-	    (lp_security() != SEC_SHARE) &&
 	    lp_use_spnego() &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
 		negotiate_spnego = True;

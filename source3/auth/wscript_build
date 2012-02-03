@@ -12,7 +12,7 @@ AUTH_NETLOGOND_SRC = 'auth_netlogond.c'
 
 AUTH_SRC = '''auth.c
            user_krb5.c
-           auth_compat.c auth_ntlmssp.c auth_generic.c'''
+           auth_ntlmssp.c auth_generic.c'''
 
 bld.SAMBA3_SUBSYSTEM('TOKEN_UTIL',
                     source='token_util.c',

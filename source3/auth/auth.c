@@ -523,17 +523,6 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 					talloc_tos(), "guest unix", NULL);
 			}
 			break;
-		case SEC_SHARE:
-			if (lp_encrypted_passwords()) {
-				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = yes\n"));
-				auth_method_list = str_list_make_v3(
-					talloc_tos(), "guest sam", NULL);
-			} else {
-				DEBUG(5,("Making default auth method list for security=share, encrypt passwords = no\n"));
-				auth_method_list = str_list_make_v3(
-					talloc_tos(), "guest unix", NULL);
-			}
-			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
 			auth_method_list = str_list_make_v3(

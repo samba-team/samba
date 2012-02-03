@@ -670,59 +670,6 @@ chmod 1770 /usr/local/samba/lib/usershares
 	
 </refsect1>
 
-<refsect1 id="VALIDATIONSECT">
-	<title>NOTE ABOUT USERNAME/PASSWORD VALIDATION</title>
-
-	<para>
-	There are a number of ways in which a user can connect to a service. The server uses the following steps
-	in determining if it will allow a connection to a specified service. If all the steps fail, the connection
-	request is rejected.  However, if one of the steps succeeds, the following steps are not checked.
-	</para>
-
-	<para>
-	If the service is marked <quote>guest only = yes</quote> and the server is running with share-level
-	security (<quote>security = share</quote>, steps 1 to 5 are skipped.
-	</para>
-
-
-	<orderedlist continuation="restarts" inheritnum="ignore" numeration="arabic">
-		<listitem><para>
-		If the client has passed a username/password pair and that username/password pair is validated by the UNIX 
-		system's password programs, the connection is made as that username. This includes the
-		<literal>\\server\service</literal>%<replaceable>username</replaceable> method of passing a username.
-		</para></listitem>
-
-		<listitem><para>
-		If the client has previously registered a username with the system and now supplies a correct password for that 
-		username, the connection is allowed.
-		</para></listitem>
-		
-		<listitem><para>
-		The client's NetBIOS name and any previously used usernames are checked against the supplied password. If 
-		they match, the connection is allowed as the corresponding user.
-		</para></listitem>
-		
-		<listitem><para>
-		If the client has previously validated a username/password pair with the server and the client has passed 
-		the validation token, that username is used.
-		</para></listitem>
-
-		<listitem><para>
-		If a <literal>user = </literal> field is given in the <filename moreinfo="none">smb.conf</filename> file for the
-		service and the client has supplied a password, and that password matches (according to the UNIX system's
-		password checking) with one of the usernames from the <literal>user =</literal> field, the connection is made as
-		the username in the <literal>user =</literal> line. If one of the usernames in the <literal>user =</literal> list
-		begins with a <literal>@</literal>, that name expands to a list of names in the group of the same name.
-		</para></listitem>
-
-		<listitem><para>
-		If the service is a guest service, a connection is made as the username given in the <literal>guest account
-		=</literal> for the service, irrespective of the supplied password.
-		</para></listitem>
-	</orderedlist>
-
-</refsect1>
-
 <refsect1>
 	<title>REGISTRY-BASED CONFIGURATION</title>
 

@@ -5286,18 +5286,7 @@ FN_GLOBAL_INTEGER(lp_passwordlevel, pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, unamelevel)
 FN_GLOBAL_INTEGER(lp_deadtime, deadtime)
 FN_GLOBAL_BOOL(lp_getwd_cache, getwd_cache)
-static FN_GLOBAL_INTEGER(_lp_srv_maxprotocol, srv_maxprotocol)
-int lp_srv_maxprotocol(void)
-{
-	int ret = _lp_srv_maxprotocol();
-	if ((ret >= PROTOCOL_SMB2_02) && (lp_security() == SEC_SHARE)) {
-		DEBUG(2,("WARNING!!: \"security = share\" is incompatible "
-			"with the SMB2 protocol. Resetting to SMB1.\n" ));
-			lp_do_parameter(-1, "server max protocol", "NT1");
-		return PROTOCOL_NT1;
-	}
-	return ret;
-}
+FN_GLOBAL_INTEGER(lp_srv_maxprotocol, srv_maxprotocol)
 FN_GLOBAL_INTEGER(lp_srv_minprotocol, srv_minprotocol)
 FN_GLOBAL_INTEGER(lp_security, security)
 FN_GLOBAL_LIST(lp_auth_methods, AuthMethods)
@@ -9050,9 +9039,7 @@ static bool lp_load_ex(const char *pszFname,
 
 	set_allowed_client_auth();
 
-	if (lp_security() == SEC_SHARE) {
-		DEBUG(1, ("WARNING: The security=share option is deprecated\n"));
-	} else if (lp_security() == SEC_SERVER) {
+	if (lp_security() == SEC_SERVER) {
 		DEBUG(1, ("WARNING: The security=server option is deprecated\n"));
 	}
 

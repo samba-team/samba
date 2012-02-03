@@ -912,7 +912,7 @@ AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/token_util.o \
 	   auth/user_info.o \
 	   auth/user_util.o \
 	   auth/user_krb5.o \
-	   auth/auth_compat.o auth/auth_ntlmssp.o auth/auth_generic.o \
+	   auth/auth_ntlmssp.o auth/auth_generic.o \
 	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ) $(DCUTIL_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_hash2.o

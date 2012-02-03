@@ -531,10 +531,6 @@ struct smbd_server_connection {
 			int max_send;
 			uint16_t last_session_tag;
 
-			/* users from session setup */
-			char *session_userlist;
-			/* workgroup from session setup. */
-			char *session_workgroup;
 			/*
 			 * this holds info on user ids that are already
 			 * validated for this VC

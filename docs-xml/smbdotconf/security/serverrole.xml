@@ -51,9 +51,6 @@
     exist as well as the account on the Domain Controller to allow 
     Samba to have a valid UNIX account to map file access to.  Winbind can provide this.</para>
 
-    <para>See also the section <link linkend="VALIDATIONSECT">
-    NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
-
     <para><anchor id="DC"/><emphasis>SERVER ROLE = DOMAIN CONTROLLER</emphasis></para>
 
     <para>This mode of operation runs Samba as a domain controller, providing domain logon services to Windows and Samba clients of the domain.  Clients must be joined to the domain to create a secure, trusted path across the network.</para>

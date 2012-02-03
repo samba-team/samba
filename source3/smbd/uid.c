@@ -288,19 +288,7 @@ bool change_to_user(connection_struct *conn, uint16_t vuid)
 
 	vuser = get_valid_user_struct(conn->sconn, vuid);
 
-	/*
-	 * We need a separate check in security=share mode due to vuid
-	 * always being UID_FIELD_INVALID. If we don't do this then
-	 * in share mode security we are *always* changing uid's between
-	 * SMB's - this hurts performance - Badly.
-	 */
-
-	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
-	   (current_user.ut.uid == conn->session_info->unix_token->uid)) {
-		DEBUG(4,("Skipping user change - already "
-			 "user\n"));
-		return(True);
-	} else if ((current_user.conn == conn) &&
+	if ((current_user.conn == conn) &&
 		   (vuser != NULL) && (current_user.vuid == vuid) &&
 		   (current_user.ut.uid == vuser->session_info->unix_token->uid)) {
 		DEBUG(4,("Skipping user change - already "
@@ -308,16 +296,15 @@ bool change_to_user(connection_struct *conn, uint16_t vuid)
 		return(True);
 	}
 
-	session_info = vuser ? vuser->session_info : conn->session_info;
-
-	if (session_info == NULL) {
-		/* Invalid vuid sent - even with security = share. */
+	if (vuser == NULL) {
+		/* Invalid vuid sent */
 		DEBUG(2,("Invalid vuid %d used on "
 			 "share %s.\n", vuid, lp_servicename(snum) ));
 		return false;
 	}
 
-	/* security = share sets force_user. */
+	session_info = vuser->session_info;
+
 	if (!conn->force_user && vuser == NULL) {
 		DEBUG(2,("Invalid vuid used %d in accessing "
 			"share %s.\n", vuid, lp_servicename(snum) ));

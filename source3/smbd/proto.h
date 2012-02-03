@@ -707,13 +707,6 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
 			struct auth_session_info *session_info,
 			DATA_BLOB response_blob);
-void add_session_user(struct smbd_server_connection *sconn, const char *user);
-void add_session_workgroup(struct smbd_server_connection *sconn,
-			   const char *workgroup);
-const char *get_session_workgroup(struct smbd_server_connection *sconn);
-bool authorise_login(struct smbd_server_connection *sconn,
-		     int snum, fstring user, DATA_BLOB password,
-		     bool *guest);
 
 /* The following definitions come from smbd/pipes.c  */
 
@@ -986,11 +979,10 @@ struct smbd_smb2_tcon;
 connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 					struct smbd_smb2_tcon *tcon,
 					user_struct *vuser,
-					DATA_BLOB password,
 					const char *pdev,
 					NTSTATUS *pstatus);
 connection_struct *make_connection(struct smbd_server_connection *sconn,
-				   const char *service_in, DATA_BLOB password,
+				   const char *service_in,
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status);
 void close_cnum(connection_struct *conn, uint16 vuid);

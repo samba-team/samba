@@ -1364,8 +1364,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	flags = smb_messages[type].flags;
 
 	/* In share mode security we must ignore the vuid. */
-	session_tag = (lp_security() == SEC_SHARE)
-		? UID_FIELD_INVALID : req->vuid;
+	session_tag = req->vuid;
 	conn = req->conn;
 
 	DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n", smb_fn_name(type),
@@ -3257,10 +3256,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->smb1.sessions.done_sesssetup = false;
 	sconn->smb1.sessions.max_send = BUFFER_SIZE;
 	sconn->smb1.sessions.last_session_tag = UID_FIELD_INVALID;
-	/* users from session setup */
-	sconn->smb1.sessions.session_userlist = NULL;
-	/* workgroup from session setup. */
-	sconn->smb1.sessions.session_workgroup = NULL;
 	/* this holds info on user ids that are already validated for this VC */
 	sconn->smb1.sessions.validated_users = NULL;
 	sconn->smb1.sessions.next_vuid = VUID_OFFSET;

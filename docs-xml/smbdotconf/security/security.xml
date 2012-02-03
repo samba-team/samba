@@ -11,34 +11,18 @@
     Samba and is one of the most important settings in the <filename moreinfo="none">
     smb.conf</filename> file.</para>
 
-    <para>The option sets the &quot;security mode bit&quot; in replies to 
-    protocol negotiations with <citerefentry><refentrytitle>smbd</refentrytitle>
-    <manvolnum>8</manvolnum></citerefentry> to turn share level security on or off. Clients decide 
-    based on this bit whether (and how) to transfer user and password 
-    information to the server.</para>
-
-
     <para>The default is <command moreinfo="none">security = user</command>, as this is
-    the most common setting needed when talking to Windows 98 and 
-    Windows NT.</para>
+    the most common setting, used for a standalone file server or a DC.</para>
 
     <para>The alternatives are
     <command moreinfo="none">security = ads</command> or <command moreinfo="none">security = domain
-    </command>, which support joining Samba to a Windows domain, along with <command moreinfo="none">security = share</command> and <command moreinfo="none">security = server</command>, both of which are deprecated.</para>
-
-    <para>In versions of Samba prior to 2.0.0, the default was 
-    <command moreinfo="none">security = share</command> mainly because that was
-    the only option at one stage.</para>
+    </command>, which support joining Samba to a Windows domain, along with <command moreinfo="none">security = server</command>, which is deprecated.</para>
 
     <para>You should use <command moreinfo="none">security = user</command> and 
     <smbconfoption name="map to guest"/> if you 
     want to mainly setup shares without a password (guest shares). This 
     is commonly used for a shared printer server. </para>
 		
-    <para>It is possible to use <command moreinfo="none">smbd</command> in a <emphasis>
-    hybrid mode</emphasis> where it is offers both user and share 
-    level security under different <smbconfoption name="NetBIOS aliases"/>. </para>
-
     <para>The different settings will now be explained.</para>
 
 
@@ -64,8 +48,6 @@
     guest shares don't work in user level security without allowing 
     the server to automatically map unknown users into the <smbconfoption name="guest account"/>. 
     See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
-
-    <para>See also the section <link linkend="VALIDATIONSECT">NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
     <para><anchor id="SECURITYEQUALSDOMAIN"/><emphasis>SECURITY = DOMAIN</emphasis></para>
 
@@ -94,92 +76,8 @@
     the server to automatically map unknown users into the <smbconfoption name="guest account"/>. 
     See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
 
-    <para>See also the section <link linkend="VALIDATIONSECT">
-    NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
-
     <para>See also the <smbconfoption name="password server"/> parameter and
 	 the <smbconfoption name="encrypted passwords"/> parameter.</para>
-
-    <para><anchor id="SECURITYEQUALSSHARE"/><emphasis>SECURITY = SHARE</emphasis></para> 
-
-    <note><para>This option is deprecated as it is incompatible with SMB2</para></note>
-		
-    <para>When clients connect to a share level security server, they 
-    need not log onto the server with a valid username and password before 
-    attempting to connect to a shared resource (although modern clients 
-    such as Windows 95/98 and Windows NT will send a logon request with 
-    a username but no password when talking to a <command moreinfo="none">security = share
-    </command> server). Instead, the clients send authentication information 
-    (passwords) on a per-share basis, at the time they attempt to connect 
-    to that share.</para>
-
-    <para>Note that <command moreinfo="none">smbd</command> <emphasis>ALWAYS</emphasis> 
-    uses a valid UNIX user to act on behalf of the client, even in
-    <command moreinfo="none">security = share</command> level security.</para>
-
-    <para>As clients are not required to send a username to the server
-    in share level security, <command moreinfo="none">smbd</command> uses several
-    techniques to determine the correct UNIX user to use on behalf
-    of the client.</para>
-
-    <para>A list of possible UNIX usernames to match with the given
-    client password is constructed using the following methods :</para>
-
-    <itemizedlist>
-	<listitem>
-	    <para>If the <smbconfoption name="guest only"/> parameter is set, then all the other 
-	    stages are missed and only the <smbconfoption name="guest account"/> username is checked.
-	    </para>
-	</listitem>
-
-	<listitem>
-	    <para>Is a username is sent with the share connection 
-	    request, then this username (after mapping - see <smbconfoption name="username map"/>), 
-	    is added as a potential username.
-	    </para>
-	</listitem>
-
-	<listitem>
-	    <para>If the client did a previous <emphasis>logon
-	    </emphasis> request (the SessionSetup SMB call) then the 
-	    username sent in this SMB will be added as a potential username.
-	    </para>
-	</listitem>
-
-	<listitem>
-	    <para>The name of the service the client requested is 
-	    added as a potential username.
-	    </para>
-	</listitem>
-
-	<listitem>
-	    <para>The NetBIOS name of the client is added to 
-	    the list as a potential username.
-	    </para>
-	</listitem>
-
-	<listitem>
-	    <para>Any users on the <smbconfoption name="user"/> list are added as potential usernames.
-	    </para>
-	</listitem>
-    </itemizedlist>
-
-    <para>If the <parameter moreinfo="none">guest only</parameter> parameter is 
-    not set, then this list is then tried with the supplied password. 
-    The first user for whom the password matches will be used as the 
-    UNIX user.</para>
-
-    <para>If the <parameter moreinfo="none">guest only</parameter> parameter is 
-    set, or no username can be determined then if the share is marked 
-    as available to the <parameter moreinfo="none">guest account</parameter>, then this 
-    guest user will be used, otherwise access is denied.</para>
-
-    <para>Note that it can be <emphasis>very</emphasis> confusing 
-    in share-level security as to which UNIX username will eventually
-    be used in granting access.</para>
-
-    <para>See also the section <link linkend="VALIDATIONSECT">
-    NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
     <para><anchor id="SECURITYEQUALSSERVER"/><emphasis>SECURITY = SERVER</emphasis></para>
 
@@ -220,9 +118,6 @@
     guest shares don't work in user level security without allowing 
     the server to automatically map unknown users into the <smbconfoption name="guest account"/>. 
     See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
-
-    <para>See also the section <link linkend="VALIDATIONSECT">
-    NOTE ABOUT USERNAME/PASSWORD VALIDATION</link>.</para>
 
     <para>See also the <smbconfoption name="password server"/> parameter and the 
 	<smbconfoption name="encrypted passwords"/> parameter.</para>

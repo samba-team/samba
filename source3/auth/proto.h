@@ -48,18 +48,6 @@ NTSTATUS make_auth_context_fixed(TALLOC_CTX *mem_ctx,
 
 NTSTATUS auth_builtin_init(void);
 
-/* The following definitions come from auth/auth_compat.c  */
-
-NTSTATUS check_plaintext_password(const char *smb_name,
-				  const struct tsocket_address *remote_address,
-				  DATA_BLOB plaintext_password,
-				  struct auth_serversupplied_info **server_info);
-bool password_ok(struct auth_context *actx, bool global_encrypted,
-		 const char *session_workgroup,
-		 const char *smb_name,
-		 const struct tsocket_address *remote_address,
-		 DATA_BLOB password_blob);
-
 /* The following definitions come from auth/auth_domain.c  */
 
 void attempt_machine_password_change(void);

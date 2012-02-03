@@ -237,15 +237,6 @@ static bool test_server_role_security_domain(struct torture_context *tctx)
 	return true;
 }
 
-static bool test_server_role_security_share(struct torture_context *tctx)
-{
-	struct loadparm_context *lp_ctx = loadparm_init(tctx);
-	torture_assert(tctx, lpcfg_set_option(lp_ctx, "security=share"), "lpcfg_set_option failed");
-	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_STANDALONE, "ROLE should be STANDALONE");
-	torture_assert_int_equal(tctx, lpcfg_security(lp_ctx), SEC_SHARE, "security should be share");
-	return true;
-}
-
 static bool test_server_role_security_server(struct torture_context *tctx)
 {
 	struct loadparm_context *lp_ctx = loadparm_init(tctx);
@@ -282,7 +273,6 @@ struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "test_server_role_dc_domain_logons_and_not_master", test_server_role_dc_domain_logons_and_not_master);
 	torture_suite_add_simple_test(suite, "test_server_role_security_ads", test_server_role_security_ads);
 	torture_suite_add_simple_test(suite, "test_server_role_security_domain", test_server_role_security_domain);
-	torture_suite_add_simple_test(suite, "test_server_role_security_share", test_server_role_security_share);
 	torture_suite_add_simple_test(suite, "test_server_role_security_server", test_server_role_security_server);
 
 	return suite;

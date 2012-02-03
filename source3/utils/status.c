@@ -418,10 +418,6 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		d_printf("\nSamba version %s\n",samba_version_string());
 		d_printf("PID     Username      Group         Machine                        \n");
 		d_printf("-------------------------------------------------------------------\n");
-		if (lp_security() == SEC_SHARE) {
-			d_printf(" <processes do not show up in "
-				 "anonymous mode>\n");
-		}
 
 		sessionid_traverse_read(traverse_sessionid, NULL);
 

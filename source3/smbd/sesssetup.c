@@ -561,11 +561,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		if (doencrypt) {
 			lm_resp = data_blob(p, passlen1);
 			nt_resp = data_blob(p+passlen1, passlen2);
-		} else if (lp_security() != SEC_SHARE) {
-			/*
-			 * In share level we should ignore any passwords, so
- 			 * only read them if we're not.
- 			 */
+		} else {
 			char *pass = NULL;
 			bool unic= smb_flag2 & FLAGS2_UNICODE_STRINGS;
 
@@ -673,27 +669,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	reload_services(sconn, conn_snum_used, true);
 
-	if (lp_security() == SEC_SHARE) {
-		char *sub_user_mapped = NULL;
-		/* In share level we should ignore any passwords */
-
-		data_blob_free(&lm_resp);
-		data_blob_free(&nt_resp);
-		data_blob_clear_free(&plaintext_password);
-
-		(void)map_username(talloc_tos(), sub_user, &sub_user_mapped);
-		if (!sub_user_mapped) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			END_PROFILE(SMBsesssetupX);
-			return;
-		}
-		fstrcpy(sub_user, sub_user_mapped);
-		add_session_user(sconn, sub_user);
-		add_session_workgroup(sconn, domain);
-		/* Then force it to null for the benfit of the code below */
-		user = "";
-	}
-
 	if (!*user) {
 
 		nt_status = check_guest_password(sconn->remote_address, &server_info);
@@ -796,36 +771,31 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
 
-	if (lp_security() == SEC_SHARE) {
-		sess_vuid = UID_FIELD_INVALID;
-		TALLOC_FREE(session_info);
-	} else {
-		/* Ignore the initial vuid. */
-		sess_vuid = register_initial_vuid(sconn);
-		if (sess_vuid == UID_FIELD_INVALID) {
-			data_blob_free(&nt_resp);
-			data_blob_free(&lm_resp);
-			reply_nterror(req, nt_status_squash(
-					      NT_STATUS_LOGON_FAILURE));
-			END_PROFILE(SMBsesssetupX);
-			return;
-		}
-		/* register_existing_vuid keeps the session_info */
-		sess_vuid = register_existing_vuid(sconn, sess_vuid,
-					session_info,
-					nt_resp.data ? nt_resp : lm_resp);
-		if (sess_vuid == UID_FIELD_INVALID) {
-			data_blob_free(&nt_resp);
-			data_blob_free(&lm_resp);
-			reply_nterror(req, nt_status_squash(
-					      NT_STATUS_LOGON_FAILURE));
-			END_PROFILE(SMBsesssetupX);
-			return;
-		}
-
-		/* current_user_info is changed on new vuid */
-		reload_services(sconn, conn_snum_used, true);
+	/* Ignore the initial vuid. */
+	sess_vuid = register_initial_vuid(sconn);
+	if (sess_vuid == UID_FIELD_INVALID) {
+		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		reply_nterror(req, nt_status_squash(
+				      NT_STATUS_LOGON_FAILURE));
+		END_PROFILE(SMBsesssetupX);
+		return;
 	}
+	/* register_existing_vuid keeps the session_info */
+	sess_vuid = register_existing_vuid(sconn, sess_vuid,
+					   session_info,
+					   nt_resp.data ? nt_resp : lm_resp);
+	if (sess_vuid == UID_FIELD_INVALID) {
+		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		reply_nterror(req, nt_status_squash(
+				      NT_STATUS_LOGON_FAILURE));
+		END_PROFILE(SMBsesssetupX);
+		return;
+	}
+
+	/* current_user_info is changed on new vuid */
+	reload_services(sconn, conn_snum_used, true);
 
 	data_blob_free(&nt_resp);
 	data_blob_free(&lm_resp);

@@ -73,11 +73,6 @@ int lp_find_server_role(int server_role, int security, int domain_logons, int do
 	role = ROLE_STANDALONE;
 
 	switch (security) {
-		case SEC_SHARE:
-			if (domain_logons) {
-				DEBUG(0, ("Server's Role (logon server) conflicts with share-level security\n"));
-			}
-			break;
 		case SEC_SERVER:
 			if (domain_logons) {
 				DEBUG(0, ("Server's Role (logon server) conflicts with server-level security\n"));
@@ -162,7 +157,7 @@ bool lp_is_security_and_server_role_valid(int server_role, int security)
 		valid = true;
 		break;
 	case ROLE_STANDALONE:
-		if (security == SEC_SHARE || security == SEC_SERVER || security == SEC_USER) {
+		if (security == SEC_SERVER || security == SEC_USER) {
 			valid = true;
 		}
 		break;
