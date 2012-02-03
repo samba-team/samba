@@ -605,9 +605,9 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 		DLIST_ADD_END(ctx->methods, method, struct auth_method_context *);
 	}
 
-	ctx->check_password = auth_check_password_wrapper;
-	ctx->get_challenge = auth_get_challenge;
-	ctx->set_challenge = auth_context_set_challenge;
+	ctx->check_ntlm_password = auth_check_password_wrapper;
+	ctx->get_ntlm_challenge = auth_get_challenge;
+	ctx->set_ntlm_challenge = auth_context_set_challenge;
 	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
 	ctx->generate_session_info = auth_generate_session_info_wrapper;
 	ctx->generate_session_info_pac = auth_generate_session_info_pac;

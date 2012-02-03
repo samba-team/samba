@@ -90,8 +90,8 @@ static NTSTATUS auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_s
 	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
 	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
 
-	if (auth_context->get_challenge) {
-		status = auth_context->get_challenge(auth_context, chal);
+	if (auth_context->get_ntlm_challenge) {
+		status = auth_context->get_ntlm_challenge(auth_context, chal);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("auth_ntlmssp_get_challenge: failed to get challenge: %s\n",
 				  nt_errstr(status)));
@@ -139,8 +139,8 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 
 	chal = challenge->data;
 
-	if (auth_context->set_challenge) {
-		nt_status = auth_context->set_challenge(auth_context,
+	if (auth_context->set_ntlm_challenge) {
+		nt_status = auth_context->set_ntlm_challenge(auth_context,
 							chal,
 							"NTLMSSP callback (NTLM2)");
 	}
@@ -183,12 +183,12 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	user_info->password.response.nt = ntlmssp_state->nt_resp;
 	user_info->password.response.nt.data = talloc_steal(user_info, ntlmssp_state->nt_resp.data);
 
-	if (auth_context->check_password) {
-		nt_status = auth_context->check_password(auth_context,
-							 gensec_ntlmssp,
-							 user_info,
-							 &gensec_ntlmssp->server_returned_info,
-							 user_session_key, lm_session_key);
+	if (auth_context->check_ntlm_password) {
+		nt_status = auth_context->check_ntlm_password(auth_context,
+							      gensec_ntlmssp,
+							      user_info,
+							      &gensec_ntlmssp->server_returned_info,
+							      user_session_key, lm_session_key);
 	}
 	talloc_free(user_info);
 

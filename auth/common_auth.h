@@ -105,17 +105,17 @@ struct auth4_context {
 	/* Private data for the callbacks on this auth context */
 	void *private_data;
 
-	NTSTATUS (*check_password)(struct auth4_context *auth_ctx,
-				   TALLOC_CTX *mem_ctx,
-				   const struct auth_usersupplied_info *user_info,
-				   void **server_returned_info,
-				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
+	NTSTATUS (*check_ntlm_password)(struct auth4_context *auth_ctx,
+					TALLOC_CTX *mem_ctx,
+					const struct auth_usersupplied_info *user_info,
+					void **server_returned_info,
+					DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
-	NTSTATUS (*get_challenge)(struct auth4_context *auth_ctx, uint8_t chal[8]);
+	NTSTATUS (*get_ntlm_challenge)(struct auth4_context *auth_ctx, uint8_t chal[8]);
 
 	bool (*challenge_may_be_modified)(struct auth4_context *auth_ctx);
 
-	NTSTATUS (*set_challenge)(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by);
+	NTSTATUS (*set_ntlm_challenge)(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 
 	NTSTATUS (*generate_session_info)(struct auth4_context *auth_context,
 					  TALLOC_CTX *mem_ctx,
