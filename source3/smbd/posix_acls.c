@@ -1362,9 +1362,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 							bool setting_acl)
 {
 	canon_ace *pace;
-	bool got_user = False;
-	bool got_grp = False;
-	bool got_other = False;
+	canon_ace *pace_user = NULL;
+	canon_ace *pace_group = NULL;
 	canon_ace *pace_other = NULL;
 
 	for (pace = *pp_ace; pace; pace = pace->next) {
@@ -1372,7 +1371,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 
 			if (setting_acl)
 				apply_default_perms(params, is_directory, pace, S_IRUSR);
-			got_user = True;
+			pace_user = pace;
 
 		} else if (pace->type == SMB_ACL_GROUP_OBJ) {
 
@@ -1382,7 +1381,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 
 			if (setting_acl)
 				apply_default_perms(params, is_directory, pace, S_IRGRP);
-			got_grp = True;
+			pace_group = pace;
 
 		} else if (pace->type == SMB_ACL_OTHER) {
 
@@ -1392,12 +1391,11 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 
 			if (setting_acl)
 				apply_default_perms(params, is_directory, pace, S_IROTH);
-			got_other = True;
 			pace_other = pace;
 		}
 	}
 
-	if (!got_user) {
+	if (!pace_user) {
 		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
@@ -1433,7 +1431,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 
 			if (pace->perms == 0) {
 				/* If we only got an "everyone" perm, just use that. */
-				if (got_other)
+				if (pace_other)
 					pace->perms = pace_other->perms;
 			}
 
@@ -1443,9 +1441,10 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		}
 
 		DLIST_ADD(*pp_ace, pace);
+		pace_user = pace;
 	}
 
-	if (!got_grp) {
+	if (!pace_group) {
 		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
@@ -1459,7 +1458,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
 			/* If we only got an "everyone" perm, just use that. */
-			if (got_other)
+			if (pace_other)
 				pace->perms = pace_other->perms;
 			else
 				pace->perms = 0;
@@ -1469,9 +1468,10 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		}
 
 		DLIST_ADD(*pp_ace, pace);
+		pace_group = pace;
 	}
 
-	if (!got_other) {
+	if (!pace_other) {
 		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
 			DEBUG(0,("ensure_canon_entry_valid: malloc fail.\n"));
 			return False;
@@ -1490,6 +1490,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 			pace->perms = unix_perms_to_acl_perms(pst->st_ex_mode, S_IROTH, S_IWOTH, S_IXOTH);
 
 		DLIST_ADD(*pp_ace, pace);
+		pace_other = pace;
 	}
 
 	return True;
