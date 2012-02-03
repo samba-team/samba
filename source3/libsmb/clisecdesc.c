@@ -94,6 +94,8 @@ NTSTATUS cli_set_secdesc(struct cli_state *cli, uint16_t fnum,
 
 	if (sd->dacl)
 		sec_info |= SECINFO_DACL;
+	if (sd->sacl)
+		sec_info |= SECINFO_SACL;
 	if (sd->owner_sid)
 		sec_info |= SECINFO_OWNER;
 	if (sd->group_sid)
