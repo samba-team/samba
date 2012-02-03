@@ -891,6 +891,35 @@ done:
 	return status;
 }
 
+/****************************************************************************
+  Fake a auth_session_info just from a username (as a
+  session_info structure, with create_local_token() already called on
+  it.
+****************************************************************************/
+
+static NTSTATUS make_session_info_from_pw(TALLOC_CTX *mem_ctx,
+					  struct passwd *pwd,
+					  bool is_guest,
+					  struct auth_session_info **session_info)
+{
+	struct auth_serversupplied_info *result;
+	NTSTATUS status;
+
+	status = make_server_info_pw(&result, pwd->pw_name, pwd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	result->nss_token = true;
+	result->guest = is_guest;
+
+	/* Now turn the server_info into a session_info with the full token etc */
+	status = create_local_token(mem_ctx, result, NULL, pwd->pw_name, session_info);
+	talloc_free(result);
+	return status;
+}
+
 /***************************************************************************
  Make (and fill) a auth_session_info struct for a system user login.
  This *must* succeed for smbd to start.
@@ -907,10 +936,10 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	status = make_session_info_from_username(mem_ctx,
-						 pwd->pw_name,
-						 false,
-						 session_info);
+	status = make_session_info_from_pw(mem_ctx,
+					   pwd,
+					   false,
+					   session_info);
 	TALLOC_FREE(pwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -941,7 +970,6 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 					 bool is_guest,
 					 struct auth_session_info **session_info)
 {
-	struct auth_serversupplied_info *result;
 	struct passwd *pwd;
 	NTSTATUS status;
 
@@ -950,20 +978,14 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	status = make_server_info_pw(&result, pwd->pw_name, pwd);
+	status = make_session_info_from_pw(mem_ctx, pwd, is_guest, session_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pwd);
 		return status;
 	}
 
-	result->nss_token = true;
-	result->guest = is_guest;
-
-	/* Now turn the server_info into a session_info with the full token etc */
-	status = create_local_token(mem_ctx, result, NULL, pwd->pw_name, session_info);
 	TALLOC_FREE(pwd);
-	talloc_free(result);
 	return status;
 }
 
