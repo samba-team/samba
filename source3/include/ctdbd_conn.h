@@ -60,7 +60,8 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
 		       TDB_DATA key);
 
 NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
-		     TDB_DATA key, TALLOC_CTX *mem_ctx, TDB_DATA *data);
+		     TDB_DATA key, TALLOC_CTX *mem_ctx, TDB_DATA *data,
+		     bool local_copy);
 
 NTSTATUS ctdbd_traverse(uint32 db_id,
 			void (*fn)(TDB_DATA key, TDB_DATA data,
