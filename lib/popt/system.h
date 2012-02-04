@@ -58,6 +58,8 @@ char *alloca ();
 # endif
 #elif defined(__GNUC__) && defined(__STRICT_ANSI__)
 #define alloca __builtin_alloca
+#elif defined(__GNUC__) && defined(HAVE_ALLOCA_H)
+# include <alloca.h>
 #endif
 
 /*@-redecl -redef@*/
