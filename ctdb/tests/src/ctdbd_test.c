@@ -53,9 +53,6 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb) {}
 #include "common/cmdline.c"
 #include "lib/util/debug.c"
 #include "common/rb_tree.c"
-#ifdef _LINUX_ERRNO_H
-#include "common/system_linux.c"
-#endif
 #include "common/system_common.c"
 #include "common/ctdb_logging.c"
 

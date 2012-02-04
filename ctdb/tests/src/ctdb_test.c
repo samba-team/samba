@@ -78,9 +78,6 @@ void tevent_loop_allow_nesting_foobar(struct tevent_context *ev);
 #include "common/cmdline.c"
 #include "lib/util/debug.c"
 #include "common/rb_tree.c"
-#ifdef _LINUX_ERRNO_H
-#include "common/system_linux.c"
-#endif
 #include "common/system_common.c"
 #include "common/ctdb_logging.c"
 
