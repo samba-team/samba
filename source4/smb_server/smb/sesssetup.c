@@ -83,8 +83,8 @@ static void sesssetup_old_send(struct tevent_req *subreq)
 		flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 	/* This references user_info_dc into session_info */
-	status = req->smb_conn->negotiate.auth_context->generate_session_info(req,
-									      req->smb_conn->negotiate.auth_context,
+	status = req->smb_conn->negotiate.auth_context->generate_session_info(req->smb_conn->negotiate.auth_context,
+									      req,
 									      user_info_dc, sess->old.in.user, 
 									      flags, &session_info);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
@@ -215,8 +215,8 @@ static void sesssetup_nt1_send(struct tevent_req *subreq)
 		flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 	/* This references user_info_dc into session_info */
-	status = state->auth_context->generate_session_info(req,
-							    state->auth_context,
+	status = state->auth_context->generate_session_info(state->auth_context,
+							    req,
 							    user_info_dc,
 							    sess->nt1.in.user,
 							    flags,

@@ -33,9 +33,9 @@
 #include "auth/kerberos/kerberos.h"
 #include "auth/kerberos/kerberos_util.h"
 
-static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
-                                                  struct auth4_context *auth_context,
-						   void *server_returned_info,
+static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_context,
+						   TALLOC_CTX *mem_ctx,
+                                                  void *server_returned_info,
 						   const char *original_user_name,
 						   uint32_t session_info_flags,
 						   struct auth_session_info **session_info);
@@ -139,7 +139,7 @@ static NTSTATUS auth_generate_session_info_principal(struct auth4_context *auth_
 			return nt_status;
 		}
 
-		nt_status = auth_generate_session_info_wrapper(mem_ctx, auth_ctx,
+		nt_status = auth_generate_session_info_wrapper(auth_ctx, mem_ctx, 
 							       user_info_dc,
 							       user_info_dc->info->account_name,
 							       session_info_flags, session_info);
@@ -465,8 +465,8 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
   * know that session_info is generated from the main ldb, and because
   * we need to break a depenency loop between the DCE/RPC layer and the
   * generation of unix tokens via IRPC */
-static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
-                                                  struct auth4_context *auth_context,
+static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_context,
+						   TALLOC_CTX *mem_ctx,
 						   void *server_returned_info,
 						   const char *original_user_name,
                                                   uint32_t session_info_flags,
@@ -543,7 +543,7 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 		session_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 
-	status = auth_generate_session_info_wrapper(mem_ctx, auth_ctx,
+	status = auth_generate_session_info_wrapper(auth_ctx, mem_ctx, 
 						    user_info_dc,
 						    user_info_dc->info->account_name,
 						    session_info_flags, session_info);

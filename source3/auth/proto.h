@@ -74,8 +74,8 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx, const struct tsocket_address 
 
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
-NTSTATUS auth3_generate_session_info(TALLOC_CTX *mem_ctx,
-				     struct auth4_context *auth_context,
+NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
+				     TALLOC_CTX *mem_ctx,
 				     void *server_returned_info,
 				     const char *original_user_name,
 				     uint32_t session_info_flags,

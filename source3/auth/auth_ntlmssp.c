@@ -24,8 +24,8 @@
 #include "includes.h"
 #include "auth.h"
 
-NTSTATUS auth3_generate_session_info(TALLOC_CTX *mem_ctx,
-				     struct auth4_context *auth_context,
+NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
+				     TALLOC_CTX *mem_ctx,
 				     void *server_returned_info,
 				     const char *original_user_name,
 				     uint32_t session_info_flags,

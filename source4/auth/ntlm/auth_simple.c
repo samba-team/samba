@@ -94,7 +94,8 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 		if (user_info_dc->info->authenticated) {
 			flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 		}
-		nt_status = auth_context->generate_session_info(tmp_ctx, auth_context,
+		nt_status = auth_context->generate_session_info(auth_context,
+								tmp_ctx, 
 								user_info_dc,
 								nt4_username,
 								flags,

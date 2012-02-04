@@ -117,8 +117,8 @@ struct auth4_context {
 
 	NTSTATUS (*set_challenge)(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 
-	NTSTATUS (*generate_session_info)(TALLOC_CTX *mem_ctx,
-					  struct auth4_context *auth_context,
+	NTSTATUS (*generate_session_info)(struct auth4_context *auth_context,
+					  TALLOC_CTX *mem_ctx,
 					  void *server_returned_info,
 					  const char *original_user_name,
 					  uint32_t session_info_flags,
