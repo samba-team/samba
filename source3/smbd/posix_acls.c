@@ -1493,6 +1493,66 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		pace_other = pace;
 	}
 
+	if (setting_acl) {
+		/* Ensure when setting a POSIX ACL, that the uid for a
+		   SMB_ACL_USER_OBJ ACE (the owner ACE entry) has a duplicate
+		   permission entry as an SMB_ACL_USER, and a gid for a
+		   SMB_ACL_GROUP_OBJ ACE (the primary group ACE entry) also has
+		   a duplicate permission entry as an SMB_ACL_GROUP. If not,
+		   then if the ownership or group ownership of this file or
+		   directory gets changed, the user or group can lose their
+		   access. */
+
+		for (pace = *pp_ace; pace; pace = pace->next) {
+			if (pace->type == SMB_ACL_USER &&
+					pace->unix_ug.uid == pace_user->unix_ug.uid) {
+				/* Already got one. */
+				pace_user = NULL;
+			} else if (pace->type == SMB_ACL_USER &&
+					pace->unix_ug.uid == pace_user->unix_ug.uid) {
+				/* Already got one. */
+				pace_group = NULL;
+			}
+		}
+
+		if (pace_user) {
+			/* Add a duplicate SMB_ACL_USER entry. */
+			if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
+				DEBUG(0,("ensure_canon_entry_valid: talloc fail.\n"));
+				return false;
+			}
+
+			ZERO_STRUCTP(pace);
+			pace->type = SMB_ACL_USER;;
+			pace->owner_type = UID_ACE;
+			pace->unix_ug.uid = pace_user->unix_ug.uid;
+			pace->trustee = pace_user->trustee;
+			pace->attr = pace_user->attr;
+			pace->perms = pace_user->perms;
+
+			DLIST_ADD(*pp_ace, pace);
+		}
+
+		if (pace_group) {
+			/* Add a duplicate SMB_ACL_GROUP entry. */
+			if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
+				DEBUG(0,("ensure_canon_entry_valid: talloc fail.\n"));
+				return false;
+			}
+
+			ZERO_STRUCTP(pace);
+			pace->type = SMB_ACL_GROUP;;
+			pace->owner_type = GID_ACE;
+			pace->unix_ug.gid = pace_group->unix_ug.gid;
+			pace->trustee = pace_group->trustee;
+			pace->attr = pace_group->attr;
+			pace->perms = pace_group->perms;
+
+			DLIST_ADD(*pp_ace, pace);
+		}
+
+	}
+
 	return True;
 }
 
