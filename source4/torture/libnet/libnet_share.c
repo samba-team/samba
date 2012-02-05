@@ -24,6 +24,7 @@
 #include "libnet/libnet.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc_c.h"
+#include "torture/libnet/proto.h"
 
 
 #define TEST_SHARENAME "libnetsharetest"
