@@ -374,7 +374,7 @@ static PyObject *py_socket_getsockopt(pytalloc_Object *self, PyObject *args)
 {
 	int level, optname;
 	int *sock;
-	socklen_t optlen = -1, newlen;
+	socklen_t optlen = 0, newlen;
 	int optval;
 	bool is_integer = false;
 	char *buffer;
@@ -385,7 +385,7 @@ static PyObject *py_socket_getsockopt(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	if (optlen < 0) {
+	if (optlen == 0) {
 		optlen = sizeof(int);
 		is_integer = true;
 	}
