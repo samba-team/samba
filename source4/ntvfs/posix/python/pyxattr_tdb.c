@@ -92,7 +92,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 	}
 	status = pull_xattr_blob_tdb_raw(eadb, mem_ctx, attribute, filename, 
 									 -1, 100, &blob);
-	if (!NT_STATUS_IS_OK(status) || blob.length < 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		talloc_free(mem_ctx);
 		return NULL;
