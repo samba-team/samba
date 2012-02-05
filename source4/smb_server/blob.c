@@ -180,7 +180,7 @@ NTSTATUS smbsrv_blob_append_string(TALLOC_CTX *mem_ctx,
 				   int default_flags,
 				   int flags)
 {
-	size_t ret;
+	ssize_t ret;
 	uint32_t offset;
 	const int max_bytes_per_char = 3;
 
