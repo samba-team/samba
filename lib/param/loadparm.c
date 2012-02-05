@@ -2566,6 +2566,9 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 				return false;
 			}
 			break;
+
+		case P_SEP:
+			break;
 	}
 
 mark_non_default:
@@ -2968,6 +2971,8 @@ static bool is_default(struct loadparm_service *sDefault, int i)
 		case P_ENUM:
 			return parm_table[i].def.ivalue ==
 				*(int *)def_ptr;
+		case P_SEP:
+			break;
 	}
 	return false;
 }
