@@ -23,6 +23,8 @@
 
 struct torture_context;
 
+bool torture_local_crypto_md5(struct torture_context *torture);
+
 /*
  This uses the test values from rfc1321
 */

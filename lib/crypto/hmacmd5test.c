@@ -21,6 +21,7 @@
 #include "../lib/crypto/crypto.h"
 
 struct torture_context;
+bool torture_local_crypto_hmacmd5(struct torture_context *torture);
 
 static DATA_BLOB data_blob_repeat_byte(uint8_t byte, size_t length)
 {
