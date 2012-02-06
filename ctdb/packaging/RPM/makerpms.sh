@@ -44,6 +44,14 @@ SPECFILE="ctdb.spec"
 SPECFILE_IN="ctdb.spec.in"
 RPMBUILD="rpmbuild"
 
+mkdir -p `rpm --eval %_specdir`
+mkdir -p `rpm --eval %_sourcedir`
+mkdir -p `rpm --eval %_builddir`
+mkdir -p `rpm --eval %_srcrpmdir`
+mkdir -p `rpm --eval %_rpmdir`/noarch
+mkdir -p `rpm --eval %_rpmdir`/i386
+mkdir -p `rpm --eval %_rpmdir`/x86_64
+
 # We use tags and determine the version, as follows:
 # ctdb-0.9.1  (First release of 0.9).
 # ctdb-0.9.23 (23rd minor release of the 112 version)
