@@ -111,6 +111,33 @@ static const char *pretty_print_flags(uint32_t flags)
 	return flags_str;
 }
 
+static int h2i(char h)
+{
+	if (h >= 'a' && h <= 'f') return h - 'a' + 10;
+	if (h >= 'A' && h <= 'F') return h - 'f' + 10;
+	return h - '0';
+}
+
+static TDB_DATA hextodata(TALLOC_CTX *mem_ctx, const char *str)
+{
+	int i, len;
+	TDB_DATA key = {NULL, 0};
+
+	len = strlen(str);
+	if (len & 0x01) {
+		DEBUG(DEBUG_ERR,("Key specified with odd number of hexadecimal digits\n"));
+		return key;
+	}
+
+	key.dsize = len>>1;
+	key.dptr  = talloc_size(mem_ctx, key.dsize);
+
+	for (i=0; i < len/2; i++) {
+		key.dptr[i] = h2i(str[i*2]) << 4 | h2i(str[i*2+1]);
+	}
+	return key;
+}
+
 /* Parse a nodestring.  Parameter dd_ok controls what happens to nodes
  * that are disconnected or deleted.  If dd_ok is true those nodes are
  * included in the output list of nodes.  If dd_ok is false, those
@@ -3273,7 +3300,6 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 
 	db_name = argv[0];
 
-
 	if (db_exists(ctdb, db_name, &persistent)) {
 		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
 		return -1;
@@ -3288,7 +3314,7 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 
 	key.dptr  = discard_const(argv[1]);
 	key.dsize = strlen((char *)key.dptr);
- 
+
 	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 	if (h == NULL) {
 		printf("Failed to fetch record '%s' on node %d\n", 
@@ -3322,7 +3348,6 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 
 	db_name = argv[0];
 
-
 	if (db_exists(ctdb, db_name, &persistent)) {
 		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
 		return -1;
@@ -3337,7 +3362,7 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 
 	key.dptr  = discard_const(argv[1]);
 	key.dsize = strlen((char *)key.dptr);
- 
+
 	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
 	if (h == NULL) {
 		printf("Failed to fetch record '%s' on node %d\n", 
@@ -3348,7 +3373,7 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 
 	data.dptr  = discard_const(argv[2]);
 	data.dsize = strlen((char *)data.dptr);
- 
+
 	if (ctdb_record_store(h, data) != 0) {
 		printf("Failed to store record\n");
 	}
@@ -3451,6 +3476,7 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	const char *tdb_file;
 	TDB_CONTEXT *tdb;
 	TDB_DATA key, data;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	int fd;
 
 	if (argc < 2) {
@@ -3461,15 +3487,23 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 
 	tdb = tdb_open(tdb_file, 0, 0, O_RDONLY, 0);
 	if (tdb == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to open TDB file %s\n", tdb_file));
+		fprintf(stderr, "Failed to open TDB file %s\n", tdb_file);
 		return -1;
 	}
 
-	key.dptr  = discard_const(argv[1]);
-	key.dsize = strlen(argv[1]);
+	if (!strncmp(argv[1], "0x", 2)) {
+		key = hextodata(tmp_ctx, argv[1] + 2);
+		if (key.dsize == 0) {
+			fprintf(stderr, "Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
+			return -1;
+		}
+	} else {
+		key.dptr  = discard_const(argv[1]);
+		key.dsize = strlen(argv[1]);
+	}
 	data = tdb_fetch(tdb, key);
 	if (data.dptr == NULL || data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(DEBUG_ERR,("Failed to read record %s from tdb %s\n", argv[1], tdb_file));
+		fprintf(stderr, "Failed to read record %s from tdb %s\n", argv[1], tdb_file);
 		tdb_close(tdb);
 		return -1;
 	}
@@ -3479,7 +3513,7 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	if (argc == 3) {
 	  fd = open(argv[2], O_WRONLY|O_CREAT|O_TRUNC, 0600);
 		if (fd == -1) {
-			DEBUG(DEBUG_ERR,("Failed to open output file %s\n", argv[2]));
+			printf("Failed to open output file %s\n", argv[2]);
 			return -1;
 		}
 		write(fd, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
@@ -3488,6 +3522,7 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 		write(1, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
 	}
 
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
