@@ -118,7 +118,7 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
         if random_password:
             password = generate_random_password(128, 255)
 
-        while 1:
+        while True:
             if password is not None and password is not '':
                 break
             password = getpass("New Password: ")
@@ -317,6 +317,12 @@ class cmd_user_disable(Command):
 
     takes_args = ["username?"]
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
     def run(self, username=None, sambaopts=None, credopts=None,
             versionopts=None, filter=None, H=None):
         if username is None and filter is None:
@@ -409,9 +415,6 @@ Example4 shows how to set the account expiration so that it will never expire.  
 
 class cmd_user_password(Command):
     """Change password for a user account (the one provided in authentication)
-
-
-
 """
 
     synopsis = "%prog [options]"
@@ -419,6 +422,12 @@ class cmd_user_password(Command):
     takes_options = [
         Option("--newpassword", help="New password", type=str),
         ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     def run(self, credopts=None, sambaopts=None, versionopts=None,
                 newpassword=None):
