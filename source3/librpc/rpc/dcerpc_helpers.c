@@ -25,7 +25,6 @@
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "librpc/crypto/gse.h"
-#include "librpc/crypto/spnego.h"
 #include "auth/gensec/gensec.h"
 
 #undef DBGC_CLASS
@@ -267,8 +266,6 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	size_t mod_len;
 	struct gensec_security *gensec_security;
 	struct schannel_state *schannel_auth;
-	struct spnego_context *spnego_ctx;
-	NTSTATUS status;
 
 	/* no auth token cases first */
 	switch (auth->auth_level) {
@@ -300,15 +297,6 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	/* Treat the same for all authenticated rpc requests. */
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
-						   struct spnego_context);
-		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		*auth_len = gensec_sig_size(gensec_security, max_len);
-		break;
-
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
 		gensec_security = talloc_get_type_abort(auth->auth_ctx,
@@ -557,7 +545,6 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 {
 	struct schannel_state *schannel_auth;
 	struct gensec_security *gensec_security;
-	struct spnego_context *spnego_ctx;
 	char pad[CLIENT_NDR_PADDING_SIZE] = { 0, };
 	DATA_BLOB auth_info;
 	DATA_BLOB auth_blob;
@@ -606,17 +593,6 @@ NTSTATUS dcerpc_add_auth_footer(struct pipe_auth_data *auth,
 		status = NT_STATUS_OK;
 		break;
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
-						   struct spnego_context);
-		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		status = add_generic_auth_footer(gensec_security,
-						 auth->auth_level,
-						 rpc_out);
-		break;
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		gensec_security = talloc_get_type_abort(auth->auth_ctx,
@@ -661,7 +637,6 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 {
 	struct schannel_state *schannel_auth;
 	struct gensec_security *gensec_security;
-	struct spnego_context *spnego_ctx;
 	NTSTATUS status;
 	struct dcerpc_auth auth_info;
 	uint32_t auth_length;
@@ -728,23 +703,6 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 		return NT_STATUS_OK;
 
 	case DCERPC_AUTH_TYPE_SPNEGO:
-		spnego_ctx = talloc_get_type_abort(auth->auth_ctx,
-						   struct spnego_context);
-		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		status = get_generic_auth_footer(gensec_security,
-						 auth->auth_level,
-						 &data, &full_pkt,
-						 &auth_info.credentials);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		break;
-
 	case DCERPC_AUTH_TYPE_KRB5:
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 

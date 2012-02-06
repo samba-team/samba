@@ -34,7 +34,6 @@
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "dcesrv_auth_generic.h"
-#include "dcesrv_spnego.h"
 #include "rpc_server.h"
 #include "rpc_dce.h"
 #include "smbd/smbd.h"
@@ -423,45 +422,6 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 }
 
 /*******************************************************************
- Handle the first part of a SPNEGO bind auth.
-*******************************************************************/
-
-static bool pipe_spnego_auth_bind(struct pipes_struct *p,
-				  TALLOC_CTX *mem_ctx,
-				  struct dcerpc_auth *auth_info,
-				  DATA_BLOB *response)
-{
-	struct spnego_context *spnego_ctx;
-	NTSTATUS status;
-
-	status = spnego_server_auth_start(p,
-					  (auth_info->auth_level ==
-						DCERPC_AUTH_LEVEL_INTEGRITY),
-					  (auth_info->auth_level ==
-						DCERPC_AUTH_LEVEL_PRIVACY),
-					  true,
-					  &auth_info->credentials,
-					  response,
-					  p->remote_address,
-					  &spnego_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed SPNEGO negotiate (%s)\n",
-			  nt_errstr(status)));
-		return false;
-	}
-
-	/* Make sure data is bound to the memctx, to be freed the caller */
-	talloc_steal(mem_ctx, response->data);
-
-	p->auth.auth_ctx = spnego_ctx;
-	p->auth.auth_type = DCERPC_AUTH_TYPE_SPNEGO;
-
-	DEBUG(10, ("SPNEGO auth started\n"));
-
-	return true;
-}
-
-/*******************************************************************
  Handle an schannel bind auth.
 *******************************************************************/
 
@@ -678,32 +638,16 @@ static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 {
 	struct gensec_security *gensec_security;
-	struct spnego_context *spnego_ctx;
-	NTSTATUS status;
 
 	switch (p->auth.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
+	case DCERPC_AUTH_TYPE_SPNEGO:
 		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
 							struct gensec_security);
 		if (!pipe_auth_generic_verify_final(p, gensec_security,
 						p->auth.auth_level,
 						&p->session_info)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		break;
-	case DCERPC_AUTH_TYPE_SPNEGO:
-		spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-						   struct spnego_context);
-		status = spnego_get_negotiated_mech(spnego_ctx, &gensec_security);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Bad SPNEGO state (%s)\n",
-				  nt_errstr(status)));
-			return status;
-		}
-		if (!pipe_auth_generic_verify_final(p, gensec_security,
-						    p->auth.auth_level,
-						    &p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		break;
@@ -883,12 +827,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			break;
 
 		case DCERPC_AUTH_TYPE_SPNEGO:
-			if (!pipe_spnego_auth_bind(p, pkt,
-						&auth_info, &auth_resp)) {
-				goto err_exit;
-			}
-			break;
-
 		case DCERPC_AUTH_TYPE_KRB5:
 			if (!pipe_auth_generic_bind(p, pkt,
 						    &auth_info, &auth_resp)) {
@@ -1033,7 +971,6 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	struct dcerpc_auth auth_info;
 	DATA_BLOB response = data_blob_null;
 	struct gensec_security *gensec_security;
-	struct spnego_context *spnego_ctx;
 	NTSTATUS status;
 
 	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
@@ -1080,18 +1017,12 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	switch (auth_info.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
+	case DCERPC_AUTH_TYPE_SPNEGO:
 		gensec_security = talloc_get_type_abort(p->auth.auth_ctx,
 						    struct gensec_security);
 		status = auth_generic_server_step(gensec_security,
 					     pkt, &auth_info.credentials,
 					     &response);
-		break;
-	case DCERPC_AUTH_TYPE_SPNEGO:
-		spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-						   struct spnego_context);
-		status = spnego_server_step(spnego_ctx,
-					    pkt, &auth_info.credentials,
-					    &response);
 		break;
 	default:
 		DEBUG(0, (__location__ ": incorrect auth type (%u).\n",
@@ -1145,7 +1076,6 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	DATA_BLOB auth_blob = data_blob_null;
 	int pad_len = 0;
 	struct gensec_security *gensec_security;
-	struct spnego_context *spnego_ctx;
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
 
@@ -1223,14 +1153,6 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 
 		switch (auth_info.auth_type) {
 		case DCERPC_AUTH_TYPE_SPNEGO:
-			spnego_ctx = talloc_get_type_abort(p->auth.auth_ctx,
-							struct spnego_context);
-			status = spnego_server_step(spnego_ctx,
-						    pkt,
-						    &auth_info.credentials,
-						    &auth_resp);
-			break;
-
 		case DCERPC_AUTH_TYPE_KRB5:
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 			gensec_security = talloc_get_type_abort(p->auth.auth_ctx,

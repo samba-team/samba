@@ -38,7 +38,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_CRYPTO',
-                     source='dcesrv_auth_generic.c dcesrv_spnego.c',
+                     source='dcesrv_auth_generic.c',
                      deps = 'KRB5_PAC')
 
 bld.SAMBA3_SUBSYSTEM('RPC_PIPE_REGISTER',
