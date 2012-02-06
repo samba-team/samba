@@ -33,6 +33,15 @@ case `uname` in
     CTDB_SCSI_IO=
     CTDB_PCAP_LDFLAGS=-lpcap
     ;;
+  FreeBSD)
+    CTDB_SYSTEM_OBJ=common/system_freebsd.o
+    CTDB_SCSI_IO=
+    CTDB_PCAP_LDFLAGS=-lpcap
+    LDFLAGS="$LDFLAGS -L/usr/local/lib -lexecinfo"
+    AC_SUBST(LDFLAGS)
+    CPPFLAGS="$CPPFLAGS -L/usr/local/include -D_FREEBSD_=1"
+    AC_SUBST(CPPFLAGS)
+    ;;
   GNU)
     CTDB_SYSTEM_OBJ=common/system_gnu.o
     CTDB_SCSI_IO=
