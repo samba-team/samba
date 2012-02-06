@@ -250,9 +250,8 @@ PyTypeObject imessaging_Type = {
 	.tp_dealloc = py_imessaging_dealloc,
 	.tp_methods = py_imessaging_methods,
 	.tp_getset = py_imessaging_getset,
-	.tp_doc = "Messaging(own_id=None, imessaging_path=None)\n" \
-		  "Create a new object that can be used to communicate with the peers in the specified messaging path.\n" \
-		  "If no path is specified, the default path from smb.conf will be used."
+	.tp_doc = "Messaging(own_id=None)\n" \
+		  "Create a new object that can be used to communicate with the peers in the specified messaging path.\n"
 };
 
 void initmessaging(void)
