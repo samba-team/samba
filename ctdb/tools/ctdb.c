@@ -3487,14 +3487,14 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 
 	tdb = tdb_open(tdb_file, 0, 0, O_RDONLY, 0);
 	if (tdb == NULL) {
-		fprintf(stderr, "Failed to open TDB file %s\n", tdb_file);
+		printf("Failed to open TDB file %s\n", tdb_file);
 		return -1;
 	}
 
 	if (!strncmp(argv[1], "0x", 2)) {
 		key = hextodata(tmp_ctx, argv[1] + 2);
 		if (key.dsize == 0) {
-			fprintf(stderr, "Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
+			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
 			return -1;
 		}
 	} else {
@@ -3503,7 +3503,7 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 	data = tdb_fetch(tdb, key);
 	if (data.dptr == NULL || data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		fprintf(stderr, "Failed to read record %s from tdb %s\n", argv[1], tdb_file);
+		printf("Failed to read record %s from tdb %s\n", argv[1], tdb_file);
 		tdb_close(tdb);
 		return -1;
 	}
@@ -3516,10 +3516,18 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 			printf("Failed to open output file %s\n", argv[2]);
 			return -1;
 		}
-		write(fd, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+		if (options.verbose){
+			write(fd, data.dptr, data.dsize);
+		} else {
+			write(fd, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+		}
 		close(fd);
 	} else {
-		write(1, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+		if (options.verbose){
+			write(1, data.dptr, data.dsize);
+		} else {
+			write(1, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
+		}
 	}
 
 	talloc_free(tmp_ctx);
