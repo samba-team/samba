@@ -63,7 +63,6 @@ static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
-	bool local = False;
 	fstring dc_name;
 	struct sockaddr_storage dc_ip;
 	struct idmap_ad_context *ctx;
@@ -101,10 +100,8 @@ static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 		}
 	}
 
-	if (!local) {
-		/* we don't want this to affect the users ccache */
-		setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
-	}
+	/* we don't want this to affect the users ccache */
+	setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
 
 	/*
 	 * At this point we only have the NetBIOS domain name.
