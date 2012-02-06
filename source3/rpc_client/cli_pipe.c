@@ -1018,7 +1018,7 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 	gensec_security = talloc_get_type_abort(cli->auth->auth_ctx,
 					struct gensec_security);
 
-	DEBUG(5, ("create_generic_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
+	DEBUG(5, ("create_generic_auth_rpc_bind_req: generate first token\n"));
 	return gensec_update(gensec_security, mem_ctx, NULL, null_blob, auth_token);
 }
 
