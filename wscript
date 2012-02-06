@@ -97,6 +97,7 @@ def configure(conf):
     conf.RECURSE('lib/popt')
     conf.RECURSE('lib/subunit/c')
     conf.RECURSE('libcli/smbreadline')
+    conf.RECURSE('lib/crypto')
     conf.RECURSE('pidl')
     conf.RECURSE('selftest')
     conf.RECURSE('source3')
