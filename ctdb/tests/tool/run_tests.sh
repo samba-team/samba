@@ -11,6 +11,10 @@ opts="-d"
 
 for i ; do
     case "$i" in
+	-v)
+	    export TESTS_VERBOSE="yes"
+	    shift
+	    ;;
 	-*)
 	    opts="$opts $i"
 	    shift

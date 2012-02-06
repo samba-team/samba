@@ -44,7 +44,7 @@ simple_test ()
     # Most of the tests when the tool fails will have a date/time/pid
     # prefix.  Strip that because it isn't possible to match it.
     if [ $required_rc -ne 0 ]  ; then
-	OUT_FILTER='s@^[0-9/]+ [0-9:\.]+ \[[0-9]+\]:@DATE TIME \[PID\]:@'
+	OUT_FILTER='s@^[0-9/]+ [0-9:\.]+ \[[ 0-9]+\]:@DATE TIME \[PID\]:@'
     fi
 
     if [ -n "$OUT_FILTER" ] ; then
@@ -54,6 +54,14 @@ simple_test ()
     fi
 
     if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
+	if [ "$TESTS_VERBOSE" = "yes" ] ; then
+	    cat <<EOF
+##################################################
+Output (Exit status: ${_rc}):
+##################################################
+$_fout
+EOF
+	fi
 	echo "PASSED"
     else
 	cat -A <<EOF
@@ -64,7 +72,7 @@ $required_output
 ##################################################
 Actual output (Exit status: ${_rc}):
 ##################################################
-$_out
+$_fout
 EOF
 	return 1
     fi
