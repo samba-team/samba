@@ -87,6 +87,8 @@ struct gensec_settings {
 	/* To fill in our own name in the NTLMSSP server */
 	const char *server_dns_domain;
 	const char *server_dns_name;
+	const char *server_netbios_domain;
+	const char *server_netbios_name;
 };
 
 struct gensec_security_ops {

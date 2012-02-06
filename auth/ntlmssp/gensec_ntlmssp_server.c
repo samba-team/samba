@@ -343,8 +343,17 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 		ntlmssp_state->server.is_standalone = false;
 	}
 
-	netbios_name = lpcfg_netbios_name(gensec_security->settings->lp_ctx);
-	netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
+	if (gensec_security->settings->server_netbios_name) {
+		netbios_name = gensec_security->settings->server_netbios_name;
+	} else {
+		netbios_name = lpcfg_netbios_name(gensec_security->settings->lp_ctx);
+	}
+
+	if (gensec_security->settings->server_netbios_domain) {
+		netbios_domain = gensec_security->settings->server_netbios_domain;
+	} else {
+		netbios_domain = lpcfg_workgroup(gensec_security->settings->lp_ctx);
+	}
 
 	if (gensec_security->settings->server_dns_name) {
 		dns_name = gensec_security->settings->server_dns_name;
