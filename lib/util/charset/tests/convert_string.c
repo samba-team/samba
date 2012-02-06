@@ -23,6 +23,11 @@
 #include "lib/util/charset/charset.h"
 #include "param/param.h"
 
+struct torture_suite *torture_local_convert_string_handle(TALLOC_CTX *mem_ctx);
+struct torture_suite *torture_local_string_case_handle(TALLOC_CTX *mem_ctx);
+struct torture_suite *torture_local_convert_string(TALLOC_CTX *mem_ctx);
+struct torture_suite *torture_local_string_case(TALLOC_CTX *mem_ctx);
+
 /* The text below is in ancient and a latin charset transliteration of
  * greek, and an english translation.  It from Apology by Plato and sourced from
  * http://en.wikipedia.org/w/index.php?title=Ancient_Greek&oldid=421361065#Example_text

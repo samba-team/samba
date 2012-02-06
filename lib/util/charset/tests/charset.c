@@ -21,6 +21,8 @@
 #include "includes.h"
 #include "torture/torture.h"
 
+struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx);
+
 static bool test_toupper_m(struct torture_context *tctx)
 {
 	torture_assert_int_equal(tctx, toupper_m('c'), 'C', "c");
