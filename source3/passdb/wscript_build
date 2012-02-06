@@ -9,7 +9,7 @@ PDB_WBC_SAM_SRC =   'pdb_wbc_sam.c'
 bld.SAMBA3_MODULE('pdb_tdbsam',
                  subsystem='pdb',
                  source=PDB_TDBSAM_SRC,
-                 deps='samba-util tdb',
+                 deps='samba-util tdb_compat',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_tdbsam'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_tdbsam'))
@@ -57,6 +57,6 @@ bld.SAMBA3_MODULE('pdb_samba4',
 bld.SAMBA3_PYTHON('pypassdb',
                   source='py_passdb.c',
                   deps='pdb',
-                  public_deps='samba-util tdb talloc pyrpc_util',
+                  public_deps='samba-util tdb_compat talloc pyrpc_util',
                   realname='samba/samba3/passdb.so'
                   )
