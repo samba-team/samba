@@ -8,6 +8,6 @@ setup_ctdb
 
 export CTDB_PUBLIC_ADDRESSES="$CTDB_ETC/does/not/exist"
 
-ok_null
+ok "No public addresses file found. Nothing to do for 10.interfaces"
 
 simple_test
