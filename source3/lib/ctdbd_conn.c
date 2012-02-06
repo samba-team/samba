@@ -1641,7 +1641,7 @@ static void smbd_ctdb_canonicalize_ip(const struct sockaddr_storage *in,
 #endif
 			out4->sin_family = AF_INET;
 			out4->sin_port   = in6->sin6_port;
-			memcpy(&out4->sin_addr, &in6->sin6_addr.s6_addr32[3], 4);
+			memcpy(&out4->sin_addr, &in6->sin6_addr.s6_addr[12], 4);
 		}
 	}
 #endif
