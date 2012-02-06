@@ -1443,6 +1443,10 @@ extern void build_options(bool screen);
 		DEBUG(0, ("ERROR: file_init_global() failed\n"));
 		return -1;
 	}
+	status = smbXsrv_open_global_init();
+	if (!NT_STATUS_IS_OK(status)) {
+		exit(1);
+	}
 
 	/* This MUST be done before start_epmd() because otherwise
 	 * start_epmd() forks and races against dcesrv_ep_setup() to

@@ -356,6 +356,7 @@ struct smbXsrv_connection {
 
 	struct smbXsrv_session_table *session_table;
 	struct smbXsrv_tcon_table *tcon_table;
+	struct smbXsrv_open_table *open_table;
 };
 
 NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id);
@@ -406,6 +407,25 @@ NTSTATUS smb2srv_tcon_lookup(struct smbXsrv_session *session,
 			     uint32_t tree_id, NTTIME now,
 			     struct smbXsrv_tcon **tcon);
 NTSTATUS smb2srv_tcon_disconnect_all(struct smbXsrv_session *session);
+
+NTSTATUS smbXsrv_open_global_init(void);
+NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
+			     struct auth_session_info *session_info,
+			     NTTIME now,
+			     struct smbXsrv_open **_open);
+uint32_t smbXsrv_open_hash(struct smbXsrv_open *_open);
+NTSTATUS smbXsrv_open_update(struct smbXsrv_open *_open);
+NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now);
+NTSTATUS smb1srv_open_table_init(struct smbXsrv_connection *conn);
+NTSTATUS smb1srv_open_lookup(struct smbXsrv_connection *conn,
+			     uint16_t fnum, NTTIME now,
+			     struct smbXsrv_open **_open);
+NTSTATUS smb2srv_open_table_init(struct smbXsrv_connection *conn);
+NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
+			     uint64_t persistent_id,
+			     uint64_t volatile_id,
+			     NTTIME now,
+			     struct smbXsrv_open **_open);
 
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
