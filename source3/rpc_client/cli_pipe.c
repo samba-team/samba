@@ -1014,20 +1014,12 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 {
 	struct gensec_security *gensec_security;
 	DATA_BLOB null_blob = data_blob_null;
-	NTSTATUS status;
 
 	gensec_security = talloc_get_type_abort(cli->auth->auth_ctx,
 					struct gensec_security);
 
 	DEBUG(5, ("create_generic_auth_rpc_bind_req: Processing NTLMSSP Negotiate\n"));
-	status = gensec_update(gensec_security, mem_ctx, NULL, null_blob, auth_token);
-
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		data_blob_free(auth_token);
-		return status;
-	}
-
-	return NT_STATUS_OK;
+	return gensec_update(gensec_security, mem_ctx, NULL, null_blob, auth_token);
 }
 
 /*******************************************************************
@@ -1143,7 +1135,9 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 	case DCERPC_AUTH_TYPE_KRB5:
 		ret = create_generic_auth_rpc_bind_req(cli, mem_ctx, &auth_token);
-		if (!NT_STATUS_IS_OK(ret)) {
+
+		if (!NT_STATUS_IS_OK(ret) &&
+		    !NT_STATUS_EQUAL(ret, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			return ret;
 		}
 		break;
@@ -1626,7 +1620,8 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 				     &cli->transfer_syntax,
 				     &state->rpc_out);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto post_status;
 	}
 
@@ -1743,6 +1738,11 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 			status = rpc_bind_next_send(req, state,
 							&auth_token);
 		} else if (NT_STATUS_IS_OK(status)) {
+			if (auth_token.length == 0) {
+				/* Bind complete. */
+				tevent_req_done(req);
+				return;
+			}
 			status = rpc_bind_finish_send(req, state,
 							&auth_token);
 		}
