@@ -17,6 +17,8 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
+#include <sys/socket.h>
+#include <string.h>
 #include <ctdb.h>
 #include <poll.h>
 #include <errno.h>

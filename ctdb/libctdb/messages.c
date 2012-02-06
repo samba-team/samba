@@ -17,6 +17,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <sys/socket.h>
 #include "libctdb_private.h"
 #include "messages.h"
 #include "io_elem.h"

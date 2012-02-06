@@ -17,6 +17,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
