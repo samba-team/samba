@@ -206,6 +206,7 @@ int main(int argc, const char *argv[])
 	}
 
 	ev = event_context_init(NULL);
+	tevent_loop_allow_nesting(ev);
 
 	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(3, 0));
 
