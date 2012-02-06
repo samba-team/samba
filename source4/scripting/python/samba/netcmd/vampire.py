@@ -3,7 +3,6 @@
 # Vampire
 #
 # Copyright Jelmer Vernooij 2010 <jelmer@samba.org>
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +33,12 @@ from samba.netcmd import (
 class cmd_vampire(Command):
     """Join and synchronise a remote AD domain to the local server"""
     synopsis = "%prog [options] <domain>"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_options = [
         Option("--target-dir", help="Target directory.", type=str),

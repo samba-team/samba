@@ -4,7 +4,6 @@
 #
 # Copyright Jelmer Vernooij 2010 <jelmer@samba.org>
 # Copyright Theresa Halloran 2011 <theresahalloran@gmail.com>
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,12 +20,15 @@
 #
 
 import samba.getopt as options
-import sys, ldb
+import ldb
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba import gensec, generate_random_password
-from samba import dsdb
+from samba import (
+    dsdb,
+    gensec,
+    generate_random_password,
+    )
 from samba.net import Net
 
 from samba.netcmd import (
@@ -100,6 +102,12 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
 
     takes_args = ["username", "password?"]
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
     def run(self, username, password=None, credopts=None, sambaopts=None,
             versionopts=None, H=None, must_change_at_next_login=False, random_password=False,
             use_username_as_cn=False, userou=None, surname=None, given_name=None, initials=None,
@@ -163,6 +171,7 @@ sudo samba-tool user delete User2
 
 Example2 shows how to delete a user in the domain against the local server.   sudo is used so a user may run the command as root.
 
+<<<<<<< HEAD
 """
     synopsis = "%prog <username> [options]"
 
@@ -172,9 +181,13 @@ Example2 shows how to delete a user in the domain against the local server.   su
     ]
 
     takes_args = ["username"]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     def run(self, username, credopts=None, sambaopts=None, versionopts=None, H=None):
-
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -196,6 +209,12 @@ class cmd_user_list(Command):
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
         ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     def run(self, sambaopts=None, credopts=None, versionopts=None, H=None):
         lp = sambaopts.get_loadparm()
@@ -249,6 +268,13 @@ Example3 shows how to enable a user in the domain against a local LDAP server.  
 
 """
     synopsis = "%prog (<username>|--filter <filter>) [options]"
+
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -340,6 +366,12 @@ Example4 shows how to set the account expiration so that it will never expire.  
 
 """
     synopsis = "%prog (<username>|--filter <filter>) [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -441,6 +473,12 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
 
 """
     synopsis = "%prog (<username>|--filter <filter>) [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,

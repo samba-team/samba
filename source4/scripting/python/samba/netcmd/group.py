@@ -5,7 +5,6 @@
 #
 # Based on the original in EJS:
 # Copyright Andrew Tridgell 2005
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -69,6 +68,12 @@ Example2 adds a new distribution group to the local server.  The command is run 
 
     synopsis = "%prog <groupname> [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
@@ -131,6 +136,12 @@ Example2 deletes group Group2 from the local server.  The command is run under r
 
     synopsis = "%prog <groupname> [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
@@ -172,6 +183,12 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
 """
 
     synopsis = "%prog <groupname> <listofmembers> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -216,6 +233,12 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
 """
 
     synopsis = "%prog <groupname> <listofmembers> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,

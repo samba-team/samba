@@ -76,6 +76,12 @@ class cmd_domain_export_keytab(Command):
 
     synopsis = "%prog <keytab> [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
     takes_options = [
         Option("--principal", help="extract only this principal", type=str),
         ]
@@ -117,6 +123,12 @@ class cmd_domain_join(Command):
     """Joins domain as either member or backup domain controller"""
 
     synopsis = "%prog <dnsdomain> [DC|RODC|MEMBER|SUBDOMAIN] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     takes_options = [
         Option("--server", help="DC to join", type=str),
@@ -407,7 +419,7 @@ class cmd_domain_demote(Command):
             except ldb.LdbError, l:
                 pass
 
-        print "Demote successfull"
+        self.outf.write("Demote successfull\n")
 
 
 
@@ -415,6 +427,12 @@ class cmd_domain_level(Command):
     """Raises domain and forest function levels"""
 
     synopsis = "%prog (show|raise <options>) [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
@@ -609,7 +627,6 @@ class cmd_domain_level(Command):
             raise CommandError("invalid argument: '%s' (choose from 'show', 'raise')" % subcommand)
 
 
-
 class cmd_domain_passwordsettings(Command):
     """Sets password settings
 
@@ -618,6 +635,12 @@ class cmd_domain_passwordsettings(Command):
     """
 
     synopsis = "%prog (show|set <options>) [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+        }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,

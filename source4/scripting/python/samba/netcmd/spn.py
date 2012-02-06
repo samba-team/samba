@@ -3,7 +3,6 @@
 # spn management
 #
 # Copyright Matthieu Patou mat@samba.org 2010
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,6 +36,12 @@ class cmd_spn_list(Command):
     """List spns of a given user."""
 
     synopsis = "%prog <user> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_args = ["user"]
 
@@ -75,6 +80,11 @@ class cmd_spn_add(Command):
 
     synopsis = "%prog <name> <user> [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
     takes_options = [
         Option("--force", help="Force the addition of the spn"\
                                " even it exists already", action="store_true"),
@@ -128,6 +138,12 @@ class cmd_spn_delete(Command):
     """Delete a spn."""
 
     synopsis = "%prog <name> [user] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_args = ["name", "user?"]
 

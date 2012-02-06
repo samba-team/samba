@@ -4,7 +4,6 @@
 #
 # Copyright Nadezhda Ivanova 2009
 # Copyright Jelmer Vernooij 2009
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,6 +37,12 @@ class cmd_fsmo_seize(Command):
     """Seize the role"""
 
     synopsis = "%prog [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,

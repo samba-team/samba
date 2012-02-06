@@ -4,7 +4,6 @@
 #   Unix SMB/CIFS implementation.
 #   Test validity of smb.conf
 #   Copyright (C) 2010-2011 Jelmer Vernooij <jelmer@samba.org>
-#   Copyright (C) Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # Based on the original in C:
 #   Copyright (C) Karl Auer 1993, 1994-1998
@@ -48,6 +47,11 @@ class cmd_testparm(Command):
 
     takes_optiongroups = {
         "sambaopts" : options.SambaOptions,
+        "versionopts": options.VersionOptions
+    }
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions
     }
 

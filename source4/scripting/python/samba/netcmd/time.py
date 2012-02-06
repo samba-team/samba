@@ -3,7 +3,6 @@
 # time
 #
 # Copyright Jelmer Vernooij 2010 <jelmer@samba.org>
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,6 +42,12 @@ samba-tool time
 Example2 return the date and time of the local server.
 """
     synopsis = "%prog [server-name] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_args = ["server_name?"]
 

@@ -3,7 +3,6 @@
 # Manipulate file NT ACLs
 #
 # Copyright Matthieu Patou 2010 <mat@matws.net>
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,6 +43,12 @@ class cmd_ntacl_set(Command):
 
     synopsis = "%prog <acl> <file> [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
     takes_options = [
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
@@ -79,6 +84,12 @@ class cmd_ntacl_set(Command):
 class cmd_ntacl_get(Command):
     """Set ACLs on a file"""
     synopsis = "%prog <file> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_options = [
         Option("--as-sddl", help="Output ACL in the SDDL format", action="store_true"),

@@ -5,7 +5,6 @@
 # Copyright Matthieu Patou mat@samba.org 2010
 # Copyright Stefan Metzmacher metze@samba.org 2011
 # Copyright Bjoern Baumbach bb@sernet.de 2011
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +39,12 @@ class cmd_delegation_show(Command):
     """Show the delegation setting of an account."""
 
     synopsis = "%prog <accountname> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_args = ["accountname"]
 
@@ -80,6 +85,12 @@ class cmd_delegation_for_any_service(Command):
 
     synopsis = "%prog <accountname> [(on|off)] [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
     takes_args = ["accountname", "onoff"]
 
     def run(self, accountname, onoff, credopts=None, sambaopts=None, versionopts=None):
@@ -115,6 +126,12 @@ class cmd_delegation_for_any_protocol(Command):
     """Set/unset UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION (S4U2Proxy) for an account."""
 
     synopsis = "%prog <accountname> [(on|off)] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_args = ["accountname", "onoff"]
 
@@ -152,6 +169,12 @@ class cmd_delegation_add_service(Command):
 
     synopsis = "%prog <accountname> <principal> [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
     takes_args = ["accountname", "principal"]
 
     def run(self, accountname, principal, credopts=None, sambaopts=None, versionopts=None):
@@ -188,6 +211,12 @@ class cmd_delegation_del_service(Command):
     """Delete a service principal as msDS-AllowedToDelegateTo"""
 
     synopsis = "%prog <accountname> <principal> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_args = ["accountname", "principal"]
 

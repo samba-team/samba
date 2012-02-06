@@ -3,7 +3,6 @@
 # Samba4 AD database checker
 #
 # Copyright (C) Andrew Tridgell 2011
-# Copyright Giampaolo Lauria 2011 <lauria2@yahoo.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +33,12 @@ from samba.dbchecker import dbcheck
 class cmd_dbcheck(Command):
     """check local AD database for errors"""
     synopsis = "%prog [<DN>] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptionsDouble,
+    }
 
     takes_args = ["DN?"]
 
