@@ -93,6 +93,7 @@ class cmd_domain_export_keytab(Command):
         net = Net(None, lp)
         net.export_keytab(keytab=keytab, principal=principal)
 
+
 class cmd_domain_info(Command):
     """Print basic info about a domain and the DC passed as parameter"""
 
@@ -100,6 +101,12 @@ class cmd_domain_info(Command):
 
     takes_options = [
         ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_args = ["address"]
 
@@ -116,7 +123,6 @@ class cmd_domain_info(Command):
             print "Client site      : %s" % res.client_site
         except RuntimeError:
             raise CommandError("Invalid IP address '" + address + "'!")
-
 
 
 class cmd_domain_join(Command):
@@ -202,6 +208,11 @@ class cmd_domain_demote(Command):
         Option("--targetdir", help="where provision is stored", type=str),
         ]
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     def run(self, sambaopts=None, credopts=None,
             versionopts=None, server=None, targetdir=None):
@@ -243,9 +254,6 @@ class cmd_domain_demote(Command):
 
         print "Using %s as partner server for the demotion" % server
         (drsuapiBind, drsuapi_handle, supportedExtensions) = drsuapi_connect(server, lp, creds)
-
-
-
 
         print "Desactivating inbound replication"
 
@@ -420,7 +428,6 @@ class cmd_domain_demote(Command):
                 pass
 
         self.outf.write("Demote successfull\n")
-
 
 
 class cmd_domain_level(Command):
@@ -837,7 +844,7 @@ class cmd_domain_samba3upgrade(Command):
 
         if not os.path.exists(smbconf):
             raise CommandError("File %s does not exist" % smbconf)
-        
+
         if testparm and not os.path.exists(testparm):
             raise CommandError("Testparm utility %s does not exist" % testparm)
 
