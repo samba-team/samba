@@ -18,20 +18,20 @@ Recovery mode:NORMAL (0)
 Recovery master:1
 EOF
 
-simple_test all <<EOF
+simple_test <<EOF
 NODEMAP
 0       192.168.20.41   0x2
 1       192.168.20.42   0x0     CURRENT RECMASTER
 2       192.168.20.43   0x0
-
-IFACES
-:Name:LinkStatus:References:
-:eth2:1:2:
-:eth1:1:4:
 
 VNNMAP
 654321
 0
 1
 2
+
+IFACES
+:Name:LinkStatus:References:
+:eth2:1:2:
+:eth1:1:4:
 EOF
