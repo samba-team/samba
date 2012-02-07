@@ -3501,6 +3501,7 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 		key.dptr  = discard_const(argv[1]);
 		key.dsize = strlen(argv[1]);
 	}
+
 	data = tdb_fetch(tdb, key);
 	if (data.dptr == NULL || data.dsize < sizeof(struct ctdb_ltdb_header)) {
 		printf("Failed to read record %s from tdb %s\n", argv[1], tdb_file);
@@ -3529,6 +3530,66 @@ static int control_tfetch(struct ctdb_context *ctdb, int argc, const char **argv
 			write(1, data.dptr+sizeof(struct ctdb_ltdb_header), data.dsize-sizeof(struct ctdb_ltdb_header));
 		}
 	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  store a record and header to a tdb-file
+ */
+static int control_tstore(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *tdb_file;
+	TDB_CONTEXT *tdb;
+	TDB_DATA key, data;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+
+	if (argc < 3) {
+		usage();
+	}
+
+	tdb_file = argv[0];
+
+	tdb = tdb_open(tdb_file, 0, 0, O_RDWR, 0);
+	if (tdb == NULL) {
+		printf("Failed to open TDB file %s\n", tdb_file);
+		return -1;
+	}
+
+	if (!strncmp(argv[1], "0x", 2)) {
+		key = hextodata(tmp_ctx, argv[1] + 2);
+		if (key.dsize == 0) {
+			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[1]);
+			return -1;
+		}
+	} else {
+		key.dptr  = discard_const(argv[1]);
+		key.dsize = strlen(argv[1]);
+	}
+
+	if (!strncmp(argv[2], "0x", 2)) {
+		data = hextodata(tmp_ctx, argv[2] + 2);
+		if (data.dsize == 0) {
+			printf("Failed to convert \"%s\" into a TDB_DATA\n", argv[2]);
+			return -1;
+		}
+	} else {
+		data.dptr  = discard_const(argv[2]);
+		data.dsize = strlen(argv[2]);
+	}
+
+	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		printf("Not enough data. You must specify the full ctdb_ltdb_header too when storing\n");
+		return -1;
+	}
+	if (tdb_store(tdb, key, data, TDB_REPLACE) != 0) {
+		printf("Failed to write record %s to tdb %s\n", argv[1], tdb_file);
+		tdb_close(tdb);
+		return -1;
+	}
+
+	tdb_close(tdb);
 
 	talloc_free(tmp_ctx);
 	return 0;
@@ -5364,7 +5425,8 @@ static const struct {
 	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },
 	{ "pfetch", 	     control_pfetch,      	false,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
 	{ "pstore", 	     control_pstore,      	false,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
-	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file", "<tdb-file> <key> [<file>]" },
+	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file [-v]", "<tdb-file> <key> [<file>]" },
+	{ "tstore", 	     control_tstore,      	false,	true,  "store a record (including ltdb header)", "<tdb-file> <key> <data+header>" },
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
@@ -5551,4 +5613,5 @@ int main(int argc, const char *argv[])
 	(void)poptFreeContext(pc);
 
 	return ret;
+
 }
