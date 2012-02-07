@@ -734,14 +734,16 @@ bld.SAMBA3_LIBRARY('pdb',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
-                     source=SERVER_MUTEX_SRC)
+                     source=SERVER_MUTEX_SRC,
+		     deps='talloc')
 
 bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
-                    source=PARAM_UTIL_SRC)
+                    source=PARAM_UTIL_SRC,
+		    deps='talloc')
 
 bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
                      source='param/loadparm_ctx.c',
-                     deps='''s3_param_h param''',
+                     deps='''talloc s3_param_h param''',
                      vars=locals())
 
 bld.SAMBA_GENERATOR('param/param_global_h',
@@ -837,7 +839,8 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                    vars=locals())
 
 bld.SAMBA3_LIBRARY('smbd_shim',
-                   source='''lib/smbd_shim.c''', 
+                   source='''lib/smbd_shim.c''',
+		   deps='talloc',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
@@ -1084,6 +1087,7 @@ bld.SAMBA3_LIBRARY('trusts_util',
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
+                    deps='talloc',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('dbwrap',
