@@ -490,7 +490,6 @@ bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,
 		     bool fake_dir_create_times);
 bool socket_exist(const char *fname);
 uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf);
-SMB_OFF_T get_file_size(char *file_name);
 void show_msg(const char *buf);
 int set_message_bcc(char *buf,int num_bytes);
 ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob);

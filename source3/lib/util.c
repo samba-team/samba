@@ -127,19 +127,6 @@ uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
- Returns the size in bytes of the named file.
-********************************************************************/
-
-SMB_OFF_T get_file_size(char *file_name)
-{
-	SMB_STRUCT_STAT buf;
-	buf.st_ex_size = 0;
-	if (sys_stat(file_name, &buf, false) != 0)
-		return (SMB_OFF_T)-1;
-	return get_file_size_stat(&buf);
-}
-
-/*******************************************************************
  Show a smb message structure.
 ********************************************************************/
 
