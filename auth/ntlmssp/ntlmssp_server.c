@@ -27,6 +27,7 @@
 #include "auth/ntlmssp/ntlmssp_ndr.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
+#include "auth/gensec/gensec.h"
 
 /**
  * Determine correct target name flags for reply, given server role
@@ -57,19 +58,23 @@ const char *ntlmssp_target_name(struct ntlmssp_state *ntlmssp_state,
 }
 
 /**
- * Next state function for the Negotiate packet
+ * Next state function for the NTLMSSP Negotiate packet
  *
- * @param ntlmssp_state NTLMSSP state
+ * @param gensec_security GENSEC state
  * @param out_mem_ctx Memory context for *out
  * @param in The request, as a DATA_BLOB.  reply.data must be NULL
  * @param out The reply, as an allocated DATA_BLOB, caller to free.
  * @return Errors or MORE_PROCESSING_REQUIRED if (normal) a reply is required.
  */
 
-NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
-				  TALLOC_CTX *out_mem_ctx,
-				  const DATA_BLOB request, DATA_BLOB *reply)
+NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security,
+					 TALLOC_CTX *out_mem_ctx,
+					 const DATA_BLOB request, DATA_BLOB *reply)
 {
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	DATA_BLOB struct_blob;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
@@ -525,7 +530,7 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 
 
 /**
- * Next state function for the Authenticate packet
+ * Next state function for the NTLMSSP Authenticate packet
  *
  * @param gensec_security GENSEC state
  * @param out_mem_ctx Memory context for *out
@@ -534,10 +539,14 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
  * @return Errors or NT_STATUS_OK if authentication sucessful
  */
 
-NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
-			     TALLOC_CTX *out_mem_ctx,
-			     const DATA_BLOB in, DATA_BLOB *out)
+NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
+				    TALLOC_CTX *out_mem_ctx,
+				    const DATA_BLOB in, DATA_BLOB *out)
 {
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	struct ntlmssp_server_auth_state *state;
 	NTSTATUS nt_status;
 
