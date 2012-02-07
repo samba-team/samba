@@ -62,17 +62,14 @@ static const struct ntlmssp_callbacks {
 };
 
 
-static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
+static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_context *gensec_ntlmssp,
 					   const DATA_BLOB input, uint32_t *idx)
 {
-	struct gensec_ntlmssp_context *gensec_ntlmssp =
-		talloc_get_type_abort(ntlmssp_state->callback_private,
-				      struct gensec_ntlmssp_context);
 	struct gensec_security *gensec_security = gensec_ntlmssp->gensec_security;
 	uint32_t ntlmssp_command;
 	uint32_t i;
 
-	if (ntlmssp_state->expected_state == NTLMSSP_DONE) {
+	if (gensec_ntlmssp->ntlmssp_state->expected_state == NTLMSSP_DONE) {
 		/* We are strict here because other modules, which we
 		 * don't fully control (such as GSSAPI) are also
 		 * strict, but are tested less often */
@@ -82,7 +79,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	if (!input.length) {
-		switch (ntlmssp_state->role) {
+		switch (gensec_ntlmssp->ntlmssp_state->role) {
 		case NTLMSSP_CLIENT:
 			ntlmssp_command = NTLMSSP_INITIAL;
 			break;
@@ -98,7 +95,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
 			break;
 		}
 	} else {
-		if (!msrpc_parse(ntlmssp_state,
+		if (!msrpc_parse(gensec_ntlmssp->ntlmssp_state,
 				 &input, "Cd",
 				 "NTLMSSP",
 				 &ntlmssp_command)) {
@@ -108,13 +105,14 @@ static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
 		}
 	}
 
-	if (ntlmssp_command != ntlmssp_state->expected_state) {
-		DEBUG(2, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command, ntlmssp_state->expected_state));
+	if (ntlmssp_command != gensec_ntlmssp->ntlmssp_state->expected_state) {
+		DEBUG(2, ("got NTLMSSP command %u, expected %u\n", ntlmssp_command,
+			  gensec_ntlmssp->ntlmssp_state->expected_state));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	for (i=0; i < ARRAY_SIZE(ntlmssp_callbacks); i++) {
-		if (ntlmssp_callbacks[i].role == ntlmssp_state->role &&
+		if (ntlmssp_callbacks[i].role == gensec_ntlmssp->ntlmssp_state->role &&
 		    ntlmssp_callbacks[i].command == ntlmssp_command) {
 			*idx = i;
 			return NT_STATUS_OK;
@@ -122,7 +120,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	DEBUG(1, ("failed to find NTLMSSP callback for NTLMSSP mode %u, command %u\n",
-		  ntlmssp_state->role, ntlmssp_command));
+		  gensec_ntlmssp->ntlmssp_state->role, ntlmssp_command));
 
 	return NT_STATUS_INVALID_PARAMETER;
 }
@@ -158,7 +156,7 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 		out_mem_ctx = ntlmssp_state;
 	}
 
-	status = gensec_ntlmssp_update_find(ntlmssp_state, input, &i);
+	status = gensec_ntlmssp_update_find(gensec_ntlmssp, input, &i);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = ntlmssp_callbacks[i].sync_fn(gensec_security, out_mem_ctx, input, out);

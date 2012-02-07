@@ -317,12 +317,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 
 	talloc_steal(out_mem_ctx, out->data);
 
-	ntlmssp_state->chal = challenge_blob;
-	ntlmssp_state->lm_resp = lm_response;
-	talloc_steal(ntlmssp_state->lm_resp.data, lm_response.data);
-	ntlmssp_state->nt_resp = nt_response;
-	talloc_steal(ntlmssp_state->nt_resp.data, nt_response.data);
-
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
 	if (gensec_security->want_features & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL)) {
@@ -357,8 +351,6 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	if (!ntlmssp_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	ntlmssp_state->callback_private = gensec_ntlmssp;
 
 	gensec_ntlmssp->ntlmssp_state = ntlmssp_state;
 

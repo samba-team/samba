@@ -28,6 +28,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/crypto.h"
 #include "auth/gensec/gensec.h"
+#include "auth/common_auth.h"
 
 /**
  * Determine correct target name flags for reply, given server role
@@ -75,6 +76,7 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	struct auth4_context *auth_context = gensec_security->auth_context;
 	DATA_BLOB struct_blob;
 	uint32_t neg_flags = 0;
 	uint32_t ntlmssp_command, chal_flags;
@@ -117,16 +119,23 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, ntlmssp_state->allow_lm_key);
 
 	/* Ask our caller what challenge they would like in the packet */
-	status = ntlmssp_state->get_challenge(ntlmssp_state, cryptkey);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("ntlmssp_server_negotiate: backend doesn't give a challenge: %s\n",
-			  nt_errstr(status)));
-		return status;
+	if (auth_context->get_ntlm_challenge) {
+		status = auth_context->get_ntlm_challenge(auth_context, cryptkey);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("gensec_ntlmssp_server_negotiate: failed to get challenge: %s\n",
+				  nt_errstr(status)));
+			return status;
+		}
+	} else {
+		DEBUG(1, ("gensec_ntlmssp_server_negotiate: backend doesn't give a challenge\n"));
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	/* Check if we may set the challenge */
-	if (!ntlmssp_state->may_set_challenge(ntlmssp_state)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+	if (auth_context->challenge_may_be_modified) {
+		if (!auth_context->challenge_may_be_modified(auth_context)) {
+			ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+		}
 	}
 
 	/* The flags we send back are not just the negotiated flags,
@@ -254,10 +263,13 @@ struct ntlmssp_server_auth_state {
  * @return Errors or NT_STATUS_OK.
  */
 
-static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
+static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
+				       struct gensec_ntlmssp_context *gensec_ntlmssp,
 				       struct ntlmssp_server_auth_state *state,
 				       const DATA_BLOB request)
 {
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	struct auth4_context *auth_context = gensec_security->auth_context;
 	uint32_t ntlmssp_command, auth_flags;
 	NTSTATUS nt_status;
 
@@ -376,15 +388,23 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 			MD5Update(&md5_session_nonce_ctx, state->session_nonce, 16);
 			MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
 
-			ntlmssp_state->chal = data_blob_talloc(
-				ntlmssp_state, session_nonce_hash, 8);
-
 			/* LM response is no longer useful */
 			data_blob_free(&ntlmssp_state->lm_resp);
 
 			/* We changed the effective challenge - set it */
-			if (!NT_STATUS_IS_OK(nt_status = ntlmssp_state->set_challenge(ntlmssp_state, &ntlmssp_state->chal))) {
-				return nt_status;
+			if (auth_context->set_ntlm_challenge) {
+				nt_status = auth_context->set_ntlm_challenge(auth_context,
+									     session_nonce_hash,
+									     "NTLMSSP callback (NTLM2)");
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					DEBUG(1, ("gensec_ntlmssp_server_negotiate: failed to get challenge: %s\n",
+						  nt_errstr(nt_status)));
+					return nt_status;
+				}
+			} else {
+				DEBUG(1, ("gensec_ntlmssp_server_negotiate: backend doesn't have facility for challenge to be set\n"));
+
+				return NT_STATUS_NOT_IMPLEMENTED;
 			}
 
 			/* LM Key is incompatible. */
@@ -395,6 +415,62 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 }
 
 /**
+ * Check the password on an NTLMSSP login.
+ *
+ * Return the session keys used on the connection.
+ */
+
+static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_security,
+					      struct gensec_ntlmssp_context *gensec_ntlmssp,
+					      TALLOC_CTX *mem_ctx,
+					      DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+{
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	struct auth_usersupplied_info *user_info;
+
+	user_info = talloc_zero(ntlmssp_state, struct auth_usersupplied_info);
+	if (!user_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	user_info->logon_parameters = MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
+	user_info->flags = 0;
+	user_info->mapped_state = false;
+	user_info->client.account_name = ntlmssp_state->user;
+	user_info->client.domain_name = ntlmssp_state->domain;
+	user_info->workstation_name = ntlmssp_state->client.netbios_name;
+	user_info->remote_host = gensec_get_remote_address(gensec_ntlmssp->gensec_security);
+
+	user_info->password_state = AUTH_PASSWORD_RESPONSE;
+	user_info->password.response.lanman = ntlmssp_state->lm_resp;
+	user_info->password.response.lanman.data = talloc_steal(user_info, ntlmssp_state->lm_resp.data);
+	user_info->password.response.nt = ntlmssp_state->nt_resp;
+	user_info->password.response.nt.data = talloc_steal(user_info, ntlmssp_state->nt_resp.data);
+
+	if (auth_context->check_ntlm_password) {
+		nt_status = auth_context->check_ntlm_password(auth_context,
+							      gensec_ntlmssp,
+							      user_info,
+							      &gensec_ntlmssp->server_returned_info,
+							      user_session_key, lm_session_key);
+	}
+	talloc_free(user_info);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(5, (__location__ ": Checking NTLMSSP password for %s\\%s failed: %s\n", user_info->client.domain_name, user_info->client.account_name, nt_errstr(nt_status)));
+	}
+
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	talloc_steal(mem_ctx, user_session_key->data);
+	talloc_steal(mem_ctx, lm_session_key->data);
+
+	return nt_status;
+}
+
+/**
  * Next state function for the Authenticate packet
  * (after authentication - figures out the session keys etc)
  *
@@ -402,9 +478,11 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
  * @return Errors or NT_STATUS_OK.
  */
 
-static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
+static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
+					struct gensec_ntlmssp_context *gensec_ntlmssp,
 					struct ntlmssp_server_auth_state *state)
 {
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	DATA_BLOB user_session_key = state->user_session_key;
 	DATA_BLOB lm_session_key = state->lm_session_key;
 	NTSTATUS nt_status = NT_STATUS_OK;
@@ -558,7 +636,7 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = ntlmssp_server_preauth(ntlmssp_state, state, in);
+	nt_status = ntlmssp_server_preauth(gensec_security, gensec_ntlmssp, state, in);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(state);
 		return nt_status;
@@ -572,7 +650,7 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 	 */
 
 	/* Finally, actually ask if the password is OK */
-	nt_status = ntlmssp_state->check_password(ntlmssp_state,
+	nt_status = ntlmssp_server_check_password(gensec_security, gensec_ntlmssp,
 						  state,
 						  &state->user_session_key,
 						  &state->lm_session_key);
@@ -589,7 +667,7 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 	   ntlmssp_state->check_password, the ntlmssp_server_postpath
 	   can be done in a callback */
 
-	nt_status = ntlmssp_server_postauth(ntlmssp_state, state);
+	nt_status = ntlmssp_server_postauth(gensec_security, gensec_ntlmssp, state);
 	TALLOC_FREE(state);
 	return nt_status;
 }

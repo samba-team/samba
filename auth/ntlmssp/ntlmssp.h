@@ -92,58 +92,6 @@ struct ntlmssp_state
 
 	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
-	/**
-	 * Private data for the callback functions
-	 */
-	void *callback_private;
-
-	/**
-	 * Callback to get the 'challenge' used for NTLM authentication.
-	 *
-	 * @param ntlmssp_state This structure
-	 * @return 8 bytes of challenge data, determined by the server to be the challenge for NTLM authentication
-	 *
-	 */
-	NTSTATUS (*get_challenge)(const struct ntlmssp_state *ntlmssp_state,
-				  uint8_t challenge[8]);
-
-	/**
-	 * Callback to find if the challenge used by NTLM authentication may be modified
-	 *
-	 * The NTLM2 authentication scheme modifies the effective challenge, but this is not compatiable with the
-	 * current 'security=server' implementation..
-	 *
-	 * @param ntlmssp_state This structure
-	 * @return Can the challenge be set to arbitary values?
-	 *
-	 */
-	bool (*may_set_challenge)(const struct ntlmssp_state *ntlmssp_state);
-
-	/**
-	 * Callback to set the 'challenge' used for NTLM authentication.
-	 *
-	 * The callback may use the void *auth_context to store state information, but the same value is always available
-	 * from the DATA_BLOB chal on this structure.
-	 *
-	 * @param ntlmssp_state This structure
-	 * @param challenge 8 bytes of data, agreed by the client and server to be the effective challenge for NTLM2 authentication
-	 *
-	 */
-	NTSTATUS (*set_challenge)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge);
-
-	/**
-	 * Callback to check the user's password.
-	 *
-	 * The callback must reads the feilds of this structure for the information it needs on the user
-	 * @param ntlmssp_state This structure
-	 * @param mem_ctx Talloc context for LM and NT session key to be returned on
-	 * @param nt_session_key If an NT session key is returned by the authentication process, return it here
-	 * @param lm_session_key If an LM session key is returned by the authentication process, return it here
-	 *
-	 */
-	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx,
-				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
-
 	union ntlmssp_crypt_state *crypt;
 };
 
