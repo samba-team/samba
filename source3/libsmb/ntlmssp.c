@@ -51,48 +51,10 @@ static const struct ntlmssp_callbacks {
 		       DATA_BLOB in, DATA_BLOB *out);
 } ntlmssp_callbacks[] = {
 	{NTLMSSP_CLIENT, NTLMSSP_INITIAL, ntlmssp3_client_initial},
-	{NTLMSSP_SERVER, NTLMSSP_NEGOTIATE, ntlmssp_server_negotiate},
 	{NTLMSSP_CLIENT, NTLMSSP_CHALLENGE, ntlmssp3_client_challenge},
-	{NTLMSSP_SERVER, NTLMSSP_AUTH, ntlmssp_server_auth},
 	{NTLMSSP_CLIENT, NTLMSSP_UNKNOWN, NULL},
 	{NTLMSSP_SERVER, NTLMSSP_UNKNOWN, NULL}
 };
-
-
-/**
- * Default challenge generation code.
- *
- */
-
-static NTSTATUS get_challenge(const struct ntlmssp_state *ntlmssp_state,
-			      uint8_t chal[8])
-{
-	generate_random_buffer(chal, 8);
-	return NT_STATUS_OK;
-}
-
-/**
- * Default 'we can set the challenge to anything we like' implementation
- *
- */
-
-static bool may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
-{
-	return True;
-}
-
-/**
- * Default 'we can set the challenge to anything we like' implementation
- *
- * Does not actually do anything, as the value is always in the structure anyway.
- *
- */
-
-static NTSTATUS set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
-{
-	SMB_ASSERT(challenge->length == 8);
-	return NT_STATUS_OK;
-}
 
 /**
  * Set a username on an NTLMSSP context - ensures it is talloc()ed
@@ -269,89 +231,6 @@ NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 		  ntlmssp_state->role, ntlmssp_command));
 
 	return NT_STATUS_INVALID_PARAMETER;
-}
-
-/**
- * Create an NTLMSSP state machine
- *
- * @param ntlmssp_state NTLMSSP State, allocated by this function
- */
-
-NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
-			      bool is_standalone,
-			      const char *netbios_name,
-			      const char *netbios_domain,
-			      const char *dns_name,
-			      const char *dns_domain,
-			      struct ntlmssp_state **_ntlmssp_state)
-{
-	struct ntlmssp_state *ntlmssp_state;
-
-	if (!netbios_name) {
-		netbios_name = "";
-	}
-
-	if (!netbios_domain) {
-		netbios_domain = "";
-	}
-
-	if (!dns_domain) {
-		dns_domain = "";
-	}
-
-	if (!dns_name) {
-		dns_name = "";
-	}
-
-	ntlmssp_state = talloc_zero(mem_ctx, struct ntlmssp_state);
-	if (!ntlmssp_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ntlmssp_state->role = NTLMSSP_SERVER;
-
-	ntlmssp_state->get_challenge = get_challenge;
-	ntlmssp_state->set_challenge = set_challenge;
-	ntlmssp_state->may_set_challenge = may_set_challenge;
-
-	ntlmssp_state->server.is_standalone = is_standalone;
-
-	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
-
-	ntlmssp_state->allow_lm_key = lp_lanman_auth();
-
-	ntlmssp_state->neg_flags =
-		NTLMSSP_NEGOTIATE_128 |
-		NTLMSSP_NEGOTIATE_56 |
-		NTLMSSP_NEGOTIATE_VERSION |
-		NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
-		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_NEGOTIATE_NTLM2 |
-		NTLMSSP_NEGOTIATE_KEY_EXCH;
-
-	ntlmssp_state->server.netbios_name = talloc_strdup(ntlmssp_state, netbios_name);
-	if (!ntlmssp_state->server.netbios_name) {
-		talloc_free(ntlmssp_state);
-		return NT_STATUS_NO_MEMORY;
-	}
-	ntlmssp_state->server.netbios_domain = talloc_strdup(ntlmssp_state, netbios_domain);
-	if (!ntlmssp_state->server.netbios_domain) {
-		talloc_free(ntlmssp_state);
-		return NT_STATUS_NO_MEMORY;
-	}
-	ntlmssp_state->server.dns_name = talloc_strdup(ntlmssp_state, dns_name);
-	if (!ntlmssp_state->server.dns_name) {
-		talloc_free(ntlmssp_state);
-		return NT_STATUS_NO_MEMORY;
-	}
-	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
-	if (!ntlmssp_state->server.dns_domain) {
-		talloc_free(ntlmssp_state);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*_ntlmssp_state = ntlmssp_state;
-	return NT_STATUS_OK;
 }
 
 /*********************************************************************
