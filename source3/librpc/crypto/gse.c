@@ -525,52 +525,6 @@ done:
 	return status;
 }
 
-static NTSTATUS gse_verify_server_auth_flags(struct gse_context *gse_ctx)
-{
-	if (memcmp(gse_ctx->ret_mech,
-		   gss_mech_krb5, sizeof(gss_OID_desc)) != 0) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	/* GSS_C_MUTUAL_FLAG */
-	/* GSS_C_DELEG_FLAG */
-	/* GSS_C_DELEG_POLICY_FLAG */
-	/* GSS_C_REPLAY_FLAG */
-	/* GSS_C_SEQUENCE_FLAG */
-
-	/* GSS_C_INTEG_FLAG */
-	if (gse_ctx->gss_want_flags & GSS_C_INTEG_FLAG) {
-		if (!(gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
-	/* GSS_C_CONF_FLAG */
-	if (gse_ctx->gss_want_flags & GSS_C_CONF_FLAG) {
-		if (!(gse_ctx->gss_got_flags & GSS_C_CONF_FLAG)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		/* GSS_C_CONF_FLAG implies GSS_C_INTEG_FLAG */
-		if (!(gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
-	/* GSS_C_DCE_STYLE */
-	if (gse_ctx->gss_want_flags & GSS_C_DCE_STYLE) {
-		if (!(gse_ctx->gss_got_flags & GSS_C_DCE_STYLE)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		/* GSS_C_DCE_STYLE implies GSS_C_MUTUAL_FLAG */
-		if (!(gse_ctx->gss_got_flags & GSS_C_MUTUAL_FLAG)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
-	return NT_STATUS_OK;
-}
-
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min)
 {
 	OM_uint32 gss_min, gss_maj;
@@ -1017,10 +971,6 @@ static NTSTATUS gensec_gse_update(struct gensec_security *gensec_security,
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-	if (gensec_security->gensec_role == GENSEC_SERVER) {
-		return gse_verify_server_auth_flags(gse_ctx);
 	}
 
 	return NT_STATUS_OK;
