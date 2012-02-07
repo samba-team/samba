@@ -50,14 +50,19 @@ void delete_and_reload_printers(struct tevent_context *ev,
 {
 	struct auth_session_info *session_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
+	int n_services;
+	int pnum;
 	int snum;
-	int n_services = lp_numservices();
-	int pnum = lp_servicenumber(PRINTERS_NAME);
 	const char *pname;
+	const char *sname;
 	NTSTATUS status;
-	bool skip = false;
 
-	SMB_ASSERT(pcap_cache_loaded());
+	/* Get pcap printers updated */
+	load_printers(ev, msg_ctx);
+
+	n_services = lp_numservices();
+	pnum = lp_servicenumber(PRINTERS_NAME);
+
 	DEBUG(10, ("reloading printer services from pcap cache\n"));
 
 	status = make_session_info_system(talloc_tos(), &session_info);
@@ -66,18 +71,29 @@ void delete_and_reload_printers(struct tevent_context *ev,
 			  "Could not create system session_info\n"));
 		/* can't remove stale printers before we
 		 * are fully initilized */
-		skip = true;
+		return;
 	}
 
-	/* remove stale printers */
-	for (snum = 0; skip == false && snum < n_services; snum++) {
-		/* avoid removing PRINTERS_NAME or non-autoloaded printers */
-		if (snum == pnum || !(lp_snum_ok(snum) && lp_print_ok(snum) &&
-		                      lp_autoloaded(snum)))
+	/*
+	 * Add default config for printers added to smb.conf file and remove
+	 * stale printers
+	 */
+	for (snum = 0; snum < n_services; snum++) {
+		/* avoid removing PRINTERS_NAME */
+		if (snum == pnum) {
 			continue;
+		}
 
+		/* skip no-printer services */
+		if (!(lp_snum_ok(snum) && lp_print_ok(snum))) {
+			continue;
+		}
+
+		sname = lp_const_servicename(snum);
 		pname = lp_printername(snum);
-		if (!pcap_printername_ok(pname)) {
+
+		/* check printer, but avoid removing non-autoloaded printers */
+		if (!pcap_printername_ok(pname) && lp_autoloaded(snum)) {
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
 			if (is_printer_published(session_info, session_info,
@@ -94,9 +110,15 @@ void delete_and_reload_printers(struct tevent_context *ev,
 			nt_printer_remove(session_info, session_info, msg_ctx,
 					  pname);
 			lp_killservice(snum);
+		} else {
+			DEBUG(8, ("Adding default registry entry for printer "
+				  "[%s], if it doesn't exist.\n", sname));
+			nt_printer_add(session_info, session_info, msg_ctx,
+				       sname);
 		}
 	}
 
+	/* Make sure deleted printers are gone */
 	load_printers(ev, msg_ctx);
 
 	TALLOC_FREE(session_info);
