@@ -202,6 +202,8 @@ def get_paths(param, targetdir=None, smbconf=None):
     :param smbconf: Path to the smb.conf file
     :return: A list with the path of important provision objects"""
     if targetdir is not None:
+        if not os.path.exists(targetdir):
+            os.mkdir(targetdir)
         etcdir = os.path.join(targetdir, "etc")
         if not os.path.exists(etcdir):
             os.makedirs(etcdir)

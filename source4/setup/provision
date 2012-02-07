@@ -218,6 +218,10 @@ if opts.blank:
 elif opts.partitions_only:
     samdb_fill = FILL_DRS
 
+if opts.targetdir is not None:
+    if not os.path.isdir(opts.targetdir):
+        os.mkdir(opts.targetdir)
+
 eadb = True
 if opts.use_xattrs == "yes":
     eadb = False
@@ -227,13 +231,15 @@ elif opts.use_xattrs == "auto" and not lp.get("posix:eadb"):
     else:
         file = tempfile.NamedTemporaryFile(dir=os.path.abspath(os.path.dirname(lp.get("private dir"))))
     try:
-        samba.ntacls.setntacl(lp, file.name,
-            "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
-        eadb = False
-    except Exception:
-        logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
-                "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
-    file.close()
+        try:
+            samba.ntacls.setntacl(lp, file.name,
+                "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+            eadb = False
+        except Exception:
+            logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
+                    "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
+    finally:
+        file.close()
 
 session = system_session()
 try:

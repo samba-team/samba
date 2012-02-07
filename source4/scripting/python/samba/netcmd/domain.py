@@ -873,6 +873,10 @@ class cmd_domain_samba3upgrade(Command):
         if sambaopts.realm:
             s3conf.set("realm", sambaopts.realm)
 
+        if targetdir is not None:
+            if not os.path.isdir(targetdir):
+                os.mkdir(targetdir)
+
         eadb = True
         if use_xattrs == "yes":
             eadb = False
@@ -882,14 +886,16 @@ class cmd_domain_samba3upgrade(Command):
             else:
                 tmpfile = tempfile.NamedTemporaryFile(dir=os.path.abspath(os.path.dirname(lp.get("private dir"))))
             try:
-                samba.ntacls.setntacl(lp, tmpfile.name,
-                            "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
-                eadb = False
-            except Exception:
-                # FIXME: Don't catch all exceptions here
-                logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
-                            "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
-            tmpfile.close()
+                try:
+                    samba.ntacls.setntacl(lp, tmpfile.name,
+                                "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+                    eadb = False
+                except Exception:
+                    # FIXME: Don't catch all exceptions here
+                    logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
+                                "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
+            finally:
+                tmpfile.close()
 
         # Set correct default values from dbdir or testparm
         paths = {}
