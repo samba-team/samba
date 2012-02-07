@@ -24,6 +24,7 @@
 import os
 from samba import sites
 from samba.samdb import SamDB
+import samba.getopt as options
 from samba.auth import system_session
 from samba.netcmd import (
     Command,
@@ -38,6 +39,12 @@ class cmd_sites_create(Command):
     synopsis = "%prog <site> [options]"
 
     takes_args = ["sitename"]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     def run(self, sitename, sambaopts=None, credopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
@@ -65,6 +72,12 @@ class cmd_sites_delete(Command):
     synopsis = "%prog <site> [options]"
 
     takes_args = ["sitename"]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     def run(self, sitename, sambaopts=None, credopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
