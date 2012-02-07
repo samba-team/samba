@@ -24,11 +24,15 @@
 */
 
 #include "includes.h"
+#include "lib/param/param.h"
 #include "popt_common.h"
 #include "utils/ntlm_auth.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"
-#include "../auth/ntlmssp/ntlmssp.h"
+#include "auth/ntlmssp/ntlmssp.h"
+#include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
+#include "librpc/crypto/gse.h"
 #include "smb_krb5.h"
 #include <iniparser.h>
 #include "../lib/crypto/arcfour.h"
@@ -36,6 +40,7 @@
 #include "nsswitch/winbind_client.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "../lib/util/asn1.h"
+#include "auth/common_auth.h"
 
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"
@@ -81,6 +86,7 @@ struct ntlm_auth_state {
 	enum ntlm_auth_cli_state cli_state;
 	enum ntlm_auth_svr_state svr_state;
 	struct ntlmssp_state *ntlmssp_state;
+	struct gensec_security *gensec_security;
 	uint32_t neg_flags;
 	char *want_feature_list;
 	char *spnego_mech;
@@ -144,6 +150,27 @@ static int use_cached_creds;
 static const char *require_membership_of;
 static const char *require_membership_of_sid;
 static const char *opt_pam_winbind_conf;
+
+/**
+ * A limited set of features are defined with text strings as needed
+ * by ntlm_auth
+ *
+ */
+static void gensec_want_feature_list(struct gensec_security *state, char* feature_list)
+{
+	if (in_list("NTLMSSP_FEATURE_SESSION_KEY", feature_list, true)) {
+		DEBUG(10, ("want GENSEC_FEATURE_SESSION_KEY\n"));
+		gensec_want_feature(state, GENSEC_FEATURE_SESSION_KEY);
+	}
+	if (in_list("NTLMSSP_FEATURE_SIGN", feature_list, true)) {
+		DEBUG(10, ("want GENSEC_FEATURE_SIGN\n"));
+		gensec_want_feature(state, GENSEC_FEATURE_SIGN);
+	}
+	if (in_list("NTLMSSP_FEATURE_SEAL", feature_list, true)) {
+		DEBUG(10, ("want GENSEC_FEATURE_SEAL\n"));
+		gensec_want_feature(state, GENSEC_FEATURE_SEAL);
+	}
+}
 
 static char winbind_separator(void)
 {
@@ -571,8 +598,98 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
     return nt_status;
 }
 
-static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx,
-				 DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+static NTSTATUS ntlm_auth_generate_session_info(struct auth4_context *auth_context,
+						TALLOC_CTX *mem_ctx,
+						void *server_returned_info,
+						const char *original_user_name,
+						uint32_t session_info_flags,
+						struct auth_session_info **session_info_out)
+{
+	char *unix_username = (char *)server_returned_info;
+	struct auth_session_info *session_info = talloc_zero(mem_ctx, struct auth_session_info);
+	if (!session_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session_info->unix_info = talloc_zero(session_info, struct auth_user_info_unix);
+	if (!session_info->unix_info) {
+		TALLOC_FREE(session_info);
+		return NT_STATUS_NO_MEMORY;
+	}
+	session_info->unix_info->unix_name = talloc_steal(session_info->unix_info, unix_username);
+
+	*session_info_out = session_info;
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * Return the challenge as determined by the authentication subsystem 
+ * @return an 8 byte random challenge
+ */
+
+static NTSTATUS ntlm_auth_get_challenge(struct auth4_context *auth_ctx,
+					uint8_t chal[8])
+{
+	if (auth_ctx->challenge.data.length == 8) {
+		DEBUG(5, ("auth_get_challenge: returning previous challenge by module %s (normal)\n", 
+			  auth_ctx->challenge.set_by));
+		memcpy(chal, auth_ctx->challenge.data.data, 8);
+		return NT_STATUS_OK;
+	}
+
+	if (!auth_ctx->challenge.set_by) {
+		generate_random_buffer(chal, 8);
+
+		auth_ctx->challenge.data		= data_blob_talloc(auth_ctx, chal, 8);
+		NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.data.data);
+		auth_ctx->challenge.set_by		= "random";
+
+		auth_ctx->challenge.may_be_modified	= true;
+	}
+
+	DEBUG(10,("auth_get_challenge: challenge set by %s\n",
+		 auth_ctx->challenge.set_by));
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * Some authentication methods 'fix' the challenge, so we may not be able to set it
+ *
+ * @return If the effective challenge used by the auth subsystem may be modified
+ */
+static bool ntlm_auth_may_set_challenge(struct auth4_context *auth_ctx)
+{
+	return auth_ctx->challenge.may_be_modified;
+}
+
+/**
+ * NTLM2 authentication modifies the effective challenge, 
+ * @param challenge The new challenge value
+ */
+static NTSTATUS ntlm_auth_set_challenge(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by) 
+{
+	auth_ctx->challenge.set_by = talloc_strdup(auth_ctx, set_by);
+	NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.set_by);
+
+	auth_ctx->challenge.data = data_blob_talloc(auth_ctx, chal, 8);
+	NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.data.data);
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * Check the password on an NTLMSSP login.  
+ *
+ * Return the session keys used on the connection.
+ */
+
+static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context, 
+				 TALLOC_CTX *mem_ctx,
+				 const struct auth_usersupplied_info *user_info, 
+				 void **server_returned_info,
+				 DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
 {
 	static const char zeros[16] = { 0, };
 	NTSTATUS nt_status;
@@ -581,11 +698,11 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX
 	uint8 user_sess_key[16]; 
 	char *unix_name = NULL;
 
-	nt_status = contact_winbind_auth_crap(ntlmssp_state->user, ntlmssp_state->domain,
-					      ntlmssp_state->client.netbios_name,
-					      &ntlmssp_state->chal,
-					      &ntlmssp_state->lm_resp,
-					      &ntlmssp_state->nt_resp, 
+	nt_status = contact_winbind_auth_crap(user_info->client.account_name, user_info->client.domain_name, 
+					      user_info->workstation_name, 
+					      &auth4_context->challenge.data,
+					      &user_info->password.response.lanman,
+					      &user_info->password.response.nt,
 					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_USER_SESSION_KEY | WBFLAG_PAM_UNIX_NAME,
 					      0,
 					      lm_key, user_sess_key, 
@@ -599,17 +716,16 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX
 		}
 
 		if (memcmp(user_sess_key, zeros, 16) != 0) {
-			*user_session_key = data_blob_talloc(mem_ctx, user_sess_key, 16);
+			*session_key = data_blob_talloc(mem_ctx, user_sess_key, 16);
 		}
-		ntlmssp_state->callback_private = talloc_strdup(ntlmssp_state,
-								unix_name);
+		*server_returned_info = talloc_strdup(mem_ctx,
+						      unix_name);
 	} else {
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
 		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
-		       ntlmssp_state->domain, ntlmssp_state->user, 
-		       ntlmssp_state->client.netbios_name,
+		       user_info->client.domain_name, user_info->client.account_name,
+		       user_info->workstation_name, 
 		       error_string ? error_string : "unknown error (NULL)"));
-		ntlmssp_state->callback_private = NULL;
 	}
 
 	SAFE_FREE(error_string);
@@ -617,8 +733,11 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX
 	return nt_status;
 }
 
-static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx,
-			       DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+static NTSTATUS local_pw_check(struct auth4_context *auth4_context, 
+				TALLOC_CTX *mem_ctx,
+				const struct auth_usersupplied_info *user_info, 
+				void **server_returned_info,
+				DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
 {
 	NTSTATUS nt_status;
 	struct samr_Password lm_pw, nt_pw;
@@ -627,25 +746,24 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *
 
 	nt_status = ntlm_password_check(mem_ctx,
 					true, true, 0,
-					&ntlmssp_state->chal,
-					&ntlmssp_state->lm_resp,
-					&ntlmssp_state->nt_resp, 
-					ntlmssp_state->user, 
-					ntlmssp_state->user, 
-					ntlmssp_state->domain,
-					&lm_pw, &nt_pw, user_session_key, lm_session_key);
+					&auth4_context->challenge.data,
+					&user_info->password.response.lanman,
+					&user_info->password.response.nt,
+					user_info->client.account_name,
+					user_info->client.account_name,
+					user_info->client.domain_name, 
+					&lm_pw, &nt_pw, session_key, lm_session_key);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		ntlmssp_state->callback_private = talloc_asprintf(ntlmssp_state,
-							      "%s%c%s", ntlmssp_state->domain, 
-							      *lp_winbind_separator(), 
-							      ntlmssp_state->user);
+		*server_returned_info = talloc_asprintf(mem_ctx,
+							"%s%c%s", user_info->client.domain_name,
+							*lp_winbind_separator(), 
+							user_info->client.account_name);
 	} else {
 		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
-			  ntlmssp_state->domain, ntlmssp_state->user,
-			  ntlmssp_state->client.netbios_name,
+			  user_info->client.domain_name, user_info->client.account_name,
+			  user_info->workstation_name, 
 			  nt_errstr(nt_status)));
-		ntlmssp_state->callback_private = NULL;
 	}
 	return nt_status;
 }
@@ -704,52 +822,144 @@ static NTSTATUS ntlm_auth_start_ntlmssp_client(struct ntlmssp_state **client_ntl
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS ntlm_auth_start_ntlmssp_server(struct ntlmssp_state **ntlmssp_state)
+static struct auth4_context *make_auth4_context_ntlm_auth(TALLOC_CTX *mem_ctx, bool local_pw)
 {
-	NTSTATUS status;
-	const char *netbios_name;
-	const char *netbios_domain;
-	const char *dns_name;
-	char *dns_domain;
-	bool is_standalone = false;
-
-	if (opt_password) {
-		netbios_name = lp_netbios_name();
-		netbios_domain = lp_workgroup();
+	struct auth4_context *auth4_context = talloc_zero(mem_ctx, struct auth4_context);
+	if (auth4_context == NULL) {
+		DEBUG(10, ("failed to allocate auth4_context failed\n"));
+		return NULL;
+	}
+	auth4_context->generate_session_info = ntlm_auth_generate_session_info;
+	auth4_context->get_ntlm_challenge = ntlm_auth_get_challenge;
+	auth4_context->set_ntlm_challenge = ntlm_auth_set_challenge;
+	auth4_context->challenge_may_be_modified = ntlm_auth_may_set_challenge;
+	if (local_pw) {
+		auth4_context->check_ntlm_password = local_pw_check;
 	} else {
-		netbios_name = get_winbind_netbios_name();
-		netbios_domain = get_winbind_domain();
+		auth4_context->check_ntlm_password = winbind_pw_check;
 	}
-	/* This should be a 'netbios domain -> DNS domain' mapping */
-	dns_domain = get_mydnsdomname(talloc_tos());
-	if (dns_domain) {
-		strlower_m(dns_domain);
+	auth4_context->private_data = NULL;
+	return auth4_context;
+}
+
+static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
+					       struct gensec_security **gensec_security_out)
+{
+	struct gensec_security *gensec_security;
+	NTSTATUS nt_status;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	struct gensec_settings *gensec_settings;
+	struct loadparm_context *lp_ctx;
+	size_t idx = 0;
+	struct cli_credentials *server_credentials;
+	
+	struct auth4_context *auth4_context = make_auth4_context_ntlm_auth(tmp_ctx, opt_password);
+	if (auth4_context == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
 	}
-	dns_name = get_mydnsfullname();
-
-	status = ntlmssp_server_start(NULL,
-				      is_standalone,
-				      netbios_name,
-				      netbios_domain,
-				      dns_name,
-				      dns_domain,
-				      ntlmssp_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not start NTLMSSP server: %s\n",
-			  nt_errstr(status)));
-		return status;
+	
+	lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		DEBUG(10, ("loadparm_init_s3 failed\n"));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_INVALID_SERVER_STATE;
 	}
-
-	(*ntlmssp_state)->neg_flags |=
-		(NTLMSSP_NEGOTIATE_SIGN |
-		 NTLMSSP_NEGOTIATE_SEAL);
-
-	/* Have we been given a local password, or should we ask winbind? */
+	
+	gensec_settings = lpcfg_gensec_settings(tmp_ctx, lp_ctx);
+	if (lp_ctx == NULL) {
+		DEBUG(10, ("lpcfg_gensec_settings failed\n"));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	/* 
+	 * This should be a 'netbios domain -> DNS domain'
+	 * mapping, and can currently validly return NULL on
+	 * poorly configured systems.
+	 *
+	 * This is used for the NTLMSSP server
+	 *
+	 */
 	if (opt_password) {
-		(*ntlmssp_state)->check_password = local_pw_check;
+		gensec_settings->server_netbios_name = lp_netbios_name();
+		gensec_settings->server_netbios_domain = lp_workgroup();
 	} else {
-		(*ntlmssp_state)->check_password = winbind_pw_check;
+		gensec_settings->server_netbios_name = get_winbind_netbios_name();
+		gensec_settings->server_netbios_domain = get_winbind_domain();
 	}
+	
+	gensec_settings->server_dns_domain = strlower_talloc(gensec_settings,
+							     get_mydnsdomname(talloc_tos()));
+	gensec_settings->server_dns_name = strlower_talloc(gensec_settings,
+							   get_mydnsfullname());
+	
+	gensec_settings->backends = talloc_zero_array(gensec_settings,
+						      struct gensec_security_ops *, 4);
+	
+	if (gensec_settings->backends == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	gensec_init();
+	
+	gensec_settings->backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
+	
+#if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
+	gensec_settings->backends[idx++] = &gensec_gse_krb5_security_ops;
+#endif
+	
+	gensec_settings->backends[idx++] = gensec_security_by_oid(NULL,
+								  GENSEC_OID_SPNEGO);
+	
+	/*
+	 * This is anonymous for now, because we just use it
+	 * to set the kerberos state at the moment
+	 */
+	server_credentials = cli_credentials_init_anon(tmp_ctx);
+	if (!server_credentials) {
+		DEBUG(0, ("auth_generic_prepare: Failed to init server credentials\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	cli_credentials_set_conf(server_credentials, lp_ctx);
+	
+	if (lp_security() == SEC_ADS || USE_KERBEROS_KEYTAB) {
+		cli_credentials_set_kerberos_state(server_credentials, CRED_AUTO_USE_KERBEROS);
+	} else {
+		cli_credentials_set_kerberos_state(server_credentials, CRED_DONT_USE_KERBEROS);
+	}
+	
+	nt_status = gensec_server_start(tmp_ctx, gensec_settings,
+					auth4_context, &gensec_security);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
+	
+	gensec_set_credentials(gensec_security, server_credentials);
+	
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
+
+	talloc_unlink(tmp_ctx, lp_ctx);
+	talloc_unlink(tmp_ctx, server_credentials);
+	talloc_unlink(tmp_ctx, gensec_settings);
+	talloc_unlink(tmp_ctx, auth4_context);
+
+	nt_status = gensec_start_mech_by_oid(gensec_security, GENSEC_OID_NTLMSSP);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
+	
+	*gensec_security_out = talloc_steal(mem_ctx, gensec_security);
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -871,7 +1081,7 @@ static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		TALLOC_FREE(state->ntlmssp_state);
+		TALLOC_FREE(state->gensec_security);
 		state->svr_state = SERVER_INITIAL;
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		/* No special preprocessing required */
@@ -880,7 +1090,7 @@ static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
 
 		if (state->svr_state == SERVER_FINISHED) {
 			*response = talloc_asprintf(mem_ctx, "GF 0x%08x",
-						 state->neg_flags);
+						    gensec_ntlmssp_neg_flags(state->gensec_security));
 		}
 		else {
 			*response = talloc_strdup(mem_ctx, "BH\n");
@@ -890,8 +1100,16 @@ static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
 	} else if (strncmp(buf, "GK", 2) == 0) {
 		DEBUG(10, ("Requested NTLMSSP session key\n"));
 		if(state->have_session_key) {
-			char *key64 = base64_encode_data_blob(state->mem_ctx,
-					state->session_key);
+			DATA_BLOB session_key;
+			char *key64;
+			nt_status = gensec_session_key(state->gensec_security, talloc_tos(), &session_key);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				*response = talloc_asprintf(
+					mem_ctx, "BH %s", nt_errstr(nt_status));
+				return;
+			}
+			key64 = base64_encode_data_blob(state->mem_ctx, session_key);
+			data_blob_free(&session_key);
 			*response = talloc_asprintf(mem_ctx, "GK %s",
 						 key64 ? key64 : "<NULL>");
 			TALLOC_FREE(key64);
@@ -907,22 +1125,22 @@ static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
 		return;
 	}
 
-	if (!state->ntlmssp_state) {
-		nt_status = ntlm_auth_start_ntlmssp_server(
-				&state->ntlmssp_state);
+	if (!state->gensec_security) {
+		nt_status = ntlm_auth_start_ntlmssp_server(state, 
+				&state->gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			*response = talloc_asprintf(
 				mem_ctx, "BH %s", nt_errstr(nt_status));
 			return;
 		}
-		ntlmssp_want_feature_list(state->ntlmssp_state,
-				state->want_feature_list);
+		gensec_want_feature_list(state->gensec_security,
+					 state->want_feature_list);
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
 	dump_data(10, request.data, request.length);
 
-	nt_status = ntlmssp_update(state->ntlmssp_state, request, &reply);
+	nt_status = gensec_update(state->gensec_security, talloc_tos(), NULL, request, &reply);
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		char *reply_base64 = base64_encode_data_blob(state->mem_ctx,
@@ -937,23 +1155,24 @@ static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
 					 nt_errstr(nt_status));
 		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
 
-		TALLOC_FREE(state->ntlmssp_state);
+		TALLOC_FREE(state->gensec_security);
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		*response = talloc_asprintf(mem_ctx, "NA %s",
 					 nt_errstr(nt_status));
 		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
 	} else {
+		struct auth_session_info *session_info;
+		nt_status = gensec_session_info(state->gensec_security, state->gensec_security, &session_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
+			TALLOC_FREE(state->gensec_security);
+			return;
+		}
 		*response = talloc_asprintf(
 			mem_ctx, "AF %s",
-			(char *)state->ntlmssp_state->callback_private);
+			session_info->unix_info->unix_name);
 		DEBUG(10, ("NTLMSSP OK!\n"));
 
-		if(state->have_session_key)
-			data_blob_free(&state->session_key);
-		state->session_key = data_blob(
-				state->ntlmssp_state->session_key.data,
-				state->ntlmssp_state->session_key.length);
-		state->neg_flags = state->ntlmssp_state->neg_flags;
 		state->have_session_key = true;
 		state->svr_state = SERVER_FINISHED;
 	}
@@ -1246,8 +1465,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	ssize_t len;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	char *user = NULL;
-	char *domain = NULL;
+	const char *unix_username = NULL;
 
 	const char *reply_code;
 	char       *reply_base64;
@@ -1261,7 +1479,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		TALLOC_FREE(state->ntlmssp_state);
+		TALLOC_FREE(state->gensec_security);
 		TALLOC_FREE(state->spnego_mech);
 		TALLOC_FREE(state->spnego_mech_oid);
 	} else if (strncmp(buf, "KK", 2) == 0) {
@@ -1388,17 +1606,17 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 				return;
 			}
 
-			if (state->ntlmssp_state) {
+			if (state->gensec_security) {
 				DEBUG(1, ("Client wants a new NTLMSSP challenge, but "
 					  "already got one\n"));
 				x_fprintf(x_stdout, "BH Client wants a new "
 						    "NTLMSSP challenge, but "
 						    "already got one\n");
-				TALLOC_FREE(state->ntlmssp_state);
+				TALLOC_FREE(state->gensec_security);
 				return;
 			}
 
-			status = ntlm_auth_start_ntlmssp_server(&state->ntlmssp_state);
+			status = ntlm_auth_start_ntlmssp_server(state, &state->gensec_security);
 			if (!NT_STATUS_IS_OK(status)) {
 				x_fprintf(x_stdout, "BH %s\n", nt_errstr(status));
 				return;
@@ -1463,12 +1681,20 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 		DEBUG(10, ("got NTLMSSP packet:\n"));
 		dump_data(10, raw_in_token.data, raw_in_token.length);
 
-		status = ntlmssp_update(state->ntlmssp_state,
-					raw_in_token,
-					&raw_out_token);
+		status = gensec_update(state->gensec_security,
+				       talloc_tos(), NULL,
+				       raw_in_token,
+				       &raw_out_token);
 		if (NT_STATUS_IS_OK(status)) {
-			user = talloc_strdup(ctx, state->ntlmssp_state->user);
-			domain = talloc_strdup(ctx, state->ntlmssp_state->domain);
+			struct auth_session_info *session_info;
+			status = gensec_session_info(state->gensec_security, state->gensec_security, &session_info);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(status)));
+				TALLOC_FREE(state->gensec_security);
+				return;
+			}
+			unix_username = session_info->unix_info->unix_name;
+			DEBUG(10, ("NTLMSSP OK!\n"));
 		}
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			TALLOC_FREE(state->ntlmssp_state);
@@ -1497,7 +1723,8 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 		/* Now in "principal" we have the name we are authenticated as. */
 
 		if (NT_STATUS_IS_OK(status)) {
-
+			char *domain;
+			char *user;
 			domain = strchr_m(principal, '@');
 
 			if (domain == NULL) {
@@ -1520,6 +1747,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 
 			data_blob_free(&ap_rep);
 			data_blob_free(&session_key);
+			unix_username = talloc_asprintf(ctx, "%s\\%s", domain, user);
 		}
 		data_blob_free(&ticket);
 #endif
@@ -1535,7 +1763,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
 		response.negTokenTarg.responseToken = raw_out_token;
 		reply_code = "AF";
-		reply_argument = talloc_asprintf(ctx, "%s\\%s", domain, user);
+		reply_argument = unix_username;
 	} else if (NT_STATUS_EQUAL(status,
 				   NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		response.negTokenTarg.supportedMech = supportedMech;

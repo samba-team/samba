@@ -209,3 +209,14 @@ _PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
 
 	return ret;
 }
+
+uint32_t gensec_ntlmssp_neg_flags(struct gensec_security *gensec_security)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp;
+	if (gensec_security->ops != &gensec_ntlmssp_security_ops) {
+		return 0;
+	}
+	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
+					       struct gensec_ntlmssp_context);
+	return gensec_ntlmssp->ntlmssp_state->neg_flags;
+}
