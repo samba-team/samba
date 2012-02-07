@@ -95,10 +95,10 @@ static void cluster_fatal(const char *why)
  */
 static void ctdb_packet_dump(struct ctdb_req_header *hdr)
 {
-	if (DEBUGLEVEL < 10) {
+	if (DEBUGLEVEL < 11) {
 		return;
 	}
-	DEBUGADD(10, ("len=%d, magic=%x, vers=%d, gen=%d, op=%d, reqid=%d\n",
+	DEBUGADD(11, ("len=%d, magic=%x, vers=%d, gen=%d, op=%d, reqid=%d\n",
 		      (int)hdr->length, (int)hdr->ctdb_magic,
 		      (int)hdr->ctdb_version, (int)hdr->generation,
 		      (int)hdr->operation, (int)hdr->reqid));
@@ -249,7 +249,7 @@ static bool ctdb_req_complete(const uint8_t *buf, size_t available,
 
 	msglen = *((uint32 *)buf);
 
-	DEBUG(10, ("msglen = %d\n", msglen));
+	DEBUG(11, ("msglen = %d\n", msglen));
 
 	if (msglen < sizeof(struct ctdb_req_header)) {
 		DEBUG(0, ("Got invalid msglen: %d, expected at least %d for "
@@ -349,8 +349,8 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (DEBUGLEVEL >= 10) {
-		DEBUG(10, ("ctdb_pull_messaging_rec:\n"));
+	if (DEBUGLEVEL >= 11) {
+		DEBUG(11, ("ctdb_pull_messaging_rec:\n"));
 		NDR_PRINT_DEBUG(messaging_rec, result);
 	}
 
@@ -411,7 +411,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 
 	hdr = (struct ctdb_req_header *)state.req.data;
 
-	DEBUG(10, ("Received ctdb packet\n"));
+	DEBUG(11, ("Received ctdb packet\n"));
 	ctdb_packet_dump(hdr);
 
 	if (hdr->operation == CTDB_REQ_MESSAGE) {
