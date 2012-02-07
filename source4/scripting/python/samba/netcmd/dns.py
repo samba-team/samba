@@ -513,6 +513,12 @@ class cmd_serverinfo(Command):
 
     takes_args = [ 'server' ]
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
     takes_options = [
         Option('--client-version', help='Client Version',
                 default='longhorn', metavar='w2k|dotnet|longhorn',
@@ -541,6 +547,12 @@ class cmd_zoneinfo(Command):
 
     takes_args = [ 'server', 'zone' ]
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
     takes_options = [
         Option('--client-version', help='Client Version',
                 default='longhorn', metavar='w2k|dotnet|longhorn',
@@ -568,6 +580,12 @@ class cmd_zonelist(Command):
     synopsis = '%prog <server> [options]'
 
     takes_args = [ 'server' ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     takes_options = [
         Option('--client-version', help='Client Version',
@@ -644,6 +662,12 @@ class cmd_zonecreate(Command):
 
     takes_args = [ 'server', 'zone' ]
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
     takes_options = [
         Option('--client-version', help='Client Version',
                 default='longhorn', metavar='w2k|dotnet|longhorn',
@@ -702,6 +726,12 @@ class cmd_zonedelete(Command):
 
     takes_args = [ 'server', 'zone' ]
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
     def run(self, server, zone, sambaopts=None, credopts=None, versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
@@ -726,6 +756,12 @@ class cmd_query(Command):
     synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|MX|NS|SOA|SRV|ALL> [options]'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype' ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     takes_options = [
         Option('--authority', help='Search authoritative records (default)',
@@ -797,6 +833,12 @@ class cmd_roothints(Command):
 
     takes_args = [ 'server', 'name?' ]
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
     def run(self, server, name='.', sambaopts=None, credopts=None, versionopts=None):
         record_type = dnsp.DNS_TYPE_NS
         select_flags = (dnsserver.DNS_RPC_VIEW_ROOT_HINT_DATA |
@@ -825,6 +867,12 @@ class cmd_add_record(Command):
     synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <data>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     def run(self, server, zone, name, rtype, data, sambaopts=None, credopts=None, versionopts=None):
 
@@ -870,6 +918,12 @@ class cmd_update_record(Command):
     synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <olddata> <newdata>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'olddata', 'newdata' ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     def run(self, server, zone, name, rtype, olddata, newdata,
                 sambaopts=None, credopts=None, versionopts=None):
@@ -924,6 +978,12 @@ class cmd_delete_record(Command):
     synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <data>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
 
     def run(self, server, zone, name, rtype, data, sambaopts=None, credopts=None, versionopts=None):
 
