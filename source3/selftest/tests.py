@@ -224,7 +224,7 @@ raw = ["raw.acls", "raw.chkpath", "raw.close", "raw.composite", "raw.context", "
        "raw.samba3checkfsp", "raw.samba3closeerr", "raw.samba3oplocklogoff"]
 
 smb2 = ["smb2.lock", "smb2.read", "smb2.compound", "smb2.connect", "smb2.scan", "smb2.scanfind",
-        "smb2.bench-oplock"]
+        "smb2.bench-oplock", "smb2.rename"]
 
 rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sharesec",
        "rpc.samba3.spoolss", "rpc.samba3.wkssvc", "rpc.samba3.winreg",
