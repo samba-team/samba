@@ -2198,7 +2198,6 @@ static void free_private_data(void **vp)
 
 static NTSTATUS pdb_samba4_init_secrets(struct pdb_methods *m)
 {
-#if _SAMBA_BUILD_ == 4
 	struct pdb_domain_info *dom_info;
 	bool ret;
 
@@ -2228,7 +2227,6 @@ done:
 	if (!ret) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-#endif
 	return NT_STATUS_OK;
 }
 
