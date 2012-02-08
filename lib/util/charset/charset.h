@@ -161,11 +161,6 @@ bool convert_string_error(charset_t from, charset_t to,
 			  void *dest, size_t destlen,
 			  size_t *converted_size);
 
-ssize_t iconv_talloc(TALLOC_CTX *mem_ctx, 
-				       smb_iconv_t cd,
-				       void const *src, size_t srclen, 
-				       void *dest);
-
 extern struct smb_iconv_handle *global_iconv_handle;
 struct smb_iconv_handle *get_iconv_handle(void);
 struct smb_iconv_handle *get_iconv_testing_handle(TALLOC_CTX *mem_ctx, 

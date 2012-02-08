@@ -6,6 +6,6 @@ bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
 
 bld.SAMBA_SUBSYSTEM('charset',
                     public_headers='charset.h',
-                    source='codepoints.c convert_string.c util_str.c util_unistr_w.c charcnv.c pull_push.c util_unistr.c weird.c charset_macosxfs.c',
+                    source='codepoints.c convert_string.c util_str.c util_unistr_w.c pull_push.c util_unistr.c weird.c charset_macosxfs.c',
                     deps='DYNCONFIG ICONV_WRAPPER',
                     public_deps='talloc')
