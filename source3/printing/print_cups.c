@@ -852,7 +852,9 @@ static int cups_job_resume(int snum, struct printjob *pjob)
  * 'cups_job_submit()' - Submit a job for printing.
  */
 
-static int cups_job_submit(int snum, struct printjob *pjob)
+static int cups_job_submit(int snum, struct printjob *pjob,
+			   enum printing_types printing_type,
+			   char *lpq_cmd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	int		ret = 1;		/* Return value */

@@ -3009,6 +3009,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 	SMB_STRUCT_STAT sbuf;
 	struct printif *current_printif = get_printer_fns(snum);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *lpq_cmd;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -3076,8 +3077,31 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		return NT_STATUS_OK;
 	}
 
-	ret = (*(current_printif->job_submit))(snum, pjob);
+	/* don't strip out characters like '$' from the printername */
+	lpq_cmd = talloc_string_sub2(tmp_ctx,
+				     lp_lpqcommand(snum),
+				     "%p",
+				     lp_printername(snum),
+				     false, false, false);
+	if (lpq_cmd == NULL) {
+		status = NT_STATUS_PRINT_CANCELLED;
+		goto fail;
+	}
+	lpq_cmd = talloc_sub_advanced(tmp_ctx,
+				      lp_servicename(snum),
+				      current_user_info.unix_name,
+				      "",
+				      current_user.ut.gid,
+				      get_current_username(),
+				      current_user_info.domain,
+				      lpq_cmd);
+	if (lpq_cmd == NULL) {
+		status = NT_STATUS_PRINT_CANCELLED;
+		goto fail;
+	}
 
+	ret = (*(current_printif->job_submit))(snum, pjob,
+					       current_printif->type, lpq_cmd);
 	if (ret) {
 		status = NT_STATUS_PRINT_CANCELLED;
 		goto fail;

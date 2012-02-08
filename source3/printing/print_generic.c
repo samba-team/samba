@@ -142,7 +142,9 @@ static int generic_job_resume(int snum, struct printjob *pjob)
  Submit a file for printing - called from print_job_end()
 ****************************************************************************/
 
-static int generic_job_submit(int snum, struct printjob *pjob)
+static int generic_job_submit(int snum, struct printjob *pjob,
+			      enum printing_types printing_type,
+			      char *lpq_cmd)
 {
 	int ret = -1;
 	char *current_directory = NULL;
