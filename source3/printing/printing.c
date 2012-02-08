@@ -373,6 +373,7 @@ done:
  unpack a pjob from a tdb buffer
 ***********************************************************************/
 
+/* FIXME talloc ctx */
 static int unpack_pjob(uint8 *buf, int buflen, struct printjob *pjob)
 {
 	int	len = 0;
@@ -431,9 +432,11 @@ static int unpack_pjob(uint8 *buf, int buflen, struct printjob *pjob)
  Useful function to find a print job in the database.
 ****************************************************************************/
 
-static struct printjob *print_job_find(const char *sharename, uint32 jobid)
+static struct printjob *print_job_find(TALLOC_CTX *mem_ctx,
+				       const char *sharename,
+				       uint32 jobid)
 {
-	static struct printjob 	pjob;
+	struct printjob		*pjob;
 	uint32_t tmp;
 	TDB_DATA 		ret;
 	struct tdb_print_db 	*pdb = get_print_db_byname(sharename);
@@ -449,27 +452,30 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 	release_print_db(pdb);
 
 	if (!ret.dptr) {
-		DEBUG(10,("print_job_find: failed to find jobid %u.\n", (unsigned int)jobid ));
+		DEBUG(10, ("print_job_find: failed to find jobid %u.\n",
+			   jobid));
 		return NULL;
 	}
 
-	talloc_free(pjob.devmode);
-
-	ZERO_STRUCT( pjob );
-
-	if ( unpack_pjob( ret.dptr, ret.dsize, &pjob ) == -1 ) {
-		DEBUG(10,("print_job_find: failed to unpack jobid %u.\n", (unsigned int)jobid ));
-		SAFE_FREE(ret.dptr);
-		return NULL;
+	pjob = talloc_zero(mem_ctx, struct printjob);
+	if (pjob == NULL) {
+		goto err_out;
 	}
 
-	SAFE_FREE(ret.dptr);
+	if (unpack_pjob(ret.dptr, ret.dsize, pjob) == -1) {
+		DEBUG(10, ("failed to unpack jobid %u.\n", jobid));
+		talloc_free(pjob);
+		pjob = NULL;
+		goto err_out;
+	}
 
 	DEBUG(10,("print_job_find: returning system job %d for jobid %u.\n",
-			(int)pjob.sysjob, (unsigned int)jobid ));
-	SMB_ASSERT(pjob.jobid == jobid);
+		  pjob->sysjob, jobid));
+	SMB_ASSERT(pjob->jobid == jobid);
 
-	return &pjob;
+err_out:
+	SAFE_FREE(ret.dptr);
+	return pjob;
 }
 
 /* Convert a unix jobid to a smb jobid */
@@ -840,19 +846,21 @@ static void pjob_delete(struct tevent_context *ev,
 	struct printjob *pjob;
 	uint32 job_status = 0;
 	struct tdb_print_db *pdb;
-
-	pdb = get_print_db_byname( sharename );
-
-	if (!pdb)
+	TALLOC_CTX *tmp_ctx = talloc_new(ev);
+	if (tmp_ctx == NULL) {
 		return;
+	}
 
-	pjob = print_job_find( sharename, jobid );
+	pdb = get_print_db_byname(sharename);
+	if (!pdb) {
+		goto err_out;
+	}
 
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
 	if (!pjob) {
-		DEBUG(5, ("pjob_delete: we were asked to delete nonexistent job %u\n",
-					(unsigned int)jobid));
-		release_print_db(pdb);
-		return;
+		DEBUG(5, ("we were asked to delete nonexistent job %u\n",
+			  jobid));
+		goto err_release;
 	}
 
 	/* We must cycle through JOB_STATUS_DELETING and
@@ -866,8 +874,11 @@ static void pjob_delete(struct tevent_context *ev,
 
 	tdb_delete(pdb->tdb, print_key(jobid, &tmp));
 	remove_from_jobs_added(sharename, jobid);
-	release_print_db( pdb );
 	rap_jobid_delete(sharename, jobid);
+err_release:
+	release_print_db(pdb);
+err_out:
+	talloc_free(tmp_ctx);
 }
 
 /****************************************************************************
@@ -880,13 +891,18 @@ static void print_unix_job(struct tevent_context *ev,
 			   uint32 jobid)
 {
 	struct printjob pj, *old_pj;
+	TALLOC_CTX *tmp_ctx = talloc_new(ev);
+	if (tmp_ctx == NULL) {
+		return;
+	}
 
-	if (jobid == (uint32)-1)
+	if (jobid == (uint32)-1) {
 		jobid = q->sysjob + UNIX_JOB_START;
+	}
 
 	/* Preserve the timestamp on an existing unix print job */
 
-	old_pj = print_job_find(sharename, jobid);
+	old_pj = print_job_find(tmp_ctx, sharename, jobid);
 
 	ZERO_STRUCT(pj);
 
@@ -910,6 +926,7 @@ static void print_unix_job(struct tevent_context *ev,
 	fstrcpy(pj.queuename, old_pj ? old_pj->queuename : sharename );
 
 	pjob_store(ev, msg_ctx, sharename, jobid, &pj);
+	talloc_free(tmp_ctx);
 }
 
 
@@ -1341,8 +1358,9 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	TDB_DATA jcdata;
 	fstring keystr, cachestr;
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
+	TALLOC_CTX *tmp_ctx = talloc_new(ev);
 
-	if (!pdb) {
+	if ((pdb == NULL) || (tmp_ctx == NULL)) {
 		return;
 	}
 
@@ -1383,7 +1401,6 @@ static void print_queue_update_internal(struct tevent_context *ev,
 
 	  fill in any system job numbers as we go
 	*/
-
 	jcdata = get_jobs_added_data(pdb);
 
 	for (i=0; i<qcount; i++) {
@@ -1396,7 +1413,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
 		}
 
 		/* we have an active SMB print job - update its status */
-		pjob = print_job_find(sharename, jobid);
+		pjob = print_job_find(tmp_ctx, sharename, jobid);
 		if (!pjob) {
 			/* err, somethings wrong. Probably smbd was restarted
 			   with jobs in the queue. All we can do is treat them
@@ -1419,6 +1436,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	}
 
 	SAFE_FREE(jcdata.dptr);
+	talloc_free(tmp_ctx);
 
 	/* now delete any queued entries that don't appear in the
            system queue */
@@ -2058,7 +2076,7 @@ bool print_job_exists(const char* sharename, uint32 jobid)
 
 char *print_job_fname(const char* sharename, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(sharename, jobid);
+	struct printjob *pjob = print_job_find(NULL, sharename, jobid);
 	if (!pjob || pjob->spooled || pjob->pid != sys_getpid())
 		return NULL;
 	return pjob->filename;
@@ -2071,12 +2089,14 @@ char *print_job_fname(const char* sharename, uint32 jobid)
  has not been spooled.
 ****************************************************************************/
 
-struct spoolss_DeviceMode *print_job_devmode(const char* sharename, uint32 jobid)
+struct spoolss_DeviceMode *print_job_devmode(TALLOC_CTX *mem_ctx,
+					     const char *sharename,
+					     uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(sharename, jobid);
-
-	if ( !pjob )
+	struct printjob *pjob = print_job_find(mem_ctx, sharename, jobid);
+	if (pjob == NULL) {
 		return NULL;
+	}
 
 	return pjob->devmode;
 }
@@ -2090,13 +2110,23 @@ bool print_job_set_name(struct tevent_context *ev,
 			const char *sharename, uint32 jobid, const char *name)
 {
 	struct printjob *pjob;
+	bool ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ev);
+	if (tmp_ctx == NULL) {
+		return false;
+	}
 
-	pjob = print_job_find(sharename, jobid);
-	if (!pjob || pjob->pid != sys_getpid())
-		return False;
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
+	if (!pjob || pjob->pid != sys_getpid()) {
+		ret = false;
+		goto err_out;
+	}
 
 	fstrcpy(pjob->jobname, name);
-	return pjob_store(ev, msg_ctx, sharename, jobid, pjob);
+	ret = pjob_store(ev, msg_ctx, sharename, jobid, pjob);
+err_out:
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 /****************************************************************************
@@ -2107,17 +2137,12 @@ bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t job
 {
 	struct printjob *pjob;
 
-	pjob = print_job_find(sharename, jobid);
+	pjob = print_job_find(mem_ctx, sharename, jobid);
 	if (!pjob || pjob->pid != sys_getpid()) {
 		return false;
 	}
 
-	*name = talloc_strdup(mem_ctx, pjob->jobname);
-	if (!*name) {
-		return false;
-	}
-
-	return true;
+	return pjob->jobname;
 }
 
 
@@ -2189,19 +2214,29 @@ static bool print_job_delete1(struct tevent_context *ev,
 			      int snum, uint32 jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
-	struct printjob *pjob = print_job_find(sharename, jobid);
+	struct printjob *pjob;
 	int result = 0;
 	struct printif *current_printif = get_printer_fns( snum );
+	bool ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(ev);
+	if (tmp_ctx == NULL) {
+		return false;
+	}
 
-	if (!pjob)
-		return False;
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
+	if (!pjob) {
+		ret = false;
+		goto err_out;
+	}
 
 	/*
 	 * If already deleting just return.
 	 */
 
-	if (pjob->status == LPQ_DELETING)
-		return True;
+	if (pjob->status == LPQ_DELETING) {
+		ret = true;
+		goto err_out;
+	}
 
 	/* Hrm - we need to be able to cope with deleting a job before it
 	   has reached the spooler.  Just mark it as LPQ_DELETING and
@@ -2231,8 +2266,10 @@ static bool print_job_delete1(struct tevent_context *ev,
 			struct tdb_print_db *pdb = get_print_db_byname(sharename);
 			int njobs = 1;
 
-			if (!pdb)
-				return False;
+			if (!pdb) {
+				ret = false;
+				goto err_out;
+			}
 			pjob_delete(ev, msg_ctx, sharename, jobid);
 			/* Ensure we keep a rough count of the number of total jobs... */
 			tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, -1);
@@ -2242,7 +2279,10 @@ static bool print_job_delete1(struct tevent_context *ev,
 
 	remove_from_jobs_added( sharename, jobid );
 
-	return (result == 0);
+	ret = (result == 0);
+err_out:
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 /****************************************************************************
@@ -2253,12 +2293,23 @@ static bool is_owner(const struct auth_serversupplied_info *server_info,
 		     const char *servicename,
 		     uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(servicename, jobid);
+	struct printjob *pjob;
+	bool ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(server_info);
+	if (tmp_ctx == NULL) {
+		return false;
+	}
 
-	if (!pjob || !server_info)
-		return False;
+	pjob = print_job_find(tmp_ctx, servicename, jobid);
+	if (!pjob || !server_info) {
+		ret = false;
+		goto err_out;
+	}
 
-	return strequal(pjob->user, server_info->sanitized_username);
+	ret = strequal(pjob->user, server_info->sanitized_username);
+err_out:
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 /****************************************************************************
@@ -2272,7 +2323,11 @@ WERROR print_job_delete(const struct auth_serversupplied_info *server_info,
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
 	bool 	owner;
-	char 	*fname;
+	WERROR werr;
+	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	owner = is_owner(server_info, lp_const_servicename(snum), jobid);
 
@@ -2292,7 +2347,8 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 
-		return WERR_ACCESS_DENIED;
+		werr = WERR_ACCESS_DENIED;
+		goto err_out;
 	}
 
 	/*
@@ -2302,18 +2358,20 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	 * spool file & return.
 	 */
 
-	fname = print_job_fname(sharename, jobid);
-	if (fname != NULL) {
-		/* remove the spool file */
-		DEBUG(10, ("print_job_delete: "
-			   "Removing spool file [%s]\n", fname));
-		if (unlink(fname) == -1) {
-			return map_werror_from_unix(errno);
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
+	if (!pjob || pjob->spooled || pjob->pid != getpid()) {
+		DEBUG(10, ("Skipping spool file removal for job %u\n", jobid));
+	} else {
+		DEBUG(10, ("Removing spool file [%s]\n", pjob->filename));
+		if (unlink(pjob->filename) == -1) {
+			werr = map_werror_from_unix(errno);
+			goto err_out;
 		}
 	}
 
 	if (!print_job_delete1(server_event_context(), msg_ctx, snum, jobid)) {
-		return WERR_ACCESS_DENIED;
+		werr = WERR_ACCESS_DENIED;
+		goto err_out;
 	}
 
 	/* force update the database and say the delete failed if the
@@ -2321,12 +2379,16 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 
 	print_queue_update(msg_ctx, snum, True);
 
-	pjob = print_job_find(sharename, jobid);
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
 	if (pjob && (pjob->status != LPQ_DELETING)) {
-		return WERR_ACCESS_DENIED;
+		werr = WERR_ACCESS_DENIED;
+		goto err_out;
 	}
+	werr = WERR_PRINTER_HAS_JOBS_QUEUED;
 
-	return WERR_PRINTER_HAS_JOBS_QUEUED;
+err_out:
+	talloc_free(tmp_ctx);
+	return werr;
 }
 
 /****************************************************************************
@@ -2342,9 +2404,12 @@ WERROR print_job_pause(const struct auth_serversupplied_info *server_info,
 	int ret = -1;
 	struct printif *current_printif = get_printer_fns( snum );
 	WERROR werr;
+	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
-	pjob = print_job_find(sharename, jobid);
-
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
 	if (!pjob || !server_info) {
 		DEBUG(10, ("print_job_pause: no pjob or user for jobid %u\n",
 			(unsigned int)jobid ));
@@ -2395,6 +2460,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	/* how do we tell if this succeeded? */
 	werr = WERR_OK;
 err_out:
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -2411,9 +2477,11 @@ WERROR print_job_resume(const struct auth_serversupplied_info *server_info,
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
 	WERROR werr;
+	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
+	if (tmp_ctx == NULL)
+		return WERR_NOT_ENOUGH_MEMORY;
 
-	pjob = print_job_find(sharename, jobid);
-
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
 	if (!pjob || !server_info) {
 		DEBUG(10, ("print_job_resume: no pjob or user for jobid %u\n",
 			(unsigned int)jobid ));
@@ -2461,6 +2529,7 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 
 	werr = WERR_OK;
 err_out:
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -2475,26 +2544,36 @@ ssize_t print_job_write(struct tevent_context *ev,
 	const char* sharename = lp_const_servicename(snum);
 	ssize_t return_code;
 	struct printjob *pjob;
-
-	pjob = print_job_find(sharename, jobid);
-
-	if (!pjob)
+	TALLOC_CTX *tmp_ctx = talloc_new(ev);
+	if (tmp_ctx == NULL) {
 		return -1;
+	}
+
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
+	if (!pjob) {
+		return_code = -1;
+		goto err_out;
+	}
+
 	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != sys_getpid())
-		return -1;
+	if (pjob->pid != sys_getpid()) {
+		return_code = -1;
+		goto err_out;
+	}
 
 	/* if SMBD is spooling this can't be allowed */
 	if (pjob->status == PJOB_SMBD_SPOOLING) {
-		return -1;
+		return_code = -1;
+		goto err_out;
 	}
 
 	return_code = write_data(pjob->fd, buf, size);
-
-	if (return_code>0) {
+	if (return_code > 0) {
 		pjob->size += size;
 		pjob_store(ev, msg_ctx, sharename, jobid, pjob);
 	}
+err_out:
+	talloc_free(tmp_ctx);
 	return return_code;
 }
 
@@ -2906,16 +2985,24 @@ void print_job_endpage(struct messaging_context *msg_ctx,
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
+	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
+	if (tmp_ctx == NULL) {
+		return;
+	}
 
-	pjob = print_job_find(sharename, jobid);
-	if (!pjob)
-		return;
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
+	if (!pjob) {
+		goto err_out;
+	}
 	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != sys_getpid())
-		return;
+	if (pjob->pid != sys_getpid()) {
+		goto err_out;
+	}
 
 	pjob->page_count++;
 	pjob_store(server_event_context(), msg_ctx, sharename, jobid, pjob);
+err_out:
+	talloc_free(tmp_ctx);
 }
 
 /****************************************************************************
@@ -2931,17 +3018,22 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 	struct printjob *pjob;
 	int ret;
 	SMB_STRUCT_STAT sbuf;
-	struct printif *current_printif = get_printer_fns( snum );
+	struct printif *current_printif = get_printer_fns(snum);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	pjob = print_job_find(sharename, jobid);
-
+	pjob = print_job_find(tmp_ctx, sharename, jobid);
 	if (!pjob) {
-		return NT_STATUS_PRINT_CANCELLED;
+		status = NT_STATUS_PRINT_CANCELLED;
+		goto err_out;
 	}
 
 	if (pjob->spooled || pjob->pid != sys_getpid()) {
-		return NT_STATUS_ACCESS_DENIED;
+		status = NT_STATUS_ACCESS_DENIED;
+		goto err_out;
 	}
 
 	if (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) {
@@ -3021,6 +3113,8 @@ fail:
 	pjob->fd = -1;
 	unlink(pjob->filename);
 	pjob_delete(server_event_context(), msg_ctx, sharename, jobid);
+err_out:
+	talloc_free(tmp_ctx);
 	return status;
 }
 
@@ -3043,6 +3137,10 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	int max_reported_jobs = lp_max_reported_jobs(snum);
 	bool ret = False;
 	const char* sharename = lp_servicename(snum);
+	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
+	if (tmp_ctx == NULL) {
+		return false;
+	}
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(lp_const_servicename(snum), True))
@@ -3109,7 +3207,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 
 		jobid = IVAL(cgdata.dptr, i*4);
 		DEBUG(5,("get_stored_queue_info: added job = %u\n", (unsigned int)jobid));
-		pjob = print_job_find(lp_const_servicename(snum), jobid);
+		pjob = print_job_find(tmp_ctx, lp_const_servicename(snum), jobid);
 		if (!pjob) {
 			DEBUG(5,("get_stored_queue_info: failed to find added job = %u\n", (unsigned int)jobid));
 			remove_from_jobs_added(sharename, jobid);
@@ -3125,6 +3223,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 		fstrcpy(queue[total_count].fs_user, pjob->user);
 		fstrcpy(queue[total_count].fs_file, pjob->jobname);
 		total_count++;
+		talloc_free(pjob);
 	}
 
 	/* Update the changed jobids. */
@@ -3146,7 +3245,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 			DEBUG(5,("get_stored_queue_info: changed job: %u\n",
 				 (unsigned int) jobid));
 
-			pjob = print_job_find(sharename, jobid);
+			pjob = print_job_find(tmp_ctx, sharename, jobid);
 			if (pjob == NULL) {
 				DEBUG(5,("get_stored_queue_info: failed to find "
 					 "changed job = %u\n",
@@ -3163,6 +3262,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 			queue[j].time = pjob->starttime;
 			fstrcpy(queue[j].fs_user, pjob->user);
 			fstrcpy(queue[j].fs_file, pjob->jobname);
+			talloc_free(pjob);
 
 			DEBUG(5,("get_stored_queue_info: updated queue[%u], jobid: %u, jobname: %s\n",
 				 (unsigned int) j, (unsigned int) jobid, pjob->jobname));
@@ -3190,6 +3290,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 
 	SAFE_FREE(data.dptr);
 	SAFE_FREE(cgdata.dptr);
+	talloc_free(tmp_ctx);
 	return ret;
 }
 
