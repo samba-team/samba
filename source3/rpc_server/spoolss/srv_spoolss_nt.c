@@ -9302,7 +9302,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	 *  a failure condition
 	 */
 
-	devmode = print_job_devmode(lp_const_servicename(snum), jobid);
+	devmode = print_job_devmode(mem_ctx, lp_const_servicename(snum), jobid);
 	if (!devmode) {
 		result = spoolss_create_default_devmode(mem_ctx,
 						pinfo2->printername,
