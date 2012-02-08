@@ -820,8 +820,8 @@ static bool pjob_store(struct tevent_context *ev,
 		}
 	}
 
-	release_print_db(pdb);
 done:
+	release_print_db(pdb);
 	SAFE_FREE( old_data.dptr );
 	SAFE_FREE( buf );
 
