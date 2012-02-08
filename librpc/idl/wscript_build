@@ -18,7 +18,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     'wmi.idl dcom.idl',
-                    options='--header --ndr-parser --server --client --python --dcom-proxy --com-header',
+                    options='--header --ndr-parser --server --client --dcom-proxy --com-header',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
