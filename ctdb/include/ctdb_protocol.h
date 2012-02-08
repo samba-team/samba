@@ -377,6 +377,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_DB_READONLY	 = 129,
 		    CTDB_CONTROL_CHECK_SRVIDS		 = 130,
 		    CTDB_CONTROL_TRAVERSE_START_EXT	 = 131,
+		    CTDB_CONTROL_GET_DB_STATISTICS	 = 132,
 };
 
 /*
@@ -656,6 +657,14 @@ struct ctdb_statistics {
 struct ctdb_statistics_wire {
 	uint32_t num;
 	struct ctdb_statistics stats[1];
+};
+
+/*
+ * db statistics
+ */
+struct ctdb_db_statistics {
+	uint32_t db_ro_delegations;
+	uint32_t db_ro_revokes;
 };
 
 /*

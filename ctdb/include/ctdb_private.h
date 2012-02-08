@@ -300,6 +300,11 @@ struct ctdb_daemon_data {
 		ctdb->statistics_current.counter++;					\
 	}
 
+#define CTDB_INCREMENT_DB_STAT(ctdb_db, counter) \
+	{										\
+		ctdb_db->statistics.counter++;						\
+	}
+
 #define CTDB_DECREMENT_STAT(ctdb, counter) \
 	{										\
 		if (ctdb->statistics.counter > 0)					\
@@ -513,6 +518,8 @@ struct ctdb_db_context {
 	   so we can avoid sending duplicate fetch requests
 	*/
 	struct trbt_tree *deferred_fetch;
+
+	struct ctdb_db_statistics statistics;
 };
 
 
@@ -1439,5 +1446,9 @@ int ctdb_null_func(struct ctdb_call_info *call);
 int ctdb_fetch_func(struct ctdb_call_info *call);
 
 int ctdb_fetch_with_header_func(struct ctdb_call_info *call);
+
+int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
+				uint32_t db_id,
+				TDB_DATA *outdata);
 
 #endif

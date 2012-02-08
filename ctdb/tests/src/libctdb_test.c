@@ -487,3 +487,20 @@ void ctdb_disconnect(struct ctdb_connection *ctdb)
 	free(ctdb);
 }
 
+bool ctdb_getdbstat(struct ctdb_connection *ctdb,
+		    uint32_t destnode,
+		    uint32_t db_id,
+		    struct ctdb_db_statistics **dbstatistics)
+{
+	if (!current_node_is_connected(ctdb)) {
+		return false;
+	}
+
+	*dbstatistics = malloc(sizeof(struct ctdb_db_statistics));
+	return true;
+}
+
+void ctdb_free_dbstat(struct ctdb_db_statistics *dbstatistics)
+{
+	free(dbstatistics);
+}

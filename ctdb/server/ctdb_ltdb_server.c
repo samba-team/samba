@@ -1464,3 +1464,20 @@ int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata)
 	return 0;
 }
 
+int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
+				uint32_t db_id,
+				TDB_DATA *outdata)
+{
+	struct ctdb_db_context *ctdb_db;
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (!ctdb_db) {
+		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in get_db_statistics\n", db_id));
+		return -1;
+	}
+
+	outdata->dptr  = (uint8_t *)&(ctdb_db->statistics);
+	outdata->dsize = sizeof(ctdb_db->statistics);
+
+	return 0;
+}

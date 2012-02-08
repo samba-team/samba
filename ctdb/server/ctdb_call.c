@@ -514,6 +514,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if (header.flags & CTDB_REC_RO_REVOKE_COMPLETE) {
 		header.flags &= ~(CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE);
 		CTDB_INCREMENT_STAT(ctdb, total_ro_revokes);
+		CTDB_INCREMENT_DB_STAT(ctdb_db, db_ro_revokes);
 		if (ctdb_ltdb_store(ctdb_db, call->key, &header, data) != 0) {
 			ctdb_fatal(ctdb, "Failed to write header with cleared REVOKE flag");
 		}
@@ -621,6 +622,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 		ctdb_queue_packet(ctdb, &r->hdr);
 		CTDB_INCREMENT_STAT(ctdb, total_ro_delegations);
+		CTDB_INCREMENT_DB_STAT(ctdb_db, db_ro_delegations);
 
 		talloc_free(r);
 		return;

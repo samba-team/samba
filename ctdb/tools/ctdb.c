@@ -566,6 +566,55 @@ static int control_stats(struct ctdb_context *ctdb, int argc, const char **argv)
 
 
 /*
+  display remote ctdb db statistics
+ */
+static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_db_statistics *dbstatistics;
+	struct ctdb_dbid_map *dbmap=NULL;
+	int i, ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
+		return ret;
+	}
+	for(i=0;i<dbmap->num;i++){
+		const char *name;
+
+		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
+		if(!strcmp(argv[0], name)){
+			talloc_free(discard_const(name));
+			break;
+		}
+		talloc_free(discard_const(name));
+	}
+	if (i == dbmap->num) {
+		DEBUG(DEBUG_ERR,("No database with name '%s' found\n", argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (!ctdb_getdbstat(ctdb_connection, options.pnn, dbmap->dbs[i].dbid, &dbstatistics)) {
+		DEBUG(DEBUG_ERR,("Failed to read db statistics from node\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	printf("DB Statistics:\n");
+	printf("RO Delegations: %d\n", dbstatistics->db_ro_delegations);
+	printf("RO Revokes:     %d\n", dbstatistics->db_ro_revokes);
+
+	ctdb_free_dbstat(dbstatistics);
+	return 0;
+}
+
+/*
   display uptime of remote node
  */
 static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5434,6 +5483,7 @@ static const struct {
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
 	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbid>" },
 	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status" },
+	{ "dbstatistics",    control_dbstatistics,      false,	false, "show db statistics", "<db>" },
 };
 
 /*

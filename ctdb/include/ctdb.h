@@ -510,6 +510,39 @@ bool ctdb_getpnn_recv(struct ctdb_connection *ctdb,
 
 
 /**
+ * ctdb_getdbstat_send - read statistics for a db
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @db_id:    the database to collect the statistics from
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_getdbstat_send(struct ctdb_connection *ctdb,
+		     uint32_t destnode,
+		     uint32_t db_id,
+		     ctdb_callback_t callback,
+		     void *cbdata);
+/**
+ * ctdb_getdbstat_recv - read an ctdb_getdbstat reply from ctdbd
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @stat: a pointer to the *stat to fill in
+ *
+ * This returns false if something went wrong, or otherwise fills in **stats
+ * stats must be freed later by calling ctdb_free_dbstat();
+ */
+bool ctdb_getdbstat_recv(struct ctdb_connection *ctdb,
+			 struct ctdb_request *req,
+			 struct ctdb_db_statistics **stat);
+
+void ctdb_free_dbstat(struct ctdb_db_statistics *stat);
+
+/**
  * ctdb_check_message_handlers_send - check a list of message_handlers
  * if they are registered
  * message_handlers are registered on the daemon using the
@@ -876,6 +909,26 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 		 uint32_t *pnn);
 
 /**
+ * ctdb_getdbstat - read the db stat of a node (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @db_id:    the database to collect the statistics from
+ * @stat: a pointer to the *stat to fill in
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ *
+ * This returns false if something went wrong, or otherwise fills in **stat
+ * stat must be freed later by calling ctdb_free_dbstat();
+ */
+bool ctdb_getdbstat(struct ctdb_connection *ctdb,
+		    uint32_t destnode,
+		    uint32_t db_id,
+		    struct ctdb_db_statistics **stat);
+
+
+/**
  * ctdb_check_message_handlers - check a list of message_handlers (synchronous)
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -1091,6 +1144,10 @@ void ctdb_free_vnnmap(struct ctdb_vnn_map *vnnmap);
 #define ctdb_getpnn_send(ctdb, destnode, cb, cbdata)			\
 	ctdb_getpnn_send((ctdb), (destnode),				\
 			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getdbstat_send(ctdb, destnode, db_id, cb, cbdata)		\
+	ctdb_getdbstat_send((ctdb), (destnode), (db_id),		\
+			    ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #define ctdb_check_message_handlers_send(ctdb, destnode, num, mhs,	\
 			 cb, cbdata)					\

@@ -136,6 +136,24 @@ bool ctdb_getpnn(struct ctdb_connection *ctdb,
 	return ret;
 }
 
+bool ctdb_getdbstat(struct ctdb_connection *ctdb,
+		    uint32_t destnode, uint32_t db_id,
+		    struct ctdb_db_statistics **stat)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	req = synchronous(ctdb,
+			  ctdb_getdbstat_send(ctdb, destnode, db_id, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_getdbstat_recv(ctdb, req, stat);
+		ctdb_request_free(req);
+	}
+	return ret;
+}
+
 bool ctdb_check_message_handlers(struct ctdb_connection *ctdb,
 		      uint32_t destnode, uint32_t num,
 		      uint64_t *mhs, uint8_t *result)

@@ -630,6 +630,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(size);
 		return ctdb_control_schedule_for_deletion(ctdb, indata);
 	}
+	case CTDB_CONTROL_GET_DB_STATISTICS:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_get_db_statistics(ctdb, *(uint32_t *)indata.dptr, outdata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

@@ -25,6 +25,7 @@
 #undef ctdb_getrecmaster_send
 #undef ctdb_getrecmode_send
 #undef ctdb_getpnn_send
+#undef ctdb_getdbstat_send
 #undef ctdb_check_message_handlers_send
 #undef ctdb_getnodemap_send
 #undef ctdb_getpublicips_send
@@ -110,6 +111,56 @@ struct ctdb_request *ctdb_getpnn_send(struct ctdb_connection *ctdb,
 {
 	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_PNN, destnode,
 					NULL, 0, callback, private_data);
+}
+
+bool ctdb_getdbstat_recv(struct ctdb_connection *ctdb,
+			 struct ctdb_request *req,
+			 struct ctdb_db_statistics **stat)
+{
+	struct ctdb_reply_control *reply;
+	struct ctdb_db_statistics *s;
+
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_DB_STATISTICS);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getpnn_recv: status -1");
+		return false;
+	}
+	if (reply->datalen != sizeof(struct ctdb_db_statistics)) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getdbstat_recv: returned data is %d bytes but should be %d", reply->datalen, (int)sizeof(struct ctdb_db_statistics));
+		return false;
+	}
+
+	s = malloc(sizeof(struct ctdb_db_statistics));
+	if (!s) {
+		return false;
+	}
+	memcpy(s, reply->data, sizeof(struct ctdb_db_statistics));
+	*stat = s;
+
+	return true;
+}
+
+struct ctdb_request *ctdb_getdbstat_send(struct ctdb_connection *ctdb,
+				      uint32_t destnode,
+				      uint32_t db_id,
+				      ctdb_callback_t callback,
+				      void *private_data)
+{
+	uint32_t indata = db_id;
+
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_DB_STATISTICS, destnode,
+					&indata, sizeof(indata), callback, private_data);
+}
+
+void ctdb_free_dbstat(struct ctdb_db_statistics *stat)
+{
+	if (stat == NULL) {
+		return;
+	}
+	free(stat);
 }
 
 bool ctdb_getnodemap_recv(struct ctdb_connection *ctdb,
