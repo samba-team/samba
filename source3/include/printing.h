@@ -102,7 +102,9 @@ struct printif
   int (*job_delete)(const char *sharename, const char *lprm_command, struct printjob *pjob);
   int (*job_pause)(int snum, struct printjob *pjob);
   int (*job_resume)(int snum, struct printjob *pjob);
-  int (*job_submit)(int snum, struct printjob *pjob);
+  int (*job_submit)(int snum, struct printjob *pjob,
+		    enum printing_types printing_type,
+		    char *lpq_command);
 };
 
 extern struct printif	generic_printif;

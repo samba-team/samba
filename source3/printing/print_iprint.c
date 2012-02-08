@@ -722,7 +722,9 @@ static int iprint_job_resume(int snum, struct printjob *pjob)
  * 'iprint_job_submit()' - Submit a job for printing.
  */
 
-static int iprint_job_submit(int snum, struct printjob *pjob)
+static int iprint_job_submit(int snum, struct printjob *pjob,
+			     enum printing_types printing_type,
+			     char *lpq_cmd)
 {
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
