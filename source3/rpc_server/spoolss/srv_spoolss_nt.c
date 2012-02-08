@@ -7381,17 +7381,13 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 		}
 		break;
 	case SPOOLSS_JOB_CONTROL_PAUSE:
-		if (print_job_pause(session_info, p->msg_ctx,
-				    snum, r->in.job_id, &errcode)) {
-			errcode = WERR_OK;
-		}
+		errcode = print_job_pause(session_info, p->msg_ctx,
+					  snum, r->in.job_id);
 		break;
 	case SPOOLSS_JOB_CONTROL_RESTART:
 	case SPOOLSS_JOB_CONTROL_RESUME:
-		if (print_job_resume(session_info, p->msg_ctx,
-				     snum, r->in.job_id, &errcode)) {
-			errcode = WERR_OK;
-		}
+		errcode = print_job_resume(session_info, p->msg_ctx,
+					   snum, r->in.job_id);
 		break;
 	case 0:
 		errcode = WERR_OK;
