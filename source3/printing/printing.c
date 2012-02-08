@@ -373,8 +373,8 @@ done:
  unpack a pjob from a tdb buffer
 ***********************************************************************/
 
-/* FIXME talloc ctx */
-static int unpack_pjob(uint8 *buf, int buflen, struct printjob *pjob)
+static int unpack_pjob(TALLOC_CTX *mem_ctx, uint8 *buf, int buflen,
+		       struct printjob *pjob)
 {
 	int	len = 0;
 	int	used;
@@ -406,7 +406,7 @@ static int unpack_pjob(uint8 *buf, int buflen, struct printjob *pjob)
 		return -1;
 	}
 
-        used = unpack_devicemode(NULL, buf+len, buflen-len, &pjob->devmode);
+        used = unpack_devicemode(mem_ctx, buf+len, buflen-len, &pjob->devmode);
         if (used == -1) {
 		return -1;
         }
@@ -462,7 +462,7 @@ static struct printjob *print_job_find(TALLOC_CTX *mem_ctx,
 		goto err_out;
 	}
 
-	if (unpack_pjob(ret.dptr, ret.dsize, pjob) == -1) {
+	if (unpack_pjob(mem_ctx, ret.dptr, ret.dsize, pjob) == -1) {
 		DEBUG(10, ("failed to unpack jobid %u.\n", jobid));
 		talloc_free(pjob);
 		pjob = NULL;
@@ -797,30 +797,32 @@ static bool pjob_store(struct tevent_context *ev,
 
 	/* Send notify updates for what has changed */
 
-	if ( ret ) {
+	if (ret) {
 		bool changed = false;
 		struct printjob old_pjob;
 
-		if ( old_data.dsize )
-		{
-			if ( unpack_pjob( old_data.dptr, old_data.dsize, &old_pjob ) != -1 )
-			{
-				pjob_store_notify(server_event_context(),
+		if (old_data.dsize) {
+			TALLOC_CTX *tmp_ctx = talloc_new(ev);
+			if (tmp_ctx == NULL)
+				goto done;
+
+			len = unpack_pjob(tmp_ctx, old_data.dptr,
+					  old_data.dsize, &old_pjob);
+			if (len != -1 ) {
+				pjob_store_notify(ev,
 						  msg_ctx,
 						  sharename, jobid, &old_pjob,
 						  pjob,
 						  &changed);
-				talloc_free(old_pjob.devmode);
-
 				if (changed) {
 					add_to_jobs_changed(pdb, jobid);
 				}
 			}
+			talloc_free(tmp_ctx);
 
-		}
-		else {
+		} else {
 			/* new job */
-			pjob_store_notify(server_event_context(), msg_ctx,
+			pjob_store_notify(ev, msg_ctx,
 					  sharename, jobid, NULL, pjob,
 					  &changed);
 		}
@@ -939,6 +941,7 @@ struct traverse_struct {
 	struct printif *print_if;
 	struct tevent_context *ev;
 	struct messaging_context *msg_ctx;
+	TALLOC_CTX *mem_ctx;
 };
 
 /****************************************************************************
@@ -955,7 +958,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	if (  key.dsize != sizeof(jobid) )
 		return 0;
 
-	if (unpack_pjob(data.dptr, data.dsize, &pjob) == -1)
+	if (unpack_pjob(ts->mem_ctx, data.dptr, data.dsize, &pjob) == -1)
 		return 0;
 	talloc_free(pjob.devmode);
 	jobid = pjob.jobid;
@@ -1436,7 +1439,6 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	}
 
 	SAFE_FREE(jcdata.dptr);
-	talloc_free(tmp_ctx);
 
 	/* now delete any queued entries that don't appear in the
            system queue */
@@ -1450,6 +1452,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	tstruct.print_if = current_printif;
 	tstruct.ev = ev;
 	tstruct.msg_ctx = msg_ctx;
+	tstruct.mem_ctx = tmp_ctx;
 
 	tdb_traverse(pdb->tdb, traverse_fn_delete, (void *)&tstruct);
 
@@ -1457,6 +1460,7 @@ static void print_queue_update_internal(struct tevent_context *ev,
 	store_queue_struct(pdb, &tstruct);
 
 	SAFE_FREE(tstruct.queue);
+	talloc_free(tmp_ctx);
 
 	DEBUG(10,("print_queue_update_internal: printer %s INFO/total_jobs = %d\n",
 				sharename, tstruct.total_jobs ));
