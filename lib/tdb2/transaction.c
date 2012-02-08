@@ -795,22 +795,22 @@ static struct tdb_recovery_record *alloc_recovery(struct tdb_context *tdb,
 		offset += off;
 
 		while (off < length) {
-			tdb_len_t len;
+			tdb_len_t len1;
 			unsigned int samelen;
 
-			len = different(tdb->tdb2.transaction->blocks[i] + off,
+			len1 = different(tdb->tdb2.transaction->blocks[i] + off,
 					buffer + off, length - off,
-					sizeof(offset) + sizeof(len) + 1,
+					sizeof(offset) + sizeof(len1) + 1,
 					&samelen);
 
 			memcpy(p, &offset, sizeof(offset));
-			memcpy(p + sizeof(offset), &len, sizeof(len));
-			tdb_convert(tdb, p, sizeof(offset) + sizeof(len));
-			p += sizeof(offset) + sizeof(len);
-			memcpy(p, buffer + off, len);
-			p += len;
-			off += len + samelen;
-			offset += len + samelen;
+			memcpy(p + sizeof(offset), &len1, sizeof(len1));
+			tdb_convert(tdb, p, sizeof(offset) + sizeof(len1));
+			p += sizeof(offset) + sizeof(len1);
+			memcpy(p, buffer + off, len1);
+			p += len1;
+			off += len1 + samelen;
+			offset += len1 + samelen;
 		}
 		tdb_access_release(tdb, buffer);
 	}
