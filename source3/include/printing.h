@@ -195,7 +195,6 @@ uint32 sysjob_to_jobid(int unix_jobid);
 bool print_notify_register_pid(int snum);
 bool print_notify_deregister_pid(int snum);
 bool print_job_exists(const char* sharename, uint32 jobid);
-char *print_job_fname(const char* sharename, uint32 jobid);
 struct spoolss_DeviceMode *print_job_devmode(TALLOC_CTX *mem_ctx,
 					     const char *sharename,
 					     uint32 jobid);
