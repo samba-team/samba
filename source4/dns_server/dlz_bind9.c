@@ -1614,14 +1614,11 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	}
 
 	if (el->num_values == 0) {
-		/* delete the record */
-		ret = ldb_delete(state->samdb, dn);
-		b9_reset_session_info(state);
-	} else {
-		/* modify the record */
-		el->flags = LDB_FLAG_MOD_REPLACE;
-		ret = ldb_modify(state->samdb, res->msgs[0]);
+		ldb_msg_remove_element(res->msgs[0], el);
 	}
+	el->flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(state->samdb, res->msgs[0]);
+
 	b9_reset_session_info(state);
 	if (ret != LDB_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
@@ -1722,13 +1719,11 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 	}
 
 	if (el->num_values == 0) {
-		/* delete the record */
-		ret = ldb_delete(state->samdb, dn);
-	} else {
-		/* modify the record */
-		el->flags = LDB_FLAG_MOD_REPLACE;
-		ret = ldb_modify(state->samdb, res->msgs[0]);
+		ldb_msg_remove_element(res->msgs[0], el);
 	}
+	el->flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(state->samdb, res->msgs[0]);
+
 	b9_reset_session_info(state);
 	if (ret != LDB_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to delete type %s in %s - %s",
