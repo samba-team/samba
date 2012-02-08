@@ -204,12 +204,12 @@ bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t job
 WERROR print_job_delete(const struct auth_serversupplied_info *server_info,
 			struct messaging_context *msg_ctx,
 			int snum, uint32_t jobid);
-bool print_job_pause(const struct auth_serversupplied_info *server_info,
+WERROR print_job_pause(const struct auth_serversupplied_info *server_info,
 		     struct messaging_context *msg_ctx,
-		     int snum, uint32 jobid, WERROR *errcode);
-bool print_job_resume(const struct auth_serversupplied_info *server_info,
+		     int snum, uint32 jobid);
+WERROR print_job_resume(const struct auth_serversupplied_info *server_info,
 		      struct messaging_context *msg_ctx,
-		      int snum, uint32 jobid, WERROR *errcode);
+		      int snum, uint32 jobid);
 ssize_t print_job_write(struct tevent_context *ev,
 			struct messaging_context *msg_ctx,
 			int snum, uint32 jobid, const char *buf, size_t size);

@@ -2333,27 +2333,30 @@ pause, or resume print job. User name: %s. Printer name: %s.",
  Pause a job.
 ****************************************************************************/
 
-bool print_job_pause(const struct auth_serversupplied_info *server_info,
+WERROR print_job_pause(const struct auth_serversupplied_info *server_info,
 		     struct messaging_context *msg_ctx,
-		     int snum, uint32 jobid, WERROR *errcode)
+		     int snum, uint32 jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
 	int ret = -1;
 	struct printif *current_printif = get_printer_fns( snum );
+	WERROR werr;
 
 	pjob = print_job_find(sharename, jobid);
 
 	if (!pjob || !server_info) {
 		DEBUG(10, ("print_job_pause: no pjob or user for jobid %u\n",
 			(unsigned int)jobid ));
-		return False;
+		werr = WERR_INVALID_PARAM;
+		goto err_out;
 	}
 
 	if (!pjob->spooled || pjob->sysjob == -1) {
 		DEBUG(10, ("print_job_pause: not spooled or bad sysjob = %d for jobid %u\n",
 			(int)pjob->sysjob, (unsigned int)jobid ));
-		return False;
+		werr = WERR_INVALID_PARAM;
+		goto err_out;
 	}
 
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
@@ -2369,16 +2372,16 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
 
-		*errcode = WERR_ACCESS_DENIED;
-		return False;
+		werr = WERR_ACCESS_DENIED;
+		goto err_out;
 	}
 
 	/* need to pause the spooled entry */
 	ret = (*(current_printif->job_pause))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = WERR_INVALID_PARAM;
-		return False;
+		werr = WERR_INVALID_PARAM;
+		goto err_out;
 	}
 
 	/* force update the database */
@@ -2390,42 +2393,45 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 			  JOB_STATUS_PAUSED);
 
 	/* how do we tell if this succeeded? */
-
-	return True;
+	werr = WERR_OK;
+err_out:
+	return werr;
 }
 
 /****************************************************************************
  Resume a job.
 ****************************************************************************/
 
-bool print_job_resume(const struct auth_serversupplied_info *server_info,
+WERROR print_job_resume(const struct auth_serversupplied_info *server_info,
 		      struct messaging_context *msg_ctx,
-		      int snum, uint32 jobid, WERROR *errcode)
+		      int snum, uint32 jobid)
 {
 	const char *sharename = lp_const_servicename(snum);
 	struct printjob *pjob;
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
+	WERROR werr;
 
 	pjob = print_job_find(sharename, jobid);
 
 	if (!pjob || !server_info) {
 		DEBUG(10, ("print_job_resume: no pjob or user for jobid %u\n",
 			(unsigned int)jobid ));
-		return False;
+		werr = WERR_INVALID_PARAM;
+		goto err_out;
 	}
 
 	if (!pjob->spooled || pjob->sysjob == -1) {
 		DEBUG(10, ("print_job_resume: not spooled or bad sysjob = %d for jobid %u\n",
 			(int)pjob->sysjob, (unsigned int)jobid ));
-		return False;
+		werr = WERR_INVALID_PARAM;
+		goto err_out;
 	}
 
 	if (!is_owner(server_info, lp_const_servicename(snum), jobid) &&
 	    !print_access_check(server_info, msg_ctx, snum,
 				JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
-		*errcode = WERR_ACCESS_DENIED;
 
 		/* BEGIN_ADMIN_LOG */
 		sys_adminlog( LOG_ERR,
@@ -2434,14 +2440,15 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 			      uidtoname(server_info->utok.uid),
 			      lp_printername(snum) );
 		/* END_ADMIN_LOG */
-		return False;
+		werr = WERR_ACCESS_DENIED;
+		goto err_out;
 	}
 
 	ret = (*(current_printif->job_resume))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = WERR_INVALID_PARAM;
-		return False;
+		werr = WERR_INVALID_PARAM;
+		goto err_out;
 	}
 
 	/* force update the database */
@@ -2452,7 +2459,9 @@ pause, or resume print job. User name: %s. Printer name: %s.",
 	notify_job_status(server_event_context(), msg_ctx, sharename, jobid,
 			  JOB_STATUS_QUEUED);
 
-	return True;
+	werr = WERR_OK;
+err_out:
+	return werr;
 }
 
 /****************************************************************************
