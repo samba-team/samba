@@ -1969,22 +1969,7 @@ bool print_job_exists(const char* sharename, uint32 jobid)
 }
 
 /****************************************************************************
- Give the filename used for a jobid.
- Only valid for the process doing the spooling and when the job
- has not been spooled.
-****************************************************************************/
-
-char *print_job_fname(const char* sharename, uint32 jobid)
-{
-	struct printjob *pjob = print_job_find(NULL, sharename, jobid);
-	if (!pjob || pjob->spooled || pjob->pid != getpid())
-		return NULL;
-	return pjob->filename;
-}
-
-
-/****************************************************************************
- Give the filename used for a jobid.
+ Return the device mode asigned to a specific print job.
  Only valid for the process doing the spooling and when the job
  has not been spooled.
 ****************************************************************************/
