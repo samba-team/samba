@@ -646,6 +646,8 @@ struct ctdb_statistics {
 	uint32_t num_recoveries;
 	struct timeval statistics_start_time;
 	struct timeval statistics_current_time;
+	uint32_t total_ro_delegations;
+	uint32_t total_ro_revokes;
 };
 
 /*

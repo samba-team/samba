@@ -343,6 +343,8 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 		STATISTICS_FIELD(pending_childwrite_calls),
 		STATISTICS_FIELD(memory_used),
 		STATISTICS_FIELD(max_hop_count),
+		STATISTICS_FIELD(total_ro_delegations),
+		STATISTICS_FIELD(total_ro_revokes),
 	};
 	tmp = s->statistics_current_time.tv_sec - s->statistics_start_time.tv_sec;
 	seconds = tmp%60;
