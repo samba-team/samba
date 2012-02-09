@@ -227,24 +227,6 @@ ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct 
 }
 
 /*******************************************************************
-A recv wrapper that will deal with EINTR or EAGAIN or EWOULDBLOCK.
-********************************************************************/
-
-ssize_t sys_recv(int fd, void *buf, size_t count, int flags)
-{
-	ssize_t ret;
-
-	do {
-		ret = recv(fd, buf, count, flags);
-#if defined(EWOULDBLOCK)
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-#else
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-#endif
-	return ret;
-}
-
-/*******************************************************************
 A recvfrom wrapper that will deal with EINTR.
 ********************************************************************/
 

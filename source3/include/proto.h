@@ -326,7 +326,6 @@ ssize_t sys_pread(int fd, void *buf, size_t count, SMB_OFF_T off);
 ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off);
 ssize_t sys_send(int s, const void *msg, size_t len, int flags);
 ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
-ssize_t sys_recv(int fd, void *buf, size_t count, int flags);
 ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 int sys_fcntl_ptr(int fd, int cmd, void *arg);
 void update_stat_ex_mtime(struct stat_ex *dst, struct timespec write_ts);
