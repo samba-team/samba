@@ -275,6 +275,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 				ok_mask |= 1<<i;
 
 				expected = (io.in.file_attributes | FILE_ATTRIBUTE_ARCHIVE) & 0x00005127;
+				io.out.file_attr &= ~FILE_ATTRIBUTE_NONINDEXED;
 				CHECK_EQUAL(io.out.file_attr, expected);
 				file_attributes_set |= io.out.file_attr;
 

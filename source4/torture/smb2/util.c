@@ -557,7 +557,7 @@ bool smb2_util_verify_attrib(TALLOC_CTX *tctx, struct smb2_tree *tree,
 	status = smb2_getinfo_file(tree, tctx, &q);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	q.all_info2.out.attrib &= ~FILE_ATTRIBUTE_ARCHIVE;
+	q.all_info2.out.attrib &= ~(FILE_ATTRIBUTE_ARCHIVE | FILE_ATTRIBUTE_NONINDEXED);
 
 	if (q.all_info2.out.attrib != attrib) {
 		torture_warning(tctx, "%s: attributes don't match! "
