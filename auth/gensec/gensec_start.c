@@ -75,8 +75,7 @@ _PUBLIC_ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_
 		/* noop */
 	}
 
-	new_gensec_list = talloc_array(mem_ctx, struct gensec_security_ops *,
-				       num_mechs_in*2 + 1);
+	new_gensec_list = talloc_array(mem_ctx, struct gensec_security_ops *, num_mechs_in + 1);
 	if (!new_gensec_list) {
 		return NULL;
 	}
