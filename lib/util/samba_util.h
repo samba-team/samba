@@ -117,8 +117,6 @@ void CatchChildLeaveStatus(void);
 
 void *sys_memalign( size_t align, size_t size );
 
-_PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host);
-
 /**
  * Wrapper for fork used to invalid pid cache.
  **/

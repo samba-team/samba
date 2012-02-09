@@ -75,15 +75,6 @@ void *sys_memalign( size_t align, size_t size )
 #endif
 }
 
-_PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host)
-{
-	struct in_addr in;
-	struct in_addr in2;
-	in = inet_makeaddr(net, host);
-	in2.s_addr = in.s_addr;
-	return in2;
-}
-
 /**************************************************************************
  Wrapper for fork. Ensures we clear our pid cache.
 ****************************************************************************/
