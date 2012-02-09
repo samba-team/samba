@@ -24,36 +24,6 @@
 
 #ifdef HAVE_KRB5
 
-/**
- * Set the machine account password
- * @param ads connection to ads server
- * @param hostname machine whose password is being set
- * @param password new password
- * @return status of password change
- **/
-ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
-				    const char *machine_account,
-				    const char *password)
-{
-	ADS_STATUS status;
-	char *principal = NULL;
-
-	/*
-	  we need to use the '$' form of the name here (the machine account name),
-	  as otherwise the server might end up setting the password for a user
-	  instead
-	 */
-	if (asprintf(&principal, "%s@%s", machine_account, ads->config.realm) < 0) {
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-
-	status = ads_krb5_set_password(ads->auth.kdc_server, principal,
-				       password, ads->auth.time_offset);
-
-	SAFE_FREE(principal);
-	return status;
-}
-
 /* run kinit to setup our ccache */
 int ads_kinit_password(ADS_STRUCT *ads)
 {

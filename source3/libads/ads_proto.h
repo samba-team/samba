@@ -58,9 +58,6 @@ int ads_keytab_list(const char *keytab_name);
 
 /* The following definitions come from libads/kerberos_util.c  */
 
-ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
-				    const char *machine_account,
-				    const char *password);
 int ads_kinit_password(ADS_STRUCT *ads);
 
 /* The following definitions come from libads/ldap.c  */
