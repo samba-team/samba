@@ -83,13 +83,17 @@ _PUBLIC_ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_
 	j = 0;
 	for (i=0; old_gensec_list && old_gensec_list[i]; i++) {
 		int oid_idx;
-
+		bool found_spnego = false;
 		for (oid_idx = 0; old_gensec_list[i]->oid && old_gensec_list[i]->oid[oid_idx]; oid_idx++) {
 			if (strcmp(old_gensec_list[i]->oid[oid_idx], GENSEC_OID_SPNEGO) == 0) {
 				new_gensec_list[j] = old_gensec_list[i];
 				j++;
+				found_spnego = true;
 				break;
 			}
+		}
+		if (found_spnego) {
+			continue;
 		}
 		switch (use_kerberos) {
 		case CRED_DONT_USE_KERBEROS:
