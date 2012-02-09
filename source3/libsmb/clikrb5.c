@@ -347,17 +347,6 @@ bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 #endif
 }
 
- void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype)
-{
-#if defined(HAVE_KRB5_KEYBLOCK_IN_CREDS)
-	KRB5_KEY_TYPE((&pcreds->keyblock)) = enctype;
-#elif defined(HAVE_KRB5_SESSION_IN_CREDS)
-	KRB5_KEY_TYPE((&pcreds->session)) = enctype;
-#else
-#error UNKNOWN_KEYBLOCK_MEMBER_IN_KRB5_CREDS_STRUCT
-#endif
-}
-
 static bool ads_cleanup_expired_creds(krb5_context context, 
 				      krb5_ccache  ccache,
 				      krb5_creds  *credsp)
