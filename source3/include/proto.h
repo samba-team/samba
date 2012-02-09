@@ -265,7 +265,6 @@ void standard_sub_advanced(const char *servicename, const char *user,
 			   const char *connectpath, gid_t gid,
 			   const char *smb_name, const char *domain_name,
 			   char *str, size_t len);
-char *standard_sub_conn(TALLOC_CTX *ctx, connection_struct *conn, const char *str);
 
 /* The following definitions come from lib/sysacls.c  */
 

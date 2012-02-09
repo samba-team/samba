@@ -779,25 +779,6 @@ void standard_sub_advanced(const char *servicename, const char *user,
 	TALLOC_FREE( s );
 }
 
-/****************************************************************************
- Do some standard substitutions in a string.
-****************************************************************************/
-
-char *standard_sub_conn(TALLOC_CTX *ctx, connection_struct *conn, const char *str)
-{
-	/* Make clear that we require the optional unix_token and unix_info in the source3 code */
-	SMB_ASSERT(conn->session_info->unix_token);
-	SMB_ASSERT(conn->session_info->unix_info);
-	return talloc_sub_advanced(ctx,
-				lp_servicename(SNUM(conn)),
-				conn->session_info->unix_info->unix_name,
-				conn->connectpath,
-				conn->session_info->unix_token->gid,
-				get_smb_user_name(),
-				"",
-				str);
-}
-
 /******************************************************************************
  version of standard_sub_basic() for string lists; uses talloc_sub_basic()
  for the work
