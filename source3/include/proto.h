@@ -520,7 +520,6 @@ void free_namearray(name_compare_entry *name_array);
 bool fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 bool fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 bool is_myname(const char *s);
-bool is_myworkgroup(const char *s);
 void ra_lanman_string( const char *native_lanman );
 const char *get_remote_arch_str(void);
 void set_remote_arch(enum remote_arch_types type);

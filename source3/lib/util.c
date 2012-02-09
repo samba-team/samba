@@ -1215,23 +1215,6 @@ bool is_myname(const char *s)
 }
 
 /*******************************************************************
- Is the name specified our workgroup/domain.
- Returns true if it is equal, false otherwise.
-********************************************************************/
-
-bool is_myworkgroup(const char *s)
-{
-	bool ret = False;
-
-	if (strequal(s, lp_workgroup())) {
-		ret=True;
-	}
-
-	DEBUG(8, ("is_myworkgroup(\"%s\") returns %d\n", s, ret));
-	return(ret);
-}
-
-/*******************************************************************
  we distinguish between 2K and XP by the "Native Lan Manager" string
    WinXP => "Windows 2002 5.1"
    WinXP 64bit => "Windows XP 5.2"
