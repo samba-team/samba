@@ -42,14 +42,6 @@ static bool machine_account_pending;
 
 enum opt { OPT_SIMPLE_BIND_DN, OPT_PASSWORD, OPT_KERBEROS, OPT_SIGN, OPT_ENCRYPT, OPT_KRB5_CCACHE };
 
-/*
-  disable asking for a password
-*/
-void popt_common_dont_ask(void)
-{
-	dont_ask = true;
-}
-
 static void popt_common_credentials_callback(poptContext con, 
 						enum poptCallbackReason reason,
 						const struct poptOption *opt,
