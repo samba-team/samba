@@ -117,12 +117,6 @@ void CatchChildLeaveStatus(void);
 
 void *sys_memalign( size_t align, size_t size );
 
-/**************************************************************************
-A wrapper for gethostbyname() that tries avoids looking up hostnames 
-in the root domain, which can cause dial-on-demand links to come up for no
-apparent reason.
-****************************************************************************/
-_PUBLIC_ struct hostent *sys_gethostbyname(const char *name);
 _PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host);
 
 /**

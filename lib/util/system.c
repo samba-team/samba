@@ -75,48 +75,6 @@ void *sys_memalign( size_t align, size_t size )
 #endif
 }
 
-/**************************************************************************
-A wrapper for gethostbyname() that tries avoids looking up hostnames 
-in the root domain, which can cause dial-on-demand links to come up for no
-apparent reason.
-****************************************************************************/
-
-_PUBLIC_ struct hostent *sys_gethostbyname(const char *name)
-{
-#ifdef REDUCE_ROOT_DNS_LOOKUPS
-	char query[256], hostname[256];
-	char *domain;
-
-	/* Does this name have any dots in it? If so, make no change */
-
-	if (strchr(name, '.'))
-		return(gethostbyname(name));
-
-	/* Get my hostname, which should have domain name 
-		attached. If not, just do the gethostname on the
-		original string. 
-	*/
-
-	gethostname(hostname, sizeof(hostname) - 1);
-	hostname[sizeof(hostname) - 1] = 0;
-	if ((domain = strchr(hostname, '.')) == NULL)
-		return(gethostbyname(name));
-
-	/* Attach domain name to query and do modified query.
-		If names too large, just do gethostname on the
-		original string.
-	*/
-
-	if((strlen(name) + strlen(domain)) >= sizeof(query))
-		return(gethostbyname(name));
-
-	slprintf(query, sizeof(query)-1, "%s%s", name, domain);
-	return(gethostbyname(query));
-#else /* REDUCE_ROOT_DNS_LOOKUPS */
-	return(gethostbyname(name));
-#endif /* REDUCE_ROOT_DNS_LOOKUPS */
-}
-
 _PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host)
 {
 	struct in_addr in;
