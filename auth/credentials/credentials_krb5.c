@@ -483,9 +483,9 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 					 &ccache, error_string);
 	if (ret) {
 		if (cli_credentials_get_kerberos_state(cred) == CRED_MUST_USE_KERBEROS) {
-			DEBUG(1, ("Failed to get kerberos credentials (kerberos required): %s\n", error_message(ret)));
+			DEBUG(1, ("Failed to get kerberos credentials (kerberos required): %s\n", *error_string));
 		} else {
-			DEBUG(4, ("Failed to get kerberos credentials: %s\n", error_message(ret)));
+			DEBUG(4, ("Failed to get kerberos credentials: %s\n", *error_string));
 		}
 		return ret;
 	}
