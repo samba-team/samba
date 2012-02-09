@@ -207,20 +207,6 @@ bool strupper_w(smb_ucs2_t *s)
 	return ret;
 }
 
-int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
-{
-	smb_ucs2_t cpa, cpb;
-
-	while ((*(COPY_UCS2_CHAR(&cpb,b))) && (*(COPY_UCS2_CHAR(&cpa,a)) == cpb)) {
-		a++;
-		b++;
-	}
-	return (*(COPY_UCS2_CHAR(&cpa,a)) - *(COPY_UCS2_CHAR(&cpb,b)));
-	/* warning: if *a != *b and both are not 0 we return a random
-		greater or lesser than 0 number not realted to which
-		string is longer */
-}
-
 static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
 {
 	smb_ucs2_t cpa, cpb;

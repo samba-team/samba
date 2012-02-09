@@ -236,7 +236,6 @@ smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n);
 smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins);
 bool strlower_w(smb_ucs2_t *s);
 bool strupper_w(smb_ucs2_t *s);
-int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
 int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b);
 int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len);
 int strcmp_wa(const smb_ucs2_t *a, const char *b);
