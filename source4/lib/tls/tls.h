@@ -58,11 +58,6 @@ struct socket_context *tls_init_client(struct socket_context *sock,
 bool tls_enabled(struct socket_context *tls);
 
 
-/*
-  true if tls support is compiled in
-*/
-bool tls_support(struct tls_params *parms);
-
 const struct socket_ops *socket_tls_ops(enum socket_type type);
 
 struct tstream_context;

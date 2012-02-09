@@ -642,11 +642,6 @@ static const struct socket_ops tls_socket_ops = {
 	.fn_get_fd		= tls_socket_get_fd
 };
 
-bool tls_support(struct tls_params *params)
-{
-	return params->tls_enabled;
-}
-
 #else
 
 /* for systems without tls we just fail the operations, and the caller
@@ -677,11 +672,6 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 				       const char *ca_path)
 {
 	return NULL;
-}
-
-bool tls_support(struct tls_params *params)
-{
-	return false;
 }
 
 #endif
