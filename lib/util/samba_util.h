@@ -334,12 +334,6 @@ _PUBLIC_ char *rfc1738_escape_unescaped(TALLOC_CTX *mem_ctx, const char *url);
 _PUBLIC_ char *rfc1738_escape_part(TALLOC_CTX *mem_ctx, const char *url);
 
 /**
-  format a string into length-prefixed dotted domain format, as used in NBT
-  and in some ADS structures
-**/
-_PUBLIC_ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s);
-
-/**
  * Add a string to an array of strings.
  *
  * num should be a pointer to an integer that holds the current 

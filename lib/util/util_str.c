@@ -32,41 +32,6 @@
  **/
 
 /**
-  format a string into length-prefixed dotted domain format, as used in NBT
-  and in some ADS structures
-**/
-_PUBLIC_ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
-{
-	char *ret;
-	int i;
-	if (!s || !*s) {
-		return talloc_strdup(mem_ctx, "");
-	}
-	ret = talloc_array(mem_ctx, char, strlen(s)+2);
-	if (!ret) {
-		return ret;
-	}
-	
-	memcpy(ret+1, s, strlen(s)+1);
-	ret[0] = '.';
-
-	for (i=0;ret[i];i++) {
-		if (ret[i] == '.') {
-			char *p = strchr(ret+i+1, '.');
-			if (p) {
-				ret[i] = p-(ret+i+1);
-			} else {
-				ret[i] = strlen(ret+i+1);
-			}
-		}
-	}
-
-	talloc_set_name_const(ret, ret);
-
-	return ret;
-}
-
-/**
  * Parse a string containing a boolean value.
  *
  * val will be set to the read value.
