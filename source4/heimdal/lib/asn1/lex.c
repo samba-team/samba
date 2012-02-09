@@ -1,6 +1,5 @@
 #include "config.h"
 
-#line 3 "lex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -788,8 +787,6 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "lex.l"
-#line 2 "lex.l"
 /*
  * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
@@ -848,7 +845,6 @@ static unsigned lineno = 1;
 static void unterminated(const char *, unsigned);
 
 /* This is for broken old lexes (solaris 10 and hpux) */
-#line 851 "lex.c"
 
 #define INITIAL 0
 
@@ -1030,10 +1026,6 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 68 "lex.l"
-
-#line 1035 "lex.c"
-
 	if ( !(yy_init) )
 		{
 		(yy_init) = 1;
@@ -1117,427 +1109,342 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 69 "lex.l"
 { return kw_ABSENT; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 70 "lex.l"
 { return kw_ABSTRACT_SYNTAX; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 71 "lex.l"
 { return kw_ALL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 72 "lex.l"
 { return kw_APPLICATION; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 73 "lex.l"
 { return kw_AUTOMATIC; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 74 "lex.l"
 { return kw_BEGIN; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 75 "lex.l"
 { return kw_BIT; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 76 "lex.l"
 { return kw_BMPString; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 77 "lex.l"
 { return kw_BOOLEAN; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 78 "lex.l"
 { return kw_BY; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 79 "lex.l"
 { return kw_CHARACTER; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 80 "lex.l"
 { return kw_CHOICE; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 81 "lex.l"
 { return kw_CLASS; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 82 "lex.l"
 { return kw_COMPONENT; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 83 "lex.l"
 { return kw_COMPONENTS; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 84 "lex.l"
 { return kw_CONSTRAINED; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 85 "lex.l"
 { return kw_CONTAINING; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 86 "lex.l"
 { return kw_DEFAULT; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 87 "lex.l"
 { return kw_DEFINITIONS; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 88 "lex.l"
 { return kw_EMBEDDED; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 89 "lex.l"
 { return kw_ENCODED; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 90 "lex.l"
 { return kw_END; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 91 "lex.l"
 { return kw_ENUMERATED; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 92 "lex.l"
 { return kw_EXCEPT; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 93 "lex.l"
 { return kw_EXPLICIT; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 94 "lex.l"
 { return kw_EXPORTS; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 95 "lex.l"
 { return kw_EXTENSIBILITY; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 96 "lex.l"
 { return kw_EXTERNAL; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 97 "lex.l"
 { return kw_FALSE; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 98 "lex.l"
 { return kw_FROM; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 99 "lex.l"
 { return kw_GeneralString; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 100 "lex.l"
 { return kw_GeneralizedTime; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 101 "lex.l"
 { return kw_GraphicString; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 102 "lex.l"
 { return kw_IA5String; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 103 "lex.l"
 { return kw_IDENTIFIER; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 104 "lex.l"
 { return kw_IMPLICIT; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 105 "lex.l"
 { return kw_IMPLIED; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 106 "lex.l"
 { return kw_IMPORTS; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 107 "lex.l"
 { return kw_INCLUDES; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 108 "lex.l"
 { return kw_INSTANCE; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 109 "lex.l"
 { return kw_INTEGER; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 110 "lex.l"
 { return kw_INTERSECTION; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 111 "lex.l"
 { return kw_ISO646String; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 112 "lex.l"
 { return kw_MAX; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 113 "lex.l"
 { return kw_MIN; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 114 "lex.l"
 { return kw_MINUS_INFINITY; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 115 "lex.l"
 { return kw_NULL; }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 116 "lex.l"
 { return kw_NumericString; }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 117 "lex.l"
 { return kw_OBJECT; }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 118 "lex.l"
 { return kw_OCTET; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 119 "lex.l"
 { return kw_OF; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 120 "lex.l"
 { return kw_OPTIONAL; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 121 "lex.l"
 { return kw_ObjectDescriptor; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 122 "lex.l"
 { return kw_PATTERN; }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 123 "lex.l"
 { return kw_PDV; }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 124 "lex.l"
 { return kw_PLUS_INFINITY; }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 125 "lex.l"
 { return kw_PRESENT; }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 126 "lex.l"
 { return kw_PRIVATE; }
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 127 "lex.l"
 { return kw_PrintableString; }
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 128 "lex.l"
 { return kw_REAL; }
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 129 "lex.l"
 { return kw_RELATIVE_OID; }
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 130 "lex.l"
 { return kw_SEQUENCE; }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 131 "lex.l"
 { return kw_SET; }
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 132 "lex.l"
 { return kw_SIZE; }
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 133 "lex.l"
 { return kw_STRING; }
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 134 "lex.l"
 { return kw_SYNTAX; }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 135 "lex.l"
 { return kw_T61String; }
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 136 "lex.l"
 { return kw_TAGS; }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 137 "lex.l"
 { return kw_TRUE; }
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 138 "lex.l"
 { return kw_TYPE_IDENTIFIER; }
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 139 "lex.l"
 { return kw_TeletexString; }
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 140 "lex.l"
 { return kw_UNION; }
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 141 "lex.l"
 { return kw_UNIQUE; }
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 142 "lex.l"
 { return kw_UNIVERSAL; }
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 143 "lex.l"
 { return kw_UTCTime; }
 	YY_BREAK
 case 76:
 YY_RULE_SETUP
-#line 144 "lex.l"
 { return kw_UTF8String; }
 	YY_BREAK
 case 77:
 YY_RULE_SETUP
-#line 145 "lex.l"
 { return kw_UniversalString; }
 	YY_BREAK
 case 78:
 YY_RULE_SETUP
-#line 146 "lex.l"
 { return kw_VideotexString; }
 	YY_BREAK
 case 79:
 YY_RULE_SETUP
-#line 147 "lex.l"
 { return kw_VisibleString; }
 	YY_BREAK
 case 80:
 YY_RULE_SETUP
-#line 148 "lex.l"
 { return kw_WITH; }
 	YY_BREAK
 case 81:
 YY_RULE_SETUP
-#line 149 "lex.l"
 { return *yytext; }
 	YY_BREAK
 case 82:
 YY_RULE_SETUP
-#line 150 "lex.l"
 { return *yytext; }
 	YY_BREAK
 case 83:
 YY_RULE_SETUP
-#line 151 "lex.l"
 { return *yytext; }
 	YY_BREAK
 case 84:
 YY_RULE_SETUP
-#line 152 "lex.l"
 { return EEQUAL; }
 	YY_BREAK
 case 85:
 YY_RULE_SETUP
-#line 153 "lex.l"
 {
 			    int c, start_lineno = lineno;
 			    int f = 0;
@@ -1560,7 +1467,6 @@ YY_RULE_SETUP
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
-#line 172 "lex.l"
 {
 			    int c, start_lineno = lineno;
 			    int level = 1;
@@ -1604,7 +1510,6 @@ YY_RULE_SETUP
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 212 "lex.l"
 {
 			    int start_lineno = lineno;
 			    int c;
@@ -1652,7 +1557,6 @@ YY_RULE_SETUP
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 257 "lex.l"
 { char *e, *y = yytext;
 			  yylval.constant = strtol((const char *)yytext,
 						   &e, 0);
@@ -1664,7 +1568,6 @@ YY_RULE_SETUP
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 265 "lex.l"
 {
 			  yylval.name =  estrdup ((const char *)yytext);
 			  return IDENTIFIER;
@@ -1672,36 +1575,29 @@ YY_RULE_SETUP
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 269 "lex.l"
 ;
 	YY_BREAK
 case 91:
 /* rule 91 can match eol */
 YY_RULE_SETUP
-#line 270 "lex.l"
 { ++lineno; }
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
-#line 271 "lex.l"
 { return ELLIPSIS; }
 	YY_BREAK
 case 93:
 YY_RULE_SETUP
-#line 272 "lex.l"
 { return RANGE; }
 	YY_BREAK
 case 94:
 YY_RULE_SETUP
-#line 273 "lex.l"
 { lex_error_message("Ignoring char(%c)\n", *yytext); }
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
-#line 274 "lex.l"
 ECHO;
 	YY_BREAK
-#line 1704 "lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2698,10 +2594,6 @@ void yyfree (void * ptr )
 }
 
 #define YYTABLES_NAME "yytables"
-
-#line 274 "lex.l"
-
-
 
 #ifndef yywrap /* XXX */
 int

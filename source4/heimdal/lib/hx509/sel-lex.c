@@ -1,6 +1,5 @@
 #include "config.h"
 
-#line 3 "sel-lex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -468,8 +467,6 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "sel-lex.l"
-#line 2 "sel-lex.l"
 /*
  * Copyright (c) 2004, 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
@@ -534,8 +531,6 @@ struct hx_expr_input _hx509_expr_input;
 #define YY_INPUT(buf,res,maxsize) (res = lex_input(buf, maxsize))
 
 #undef ECHO
-
-#line 538 "sel-lex.c"
 
 #define INITIAL 0
 
@@ -717,11 +712,6 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 68 "sel-lex.l"
-
-
-#line 723 "sel-lex.c"
-
 	if ( !(yy_init) )
 		{
 		(yy_init) = 1;
@@ -805,37 +795,30 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 70 "sel-lex.l"
 { return kw_TRUE; }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 71 "sel-lex.l"
 { return kw_FALSE; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 72 "sel-lex.l"
 { return kw_AND; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 73 "sel-lex.l"
 { return kw_OR; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 74 "sel-lex.l"
 { return kw_IN; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 75 "sel-lex.l"
 { return kw_TAILMATCH; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 77 "sel-lex.l"
 {
 			  yylval.string = strdup ((const char *)yytext);
 			  return IDENTIFIER;
@@ -843,31 +826,25 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 81 "sel-lex.l"
 { yylval.string = handle_string(); return STRING; }
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 82 "sel-lex.l"
 { ++lineno; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 83 "sel-lex.l"
 { return *yytext; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 84 "sel-lex.l"
 ;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 85 "sel-lex.l"
 ECHO;
 	YY_BREAK
-#line 870 "sel-lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1864,10 +1841,6 @@ void yyfree (void * ptr )
 }
 
 #define YYTABLES_NAME "yytables"
-
-#line 85 "sel-lex.l"
-
-
 
 static char *
 handle_string(void)
