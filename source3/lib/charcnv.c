@@ -523,41 +523,6 @@ size_t push_string_base(const char *base, uint16 flags2,
 /**
  Copy a string from a unicode or ascii source (depending on
  the packet flags) to a char* destination.
- Flags can have:
-  STR_TERMINATE means the string in src is null terminated.
-  STR_UNICODE   means to force as unicode.
-  STR_ASCII     use ascii even with unicode packet.
-  STR_NOALIGN   means don't do alignment.
- if STR_TERMINATE is set then src_len is ignored is it is -1
- src_len is the length of the source area in bytes.
- Return the number of bytes occupied by the string in src.
- The resulting string in "dest" is always null terminated.
-**/
-
-size_t pull_string_fn(const void *base_ptr,
-		   uint16 smb_flags2,
-		   char *dest,
-		   const void *src,
-		   size_t dest_len,
-		   size_t src_len,
-		   int flags)
-{
-	if ((base_ptr == NULL) && ((flags & (STR_ASCII|STR_UNICODE)) == 0)) {
-		smb_panic("No base ptr to get flg2 and neither ASCII nor "
-			  "UNICODE defined");
-	}
-
-	if (!(flags & STR_ASCII) && \
-	    ((flags & STR_UNICODE || \
-	      (smb_flags2 & FLAGS2_UNICODE_STRINGS)))) {
-		return pull_ucs2(base_ptr, dest, src, dest_len, src_len, flags);
-	}
-	return pull_ascii(dest, src, dest_len, src_len, flags);
-}
-
-/**
- Copy a string from a unicode or ascii source (depending on
- the packet flags) to a char* destination.
  Variant that uses talloc.
  Flags can have:
   STR_TERMINATE means the string in src is null terminated.

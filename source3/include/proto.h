@@ -76,13 +76,6 @@ size_t push_string_check_fn(void *dest, const char *src,
 size_t push_string_base(const char *base, uint16 flags2,
 			void *dest, const char *src,
 			size_t dest_len, int flags);
-size_t pull_string_fn(const void *base_ptr,
-			uint16 smb_flags2,
-			char *dest,
-			const void *src,
-			size_t dest_len,
-			size_t src_len,
-			int flags);
 size_t pull_string_talloc(TALLOC_CTX *ctx,
 			const void *base_ptr,
 			uint16 smb_flags2,
