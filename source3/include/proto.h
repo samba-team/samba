@@ -85,7 +85,6 @@ size_t pull_string_talloc(TALLOC_CTX *ctx,
 			int flags);
 size_t align_string(const void *base_ptr, const char *p, int flags);
 size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate);
-int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
 
 /* The following definitions come from lib/conn_tdb.c  */

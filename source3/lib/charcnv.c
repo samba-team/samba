@@ -595,14 +595,6 @@ size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate
 }
 
 
-/* Converts a string from internal samba format to unicode
- */
-
-int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags)
-{
-	return push_ucs2(NULL, dest, src, dest_len, flags|STR_UNICODE|STR_NOALIGN);
-}
-
 /* Converts a string from internal samba format to unicode. Always terminates.
  * Actually just a wrapper round push_ucs2_talloc().
  */
