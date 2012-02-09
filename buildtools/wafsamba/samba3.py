@@ -46,7 +46,7 @@ Build.BuildContext.SAMBA3_IS_ENABLED_MODULE = SAMBA3_IS_ENABLED_MODULE
 
 def s3_fix_kwargs(bld, kwargs):
     '''fix the build arguments for s3 build rules to include the
-	necessary includes, subdir and cflags options '''
+    necessary includes, subdir and cflags options '''
     s3dir = os.path.join(bld.env.srcdir, 'source3')
     s3reldir = os_path_relpath(s3dir, bld.curdir)
 
@@ -92,23 +92,23 @@ def s3_fix_kwargs(bld, kwargs):
 # these wrappers allow for mixing of S3 and S4 build rules in the one build
 
 def SAMBA3_LIBRARY(bld, name, *args, **kwargs):
-	s3_fix_kwargs(bld, kwargs)
-	return bld.SAMBA_LIBRARY(name, *args, **kwargs)
+    s3_fix_kwargs(bld, kwargs)
+    return bld.SAMBA_LIBRARY(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_LIBRARY = SAMBA3_LIBRARY
 
 def SAMBA3_MODULE(bld, name, *args, **kwargs):
-	s3_fix_kwargs(bld, kwargs)
-	return bld.SAMBA_MODULE(name, *args, **kwargs)
+    s3_fix_kwargs(bld, kwargs)
+    return bld.SAMBA_MODULE(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_MODULE = SAMBA3_MODULE
 
 def SAMBA3_SUBSYSTEM(bld, name, *args, **kwargs):
-	s3_fix_kwargs(bld, kwargs)
-	return bld.SAMBA_SUBSYSTEM(name, *args, **kwargs)
+    s3_fix_kwargs(bld, kwargs)
+    return bld.SAMBA_SUBSYSTEM(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_SUBSYSTEM = SAMBA3_SUBSYSTEM
 
 def SAMBA3_BINARY(bld, name, *args, **kwargs):
-	s3_fix_kwargs(bld, kwargs)
-	return bld.SAMBA_BINARY(name, *args, **kwargs)
+    s3_fix_kwargs(bld, kwargs)
+    return bld.SAMBA_BINARY(name, *args, **kwargs)
 Build.BuildContext.SAMBA3_BINARY = SAMBA3_BINARY
 
 def SAMBA3_PYTHON(bld, name, *args, **kwargs):

@@ -31,8 +31,8 @@ def SAMBA_PIDL(bld, pname, source,
                     '--client'            : 'ndr_%s_c.c ndr_%s_c.h',
                     '--python'            : 'py_%s.c',
                     '--tdr-parser'        : 'tdr_%s.c tdr_%s.h',
-                    '--dcom-proxy'	  : '%s_p.c',
-                    '--com-header'	  : 'com_%s.h'
+                    '--dcom-proxy'        : '%s_p.c',
+                    '--com-header'        : 'com_%s.h'
                     }
 
     table_header_idx = None

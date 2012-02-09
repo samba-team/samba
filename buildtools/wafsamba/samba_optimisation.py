@@ -12,50 +12,50 @@ import preproc, Task
 @feature('cc', 'cxx')
 @after('apply_type_vars', 'apply_lib_vars', 'apply_core')
 def apply_incpaths(self):
-	lst = []
+    lst = []
 
-	try:
-		kak = self.bld.kak
-	except AttributeError:
-		kak = self.bld.kak = {}
+    try:
+        kak = self.bld.kak
+    except AttributeError:
+        kak = self.bld.kak = {}
 
-	# TODO move the uselib processing out of here
-	for lib in self.to_list(self.uselib):
-		for path in self.env['CPPPATH_' + lib]:
-			if not path in lst:
-				lst.append(path)
-	if preproc.go_absolute:
-		for path in preproc.standard_includes:
-			if not path in lst:
-				lst.append(path)
+    # TODO move the uselib processing out of here
+    for lib in self.to_list(self.uselib):
+        for path in self.env['CPPPATH_' + lib]:
+            if not path in lst:
+                lst.append(path)
+    if preproc.go_absolute:
+        for path in preproc.standard_includes:
+            if not path in lst:
+                lst.append(path)
 
-	for path in self.to_list(self.includes):
-		if not path in lst:
-			if preproc.go_absolute or path[0] != '/': #os.path.isabs(path):
-				lst.append(path)
-			else:
-				self.env.prepend_value('CPPPATH', path)
+    for path in self.to_list(self.includes):
+        if not path in lst:
+            if preproc.go_absolute or path[0] != '/': #os.path.isabs(path):
+                lst.append(path)
+            else:
+                self.env.prepend_value('CPPPATH', path)
 
-	for path in lst:
-		node = None
-		if path[0] == '/': # os.path.isabs(path):
-			if preproc.go_absolute:
-				node = self.bld.root.find_dir(path)
-		elif path[0] == '#':
-			node = self.bld.srcnode
-			if len(path) > 1:
-				try:
-					node = kak[path]
-				except KeyError:
-					kak[path] = node = node.find_dir(path[1:])
-		else:
-			try:
-				node = kak[(self.path.id, path)]
-			except KeyError:
-				kak[(self.path.id, path)] = node = self.path.find_dir(path)
+    for path in lst:
+        node = None
+        if path[0] == '/': # os.path.isabs(path):
+            if preproc.go_absolute:
+                node = self.bld.root.find_dir(path)
+        elif path[0] == '#':
+            node = self.bld.srcnode
+            if len(path) > 1:
+                try:
+                    node = kak[path]
+                except KeyError:
+                    kak[path] = node = node.find_dir(path[1:])
+        else:
+            try:
+                node = kak[(self.path.id, path)]
+            except KeyError:
+                kak[(self.path.id, path)] = node = self.path.find_dir(path)
 
-		if node:
-			self.env.append_value('INC_PATHS', node)
+        if node:
+            self.env.append_value('INC_PATHS', node)
 
 @feature('cc')
 @after('apply_incpaths')
@@ -91,13 +91,13 @@ def apply_obj_vars_cc(self):
 import Node, Environment
 
 def vari(self):
-	return "default"
+    return "default"
 Environment.Environment.variant = vari
 
 def variant(self, env):
-	if not env: return 0
-	elif self.id & 3 == Node.FILE: return 0
-	else: return "default"
+    if not env: return 0
+    elif self.id & 3 == Node.FILE: return 0
+    else: return "default"
 Node.Node.variant = variant
 
 
@@ -113,13 +113,13 @@ def create_task(self, name, src=None, tgt=None):
 TaskGen.task_gen.create_task = create_task
 
 def hash_constraints(self):
-	a = self.attr
-	sum = hash((str(a('before', '')),
+    a = self.attr
+    sum = hash((str(a('before', '')),
             str(a('after', '')),
             str(a('ext_in', '')),
             str(a('ext_out', '')),
             self.__class__.maxjobs))
-	return sum
+    return sum
 Task.TaskBase.hash_constraints = hash_constraints
 
 
@@ -129,37 +129,37 @@ Task.TaskBase.hash_constraints = hash_constraints
 
 # @extension(cc.EXT_CC)
 # def c_hook(self, node):
-# 	task = self.create_task('cc', node, node.change_ext('.o'))
-# 	try:
-# 		self.compiled_tasks.append(task)
-# 	except AttributeError:
-# 		raise Utils.WafError('Have you forgotten to set the feature "cc" on %s?' % str(self))
+#     task = self.create_task('cc', node, node.change_ext('.o'))
+#     try:
+#         self.compiled_tasks.append(task)
+#     except AttributeError:
+#         raise Utils.WafError('Have you forgotten to set the feature "cc" on %s?' % str(self))
 
-# 	bld = self.bld
-# 	try:
-# 		dc = bld.dc
-# 	except AttributeError:
-# 		dc = bld.dc = {}
+#     bld = self.bld
+#     try:
+#         dc = bld.dc
+#     except AttributeError:
+#         dc = bld.dc = {}
 
-# 	if task.outputs[0].id in dc:
-# 		raise Utils.WafError('Samba, you are doing it wrong %r %s %s' % (task.outputs, task.generator, dc[task.outputs[0].id].generator))
-# 	else:
-# 		dc[task.outputs[0].id] = task
+#     if task.outputs[0].id in dc:
+#         raise Utils.WafError('Samba, you are doing it wrong %r %s %s' % (task.outputs, task.generator, dc[task.outputs[0].id].generator))
+#     else:
+#         dc[task.outputs[0].id] = task
 
-# 	return task
+#     return task
 
 
 def suncc_wrap(cls):
-	'''work around a problem with cc on solaris not handling module aliases
-	which have empty libs'''
-	if getattr(cls, 'solaris_wrap', False):
-		return
-	cls.solaris_wrap = True
-	oldrun = cls.run
-	def run(self):
-		if self.env.CC_NAME == "sun" and not self.inputs:
-			self.env = self.env.copy()
-			self.env.append_value('LINKFLAGS', '-')
-		return oldrun(self)
-	cls.run = run
+    '''work around a problem with cc on solaris not handling module aliases
+    which have empty libs'''
+    if getattr(cls, 'solaris_wrap', False):
+        return
+    cls.solaris_wrap = True
+    oldrun = cls.run
+    def run(self):
+        if self.env.CC_NAME == "sun" and not self.inputs:
+            self.env = self.env.copy()
+            self.env.append_value('LINKFLAGS', '-')
+        return oldrun(self)
+    cls.run = run
 suncc_wrap(Task.TaskBase.classes['cc_link'])

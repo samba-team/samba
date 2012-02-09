@@ -295,7 +295,7 @@ def CHECK_PERL_MANPAGE(conf, msg=None, section=None):
     dest.write("""
 use ExtUtils::MakeMaker;
 WriteMakefile(
-    'NAME'	=> 'WafTest',
+    'NAME'    => 'WafTest',
     'EXE_FILES' => [ 'WafTest' ]
 );
 """)
