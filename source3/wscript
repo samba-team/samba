@@ -589,7 +589,7 @@ krb5_auth_con_setuseruserkey krb5_get_permitted_enctypes
 krb5_get_default_in_tkt_etypes krb5_free_data_contents
 krb5_principal_get_comp_string krb5_free_unparsed_name
 krb5_free_keytab_entry_contents krb5_kt_free_entry krb5_krbhst_init
-krb5_krbhst_get_addrinfo krb5_c_enctype_compare
+krb5_krbhst_get_addrinfo
 krb5_crypto_init krb5_crypto_destroy krb5_decode_ap_req free_AP_REQ
 krb5_c_verify_checksum krb5_principal_compare_any_realm
 krb5_parse_name_norealm krb5_princ_size krb5_get_init_creds_opt_set_pac_request
@@ -752,9 +752,6 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
             use_ads=False
         if not conf.CONFIG_SET('HAVE_KRB5_MK_REQ_EXTENDED'):
             Logs.warn("krb5_mk_req_extended not found in -lkrb5")
-            use_ads=False
-        if not conf.CONFIG_SET('HAVE_KRB5_C_ENCTYPE_COMPARE'):
-            Logs.warn("krb5_c_enctype_compare not found in -lkrb5")
             use_ads=False
         if not conf.CONFIG_SET('HAVE_KRB5_GET_HOST_REALM'):
             Logs.warn("krb5_get_host_realm not found in -lkrb5")

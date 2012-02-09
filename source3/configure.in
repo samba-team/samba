@@ -3869,7 +3869,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_kt_free_entry, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_krbhst_init, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_krbhst_get_addrinfo, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_c_enctype_compare, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_crypto_init, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_crypto_destroy, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_decode_ap_req, $KRB5_LIBS)
@@ -4399,11 +4398,6 @@ if test x"$with_ads_support" != x"no"; then
 
   if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" != x"yes"; then
     AC_MSG_WARN(krb5_mk_req_extended not found in -lkrb5)
-    use_ads=no
-  fi
-
-  if test x"$ac_cv_func_ext_krb5_c_enctype_compare" != x"yes"; then
-    AC_MSG_WARN(krb5_c_enctype_compare not found in -lkrb5)
     use_ads=no
   fi
 
