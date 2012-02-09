@@ -330,28 +330,6 @@ void prs_switch_type(prs_struct *ps, bool io)
 }
 
 /*******************************************************************
- Stream a uint8.
- ********************************************************************/
-
-bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
-{
-	char *q = prs_mem_get(ps, 1);
-	if (q == NULL)
-		return False;
-
-	if (UNMARSHALLING(ps))
-		*data8 = CVAL(q,0);
-	else
-		SCVAL(q,0,*data8);
-
-	DEBUGADD(5,("%s%04x %s: %02x\n", tab_depth(5,depth), ps->data_offset, name, *data8));
-
-	ps->data_offset += 1;
-
-	return True;
-}
-
-/*******************************************************************
  Stream a uint16.
  ********************************************************************/
 

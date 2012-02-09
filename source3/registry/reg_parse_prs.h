@@ -72,7 +72,6 @@ bool prs_align(prs_struct *ps);
 bool prs_align_uint64(prs_struct *ps);
 char *prs_mem_get(prs_struct *ps, uint32 extra_size);
 void prs_switch_type(prs_struct *ps, bool io);
-bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8);
 bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16);
 bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32);
 bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
