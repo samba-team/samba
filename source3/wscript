@@ -647,10 +647,6 @@ krb5_get_init_creds_opt_free(ctx, opt);
                         'KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT',
                         headers='krb5.h', link=False,
                         msg="Checking whether krb5_get_init_creds_opt_free takes a context argument")
-        conf.CHECK_CODE('krb5_mk_error(0,0,0)',
-                        'HAVE_SHORT_KRB5_MK_ERROR_INTERFACE',
-                        headers='krb5.h', link=False,
-                        msg="Checking whether krb5_mk_error takes 3 arguments MIT or 9 Heimdal")
         conf.CHECK_CODE('''
 const krb5_data *pkdata;
 krb5_context context;
