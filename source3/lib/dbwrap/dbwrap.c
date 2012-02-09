@@ -118,7 +118,7 @@ static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
 
 	used = ffs(lock_order_mask);
 
-	DEBUG(1, ("used=%d, lock_order=%d, idx=%d\n", used,
+	DEBUG(5, ("used=%d, lock_order=%d, idx=%d\n", used,
 		  (int)db->lock_order, (int)idx));
 
 	if ((used != 0) && (used-1 <= idx)) {
