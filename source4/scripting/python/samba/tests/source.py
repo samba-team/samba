@@ -38,14 +38,16 @@ from samba.tests import (
 
 def get_python_source_files():
     """Iterate over all Python source files."""
-    library_dir = os.path.join(os.path.dirname(__file__), "..", "..", "samba")
+    library_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "samba"))
+    assert os.path.isdir(library_dir), library_dir
 
     for root, dirs, files in os.walk(library_dir):
         for f in files:
             if f.endswith(".py"):
                 yield os.path.abspath(os.path.join(root, f))
 
-    bindir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "bin")
+    bindir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "bin"))
+    assert os.path.isdir(bindir), bindir
     for f in os.listdir(bindir):
         p = os.path.abspath(os.path.join(bindir, f))
         if not os.path.islink(p):
@@ -53,6 +55,12 @@ def get_python_source_files():
         target = os.readlink(p)
         if os.path.dirname(target).endswith("scripting/bin"):
             yield p
+    wafsambadir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "buildtools", "wafsamba"))
+    assert os.path.isdir(wafsambadir), wafsambadir
+    for root, dirs, files in os.walk(wafsambadir):
+        for f in files:
+            if f.endswith(".py"):
+                yield os.path.abspath(os.path.join(root, f))
 
 
 def get_source_file_contents():
@@ -84,6 +92,9 @@ class TestSource(TestCase):
         for fname, text in get_source_file_contents():
             if fname.endswith("ms_schema.py"):
                 # FIXME: Not sure who holds copyright on ms_schema.py
+                continue
+            if "wafsamba" in fname:
+                # FIXME: No copyright headers in wafsamba
                 continue
             match = copyright_re.search(text)
             if not match:
@@ -121,6 +132,9 @@ class TestSource(TestCase):
         gpl_re = re.compile(re.escape(gpl_txt), re.MULTILINE)
 
         for fname, text in get_source_file_contents():
+            if "wafsamba" in fname:
+                # FIXME: License to wafsamba hasn't been clarified yet
+                continue
             if not gpl_re.search(text):
                 incorrect.append(fname)
 
