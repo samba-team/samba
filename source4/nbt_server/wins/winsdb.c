@@ -124,32 +124,6 @@ failed:
 	return 0;
 }
 
-uint64_t winsdb_get_seqnumber(struct winsdb_handle *h)
-{
-	int ret;
-	struct ldb_context *ldb = h->ldb;
-	struct ldb_dn *dn;
-	struct ldb_result *res = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
-	uint64_t seqnumber = 0;
-
-	dn = ldb_dn_new(tmp_ctx, ldb, "@BASEINFO");
-	if (!dn) goto failed;
-
-	/* find the record in the WINS database */
-	ret = ldb_search(ldb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
-	if (ret != LDB_SUCCESS) goto failed;
-	if (res->count > 1) goto failed;
-
-	if (res->count == 1) {
-		seqnumber = ldb_msg_find_attr_as_uint64(res->msgs[0], "sequenceNumber", 0);
-	}
-
-failed:
-	talloc_free(tmp_ctx);
-	return seqnumber;
-}
-
 /*
   return a DN for a nbt_name
 */
