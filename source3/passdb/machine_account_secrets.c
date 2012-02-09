@@ -397,19 +397,6 @@ static bool secrets_delete_prev_machine_password(const char *domain)
 }
 
 /************************************************************************
- Routine to delete the plaintext machine account password and old
- password if any
-************************************************************************/
-
-bool secrets_delete_machine_password(const char *domain)
-{
-	if (!secrets_delete_prev_machine_password(domain)) {
-		return false;
-	}
-	return secrets_delete(machine_password_keystr(domain));
-}
-
-/************************************************************************
  Routine to delete the plaintext machine account password, old password,
  sec channel type and last change time from secrets database
 ************************************************************************/
