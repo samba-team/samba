@@ -9266,11 +9266,6 @@ int lp_servicenumber(const char *pszServiceName)
 	return (iService);
 }
 
-bool share_defined(const char *service_name)
-{
-	return (lp_servicenumber(service_name) != -1);
-}
-
 /*******************************************************************
  A useful volume label function. 
 ********************************************************************/

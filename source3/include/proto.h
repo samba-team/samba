@@ -1571,7 +1571,6 @@ int lp_numservices(void);
 void lp_dump(FILE *f, bool show_defaults, int maxtoprint);
 void lp_dump_one(FILE * f, bool show_defaults, int snum);
 int lp_servicenumber(const char *pszServiceName);
-bool share_defined(const char *service_name);
 struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
 				      const char *sharename);
 const char *volume_label(int snum);
