@@ -1556,19 +1556,6 @@ char *lock_path(const char *name)
 }
 
 /**
- * @brief Returns an absolute path to a file in the Samba pid directory.
- *
- * @param name File to find, relative to PIDDIR.
- *
- * @retval Pointer to a talloc'ed string containing the full path.
- **/
-
-char *pid_path(const char *name)
-{
-	return xx_path(name, lp_piddir());
-}
-
-/**
  * @brief Returns an absolute path to a file in the Samba state directory.
  *
  * @param name File to find, relative to STATEDIR.
