@@ -1507,7 +1507,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 				(unsigned int)tp->tv_sec, (unsigned int)tp->tv_usec ));
 		}
 
-		ret = sys_poll(pfds, num_pfds, timeout);
+		ret = poll(pfds, num_pfds, timeout);
 
 		if (run_events_poll(winbind_event_context(), ret,
 				    pfds, num_pfds)) {

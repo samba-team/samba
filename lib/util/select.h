@@ -24,7 +24,6 @@
 
 /* The following definitions come from lib/util/select.c  */
 
-int sys_poll(struct pollfd *fds, int num_fds, int timeout);
 int sys_poll_intr(struct pollfd *fds, int num_fds, int timeout);
 
 #endif

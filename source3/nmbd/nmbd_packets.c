@@ -1935,7 +1935,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 	event_add_to_poll_args(nmbd_event_context(), NULL,
 			       &fds, &num_sockets, &timeout);
 
-	pollrtn = sys_poll(fds, num_sockets, timeout);
+	pollrtn = poll(fds, num_sockets, timeout);
 
 	if (run_events_poll(nmbd_event_context(), pollrtn, fds, num_sockets)) {
 		return False;

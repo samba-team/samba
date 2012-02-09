@@ -101,14 +101,9 @@ bool event_add_to_poll_args(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 	fds = *pfds;
 	num_pollfds = *pnum_pfds;
 
-	/*
-	 * The +1 is for the sys_poll calling convention. It expects
-	 * an array 1 longer for the signal pipe
-	 */
-
-	if (talloc_array_length(fds) < num_pollfds + num_fds + 1) {
+	if (talloc_array_length(fds) < num_pollfds + num_fds) {
 		fds = talloc_realloc(mem_ctx, fds, struct pollfd,
-					   num_pollfds + num_fds + 1);
+					   num_pollfds + num_fds);
 		if (fds == NULL) {
 			DEBUG(10, ("talloc_realloc failed\n"));
 			return false;
@@ -338,7 +333,7 @@ static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 		return -1;
 	}
 
-	ret = sys_poll(state->pfds, num_pfds, timeout);
+	ret = poll(state->pfds, num_pfds, timeout);
 	if (ret == -1 && errno != EINTR) {
 		tevent_debug(ev, TEVENT_DEBUG_FATAL,
 			     "poll() failed: %d:%s\n",

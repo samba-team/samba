@@ -967,7 +967,7 @@ static NTSTATUS smbd_server_connection_loop_once(struct tevent_context *ev_ctx,
 		int sav;
 		START_PROFILE(smbd_idle);
 
-		ret = sys_poll(conn->pfds, num_pfds, timeout);
+		ret = poll(conn->pfds, num_pfds, timeout);
 		sav = errno;
 
 		END_PROFILE(smbd_idle);

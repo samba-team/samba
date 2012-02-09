@@ -1604,7 +1604,7 @@ int poll_one_fd(int fd, int events, int timeout, int *revents)
 	int ret;
 	int saved_errno;
 
-	fds = talloc_zero_array(talloc_tos(), struct pollfd, 2);
+	fds = talloc_zero_array(talloc_tos(), struct pollfd, 1);
 	if (fds == NULL) {
 		errno = ENOMEM;
 		return -1;
@@ -1612,7 +1612,7 @@ int poll_one_fd(int fd, int events, int timeout, int *revents)
 	fds[0].fd = fd;
 	fds[0].events = events;
 
-	ret = sys_poll(fds, 1, timeout);
+	ret = poll(fds, 1, timeout);
 
 	/*
 	 * Assign whatever poll did, even in the ret<=0 case.

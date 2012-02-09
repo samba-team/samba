@@ -395,11 +395,11 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		 */
 
 		/*
-		 * We allocate 2 entries here. One is needed anyway for
-		 * sys_poll and in the clustering case we might have to add
-		 * the ctdb fd. This avoids the realloc then.
+		 * We allocate 1 entries here. In the clustering case
+		 * we might have to add the ctdb fd. This avoids the
+		 * realloc then.
 		 */
-		pollfds = talloc_array(talloc_tos(), struct pollfd, 2);
+		pollfds = talloc_array(talloc_tos(), struct pollfd, 1);
 		if (pollfds == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			break;
@@ -425,8 +425,8 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		select_timeout = timeval_min(&select_timeout,
 					     &timeout_remaining);
 
-		ret = sys_poll(pollfds, num_pollfds,
-			       timeval_to_msec(select_timeout));
+		ret = poll(pollfds, num_pollfds,
+			   timeval_to_msec(select_timeout));
 
 		/*
 		 * We're not *really interested in the actual flags. We just
