@@ -209,24 +209,6 @@ ssize_t sys_send(int s, const void *msg, size_t len, int flags)
 }
 
 /*******************************************************************
-A sendto wrapper that will deal with EINTR or EAGAIN or EWOULDBLOCK.
-********************************************************************/
-
-ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
-{
-	ssize_t ret;
-
-	do {
-		ret = sendto(s, msg, len, flags, to, tolen);
-#if defined(EWOULDBLOCK)
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-#else
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-#endif
-	return ret;
-}
-
-/*******************************************************************
 A recvfrom wrapper that will deal with EINTR.
 ********************************************************************/
 
