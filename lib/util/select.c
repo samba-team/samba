@@ -35,24 +35,6 @@ static pid_t initialised;
 static int select_pipe[2];
 static volatile unsigned pipe_written, pipe_read;
 
-/*******************************************************************
- Call this from all Samba signal handlers if you want to avoid a
- nasty signal race condition.
-********************************************************************/
-
-void sys_select_signal(char c)
-{
-	int saved_errno = errno;
-
-	if (!initialised) return;
-
-	if (pipe_written > pipe_read+256) return;
-
-	if (write(select_pipe[1], &c, 1) == 1) pipe_written++;
-
-	errno = saved_errno;
-}
-
 /*
  * sys_poll expects pollfd's to be a talloc'ed array.
  *
