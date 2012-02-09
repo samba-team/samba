@@ -499,22 +499,6 @@ bool secrets_store_generic(const char *owner, const char *key, const char *secre
 	return ret;
 }
 
-bool secrets_delete_generic(const char *owner, const char *key)
-{
-	char *tdbkey = NULL;
-	bool ret;
-
-	if (asprintf(&tdbkey, "SECRETS/GENERIC/%s/%s", owner, key) < 0) {
-		DEBUG(0, ("asprintf failed!\n"));
-		return False;
-	}
-
-	ret = secrets_delete(tdbkey);
-
-	SAFE_FREE(tdbkey);
-	return ret;
-}
-
 /*******************************************************************
  Find the ldap password.
 ******************************************************************/

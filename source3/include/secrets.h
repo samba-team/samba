@@ -125,7 +125,6 @@ bool secrets_fetch_afs_key(const char *cell, struct afs_key *result);
 void secrets_fetch_ipc_userpass(char **username, char **domain, char **password);
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
-bool secrets_delete_generic(const char *owner, const char *key);
 
 /* The following definitions come from passdb/secrets_lsa.c  */
 NTSTATUS lsa_secret_get(TALLOC_CTX *mem_ctx,
