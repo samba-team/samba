@@ -101,7 +101,9 @@ static void s3fs_task_init(struct task_server *task)
 	req = samba_runcmd_send(task, task->event_ctx, timeval_zero(), 1, 0,
 				smbd_cmd,
 				"--configfile", fileserver_conf,
-				"--foreground", NULL);
+				"--foreground",
+				debug_get_output_is_stdout()?"--log-stdout":NULL,
+				NULL);
 	if (req == NULL) {
 		DEBUG(0, ("Failed to start smbd as child daemon\n"));
 		goto failed;
