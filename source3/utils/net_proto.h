@@ -414,10 +414,6 @@ NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 				struct cli_state **cli_ctx,
 				const struct sockaddr_storage *server_ss,
 				const char *server_name);
-NTSTATUS connect_to_ipc_krb5(struct net_context *c,
-			struct cli_state **cli_ctx,
-			const struct sockaddr_storage *server_ss,
-			const char *server_name);
 NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 			  struct rpc_pipe_client **pp_pipe_hnd,
 			  const struct ndr_syntax_id *interface);

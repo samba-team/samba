@@ -241,59 +241,6 @@ static char *get_user_and_realm(const char *username)
 	return user_and_realm;
 }
 
-/****************************************************************************
- Connect to \\server\ipc$ using KRB5.
-****************************************************************************/
-
-NTSTATUS connect_to_ipc_krb5(struct net_context *c,
-			struct cli_state **cli_ctx,
-			const struct sockaddr_storage *server_ss,
-			const char *server_name)
-{
-	NTSTATUS nt_status;
-	char *user_and_realm = NULL;
-
-	/* FIXME: Should get existing kerberos ticket if possible. */
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
-	if (!c->opt_password) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	user_and_realm = get_user_and_realm(c->opt_user_name);
-	if (!user_and_realm) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	nt_status = cli_full_connection(cli_ctx, NULL, server_name,
-					server_ss, c->opt_port,
-					"IPC$", "IPC",
-					user_and_realm, c->opt_workgroup,
-					c->opt_password,
-					CLI_FULL_CONNECTION_USE_KERBEROS,
-					SMB_SIGNING_DEFAULT);
-
-	SAFE_FREE(user_and_realm);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1,("Cannot connect to server using kerberos.  Error was %s\n", nt_errstr(nt_status)));
-		return nt_status;
-	}
-
-        if (c->smb_encrypt) {
-		nt_status = cli_cm_force_encryption(*cli_ctx,
-					user_and_realm,
-					c->opt_password,
-					c->opt_workgroup,
-                                        "IPC$");
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			cli_shutdown(*cli_ctx);
-			*cli_ctx = NULL;
-		}
-	}
-
-	return nt_status;
-}
-
 /**
  * Connect a server and open a given pipe
  *
