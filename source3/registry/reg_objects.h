@@ -47,8 +47,6 @@ int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr );
 char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32_t key_index );
 WERROR regval_ctr_init(TALLOC_CTX *mem_ctx, struct regval_ctr **ctr);
 int regval_ctr_numvals(struct regval_ctr *ctr);
-struct regval_blob* dup_registry_value(struct regval_blob *val);
-void free_registry_value(struct regval_blob *val);
 uint8_t* regval_data_p(struct regval_blob *val);
 uint32_t regval_size(struct regval_blob *val);
 char* regval_name(struct regval_blob *val);
