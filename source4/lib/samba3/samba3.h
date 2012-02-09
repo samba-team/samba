@@ -25,7 +25,6 @@
 
 struct samr_Password *smbpasswd_gethexpwd(TALLOC_CTX *mem_ctx, const char *p);
 char *smbpasswd_sethexpwd(TALLOC_CTX *mem_ctx, struct samr_Password *pwd, uint16_t acb_info);
-uint16_t smbpasswd_decode_acb_info(const char *p);
 char *smbpasswd_encode_acb_info(TALLOC_CTX *mem_ctx, uint16_t acb_info);
 
 #endif /* _SAMBA3_H */
