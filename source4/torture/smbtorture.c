@@ -548,6 +548,9 @@ int main(int argc,char *argv[])
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
 	} else if (strcmp(target, "samba4") == 0) {
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
+	} else if (strcmp(target, "samba4-ntvfs") == 0) {
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
+		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:samba4-ntvfs", "true");
 	} else if (strcmp(target, "winxp") == 0) {
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:winxp", "true");
 	} else if (strcmp(target, "w2k3") == 0) {
