@@ -894,7 +894,7 @@ bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 	if (!smb2req) {
 		return false;
 	}
-	if (smb2req->subreq == NULL) {
+	if (smb2req->async_te == NULL) {
 		return false;
 	}
 	req = smb2req->subreq;
