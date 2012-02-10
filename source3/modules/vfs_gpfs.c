@@ -1224,7 +1224,11 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 
         ret = SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
         if(ret == -1){
-                DEBUG(1,("vfs_gpfs_ntimes: SMB_VFS_NEXT_NTIMES failed\n"));
+		/* don't complain if access was denied */
+		if (errno != EPERM && errno != EACCES) {
+			DEBUG(1,("vfs_gpfs_ntimes: SMB_VFS_NEXT_NTIMES failed:"
+				 "%s", strerror(errno)));
+		}
                 return -1;
         }
 
