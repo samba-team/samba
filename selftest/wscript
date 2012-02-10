@@ -12,6 +12,9 @@ def set_options(opt):
     opt.add_option('--enable-selftest',
                    help=("enable options necessary for selftest (default=no)"),
                    action="store_true", dest='enable_selftest', default=False)
+    opt.add_option('--enable-coverage',
+                   help=("enable options necessary for code coverage reporting on selftest (default=no)"),
+                   action="store_true", dest='enable_coverage', default=False)
     opt.add_option('--with-selftest-prefix',
                    help=("specify location of selftest directory (default=./st)"),
                    action="store", dest='SELFTEST_PREFIX', default='./st')
@@ -69,6 +72,10 @@ def set_options(opt):
 
 def configure(conf):
     conf.env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
+    conf.env.enable_coverage = Options.options.enable_coverage
+    if conf.env.enable_coverage:
+        conf.ADD_LDFLAGS('-lgcov', testflags=True)
+        conf.ADD_CFLAGS('--coverage')
 
 def cmd_testonly(opt):
     '''run tests without doing a build first'''
