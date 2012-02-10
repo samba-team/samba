@@ -1000,21 +1000,6 @@ int samdb_msg_set_value(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct
 }
 
 /*
-  set a string element in a message
-*/
-int samdb_msg_set_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			 const char *attr_name, const char *str)
-{
-	struct ldb_message_element *el;
-
-	el = ldb_msg_find_element(msg, attr_name);
-	if (el) {
-		el->num_values = 0;
-	}
-	return ldb_msg_add_string(msg, attr_name, str);
-}
-
-/*
  * Sets an unsigned int element in a message
  *
  * The issue here is that we have not yet first cast to int32_t explicitly,
