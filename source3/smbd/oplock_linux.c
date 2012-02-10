@@ -228,8 +228,6 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 		return NULL;
 	}
 
-	ctx->private_data = se;
-
 	DEBUG(3,("Linux kernel oplocks enabled\n"));
 
 	return ctx;
