@@ -458,6 +458,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 		state->smb1req = smb1req;
+		smb2req->subreq = req;
 		DEBUG(10,("smbd_smb2_create: name[%s]\n",
 			in_name));
 	} else {
