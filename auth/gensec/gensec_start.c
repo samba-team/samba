@@ -50,7 +50,22 @@ bool gensec_security_ops_enabled(struct gensec_security_ops *ops, struct gensec_
 /* Sometimes we want to force only kerberos, sometimes we want to
  * force it's avoidance.  The old list could be either
  * gensec_security_all(), or from cli_credentials_gensec_list() (ie,
- * an existing list we have trimmed down) */
+ * an existing list we have trimmed down)
+ *
+ * The intended logic is:
+ *
+ * if we are in the default AUTO have kerberos:
+ * - take a reference to the master list
+ * otherwise
+ * - always add spnego then:
+ * - if we 'MUST' have kerberos:
+ *   only add kerberos mechs
+ * - if we 'DONT' want kerberos':
+ *   only add non-kerberos mechs
+ *
+ * Once we get things like NegoEx or moonshot, this will of course get
+ * more compplex.
+ */
 
 _PUBLIC_ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
 						       struct gensec_security_ops **old_gensec_list,
