@@ -31,6 +31,11 @@
 #include "messages.h"
 #include "lib/param/loadparm.h"
 
+static bool snum_is_shared_printer(int snum)
+{
+	return (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum));
+}
+
 /**
  * @brief Purge stale printers and reload from pre-populated pcap cache.
  *
@@ -85,7 +90,7 @@ void delete_and_reload_printers(struct tevent_context *ev,
 		}
 
 		/* skip no-printer services */
-		if (!(lp_snum_ok(snum) && lp_print_ok(snum))) {
+		if (!snum_is_shared_printer(snum)) {
 			continue;
 		}
 
