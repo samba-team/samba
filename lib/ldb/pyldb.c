@@ -1051,7 +1051,7 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 
 	while (PyDict_Next(py_obj, &dict_pos, &key, &value)) {
 		char *key_str = PyString_AsString(key);
-		if (strcmp(key_str, "dn") != 0) {
+		if (ldb_attr_cmp(key_str, "dn") != 0) {
 			msg_el = PyObject_AsMessageElement(msg->elements, value,
 							   mod_flags, key_str);
 			if (msg_el == NULL) {
@@ -2516,7 +2516,7 @@ static PyObject *py_ldb_msg_getitem_helper(PyLdbMessageObject *self, PyObject *p
 		return NULL;
 	}
 	name = PyString_AsString(py_name);
-	if (!strcmp(name, "dn"))
+	if (!ldb_attr_cmp(name, "dn"))
 		return pyldb_Dn_FromDn(msg->dn);
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
