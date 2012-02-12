@@ -1124,6 +1124,17 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
       </para>
     </refsect2>
 
+    <refsect2><title>setdbreadonly &lt;dbname|hash&gt;</title>
+      <para>
+        This command will enable the ReadOnly record support for a database.
+	This is an experimental feature to improve performance for contended
+	records primarily in locking.tdb and brlock.tdb.
+	When enabling this feature you must set it on all nodes in the cluster.
+	For now, this feature requires a special patch to samba in order to 
+	use it.
+      </para>
+    </refsect2>
+
 
   <refsect1><title>Debugging Commands</title>
     <para>
