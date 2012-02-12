@@ -233,8 +233,7 @@ def subst_vars_error(string, env):
         if re.match('\$\{\w+\}', v):
             vname = v[2:-1]
             if not vname in env:
-                Logs.error("Failed to find variable %s in %s" % (vname, string))
-                sys.exit(1)
+                raise KeyError("Failed to find variable %s in %s" % (vname, string))
             v = env[vname]
         out.append(v)
     return ''.join(out)
