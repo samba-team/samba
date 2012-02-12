@@ -4425,21 +4425,50 @@ static int control_getdbprio(struct ctdb_context *ctdb, int argc, const char **a
  */
 static int control_setdbreadonly(struct ctdb_context *ctdb, int argc, const char **argv)
 {
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t db_id;
-	int ret;
+	struct ctdb_dbid_map *dbmap=NULL;
+	int i, ret;
 
 	if (argc < 1) {
 		usage();
 	}
 
-	db_id = strtoul(argv[0], NULL, 0);
+	if (!strncmp(argv[0], "0x", 2)) {
+		db_id = strtoul(argv[0] + 2, NULL, 0);
+	} else {
+		ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		for(i=0;i<dbmap->num;i++){
+			const char *name;
+
+			ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
+			if(!strcmp(argv[0], name)){
+				talloc_free(discard_const(name));
+				break;
+			}
+			talloc_free(discard_const(name));
+		}
+		if (i == dbmap->num) {
+			DEBUG(DEBUG_ERR,("No database with name '%s' found\n", argv[0]));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+		db_id = dbmap->dbs[i].dbid;
+	}
 
 	ret = ctdb_ctrl_set_db_readonly(ctdb, options.pnn, db_id);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Unable to set db to support readonly\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
