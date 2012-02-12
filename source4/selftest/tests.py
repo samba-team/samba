@@ -442,6 +442,7 @@ planpythontestsuite("dc:local", "samba.tests.samba_tool.user")
 
 planpythontestsuite("none", "subunit")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.rpcecho")
+planpythontestsuite("none", "wafsamba.tests.test_utils", extra_path=[os.path.join(samba4srcdir, "..", "buildtools"), os.path.join(samba4srcdir, "..", "buildtools", "wafadmin")])
 planoldpythontestsuite("dc:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 plantestsuite("samba4.ldap.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
