@@ -18,6 +18,7 @@ from wafsamba.tests import TestCase
 
 from wafsamba.samba_utils import (
     TO_LIST,
+    dict_concat,
     subst_vars_error,
     unique_list,
     )
@@ -50,8 +51,26 @@ class UniqueListTests(TestCase):
 class SubstVarsErrorTests(TestCase):
 
     def test_valid(self):
-        self.assertEquals("", subst_vars_error(""))
+        self.assertEquals("", subst_vars_error("", {}))
         self.assertEquals("FOO bar", subst_vars_error("${F} bar", {"F": "FOO"}))
 
     def test_invalid(self):
         self.assertRaises(KeyError, subst_vars_error, "${F}", {})
+
+
+class DictConcatTests(TestCase):
+
+    def test_empty(self):
+        ret = {}
+        dict_concat(ret, {})
+        self.assertEquals({}, ret)
+
+    def test_same(self):
+        ret = {"foo": "bar"}
+        dict_concat(ret, {"foo": "bla"})
+        self.assertEquals({"foo": "bar"}, ret)
+
+    def test_simple(self):
+        ret = {"foo": "bar"}
+        dict_concat(ret, {"blie": "bla"})
+        self.assertEquals({"foo": "bar", "blie": "bla"}, ret)
