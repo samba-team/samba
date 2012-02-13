@@ -11,6 +11,21 @@ use FindBin qw($RealBin);
 use POSIX;
 use target::Samba;
 
+sub have_ads($) {
+    my ($self);
+	my $found_ads = 0;
+	my $smbd_build_options = Samba::bindir_path($self, "smbd") . " -b";
+	my @build_options = `$smbd_build_options`;
+	foreach my $option (@build_options) {
+	        if ($option =~ "WITH_ADS") {
+		       $found_ads = 1;
+		}
+	}
+
+	# If we were not built with ADS support, pretend we were never even available
+	return $found_ads;
+}
+
 sub new($$) {
 	my ($classname, $bindir, $binary_mapping, $srcdir, $server_maxtime) = @_;
 	my $self = { vars => {},
@@ -205,6 +220,11 @@ sub setup_member($$$)
 sub setup_admember($$$$)
 {
 	my ($self, $prefix, $dcvars, $iface) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->have_ads()) {
+	        return "UNKNOWN";
+	}
 
 	print "PROVISIONING S3 AD MEMBER$iface...";
 
@@ -413,6 +433,11 @@ sub setup_secserver($$$)
 sub setup_ktest($$$)
 {
 	my ($self, $prefix) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->have_ads()) {
+	        return "UNKNOWN";
+	}
 
 	print "PROVISIONING server with security=ads...";
 
