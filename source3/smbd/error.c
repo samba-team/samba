@@ -71,7 +71,11 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 		}
 		SIVAL(outbuf,smb_rcls,NT_STATUS_V(ntstatus));
 		SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2)|FLAGS2_32_BIT_ERROR_CODES);
-		DEBUG(3,("error packet at %s(%d) cmd=%d (%s) %s\n",
+		/* This must not start with the word 'error', as this
+		 * is reserved in the subunit stream protocol, causing
+		 * false errors to show up when debugging is turned
+		 * on */
+		DEBUG(3,("NT error packet at %s(%d) cmd=%d (%s) %s\n",
 			 file, line,
 			 (int)CVAL(outbuf,smb_com),
 			 smb_fn_name(CVAL(outbuf,smb_com)),
@@ -88,7 +92,11 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 		SSVAL(outbuf,smb_rcls,eclass);
 		SSVAL(outbuf,smb_err,ecode);  
 
-		DEBUG(3,("error packet at %s(%d) cmd=%d (%s) eclass=%d ecode=%d\n",
+		/* This must not start with the word 'error', as this
+		 * is reserved in the subunit stream protocol, causing
+		 * false errors to show up when debugging is turned
+		 * on */
+		DEBUG(3,("DOS error packet at %s(%d) cmd=%d (%s) eclass=%d ecode=%d\n",
 			  file, line,
 			  (int)CVAL(outbuf,smb_com),
 			  smb_fn_name(CVAL(outbuf,smb_com)),
