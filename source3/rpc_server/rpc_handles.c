@@ -299,8 +299,8 @@ static struct dcesrv_handle *create_rpc_handle_internal(struct pipes_struct *p,
 
 	*hnd = rpc_hnd->wire_handle;
 
-	DEBUG(4, ("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
-	dump_data(4, (uint8_t *)hnd, sizeof(*hnd));
+	DEBUG(6, ("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
+	dump_data(6, (uint8_t *)hnd, sizeof(*hnd));
 
 	return rpc_hnd;
 }
@@ -334,8 +334,8 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
 	count = 0;
 	for (h = p->pipe_handles->handles; h != NULL; h = h->next) {
 		if (memcmp(&h->wire_handle, hnd, sizeof(*hnd)) == 0) {
-			DEBUG(4,("Found policy hnd[%u] ", count));
-			dump_data(4, (const uint8 *)hnd, sizeof(*hnd));
+			DEBUG(6,("Found policy hnd[%u] ", count));
+			dump_data(6, (const uint8 *)hnd, sizeof(*hnd));
 			if (data_p) {
 				*data_p = h->data;
 			}
@@ -383,7 +383,7 @@ bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd)
 		return false;
 	}
 
-	DEBUG(3,("Closed policy\n"));
+	DEBUG(6,("Closed policy\n"));
 
 	p->pipe_handles->count--;
 
