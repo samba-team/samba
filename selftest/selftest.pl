@@ -882,7 +882,9 @@ sub setup_env($$)
 		}
 	} else {
 		$testenv_vars = $target->setup_env($envname, $prefix);
-		if (defined($testenv_vars) && not defined($testenv_vars->{target})) {
+		if (defined($testenv_vars) and $testenv_vars eq "UNKNOWN") {
+		    return $testenv_vars;
+		} elsif (defined($testenv_vars) && not defined($testenv_vars->{target})) {
 		        $testenv_vars->{target} = $target;
 		}
 		if (not defined($testenv_vars)) {
@@ -1023,6 +1025,11 @@ $envvarstr
 			Subunit::start_testsuite($name);
 			Subunit::end_testsuite($name, "error",
 				"unable to set up environment $envname - exiting");
+			next;
+		} elsif ($envvars eq "UNKNOWN") {
+			Subunit::start_testsuite($name);
+			Subunit::end_testsuite($name, "skip",
+				"environment $envname is unknown in this test backend - skipping");
 			next;
 		}
 

@@ -112,7 +112,7 @@ sub setup_env($$$)
 		}
 		return $self->setup_member("$path/member", $self->{vars}->{s3dc});
 	} else {
-		return undef;
+		return "UNKNOWN";
 	}
 }
 

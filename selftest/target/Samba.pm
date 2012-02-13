@@ -27,13 +27,13 @@ sub setup_env($$$)
 	$ENV{ENVNAME} = $envname;
 
 	my $env = $self->{samba4}->setup_env($envname, $path);
-	if (defined($env)) {
+	if (defined($env) and $env ne "UNKNOWN") {
 	    if (not defined($env->{target})) {
 		$env->{target} = $self->{samba4};
 	    }
 	} else {
 	   	$env = $self->{samba3}->setup_env($envname, $path);
-		if (defined($env)) {
+		if (defined($env) and $env ne "UNKNOWN") {
 		    if (not defined($env->{target})) {
 			$env->{target} = $self->{samba3};
 		    }

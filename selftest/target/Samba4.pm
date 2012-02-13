@@ -1429,7 +1429,7 @@ sub setup_env($$$)
 	} elsif ($envname eq "plugin_s4_dc") {
 		return $self->setup_plugin_s4_dc("$path/plugin_s4_dc");
 	} else {
-		return undef;
+		return "UNKNOWN";
 	}
 }
 
