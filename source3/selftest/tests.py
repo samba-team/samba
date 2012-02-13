@@ -33,18 +33,6 @@ try:
 except KeyError:
     config_h = os.path.join(samba3srcdir, "include/autoconf/config.h")
 
-f = open(config_h, 'r')
-try:
-    have_ads_support = ("HAVE_LDAP 1" in f.read())
-finally:
-    f.close()
-
-f = open(config_h, 'r')
-try:
-    have_ads_support &= ("HAVE_KRB5 1" in f.read())
-finally:
-    f.close()
-
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
                    "--target=samba3", "--basedir=$SELFTEST_TMPDIR",
                    '--option="torture:winbindd_netbios_name=$SERVER"',
@@ -283,48 +271,46 @@ for s in signseal_options:
             plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s] " % (a, s, e), "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
                                                              "none", options, configuration])
 
-    if have_ads_support:
-        # We should try more combinations in future, but this is all
-        # the pre-calculated credentials cache supports at the moment
-        e = ""
-        a = ""
+    # We should try more combinations in future, but this is all
+    # the pre-calculated credentials cache supports at the moment
+    e = ""
+    a = ""
+    binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
+    options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
+    plansmbtorturetestsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s] ' % (a, s, e))
+
+    options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
+    plansmbtorturetestsuite(test, "ktest", options, 'krb5 ncacn_np with [%s%s%s] ' % (a, s, e))
+
+    auth_options2 = ["krb5", "spnego,krb5"]
+    for a in auth_options2:
         binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
-        options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
-        plansmbtorturetestsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s] ' % (a, s, e))
 
-        options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
-        plansmbtorturetestsuite(test, "ktest", options, 'krb5 ncacn_np with [%s%s%s] ' % (a, s, e))
-
-        auth_options2 = ["krb5", "spnego,krb5"]
-        for a in auth_options2:
-            binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
-
-            plantestsuite("samba3.blackbox.rpcclient krb5 ncacn_np with [%s%s%s] " % (a, s, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
+        plantestsuite("samba3.blackbox.rpcclient krb5 ncacn_np with [%s%s%s] " % (a, s, e), "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
                                                                                                                               "$PREFIX/ktest/krb5_ccache-3", binding_string, "-k", configuration])
 
 
 options_list = ["", "-e"]
 for options in options_list:
-    if have_ads_support:
-        plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local", 
-                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
-                       "$PREFIX/ktest/krb5_ccache-2", 
-                       binpath('smbclient3'), "$SERVER", options, configuration])
+    plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local", 
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
+                   "$PREFIX/ktest/krb5_ccache-2", 
+                   binpath('smbclient3'), "$SERVER", options, configuration])
 
-        plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
-                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
-                       "$PREFIX/ktest/krb5_ccache-2",
-                       binpath('smbclient3'), "$SERVER", options, configuration])
+    plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
+                   "$PREFIX/ktest/krb5_ccache-2",
+                   binpath('smbclient3'), "$SERVER", options, configuration])
 
-        plantestsuite("samba3.blackbox.smbclient_large_file %s" % options, "ktest:local",
-                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
-                       "$PREFIX/ktest/krb5_ccache-3",
-                       binpath('smbclient3'), "$SERVER", "$PREFIX", options, "-k " + configuration])
+    plantestsuite("samba3.blackbox.smbclient_large_file %s" % options, "ktest:local",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
+                   "$PREFIX/ktest/krb5_ccache-3",
+                   binpath('smbclient3'), "$SERVER", "$PREFIX", options, "-k " + configuration])
 
-        plantestsuite("samba3.blackbox.smbclient_posix_large %s krb5" % options, "ktest:local",
-                      [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
-                       "$PREFIX/ktest/krb5_ccache-3",
-                       binpath('smbclient3'), "$SERVER", "$PREFIX", options, "-k " + configuration])
+    plantestsuite("samba3.blackbox.smbclient_posix_large %s krb5" % options, "ktest:local",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
+                   "$PREFIX/ktest/krb5_ccache-3",
+                   binpath('smbclient3'), "$SERVER", "$PREFIX", options, "-k " + configuration])
 
     plantestsuite("samba3.blackbox.smbclient_posix_large %s NTLM" % options, "s3dc:local",
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),

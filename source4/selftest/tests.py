@@ -70,13 +70,6 @@ try:
 except KeyError:
     config_h = os.path.join(samba4bindir, "default/include/config.h")
 
-f = open(config_h, 'r')
-try:
-    # The other parts of the HAVE_ADS test are always supplied by the top level build
-    have_ads_support = ("HAVE_LDAP 1" in f.read())
-finally:
-    f.close()
-
 # see if we support ldaps
 f = open(config_h, 'r')
 try:
@@ -139,12 +132,11 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
 
 #Plugin S4 DC tests (confirms named pipe auth forwarding).  This can be expanded once kerberos is supported in the plugin DC
 #
-if have_ads_support:
-    for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
-        for t in ncacn_np_tests:
-            env = "plugin_s4_dc"
-            transport = "ncacn_np"
-            plansmbtorturetestsuite(t, env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '-k', 'no'], "samba4.%s with %s" % (t, bindoptions))
+for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
+    for t in ncacn_np_tests:
+        env = "plugin_s4_dc"
+        transport = "ncacn_np"
+        plansmbtorturetestsuite(t, env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '-k', 'no'], "samba4.%s with %s" % (t, bindoptions))
 
 for bindoptions in [""] + validate_list + ["bigendian"]:
     for t in auto_rpc_tests:
@@ -361,11 +353,10 @@ for mech in [
     signoptions = "%s --signing=off" % mech
     name = "smb.signing disabled on with %s" % signoptions
     plansmbtorturetestsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
-    if have_ads_support:
-        plansmbtorturetestsuite('base.xcopy', "s3member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
-        plansmbtorturetestsuite('base.xcopy', "plugin_s4_dc", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$USERNAME%$PASSWORD'], "samba4.%s" % name)
-        plansmbtorturetestsuite('base.xcopy', "plugin_s4_dc",
-                               ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s administrator" % name)
+    plansmbtorturetestsuite('base.xcopy', "s3member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s domain-creds" % name)
+    plansmbtorturetestsuite('base.xcopy', "plugin_s4_dc", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$USERNAME%$PASSWORD'], "samba4.%s" % name)
+    plansmbtorturetestsuite('base.xcopy', "plugin_s4_dc",
+                            ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$DC_USERNAME%$DC_PASSWORD'], "samba4.%s administrator" % name)
 
 plantestsuite("samba4.blackbox.bogusdomain", "s3member", ["testprogs/blackbox/bogus.sh", "$NETBIOSNAME", "xcopy_share", '$DC_USERNAME', '$DC_PASSWORD'], allow_empty_output=True)
 for mech in [
