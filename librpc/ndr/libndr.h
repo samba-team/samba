@@ -407,6 +407,7 @@ struct sockaddr_storage;
  Map an NT error code from a NDR error code.
 *********************************************************************/
 NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err);
+int ndr_map_error2errno(enum ndr_err_code ndr_err);
 const char *ndr_map_error2string(enum ndr_err_code ndr_err);
 #define ndr_errstr ndr_map_error2string
 

@@ -1339,6 +1339,31 @@ _PUBLIC_ NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err)
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
+_PUBLIC_ int ndr_map_error2errno(enum ndr_err_code ndr_err)
+{
+	switch (ndr_err) {
+	case NDR_ERR_SUCCESS:
+		return 0;
+	case NDR_ERR_BUFSIZE:
+		return ENOSPC;
+	case NDR_ERR_TOKEN:
+		return EINVAL;
+	case NDR_ERR_ALLOC:
+		return ENOMEM;
+	case NDR_ERR_ARRAY_SIZE:
+		return EMSGSIZE;
+	case NDR_ERR_INVALID_POINTER:
+		return EINVAL;
+	case NDR_ERR_UNREAD_BYTES:
+		return EOVERFLOW;
+	default:
+		break;
+	}
+
+	/* we should map all error codes to different status codes */
+	return EINVAL;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_timespec(struct ndr_push *ndr,
 					     int ndr_flags,
 					     const struct timespec *t)
