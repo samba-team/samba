@@ -128,10 +128,10 @@ tests=["--ping", "--separator",
        "--online-status --domain=$DOMAIN",
        #Didn't pass yet# "--domain-users",
        "--domain-groups",
-       "--name-to-sid=$USERNAME",
-       "--name-to-sid=$DOMAIN\\\\$USERNAME",
+       "--name-to-sid=$DC_USERNAME",
+       "--name-to-sid=$DOMAIN\\\\$DC_USERNAME",
      #Didn't pass yet# "--user-info=$USERNAME",
-       "--user-groups=$DOMAIN\\\\$USERNAME",
+       "--user-groups=$DOMAIN\\\\$DC_USERNAME",
        "--allocate-uid",
        "--allocate-gid"]
 
