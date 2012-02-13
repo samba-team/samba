@@ -6257,6 +6257,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 	WERROR result = WERR_OK;
 	struct dcerpc_binding_handle *b;
 	TALLOC_CTX *tmp_ctx;
+	bool ok;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
@@ -6271,15 +6272,26 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (force_update || !strequal(printer->drivername, old_printer->drivername)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->drivername);
-		winreg_set_printer_dataex(tmp_ctx, b,
+	if (printer->drivername != NULL &&
+	    (force_update ||
+	     !strequal(printer->drivername, old_printer->drivername))) {
+		ok = push_reg_sz(tmp_ctx, &buffer, printer->drivername);
+		if (!ok) {
+			DEBUG(0, ("%s data corrupted\n", SPOOL_REG_DRIVERNAME));
+			result = WERR_INVALID_DATA;
+			goto done;
+		}
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_DRIVERNAME,
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_DRIVERNAME));
+			goto done;
+		}
 
 		if (!force_update) {
 			DEBUG(10,("update_printer: changing driver [%s]!  Sending event!\n",
@@ -6291,15 +6303,26 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (force_update || !strequal(printer->comment, old_printer->comment)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->comment);
-		winreg_set_printer_dataex(tmp_ctx, b,
+	if (printer->comment != NULL &&
+	    (force_update ||
+	     !strequal(printer->comment, old_printer->comment))) {
+		ok = push_reg_sz(tmp_ctx, &buffer, printer->comment);
+		if (!ok) {
+			DEBUG(0, ("comment data corrupted\n"));
+			result = WERR_INVALID_DATA;
+			goto done;
+		}
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_DESCRIPTION,
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_DESCRIPTION));
+			goto done;
+		}
 
 		if (!force_update) {
 			notify_printer_comment(server_event_context(), msg_ctx,
@@ -6308,15 +6331,26 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (force_update || !strequal(printer->sharename, old_printer->sharename)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->sharename);
-		winreg_set_printer_dataex(tmp_ctx, b,
+	if (printer->sharename != NULL &&
+	    (force_update ||
+	     !strequal(printer->sharename, old_printer->sharename))) {
+		ok = push_reg_sz(tmp_ctx, &buffer, printer->sharename);
+		if (!ok) {
+			DEBUG(0, ("sharename data corrupted\n"));
+			result = WERR_INVALID_DATA;
+			goto done;
+		}
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTSHARENAME,
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PRINTSHARENAME));
+			goto done;
+		}
 
 		if (!force_update) {
 			notify_printer_sharename(server_event_context(),
@@ -6326,7 +6360,9 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (force_update || !strequal(printer->printername, old_printer->printername)) {
+	if (printer->printername != NULL &&
+	    (force_update ||
+	     !strequal(printer->printername, old_printer->printername))) {
 		const char *p;
 
 		p = strrchr(printer->printername, '\\' );
@@ -6336,14 +6372,23 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 			p = printer->printername;
 		}
 
-		push_reg_sz(tmp_ctx, &buffer, p);
-		winreg_set_printer_dataex(tmp_ctx, b,
+		ok = push_reg_sz(tmp_ctx, &buffer, p);
+		if (!ok) {
+			DEBUG(0, ("printername data corrupted\n"));
+			result = WERR_INVALID_DATA;
+			goto done;
+		}
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTERNAME,
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PRINTSHARENAME));
+			goto done;
+		}
 
 		if (!force_update) {
 			notify_printer_printername(server_event_context(),
@@ -6351,15 +6396,26 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (force_update || !strequal(printer->portname, old_printer->portname)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->portname);
-		winreg_set_printer_dataex(tmp_ctx, b,
+	if (printer->portname != NULL &&
+	    (force_update ||
+	     !strequal(printer->portname, old_printer->portname))) {
+		ok = push_reg_sz(tmp_ctx, &buffer, printer->portname);
+		if (!ok) {
+			DEBUG(0, ("portname data corrupted\n"));
+			result = WERR_INVALID_DATA;
+			goto done;
+		}
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PORTNAME,
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PORTNAME));
+			goto done;
+		}
 
 		if (!force_update) {
 			notify_printer_port(server_event_context(),
@@ -6368,15 +6424,26 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (force_update || !strequal(printer->location, old_printer->location)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->location);
-		winreg_set_printer_dataex(tmp_ctx, b,
+	if (printer->location != NULL &&
+	    (force_update ||
+	     !strequal(printer->location, old_printer->location))) {
+		ok = push_reg_sz(tmp_ctx, &buffer, printer->location);
+		if (!ok) {
+			DEBUG(0, ("location data corrupted\n"));
+			result = WERR_INVALID_DATA;
+			goto done;
+		}
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_LOCATION,
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_LOCATION));
+			goto done;
+		}
 
 		if (!force_update) {
 			notify_printer_location(server_event_context(),
@@ -6386,15 +6453,26 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (force_update || !strequal(printer->sepfile, old_printer->sepfile)) {
-		push_reg_sz(tmp_ctx, &buffer, printer->sepfile);
-		winreg_set_printer_dataex(tmp_ctx, b,
+	if (printer->sepfile != NULL &&
+	    (force_update ||
+	     !strequal(printer->sepfile, old_printer->sepfile))) {
+		ok = push_reg_sz(tmp_ctx, &buffer, printer->sepfile);
+		if (!ok) {
+			DEBUG(0, ("sepfile data corrupted\n"));
+			result = WERR_INVALID_DATA;
+			goto done;
+		}
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTSEPARATORFILE,
 					  REG_SZ,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PRINTSEPARATORFILE));
+			goto done;
+		}
 
 		if (!force_update) {
 			notify_printer_sepfile(server_event_context(),
@@ -6404,53 +6482,73 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (force_update || printer->starttime != old_printer->starttime) {
+	if (printer->starttime != 0 &&
+	    (force_update ||
+	     printer->starttime != old_printer->starttime)) {
 		buffer = data_blob_talloc(tmp_ctx, NULL, 4);
 		SIVAL(buffer.data, 0, printer->starttime);
-		winreg_set_printer_dataex(tmp_ctx, b,
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTSTARTTIME,
 					  REG_DWORD,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PRINTSTARTTIME));
+			goto done;
+		}
 	}
 
-	if (force_update || printer->untiltime != old_printer->untiltime) {
+	if (printer->untiltime != 0 &&
+	    (force_update ||
+	     printer->untiltime != old_printer->untiltime)) {
 		buffer = data_blob_talloc(tmp_ctx, NULL, 4);
 		SIVAL(buffer.data, 0, printer->untiltime);
-		winreg_set_printer_dataex(tmp_ctx, b,
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTENDTIME,
 					  REG_DWORD,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PRINTENDTIME));
+			goto done;
+		}
 	}
 
 	if (force_update || printer->priority != old_printer->priority) {
 		buffer = data_blob_talloc(tmp_ctx, NULL, 4);
 		SIVAL(buffer.data, 0, printer->priority);
-		winreg_set_printer_dataex(tmp_ctx, b,
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRIORITY,
 					  REG_DWORD,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PRINTENDTIME));
+			goto done;
+		}
 	}
 
 	if (force_update || printer->attributes != old_printer->attributes) {
 		buffer = data_blob_talloc(tmp_ctx, NULL, 4);
 		SIVAL(buffer.data, 0, (printer->attributes &
 				       PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS));
-		winreg_set_printer_dataex(tmp_ctx, b,
+		result = winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
 					  SPOOL_REG_PRINTKEEPPRINTEDJOBS,
 					  REG_DWORD,
 					  buffer.data,
 					  buffer.length);
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(0, ("Failed to set %s\n", SPOOL_REG_PRINTENDTIME));
+			goto done;
+		}
 
 		switch (printer->attributes & 0x3) {
 			case 0:
@@ -6465,7 +6563,12 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 			default:
 				spooling = "unknown";
 		}
-		push_reg_sz(tmp_ctx, &buffer, spooling);
+		ok = push_reg_sz(tmp_ctx, &buffer, spooling);
+		if (!ok) {
+			DEBUG(0, ("printSpooling data corrupted\n"));
+			result = WERR_INVALID_DATA;
+			goto done;
+		}
 		winreg_set_printer_dataex(tmp_ctx, b,
 					  printer->sharename,
 					  SPOOL_DSSPOOLER_KEY,
@@ -6475,14 +6578,23 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 					  buffer.length);
 	}
 
-	push_reg_sz(tmp_ctx, &buffer, lp_netbios_name());
-	winreg_set_printer_dataex(tmp_ctx, b,
+	ok = push_reg_sz(tmp_ctx, &buffer, lp_netbios_name());
+	if (!ok) {
+		DEBUG(0, ("shortServerName data corrupted\n"));
+		result = WERR_INVALID_DATA;
+		goto done;
+	}
+	result = winreg_set_printer_dataex(tmp_ctx, b,
 				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
 				  SPOOL_REG_SHORTSERVERNAME,
 				  REG_SZ,
 				  buffer.data,
 				  buffer.length);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("Failed to set %s\n", SPOOL_REG_SHORTSERVERNAME));
+		goto done;
+	}
 
 	dnsdomname = get_mydnsfullname();
 	if (dnsdomname != NULL && dnsdomname[0] != '\0') {
@@ -6495,25 +6607,43 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	push_reg_sz(tmp_ctx, &buffer, longname);
-	winreg_set_printer_dataex(tmp_ctx, b,
-				  printer->sharename,
-				  SPOOL_DSSPOOLER_KEY,
-				  SPOOL_REG_SERVERNAME,
-				  REG_SZ,
-				  buffer.data,
-				  buffer.length);
+	ok = push_reg_sz(tmp_ctx, &buffer, longname);
+	if (!ok) {
+		DEBUG(0, ("longname data corrupted\n"));
+		result = WERR_INVALID_DATA;
+		goto done;
+	}
+	result = winreg_set_printer_dataex(tmp_ctx, b,
+					   printer->sharename,
+					   SPOOL_DSSPOOLER_KEY,
+					   SPOOL_REG_SERVERNAME,
+					   REG_SZ,
+					   buffer.data,
+					   buffer.length);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("Failed to set %s\n", SPOOL_REG_SERVERNAME));
+		goto done;
+	}
 
 	uncname = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
 				  lp_netbios_name(), printer->sharename);
-	push_reg_sz(tmp_ctx, &buffer, uncname);
-	winreg_set_printer_dataex(tmp_ctx, b,
+	ok = push_reg_sz(tmp_ctx, &buffer, uncname);
+	if (!ok) {
+		DEBUG(0, ("uncName data corrupted\n"));
+		result = WERR_INVALID_DATA;
+		goto done;
+	}
+	result = winreg_set_printer_dataex(tmp_ctx, b,
 				  printer->sharename,
 				  SPOOL_DSSPOOLER_KEY,
 				  SPOOL_REG_UNCNAME,
 				  REG_SZ,
 				  buffer.data,
 				  buffer.length);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("Failed to set %s\n", SPOOL_REG_UNCNAME));
+		goto done;
+	}
 
 done:
 	talloc_free(tmp_ctx);
