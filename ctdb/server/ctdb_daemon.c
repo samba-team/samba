@@ -288,6 +288,10 @@ static void daemon_request_message_from_client(struct ctdb_client *client,
 	TDB_DATA data;
 	int res;
 
+	if (c->hdr.destnode == CTDB_CURRENT_NODE) {
+		c->hdr.destnode = ctdb_get_pnn(client->ctdb);
+	}
+
 	/* maybe the message is for another client on this node */
 	if (ctdb_get_pnn(client->ctdb)==c->hdr.destnode) {
 		ctdb_request_message(client->ctdb, (struct ctdb_req_header *)c);
