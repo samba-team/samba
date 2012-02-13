@@ -79,6 +79,7 @@ int main(int argc, const char *argv[])
 {
 	struct ctdb_connection *ctdb;
 	struct ctdb_db *ctdb_db;
+	const char *socket_name;
 
 	TDB_DATA key;
 
@@ -110,8 +111,11 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	ctdb = ctdb_connect("/tmp/ctdb.socket",
-			    ctdb_log_file, stderr);
+	socket_name = getenv("CTDB_SOCKET");
+	if (socket_name == NULL) {
+		socket_name = "/tmp/ctdb.socket";
+	}
+	ctdb = ctdb_connect(socket_name, ctdb_log_file, stderr);
 
 	if (!ctdb) {
 		fprintf(stderr, "Connecting to /tmp/ctdb.socket");
