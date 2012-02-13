@@ -1,3 +1,5 @@
+#ifndef TDB_PRIVATE_H
+#define TDB_PRIVATE_H
  /* 
    Unix SMB/CIFS implementation.
 
@@ -280,3 +282,4 @@ void tdb_header_hash(struct tdb_context *tdb,
 		     uint32_t *magic1_hash, uint32_t *magic2_hash);
 unsigned int tdb_old_hash(TDB_DATA *key);
 size_t tdb_dead_space(struct tdb_context *tdb, tdb_off_t off);
+#endif /* TDB_PRIVATE_H */
