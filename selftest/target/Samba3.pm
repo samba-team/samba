@@ -897,7 +897,7 @@ sub provision($$$$$$$)
 	pid directory = $piddir
 	lock directory = $lockdir
 	log file = $logdir/log.\%m
-	log level = 0
+	log level = 1
 	debug pid = yes
         max log size = 0
 
