@@ -152,6 +152,7 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 	const char *sam_name;
 	char *filename, *dirname;
 	int open_flags;
+	struct stat statbuf;
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
@@ -193,6 +194,11 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 
 		mkdir(dirname, 0700);
 		talloc_free(dirname);
+	} else {
+		if (stat(filename, &statbuf) != 0) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	lp_ctx = talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"),
