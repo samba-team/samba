@@ -123,26 +123,26 @@ tests=["--ping", "--separator",
        "--allocate-uid",
        "--allocate-gid"]
 
-for t in tests:
-    plantestsuite("samba3.wbinfo_s3.(s3dc:local).%s" % t, "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
-    plantestsuite("samba3.wbinfo_s3.(member:local).%s" % t, "member:local", [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
-
-plantestsuite(
-    "samba3.wbinfo_sids2xids.(member:local)", "member:local",
-    [os.path.join(samba3srcdir, "script/tests/test_wbinfo_sids2xids.sh")])
-
-plantestsuite("samba3.ntlm_auth.(s3dc:local)", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, binpath('ntlm_auth3'), configuration])
-
-for env in ["s3dc", "member"]:
+for env in ["s3dc", "member", "s3member"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', binpath('smbclient3'), configuration])
+
+    for t in tests:
+        plantestsuite("samba3.wbinfo_s3.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
+
+    plantestsuite(
+        "samba3.wbinfo_sids2xids.(%s:local)" % env, "%s:local" % env,
+        [os.path.join(samba3srcdir, "script/tests/test_wbinfo_sids2xids.sh")])
+        
     plantestsuite(
         "samba3.ntlm_auth.diagnostics(%s:local)" % env, "%s:local" % env,
         [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_diagnostics.sh"), binpath('ntlm_auth3'), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
 
+plantestsuite("samba3.ntlm_auth.(s3dc:local)", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, binpath('ntlm_auth3'), configuration])
+
 for env in ["secserver"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) domain creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN\\\\$DC_USERNAME', '$DC_PASSWORD', binpath('smbclient3'), configuration + " --option=clientntlmv2auth=no"])
 
-for env in ["member"]:
+for env in ["member", "s3member"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$SERVER\\\\$USERNAME', '$PASSWORD', binpath('smbclient3'), configuration])
 
 for env in ["maptoguest", "secshare", "secserver"]:
@@ -155,13 +155,13 @@ plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) bad username" % env, en
 for env in ["s3dc"]:
     plantestsuite("samba3.blackbox.smbclient_s3.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', binpath('smbclient3'), binpath('wbinfo'), configuration])
 
-for env in ["member"]:
+for env in ["member", "s3member"]:
     plantestsuite("samba3.blackbox.smbclient_s3.plain (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$SERVER', '$SERVER\\\\$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', binpath('smbclient3'), binpath('wbinfo'), configuration])
 
 for env in ["s3dc"]:
     plantestsuite("samba3.blackbox.smbclient_s3.sign (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', binpath('smbclient3'), binpath('wbinfo'), configuration, "--signing=required"])
 
-for env in ["member"]:
+for env in ["member", "s3member"]:
     plantestsuite("samba3.blackbox.smbclient_s3.sign (%s) member creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$SERVER', '$SERVER\\\\$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', binpath('smbclient3'), binpath('wbinfo'), configuration, "--signing=required"])
 
 # encrypted
