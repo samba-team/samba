@@ -26,7 +26,7 @@
 #include <ctype.h>
 
 
-#ifdef HAVE_GSSAPI_SUPPORT
+#ifdef HAVE_KRB5
 
 /*********************************************************************
 *********************************************************************/
@@ -331,4 +331,4 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 	return err;
 }
 
-#endif	/* HAVE_GSSAPI_SUPPORT */
+#endif	/* HAVE_KRB5 */

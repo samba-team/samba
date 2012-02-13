@@ -27,6 +27,7 @@
 
 #include "../replace/replace.h"
 #include "system/network.h"
+#include "system/kerberos.h"
 
 /* make sure we have included the correct config.h */
 #ifndef NO_CONFIG_H /* for some tests */
@@ -75,22 +76,6 @@
 #ifndef uint32
 #define uint32 uint32_t
 #endif
-#endif
-
-#ifdef HAVE_KRB5_H
-#include <krb5.h>
-#endif
-
-#if HAVE_GSSAPI_GSSAPI_H
-#include <gssapi/gssapi.h>
-#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
-#include <gssapi/gssapi_generic.h>
-#elif HAVE_GSSAPI_H
-#include <gssapi.h>
-#endif
-
-#if defined(HAVE_GSSAPI_H) || defined(HAVE_GSSAPI_GSSAPI_H) || defined(HAVE_GSSAPI_GSSAPI_GENERIC_H)
-#define HAVE_GSSAPI_SUPPORT    1
 #endif
 
 #include <talloc.h>
