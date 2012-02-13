@@ -11,7 +11,7 @@ install:
 uninstall:
 	$(WAF) uninstall
 
-test:
+test: FORCE
 	$(WAF) test $(TEST_OPTIONS)
 
 testenv:
