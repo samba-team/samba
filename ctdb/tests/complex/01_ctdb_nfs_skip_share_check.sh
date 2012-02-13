@@ -99,7 +99,7 @@ try_command_on_node -v $test_node "mkdir -p \"$rc_local_d\""
 
 f="$rc_local_d/fake-exportfs"
 echo "Installing \"$f\"..."
-try_command_on_node $test_node "echo \"function exportfs () { echo $foo_dir 127.0.0.1/32 ; }\" >\"$f\" ; chmod +x \"$f\""
+try_command_on_node $test_node "echo \"function exportfs () { echo \\\"$foo_dir 127.0.0.1/32(rw)\\\" ; }\" >\"$f\" ; chmod +x \"$f\""
 
 n="$rc_local_d/nfs-skip-share-check"
 n_contents='loadconfig() {
