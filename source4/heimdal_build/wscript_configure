@@ -62,7 +62,6 @@ conf.CHECK_DECLS('_res', headers='netinet/in.h arpa/nameser.h resolv.h')
 conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True, headers='pty.h util.h libutil.h')
 
 conf.DEFINE('HAVE_KRB5',1)
-conf.DEFINE('HAVE_GSSAPI',1)
 
 conf.CHECK_FUNCS('dirfd', headers='dirent.h')
 conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')

@@ -4488,9 +4488,6 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$use_ads" = x"yes"; then
     AC_DEFINE(WITH_ADS,1,[Whether to include Active Directory support])
     AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
-    if test x"$have_gssapi" = x"yes"; then
-      AC_DEFINE(HAVE_GSSAPI,1,[Whether GSSAPI is available])
-    fi
   else
     if test x"$with_ads_support" = x"yes"; then
 	AC_MSG_ERROR(krb5 libs don't have all features required for Active Directory support)

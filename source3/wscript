@@ -815,8 +815,6 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         if use_ads:
             conf.DEFINE('WITH_ADS', '1')
             conf.DEFINE('HAVE_KRB5', '1')
-            if have_gssapi:
-                conf.DEFINE('HAVE_GSSAPI', '1')
             if conf.CONFIG_SET('HAVE_LDAP'):
                 conf.env['HAVE_ADS'] = '1'
         else:
@@ -995,7 +993,7 @@ int i; i = PAM_RADIO_TYPE;
         conf.CHECK_FUNCS_IN('uuid_generate', 'uuid')
         if not conf.CONFIG_SET('HAVE_UUID_UUID_H') and not conf.CONFIG_SET('HAVE_UUID_GENERATE'):
             Logs.warn("--with-dnsupdate=yes but uuid support not sufficient")
-        elif not conf.CONFIG_SET('HAVE_GSSAPI'):
+        elif not conf.CONFIG_SET('HAVE_KRB5'):
             Logs.warn("--with-dnsupdate=yes but gssapi support not sufficient")
         else:
             conf.DEFINE('WITH_DNS_UPDATES', 1)
