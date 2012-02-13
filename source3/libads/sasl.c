@@ -268,7 +268,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	return ADS_ERROR(rc);
 }
 
-#ifdef HAVE_GSSAPI
+#ifdef HAVE_KRB5
 static ADS_STATUS ads_sasl_gssapi_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 {
 	gss_ctx_id_t context_handle = (gss_ctx_id_t)ads->ldap.wrap_private_data;
@@ -609,12 +609,12 @@ failed:
 	return status;
 }
 
-#endif /* HAVE_GSSAPI */
+#endif /* HAVE_KRB5 */
 
 #ifdef HAVE_KRB5
 struct ads_service_principal {
 	 char *string;
-#ifdef HAVE_GSSAPI
+#ifdef HAVE_KRB5
 	 gss_name_t name;
 #endif
 };
@@ -623,7 +623,7 @@ static void ads_free_service_principal(struct ads_service_principal *p)
 {
 	SAFE_FREE(p->string);
 
-#ifdef HAVE_GSSAPI
+#ifdef HAVE_KRB5
 	if (p->name) {
 		uint32 minor_status;
 		gss_release_name(&minor_status, &p->name);
@@ -706,7 +706,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 						 struct ads_service_principal *p)
 {
 	ADS_STATUS status;
-#ifdef HAVE_GSSAPI
+#ifdef HAVE_KRB5
 	gss_buffer_desc input_name;
 	/* GSS_KRB5_NT_PRINCIPAL_NAME */
 	gss_OID_desc nt_principal =
@@ -740,7 +740,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 		}
 	}
 
-#ifdef HAVE_GSSAPI
+#ifdef HAVE_KRB5
 	input_name.value = p->string;
 	input_name.length = strlen(p->string);
 
@@ -793,7 +793,7 @@ static ADS_STATUS ads_sasl_spnego_rawkrb5_bind(ADS_STRUCT *ads, const char *prin
 static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads,
 					    struct ads_service_principal *p)
 {
-#ifdef HAVE_GSSAPI
+#ifdef HAVE_KRB5
 	/*
 	 * we only use the gsskrb5 based implementation
 	 * when sasl sign or seal is requested.
@@ -919,7 +919,7 @@ failed:
 	return status;
 }
 
-#ifdef HAVE_GSSAPI
+#ifdef HAVE_KRB5
 #define MAX_GSS_PASSES 3
 
 /* this performs a SASL/gssapi bind
@@ -1155,7 +1155,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	return status;
 }
 
-#endif /* HAVE_GSSAPI */
+#endif /* HAVE_KRB5 */
 
 /* mapping between SASL mechanisms and functions */
 static struct {
@@ -1163,7 +1163,7 @@ static struct {
 	ADS_STATUS (*fn)(ADS_STRUCT *);
 } sasl_mechanisms[] = {
 	{"GSS-SPNEGO", ads_sasl_spnego_bind},
-#ifdef HAVE_GSSAPI
+#ifdef HAVE_KRB5
 	{"GSSAPI", ads_sasl_gssapi_bind}, /* doesn't work with .NET RC1. No idea why */
 #endif
 	{NULL, NULL}
