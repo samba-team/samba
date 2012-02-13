@@ -936,7 +936,7 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 		printf("Number of nodes:%d\n", (int) talloc_array_length(nodes));
 	}
 
-	if (!ctdb_getpnn(ctdb_connection, CTDB_CURRENT_NODE, &mypnn)) {
+	if (!ctdb_getpnn(ctdb_connection, options.pnn, &mypnn)) {
 		DEBUG(DEBUG_ERR, ("Unable to get PNN from local node\n"));
 		return -1;
 	}
