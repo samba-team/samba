@@ -2049,6 +2049,8 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("winreg_get_printer_dataex: Could not query value %s: %s\n",
+			  value, win_errstr(result)));
 		goto done;
 	}
 
@@ -2075,6 +2077,8 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("winreg_get_printer_dataex: Could not query value %s: %s\n",
+			  value, win_errstr(result)));
 		goto done;
 	}
 
