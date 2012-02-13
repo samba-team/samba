@@ -803,6 +803,132 @@ done:
 }
 
 /*
+ * this is a replay of how Word 2010 saves a file
+ * this should pass
+ */
+
+static bool torture_smb2_rename_msword(struct torture_context *torture,
+		struct smb2_tree *tree1)
+{
+	bool ret = true;
+	NTSTATUS status;
+	union smb_open io;
+	union smb_close cl;
+	union smb_setfileinfo sinfo;
+	union smb_fileinfo fi;
+	struct smb2_handle fh, dh;
+
+	smb2_deltree(tree1, BASEDIR);
+	smb2_util_rmdir(tree1, BASEDIR);
+
+	torture_comment(torture, "Creating base directory\n");
+
+	smb2_util_mkdir(tree1, BASEDIR);
+
+	torture_comment(torture, "Creating test file\n");
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = 0;
+	io.smb2.in.desired_access = 0x0017019f;
+	io.smb2.in.create_options = 0x60;
+	io.smb2.in.file_attributes = 0;
+	io.smb2.in.share_access = 0;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = BASEDIR "\\file.txt";
+
+	status = smb2_create(tree1, torture, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fh = io.smb2.out.file.handle;
+
+	torture_comment(torture, "Opening parent directory\n");
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = 0;
+	io.smb2.in.desired_access = 0x00100080;
+	io.smb2.in.create_options = 0x00800021;
+	io.smb2.in.file_attributes = 0;
+	io.smb2.in.share_access = 0;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = BASEDIR;
+
+	status = smb2_create(tree1, torture, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	dh = io.smb2.out.file.handle;
+
+	torture_comment(torture, "Renaming test file\n");
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = fh;
+	sinfo.rename_information.in.overwrite = 0;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name =
+		BASEDIR "\\newname.txt";
+	status = smb2_setinfo_file(tree1, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_comment(torture, "Checking for new filename\n");
+
+	ZERO_STRUCT(fi);
+	fi.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+	fi.generic.in.file.handle = fh;
+	status = smb2_getinfo_file(tree1, torture, &fi);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+
+	torture_comment(torture, "Closing test file\n");
+
+	ZERO_STRUCT(cl.smb2);
+	cl.smb2.level = RAW_CLOSE_SMB2;
+	cl.smb2.in.file.handle = fh;
+	status = smb2_close(tree1, &(cl.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(fh);
+
+	torture_comment(torture, "Closing directory\n");
+
+	ZERO_STRUCT(cl.smb2);
+	cl.smb2.level = RAW_CLOSE_SMB2;
+	cl.smb2.in.file.handle = dh;
+	status = smb2_close(tree1, &(cl.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(dh);
+
+
+done:
+
+	torture_comment(torture, "Cleaning up\n");
+
+	if (fh.data) {
+		ZERO_STRUCT(cl.smb2);
+		cl.smb2.level = RAW_CLOSE_SMB2;
+		cl.smb2.in.file.handle = fh;
+		status = smb2_close(tree1, &(cl.smb2));
+	}
+	if (dh.data) {
+		ZERO_STRUCT(cl.smb2);
+		cl.smb2.level = RAW_CLOSE_SMB2;
+		cl.smb2.in.file.handle = dh;
+		status = smb2_close(tree1, &(cl.smb2));
+	}
+
+	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
+
+
+/*
    basic testing of SMB2 rename
  */
 struct torture_suite *torture_smb2_rename_init(void)
@@ -834,6 +960,10 @@ struct torture_suite *torture_smb2_rename_init(void)
 	torture_suite_add_1smb2_test(suite,
 		"no_share_delete_no_delete_access",
 		torture_smb2_rename_no_delete_access2);
+
+	torture_suite_add_1smb2_test(suite,
+		"msword",
+		torture_smb2_rename_msword);
 
 	suite->description = talloc_strdup(suite, "smb2.rename tests");
 
