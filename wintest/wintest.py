@@ -491,8 +491,22 @@ options {
 
     def port_wait(self, hostname, port, retries=200, delay=3, wait_for_fail=False):
         '''wait for a host to come up on the network'''
-        self.retry_cmd("nc -v -z -w 1 %s %u" % (hostname, port), ['succeeded'],
-                       retries=retries, delay=delay, wait_for_fail=wait_for_fail)
+
+        while retries > 0:
+            child = self.pexpect_spawn("nc -v -z -w 1 %s %u" % (hostname, port), crlf=False, timeout=1)
+            i = child.expect(['succeeded', 'failed', pexpect.EOF, pexpect.TIMEOUT])
+            if wait_for_fail:
+                if i > 0:
+                    return
+            else:
+                if i == 0:
+                    return
+
+            time.sleep(delay)
+            retries -= 1
+            self.info("retrying (retries=%u delay=%u)" % (retries, delay))
+
+        raise RuntimeError("gave up waiting for %s:%d" % (hostname, port))
 
     def run_net_time(self, child):
         '''run net time on windows'''
