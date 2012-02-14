@@ -89,6 +89,10 @@ sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
 	
+	if (defined($self->{vars}->{$envname})) {
+	        return $self->{vars}->{$envname};
+	}
+
 	if ($envname eq "s3dc") {
 		return $self->setup_s3dc("$path/s3dc");
 	} elsif ($envname eq "secshare") {

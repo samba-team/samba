@@ -1388,6 +1388,10 @@ sub setup_env($$$)
 
 	$ENV{ENVNAME} = $envname;
 
+	if (defined($self->{vars}->{$envname})) {
+	        return $self->{vars}->{$envname};
+	}
+
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
 	} elsif ($envname eq "fl2000dc") {
