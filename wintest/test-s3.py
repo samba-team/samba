@@ -102,7 +102,7 @@ def test_smbclient(t):
 def create_shares(t):
     t.info("Adding test shares")
     t.chdir('${PREFIX}')
-    t.write_file("lib/smb.conf", '''
+    t.write_file("etc/smb.conf", '''
 [test]
        path = ${PREFIX}/test
        read only = no
@@ -122,7 +122,7 @@ def prep_join_as_member(t, vm):
     child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
     t.del_files(["var", "private"])
-    t.write_file("lib/smb.conf", '''
+    t.write_file("etc/smb.conf", '''
 [global]
 	netbios name = ${HOSTNAME}
 	log level = ${DEBUGLEVEL}
