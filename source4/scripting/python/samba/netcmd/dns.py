@@ -421,6 +421,20 @@ class NSRecord(dnsserver.DNS_RPC_RECORD):
         ns.len = len(dns_server)
         self.data = ns
 
+class MXRecord(dnsserver.DNS_RPC_RECORD):
+    def __init__(self, mail_server, preference, serial=1, ttl=900,
+                 rank=dnsp.DNS_RANK_ZONE, node_flag=0):
+        super(MXRecord, self).__init__()
+        self.wType = dnsp.DNS_TYPE_MX
+        self.dwFlags = rank | node_flag
+        self.dwSerial = serial
+        self.dwTtlSeconds = ttl
+        mx = dnsserver.DNS_RPC_RECORD_NAME_PREFERENCE()
+        mx.wPreference = preference
+        mx.nameExchange.str = mail_server
+        mx.nameExchange.len = len(mail_server)
+        self.data = mx
+
 class SOARecord(dnsserver.DNS_RPC_RECORD):
     def __init__(self, mname, rname, serial=1, refresh=900, retry=600,
                  expire=86400, minimum=3600, ttl=3600, rank=dnsp.DNS_RANK_ZONE,
