@@ -51,7 +51,7 @@ sub.communicate("")
 smb4torture_possible = (sub.returncode == 0)
 
 def plansmbtorturetestsuite(name, env, options, description=''):
-    modname = "samba3.posix_s3.%s %s" % (name, description)
+    modname = "samba3.%s %s" % (name, description)
     cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
     if smb4torture_possible:
         plantestsuite_loadlist(modname, env, cmdline)
