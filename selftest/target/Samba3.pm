@@ -421,6 +421,7 @@ sub setup_ktest($$$)
         realm = ktest.samba.example.com
 	security = ads
         username map = $prefix/lib/username.map
+        server signing = required
 ";
 
 	my $ret = $self->provision($prefix,
