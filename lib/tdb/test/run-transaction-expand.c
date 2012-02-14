@@ -1,6 +1,3 @@
-/* We need this otherwise fcntl locking fails. */
-#define _FILE_OFFSET_BITS 64
-#define _XOPEN_SOURCE 500
 #include "../common/tdb_private.h"
 
 /* Speed up the tests: setting TDB_NOSYNC removed recovery altogether. */
@@ -18,7 +15,14 @@ static inline int fake_msync(void *addr, size_t length, int flags)
 #define msync fake_msync
 #endif
 
-#include "../common/tdb_private.h"
+#ifdef HAVE_FDATASYNC
+static inline int fake_fdatasync(int fd)
+{
+	return 0;
+}
+#define fdatasync fake_fdatasync
+#endif
+
 #include "../common/io.c"
 #include "../common/tdb.c"
 #include "../common/lock.c"

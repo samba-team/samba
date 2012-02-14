@@ -81,8 +81,8 @@ int main(int argc, char *argv[])
 	ok1(tdb);
 	tdb->methods = &large_io_methods;
 
-	/* Enlarge the file (internally multiplies by 100). */
-	ok1(tdb_expand(tdb, 30000000) == 0);
+	/* Enlarge the file (internally multiplies by 2). */
+	ok1(tdb_expand(tdb, 1500000000) == 0);
 
 	/* Put an entry in, and check it. */
 	key.dsize = strlen("hi");
