@@ -952,9 +952,19 @@ class cmd_roothints(Command):
 
 
 class cmd_add_record(Command):
-    """Add a DNS record"""
+    """Add a DNS record
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <data>'
+       For each type data contents are as follows:
+         A      ipv4_address_string
+         AAAA   ipv6_address_string
+         PTR    fqdn_string
+         CNAME  fqdn_string
+         NS     fqdn_string
+         MX     "fqdn_string preference"
+         SRV    "fqdn_string port priority weight"
+    """
+
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV> <data>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
 
@@ -966,20 +976,11 @@ class cmd_add_record(Command):
 
     def run(self, server, zone, name, rtype, data, sambaopts=None, credopts=None, versionopts=None):
 
-        record_type = dns_type_flag(rtype)
-
-        if record_type == dnsp.DNS_TYPE_A:
-            rec = ARecord(data)
-        elif record_type == dnsp.DNS_TYPE_AAAA:
-            rec = AAAARecord(data)
-        elif record_type == dnsp.DNS_TYPE_PTR:
-            rec = PTRRecord(data)
-        elif record_type == dnsp.DNS_TYPE_CNAME:
-            rec = CNameRecord(data)
-        elif record_type == dnsp.DNS_TYPE_NS:
-            rec = NSRecord(data)
-        else:
+        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV'):
             raise CommandError('Adding record of type %s is not supported' % rtype)
+
+        record_type = dns_type_flag(rtype)
+        rec = data_to_dns_record(record_type, data)
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
@@ -1003,9 +1004,19 @@ class cmd_add_record(Command):
 
 
 class cmd_update_record(Command):
-    """Update a DNS record"""
+    """Update a DNS record
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <olddata> <newdata>'
+       For each type data contents are as follows:
+         A      ipv4_address_string
+         AAAA   ipv6_address_string
+         PTR    fqdn_string
+         CNAME  fqdn_string
+         NS     fqdn_string
+         MX     "fqdn_string preference"
+         SRV    "fqdn_string port priority weight"
+    """
+
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV> <olddata> <newdata>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'olddata', 'newdata' ]
 
@@ -1018,19 +1029,11 @@ class cmd_update_record(Command):
     def run(self, server, zone, name, rtype, olddata, newdata,
                 sambaopts=None, credopts=None, versionopts=None):
 
-        record_type = dns_type_flag(rtype)
-        if record_type == dnsp.DNS_TYPE_A:
-            rec = ARecord(newdata)
-        elif record_type == dnsp.DNS_TYPE_AAAA:
-            rec = AAAARecord(newdata)
-        elif record_type == dnsp.DNS_TYPE_PTR:
-            rec = PTRRecord(newdata)
-        elif record_type == dnsp.DNS_TYPE_CNAME:
-            rec = CNameRecord(newdata)
-        elif record_type == dnsp.DNS_TYPE_NS:
-            rec = NSRecord(newdata)
-        else:
+        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV'):
             raise CommandError('Updating record of type %s is not supported' % rtype)
+
+        record_type = dns_type_flag(rtype)
+        rec = data_to_dns_record(record_type, newdata)
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
@@ -1063,9 +1066,19 @@ class cmd_update_record(Command):
 
 
 class cmd_delete_record(Command):
-    """Delete a DNS record"""
+    """Delete a DNS record
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS> <data>'
+       For each type data contents are as follows:
+         A      ipv4_address_string
+         AAAA   ipv6_address_string
+         PTR    fqdn_string
+         CNAME  fqdn_string
+         NS     fqdn_string
+         MX     "fqdn_string preference"
+         SRV    "fqdn_string port priority weight"
+    """
+
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV> <data>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
 
@@ -1077,20 +1090,10 @@ class cmd_delete_record(Command):
 
     def run(self, server, zone, name, rtype, data, sambaopts=None, credopts=None, versionopts=None):
 
-        record_type = dns_type_flag(rtype)
-
-        if record_type == dnsp.DNS_TYPE_A:
-            rec = ARecord(data)
-        elif record_type == dnsp.DNS_TYPE_AAAA:
-            rec = AAAARecord(data)
-        elif record_type == dnsp.DNS_TYPE_PTR:
-            rec = PTRRecord(data)
-        elif record_type == dnsp.DNS_TYPE_CNAME:
-            rec = CNameRecord(data)
-        elif record_type == dnsp.DNS_TYPE_NS:
-            rec = NSRecord(data)
-        else:
+        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV'):
             raise CommandError('Deleting record of type %s is not supported' % rtype)
+
+        record_type = dns_type_flag(rtype)
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
