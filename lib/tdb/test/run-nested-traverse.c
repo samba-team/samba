@@ -12,7 +12,7 @@
 #include "../common/open.c"
 #include "../common/check.c"
 #include "../common/hash.c"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #undef fcntl
 #include <stdlib.h>
 #include <stdbool.h>

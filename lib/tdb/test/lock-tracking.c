@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include "../common/tdb_private.h"
 #include "lock-tracking.h"
 

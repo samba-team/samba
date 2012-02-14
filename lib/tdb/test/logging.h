@@ -1,5 +1,6 @@
 #ifndef TDB_TEST_LOGGING_H
 #define TDB_TEST_LOGGING_H
+#include "replace.h"
 #include "../include/tdb.h"
 #include <stdbool.h>
 

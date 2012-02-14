@@ -29,7 +29,7 @@ static inline int fake_msync(void *addr, size_t length, int flags)
 #include "../common/open.c"
 #include "../common/check.c"
 #include "../common/hash.c"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdlib.h>
 #include <err.h>
 #include "logging.h"

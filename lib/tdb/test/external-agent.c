@@ -11,7 +11,7 @@
 #include <string.h>
 #include <errno.h>
 #include "../common/tdb_private.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdio.h>
 #include <stdarg.h>
 

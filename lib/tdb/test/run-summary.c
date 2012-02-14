@@ -10,7 +10,7 @@
 #include "../common/check.c"
 #include "../common/hash.c"
 #include "../common/summary.c"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdlib.h>
 #include <err.h>
 

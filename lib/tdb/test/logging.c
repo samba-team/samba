@@ -1,5 +1,5 @@
 #include "logging.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
