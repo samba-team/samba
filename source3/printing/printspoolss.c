@@ -189,7 +189,6 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	}
 
 	fsp->file_id = vfs_file_id_from_sbuf(fsp->conn, &fsp->fsp_name->st);
-	fsp->mode = fsp->fsp_name->st.st_ex_mode;
 	fsp->fh->fd = fd;
 
 	fsp->vuid = current_vuid;

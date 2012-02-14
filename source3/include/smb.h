@@ -233,7 +233,6 @@ typedef struct files_struct {
 	unsigned int num_smb_operations;
 	struct file_id file_id;
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
-	mode_t mode;
 	uint16 file_pid;
 	uint16 vuid;
 	write_cache *wcp;
