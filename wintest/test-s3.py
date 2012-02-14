@@ -43,7 +43,7 @@ def start_s3(t):
 def test_wbinfo(t):
     t.info('Testing wbinfo')
     t.chdir('${PREFIX}')
-    t.cmd_contains("bin/wbinfo --version", ["Version 3."])
+    t.cmd_contains("bin/wbinfo --version", ["Version 4."])
     t.cmd_contains("bin/wbinfo -p", ["Ping to winbindd succeeded"])
     t.retry_cmd("bin/wbinfo --online-status",
                 ["BUILTIN : online",
@@ -74,8 +74,8 @@ def test_wbinfo(t):
 def test_smbclient(t):
     t.info('Testing smbclient')
     t.chdir('${PREFIX}')
-    t.cmd_contains("bin/smbclient --version", ["Version 3."])
-    t.cmd_contains('bin/smbclient -L ${INTERFACE_IP} -U%', ["Domain=[${WIN_DOMAIN}]", "test", "IPC$", "Samba 3."],
+    t.cmd_contains("bin/smbclient --version", ["Version 4."])
+    t.cmd_contains('bin/smbclient -L ${INTERFACE_IP} -U%', ["Domain=[${WIN_DOMAIN}]", "test", "IPC$", "Samba 4."],
                    casefold=True)
     child = t.pexpect_spawn('bin/smbclient //${HOSTNAME}.${WIN_REALM}/test -Uroot@${WIN_REALM}%${PASSWORD2}')
     child.expect("smb:")
@@ -182,7 +182,7 @@ def test_join_as_member(t, vm):
 def test_s3(t):
     '''basic s3 testing'''
 
-    t.setvar("SAMBA_VERSION", "Version 3")
+    t.setvar("SAMBA_VERSION", "Version 4")
     t.check_prerequesites()
     set_libpath(t)
 
