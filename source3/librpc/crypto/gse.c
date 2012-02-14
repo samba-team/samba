@@ -28,6 +28,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "../librpc/gen_ndr/dcerpc.h"
+#include "lib/util/asn1.h"
 
 #if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
 
@@ -76,8 +77,6 @@ struct gse_context {
 	OM_uint32 gss_want_flags, gss_got_flags;
 
 	gss_cred_id_t delegated_cred_handle;
-
-	gss_krb5_lucid_context_v1_t *lucid;
 
 	/* gensec_gse only */
 	krb5_context k5ctx;
@@ -147,11 +146,6 @@ static int gse_context_destructor(void *ptr)
 	if (gse_ctx->delegated_cred_handle) {
 		gss_maj = gss_release_cred(&gss_min,
 					   &gse_ctx->delegated_cred_handle);
-	}
-
-	if (gse_ctx->lucid) {
-		gss_krb5_free_lucid_sec_context(&gss_min, gse_ctx->lucid);
-		gse_ctx->lucid = NULL;
 	}
 
 	/* MIT and Heimdal differ as to if you can call
@@ -628,42 +622,13 @@ done:
 	return errstr;
 }
 
-static NTSTATUS gse_init_lucid(struct gse_context *gse_ctx)
-{
-	OM_uint32 maj_stat, min_stat;
-	void *ptr = NULL;
-
-	if (gse_ctx->lucid) {
-		return NT_STATUS_OK;
-	}
-
-	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
-						     &gse_ctx->gssapi_context,
-						     1, &ptr);
-	if (maj_stat != GSS_S_COMPLETE) {
-		DEBUG(0,("gse_init_lucid: %s\n",
-			gse_errstr(talloc_tos(), maj_stat, min_stat)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	gse_ctx->lucid = (gss_krb5_lucid_context_v1_t *)ptr;
-
-	if (gse_ctx->lucid->version != 1) {
-		DEBUG(0,("gse_init_lucid: lucid version[%d] != 1\n",
-			gse_ctx->lucid->version));
-		gss_krb5_free_lucid_sec_context(&min_stat, gse_ctx->lucid);
-		gse_ctx->lucid = NULL;
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
-				     struct gse_context *gse_ctx)
+static NTSTATUS gse_get_session_key(TALLOC_CTX *mem_ctx,
+				    struct gse_context *gse_ctx, 
+				    DATA_BLOB *session_key, 
+				    uint32_t *keytype)
 {
 	OM_uint32 gss_min, gss_maj;
 	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
-	DATA_BLOB ret;
 
 	gss_maj = gss_inquire_sec_context_by_oid(
 				&gss_min, gse_ctx->gssapi_context,
@@ -671,7 +636,7 @@ static DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 	if (gss_maj) {
 		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
 			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		return data_blob_null;
+		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
 	if ((set == GSS_C_NO_BUFFER_SET) ||
@@ -686,26 +651,58 @@ static DATA_BLOB gse_get_session_key(TALLOC_CTX *mem_ctx,
 					     &subkey);
 		if (gss_maj != 0) {
 			DEBUG(1, ("NO session key for this mech\n"));
-			return data_blob_null;
+			return NT_STATUS_NO_USER_SESSION_KEY;
 		}
-		ret = data_blob_talloc(mem_ctx,
-				       KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
+		if (session_key) {
+			*session_key = data_blob_talloc(mem_ctx,
+							KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
+		}
+		if (keytype) {
+			*keytype = KRB5_KEY_TYPE(subkey);
+		}
 		krb5_free_keyblock(NULL /* should be krb5_context */, subkey);
-		return ret;
+		return NT_STATUS_OK;
 #else
 		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
 			  "OID for data in results:\n"));
 		dump_data(1, (uint8_t *)set->elements[1].value,
 			     set->elements[1].length);
-		return data_blob_null;
+		return NT_STATUS_NO_USER_SESSION_KEY;
 #endif
 	}
 
-	ret = data_blob_talloc(mem_ctx, set->elements[0].value,
-					set->elements[0].length);
+	if (session_key) {
+		*session_key = data_blob_talloc(mem_ctx, set->elements[0].value,
+						set->elements[0].length);
+	}
 
+	if (keytype) {
+		char *oid;
+		char *p, *q = NULL;
+		if (!ber_read_OID_String(talloc_tos(), 
+					 data_blob_const(set->elements[0].value,
+							 set->elements[0].length), &oid)) {
+			TALLOC_FREE(oid);
+			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		p = strrchr(oid, '.');
+		if (!p) {
+			TALLOC_FREE(oid);
+			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			return NT_STATUS_INVALID_PARAMETER;
+		} else {
+			p++;
+			*keytype = strtoul(p, &q, 10);
+			if (q == NULL || *q != '\0') {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		TALLOC_FREE(oid);
+	}
+	
 	gss_maj = gss_release_buffer_set(&gss_min, &set);
-	return ret;
+	return NT_STATUS_OK;
 }
 
 static size_t gse_get_signature_length(struct gse_context *gse_ctx,
@@ -1178,21 +1175,33 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_NEW_SPNEGO) {
 		NTSTATUS status;
+		uint32_t keytype;
 
 		if (!(gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG)) {
 			return false;
 		}
 
-		status = gse_init_lucid(gse_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+		status = gse_get_session_key(talloc_tos(), 
+					   gse_ctx, NULL, &keytype);
+		/* 
+		 * We should do a proper sig on the mechListMic unless
+		 * we know we have to be backwards compatible with
+		 * earlier windows versions.  
+		 * 
+		 * Negotiating a non-krb5
+		 * mech for example should be regarded as having
+		 * NEW_SPNEGO
+		 */
+		if (NT_STATUS_IS_OK(status)) {
+			switch (keytype) {
+			case ENCTYPE_DES_CBC_CRC:
+			case ENCTYPE_DES_CBC_MD5:
+			case ENCTYPE_ARCFOUR_HMAC:
+			case ENCTYPE_DES3_CBC_SHA1:
+				return false;
+			}
 		}
-
-		if (gse_ctx->lucid->protocol == 1) {
-			return true;
-		}
-
-		return false;
+		return true;
 	}
 	/* We can always do async (rather than strict request/reply) packets.  */
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
@@ -1209,20 +1218,13 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
  */
 static NTSTATUS gensec_gse_session_key(struct gensec_security *gensec_security,
 				       TALLOC_CTX *mem_ctx,
-				       DATA_BLOB *session_key_out)
+				       DATA_BLOB *session_key)
 {
 	struct gse_context *gse_ctx =
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
 
-	DATA_BLOB session_key = gse_get_session_key(mem_ctx, gse_ctx);
-	if (session_key.data == NULL) {
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	*session_key_out = session_key;
-
-	return NT_STATUS_OK;
+	return gse_get_session_key(mem_ctx, gse_ctx, session_key, NULL);
 }
 
 /* Get some basic (and authorization) information about the user on
