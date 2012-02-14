@@ -6744,12 +6744,15 @@ static WERROR update_printer(struct pipes_struct *p,
 		}
 	}
 
-	update_dsspooler(tmp_ctx,
-			 get_session_info_system(),
-			 p->msg_ctx,
-			 snum,
-			 printer,
-			 old_printer);
+	result = update_dsspooler(tmp_ctx,
+				  get_session_info_system(),
+				  p->msg_ctx,
+				  snum,
+				  printer,
+				  old_printer);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
 
 	printer_mask &= ~SPOOLSS_PRINTER_INFO_SECDESC;
 
@@ -8105,12 +8108,15 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 		info2_mask = ~SPOOLSS_PRINTER_INFO_DEVMODE;
 	}
 
-	update_dsspooler(p->mem_ctx,
-			 get_session_info_system(),
-			 p->msg_ctx,
-			 0,
-			 info2,
-			 NULL);
+	err = update_dsspooler(p->mem_ctx,
+			       get_session_info_system(),
+			       p->msg_ctx,
+			       0,
+			       info2,
+			       NULL);
+	if (!W_ERROR_IS_OK(err)) {
+		return err;
+	}
 
 	err = winreg_update_printer_internal(p->mem_ctx,
 				    get_session_info_system(),
