@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "util_tdb.h"
+#include "serverid.h"
 
 #ifdef CLUSTER_SUPPORT
 
@@ -1228,8 +1229,14 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 		}
 
 		for (i=0; i<vnn->num_srvids; i++) {
-			results[vnn->pid_indexes[i]] =
-				((reply->data[i/8] & (1<<(i%8))) != 0);
+			int idx = vnn->pid_indexes[i];
+
+			if (pids[i].unique_id ==
+			    SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+				results[idx] = true;
+				continue;
+			}
+			results[idx] = ((reply->data[i/8] & (1<<(i%8))) != 0);
 		}
 
 		TALLOC_FREE(reply);

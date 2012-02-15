@@ -265,6 +265,10 @@ bool serverid_exists(const struct server_id *id)
 		return false;
 	}
 
+	if (id->unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+		return true;
+	}
+
 	db = serverid_db();
 	if (db == NULL) {
 		return false;
@@ -308,6 +312,10 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 		struct serverid_key key;
 		TDB_DATA tdbkey;
 
+		if (ids[i].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+			results[i] = true;
+			continue;
+		}
 		if (!results[i]) {
 			continue;
 		}
@@ -432,4 +440,16 @@ bool serverid_traverse(int (*fn)(struct db_record *rec,
 
 	status = dbwrap_traverse(db, serverid_traverse_fn, &state, NULL);
 	return NT_STATUS_IS_OK(status);
+}
+
+uint64_t serverid_get_random_unique_id(void)
+{
+	uint64_t unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY;
+
+	while (unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+		generate_random_buffer((uint8_t *)&unique_id,
+				       sizeof(unique_id));
+	}
+
+	return unique_id;
 }

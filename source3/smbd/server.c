@@ -481,7 +481,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	 * Generate a unique id in the parent process so that we use
 	 * the global random state in the parent.
 	 */
-	generate_random_buffer((uint8_t *)&unique_id, sizeof(unique_id));
+	unique_id = serverid_get_random_unique_id();
 
 	pid = sys_fork();
 	if (pid == 0) {
@@ -973,7 +973,6 @@ extern void build_options(bool screen);
 	struct smbd_parent_context *parent = NULL;
 	TALLOC_CTX *frame;
 	NTSTATUS status;
-	uint64_t unique_id;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 	struct tevent_signal *se;
@@ -1191,8 +1190,7 @@ extern void build_options(bool screen);
 		become_daemon(Fork, no_process_group, log_stdout);
 	}
 
-        generate_random_buffer((uint8_t *)&unique_id, sizeof(unique_id));
-        set_my_unique_id(unique_id);
+        set_my_unique_id(serverid_get_random_unique_id());
 
 #if HAVE_SETPGID
 	/*
