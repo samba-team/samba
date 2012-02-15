@@ -25,12 +25,14 @@
 #include "popt_common.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
+#include "dbwrap/dbwrap_watch.h"
 #include "messages.h"
 #include "util_tdb.h"
 
-enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS };
+enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS,
+		 OP_LISTWATCHERS };
 
-enum dbwrap_type { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX };
+enum dbwrap_type { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX, TYPE_NONE };
 
 static int dbwrap_tool_fetch_int32(struct db_context *db,
 				   const char *keyname,
@@ -297,6 +299,34 @@ static int dbwrap_tool_listkeys(struct db_context *db,
 	return 0;
 }
 
+static int dbwrap_tool_listwatchers_cb(const uint8_t *db_id, size_t db_id_len,
+				       const TDB_DATA key,
+				       const struct server_id *watchers,
+				       size_t num_watchers,
+				       void *private_data)
+{
+	uint32_t i;
+	dump_data_file(db_id, db_id_len, false, stdout);
+	dump_data_file(key.dptr, key.dsize, false, stdout);
+
+	for (i=0; i<num_watchers; i++) {
+		char *str = server_id_str(talloc_tos(), &watchers[i]);
+		printf("%s\n", str);
+		TALLOC_FREE(str);
+	}
+	printf("\n");
+	return 0;
+}
+
+
+static int dbwrap_tool_listwatchers(struct db_context *db,
+				    const char *keyname,
+				    const char *data)
+{
+	dbwrap_watchers_traverse_read(dbwrap_tool_listwatchers_cb, NULL);
+	return 0;
+}
+
 struct dbwrap_op_dispatch_table {
 	enum dbwrap_op op;
 	enum dbwrap_type type;
@@ -317,6 +347,7 @@ struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_DELETE, TYPE_INT32,  dbwrap_tool_delete },
 	{ OP_ERASE,  TYPE_INT32,  dbwrap_tool_erase },
 	{ OP_LISTKEYS, TYPE_INT32, dbwrap_tool_listkeys },
+	{ OP_LISTWATCHERS, TYPE_NONE, dbwrap_tool_listwatchers },
 	{ 0, 0, NULL },
 };
 
@@ -377,7 +408,8 @@ int main(int argc, const char **argv)
 	if ((extra_argc < 2) || (extra_argc > 5)) {
 		d_fprintf(stderr,
 			  "USAGE: %s <database> <op> [<key> [<type> [<value>]]]\n"
-			  "       ops: fetch, store, delete, erase, listkeys\n"
+			  "       ops: fetch, store, delete, erase, listkeys, "
+			  "listwatchers\n"
 			  "       types: int32, uint32, string, hex\n",
 			 argv[0]);
 		goto done;
@@ -427,6 +459,14 @@ int main(int argc, const char **argv)
 			goto done;
 		}
 		op = OP_LISTKEYS;
+	} else if (strcmp(opname, "listwatchers") == 0) {
+		if (extra_argc != 2) {
+			d_fprintf(stderr, "ERROR: operation 'listwatchers' "
+				  "does not take an argument\n");
+			goto done;
+		}
+		op = OP_LISTWATCHERS;
+		keytype = "none";
 	} else {
 		d_fprintf(stderr,
 			  "ERROR: invalid op '%s' specified\n"
@@ -443,10 +483,12 @@ int main(int argc, const char **argv)
 		type = TYPE_STRING;
 	} else if (strcmp(keytype, "hex") == 0) {
 		type = TYPE_HEX;
+	} else if (strcmp(keytype, "none") == 0) {
+		type = TYPE_NONE;
 	} else {
 		d_fprintf(stderr, "ERROR: invalid type '%s' specified.\n"
 				  "       supported types: int32, uint32, "
-				  "string, hex\n",
+				  "string, hex, none\n",
 				  keytype);
 		goto done;
 	}
@@ -463,11 +505,22 @@ int main(int argc, const char **argv)
 		goto done;
 	}
 
-	db = db_open(mem_ctx, dbname, 0, TDB_DEFAULT, O_RDWR | O_CREAT, 0644,
-		     DBWRAP_LOCK_ORDER_1);
-	if (db == NULL) {
-		d_fprintf(stderr, "ERROR: could not open dbname\n");
-		goto done;
+	switch (op) {
+	case OP_FETCH:
+	case OP_STORE:
+	case OP_DELETE:
+	case OP_ERASE:
+	case OP_LISTKEYS:
+		db = db_open(mem_ctx, dbname, 0, TDB_DEFAULT, O_RDWR | O_CREAT,
+			     0644, DBWRAP_LOCK_ORDER_1);
+		if (db == NULL) {
+			d_fprintf(stderr, "ERROR: could not open dbname\n");
+			goto done;
+		}
+		break;
+	default:
+		db = NULL;
+		break;
 	}
 
 	for (count = 0; dispatch_table[count].cmd != NULL; count++) {
