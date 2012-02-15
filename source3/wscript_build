@@ -41,6 +41,7 @@ REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 LIB_SRC = '''
           lib/messages.c lib/messages_local.c
           lib/messages_ctdbd.c lib/ctdb_packet.c lib/ctdbd_conn.c
+	  lib/ctdb_conn.c
           lib/id_cache.c
           lib/talloc_dict.c
           lib/serverid.c
@@ -572,6 +573,7 @@ SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/
                 torture/test_authinfo_structs.c
                 torture/test_smbsock_any_connect.c
                 torture/test_cleanup.c
+		torture/test_ctdbconn.c
                 torture/t_strappend.c'''
 
 SMBTORTURE_SRC = '''${SMBTORTURE_SRC1}

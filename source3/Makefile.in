@@ -433,6 +433,7 @@ CRYPTO_OBJ = ../lib/crypto/crc32.o @CRYPTO_MD5_OBJ@ \
 LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	  lib/messages_ctdbd.o lib/ctdb_packet.o lib/ctdbd_conn.o \
+	  lib/ctdb_conn.o \
 	  lib/id_cache.o \
 	  ../lib/socket/interfaces.o lib/memcache.o \
 	  lib/talloc_dict.o \
@@ -1273,6 +1274,7 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/uta
 		torture/test_chain3.o \
 		torture/test_authinfo_structs.o \
 		torture/test_cleanup.o \
+		torture/test_ctdbconn.o \
 		torture/t_strappend.o
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) $(TLDAP_OBJ) \
