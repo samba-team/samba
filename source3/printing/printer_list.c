@@ -191,7 +191,7 @@ NTSTATUS printer_list_set_printer(TALLOC_CTX *mem_ctx,
 	data.dsize = len;
 
 	len = tdb_pack(data.dptr, data.dsize,
-		       PL_DATA_FORMAT, time_h, time_l, name, str);
+		       PL_DATA_FORMAT, time_h, time_l, name, str, str2);
 
 	status = dbwrap_store_bystring_upper(db, key, data, TDB_REPLACE);
 
