@@ -29,11 +29,6 @@ enum g_lock_type {
 	G_LOCK_WRITE = 1,
 };
 
-/*
- * Or'ed with g_lock_type
- */
-#define G_LOCK_PENDING (2)
-
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg);
 
