@@ -108,5 +108,6 @@ bool run_ctdb_conn(int dummy);
 bool run_msg_test(int dummy);
 bool run_notify_bench2(int dummy);
 bool run_notify_bench3(int dummy);
+bool run_dbwrap_watch1(int dummy);
 
 #endif /* __TORTURE_H__ */

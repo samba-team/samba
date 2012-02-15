@@ -263,6 +263,7 @@ TDB_LIB_OBJ = lib/util_tdb.o ../lib/util/util_tdb.o \
 	  lib/dbwrap/dbwrap_ctdb.o \
 	  lib/g_lock.o \
 	  lib/dbwrap/dbwrap_cache.o \
+	  lib/dbwrap/dbwrap_watch.o \
 	  lib/dbwrap/dbwrap_rbt.o
 
 TDB_VALIDATE_OBJ = lib/tdb_validate.o
@@ -1280,6 +1281,7 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/uta
 		torture/test_ctdbconn.o \
 		torture/test_msg.o \
 		torture/test_notify.o \
+		torture/test_dbwrap_watch.o \
 		torture/t_strappend.o
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) $(TLDAP_OBJ) \

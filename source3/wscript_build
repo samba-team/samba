@@ -6,6 +6,7 @@ import samba_version, samba3
 TDB_LIB_SRC = '''
 	  lib/dbwrap/dbwrap_open.c
           lib/dbwrap/dbwrap_ctdb.c
+          lib/dbwrap/dbwrap_watch.c
           lib/g_lock.c'''
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
@@ -560,6 +561,7 @@ SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/
 		torture/test_msg.c
 		torture/test_notify.c
 		lib/tevent_barrier.c
+		torture/test_dbwrap_watch.c
                 torture/t_strappend.c'''
 
 SMBTORTURE_SRC = '''${SMBTORTURE_SRC1}
