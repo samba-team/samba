@@ -1331,7 +1331,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 				    &dcnames, &num_dcnames)) {
 			return False;
 		}
-		if (!add_sockaddr_to_array(mem_ctx, &dcs[i].ss, 445,
+		if (!add_sockaddr_to_array(mem_ctx, &dcs[i].ss, TCP_SMB_PORT,
 				      &addrs, &num_addrs)) {
 			return False;
 		}

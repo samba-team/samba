@@ -191,7 +191,7 @@ static struct tevent_req *nb_connect_send(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(state, nb_connect_state_destructor);
 
-	subreq = open_socket_out_send(state, ev, addr, 139, 5000);
+	subreq = open_socket_out_send(state, ev, addr, NBT_SMB_PORT, 5000);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -276,7 +276,7 @@ static void nb_connect_done(struct tevent_req *subreq)
 		make_nmb_name(&state->called, state->called_name, 0x20);
 
 		subreq = open_socket_out_send(state, state->ev, state->addr,
-					      139, 5000);
+					      NBT_SMB_PORT, 5000);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -351,7 +351,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(state, smbsock_connect_state_destructor);
 
-	if (port == 139) {
+	if (port == NBT_SMB_PORT) {
 		subreq = tevent_wakeup_send(state, ev, timeval_set(0, 0));
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
@@ -374,7 +374,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	 * port==0, try both
 	 */
 
-	state->req_445 = open_socket_out_send(state, ev, addr, 445, 5000);
+	state->req_445 = open_socket_out_send(state, ev, addr, TCP_SMB_PORT, 5000);
 	if (tevent_req_nomem(state->req_445, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -382,7 +382,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 				req);
 
 	/*
-	 * After 5 msecs, fire the 139 request
+	 * After 5 msecs, fire the 139 (NBT) request
 	 */
 	state->req_139 = tevent_wakeup_send(
 		state, ev, timeval_current_ofs(0, 5000));
@@ -445,14 +445,14 @@ static void smbsock_connect_connected(struct tevent_req *subreq)
 		status = open_socket_out_recv(subreq, &state->sock);
 		TALLOC_FREE(state->req_445);
 		unfinished_req = state->req_139;
-		state->port = 445;
+		state->port = TCP_SMB_PORT;
 
 	} else if (subreq == state->req_139) {
 
 		status = nb_connect_recv(subreq, &state->sock);
 		TALLOC_FREE(state->req_139);
 		unfinished_req = state->req_445;
-		state->port = 139;
+		state->port = NBT_SMB_PORT;
 
 	} else {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);

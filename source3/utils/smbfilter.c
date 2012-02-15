@@ -180,7 +180,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 	int s = -1;
 
 	/* we have a connection from a new client, now connect to the server */
-	status = open_socket_out(dest_ss, 445, LONG_CONNECT_TIMEOUT, &s);
+	status = open_socket_out(dest_ss, TCP_SMB_PORT, LONG_CONNECT_TIMEOUT, &s);
 
 	if (s == -1) {
 		char addr[INET6_ADDRSTRLEN];
@@ -278,7 +278,7 @@ static void start_filter(char *desthost)
 	/* start listening on port 445 locally */
 
 	zero_sockaddr(&my_ss);
-	s = open_socket_in(SOCK_STREAM, 445, 0, &my_ss, True);
+	s = open_socket_in(SOCK_STREAM, TCP_SMB_PORT, 0, &my_ss, True);
 
 	if (s == -1) {
 		d_printf("bind failed\n");

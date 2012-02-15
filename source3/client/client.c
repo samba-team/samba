@@ -5168,7 +5168,7 @@ static int do_host_query(const char *query_host)
 		}
 	}
 
-	if (port != 139) {
+	if (port != NBT_SMB_PORT) {
 
 		/* Workgroups simply don't make sense over anything
 		   else but port 139... */
@@ -5177,7 +5177,8 @@ static int do_host_query(const char *query_host)
 		status = cli_cm_open(talloc_tos(), NULL,
 				     have_ip ? dest_ss_str : query_host,
 				     "IPC$", auth_info, true, smb_encrypt,
-				     max_protocol, 139, name_type, &cli);
+				     max_protocol, NBT_SMB_PORT, name_type,
+				     &cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			cli = NULL;
 		}
@@ -5242,7 +5243,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	NTSTATUS status;
 
 	status = cli_connect_nb(desthost, have_ip ? &dest_ss : NULL,
-				port ? port : 139, name_type,
+				port ? port : NBT_SMB_PORT, name_type,
 				lp_netbios_name(), SMB_SIGNING_DEFAULT, 0, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed. Error %s\n", desthost, nt_errstr(status));
@@ -5354,7 +5355,7 @@ static int do_message_op(struct user_auth_info *a_info)
 				exit(ENOMEM);
 			}
 			if( !port )
-				port = 139;
+				port = NBT_SMB_PORT;
  			message = true;
  			break;
 		case 'I':

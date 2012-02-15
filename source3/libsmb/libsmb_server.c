@@ -420,7 +420,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		/*
 		 * Try 139 first for IPC$
 		 */
-		status = cli_connect_nb(server_n, NULL, 139, 0x20,
+		status = cli_connect_nb(server_n, NULL, NBT_SMB_PORT, 0x20,
 					smbc_getNetbiosName(context),
 					SMB_SIGNING_DEFAULT, flags, &c);
 	}

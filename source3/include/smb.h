@@ -44,8 +44,8 @@
 
 #define NMB_PORT 137
 #define DGRAM_PORT 138
-#define SMB_PORT1 445
-#define SMB_PORT2 139
+#define NBT_SMB_PORT  139   /* Port for SMB over NBT transport (IETF STD#19). */
+#define TCP_SMB_PORT  445   /* Port for SMB over naked TCP transport.         */
 #define SMB_PORTS "445 139"
 
 #define Undefined (-1)

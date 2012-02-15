@@ -3094,7 +3094,7 @@ static bool run_bad_nbt_session(int dummy)
 		return false;
 	}
 
-	status = open_socket_out(&ss, 139, 10000, &fd);
+	status = open_socket_out(&ss, NBT_SMB_PORT, 10000, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "open_socket_out failed: %s\n",
 			  nt_errstr(status));

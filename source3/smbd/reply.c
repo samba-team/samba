@@ -410,13 +410,13 @@ static bool netbios_session_retarget(struct smbd_server_connection *sconn,
 	char *retarget;
 	char *p;
 	int retarget_type = 0x20;
-	int retarget_port = 139;
+	int retarget_port = NBT_SMB_PORT;
 	struct sockaddr_storage retarget_addr;
 	struct sockaddr_in *in_addr;
 	bool ret = false;
 	uint8_t outbuf[10];
 
-	if (get_socket_port(sconn->sock) != 139) {
+	if (get_socket_port(sconn->sock) != NBT_SMB_PORT) {
 		return false;
 	}
 

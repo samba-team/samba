@@ -143,8 +143,8 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	NTSTATUS nt_status;
 	bool username_was_mapped;
 
-	/* the client has given us its machine name (which we otherwise would not get on port 445).
-	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
+	/* The client has given us its machine name (which we only get over NBT transport).
+	   We need to possibly reload smb.conf if smb.conf includes depend on the machine name. */
 
 	set_remote_machine_name(gensec_ntlmssp->ntlmssp_state->client.netbios_name, True);
 
