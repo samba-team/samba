@@ -421,6 +421,11 @@ class NSRecord(dnsserver.DNS_RPC_RECORD):
         ns.len = len(dns_server)
         self.data = ns
 
+#
+# FIXME: In MXRecord, SOARecord, SRVRecord keep a reference to strings
+#        to overcome the bug in pidl generated python bindings.
+#
+
 class MXRecord(dnsserver.DNS_RPC_RECORD):
     def __init__(self, mail_server, preference, serial=1, ttl=900,
                  rank=dnsp.DNS_RANK_ZONE, node_flag=0):
@@ -431,8 +436,9 @@ class MXRecord(dnsserver.DNS_RPC_RECORD):
         self.dwTtlSeconds = ttl
         mx = dnsserver.DNS_RPC_RECORD_NAME_PREFERENCE()
         mx.wPreference = preference
-        mx.nameExchange.str = mail_server
-        mx.nameExchange.len = len(mail_server)
+        self._mail_server = mail_server
+        mx.nameExchange.str = self._mail_server
+        mx.nameExchange.len = len(self._mail_server)
         self.data = mx
 
 class SOARecord(dnsserver.DNS_RPC_RECORD):
@@ -449,10 +455,12 @@ class SOARecord(dnsserver.DNS_RPC_RECORD):
         soa.dwRefresh = refresh
         soa.dwRetry = retry
         soa.dwExpire = expire
-        soa.NamePrimaryServer.str = mname
-        soa.NamePrimaryServer.len = len(mname)
-        soa.ZoneAdministratorEmail.str = rname
-        soa.ZoneAdministratorEmail.len = len(rname)
+        self._mname = mname
+        soa.NamePrimaryServer.str = self._mname
+        soa.NamePrimaryServer.len = len(self._mname)
+        self._rname = rname
+        soa.ZoneAdministratorEmail.str = self._rname
+        soa.ZoneAdministratorEmail.len = len(self._rname)
         self.data = soa
 
 class SRVRecord(dnsserver.DNS_RPC_RECORD):
@@ -467,8 +475,9 @@ class SRVRecord(dnsserver.DNS_RPC_RECORD):
         srv.wPriority = priority
         srv.wWeight = weight
         srv.wPort = port
-        srv.nameTarget.str = target
-        srv.nameTarget.len = len(target)
+        self._target = target
+        srv.nameTarget.str = self._target
+        srv.nameTarget.len = len(self._target)
         self.data = srv
 
 
