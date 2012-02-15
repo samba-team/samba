@@ -8918,6 +8918,7 @@ static struct {
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
 	{ "LOCAL-CTDB-CONN", run_ctdb_conn, 0},
+	{ "LOCAL-MSG", run_msg_test, 0},
 	{ "LOCAL-BASE64", run_local_base64, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
