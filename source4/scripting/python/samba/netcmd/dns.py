@@ -345,9 +345,10 @@ def print_dns_record(outf, rec):
                     rec.data.NamePrimaryServer.str,
                     rec.data.ZoneAdministratorEmail.str)
     elif rec.wType == dnsp.DNS_TYPE_MX:
-        mesg = 'MX: %s' % (rec.data.str)
+        mesg = 'MX: %s (%d)' % (rec.data.nameExchange.str, rec.data.wPreference)
     elif rec.wType == dnsp.DNS_TYPE_SRV:
-        mesg = 'SRV: %s (%d)' % (rec.data.nameTarget.str, rec.data.wPort)
+        mesg = 'SRV: %s (%d, %d, %d)' % (rec.data.nameTarget.str, rec.data.wPort,
+                                         rec.data.wPriority, rec.data.wWeight)
     outf.write('    %s (flags=%x, serial=%d, ttl=%d)\n' % (
                 mesg, rec.dwFlags, rec.dwSerial, rec.dwTtlSeconds))
 
