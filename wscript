@@ -12,6 +12,7 @@ import wafsamba, Options, samba_dist, Scripting, Utils, samba_version
 
 
 samba_dist.DIST_DIRS('.')
+samba_dist.DIST_BLACKLIST('.gitignore')
 
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
