@@ -1610,6 +1610,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	result->transaction_commit = db_ctdb_transaction_commit;
 	result->transaction_cancel = db_ctdb_transaction_cancel;
 	result->id = db_ctdb_id;
+	result->stored_callback = NULL;
 
 	DEBUG(3,("db_open_ctdb: opened database '%s' with dbid 0x%x\n",
 		 name, db_ctdb->db_id));

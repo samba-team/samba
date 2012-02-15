@@ -63,6 +63,9 @@ struct db_context {
 	void *private_data;
 	enum dbwrap_lock_order lock_order;
 	bool persistent;
+	void (*stored_callback)(struct db_context *db, struct db_record *rec,
+				void *private_data);
+	void *stored_callback_private_data;
 };
 
 #endif /* __DBWRAP_PRIVATE_H__ */

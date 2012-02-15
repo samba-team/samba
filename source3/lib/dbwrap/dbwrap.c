@@ -67,12 +67,46 @@ TDB_DATA dbwrap_record_get_value(const struct db_record *rec)
 
 NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags)
 {
-	return rec->store(rec, data, flags);
+	NTSTATUS status;
+	struct db_context *db;
+
+	status = rec->store(rec, data, flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	db = rec->db;
+	if (db->stored_callback != NULL) {
+		db->stored_callback(db, rec,
+				    db->stored_callback_private_data);
+	}
+	return NT_STATUS_OK;
+}
+
+void dbwrap_set_stored_callback(
+	struct db_context *db,
+	void (*cb)(struct db_context *db, struct db_record *rec,
+		   void *private_data),
+	void *private_data)
+{
+	db->stored_callback = cb;
+	db->stored_callback_private_data = private_data;
 }
 
 NTSTATUS dbwrap_record_delete(struct db_record *rec)
 {
-	return rec->delete_rec(rec);
+	NTSTATUS status;
+	struct db_context *db;
+
+	status = rec->delete_rec(rec);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	db = rec->db;
+	if (db->stored_callback != NULL) {
+		db->stored_callback(db, rec,
+				    db->stored_callback_private_data);
+	}
+	return NT_STATUS_OK;
 }
 
 struct dbwrap_lock_order_state {

@@ -436,6 +436,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->exists = db_tdb_exists;
 	result->wipe = db_tdb_wipe;
 	result->id = db_tdb_id;
+	result->stored_callback = NULL;
 	return result;
 
  fail:

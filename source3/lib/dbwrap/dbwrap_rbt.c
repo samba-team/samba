@@ -444,6 +444,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	result->parse_record = db_rbt_parse_record;
 	result->lock_order = 0;
 	result->id = db_rbt_id;
+	result->stored_callback = NULL;
 
 	return result;
 }
