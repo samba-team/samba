@@ -77,6 +77,16 @@ static void messaging_tdb_signal_handler(struct tevent_context *ev_ctx,
 	message_dispatch(ctx->msg_ctx);
 }
 
+void *messaging_tdb_event(TALLOC_CTX *mem_ctx, struct messaging_context *msg,
+			  struct tevent_context *ev)
+{
+	struct messaging_tdb_context *msg_tdb = talloc_get_type_abort(
+		msg->local->private_data, struct messaging_tdb_context);
+
+	return tevent_add_signal(ev, mem_ctx, SIGUSR1, 0,
+				 messaging_tdb_signal_handler, msg_tdb);
+}
+
 /****************************************************************************
  Initialise the messaging functions. 
 ****************************************************************************/
