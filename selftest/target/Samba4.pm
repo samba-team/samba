@@ -1659,18 +1659,20 @@ sub setup_plugin_s4_dc($$)
 	my ($self, $path) = @_;
 
 	my $env = $self->provision_plugin_s4_dc($path);
-	if (defined $env) {
-		$self->check_or_start($env, "single");
-
-		$self->wait_for_start($env);
-
-		my $s3_part_env = $self->{target3}->setup_plugin_s4_dc($path, $env, 30);
-		if (not defined($s3_part_env)) {
-		    return undef;
-		}
-
-		$self->{vars}->{plugin_s4_dc} = $s3_part_env;
+	unless ($env) {
+		return undef;
 	}
+
+	$self->check_or_start($env, "single");
+	
+	$self->wait_for_start($env);
+	
+	my $s3_part_env = $self->{target3}->setup_plugin_s4_dc($path, $env, 30);
+	unless ($s3_part_env) {
+		return undef;
+	}
+	
+	$self->{vars}->{plugin_s4_dc} = $env;
 	return $env;
 }
 
