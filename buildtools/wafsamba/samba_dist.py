@@ -141,7 +141,7 @@ def dist(appname='',version=''):
                 f = f[len(dir)+1:]
 
             # Remove files in the blacklist
-            if f in dist_blacklist:
+            if f in blacklist:
                 continue
             blacklisted = False
             # Remove directories in the blacklist
