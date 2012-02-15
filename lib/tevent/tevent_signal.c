@@ -346,6 +346,8 @@ int tevent_common_check_signal(struct tevent_context *ev)
 			struct tevent_signal *se = sl->se;
 			struct tevent_se_exists *exists;
 
+			next = sl->next;
+
 			/*
 			 * We have to be careful to not touch "se"
 			 * after it was deleted in its handler. Thus
@@ -361,7 +363,6 @@ int tevent_common_check_signal(struct tevent_context *ev)
 			talloc_set_destructor(
 				exists, tevent_se_exists_destructor);
 
-			next = sl->next;
 #ifdef SA_SIGINFO
 			if (se->sa_flags & SA_SIGINFO) {
 				uint32_t j;
