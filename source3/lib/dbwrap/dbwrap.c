@@ -351,3 +351,8 @@ int dbwrap_transaction_cancel(struct db_context *db)
 {
 	return db->transaction_cancel(db);
 }
+
+void dbwrap_db_id(struct db_context *db, const uint8_t **id, size_t *idlen)
+{
+	db->id(db, id, idlen);
+}

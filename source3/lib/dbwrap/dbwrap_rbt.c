@@ -408,6 +408,12 @@ static int db_rbt_trans_dummy(struct db_context *db)
 	return 0;
 }
 
+static void db_rbt_id(struct db_context *db, const uint8_t **id, size_t *idlen)
+{
+	*id = (uint8_t *)db;
+	*idlen = sizeof(db);
+}
+
 struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 {
 	struct db_context *result;
@@ -437,6 +443,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	result->wipe = db_rbt_wipe;
 	result->parse_record = db_rbt_parse_record;
 	result->lock_order = 0;
+	result->id = db_rbt_id;
 
 	return result;
 }

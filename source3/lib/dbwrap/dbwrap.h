@@ -62,6 +62,7 @@ int dbwrap_get_flags(struct db_context *db);
 int dbwrap_transaction_start(struct db_context *db);
 int dbwrap_transaction_commit(struct db_context *db);
 int dbwrap_transaction_cancel(struct db_context *db);
+void dbwrap_db_id(struct db_context *db, const uint8_t **id, size_t *idlen);
 
 
 /* The following definitions come from lib/dbwrap_util.c  */

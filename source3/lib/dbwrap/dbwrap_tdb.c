@@ -23,9 +23,15 @@
 #include "dbwrap/dbwrap_tdb.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "util_tdb.h"
+#include "system/filesys.h"
 
 struct db_tdb_ctx {
 	struct tdb_wrap *wtdb;
+
+	struct {
+		dev_t dev;
+		ino_t ino;
+	} id;
 };
 
 static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag);
@@ -366,6 +372,14 @@ static int db_tdb_transaction_cancel(struct db_context *db)
 	return 0;
 }
 
+static void db_tdb_id(struct db_context *db, const uint8_t **id, size_t *idlen)
+{
+	struct db_tdb_ctx *db_ctx =
+		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
+	*id = (uint8_t *)&db_ctx->id;
+	*idlen = sizeof(db_ctx->id);
+}
+
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 			       struct loadparm_context *lp_ctx,
 			       const char *name,
@@ -375,6 +389,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 {
 	struct db_context *result = NULL;
 	struct db_tdb_ctx *db_tdb;
+	struct stat st;
 
 	result = talloc_zero(mem_ctx, struct db_context);
 	if (result == NULL) {
@@ -396,6 +411,15 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	ZERO_STRUCT(db_tdb->id);
+
+	if (fstat(tdb_fd(db_tdb->wtdb->tdb), &st) == -1) {
+		DEBUG(3, ("fstat failed: %s\n", strerror(errno)));
+		goto fail;
+	}
+	db_tdb->id.dev = st.st_dev;
+	db_tdb->id.ino = st.st_ino;
+
 	result->fetch_locked = db_tdb_fetch_locked;
 	result->try_fetch_locked = db_tdb_try_fetch_locked;
 	result->traverse = db_tdb_traverse;
@@ -409,6 +433,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->transaction_cancel = db_tdb_transaction_cancel;
 	result->exists = db_tdb_exists;
 	result->wipe = db_tdb_wipe;
+	result->id = db_tdb_id;
 	return result;
 
  fail:

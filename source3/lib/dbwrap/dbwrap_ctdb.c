@@ -1490,6 +1490,16 @@ static int db_ctdb_get_flags(struct db_context *db)
 	return tdb_get_flags(ctx->wtdb->tdb);
 }
 
+static void db_ctdb_id(struct db_context *db, const uint8_t **id,
+		       size_t *idlen)
+{
+	struct db_ctdb_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_ctdb_ctx);
+
+	*id = (uint8_t *)&ctx->db_id;
+	*idlen = sizeof(ctx->db_id);
+}
+
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
 				int hash_size, int tdb_flags,
@@ -1599,6 +1609,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	result->transaction_start = db_ctdb_transaction_start;
 	result->transaction_commit = db_ctdb_transaction_commit;
 	result->transaction_cancel = db_ctdb_transaction_cancel;
+	result->id = db_ctdb_id;
 
 	DEBUG(3,("db_open_ctdb: opened database '%s' with dbid 0x%x\n",
 		 name, db_ctdb->db_id));
