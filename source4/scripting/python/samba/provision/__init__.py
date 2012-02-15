@@ -1807,9 +1807,6 @@ def provision(logger, session_info, credentials, smbconf=None,
             logger.info("LDAP Admin User:       %s" %
                 provision_backend.credentials.get_username())
 
-        logger.info("LDAP Admin Password:   %s" %
-            provision_backend.credentials.get_password())
-
         if provision_backend.slapd_command_escaped is not None:
             # now display slapd_command_file.txt to show how slapd must be
             # started next time
