@@ -1744,6 +1744,9 @@ def provision(logger, session_info, credentials, smbconf=None,
 
         if adminpass is None:
             adminpass = samba.generate_random_password(12, 32)
+            adminpass_generated = True
+        else:
+            adminpass_generated = False
 
         if samdb_fill == FILL_FULL:
             provision_fill(samdb, secrets_ldb, logger,
@@ -1799,7 +1802,8 @@ def provision(logger, session_info, credentials, smbconf=None,
     logger.info("DNS Domain:            %s" % names.dnsdomain)
     logger.info("DOMAIN SID:            %s" % str(domainsid))
     if samdb_fill == FILL_FULL:
-        logger.info("Admin password:        %s" % adminpass)
+        if adminpass_generated:
+            logger.info("Admin password:        %s" % adminpass)
     if provision_backend.type is not "ldb":
         if provision_backend.credentials.get_bind_dn() is not None:
             logger.info("LDAP Backend Admin DN: %s" %
