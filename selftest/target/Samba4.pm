@@ -1662,6 +1662,11 @@ sub setup_plugin_s4_dc($$)
 {
 	my ($self, $path) = @_;
 
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->{target3}->have_ads()) {
+	       return "UNKNOWN";
+	}
+
 	my $env = $self->provision_plugin_s4_dc($path);
 	unless ($env) {
 		return undef;
