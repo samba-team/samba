@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha17
+What's new in Samba 4 alpha18
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -10,7 +10,7 @@ and above.
 WARNINGS
 ========
 
-Samba4 alpha17 is not a final Samba release, however we are now making
+Samba4 alpha18 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains both the technology of Samba 3.6
 (that you can reasonably expect to upgrade existing Samba 3.x releases
@@ -55,84 +55,74 @@ programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE alpha16
+CHANGES SINCE alpha17
 =====================
 
-For a list of changes since alpha 15, please see the git log.
+For a list of changes since alpha 17, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log release-4-0-0alpha16..release-4-0-0alpha17
+$ git log samba-4.0.0alpha17..samba-4.0.0alpha18
 
 Some major user-visible changes include:
 
-samba-tool dbcheck
-------------------
+Improvements to DNS servers.  Samba4 now has 3 options for the
+handling of DNS:  The default option is to use the BIND 9.8 DLZ plugin,
+which stores the information about the DNS zone in the directory.
+There is also an internal DNS server (but which does not support
+secure DNS updates at this time) and the flat file BIND 9.8 backend
+(storing the data in traditional zone files).
 
-We now have an fsck-like tool for Samba's internal sam.ldb database.
-Run samba-tool dbcheck after installation to check your database for
-self-consistency.  Any database created with a previous Samba4 alpha
-will have a very large number of consistency errors, which this tool
-can fix.
+To migrate from zone files to directory based DNS servers, a migration
+tool (upgradedns) has been added.
 
-See also the -H option to point dbcheck at a different database to the
-default, and the --fix and --yes options to make changes and to not
-prompt about those changes. 
+samba-tool dns commands to manage DNS records stored in directory.
 
-After upgrading Samba, it is suggested that you do the following:
+smbwrapper (a user-space file system based on LD_PRELOAD) has been
+removed.  
 
-  - stop samba
-  - take a backup copy of your sam.ldb and sam.ldb.d/* database files
-  - run samba-tool dbcheck --cross-ncs --fix
-  - use 'all' to say yes to fixing each type of error found
-  - after it has finished, run dbcheck again to ensure it reports no
-    errors
+Improvement to the upgrade process between Samba 3.x domains and Samba
+4.0 AD domains (samba-tool domain samba3upgrade).
 
-There will be a lot of errors fixed, particularly related to
-bad/missing GUID values. This is due to a bug in previous releases
-that left many objects with bad GUID values. These can all be fixed
-using dbcheck with steps above.
+Some major but less visible changes include:
 
+Major work to bridge the code gap between the major parts of the code
+base, including a common loadparm wrapper, smb client library, as well
+as NTLMSSP, GSSAPI and SPNEGO code as part of the GENSEC
+authentication and authorization stack.
 
-New default paths
------------------
+Preparation work for moving to TDB2, a new version of Samba's core TDB
+database.
 
-The configure options for paths have changed again, and the
---enable-fhs option has been reinstated.  Packagers should attempt to
-first package Samba using:
+smbtorture tests for SMB 2 and SMB 2.2 as the team improves and
+develops support these new protocols.
 
-./configure --enable-fhs --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+Major cleanup and removal of global variables in the smbd SMB and SMB2 server.
 
-and only after examining the location Samba uses with these options
-should further changes be made.  Existing packaging scripts are not
-expected to work unmodified, instead the Samba Team's aim is to
-simplify such scripts for the long term. 
-
-samba-tool domain samba3upgrade
--------------------------------
-
-The new samba-tool domain samba3upgrade command is a supported upgrade route from Samba
-3.x domain controllers to Samba 4.0 AD domain controllers.  This
-provides a one-time migration of all users, domain members, passwords,
-groups, group members and account polcies. 
-
-This tool is still under development and may fail when presented with
-an inconsistant Samba3 database (such as many LDAP configurations).
-We hope to improve the error handling and recovery in these
-situations, so please provide feedback using the samba-technical
-mailing list.
+Heimdal security issue 2012-01-11 - libkrb5 checksum - denial of serice
+http://www.h5l.org//advisories.html?show=2012-01-11
 
 KNOWN ISSUES
 ============
+
+- upgradeprovision should not be run when upgrading to this release
+  from a recent release.  No important database format changes have
+  been made since alpha16.  
+
+- The BIND 9 DLZ plugin is compatible only with BIND 9.8, not BIND 9.9. 
+
+- Systems with tdb or ldb installed as a system library may have
+  difficulty building this release of Samba4.  The --disable-tdb2
+  configure switch may be of assistance.  (Distributors who (rightly)
+  have difficulty with this may wish to wait until a future release,
+  which will soon fix this issue).
 
 - Installation on systems without a system iconv (and developer
   headers at compile time) is known to cause errors when dealing with
   non-ASCII characters.
 
 - In some situations, group members may not be upgraded by the
-  samba-tool domain upgrade_from_s3 script
-
-- The samba-tool domain join script will not join Windows 2000 domains.
+  samba-tool domain samba3upgrade tool
 
 - Domain member support in the 'samba' binary is in it's infancy, and
   is not comparable to the support found in winbindd.  As such, do not
