@@ -577,11 +577,11 @@ options {
     def disable_firewall(self, child):
         '''remove the annoying firewall'''
         child.sendline('netsh advfirewall set allprofiles state off')
-        i = child.expect(["Ok", "The following command was not found: advfirewall set allprofiles state off", "The requested operation requires elevation"])
+        i = child.expect(["Ok", "The following command was not found: advfirewall set allprofiles state off", "The requested operation requires elevation", "Access is denied"])
         child.expect("C:")
         if i == 1:
             child.sendline('netsh firewall set opmode mode = DISABLE profile = ALL')
-            i = child.expect(["Ok", "The following command was not found"])
+            i = child.expect(["Ok", "The following command was not found", "Access is denied"])
             if i != 0:
                 self.info("Firewall disable failed - ignoring")
             child.expect("C:")
