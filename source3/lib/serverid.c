@@ -241,6 +241,10 @@ bool serverid_exists(const struct server_id *id)
 		return false;
 	}
 
+	if (id->unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+		return true;
+	}
+
 	db = serverid_db();
 	if (db == NULL) {
 		return false;
@@ -354,4 +358,16 @@ bool serverid_traverse(int (*fn)(struct db_record *rec,
 	state.fn = fn;
 	state.private_data = private_data;
 	return db->traverse(db, serverid_traverse_fn, &state);
+}
+
+uint64_t serverid_get_random_unique_id(void)
+{
+	uint64_t unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY;
+
+	while (unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+		generate_random_buffer((uint8_t *)&unique_id,
+					sizeof(unique_id));
+	}
+
+	return unique_id;
 }
