@@ -232,7 +232,7 @@ def test_s3(t):
         t.test_remote_smbclient('WINDOWS7', dom_username, dom_password, args='--option=clientntlmv2auth=no')
         t.test_remote_smbclient('WINDOWS7', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k")
         t.test_remote_smbclient('WINDOWS7', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k --option=clientusespnegoprincipal=yes")
-        t.test_net_use('WINDOWS7', t.getvar("W2K8R2A_DOMAIN"), 'root', '${PASSWORD2}')
+        t.test_net_use('WINDOWS7', dom_realm, t.getvar("W2K8R2A_DOMAIN"), 'root', '${PASSWORD2}')
 
     if t.have_var('WINXP_VM') and t.have_var('W2K8R2A_VM') and not t.skip("join_winxp_2008r2"):
         if not dc_started:
@@ -251,7 +251,7 @@ def test_s3(t):
         t.test_remote_smbclient('WINXP', dom_username, dom_password, args='--option=clientntlmv2auth=no')
         t.test_remote_smbclient('WINXP', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k")
         t.test_remote_smbclient('WINXP', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k --clientusespnegoprincipal=yes")
-        t.test_net_use('WINXP', t.getvar("W2K8R2A_DOMAIN"), 'root', '${PASSWORD2}')
+        t.test_net_use('WINXP', dom_realm, t.getvar("W2K8R2A_DOMAIN"), 'root', '${PASSWORD2}')
 
     t.info("S3 test: All OK")
 

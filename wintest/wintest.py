@@ -845,11 +845,11 @@ RebootOnCompletion=No
         self.cmd_contains("bin/smbclient --version", ["${SAMBA_VERSION}"])
         self.retry_cmd('bin/smbclient -L ${WIN_HOSTNAME} -U%s%%%s %s' % (username, password, args), ["IPC"])
 
-    def test_net_use(self, vm, domain, username, password):
+    def test_net_use(self, vm, realm, domain, username, password):
         self.setwinvars(vm)
         self.info('Testing net use against Samba3 member')
         child = self.open_telnet("${WIN_HOSTNAME}", "%s\\%s" % (domain, username), password)
-        child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
+        child.sendline("net use t: \\\\${HOSTNAME}.%s\\test" % realm)
         child.expect("The command completed successfully")
 
 
