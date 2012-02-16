@@ -392,10 +392,11 @@ for env in ["dc", "s4member"]:
         plansmbtorturetestsuite(t, env, wb_opts + ['//_none_/_none_'])
 
 nsstest4 = binpath("nsstest")
-if os.path.exists(nsstest4):
-    plantestsuite("samba4.nss.test using winbind(s4member)", "s4member", [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "default/nsswitch/libnss-winbind.so")])
-else:
-    skiptestsuite("samba4.nss.test using winbind(s4member)", "nsstest not available")
+for env in ["dc", "s4member", "s3dc", "s3member", "member"]:
+    if os.path.exists(nsstest4):
+        plantestsuite("samba4.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "default/nsswitch/libnss-winbind.so")])
+    else:
+        skiptestsuite("samba4.nss.test using winbind(%s)" % env, "nsstest not available")
 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
 def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[]):
