@@ -824,10 +824,18 @@ RebootOnCompletion=No
     def run_winjoin(self, vm, domain, username="administrator", password="${PASSWORD1}"):
         '''join a windows box to a domain'''
         child = self.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True, set_noexpire=True)
-        child.sendline("ipconfig /flushdns")
-        child.expect("C:")
-        child.sendline("netdom join ${WIN_HOSTNAME} /Domain:%s /UserD:%s /PasswordD:%s" % (domain, username, password))
-        child.expect("The command completed successfully")
+        retries = 5
+        while retries > 0:
+            child.sendline("ipconfig /flushdns")
+            child.expect("C:")
+            child.sendline("netdom join ${WIN_HOSTNAME} /Domain:%s /UserD:%s /PasswordD:%s" % (domain, username, password))
+            i = child.expect(["The command completed successfully", 
+                             "The specified domain either does not exist or could not be contacted."])
+            if i == 0:
+                break
+            time.sleep(10)
+            retries -= 1
+
         child.expect("C:")
         child.sendline("shutdown /r -t 0")
         self.wait_reboot()
