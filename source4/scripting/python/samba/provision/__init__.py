@@ -1436,8 +1436,6 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
     if invocationid is None:
         invocationid = str(uuid.uuid4())
 
-    if adminpass is None:
-        adminpass = samba.generate_random_password(12, 32)
     if krbtgtpass is None:
         krbtgtpass = samba.generate_random_password(128, 255)
     if machinepass is None:
@@ -1743,6 +1741,9 @@ def provision(logger, session_info, credentials, smbconf=None,
 
             if not os.path.isdir(paths.netlogon):
                 os.makedirs(paths.netlogon, 0755)
+
+        if adminpass is None:
+            adminpass = samba.generate_random_password(12, 32)
 
         if samdb_fill == FILL_FULL:
             provision_fill(samdb, secrets_ldb, logger,
