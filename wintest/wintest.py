@@ -545,9 +545,10 @@ options {
         child.expect('\d+.\d+.\d+.\d+')
         self.setvar('WIN_SUBNET_MASK', child.after)
         child.expect('Default Gateway')
-        child.expect('\d+.\d+.\d+.\d+')
-        self.setvar('WIN_DEFAULT_GATEWAY', child.after)
-        child.expect("C:")
+        i = child.expect(['\d+.\d+.\d+.\d+', "C:"])
+        if i == 0:
+            self.setvar('WIN_DEFAULT_GATEWAY', child.after)
+            child.expect("C:")
 
     def get_is_dc(self, child):
         '''check if a windows machine is a domain controller'''
