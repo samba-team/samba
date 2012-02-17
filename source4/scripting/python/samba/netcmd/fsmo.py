@@ -125,6 +125,12 @@ class cmd_fsmo_show(Command):
 
     synopsis = "%prog [options]"
 
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
@@ -181,6 +187,12 @@ class cmd_fsmo_transfer(Command):
     """Transfer the role"""
 
     synopsis = "%prog [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
 
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,

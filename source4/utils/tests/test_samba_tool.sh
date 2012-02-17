@@ -40,4 +40,6 @@ testit "domain level.show" $VALGRIND $samba_tool domain level show
 
 testit "domain info" $VALGRIND $samba_tool domain info $SERVER_IP
 
+testit "fsmo show" $VALGRIND $samba_tool fsmo show
+
 exit $failed
