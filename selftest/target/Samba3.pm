@@ -12,15 +12,17 @@ use POSIX;
 use target::Samba;
 
 sub have_ads($) {
-    my ($self);
+        my ($self) = @_;
 	my $found_ads = 0;
-	my $smbd_build_options = Samba::bindir_path($self, "smbd") . " -b";
-	my @build_options = `$smbd_build_options`;
-	foreach my $option (@build_options) {
-	        if ($option =~ "WITH_ADS") {
-		       $found_ads = 1;
-		}
-	}
+        my $smbd_build_options = Samba::bindir_path($self, "smbd") . " -b|";
+        open(IN, $smbd_build_options) or die("Unable to run $smbd_build_options: $!");
+
+        while (<IN>) {
+                if (/WITH_ADS/) {
+                       $found_ads = 1;
+                }
+        }
+	close IN;
 
 	# If we were not built with ADS support, pretend we were never even available
 	return $found_ads;
