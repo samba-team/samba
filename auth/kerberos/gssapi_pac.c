@@ -22,6 +22,7 @@
 #ifdef HAVE_KRB5
 
 #include "libcli/auth/krb5_wrap.h"
+#include "lib/util/asn1.h"
 
 #if 0
 /* FIXME - need proper configure/waf test
@@ -46,6 +47,26 @@ const gss_OID_desc * const gss_mech_krb5              = krb5_gss_oid_array+0;
 const gss_OID_desc * const gss_mech_krb5_old          = krb5_gss_oid_array+1;
 const gss_OID_desc * const gss_mech_krb5_wrong        = krb5_gss_oid_array+2;
 #endif
+
+#ifndef GSS_KRB5_INQ_SSPI_SESSION_KEY_OID
+#define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH 11
+#define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x05"
+#endif
+
+gss_OID_desc gse_sesskey_inq_oid = {
+	GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH,
+	(void *)GSS_KRB5_INQ_SSPI_SESSION_KEY_OID
+};
+
+#ifndef GSS_KRB5_SESSION_KEY_ENCTYPE_OID
+#define GSS_KRB5_SESSION_KEY_ENCTYPE_OID_LENGTH 10
+#define GSS_KRB5_SESSION_KEY_ENCTYPE_OID  "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x04"
+#endif
+
+gss_OID_desc gse_sesskeytype_oid = {
+	GSS_KRB5_SESSION_KEY_ENCTYPE_OID_LENGTH,
+	(void *)GSS_KRB5_SESSION_KEY_ENCTYPE_OID
+};
 
 /* The Heimdal OID for getting the PAC */
 #define EXTRACT_PAC_AUTHZ_DATA_FROM_SEC_CONTEXT_OID_LENGTH 8
@@ -149,4 +170,96 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 #endif
 	return NT_STATUS_ACCESS_DENIED;
 }
+
+NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
+				gss_ctx_id_t gssapi_context,
+				DATA_BLOB *session_key, 
+				uint32_t *keytype)
+{
+	OM_uint32 gss_min, gss_maj;
+	gss_buffer_set_t set = GSS_C_NO_BUFFER_SET;
+
+	gss_maj = gss_inquire_sec_context_by_oid(
+				&gss_min, gssapi_context,
+				&gse_sesskey_inq_oid, &set);
+	if (gss_maj) {
+		DEBUG(0, ("gss_inquire_sec_context_by_oid failed [%s]\n",
+			  gssapi_error_string(mem_ctx, gss_maj, gss_min, gss_mech_krb5)));
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if ((set == GSS_C_NO_BUFFER_SET) ||
+	    (set->count == 0)) {
+#ifdef HAVE_GSSKRB5_GET_SUBKEY
+		krb5_keyblock *subkey;
+		gss_maj = gsskrb5_get_subkey(&gss_min,
+					     gssapi_context,
+					     &subkey);
+		if (gss_maj != 0) {
+			DEBUG(1, ("NO session key for this mech\n"));
+			return NT_STATUS_NO_USER_SESSION_KEY;
+		}
+		if (session_key) {
+			*session_key = data_blob_talloc(mem_ctx,
+							KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
+		}
+		if (keytype) {
+			*keytype = KRB5_KEY_TYPE(subkey);
+		}
+		krb5_free_keyblock(NULL /* should be krb5_context */, subkey);
+		return NT_STATUS_OK;
+#else
+		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
+			  "OID for data in results:\n"));
+		dump_data(1, (uint8_t *)set->elements[1].value,
+			     set->elements[1].length);
+		return NT_STATUS_NO_USER_SESSION_KEY;
+#endif
+	}
+
+	if (session_key) {
+		*session_key = data_blob_talloc(mem_ctx, set->elements[0].value,
+						set->elements[0].length);
+	}
+
+	if (keytype) {
+		char *oid;
+		char *p, *q = NULL;
+		
+		if (set->count < 2
+		    || memcmp(set->elements[1].value,
+			      gse_sesskeytype_oid.elements,
+			      gse_sesskeytype_oid.length) != 0) {
+			/* Perhaps a non-krb5 session key */
+			*keytype = 0;
+			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			return NT_STATUS_OK;
+		}
+		if (!ber_read_OID_String(mem_ctx,
+					 data_blob_const(set->elements[1].value,
+							 set->elements[1].length), &oid)) {
+			TALLOC_FREE(oid);
+			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		p = strrchr(oid, '.');
+		if (!p) {
+			TALLOC_FREE(oid);
+			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			return NT_STATUS_INVALID_PARAMETER;
+		} else {
+			p++;
+			*keytype = strtoul(p, &q, 10);
+			if (q == NULL || *q != '\0') {
+				TALLOC_FREE(oid);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		}
+		TALLOC_FREE(oid);
+	}
+	
+	gss_maj = gss_release_buffer_set(&gss_min, &set);
+	return NT_STATUS_OK;
+}
+
 #endif

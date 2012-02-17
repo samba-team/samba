@@ -24,6 +24,18 @@
 struct PAC_SIGNATURE_DATA;
 struct PAC_DATA;
 
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
+#define KRB5_KEY_TYPE(k)	((k)->keytype)
+#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
+#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
+#define KRB5_KEY_DATA_CAST	void
+#else /* MIT */
+#define KRB5_KEY_TYPE(k)	((k)->enctype)
+#define KRB5_KEY_LENGTH(k)	((k)->length)
+#define KRB5_KEY_DATA(k)	((k)->contents)
+#define KRB5_KEY_DATA_CAST	krb5_octet
+#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
+
 int create_kerberos_key_from_string_direct(krb5_context context,
 						  krb5_principal host_princ,
 						  krb5_data *password,
@@ -76,6 +88,11 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 				gss_ctx_id_t gssapi_context,
 				gss_name_t gss_client_name,
 				DATA_BLOB *pac_data);
+NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
+				gss_ctx_id_t gssapi_context,
+				DATA_BLOB *session_key, 
+				uint32_t *keytype);
+
 DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8_t tok_id[2]);
 
 bool gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8_t tok_id[2]);

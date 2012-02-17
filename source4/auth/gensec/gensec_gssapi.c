@@ -1229,6 +1229,7 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_NEW_SPNEGO) {
 		NTSTATUS status;
+		uint32_t keytype;
 
 		if (!(gensec_gssapi_state->gss_got_flags & GSS_C_INTEG_FLAG)) {
 			return false;
@@ -1241,16 +1242,27 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 			return false;
 		}
 
-		status = gensec_gssapi_init_lucid(gensec_gssapi_state);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
+		status = gssapi_get_session_key(gensec_gssapi_state,
+						gensec_gssapi_state->gssapi_context, NULL, &keytype);
+		/* 
+		 * We should do a proper sig on the mechListMic unless
+		 * we know we have to be backwards compatible with
+		 * earlier windows versions.  
+		 * 
+		 * Negotiating a non-krb5
+		 * mech for example should be regarded as having
+		 * NEW_SPNEGO
+		 */
+		if (NT_STATUS_IS_OK(status)) {
+			switch (keytype) {
+			case ENCTYPE_DES_CBC_CRC:
+			case ENCTYPE_DES_CBC_MD5:
+			case ENCTYPE_ARCFOUR_HMAC:
+			case ENCTYPE_DES3_CBC_SHA1:
+				return false;
+			}
 		}
-
-		if (gensec_gssapi_state->lucid->protocol == 1) {
-			return true;
-		}
-
-		return false;
+		return true;
 	}
 	/* We can always do async (rather than strict request/reply) packets.  */
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
@@ -1271,30 +1283,7 @@ static NTSTATUS gensec_gssapi_session_key(struct gensec_security *gensec_securit
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-	OM_uint32 maj_stat, min_stat;
-	krb5_keyblock *subkey;
-
-	if (gensec_gssapi_state->sasl_state != STAGE_DONE) {
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	maj_stat = gsskrb5_get_subkey(&min_stat,
-				      gensec_gssapi_state->gssapi_context,
-				      &subkey);
-	if (maj_stat != 0) {
-		DEBUG(1, ("NO session key for this mech\n"));
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-	
-	DEBUG(10, ("Got KRB5 session key of length %d%s\n",
-		   (int)KRB5_KEY_LENGTH(subkey),
-		   (gensec_gssapi_state->sasl_state == STAGE_DONE)?" (done)":""));
-	*session_key = data_blob_talloc(mem_ctx,
-					KRB5_KEY_DATA(subkey), KRB5_KEY_LENGTH(subkey));
-	krb5_free_keyblock(gensec_gssapi_state->smb_krb5_context->krb5_context, subkey);
-	dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
-
-	return NT_STATUS_OK;
+	return gssapi_get_session_key(mem_ctx, gensec_gssapi_state->gssapi_context, session_key, NULL);
 }
 
 /* Get some basic (and authorization) information about the user on
