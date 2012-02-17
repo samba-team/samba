@@ -941,60 +941,6 @@ static void smbd_conf_updated(struct messaging_context *msg,
 	reload_services(sconn, conn_snum_used, false);
 }
 
-static NTSTATUS smbd_server_connection_loop_once(struct tevent_context *ev_ctx,
-						 struct smbd_server_connection *conn)
-{
-	int timeout;
-	int num_pfds = 0;
-	int ret;
-	bool retry;
-
-	timeout = SMBD_SELECT_TIMEOUT * 1000;
-
-	/*
-	 * Are there any timed events waiting ? If so, ensure we don't
-	 * select for longer than it would take to wait for them.
-	 */
-
-	event_add_to_poll_args(ev_ctx, conn, &conn->pfds, &num_pfds, &timeout);
-
-	/* Process a signal and timed events now... */
-	if (run_events_poll(ev_ctx, 0, NULL, 0)) {
-		return NT_STATUS_RETRY;
-	}
-
-	{
-		int sav;
-		START_PROFILE(smbd_idle);
-
-		ret = poll(conn->pfds, num_pfds, timeout);
-		sav = errno;
-
-		END_PROFILE(smbd_idle);
-		errno = sav;
-	}
-
-	if (ret == -1) {
-		if (errno == EINTR) {
-			return NT_STATUS_RETRY;
-		}
-		return map_nt_error_from_unix(errno);
-	}
-
-	retry = run_events_poll(ev_ctx, ret, conn->pfds, num_pfds);
-	if (retry) {
-		return NT_STATUS_RETRY;
-	}
-
-	/* Did we timeout ? */
-	if (ret == 0) {
-		return NT_STATUS_RETRY;
-	}
-
-	/* should not be reached */
-	return NT_STATUS_INTERNAL_ERROR;
-}
-
 /*
  * Only allow 5 outstanding trans requests. We're allocating memory, so
  * prevent a DoS.
@@ -3380,18 +3326,15 @@ void smbd_process(struct tevent_context *ev_ctx,
 	TALLOC_FREE(frame);
 
 	while (True) {
-		NTSTATUS status;
-
 		frame = talloc_stackframe_pool(8192);
 
 		errno = 0;
-
-		status = smbd_server_connection_loop_once(ev_ctx, sconn);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY) &&
-		    !NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("smbd_server_connection_loop_once failed: %s,"
-				  " exiting\n", nt_errstr(status)));
-			break;
+		if (tevent_loop_once(ev_ctx) == -1) {
+			if (errno != EINTR) {
+				DEBUG(3, ("tevent_loop_once failed: %s,"
+					  " exiting\n", strerror(errno) ));
+				break;
+			}
 		}
 
 		TALLOC_FREE(frame);
