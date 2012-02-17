@@ -838,7 +838,7 @@ RebootOnCompletion=No
         child.sendline("shutdown -r -t 0")
         self.port_wait("${WIN_IP}", 139, wait_for_fail=True)
         self.port_wait("${WIN_IP}", 139)
-        self.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
+        self.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'], retries=60, delay=5 )
 
 
     def start_winvm(self, vm):
