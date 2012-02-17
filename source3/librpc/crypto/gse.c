@@ -59,15 +59,6 @@ gss_OID_desc gse_sesskeytype_oid = {
 	(void *)GSS_KRB5_SESSION_KEY_ENCTYPE_OID
 };
 
-#define GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID_LENGTH 12
-/*					    EXTRACTION OID				   AUTHZ ID */
-#define GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x0a" "\x01"
-
-gss_OID_desc gse_authz_data_oid = {
-	GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID_LENGTH,
-	(void *)GSE_EXTRACT_RELEVANT_AUTHZ_DATA_OID
-};
-
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
 
 struct gse_context {
