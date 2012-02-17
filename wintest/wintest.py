@@ -658,6 +658,7 @@ options {
         '''open a telnet connection to a windows server, return the pexpect child'''
         set_route = False
         set_dns = False
+        set_telnetclients = True
         if self.getvar('WIN_IP'):
             ip = self.getvar('WIN_IP')
         else:
@@ -681,12 +682,24 @@ options {
             child.expect("password:")
             child.sendline(password)
             i = child.expect(["C:",
+                              "TelnetClients",
                               "Denying new connections due to the limit on number of connections",
                               "No more connections are allowed to telnet server",
                               "Unable to connect to remote host",
                               "No route to host",
                               "Connection refused",
                               pexpect.EOF])
+            if i == 1:
+                if set_telnetclients:
+                    self.run_cmd('bin/net rpc group addmem TelnetClients "authenticated users" -S $WIN_IP -U$WIN_USER%$WIN_PASS')
+                    child.close()
+                    retries -= 1
+                    set_telnetclients = False
+                    self.info("retrying (retries=%u delay=%u)" % (retries, delay))
+                    continue
+                else:
+                    raise RuntimeError("Failed to connect with telnet due to missing TelnetClients membership")
+
             if i != 0:
                 child.close()
                 time.sleep(delay)
