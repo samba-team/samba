@@ -35,10 +35,6 @@
 #include "smb_krb5.h"
 #include "gse_krb5.h"
 
-#ifndef GSS_C_DCE_STYLE
-#define GSS_C_DCE_STYLE 0x1000
-#endif
-
 #ifndef GSS_KRB5_INQ_SSPI_SESSION_KEY_OID
 #define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID_LENGTH 11
 #define GSS_KRB5_INQ_SSPI_SESSION_KEY_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x05"
