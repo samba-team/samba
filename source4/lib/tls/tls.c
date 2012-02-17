@@ -28,7 +28,7 @@
 #include "param/param.h"
 
 #if ENABLE_GNUTLS
-#include "gnutls/gnutls.h"
+#include <gnutls/gnutls.h>
 
 #define DH_BITS 1024
 

@@ -22,8 +22,8 @@
 #include "includes.h"
 
 #if ENABLE_GNUTLS
-#include "gnutls/gnutls.h"
-#include "gnutls/x509.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/x509.h>
 #if HAVE_GCRYPT_H
 #include <gcrypt.h>
 #endif
