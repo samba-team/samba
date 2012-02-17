@@ -621,8 +621,8 @@ static NTSTATUS gse_get_session_key(TALLOC_CTX *mem_ctx,
 		char *oid;
 		char *p, *q = NULL;
 		if (!ber_read_OID_String(talloc_tos(), 
-					 data_blob_const(set->elements[0].value,
-							 set->elements[0].length), &oid)) {
+					 data_blob_const(set->elements[1].value,
+							 set->elements[1].length), &oid)) {
 			TALLOC_FREE(oid);
 			gss_maj = gss_release_buffer_set(&gss_min, &set);
 			return NT_STATUS_INVALID_PARAMETER;
