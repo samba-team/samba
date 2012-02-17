@@ -554,7 +554,6 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 
 	for (idx=1; idx < count; idx += 3) {
 		const uint8_t *inhdr = NULL;
-		uint32_t in_flags;
 		uint8_t *outhdr = NULL;
 		uint8_t *outbody = NULL;
 		uint32_t next_command_ofs = 0;
@@ -567,7 +566,6 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		}
 
 		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
-		in_flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 
 		outhdr = talloc_zero_array(vector, uint8_t,
 				      OUTVEC_ALLOC_SIZE);

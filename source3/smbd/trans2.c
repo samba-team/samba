@@ -1539,7 +1539,6 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	uint32_t len;
 	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
 	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
-	time_t c_date = (time_t)0;
 	char *nameptr;
 	char *last_entry_ptr;
 	bool was_8_3;
@@ -1575,7 +1574,6 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	create_date = convert_timespec_to_time_t(create_date_ts);
 	mdate = convert_timespec_to_time_t(mdate_ts);
 	adate = convert_timespec_to_time_t(adate_ts);
-	c_date = convert_timespec_to_time_t(cdate_ts);
 
 	/* align the record */
 	SMB_ASSERT(align >= 1);

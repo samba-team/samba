@@ -2646,7 +2646,6 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 {
 	struct smb_request req;
 	uint16_t num_replies;
-	size_t out_len;
 	char *outbuf;
 	bool ok;
 
@@ -2702,8 +2701,6 @@ static bool smbd_echo_reply(struct smbd_echo_state *state,
 	if (req.buflen > 0) {
 		memcpy(smb_buf(req.outbuf), req.buf, req.buflen);
 	}
-
-	out_len = smb_len(req.outbuf) + 4;
 
 	ok = srv_send_smb(req.sconn,
 			  (char *)outbuf,

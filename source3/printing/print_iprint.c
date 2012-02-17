@@ -866,7 +866,6 @@ static int iprint_queue_get(const char *sharename,
 	int		job_id;		/* job-id attribute */
 	int		job_k_octets;	/* job-k-octets attribute */
 	time_t		job_time;	/* time-at-creation attribute */
-	time_t		printer_current_time = 0;	/* printer's current time */
 	time_t		printer_up_time = 0;	/* printer's uptime */
 	ipp_jstate_t	job_status;	/* job-status attribute */
 	int		job_priority;	/* job-priority attribute */
@@ -992,10 +991,6 @@ static int iprint_queue_get(const char *sharename,
 	if ((attr = ippFindAttribute(response, "printer-state-message",
 	                             IPP_TAG_TEXT)) != NULL)
 		fstrcpy(status->message, attr->values[0].string.text);
-
-	if ((attr = ippFindAttribute(response, "printer-current-time",
-	                             IPP_TAG_DATE)) != NULL)
-		printer_current_time = ippDateToTime(attr->values[0].date);
 
 	if ((attr = ippFindAttribute(response, "printer-up-time",
 	                             IPP_TAG_INTEGER)) != NULL)

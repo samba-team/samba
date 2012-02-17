@@ -78,7 +78,7 @@ static bool gss_oid_equal(const gss_OID o1, const gss_OID o2)
 static int gse_context_destructor(void *ptr)
 {
 	struct gse_context *gse_ctx;
-	OM_uint32 gss_min, gss_maj;
+	OM_uint32 gss_min;
 
 	gse_ctx = talloc_get_type_abort(ptr, struct gse_context);
 	if (gse_ctx->k5ctx) {
@@ -94,24 +94,24 @@ static int gse_context_destructor(void *ptr)
 		gse_ctx->k5ctx = NULL;
 	}
 	if (gse_ctx->gssapi_context != GSS_C_NO_CONTEXT) {
-		gss_maj = gss_delete_sec_context(&gss_min,
+		(void)gss_delete_sec_context(&gss_min,
 						 &gse_ctx->gssapi_context,
 						 GSS_C_NO_BUFFER);
 	}
 	if (gse_ctx->server_name) {
-		gss_maj = gss_release_name(&gss_min,
+		(void)gss_release_name(&gss_min,
 					   &gse_ctx->server_name);
 	}
 	if (gse_ctx->client_name) {
-		gss_maj = gss_release_name(&gss_min,
+		(void)gss_release_name(&gss_min,
 					   &gse_ctx->client_name);
 	}
 	if (gse_ctx->creds) {
-		gss_maj = gss_release_cred(&gss_min,
+		(void)gss_release_cred(&gss_min,
 					   &gse_ctx->creds);
 	}
 	if (gse_ctx->delegated_cred_handle) {
-		gss_maj = gss_release_cred(&gss_min,
+		(void)gss_release_cred(&gss_min,
 					   &gse_ctx->delegated_cred_handle);
 	}
 

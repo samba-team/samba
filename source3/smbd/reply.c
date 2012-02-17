@@ -3525,10 +3525,8 @@ static int setup_readX_header(struct smb_request *req, char *outbuf,
 			      size_t smb_maxcnt)
 {
 	int outsize;
-	char *data;
 
 	outsize = srv_set_message(outbuf,12,smb_maxcnt,False);
-	data = smb_buf(outbuf);
 
 	memset(outbuf+smb_vwv0,'\0',24); /* valgrind init. */
 

@@ -1293,7 +1293,6 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	time_t t;
 	uint32 rid;
 	fstring tmp;
 
@@ -1323,8 +1322,6 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 			  sid_string_dbg(sid)));
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-
-	t = centry_time(centry);
 
 	/* In the salted case this isn't actually the nt_hash itself,
 	   but the MD5 of the salt + nt_hash. Let the caller

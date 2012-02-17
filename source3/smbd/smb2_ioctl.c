@@ -119,7 +119,6 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 					struct smbd_smb2_request);
 	const uint8_t *inbody;
 	int i = req->current_idx;
-	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint32_t in_ctl_code;
@@ -159,8 +158,6 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	in_ctl_code		= IVAL(inbody, 0x04);
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
-
-	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x30);
 	if (outbody.data == NULL) {

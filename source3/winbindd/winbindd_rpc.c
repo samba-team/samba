@@ -972,7 +972,6 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 
 	do {
 		struct lsa_DomainList dom_list;
-		uint32_t start_idx;
 		uint32_t i;
 
 		/*
@@ -995,7 +994,6 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		start_idx = count;
 		count += dom_list.count;
 
 		array = talloc_realloc(mem_ctx,

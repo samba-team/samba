@@ -156,14 +156,13 @@ static void cli_symlink_delete_on_close_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_symlink_state *state = tevent_req_data(
 		req, struct cli_symlink_state);
-	NTSTATUS status;
-
-	status = cli_nt_delete_on_close_recv(subreq);
-	TALLOC_FREE(subreq);
 
 	/*
 	 * Ignore status, we can't do much anyway in case of failure
 	 */
+
+	(void)cli_nt_delete_on_close_recv(subreq);
+	TALLOC_FREE(subreq);
 
 	subreq = cli_close_send(state, state->ev, state->cli, state->fnum);
 	if (tevent_req_nomem(subreq, req)) {

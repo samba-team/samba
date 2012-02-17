@@ -114,8 +114,6 @@ static void smbd_smb2_request_write_done(struct tevent_req *subreq)
 {
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
-	int i = req->current_idx;
-	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint32_t out_count = 0;
@@ -133,8 +131,6 @@ static void smbd_smb2_request_write_done(struct tevent_req *subreq)
 		}
 		return;
 	}
-
-	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x10);
 	if (outbody.data == NULL) {

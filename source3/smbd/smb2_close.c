@@ -32,7 +32,6 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
 	int i = req->current_idx;
-	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	uint16_t in_flags;
 	uint64_t in_file_id_persistent;
@@ -68,7 +67,6 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, status);
 	}
 
-	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 	return smbd_smb2_request_done(req, outbody, NULL);
 }
 

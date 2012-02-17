@@ -264,8 +264,6 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 {
 	struct smbd_smb2_request *smb2req = tevent_req_callback_data(tsubreq,
 					struct smbd_smb2_request);
-	int i = smb2req->current_idx;
-	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint8_t out_oplock_level = 0;
@@ -336,8 +334,6 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	if (out_context_buffer.length > 0) {
 		out_context_buffer_offset = SMB2_HDR_BODY + 0x58;
 	}
-
-	outhdr = (uint8_t *)smb2req->out.vector[i].iov_base;
 
 	outbody = data_blob_talloc(smb2req->out.vector, NULL, 0x58);
 	if (outbody.data == NULL) {
