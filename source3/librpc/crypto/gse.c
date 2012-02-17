@@ -581,10 +581,7 @@ static NTSTATUS gse_get_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	if ((set == GSS_C_NO_BUFFER_SET) ||
-	    (set->count != 2) ||
-	    (memcmp(set->elements[1].value,
-		    gse_sesskeytype_oid.elements,
-		    gse_sesskeytype_oid.length) != 0)) {
+	    (set->count == 0)) {
 #ifdef HAVE_GSSKRB5_GET_SUBKEY
 		krb5_keyblock *subkey;
 		gss_maj = gsskrb5_get_subkey(&gss_min,
@@ -620,6 +617,16 @@ static NTSTATUS gse_get_session_key(TALLOC_CTX *mem_ctx,
 	if (keytype) {
 		char *oid;
 		char *p, *q = NULL;
+		
+		if (set->count < 2
+		    || memcmp(set->elements[1].value,
+			      gse_sesskeytype_oid.elements,
+			      gse_sesskeytype_oid.length) != 0) {
+			/* Perhaps a non-krb5 session key */
+			*keytype = 0;
+			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			return NT_STATUS_OK;
+		}
 		if (!ber_read_OID_String(talloc_tos(), 
 					 data_blob_const(set->elements[1].value,
 							 set->elements[1].length), &oid)) {
