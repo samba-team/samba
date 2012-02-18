@@ -390,6 +390,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 				   const DATA_BLOB *lm_response,
 				   const DATA_BLOB *nt_response,
 				   uint32 flags,
+				   uint32 extra_logon_parameters,
 				   uint8 lm_key[8],
 				   uint8 user_session_key[16],
 				   char **error_string,
@@ -409,7 +410,8 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	request.flags = flags;
 
-	request.data.auth_crap.logon_parameters = MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT | MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
+	request.data.auth_crap.logon_parameters = extra_logon_parameters
+		| MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT | MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
 
 	if (require_membership_of_sid)
 		fstrcpy(request.data.auth_crap.require_membership_of_sid, require_membership_of_sid);
@@ -585,6 +587,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX
 					      &ntlmssp_state->lm_resp,
 					      &ntlmssp_state->nt_resp, 
 					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_USER_SESSION_KEY | WBFLAG_PAM_UNIX_NAME,
+					      0,
 					      lm_key, user_sess_key, 
 					      &error_string, &unix_name);
 
@@ -2032,7 +2035,7 @@ static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
 							      &challenge, 
 							      &lm_response, 
 							      &nt_response, 
-							      flags, 
+							      flags, 0,
 							      lm_key, 
 							      user_session_key,
 							      &error_string,
@@ -2486,7 +2489,7 @@ static bool check_auth_crap(void)
 					      &opt_challenge, 
 					      &opt_lm_response, 
 					      &opt_nt_response, 
-					      flags,
+					      flags, 0,
 					      (unsigned char *)lm_key, 
 					      (unsigned char *)user_session_key, 
 					      &error_string, NULL);

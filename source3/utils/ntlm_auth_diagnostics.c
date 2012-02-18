@@ -98,7 +98,7 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which)
 					      &chall,
 					      &lm_response,
 					      &nt_response,
-					      flags,
+					      flags, 0,
 					      lm_key, 
 					      user_session_key,
 					      &error_string, NULL);
@@ -197,7 +197,7 @@ static bool test_ntlm_in_lm(void)
 					      &chall,
 					      &nt_response,
 					      NULL,
-					      flags,
+					      flags, 0,
 					      lm_key,
 					      user_session_key,
 					      &error_string, NULL);
@@ -268,7 +268,7 @@ static bool test_ntlm_in_both(void)
 					      &chall,
 					      &nt_response,
 					      &nt_response,
-					      flags,
+					      flags, 0,
 					      lm_key,
 					      user_session_key,
 					      &error_string, NULL);
@@ -359,7 +359,7 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 					      &chall,
 					      &lmv2_response,
 					      &ntlmv2_response,
-					      flags,
+					      flags, 0,
 					      NULL, 
 					      user_session_key,
 					      &error_string, NULL);
@@ -510,7 +510,7 @@ static bool test_plaintext(enum ntlm_break break_which)
 					      &chall,
 					      &lm_response,
 					      &nt_response,
-					      flags,
+					      flags, MSV1_0_CLEARTEXT_PASSWORD_ALLOWED,
 					      lm_key,
 					      user_session_key,
 					      &error_string, NULL);
