@@ -322,6 +322,7 @@ done:
 /**
  * basic test for doing a durable open
  * and do a durable reopen on the same connection
+ * while the first open is still active (fails)
  */
 bool test_durable_open_reopen1(struct torture_context *tctx,
 			       struct smb2_tree *tree)
