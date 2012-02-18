@@ -201,9 +201,8 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 
 	if (rejected_mask != 0) {
 		return NT_STATUS_ACCESS_DENIED;
-	} else {
-		return NT_STATUS_OK;
 	}
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS check_parent_access(struct connection_struct *conn,
