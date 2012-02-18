@@ -67,6 +67,7 @@ class strcasecmp_m_Tests(samba.tests.TestCase):
 
 class strstr_m_Tests(samba.tests.TestCase):
     """strstr_m tests in simple ASCII and unicode strings"""
+
     def test_strstr_m(self):
         # A, B, strstr_m(A, B)
         cases = [('hello', 'hello', 'hello'),

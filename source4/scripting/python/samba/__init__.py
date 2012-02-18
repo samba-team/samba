@@ -28,14 +28,16 @@ import os
 import sys
 import samba.param
 
+
 def source_tree_topdir():
     """Return the top level source directory."""
-    paths = [ "../../..", "../../../.." ]
+    paths = ["../../..", "../../../.."]
     for p in paths:
         topdir = os.path.normpath(os.path.join(os.path.dirname(__file__), p))
         if os.path.exists(os.path.join(topdir, 'source4')):
             return topdir
     raise RuntimeError("unable to find top level source directory")
+
 
 def in_source_tree():
     """Return True if we are running from within the samba source tree"""
@@ -48,6 +50,7 @@ def in_source_tree():
 
 import ldb
 from samba._ldb import Ldb as _Ldb
+
 
 class Ldb(_Ldb):
     """Simple Samba-specific LDB subclass that takes care
@@ -166,7 +169,8 @@ class Ldb(_Ldb):
         # Try to delete user/computer accounts to allow deletion of groups
         self.erase_users_computers(basedn)
 
-        # Delete the 'visible' records, and the invisble 'deleted' records (if this DB supports it)
+        # Delete the 'visible' records, and the invisble 'deleted' records (if
+        # this DB supports it)
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE,
                        "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
                        [], controls=["show_deleted:0", "show_recycled:0"]):
@@ -178,7 +182,8 @@ class Ldb(_Ldb):
                     raise
 
         res = self.search(basedn, ldb.SCOPE_SUBTREE,
-            "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", [], controls=["show_deleted:0", "show_recycled:0"])
+            "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
+            [], controls=["show_deleted:0", "show_recycled:0"])
         assert len(res) == 0
 
         # delete the specials

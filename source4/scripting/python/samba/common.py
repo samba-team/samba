@@ -18,7 +18,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import ldb, dsdb
+
+import ldb
+import dsdb
+
 
 def confirm(msg, forced=False, allow_all=False):
     """confirm an action with the user
@@ -73,7 +76,7 @@ class dsdb_Dn(object):
                 syntax_oid = dsdb.DSDB_SYNTAX_STRING_DN
             else:
                 syntax_oid = dsdb.DSDB_SYNTAX_OR_NAME
-        if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_STRING_DN ]:
+        if syntax_oid in [dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_STRING_DN]:
             # it is a binary DN
             colons = dnstring.split(':')
             if len(colons) < 4:

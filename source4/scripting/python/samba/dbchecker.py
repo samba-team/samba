@@ -27,11 +27,12 @@ from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
 from samba.common import dsdb_Dn
 
+
 class dbcheck(object):
     """check a SAM database for errors"""
 
-    def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False, yes=False,
-                 quiet=False, in_transaction=False):
+    def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False,
+                 yes=False, quiet=False, in_transaction=False):
         self.samdb = samdb
         self.dict_oid_name = None
         self.samdb_schema = (samdb_schema or samdb)
@@ -67,20 +68,14 @@ class dbcheck(object):
         if error_count != 0 and not self.fix:
             self.report("Please use --fix to fix these errors")
 
-
         self.report('Checked %u objects (%u errors)' % (len(res), error_count))
-
         return error_count
-
 
     def report(self, msg):
         '''print a message unless quiet is set'''
         if not self.quiet:
             print(msg)
 
-
-    ################################################################
-    # a local confirm function that obeys the --fix and --yes options
     def confirm(self, msg, allow_all=False, forced=False):
         '''confirm a change'''
         if not self.fix:
@@ -114,7 +109,6 @@ class dbcheck(object):
             return True
         return c
 
-
     def do_modify(self, m, controls, msg, validate=True):
         '''perform a modify with optional verbose output'''
         if self.verbose:
@@ -126,9 +120,6 @@ class dbcheck(object):
             return False
         return True
 
-
-    ################################################################
-    # handle empty attributes
     def err_empty_attribute(self, dn, attrname):
         '''fix empty attributes'''
         self.report("ERROR: Empty attribute %s in %s" % (attrname, dn))
@@ -143,15 +134,13 @@ class dbcheck(object):
                           "Failed to remove empty attribute %s" % attrname, validate=False):
             self.report("Removed empty attribute %s" % attrname)
 
-
-    ################################################################
-    # handle normalisation mismatches
     def err_normalise_mismatch(self, dn, attrname, values):
         '''fix attribute normalisation errors'''
         self.report("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
         mod_list = []
         for val in values:
-            normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, [val])
+            normalised = self.samdb.dsdb_normalise_attributes(
+                self.samdb_schema, attrname, [val])
             if len(normalised) != 1:
                 self.report("Unable to normalise value '%s'" % val)
                 mod_list.append((val, ''))
@@ -168,7 +157,8 @@ class dbcheck(object):
             (val, nval) = mod_list[i]
             m['value_%u' % i] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
             if nval != '':
-                m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD, attrname)
+                m['normv_%u' % i] = ldb.MessageElement(nval, ldb.FLAG_MOD_ADD,
+                    attrname)
 
         if self.do_modify(m, ["relax:0", "show_recycled:1"],
                           "Failed to normalise attribute %s" % attrname,
@@ -179,10 +169,8 @@ class dbcheck(object):
         '''see if a dsdb_Dn is the special Deleted Objects DN'''
         return dsdb_dn.prefix == "B:32:18E2EA80684F11D2B9AA00C04F79F805:"
 
-
-    ################################################################
-    # handle a DN pointing to a deleted object
     def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
+        """handle a DN pointing to a deleted object"""
         self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
         self.report("Target GUID points at deleted DN %s" % correct_dn)
         if not self.confirm_all('Remove DN link?', 'remove_all_deleted_DN_links'):
@@ -195,9 +183,8 @@ class dbcheck(object):
                           "Failed to remove deleted DN attribute %s" % attrname):
             self.report("Removed deleted DN on attribute %s" % attrname)
 
-    ################################################################
-    # handle a missing target DN (both GUID and DN string form are missing)
     def err_missing_dn_GUID(self, dn, attrname, val, dsdb_dn):
+        """handle a missing target DN (both GUID and DN string form are missing)"""
         # check if its a backlink
         linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
         if (linkID & 1 == 0) and str(dsdb_dn).find('DEL\\0A') == -1:
@@ -205,10 +192,8 @@ class dbcheck(object):
             return
         self.err_deleted_dn(dn, attrname, val, dsdb_dn, dsdb_dn)
 
-
-    ################################################################
-    # handle a missing GUID extended DN component
     def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
+        """handle a missing GUID extended DN component"""
         self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
         controls=["extended_dn:1:1", "show_recycled:1"]
         try:
@@ -236,10 +221,8 @@ class dbcheck(object):
                           "Failed to fix %s on attribute %s" % (errstr, attrname)):
             self.report("Fixed %s on attribute %s" % (errstr, attrname))
 
-
-    ################################################################
-    # handle a DN string being incorrect
     def err_dn_target_mismatch(self, dn, attrname, val, dsdb_dn, correct_dn, errstr):
+        """handle a DN string being incorrect"""
         self.report("ERROR: incorrect DN string component for %s in object %s - %s" % (attrname, dn, val))
         dsdb_dn.dn = correct_dn
 
@@ -254,8 +237,6 @@ class dbcheck(object):
                           "Failed to fix incorrect DN string on attribute %s" % attrname):
             self.report("Fixed incorrect DN string on attribute %s" % (attrname))
 
-    ################################################################
-    # handle an unknown attribute error
     def err_unknown_attribute(self, obj, attrname):
         '''handle an unknown attribute error'''
         self.report("ERROR: unknown attribute '%s' in %s" % (attrname, obj.dn))
@@ -269,9 +250,6 @@ class dbcheck(object):
                           "Failed to remove unknown attribute %s" % attrname):
             self.report("Removed unknown attribute %s" % (attrname))
 
-
-    ################################################################
-    # handle a missing backlink
     def err_missing_backlink(self, obj, attrname, val, backlink_name, target_dn):
         '''handle a missing backlink value'''
         self.report("ERROR: missing backlink attribute '%s' in %s for link %s in %s" % (backlink_name, target_dn, attrname, obj.dn))
@@ -286,9 +264,6 @@ class dbcheck(object):
                           "Failed to fix missing backlink %s" % backlink_name):
             self.report("Fixed missing backlink %s" % (backlink_name))
 
-
-    ################################################################
-    # handle a orphaned backlink
     def err_orphaned_backlink(self, obj, attrname, val, link_name, target_dn):
         '''handle a orphaned backlink value'''
         self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (attrname, obj.dn, link_name, target_dn))
@@ -302,9 +277,6 @@ class dbcheck(object):
                           "Failed to fix orphaned backlink %s" % link_name):
             self.report("Fixed orphaned backlink %s" % (link_name))
 
-
-    ################################################################
-    # specialised checking for a dn attribute
     def check_dn(self, obj, attrname, syntax_oid):
         '''check a DN attribute for correctness'''
         error_count = 0
@@ -315,12 +287,13 @@ class dbcheck(object):
             guid = dsdb_dn.dn.get_extended_component("GUID")
             if guid is None:
                 error_count += 1
-                self.err_incorrect_dn_GUID(obj.dn, attrname, val, dsdb_dn, "missing GUID")
+                self.err_incorrect_dn_GUID(obj.dn, attrname, val, dsdb_dn,
+                    "missing GUID")
                 continue
 
             guidstr = str(misc.GUID(guid))
 
-            attrs=['isDeleted']
+            attrs = ['isDeleted']
             linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
             reverse_link_name = self.samdb_schema.get_backlink_from_lDAPDisplayName(attrname)
             if reverse_link_name is not None:
@@ -415,9 +388,6 @@ class dbcheck(object):
                           "Failed to fix metadata for attribute %s" % attr):
             self.report("Fixed metadata for attribute %s" % attr)
 
-
-    ################################################################
-    # check one object - calls to individual error handlers above
     def check_object(self, dn, attrs=['*']):
         '''check one object'''
         if self.verbose:
@@ -453,7 +423,6 @@ class dbcheck(object):
                 list_attrs_from_md = self.process_metadata(obj[attrname])
                 got_repl_property_meta_data = True
                 continue
-
 
             # check for empty attributes
             for val in obj[attrname]:

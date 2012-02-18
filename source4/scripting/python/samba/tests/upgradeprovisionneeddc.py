@@ -161,7 +161,8 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         self.assertNotEquals(oem, "")
 
     def test_update_dns_account(self):
-        update_dns_account_password(self.ldbs.sam, self.ldbs.secrets, self.names)
+        update_dns_account_password(self.ldbs.sam, self.ldbs.secrets,
+            self.names)
 
     def test_updateOEMInfo(self):
         realm = self.lp.get("realm")

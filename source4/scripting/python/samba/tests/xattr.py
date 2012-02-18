@@ -83,7 +83,7 @@ class XattrTests(TestCase):
         ntacl.version = 1
         open(tempf, 'w').write("empty")
         try:
-            self.assertRaises(IOError, samba.xattr_tdb.wrap_setxattr, 
+            self.assertRaises(IOError, samba.xattr_tdb.wrap_setxattr,
                     os.path.join("nonexistent", "eadb.tdb"), tempf,
                     "user.unittests", ndr_pack(ntacl))
         finally:

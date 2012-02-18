@@ -27,15 +27,15 @@ class WinregTests(RpcInterfaceTestCase):
 
     def setUp(self):
         super(WinregTests, self).setUp()
-        self.conn = winreg.winreg("ncalrpc:", self.get_loadparm(), 
+        self.conn = winreg.winreg("ncalrpc:", self.get_loadparm(),
                                   self.get_credentials())
 
     def get_hklm(self):
-        return self.conn.OpenHKLM(None, 
+        return self.conn.OpenHKLM(None,
              winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
 
     def test_hklm(self):
-        handle = self.conn.OpenHKLM(None, 
+        handle = self.conn.OpenHKLM(None,
                  winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
         self.conn.CloseKey(handle)
 

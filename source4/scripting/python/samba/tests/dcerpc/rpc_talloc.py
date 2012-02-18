@@ -37,6 +37,7 @@ import talloc
 
 talloc.enable_null_tracking()
 
+
 class TallocTests(samba.tests.TestCase):
     '''test talloc behaviour of pidl generated python code'''
 
@@ -54,7 +55,7 @@ class TallocTests(samba.tests.TestCase):
         # we expect one block for the object, and one for the structure
         self.check_blocks(partial_attribute_set, 2)
 
-        attids = [ 1, 2, 3]
+        attids = [1, 2, 3]
         partial_attribute_set.version = 1
         partial_attribute_set.attids     = attids
         partial_attribute_set.num_attids = len(attids)
