@@ -3178,7 +3178,7 @@ bin/tdbtorture: $(BINARY_PREREQS) $(TDBTORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
 
 bin/timelimit: script/tests/timelimit.o
 	@echo Linking $@
-	@$(CC) -o $@ $(DYNEXP) script/tests/timelimit.o
+	@$(CC) -o $@ $(DYNEXP) script/tests/timelimit.o $(LDFLAGS)
 
 bin/rpc_open_tcp: $(BINARY_PREREQS) $(RPC_OPEN_TCP_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
