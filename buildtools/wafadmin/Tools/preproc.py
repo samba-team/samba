@@ -555,8 +555,7 @@ def parse_char(txt):
 		except KeyError: raise PreprocError("could not parse char literal '%s'" % txt)
 
 @Utils.run_once
-def tokenize(s):
-	"""convert a string into a list of tokens (shlex.split does not apply to c/c++/d)"""
+def tokenize_private(s):
 	ret = []
 	for match in re_clexer.finditer(s):
 		m = match.group
@@ -590,6 +589,10 @@ def tokenize(s):
 				ret.append((name, v))
 				break
 	return ret
+
+def tokenize(s):
+	"""convert a string into a list of tokens (shlex.split does not apply to c/c++/d)"""
+	return tokenize_private(s)[:]
 
 @Utils.run_once
 def define_name(line):
