@@ -39,7 +39,7 @@ case `uname` in
     CTDB_PCAP_LDFLAGS=-lpcap
     LDFLAGS="$LDFLAGS -L/usr/local/lib -lexecinfo"
     AC_SUBST(LDFLAGS)
-    CPPFLAGS="$CPPFLAGS -L/usr/local/include -D_FREEBSD_=1"
+    CPPFLAGS="$CPPFLAGS -I/usr/local/include -D_FREEBSD_=1"
     AC_SUBST(CPPFLAGS)
     ;;
   GNU)
