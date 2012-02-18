@@ -25,4 +25,5 @@
 #include "../lib/crypto/hmacsha256.h"
 #include "../lib/crypto/arcfour.h"
 #include "../lib/crypto/aes.h"
+#include "../lib/crypto/aes_cmac_128.h"
 
