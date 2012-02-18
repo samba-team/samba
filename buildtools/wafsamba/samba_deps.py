@@ -190,8 +190,6 @@ def build_includes(self):
           self.sname, self.includes)
 
 
-
-
 def add_init_functions(self):
     '''This builds the right set of init functions'''
 
@@ -250,7 +248,6 @@ def add_init_functions(self):
     self.ccflags = cflags
 
 
-
 def check_duplicate_sources(bld, tgt_list):
     '''see if we are compiling the same source file more than once
        without an allow_duplicates attribute'''
@@ -297,7 +294,7 @@ def check_duplicate_sources(bld, tgt_list):
         for tname in subsystems[s]:
             if len(subsystems[s][tname]) > 1:
                 raise Utils.WafError("ERROR: source %s is in more than one subsystem of target '%s': %s" % (s, tname, subsystems[s][tname]))
-                
+
     return ret
 
 
