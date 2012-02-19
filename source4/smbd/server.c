@@ -179,8 +179,8 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 					   struct timeval t, void *private_data)
 {
 	const char *binary_name = (const char *)private_data;
-	DEBUG(0,("%s: maximum runtime exceeded - terminating, current ts: %llu\n",
-	      binary_name, (unsigned long long) time(NULL)));
+	DEBUG(0,("%s: maximum runtime exceeded - terminating at %llu, current ts: %llu\n",
+		 binary_name, (unsigned long long)t.tv_sec, (unsigned long long) time(NULL)));
 	exit(0);
 }
 
