@@ -1110,6 +1110,7 @@ done:
 }
 
 static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
+					  uint32_t logon_parameters,
 					  const char *domain, const char *user,
 					  const DATA_BLOB *challenge,
 					  const DATA_BLOB *lm_resp,
@@ -1136,6 +1137,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("make_user_info failed: %s\n", nt_errstr(status)));
 		return status;
 	}
+	user_info->logon_parameters = logon_parameters;
 
 	/* We don't want any more mapping of the username */
 	user_info->mapped_state = True;
@@ -1397,7 +1399,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 		DATA_BLOB chal_blob = data_blob_const(chal, sizeof(chal));
 
 		result = winbindd_dual_auth_passdb(
-			mem_ctx, name_domain, name_user,
+			mem_ctx, 0, name_domain, name_user,
 			&chal_blob, &lm_resp, &nt_resp, info3);
 		goto done;
 	}
@@ -1820,7 +1822,9 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			sizeof(state->request->data.auth_crap.chal));
 
 		result = winbindd_dual_auth_passdb(
-			state->mem_ctx, name_domain, name_user,
+			state->mem_ctx,
+			state->request->data.auth_crap.logon_parameters,
+			name_domain, name_user,
 			&chal_blob, &lm_resp, &nt_resp, &info3);
 		goto process_result;
 	}
