@@ -468,10 +468,7 @@ def library_flags(self, libs):
     ccflags = []
     ldflags = []
     for lib in TO_LIST(libs):
-        inc_path = getattr(self.env, 'CPPPATH_%s' % lib.upper(), [])
-        lib_path = getattr(self.env, 'LIBPATH_%s' % lib.upper(), [])
-        ccflags.extend(['-I%s' % i for i in inc_path])
-        # note that we do not add the -L in here, as that is added by the waf
+        # note that we do not add the -I and -L in here, as that is added by the waf
         # core. Adding it here would just change the order that it is put on the link line
         # which can cause system paths to be added before internal libraries
         extra_ccflags = TO_LIST(getattr(self.env, 'CCFLAGS_%s' % lib.upper(), []))
