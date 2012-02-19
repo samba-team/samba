@@ -456,7 +456,7 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 						     const struct file_id id)
 {
-	return get_share_mode_lock_fresh(mem_ctx, id, NULL, NULL, NULL);
+	return get_share_mode_lock(mem_ctx, id, NULL, NULL, NULL);
 }
 
 /*******************************************************************

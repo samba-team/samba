@@ -388,7 +388,7 @@ static int the_lock_destructor(struct share_mode_lock *l)
  Get a share_mode_lock, Reference counted to allow nexted calls.
 ********************************************************************/
 
-struct share_mode_lock *get_share_mode_lock_fresh(
+struct share_mode_lock *get_share_mode_lock(
 	TALLOC_CTX *mem_ctx,
 	const struct file_id id,
 	const char *servicepath,

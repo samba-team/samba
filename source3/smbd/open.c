@@ -1949,9 +1949,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		struct timespec old_write_time = smb_fname->st.st_ex_mtime;
 		id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 
-		lck = get_share_mode_lock_fresh(talloc_tos(), id,
-						conn->connectpath,
-						smb_fname, &old_write_time);
+		lck = get_share_mode_lock(talloc_tos(), id,
+					  conn->connectpath,
+					  smb_fname, &old_write_time);
 		if (lck == NULL) {
 			DEBUG(0, ("Could not get share mode lock\n"));
 			return NT_STATUS_SHARING_VIOLATION;
@@ -2191,9 +2191,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		id = fsp->file_id;
 
-		lck = get_share_mode_lock_fresh(talloc_tos(), id,
-						conn->connectpath,
-						smb_fname, &old_write_time);
+		lck = get_share_mode_lock(talloc_tos(), id,
+					  conn->connectpath,
+					  smb_fname, &old_write_time);
 
 		if (lck == NULL) {
 			DEBUG(0, ("open_file_ntcreate: Could not get share "
@@ -2878,9 +2878,9 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	lck = get_share_mode_lock_fresh(talloc_tos(), fsp->file_id,
-					conn->connectpath, smb_dname,
-					&mtimespec);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
+				  conn->connectpath, smb_dname,
+				  &mtimespec);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for "
