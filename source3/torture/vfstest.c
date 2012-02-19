@@ -25,9 +25,13 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "popt_common.h"
 #include "vfstest.h"
 #include "../libcli/smbreadline/smbreadline.h"
+#include "auth.h"
+#include "serverid.h"
+#include "messages.h"
 
 /* List to hold groups of commands */
 static struct cmd_list {
@@ -424,6 +428,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	char cwd[MAXPATHLEN];
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = tevent_context_init(NULL);
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -469,8 +474,15 @@ int main(int argc, char *argv[])
 
 	/* some basic initialization stuff */
 	sec_init();
+	init_guest_info();
+	locking_init();
+	serverid_parent_init(NULL);
 	vfs.conn = talloc_zero(NULL, connection_struct);
 	vfs.conn->params = talloc_zero(vfs.conn, struct share_params);
+	vfs.conn->sconn = talloc_zero(NULL, struct smbd_server_connection);
+	vfs.conn->sconn->msg_ctx = messaging_init(vfs.conn->sconn, ev);
+	make_session_info_guest(NULL, &vfs.conn->session_info);
+	file_init(vfs.conn->sconn);
 	set_conn_connectpath(vfs.conn, getcwd(cwd, sizeof(cwd)));
 	for (i=0; i < 1024; i++)
 		vfs.files[i] = NULL;
