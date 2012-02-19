@@ -3037,6 +3037,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	if (dom_sid_compare(&global_sid_NULL, &(*pp_sids)[0]) == 0) {
 		DEBUG(3, ("primary group of [%s] not found\n",
 			  pdb_get_username(user)));
+		ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
 
