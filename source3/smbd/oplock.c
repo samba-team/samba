@@ -162,7 +162,7 @@ bool remove_oplock(files_struct *fsp)
 	struct share_mode_lock *lck;
 
 	/* Remove the oplock flag from the sharemode. */
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
 		DEBUG(0,("remove_oplock: failed to lock share entry for "
 			 "file %s\n", fsp_str_dbg(fsp)));
@@ -188,7 +188,7 @@ bool downgrade_oplock(files_struct *fsp)
 	bool ret;
 	struct share_mode_lock *lck;
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
 		DEBUG(0,("downgrade_oplock: failed to lock share entry for "
 			 "file %s\n", fsp_str_dbg(fsp)));
@@ -804,7 +804,7 @@ static void do_break_to_none(struct tevent_req *req)
 		DEBUG(1, ("tevent_wakeup_recv failed\n"));
 		goto done;
 	}
-	lck = get_share_mode_lock(talloc_tos(), state->id);
+	lck = get_existing_share_mode_lock(talloc_tos(), state->id);
 	if (lck == NULL) {
 		DEBUG(1, ("release_level_2_oplocks_on_change: failed to lock "
 			  "share mode entry for file %s.\n",

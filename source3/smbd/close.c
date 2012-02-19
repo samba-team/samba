@@ -347,7 +347,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
 		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
 			  "lock for file %s\n", fsp_str_dbg(fsp)));
@@ -615,7 +615,7 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 	 * must update it in the open file db too. */
 	(void)set_write_time(fsp->file_id, fsp->close_write_time);
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck) {
 		/* Close write times overwrite sticky write times
 		   so we must replace any sticky write time here. */
@@ -1017,7 +1017,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	 * reference to a directory also.
 	 */
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for "
 			  "%s\n", fsp_str_dbg(fsp)));

@@ -1594,7 +1594,8 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 				struct server_id pid)
 {
-	struct share_mode_lock *lck = get_share_mode_lock(talloc_tos(), id);
+	struct share_mode_lock *lck = get_existing_share_mode_lock(
+		talloc_tos(), id);
 	if (lck == NULL) {
 		DEBUG(0, ("could not get share mode lock\n"));
 		return;

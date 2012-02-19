@@ -453,8 +453,8 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
  counts it internally to allow for nested lock fetches.
 ********************************************************************/
 
-struct share_mode_lock *get_share_mode_lock(TALLOC_CTX *mem_ctx,
-					    const struct file_id id)
+struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
+						     const struct file_id id)
 {
 	return get_share_mode_lock_fresh(mem_ctx, id, NULL, NULL, NULL);
 }
@@ -953,7 +953,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct s
 		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
 		  fsp_str_dbg(fsp)));
 
-	lck = get_share_mode_lock(talloc_tos(), fsp->file_id);
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
 		return False;
 	}
@@ -1006,7 +1006,7 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 			    convert_timespec_to_time_t(write_time)),
 		 file_id_string_tos(&fileid)));
 
-	lck = get_share_mode_lock(talloc_tos(), fileid);
+	lck = get_existing_share_mode_lock(talloc_tos(), fileid);
 	if (lck == NULL) {
 		return False;
 	}
@@ -1029,7 +1029,7 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 			    convert_timespec_to_time_t(write_time)),
 		 file_id_string_tos(&fileid)));
 
-	lck = get_share_mode_lock(talloc_tos(), fileid);
+	lck = get_existing_share_mode_lock(talloc_tos(), fileid);
 	if (lck == NULL) {
 		return False;
 	}
