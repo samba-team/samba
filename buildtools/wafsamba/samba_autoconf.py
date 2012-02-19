@@ -373,6 +373,8 @@ def CHECK_CODE(conf, code, define,
 
     (ccflags, ldflags) = library_flags(conf, uselib)
 
+    uselib = [l.upper() for l in uselib]
+
     cflags.extend(ccflags)
 
     if on_target:
@@ -509,9 +511,9 @@ int foo()
 
         (ccflags, ldflags) = library_flags(conf, lib)
         if shlib:
-            res = conf.check(features='cc cshlib', fragment=fragment, lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags)
+            res = conf.check(features='cc cshlib', fragment=fragment, lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper())
         else:
-            res = conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags)
+            res = conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper())
 
         if not res:
             if mandatory:
