@@ -95,10 +95,13 @@ def CHECK_HEADER(conf, h, add_headers=False, lib=None):
     (ccflags, ldflags) = library_flags(conf, lib)
 
     hdrs = hlist_to_string(conf, headers=h)
+    if lib is None:
+        lib = ""
     ret = conf.check(fragment='%s\nint main(void) { return 0; }' % hdrs,
                      type='nolink',
                      execute=0,
                      ccflags=ccflags,
+                     uselib=lib.upper(),
                      msg="Checking for header %s" % h)
     if not ret:
         missing_headers.add(h)
