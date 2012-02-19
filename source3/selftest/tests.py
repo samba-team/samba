@@ -135,6 +135,9 @@ plantestsuite("samba3.ntlm_auth.(s3dc:local)", "s3dc:local", [os.path.join(samba
 
 for env in ["s3dc", "member"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', binpath('smbclient3'), configuration])
+    plantestsuite(
+        "samba3.ntlm_auth.diagnostics(%s:local)" % env, "%s:local" % env,
+        [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_diagnostics.sh"), binpath('ntlm_auth3'), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
 
 for env in ["secserver"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) domain creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN\\\\$DC_USERNAME', '$DC_PASSWORD', binpath('smbclient3'), configuration + " --option=clientntlmv2auth=no"])
