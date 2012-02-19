@@ -1601,12 +1601,14 @@ static uint32_t *ip_key(ctdb_sock_addr *ip)
 	case AF_INET:
 		key[0]	= ip->ip.sin_addr.s_addr;
 		break;
-	case AF_INET6:
-		key[0]	= ip->ip6.sin6_addr.s6_addr32[3];
-		key[1]	= ip->ip6.sin6_addr.s6_addr32[2];
-		key[2]	= ip->ip6.sin6_addr.s6_addr32[1];
-		key[3]	= ip->ip6.sin6_addr.s6_addr32[0];
+	case AF_INET6: {
+		uint32_t *s6_a32 = (uint32_t *)&(ip->ip6.sin6_addr.s6_addr);
+		key[0]	= s6_a32[3];
+		key[1]	= s6_a32[2];
+		key[2]	= s6_a32[1];
+		key[3]	= s6_a32[0];
 		break;
+	}
 	default:
 		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family passed :%u\n", ip->sa.sa_family));
 		return key;

@@ -18,6 +18,7 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <sys/socket.h>
 #include <ctdb.h>
 #include <tdb.h>
 #include <stdlib.h>

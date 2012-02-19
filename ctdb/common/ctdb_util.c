@@ -522,7 +522,7 @@ void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip)
 #endif
 		cip->ip.sin_family = AF_INET;
 		cip->ip.sin_port   = ip->ip6.sin6_port;
-		memcpy(&cip->ip.sin_addr, &ip->ip6.sin6_addr.s6_addr32[3], 4);
+		memcpy(&cip->ip.sin_addr, &ip->ip6.sin6_addr.s6_addr[12], 4);
 	}
 }
 

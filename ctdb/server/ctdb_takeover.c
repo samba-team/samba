@@ -1222,12 +1222,14 @@ static uint32_t *ip_key(ctdb_sock_addr *ip)
 	case AF_INET:
 		key[3]	= htonl(ip->ip.sin_addr.s_addr);
 		break;
-	case AF_INET6:
-		key[0]	= htonl(ip->ip6.sin6_addr.s6_addr32[0]);
-		key[1]	= htonl(ip->ip6.sin6_addr.s6_addr32[1]);
-		key[2]	= htonl(ip->ip6.sin6_addr.s6_addr32[2]);
-		key[3]	= htonl(ip->ip6.sin6_addr.s6_addr32[3]);
+	case AF_INET6: {
+		uint32_t *s6_a32 = (uint32_t *)&(ip->ip6.sin6_addr.s6_addr);
+		key[0]	= htonl(s6_a32[0]);
+		key[1]	= htonl(s6_a32[1]);
+		key[2]	= htonl(s6_a32[2]);
+		key[3]	= htonl(s6_a32[3]);
 		break;
+	}
 	default:
 		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family passed :%u\n", ip->sa.sa_family));
 		return key;
@@ -2800,18 +2802,23 @@ static uint32_t *killtcp_key(ctdb_sock_addr *src, ctdb_sock_addr *dst)
 		key[2]	= dst->ip.sin_port;
 		key[3]	= src->ip.sin_port;
 		break;
-	case AF_INET6:
-		key[0]	= dst->ip6.sin6_addr.s6_addr32[3];
-		key[1]	= src->ip6.sin6_addr.s6_addr32[3];
-		key[2]	= dst->ip6.sin6_addr.s6_addr32[2];
-		key[3]	= src->ip6.sin6_addr.s6_addr32[2];
-		key[4]	= dst->ip6.sin6_addr.s6_addr32[1];
-		key[5]	= src->ip6.sin6_addr.s6_addr32[1];
-		key[6]	= dst->ip6.sin6_addr.s6_addr32[0];
-		key[7]	= src->ip6.sin6_addr.s6_addr32[0];
+	case AF_INET6: {
+		uint32_t *dst6_addr32 =
+			(uint32_t *)&(dst->ip6.sin6_addr.s6_addr);
+		uint32_t *src6_addr32 =
+			(uint32_t *)&(src->ip6.sin6_addr.s6_addr);
+		key[0]	= dst6_addr32[3];
+		key[1]	= src6_addr32[3];
+		key[2]	= dst6_addr32[2];
+		key[3]	= src6_addr32[2];
+		key[4]	= dst6_addr32[1];
+		key[5]	= src6_addr32[1];
+		key[6]	= dst6_addr32[0];
+		key[7]	= src6_addr32[0];
 		key[8]	= dst->ip6.sin6_port;
 		key[9]	= src->ip6.sin6_port;
 		break;
+	}
 	default:
 		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family passed :%u\n", src->sa.sa_family));
 		return key;

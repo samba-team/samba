@@ -35,7 +35,7 @@ PMDA_LIBS = -lpcp -lpcp_pmda
 PMDA_INSTALL = @CTDB_PMDA_INSTALL@
 PMDA_DEST_DIR = /var/lib/pcp/pmdas
 
-CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
+CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
 	-DLOGDIR=\"$(logdir)\" \
