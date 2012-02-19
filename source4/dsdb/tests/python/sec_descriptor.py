@@ -24,7 +24,7 @@ from samba.dcerpc import security
 
 from samba import gensec, sd_utils
 from samba.samdb import SamDB
-from samba.credentials import Credentials
+from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.auth import system_session
 from samba.dsdb import DS_DOMAIN_FUNCTION_2008
 from samba.dcerpc.security import (
@@ -136,6 +136,7 @@ showInAdvancedViewOnly: TRUE
         creds_tmp.set_workstation(creds.get_workstation())
         creds_tmp.set_gensec_features(creds_tmp.get_gensec_features()
                                       | gensec.FEATURE_SEAL)
+        creds_tmp.set_kerberos_state(DONT_USE_KERBEROS) # kinit is too expensive to use in a tight loop
         ldb_target = SamDB(url=host, credentials=creds_tmp, lp=lp)
         return ldb_target
 
