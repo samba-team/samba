@@ -483,6 +483,9 @@ struct ctdb_context {
 
 	/* Used to defer db attach requests while in recovery mode */
 	struct ctdb_deferred_attach_context *deferred_attach;
+
+	/* if we are a child process, do we have a domain socket to send controls on */
+	bool can_send_controls;
 };
 
 struct ctdb_db_context {

@@ -1560,8 +1560,16 @@ int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
 		return ret;
 	}
 
-	/* child process: send the main daemon a control */
+	/* if we dont have a connection to the daemon we can not send
+	   a control. For example sometimes from update_record control child
+	   process.
+	*/
+	if (!ctdb_db->ctdb->can_send_controls) {
+		return -1;
+	}
 
+
+	/* child process: send the main daemon a control */
 	indata.dsize = offsetof(struct ctdb_control_schedule_for_deletion, key) + key.dsize;
 	indata.dptr = talloc_zero_array(ctdb_db, uint8_t, indata.dsize);
 	if (indata.dptr == NULL) {

@@ -346,6 +346,7 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 		if (ctdb->do_setsched) {
 			ctdb_restore_scheduler(ctdb);
 		}
+		ctdb->can_send_controls = false;
 	}
 	return pid;
 }
