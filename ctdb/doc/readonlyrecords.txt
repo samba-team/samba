@@ -23,7 +23,7 @@ We can not make backward incompatible changes the ctdb_ltdb header for the recor
 A Read-Only lock enabled ctdb demon must be able to interoperate with a non-Read-Only
 lock enbled daemon.
 
-Getting a Read-Only look should not be slower than getting a Read-Write lock.
+Getting a Read-Only lock should not be slower than getting a Read-Write lock.
 
 When revoking Read-Only locks for a record, this should involve only those nodes that
 currently hold a Read-Only lock and should avoid broadcasting opportunistic revocations.
@@ -102,7 +102,7 @@ requests.
 
 
 
-Once the revoke process is completedtThere will be at least one deferred request to
+Once the revoke process is completed there will be at least one deferred request to
 access this record. That is the initical call to for an exclusive fetch_lock() that
 triggered the revoke process to be started.
 In addition to this deferred request there may also be additional requests that have
@@ -201,7 +201,7 @@ This will change to instead to something like
     finished:
 
 If the record does not yet exist in the local TDB, we always perform a full fetch for a
-Read-Write lock even if only a Read-Only lock ws requested.
+Read-Write lock even if only a Read-Only lock was requested.
 This means that for first access we always grab a Read-Write lock and thus upgrade any
 requests for Read-Only locks into a Read-Write request.
 This creates the record, migrates it onto the node and makes the local node become
@@ -230,7 +230,7 @@ If this is the LMASTER for the record and the record does not yet exist, LMASTER
 return an error back to the client (*A above) and the client will try to recover.
 In particular, LMASTER will not create a new record for this case.
 
-If this is the LMASTER for the record and the record exists, the PDU will be forwrded to
+If this is the LMASTER for the record and the record exists, the PDU will be forwarded to
 the DMASTER for the record.
 
 If this node is not the DMASTER for this record, we forward the PDU back to the
@@ -279,7 +279,7 @@ be  no-op  (*B below))
 
 Recovery process changes
 ========================
-A recovery implicitely clears/revokes any read only records and delegations from all
+A recovery implicitly clears/revokes any read only records and delegations from all
 databases.
 
 During delegations of Read-Only locks, this is done in such way that delegated records
