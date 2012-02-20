@@ -869,9 +869,6 @@ int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2);
 DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob);
-bool spnego_parse_auth(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *auth);
-DATA_BLOB spnego_gen_auth_response(TALLOC_CTX *ctx, DATA_BLOB *reply, NTSTATUS nt_status,
-				   const char *mechOID);
 bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 				DATA_BLOB blob, NTSTATUS nt_status,
 				const char *mechOID,
@@ -879,14 +876,6 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 
 bool spnego_parse_auth_and_mic(TALLOC_CTX *ctx, DATA_BLOB blob,
 				DATA_BLOB *auth, DATA_BLOB *signature);
-DATA_BLOB spnego_gen_auth_response_and_mic(TALLOC_CTX *ctx,
-					   NTSTATUS nt_status,
-					   const char *mechOID,
-					   DATA_BLOB *reply,
-					   DATA_BLOB *mechlistMIC);
-bool spnego_mech_list_blob(TALLOC_CTX *mem_ctx,
-			   char **oid_list, DATA_BLOB *data);
-
 /* The following definitions come from libsmb/conncache.c  */
 
 NTSTATUS check_negative_conn_cache( const char *domain, const char *server);
