@@ -83,6 +83,8 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 	 */
 	if (data.dsize != 0) {
 		keep = true;
+	} else if (header->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY)) {
+		keep = true;
 	} else if (ctdb_db->persistent) {
 		keep = true;
 	} else if (header->flags & CTDB_REC_FLAG_AUTOMATIC) {
