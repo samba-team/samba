@@ -29,11 +29,15 @@ struct func_entry {
 
 struct vfs_state {
 	struct connection_struct *conn;
+	uint64_t mid;
 	struct files_struct *files[1024];
 	DIR *currentdir;
 	void *data;
 	size_t data_size;
 };
+
+struct smb_request *vfstest_get_smbreq(TALLOC_CTX *mem_ctx,
+				       struct vfs_state *vfs);
 
 struct cmd_set {
 	const char *name;

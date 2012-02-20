@@ -416,6 +416,30 @@ void exit_server_cleanly(const char *const reason)
 	exit_server("normal exit");
 }
 
+struct smb_request *vfstest_get_smbreq(TALLOC_CTX *mem_ctx,
+				       struct vfs_state *vfs)
+{
+	struct smb_request *result;
+
+	result = talloc_zero(mem_ctx, struct smb_request);
+	if (result == NULL) {
+		return NULL;
+	}
+	result->sconn = vfs->conn->sconn;
+	result->mid = ++vfs->mid;
+
+	result->inbuf = talloc_array(result, uint8_t, smb_size);
+	if (result->inbuf == NULL) {
+		goto fail;
+	}
+	SSVAL(result->inbuf, smb_mid, result->mid);
+	smb_setlen(result->inbuf, smb_size-4);
+	return result;
+fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
 /* Main function */
 
 int main(int argc, char *argv[])
