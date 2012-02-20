@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 
   /* Now, write some date to the file ... */
 
-  bzero(buff, sizeof(buff));
+  memset(buff, '\0', sizeof(buff));
   strcpy(buff, "Some test data for the moment ...");
 
   err = smbc_write(fd, buff, sizeof(buff));
