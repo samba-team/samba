@@ -47,7 +47,7 @@ void print_list_fn(struct print_job_info *pji)
 
 int main(int argc, char *argv[])
 {
-  int err, fd, dh1, dh2, dh3, dsize, dirc;
+  int err, fd, dh1, dsize, dirc;
   const char *file = "smb://samba/public/testfile.txt";
   const char *file2 = "smb://samba/public/testfile2.txt";
   char buff[256];
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 
     }
 
-    fprintf(stdout, "Directory handles: %u, %u, %u\n", dh1, dh2, dh3);
+    fprintf(stdout, "Directory handle: %u\n", dh1);
 
     /* Now, list those directories, but in funny ways ... */
 
