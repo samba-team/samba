@@ -176,6 +176,8 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	while (i < d->num_share_modes) {
 		struct share_mode_entry *e = &d->share_modes[i];
 		if (!pid_exists[i]) {
+			DEBUG(10, ("wipe non-existent pid %s\n",
+				   procid_str_static(&e->pid)));
 			*e = d->share_modes[d->num_share_modes-1];
 			d->num_share_modes -= 1;
 			d->modified = True;
