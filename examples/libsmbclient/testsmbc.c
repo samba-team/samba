@@ -29,22 +29,6 @@
 #include "libsmbclient.h"
 #include "get_auth_data_fn.h"
 
-int global_id = 0;
-
-void print_list_fn(struct print_job_info *pji)
-{
-
-  fprintf(stdout, "Print job: ID: %u, Prio: %u, Size: %lu, User: %s, Name: %s\n",
-	  pji->id,
-          pji->priority,
-          (unsigned long) pji->size,
-          pji->user,
-          pji->name);
-
-  global_id = pji->id;
-
-}
-
 int main(int argc, char *argv[])
 {
   int err, fd, dh1, dsize, dirc;
