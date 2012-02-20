@@ -415,8 +415,6 @@ void exit_server_cleanly(const char *const reason)
 	exit_server("normal exit");
 }
 
-int last_message = -1;
-
 /* Main function */
 
 int main(int argc, char *argv[])
