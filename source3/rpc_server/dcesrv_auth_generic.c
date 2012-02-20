@@ -24,59 +24,6 @@
 #include "auth.h"
 #include "auth/gensec/gensec.h"
 
-NTSTATUS auth_generic_server_start(TALLOC_CTX *mem_ctx,
-				   const char *oid,
-				   bool do_sign,
-				   bool do_seal,
-				   bool is_dcerpc,
-				   DATA_BLOB *token_in,
-				   DATA_BLOB *token_out,
-				   const struct tsocket_address *remote_address,
-				   struct gensec_security **ctx)
-{
-	struct gensec_security *gensec_security = NULL;
-	NTSTATUS status;
-
-	status = auth_generic_prepare(talloc_tos(), remote_address, &gensec_security);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ ": auth_generic_prepare failed: %s\n",
-			  nt_errstr(status)));
-		return status;
-	}
-
-	if (do_sign) {
-		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
-	}
-	if (do_seal) {
-		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
-		gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
-	}
-
-	if (is_dcerpc) {
-		gensec_want_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE);
-	}
-
-	status = gensec_start_mech_by_oid(gensec_security, oid);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ ": auth_generic_start failed: %s\n",
-			  nt_errstr(status)));
-		TALLOC_FREE(gensec_security);
-		return status;
-	}
-
-	status = gensec_update(gensec_security, mem_ctx, NULL, *token_in, token_out);
-	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		DEBUG(2, (__location__ ": gensec_update failed: %s\n",
-			  nt_errstr(status)));
-		TALLOC_FREE(gensec_security);
-		return status;
-	}
-
-	/* steal gensec context to the caller */
-	*ctx = talloc_move(mem_ctx, &gensec_security);
-	return NT_STATUS_OK;
-}
-
 NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
 					    uint8_t auth_type, uint8_t auth_level,
 					    DATA_BLOB *token_in,
