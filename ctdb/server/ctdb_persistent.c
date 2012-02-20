@@ -456,12 +456,12 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 	}
 
 	for (i=0;i<m->count;i++) {
-		struct ctdb_ltdb_header *oldheader;
-		struct ctdb_ltdb_header *header;
+		struct ctdb_ltdb_header oldheader;
+		struct ctdb_ltdb_header header;
 		TDB_DATA key, data, olddata;
 		TALLOC_CTX *tmp_ctx = talloc_new(state);
 
-		rec = ctdb_marshall_loop_next(m, rec, NULL, NULL, &key, &data);
+		rec = ctdb_marshall_loop_next(m, rec, NULL, &header, &key, &data);
 		
 		if (rec == NULL) {
 			DEBUG(DEBUG_ERR,("Failed to get next record %d for db_id 0x%08x in ctdb_persistent_store\n",
@@ -469,42 +469,29 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 			talloc_free(tmp_ctx);
 			goto failed;			
 		}
-		header = (struct ctdb_ltdb_header *)&data.dptr[0];
 
 		/* fetch the old header and ensure the rsn is less than the new rsn */
-		olddata = tdb_fetch(state->ctdb_db->ltdb->tdb, key);
-		if (olddata.dptr == NULL) {
+		ret = ctdb_ltdb_fetch(state->ctdb_db, key, &oldheader, tmp_ctx, &olddata);
+		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to fetch old record for db_id 0x%08x in ctdb_persistent_store\n",
 					 state->ctdb_db->db_id));
 			talloc_free(tmp_ctx);
 			goto failed;
 		}
-		if (olddata.dsize < sizeof(struct ctdb_ltdb_header)) {
-			DEBUG(DEBUG_ERR,("Not enough header for record for db_id 0x%08x in ctdb_persistent_store\n",
-					state->ctdb_db->db_id));
-			talloc_free(tmp_ctx);
-			free(olddata.dptr);
-			goto failed;
-		}
-		oldheader = (struct ctdb_ltdb_header *)&olddata.dptr[0];
 
-		if (oldheader->rsn >= header->rsn &&
-		   (olddata.dsize != data.dsize || 
-		   memcmp(&olddata.dptr[sizeof(struct ctdb_ltdb_header)],
-		     &data.dptr[sizeof(struct ctdb_ltdb_header)],
-		     data.dsize - sizeof(struct ctdb_ltdb_header)) != 0)) {
+		if (oldheader.rsn >= header.rsn &&
+		    (olddata.dsize != data.dsize || 
+		     memcmp(olddata.dptr, data.dptr, data.dsize) != 0)) {
 			DEBUG(DEBUG_CRIT,("existing header for db_id 0x%08x has larger RSN %llu than new RSN %llu in ctdb_persistent_store\n",
 					  state->ctdb_db->db_id, 
-					  (unsigned long long)oldheader->rsn, (unsigned long long)header->rsn));
+					  (unsigned long long)oldheader.rsn, (unsigned long long)header.rsn));
 			talloc_free(tmp_ctx);
-			free(olddata.dptr);
 			goto failed;
 		}
 
 		talloc_free(tmp_ctx);
-		free(olddata.dptr);
 
-		ret = tdb_store(state->ctdb_db->ltdb->tdb, key, data, TDB_REPLACE);
+		ret = ctdb_ltdb_store(state->ctdb_db, key, &header, data);
 		if (ret != 0) {
 			DEBUG(DEBUG_CRIT,("Failed to store record for db_id 0x%08x in ctdb_persistent_store\n", 
 					  state->ctdb_db->db_id));
