@@ -4123,7 +4123,9 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 		return -1;
 	}
 
-	 return 0;
+	ctdb->can_send_controls = true;
+
+	return 0;
 }
 
 /*
