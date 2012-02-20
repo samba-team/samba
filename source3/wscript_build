@@ -811,7 +811,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source=LIB_UTIL_SRC,
-                   deps='ndr security NDR_SECURITY samba-util',
+                   deps='ndr security NDR_SECURITY samba-util UTIL_TDB',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
@@ -821,8 +821,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         LIBTSOCKET
                         NDR_MESSAGING
                         LIBASYNC_REQ
-                        tdb-wrap3
-                        UTIL_TDB
                         UTIL_PW
                         SAMBA_VERSION
                         PTHREADPOOL
