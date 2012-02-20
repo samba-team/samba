@@ -428,12 +428,16 @@ def build(bld):
                 REPLACE_HOSTCC_SOURCE += ' %s' % filename
                 break
 
+    extra_libs = ''
+    if bld.CONFIG_SET('HAVE_LIBBSD'): extra_libs += ' bsd'
+
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_HOSTCC',
         REPLACE_HOSTCC_SOURCE,
         use_hostcc=True,
         use_global_deps=False,
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -DUID_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-        group='compiler_libraries'
+        group='compiler_libraries',
+        deps = extra_libs
     )
 
     REPLACE_SOURCE = REPLACE_HOSTCC_SOURCE
@@ -451,9 +455,6 @@ def build(bld):
     if not bld.CONFIG_SET('HAVE_INET_ATON'):     REPLACE_SOURCE += ' inet_aton.c'
     if not bld.CONFIG_SET('HAVE_INET_NTOP'):     REPLACE_SOURCE += ' inet_ntop.c'
     if not bld.CONFIG_SET('HAVE_INET_PTON'):     REPLACE_SOURCE += ' inet_pton.c'
-
-    extra_libs = ''
-    if bld.CONFIG_SET('HAVE_LIBBSD'): extra_libs += ' bsd'
 
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
