@@ -240,10 +240,10 @@ int main(int argc, char *argv[])
   }
 
   fprintf(stdout, "Stat'ed file:   %s. Size = %d, mode = %04X\n", file2, 
-	  (int)st2.st_size, st2.st_mode);
+	  (int)st2.st_size, (unsigned int)st2.st_mode);
   fprintf(stdout, "    time: %s\n", ctime(&st2.st_atime));
   fprintf(stdout, "Earlier stat:   %s, Size = %d, mode = %04X\n", file, 
-	  (int)st1.st_size, st1.st_mode);
+	  (int)st1.st_size, (unsigned int)st1.st_mode);
   fprintf(stdout, "    time: %s\n", ctime(&st1.st_atime));
 
   /* Now, make a directory ... */
