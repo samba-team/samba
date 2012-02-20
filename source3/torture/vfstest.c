@@ -32,6 +32,7 @@
 #include "auth.h"
 #include "serverid.h"
 #include "messages.h"
+#include "libcli/security/security.h"
 
 /* List to hold groups of commands */
 static struct cmd_list {
@@ -476,9 +477,12 @@ int main(int argc, char *argv[])
 	locking_init();
 	serverid_parent_init(NULL);
 	vfs.conn = talloc_zero(NULL, connection_struct);
+	vfs.conn->share_access = FILE_GENERIC_ALL;
 	vfs.conn->params = talloc_zero(vfs.conn, struct share_params);
 	vfs.conn->sconn = talloc_zero(NULL, struct smbd_server_connection);
 	vfs.conn->sconn->msg_ctx = messaging_init(vfs.conn->sconn, ev);
+	vfs.conn->sconn->ev_ctx = ev;
+	serverid_register(messaging_server_id(vfs.conn->sconn->msg_ctx), 0);
 	make_session_info_guest(NULL, &vfs.conn->session_info);
 	file_init(vfs.conn->sconn);
 	set_conn_connectpath(vfs.conn, getcwd(cwd, sizeof(cwd)));
