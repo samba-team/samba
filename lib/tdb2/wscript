@@ -92,6 +92,7 @@ def build(bld):
                               vnum=VERSION,
                               public_headers='tdb2.h',
                               public_headers_install=not private_library,
+                              pc_files='tdb2.pc',
                               private_library=private_library)
 
             bld.SAMBA_BINARY('tdbtorture',
