@@ -285,6 +285,11 @@ bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
     deps='z LZXPRESS'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_FSRVP',
+	source='gen_ndr/ndr_fsrvp.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
     source='gen_ndr/ndr_dcerpc.c',
     public_deps='ndr',
@@ -579,12 +584,17 @@ bld.SAMBA_SUBSYSTEM('NDR_IOCTL',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_FSRVP',
+	source='gen_ndr/ndr_fsrvp_c.c',
+	public_deps='dcerpc-binding NDR_FSRVP'
+	)
+
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
     source=[],
     deps='''NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT
     NDR_DNSP NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM
-    NDR_NTPRINTING''',
+    NDR_NTPRINTING NDR_FSRVP''',
     private_library=True,
     grouping_library=True
     )
