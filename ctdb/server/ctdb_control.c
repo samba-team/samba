@@ -308,6 +308,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 
 	case CTDB_CONTROL_SHUTDOWN:
+		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
 		ctdb_stop_recoverd(ctdb);
 		ctdb_stop_keepalive(ctdb);
 		ctdb_stop_monitoring(ctdb);
@@ -316,7 +317,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 			ctdb->methods->shutdown(ctdb);
 		}
 		ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
-		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
 		exit(0);
 
 	case CTDB_CONTROL_TAKEOVER_IPv4:
