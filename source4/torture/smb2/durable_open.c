@@ -997,7 +997,7 @@ bool test_durable_open_open(struct torture_context *tctx,
 	 * little funky.
 	 */
 	lease = random();
-	snprintf(fname, 256, "durable_open_lock_%s.dat", generate_random_str(tctx, 8));
+	snprintf(fname, 256, "durable_open_open_%s.dat", generate_random_str(tctx, 8));
 
 	/* Clean slate */
 	smb2_util_unlink(tree1, fname);
