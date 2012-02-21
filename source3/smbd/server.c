@@ -466,6 +466,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	}
 
 	if (s->parent->interactive) {
+		tevent_re_initialise(ev);
 		smbd_process(ev, sconn);
 		exit_server_cleanly("end of interactive mode");
 		return;
