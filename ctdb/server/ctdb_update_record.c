@@ -54,12 +54,12 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 		TALLOC_CTX *tmp_ctx = talloc_new(state);
 
 		rec = ctdb_marshall_loop_next(m, rec, NULL, &header, &key, &data);
-		
+
 		if (rec == NULL) {
 			DEBUG(DEBUG_ERR,("Failed to get next record %d for db_id 0x%08x in ctdb_persistent_store\n",
 					 i, state->ctdb_db->db_id));
 			talloc_free(tmp_ctx);
-			goto failed;			
+			goto failed;
 		}
 
 		/* fetch the old header and ensure the rsn is less than the new rsn */
@@ -72,10 +72,10 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 		}
 
 		if (oldheader.rsn >= header.rsn &&
-		    (olddata.dsize != data.dsize || 
+		    (olddata.dsize != data.dsize ||
 		     memcmp(olddata.dptr, data.dptr, data.dsize) != 0)) {
 			DEBUG(DEBUG_CRIT,("existing header for db_id 0x%08x has larger RSN %llu than new RSN %llu in ctdb_persistent_store\n",
-					  state->ctdb_db->db_id, 
+					  state->ctdb_db->db_id,
 					  (unsigned long long)oldheader.rsn, (unsigned long long)header.rsn));
 			talloc_free(tmp_ctx);
 			goto failed;
@@ -85,7 +85,7 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 
 		ret = ctdb_ltdb_store(state->ctdb_db, key, &header, data);
 		if (ret != 0) {
-			DEBUG(DEBUG_CRIT,("Failed to store record for db_id 0x%08x in ctdb_persistent_store\n", 
+			DEBUG(DEBUG_CRIT,("Failed to store record for db_id 0x%08x in ctdb_persistent_store\n",
 					  state->ctdb_db->db_id));
 			goto failed;
 		}
@@ -99,7 +99,7 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 	}
 
 	return 0;
-	
+
 failed:
 	tdb_transaction_cancel(state->ctdb_db->ltdb->tdb);
 	return -1;
@@ -112,7 +112,7 @@ failed:
  */
 static void ctdb_persistent_write_callback(int status, void *private_data)
 {
-	struct ctdb_persistent_write_state *state = talloc_get_type(private_data, 
+	struct ctdb_persistent_write_state *state = talloc_get_type(private_data,
 								   struct ctdb_persistent_write_state);
 
 
@@ -124,10 +124,10 @@ static void ctdb_persistent_write_callback(int status, void *private_data)
 /*
   called if our lockwait child times out
  */
-static void ctdb_persistent_lock_timeout(struct event_context *ev, struct timed_event *te, 
+static void ctdb_persistent_lock_timeout(struct event_context *ev, struct timed_event *te,
 					 struct timeval t, void *private_data)
 {
-	struct ctdb_persistent_write_state *state = talloc_get_type(private_data, 
+	struct ctdb_persistent_write_state *state = talloc_get_type(private_data,
 								   struct ctdb_persistent_write_state);
 	ctdb_request_control_reply(state->ctdb_db->ctdb, state->c, NULL, -1, "timeout in ctdb_persistent_lock");
 	talloc_free(state);
@@ -154,10 +154,10 @@ static int childwrite_destructor(struct childwrite_handle *h)
 /* called when the child process has finished writing the record to the
    database
 */
-static void childwrite_handler(struct event_context *ev, struct fd_event *fde, 
+static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
 			     uint16_t flags, void *private_data)
 {
-	struct childwrite_handle *h = talloc_get_type(private_data, 
+	struct childwrite_handle *h = talloc_get_type(private_data,
 						     struct childwrite_handle);
 	void *p = h->private_data;
 	void (*callback)(int, void *) = h->callback;
@@ -273,12 +273,12 @@ static struct childwrite_handle *ctdb_childwrite(
 	return result;
 }
 
-/* 
+/*
    update a record on this node if the new record has a higher rsn than the
    current record
  */
-int32_t ctdb_control_update_record(struct ctdb_context *ctdb, 
-				   struct ctdb_req_control *c, TDB_DATA recdata, 
+int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c, TDB_DATA recdata,
 				   bool *async_reply)
 {
 	struct ctdb_db_context *ctdb_db;
@@ -310,7 +310,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->c       = c;
 	state->m       = m;
 
-	/* create a child process to take out a transaction and 
+	/* create a child process to take out a transaction and
 	   write the data.
 	*/
 	handle = ctdb_childwrite(ctdb_db, ctdb_persistent_write_callback, state);
