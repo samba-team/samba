@@ -1009,8 +1009,6 @@ bool test_durable_open_open(struct torture_context *tctx,
 				smb2_util_lease_state("RH"));
 	io1.in.durable_open = true;
 
-	smb2_oplock_create(&io2, fname, SMB2_OPLOCK_LEVEL_NONE);
-
 	status = smb2_create(tree1, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h1 = io1.out.file.handle;
@@ -1028,6 +1026,8 @@ bool test_durable_open_open(struct torture_context *tctx,
 	tree1 = NULL;
 
 	/* Open the file in tree2 */
+	smb2_oplock_create(&io2, fname, SMB2_OPLOCK_LEVEL_NONE);
+
 	status = smb2_create(tree2, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h2 = io2.out.file.handle;
