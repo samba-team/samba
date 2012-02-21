@@ -340,7 +340,7 @@ static uint32_t hashlittle( const void *key, size_t length )
   return c;
 }
 
-uint64_t tdb1_incompatible_hash(const void *key, size_t len, uint64_t seed,
+_PUBLIC_ uint64_t tdb1_incompatible_hash(const void *key, size_t len, uint64_t seed,
 				 void *unused)
 {
 	return hashlittle(key, len);

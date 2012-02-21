@@ -107,7 +107,7 @@ static enum TDB_ERROR update_data(struct tdb_context *tdb,
 	return ecode;
 }
 
-enum TDB_ERROR tdb_store(struct tdb_context *tdb,
+_PUBLIC_ enum TDB_ERROR tdb_store(struct tdb_context *tdb,
 			 struct tdb_data key, struct tdb_data dbuf, int flag)
 {
 	struct hash_info h;
@@ -174,7 +174,7 @@ out:
 	return tdb->last_error = ecode;
 }
 
-enum TDB_ERROR tdb_append(struct tdb_context *tdb,
+_PUBLIC_ enum TDB_ERROR tdb_append(struct tdb_context *tdb,
 			  struct tdb_data key, struct tdb_data dbuf)
 {
 	struct hash_info h;
@@ -248,7 +248,7 @@ out:
 	return tdb->last_error = ecode;
 }
 
-enum TDB_ERROR tdb_fetch(struct tdb_context *tdb, struct tdb_data key,
+_PUBLIC_ enum TDB_ERROR tdb_fetch(struct tdb_context *tdb, struct tdb_data key,
 			 struct tdb_data *data)
 {
 	tdb_off_t off;
@@ -280,7 +280,7 @@ enum TDB_ERROR tdb_fetch(struct tdb_context *tdb, struct tdb_data key,
 	return tdb->last_error = ecode;
 }
 
-bool tdb_exists(struct tdb_context *tdb, TDB_DATA key)
+_PUBLIC_ bool tdb_exists(struct tdb_context *tdb, TDB_DATA key)
 {
 	tdb_off_t off;
 	struct tdb_used_record rec;
@@ -301,7 +301,7 @@ bool tdb_exists(struct tdb_context *tdb, TDB_DATA key)
 	return off ? true : false;
 }
 
-enum TDB_ERROR tdb_delete(struct tdb_context *tdb, struct tdb_data key)
+_PUBLIC_ enum TDB_ERROR tdb_delete(struct tdb_context *tdb, struct tdb_data key)
 {
 	tdb_off_t off;
 	struct tdb_used_record rec;
@@ -346,7 +346,7 @@ unlock:
 	return tdb->last_error = ecode;
 }
 
-unsigned int tdb_get_flags(struct tdb_context *tdb)
+_PUBLIC_ unsigned int tdb_get_flags(struct tdb_context *tdb)
 {
 	return tdb->flags;
 }
@@ -372,7 +372,7 @@ static bool readonly_changable(struct tdb_context *tdb, const char *caller)
 	return true;
 }
 
-void tdb_add_flag(struct tdb_context *tdb, unsigned flag)
+_PUBLIC_ void tdb_add_flag(struct tdb_context *tdb, unsigned flag)
 {
 	if (tdb->flags & TDB_INTERNAL) {
 		tdb->last_error = tdb_logerr(tdb, TDB_ERR_EINVAL,
@@ -409,7 +409,7 @@ void tdb_add_flag(struct tdb_context *tdb, unsigned flag)
 	}
 }
 
-void tdb_remove_flag(struct tdb_context *tdb, unsigned flag)
+_PUBLIC_ void tdb_remove_flag(struct tdb_context *tdb, unsigned flag)
 {
 	if (tdb->flags & TDB_INTERNAL) {
 		tdb->last_error = tdb_logerr(tdb, TDB_ERR_EINVAL,
@@ -454,7 +454,7 @@ void tdb_remove_flag(struct tdb_context *tdb, unsigned flag)
 	}
 }
 
-const char *tdb_errorstr(enum TDB_ERROR ecode)
+_PUBLIC_ const char *tdb_errorstr(enum TDB_ERROR ecode)
 {
 	/* Gcc warns if you miss a case in the switch, so use that. */
 	switch (TDB_ERR_TO_OFF(ecode)) {
@@ -471,7 +471,7 @@ const char *tdb_errorstr(enum TDB_ERROR ecode)
 	return "Invalid error code";
 }
 
-enum TDB_ERROR tdb_error(struct tdb_context *tdb)
+_PUBLIC_ enum TDB_ERROR tdb_error(struct tdb_context *tdb)
 {
 	return tdb->last_error;
 }
@@ -506,7 +506,7 @@ enum TDB_ERROR COLD tdb_logerr(struct tdb_context *tdb,
 	return ecode;
 }
 
-enum TDB_ERROR tdb_parse_record_(struct tdb_context *tdb,
+_PUBLIC_ enum TDB_ERROR tdb_parse_record_(struct tdb_context *tdb,
 				 TDB_DATA key,
 				 enum TDB_ERROR (*parse)(TDB_DATA k,
 							 TDB_DATA d,
@@ -548,12 +548,12 @@ enum TDB_ERROR tdb_parse_record_(struct tdb_context *tdb,
 	return tdb->last_error = ecode;
 }
 
-const char *tdb_name(const struct tdb_context *tdb)
+_PUBLIC_ const char *tdb_name(const struct tdb_context *tdb)
 {
 	return tdb->name;
 }
 
-int64_t tdb_get_seqnum(struct tdb_context *tdb)
+_PUBLIC_ int64_t tdb_get_seqnum(struct tdb_context *tdb)
 {
 	tdb_off_t off;
 
@@ -577,7 +577,7 @@ int64_t tdb_get_seqnum(struct tdb_context *tdb)
 }
 
 
-int tdb_fd(const struct tdb_context *tdb)
+_PUBLIC_ int tdb_fd(const struct tdb_context *tdb)
 {
 	return tdb->file->fd;
 }
@@ -600,7 +600,7 @@ static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	return 0;
 }
 
-enum TDB_ERROR tdb_repack(struct tdb_context *tdb)
+_PUBLIC_ enum TDB_ERROR tdb_repack(struct tdb_context *tdb)
 {
 	struct tdb_context *tmp_db;
 	struct traverse_state state;

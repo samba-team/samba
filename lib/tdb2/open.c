@@ -210,7 +210,7 @@ static enum TDB_ERROR tdb_new_file(struct tdb_context *tdb)
 	return TDB_SUCCESS;
 }
 
-enum TDB_ERROR tdb_set_attribute(struct tdb_context *tdb,
+_PUBLIC_ enum TDB_ERROR tdb_set_attribute(struct tdb_context *tdb,
 				 const union tdb_attribute *attr)
 {
 	switch (attr->base.attr) {
@@ -256,7 +256,7 @@ enum TDB_ERROR tdb_set_attribute(struct tdb_context *tdb,
 	return TDB_SUCCESS;
 }
 
-enum TDB_ERROR tdb_get_attribute(struct tdb_context *tdb,
+_PUBLIC_ enum TDB_ERROR tdb_get_attribute(struct tdb_context *tdb,
 				 union tdb_attribute *attr)
 {
 	switch (attr->base.attr) {
@@ -320,7 +320,7 @@ enum TDB_ERROR tdb_get_attribute(struct tdb_context *tdb,
 	return TDB_SUCCESS;
 }
 
-void tdb_unset_attribute(struct tdb_context *tdb,
+_PUBLIC_ void tdb_unset_attribute(struct tdb_context *tdb,
 			 enum tdb_attribute_type type)
 {
 	switch (type) {
@@ -424,7 +424,7 @@ static enum TDB_ERROR capabilities_ok(struct tdb_context *tdb,
 	return ecode;
 }
 
-struct tdb_context *tdb_open(const char *name, int tdb_flags,
+_PUBLIC_ struct tdb_context *tdb_open(const char *name, int tdb_flags,
 			     int open_flags, mode_t mode,
 			     union tdb_attribute *attr)
 {
@@ -825,7 +825,7 @@ fail_errno:
 	return NULL;
 }
 
-int tdb_close(struct tdb_context *tdb)
+_PUBLIC_ int tdb_close(struct tdb_context *tdb)
 {
 	int ret = 0;
 	struct tdb_context **i;
@@ -873,7 +873,7 @@ int tdb_close(struct tdb_context *tdb)
 	return ret;
 }
 
-void tdb_foreach_(int (*fn)(struct tdb_context *, void *), void *p)
+_PUBLIC_ void tdb_foreach_(int (*fn)(struct tdb_context *, void *), void *p)
 {
 	struct tdb_context *i;
 

@@ -18,7 +18,7 @@
 #include "private.h"
 #include <ccan/likely/likely.h>
 
-int64_t tdb_traverse_(struct tdb_context *tdb,
+_PUBLIC_ int64_t tdb_traverse_(struct tdb_context *tdb,
 		      int (*fn)(struct tdb_context *,
 				TDB_DATA, TDB_DATA, void *),
 		      void *p)
@@ -57,7 +57,7 @@ int64_t tdb_traverse_(struct tdb_context *tdb,
 	return count;
 }
 
-enum TDB_ERROR tdb_firstkey(struct tdb_context *tdb, struct tdb_data *key)
+_PUBLIC_ enum TDB_ERROR tdb_firstkey(struct tdb_context *tdb, struct tdb_data *key)
 {
 	struct traverse_info tinfo;
 
@@ -75,7 +75,7 @@ enum TDB_ERROR tdb_firstkey(struct tdb_context *tdb, struct tdb_data *key)
 }
 
 /* We lock twice, not very efficient.  We could keep last key & tinfo cached. */
-enum TDB_ERROR tdb_nextkey(struct tdb_context *tdb, struct tdb_data *key)
+_PUBLIC_ enum TDB_ERROR tdb_nextkey(struct tdb_context *tdb, struct tdb_data *key)
 {
 	struct traverse_info tinfo;
 	struct hash_info h;
@@ -110,7 +110,7 @@ static int wipe_one(struct tdb_context *tdb,
 	return (*ecode != TDB_SUCCESS);
 }
 
-enum TDB_ERROR tdb_wipe_all(struct tdb_context *tdb)
+_PUBLIC_ enum TDB_ERROR tdb_wipe_all(struct tdb_context *tdb)
 {
 	enum TDB_ERROR ecode;
 	int64_t count;

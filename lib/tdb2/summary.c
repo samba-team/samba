@@ -211,7 +211,7 @@ static void add_capabilities(struct tdb_context *tdb, size_t num, char *summary)
 	}
 }
 
-enum TDB_ERROR tdb_summary(struct tdb_context *tdb,
+_PUBLIC_ enum TDB_ERROR tdb_summary(struct tdb_context *tdb,
 			   enum tdb_summary_flags flags,
 			   char **summary)
 {

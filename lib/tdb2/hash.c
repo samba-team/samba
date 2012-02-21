@@ -851,7 +851,7 @@ static enum TDB_ERROR chainlock(struct tdb_context *tdb, const TDB_DATA *key,
 
 /* lock/unlock one hash chain. This is meant to be used to reduce
    contention - it cannot guarantee how many records will be locked */
-enum TDB_ERROR tdb_chainlock(struct tdb_context *tdb, TDB_DATA key)
+_PUBLIC_ enum TDB_ERROR tdb_chainlock(struct tdb_context *tdb, TDB_DATA key)
 {
 	if (tdb->flags & TDB_VERSION1) {
 		if (tdb1_chainlock(tdb, key) == -1)
@@ -862,7 +862,7 @@ enum TDB_ERROR tdb_chainlock(struct tdb_context *tdb, TDB_DATA key)
 					   "tdb_chainlock");
 }
 
-void tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key)
+_PUBLIC_ void tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key)
 {
 	uint64_t h = tdb_hash(tdb, key.dptr, key.dsize);
 	tdb_off_t lockstart, locksize;
@@ -882,7 +882,7 @@ void tdb_chainunlock(struct tdb_context *tdb, TDB_DATA key)
 	tdb_unlock_hashes(tdb, lockstart, locksize, F_WRLCK);
 }
 
-enum TDB_ERROR tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key)
+_PUBLIC_ enum TDB_ERROR tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key)
 {
 	if (tdb->flags & TDB_VERSION1) {
 		if (tdb1_chainlock_read(tdb, key) == -1)
@@ -893,7 +893,7 @@ enum TDB_ERROR tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key)
 					   "tdb_chainlock_read");
 }
 
-void tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key)
+_PUBLIC_ void tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key)
 {
 	uint64_t h = tdb_hash(tdb, key.dptr, key.dsize);
 	tdb_off_t lockstart, locksize;

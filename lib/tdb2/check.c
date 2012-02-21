@@ -794,7 +794,7 @@ static enum TDB_ERROR check_linear(struct tdb_context *tdb,
 	return TDB_SUCCESS;
 }
 
-enum TDB_ERROR tdb_check_(struct tdb_context *tdb,
+_PUBLIC_ enum TDB_ERROR tdb_check_(struct tdb_context *tdb,
 			  enum TDB_ERROR (*check)(TDB_DATA, TDB_DATA, void *),
 			  void *data)
 {

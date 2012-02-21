@@ -517,7 +517,7 @@ static void _tdb_transaction_cancel(struct tdb_context *tdb)
   start a tdb transaction. No token is returned, as only a single
   transaction is allowed to be pending per tdb_context
 */
-enum TDB_ERROR tdb_transaction_start(struct tdb_context *tdb)
+_PUBLIC_ enum TDB_ERROR tdb_transaction_start(struct tdb_context *tdb)
 {
 	enum TDB_ERROR ecode;
 
@@ -621,7 +621,7 @@ fail_allrecord_lock:
 /*
   cancel the current transaction
 */
-void tdb_transaction_cancel(struct tdb_context *tdb)
+_PUBLIC_ void tdb_transaction_cancel(struct tdb_context *tdb)
 {
 	if (tdb->flags & TDB_VERSION1) {
 		tdb1_transaction_cancel(tdb);
@@ -1065,7 +1065,7 @@ static enum TDB_ERROR _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 /*
    prepare to commit the current transaction
 */
-enum TDB_ERROR tdb_transaction_prepare_commit(struct tdb_context *tdb)
+_PUBLIC_ enum TDB_ERROR tdb_transaction_prepare_commit(struct tdb_context *tdb)
 {
 	if (tdb->flags & TDB_VERSION1) {
 		if (tdb1_transaction_prepare_commit(tdb) == -1)
@@ -1078,7 +1078,7 @@ enum TDB_ERROR tdb_transaction_prepare_commit(struct tdb_context *tdb)
 /*
   commit the current transaction
 */
-enum TDB_ERROR tdb_transaction_commit(struct tdb_context *tdb)
+_PUBLIC_ enum TDB_ERROR tdb_transaction_commit(struct tdb_context *tdb)
 {
 	const struct tdb_methods *methods;
 	int i;
