@@ -5612,6 +5612,34 @@ if test "x$have_cluster_support" = "xyes" ; then
 	fi
 fi
 
+AC_ARG_ENABLE([ctdb-readonly-records],
+	AS_HELP_STRING([--enable-ctdb-readonly-records],
+		[Turn on CTDB readonly records support (default=yes)]),
+	[want_ctdb_readonly=$enableval],
+	[want_ctdb_readonly=yes])
+
+if test "x$have_cluster_support" = "xyes" -a "x$want_ctdb_readonly" = "xyes" ; then
+	AC_HAVE_DECL(CTDB_WANT_READONLY,[
+	#include "confdefs.h"
+	#define NO_CONFIG_H
+	#include "replace.h"
+	#include "system/wait.h"
+	#include "system/network.h"
+	#include <talloc.h>
+	#include <tdb.h>
+	#include <ctdb.h>
+	])
+
+	if test "x$ac_cv_have_CTDB_WANT_READONLY_decl" != "xyes" ; then
+		if test "x$enable_old_ctdb" = "xyes" ; then
+			AC_MSG_WARN([ignoring missing READONLY support (--enable-old-ctdb)])
+		else
+			ctdb_broken="support for CTDB readonly records missing"
+			have_cluster_support=no
+		fi
+	fi
+fi
+
 if test "x$have_cluster_support" = "xyes" ; then
 	# In ctdb 1.0.57, ctdb_control_tcp was temporarily renamed
 	# to ctdb_tcp_client.

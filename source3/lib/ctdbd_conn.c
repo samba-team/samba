@@ -1400,6 +1400,13 @@ NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
 	struct ctdb_req_call req;
 	struct ctdb_reply_call *reply;
 	NTSTATUS status;
+	uint32_t flags;
+
+#ifdef HAVE_CTDB_WANT_READONLY_DECL
+	flags = local_copy ? CTDB_WANT_READONLY : 0;
+#else
+	flags = 0;
+#endif
 
 	ZERO_STRUCT(req);
 
@@ -1408,7 +1415,7 @@ NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
 	req.hdr.ctdb_version = CTDB_VERSION;
 	req.hdr.operation    = CTDB_REQ_CALL;
 	req.hdr.reqid        = ctdbd_next_reqid(conn);
-	req.flags            = local_copy ? CTDB_WANT_READONLY : 0;
+	req.flags            = flags;
 	req.callid           = CTDB_FETCH_FUNC;
 	req.db_id            = db_id;
 	req.keylen           = key.dsize;

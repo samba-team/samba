@@ -1012,6 +1012,7 @@ static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
 	if (ctdb_data.dsize < sizeof(struct ctdb_ltdb_header))
 		return false;
 
+#ifdef HAVE_CTDB_WANT_READONLY_DECL
 	hdr = (struct ctdb_ltdb_header *)ctdb_data.dptr;
 	if (hdr->dmaster != get_my_vnn()) {
 		/* If we're not dmaster, it must be r/o copy. */
@@ -1020,6 +1021,9 @@ static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
 
 	/* If we want write access, noone can have r/o copies. */
 	return read_only || !(hdr->flags & CTDB_REC_RO_HAVE_DELEGATIONS);
+#else
+	return !read_only;
+#endif
 }
 
 static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
