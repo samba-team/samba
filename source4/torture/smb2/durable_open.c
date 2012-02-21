@@ -979,9 +979,9 @@ bool test_durable_open_lock(struct torture_context *tctx,
   reconnect after an open, the oplock/lease tests above will certainly
   demonstrate an error on reconnect.
 */
-bool test_durable_open_open(struct torture_context *tctx,
-			    struct smb2_tree *tree1,
-			    struct smb2_tree *tree2)
+bool test_durable_open_open_lease(struct torture_context *tctx,
+				  struct smb2_tree *tree1,
+				  struct smb2_tree *tree2)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io1, io2;
@@ -997,7 +997,8 @@ bool test_durable_open_open(struct torture_context *tctx,
 	 * little funky.
 	 */
 	lease = random();
-	snprintf(fname, 256, "durable_open_open_%s.dat", generate_random_str(tctx, 8));
+	snprintf(fname, 256, "durable_open_open_lease_%s.dat",
+		 generate_random_str(tctx, 8));
 
 	/* Clean slate */
 	smb2_util_unlink(tree1, fname);
@@ -1082,7 +1083,8 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
 	torture_suite_add_2smb2_test(suite, "lease", test_durable_open_lease);
 	torture_suite_add_1smb2_test(suite, "lock", test_durable_open_lock);
-	torture_suite_add_2smb2_test(suite, "open", test_durable_open_open);
+	torture_suite_add_2smb2_test(suite, "open-lease",
+				     test_durable_open_open_lease);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
 
