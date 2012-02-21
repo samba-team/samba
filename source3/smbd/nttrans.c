@@ -343,7 +343,7 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		/* This is very strange. We
  		 * return 50 words, but only set
- 		 * the wcnt to 42 ? It's definately
+		 * the wcnt to 42 ? It's definitely
  		 * what happens on the wire....
  		 */
 		reply_outbuf(req, 50, 0);
@@ -625,7 +625,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		/* This is very strange. We
  		 * return 50 words, but only set
- 		 * the wcnt to 42 ? It's definately
+		 * the wcnt to 42 ? It's definitely
  		 * what happens on the wire....
  		 */
 		reply_outbuf(req, 50, 0);
