@@ -29,9 +29,8 @@
 extern "C" {
 #endif
 
-#include "config.h"
 #ifdef HAVE_LIBREPLACE
-#include "replace.h"
+#include <replace.h>
 #else
 #if HAVE_FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
@@ -49,9 +48,25 @@ extern "C" {
 /* For memcmp */
 #include <string.h>
 #endif
+
+#if HAVE_CCAN
 #include <ccan/compiler/compiler.h>
 #include <ccan/typesafe_cb/typesafe_cb.h>
 #include <ccan/cast/cast.h>
+#else
+#ifndef typesafe_cb_preargs
+/* Failing to have CCAN just mean less typesafe protection, etc. */
+#define typesafe_cb_preargs(rtype, atype, fn, arg, ...)	\
+	((rtype (*)(__VA_ARGS__, atype))(fn))
+#endif
+#ifndef cast_const
+#if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
+#define cast_const(type, expr) ((type)((intptr_t)(expr)))
+#else
+#define cast_const(type, expr) ((type *)(expr))
+#endif
+#endif
+#endif /* !HAVE_CCAN */
 
 union tdb_attribute;
 struct tdb_context;

@@ -18,7 +18,12 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config.h"
+#ifndef HAVE_CCAN
+#error You need ccan to build tdb2!
+#endif
 #include "tdb2.h"
+#include <ccan/compiler/compiler.h>
 #include <ccan/likely/likely.h>
 #include <ccan/endian/endian.h>
 
