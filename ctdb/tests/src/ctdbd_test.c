@@ -79,6 +79,7 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb) {}
 #include "server/ctdb_vacuum.c"
 #include "server/ctdb_banning.c"
 #include "server/ctdb_statistics.c"
+#include "server/ctdb_update_record.c"
 
 /* CTDB_CLIENT_OBJ */
 #include "client/ctdb_client.c"
