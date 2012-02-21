@@ -20,7 +20,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config.h"
 #include "tdb2.h"
+#ifdef HAVE_LIBREPLACE
+#include <replace.h>
+#include <system/filesys.h>
+#include <system/time.h>
+#include <system/locale.h>
+#else
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -31,6 +38,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
+#endif
 
 static int do_command(void);
 const char *cmdname;

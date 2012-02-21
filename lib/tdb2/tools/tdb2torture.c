@@ -2,9 +2,13 @@
    writers - that stresses the locking code.
 */
 
+#include "config.h"
 #include "tdb2.h"
-#include <stdlib.h>
 #include <err.h>
+#ifdef HAVE_LIBREPLACE
+#include <replace.h>
+#else
+#include <stdlib.h>
 #include <getopt.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -15,6 +19,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <sys/wait.h>
+#endif
 
 /* Currently we default to creating a tdb1.  This will change! */
 #define TDB2_IS_DEFAULT false

@@ -16,7 +16,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "config.h"
 #include "tdb2.h"
+#ifdef HAVE_LIBREPLACE
+#include <replace.h>
+#include <system/filesys.h>
+#include <system/locale.h>
+#else
 #include <ctype.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -24,6 +30,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#endif
 
 static void print_data(TDB_DATA d)
 {

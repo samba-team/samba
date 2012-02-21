@@ -40,6 +40,7 @@
 
  */
 
+#include "config.h"
 #include "tdb2.h"
 #include "system/filesys.h"
 
