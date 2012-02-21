@@ -971,14 +971,14 @@ bool test_durable_open_lock(struct torture_context *tctx,
 	return ret;
 }
 
-/*
-  Open, disconnect, open in another tree, reconnect.
-
-  This test actually demonstrates a minimum level of respect for the durable
-  open in the face of another open. As long as this test shows an inability to
-  reconnect after an open, the oplock/lease tests above will certainly
-  demonstrate an error on reconnect.
-*/
+/**
+ * Open with a RH lease, disconnect, open in another tree, reconnect.
+ *
+ * This test actually demonstrates a minimum level of respect for the durable
+ * open in the face of another open. As long as this test shows an inability to
+ * reconnect after an open, the oplock/lease tests above will certainly
+ * demonstrate an error on reconnect.
+ */
 bool test_durable_open_open_lease(struct torture_context *tctx,
 				  struct smb2_tree *tree1,
 				  struct smb2_tree *tree2)
