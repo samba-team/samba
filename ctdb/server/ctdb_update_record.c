@@ -191,7 +191,8 @@ static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
 /* this creates a child process which will take out a tdb transaction
    and write the record to the database.
 */
-struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
+static struct childwrite_handle *ctdb_childwrite(
+				struct ctdb_db_context *ctdb_db,
 				void (*callback)(int, void *private_data),
 				struct ctdb_persistent_write_state *state)
 {
