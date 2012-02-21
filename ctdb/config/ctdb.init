@@ -313,7 +313,7 @@ stop() {
     while pkill -0 -f $ctdbd ; do
 	sleep 1
 	count=$(($count + 1))
-	[ $count -gt 10 ] && {
+	[ $count -gt 30 ] && {
 	    echo -n $"killing ctdbd "
 	    pkill -9 -f $ctdbd
 	    pkill -9 -f $CTDB_BASE/events.d/
