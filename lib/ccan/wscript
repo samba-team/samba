@@ -3,6 +3,7 @@
 import Logs, sys
 
 def configure(conf):
+    conf.DEFINE('HAVE_CCAN', 1)
     # FIXME: if they don't have -Werror, these will all fail.  But they
     # probably will anyway...
     conf.CHECK_CODE('int __attribute__((cold)) func(int x) { return x; }',
