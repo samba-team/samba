@@ -1,7 +1,8 @@
 /* Another test revealed that we lost an entry.  This reproduces it. */
-#include <ccan/tdb2/tdb2.h>
+#include "config.h"
+#include "tdb2.h"
 #include <ccan/hash/hash.h>
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

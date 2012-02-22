@@ -1,6 +1,6 @@
 #ifndef TDB2_TEST_LAYOUT_H
 #define TDB2_TEST_LAYOUT_H
-#include <ccan/tdb2/private.h>
+#include "private.h"
 
 struct tdb_layout *new_tdb_layout(void);
 void tdb_layout_add_freetable(struct tdb_layout *layout);

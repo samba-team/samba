@@ -1,7 +1,7 @@
 #include "failtest_helper.h"
 #include "logging.h"
 #include <string.h>
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 
 bool failtest_suppress = false;
 

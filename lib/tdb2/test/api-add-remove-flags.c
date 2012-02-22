@@ -1,6 +1,6 @@
-#include <ccan/tdb2/private.h> // for tdb_context
-#include <ccan/tdb2/tdb2.h>
-#include <ccan/tap/tap.h>
+#include "private.h" // for tdb_context
+#include "tdb2.h"
+#include "tap-interface.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

@@ -36,11 +36,16 @@ enum agent_return external_agent_operation(struct agent *handle,
 					   const char *name);
 
 /* Hook into free() on tdb_data in external agent. */
-void (*external_agent_free)(void *);
+extern void (*external_agent_free)(void *);
 
 /* Mapping enum -> string. */
 const char *agent_return_name(enum agent_return ret);
 const char *operation_name(enum operation op);
 
 void free_external_agent(struct agent *agent);
+
+/* Internal use: */
+struct tdb_context;
+enum agent_return external_agent_needs_rec(struct tdb_context *tdb);
+
 #endif /* TDB2_TEST_EXTERNAL_AGENT_H */

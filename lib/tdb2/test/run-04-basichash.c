@@ -1,5 +1,5 @@
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include "logging.h"
 
 /* We rig the hash so adjacent-numbered records always clash. */

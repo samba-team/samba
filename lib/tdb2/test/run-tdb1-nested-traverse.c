@@ -1,7 +1,7 @@
 #include "tdb1-lock-tracking.h"
 #define fcntl fcntl_with_lockcheck1
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #undef fcntl
 #include <stdlib.h>
 #include <stdbool.h>

@@ -1,7 +1,7 @@
-#include <ccan/tdb2/private.h>
+#include "private.h"
 #include <ccan/failtest/failtest_override.h>
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <ccan/failtest/failtest.h>
 #include "logging.h"
 #include "failtest_helper.h"

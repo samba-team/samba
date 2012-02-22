@@ -1,5 +1,5 @@
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <err.h>
 #include "logging.h"
 

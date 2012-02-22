@@ -1,6 +1,6 @@
 #ifndef TDB1_LOCK_TRACKING_H
 #define TDB1_LOCK_TRACKING_H
-#include <ccan/tdb2/private.h>
+#include "private.h"
 #include <stdbool.h>
 
 /* Set this if you want a callback after fnctl unlock. */

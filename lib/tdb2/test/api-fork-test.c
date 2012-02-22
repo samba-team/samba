@@ -10,8 +10,9 @@
  * Note that we don't hold a lock across tdb_traverse callbacks, so
  * that doesn't matter.
  */
-#include <ccan/tdb2/tdb2.h>
-#include <ccan/tap/tap.h>
+#include "config.h"
+#include "tdb2.h"
+#include "tap-interface.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

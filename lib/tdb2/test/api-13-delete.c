@@ -1,10 +1,10 @@
-#include <ccan/tdb2/private.h> // For TDB_TOPLEVEL_HASH_BITS
+#include "private.h" // For TDB_TOPLEVEL_HASH_BITS
 #include <ccan/hash/hash.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <ccan/tdb2/tdb2.h>
-#include <ccan/tap/tap.h>
+#include "tdb2.h"
+#include "tap-interface.h"
 #include "logging.h"
 
 /* We rig the hash so adjacent-numbered records always clash. */

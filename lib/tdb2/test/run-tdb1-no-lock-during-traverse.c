@@ -1,11 +1,11 @@
-#include <ccan/tdb2/private.h>
+#include "private.h"
 #include <unistd.h>
 #include "tdb1-lock-tracking.h"
 
 #define fcntl fcntl_with_lockcheck1
 
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdlib.h>
 #include <err.h>
 #include "logging.h"

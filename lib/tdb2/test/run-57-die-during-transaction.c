@@ -1,7 +1,7 @@
-#include <ccan/tdb2/private.h>
+#include "private.h"
 #include <unistd.h>
 #include "lock-tracking.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdlib.h>
 #include <assert.h>
 static ssize_t pwrite_check(int fd, const void *buf, size_t count, off_t offset);

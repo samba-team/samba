@@ -1,10 +1,10 @@
 /* We save the locks so we can reaquire them. */
-#include <ccan/tdb2/tdb1_private.h>
+#include "tdb1_private.h" /* For TDB_HASH_LOCK_START, TDB1_FREELIST_TOP, etc. */
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include "lock-tracking.h"
 
 struct lock {

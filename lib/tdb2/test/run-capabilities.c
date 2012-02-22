@@ -1,6 +1,6 @@
 #include <ccan/failtest/failtest_override.h>
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include "logging.h"
 #include "layout.h"
 #include "failtest_helper.h"

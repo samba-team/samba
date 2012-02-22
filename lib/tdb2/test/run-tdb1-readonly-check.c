@@ -1,7 +1,7 @@
 /* We should be able to tdb_check a O_RDONLY tdb, and we were previously allowed
  * to tdb_check() inside a transaction (though that's paranoia!). */
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdlib.h>
 #include <err.h>
 #include "logging.h"

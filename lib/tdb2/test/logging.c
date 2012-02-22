@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include "logging.h"
 
 unsigned tap_log_messages;

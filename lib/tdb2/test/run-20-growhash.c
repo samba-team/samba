@@ -1,5 +1,5 @@
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include "logging.h"
 
 static uint64_t myhash(const void *key, size_t len, uint64_t seed, void *priv)

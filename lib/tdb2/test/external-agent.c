@@ -10,8 +10,7 @@
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
-#include <ccan/tdb2/tdb1_private.h>
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -65,7 +64,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 	switch (op) {
 	case OPEN:
 		if (tdb) {
-			diag("Already have tdb %s open", tdb->name);
+			diag("Already have tdb %s open", tdb_name(tdb));
 			return OTHER_FAILURE;
 		}
 		tdb = tdb_open(name, TDB_DEFAULT, O_RDWR, 0, &tap_log_attr);
@@ -79,7 +78,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 		break;
 	case OPEN_WITH_HOOK:
 		if (tdb) {
-			diag("Already have tdb %s open", tdb->name);
+			diag("Already have tdb %s open", tdb_name(tdb));
 			return OTHER_FAILURE;
 		}
 		cif.openhook.base.attr = TDB_ATTRIBUTE_OPENHOOK;
@@ -118,10 +117,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 		ret = tdb_transaction_commit(tdb)==0 ? SUCCESS : OTHER_FAILURE;
 		break;
 	case NEEDS_RECOVERY:
-		if (tdb->flags & TDB_VERSION1)
-			ret = tdb1_needs_recovery(tdb) ? SUCCESS : FAILED;
-		else
-			ret = tdb_needs_recovery(tdb) ? SUCCESS : FAILED;
+		ret = external_agent_needs_rec(tdb);
 		break;
 	case CHECK:
 		ret = tdb_check(tdb, NULL, NULL) == 0 ? SUCCESS : OTHER_FAILURE;

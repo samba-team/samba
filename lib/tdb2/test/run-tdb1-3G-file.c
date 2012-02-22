@@ -1,7 +1,7 @@
 /* We need this otherwise fcntl locking fails. */
 #define _FILE_OFFSET_BITS 64
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdlib.h>
 #include <err.h>
 #include "logging.h"

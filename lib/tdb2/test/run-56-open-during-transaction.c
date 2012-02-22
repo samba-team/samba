@@ -1,4 +1,4 @@
-#include <ccan/tdb2/private.h>
+#include "private.h"
 #include <unistd.h>
 #include "lock-tracking.h"
 
@@ -12,7 +12,7 @@ static int ftruncate_check(int fd, off_t length);
 #define ftruncate ftruncate_check
 
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdarg.h>

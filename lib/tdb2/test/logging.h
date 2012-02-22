@@ -1,6 +1,6 @@
 #ifndef TDB2_TEST_LOGGING_H
 #define TDB2_TEST_LOGGING_H
-#include <ccan/tdb2/tdb2.h>
+#include "tdb2.h"
 #include <stdbool.h>
 #include <string.h>
 

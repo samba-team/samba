@@ -1,5 +1,7 @@
-#include <ccan/tdb2/tdb2.h>
-#include <ccan/tap/tap.h>
+#include "config.h"
+#include "tdb2.h"
+#include "tap-interface.h"
+#include "system/wait.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>

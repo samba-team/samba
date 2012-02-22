@@ -1,5 +1,5 @@
 #include "tdb2-source.h"
-#include <ccan/tap/tap.h>
+#include "tap-interface.h"
 #include "logging.h"
 
 static int mylock(int fd, int rw, off_t off, off_t len, bool waitflag,

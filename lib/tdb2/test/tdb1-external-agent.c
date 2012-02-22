@@ -10,8 +10,8 @@
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
-#include <ccan/tdb2/tdb1_private.h>
-#include <ccan/tap/tap.h>
+#include "tdb1_private.h"
+#include "tap-interface.h"
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -76,7 +76,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 		ret = tdb_check(tdb, NULL, NULL) == TDB_SUCCESS ? SUCCESS : OTHER_FAILURE;
 		break;
 	case NEEDS_RECOVERY:
-		ret = tdb1_needs_recovery(tdb) ? SUCCESS : FAILED;
+		ret = external_agent_needs_rec(tdb);
 		break;
 	case CLOSE:
 		ret = tdb_close(tdb) == 0 ? SUCCESS : OTHER_FAILURE;
