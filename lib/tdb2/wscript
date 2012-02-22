@@ -27,6 +27,12 @@ def set_options(opt):
     opt.add_option('--disable-tdb2',
                    help=("Use old tdb1 API instead of tdb2"),
                    action="store_false", dest='BUILD_TDB2')
+    opt.add_option('--valgrind',
+                   help=("use valgrind on tests programs"),
+                   action="store_true", dest='VALGRIND', default=False)
+    opt.add_option('--valgrind-log',
+                   help=("where to put the valgrind log"),
+                   action="store", dest='VALGRINDLOG', default=None)
     if opt.IN_LAUNCH_DIR():
         opt.add_option('--disable-python',
                        help=("disable the pytdb module"),
@@ -183,9 +189,15 @@ def testonly(ctx):
         link = os.path.join(testdir, 'test')
         if not os.path.exists(link):
             os.symlink(os.path.abspath(os.path.join(env.cwd, 'test')), link)
+
+        if Options.options.VALGRIND:
+            os.environ['VALGRIND'] = 'valgrind -q --num-callers=30'
+        if Options.options.VALGRINDLOG is not None:
+            os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
+
         for f in env.tdb2_test['run'] + env.tdb2_test['api']:
             name = "tdb2-" + os.path.splitext(os.path.basename(f))[0]
-            cmd = "cd " + testdir + " && " + os.path.abspath(os.path.join(Utils.g_module.blddir, name)) + " > test-output 2>&1"
+            cmd = "cd " + testdir + " && $VALGRIND " + os.path.abspath(os.path.join(Utils.g_module.blddir, name)) + " > test-output 2>&1"
             print("..." + f)
             ret = samba_utils.RUN_COMMAND(cmd)
             if ret != 0:
