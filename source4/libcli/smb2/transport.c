@@ -30,6 +30,7 @@
 #include "lib/stream/packet.h"
 #include "../lib/util/dlinklist.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "librpc/ndr/libndr.h"
 
 /*
   destroy a transport
@@ -48,6 +49,7 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 					   struct smbcli_options *options)
 {
 	struct smb2_transport *transport;
+	struct GUID client_guid;
 
 	transport = talloc_zero(parent_ctx, struct smb2_transport);
 	if (!transport) return NULL;
@@ -58,12 +60,14 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 	TALLOC_FREE(sock->event.fde);
 	TALLOC_FREE(sock->event.te);
 
+	client_guid = GUID_random();
+
 	transport->conn = smbXcli_conn_create(transport,
 					      sock->sock->fd,
 					      sock->hostname,
 					      options->signing,
 					      0, /* smb1_capabilities */
-					      NULL); /* client_guid */
+					      &client_guid);
 	if (transport->conn == NULL) {
 		talloc_free(transport);
 		return NULL;
