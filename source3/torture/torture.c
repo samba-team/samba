@@ -8935,6 +8935,7 @@ static struct {
 	{ "LOCAL-CONV-AUTH-INFO", run_local_conv_auth_info, 0},
 	{ "LOCAL-sprintf_append", run_local_sprintf_append, 0},
 	{ "LOCAL-hex_encode_buf", run_local_hex_encode_buf, 0},
+	{ "LOCAL-IDMAP-TDB-COMMON", run_idmap_tdb_common_test, 0},
 	{NULL, NULL, 0}};
 
 
