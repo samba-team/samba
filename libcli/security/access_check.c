@@ -205,6 +205,11 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
 	}
 
+	if ((bits_remaining & SEC_STD_WRITE_OWNER) &&
+	     security_token_has_privilege(token, SEC_PRIV_TAKE_OWNERSHIP)) {
+		bits_remaining &= ~(SEC_STD_WRITE_OWNER);
+	}
+
 	/* a NULL dacl allows access */
 	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
 		*access_granted = access_desired;
