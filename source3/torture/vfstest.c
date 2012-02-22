@@ -452,6 +452,7 @@ int main(int argc, char *argv[])
 	char cwd[MAXPATHLEN];
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev = tevent_context_init(NULL);
+	NTSTATUS status = NT_STATUS_OK;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -532,11 +533,11 @@ int main(int argc, char *argv[])
 		char    *p = cmdstr;
 
 		while((cmd=next_command(frame, &p)) != NULL) {
-			process_cmd(&vfs, cmd);
+			status = process_cmd(&vfs, cmd);
 		}
 
 		TALLOC_FREE(cmd);
-		return 0;
+		return NT_STATUS_IS_OK(status) ? 0 : 1;
 	}
 
 	/* Loop around accepting commands */
@@ -551,12 +552,12 @@ int main(int argc, char *argv[])
 		}
 
 		if (line[0] != '\n') {
-			process_cmd(&vfs, line);
+			status = process_cmd(&vfs, line);
 		}
 		SAFE_FREE(line);
 	}
 
 	TALLOC_FREE(vfs.conn);
 	TALLOC_FREE(frame);
-	return 0;
+	return NT_STATUS_IS_OK(status) ? 0 : 1;
 }
