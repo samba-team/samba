@@ -26,6 +26,7 @@
 #include "../include/ctdb_private.h"
 #include "lib/tevent/tevent.h"
 #include "../common/rb_tree.h"
+#include "lib/util/dlinklist.h"
 
 static void ctdb_event_script_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p);
 
@@ -41,7 +42,8 @@ static void sigterm(int sig)
 
 /* This is attached to the event script state. */
 struct event_script_callback {
-	struct ctdb_event_script_state *state;
+	struct event_script_callback *next, *prev;
+	struct ctdb_context *ctdb;
 
 	/* Warning: this can free us! */
 	void (*fn)(struct ctdb_context *, int, void *);
@@ -611,8 +613,18 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 	}
 
 	/* This is allowed to free us; talloc will prevent double free anyway,
-	 * but beware if you call this outside the destructor! */
-	callback = state->callback;
+	 * but beware if you call this outside the destructor!
+	 * the callback hangs off a different context so we walk the list
+	 * of "active" callbacks until we find the one state points to.
+	 * if we cant find it it means the callback has been removed.
+	 */
+	for (callback = state->ctdb->script_callbacks; callback != NULL; callback = callback->next) {
+		if (callback == state->callback) {
+			break;
+		}
+	}
+	
+	state->callback = NULL;
 
 	if (callback) {
 		/* Make sure destructor doesn't free itself! */
@@ -669,8 +681,7 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 
 static int remove_callback(struct event_script_callback *callback)
 {
-	/* Detach ourselves from the running script state */
-	callback->state->callback = NULL;
+	DLIST_REMOVE(callback->ctdb->script_callbacks, callback);
 	return 0;
 }
 
@@ -694,9 +705,10 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	/* The callback isn't done if the context is freed. */
 	state->callback = talloc(mem_ctx, struct event_script_callback);
 	CTDB_NO_MEMORY(ctdb, state->callback);
+	DLIST_ADD(ctdb->script_callbacks, state->callback);
 	talloc_set_destructor(state->callback, remove_callback);
-	state->callback->state = state;
-	state->callback->fn = callback;
+	state->callback->ctdb         = ctdb;
+	state->callback->fn           = callback;
 	state->callback->private_data = private_data;
 
 	state->ctdb = ctdb;
