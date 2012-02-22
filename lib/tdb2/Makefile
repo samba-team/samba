@@ -45,6 +45,7 @@ everything: all
 
 testsuite: all
 
+.PHONY: check
 check: test
 
 torture: all

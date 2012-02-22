@@ -13,7 +13,7 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
     srcdir = '../' + srcdir
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, Options, Logs
+import wafsamba, samba_dist, Options, Logs, glob
 
 samba_dist.DIST_DIRS('lib/tdb2:. lib/replace:lib/replace lib/ccan:lib/ccan buildtools:buildtools')
 
@@ -62,6 +62,18 @@ def configure(conf):
         conf.ADD_EXTRA_INCLUDES('''#lib''')
 
         conf.SAMBA_CONFIG_H()
+
+        # Seems like env can't contain sets?
+        conf.env.tdb2_test = {}
+        conf.env.tdb2_test['run'] = glob.glob('test/run*.c')
+        conf.env.tdb2_test['api'] = glob.glob('test/api*.c')
+        conf.env.tdb2_test['runhelper'] = glob.glob('test/helprun*.c')
+        conf.env.tdb2_test['apihelper'] = glob.glob('test/helpapi*.c')
+        conf.env.tdb2_test['helper'] = list(set(glob.glob('test/*.c'))
+                                            - set(conf.env.tdb2_test['run'])
+                                            - set(conf.env.tdb2_test['api'])
+                                            - set(conf.env.tdb2_test['runhelper'])
+                                            - set(conf.env.tdb2_test['apihelper']))
 
 def build(bld):
     if bld.env.BUILD_TDB2:
@@ -116,6 +128,33 @@ def build(bld):
                              'tools/tdb2backup.c',
                              deps='tdb')
 
+            # FIXME: We need CCAN for some API tests, but waf thinks it's
+            # already available via tdb.  It is, but not publicly.
+            # Workaround is to build a private, non-hiding version.
+            bld.SAMBA_SUBSYSTEM('tdb-testing',
+                                SRC,
+                                deps='replace ccan',
+                                includes='.')
+
+            bld.SAMBA_SUBSYSTEM('tdb2-test-helpers',
+                                bld.env.tdb2_test['helper'], deps='replace')
+            bld.SAMBA_SUBSYSTEM('tdb2-run-helpers',
+                                bld.env.tdb2_test['runhelper'], deps='replace')
+            bld.SAMBA_SUBSYSTEM('tdb2-api-helpers',
+                                bld.env.tdb2_test['apihelper'], deps='replace tdb-testing')
+
+            for f in bld.env.tdb2_test['run']:
+                base = os.path.splitext(os.path.basename(f))[0]
+                bld.SAMBA_BINARY('tdb2-' + base, f,
+                                 deps='ccan replace tdb2-test-helpers tdb2-run-helpers',
+                                 install=False)
+
+            for f in bld.env.tdb2_test['api']:
+                base = os.path.splitext(os.path.basename(f))[0]
+                bld.SAMBA_BINARY('tdb2-' + base, f,
+                                 deps='ccan replace tdb2-test-helpers tdb2-api-helpers',
+                                 install=False)
+
             if not bld.CONFIG_SET('USING_SYSTEM_PYTDB'):
                 bld.SAMBA_PYTHON('pytdb',
                                  source='pytdb.c',
@@ -123,6 +162,46 @@ def build(bld):
                                  enabled=not bld.env.disable_python,
                                  realname='tdb.so',
                                  cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+
+def testonly(ctx):
+    '''run tdb2 testsuite'''
+    import Utils, samba_utils, shutil
+    ecode = 0;
+
+    env = samba_utils.LOAD_ENVIRONMENT()
+
+    if env.BUILD_TDB2 and env.standalone_tdb2:
+        # FIXME: This is horrible :(
+        test_prefix = "%s/st" % (Utils.g_module.blddir)
+        shutil.rmtree(test_prefix, ignore_errors=True)
+        os.makedirs(test_prefix)
+
+        # Create scratch directory for tests.
+        testdir = os.path.join(test_prefix, 'tdb2-tests')
+        samba_utils.mkdir_p(testdir)
+        # Symlink back to source dir so it can find tests in test/
+        link = os.path.join(testdir, 'test')
+        if not os.path.exists(link):
+            os.symlink(os.path.abspath(os.path.join(env.cwd, 'test')), link)
+        for f in env.tdb2_test['run'] + env.tdb2_test['api']:
+            name = "tdb2-" + os.path.splitext(os.path.basename(f))[0]
+            cmd = "cd " + testdir + " && " + os.path.abspath(os.path.join(Utils.g_module.blddir, name)) + " > test-output 2>&1"
+            print("..." + f)
+            ret = samba_utils.RUN_COMMAND(cmd)
+            if ret != 0:
+                print("%s (%s) failed:" % (name, f))
+                samba_utils.RUN_COMMAND("cat " + os.path.join(testdir, 'test-output'))
+                ecode = ret;
+                break;
+
+    sys.exit(ecode)
+
+# WAF doesn't build the unit tests for this, maybe because they don't link with tdb?
+# This forces it
+def test(ctx):
+    import Scripting
+    Scripting.commands.append('build')
+    Scripting.commands.append('testonly')
 
 def dist():
     '''makes a tarball for distribution'''
