@@ -33,6 +33,6 @@ struct HMACSHA256Context {
 
 void hmac_sha256_init(const uint8_t *key, size_t key_len, struct HMACSHA256Context *ctx);
 void hmac_sha256_update(const uint8_t *data, size_t data_len, struct HMACSHA256Context *ctx);
-void hmac_sha256_final(uint8_t digest[20], struct HMACSHA256Context *ctx);
+void hmac_sha256_final(uint8_t digest[SHA256_DIGEST_LENGTH], struct HMACSHA256Context *ctx);
 
 #endif /* _HMAC_SHA256_H */
