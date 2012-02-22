@@ -135,3 +135,35 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 
 	return NT_STATUS_OK;
 }
+
+void smb2_key_deviration(const uint8_t *KI, size_t KI_len,
+			 const uint8_t *Label, size_t Label_len,
+			 const uint8_t *Context, size_t Context_len,
+			 uint8_t KO[16])
+{
+	struct HMACSHA256Context ctx;
+	uint8_t buf[4];
+	static const uint8_t zero = 0;
+	uint8_t digest[SHA256_DIGEST_LENGTH];
+	uint32_t i = 1;
+	uint32_t L = 128;
+
+	/*
+	 * a simplified version of
+	 * "NIST Special Publication 800-108" section 5.1
+	 * using hmac-sha256.
+	 */
+	hmac_sha256_init(KI, KI_len, &ctx);
+
+	RSIVAL(buf, 0, i);
+	hmac_sha256_update(buf, sizeof(buf), &ctx);
+	hmac_sha256_update(Label, Label_len, &ctx);
+	hmac_sha256_update(&zero, 1, &ctx);
+	hmac_sha256_update(Context, Context_len, &ctx);
+	RSIVAL(buf, 0, L);
+	hmac_sha256_update(buf, sizeof(buf), &ctx);
+
+	hmac_sha256_final(digest, &ctx);
+
+	memcpy(KO, digest, 16);
+}
