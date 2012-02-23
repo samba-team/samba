@@ -888,7 +888,7 @@ sub setup_env($$)
 		        $testenv_vars->{target} = $target;
 		}
 		if (not defined($testenv_vars)) {
-			warn("$opt_target can't provide environment '$envname'");
+			warn("$opt_target can't start up known environment '$envname'");
 		}
 	}
 

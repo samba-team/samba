@@ -31,7 +31,7 @@ sub setup_env($$$)
 	    if (not defined($env->{target})) {
 		$env->{target} = $self->{samba4};
 	    }
-	} else {
+	} elsif (defined($env) and $env eq "UNKNOWN") {
 	   	$env = $self->{samba3}->setup_env($envname, $path);
 		if (defined($env) and $env ne "UNKNOWN") {
 		    if (not defined($env->{target})) {
@@ -39,8 +39,12 @@ sub setup_env($$$)
 		    }
 		}
 	}
-	if (not defined $env) {
+	if (defined($env) and ($env eq "UNKNOWN")) {
 		warn("Samba can't provide environment '$envname'");
+		return "UNKNOWN";
+	}
+	if (not defined $env) {
+		warn("failed to start up environment '$envname'");
 		return undef;
 	}
 	return $env;
