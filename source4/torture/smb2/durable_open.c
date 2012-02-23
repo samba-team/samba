@@ -551,7 +551,10 @@ bool test_durable_open_reopen4(struct torture_context *tctx,
 	CHECK_VAL(io1.out.durable_open, true);
 	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
 
-	/* disconnect, reconnect and then do durable reopen */
+	/*
+	 * do a session logoff, establish a new session and tree
+	 * connect on the same transport, and try a durable reopen
+	 */
 	transport = tree->session->transport;
 	status = smb2_logoff(tree->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
