@@ -1164,18 +1164,15 @@ bool test_durable_open_open_oplock(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io1, io2;
-	struct smb2_lease ls;
 	struct smb2_handle h1, h2;
 	NTSTATUS status;
 	char fname[256];
 	bool ret = true;
-	uint64_t lease;
 
 	/*
 	 * Choose a random name and random lease in case the state is left a
 	 * little funky.
 	 */
-	lease = random();
 	snprintf(fname, 256, "durable_open_open_oplock_%s.dat",
 		 generate_random_str(tctx, 8));
 
@@ -1215,7 +1212,6 @@ bool test_durable_open_open_oplock(struct torture_context *tctx,
 	ZERO_STRUCT(io1);
 	io1.in.fname = fname;
 	io1.in.durable_handle = &h1;
-	io1.in.lease_request = &ls;
 
 	status = smb2_create(tree1, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
