@@ -134,7 +134,8 @@ def install_library(self):
 
     # tell waf to install the library
     bld.install_as(os.path.join(install_path, install_name),
-                   os.path.join(self.path.abspath(bld.env), inst_name))
+                   os.path.join(self.path.abspath(bld.env), inst_name),
+                   chmod=MODE_755)
     if install_link and install_link != install_name:
         # and the symlink if needed
         bld.symlink_as(os.path.join(install_path, install_link), os.path.basename(install_name))
