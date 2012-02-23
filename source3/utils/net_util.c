@@ -220,27 +220,6 @@ NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 	}
 }
 
-/****************************************************************************
- Return malloced user@realm for krb5 login.
-****************************************************************************/
-
-static char *get_user_and_realm(const char *username)
-{
-	char *user_and_realm = NULL;
-
-	if (!username) {
-		return NULL;
-	}
-	if (strchr_m(username, '@')) {
-		user_and_realm = SMB_STRDUP(username);
-	} else {
-		if (asprintf(&user_and_realm, "%s@%s", username, lp_realm()) == -1) {
-			user_and_realm = NULL;
-		}
-	}
-	return user_and_realm;
-}
-
 /**
  * Connect a server and open a given pipe
  *
