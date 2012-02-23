@@ -529,7 +529,7 @@ static bool init_smb_request(struct smb_request *req,
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
-	req->vwv    = discard_const_p(uint16_t, (inbuf+smb_vwv));
+	req->vwv    = (const uint16_t *)(inbuf+smb_vwv);
 	req->buflen = smb_buflen(inbuf);
 	req->buf    = (const uint8_t *)smb_buf_const(inbuf);
 	req->unread_bytes = unread_bytes;

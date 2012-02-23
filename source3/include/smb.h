@@ -452,7 +452,7 @@ struct smb_request {
 	uint16 vuid;
 	uint16 tid;
 	uint8  wct;
-	uint16_t *vwv;
+	const uint16_t *vwv;
 	uint16_t buflen;
 	const uint8_t *buf;
 	const uint8 *inbuf;
