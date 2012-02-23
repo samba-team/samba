@@ -529,6 +529,7 @@ bool test_durable_open_reopen4(struct torture_context *tctx,
 	struct smb2_create io1, io2;
 	bool ret = true;
 	struct smb2_transport *transport;
+	struct smb2_session *session2;
 	struct smb2_tree *tree2;
 
 	/* Choose a random name in case the state is left a little funky. */
@@ -559,11 +560,17 @@ bool test_durable_open_reopen4(struct torture_context *tctx,
 	status = smb2_logoff(tree->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (!torture_smb2_session_setup(tctx, transport, mem_ctx, &tree->session)) {
+	if (!torture_smb2_session_setup(tctx, transport, mem_ctx, &session2)) {
 		torture_warning(tctx, "session setup failed.\n");
 		ret = false;
 		goto done;
 	}
+
+	/*
+	 * the session setup has talloc-stolen the transport,
+	 * so we can safely free the old tree+session for clarity
+	 */
+	TALLOC_FREE(tree);
 
 	ZERO_STRUCT(io2);
 	io2.in.fname = fname;
@@ -572,7 +579,7 @@ bool test_durable_open_reopen4(struct torture_context *tctx,
 	status = smb2_create(tree, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_NETWORK_NAME_DELETED);
 
-	if (!torture_smb2_tree_connect(tctx, tree->session, mem_ctx, &tree2)) {
+	if (!torture_smb2_tree_connect(tctx, session2, mem_ctx, &tree2)) {
 		torture_warning(tctx, "tree connect failed.\n");
 		ret = false;
 		goto done;
