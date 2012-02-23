@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
@@ -293,6 +294,12 @@ bool test_durable_open_open2(struct torture_context *tctx,
 	char fname[256];
 	bool ret = true;
 	int i;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_open2_%s.dat", generate_random_str(tctx, 8));
@@ -881,6 +888,12 @@ bool test_durable_open_lease(struct torture_context *tctx,
 	char fname[256];
 	bool ret = true;
 	uint64_t lease1, lease2;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	/*
 	 * Choose a random name and random lease in case the state is left a
@@ -980,6 +993,12 @@ bool test_durable_open_lock(struct torture_context *tctx,
 	char fname[256];
 	bool ret = true;
 	uint64_t lease;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	/*
 	 * Choose a random name and random lease in case the state is left a
@@ -1074,6 +1093,12 @@ bool test_durable_open_open_lease(struct torture_context *tctx,
 	char fname[256];
 	bool ret = true;
 	uint64_t lease;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	/*
 	 * Choose a random name and random lease in case the state is left a
