@@ -255,6 +255,12 @@ static bool test_one_durable_open_open2(struct torture_context *tctx,
 	struct smb2_create io;
 	struct smb2_lease ls;
 	uint64_t lease;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	smb2_util_unlink(tree, fname);
 
