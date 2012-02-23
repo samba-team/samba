@@ -126,7 +126,9 @@ void sys_utmp_yield(const char *username, const char *hostname,
 
 #else /* WITH_UTMP */
 
+#ifdef HAVE_UTMP_H
 #include <utmp.h>
+#endif
 
 #ifdef HAVE_UTMPX_H
 #include <utmpx.h>
