@@ -588,6 +588,7 @@ bool test_durable_open_reopen4(struct torture_context *tctx,
 	ZERO_STRUCT(io2);
 	io2.in.fname = fname;
 	io2.in.durable_handle = h;
+	h = NULL;
 
 	status = smb2_create(tree2, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
