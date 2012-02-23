@@ -158,8 +158,8 @@ static NTSTATUS close_filestruct(files_struct *fsp)
 
 static int compare_share_mode_times(const void *p1, const void *p2)
 {
-	struct share_mode_entry *s1 = (struct share_mode_entry *)p1;
-	struct share_mode_entry *s2 = (struct share_mode_entry *)p2;
+	const struct share_mode_entry *s1 = (const struct share_mode_entry *)p1;
+	const struct share_mode_entry *s2 = (const struct share_mode_entry *)p2;
 	return timeval_compare(&s1->time, &s2->time);
 }
 
