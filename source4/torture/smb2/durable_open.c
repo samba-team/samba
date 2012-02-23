@@ -590,7 +590,7 @@ bool test_durable_open_reopen4(struct torture_context *tctx,
 
 done:
 	if (h != NULL) {
-		smb2_util_close(tree, *h);
+		smb2_util_close(tree2, *h);
 	}
 
 	smb2_util_unlink(tree2, fname);
