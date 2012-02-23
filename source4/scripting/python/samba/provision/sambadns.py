@@ -856,7 +856,7 @@ def create_dns_legacy(samdb, domainsid, forestdn, dnsadmins_sid):
 
 
 def fill_dns_data_legacy(samdb, domainsid, forestdn, dnsdomain, site, hostname,
-                         hostip, hostip6):
+                         hostip, hostip6, dnsadmins_sid):
     # Add domain record
     add_domain_record(samdb, forestdn, "CN=System", dnsdomain, domainsid,
                       dnsadmins_sid)
@@ -992,8 +992,8 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
     if os_level == DS_DOMAIN_FUNCTION_2000:
         # Populating legacy dns
         logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % forestdn)
-        fill_dns_data_legacy(samdb, domainsid, forestdn, dnsdoman, site,
-                             hostame, hostip, hostip6)
+        fill_dns_data_legacy(samdb, domainsid, forestdn, dnsdomain, site,
+                             hostname, hostip, hostip6, dnsadmins_sid)
 
     elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and \
             os_level >= DS_DOMAIN_FUNCTION_2003:
