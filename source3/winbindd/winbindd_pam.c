@@ -2101,6 +2101,15 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 done:
 
+	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT)) {
+		DEBUG(3,("winbindd_dual_pam_auth_crap: sam_network_logon(ex) "
+				"returned NT_STATUS_IO_TIMEOUT after the retry."
+				"We didn't know what's going on killing "
+				"connections to domain %s\n",
+				name_domain));
+		invalidate_cm_connection(&contact_domain->conn);
+	}
+
 	/* give us a more useful (more correct?) error code */
 	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) ||
 	    (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
