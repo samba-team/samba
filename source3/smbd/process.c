@@ -1790,7 +1790,6 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	size_t old_size, new_size;
 	size_t ofs;
 	size_t chain_padding = 0;
-	size_t bytes_padding = 0;
 	bool first_request;
 
 	old_size = talloc_get_size(*poutbuf);
@@ -1816,8 +1815,7 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	 */
 
 	new_size = old_size + chain_padding + 1 + wct * sizeof(uint16_t) + 2;
-
-	new_size += bytes_padding + num_bytes;
+	new_size += num_bytes;
 
 	if ((smb_command != SMBwriteX) && (new_size > 0xffff)) {
 		DEBUG(1, ("smb_splice_chain: %u bytes won't fit\n",
@@ -1875,17 +1873,8 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	 * bcc (byte count)
 	 */
 
-	SSVAL(outbuf, ofs, num_bytes + bytes_padding);
+	SSVAL(outbuf, ofs, num_bytes);
 	ofs += sizeof(uint16_t);
-
-	/*
-	 * padding
-	 */
-
-	if (bytes_padding != 0) {
-		memset(outbuf + ofs, 0, bytes_padding);
-		ofs += bytes_padding;
-	}
 
 	/*
 	 * The bytes field
