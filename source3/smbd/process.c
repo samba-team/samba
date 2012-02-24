@@ -1790,6 +1790,8 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	size_t old_size, new_size;
 	size_t ofs;
 	size_t chain_padding = 0;
+	size_t andx_cmd_ofs;
+
 
 	old_size = talloc_get_size(*poutbuf);
 
@@ -1822,24 +1824,19 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	}
 	*poutbuf = outbuf;
 
-	{
-		size_t andx_cmd_ofs;
-
-		if (!find_andx_cmd_ofs(outbuf, &andx_cmd_ofs)) {
-			DEBUG(1, ("invalid command chain\n"));
-			*poutbuf = talloc_realloc(
-				NULL, *poutbuf, uint8_t, old_size);
-			return false;
-		}
-
-		if (chain_padding != 0) {
-			memset(outbuf + old_size, 0, chain_padding);
-			old_size += chain_padding;
-		}
-
-		SCVAL(outbuf, andx_cmd_ofs, smb_command);
-		SSVAL(outbuf, andx_cmd_ofs + 2, old_size - 4);
+	if (!find_andx_cmd_ofs(outbuf, &andx_cmd_ofs)) {
+		DEBUG(1, ("invalid command chain\n"));
+		*poutbuf = talloc_realloc(NULL, *poutbuf, uint8_t, old_size);
+		return false;
 	}
+
+	if (chain_padding != 0) {
+		memset(outbuf + old_size, 0, chain_padding);
+		old_size += chain_padding;
+	}
+
+	SCVAL(outbuf, andx_cmd_ofs, smb_command);
+	SSVAL(outbuf, andx_cmd_ofs + 2, old_size - 4);
 
 	ofs = old_size;
 
