@@ -24,5 +24,5 @@ or later, then it is better *NOT* to run upgradeprovision as the
 database format has not changed.
 
 To upgrade from BIND9 flat files to the internal database store for
-Bind 9 DLZ, use ./source4/scripting/bin/upgradedns
+Bind 9 DLZ, use ./source4/scripting/bin/samba_upgradedns
 
