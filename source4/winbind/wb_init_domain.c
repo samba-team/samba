@@ -78,22 +78,33 @@ static struct dcerpc_binding *init_domain_binding(struct init_domain_state *stat
 						  const struct ndr_interface_table *table) 
 {
 	struct dcerpc_binding *binding;
+	char *s;
 	NTSTATUS status;
 
 	/* Make a binding string */
-	{
-		char *s = talloc_asprintf(state, "ncacn_np:%s", state->domain->dc_name);
+	if ((lpcfg_server_role(state->service->task->lp_ctx) != ROLE_DOMAIN_MEMBER) &&
+	    dom_sid_equal(state->domain->info->sid, state->service->primary_sid) &&
+	    state->service->sec_channel_type != SEC_CHAN_RODC) {
+		s = talloc_asprintf(state, "ncalrpc:%s", state->domain->dc_name);
 		if (s == NULL) return NULL;
-		status = dcerpc_parse_binding(state, s, &binding);
-		talloc_free(s);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NULL;
-		}
+	} else {
+		s = talloc_asprintf(state, "ncacn_np:%s", state->domain->dc_name);
+		if (s == NULL) return NULL;
+
+	}
+	status = dcerpc_parse_binding(state, s, &binding);
+	talloc_free(s);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
 	}
 
 	/* Alter binding to contain hostname, but also address (so we don't look it up twice) */
 	binding->target_hostname = state->domain->dc_name;
 	binding->host = state->domain->dc_address;
+
+	if (binding->transport == NCALRPC) {
+		return binding;
+	}
 
 	/* This shouldn't make a network call, as the mappings for named pipes are well known */
 	status = dcerpc_epm_map_binding(binding, binding, table, state->service->task->event_ctx,

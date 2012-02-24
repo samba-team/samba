@@ -27,6 +27,8 @@
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
 #include "libcli/finddc.h"
+#include "lib/socket/netif.h"
+#include "param/param.h"
 
 struct get_dom_info_state {
 	struct composite_context *ctx;
@@ -64,6 +66,24 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 
 	state->info->sid = dom_sid_dup(state->info, sid);
 	if (state->info->sid == NULL) goto failed;
+
+	if ((lpcfg_server_role(service->task->lp_ctx) != ROLE_DOMAIN_MEMBER) &&
+	    dom_sid_equal(sid, service->primary_sid) &&
+	    service->sec_channel_type != SEC_CHAN_RODC) {
+		struct interface *ifaces = NULL;
+
+		load_interface_list(state, service->task->lp_ctx, &ifaces);
+
+		state->info->dc = talloc(state->info, struct nbt_dc_name);
+
+		state->info->dc->address = talloc_strdup(state->info->dc,
+						iface_list_n_ip(ifaces, 0));
+		state->info->dc->name = talloc_strdup(state->info->dc,
+						lpcfg_netbios_name(service->task->lp_ctx));
+
+		composite_done(state->ctx);
+		return result;
+	}
 
 	dom_sid = dom_sid_dup(mem_ctx, sid);
 	if (dom_sid == NULL) goto failed;
