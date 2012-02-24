@@ -1745,7 +1745,9 @@ static bool find_andx_cmd_ofs(uint8_t *buf, size_t *pofs)
 
 	cmd = CVAL(buf, smb_com);
 
-	SMB_ASSERT(is_andx_req(cmd));
+	if (!is_andx_req(cmd)) {
+		return false;
+	}
 
 	ofs = smb_vwv0;
 
@@ -1761,7 +1763,9 @@ static bool find_andx_cmd_ofs(uint8_t *buf, size_t *pofs)
 		 */
 		ofs = SVAL(buf, ofs+2) + 4 + 1;
 
-		SMB_ASSERT(ofs+4 < talloc_get_size(buf));
+		if (ofs+4 >= talloc_get_size(buf)) {
+			return false;
+		}
 	}
 
 	*pofs = ofs;
