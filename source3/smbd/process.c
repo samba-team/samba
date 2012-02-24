@@ -1775,22 +1775,18 @@ static bool find_andx_cmd_ofs(uint8_t *buf, size_t *pofs)
 /**
  * @brief Do the smb chaining at a buffer level
  * @param[in] poutbuf		Pointer to the talloc'ed buffer to be modified
- * @param[in] smb_command	The command that we want to issue
- * @param[in] wct		How many words?
- * @param[in] vwv		The words, already in network order
- * @param[in] bytes_alignment	How shall we align "bytes"?
- * @param[in] num_bytes		How many bytes?
- * @param[in] bytes		The data the request ships
- *
- * smb_splice_chain() adds the vwv and bytes to the request already present in
- * *poutbuf.
+ * @param[in] andx_buf		Buffer to be appended
  */
 
-static bool smb_splice_chain(uint8_t **poutbuf, uint8_t smb_command,
-			     uint8_t wct, const uint16_t *vwv,
-			     size_t bytes_alignment,
-			     uint32_t num_bytes, const uint8_t *bytes)
+static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 {
+	uint8_t smb_command	= CVAL(andx_buf, smb_com);
+	uint8_t wct		= CVAL(andx_buf, smb_wct);
+	const uint16_t *vwv	= (const uint16_t *)(andx_buf + smb_vwv);
+	size_t bytes_alignment	= 0;
+	uint32_t num_bytes	= smb_buflen(andx_buf);
+	const uint8_t *bytes	= (const uint8_t *)smb_buf(andx_buf);
+
 	uint8_t *outbuf;
 	size_t old_size, new_size;
 	size_t ofs;
@@ -1983,12 +1979,7 @@ void chain_reply(struct smb_request *req)
 		SSVAL(req->chain_outbuf, smb_tid, SVAL(req->outbuf, smb_tid));
 		SSVAL(req->chain_outbuf, smb_uid, SVAL(req->outbuf, smb_uid));
 
-		if (!smb_splice_chain(&req->chain_outbuf,
-				      CVAL(req->outbuf, smb_com),
-				      CVAL(req->outbuf, smb_wct),
-				      (uint16_t *)(req->outbuf + smb_vwv),
-				      0, smb_buflen(req->outbuf),
-				      (uint8_t *)smb_buf(req->outbuf))) {
+		if (!smb_splice_chain(&req->chain_outbuf, req->outbuf)) {
 			goto error;
 		}
 		TALLOC_FREE(req->outbuf);
@@ -2144,12 +2135,7 @@ void chain_reply(struct smb_request *req)
 	SSVAL(req->chain_outbuf, smb_rcls, SVAL(req->outbuf, smb_rcls));
 	SSVAL(req->chain_outbuf, smb_err, SVAL(req->outbuf, smb_err));
 
-	if (!smb_splice_chain(&req->chain_outbuf,
-			      CVAL(req->outbuf, smb_com),
-			      CVAL(req->outbuf, smb_wct),
-			      (uint16_t *)(req->outbuf + smb_vwv),
-			      0, smb_buflen(req->outbuf),
-			      (uint8_t *)smb_buf(req->outbuf))) {
+	if (!smb_splice_chain(&req->chain_outbuf, req->outbuf)) {
 		exit_server_cleanly("chain_reply: smb_splice_chain failed\n");
 	}
 	TALLOC_FREE(req->outbuf);
