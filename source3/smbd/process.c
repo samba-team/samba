@@ -1790,18 +1790,10 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	size_t old_size, new_size;
 	size_t ofs;
 	size_t chain_padding = 0;
-	bool first_request;
 
 	old_size = talloc_get_size(*poutbuf);
 
-	/*
-	 * old_size == smb_wct means we're pushing the first request in for
-	 * libsmb/
-	 */
-
-	first_request = (old_size == smb_wct);
-
-	if (!first_request && ((old_size % 4) != 0)) {
+	if ((old_size % 4) != 0) {
 		/*
 		 * Align the wct field of subsequent requests to a 4-byte
 		 * boundary
@@ -1830,9 +1822,7 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	}
 	*poutbuf = outbuf;
 
-	if (first_request) {
-		SCVAL(outbuf, smb_com, smb_command);
-	} else {
+	{
 		size_t andx_cmd_ofs;
 
 		if (!find_andx_cmd_ofs(outbuf, &andx_cmd_ofs)) {
