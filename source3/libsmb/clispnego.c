@@ -412,46 +412,6 @@ DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob)
 /*
  parse a SPNEGO auth packet. This contains the encrypted passwords
 */
-bool spnego_parse_auth_and_mic(TALLOC_CTX *ctx, DATA_BLOB blob,
-				DATA_BLOB *auth, DATA_BLOB *signature)
-{
-	ssize_t len;
-	struct spnego_data token;
-
-	len = spnego_read_data(talloc_tos(), blob, &token);
-	if (len == -1) {
-		DEBUG(3,("spnego_parse_auth: spnego_read_data failed\n"));
-		return false;
-	}
-
-	if (token.type != SPNEGO_NEG_TOKEN_TARG) {
-		DEBUG(3,("spnego_parse_auth: wrong token type: %d\n",
-			token.type));
-		spnego_free_data(&token);
-		return false;
-	}
-
-	*auth = data_blob_talloc(ctx,
-				 token.negTokenTarg.responseToken.data,
-				 token.negTokenTarg.responseToken.length);
-
-	if (!signature) {
-		goto done;
-	}
-
-	*signature = data_blob_talloc(ctx,
-				 token.negTokenTarg.mechListMIC.data,
-				 token.negTokenTarg.mechListMIC.length);
-
-done:
-	spnego_free_data(&token);
-
-	return true;
-}
-
-/*
- parse a SPNEGO auth packet. This contains the encrypted passwords
-*/
 bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 			        DATA_BLOB blob, NTSTATUS nt_status,
 				const char *mechOID,

@@ -874,8 +874,6 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 				const char *mechOID,
 				DATA_BLOB *auth);
 
-bool spnego_parse_auth_and_mic(TALLOC_CTX *ctx, DATA_BLOB blob,
-				DATA_BLOB *auth, DATA_BLOB *signature);
 /* The following definitions come from libsmb/conncache.c  */
 
 NTSTATUS check_negative_conn_cache( const char *domain, const char *server);
