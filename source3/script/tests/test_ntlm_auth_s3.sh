@@ -10,7 +10,10 @@ fi
 PYTHON=$1
 SRC3DIR=$2
 NTLM_AUTH=$3
-shift 3
+DOMAIN=$4
+USERNAME=$5
+PASSWORD=$6
+shift 6
 ADDARGS="$*"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
@@ -20,7 +23,8 @@ failed=0
 
 testit "ntlm_auth" $PYTHON $SRC3DIR/torture/test_ntlm_auth.py $NTLM_AUTH $ADDARGS || failed=`expr $failed + 1`
 # This should work even with NTLMv2
-testit "ntlm_auth" $PYTHON $SRC3DIR/torture/test_ntlm_auth.py $NTLM_AUTH $ADDARGS --client-domain=fOo --server-domain=fOo || failed=`expr $failed + 1`
+testit "ntlm_auth with specified domain" $PYTHON $SRC3DIR/torture/test_ntlm_auth.py $NTLM_AUTH $ADDARGS --client-domain=fOo --server-domain=fOo || failed=`expr $failed + 1`
+testit "ntlm_auth against winbindd" $PYTHON $SRC3DIR/torture/test_ntlm_auth.py $NTLM_AUTH --client-username=$USERNAME --client-domain=$DOMAIN --client-password=$PASSWORD --server-use-winbindd $ADDARGS || failed=`expr $failed + 1`
 
 
 testok $0 $failed

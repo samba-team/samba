@@ -89,6 +89,9 @@ def parseCommandLine():
 				help="Domain server uses for local auth. [default: FOO]")
 	parser.add_option("--server-helper", dest="server_helper",\
 				help="Helper mode for the ntlm_auth server. [default: squid-2.5-server]")
+	parser.add_option("--server-use-winbindd", dest="server_use_winbindd",\
+				help="Use winbindd to check the password (rather than default username/pw)", action="store_true")
+
 
 	parser.add_option("-s", "--configfile", dest="config_file",\
 				help="Path to smb.conf file. [default:/etc/samba/smb.conf")
@@ -163,9 +166,11 @@ def main():
 
 		server_args = []
 		server_args.append("--helper-protocol=%s" % opts.server_helper)
-		server_args.append("--username=%s" % opts.server_username)
-		server_args.append("--password=%s" % opts.server_password)
-		server_args.append("--domain=%s" % opts.server_domain)
+		if not opts.server_use_winbindd:
+			server_args.append("--username=%s" % opts.server_username)
+			server_args.append("--password=%s" % opts.server_password)
+			server_args.append("--domain=%s" % opts.server_domain)
+
 		server_args.append("--configfile=%s" % opts.config_file)
 
 		os.execv(ntlm_auth_path, server_args)
