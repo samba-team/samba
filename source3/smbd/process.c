@@ -1783,7 +1783,6 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	uint8_t smb_command	= CVAL(andx_buf, smb_com);
 	uint8_t wct		= CVAL(andx_buf, smb_wct);
 	const uint16_t *vwv	= (const uint16_t *)(andx_buf + smb_vwv);
-	size_t bytes_alignment	= 0;
 	uint32_t num_bytes	= smb_buflen(andx_buf);
 	const uint8_t *bytes	= (const uint8_t *)smb_buf(andx_buf);
 
@@ -1813,15 +1812,10 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 
 	/*
 	 * After the old request comes the new wct field (1 byte), the vwv's
-	 * and the num_bytes field. After at we might need to align the bytes
-	 * given to us to "bytes_alignment", increasing the num_bytes value.
+	 * and the num_bytes field.
 	 */
 
 	new_size = old_size + chain_padding + 1 + wct * sizeof(uint16_t) + 2;
-
-	if ((bytes_alignment != 0) && ((new_size % bytes_alignment) != 0)) {
-		bytes_padding = bytes_alignment - (new_size % bytes_alignment);
-	}
 
 	new_size += bytes_padding + num_bytes;
 
