@@ -1826,7 +1826,7 @@ static bool smb_splice_chain(uint8_t **poutbuf, uint8_t smb_command,
 	new_size += bytes_padding + num_bytes;
 
 	if ((smb_command != SMBwriteX) && (new_size > 0xffff)) {
-		DEBUG(1, ("splice_chain: %u bytes won't fit\n",
+		DEBUG(1, ("smb_splice_chain: %u bytes won't fit\n",
 			  (unsigned)new_size));
 		return false;
 	}
