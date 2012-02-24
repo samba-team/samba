@@ -895,6 +895,21 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
  it is below dir in the heirachy. This uses realpath.
+ This function must run as root, and will return names
+ and valid stat structs that can be checked on open.
+********************************************************************/
+
+NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
+			const char *fname,
+			struct smb_filename **pp_parent_name,
+			struct smb_filename **pp_file_name)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/*******************************************************************
+ Reduce a file name, removing .. elements and checking that
+ it is below dir in the heirachy. This uses realpath.
 ********************************************************************/
 
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)

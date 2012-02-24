@@ -1021,6 +1021,26 @@ NTSTATUS check_name(connection_struct *conn, const char *name)
 }
 
 /****************************************************************************
+ Must be called as root. Creates the struct priv_backup_restore_paths structure
+ attached to the struct smb_request if this call is successful.
+****************************************************************************/
+
+static NTSTATUS check_name_with_privilege(connection_struct *conn,
+		struct smb_request *smbreq,
+		const char *name)
+{
+	NTSTATUS status = check_veto_path(conn, name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return check_reduced_name_with_privilege(conn,
+			name,
+			NULL,
+			NULL);
+}
+
+/****************************************************************************
  Check if two filenames are equal.
  This needs to be careful about whether we are case sensitive.
 ****************************************************************************/
@@ -1257,6 +1277,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
  * @param ctx		talloc_ctx to allocate memory with.
  * @param conn		connection struct for vfs calls.
  * @param dfs_path	Whether this path requires dfs resolution.
+ * @param smbreq	SMB request if we're using privilages.
  * @param name_in	The unconverted name.
  * @param ucf_flags	flags to pass through to unix_convert().
  *			UCF_ALWAYS_ALLOW_WCARD_LCOMP will be OR'd in if
@@ -1270,9 +1291,10 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
  * @return NT_STATUS_OK if all operations completed succesfully, appropriate
  * 	   error otherwise.
  */
-NTSTATUS filename_convert(TALLOC_CTX *ctx,
+static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				bool dfs_path,
+				struct smb_request *smbreq,
 				const char *name_in,
 				uint32_t ucf_flags,
 				bool *ppath_contains_wcard,
@@ -1291,7 +1313,7 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				&fname,
 				ppath_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("filename_convert: resolve_dfspath failed "
+		DEBUG(10,("filename_convert_internal: resolve_dfspath failed "
 			"for name %s with %s\n",
 			name_in,
 			nt_errstr(status) ));
@@ -1320,7 +1342,7 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 
 	status = unix_convert(ctx, conn, fname, pp_smb_fname, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("filename_convert: unix_convert failed "
+		DEBUG(10,("filename_convert_internal: unix_convert failed "
 			"for name %s with %s\n",
 			fname,
 			nt_errstr(status) ));
@@ -1333,9 +1355,13 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 		return check_veto_path(conn, (*pp_smb_fname)->base_name);
 	}
 
-	status = check_name(conn, (*pp_smb_fname)->base_name);
+	if (!smbreq) {
+		status = check_name(conn, (*pp_smb_fname)->base_name);
+	} else {
+		status = check_name_with_privilege(conn, smbreq, (*pp_smb_fname)->base_name);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("filename_convert: check_name failed "
+		DEBUG(3,("filename_convert_internal: check_name failed "
 			"for name %s with %s\n",
 			smb_fname_str_dbg(*pp_smb_fname),
 			nt_errstr(status) ));
@@ -1344,4 +1370,50 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 	}
 
 	return status;
+}
+
+/*
+ * Go through all the steps to validate a filename.
+ * Non-root version.
+ */
+
+NTSTATUS filename_convert(TALLOC_CTX *ctx,
+				connection_struct *conn,
+				bool dfs_path,
+				const char *name_in,
+				uint32_t ucf_flags,
+				bool *ppath_contains_wcard,
+				struct smb_filename **pp_smb_fname)
+{
+	return filename_convert_internal(ctx,
+					conn,
+					dfs_path,
+					NULL,
+					name_in,
+					ucf_flags,
+					ppath_contains_wcard,
+					pp_smb_fname);
+}
+
+/*
+ * Go through all the steps to validate a filename.
+ * root (privileged) version.
+ */
+
+NTSTATUS filename_convert_with_privilege(TALLOC_CTX *ctx,
+                                connection_struct *conn,
+				struct smb_request *smbreq,
+                                const char *name_in,
+                                uint32_t ucf_flags,
+                                bool *ppath_contains_wcard,
+                                struct smb_filename **pp_smb_fname)
+{
+	return filename_convert_internal(ctx,
+					conn,
+					smbreq->flags2 & FLAGS2_DFS_PATHNAMES,
+					smbreq,
+					name_in,
+					ucf_flags,
+					ppath_contains_wcard,
+					pp_smb_fname);
 }

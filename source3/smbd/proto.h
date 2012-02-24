@@ -349,6 +349,13 @@ NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			uint32_t ucf_flags,
 			bool *ppath_contains_wcard,
 			struct smb_filename **pp_smb_fname);
+NTSTATUS filename_convert_with_privilege(TALLOC_CTX *mem_ctx,
+			connection_struct *conn,
+			struct smb_request *smbreq,
+			const char *name_in,
+			uint32_t ucf_flags,
+			bool *ppath_contains_wcard,
+			struct smb_filename **pp_smb_fname);
 
 /* The following definitions come from smbd/files.c  */
 
@@ -1159,6 +1166,10 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 int vfs_ChDir(connection_struct *conn, const char *path);
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname);
+NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
+			const char *fname,
+			struct smb_filename **pp_parent_name,
+			struct smb_filename **pp_file_name);
 int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
 		       SMB_STRUCT_STAT *psbuf);
 int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
