@@ -209,6 +209,32 @@ def main():
 	if buf.count("AF ", 0, 3) != 1:
 		sys.exit(4)
 
+	if opts.client_helper == "ntlmssp-client-1":
+		writeLine(client_out, "GK")
+		buf = readLine(client_in)
+
+		if buf.count("GK ", 0, 3) != 1:
+			sys.exit(4)
+
+		writeLine(client_out, "GF")
+		buf = readLine(client_in)
+
+		if buf.count("GF ", 0, 3) != 1:
+			sys.exit(4)
+
+	if opts.server_helper == "squid-2.5-ntlmssp":
+		writeLine(server_out, "GK")
+		buf = readLine(server_in)
+
+		if buf.count("GK ", 0, 3) != 1:
+			sys.exit(4)
+
+		writeLine(server_out, "GF")
+		buf = readLine(server_in)
+
+		if buf.count("GF ", 0, 3) != 1:
+			sys.exit(4)
+
 	os.close(server_in)
 	os.close(server_out)
 	os.close(client_in)
