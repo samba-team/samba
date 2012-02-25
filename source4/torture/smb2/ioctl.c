@@ -149,16 +149,17 @@ static bool check_pattern(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 		printf("read failed - %s\n", nt_errstr(status));
 		return false;
 	} else if (len != r.out.data.length) {
-		printf("read data len mismatch got %zd, expected %lu\n",
-		       r.out.data.length, len);
+		printf("read data len mismatch got %zu, expected %llu\n",
+		       r.out.data.length, (unsigned long long)len);
 		return false;
 	}
 
 	for (i = 0; i <= len - 8; i += 8, patt_off += 8) {
 		if (BVAL(r.out.data.data, i) != patt_hash(patt_off)) {
-			printf("pattern bad at %lu, got %lx, expected %lx\n",
-			       i, BVAL(r.out.data.data, i),
-			       patt_hash(patt_off));
+			printf("pattern bad at %llu, got %llx, expected %llx\n",
+			       (unsigned long long)i,
+			       (unsigned long long)BVAL(r.out.data.data, i),
+			       (unsigned long long)patt_hash(patt_off));
 			return false;
 		}
 	}
