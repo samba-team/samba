@@ -7183,7 +7183,7 @@ AC_TRY_RUN([#include "${srcdir-.}/../tests/summary.c"],
 dnl Merge in developer cflags from now on
 AC_SUBST(DEVELOPER_CFLAGS)
 if test x"$krb5_developer" = x"yes" -o x"$developer" = x"yes" -o x"$picky_developer" = x"yes"; then
-    CFLAGS="${CFLAGS} \$(DEVELOPER_CFLAGS)"
+    CFLAGS="${CFLAGS} \$(DEVELOPER_CFLAGS) ${CFLAGS_APPEND}"
 fi
 
 # Stuff the smbd-only libraries at the end of the smbd link
