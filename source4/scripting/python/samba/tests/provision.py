@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2012
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@
 
 import os
 from samba.provision import (
+    ProvisionNames,
     ProvisionPaths,
+    ProvisionResult,
     sanitize_server_role,
     setup_secretsdb,
     findnss,
@@ -66,7 +68,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         finally:
             del ldb
             os.unlink(path)
-            
+
 
 class FindNssTests(TestCase):
     """Test findnss() function."""
@@ -132,3 +134,32 @@ class SanitizeServerRoleTests(TestCase):
 
     def test_valid(self):
         self.assertEquals("standalone", sanitize_server_role("ROLE_STANDALONE"))
+
+
+class DummyLogger(object):
+
+    def __init__(self):
+        self.entries = []
+
+    def info(self, text):
+        self.entries.append(("INFO", text))
+
+
+class ProvisionResultTests(TestCase):
+
+    def test_report_logger(self):
+        logger = DummyLogger()
+        result = ProvisionResult()
+        result.server_role = "domain controller"
+        result.names = ProvisionNames()
+        result.names.hostname = "hostnaam"
+        result.names.domain = "DOMEIN"
+        result.names.dnsdomain = "dnsdomein"
+        result.domainsid = "S1-1-1"
+        result.report_logger(logger)
+        self.assertEquals(logger.entries, [
+            ('INFO', 'Server Role:           domain controller'),
+            ('INFO', 'Hostname:              hostnaam'),
+            ('INFO', 'NetBIOS Domain:        DOMEIN'),
+            ('INFO', 'DNS Domain:            dnsdomein'),
+            ('INFO', 'DOMAIN SID:            S1-1-1')])

@@ -2,7 +2,7 @@
 # Unix SMB/CIFS implementation.
 # backend code for provisioning a Samba4 server
 
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2010
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2012
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008-2009
 # Copyright (C) Oliver Liebel <oliver@itc.li> 2008-2009
 #
@@ -360,14 +360,30 @@ def get_last_provision_usn(sam):
 
 
 class ProvisionResult(object):
+    """Result of a provision.
+
+    :ivar server_role: The server role
+    :ivar paths: ProvisionPaths instance
+    :ivar domaindn: The domain dn, as string
+    """
 
     def __init__(self):
+        self.server_role = None
         self.paths = None
         self.domaindn = None
         self.lp = None
         self.samdb = None
         self.idmap = None
         self.names = None
+        self.domainsid = None
+
+    def report_logger(self, logger):
+        """Report this provision result to a logger."""
+        logger.info("Server Role:           %s" % self.server_role)
+        logger.info("Hostname:              %s" % self.names.hostname)
+        logger.info("NetBIOS Domain:        %s" % self.names.domain)
+        logger.info("DNS Domain:            %s" % self.names.dnsdomain)
+        logger.info("DOMAIN SID:            %s" % self.domainsid)
 
 
 def check_install(lp, session_info, credentials):
@@ -1501,7 +1517,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
 
     # fix any dangling GUIDs from the provision
     logger.info("Fixing provision GUIDs")
-    chk = dbcheck(samdb, samdb_schema=samdb,  verbose=False, fix=True, yes=True, quiet=True)
+    chk = dbcheck(samdb, samdb_schema=samdb, verbose=False, fix=True, yes=True,
+            quiet=True)
     samdb.transaction_start()
     try:
         # a small number of GUIDs are missing because of ordering issues in the
@@ -1810,15 +1827,20 @@ def provision(logger, session_info, credentials, smbconf=None,
                 logger.info("Failed to chown %s to bind gid %u",
                             dns_keytab_path, paths.bind_gid)
 
+    logger.info("Once the above files are installed, your Samba4 server will be ready to use")
+    result = ProvisionResult()
+    result.server_role = serverrole
+    result.domaindn = domaindn
+    result.paths = paths
+    result.names = names
+    result.lp = lp
+    result.samdb = samdb
+    result.idmap = idmap
+    result.domainsid = str(domainsid)
+    result.report_logger(logger)
     logger.info("A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in %s .",
             paths.phpldapadminconfig)
 
-    logger.info("Once the above files are installed, your Samba4 server will be ready to use")
-    logger.info("Server Role:           %s" % serverrole)
-    logger.info("Hostname:              %s" % names.hostname)
-    logger.info("NetBIOS Domain:        %s" % names.domain)
-    logger.info("DNS Domain:            %s" % names.dnsdomain)
-    logger.info("DOMAIN SID:            %s" % str(domainsid))
     if samdb_fill == FILL_FULL:
         if adminpass_generated:
             logger.info("Admin password:        %s" % adminpass)
@@ -1838,13 +1860,6 @@ def provision(logger, session_info, credentials, smbconf=None,
             logger.info("This slapd-Commandline is also stored under: %s/ldap_backend_startup.sh",
                     provision_backend.ldapdir)
 
-    result = ProvisionResult()
-    result.domaindn = domaindn
-    result.paths = paths
-    result.names = names
-    result.lp = lp
-    result.samdb = samdb
-    result.idmap = idmap
     return result
 
 
