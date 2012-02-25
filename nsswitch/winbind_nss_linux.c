@@ -322,7 +322,7 @@ static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
 
 	/* Group membership */
 
-	if ((gr->num_gr_mem < 0) || !gr_mem) {
+	if (!gr_mem) {
 		gr->num_gr_mem = 0;
 	}
 
