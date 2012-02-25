@@ -215,7 +215,7 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
  Get the dir path for a dir index.
 ****************************************************************************/
 
-char *dptr_path(struct smbd_server_connection *sconn, int key)
+const char *dptr_path(struct smbd_server_connection *sconn, int key)
 {
 	struct dptr_struct *dptr = dptr_get(sconn, key, false);
 	if (dptr)
@@ -227,7 +227,7 @@ char *dptr_path(struct smbd_server_connection *sconn, int key)
  Get the dir wcard for a dir index.
 ****************************************************************************/
 
-char *dptr_wcard(struct smbd_server_connection *sconn, int key)
+const char *dptr_wcard(struct smbd_server_connection *sconn, int key)
 {
 	struct dptr_struct *dptr = dptr_get(sconn, key, false);
 	if (dptr)

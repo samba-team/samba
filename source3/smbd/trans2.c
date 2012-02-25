@@ -2773,13 +2773,11 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	directory = dptr_path(sconn, dptr_num);
 
 	/* Get the wildcard mask from the dptr */
-	if((p = dptr_wcard(sconn, dptr_num))== NULL) {
+	if((mask = dptr_wcard(sconn, dptr_num))== NULL) {
 		DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
 		reply_nterror(req, STATUS_NO_MORE_FILES);
 		return;
 	}
-
-	mask = p;
 
 	/* Get the attr mask from the dptr */
 	dirtype = dptr_attr(sconn, dptr_num);

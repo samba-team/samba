@@ -189,8 +189,8 @@ bool make_dir_struct(TALLOC_CTX *ctx,
 			time_t date,
 			bool uc);
 bool init_dptrs(struct smbd_server_connection *sconn);
-char *dptr_path(struct smbd_server_connection *sconn, int key);
-char *dptr_wcard(struct smbd_server_connection *sconn, int key);
+const char *dptr_path(struct smbd_server_connection *sconn, int key);
+const char *dptr_wcard(struct smbd_server_connection *sconn, int key);
 uint16 dptr_attr(struct smbd_server_connection *sconn, int key);
 void dptr_close(struct smbd_server_connection *sconn, int *key);
 void dptr_closecnum(connection_struct *conn);
