@@ -151,6 +151,9 @@ static const char *require_membership_of;
 static const char *require_membership_of_sid;
 static const char *opt_pam_winbind_conf;
 
+const char *opt_target_service;
+const char *opt_target_hostname;
+
 /**
  * A limited set of features are defined with text strings as needed
  * by ntlm_auth
@@ -1953,17 +1956,41 @@ static bool manage_client_krb5_init(struct spnego_data spnego)
 		return False;
 	}
 
-	principal = (char *)SMB_MALLOC(
-		spnego.negTokenInit.mechListMIC.length+1);
+	principal = talloc_strndup(ctx, (char *)spnego.negTokenInit.mechListMIC.data,
+				   spnego.negTokenInit.mechListMIC.length);
 
-	if (principal == NULL) {
-		DEBUG(1, ("Could not malloc principal\n"));
-		return False;
+	if (!principal) {
+		return false;
 	}
 
-	memcpy(principal, spnego.negTokenInit.mechListMIC.data,
-	       spnego.negTokenInit.mechListMIC.length);
-	principal[spnego.negTokenInit.mechListMIC.length] = '\0';
+	/* We may not be allowed to use the server-supplied SPNEGO principal, or it may not have been supplied to us
+	 */
+	if (!lp_client_use_spnego_principal() || strequal(principal, ADS_IGNORE_PRINCIPAL)) {
+		TALLOC_FREE(principal);
+	}
+	
+	if (principal == NULL &&
+	    !is_ipaddress(opt_target_hostname)) {
+		DEBUG(3,("manage_client_krb5_init: using target "
+			 "hostname not SPNEGO principal\n"));
+
+		principal = kerberos_get_principal_from_service_hostname(talloc_tos(),
+									 opt_target_service,
+									 opt_target_hostname);
+
+		if (!principal) {
+			return false;
+		}
+		
+		DEBUG(3,("manage_client_krb5_init: guessed "
+			 "server principal=%s\n",
+			 principal ? principal : "<null>"));
+	}
+	
+	if (principal == NULL) {
+		DEBUG(3,("manage_client_krb5_init: could not guess server principal\n"));
+		return false;
+	}
 
 	retval = cli_krb5_get_ticket(ctx, principal, 0,
 					  &tkt, &session_key_krb5,
@@ -2766,7 +2793,9 @@ enum {
 	OPT_DIAGNOSTICS,
 	OPT_REQUIRE_MEMBERSHIP,
 	OPT_USE_CACHED_CREDS,
-	OPT_PAM_WINBIND_CONF
+	OPT_PAM_WINBIND_CONF,
+	OPT_TARGET_SERVICE,
+	OPT_TARGET_HOSTNAME
 };
 
  int main(int argc, const char **argv)
@@ -2808,6 +2837,8 @@ enum {
 		  "Perform diagnostics on the authentication chain"},
 		{ "require-membership-of", 0, POPT_ARG_STRING, &require_membership_of, OPT_REQUIRE_MEMBERSHIP, "Require that a user be a member of this group (either name or SID) for authentication to succeed" },
 		{ "pam-winbind-conf", 0, POPT_ARG_STRING, &opt_pam_winbind_conf, OPT_PAM_WINBIND_CONF, "Require that request must set WBFLAG_PAM_CONTACT_TRUSTDOM when krb5 auth is required" },
+		{ "target-service", 0, POPT_ARG_STRING, &opt_target_service, OPT_TARGET_SERVICE, "Target service (eg http)" },
+		{ "target-hostname", 0, POPT_ARG_STRING, &opt_target_hostname, OPT_TARGET_HOSTNAME, "Target hostname" },
 		POPT_COMMON_CONFIGFILE
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
