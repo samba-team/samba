@@ -916,11 +916,11 @@ class cmd_create(Command):
 
             # Set ACL
             conn.set_acl(sharepath, fs_sd)
-
-            self.samdb.transaction_commit()
-        except Exception, e:
+        except:
             self.samdb.transaction_cancel()
-            raise RuntimeError("Error adding GPO to AD", e)
+            raise
+        else:
+            self.samdb.transaction_commit()
 
         self.outf.write("GPO '%s' created as %s\n" % (displayname, gpo))
 
