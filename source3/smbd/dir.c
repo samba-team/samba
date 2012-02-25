@@ -281,11 +281,7 @@ static void dptr_close_internal(struct dptr_struct *dptr)
 
 done:
 	TALLOC_FREE(dptr->dir_hnd);
-
-	/* Lanman 2 specific code */
-	SAFE_FREE(dptr->wcard);
-	SAFE_FREE(dptr->path);
-	SAFE_FREE(dptr);
+	TALLOC_FREE(dptr);
 }
 
 /****************************************************************************
@@ -494,18 +490,18 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 		dptr_idleoldest(sconn);
 	}
 
-	dptr = SMB_MALLOC_P(struct dptr_struct);
+	dptr = talloc(NULL, struct dptr_struct);
 	if(!dptr) {
-		DEBUG(0,("malloc fail in dptr_create.\n"));
+		DEBUG(0,("talloc fail in dptr_create.\n"));
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCTP(dptr);
 
-	dptr->path = SMB_STRDUP(path);
+	dptr->path = talloc_strdup(dptr, path);
 	if (!dptr->path) {
-		SAFE_FREE(dptr);
+		TALLOC_FREE(dptr);
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -513,10 +509,9 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 	dptr->dir_hnd = dir_hnd;
 	dptr->spid = spid;
 	dptr->expect_close = expect_close;
-	dptr->wcard = SMB_STRDUP(wcard);
+	dptr->wcard = talloc_strdup(dptr, wcard);
 	if (!dptr->wcard) {
-		SAFE_FREE(dptr->path);
-		SAFE_FREE(dptr);
+		TALLOC_FREE(dptr);
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -555,9 +550,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 			dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 0);
 			if(dptr->dnum == -1 || dptr->dnum > 254) {
 				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
-				SAFE_FREE(dptr->path);
-				SAFE_FREE(dptr->wcard);
-				SAFE_FREE(dptr);
+				TALLOC_FREE(dptr);
 				TALLOC_FREE(dir_hnd);
 				return NT_STATUS_TOO_MANY_OPENED_FILES;
 			}
@@ -587,9 +580,7 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 
 			if(dptr->dnum == -1 || dptr->dnum < 255) {
 				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
-				SAFE_FREE(dptr->path);
-				SAFE_FREE(dptr->wcard);
-				SAFE_FREE(dptr);
+				TALLOC_FREE(dptr);
 				TALLOC_FREE(dir_hnd);
 				return NT_STATUS_TOO_MANY_OPENED_FILES;
 			}
