@@ -701,7 +701,7 @@ class dc_join(object):
             ctx.destination_dsa_guid = destination_dsa_guid
 
             print "Committing SAM database"
-        except Exception:
+        except:
             ctx.local_samdb.transaction_cancel()
             raise
         else:
@@ -877,7 +877,7 @@ class dc_join(object):
                 ctx.join_provision_own_domain()
                 ctx.join_setup_trusts()
             ctx.join_finalise()
-        except Exception:
+        except:
             print "Join failed - cleaning up"
             ctx.cleanup_old_join()
             raise

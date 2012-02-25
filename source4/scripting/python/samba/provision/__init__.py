@@ -718,7 +718,7 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
 
         logger.info("Setting up sam.ldb rootDSE")
         setup_samdb_rootdse(samdb, names)
-    except Exception:
+    except:
         samdb.transaction_cancel()
         raise
     else:
@@ -860,7 +860,7 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
                         "LDAPADMINREALM": backend_credentials.get_realm(),
                         "LDAPADMINPASS_B64": b64encode(backend_credentials.get_password())
                         })
-    except Exception:
+    except:
         secrets_ldb.transaction_cancel()
         raise
     return secrets_ldb
@@ -1200,7 +1200,7 @@ def fill_samdb(samdb, lp, names,
         msg["subRefs"] = ldb.MessageElement(names.configdn , ldb.FLAG_MOD_ADD,
                     "subRefs")
 
-    except Exception:
+    except:
         samdb.transaction_cancel()
         raise
     else:
@@ -1285,22 +1285,23 @@ def fill_samdb(samdb, lp, names,
                 })
 
             logger.info("Setting up self join")
-            setup_self_join(samdb, admin_session_info, names=names, fill=fill, invocationid=invocationid,
-                            dnspass=dnspass,
-                            machinepass=machinepass,
-                            domainsid=domainsid,
-                            next_rid=next_rid,
-                            dc_rid=dc_rid,
-                            policyguid=policyguid,
-                            policyguid_dc=policyguid_dc,
-                            domainControllerFunctionality=domainControllerFunctionality,
-                            ntdsguid=ntdsguid)
+            setup_self_join(samdb, admin_session_info, names=names, fill=fill,
+                invocationid=invocationid,
+                dnspass=dnspass,
+                machinepass=machinepass,
+                domainsid=domainsid,
+                next_rid=next_rid,
+                dc_rid=dc_rid,
+                policyguid=policyguid,
+                policyguid_dc=policyguid_dc,
+                domainControllerFunctionality=domainControllerFunctionality,
+                ntdsguid=ntdsguid)
 
             ntds_dn = "CN=NTDS Settings,%s" % names.serverdn
             names.ntdsguid = samdb.searchone(basedn=ntds_dn,
                 attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
             assert isinstance(names.ntdsguid, str)
-    except Exception:
+    except:
         samdb.transaction_cancel()
         raise
     else:
@@ -1771,7 +1772,7 @@ def provision(logger, session_info, credentials, smbconf=None,
 
         create_phpldapadmin_config(paths.phpldapadminconfig,
                                    ldapi_url)
-    except Exception:
+    except:
         secrets_ldb.transaction_cancel()
         raise
 
@@ -1832,9 +1833,9 @@ def provision_become_dc(smbconf=None, targetdir=None,
         serverdn=None, domain=None, hostname=None, domainsid=None,
         adminpass=None, krbtgtpass=None, domainguid=None, policyguid=None,
         policyguid_dc=None, invocationid=None, machinepass=None, dnspass=None,
-        dns_backend=None, root=None, nobody=None, users=None, wheel=None, backup=None,
-        serverrole=None, ldap_backend=None, ldap_backend_type=None,
-        sitename=None, debuglevel=1):
+        dns_backend=None, root=None, nobody=None, users=None, wheel=None,
+        backup=None, serverrole=None, ldap_backend=None,
+        ldap_backend_type=None, sitename=None, debuglevel=1):
 
     logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)
@@ -1887,6 +1888,7 @@ class ProvisioningError(Exception):
 
 class InvalidNetbiosName(Exception):
     """A specified name was not a valid NetBIOS name."""
+
     def __init__(self, name):
         super(InvalidNetbiosName, self).__init__(
             "The name '%r' is not a valid NetBIOS name" % name)

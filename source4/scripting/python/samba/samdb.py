@@ -222,7 +222,7 @@ pwdLastSet: 0
                 raise Exception('Unable to find group "%s"' % groupname)
             assert(len(targetgroup) == 1)
             self.delete(targetgroup[0].dn)
-        except Exception:
+        except:
             self.transaction_cancel()
             raise
         else:
@@ -280,7 +280,7 @@ member: %s
             if modified is True:
                 self.modify_ldif(addtargettogroup)
 
-        except Exception:
+        except:
             self.transaction_cancel()
             raise
         else:
@@ -406,7 +406,7 @@ member: %s
             if setpassword:
                 self.setpassword("(samAccountName=%s)" % ldb.binary_encode(username), password,
                                  force_password_change_at_next_login_req)
-        except Exception:
+        except:
             self.transaction_cancel()
             raise
         else:
@@ -428,7 +428,7 @@ member: %s
                 raise Exception('Unable to find user "%s"' % username)
             assert(len(target) == 1)
             self.delete(target[0].dn)
-        except Exception:
+        except:
             self.transaction_cancel()
             raise
         else:
@@ -468,7 +468,7 @@ unicodePwd:: %s
 
             #  modify the userAccountControl to remove the disabled bit
             self.enable_account(search_filter)
-        except Exception:
+        except:
             self.transaction_cancel()
             raise
         else:
@@ -511,7 +511,7 @@ accountExpires: %u
 """ % (user_dn, userAccountControl, accountExpires)
 
             self.modify_ldif(setexp)
-        except Exception:
+        except:
             self.transaction_cancel()
             raise
         else:
@@ -841,7 +841,7 @@ accountExpires: %u
         self.transaction_start()
         try:
             seq = super(SamDB, self).sequence_number(seq_type)
-        except Exception:
+        except:
              self.transaction_cancel()
              raise
         else:

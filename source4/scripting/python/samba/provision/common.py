@@ -77,7 +77,7 @@ def setup_ldb(ldb, ldif_path, subst_vars):
     ldb.transaction_start()
     try:
         setup_add_ldif(ldb, ldif_path, subst_vars)
-    except Exception:
+    except:
         ldb.transaction_cancel()
         raise
     else:

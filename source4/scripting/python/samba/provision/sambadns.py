@@ -715,7 +715,7 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
             "DOMAINSID" : str(domainsid),
             "DESCRIPTOR" : descr})
         setup_add_ldif(dom_ldb, setup_path("provision_basedn_options.ldif"), None)
-    except Exception:
+    except:
         logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
         raise
     del partfile[domaindn]
@@ -750,7 +750,7 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
             tdb_copy(logger,
                      os.path.join(private_dir, pfile),
                      os.path.join(dns_dir, pfile))
-    except Exception:
+    except:
         logger.error("Failed to setup database for BIND, AD based DNS cannot be used")
         raise
 
