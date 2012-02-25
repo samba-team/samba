@@ -321,7 +321,8 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 		return false;
 	}
 
-	status = smb2_session_setup_spnego(session, credentials);
+	status = smb2_session_setup_spnego(session, credentials,
+					   0 /* previous_session_id */);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("session setup failed: %s\n", nt_errstr(status));
 		talloc_free(session);

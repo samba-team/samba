@@ -176,7 +176,8 @@ static void smb2_connect_negprot_done(struct tevent_req *subreq)
 
 	subreq = smb2_session_setup_spnego_send(state, state->ev,
 						state->session,
-						state->credentials);
+						state->credentials,
+						0 /* previous_session_id */);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

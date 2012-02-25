@@ -75,6 +75,7 @@ struct smb2_session_setup_spnego_state {
 	struct tevent_context *ev;
 	struct smb2_session *session;
 	struct cli_credentials *credentials;
+	uint64_t previous_session_id;
 	NTSTATUS gensec_status;
 	DATA_BLOB in_secblob;
 	DATA_BLOB out_secblob;
@@ -85,10 +86,12 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq);
 /*
   a composite function that does a full SPNEGO session setup
  */
-struct tevent_req *smb2_session_setup_spnego_send(TALLOC_CTX *mem_ctx,
-						  struct tevent_context *ev,
-						  struct smb2_session *session,
-						  struct cli_credentials *credentials)
+struct tevent_req *smb2_session_setup_spnego_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smb2_session *session,
+				struct cli_credentials *credentials,
+				uint64_t previous_session_id)
 {
 	struct tevent_req *req;
 	struct smb2_session_setup_spnego_state *state;
@@ -109,6 +112,7 @@ struct tevent_req *smb2_session_setup_spnego_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->session = session;
 	state->credentials = credentials;
+	state->previous_session_id = previous_session_id;
 
 	server_gss_blob = smbXcli_conn_server_gss_blob(session->transport->conn);
 	if (server_gss_blob) {
@@ -159,7 +163,7 @@ struct tevent_req *smb2_session_setup_spnego_send(TALLOC_CTX *mem_ctx,
 					    0, /* in_flags */
 					    0, /* in_capabilities */
 					    0, /* in_channel */
-					    0, /* in_previous_session_id */
+					    state->previous_session_id,
 					    &state->in_secblob);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -239,7 +243,7 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 					    0, /* in_flags */
 					    0, /* in_capabilities */
 					    0, /* in_channel */
-					    0, /* in_previous_session_id */
+					    state->previous_session_id,
 					    &state->in_secblob);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -259,7 +263,8 @@ NTSTATUS smb2_session_setup_spnego_recv(struct tevent_req *req)
   sync version of smb2_session_setup_spnego
 */
 NTSTATUS smb2_session_setup_spnego(struct smb2_session *session, 
-				   struct cli_credentials *credentials)
+				   struct cli_credentials *credentials,
+				   uint64_t previous_session_id)
 {
 	struct tevent_req *subreq;
 	NTSTATUS status;
@@ -272,7 +277,8 @@ NTSTATUS smb2_session_setup_spnego(struct smb2_session *session,
 	}
 
 	subreq = smb2_session_setup_spnego_send(frame, ev,
-						session, credentials);
+						session, credentials,
+						previous_session_id);
 	if (subreq == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
