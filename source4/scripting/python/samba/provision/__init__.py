@@ -37,7 +37,6 @@ import time
 import uuid
 import socket
 import urllib
-import shutil
 import string
 
 import ldb
@@ -81,7 +80,6 @@ from samba.provision.common import (
     setup_path,
     setup_add_ldif,
     setup_modify_ldif,
-    setup_ldb
     )
 from samba.provision.sambadns import (
     setup_ad_dns,
@@ -242,6 +240,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
     else:
         raise ProvisioningError("Unable to find uid/gid for Domain Admins rid")
     return names
+
 
 def update_provision_usn(samdb, low, high, id, replace=False):
     """Update the field provisionUSN in sam.ldb
@@ -653,7 +652,6 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
     f.close()
 
 
-
 def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
                         users_gid, wheel_gid):
     """setup reasonable name mappings for sam names to unix names.
@@ -839,12 +837,10 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
 
     path = paths.secrets
 
-    secrets_ldb = Ldb(path, session_info=session_info,
-                      lp=lp)
+    secrets_ldb = Ldb(path, session_info=session_info, lp=lp)
     secrets_ldb.erase()
     secrets_ldb.load_ldif_file_add(setup_path("secrets_init.ldif"))
-    secrets_ldb = Ldb(path, session_info=session_info,
-                      lp=lp)
+    secrets_ldb = Ldb(path, session_info=session_info, lp=lp)
     secrets_ldb.transaction_start()
     try:
         secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
@@ -1520,6 +1516,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                               'ipsecNegotiationPolicyReference',
                               'ipsecNFAReference'])
     samdb.transaction_commit()
+
 
 def provision(logger, session_info, credentials, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
