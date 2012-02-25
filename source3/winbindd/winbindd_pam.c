@@ -1179,6 +1179,18 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3,("could not open handle to NETLOGON pipe (error: %s)\n",
 				  nt_errstr(result)));
+			if (NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT)) {
+				if (attempts > 0) {
+					DEBUG(3, ("This is the second problem for this "
+						"particular call, forcing the close of "
+						"this connection\n"));
+					invalidate_cm_connection(&domain->conn);
+				} else {
+					DEBUG(3, ("First call to cm_connect_netlogon "
+						"has timed out, retrying\n"));
+					continue;
+				}
+			}
 			return result;
 		}
 		auth = netlogon_pipe->auth;
@@ -1322,7 +1334,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		   rpc changetrustpw' */
 
 		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
-			DEBUG(3,("winbindd_pam_auth: sam_logon returned "
+			DEBUG(3,("winbind_samlogon_retry_loop: sam_logon returned "
 				 "ACCESS_DENIED.  Maybe the trust account "
 				"password was changed and we didn't know it. "
 				 "Killing connections to domain %s\n",
@@ -1333,6 +1345,13 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 
 	} while ( (attempts < 2) && retry );
 
+	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT)) {
+		DEBUG(3,("winbind_samlogon_retry_loop: sam_network_logon(ex) "
+				"returned NT_STATUS_IO_TIMEOUT after the retry."
+				"Killing connections to domain %s\n",
+			domainname));
+		invalidate_cm_connection(&domain->conn);
+	}
 	return result;
 }
 
