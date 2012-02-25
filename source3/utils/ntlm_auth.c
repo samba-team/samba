@@ -1940,7 +1940,7 @@ static void manage_client_ntlmssp_targ(struct spnego_data spnego)
 static bool manage_client_krb5_init(struct spnego_data spnego)
 {
 	char *principal;
-	DATA_BLOB tkt, to_server;
+	DATA_BLOB tkt, tkt_wrapped, to_server;
 	DATA_BLOB session_key_krb5 = data_blob_null;
 	struct spnego_data reply;
 	char *reply_base64;
@@ -2024,7 +2024,11 @@ static bool manage_client_krb5_init(struct spnego_data spnego)
 			DEBUG(10, ("Kinit suceeded, but getting a ticket failed: %s\n", error_message(retval)));
 			return False;
 		}
+
 	}
+
+	/* wrap that up in a nice GSS-API wrapping */
+	tkt_wrapped = spnego_gen_krb5_wrap(ctx, tkt, TOK_ID_KRB_AP_REQ);
 
 	data_blob_free(&session_key_krb5);
 
@@ -2034,7 +2038,7 @@ static bool manage_client_krb5_init(struct spnego_data spnego)
 	reply.negTokenInit.mechTypes = my_mechs;
 	reply.negTokenInit.reqFlags = data_blob_null;
 	reply.negTokenInit.reqFlagsPadding = 0;
-	reply.negTokenInit.mechToken = tkt;
+	reply.negTokenInit.mechToken = tkt_wrapped;
 	reply.negTokenInit.mechListMIC = data_blob_null;
 
 	len = spnego_write_data(ctx, &to_server, &reply);
