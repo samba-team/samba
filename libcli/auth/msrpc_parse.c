@@ -177,9 +177,7 @@ NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx,
 
 			n = pointers[i].length;
 			SSVAL(blob->data, data_ofs, n); data_ofs += 2;
-			if (n >= 0) {
-				memcpy(blob->data+data_ofs, pointers[i].data, n);
-			}
+			memcpy(blob->data+data_ofs, pointers[i].data, n);
 			data_ofs += n;
 			break;
 		case 'd':
