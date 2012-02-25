@@ -189,15 +189,15 @@ static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 		switch (n->sid_type) {
 		case SID_NAME_USER:
 		case SID_NAME_COMPUTER:
-			t->type = WBC_ID_TYPE_UID;
+			t->type = ID_TYPE_UID;
 			break;
 		case SID_NAME_DOM_GRP:
 		case SID_NAME_ALIAS:
 		case SID_NAME_WKN_GRP:
-			t->type = WBC_ID_TYPE_GID;
+			t->type = ID_TYPE_GID;
 			break;
 		default:
-			t->type = WBC_ID_TYPE_NOT_SPECIFIED;
+			t->type = ID_TYPE_NOT_SPECIFIED;
 			break;
 		};
 		t->domain_index = n->sid_index;
