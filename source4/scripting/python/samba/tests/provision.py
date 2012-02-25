@@ -20,7 +20,12 @@
 """Tests for samba.provision."""
 
 import os
-from samba.provision import setup_secretsdb, findnss, ProvisionPaths
+from samba.provision import (
+    ProvisionPaths,
+    sanitize_server_role,
+    setup_secretsdb,
+    findnss,
+    )
 import samba.tests
 from samba.tests import env_loadparm, TestCase
 
@@ -115,3 +120,15 @@ class Disabled(object):
         raise NotImplementedError(self.test_vampire)
 
 
+class SanitizeServerRoleTests(TestCase):
+
+    def test_same(self):
+        self.assertEquals("standalone", sanitize_server_role("standalone"))
+        self.assertEquals("member server",
+            sanitize_server_role("member server"))
+
+    def test_invalid(self):
+        self.assertRaises(ValueError, sanitize_server_role, "foo")
+
+    def test_valid(self):
+        self.assertEquals("standalone", sanitize_server_role("ROLE_STANDALONE"))

@@ -866,7 +866,6 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
     return secrets_ldb
 
 
-
 def setup_privileges(path, session_info, lp):
     """Setup the privileges database.
 
@@ -930,10 +929,9 @@ def setup_samdb_rootdse(samdb, names):
         })
 
 
-def setup_self_join(samdb, admin_session_info, names, fill, machinepass, dnspass,
-                    domainsid, next_rid, invocationid,
-                    policyguid, policyguid_dc, domainControllerFunctionality,
-                    ntdsguid, dc_rid=None):
+def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
+        dnspass, domainsid, next_rid, invocationid, policyguid, policyguid_dc,
+        domainControllerFunctionality, ntdsguid=None, dc_rid=None):
     """Join a host to its own domain."""
     assert isinstance(invocationid, str)
     if ntdsguid is not None:
@@ -968,7 +966,8 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass, dnspass
               "DNSDOMAIN": names.dnsdomain,
               "DOMAINDN": names.domaindn})
 
-    # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
+    # If we are setting up a subdomain, then this has been replicated in, so we
+    # don't need to add it
     if fill == FILL_FULL:
         setup_add_ldif(samdb, setup_path("provision_self_join_config.ldif"), {
                 "CONFIGDN": names.configdn,
@@ -987,7 +986,8 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass, dnspass
                     domainControllerFunctionality)})
 
     # Setup fSMORoleOwner entries to point at the newly created DC entry
-        setup_modify_ldif(samdb, setup_path("provision_self_join_modify_config.ldif"), {
+        setup_modify_ldif(samdb,
+            setup_path("provision_self_join_modify_config.ldif"), {
                 "CONFIGDN": names.configdn,
                 "SCHEMADN": names.schemadn,
                 "DEFAULTSITE": names.sitename,
@@ -997,9 +997,8 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass, dnspass
 
     system_session_info = system_session()
     samdb.set_session_info(system_session_info)
-    # Setup fSMORoleOwner entries to point at the newly created DC entry
-
-    # to modify a serverReference under cn=config when we are a subdomain, we must
+    # Setup fSMORoleOwner entries to point at the newly created DC entry to
+    # modify a serverReference under cn=config when we are a subdomain, we must
     # be system due to ACLs
     setup_modify_ldif(samdb, setup_path("provision_self_join_modify.ldif"), {
               "DOMAINDN": names.domaindn,
@@ -1029,7 +1028,6 @@ def getpolicypath(sysvolpath, dnsdomain, guid):
     :param guid: The GUID of the policy
     :return: A string with the complete path to the policy folder
     """
-
     if guid[0] != "{":
         guid = "{%s}" % guid
     policy_path = os.path.join(sysvolpath, dnsdomain, "Policies", guid)
@@ -1096,6 +1094,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     samdb.connect(path)
 
     return samdb
+
 
 def fill_samdb(samdb, lp, names,
         logger, domainsid, domainguid, policyguid, policyguid_dc, fill,
@@ -1519,6 +1518,33 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
     samdb.transaction_commit()
 
 
+_ROLES_MAP = {
+    "ROLE_STANDALONE": "standalone",
+    "ROLE_DOMAIN_MEMBER": "member server",
+    "ROLE_DOMAIN_BDC": "domain controller",
+    "ROLE_DOMAIN_PDC": "domain controller",
+    "dc": "domain controller",
+    "member": "member server",
+    "domain controller": "domain controller",
+    "member server": "member server",
+    "standalone": "standalone",
+    }
+
+
+def sanitize_server_role(role):
+    """Sanitize a server role name.
+
+    :param role: Server role
+    :raise ValueError: If the role can not be interpreted
+    :return: Sanitized server role (one of "member server",
+        "domain controller", "standalone")
+    """
+    try:
+        return  _ROLES_MAP[role]
+    except KeyError:
+        raise ValueError(role)
+
+
 def provision(logger, session_info, credentials, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
@@ -1538,20 +1564,9 @@ def provision(logger, session_info, credentials, smbconf=None,
     :note: caution, this wipes all existing data!
     """
 
-    roles = {}
-    roles["ROLE_STANDALONE"] = "standalone"
-    roles["ROLE_DOMAIN_MEMBER"] = "member server"
-    roles["ROLE_DOMAIN_BDC"] = "domain controller"
-    roles["ROLE_DOMAIN_PDC"] = "domain controller"
-    roles["dc"] = "domain controller"
-    roles["member"] = "member server"
-    roles["domain controller"] = "domain controller"
-    roles["member server"] = "member server"
-    roles["standalone"] = "standalone"
-
     try:
-        serverrole = roles[serverrole]
-    except KeyError:
+        serverrole = sanitize_server_role(serverrole)
+    except ValueError:
         raise ProvisioningError('server role (%s) should be one of "domain controller", "member server", "standalone"' % serverrole)
 
     if ldapadminpass is None:
