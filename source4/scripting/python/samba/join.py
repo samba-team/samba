@@ -599,6 +599,7 @@ class dc_join(object):
                             machinepass=ctx.acct_pass, serverrole="domain controller",
                             sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
                             dns_backend="NONE")
+        presult.report_logger(logger)
         print "Provision OK for domain DN %s" % presult.domaindn
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp

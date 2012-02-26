@@ -141,8 +141,8 @@ class DummyLogger(object):
     def __init__(self):
         self.entries = []
 
-    def info(self, text):
-        self.entries.append(("INFO", text))
+    def info(self, text, *args):
+        self.entries.append(("INFO", text % args))
 
 
 class ProvisionResultTests(TestCase):
@@ -156,6 +156,7 @@ class ProvisionResultTests(TestCase):
         result.names.domain = "DOMEIN"
         result.names.dnsdomain = "dnsdomein"
         result.domainsid = "S1-1-1"
+        result.paths = ProvisionPaths()
         result.report_logger(logger)
         self.assertEquals(logger.entries, [
             ('INFO', 'Server Role:           domain controller'),

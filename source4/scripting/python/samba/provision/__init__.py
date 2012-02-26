@@ -118,6 +118,7 @@ class ProvisionPaths(object):
         self.dns = None
         self.winsdb = None
         self.private_dir = None
+        self.phpldapadminconfig = None
 
 
 class ProvisionNames(object):
@@ -379,11 +380,16 @@ class ProvisionResult(object):
 
     def report_logger(self, logger):
         """Report this provision result to a logger."""
-        logger.info("Server Role:           %s" % self.server_role)
-        logger.info("Hostname:              %s" % self.names.hostname)
-        logger.info("NetBIOS Domain:        %s" % self.names.domain)
-        logger.info("DNS Domain:            %s" % self.names.dnsdomain)
-        logger.info("DOMAIN SID:            %s" % self.domainsid)
+        logger.info("Server Role:           %s", self.server_role)
+        logger.info("Hostname:              %s", self.names.hostname)
+        logger.info("NetBIOS Domain:        %s", self.names.domain)
+        logger.info("DNS Domain:            %s", self.names.dnsdomain)
+        logger.info("DOMAIN SID:            %s", self.domainsid)
+
+        if self.paths.phpldapadminconfig is not None:
+            logger.info(
+                "A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in %s .",
+                self.paths.phpldapadminconfig)
 
 
 def check_install(lp, session_info, credentials):
@@ -1837,9 +1843,6 @@ def provision(logger, session_info, credentials, smbconf=None,
     result.samdb = samdb
     result.idmap = idmap
     result.domainsid = str(domainsid)
-    result.report_logger(logger)
-    logger.info("A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in %s .",
-            paths.phpldapadminconfig)
 
     if samdb_fill == FILL_FULL:
         if adminpass_generated:

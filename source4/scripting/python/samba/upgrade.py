@@ -643,6 +643,7 @@ Please fix this account before attempting to upgrade again
                        hostname=netbiosname.lower(), machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL,
                        useeadb=useeadb, dns_backend=dns_backend)
+    result.report_logger(logger)
 
     # Import WINS database
     logger.info("Importing WINS database")

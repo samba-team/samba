@@ -259,7 +259,7 @@ def newprovision(names, creds, session, smbconf, provdir, logger):
     os.mkdir(provdir)
     logger.info("Provision stored in %s", provdir)
     dns_backend="BIND9_DLZ"
-    provision(logger, session, creds, smbconf=smbconf,
+    return provision(logger, session, creds, smbconf=smbconf,
             targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
             domain=names.domain, domainguid=names.domainguid,
             domainsid=str(names.domainsid), ntdsguid=names.ntdsguid,

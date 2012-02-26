@@ -243,7 +243,7 @@ elif opts.use_xattrs == "auto" and not lp.get("posix:eadb"):
 
 session = system_session()
 try:
-    provision(logger,
+    result = provision(logger,
           session, creds, smbconf=smbconf, targetdir=opts.targetdir,
           samdb_fill=samdb_fill, realm=opts.realm, domain=opts.domain,
           domainguid=opts.domain_guid, domainsid=opts.domain_sid,
@@ -263,3 +263,5 @@ try:
 except ProvisioningError, e:
     print str(e)
     sys.exit(1)
+
+result.report_logger(logger)
