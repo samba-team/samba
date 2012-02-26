@@ -300,16 +300,16 @@ def setup_file(template, fname, subst_vars=None):
     finally:
         f.close()
 
+MAX_NETBIOS_NAME_LEN = 15
+def is_valid_netbios_char(c):
+    return (c.isalnum() or c in " !#$%&'()-.@^_{}~")
 
 def valid_netbios_name(name):
     """Check whether a name is valid as a NetBIOS name. """
     # See crh's book (1.4.1.1)
-    if len(name) > 15:
+    if len(name) > MAX_NETBIOS_NAME_LEN:
         return False
-    for x in name:
-        if not x.isalnum() and not x in " !#$%&'()-.@^_{}~":
-            return False
-    return True
+    return all([is_valid_netbios_char(x) for x in name])
 
 
 def import_bundled_package(modulename, location):

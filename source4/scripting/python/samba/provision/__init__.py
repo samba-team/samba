@@ -46,7 +46,9 @@ import samba
 from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from samba import (
     Ldb,
+    MAX_NETBIOS_NAME_LEN,
     check_all_substituted,
+    is_valid_netbios_char,
     setup_file,
     substitute_var,
     valid_netbios_name,
@@ -93,7 +95,6 @@ from samba.samdb import SamDB
 from samba.dbchecker import dbcheck
 
 
-VALID_NETBIOS_CHARS = " !#$%&'()-.@^_{}~"
 DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
 DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04fB984F9"
 DEFAULTSITE = "Default-First-Site-Name"
@@ -482,14 +483,9 @@ def provision_paths_from_lp(lp, dnsdomain):
 
 def determine_netbios_name(hostname):
     """Determine a netbios name from a hostname."""
-    netbiosname = hostname
-    # remove forbidden chars
-    newnbname = ""
-    for x in netbiosname:
-        if x.isalnum() or x in VALID_NETBIOS_CHARS:
-            newnbname = "%s%c" % (newnbname, x)
-    # force the length to be <16
-    return newnbname[0:15].upper()
+    # remove forbidden chars and force the length to be <16
+    netbiosname = "".join([x for x in hostname if is_valid_netbios_char(x)])
+    return netbiosname[:MAX_NETBIOS_NAME_LEN].upper()
 
 
 def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
