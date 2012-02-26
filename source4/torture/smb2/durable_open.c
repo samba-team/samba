@@ -560,7 +560,10 @@ bool test_durable_open_reopen4(struct torture_context *tctx,
 	status = smb2_logoff(tree->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (!torture_smb2_session_setup(tctx, transport, mem_ctx, &session2)) {
+	if (!torture_smb2_session_setup(tctx, transport,
+					0, /* previous_session_id */
+					mem_ctx, &session2))
+	{
 		torture_warning(tctx, "session setup failed.\n");
 		ret = false;
 		goto done;

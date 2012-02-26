@@ -306,6 +306,7 @@ bool torture_smb2_tree_connect(struct torture_context *tctx,
  */
 bool torture_smb2_session_setup(struct torture_context *tctx,
 				struct smb2_transport *transport,
+				uint64_t previous_session_id,
 				TALLOC_CTX *mem_ctx,
 				struct smb2_session **_session)
 {
@@ -322,7 +323,7 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 	}
 
 	status = smb2_session_setup_spnego(session, credentials,
-					   0 /* previous_session_id */);
+					   previous_session_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("session setup failed: %s\n", nt_errstr(status));
 		talloc_free(session);
