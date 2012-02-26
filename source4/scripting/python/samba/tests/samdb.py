@@ -53,7 +53,7 @@ class SamDBTestCase(TestCaseInTempDir):
         domainsid = security.random_sid()
         path = os.path.join(self.tempdir, "samdb.ldb")
         session_info = system_session()
-        
+
         hostname="foo"
         domain="EXAMPLE"
         dnsdomain="example.com" 
@@ -62,7 +62,7 @@ class SamDBTestCase(TestCaseInTempDir):
 
         smbconf = os.path.join(self.tempdir, "smb.conf")
         make_smbconf(smbconf, hostname, domain, dnsdomain,
-                     serverrole, self.tempdir)
+                     self.tempdir, serverrole=serverrole)
 
         self.lp = param.LoadParm()
         self.lp.load(smbconf)

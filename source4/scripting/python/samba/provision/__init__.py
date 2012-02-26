@@ -586,28 +586,28 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     return names
 
 
-def make_smbconf(smbconf, hostname, domain, realm, serverrole,
-                 targetdir, sid_generator="internal", eadb=False, lp=None,
+def make_smbconf(smbconf, hostname, domain, realm, targetdir,
+                 serverrole=None, sid_generator=None, eadb=False, lp=None,
                  server_services=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
+
     if hostname is None:
         hostname = socket.gethostname().split(".")[0]
-        netbiosname = determine_netbios_name(hostname)
-    else:
-        netbiosname = hostname.upper()
+
+    netbiosname = determine_netbios_name(hostname)
 
     if serverrole is None:
         serverrole = "standalone"
 
-    assert serverrole in ("domain controller", "member server", "standalone")
-    if serverrole == "domain controller":
-        smbconfsuffix = "dc"
-    elif serverrole == "member server":
-        smbconfsuffix = "member"
-    elif serverrole == "standalone":
-        smbconfsuffix = "standalone"
+    try:
+        smbconfsuffix = {
+            "domain controller": "dc",
+            "member server": "member",
+            "standalone": "standalone"}[serverrole]
+    except KeyError:
+        raise ValueError("server role %r invalid" % serverrole)
 
     if sid_generator is None:
         sid_generator = "internal"
@@ -1658,12 +1658,13 @@ def provision(logger, session_info, credentials, smbconf=None,
             f.close()
         if data is None or data == "":
             make_smbconf(smbconf, hostname, domain, realm,
-                         serverrole, targetdir, sid_generator, useeadb,
+                         targetdir, serverrole=serverrole,
+                         sid_generator=sid_generator, eadb=useeadb,
                          lp=lp, server_services=server_services)
     else:
-        make_smbconf(smbconf, hostname, domain, realm, serverrole,
-                     targetdir, sid_generator, useeadb, lp=lp,
-                     server_services=server_services)
+        make_smbconf(smbconf, hostname, domain, realm, targetdir,
+                     serverrole=serverrole, sid_generator=sid_generator,
+                     eadb=useeadb, lp=lp, server_services=server_services)
 
     if lp is None:
         lp = samba.param.LoadParm()
