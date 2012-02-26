@@ -601,14 +601,6 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     if serverrole is None:
         serverrole = "standalone"
 
-    try:
-        smbconfsuffix = {
-            "domain controller": "dc",
-            "member server": "member",
-            "standalone": "standalone"}[serverrole]
-    except KeyError:
-        raise ValueError("server role %r invalid" % serverrole)
-
     if sid_generator is None:
         sid_generator = "internal"
 
@@ -617,6 +609,14 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
 
     assert realm is not None
     realm = realm.upper()
+
+    global_settings = {
+        "passdb backend": "samba4",
+        "netbios name": netbiosname,
+        "workgroup": domain,
+        "realm": realm,
+        "server role": serverrole,
+        }
 
     if lp is None:
         lp = samba.param.LoadParm()
@@ -631,43 +631,39 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
         lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
 
     if server_services is not None:
-        server_services_line = "server services = " + " ".join(server_services)
-    else:
-        server_services_line = ""
+        global_settings["server services"] = " ".join(server_services)
 
     if targetdir is not None:
-        privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
-        lockdir_line = "lock dir = " + os.path.abspath(targetdir)
-        statedir_line = "state directory = " + os.path.abspath(targetdir)
-        cachedir_line = "cache directory = " + os.path.abspath(targetdir)
+        global_settings["private dir"] = os.path.abspath(os.path.join(targetdir, "private"))
+        global_settings["lock dir"] = os.path.abspath(targetdir)
+        global_settings["state directory"] = os.path.abspath(targetdir)
+        global_settings["cache directory"] = os.path.abspath(targetdir)
 
         lp.set("lock dir", os.path.abspath(targetdir))
         lp.set("state directory", os.path.abspath(targetdir))
         lp.set("cache directory", os.path.abspath(targetdir))
-    else:
-        privatedir_line = ""
-        lockdir_line = ""
-        statedir_line = ""
-        cachedir_line = ""
 
-    sysvol = os.path.join(lp.get("state directory"), "sysvol")
-    netlogon = os.path.join(sysvol, realm.lower(), "scripts")
+    shares = {}
+    if serverrole == "domain controller":
+        shares["sysvol"] = os.path.join(global_settings["state directory"],
+            "sysvol")
+        shares["netlogon"] = os.path.join(shares["sysvol"], realm.lower(),
+            "scripts")
 
-    setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix),
-               smbconf, {
-            "NETBIOS_NAME": netbiosname,
-            "DOMAIN": domain,
-            "REALM": realm,
-            "SERVERROLE": serverrole,
-            "NETLOGONPATH": netlogon,
-            "SYSVOLPATH": sysvol,
-            "PRIVATEDIR_LINE": privatedir_line,
-            "LOCKDIR_LINE": lockdir_line,
-            "STATEDIR_LINE": statedir_line,
-            "CACHEDIR_LINE": cachedir_line,
-            "SERVER_SERVICES_LINE": server_services_line
-            })
+    f = open(smbconf, 'w')
+    try:
+        f.write("[globals]\n")
+        for key, val in global_settings.iteritems():
+            f.write("\t%s = %s\n" % (key, val))
+        f.write("\n")
 
+        for name, path in shares.iteritems():
+            f.write("[%s]\n" % name)
+            f.write("\tpath = %s\n" % path)
+            f.write("\tread only = no\n")
+            f.write("\n")
+    finally:
+        f.close()
     # reload the smb.conf
     lp.load(smbconf)
 
