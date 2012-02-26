@@ -377,9 +377,13 @@ class ProvisionResult(object):
         self.idmap = None
         self.names = None
         self.domainsid = None
+        self.adminpass_generated = None
+        self.adminpass = None
 
     def report_logger(self, logger):
         """Report this provision result to a logger."""
+        if self.adminpass_generated:
+            logger.info("Admin password:        %s", self.adminpass)
         logger.info("Server Role:           %s", self.server_role)
         logger.info("Hostname:              %s", self.names.hostname)
         logger.info("NetBIOS Domain:        %s", self.names.domain)
@@ -388,7 +392,8 @@ class ProvisionResult(object):
 
         if self.paths.phpldapadminconfig is not None:
             logger.info(
-                "A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in %s.",
+                "A phpLDAPadmin configuration file suitable for administering "
+                "the Samba 4 LDAP server has been created in %s.",
                 self.paths.phpldapadminconfig)
 
 
@@ -1790,16 +1795,17 @@ def provision(logger, session_info, credentials, smbconf=None,
             adminpass_generated = False
 
         if samdb_fill == FILL_FULL:
-            provision_fill(samdb, secrets_ldb, logger,
-                           names, paths, schema=schema, targetdir=targetdir,
-                           samdb_fill=samdb_fill, hostip=hostip, hostip6=hostip6, domainsid=domainsid,
-                           next_rid=next_rid, dc_rid=dc_rid, adminpass=adminpass,
-                           krbtgtpass=krbtgtpass, domainguid=domainguid,
-                           policyguid=policyguid, policyguid_dc=policyguid_dc,
-                           invocationid=invocationid, machinepass=machinepass,
-                           ntdsguid=ntdsguid, dns_backend=dns_backend, dnspass=dnspass,
-                           serverrole=serverrole, dom_for_fun_level=dom_for_fun_level,
-                           am_rodc=am_rodc, lp=lp)
+            provision_fill(samdb, secrets_ldb, logger, names, paths,
+                    schema=schema, targetdir=targetdir, samdb_fill=samdb_fill,
+                    hostip=hostip, hostip6=hostip6, domainsid=domainsid,
+                    next_rid=next_rid, dc_rid=dc_rid, adminpass=adminpass,
+                    krbtgtpass=krbtgtpass, domainguid=domainguid,
+                    policyguid=policyguid, policyguid_dc=policyguid_dc,
+                    invocationid=invocationid, machinepass=machinepass,
+                    ntdsguid=ntdsguid, dns_backend=dns_backend,
+                    dnspass=dnspass, serverrole=serverrole,
+                    dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
+                    lp=lp)
 
         create_krb5_conf(paths.krb5conf,
                          dnsdomain=names.dnsdomain, hostname=names.hostname,
@@ -1845,8 +1851,11 @@ def provision(logger, session_info, credentials, smbconf=None,
     result.domainsid = str(domainsid)
 
     if samdb_fill == FILL_FULL:
-        if adminpass_generated:
-            logger.info("Admin password:        %s" % adminpass)
+        result.adminpass_generated = adminpass_generated
+        result.adminpass = adminpass
+    else:
+        result.adminpass_generated = False
+        result.adminpass = None
     if provision_backend.type is not "ldb":
         if provision_backend.credentials.get_bind_dn() is not None:
             logger.info("LDAP Backend Admin DN: %s" %

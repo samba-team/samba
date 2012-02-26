@@ -152,7 +152,7 @@ class ProvisionResultTests(TestCase):
         result.report_logger(logger)
         return logger.entries
 
-    def test_basic_report_logger(self):
+    def base_result(self):
         result = ProvisionResult()
         result.server_role = "domain controller"
         result.names = ProvisionNames()
@@ -161,6 +161,10 @@ class ProvisionResultTests(TestCase):
         result.names.dnsdomain = "dnsdomein"
         result.domainsid = "S1-1-1"
         result.paths = ProvisionPaths()
+        return result
+
+    def test_basic_report_logger(self):
+        result = self.base_result()
         entries = self.report_logger(result)
         self.assertEquals(entries, [
             ('INFO', 'Server Role:           domain controller'),
@@ -170,15 +174,17 @@ class ProvisionResultTests(TestCase):
             ('INFO', 'DOMAIN SID:            S1-1-1')])
 
     def test_report_logger_phpldapadmin(self):
-        result = ProvisionResult()
-        result.server_role = "domain controller"
-        result.names = ProvisionNames()
-        result.names.hostname = "hostnaam"
-        result.names.domain = "DOMEIN"
-        result.names.dnsdomain = "dnsdomein"
-        result.domainsid = "S1-1-1"
-        result.paths = ProvisionPaths()
+        result = self.base_result()
         result.paths.phpldapadminconfig = "/some/ldapconfig"
         entries = self.report_logger(result)
         self.assertEquals(entries[-1],
             ("INFO", "A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in /some/ldapconfig."))
+
+    def test_report_logger_adminpass(self):
+        result = self.base_result()
+        result.adminpass_generated = True
+        result.adminpass = "geheim"
+        entries = self.report_logger(result)
+        self.assertEquals(entries[0],
+                ("INFO", 'Admin password:        geheim'))
+
