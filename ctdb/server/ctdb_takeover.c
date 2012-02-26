@@ -2934,9 +2934,25 @@ static void ctdb_tickle_sentenced_connections(struct event_context *ev, struct t
  */
 static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 {
-	if (killtcp->vnn) {
-		killtcp->vnn->killtcp = NULL;
+	struct ctdb_vnn *tmpvnn;
+
+	/* verify that this vnn is still active */
+	for (tmpvnn = killtcp->ctdb->vnn; tmpvnn; tmpvnn = tmpvnn->next) {
+		if (tmpvnn == killtcp->vnn) {
+			break;
+		}
 	}
+
+	if (tmpvnn == NULL) {
+		return 0;
+	}
+
+	if (killtcp->vnn->killtcp != killtcp) {
+		return 0;
+	}
+
+	killtcp->vnn->killtcp = NULL;
+
 	return 0;
 }
 
@@ -2991,7 +3007,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	   a new structure
 	 */
 	if (killtcp == NULL) {
-		killtcp = talloc_zero(ctdb, struct ctdb_kill_tcp);
+		killtcp = talloc_zero(vnn, struct ctdb_kill_tcp);
 		CTDB_NO_MEMORY(ctdb, killtcp);
 
 		killtcp->vnn         = vnn;
