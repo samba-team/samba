@@ -3049,7 +3049,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	/* if we have no addresses and haven't done the auto lookup, then
 	   just return the list of DC's.  Or maybe we just failed. */
 
-	if ((num_addresses == 0)) {
+	if (num_addresses == 0) {
 		if (done_auto_lookup) {
 			DEBUG(4,("get_dc_list: no servers found\n"));
 			status = NT_STATUS_NO_LOGON_SERVERS;
