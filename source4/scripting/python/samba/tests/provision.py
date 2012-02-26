@@ -24,6 +24,7 @@ from samba.provision import (
     ProvisionNames,
     ProvisionPaths,
     ProvisionResult,
+    determine_netbios_name,
     sanitize_server_role,
     setup_secretsdb,
     findnss,
@@ -190,3 +191,11 @@ class ProvisionResultTests(TestCase):
         self.assertEquals(entries[1],
                 ("INFO", 'Admin password:        geheim'))
 
+
+class DetermineNetbiosNameTests(TestCase):
+
+    def test_limits_to_15(self):
+        self.assertEquals("A" * 15, determine_netbios_name("a" * 30))
+
+    def test_strips_invalid(self):
+        self.assertEquals("BLABLA", determine_netbios_name("bla/bla"))
