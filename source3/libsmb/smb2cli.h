@@ -32,7 +32,7 @@ struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 				uint8_t in_flags,
 				uint32_t in_capabilities,
 				uint32_t in_channel,
-				struct smbXcli_session *in_previous_session,
+				uint64_t in_previous_session_id,
 				const DATA_BLOB *in_security_buffer);
 NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
 				    TALLOC_CTX *mem_ctx,

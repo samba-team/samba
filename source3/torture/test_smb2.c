@@ -426,7 +426,8 @@ bool run_smb2_session_reconnect(int dummy)
 					    0x0, /* in_flags */
 					    SMB2_CAP_DFS, /* in_capabilities */
 					    0, /* in_channel */
-					    cli1->smb2.session, /* in_previous_session */
+					    /* in_previous_session_id: */
+					    smb2cli_session_current_id(cli1->smb2.session),
 					    &in_blob); /* in_security_buffer */
 	if (subreq == NULL) {
 		printf("smb2cli_session_setup_send() returned NULL\n");
@@ -460,7 +461,8 @@ bool run_smb2_session_reconnect(int dummy)
 					    0x0, /* in_flags */
 					    SMB2_CAP_DFS, /* in_capabilities */
 					    0, /* in_channel */
-					    cli1->smb2.session, /* in_previous_session */
+					    /* in_previous_session_id: */
+					    smb2cli_session_current_id(cli1->smb2.session),
 					    &in_blob); /* in_security_buffer */
 	if (subreq == NULL) {
 		printf("smb2cli_session_setup_send() returned NULL\n");
@@ -881,7 +883,7 @@ bool run_smb2_multi_channel(int dummy)
 					    0x01, /* in_flags */
 					    SMB2_CAP_DFS, /* in_capabilities */
 					    0, /* in_channel */
-					    NULL, /* in_previous_session */
+					    0, /* in_previous_session_id */
 					    &in_blob); /* in_security_buffer */
 	if (subreq == NULL) {
 		printf("smb2cli_session_setup_send() returned NULL\n");
@@ -915,7 +917,7 @@ bool run_smb2_multi_channel(int dummy)
 					    0x01, /* in_flags */
 					    SMB2_CAP_DFS, /* in_capabilities */
 					    0, /* in_channel */
-					    NULL, /* in_previous_session */
+					    0, /* in_previous_session_id */
 					    &in_blob); /* in_security_buffer */
 	if (subreq == NULL) {
 		printf("smb2cli_session_setup_send() returned NULL\n");
@@ -1143,7 +1145,7 @@ bool run_smb2_session_reauth(int dummy)
 					    0x0, /* in_flags */
 					    SMB2_CAP_DFS, /* in_capabilities */
 					    0, /* in_channel */
-					    NULL, /* in_previous_session */
+					    0, /* in_previous_session_id */
 					    &in_blob); /* in_security_buffer */
 	if (subreq == NULL) {
 		printf("smb2cli_session_setup_send() returned NULL\n");
@@ -1199,7 +1201,7 @@ bool run_smb2_session_reauth(int dummy)
 					    0x0, /* in_flags */
 					    SMB2_CAP_DFS, /* in_capabilities */
 					    0, /* in_channel */
-					    NULL, /* in_previous_session */
+					    0, /* in_previous_session_id */
 					    &in_blob); /* in_security_buffer */
 	if (subreq == NULL) {
 		printf("smb2cli_session_setup_send() returned NULL\n");

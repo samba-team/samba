@@ -159,7 +159,7 @@ struct tevent_req *smb2_session_setup_spnego_send(TALLOC_CTX *mem_ctx,
 					    0, /* in_flags */
 					    0, /* in_capabilities */
 					    0, /* in_channel */
-					    NULL, /* in_previous_session */
+					    0, /* in_previous_session_id */
 					    &state->in_secblob);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -239,7 +239,7 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 					    0, /* in_flags */
 					    0, /* in_capabilities */
 					    0, /* in_channel */
-					    NULL, /* in_previous_session */
+					    0, /* in_previous_session_id */
 					    &state->in_secblob);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

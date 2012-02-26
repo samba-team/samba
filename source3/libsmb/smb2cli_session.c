@@ -46,7 +46,7 @@ struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 				uint8_t in_flags,
 				uint32_t in_capabilities,
 				uint32_t in_channel,
-				struct smbXcli_session *in_previous_session,
+				uint64_t in_previous_session_id,
 				const DATA_BLOB *in_security_buffer)
 {
 	struct tevent_req *req, *subreq;
@@ -57,7 +57,6 @@ struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	uint8_t security_mode;
 	uint16_t security_buffer_offset = 0;
 	uint16_t security_buffer_length = 0;
-	uint64_t previous_session_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_session_setup_state);
@@ -81,11 +80,6 @@ struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		security_buffer_length = in_security_buffer->length;
 	}
 
-	if (in_previous_session) {
-		previous_session_id =
-			smb2cli_session_current_id(in_previous_session);
-	}
-
 	buf = state->fixed;
 
 	SSVAL(buf,  0, 25);
@@ -95,7 +89,7 @@ struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	SIVAL(buf,  8, in_channel);
 	SSVAL(buf, 12, security_buffer_offset);
 	SSVAL(buf, 14, security_buffer_length);
-	SBVAL(buf, 16, previous_session_id);
+	SBVAL(buf, 16, in_previous_session_id);
 
 	if (security_buffer_length > 0) {
 		dyn = in_security_buffer->data;

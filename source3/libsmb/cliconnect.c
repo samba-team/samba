@@ -1232,7 +1232,7 @@ static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
 						    0, /* in_flags */
 						    SMB2_CAP_DFS, /* in_capabilities */
 						    0, /* in_channel */
-						    NULL, /* in_previous_session */
+						    0, /* in_previous_session_id */
 						    &state->smb2_blob);
 		if (subreq == NULL) {
 			return false;
