@@ -379,9 +379,13 @@ class ProvisionResult(object):
         self.domainsid = None
         self.adminpass_generated = None
         self.adminpass = None
+        self.backend_result = None
 
     def report_logger(self, logger):
         """Report this provision result to a logger."""
+        logger.info(
+            "Once the above files are installed, your Samba4 server will "
+            "be ready to use")
         if self.adminpass_generated:
             logger.info("Admin password:        %s", self.adminpass)
         logger.info("Server Role:           %s", self.server_role)
@@ -395,6 +399,9 @@ class ProvisionResult(object):
                 "A phpLDAPadmin configuration file suitable for administering "
                 "the Samba 4 LDAP server has been created in %s.",
                 self.paths.phpldapadminconfig)
+
+        if self.backend_result:
+            self.backend_result.report_logger(logger)
 
 
 def check_install(lp, session_info, credentials):
@@ -727,7 +734,7 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
                 lp=lp, options=["modules:"])
 
     ldap_backend_line = "# No LDAP backend"
-    if provision_backend.type is not "ldb":
+    if provision_backend.type != "ldb":
         ldap_backend_line = "ldapBackend: %s" % provision_backend.ldap_uri
 
     samdb.transaction_start()
@@ -1604,7 +1611,7 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     if ldapadminpass is None:
         # Make a new, random password between Samba and it's LDAP server
-        ldapadminpass=samba.generate_random_password(128, 255)
+        ldapadminpass = samba.generate_random_password(128, 255)
 
     if backend_type is None:
         backend_type = "ldb"
@@ -1740,8 +1747,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
         logger.info("Setting up share.ldb")
-        share_ldb = Ldb(paths.shareconf, session_info=session_info,
-                        lp=lp)
+        share_ldb = Ldb(paths.shareconf, session_info=session_info, lp=lp)
         share_ldb.load_ldif_file_add(setup_path("share.ldif"))
 
     logger.info("Setting up secrets.ldb")
@@ -1751,15 +1757,13 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     try:
         logger.info("Setting up the registry")
-        setup_registry(paths.hklm, session_info,
-                       lp=lp)
+        setup_registry(paths.hklm, session_info, lp=lp)
 
         logger.info("Setting up the privileges database")
         setup_privileges(paths.privilege, session_info, lp=lp)
 
         logger.info("Setting up idmap db")
-        idmap = setup_idmapdb(paths.idmapdb,
-            session_info=session_info, lp=lp)
+        idmap = setup_idmapdb(paths.idmapdb, session_info=session_info, lp=lp)
 
         setup_name_mappings(idmap, sid=str(domainsid),
                             root_uid=root_uid, nobody_uid=nobody_uid,
@@ -1816,7 +1820,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         if serverrole == "domain controller":
             create_dns_update_list(lp, logger, paths)
 
-        provision_backend.post_setup()
+        backend_result = provision_backend.post_setup()
         provision_backend.shutdown()
 
         create_phpldapadmin_config(paths.phpldapadminconfig,
@@ -1839,7 +1843,6 @@ def provision(logger, session_info, credentials, smbconf=None,
                 logger.info("Failed to chown %s to bind gid %u",
                             dns_keytab_path, paths.bind_gid)
 
-    logger.info("Once the above files are installed, your Samba4 server will be ready to use")
     result = ProvisionResult()
     result.server_role = serverrole
     result.domaindn = domaindn
@@ -1856,21 +1859,8 @@ def provision(logger, session_info, credentials, smbconf=None,
     else:
         result.adminpass_generated = False
         result.adminpass = None
-    if provision_backend.type is not "ldb":
-        if provision_backend.credentials.get_bind_dn() is not None:
-            logger.info("LDAP Backend Admin DN: %s" %
-                provision_backend.credentials.get_bind_dn())
-        else:
-            logger.info("LDAP Admin User:       %s" %
-                provision_backend.credentials.get_username())
 
-        if provision_backend.slapd_command_escaped is not None:
-            # now display slapd_command_file.txt to show how slapd must be
-            # started next time
-            logger.info("Use later the following commandline to start slapd, then Samba:")
-            logger.info(provision_backend.slapd_command_escaped)
-            logger.info("This slapd-Commandline is also stored under: %s/ldap_backend_startup.sh",
-                    provision_backend.ldapdir)
+    result.backend_result = backend_result
 
     return result
 

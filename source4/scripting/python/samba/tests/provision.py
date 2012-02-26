@@ -167,6 +167,8 @@ class ProvisionResultTests(TestCase):
         result = self.base_result()
         entries = self.report_logger(result)
         self.assertEquals(entries, [
+            ('INFO', 'Once the above files are installed, your Samba4 server '
+                'will be ready to use'),
             ('INFO', 'Server Role:           domain controller'),
             ('INFO', 'Hostname:              hostnaam'),
             ('INFO', 'NetBIOS Domain:        DOMEIN'),
@@ -185,6 +187,6 @@ class ProvisionResultTests(TestCase):
         result.adminpass_generated = True
         result.adminpass = "geheim"
         entries = self.report_logger(result)
-        self.assertEquals(entries[0],
+        self.assertEquals(entries[1],
                 ("INFO", 'Admin password:        geheim'))
 

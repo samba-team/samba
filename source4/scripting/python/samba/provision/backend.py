@@ -51,7 +51,43 @@ class SlapdAlreadyRunning(Exception):
             self.ldapi_uri)
 
 
+class BackendResult(object):
+
+    def report_logger(self, logger):
+        """Rerport this result to a particular logger.
+
+        """
+        raise NotImplementedError(self.report_logger)
+
+
+class LDAPBackendResult(BackendResult):
+
+    def __init__(self, credentials, slapd_command_escaped, ldapdir):
+        self.credentials = credentials
+        self.slapd_command_escaped = slapd_command_escaped
+        self.ldapdir = ldapdir
+
+    def report_logger(self, logger):
+        if self.credentials.get_bind_dn() is not None:
+            logger.info("LDAP Backend Admin DN: %s" %
+                self.credentials.get_bind_dn())
+        else:
+            logger.info("LDAP Admin User:       %s" %
+                self.credentials.get_username())
+
+        if self.slapd_command_escaped is not None:
+            # now display slapd_command_file.txt to show how slapd must be
+            # started next time
+            logger.info(
+                "Use later the following commandline to start slapd, then Samba:")
+            logger.info(self.slapd_command_escaped)
+            logger.info(
+                "This slapd-Commandline is also stored under: %s/ldap_backend_startup.sh",
+                self.ldapdir)
+
+
 class ProvisionBackend(object):
+
     def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None):
         """Provision a backend for samba4"""
@@ -79,7 +115,10 @@ class ProvisionBackend(object):
         raise NotImplementedError(self.shutdown)
 
     def post_setup(self):
-        """Post setup."""
+        """Post setup.
+
+        :return: A BackendResult or None
+        """
         raise NotImplementedError(self.post_setup)
 
 
@@ -278,7 +317,8 @@ class LDAPBackend(ProvisionBackend):
             self.slapd.communicate()
 
     def post_setup(self):
-        pass
+        return LDAPBackendResult(self.credentials, self.slapd_command_escaped,
+                    self.ldapdir)
 
 
 class OpenLDAPBackend(LDAPBackend):
@@ -770,3 +810,5 @@ class FDSBackend(LDAPBackend):
                          self.names.schemadn):
             m.dn = ldb.Dn(ldapi_db, dnstring)
             ldapi_db.modify(m)
+        return LDAPBackendResult(self.credentials, self.slapd_command_escaped,
+            self.ldapdir)
