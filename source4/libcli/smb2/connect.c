@@ -269,17 +269,18 @@ NTSTATUS smb2_connect_recv(struct tevent_req *req,
 /*
   sync version of smb2_connect
 */
-NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
-		      const char *host,
-		      const char **ports,
-		      const char *share,
-		      struct resolve_context *resolve_ctx,
-		      struct cli_credentials *credentials,
-		      struct smb2_tree **tree,
-		      struct tevent_context *ev,
-		      struct smbcli_options *options,
-		      const char *socket_options,
-		      struct gensec_settings *gensec_settings)
+NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
+			  const char *host,
+			  const char **ports,
+			  const char *share,
+			  struct resolve_context *resolve_ctx,
+			  struct cli_credentials *credentials,
+			  uint64_t previous_session_id,
+			  struct smb2_tree **tree,
+			  struct tevent_context *ev,
+			  struct smbcli_options *options,
+			  const char *socket_options,
+			  struct gensec_settings *gensec_settings)
 {
 	struct tevent_req *subreq;
 	NTSTATUS status;
@@ -297,7 +298,7 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 				   share,
 				   resolve_ctx,
 				   credentials,
-				   0, /* previous_session_id */
+				   previous_session_id,
 				   options,
 				   socket_options,
 				   gensec_settings);
@@ -322,4 +323,27 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
+		      const char *host,
+		      const char **ports,
+		      const char *share,
+		      struct resolve_context *resolve_ctx,
+		      struct cli_credentials *credentials,
+		      struct smb2_tree **tree,
+		      struct tevent_context *ev,
+		      struct smbcli_options *options,
+		      const char *socket_options,
+		      struct gensec_settings *gensec_settings)
+{
+	NTSTATUS status;
+
+	status = smb2_connect_ext(mem_ctx, host, ports, share, resolve_ctx,
+				  credentials,
+				  0, /* previous_session_id */
+				  tree, ev, options, socket_options,
+				  gensec_settings);
+
+	return status;
 }
