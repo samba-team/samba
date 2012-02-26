@@ -50,7 +50,7 @@ from samba.provision import (get_domain_descriptor, find_provision_key_parameter
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn, setup_path)
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
-from samba.dcerpc import security, drsblobs, xattr
+from samba.dcerpc import security, drsblobs
 from samba.ndr import ndr_unpack
 from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  get_ldbs,
@@ -63,6 +63,7 @@ from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  search_constructed_attrs_stored,
                                  int64range2str, update_dns_account_password,
                                  increment_calculated_keyversion_number)
+from samba.xattr import copytree_with_xattrs
 
 replace=2**FLAG_MOD_REPLACE
 add=2**FLAG_MOD_ADD
@@ -1463,66 +1464,6 @@ def update_samdb(ref_samdb, samdb, names, provisionUSNs, schema, prereloadfunc):
         return 0
 
 
-def copyxattrs(dir, refdir):
-    """ Copy owner, groups, extended ACL and NT acls from
-    a reference dir to a destination dir
-
-    Both dir are supposed to hold the same files
-    :param dir: Destination dir
-    :param refdir: Reference directory"""
-
-    noxattr = 0
-    for root, dirs, files in os.walk(dir, topdown=True):
-        for name in files:
-            subdir=root[len(dir):]
-            ref = os.path.join("%s%s" % (refdir, subdir), name)
-            statsinfo = os.stat(ref)
-            tgt = os.path.join(root, name)
-            try:
-
-                os.chown(tgt, statsinfo.st_uid, statsinfo.st_gid)
-                # Get the xattr attributes if any
-                try:
-                    attribute = samba.xattr_native.wrap_getxattr(ref,
-                                                 xattr.XATTR_NTACL_NAME)
-                    samba.xattr_native.wrap_setxattr(tgt,
-                                                 xattr.XATTR_NTACL_NAME,
-                                                 attribute)
-                except Exception:
-                    noxattr = 1
-                attribute = samba.xattr_native.wrap_getxattr(ref,
-                                                 "system.posix_acl_access")
-                samba.xattr_native.wrap_setxattr(tgt,
-                                                 "system.posix_acl_access",
-                                                  attribute)
-            except Exception:
-                continue
-        for name in dirs:
-            subdir=root[len(dir):]
-            ref = os.path.join("%s%s" % (refdir, subdir), name)
-            statsinfo = os.stat(ref)
-            tgt = os.path.join(root, name)
-            try:
-                os.chown(os.path.join(root, name), statsinfo.st_uid,
-                          statsinfo.st_gid)
-                try:
-                    attribute = samba.xattr_native.wrap_getxattr(ref,
-                                                 xattr.XATTR_NTACL_NAME)
-                    samba.xattr_native.wrap_setxattr(tgt,
-                                                 xattr.XATTR_NTACL_NAME,
-                                                 attribute)
-                except Exception:
-                    noxattr = 1
-                attribute = samba.xattr_native.wrap_getxattr(ref,
-                                                 "system.posix_acl_access")
-                samba.xattr_native.wrap_setxattr(tgt,
-                                                 "system.posix_acl_access",
-                                                  attribute)
-
-            except Exception:
-                continue
-
-
 def backup_provision(paths, dir):
     """This function backup the provision files so that a rollback
     is possible
@@ -1530,9 +1471,7 @@ def backup_provision(paths, dir):
     :param paths: Paths to different objects
     :param dir: Directory where to store the backup
     """
-
-    shutil.copytree(paths.sysvol, os.path.join(dir, "sysvol"))
-    copyxattrs(os.path.join(dir, "sysvol"), paths.sysvol)
+    copytree_with_xattrs(paths.sysvol, os.path.join(dir, "sysvol"))
     shutil.copy2(paths.samdb, dir)
     shutil.copy2(paths.secrets, dir)
     shutil.copy2(paths.idmapdb, dir)
@@ -1553,8 +1492,6 @@ def backup_provision(paths, dir):
         shutil.copy2(configldb, dir)
     else:
         shutil.copytree(samldbdir, os.path.join(dir, "sam.ldb.d"))
-
-
 
 
 def sync_calculated_attributes(samdb, names):
