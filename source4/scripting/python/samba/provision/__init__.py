@@ -599,14 +599,7 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
     assert smbconf is not None
     if hostname is None:
         hostname = socket.gethostname().split(".")[0]
-        netbiosname = hostname.upper()
-        # remove forbidden chars
-        newnbname = ""
-        for x in netbiosname:
-            if x.isalnum() or x in VALID_NETBIOS_CHARS:
-                newnbname = "%s%c" % (newnbname, x)
-        #force the length to be <16
-        netbiosname = newnbname[0:15]
+        netbiosname = determine_netbios_name(hostname)
     else:
         netbiosname = hostname.upper()
 
