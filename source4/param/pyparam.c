@@ -475,17 +475,17 @@ static PyObject *py_sbin_dir(PyObject *self)
 }
 
 static PyMethodDef pyparam_methods[] = {
-    { "default_path", (PyCFunction)py_default_path, METH_NOARGS, 
-        "Returns the default smb.conf path." },
-    { "setup_dir", (PyCFunction)py_setup_dir, METH_NOARGS,
-        "Returns the compiled in location of provision tempates." },
-    { "modules_dir", (PyCFunction)py_modules_dir, METH_NOARGS,
-        "Returns the compiled in location of modules." },
-    { "bin_dir", (PyCFunction)py_bin_dir, METH_NOARGS,
-	"Returns the compiled in BINDIR." },
-    { "sbin_dir", (PyCFunction)py_sbin_dir, METH_NOARGS,
-	"Returns the compiled in SBINDIR." },
-    { NULL }
+	{ "default_path", (PyCFunction)py_default_path, METH_NOARGS, 
+		"Returns the default smb.conf path." },
+	{ "setup_dir", (PyCFunction)py_setup_dir, METH_NOARGS,
+		"Returns the compiled in location of provision tempates." },
+	{ "modules_dir", (PyCFunction)py_modules_dir, METH_NOARGS,
+		"Returns the compiled in location of modules." },
+	{ "bin_dir", (PyCFunction)py_bin_dir, METH_NOARGS,
+		"Returns the compiled in BINDIR." },
+	{ "sbin_dir", (PyCFunction)py_sbin_dir, METH_NOARGS,
+		"Returns the compiled in SBINDIR." },
+	{ NULL }
 };
 
 void initparam(void)
