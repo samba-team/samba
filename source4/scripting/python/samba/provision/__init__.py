@@ -680,8 +680,10 @@ def make_smbconf(smbconf, hostname, domain, realm, serverrole,
     # this ensures that any smb.conf parameters that were set
     # on the provision/join command line are set in the resulting smb.conf
     f = open(smbconf, mode='w')
-    lp.dump(f, False)
-    f.close()
+    try:
+        lp.dump(f, False)
+    finally:
+        f.close()
 
 
 def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
@@ -1069,8 +1071,11 @@ def getpolicypath(sysvolpath, dnsdomain, guid):
 def create_gpo_struct(policy_path):
     if not os.path.exists(policy_path):
         os.makedirs(policy_path, 0775)
-    open(os.path.join(policy_path, "GPT.INI"), 'w').write(
-                      "[General]\r\nVersion=0")
+    f = open(os.path.join(policy_path, "GPT.INI"), 'w')
+    try:
+        f.write("[General]\r\nVersion=0")
+    finally:
+        f.close()
     p = os.path.join(policy_path, "MACHINE")
     if not os.path.exists(p):
         os.makedirs(p, 0775)
@@ -1651,8 +1656,11 @@ def provision(logger, session_info, credentials, smbconf=None,
         # if Samba Team members can't figure out the weird errors
         # loading an empty smb.conf gives, then we need to be smarter.
         # Pretend it just didn't exist --abartlet
-        data = open(smbconf, 'r').read()
-        data = data.lstrip()
+        f = open(smbconf, 'r')
+        try:
+            data = f.read().lstrip()
+        finally:
+            f.close()
         if data is None or data == "":
             make_smbconf(smbconf, hostname, domain, realm,
                          serverrole, targetdir, sid_generator, useeadb,
