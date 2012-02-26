@@ -860,6 +860,8 @@ void reply_tcon_and_X(struct smb_request *req)
 		}
 	}
 
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
 	DEBUG(3,("tconX service=%s \n",
 		 service));
@@ -2035,6 +2037,9 @@ void reply_open_and_X(struct smb_request *req)
 		reply_outbuf(req, 15, 0);
 	}
 
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+
 	if (core_oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		SCVAL(req->outbuf, smb_flg,
 		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
@@ -2094,6 +2099,8 @@ void reply_ulogoffX(struct smb_request *req)
 	invalidate_vuid(sconn, req->vuid);
 
 	reply_outbuf(req, 2, 0);
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
 	DEBUG( 3, ( "ulogoffX vuid=%d\n", req->vuid ) );
 
@@ -3684,6 +3691,8 @@ normal_read:
 nosendfile_read:
 
 	reply_outbuf(req, 12, smb_maxcnt);
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
 	nread = read_file(fsp, smb_buf(req->outbuf), startpos, smb_maxcnt);
 	saved_errno = errno;
@@ -4628,6 +4637,8 @@ void reply_write_and_X(struct smb_request *req)
 	}
 
 	reply_outbuf(req, 6, 0);
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
 	SSVAL(req->outbuf,smb_vwv4,nwritten>>16);
 
@@ -7835,6 +7846,8 @@ void reply_lockingX(struct smb_request *req)
 	}
 
 	reply_outbuf(req, 2, 0);
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
 	DEBUG(3, ("lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
 		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));

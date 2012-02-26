@@ -271,6 +271,8 @@ static void reply_lockingX_success(struct blocking_lock_record *blr)
 	struct smb_request *req = blr->req;
 
 	reply_outbuf(req, 2, 0);
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
 	/*
 	 * As this message is a lockingX call we must handle

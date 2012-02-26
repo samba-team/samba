@@ -352,6 +352,9 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 		reply_outbuf(req, 34, 0);
 	}
 
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+
 	p = (char *)req->outbuf + smb_vwv2;
 	p++;
 	SSVAL(p,0,pnum);
@@ -633,6 +636,9 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	} else {
 		reply_outbuf(req, 34, 0);
 	}
+
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
 	p = (char *)req->outbuf + smb_vwv2;
 

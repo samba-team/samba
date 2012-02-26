@@ -736,6 +736,9 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	/* it's ok - setup a reply */
 	reply_outbuf(req, 3, 0);
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+
 	if (get_Protocol() >= PROTOCOL_NT1) {
 		push_signature(&req->outbuf);
 		/* perhaps grab OS version here?? */

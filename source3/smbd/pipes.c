@@ -146,6 +146,9 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	/* Prepare the reply */
 	reply_outbuf(req, 15, 0);
 
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+
 	/* Mark the opened file as an existing named pipe in message mode. */
 	SSVAL(req->outbuf,smb_vwv9,2);
 	SSVAL(req->outbuf,smb_vwv10,0xc700);
@@ -354,6 +357,9 @@ static void pipe_write_andx_done(struct tevent_req *subreq)
 
 	reply_outbuf(req, 6, 0);
 
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+
 	nwritten = (state->pipe_start_message_raw ? nwritten + 2 : nwritten);
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
 
@@ -417,6 +423,9 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	state->smb_mincnt = SVAL(req->vwv+6, 0);
 
 	reply_outbuf(req, 12, state->smb_maxcnt);
+	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+
 	data = (uint8_t *)smb_buf(req->outbuf);
 
 	/*
