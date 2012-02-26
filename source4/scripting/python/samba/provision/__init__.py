@@ -499,7 +499,6 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     netbiosname = lp.get("netbios name")
     if netbiosname is None:
         netbiosname = determine_netbios_name(hostname)
-    assert netbiosname is not None
     netbiosname = netbiosname.upper()
     if not valid_netbios_name(netbiosname):
         raise InvalidNetbiosName(netbiosname)
@@ -1645,7 +1644,7 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     server_services = None
     if dns_backend == "SAMBA_INTERNAL":
-        server_services = [ "+dns" ]
+        server_services = ["+dns"]
 
     # only install a new smb.conf if there isn't one there already
     if os.path.exists(smbconf):
@@ -1779,17 +1778,12 @@ def provision(logger, session_info, credentials, smbconf=None,
 
         if serverrole == "domain controller":
             if paths.netlogon is None:
-                logger.info("Existing smb.conf does not have a [netlogon] share, but you are configuring a DC.")
-                logger.info("Please either remove %s or see the template at %s" %
-                        (paths.smbconf, setup_path("provision.smb.conf.dc")))
-                assert paths.netlogon is not None
+                raise MissingShareError("netlogon", paths.smbconf,
+                    setup_path("provision.smb.conf.dc"))
 
             if paths.sysvol is None:
-                logger.info("Existing smb.conf does not have a [sysvol] share, but you"
-                        " are configuring a DC.")
-                logger.info("Please either remove %s or see the template at %s" %
-                        (paths.smbconf, setup_path("provision.smb.conf.dc")))
-                assert paths.sysvol is not None
+                raise MissingShareError("sysvol", paths.smbconf,
+                    setup_path("provision.smb.conf.dc"))
 
             if not os.path.isdir(paths.netlogon):
                 os.makedirs(paths.netlogon, 0755)
@@ -1931,3 +1925,12 @@ class InvalidNetbiosName(Exception):
     def __init__(self, name):
         super(InvalidNetbiosName, self).__init__(
             "The name '%r' is not a valid NetBIOS name" % name)
+
+
+class MissingShareError(ProvisioningError):
+
+    def __init__(self, name, smbconf, smbconf_template):
+        super(MissingShareError, self).__init__(
+            "Existing smb.conf does not have a [%s] share, but you are "
+            "configuring a DC. Please either remove %s or see the template "
+            "at %s" % (name, smbconf, smbconf_template))
