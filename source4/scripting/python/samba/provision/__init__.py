@@ -480,6 +480,18 @@ def provision_paths_from_lp(lp, dnsdomain):
     return paths
 
 
+def determine_netbios_name(hostname):
+    """Determine a netbios name from a hostname."""
+    netbiosname = hostname
+    # remove forbidden chars
+    newnbname = ""
+    for x in netbiosname:
+        if x.isalnum() or x in VALID_NETBIOS_CHARS:
+            newnbname = "%s%c" % (newnbname, x)
+    # force the length to be <16
+    return newnbname[0:15].upper()
+
+
 def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
                 serverrole=None, rootdn=None, domaindn=None, configdn=None,
                 schemadn=None, serverdn=None, sitename=None):
@@ -490,14 +502,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
     netbiosname = lp.get("netbios name")
     if netbiosname is None:
-        netbiosname = hostname
-        # remove forbidden chars
-        newnbname = ""
-        for x in netbiosname:
-            if x.isalnum() or x in VALID_NETBIOS_CHARS:
-                newnbname = "%s%c" % (newnbname, x)
-        # force the length to be <16
-        netbiosname = newnbname[0:15]
+        netbiosname = determine_netbios_name(hostname)
     assert netbiosname is not None
     netbiosname = netbiosname.upper()
     if not valid_netbios_name(netbiosname):
