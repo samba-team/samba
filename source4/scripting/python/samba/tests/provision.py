@@ -147,8 +147,12 @@ class DummyLogger(object):
 
 class ProvisionResultTests(TestCase):
 
-    def test_report_logger(self):
+    def report_logger(self, result):
         logger = DummyLogger()
+        result.report_logger(logger)
+        return logger.entries
+
+    def test_basic_report_logger(self):
         result = ProvisionResult()
         result.server_role = "domain controller"
         result.names = ProvisionNames()
@@ -157,10 +161,24 @@ class ProvisionResultTests(TestCase):
         result.names.dnsdomain = "dnsdomein"
         result.domainsid = "S1-1-1"
         result.paths = ProvisionPaths()
-        result.report_logger(logger)
-        self.assertEquals(logger.entries, [
+        entries = self.report_logger(result)
+        self.assertEquals(entries, [
             ('INFO', 'Server Role:           domain controller'),
             ('INFO', 'Hostname:              hostnaam'),
             ('INFO', 'NetBIOS Domain:        DOMEIN'),
             ('INFO', 'DNS Domain:            dnsdomein'),
             ('INFO', 'DOMAIN SID:            S1-1-1')])
+
+    def test_report_logger_phpldapadmin(self):
+        result = ProvisionResult()
+        result.server_role = "domain controller"
+        result.names = ProvisionNames()
+        result.names.hostname = "hostnaam"
+        result.names.domain = "DOMEIN"
+        result.names.dnsdomain = "dnsdomein"
+        result.domainsid = "S1-1-1"
+        result.paths = ProvisionPaths()
+        result.paths.phpldapadminconfig = "/some/ldapconfig"
+        entries = self.report_logger(result)
+        self.assertEquals(entries[-1],
+            ("INFO", "A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in /some/ldapconfig."))

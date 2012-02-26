@@ -388,7 +388,7 @@ class ProvisionResult(object):
 
         if self.paths.phpldapadminconfig is not None:
             logger.info(
-                "A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in %s .",
+                "A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in %s.",
                 self.paths.phpldapadminconfig)
 
 
