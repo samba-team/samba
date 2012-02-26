@@ -217,9 +217,11 @@ class LDAPBackend(ProvisionBackend):
                 if err != errno.ENOENT:
                     raise
             else:
-                p = f.read()
-                f.close()
-                self.logger.info("Check for slapd Process with PID: %s and terminate it manually." % p)
+                try:
+                    p = f.read()
+                finally:
+                    f.close()
+                self.logger.info("Check for slapd process with PID: %s and terminate it manually." % p)
             raise SlapdAlreadyRunning(self.ldap_uri)
         except LdbError:
             # XXX: We should never be catching all Ldb errors
@@ -535,8 +537,11 @@ class OpenLDAPBackend(LDAPBackend):
         backend_schema = "backend-schema.schema"
 
         f = open(setup_path(mapping), 'r')
-        backend_schema_data = self.schema.convert_to_openldap(
-                "openldap", f.read())
+        try:
+            backend_schema_data = self.schema.convert_to_openldap(
+                    "openldap", f.read())
+        finally:
+            f.close()
         assert backend_schema_data is not None
         f = open(os.path.join(self.ldapdir, backend_schema), 'w')
         try:
@@ -699,7 +704,11 @@ class FDSBackend(LDAPBackend):
 
         lnkattr = self.schema.linked_attributes()
 
-        refint_config = open(setup_path("fedorads-refint-delete.ldif"), 'r').read()
+        f = open(setup_path("fedorads-refint-delete.ldif"), 'r')
+        try:
+            refint_config = f.read()
+        finally:
+            f.close()
         memberof_config = ""
         index_config = ""
         argnum = 3
@@ -718,8 +727,16 @@ class FDSBackend(LDAPBackend):
                     setup_path("fedorads-index.ldif"), { "ATTR" : attr })
                 argnum += 1
 
-        open(self.refint_ldif, 'w').write(refint_config)
-        open(self.linked_attrs_ldif, 'w').write(memberof_config)
+        f = open(self.refint_ldif, 'w')
+        try:
+            f.write(refint_config)
+        finally:
+            f.close()
+        f = open(self.linked_attrs_ldif, 'w')
+        try:
+            f.write(memberof_config)
+        finally:
+            f.close()
 
         attrs = ["lDAPDisplayName"]
         res = self.schema.ldb.search(expression="(&(objectclass=attributeSchema)(searchFlags:1.2.840.113556.1.4.803:=1))", base=self.names.schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
@@ -733,7 +750,11 @@ class FDSBackend(LDAPBackend):
             index_config += read_and_sub_file(
                 setup_path("fedorads-index.ldif"), { "ATTR" : attr })
 
-        open(self.index_ldif, 'w').write(index_config)
+        f = open(self.index_ldif, 'w')
+        try:
+            f.write(index_config)
+        finally:
+            f.close()
 
         setup_file(setup_path("fedorads-samba.ldif"), self.samba_ldif, {
             "SAMBADN": self.sambadn,
@@ -744,8 +765,12 @@ class FDSBackend(LDAPBackend):
         backend_schema = "99_ad.ldif"
 
         # Build a schema file in Fedora DS format
-        backend_schema_data = self.schema.convert_to_openldap("fedora-ds",
-            open(setup_path(mapping), 'r').read())
+        f = open(setup_path(mapping), 'r')
+        try:
+            backend_schema_data = self.schema.convert_to_openldap("fedora-ds",
+                f.read())
+        finally:
+            f.close()
         assert backend_schema_data is not None
         f = open(os.path.join(self.ldapdir, backend_schema), 'w')
         try:
