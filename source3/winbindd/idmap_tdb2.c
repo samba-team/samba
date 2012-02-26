@@ -149,7 +149,7 @@ static NTSTATUS idmap_tdb2_set_mapping_action(struct db_context *db,
 
 	/* check wheter sid mapping is already present in db */
 	ret = dbwrap_fetch_bystring(db, tmp_ctx, state->ksidstr, &data);
-	if (!NT_STATUS_IS_OK(ret)) {
+	if (NT_STATUS_IS_OK(ret)) {
 		ret = NT_STATUS_OBJECT_NAME_COLLISION;
 		goto done;
 	}
