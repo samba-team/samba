@@ -589,17 +589,15 @@ class dc_join(object):
         logger.addHandler(logging.StreamHandler(sys.stdout))
         smbconf = ctx.lp.configfile
 
-        presult = provision(logger, system_session(), None,
-                            smbconf=smbconf, targetdir=ctx.targetdir, samdb_fill=FILL_DRS,
-                            realm=ctx.realm, rootdn=ctx.root_dn, domaindn=ctx.base_dn,
-                            schemadn=ctx.schema_dn,
-                            configdn=ctx.config_dn,
-                            serverdn=ctx.server_dn, domain=ctx.domain_name,
-                            hostname=ctx.myname, domainsid=ctx.domsid,
-                            machinepass=ctx.acct_pass, serverrole="domain controller",
-                            sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
-                            dns_backend="NONE")
-        presult.report_logger(logger)
+        presult = provision(logger, system_session(), None, smbconf=smbconf,
+                targetdir=ctx.targetdir, samdb_fill=FILL_DRS, realm=ctx.realm,
+                rootdn=ctx.root_dn, domaindn=ctx.base_dn,
+                schemadn=ctx.schema_dn, configdn=ctx.config_dn,
+                serverdn=ctx.server_dn, domain=ctx.domain_name,
+                hostname=ctx.myname, domainsid=ctx.domsid,
+                machinepass=ctx.acct_pass, serverrole="domain controller",
+                sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
+                dns_backend="NONE")
         print "Provision OK for domain DN %s" % presult.domaindn
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
