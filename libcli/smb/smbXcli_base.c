@@ -4108,17 +4108,6 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 					struct smbXcli_session **_session2)
 {
 	struct smbXcli_session *session2;
-	uint16_t no_sign_flags;
-
-	no_sign_flags = SMB2_SESSION_FLAG_IS_GUEST | SMB2_SESSION_FLAG_IS_NULL;
-
-	if (session1->smb2.session_flags & no_sign_flags) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
-	if (session1->smb2.session_key.length == 0) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
 
 	if (session1->smb2.signing_key.length == 0) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
