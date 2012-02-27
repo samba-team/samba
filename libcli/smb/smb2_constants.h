@@ -160,6 +160,8 @@
 #define SMB2_CREATE_TAG_TWRP "TWrp"
 #define SMB2_CREATE_TAG_QFID "QFid"
 #define SMB2_CREATE_TAG_RQLS "RqLs"
+#define SMB2_CREATE_TAG_DH2Q "DH2Q"
+#define SMB2_CREATE_TAG_DH2C "DH2C"
 
 /* SMB2 notify flags */
 #define SMB2_WATCH_TREE 0x0001
