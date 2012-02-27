@@ -74,11 +74,12 @@ class ProvisionLDB(object):
         self.hku = None
         self.hklm = None
 
+    def dbs(self):
+        return (self.sam, self.secrets, self.idmap, self.privilege)
+
     def startTransactions(self):
-        self.sam.transaction_start()
-        self.secrets.transaction_start()
-        self.idmap.transaction_start()
-        self.privilege.transaction_start()
+        for db in self.dbs():
+            db.transaction_start()
 # TO BE DONE
 #        self.hkcr.transaction_start()
 #        self.hkcu.transaction_start()
@@ -87,26 +88,11 @@ class ProvisionLDB(object):
 
     def groupedRollback(self):
         ok = True
-        try:
-            self.sam.transaction_cancel()
-        except Exception:
-            ok = False
-
-        try:
-            self.secrets.transaction_cancel()
-        except Exception:
-            ok = False
-
-        try:
-            self.idmap.transaction_cancel()
-        except Exception:
-            ok = False
-
-        try:
-            self.privilege.transaction_cancel()
-        except Exception:
-            ok = False
-
+        for db in self.dbs():
+            try:
+                db.transaction_cancel()
+            except Exception:
+                ok = False
         return ok
 # TO BE DONE
 #        self.hkcr.transaction_cancel()
@@ -116,10 +102,8 @@ class ProvisionLDB(object):
 
     def groupedCommit(self):
         try:
-            self.sam.transaction_prepare_commit()
-            self.secrets.transaction_prepare_commit()
-            self.idmap.transaction_prepare_commit()
-            self.privilege.transaction_prepare_commit()
+            for db in self.dbs():
+                db.transaction_prepare_commit()
         except Exception:
             return self.groupedRollback()
 # TO BE DONE
@@ -128,10 +112,8 @@ class ProvisionLDB(object):
 #        self.hku.transaction_prepare_commit()
 #        self.hklm.transaction_prepare_commit()
         try:
-            self.sam.transaction_commit()
-            self.secrets.transaction_commit()
-            self.idmap.transaction_commit()
-            self.privilege.transaction_commit()
+            for db in self.dbs():
+                db.transaction_commit()
         except Exception:
             return self.groupedRollback()
 
@@ -141,6 +123,7 @@ class ProvisionLDB(object):
 #        self.hku.transaction_commit()
 #        self.hklm.transaction_commit()
         return True
+
 
 def get_ldbs(paths, creds, session, lp):
     """Return LDB object mapped on most important databases
@@ -534,7 +517,7 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
     res2 = secrets_ldb.search(expression="(samaccountname=dns)",
                                 scope=SCOPE_SUBTREE, attrs=["dn"])
 
-    if (len(res2) == 1):
+    if len(res2) == 1:
             messagefunc(SIMPLE, "Remove old dns account")
             secrets_ldb.delete(res2[0]["dn"])
 
