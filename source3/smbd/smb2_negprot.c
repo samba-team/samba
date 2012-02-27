@@ -261,8 +261,8 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	SIVAL(outbody.data, 0x18,
 	      capabilities);			/* capabilities */
 	SIVAL(outbody.data, 0x1C, max_trans);	/* max transact size */
-	SIVAL(outbody.data, 0x20, max_trans);	/* max read size */
-	SIVAL(outbody.data, 0x24, max_trans);	/* max write size */
+	SIVAL(outbody.data, 0x20, max_read);	/* max read size */
+	SIVAL(outbody.data, 0x24, max_write);	/* max write size */
 	SBVAL(outbody.data, 0x28, 0);		/* system time */
 	SBVAL(outbody.data, 0x30, 0);		/* server start time */
 	SSVAL(outbody.data, 0x38,
