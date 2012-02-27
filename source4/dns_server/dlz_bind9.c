@@ -1458,17 +1458,20 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		return result;
 	}
 
+	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
+	if (el == NULL) {
+		ret = ldb_msg_add_empty(res->msgs[0], "dnsRecord", LDB_FLAG_MOD_ADD, &el);
+		if (ret != LDB_SUCCESS) {
+			state->log(ISC_LOG_ERROR, "samba_dlz: failed to add dnsRecord for %s",
+				   ldb_dn_get_linearized(dn));
+			talloc_free(rec);
+			return ISC_R_FAILURE;
+		}
+	}
+
 	/* there are existing records. We need to see if this will
 	 * replace a record or add to it
 	 */
-	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
-	if (el == NULL) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: no dnsRecord attribute for %s",
-			   ldb_dn_get_linearized(dn));
-		talloc_free(rec);
-		return ISC_R_FAILURE;
-	}
-
 	for (i=0; i<el->num_values; i++) {
 		struct dnsp_DnssrvRpcRecord rec2;
 
@@ -1614,9 +1617,10 @@ _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, vo
 	}
 
 	if (el->num_values == 0) {
-		ldb_msg_remove_element(res->msgs[0], el);
+		el->flags = LDB_FLAG_MOD_DELETE;
+	} else {
+		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
-	el->flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(state->samdb, res->msgs[0]);
 
 	b9_reset_session_info(state);
@@ -1719,9 +1723,10 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 	}
 
 	if (el->num_values == 0) {
-		ldb_msg_remove_element(res->msgs[0], el);
+		el->flags = LDB_FLAG_MOD_DELETE;
+	} else {
+		el->flags = LDB_FLAG_MOD_REPLACE;
 	}
-	el->flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(state->samdb, res->msgs[0]);
 
 	b9_reset_session_info(state);
