@@ -219,9 +219,9 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 			return;
 		}
 
-		status = smb2cli_session_update_session_key(session->smbXcli,
-							    session->session_key,
-							    recv_iov);
+		status = smb2cli_session_set_session_key(session->smbXcli,
+							 session->session_key,
+							 recv_iov);
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}

@@ -1519,7 +1519,7 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 
 	if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
 		struct smbXcli_session *session = state->cli->smb2.session;
-		status = smb2cli_session_update_session_key(session,
+		status = smb2cli_session_set_session_key(session,
 						state->session_key_krb5,
 						recv_iov);
 		if (tevent_req_nterror(req, status)) {
@@ -1710,7 +1710,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 
 		if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
 			struct smbXcli_session *session = state->cli->smb2.session;
-			status = smb2cli_session_update_session_key(session,
+			status = smb2cli_session_set_session_key(session,
 						state->ntlmssp_state->session_key,
 						recv_iov);
 			if (tevent_req_nterror(req, status)) {

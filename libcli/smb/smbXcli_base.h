@@ -249,12 +249,15 @@ uint64_t smb2cli_session_current_id(struct smbXcli_session *session);
 void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
 				      uint64_t session_id,
 				      uint16_t session_flags);
-NTSTATUS smb2cli_session_update_session_key(struct smbXcli_session *session,
-					    const DATA_BLOB session_key,
-					    const struct iovec *recv_iov);
+NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
+					 const DATA_BLOB session_key,
+					 const struct iovec *recv_iov);
 NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 					struct smbXcli_session *session1,
 					struct smbXcli_conn *conn,
 					struct smbXcli_session **_session2);
+NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
+					 const DATA_BLOB channel_key,
+					 const struct iovec *recv_iov);
 
 #endif /* _SMBXCLI_BASE_H_ */

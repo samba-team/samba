@@ -548,11 +548,11 @@ bool run_smb2_session_reconnect(int dummy)
 
 	/* now grab the session key and try with signing */
 
-	status = smb2cli_session_update_session_key(cli2->smb2.session,
-						    session_key,
-						    recv_iov);
+	status = smb2cli_session_set_session_key(cli2->smb2.session,
+						 session_key,
+						 recv_iov);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smb2cli_session_update_session_key %s\n", nt_errstr(status));
+		printf("smb2cli_session_set_session_key %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -772,7 +772,7 @@ bool run_smb2_multi_channel(int dummy)
 	struct tevent_req *subreq;
 	DATA_BLOB in_blob = data_blob_null;
 	DATA_BLOB out_blob;
-	DATA_BLOB session_key;
+	DATA_BLOB channel_session_key;
 	struct auth_generic_state *auth_generic_state;
 	struct iovec *recv_iov;
 	const char *hello = "Hello, world\n";
@@ -937,18 +937,18 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = gensec_session_key(auth_generic_state->gensec_security, talloc_tos(),
-				    &session_key);
+				    &channel_session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("gensec_session_key returned %s\n",
 			nt_errstr(status));
 		return false;
 	}
 
-	status = smb2cli_session_update_session_key(cli2->smb2.session,
-						    session_key,
-						    recv_iov);
+	status = smb2cli_session_set_channel_key(cli2->smb2.session,
+						 channel_session_key,
+						 recv_iov);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("smb2cli_session_update_session_key %s\n", nt_errstr(status));
+		printf("smb2cli_session_set_channel_key %s\n", nt_errstr(status));
 		return false;
 	}
 
