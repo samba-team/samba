@@ -767,6 +767,7 @@ bool run_smb2_multi_channel(int dummy)
 {
 	struct cli_state *cli1;
 	struct cli_state *cli2;
+	struct cli_state *cli3;
 	NTSTATUS status;
 	bool ok;
 	uint64_t fid_persistent, fid_volatile;
@@ -793,6 +794,11 @@ bool run_smb2_multi_channel(int dummy)
 	}
 	cli2->smb2.pid = 0xFEFF;
 
+	if (!torture_init_connection(&cli3)) {
+		return false;
+	}
+	cli3->smb2.pid = 0xFEFF;
+
 	status = smbXcli_negprot(cli1->conn, cli1->timeout,
 				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_24);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -801,6 +807,13 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smbXcli_negprot(cli2->conn, cli2->timeout,
+				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_24);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smbXcli_negprot(cli3->conn, cli3->timeout,
 				 PROTOCOL_SMB2_22, PROTOCOL_SMB2_24);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
@@ -956,6 +969,134 @@ bool run_smb2_multi_channel(int dummy)
 
 	cli2->smb2.tid = cli1->smb2.tid;
 
+	status = smb2cli_session_create_channel(cli3,
+						cli2->smb2.session,
+						cli3->conn,
+						&cli3->smb2.session);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_session_create_channel returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = auth_generic_client_prepare(talloc_tos(), &auth_generic_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_client_prepare returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	gensec_want_feature(auth_generic_state->gensec_security,
+			    GENSEC_FEATURE_SESSION_KEY);
+	status = auth_generic_set_username(auth_generic_state, username);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = auth_generic_set_domain(auth_generic_state, workgroup);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = auth_generic_set_password(auth_generic_state, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_client_start returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("gensec_update returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
+					    cli3->conn,
+					    cli3->timeout,
+					    cli3->smb2.session,
+					    0x01, /* in_flags */
+					    SMB2_CAP_DFS, /* in_capabilities */
+					    0, /* in_channel */
+					    0, /* in_previous_session_id */
+					    &in_blob); /* in_security_buffer */
+	if (subreq == NULL) {
+		printf("smb2cli_session_setup_send() returned NULL\n");
+		return false;
+	}
+
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		printf("tevent_req_poll() returned false\n");
+		return false;
+	}
+
+	status = smb2cli_session_setup_recv(subreq, talloc_tos(),
+					    NULL, &out_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("smb2cli_session_setup_recv returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_update returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
+					    cli3->conn,
+					    cli3->timeout,
+					    cli3->smb2.session,
+					    0x01, /* in_flags */
+					    SMB2_CAP_DFS, /* in_capabilities */
+					    0, /* in_channel */
+					    0, /* in_previous_session_id */
+					    &in_blob); /* in_security_buffer */
+	if (subreq == NULL) {
+		printf("smb2cli_session_setup_send() returned NULL\n");
+		return false;
+	}
+
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		printf("tevent_req_poll() returned false\n");
+		return false;
+	}
+
+	status = smb2cli_session_setup_recv(subreq, talloc_tos(),
+					    &recv_iov, &out_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_session_setup_recv returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = gensec_session_key(auth_generic_state->gensec_security, talloc_tos(),
+				    &channel_session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("gensec_session_key returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_session_set_channel_key(cli3->smb2.session,
+						 channel_session_key,
+						 recv_iov);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_session_set_channel_key %s\n", nt_errstr(status));
+		return false;
+	}
+
+	cli3->smb2.tid = cli2->smb2.tid;
+
 	status = smb2cli_create(cli2, "multi-channel.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
@@ -991,6 +1132,12 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
+	status = smb2cli_flush(cli3, fid_persistent, fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_read(cli2, 0x10000, 0, fid_persistent,
 			       fid_volatile, 2, 0,
 			       talloc_tos(), &result, &nread);
@@ -1011,9 +1158,15 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = smb2cli_close(cli1, 0, fid_persistent, fid_volatile);
+	status = smb2cli_close(cli3, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_flush(cli3, fid_persistent, fid_volatile);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
+		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
