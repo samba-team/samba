@@ -489,12 +489,6 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2_signing_check_pdu(session_key, recv_iov, 3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("check pdu returned %s\n", nt_errstr(status));
-		return false;
-	}
-
 	/* check file operation on the old client */
 
 	status = smb2cli_flush(cli1, fid_persistent, fid_volatile);
