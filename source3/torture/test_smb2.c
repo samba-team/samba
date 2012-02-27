@@ -1210,7 +1210,7 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "multi-channel.txt",
+	status = smb2cli_create(cli, "session-reauth.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
