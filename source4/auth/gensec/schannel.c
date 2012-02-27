@@ -236,13 +236,12 @@ static NTSTATUS schannel_start(struct gensec_security *gensec_security)
 {
 	struct schannel_state *state;
 
-	state = talloc(gensec_security, struct schannel_state);
+	state = talloc_zero(gensec_security, struct schannel_state);
 	if (!state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	state->state = SCHANNEL_STATE_START;
-	state->seq_num = 0;
 	gensec_security->private_data = state;
 
 	return NT_STATUS_OK;
