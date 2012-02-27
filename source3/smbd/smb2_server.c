@@ -786,6 +786,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	if (nreq->do_signing) {
 		NTSTATUS status;
 		status = smb2_signing_sign_pdu(nreq->session->session_key,
+					get_Protocol(),
 					&nreq->out.vector[i], 3);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -1071,6 +1072,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		NTSTATUS status;
 
 		status = smb2_signing_sign_pdu(req->session->session_key,
+					get_Protocol(),
 					&state->vector[1], 2);
 		if (!NT_STATUS_IS_OK(status)) {
 			smbd_server_connection_terminate(req->sconn,
@@ -1376,6 +1378,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 		req->do_signing = true;
 		status = smb2_signing_check_pdu(req->session->session_key,
+						get_Protocol(),
 						&req->in.vector[i], 3);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
@@ -1865,6 +1868,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	if (req->do_signing) {
 		NTSTATUS status;
 		status = smb2_signing_sign_pdu(req->session->session_key,
+					       get_Protocol(),
 					       &req->out.vector[i], 3);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

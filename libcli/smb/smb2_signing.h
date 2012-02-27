@@ -24,10 +24,12 @@
 struct iovec;
 
 NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
+			       enum protocol_types protocol,
 			       struct iovec *vector,
 			       int count);
 
 NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
+				enum protocol_types protocol,
 				const struct iovec *vector,
 				int count);
 
