@@ -4132,16 +4132,42 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	session->smb2.signing_key = data_blob_talloc(session,
 						     session_key,
 						     sizeof(session_key));
-	ZERO_STRUCT(session_key);
 	if (session->smb2.signing_key.data == NULL) {
+		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+#define _STRING_BLOB(x) data_blob_const((const uint8_t *)(x), sizeof(x))
+		const DATA_BLOB label = _STRING_BLOB("SMB2AESCMAC");
+		const DATA_BLOB context = _STRING_BLOB("SmbSign");
+#undef _STRING_BLOB
+
+		smb2_key_deviration(session_key, sizeof(session_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    session->smb2.signing_key.data);
 	}
 
 	session->smb2.application_key = data_blob_dup_talloc(session,
 						session->smb2.signing_key);
 	if (session->smb2.application_key.data == NULL) {
+		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+#define _STRING_BLOB(x) data_blob_const((const uint8_t *)(x), sizeof(x))
+		const DATA_BLOB label = _STRING_BLOB("SMB2APP");
+		const DATA_BLOB context = _STRING_BLOB("SmbRpc");
+#undef _STRING_BLOB
+
+		smb2_key_deviration(session_key, sizeof(session_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    session->smb2.application_key.data);
+	}
+	ZERO_STRUCT(session_key);
 
 	session->smb2.channel_signing_key = data_blob_dup_talloc(session,
 						session->smb2.signing_key);
@@ -4230,10 +4256,23 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	session->smb2.channel_signing_key = data_blob_talloc(session,
 						channel_key,
 						sizeof(channel_key));
-	ZERO_STRUCT(channel_key);
 	if (session->smb2.channel_signing_key.data == NULL) {
+		ZERO_STRUCT(channel_key);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+#define _STRING_BLOB(x) data_blob_const((const uint8_t *)(x), sizeof(x))
+		const DATA_BLOB label = _STRING_BLOB("SMB2AESCMAC");
+		const DATA_BLOB context = _STRING_BLOB("SmbSign");
+#undef _STRING_BLOB
+
+		smb2_key_deviration(channel_key, sizeof(channel_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    session->smb2.channel_signing_key.data);
+	}
+	ZERO_STRUCT(channel_key);
 
 	status = smb2_signing_check_pdu(session->smb2.channel_signing_key,
 					session->conn->protocol,
