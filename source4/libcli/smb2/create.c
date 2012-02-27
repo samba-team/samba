@@ -336,6 +336,25 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 			}
 			io->out.durable_open = true;
 		}
+		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_DH2Q) == 0) {
+			uint32_t flags;
+			uint8_t *data;
+
+			if (io->out.blobs.blobs[i].data.length != 8) {
+				smb2_request_destroy(req);
+				return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			}
+
+			io->out.durable_open = false;
+			io->out.durable_open_v2 = true;
+
+			data = io->out.blobs.blobs[i].data.data;
+			io->out.timeout = IVAL(data, 0);
+			flags = IVAL(data, 4);
+			if ((flags & SMB2_DHANDLE_FLAG_PERSISTENT) != 0) {
+				io->out.persistent_open = true;
+			}
+		}
 	}
 
 	data_blob_free(&blob);
