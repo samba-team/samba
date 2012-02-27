@@ -479,14 +479,13 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 		return False;
 	}
 
-	schannel_auth = talloc(p, struct schannel_state);
+	schannel_auth = talloc_zero(p, struct schannel_state);
 	if (!schannel_auth) {
 		TALLOC_FREE(creds);
 		return False;
 	}
 
 	schannel_auth->state = SCHANNEL_STATE_START;
-	schannel_auth->seq_num = 0;
 	schannel_auth->initiator = false;
 	schannel_auth->creds = creds;
 
