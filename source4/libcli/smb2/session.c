@@ -213,14 +213,16 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 	}
 
 	if (NT_STATUS_IS_OK(peer_status) && NT_STATUS_IS_OK(state->gensec_status)) {
-		status = gensec_session_key(session->gensec, session,
-					    &session->session_key);
+		DATA_BLOB session_key;
+
+		status = gensec_session_key(session->gensec, state,
+					    &session_key);
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
 
 		status = smb2cli_session_set_session_key(session->smbXcli,
-							 session->session_key,
+							 session_key,
 							 recv_iov);
 		if (tevent_req_nterror(req, status)) {
 			return;
