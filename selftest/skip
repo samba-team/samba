@@ -55,6 +55,7 @@
 ^samba4.smb2.scan
 ^samba4.smb2.lease
 ^samba4.smb2.durable.open
+^samba4.smb2.durable-v2-open
 ^samba4.smb2.dir
 ^samba4.smb2.session
 ^samba4.ntvfs.cifs.*.base.charset
