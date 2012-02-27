@@ -1320,5 +1320,7 @@ struct cmd_set vfs_commands[] = {
 	  "setxattr <path> <name> <value> [<flags>]" },
 	{ "removexattr", cmd_removexattr, "VFS removexattr()",
 	  "removexattr <path> <name>\n" },
+	{ "test_chain", cmd_test_chain, "test chain code",
+	  "test_chain" },
 	{ NULL }
 };

@@ -1880,6 +1880,242 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	return true;
 }
 
+bool smb1_is_chain(const uint8_t *buf)
+{
+	uint8_t cmd, wct, andx_cmd;
+
+	cmd = CVAL(buf, smb_com);
+	if (!is_andx_req(cmd)) {
+		return false;
+	}
+	wct = CVAL(buf, smb_wct);
+	if (wct < 2) {
+		return false;
+	}
+	andx_cmd = CVAL(buf, smb_vwv);
+	return (andx_cmd != 0xFF);
+}
+
+bool smb1_walk_chain(const uint8_t *buf,
+		     bool (*fn)(uint8_t cmd,
+				uint8_t wct, const uint16_t *vwv,
+				uint16_t num_bytes, const uint8_t *bytes,
+				void *private_data),
+		     void *private_data)
+{
+	size_t smblen = smb_len(buf);
+	const char *smb_buf = smb_base(buf);
+	uint8_t cmd, chain_cmd;
+	uint8_t wct;
+	const uint16_t *vwv;
+	uint16_t num_bytes;
+	const uint8_t *bytes;
+
+	cmd = CVAL(buf, smb_com);
+	wct = CVAL(buf, smb_wct);
+	vwv = (const uint16_t *)(buf + smb_vwv);
+	num_bytes = smb_buflen(buf);
+	bytes = (uint8_t *)smb_buf_const(buf);
+
+	if (!fn(cmd, wct, vwv, num_bytes, bytes, private_data)) {
+		return false;
+	}
+
+	if (!is_andx_req(cmd)) {
+		return true;
+	}
+	if (wct < 2) {
+		return false;
+	}
+
+	chain_cmd = CVAL(vwv, 0);
+
+	while (chain_cmd != 0xff) {
+		uint32_t chain_offset;	/* uint32_t to avoid overflow */
+		size_t length_needed;
+		ptrdiff_t vwv_offset;
+
+		chain_offset = SVAL(vwv+1, 0);
+
+		/*
+		 * Check if the client tries to fool us. The chain
+		 * offset needs to point beyond the current request in
+		 * the chain, it needs to strictly grow. Otherwise we
+		 * might be tricked into an endless loop always
+		 * processing the same request over and over again. We
+		 * used to assume that vwv and the byte buffer array
+		 * in a chain are always attached, but OS/2 the
+		 * Write&X/Read&X chain puts the Read&X vwv array
+		 * right behind the Write&X vwv chain. The Write&X bcc
+		 * array is put behind the Read&X vwv array. So now we
+		 * check whether the chain offset points strictly
+		 * behind the previous vwv array. req->buf points
+		 * right after the vwv array of the previous
+		 * request. See
+		 * https://bugzilla.samba.org/show_bug.cgi?id=8360 for
+		 * more information.
+		 */
+
+		vwv_offset = ((const char *)vwv - smb_buf);
+		if (chain_offset <= vwv_offset) {
+			return false;
+		}
+
+		/*
+		 * Next check: Make sure the chain offset does not
+		 * point beyond the overall smb request length.
+		 */
+
+		length_needed = chain_offset+1;	/* wct */
+		if (length_needed > smblen) {
+			return false;
+		}
+
+		/*
+		 * Now comes the pointer magic. Goal here is to set up
+		 * vwv and buf correctly again. The chain offset (the
+		 * former vwv[1]) points at the new wct field.
+		 */
+
+		wct = CVAL(smb_buf, chain_offset);
+
+		if (is_andx_req(chain_cmd) && (wct < 2)) {
+			return false;
+		}
+
+		/*
+		 * Next consistency check: Make the new vwv array fits
+		 * in the overall smb request.
+		 */
+
+		length_needed += (wct+1)*sizeof(uint16_t); /* vwv+buflen */
+		if (length_needed > smblen) {
+			return false;
+		}
+		vwv = (const uint16_t *)(smb_buf + chain_offset + 1);
+
+		/*
+		 * Now grab the new byte buffer....
+		 */
+
+		num_bytes = SVAL(vwv+wct, 0);
+
+		/*
+		 * .. and check that it fits.
+		 */
+
+		length_needed += num_bytes;
+		if (length_needed > smblen) {
+			return false;
+		}
+		bytes = (const uint8_t *)(vwv+wct+1);
+
+		if (!fn(chain_cmd, wct, vwv, num_bytes, bytes, private_data)) {
+			return false;
+		}
+
+		if (!is_andx_req(chain_cmd)) {
+			return true;
+		}
+		chain_cmd = CVAL(vwv, 0);
+	}
+	return true;
+}
+
+static bool smb1_chain_length_cb(uint8_t cmd,
+				 uint8_t wct, const uint16_t *vwv,
+				 uint16_t num_bytes, const uint8_t *bytes,
+				 void *private_data)
+{
+	unsigned *count = (unsigned *)private_data;
+	*count += 1;
+	return true;
+}
+
+unsigned smb1_chain_length(const uint8_t *buf)
+{
+	unsigned count = 0;
+
+	if (!smb1_walk_chain(buf, smb1_chain_length_cb, &count)) {
+		return 0;
+	}
+	return count;
+}
+
+struct smb1_parse_chain_state {
+	TALLOC_CTX *mem_ctx;
+	const uint8_t *buf;
+	struct smbd_server_connection *sconn;
+	bool encrypted;
+	uint32_t seqnum;
+
+	struct smb_request **reqs;
+	unsigned num_reqs;
+};
+
+static bool smb1_parse_chain_cb(uint8_t cmd,
+				uint8_t wct, const uint16_t *vwv,
+				uint16_t num_bytes, const uint8_t *bytes,
+				void *private_data)
+{
+	struct smb1_parse_chain_state *state =
+		(struct smb1_parse_chain_state *)private_data;
+	struct smb_request **reqs;
+	struct smb_request *req;
+	bool ok;
+
+	reqs = talloc_realloc(state->mem_ctx, state->reqs,
+			      struct smb_request *, state->num_reqs+1);
+	if (reqs == NULL) {
+		return false;
+	}
+	state->reqs = reqs;
+
+	req = talloc(reqs, struct smb_request);
+	if (req == NULL) {
+		return false;
+	}
+
+	ok = init_smb_request(req, state->sconn, state->buf, 0,
+			      state->encrypted, state->seqnum);
+	if (!ok) {
+		return false;
+	}
+	req->cmd = cmd;
+	req->wct = wct;
+	req->vwv = vwv;
+	req->buflen = num_bytes;
+	req->buf = bytes;
+
+	reqs[state->num_reqs] = req;
+	state->num_reqs += 1;
+	return true;
+}
+
+bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
+		      struct smbd_server_connection *sconn,
+		      bool encrypted, uint32_t seqnum,
+		      struct smb_request ***reqs, unsigned *num_reqs)
+{
+	struct smb1_parse_chain_state state;
+
+	state.mem_ctx = mem_ctx;
+	state.buf = buf;
+	state.sconn = sconn;
+	state.encrypted = encrypted;
+	state.seqnum = seqnum;
+	state.reqs = NULL;
+	state.num_reqs = 0;
+
+	if (!smb1_walk_chain(buf, smb1_parse_chain_cb, &state)) {
+		TALLOC_FREE(state.reqs);
+		return false;
+	}
+	*reqs = state.reqs;
+	*num_reqs = state.num_reqs;
+	return true;
+}
+
 /****************************************************************************
  Construct a chained reply and add it to the already made reply
 ****************************************************************************/

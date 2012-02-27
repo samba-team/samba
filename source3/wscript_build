@@ -584,7 +584,8 @@ LOCKTEST_SRC = '''torture/locktest.c'''
 
 PDBTEST_SRC = '''torture/pdbtest.c'''
 
-VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c'''
+VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c
+		torture/vfstest_chain.c'''
 
 LOG2PCAP_SRC = '''utils/log2pcaphex.c'''
 

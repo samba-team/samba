@@ -46,3 +46,6 @@ struct cmd_set {
 	const char *description;
 	const char *usage;
 };
+
+NTSTATUS cmd_test_chain(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+			int argc, const char **argv);

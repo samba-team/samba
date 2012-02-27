@@ -1299,7 +1299,8 @@ PDBTEST_OBJ = torture/pdbtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(SMBLDAP_OBJ) $(POPT_LIB_OBJ) \
 		$(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ)
 
-VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
+VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ) \
+		torture/vfstest_chain.o
 
 LOG2PCAP_OBJ = utils/log2pcaphex.o
 
