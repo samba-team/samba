@@ -3002,9 +3002,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			 * propagate the NT_STATUS_USER_SESSION_DELETED
 			 * status to the caller.
 			 */
-			if (signing_key) {
-				signing_key = NULL;
-			}
+			signing_key = NULL;
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED) ||
