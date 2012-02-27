@@ -3,7 +3,6 @@
 #
 # Utility code for dealing with POSIX extended attributes
 #
-# Copyright (C) Matthieu Patou <mat@matws.net> 2009 - 2010
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2012
 #
 # This program is free software; you can redistribute it and/or modify
@@ -25,70 +24,41 @@ import samba.xattr_native
 import shutil
 
 
-def copytree_with_xattrs(source, target):
-    """Copy a tree but preserve extended attributes.
+def copyattrs(frompath, topath):
+    """Copy ACL related attributes from a path to another path."""
+    for attr_name in (xattr.XATTR_NTACL_NAME, "system.posix_acl_access"):
+        # Get the xattr attributes if any
+        try:
+            attribute = samba.xattr_native.wrap_getxattr(frompath,
+                                         xattr.XATTR_NTACL_NAME)
+            samba.xattr_native.wrap_setxattr(topath,
+                                         xattr.XATTR_NTACL_NAME,
+                                         attribute)
+        except Exception:
+            pass
+            # FIXME:Catch a specific exception
 
-    :param source: Source tree path
-    :param target: Target path
+
+def copytree_with_xattrs(src, dst):
+    """Recursively copy a directory tree using shutil.copy2(), preserving xattrs.
+
+    The destination directory must not already exist.
+    If exception(s) occur, an Error is raised with a list of reasons.
     """
-    shutil.copytree(source, target)
-    copyxattrs(target, source)
+    names = os.listdir(src)
 
-
-def copyxattrs(dir, refdir):
-    """Copy extended attributes from a reference dir to a destination dir
-
-    Both dir are supposed to hold the same files
-    :param dir: Destination dir
-    :param refdir: Reference directory"""
-
-    for root, dirs, files in os.walk(dir, topdown=True):
-        for name in files:
-            subdir = root[len(dir):]
-            ref = os.path.join(refdir, subdir, name)
-            statsinfo = os.stat(ref)
-            tgt = os.path.join(root, name)
-            try:
-                os.chown(tgt, statsinfo.st_uid, statsinfo.st_gid)
-                # Get the xattr attributes if any
-                try:
-                    attribute = samba.xattr_native.wrap_getxattr(ref,
-                                                 xattr.XATTR_NTACL_NAME)
-                    samba.xattr_native.wrap_setxattr(tgt,
-                                                 xattr.XATTR_NTACL_NAME,
-                                                 attribute)
-                except Exception:
-                    pass
-                    # FIXME:Catch a specific exception
-                attribute = samba.xattr_native.wrap_getxattr(ref,
-                                                 "system.posix_acl_access")
-                samba.xattr_native.wrap_setxattr(tgt,
-                                                 "system.posix_acl_access",
-                                                  attribute)
-            except Exception:
-                # FIXME: Catch a specific exception
-                continue
-        for name in dirs:
-            subdir = root[len(dir):]
-            ref = os.path.join(refdir, subdir, name)
-            statsinfo = os.stat(ref)
-            tgt = os.path.join(root, name)
-            try:
-                os.chown(os.path.join(root, name), statsinfo.st_uid,
-                          statsinfo.st_gid)
-                try:
-                    attribute = samba.xattr_native.wrap_getxattr(ref,
-                                                 xattr.XATTR_NTACL_NAME)
-                    samba.xattr_native.wrap_setxattr(tgt,
-                                                 xattr.XATTR_NTACL_NAME,
-                                                 attribute)
-                except Exception:
-                    pass # FIXME: Catch a specific exception
-                attribute = samba.xattr_native.wrap_getxattr(ref,
-                                                 "system.posix_acl_access")
-                samba.xattr_native.wrap_setxattr(tgt,
-                                                 "system.posix_acl_access",
-                                                  attribute)
-
-            except Exception:
-                continue
+    os.makedirs(dst)
+    errors = []
+    for name in names:
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        if os.path.islink(srcname):
+            linkto = os.readlink(srcname)
+            os.symlink(linkto, dstname)
+        elif os.path.isdir(srcname):
+            copytree_with_xattrs(srcname, dstname)
+        else:
+            # Will raise a SpecialFileError for unsupported file types
+            shutil.copy2(srcname, dstname)
+    shutil.copystat(src, dst)
+    copyattrs(src, dst)

@@ -20,10 +20,16 @@
 """Tests for samba.xattr_native and samba.xattr_tdb."""
 
 import samba.xattr_native, samba.xattr_tdb
+from samba.xattr import copytree_with_xattrs
 from samba.dcerpc import xattr
 from samba.ndr import ndr_pack
-from samba.tests import TestCase, TestSkipped
+from samba.tests import (
+    TestCase,
+    TestCaseInTempDir,
+    TestSkipped,
+    )
 import random
+import shutil
 import os
 
 class XattrTests(TestCase):
@@ -103,3 +109,20 @@ class XattrTests(TestCase):
         finally:
             os.unlink(tempf)
         os.unlink(eadb_path)
+
+
+class TestCopyTreeWithXattrs(TestCaseInTempDir):
+
+    def test_simple(self):
+        os.chdir(self.tempdir)
+        os.mkdir("a")
+        os.mkdir("a/b")
+        os.mkdir("a/b/c")
+        f = open('a/b/c/d', 'w')
+        try:
+            f.write("foo")
+        finally:
+            f.close()
+        copytree_with_xattrs("a", "b")
+        shutil.rmtree("a")
+        shutil.rmtree("b")

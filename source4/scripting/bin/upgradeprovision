@@ -1471,7 +1471,7 @@ def backup_provision(paths, dir):
     :param paths: Paths to different objects
     :param dir: Directory where to store the backup
     """
-    if paths.sysvol is not None:
+    if paths.sysvol:
         copytree_with_xattrs(paths.sysvol, os.path.join(dir, "sysvol"))
     shutil.copy2(paths.samdb, dir)
     shutil.copy2(paths.secrets, dir)
