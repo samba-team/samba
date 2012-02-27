@@ -1158,6 +1158,106 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
+	status = auth_generic_client_prepare(talloc_tos(), &auth_generic_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_client_prepare returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	gensec_want_feature(auth_generic_state->gensec_security,
+			    GENSEC_FEATURE_SESSION_KEY);
+	status = auth_generic_set_username(auth_generic_state, username);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = auth_generic_set_domain(auth_generic_state, workgroup);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = auth_generic_set_password(auth_generic_state, password);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_client_start returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, data_blob_null, &in_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("gensec_update returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
+					    cli3->conn,
+					    cli3->timeout,
+					    cli3->smb2.session,
+					    0x0, /* in_flags */
+					    SMB2_CAP_DFS, /* in_capabilities */
+					    0, /* in_channel */
+					    0, /* in_previous_session_id */
+					    &in_blob); /* in_security_buffer */
+	if (subreq == NULL) {
+		printf("smb2cli_session_setup_send() returned NULL\n");
+		return false;
+	}
+
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		printf("tevent_req_poll() returned false\n");
+		return false;
+	}
+
+	status = smb2cli_session_setup_recv(subreq, talloc_tos(),
+					    NULL, &out_blob);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		printf("smb2cli_session_setup_recv returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_update returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
+					    cli2->conn,
+					    cli2->timeout,
+					    cli2->smb2.session,
+					    0x0, /* in_flags */
+					    SMB2_CAP_DFS, /* in_capabilities */
+					    0, /* in_channel */
+					    0, /* in_previous_session_id */
+					    &in_blob); /* in_security_buffer */
+	if (subreq == NULL) {
+		printf("smb2cli_session_setup_send() returned NULL\n");
+		return false;
+	}
+
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		printf("tevent_req_poll() returned false\n");
+		return false;
+	}
+
+	status = smb2cli_session_setup_recv(subreq, talloc_tos(),
+					    &recv_iov, &out_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_session_setup_recv returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_close(cli3, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
