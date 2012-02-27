@@ -133,6 +133,7 @@ struct smbXcli_session {
 	struct {
 		uint64_t session_id;
 		uint16_t session_flags;
+		DATA_BLOB application_key;
 		DATA_BLOB signing_key;
 		bool should_sign;
 		DATA_BLOB channel_signing_key;
@@ -4073,6 +4074,24 @@ uint64_t smb2cli_session_current_id(struct smbXcli_session *session)
 	return session->smb2.session_id;
 }
 
+NTSTATUS smb2cli_session_application_key(struct smbXcli_session *session,
+					 TALLOC_CTX *mem_ctx,
+					 DATA_BLOB *key)
+{
+	*key = data_blob_null;
+
+	if (session->smb2.application_key.length == 0) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	*key = data_blob_dup_talloc(mem_ctx, session->smb2.application_key);
+	if (key->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
 				      uint64_t session_id,
 				      uint16_t session_flags)
@@ -4114,6 +4133,12 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 						     sizeof(session_key));
 	ZERO_STRUCT(session_key);
 	if (session->smb2.signing_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session->smb2.application_key = data_blob_dup_talloc(session,
+						session->smb2.signing_key);
+	if (session->smb2.application_key.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
