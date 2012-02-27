@@ -23,7 +23,7 @@
 #include "../libcli/smb/smb_common.h"
 #include "../lib/crypto/crypto.h"
 
-NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
+NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 			       struct iovec *vector,
 			       int count)
 {
@@ -52,9 +52,9 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
 		return NT_STATUS_OK;
 	}
 
-	if (session_key.length == 0) {
+	if (signing_key.length == 0) {
 		DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
-			 (unsigned)session_key.length));
+			 (unsigned)signing_key.length));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -63,7 +63,7 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
 	SIVAL(hdr, SMB2_HDR_FLAGS, IVAL(hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
 
 	ZERO_STRUCT(m);
-	hmac_sha256_init(session_key.data, MIN(session_key.length, 16), &m);
+	hmac_sha256_init(signing_key.data, MIN(signing_key.length, 16), &m);
 	for (i=0; i < count; i++) {
 		hmac_sha256_update((const uint8_t *)vector[i].iov_base,
 				   vector[i].iov_len, &m);
@@ -76,7 +76,7 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
+NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 				const struct iovec *vector,
 				int count)
 {
@@ -107,7 +107,7 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
 		return NT_STATUS_OK;
 	}
 
-	if (session_key.length == 0) {
+	if (signing_key.length == 0) {
 		/* we don't have the session key yet */
 		return NT_STATUS_OK;
 	}
@@ -115,7 +115,7 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
 	sig = hdr+SMB2_HDR_SIGNATURE;
 
 	ZERO_STRUCT(m);
-	hmac_sha256_init(session_key.data, MIN(session_key.length, 16), &m);
+	hmac_sha256_init(signing_key.data, MIN(signing_key.length, 16), &m);
 	hmac_sha256_update(hdr, SMB2_HDR_SIGNATURE, &m);
 	hmac_sha256_update(zero_sig, 16, &m);
 	for (i=1; i < count; i++) {

@@ -23,11 +23,11 @@
 
 struct iovec;
 
-NTSTATUS smb2_signing_sign_pdu(DATA_BLOB session_key,
+NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 			       struct iovec *vector,
 			       int count);
 
-NTSTATUS smb2_signing_check_pdu(DATA_BLOB session_key,
+NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 				const struct iovec *vector,
 				int count);
 
