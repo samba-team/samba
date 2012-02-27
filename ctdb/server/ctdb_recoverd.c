@@ -65,6 +65,7 @@ struct ctdb_recoverd {
 	struct ip_reallocate_list *reallocate_callers;
 	TALLOC_CTX *ip_check_disable_ctx;
 	struct ctdb_control_get_ifaces *ifaces;
+	TALLOC_CTX *deferred_rebalance_ctx;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -2068,6 +2069,53 @@ static void reenable_ip_check(struct event_context *ev, struct timed_event *te,
 }
 
 
+static void ctdb_rebalance_timeout(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *p)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
+	int ret;
+
+	DEBUG(DEBUG_NOTICE,("Rebalance all nodes that have had ip assignment changes.\n"));
+
+	ret = ctdb_takeover_run(ctdb, rec->nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
+		rec->need_takeover_run = true;
+	}
+
+	talloc_free(rec->deferred_rebalance_ctx);
+	rec->deferred_rebalance_ctx = NULL;
+}
+
+	
+static void recd_node_rebalance_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	uint32_t pnn;
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+
+	if (data.dsize != sizeof(uint32_t)) {
+		DEBUG(DEBUG_ERR,(__location__ " Incorrect size of node rebalance message. Was %zd but expected %zd bytes\n", data.dsize, sizeof(uint32_t)));
+		return;
+	}
+
+	pnn = *(uint32_t *)&data.dptr[0];
+
+	lcp2_forcerebalance(ctdb, pnn);
+	DEBUG(DEBUG_NOTICE,("Received message to perform node rebalancing for node %d\n", pnn));
+
+	if (rec->deferred_rebalance_ctx != NULL) {
+		talloc_free(rec->deferred_rebalance_ctx);
+	}
+	rec->deferred_rebalance_ctx = talloc_new(rec);
+	event_add_timed(ctdb->ev, rec->deferred_rebalance_ctx, 
+			timeval_current_ofs(60, 0),
+			ctdb_rebalance_timeout, rec);
+}
+
+
+
 static void recd_update_ip_handler(struct ctdb_context *ctdb, uint64_t srvid, 
 			     TDB_DATA data, void *private_data)
 {
@@ -3622,6 +3670,10 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for updating the recovery daemons node assignment for an ip */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECD_UPDATE_IP, recd_update_ip_handler, rec);
+
+	/* register a message port for forcing a rebalance of a node next
+	   reallocation */
+	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_REBALANCE_NODE, recd_node_rebalance_handler, rec);
 
 	for (;;) {
 		TALLOC_CTX *mem_ctx = talloc_new(ctdb);

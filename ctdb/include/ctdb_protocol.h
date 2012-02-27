@@ -130,6 +130,11 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_TAKEOVER_RUN 0xFB00000000000000LL
 
+/* request recovery daemon to rebalance ips for a node.
+   input is uint32_t for the node id.
+*/
+#define CTDB_SRVID_REBALANCE_NODE 0xFB01000000000000LL
+
 /* A message id to ask the recovery daemon to temporarily disable the
    public ip checks
 */

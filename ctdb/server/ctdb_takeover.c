@@ -1531,6 +1531,32 @@ static bool basic_failback(struct ctdb_context *ctdb,
 	return false;
 }
 
+struct ctdb_rebalancenodes {
+	struct ctdb_rebalancenodes *next;
+	uint32_t pnn;
+};
+static struct ctdb_rebalancenodes *force_rebalance_list = NULL;
+
+
+/* set this flag to force the node to be rebalanced even if it just didnt
+   become healthy again.
+*/
+void lcp2_forcerebalance(struct ctdb_context *ctdb, uint32_t pnn)
+{
+	struct ctdb_rebalancenodes *rebalance;
+
+	for (rebalance = force_rebalance_list; rebalance; rebalance = rebalance->next) {
+		if (rebalance->pnn == pnn) {
+			return;
+		}
+	}
+
+	rebalance = talloc(ctdb, struct ctdb_rebalancenodes);
+	rebalance->pnn = pnn;
+	rebalance->next = force_rebalance_list;
+	force_rebalance_list = rebalance;
+}
+
 /* Do necessary LCP2 initialisation.  Bury it in a function here so
  * that we can unit test it.
  */
@@ -1561,6 +1587,20 @@ static void lcp2_init(struct ctdb_context * tmp_ctx,
 		if (tmp_ip->pnn != -1) {
 			(*newly_healthy)[tmp_ip->pnn] = false;
 		}
+	}
+
+	/* 3rd step: if a node is forced to re-balance then
+	   we allow failback onto the node */
+	while (force_rebalance_list != NULL) {
+		struct ctdb_rebalancenodes *next = force_rebalance_list->next;
+
+		if (force_rebalance_list->pnn <= nodemap->num) {
+			(*newly_healthy)[force_rebalance_list->pnn] = true;
+		}
+
+		DEBUG(DEBUG_ERR,("During ipreallocation, forced rebalance of node %d\n", force_rebalance_list->pnn));
+		talloc_free(force_rebalance_list);
+		force_rebalance_list = next;
 	}
 }
 

@@ -1570,6 +1570,44 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+static int rebalance_node(struct ctdb_context *ctdb, uint32_t pnn)
+{
+	uint32_t recmaster;
+	TDB_DATA data;
+
+	if (ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), pnn, &recmaster) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", pnn));
+		return -1;
+	}
+
+	data.dptr  = (uint8_t *)&pnn;
+	data.dsize = sizeof(uint32_t);
+	if (ctdb_client_send_message(ctdb, recmaster, CTDB_SRVID_REBALANCE_NODE, data) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send message to force node reallocation\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/*
+  rebalance a node by setting it to allow failback and triggering a
+  takeover run
+ */
+static int control_rebalancenode(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	switch (options.pnn) {
+	case CTDB_BROADCAST_ALL:
+	case CTDB_CURRENT_NODE:
+		DEBUG(DEBUG_ERR,("You must specify a node number with -n <pnn> for the node to rebalance\n"));
+		return -1;
+	}
+
+	return rebalance_node(ctdb, options.pnn);
+}
+
+
 static int getips_store_callback(void *param, void *data)
 {
 	struct ctdb_public_ip *node_ip = (struct ctdb_public_ip *)data;
@@ -1937,17 +1975,8 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return ret;
 	}
 
-	do {
-		ret = control_ipreallocate(ctdb, argc, argv);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u. Wait 3 seconds and try again.\n", options.pnn));
-			sleep(3);
-			retries++;
-		}
-	} while (retries < 5 && ret != 0);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u. Giving up.\n", options.pnn));
-		talloc_free(tmp_ctx);
+	if (rebalance_node(ctdb, options.pnn) != 0) {
+		DEBUG(DEBUG_ERR,("Error when trying to rebalance node\n"));
 		return ret;
 	}
 
@@ -5512,6 +5541,7 @@ static const struct {
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
+	{ "rebalancenode",     control_rebalancenode,	false,	false, "release a node by allowing it to takeover ips", "<pnn>"},
 	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbid>" },
 	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status" },
 	{ "dbstatistics",    control_dbstatistics,      false,	false, "show db statistics", "<db>" },
