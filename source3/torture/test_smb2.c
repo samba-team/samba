@@ -1170,6 +1170,12 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
+	status = smb2cli_flush(cli, fid_persistent, fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+		return false;
+	}
+
 	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
 					    cli->conn,
 					    cli->timeout,
