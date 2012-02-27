@@ -2088,21 +2088,6 @@ static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_ca
 }
 
 
-#define GET_CHECK_STR(dest, mem, msg, attr) \
-do {\
-	const char *s; \
-	s = ldb_msg_find_attr_as_string(msg, attr, NULL); \
-	if (!s) { \
-		DEBUG(0, ("DB Error, TustedDomain entry (%s) " \
-			  "without flatname\n", \
-			  ldb_dn_get_linearized(msg->dn))); \
-		continue; \
-	} \
-	dest = talloc_strdup(mem, s); \
-	W_ERROR_HAVE_NO_MEMORY(dest); \
-} while(0)
-
-
 static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 					 struct ldb_context *sam_ctx,
 					 struct netr_DomainTrustList *trusts,
@@ -2158,10 +2143,14 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 					       n + 1);
 		W_ERROR_HAVE_NO_MEMORY(trusts->array);
 
-		GET_CHECK_STR(trusts->array[n].netbios_name, trusts,
-			      dom_res[i], "flatname");
-		GET_CHECK_STR(trusts->array[n].dns_name, trusts,
-			      dom_res[i], "trustPartner");
+		trusts->array[n].netbios_name = talloc_steal(trusts->array, ldb_msg_find_attr_as_string(dom_res[i], "flatname", NULL));
+		if (!trusts->array[n].netbios_name) {
+			DEBUG(0, ("DB Error, TrustedDomain entry (%s) "
+				  "without flatname\n", 
+				  ldb_dn_get_linearized(dom_res[i]->dn)));
+		}
+
+		trusts->array[n].dns_name = talloc_steal(trusts->array, ldb_msg_find_attr_as_string(dom_res[i], "trustPartner", NULL));
 
 		trusts->array[n].trust_flags = flags;
 		if ((trust_flags & NETR_TRUST_FLAG_IN_FOREST) &&
