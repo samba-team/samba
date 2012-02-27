@@ -1709,6 +1709,14 @@ union smb_open {
 			struct security_descriptor *sec_desc;
 			bool   durable_open;
 			struct smb2_handle *durable_handle;
+
+			/* data for durable handle v2 */
+			bool durable_open_v2;
+			struct GUID create_guid;
+			bool persistent_open;
+			uint32_t timeout;
+			struct smb2_handle *durable_handle_v2;
+
 			bool   query_maximal_access;
 			NTTIME timewarp;
 			bool   query_on_disk_id;
@@ -1742,6 +1750,11 @@ union smb_open {
 			uint8_t on_disk_id[32];
 			struct smb2_lease lease_response;
 			bool durable_open;
+
+			/* durable handle v2 */
+			bool durable_open_v2;
+			bool persistent_open;
+			uint32_t timeout;
 
 			/* tagged blobs in the reply */
 			struct smb2_create_blobs blobs;
