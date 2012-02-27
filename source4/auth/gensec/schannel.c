@@ -73,7 +73,14 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			return NT_STATUS_OK;
 		}
 
-		state->creds = talloc_reference(state, cli_credentials_get_netlogon_creds(gensec_security->credentials));
+		state->creds = cli_credentials_get_netlogon_creds(gensec_security->credentials);
+		if (state->creds == NULL) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+		state->creds = netlogon_creds_copy(state, state->creds);
+		if (state->creds == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		bind_schannel.MessageType = NL_NEGOTIATE_REQUEST;
 #if 0
