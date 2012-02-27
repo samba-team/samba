@@ -30,8 +30,7 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 {
 	uint8_t *hdr;
 	uint64_t session_id;
-	struct HMACSHA256Context m;
-	uint8_t res[SHA256_DIGEST_LENGTH];
+	uint8_t res[16];
 	int i;
 
 	if (count < 2) {
@@ -63,13 +62,33 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 
 	SIVAL(hdr, SMB2_HDR_FLAGS, IVAL(hdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_SIGNED);
 
-	ZERO_STRUCT(m);
-	hmac_sha256_init(signing_key.data, MIN(signing_key.length, 16), &m);
-	for (i=0; i < count; i++) {
-		hmac_sha256_update((const uint8_t *)vector[i].iov_base,
-				   vector[i].iov_len, &m);
+	if (protocol >= PROTOCOL_SMB2_24) {
+		struct aes_cmac_128_context ctx;
+		uint8_t key[AES_BLOCK_SIZE];
+
+		ZERO_STRUCT(key);
+		memcpy(key, signing_key.data, MIN(signing_key.length, 16));
+
+		aes_cmac_128_init(&ctx, key);
+		for (i=0; i < count; i++) {
+			aes_cmac_128_update(&ctx,
+					(const uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+		}
+		aes_cmac_128_final(&ctx, res);
+	} else {
+		struct HMACSHA256Context m;
+		uint8_t digest[SHA256_DIGEST_LENGTH];
+
+		ZERO_STRUCT(m);
+		hmac_sha256_init(signing_key.data, MIN(signing_key.length, 16), &m);
+		for (i=0; i < count; i++) {
+			hmac_sha256_update((const uint8_t *)vector[i].iov_base,
+					   vector[i].iov_len, &m);
+		}
+		hmac_sha256_final(digest, &m);
+		memcpy(res, digest, 16);
 	}
-	hmac_sha256_final(res, &m);
 	DEBUG(5,("signed SMB2 message\n"));
 
 	memcpy(hdr + SMB2_HDR_SIGNATURE, res, 16);
@@ -85,8 +104,7 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 	const uint8_t *hdr;
 	const uint8_t *sig;
 	uint64_t session_id;
-	struct HMACSHA256Context m;
-	uint8_t res[SHA256_DIGEST_LENGTH];
+	uint8_t res[16];
 	static const uint8_t zero_sig[16] = { 0, };
 	int i;
 
@@ -116,15 +134,37 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 
 	sig = hdr+SMB2_HDR_SIGNATURE;
 
-	ZERO_STRUCT(m);
-	hmac_sha256_init(signing_key.data, MIN(signing_key.length, 16), &m);
-	hmac_sha256_update(hdr, SMB2_HDR_SIGNATURE, &m);
-	hmac_sha256_update(zero_sig, 16, &m);
-	for (i=1; i < count; i++) {
-		hmac_sha256_update((const uint8_t *)vector[i].iov_base,
-				   vector[i].iov_len, &m);
+	if (protocol >= PROTOCOL_SMB2_24) {
+		struct aes_cmac_128_context ctx;
+		uint8_t key[AES_BLOCK_SIZE];
+
+		ZERO_STRUCT(key);
+		memcpy(key, signing_key.data, MIN(signing_key.length, 16));
+
+		aes_cmac_128_init(&ctx, key);
+		aes_cmac_128_update(&ctx, hdr, SMB2_HDR_SIGNATURE);
+		aes_cmac_128_update(&ctx, zero_sig, 16);
+		for (i=1; i < count; i++) {
+			aes_cmac_128_update(&ctx,
+					(const uint8_t *)vector[i].iov_base,
+					vector[i].iov_len);
+		}
+		aes_cmac_128_final(&ctx, res);
+	} else {
+		struct HMACSHA256Context m;
+		uint8_t digest[SHA256_DIGEST_LENGTH];
+
+		ZERO_STRUCT(m);
+		hmac_sha256_init(signing_key.data, MIN(signing_key.length, 16), &m);
+		hmac_sha256_update(hdr, SMB2_HDR_SIGNATURE, &m);
+		hmac_sha256_update(zero_sig, 16, &m);
+		for (i=1; i < count; i++) {
+			hmac_sha256_update((const uint8_t *)vector[i].iov_base,
+					   vector[i].iov_len, &m);
+		}
+		hmac_sha256_final(digest, &m);
+		memcpy(res, digest, 16);
 	}
-	hmac_sha256_final(res, &m);
 
 	if (memcmp(res, sig, 16) != 0) {
 		DEBUG(0,("Bad SMB2 signature for message\n"));
