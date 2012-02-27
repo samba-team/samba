@@ -1224,6 +1224,12 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
+	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("auth_generic_update returned %s\n", nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_flush(cli1, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
@@ -1242,9 +1248,51 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = gensec_update(auth_generic_state->gensec_security, talloc_tos(), ev, out_blob, &in_blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_update returned %s\n", nt_errstr(status));
+	status = smb2cli_create(cli1, "multi-channel-invalid.txt",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
+			FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_DELETE_ON_CLOSE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("smb2cli_create %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_create(cli2, "multi-channel-invalid.txt",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
+			FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_DELETE_ON_CLOSE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("smb2cli_create %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_create(cli3, "multi-channel-invalid.txt",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
+			FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_DELETE_ON_CLOSE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("smb2cli_create %s\n", nt_errstr(status));
 		return false;
 	}
 
