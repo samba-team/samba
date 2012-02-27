@@ -282,7 +282,14 @@ static void reply_lockingX_success(struct blocking_lock_record *blr)
 	 * that here and must set up the chain info manually.
 	 */
 
-	chain_reply(req);
+	if (!srv_send_smb(req->sconn,
+			(char *)req->outbuf,
+			true, req->seqnum+1,
+			IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
+			&req->pcd)) {
+		exit_server_cleanly("construct_reply: srv_send_smb failed.");
+	}
+
 	TALLOC_FREE(req->outbuf);
 }
 
