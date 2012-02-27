@@ -22,6 +22,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
+#include "tsocket.h"
 
 /*
  * this is the entry point if SMB2 is selected via
@@ -226,14 +227,36 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	/*
-	 * Unless we implement SMB2_CAP_LARGE_MTU,
 	 * 0x10000 (65536) is the maximum allowed message size
+	 * for SMB 2.0
 	 */
 	max_limit = 0x10000;
 
-	max_trans = MIN(max_limit, max_trans);
-	max_read  = MIN(max_limit, max_read);
-	max_write = MIN(max_limit, max_write);
+	if (protocol >= PROTOCOL_SMB2_10) {
+		/* largeMTU is only available on port 445 */
+		if (TCP_SMB_PORT ==
+		    tsocket_address_inet_port(req->sconn->local_address))
+		{
+
+			capabilities |= SMB2_CAP_LARGE_MTU;
+			req->sconn->smb2.supports_multicredit = true;
+
+			/* SMB2.1 has 1 MB of allowed size */
+			max_limit = 0x100000; /* 1MB */
+		}
+	}
+
+	/*
+	 * the defaults are 1MB, but we'll limit this to max_limit based on
+	 * the dialect (64kb for SMB2.0, 1MB for SMB2.1 with LargeMTU)
+	 *
+	 * user configured values exceeding the limits will be overwritten,
+	 * only smaller values will be accepted
+	 */
+
+	max_trans = MIN(max_limit, lp_smb2_max_trans());
+	max_read = MIN(max_limit, lp_smb2_max_read());
+	max_write = MIN(max_limit, lp_smb2_max_write());
 
 	security_offset = SMB2_HDR_BODY + 0x40;
 
