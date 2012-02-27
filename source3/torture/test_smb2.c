@@ -1176,6 +1176,22 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
+	status = smb2cli_create(cli, "session-reauth-invalid.txt",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
+			FILE_ATTRIBUTE_NORMAL, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_DELETE_ON_CLOSE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("smb2cli_create %s\n", nt_errstr(status));
+		return false;
+	}
+
 	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
 					    cli->conn,
 					    cli->timeout,
