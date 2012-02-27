@@ -106,6 +106,34 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		}
 	}
 
+	if (io->in.durable_open_v2) {
+		uint8_t data[32];
+		uint32_t flags = 0;
+		DATA_BLOB guid_blob;
+
+		SIVAL(data, 0, io->in.timeout);
+		if (io->in.persistent_open) {
+			flags = SMB2_DHANDLE_FLAG_PERSISTENT;
+		}
+		SIVAL(data, 4, flags);
+		SBVAL(data, 8, 0x0); /* reserved */
+		status = GUID_to_ndr_blob(&io->in.create_guid, req, /* TALLOC_CTX */
+					  &guid_blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+		memcpy(data+16, guid_blob.data, 16);
+
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_DH2Q,
+					      data_blob_const(data, 32));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
 	if (io->in.durable_handle) {
 		uint8_t data[16];
 		smb2_push_handle(data, io->in.durable_handle);
