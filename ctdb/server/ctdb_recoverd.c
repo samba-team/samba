@@ -2100,6 +2100,10 @@ static void recd_node_rebalance_handler(struct ctdb_context *ctdb, uint64_t srvi
 		return;
 	}
 
+	if (ctdb->tunable.deferred_rebalance_on_node_add == 0) {
+		return;
+	}
+
 	pnn = *(uint32_t *)&data.dptr[0];
 
 	lcp2_forcerebalance(ctdb, pnn);
@@ -2110,7 +2114,7 @@ static void recd_node_rebalance_handler(struct ctdb_context *ctdb, uint64_t srvi
 	}
 	rec->deferred_rebalance_ctx = talloc_new(rec);
 	event_add_timed(ctdb->ev, rec->deferred_rebalance_ctx, 
-			timeval_current_ofs(60, 0),
+			timeval_current_ofs(ctdb->tunable.deferred_rebalance_on_node_add, 0),
 			ctdb_rebalance_timeout, rec);
 }
 
