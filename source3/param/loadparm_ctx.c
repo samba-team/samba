@@ -110,6 +110,9 @@ static const struct loadparm_s3_context s3_fns =
 	.unix_extensions = lp_unix_extensions,
 	.use_spnego = lp_use_spnego,
 	.use_mmap = lp_use_mmap,
+
+	.srv_minprotocol = lp_srv_minprotocol,
+	.srv_maxprotocol = lp_srv_maxprotocol,
 };
 
 const struct loadparm_s3_context *loadparm_s3_context(void)

@@ -606,7 +606,31 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= enum_protocol
 	},
 	{
+		.label		= "max protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(srv_maxprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol
+	},
+	{
+		.label		= "protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(srv_maxprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol
+	},
+	{
 		.label		= "server min protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(srv_minprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol
+	},
+	{
+		.label		= "min protocol",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(srv_minprotocol),

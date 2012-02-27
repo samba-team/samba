@@ -1549,7 +1549,16 @@ static struct parm_struct parm_table[] = {
 		.label		= "max protocol",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(maxprotocol),
+		.offset		= GLOBAL_VAR(srv_maxprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "server max protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(srv_maxprotocol),
 		.special	= NULL,
 		.enum_list	= enum_protocol,
 		.flags		= FLAG_ADVANCED,
@@ -1558,7 +1567,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "protocol",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(maxprotocol),
+		.offset		= GLOBAL_VAR(srv_maxprotocol),
 		.special	= NULL,
 		.enum_list	= enum_protocol,
 		.flags		= FLAG_ADVANCED,
@@ -1567,7 +1576,16 @@ static struct parm_struct parm_table[] = {
 		.label		= "min protocol",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(minprotocol),
+		.offset		= GLOBAL_VAR(srv_minprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "server min protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(srv_minprotocol),
 		.special	= NULL,
 		.enum_list	= enum_protocol,
 		.flags		= FLAG_ADVANCED,
@@ -4748,8 +4766,8 @@ static void init_globals(bool reinit_globals)
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = max_open_files();
 	Globals.open_files_db_hash_size = SMB_OPEN_DATABASE_TDB_HASH_SIZE;
-	Globals.maxprotocol = PROTOCOL_NT1;
-	Globals.minprotocol = PROTOCOL_CORE;
+	Globals.srv_maxprotocol = PROTOCOL_NT1;
+	Globals.srv_minprotocol = PROTOCOL_CORE;
 	Globals.security = SEC_USER;
 	Globals.paranoid_server_security = true;
 	Globals.bEncryptPasswords = true;
@@ -5268,19 +5286,19 @@ FN_GLOBAL_INTEGER(lp_passwordlevel, pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, unamelevel)
 FN_GLOBAL_INTEGER(lp_deadtime, deadtime)
 FN_GLOBAL_BOOL(lp_getwd_cache, getwd_cache)
-static FN_GLOBAL_INTEGER(_lp_maxprotocol, maxprotocol)
-int lp_maxprotocol(void)
+static FN_GLOBAL_INTEGER(_lp_srv_maxprotocol, srv_maxprotocol)
+int lp_srv_maxprotocol(void)
 {
-	int ret = _lp_maxprotocol();
+	int ret = _lp_srv_maxprotocol();
 	if ((ret >= PROTOCOL_SMB2_02) && (lp_security() == SEC_SHARE)) {
 		DEBUG(2,("WARNING!!: \"security = share\" is incompatible "
 			"with the SMB2 protocol. Resetting to SMB1.\n" ));
-			lp_do_parameter(-1, "max protocol", "NT1");
+			lp_do_parameter(-1, "server max protocol", "NT1");
 		return PROTOCOL_NT1;
 	}
 	return ret;
 }
-FN_GLOBAL_INTEGER(lp_minprotocol, minprotocol)
+FN_GLOBAL_INTEGER(lp_srv_minprotocol, srv_minprotocol)
 FN_GLOBAL_INTEGER(lp_security, security)
 FN_GLOBAL_LIST(lp_auth_methods, AuthMethods)
 FN_GLOBAL_BOOL(lp_paranoid_server_security, paranoid_server_security)

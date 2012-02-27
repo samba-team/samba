@@ -695,8 +695,8 @@ void reply_negprot(struct smb_request *req)
 	/* Check for protocols, most desirable first */
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
 		i = 0;
-		if ((supported_protocols[protocol].protocol_level <= lp_maxprotocol()) &&
-				(supported_protocols[protocol].protocol_level >= lp_minprotocol()))
+		if ((supported_protocols[protocol].protocol_level <= lp_srv_maxprotocol()) &&
+				(supported_protocols[protocol].protocol_level >= lp_srv_minprotocol()))
 			while (i < num_cliprotos) {
 				if (strequal(cliprotos[i],supported_protocols[protocol].proto_name))
 					choice = i;

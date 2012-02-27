@@ -3013,7 +3013,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	char *rhost;
 	int ret;
 
-	if (lp_maxprotocol() >= PROTOCOL_SMB2_02) {
+	if (lp_srv_maxprotocol() >= PROTOCOL_SMB2_02) {
 		/*
 		 * We're not making the decision here,
 		 * we're just allowing the client
