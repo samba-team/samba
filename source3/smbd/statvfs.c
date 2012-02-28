@@ -49,9 +49,7 @@ static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 	}
 	return result;
 }
-#endif
-
-#if defined(DARWINOS)
+#elif defined(DARWINOS)
 
 #include <sys/attr.h>
 
@@ -125,6 +123,43 @@ static int darwin_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 
 	return 0;
 }
+#elif defined(BSD) && defined(MNT_RDONLY)
+static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
+{
+	struct statfs statfs_buf;
+	int result;
+
+	result = statfs(path, &statfs_buf);
+	if (result != 0) {
+		return result;
+	}
+
+	statbuf->OptimalTransferSize = statfs_buf.f_iosize;
+	statbuf->BlockSize = statfs_buf.f_bsize;
+	statbuf->TotalBlocks = statfs_buf.f_blocks;
+	statbuf->BlocksAvail = statfs_buf.f_bfree;
+	statbuf->UserBlocksAvail = statfs_buf.f_bavail;
+	statbuf->TotalFileNodes = statfs_buf.f_files;
+	statbuf->FreeFileNodes = statfs_buf.f_ffree;
+	statbuf->FsIdentifier =
+		(((uint64_t) statfs_buf.f_fsid.val[0] << 32) & 0xffffffff00000000LL) |
+		    (uint64_t) statfs_buf.f_fsid.val[1];
+	/* Try to extrapolate some of the fs flags into the
+	 * capabilities
+	 */
+	statbuf->FsCapabilities =
+	    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+#ifdef MNT_ACLS
+	if (statfs_buf.f_flags & MNT_ACLS)
+		statbuf->FsCapabilities |= FILE_PERSISTENT_ACLS;
+#endif
+	if (statfs_buf.f_flags & MNT_QUOTA)
+		statbuf->FsCapabilities |= FILE_VOLUME_QUOTAS;
+	if (statfs_buf.f_flags & MNT_RDONLY)
+		statbuf->FsCapabilities |= FILE_READ_ONLY_VOLUME;
+
+	return 0;
+}
 #endif
 
 /* 
@@ -139,6 +174,8 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 	return linux_statvfs(path, statbuf);
 #elif defined(DARWINOS)
 	return darwin_statvfs(path, statbuf);
+#elif defined(BSD) && defined(MNT_RDONLY)
+	return bsd_statvfs(path, statbuf);
 #else
 	/* BB change this to return invalid level */
 #ifdef EOPNOTSUPP
