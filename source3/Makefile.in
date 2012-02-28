@@ -1266,6 +1266,7 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/uta
 		torture/test_case_insensitive.o \
 		torture/test_posix_append.o \
 		torture/test_smb2.o \
+		torture/test_chain3.o \
 		torture/test_authinfo_structs.o \
 		torture/test_cleanup.o \
 		torture/t_strappend.o

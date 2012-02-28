@@ -8881,6 +8881,7 @@ static struct {
 	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
 	{ "CHAIN1", run_chain1, 0},
 	{ "CHAIN2", run_chain2, 0},
+	{ "CHAIN3", run_chain3, 0},
 	{ "WINDOWS-WRITE", run_windows_write, 0},
 	{ "NTTRANS-CREATE", run_nttrans_create, 0},
 	{ "NTTRANS-FSCTL", run_nttrans_fsctl, 0},
