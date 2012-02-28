@@ -69,7 +69,7 @@ struct durable_open_vs_oplock {
 #define NUM_OPLOCK_TYPES 4
 #define NUM_SHARE_MODES 8
 #define NUM_OPLOCK_OPEN_TESTS ( NUM_OPLOCK_TYPES * NUM_SHARE_MODES )
-struct durable_open_vs_oplock durable_open_vs_oplock_table[NUM_OPLOCK_OPEN_TESTS] =
+static struct durable_open_vs_oplock durable_open_vs_oplock_table[NUM_OPLOCK_OPEN_TESTS] =
 {
 	{ "", "", false },
 	{ "", "R", false },
@@ -194,7 +194,7 @@ struct durable_open_vs_lease {
 
 #define NUM_LEASE_TYPES 5
 #define NUM_LEASE_OPEN_TESTS ( NUM_LEASE_TYPES * NUM_SHARE_MODES )
-struct durable_open_vs_lease durable_open_vs_lease_table[NUM_LEASE_OPEN_TESTS] =
+static struct durable_open_vs_lease durable_open_vs_lease_table[NUM_LEASE_OPEN_TESTS] =
 {
 	{ "", "", false },
 	{ "", "R", false },
