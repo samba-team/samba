@@ -84,16 +84,12 @@ static bool torture_smb2_fileinfo(struct torture_context *tctx, struct smb2_tree
 	int i;
 
 	status = torture_smb2_testfile(tree, FNAME, &hfile);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf(__location__ " Unable to create test file '%s' - %s\n", FNAME, nt_errstr(status));
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Unable to create test file "
+				   FNAME "\n");
 
 	status = torture_smb2_testdir(tree, DNAME, &hdir);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf(__location__ " Unable to create test directory '%s' - %s\n", DNAME, nt_errstr(status));
-		goto failed;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Unable to create test dir "
+				   DNAME "\n");
 
 	printf("Testing file info levels\n");
 	torture_smb2_all_info(tree, hfile);
@@ -105,40 +101,33 @@ static bool torture_smb2_fileinfo(struct torture_context *tctx, struct smb2_tree
 			file_levels[i].dinfo.query_secdesc.in.secinfo_flags = 0x7;
 		}
 		if (file_levels[i].level == RAW_FILEINFO_SMB2_ALL_EAS) {
-			file_levels[i].finfo.all_eas.in.continue_flags = 
+			file_levels[i].finfo.all_eas.in.continue_flags =
 				SMB2_CONTINUE_FLAG_RESTART;
-			file_levels[i].dinfo.all_eas.in.continue_flags = 
+			file_levels[i].dinfo.all_eas.in.continue_flags =
 				SMB2_CONTINUE_FLAG_RESTART;
 		}
 		file_levels[i].finfo.generic.level = file_levels[i].level;
 		file_levels[i].finfo.generic.in.file.handle = hfile;
 		file_levels[i].fstatus = smb2_getinfo_file(tree, tree, &file_levels[i].finfo);
-		if (!NT_STATUS_IS_OK(file_levels[i].fstatus)) {
-			printf("(%s) %s failed on file - %s\n", __location__,
-				file_levels[i].name, nt_errstr(file_levels[i].fstatus));
-			goto failed;
-		}
+		torture_assert_ntstatus_ok(tctx, file_levels[i].fstatus,
+					   talloc_asprintf(tctx, "%s on file",
+							   file_levels[i].name));
 		file_levels[i].dinfo.generic.level = file_levels[i].level;
 		file_levels[i].dinfo.generic.in.file.handle = hdir;
 		file_levels[i].dstatus = smb2_getinfo_file(tree, tree, &file_levels[i].dinfo);
-		if (!NT_STATUS_IS_OK(file_levels[i].dstatus)) {
-			printf("(%s) %s failed on dir - %s\n", __location__,
-				file_levels[i].name, nt_errstr(file_levels[i].dstatus));
-			goto failed;
-		}
+		torture_assert_ntstatus_ok(tctx, file_levels[i].dstatus,
+					   talloc_asprintf(tctx, "%s on dir",
+							   file_levels[i].name));
 	}
 
 	return true;
-
-failed:
-	return false;
 }
 
 
 /*
   test fsinfo levels
 */
-static bool torture_smb2_fsinfo(struct smb2_tree *tree)
+static bool torture_smb2_fsinfo(struct torture_context *tctx, struct smb2_tree *tree)
 {
 	int i;
 	NTSTATUS status;
@@ -146,19 +135,14 @@ static bool torture_smb2_fsinfo(struct smb2_tree *tree)
 
 	printf("Testing fsinfo levels\n");
 	status = smb2_util_roothandle(tree, &handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf(__location__ " Unable to create root handle - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Unable to create root handle");
 
 	for (i=0;i<ARRAY_SIZE(fs_levels);i++) {
 		fs_levels[i].info.generic.level = fs_levels[i].level;
 		fs_levels[i].info.generic.handle = handle;
 		fs_levels[i].status = smb2_getinfo_fs(tree, tree, &fs_levels[i].info);
-		if (!NT_STATUS_IS_OK(fs_levels[i].status)) {
-			printf("%s failed - %s\n", fs_levels[i].name, nt_errstr(fs_levels[i].status));
-			return false;
-		}
+		torture_assert_ntstatus_ok(tctx, fs_levels[i].status,
+					   fs_levels[i].name);
 	}
 
 	return true;
@@ -168,7 +152,7 @@ static bool torture_smb2_fsinfo(struct smb2_tree *tree)
 /*
   test for buffer size handling
 */
-static bool torture_smb2_buffercheck(struct smb2_tree *tree)
+static bool torture_smb2_buffercheck(struct torture_context *tctx, struct smb2_tree *tree)
 {
 	NTSTATUS status;
 	struct smb2_handle handle;
@@ -176,10 +160,7 @@ static bool torture_smb2_buffercheck(struct smb2_tree *tree)
 
 	printf("Testing buffer size handling\n");
 	status = smb2_util_roothandle(tree, &handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf(__location__ " Unable to create root handle - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Unable to create root handle");
 
 	ZERO_STRUCT(b);
 	b.in.info_type            = SMB2_GETINFO_FS;
@@ -189,12 +170,9 @@ static bool torture_smb2_buffercheck(struct smb2_tree *tree)
 	b.in.file.handle          = handle;
 
 	status = smb2_getinfo(tree, tree, &b);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_INFO_LENGTH_MISMATCH)) {
-		printf(__location__ " Wrong error code for small buffer %s\n",
-		       nt_errstr(status));
-		return false;
-	}
-
+	torture_assert_ntstatus_equal(tctx, status,
+				      NT_STATUS_INFO_LENGTH_MISMATCH,
+				      "Wrong error code for small buffer");
 	return true;
 }
 
@@ -208,27 +186,27 @@ bool torture_smb2_getinfo(struct torture_context *torture)
 	bool ret = true;
 	NTSTATUS status;
 
-	if (!torture_smb2_connection(torture, &tree)) {
-		return false;
-	}
+	ret = torture_smb2_connection(torture, &tree);
+	torture_assert(torture, ret, "connection failed");
 
 	smb2_deltree(tree, FNAME);
 	smb2_deltree(tree, DNAME);
 
 	status = torture_setup_complex_file(tree, FNAME);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
+	torture_assert_ntstatus_ok(torture, status,
+				   "setup complex file " FNAME);
+
 	torture_setup_complex_file(tree, FNAME ":streamtwo");
+
 	status = torture_setup_complex_dir(tree, DNAME);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
+	torture_assert_ntstatus_ok(torture, status,
+				   "setup complex dir " DNAME);
+
 	torture_setup_complex_file(tree, DNAME ":streamtwo");
 
 	ret &= torture_smb2_fileinfo(torture, tree);
-	ret &= torture_smb2_fsinfo(tree);
-	ret &= torture_smb2_buffercheck(tree);
+	ret &= torture_smb2_fsinfo(torture, tree);
+	ret &= torture_smb2_buffercheck(torture, tree);
 
 	talloc_free(mem_ctx);
 
