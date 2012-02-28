@@ -236,7 +236,7 @@ char *dns_split_node_name(TALLOC_CTX *tmp_ctx, const char *node_name, const char
 void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 				struct DNS_RPC_RECORD *dns)
 {
-	int len;
+	int i, len;
 
 	ZERO_STRUCTP(dns);
 
@@ -323,8 +323,12 @@ void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 		break;
 
 	case DNS_TYPE_TXT:
-		dns->data.name.len = strlen(dnsp->data.txt);
-		dns->data.name.str = talloc_strdup(mem_ctx, dnsp->data.txt);
+		dns->data.txt.count = dnsp->data.txt.count;
+		dns->data.txt.str = talloc_array(mem_ctx, struct DNS_RPC_NAME, dnsp->data.txt.count);
+		for (i=0; i<dnsp->data.txt.count; i++) {
+			dns->data.txt.str[i].str = talloc_strdup(mem_ctx, dnsp->data.txt.str[i]);
+			dns->data.txt.str[i].len = strlen(dnsp->data.txt.str[i]);
+		}
 		break;
 
 	case DNS_TYPE_AAAA:
@@ -355,7 +359,7 @@ void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 
 struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns)
 {
-	int len;
+	int i, len;
 	struct dnsp_DnssrvRpcRecord *dnsp;
 
 	dnsp = talloc_zero(mem_ctx, struct dnsp_DnssrvRpcRecord);
@@ -436,7 +440,11 @@ struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RP
 		break;
 
 	case DNS_TYPE_TXT:
-		dnsp->data.txt = talloc_strdup(mem_ctx, dns->data.name.str);
+		dnsp->data.txt.count = dns->data.txt.count;
+		dnsp->data.txt.str = talloc_array(mem_ctx, const char *, dns->data.txt.count);
+		for (i=0; i<dns->data.txt.count; i++) {
+			dnsp->data.txt.str[i] = talloc_strdup(mem_ctx, dns->data.txt.str[i].str);
+		}
 		break;
 
 	case DNS_TYPE_AAAA:
@@ -929,6 +937,9 @@ bool dns_name_equal(const char *name1, const char *name2)
 
 bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRecord *rec2)
 {
+	bool status;
+	int i;
+
 	if (rec1->wType != rec2->wType) {
 		return false;
 	}
@@ -963,7 +974,15 @@ bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRe
 			dns_name_equal(rec1->data.mx.nameTarget, rec2->data.srv.nameTarget);
 
 	case DNS_TYPE_TXT:
-		return strcmp(rec1->data.txt, rec2->data.txt) == 0;
+		if (rec1->data.txt.count != rec2->data.txt.count) {
+			return false;
+		}
+		status = true;
+		for (i=0; i<rec1->data.txt.count; i++) {
+			status = status && (strcmp(rec1->data.txt.str[i],
+						   rec2->data.txt.str[i]) == 0);
+		}
+		return status;
 
 	case DNS_TYPE_AAAA:
 		return strcmp(rec1->data.ipv6, rec2->data.ipv6) == 0;
