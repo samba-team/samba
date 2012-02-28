@@ -1784,7 +1784,7 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	uint8_t wct		= CVAL(andx_buf, smb_wct);
 	const uint16_t *vwv	= (const uint16_t *)(andx_buf + smb_vwv);
 	uint32_t num_bytes	= smb_buflen(andx_buf);
-	const uint8_t *bytes	= (const uint8_t *)smb_buf(andx_buf);
+	const uint8_t *bytes	= (const uint8_t *)smb_buf_const(andx_buf);
 
 	uint8_t *outbuf;
 	size_t old_size, new_size;
