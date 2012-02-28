@@ -1252,6 +1252,45 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
+NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
+						uint32_t data_length)
+{
+	uint16_t needed_charge;
+	uint16_t credit_charge;
+	const uint8_t *inhdr;
+	int i = req->current_idx;
+
+	if (!req->sconn->smb2.supports_multicredit) {
+		if (data_length > 65536) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return NT_STATUS_OK;
+	}
+
+	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+	credit_charge = IVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
+
+	/* requests larger than 64 KB need credit charge */
+	if (credit_charge == 0 && data_length > 65536) {
+		DEBUG(2, ("Request larger than 64KB w/o creditcharge\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	needed_charge = (data_length - 1)/ 65536 + 1;
+
+	DEBUG(10, ("mid %lu, CreditCharge: %d, NeededCharge: %d\n",
+		   BVAL(inhdr, SMB2_HDR_MESSAGE_ID), credit_charge,
+		   needed_charge));
+
+	if (needed_charge > credit_charge) {
+		DEBUG(2, ("CreditCharge too low, given %d, needed %d\n",
+					credit_charge, needed_charge));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 					size_t expected_body_size)
 {
