@@ -76,13 +76,9 @@ static void cmd_list_trustdoms_recv_domain(struct composite_context *ctx)
 		talloc_get_type(ctx->async.private_data,
 				struct cmd_list_trustdom_state);
 	struct wbsrv_domain *domain;
-	struct smbcli_tree *tree;
 
 	state->ctx->status = wb_sid2domain_recv(ctx, &domain);
 	if (!composite_is_ok(state->ctx)) return;
-
-	tree = dcerpc_smb_tree(domain->libnet_ctx->lsa.pipe->conn);
-	if (composite_nomem(tree, state->ctx)) return;
 
 	ctx = wb_init_lsa_send(state, domain);
 	composite_continue(state->ctx, ctx, cmd_list_trustdoms_recv_lsa,
