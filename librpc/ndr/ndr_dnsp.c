@@ -48,7 +48,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 
 	ret = talloc_strdup(ndr->current_mem_ctx, "");
 	if (!ret) {
-		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp");
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_name");
 	}
 	total_len = 1;
 
@@ -61,7 +61,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 		}
 		ret = talloc_realloc(ndr->current_mem_ctx, ret, char, newlen);
 		if (!ret) {
-			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp");
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_name");
 		}
 		NDR_CHECK(ndr_pull_bytes(ndr, (uint8_t *)&ret[total_len-1], sublen));
 		if (i != count-1) {
@@ -72,10 +72,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 	}
 	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &termination));
 	if (termination != 0) {
-		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp - not NUL terminated");
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_name - not NUL terminated");
 	}
 	if (ndr->offset > raw_offset + len) {
-		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp - overrun by %u bytes",
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_name - overrun by %u bytes",
 				      ndr->offset - (raw_offset + len));
 	}
 	/* there could be additional pad bytes */
@@ -142,12 +142,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_fl
 
 	ret = talloc_strdup(ndr->current_mem_ctx, "");
 	if (!ret) {
-		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp");
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string");
 	}
 	total_len = 1;
 	ret = talloc_zero_array(ndr->current_mem_ctx, char, len+1);
 	if (!ret) {
-		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp");
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string");
 	}
 	NDR_CHECK(ndr_pull_bytes(ndr, (uint8_t *)&ret[total_len-1], len));
 	total_len = len;
