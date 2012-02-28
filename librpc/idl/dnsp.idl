@@ -193,6 +193,11 @@ interface dnsp
 		dnsp_dns_addr AddrArray[AddrCount];
 	} dnsp_dns_addr_array;
 
+	typedef [public,nopull,nopush,noprint,gensize] struct {
+		uint8		count;
+		dnsp_string	str[count];
+	} dnsp_string_list;
+
 	typedef [nodiscriminant,gensize] union {
 		[case(DNS_TYPE_TOMBSTONE)] 		    NTTIME timestamp;
 		[case(DNS_TYPE_A)] [flag(NDR_BIG_ENDIAN)]   ipv4address ipv4;
@@ -200,7 +205,7 @@ interface dnsp
 		[case(DNS_TYPE_CNAME)]                      dnsp_name cname;
 		[case(DNS_TYPE_SOA)] [flag(NDR_BIG_ENDIAN)] dnsp_soa soa;
 		[case(DNS_TYPE_MX)] [flag(NDR_BIG_ENDIAN)]  dnsp_mx mx;
-		[case(DNS_TYPE_TXT)]                        dnsp_string txt;
+		[case(DNS_TYPE_TXT)]                        dnsp_string_list txt;
 		[case(DNS_TYPE_PTR)]                        dnsp_name ptr;
 		[case(DNS_TYPE_HINFO)]                      dnsp_hinfo hinfo;
 		[case(DNS_TYPE_AAAA)]                       ipv6address ipv6;
