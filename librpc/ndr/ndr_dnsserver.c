@@ -61,3 +61,40 @@ enum ndr_err_code ndr_push_DNS_RPC_RECORDS_ARRAY(struct ndr_push *ndr,
 
 	return NDR_ERR_SUCCESS;
 }
+
+/*
+ * Parsing of DNS_RPC_RECORD_STRING
+ */
+
+enum ndr_err_code ndr_pull_DNS_RPC_RECORD_STRING(struct ndr_pull *ndr,
+		int ndr_flags, struct DNS_RPC_RECORD_STRING *rec)
+{
+	rec->count = 0;
+	rec->str = talloc_array(ndr->current_mem_ctx, struct DNS_RPC_NAME, rec->count);
+	if (! rec->str) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull DNS_RPC_RECORD_STRING");
+	}
+
+	while (ndr->offset < ndr->data_size) {
+		rec->str = talloc_realloc(ndr->current_mem_ctx, rec->str, struct DNS_RPC_NAME, rec->count+1);
+		if (! rec->str) {
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull DNS_RPC_RECORD_STRING");
+		}
+		NDR_CHECK(ndr_pull_DNS_RPC_NAME(ndr, ndr_flags, &rec->str[rec->count]));
+		rec->count++;
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_DNS_RPC_RECORD_STRING(struct ndr_push *ndr,
+		int ndr_flags, const struct DNS_RPC_RECORD_STRING *rec)
+{
+	int i;
+
+	for (i=0; i<rec->count; i++) {
+		NDR_CHECK(ndr_push_DNS_RPC_NAME(ndr, ndr_flags, &rec->str[i]));
+	}
+
+	return NDR_ERR_SUCCESS;
+}
