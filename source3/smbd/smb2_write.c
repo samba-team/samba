@@ -88,6 +88,11 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	in_data_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_data_buffer.length = in_data_length;
 
+	status = smbd_smb2_request_verify_creditcharge(req, in_data_length);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
+	}
+
 	if (req->compat_chain_fsp) {
 		/* skip check */
 	} else if (in_file_id_persistent != in_file_id_volatile) {

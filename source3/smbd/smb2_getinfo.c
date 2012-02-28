@@ -97,6 +97,12 @@ NTSTATUS smbd_smb2_request_process_getinfo(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
+	status = smbd_smb2_request_verify_creditcharge(req,
+			MAX(in_input_buffer.length,in_output_buffer_length));
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
+	}
+
 	if (req->compat_chain_fsp) {
 		/* skip check */
 	} else if (in_file_id_persistent != in_file_id_volatile) {

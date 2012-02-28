@@ -282,6 +282,14 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	status = smbd_smb2_request_verify_creditcharge(smb2req,
+					in_output_buffer_length);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
 	switch (in_file_info_class) {
 	case SMB2_FIND_DIRECTORY_INFO:
 		info_level = SMB_FIND_FILE_DIRECTORY_INFO;
