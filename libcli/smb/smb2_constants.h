@@ -84,10 +84,15 @@
 #define SMB2_NEGOTIATE_SIGNING_ENABLED   0x01
 #define SMB2_NEGOTIATE_SIGNING_REQUIRED  0x02
 
-/* SMB2 capabilities - only 1 so far. I'm sure more will be added */
-#define SMB2_CAP_DFS                     0x00000001
-#define SMB2_CAP_LEASING                 0x00000002 /* only in dialect 0x210 */
-#define SMB2_CAP_LARGE_MTU		 0x00000004 /* only in dialect 0x210 */
+/* SMB2 global capabilities */
+#define SMB2_CAP_DFS			0x00000001
+#define SMB2_CAP_LEASING		0x00000002 /* only in dialect >= 0x210 */
+#define SMB2_CAP_LARGE_MTU		0x00000004 /* only in dialect >= 0x210 */
+#define SMB2_CAP_MULTI_CHANNEL		0x00000008 /* only in dialect >= 0x222 */
+#define SMB2_CAP_PERSISTENT_HANDLES	0x00000010 /* only in dialect >= 0x222 */
+#define SMB2_CAP_DIRECTORY_LEASING	0x00000020 /* only in dialect >= 0x222 */
+#define SMB2_CAP_ENCRYPTION		0x00000040 /* only in dialect >= 0x222 */
+
 /* so we can spot new caps as added */
 #define SMB2_CAP_ALL                     SMB2_CAP_DFS
 
