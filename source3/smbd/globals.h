@@ -590,6 +590,7 @@ struct smbd_server_connection {
 		uint32_t max_trans;
 		uint32_t max_read;
 		uint32_t max_write;
+		bool supports_multicredit;
 		struct bitmap *credits_bitmap;
 		bool compound_related_in_progress;
 	} smb2;
