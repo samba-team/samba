@@ -21,6 +21,7 @@
 import samba.getopt as options
 from struct import pack
 from socket import inet_ntoa
+import shlex
 
 from samba.netcmd import (
     Command,
@@ -151,6 +152,8 @@ def dns_type_flag(rec_type):
         record_type = dnsp.DNS_TYPE_MX
     elif rtype == 'SRV':
         record_type = dnsp.DNS_TYPE_SRV
+    elif rtype == 'TXT':
+        record_type = dnsp.DNS_TYPE_TXT
     elif rtype == 'ALL':
         record_type = dnsp.DNS_TYPE_ALL
     else:
@@ -325,7 +328,6 @@ def print_enumzones(outf, typeid, zones):
 
 
 def print_dns_record(outf, rec):
-    mesg = 'Unknown: '
     if rec.wType == dnsp.DNS_TYPE_A:
         mesg = 'A: %s' % (rec.data)
     elif rec.wType == dnsp.DNS_TYPE_AAAA:
@@ -349,6 +351,11 @@ def print_dns_record(outf, rec):
     elif rec.wType == dnsp.DNS_TYPE_SRV:
         mesg = 'SRV: %s (%d, %d, %d)' % (rec.data.nameTarget.str, rec.data.wPort,
                                          rec.data.wPriority, rec.data.wWeight)
+    elif rec.wType == dnsp.DNS_TYPE_TXT:
+        slist = ['"%s"' % name.str for name in rec.data.str]
+        mesg = 'TXT: %s' % ','.join(slist)
+    else:
+        mesg = 'Unknown: '
     outf.write('    %s (flags=%x, serial=%d, ttl=%d)\n' % (
                 mesg, rec.dwFlags, rec.dwSerial, rec.dwTtlSeconds))
 
@@ -486,6 +493,28 @@ class SRVRecord(dnsserver.DNS_RPC_RECORD):
         srv.nameTarget.len = len(target)
         self.data = srv
 
+class TXTRecord(dnsserver.DNS_RPC_RECORD):
+    def __init__(self, slist, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
+                node_flag=0):
+        super(TXTRecord, self).__init__()
+        self.wType = dnsp.DNS_TYPE_TXT
+        self.dwFlags = rank | node_flag
+        self.dwSerial = serial
+        self.dwTtlSeconds = ttl
+        self._slist = []
+        for s in slist:
+            self._slist.append(s[:])
+        names = []
+        for s in self._slist:
+            name = dnsserver.DNS_RPC_NAME()
+            name.str = s
+            name.len = len(s)
+            names.append(name)
+        txt = dnsserver.DNS_RPC_RECORD_STRING()
+        txt.count = len(slist)
+        txt.str = names
+        self.data = txt
+
 
 # Convert data into a dns record
 def data_to_dns_record(record_type, data):
@@ -529,6 +558,9 @@ def data_to_dns_record(record_type, data):
         minimum = int(tmp[6])
         rec = SOARecord(nameserver, email, serial=serial, refresh=refresh,
                         retry=retry, expire=expire, minimum=minimum)
+    elif record_type == dnsp.DNS_TYPE_TXT:
+        slist = shlex.split(data)
+        rec = TXTRecord(slist)
     else:
         raise CommandError('Unsupported record type')
     return rec
@@ -604,6 +636,13 @@ def dns_record_match(dns_conn, server, zone, name, record_type, data):
                dns_name_equal(rec.data.ZoneAdministratorEmail,
                               urec.data.ZoneAdministratorEmail):
                 found = True
+        elif record_type == dnsp.DNS_TYPE_TXT:
+            if rec.data.count == urec.data.count:
+                found = True
+                for i in xrange(rec.data.count):
+                    found = found and \
+                            (rec.data.str[i].str == urec.data.str[i].str)
+
         if found:
             rec_match = rec
             break
@@ -858,7 +897,7 @@ class cmd_zonedelete(Command):
 class cmd_query(Command):
     """Query a name."""
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|MX|NS|SOA|SRV|ALL> [options]'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|CNAME|MX|NS|SOA|SRV|TXT|ALL> [options]'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype' ]
 
@@ -977,9 +1016,10 @@ class cmd_add_record(Command):
          NS     fqdn_string
          MX     "fqdn_string preference"
          SRV    "fqdn_string port priority weight"
+         TXT    "'string1' 'string2' ..."
     """
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV> <data>'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV|TXT> <data>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
 
@@ -991,7 +1031,7 @@ class cmd_add_record(Command):
 
     def run(self, server, zone, name, rtype, data, sambaopts=None, credopts=None, versionopts=None):
 
-        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV'):
+        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV','TXT'):
             raise CommandError('Adding record of type %s is not supported' % rtype)
 
         record_type = dns_type_flag(rtype)
@@ -1029,9 +1069,10 @@ class cmd_update_record(Command):
          NS     fqdn_string
          MX     "fqdn_string preference"
          SRV    "fqdn_string port priority weight"
+         TXT    "'string1' 'string2' ..."
     """
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV> <olddata> <newdata>'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV|TXT> <olddata> <newdata>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'olddata', 'newdata' ]
 
@@ -1044,7 +1085,7 @@ class cmd_update_record(Command):
     def run(self, server, zone, name, rtype, olddata, newdata,
                 sambaopts=None, credopts=None, versionopts=None):
 
-        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV'):
+        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV','TXT'):
             raise CommandError('Updating record of type %s is not supported' % rtype)
 
         record_type = dns_type_flag(rtype)
@@ -1091,9 +1132,10 @@ class cmd_delete_record(Command):
          NS     fqdn_string
          MX     "fqdn_string preference"
          SRV    "fqdn_string port priority weight"
+         TXT    "'string1' 'string2' ..."
     """
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV> <data>'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV|TXT> <data>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'data' ]
 
@@ -1105,7 +1147,7 @@ class cmd_delete_record(Command):
 
     def run(self, server, zone, name, rtype, data, sambaopts=None, credopts=None, versionopts=None):
 
-        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV'):
+        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV','TXT'):
             raise CommandError('Deleting record of type %s is not supported' % rtype)
 
         record_type = dns_type_flag(rtype)
