@@ -334,8 +334,15 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->data.mx.nameTarget);
 		break;
 	case DNS_QTYPE_TXT:
-		r->data.txt = talloc_strdup(mem_ctx, rrec->rdata.txt_record.txt);
-		W_ERROR_HAVE_NO_MEMORY(r->data.txt);
+		/* FIXME: This converts the TXT rr data into a single string.
+		 *        Since dns server does not reply to qtype TXT,
+		 *        this is not yet relevant.
+		 */
+		r->data.txt.count = 1;
+		r->data.txt.str = talloc_array(mem_ctx, const char *, 1);
+		W_ERROR_HAVE_NO_MEMORY(r->data.txt.str);
+		r->data.txt.str[0] = talloc_strdup(mem_ctx, rrec->rdata.txt_record.txt);
+		W_ERROR_HAVE_NO_MEMORY(r->data.txt.str[0]);
 		break;
 	default:
 		DEBUG(0, ("Got a qytpe of %d\n", rrec->rr_type));

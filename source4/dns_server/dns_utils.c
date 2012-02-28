@@ -115,6 +115,9 @@ bool dns_name_equal(const char *name1, const char *name2)
 bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 		       struct dnsp_DnssrvRpcRecord *rec2)
 {
+	bool status;
+	int i;
+
 	if (rec1->wType != rec2->wType) {
 		return false;
 	}
@@ -128,7 +131,15 @@ bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 	case DNS_TYPE_CNAME:
 		return dns_name_equal(rec1->data.cname, rec2->data.cname);
 	case DNS_TYPE_TXT:
-		return strcmp(rec1->data.txt, rec2->data.txt) == 0;
+		if (rec1->data.txt.count != rec2->data.txt.count) {
+			return false;
+		}
+		status = true;
+		for (i=0; i<rec1->data.txt.count; i++) {
+			status = status && (strcmp(rec1->data.txt.str[i],
+						rec2->data.txt.str[i]) == 0);
+		}
+		return status;
 	case DNS_TYPE_PTR:
 		return strcmp(rec1->data.ptr, rec2->data.ptr) == 0;
 	case DNS_TYPE_NS:
