@@ -791,6 +791,4 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	sconn->smb1.sessions.done_sesssetup = true;
 
 	END_PROFILE(SMBsesssetupX);
-	chain_reply(req);
-	return;
 }

@@ -159,9 +159,6 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	SIVAL(req->outbuf, smb_vwv6, 0);	/* size */
 	SSVAL(req->outbuf, smb_vwv8, 0);	/* rmode */
 	SSVAL(req->outbuf, smb_vwv11, 0x0001);
-
-	chain_reply(req);
-	return;
 }
 
 /****************************************************************************
@@ -366,7 +363,6 @@ static void pipe_write_andx_done(struct tevent_req *subreq)
 	DEBUG(3,("writeX-IPC nwritten=%d\n", (int)nwritten));
 
  done:
-	chain_reply(req);
 	/*
 	 * We must free here as the ownership of req was
 	 * moved to the connection struct in reply_pipe_write_and_X().
@@ -493,7 +489,6 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 		 state->smb_mincnt, state->smb_maxcnt, (int)nread));
 
  done:
-	chain_reply(req);
 	/*
 	 * We must free here as the ownership of req was
 	 * moved to the connection struct in reply_pipe_read_and_X().

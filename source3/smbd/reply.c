@@ -873,8 +873,6 @@ void reply_tcon_and_X(struct smb_request *req)
 	END_PROFILE(SMBtconX);
 
 	req->tid = conn->cnum;
-	chain_reply(req);
-	return;
 }
 
 /****************************************************************************
@@ -2065,7 +2063,6 @@ void reply_open_and_X(struct smb_request *req)
 		SIVAL(req->outbuf, smb_vwv15, SEC_STD_ALL);
 	}
 
-	chain_reply(req);
  out:
 	TALLOC_FREE(smb_fname);
 	END_PROFILE(SMBopenX);
@@ -2106,7 +2103,6 @@ void reply_ulogoffX(struct smb_request *req)
 
 	END_PROFILE(SMBulogoffX);
 	req->vuid = UID_FIELD_INVALID;
-	chain_reply(req);
 }
 
 /****************************************************************************
@@ -3708,8 +3704,6 @@ nosendfile_read:
 
 	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 		    fsp->fnum, (int)smb_maxcnt, (int)nread ) );
-
-	chain_reply(req);
 	return;
 
  strict_unlock:
@@ -4654,7 +4648,6 @@ void reply_write_and_X(struct smb_request *req)
 	}
 
 	END_PROFILE(SMBwriteX);
-	chain_reply(req);
 	return;
 
 out:
@@ -7853,7 +7846,6 @@ void reply_lockingX(struct smb_request *req)
 		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));
 
 	END_PROFILE(SMBlockingX);
-	chain_reply(req);
 }
 
 #undef DBGC_CLASS

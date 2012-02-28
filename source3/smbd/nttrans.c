@@ -382,8 +382,6 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 	}
 
 	DEBUG(5,("do_ntcreate_pipe_open: open pipe = %s\n", fname));
-
-	chain_reply(req);
 }
 
 struct case_semantics_state {
@@ -734,7 +732,6 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n",
 		fsp->fnum, smb_fname_str_dbg(smb_fname)));
 
-	chain_reply(req);
  out:
 	END_PROFILE(SMBntcreateX);
 	return;
