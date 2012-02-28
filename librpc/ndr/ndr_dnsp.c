@@ -160,14 +160,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_fl
 enum ndr_err_code ndr_push_dnsp_string(struct ndr_push *ndr, int ndr_flags, const char *string)
 {
 	int total_len;
-	total_len = strlen(string) + 1;
+	total_len = strlen(string);
 	if (total_len > 255) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
 				      "dns_name of length %d larger than 255", total_len);
 	}
 	NDR_CHECK(ndr_push_uint8(ndr, ndr_flags, (uint8_t)total_len));
-	NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)string, total_len - 1));
-	NDR_PUSH_ALIGN(ndr, 1);
+	NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)string, total_len));
 
 	return NDR_ERR_SUCCESS;
 }
