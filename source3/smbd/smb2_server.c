@@ -1288,7 +1288,7 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 	/*
 	 * Now check the expected body size,
 	 * where the last byte might be in the
-	 * dynnamic section..
+	 * dynamic section..
 	 */
 	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
 		return NT_STATUS_INVALID_PARAMETER;
