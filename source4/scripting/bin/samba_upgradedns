@@ -24,6 +24,7 @@ import optparse
 import logging
 import grp
 from base64 import b64encode
+import shlex
 
 sys.path.insert(0, 'bin/python')
 
@@ -112,7 +113,8 @@ def convert_dns_rdata(rdata, serial=1):
                         priority=int(rdata.priority), weight=int(rdata.weight),
                         serial=serial)
     elif rdata.rdtype == dns.rdatatype.TXT:
-        rec = TXTRecord(rdata.to_text(relativize=False), serial=serial)
+        slist = shlex.split(rdata.to_text())
+        rec = TXTRecord(slist, serial=serial)
     elif rdata.rdtype == dns.rdatatype.SOA:
         rec = SOARecord(rdata.mname.to_text(), rdata.rname.to_text(),
                         serial=int(rdata.serial),
