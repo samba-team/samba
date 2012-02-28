@@ -72,11 +72,14 @@
 
 #define CHECK_SECURITY_DESCRIPTOR(_sd1, _sd2) do { \
 	if (!security_descriptor_equal(_sd1, _sd2)) { \
-		torture_warning(tctx, "%s: security descriptors don't match!\n", __location__); \
+		torture_warning(tctx, "security descriptors don't match!\n"); \
 		torture_warning(tctx, "got:\n"); \
 		NDR_PRINT_DEBUG(security_descriptor, _sd1); \
 		torture_warning(tctx, "expected:\n"); \
 		NDR_PRINT_DEBUG(security_descriptor, _sd2); \
+		torture_result(tctx, TORTURE_FAIL, \
+			       "%s: security descriptors don't match!\n", \
+			       __location__); \
 		ret = false; \
 	} \
 } while (0)
