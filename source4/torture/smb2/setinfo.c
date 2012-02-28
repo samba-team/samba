@@ -73,7 +73,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	smb2_util_close(tree, handle); \
 	status = smb2_create_complex_file(tree, fname, &handle); \
 	if (!NT_STATUS_IS_OK(status)) { \
-		torture_result(tctx, TORTURE_ERROR, "(%s) ERROR: open of %s failed (%s)\n", \
+		torture_result(tctx, TORTURE_FAIL, "(%s) ERROR: open of %s failed (%s)\n", \
 		       __location__, fname, nt_errstr(status)); \
 		ret = false; \
 		goto done; \
