@@ -170,3 +170,56 @@ enum ndr_err_code ndr_push_dnsp_string(struct ndr_push *ndr, int ndr_flags, cons
 
 	return NDR_ERR_SUCCESS;
 }
+
+/*
+ * print a dnsp_string_list
+ */
+_PUBLIC_ void ndr_print_dnsp_string_list(struct ndr_print *ndr, const char *name,
+					 const struct dnsp_string_list *list)
+{
+	uint32_t i;
+
+	ndr->no_newline = true;
+	for (i=0; i<ndr->depth; i++) {
+		ndr->print(ndr, "    ");
+	}
+	ndr->print(ndr, "%-25s:", name);
+	for (i=0; i<list->count; i++) {
+		ndr->print(ndr, " \"%s\"", list->str[i]);
+	}
+	ndr->print(ndr, "\n");
+	ndr->no_newline = false;
+}
+
+/*
+ * pull a dnsp_string_list
+ */
+_PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string_list(struct ndr_pull *ndr, int ndr_flags, struct dnsp_string_list *list)
+{
+	list->count = 0;
+	list->str = talloc_array(ndr->current_mem_ctx, char *, list->count);
+	if (! list->str) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string_list");
+	}
+
+	while (ndr->offset < ndr->data_size) {
+		list->str = talloc_realloc(ndr->current_mem_ctx, list->str, char *, list->count+1);
+		if (! list->str) {
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string_list");
+		}
+		NDR_CHECK(ndr_pull_dnsp_string(ndr, ndr_flags, &list->str[list->count]));
+		list->count++;
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_dnsp_string_list(struct ndr_push *ndr, int ndr_flags, const struct dnsp_string_list *list)
+{
+	uint8_t i;
+
+	for (i=0; i<list->count; i++) {
+		NDR_CHECK(ndr_push_dnsp_string(ndr, ndr_flags, list->str[i]));
+	}
+	return NDR_ERR_SUCCESS;
+}
