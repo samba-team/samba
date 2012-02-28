@@ -71,7 +71,7 @@ import "misc.idl", "dnsp.idl";
 	/* DNS_RECORD_TYPE is defined in dnsp.idl as dns_record_type */
 	/* DNS_RPC_NODE_FLAGS is defined in dnsp.idl as dns_rpc_node_flags */
 
-	typedef [gensize] struct {
+	typedef [public,gensize] struct {
 		[value(strlen(str))] uint8 len;
 		[charset(UTF8)] uint8 str[len];
 	}
@@ -103,6 +103,12 @@ import "misc.idl", "dnsp.idl";
 	}
 	DNS_RPC_RECORD_NAME_PREFERENCE;
 
+	typedef [gensize,nopull,nopush] struct {
+		uint8 count;
+		DNS_RPC_NAME str[count];
+	}
+	DNS_RPC_RECORD_STRING;
+
 	typedef struct {
 		uint16 wPriority;
 		uint16 wWeight;
@@ -125,7 +131,7 @@ import "misc.idl", "dnsp.idl";
 		[case(DNS_TYPE_PTR)]   				DNS_RPC_NAME ptr;
 		[case(DNS_TYPE_HINFO)]   			DNS_RPC_NAME hinfo;
 		[case(DNS_TYPE_MX)]   				DNS_RPC_RECORD_NAME_PREFERENCE mx;
-		[case(DNS_TYPE_TXT)]   				DNS_RPC_NAME name;
+		[case(DNS_TYPE_TXT)]   				DNS_RPC_RECORD_STRING txt;
 		[case(DNS_TYPE_AAAA)]   			ipv6address ipv6;
 		[case(DNS_TYPE_SRV)]   				DNS_RPC_RECORD_SRV srv;
 		[case(DNS_TYPE_DNAME)] 				DNS_RPC_NAME name;
