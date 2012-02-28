@@ -1036,6 +1036,9 @@ bool run_smb2_session_reauth(int dummy)
 	NTSTATUS status;
 	bool ok;
 	uint64_t fid_persistent, fid_volatile;
+	uint64_t dir_persistent, dir_volatile;
+	uint8_t *dir_data;
+	uint32_t dir_data_length;
 	struct tevent_context *ev;
 	struct tevent_req *subreq;
 	DATA_BLOB in_blob = data_blob_null;
@@ -1091,6 +1094,33 @@ bool run_smb2_session_reauth(int dummy)
 			&fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_create(cli, "",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_SYNCHRONIZE|
+			SEC_DIR_LIST|
+			SEC_DIR_READ_ATTRIBUTE, /* desired_access, */
+			0, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_OPEN, /* create_disposition, */
+			FILE_SYNCHRONOUS_IO_NONALERT|FILE_DIRECTORY_FILE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&dir_persistent,
+			&dir_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_create returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_query_directory(
+		cli, 1, 0x3, 0, dir_persistent, dir_volatile,
+		"session-reauth.txt", 0xffff,
+		talloc_tos(), &dir_data, &dir_data_length);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_query_directory returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1178,6 +1208,15 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
+	status = smb2cli_query_directory(
+		cli, 1, 0x3, 0, dir_persistent, dir_volatile,
+		"session-reauth.txt", 0xffff,
+		talloc_tos(), &dir_data, &dir_data_length);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_query_directory returned %s\n", nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_create(cli, "session-reauth-invalid.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
@@ -1191,6 +1230,24 @@ bool run_smb2_session_reauth(int dummy)
 			&fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_create(cli, "",
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			SEC_STD_SYNCHRONIZE|
+			SEC_DIR_LIST|
+			SEC_DIR_READ_ATTRIBUTE, /* desired_access, */
+			0, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_OPEN, /* create_disposition, */
+			FILE_SYNCHRONOUS_IO_NONALERT|FILE_DIRECTORY_FILE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&dir_persistent,
+			&dir_volatile);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("smb2cli_create returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1247,6 +1304,21 @@ bool run_smb2_session_reauth(int dummy)
 			&fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_create %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_query_directory(
+		cli, 1, 0x3, 0, dir_persistent, dir_volatile,
+		"session-reauth.txt", 0xffff,
+		talloc_tos(), &dir_data, &dir_data_length);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_query_directory returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_close(cli, 0, dir_persistent, dir_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;
 	}
 
