@@ -56,6 +56,7 @@
 ^samba4.smb2.lease
 ^samba4.smb2.durable.open
 ^samba4.smb2.dir
+^samba4.smb2.session
 ^samba4.ntvfs.cifs.*.base.charset
 ^samba4.ntvfs.cifs.*.base.iometer
 ^samba4.ntvfs.cifs.*.base.casetable
