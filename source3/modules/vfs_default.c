@@ -107,7 +107,7 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	int ret = -1;
 
-#if defined(DARWINOS)
+#if defined(DARWINOS) || (defined(BSD) && defined(MNT_RDONLY))
 	struct vfs_statvfs_struct statbuf;
 	ZERO_STRUCT(statbuf);
 	sys_statvfs(conn->connectpath, &statbuf);
