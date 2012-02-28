@@ -129,13 +129,16 @@ class SRVRecord(dnsp.DnssrvRpcRecord):
         self.data = srv
 
 class TXTRecord(dnsp.DnssrvRpcRecord):
-    def __init__(self, txt, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
+    def __init__(self, slist, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
         super(TXTRecord, self).__init__()
         self.wType = dnsp.DNS_TYPE_TXT
         self.rank = rank
         self.dwSerial = serial
         self.dwTtlSeconds = ttl
-        self.data = txt
+        stringlist = dnsp.string_list()
+        stringlist.count = len(slist)
+        stringlist.str = slist
+        self.data = stringlist
 
 class TypeProperty(dnsp.DnsProperty):
     def __init__(self, zone_type=dnsp.DNS_ZONE_TYPE_PRIMARY):
