@@ -1045,6 +1045,7 @@ bool run_smb2_session_reauth(int dummy)
 	DATA_BLOB out_blob;
 	struct auth_generic_state *auth_generic_state;
 	struct iovec *recv_iov;
+	uint32_t saved_tid;
 
 	printf("Starting SMB2-SESSION_REAUTH\n");
 
@@ -1251,6 +1252,14 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
+	saved_tid = cli->smb2.tid;
+	status = cli_tree_connect(cli, share, "?????", "", 0);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+	cli->smb2.tid = saved_tid;
+
 	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
 					    cli->conn,
 					    cli->timeout,
@@ -1327,6 +1336,14 @@ bool run_smb2_session_reauth(int dummy)
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;
 	}
+
+	saved_tid = cli->smb2.tid;
+	status = cli_tree_connect(cli, share, "?????", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+	cli->smb2.tid = saved_tid;
 
 	return true;
 }
