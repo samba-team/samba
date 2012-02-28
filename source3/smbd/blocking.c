@@ -268,7 +268,9 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 
 static void reply_lockingX_success(struct blocking_lock_record *blr)
 {
-	reply_outbuf(blr->req, 2, 0);
+	struct smb_request *req = blr->req;
+
+	reply_outbuf(req, 2, 0);
 
 	/*
 	 * As this message is a lockingX call we must handle
@@ -278,8 +280,8 @@ static void reply_lockingX_success(struct blocking_lock_record *blr)
 	 * that here and must set up the chain info manually.
 	 */
 
-	chain_reply(blr->req);
-	TALLOC_FREE(blr->req->outbuf);
+	chain_reply(req);
+	TALLOC_FREE(req->outbuf);
 }
 
 /****************************************************************************
