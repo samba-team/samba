@@ -64,6 +64,7 @@ struct dptr_struct {
 	char *path;
 	bool has_wild; /* Set to true if the wcard entry has MS wildcard characters in it. */
 	bool did_stat; /* Optimisation for non-wcard searches. */
+	bool priv;     /* Directory handle opened with privilege. */
 };
 
 static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
@@ -645,6 +646,16 @@ bool dptr_has_wild(struct dptr_struct *dptr)
 int dptr_dnum(struct dptr_struct *dptr)
 {
 	return dptr->dnum;
+}
+
+bool dptr_get_priv(struct dptr_struct *dptr)
+{
+	return dptr->priv;
+}
+
+void dptr_set_priv(struct dptr_struct *dptr)
+{
+	dptr->priv = true;
 }
 
 /****************************************************************************

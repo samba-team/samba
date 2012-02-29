@@ -205,6 +205,8 @@ void dptr_SeekDir(struct dptr_struct *dptr, long offset);
 long dptr_TellDir(struct dptr_struct *dptr);
 bool dptr_has_wild(struct dptr_struct *dptr);
 int dptr_dnum(struct dptr_struct *dptr);
+bool dptr_get_priv(struct dptr_struct *dptr);
+void dptr_set_priv(struct dptr_struct *dptr);
 char *dptr_ReadDirName(TALLOC_CTX *ctx,
 			struct dptr_struct *dptr,
 			long *poffset,
