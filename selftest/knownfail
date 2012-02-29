@@ -157,6 +157,7 @@
 ^samba3.smb2.durable-open .reopen2a
 ^samba3.smb2.durable-open .reopen3
 ^samba3.smb2.durable-open .reopen4
+^samba3.smb2.durable-open .oplock
 ^samba3.smb2.dir .one
 ^samba3.smb2.dir .modify
 ^samba3.smb2.lease .request
