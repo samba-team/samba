@@ -94,7 +94,14 @@
 #define SMB2_CAP_ENCRYPTION		0x00000040 /* only in dialect >= 0x222 */
 
 /* so we can spot new caps as added */
-#define SMB2_CAP_ALL                     SMB2_CAP_DFS
+#define SMB2_CAP_ALL (\
+		SMB2_CAP_DFS | \
+		SMB2_CAP_LEASING | \
+		SMB2_CAP_LARGE_MTU | \
+		SMB2_CAP_MULTI_CHANNEL | \
+		SMB2_CAP_PERSISTENT_HANDLES | \
+		SMB2_CAP_ENCRYPTION)
+
 
 /* SMB2 session flags */
 #define SMB2_SESSION_FLAG_IS_GUEST       0x0001
