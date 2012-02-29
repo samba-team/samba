@@ -375,7 +375,7 @@ wb_opts = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=
 
 winbind_struct_tests = smb4torture_testsuites("winbind.struct")
 winbind_ndr_tests = smb4torture_testsuites("winbind.ndr")
-for env in ["dc", "s4member"]:
+for env in ["plugin_s4_dc", "dc", "s4member"]:
     for t in winbind_struct_tests:
         plansmbtorturetestsuite(t, env, wb_opts + ['//_none_/_none_'])
 
@@ -383,7 +383,7 @@ for env in ["dc", "s4member"]:
         plansmbtorturetestsuite(t, env, wb_opts + ['//_none_/_none_'])
 
 nsstest4 = binpath("nsstest")
-for env in ["dc", "s4member", "s3dc", "s3member", "member"]:
+for env in ["plugin_s4_dc", "dc", "s4member", "s3dc", "s3member", "member"]:
     if os.path.exists(nsstest4):
         plantestsuite("samba4.nss.test using winbind(%s)" % env, env, [os.path.join(bbdir, "nsstest.sh"), nsstest4, os.path.join(samba4bindir, "default/nsswitch/libnss-winbind.so")])
     else:
