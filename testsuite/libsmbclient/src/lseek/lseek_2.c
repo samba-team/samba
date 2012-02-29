@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 	int err = -1;
 	int fd = 0;
 
-	bzero(g_workgroup,MAX_BUFF_SIZE);
+	memset(g_workgroup, '\0', MAX_BUFF_SIZE);
 
 	if ( argc == 4 )
 	{

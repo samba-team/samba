@@ -36,8 +36,8 @@ int main(int argc, char** argv)
 	char* message;
 	char* response;
 
-	bzero(g_workgroup,MAX_BUFF_SIZE);
-	bzero(url,MAX_BUFF_SIZE);
+	memset(g_workgroup, '\0', MAX_BUFF_SIZE);
+	memset(url, '\0', MAX_BUFF_SIZE);
 
 	if ( argc == 6 )
 	{
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 		msg_len = strlen(argv[5])+1;
 		message = malloc(msg_len);
 		response = malloc(msg_len);
-		bzero(response,msg_len);
+		memset(response, '\0', msg_len);
 		message[msg_len - 1] = 0;	
 		strncpy(message,argv[5],msg_len);
 

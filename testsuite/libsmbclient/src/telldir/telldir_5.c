@@ -48,11 +48,11 @@ int main(int argc, char** argv)
 	char dir_url[MAX_BUFF_SIZE];
 	char dirbuff[MAX_BUFF_SIZE];
 
-	bzero(g_workgroup,MAX_BUFF_SIZE);
-	bzero(url,MAX_BUFF_SIZE);
-	bzero(file_url,MAX_BUFF_SIZE);
-	bzero(dir_url,MAX_BUFF_SIZE);
-	bzero(buff,MAX_BUFF_SIZE);
+	memset(g_workgroup, '\0', MAX_BUFF_SIZE);
+	memset(url, '\0', MAX_BUFF_SIZE);
+	memset(file_url, '\0', MAX_BUFF_SIZE);
+	memset(dir_url, '\0', MAX_BUFF_SIZE);
+	memset(buff, '\0', MAX_BUFF_SIZE);
 
 	if ( argc == 6 )
 	{

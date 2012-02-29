@@ -36,8 +36,8 @@ int main(int argc, char** argv)
 	char *user;
 	SMBCCTX *ctx;
 
-	bzero(g_workgroup,MAX_BUFF_SIZE);
-	bzero(url,MAX_BUFF_SIZE);
+	memset(g_workgroup, '\0', MAX_BUFF_SIZE);
+	memset(url, '\0', MAX_BUFF_SIZE);
 
 	if ( argc == 2)
 	{

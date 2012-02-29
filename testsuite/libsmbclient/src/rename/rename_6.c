@@ -32,8 +32,8 @@ int main(int argc, char** argv)
 	int fd = 0;
 	char url[MAX_BUFF_SIZE];
 
-	bzero(g_workgroup,MAX_BUFF_SIZE);
-	bzero(url,MAX_BUFF_SIZE);
+	memset(g_workgroup, '\0', MAX_BUFF_SIZE);
+	memset(url, '\0', MAX_BUFF_SIZE);
 
 	if ( argc == 6 )
 	{

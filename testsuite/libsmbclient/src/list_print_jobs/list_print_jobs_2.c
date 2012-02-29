@@ -61,10 +61,10 @@ int main(int argc, char** argv)
 	int err = -1;
 	char url[MAX_BUFF_SIZE];
 
-	bzero(g_workgroup,MAX_BUFF_SIZE);
-	bzero(url,MAX_BUFF_SIZE);
-	bzero(g_print_user,MAX_BUFF_SIZE);
-	bzero(g_print_name,MAX_BUFF_SIZE);
+	memset(g_workgroup, '\0', MAX_BUFF_SIZE);
+	memset(url, '\0', MAX_BUFF_SIZE);
+	memset(g_print_user, '\0', MAX_BUFF_SIZE);
+	memset(g_print_name, '\0', MAX_BUFF_SIZE);
 
 	g_print_id = 0;
 	g_print_priority = 0;
