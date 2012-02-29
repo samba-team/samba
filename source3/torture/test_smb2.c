@@ -1018,13 +1018,15 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_flush(cli2, fid_persistent, fid_volatile);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+		return false;
 	}
 
 	status = smb2cli_flush(cli1, fid_persistent, fid_volatile);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+		return false;
 	}
 
 	return true;
