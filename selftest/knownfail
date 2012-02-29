@@ -152,6 +152,11 @@
 ^samba3.smb2.durable-open .lease
 ^samba3.smb2.durable-open .lock
 ^samba3.smb2.durable-open .open
+^samba3.smb2.durable-open .reopen1
+^samba3.smb2.durable-open .reopen2
+^samba3.smb2.durable-open .reopen2a
+^samba3.smb2.durable-open .reopen3
+^samba3.smb2.durable-open .reopen4
 ^samba3.smb2.dir .one
 ^samba3.smb2.dir .modify
 ^samba3.smb2.lease .request
