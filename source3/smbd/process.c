@@ -1978,6 +1978,38 @@ static bool smb_splice_chain(uint8_t **poutbuf, const uint8_t *andx_buf)
 	 */
 
 	memcpy(outbuf + ofs, vwv, sizeof(uint16_t) * wct);
+
+	/*
+	 * HACK ALERT
+	 *
+	 * Read&X has an offset into its data buffer at
+	 * vwv[6]. reply_read_andx has no idea anymore that it's
+	 * running from within a chain, so we have to fix up the
+	 * offset here.
+	 *
+	 * Although it looks disgusting at this place, I want to keep
+	 * it here. The alternative would be to push knowledge about
+	 * the andx chain down into read&x again.
+	 */
+
+	if (smb_command == SMBreadX) {
+		uint8_t *bytes_addr;
+
+		if (wct < 7) {
+			/*
+			 * Invalid read&x response
+			 */
+			return false;
+		}
+
+		bytes_addr = outbuf + ofs	 /* vwv start */
+			+ sizeof(uint16_t) * wct /* vwv array */
+			+ sizeof(uint16_t);	 /* bcc */
+
+		SSVAL(outbuf + ofs, 6 * sizeof(uint16_t),
+		      bytes_addr - outbuf - 4);
+	}
+
 	ofs += sizeof(uint16_t) * wct;
 
 	/*
