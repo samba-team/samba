@@ -4143,7 +4143,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		const DATA_BLOB context = _STRING_BLOB("SmbSign");
 #undef _STRING_BLOB
 
-		smb2_key_deviration(session_key, sizeof(session_key),
+		smb2_key_derivation(session_key, sizeof(session_key),
 				    label.data, label.length,
 				    context.data, context.length,
 				    session->smb2.signing_key.data);
@@ -4162,7 +4162,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		const DATA_BLOB context = _STRING_BLOB("SmbRpc");
 #undef _STRING_BLOB
 
-		smb2_key_deviration(session_key, sizeof(session_key),
+		smb2_key_derivation(session_key, sizeof(session_key),
 				    label.data, label.length,
 				    context.data, context.length,
 				    session->smb2.application_key.data);
@@ -4267,7 +4267,7 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 		const DATA_BLOB context = _STRING_BLOB("SmbSign");
 #undef _STRING_BLOB
 
-		smb2_key_deviration(channel_key, sizeof(channel_key),
+		smb2_key_derivation(channel_key, sizeof(channel_key),
 				    label.data, label.length,
 				    context.data, context.length,
 				    session->smb2.channel_signing_key.data);

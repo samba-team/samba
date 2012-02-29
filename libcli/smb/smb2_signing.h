@@ -33,7 +33,7 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 				const struct iovec *vector,
 				int count);
 
-void smb2_key_deviration(const uint8_t *KI, size_t KI_len,
+void smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 			 const uint8_t *Label, size_t Label_len,
 			 const uint8_t *Context, size_t Context_len,
 			 uint8_t KO[16]);
