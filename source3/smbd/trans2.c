@@ -2296,6 +2296,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	struct dptr_struct *dirptr = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint32_t ucf_flags = (UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP);
+	bool backup_priv = false;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2308,11 +2309,16 @@ static void call_trans2findfirst(connection_struct *conn,
 	close_after_first = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE);
 	close_if_end = (findfirst_flags & FLAG_TRANS2_FIND_CLOSE_IF_END);
 	requires_resume_key = (findfirst_flags & FLAG_TRANS2_FIND_REQUIRE_RESUME);
+	backup_priv = ((findfirst_flags & FLAG_TRANS2_FIND_BACKUP_INTENT) &&
+				security_token_has_privilege(get_current_nttok(conn),
+						SEC_PRIV_BACKUP));
+
 	info_level = SVAL(params,6);
 
 	DEBUG(3,("call_trans2findfirst: dirtype = %x, maxentries = %d, close_after_first=%d, \
-close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
+close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_data_bytes = %d\n",
 		(unsigned int)dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
+		(int)backup_priv,
 		info_level, max_data_bytes));
 
 	if (!maxentries) {
@@ -2354,12 +2360,24 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		goto out;
 	}
 
-	ntstatus = filename_convert(ctx, conn,
+	if (backup_priv) {
+		become_root();
+		ntstatus = filename_convert_with_privilege(ctx,
+				conn,
+				req,
+				directory,
+				ucf_flags,
+				&mask_contains_wcard,
+				&smb_dname);
+	} else {
+		ntstatus = filename_convert(ctx, conn,
 				    req->flags2 & FLAGS2_DFS_PATHNAMES,
 				    directory,
 				    ucf_flags,
 				    &mask_contains_wcard,
 				    &smb_dname);
+	}
+
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		if (NT_STATUS_EQUAL(ntstatus,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
@@ -2463,6 +2481,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		goto out;
+	}
+
+	if (backup_priv) {
+		/* Remember this in case we have
+		   to do a findnext. */
+		dptr_set_priv(dirptr);
 	}
 
 	dptr_num = dptr_dnum(dirptr);
@@ -2591,6 +2615,11 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		name_to_8_3(mask, mangled_name, True, conn->params);
 	}
  out:
+
+	if (backup_priv) {
+		unbecome_root();
+	}
+
 	TALLOC_FREE(smb_dname);
 	return;
 }
@@ -2640,6 +2669,7 @@ static void call_trans2findnext(connection_struct *conn,
 	TALLOC_CTX *ctx = talloc_tos();
 	struct dptr_struct *dirptr;
 	struct smbd_server_connection *sconn = req->sconn;
+	bool backup_priv = false; 
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2782,10 +2812,14 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Get the attr mask from the dptr */
 	dirtype = dptr_attr(sconn, dptr_num);
 
-	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld)\n",
+	backup_priv = dptr_get_priv(dirptr);
+
+	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld) "
+		"backup_priv = %d\n",
 		dptr_num, mask, dirtype,
 		(long)dirptr,
-		dptr_TellDir(dirptr)));
+		dptr_TellDir(dirptr),
+		(int)backup_priv));
 
 	/* Initialize per TRANS2_FIND_NEXT operation data */
 	dptr_init_search_op(dirptr);
@@ -2801,6 +2835,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	p = pdata;
 	space_remaining = max_data_bytes;
 	out_of_space = False;
+
+	if (backup_priv) {
+		become_root();
+	}
 
 	/*
 	 * Seek to the correct position. We no longer use the resume key but
@@ -2889,6 +2927,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if(close_after_request || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
 		dptr_close(sconn, &dptr_num); /* This frees up the saved mask */
+	}
+
+	if (backup_priv) {
+		unbecome_root();
 	}
 
 	/* Set up the return parameter block */
