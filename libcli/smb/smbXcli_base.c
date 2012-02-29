@@ -102,6 +102,7 @@ struct smbXcli_conn {
 
 	struct {
 		struct {
+			uint32_t capabilities;
 			uint16_t security_mode;
 			struct GUID guid;
 		} client;
@@ -225,7 +226,8 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 const char *remote_name,
 					 enum smb_signing_setting signing_state,
 					 uint32_t smb1_capabilities,
-					 struct GUID *client_guid)
+					 struct GUID *client_guid,
+					 uint32_t smb2_capabilities)
 {
 	struct smbXcli_conn *conn = NULL;
 	void *ss = NULL;
@@ -319,6 +321,7 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 	if (client_guid) {
 		conn->smb2.client.guid = *client_guid;
 	}
+	conn->smb2.client.capabilities = smb2_capabilities;
 
 	conn->smb2.cur_credits = 1;
 	conn->smb2.max_credits = 0;
@@ -3796,7 +3799,11 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	SSVAL(buf, 2, dialect_count);
 	SSVAL(buf, 4, state->conn->smb2.client.security_mode);
 	SSVAL(buf, 6, 0);	/* Reserved */
-	SSVAL(buf, 8, 0); 	/* Capabilities */
+	if (state->max_protocol >= PROTOCOL_SMB2_22) {
+		SIVAL(buf, 8, state->conn->smb2.client.capabilities);
+	} else {
+		SIVAL(buf, 8, 0); 	/* Capabilities */
+	}
 	if (state->max_protocol >= PROTOCOL_SMB2_10) {
 		NTSTATUS status;
 		DATA_BLOB blob;

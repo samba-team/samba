@@ -260,7 +260,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	cli->conn = smbXcli_conn_create(cli, fd, remote_name,
 					signing_state,
 					smb1_capabilities,
-					NULL); /* client_guid */
+					NULL, /* client_guid */
+					0 /* smb1_capabilites */);
 	if (cli->conn == NULL) {
 		goto error;
 	}

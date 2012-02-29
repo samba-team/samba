@@ -31,7 +31,8 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 const char *remote_name,
 					 enum smb_signing_setting signing_state,
 					 uint32_t smb1_capabilities,
-					 struct GUID *client_guid);
+					 struct GUID *client_guid,
+					 uint32_t smb2_capabilities);
 
 bool smbXcli_conn_is_connected(struct smbXcli_conn *conn);
 void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status);
