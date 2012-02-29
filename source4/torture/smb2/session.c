@@ -68,7 +68,6 @@ bool test_session_reconnect(struct torture_context *tctx, struct smb2_tree *tree
 	bool ret = true;
 	struct smb2_tree *tree2;
 	union smb_fileinfo qfinfo;
-	uint64_t pos;
 
 	/* Add some random component to the file name. */
 	snprintf(fname, 256, "session_reconnect_%s.dat",
