@@ -1317,6 +1317,35 @@ dcerpc endpoint servers = -unixinfo -rpcecho -spoolss -winreg -wkssvc -srvsvc
 	return $ret;
 }
 
+sub provision_chgdcpass($$)
+{
+	my ($self, $prefix) = @_;
+
+	print "PROVISIONING CHGDCPASS...";
+	my $ret = $self->provision($prefix,
+				   "domain controller",
+				   "chgdcpass",
+				   "CHDCDOMAIN",
+				   "chgdcpassword.samba.example.com",
+				   "2008",
+				   31,
+				   "chgDCpass1",
+				   undef);
+
+	return undef unless(defined $ret);
+	unless($self->add_wins_config("$prefix/private")) {
+		warn("Unable to add wins configuration");
+		return undef;
+	}
+	$ret->{DC_SERVER} = $ret->{SERVER};
+	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $ret->{USERNAME};
+	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+
+	return $ret;
+}
+
 sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
@@ -1425,6 +1454,8 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $self->setup_rodc("$path/rodc", $self->{vars}->{dc});
+	} elsif ($envname eq "chgdcpass") {
+		return $self->setup_chgdcpass("$path/chgdcpass", $self->{vars}->{chgdcpass});
 	} elsif ($envname eq "s3member") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1481,6 +1512,21 @@ sub setup_dc($$)
 		$self->wait_for_start($env);
 
 		$self->{vars}->{dc} = $env;
+	}
+	return $env;
+}
+
+sub setup_chgdcpass($$)
+{
+	my ($self, $path) = @_;
+
+	my $env = $self->provision_chgdcpass($path);
+	if (defined $env) {
+		$self->check_or_start($env, "single");
+
+		$self->wait_for_start($env);
+
+		$self->{vars}->{chgdcpass} = $env;
 	}
 	return $env;
 }
