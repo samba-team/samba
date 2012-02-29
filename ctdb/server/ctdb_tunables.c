@@ -60,7 +60,7 @@ static const struct {
 	{ "VerifyRecoveryLock",   1,  offsetof(struct ctdb_tunable, verify_recovery_lock), false },
 	{ "VacuumInterval",   10,  offsetof(struct ctdb_tunable, vacuum_interval), false },
 	{ "VacuumDefaultInterval", 10,  offsetof(struct ctdb_tunable, vacuum_default_interval), true },
-	{ "VacuumMaxRunTime",     30,  offsetof(struct ctdb_tunable, vacuum_max_run_time), false },
+	{ "VacuumMaxRunTime",     120,  offsetof(struct ctdb_tunable, vacuum_max_run_time), false },
 	{ "RepackLimit",      10000,  offsetof(struct ctdb_tunable, repack_limit), false },
 	{ "VacuumLimit",       5000,  offsetof(struct ctdb_tunable, vacuum_limit), false },
 	{ "VacuumMinInterval",   10,  offsetof(struct ctdb_tunable, vacuum_min_interval), true },
