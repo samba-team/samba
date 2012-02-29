@@ -92,6 +92,8 @@ NTSTATUS torture_local_init(void)
 				      torture_local_crypto_md5);
 	torture_suite_add_simple_test(suite, "crypto.hmacmd5", 
 				      torture_local_crypto_hmacmd5);
+	torture_suite_add_simple_test(suite, "crypto.aes_cmac_128",
+				      torture_local_crypto_aes_cmac_128);
 
 	for (i = 0; suite_generators[i]; i++)
 		torture_suite_add_suite(suite,
