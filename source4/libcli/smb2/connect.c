@@ -242,6 +242,7 @@ static void smb2_connect_tcon_done(struct smb2_request *smb2req)
 	}
 
 	state->tree->tid = state->tcon.out.tid;
+	state->tree->capabilities = state->tcon.out.capabilities;
 
 	tevent_req_done(req);
 }

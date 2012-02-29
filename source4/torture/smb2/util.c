@@ -295,6 +295,7 @@ bool torture_smb2_tree_connect(struct torture_context *tctx,
 	}
 
 	tree->tid = tcon.out.tid;
+	tree->capabilities = tcon.out.capabilities;
 
 	*_tree = tree;
 
