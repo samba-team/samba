@@ -4,6 +4,7 @@
    test suite for SMB2 durable opens
 
    Copyright (C) Stefan Metzmacher 2008
+   Copyright (C) Michael Adam 2011-2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
