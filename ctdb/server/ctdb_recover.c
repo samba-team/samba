@@ -954,6 +954,20 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 		return -1;		
 	}
 
+	/* do not allow deleting record that have readonly flags set. */
+	if (hdr->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE)) {
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		DEBUG(DEBUG_INFO,(__location__ " Skipping record with readonly flags set\n"));
+		free(data.dptr);
+		return -1;		
+	}
+	if (hdr2->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE)) {
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		DEBUG(DEBUG_INFO,(__location__ " Skipping record with readonly flags set\n"));
+		free(data.dptr);
+		return -1;		
+	}
+
 	if (hdr2->dmaster == ctdb->pnn) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 		DEBUG(DEBUG_INFO,(__location__ " Attempted delete record where we are the dmaster\n"));
