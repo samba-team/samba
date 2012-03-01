@@ -226,7 +226,7 @@ if (0) {
 
     conf.CHECK_FUNCS('''
 _acl __acl add_proplist_entry atexit attr_getf attr_list attr_listf
-attropen attr_remove attr_removef attr_set attr_setf backtrace_symbols
+attropen attr_remove attr_removef attr_set attr_setf
 bindtextdomain _chdir __chdir chflags chmod _close __close _closedir
 __closedir closedir64 creat64 crypt16 delproplist devnm dgettext dirfd
 DNSServiceRegister _dup __dup _dup2 __dup2 endmntent execl

@@ -2,7 +2,7 @@
 
 
 # backtrace could be in libexecinfo or in libc
-conf.CHECK_FUNCS_IN('backtrace', 'execinfo', checklibc=True, headers='execinfo.h')
+conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
 
 conf.CHECK_FUNCS('sigprocmask sigblock sigaction')
 
