@@ -4247,7 +4247,7 @@ NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 
 	status = cli_set_ea(cli, TRANSACT2_SETPATHINFO, param, param_len,
 			    ea_name, ea_val, ea_len);
-	SAFE_FREE(frame);
+	talloc_free(frame);
 	return status;
 }
 
