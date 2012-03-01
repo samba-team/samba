@@ -4185,7 +4185,9 @@ static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
 
 	if (ea_namelen == 0 && ea_len == 0) {
 		data_len = 4;
-		data = (uint8_t *)SMB_MALLOC(data_len);
+		data = talloc_array(talloc_tos(),
+				uint8_t,
+				data_len);
 		if (!data) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -4193,7 +4195,9 @@ static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
 		SIVAL(p,0,data_len);
 	} else {
 		data_len = 4 + 4 + ea_namelen + 1 + ea_len;
-		data = (uint8_t *)SMB_MALLOC(data_len);
+		data = talloc_array(talloc_tos(),
+				uint8_t,
+				data_len);
 		if (!data) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -4215,7 +4219,7 @@ static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
 			   NULL, 0, NULL, /* rsetup */
 			   NULL, 0, NULL, /* rparam */
 			   NULL, 0, NULL); /* rdata */
-	SAFE_FREE(data);
+	talloc_free(data);
 	return status;
 }
 
