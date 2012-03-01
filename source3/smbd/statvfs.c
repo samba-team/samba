@@ -23,33 +23,7 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 
-#if defined(LINUX) && defined(HAVE_FSID_INT)
-static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
-{
-	struct statvfs statvfs_buf;
-	int result;
-
-	result = statvfs(path, &statvfs_buf);
-
-	if (!result) {
-		statbuf->OptimalTransferSize = statvfs_buf.f_frsize;
-		statbuf->BlockSize = statvfs_buf.f_bsize;
-		statbuf->TotalBlocks = statvfs_buf.f_blocks;
-		statbuf->BlocksAvail = statvfs_buf.f_bfree;
-		statbuf->UserBlocksAvail = statvfs_buf.f_bavail;
-		statbuf->TotalFileNodes = statvfs_buf.f_files;
-		statbuf->FreeFileNodes = statvfs_buf.f_ffree;
-		statbuf->FsIdentifier = statvfs_buf.f_fsid;
-
-		/* Good defaults for Linux filesystems are case sensitive
-		 * and case preserving.
-		 */
-		statbuf->FsCapabilities =
-		    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
-	}
-	return result;
-}
-#elif defined(DARWINOS)
+#if defined(DARWINOS)
 
 #include <sys/attr.h>
 
@@ -160,6 +134,32 @@ static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 
 	return 0;
 }
+#elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
+static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
+{
+	struct statvfs statvfs_buf;
+	int result;
+
+	result = statvfs(path, &statvfs_buf);
+
+	if (!result) {
+		statbuf->OptimalTransferSize = statvfs_buf.f_frsize;
+		statbuf->BlockSize = statvfs_buf.f_bsize;
+		statbuf->TotalBlocks = statvfs_buf.f_blocks;
+		statbuf->BlocksAvail = statvfs_buf.f_bfree;
+		statbuf->UserBlocksAvail = statvfs_buf.f_bavail;
+		statbuf->TotalFileNodes = statvfs_buf.f_files;
+		statbuf->FreeFileNodes = statvfs_buf.f_ffree;
+		statbuf->FsIdentifier = statvfs_buf.f_fsid;
+
+		/* Good defaults for Linux filesystems are case sensitive
+		 * and case preserving.
+		 */
+		statbuf->FsCapabilities =
+		    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+	}
+	return result;
+}
 #endif
 
 /* 
@@ -170,12 +170,12 @@ static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 */
 int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {
-#if defined(LINUX) && defined(HAVE_FSID_INT)
-	return linux_statvfs(path, statbuf);
-#elif defined(DARWINOS)
+#if defined(DARWINOS)
 	return darwin_statvfs(path, statbuf);
 #elif defined(BSD) && defined(MNT_RDONLY)
 	return bsd_statvfs(path, statbuf);
+#elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
+	return linux_statvfs(path, statbuf);
 #else
 	/* BB change this to return invalid level */
 #ifdef EOPNOTSUPP
