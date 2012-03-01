@@ -32,7 +32,7 @@
 /* 
    scan for valid SMB2 getinfo levels
 */
-bool torture_smb2_getinfo_scan(struct torture_context *torture)
+static bool torture_smb2_getinfo_scan(struct torture_context *torture)
 {
 	struct smb2_tree *tree;
 	NTSTATUS status;
@@ -108,7 +108,7 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 /* 
    scan for valid SMB2 setinfo levels
 */
-bool torture_smb2_setinfo_scan(struct torture_context *torture)
+static bool torture_smb2_setinfo_scan(struct torture_context *torture)
 {
 	static const char *FNAME  = "scan-setinfo.dat";
 	static const char *FNAME2 = "scan-setinfo.dat:2ndstream";
@@ -156,7 +156,7 @@ bool torture_smb2_setinfo_scan(struct torture_context *torture)
 /* 
    scan for valid SMB2 scan levels
 */
-bool torture_smb2_find_scan(struct torture_context *torture)
+static bool torture_smb2_find_scan(struct torture_context *torture)
 {
 	struct smb2_tree *tree;
 	NTSTATUS status;
@@ -200,7 +200,7 @@ bool torture_smb2_find_scan(struct torture_context *torture)
 /* 
    scan for valid SMB2 opcodes
 */
-bool torture_smb2_scan(struct torture_context *torture)
+static bool torture_smb2_scan(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
@@ -255,4 +255,18 @@ bool torture_smb2_scan(struct torture_context *torture)
 	talloc_free(mem_ctx);
 
 	return true;
+}
+
+struct torture_suite *torture_smb2_scan_init(void)
+{
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "scan");
+
+	torture_suite_add_simple_test(suite, "scan", torture_smb2_scan);
+	torture_suite_add_simple_test(suite, "getinfo", torture_smb2_getinfo_scan);
+	torture_suite_add_simple_test(suite, "setinfo", torture_smb2_setinfo_scan);
+	torture_suite_add_simple_test(suite, "find", torture_smb2_find_scan);
+
+	suite->description = talloc_strdup(suite, "scan target (not a test)");
+
+	return suite;
 }
