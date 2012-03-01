@@ -212,7 +212,7 @@ def main():
 			sys.exit(4)
 
 	
-	if opts.client_helper == "ntlmssp-client-1" and opts.server_helper == "gss-spnego":
+	elif opts.client_helper == "ntlmssp-client-1" and opts.server_helper == "gss-spnego":
 		# We're in the parent
 		writeLine(client_out, "YR")
 		buf = readLine(client_in)
@@ -242,7 +242,7 @@ def main():
 			sys.exit(4)
 
 
-	if opts.client_helper == "gss-spnego-client" and opts.server_helper == "gss-spnego":
+	elif opts.client_helper == "gss-spnego-client" and opts.server_helper == "gss-spnego":
 		# We're in the parent
 		writeLine(server_out, "YR")
 		buf = readLine(server_in)
@@ -265,6 +265,9 @@ def main():
 
 			if buf.count("AF * ", 0, 5) == 1:
 				break
+
+	else:
+		sys.exit(5)
 
 	if opts.client_helper == "ntlmssp-client-1":
 		writeLine(client_out, "GK")
