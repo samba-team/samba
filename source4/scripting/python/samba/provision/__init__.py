@@ -645,8 +645,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
 
     shares = {}
     if serverrole == "domain controller":
-        shares["sysvol"] = os.path.join(global_settings["state directory"],
-            "sysvol")
+        shares["sysvol"] = os.path.join(lp.get("state directory"), "sysvol")
         shares["netlogon"] = os.path.join(shares["sysvol"], realm.lower(),
             "scripts")
 
