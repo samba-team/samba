@@ -1021,7 +1021,7 @@ NTSTATUS check_name(connection_struct *conn, const char *name)
 }
 
 /****************************************************************************
- Must be called as root. Creates the struct priv_backup_restore_paths structure
+ Must be called as root. Creates the struct privilege_paths
  attached to the struct smb_request if this call is successful.
 ****************************************************************************/
 
@@ -1036,8 +1036,7 @@ static NTSTATUS check_name_with_privilege(connection_struct *conn,
 	}
 	return check_reduced_name_with_privilege(conn,
 			name,
-			NULL,
-			NULL);
+			smbreq);
 }
 
 /****************************************************************************

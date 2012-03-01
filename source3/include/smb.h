@@ -442,6 +442,7 @@ struct current_user {
 };
 
 struct smbd_smb2_request;
+struct privilege_paths;
 
 struct smb_request {
 	uint8_t cmd;
@@ -495,6 +496,12 @@ struct smb_request {
 	 * Back pointer to smb2 request.
 	 */
 	struct smbd_smb2_request *smb2req;
+
+	/*
+	 * Pathnames used if request done
+	 * under privilege.
+	 */
+	struct privilege_paths *priv_paths;
 };
 
 /* Defines for the sent_oplock_break field above. */
@@ -1347,6 +1354,15 @@ struct smb_filename {
 	char *stream_name;
 	char *original_lcomp;
 	SMB_STRUCT_STAT st;
+};
+
+/*
+ * Pathnames used if request done
+ * under privilege.
+ */
+struct privilege_paths {
+	struct smb_filename parent_name;
+	struct smb_filename file_name;
 };
 
 /* Used to keep track of deferred opens. */
