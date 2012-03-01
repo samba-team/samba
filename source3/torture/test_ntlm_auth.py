@@ -181,33 +181,90 @@ def main():
 	server_out = server_out_w
 	os.close(server_out_r)
 
-	# We're in the parent
-	writeLine(client_out, "YR")
-	buf = readLine(client_in)
+	if opts.client_helper == "ntlmssp-client-1" and opts.server_helper == "squid-2.5-ntlmssp":
 
-	if buf.count("YR ", 0, 3) != 1:
-		sys.exit(1)
+		# We're in the parent
+		writeLine(client_out, "YR")
+		buf = readLine(client_in)
+		
+		if buf.count("YR ", 0, 3) != 1:
+			sys.exit(1)
 
-	writeLine(server_out, buf)
-	buf = readLine(server_in)
+		writeLine(server_out, buf)
+		buf = readLine(server_in)
 
-	if buf.count("TT ", 0, 3) != 1:
-		sys.exit(2)
+		if buf.count("TT ", 0, 3) != 1:
+			sys.exit(2)
 
-	writeLine(client_out, buf)
-	buf = readLine(client_in)
+		writeLine(client_out, buf)
+		buf = readLine(client_in)
 
-	if buf.count("AF ", 0, 3) != 1:
-		sys.exit(3)
+		if buf.count("AF ", 0, 3) != 1:
+			sys.exit(3)
 
-	# Client sends 'AF <base64 blob>' but server expects 'KK <abse64 blob>'
-	buf = buf.replace("AF", "KK", 1)
+		# Client sends 'AF <base64 blob>' but server expects 'KK <abse64 blob>'
+		buf = buf.replace("AF", "KK", 1)
+		
+		writeLine(server_out, buf)
+		buf = readLine(server_in)
+		
+		if buf.count("AF ", 0, 3) != 1:
+			sys.exit(4)
 
-	writeLine(server_out, buf)
-	buf = readLine(server_in)
+	
+	if opts.client_helper == "ntlmssp-client-1" and opts.server_helper == "gss-spnego":
+		# We're in the parent
+		writeLine(client_out, "YR")
+		buf = readLine(client_in)
+		
+		if buf.count("YR ", 0, 3) != 1:
+			sys.exit(1)
 
-	if buf.count("AF ", 0, 3) != 1:
-		sys.exit(4)
+		writeLine(server_out, buf)
+		buf = readLine(server_in)
+
+		if buf.count("TT ", 0, 3) != 1:
+			sys.exit(2)
+
+		writeLine(client_out, buf)
+		buf = readLine(client_in)
+
+		if buf.count("AF ", 0, 3) != 1:
+			sys.exit(3)
+
+		# Client sends 'AF <base64 blob>' but server expects 'KK <abse64 blob>'
+		buf = buf.replace("AF", "KK", 1)
+		
+		writeLine(server_out, buf)
+		buf = readLine(server_in)
+		
+		if buf.count("AF * ", 0, 5) != 1:
+			sys.exit(4)
+
+
+	if opts.client_helper == "gss-spnego-client" and opts.server_helper == "gss-spnego":
+		# We're in the parent
+		writeLine(server_out, "YR")
+		buf = readLine(server_in)
+		
+		while True:
+			if buf.count("AF ", 0, 3) != 1 and buf.count("TT ", 0, 3) != 1:
+				sys.exit(1)
+
+			writeLine(client_out, buf)
+			buf = readLine(client_in)
+		
+			if buf.count("AF", 0, 2) == 1:
+				break
+
+			if buf.count("AF ", 0, 5) != 1 and buf.count("KK ", 0, 3) != 1 and buf.count("TT ", 0, 3) != 1:
+				sys.exit(2)
+
+			writeLine(server_out, buf)
+			buf = readLine(server_in)
+
+			if buf.count("AF * ", 0, 5) == 1:
+				break
 
 	if opts.client_helper == "ntlmssp-client-1":
 		writeLine(client_out, "GK")
