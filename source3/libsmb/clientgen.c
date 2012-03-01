@@ -25,6 +25,7 @@
 #include "../libcli/smb/smb_seal.h"
 #include "async_smb.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "../librpc/ndr/libndr.h"
 
 /*******************************************************************
  Setup the word count and byte count for a client smb message.
@@ -150,6 +151,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	bool force_ascii = false;
 	bool use_level_II_oplocks = false;
 	uint32_t smb1_capabilities = 0;
+	uint32_t smb2_capabilities = 0;
+	struct GUID client_guid = GUID_random();
 
 	/* Check the effective uid - make sure we are not setuid */
 	if (is_setuid_root()) {
@@ -250,6 +253,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		smb1_capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
 
+	smb2_capabilities = SMB2_CAP_ALL;
+
 	if (remote_realm) {
 		cli->remote_realm = talloc_strdup(cli, remote_realm);
 		if (cli->remote_realm == NULL) {
@@ -260,8 +265,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	cli->conn = smbXcli_conn_create(cli, fd, remote_name,
 					signing_state,
 					smb1_capabilities,
-					NULL, /* client_guid */
-					0 /* smb1_capabilites */);
+					&client_guid,
+					smb2_capabilities);
 	if (cli->conn == NULL) {
 		goto error;
 	}
