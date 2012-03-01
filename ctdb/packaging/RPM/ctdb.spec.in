@@ -146,6 +146,10 @@ development libraries for ctdb
 %{_libdir}/libctdb.a
 
 %changelog
+* Thu Mar 1 2012 : Version 1.13
+ - This is the new stable branch for modern features for ctdb.
+   Main new features are performance/scaling improvements for
+   concurrnet fetch and fetch_lock operations.
 * Tue Nov 8 2011 : Version 1.12
  - Add new tunable : AllowClientDBAttach that can be used to stop
    client db access during maintenance operations
