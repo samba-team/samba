@@ -387,6 +387,7 @@ bool spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
 	bool ret;
 	ASN1_DATA *data;
 	int data_remaining;
+	*ticket = data_blob_null;
 
 	data = asn1_init(talloc_tos());
 	if (data == NULL) {
