@@ -461,7 +461,7 @@ struct smb_request {
 	/*
 	 * Async handling in the main smb processing loop is directed by
 	 * outbuf: reply_xxx routines indicate sync behaviour by putting their
-	 * reply into "outbuf". If they leave it as NULL, they take of it
+	 * reply into "outbuf". If they leave it as NULL, they take care of it
 	 * themselves, possibly later.
 	 *
 	 * If async handling is wanted, the reply_xxx routine must make sure
