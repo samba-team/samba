@@ -1355,7 +1355,7 @@ static bool b9_record_match(struct dlz_bind9_data *state,
 		}
 		return status;
 	case DNS_TYPE_PTR:
-		return strcmp(rec1->data.ptr, rec2->data.ptr) == 0;
+		return dns_name_equal(rec1->data.ptr, rec2->data.ptr);
 	case DNS_TYPE_NS:
 		return dns_name_equal(rec1->data.ns, rec2->data.ns);
 
