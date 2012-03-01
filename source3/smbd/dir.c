@@ -413,6 +413,60 @@ static void dptr_close_oldest(struct smbd_server_connection *sconn,
 }
 
 /****************************************************************************
+ Safely do an OpenDir as root, ensuring we're in the right place.
+****************************************************************************/
+
+static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
+					struct smb_request *req,
+					const char *path,
+					const char *wcard,
+					uint32_t attr)
+{
+	NTSTATUS status;
+	struct smb_Dir *dir_hnd = NULL;
+	struct smb_filename *smb_fname_cwd = NULL;
+	char *saved_dir = vfs_GetWd(talloc_tos(), conn);
+	struct privilege_paths *priv_paths = req->priv_paths;
+	int ret;
+
+	if (saved_dir == NULL) {
+		return NULL;
+	}
+
+	if (vfs_ChDir(conn, path) == -1) {
+		return NULL;
+	}
+
+	/* Now check the stat value is the same. */
+	status = create_synthetic_smb_fname(talloc_tos(), ".",
+					NULL, NULL,
+					&smb_fname_cwd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+	ret = SMB_VFS_STAT(conn, smb_fname_cwd);
+	if (ret != 0) {
+		goto out;
+	}
+
+	if (!check_same_stat(&smb_fname_cwd->st, &priv_paths->parent_name.st)) {
+		DEBUG(0,("open_dir_with_privilege: stat mismatch between %s "
+			"and %s\n",
+			path,
+			smb_fname_str_dbg(&priv_paths->parent_name)));
+		goto out;
+	}
+
+	dir_hnd = OpenDir(NULL, conn, ".", wcard, attr);
+
+  out:
+
+	vfs_ChDir(conn, saved_dir);
+	return dir_hnd;
+}
+
+/****************************************************************************
  Create a new dir ptr. If the flag old_handle is true then we must allocate
  from the bitmap range 0 - 255 as old SMBsearch directory handles are only
  one byte long. If old_handle is false we allocate from the range
@@ -421,7 +475,9 @@ static void dptr_close_oldest(struct smbd_server_connection *sconn,
  wcard must not be zero.
 ****************************************************************************/
 
-NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
+NTSTATUS dptr_create(connection_struct *conn,
+		struct smb_request *req,
+		files_struct *fsp,
 		const char *path, bool old_handle, bool expect_close,uint16 spid,
 		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
 {
@@ -480,7 +536,15 @@ NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		dir_hnd = OpenDir(NULL, conn, path, wcard, attr);
+		if (req && req->priv_paths) {
+			dir_hnd = open_dir_with_privilege(conn,
+						req,
+						path,
+						wcard,
+						attr);
+		} else {
+			dir_hnd = OpenDir(NULL, conn, path, wcard, attr);
+		}
 	}
 
 	if (!dir_hnd) {

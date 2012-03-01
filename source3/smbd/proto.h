@@ -197,7 +197,9 @@ void dptr_closecnum(connection_struct *conn);
 void dptr_idlecnum(connection_struct *conn);
 void dptr_closepath(struct smbd_server_connection *sconn,
 		    char *path,uint16 spid);
-NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
+NTSTATUS dptr_create(connection_struct *conn,
+		struct smb_request *req,
+		files_struct *fsp,
 		const char *path, bool old_handle, bool expect_close,uint16 spid,
 		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret);
 void dptr_CloseDir(files_struct *fsp);

@@ -1497,6 +1497,7 @@ void reply_search(struct smb_request *req)
 		SCVAL(status,0,(dirtype & 0x1F));
 
 		nt_status = dptr_create(conn,
+					NULL, /* req */
 					NULL, /* fsp */
 					directory,
 					True,
