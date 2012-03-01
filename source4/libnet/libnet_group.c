@@ -139,11 +139,9 @@ NTSTATUS libnet_CreateGroup_recv(struct composite_context *c,
 				 struct libnet_CreateGroup *r)
 {
 	NTSTATUS status;
-	struct create_group_state *s;
 
 	status = composite_wait(c);
 	if (!NT_STATUS_IS_OK(status)) {
-		s = talloc_get_type_abort(c->private_data, struct create_group_state);
 		r->out.error_string = talloc_strdup(mem_ctx, nt_errstr(status));
 	}
 
