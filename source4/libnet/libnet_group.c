@@ -90,8 +90,8 @@ static void continue_domain_opened(struct composite_context *ctx)
 	struct create_group_state *s;
 	struct composite_context *create_req;
 	
-	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct create_group_state);
+	c = talloc_get_type_abort(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type_abort(c->private_data, struct create_group_state);
 
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
 	if (!composite_is_ok(c)) return;
@@ -114,8 +114,8 @@ static void continue_rpc_group_added(struct composite_context *ctx)
 	struct composite_context *c;
 	struct create_group_state *s;
 
-	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct create_group_state);
+	c = talloc_get_type_abort(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type_abort(c->private_data, struct create_group_state);
 
 	/* receive result of group add call */
 	c->status = libnet_rpc_groupadd_recv(ctx, c, &s->group_add);
@@ -143,7 +143,7 @@ NTSTATUS libnet_CreateGroup_recv(struct composite_context *c,
 
 	status = composite_wait(c);
 	if (!NT_STATUS_IS_OK(status)) {
-		s = talloc_get_type(c->private_data, struct create_group_state);
+		s = talloc_get_type_abort(c->private_data, struct create_group_state);
 		r->out.error_string = talloc_strdup(mem_ctx, nt_errstr(status));
 	}
 
@@ -280,8 +280,8 @@ static void continue_domain_open_info(struct composite_context *ctx)
 	struct group_info_state *s;
 	struct composite_context *lookup_req, *info_req;
 	
-	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct group_info_state);
+	c = talloc_get_type_abort(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type_abort(c->private_data, struct group_info_state);
 	
 	/* receive domain handle */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domopen);
@@ -328,8 +328,8 @@ static void continue_name_found(struct composite_context *ctx)
 	struct group_info_state *s;
 	struct composite_context *info_req;
 
-	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct group_info_state);
+	c = talloc_get_type_abort(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type_abort(c->private_data, struct group_info_state);
 
 	/* receive SID assiociated with name found */
 	c->status = libnet_LookupName_recv(ctx, c, &s->lookup);
@@ -365,8 +365,8 @@ static void continue_group_info(struct composite_context *ctx)
 	struct composite_context *c;
 	struct group_info_state *s;
 
-	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct group_info_state);
+	c = talloc_get_type_abort(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type_abort(c->private_data, struct group_info_state);
 
 	/* receive group information */
 	c->status = libnet_rpc_groupinfo_recv(ctx, c, &s->info);
@@ -394,7 +394,7 @@ NTSTATUS libnet_GroupInfo_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
 	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
 		/* put the results into io structure if everything went fine */
-		s = talloc_get_type(c->private_data, struct group_info_state);
+		s = talloc_get_type_abort(c->private_data, struct group_info_state);
 
 		io->out.group_name = talloc_steal(mem_ctx,
 					s->info.out.info.all.name.string);
@@ -519,8 +519,8 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
 	struct grouplist_state *s;
 	struct tevent_req *subreq;
 	
-	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct grouplist_state);
+	c = talloc_get_type_abort(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type_abort(c->private_data, struct grouplist_state);
 
 	/* receive lsa domain handle */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
@@ -553,7 +553,7 @@ static void continue_domain_queried(struct tevent_req *subreq)
 	bool prereq_met = false;
 	
 	c = tevent_req_callback_data(subreq, struct composite_context);
-	s = talloc_get_type(c->private_data, struct grouplist_state);
+	s = talloc_get_type_abort(c->private_data, struct grouplist_state);
 
 	/* receive result of rpc request */
 	c->status = dcerpc_lsa_QueryInfoPolicy_r_recv(subreq, s);
@@ -598,8 +598,8 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 	struct grouplist_state *s;
 	struct tevent_req *subreq;
 
-	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct grouplist_state);
+	c = talloc_get_type_abort(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type_abort(c->private_data, struct grouplist_state);
 
 	/* receive samr domain handle */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
@@ -635,7 +635,7 @@ static void continue_groups_enumerated(struct tevent_req *subreq)
 	uint32_t i;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
-	s = talloc_get_type(c->private_data, struct grouplist_state);
+	s = talloc_get_type_abort(c->private_data, struct grouplist_state);
 
 	/* receive result of rpc request */
 	c->status = dcerpc_samr_EnumDomainGroups_r_recv(subreq, s);
@@ -713,7 +713,7 @@ NTSTATUS libnet_GroupList_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 	    NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
 		
-		s = talloc_get_type(c->private_data, struct grouplist_state);
+		s = talloc_get_type_abort(c->private_data, struct grouplist_state);
 		
 		/* get results from composite context */
 		io->out.count        = s->count;

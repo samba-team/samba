@@ -62,7 +62,7 @@ static void continue_userinfo_lookup(struct tevent_req *subreq)
 	struct msg_rpc_lookup_name *msg_lookup;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
-	s = talloc_get_type(c->private_data, struct userinfo_state);
+	s = talloc_get_type_abort(c->private_data, struct userinfo_state);
 
 	/* receive samr_Lookup reply */
 	c->status = dcerpc_samr_LookupNames_r_recv(subreq, s);
@@ -123,7 +123,7 @@ static void continue_userinfo_openuser(struct tevent_req *subreq)
 	struct msg_rpc_open_user *msg_open;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
-	s = talloc_get_type(c->private_data, struct userinfo_state);
+	s = talloc_get_type_abort(c->private_data, struct userinfo_state);
 
 	/* receive samr_OpenUser reply */
 	c->status = dcerpc_samr_OpenUser_r_recv(subreq, s);
@@ -174,7 +174,7 @@ static void continue_userinfo_getuser(struct tevent_req *subreq)
 	struct msg_rpc_query_user *msg_query;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
-	s = talloc_get_type(c->private_data, struct userinfo_state);
+	s = talloc_get_type_abort(c->private_data, struct userinfo_state);
 
 	/* receive samr_QueryUserInfo reply */
 	c->status = dcerpc_samr_QueryUserInfo_r_recv(subreq, s);
@@ -225,7 +225,7 @@ static void continue_userinfo_closeuser(struct tevent_req *subreq)
 	struct msg_rpc_close_user *msg_close;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
-	s = talloc_get_type(c->private_data, struct userinfo_state);
+	s = talloc_get_type_abort(c->private_data, struct userinfo_state);
 
 	/* receive samr_Close reply */
 	c->status = dcerpc_samr_Close_r_recv(subreq, s);
@@ -345,7 +345,7 @@ NTSTATUS libnet_rpc_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_c
 	status = composite_wait(c);
 	
 	if (NT_STATUS_IS_OK(status) && io) {
-		s = talloc_get_type(c->private_data, struct userinfo_state);
+		s = talloc_get_type_abort(c->private_data, struct userinfo_state);
 		talloc_steal(mem_ctx, s->info);
 		io->out.info = *s->info;
 	}
