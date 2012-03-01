@@ -1908,8 +1908,8 @@ static void manage_client_ntlmssp_targ(struct spnego_data spnego)
 				       spnego.negTokenTarg.responseToken,
 				       &request);
 
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED from "
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED or OK from "
 			  "ntlmssp_client_update, got: %s\n",
 			  nt_errstr(status)));
 		x_fprintf(x_stdout, "BH Expected MORE_PROCESSING_REQUIRED from "
@@ -1950,27 +1950,16 @@ static bool manage_client_krb5_init(struct spnego_data spnego)
 	ssize_t len;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if ( (spnego.negTokenInit.mechListMIC.data == NULL) ||
-	     (spnego.negTokenInit.mechListMIC.length == 0) ) {
-		DEBUG(1, ("Did not get a principal for krb5\n"));
-		return False;
-	}
-
-	principal = talloc_strndup(ctx, (char *)spnego.negTokenInit.mechListMIC.data,
-				   spnego.negTokenInit.mechListMIC.length);
-
-	if (!principal) {
-		return false;
-	}
+	principal = spnego.negTokenInit.targetPrincipal;
 
 	/* We may not be allowed to use the server-supplied SPNEGO principal, or it may not have been supplied to us
 	 */
 	if (!lp_client_use_spnego_principal() || strequal(principal, ADS_IGNORE_PRINCIPAL)) {
-		TALLOC_FREE(principal);
+		principal = NULL;
 	}
 	
 	if (principal == NULL &&
-	    !is_ipaddress(opt_target_hostname)) {
+	    opt_target_service && opt_target_hostname && !is_ipaddress(opt_target_hostname)) {
 		DEBUG(3,("manage_client_krb5_init: using target "
 			 "hostname not SPNEGO principal\n"));
 
