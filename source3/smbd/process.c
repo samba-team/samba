@@ -538,7 +538,6 @@ static bool init_smb_request(struct smb_request *req,
 	req->sconn = sconn;
 	req->conn = conn_find(sconn,req->tid);
 	req->chain_fsp = NULL;
-	req->chain_outbuf = NULL;
 	req->done = false;
 	req->smb2req = NULL;
 	req->priv_paths = NULL;

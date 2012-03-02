@@ -481,11 +481,6 @@ struct smb_request {
 	struct files_struct *chain_fsp;
 
 	/*
-	 * Here we collect the outbufs from the chain handlers
-	 */
-	uint8_t *chain_outbuf;
-
-	/*
 	 * state information for async smb handling
 	 */
 	void *async_priv;
