@@ -51,14 +51,16 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to setup complex file '%s'\n", FNAME);
+		printf("Failed to setup complex file '%s': %s\n",
+		       FNAME, nt_errstr(status));
 		return false;
 	}
 	torture_setup_complex_file(tree, FNAME2);
 
 	status = torture_setup_complex_dir(tree, DNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to setup complex dir  '%s'\n", DNAME);
+		printf("Failed to setup complex dir '%s': %s\n",
+		       DNAME, nt_errstr(status));
 		smb2_util_unlink(tree, FNAME);
 		return false;
 	}
@@ -123,7 +125,8 @@ bool torture_smb2_setinfo_scan(struct torture_context *torture)
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to setup complex file '%s'\n", FNAME);
+		printf("Failed to setup complex file '%s': %s\n",
+		       FNAME, nt_errstr(status));
 		return false;
 	}
 	torture_setup_complex_file(tree, FNAME2);
