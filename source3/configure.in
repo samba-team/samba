@@ -5240,6 +5240,26 @@ fi
 AC_CHECKING(how to get filesystem space usage)
 space=no
 
+# Perform only the link test since it seems there are no variants of the
+# statvfs function.  This check is more than just AC_CHECK_FUNCS(statvfs)
+# because that got a false positive on SCO OSR5.  Adding the declaration
+# of a `struct statvfs' causes this test to fail (as it should) on such
+# systems.  That system is reported to work fine with STAT_STATFS4 which
+# is what it gets when this test fails.
+if test $space = no; then
+  # SVR4
+  AC_CACHE_CHECK([statvfs function (SVR4)], fu_cv_sys_stat_statvfs,
+		 [AC_TRY_LINK([#include <sys/types.h>
+#include <sys/statvfs.h>],
+			      [struct statvfs fsd; statvfs (0, &fsd);],
+			      fu_cv_sys_stat_statvfs=yes,
+			      fu_cv_sys_stat_statvfs=no)])
+  if test $fu_cv_sys_stat_statvfs = yes; then
+    space=yes
+    AC_DEFINE(STAT_STATVFS,1,[Whether statvfs() is available])
+  fi
+fi
+
 # Test for statvfs64.
 if test $space = no; then
   # SVR4
@@ -5261,26 +5281,6 @@ if test $space = no; then
   if test $fu_cv_sys_stat_statvfs64 = yes; then
     space=yes
     AC_DEFINE(STAT_STATVFS64,1,[Whether statvfs64() is available])
-  fi
-fi
-
-# Perform only the link test since it seems there are no variants of the
-# statvfs function.  This check is more than just AC_CHECK_FUNCS(statvfs)
-# because that got a false positive on SCO OSR5.  Adding the declaration
-# of a `struct statvfs' causes this test to fail (as it should) on such
-# systems.  That system is reported to work fine with STAT_STATFS4 which
-# is what it gets when this test fails.
-if test $space = no; then
-  # SVR4
-  AC_CACHE_CHECK([statvfs function (SVR4)], fu_cv_sys_stat_statvfs,
-		 [AC_TRY_LINK([#include <sys/types.h>
-#include <sys/statvfs.h>],
-			      [struct statvfs fsd; statvfs (0, &fsd);],
-			      fu_cv_sys_stat_statvfs=yes,
-			      fu_cv_sys_stat_statvfs=no)])
-  if test $fu_cv_sys_stat_statvfs = yes; then
-    space=yes
-    AC_DEFINE(STAT_STATVFS,1,[Whether statvfs() is available])
   fi
 fi
 
