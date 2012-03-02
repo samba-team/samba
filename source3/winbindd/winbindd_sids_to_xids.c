@@ -130,7 +130,7 @@ static bool winbindd_sids_to_xids_in_cache(struct dom_sid *sid,
 		return false;
 	}
 	if (idmap_cache_find_sid2unixid(sid, &id, &expired)) {
-		if (expired && is_domain_offline(find_our_domain())) {
+		if (expired && is_domain_online(find_our_domain())) {
 			return false;
 		}
 		map->sid = sid;
