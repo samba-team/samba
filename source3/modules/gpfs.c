@@ -22,6 +22,7 @@
 #include "smbd/smbd.h"
 
 #include "libcli/security/security.h"
+#include "gpfs_fcntl.h"
 #include "gpfs_gpl.h"
 #include "vfs_gpfs.h"
 
@@ -36,6 +37,9 @@ static int (*gpfs_get_winattrs_path_fn)(char *pathname, struct gpfs_winattr *att
 static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
 static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
 static int (*gpfs_lib_init_fn)(int flags);
+static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufferP);
+static int (*gpfs_fcntl_fn)(gpfs_file_t fileDesc, void *fcntlArgP);
+static int (*gpfs_getfilesetid_fn)(char *pathname, char *name, int *idP);
 
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
@@ -184,6 +188,75 @@ int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
         return gpfs_set_winattrs_path_fn(pathname,flags, attrs);
 }
 
+int get_gpfs_quota(const char *pathname, int type, int id,
+		   struct gpfs_quotaInfo *qi)
+{
+	int ret;
+
+	if (!gpfs_quotactl_fn) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	ZERO_STRUCTP(qi);
+	ret = gpfs_quotactl_fn(discard_const_p(char, pathname),
+			       GPFS_QCMD(Q_GETQUOTA, type), id, qi);
+
+	if (ret) {
+		if (errno == GPFS_E_NO_QUOTA_INST) {
+			DEBUG(10, ("Quotas disabled on GPFS filesystem.\n"));
+		} else {
+			DEBUG(0, ("Get quota failed, type %d, id, %d, "
+				  "errno %d.\n", type, id, errno));
+		}
+
+		return ret;
+	}
+
+	DEBUG(10, ("quota type %d, id %d, blk u:%lld h:%lld s:%lld gt:%u\n",
+		   type, id, qi->blockUsage, qi->blockHardLimit,
+		   qi->blockSoftLimit, qi->blockGraceTime));
+
+	return ret;
+}
+
+int get_gpfs_fset_id(const char *pathname, int *fset_id)
+{
+	int err, fd, errno_fcntl;
+
+	struct {
+		gpfsFcntlHeader_t hdr;
+		gpfsGetFilesetName_t fsn;
+	} arg;
+
+	if (!gpfs_fcntl_fn || !gpfs_getfilesetid_fn) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	arg.hdr.totalLength = sizeof(arg);
+	arg.hdr.fcntlVersion = GPFS_FCNTL_CURRENT_VERSION;
+	arg.hdr.fcntlReserved = 0;
+	arg.fsn.structLen = sizeof(arg.fsn);
+	arg.fsn.structType = GPFS_FCNTL_GET_FILESETNAME;
+
+	fd = open(pathname, O_RDONLY);
+	if (fd == -1)
+		return fd;
+
+	err = gpfs_fcntl_fn(fd, &arg);
+	errno_fcntl = errno;
+	close(fd);
+
+	if (err) {
+		errno = errno_fcntl;
+		return err;
+	}
+
+	return gpfs_getfilesetid_fn(discard_const_p(char, pathname),
+				    arg.fsn.buffer, fset_id);
+}
+
 void smbd_gpfs_lib_init()
 {
 	if (gpfs_lib_init_fn) {
@@ -258,6 +331,9 @@ void init_gpfs(void)
         init_gpfs_function(&gpfs_get_winattrs_fn,"gpfs_get_winattrs");
 	init_gpfs_function(&gpfs_ftruncate_fn, "gpfs_ftruncate");
         init_gpfs_function(&gpfs_lib_init_fn,"gpfs_lib_init");
+	init_gpfs_function(&gpfs_quotactl_fn, "gpfs_quotactl");
+	init_gpfs_function(&gpfs_fcntl_fn, "gpfs_fcntl");
+	init_gpfs_function(&gpfs_getfilesetid_fn, "gpfs_getfilesetid");
 
 	return;
 }
