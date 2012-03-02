@@ -660,9 +660,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		return pid;
 	}
 
-	/* child */
-	close_low_fds(false);
-
 	status = reinit_after_fork(msg_ctx,
 				   ev_ctx,
 				   true);

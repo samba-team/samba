@@ -875,9 +875,6 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	/* child */
-	close_low_fds(false);
-
 	/* save the parent process id so the children can use it later */
 	parent_id = procid_self();
 

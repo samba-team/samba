@@ -504,12 +504,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		 * them, counting worker smbds. */
 		CatchChild();
 
-		/* close our standard file
-		   descriptors */
-		if (!debug_get_output_is_stdout()) {
-			close_low_fds(False); /* Don't close stderr */
-		}
-
 		status = reinit_after_fork(msg_ctx,
 					   ev,
 					   true);
@@ -1397,10 +1391,8 @@ extern void build_options(bool screen);
 		   goes away */
 		smbd_server_conn->sock = dup(0);
 
-		/* close our standard file descriptors */
-		if (!debug_get_output_is_stdout()) {
-			close_low_fds(False); /* Don't close stderr */
-		}
+		/* close stdin, stdout (if not logging to it), but not stderr */
+		close_low_fds(true, !debug_get_output_is_stdout(), false);
 
 #ifdef HAVE_ATEXIT
 		atexit(killkids);

@@ -824,7 +824,7 @@ _PUBLIC_ int idr_remove(struct idr_context *idp, int id);
 /**
  Close the low 3 fd's and open dev/null in their place
 **/
-_PUBLIC_ void close_low_fds(bool stderr_too);
+_PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too);
 
 /**
  Become a daemon, discarding the controlling terminal.

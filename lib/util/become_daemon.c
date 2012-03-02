@@ -29,14 +29,16 @@
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
 
-_PUBLIC_ void close_low_fds(bool stderr_too)
+_PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
 {
 #ifndef VALGRIND
 	int fd;
 	int i;
 
-	close(0);
-	close(1);
+	if (stdin_too)
+		close(0);
+	if (stdout_too)
+		close(1);
 
 	if (stderr_too)
 		close(2);
@@ -44,6 +46,10 @@ _PUBLIC_ void close_low_fds(bool stderr_too)
 	/* try and use up these file descriptors, so silly
 		library routines writing to stdout etc won't cause havoc */
 	for (i=0;i<3;i++) {
+		if (i == 0 && !stdin_too)
+			continue;
+		if (i == 1 && !stdout_too)
+			continue;
 		if (i == 2 && !stderr_too)
 			continue;
 
@@ -87,9 +93,9 @@ _PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout
 	}
 #endif /* HAVE_SETSID */
 
-	if (!log_stdout) {
-		/* Close fd's 0,1,2. Needed if started by rsh */
-		close_low_fds(false);  /* Don't close stderr, let the debug system
-					  attach it to the logfile */
-	}
+	/* Close fd's 0,1,2 as appropriate. Needed if started by rsh. */
+	/* stdin must be open if we do not fork, for monitoring for
+	 * close.  stdout must be open if we are logging there, and we
+	 * never close stderr (but debug might dup it onto a log file) */
+	close_low_fds(do_fork, !log_stdout, false);
 }

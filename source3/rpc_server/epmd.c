@@ -159,9 +159,6 @@ void start_epmd(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	/* child */
-	close_low_fds(false);
-
 	status = reinit_after_fork(msg_ctx,
 				   ev_ctx,
 				   true);

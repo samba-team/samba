@@ -592,9 +592,14 @@ bool reopen_logs_internal(void)
 	(void)umask(oldumask);
 
 	/* Take over stderr to catch output into logs */
-	if (state.fd > 0 && dup2(state.fd, 2) == -1) {
-		close_low_fds(true); /* Close stderr too, if dup2 can't point it
-					at the logfile */
+	if (state.fd > 0) {
+		if (dup2(state.fd, 2) == -1) {
+			/* Close stderr too, if dup2 can't point it -
+			   at the logfile.  There really isn't much
+			   that can be done on such a fundemental
+			   failure... */
+			close_low_fds(false, false, true);
+		}
 	}
 
 	state.reopening_logs = false;
