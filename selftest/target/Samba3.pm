@@ -151,7 +151,6 @@ sub setup_s3dc($$)
 
 	my $vars = $self->provision($path,
 				    "LOCALS3DC2",
-				    2,
 				    "locals3dc2pass",
 				    $s3dc_options);
 
@@ -187,7 +186,6 @@ sub setup_member($$$)
 ";
 	my $ret = $self->provision($prefix,
 				   "LOCALMEMBER3",
-				   3,
 				   "localmember3pass",
 				   $member_options);
 
@@ -221,14 +219,14 @@ sub setup_member($$$)
 
 sub setup_admember($$$$)
 {
-	my ($self, $prefix, $dcvars, $iface) = @_;
+	my ($self, $prefix, $dcvars) = @_;
 
 	# If we didn't build with ADS, pretend this env was never available
 	if (not $self->have_ads()) {
 	        return "UNKNOWN";
 	}
 
-	print "PROVISIONING S3 AD MEMBER$iface...";
+	print "PROVISIONING S3 AD MEMBER...";
 
 	my $member_options = "
 	security = ads
@@ -238,9 +236,8 @@ sub setup_admember($$$$)
 ";
 
 	my $ret = $self->provision($prefix,
-				   "LOCALADMEMBER$iface",
-				   $iface,
-				   "loCalMember${iface}Pass",
+				   "LOCALADMEMBER",
+				   "loCalMemberPass",
 				   $member_options);
 
 	$ret or return undef;
@@ -308,7 +305,6 @@ sub setup_secshare($$)
 
 	my $vars = $self->provision($path,
 				    "LOCALSHARE4",
-				    4,
 				    "local4pass",
 				    $secshare_options);
 
@@ -338,7 +334,6 @@ sub setup_secserver($$$)
 
 	my $ret = $self->provision($prefix,
 				   "LOCALSERVER5",
-				   5,
 				   "localserver5pass",
 				   $secserver_options);
 
@@ -380,7 +375,6 @@ sub setup_ktest($$$)
 
 	my $ret = $self->provision($prefix,
 				   "LOCALKTEST6",
-				   6,
 				   "localktest6pass",
 				   $ktest_options);
 
@@ -467,7 +461,6 @@ map to guest = bad user
 
 	my $vars = $self->provision($path,
 				    "maptoguest",
-				    7,
 				    "maptoguestpass",
 				    $options);
 
@@ -674,14 +667,15 @@ sub check_or_start($$$$$) {
 	return 0;
 }
 
-sub provision($$$$$$$)
+sub provision($$$$$$)
 {
-	my ($self, $prefix, $server, $swiface, $password, $extra_options, $no_delete_prefix) = @_;
+	my ($self, $prefix, $server, $password, $extra_options, $no_delete_prefix) = @_;
 
 	##
 	## setup the various environment variables we need
 	##
 
+	my $swiface = Samba::get_interface($server);
 	my %ret = ();
 	my $server_ip = "127.0.0.$swiface";
 	my $domain = "SAMBA-TEST";

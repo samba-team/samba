@@ -445,11 +445,11 @@ Wfz/8alZ5aMezCQzXJyIaJsCLeKABosSwHcpAFmxlQ==
 EOF
 }
 
-sub provision_raw_prepare($$$$$$$$$$)
+sub provision_raw_prepare($$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
-	    $swiface, $password, $kdc_ipv4) = @_;
+	    $password, $kdc_ipv4) = @_;
 	my $ctx;
 	my $netbiosname = uc($hostname);
 
@@ -465,6 +465,9 @@ sub provision_raw_prepare($$$$$$$$$$)
 	unless (system("rm -rf $prefix_abs/*") == 0) {
 		warn("Unable to clean up");
 	}
+
+	
+	my $swiface = Samba::get_interface($hostname);
 
 	$ctx->{prefix} = $prefix;
 	$ctx->{prefix_abs} = $prefix_abs;
@@ -723,16 +726,16 @@ sub provision_raw_step2($$$)
 	return $ret;
 }
 
-sub provision($$$$$$$$$)
+sub provision($$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
-	    $swiface, $password, $kdc_ipv4, $extra_smbconf_options) = @_;
+	    $password, $kdc_ipv4, $extra_smbconf_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $hostname,
 					       $domain, $realm, $functional_level,
-					       $swiface, $password, $kdc_ipv4);
+					       $password, $kdc_ipv4);
 
 	$ctx->{tmpdir} = "$ctx->{prefix_abs}/tmp";
 	push(@{$ctx->{directories}}, "$ctx->{tmpdir}");
@@ -857,7 +860,6 @@ sub provision_member($$$)
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
-				   23,
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
 				   "");
@@ -923,7 +925,6 @@ sub provision_rpc_proxy($$$)
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
-				   24,
 				   "locRPCproxypass4",
 				   $dcvars->{SERVER_IP},
 				   $extra_smbconf_options);
@@ -997,7 +998,7 @@ sub provision_vampire_dc($$$)
 					       "SAMBADOMAIN",
 					       "samba.example.com",
 					       "2008",
-					       22, $dcvars->{PASSWORD},
+					       $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP});
 
 	$ctx->{smb_conf_extra_options} = "
@@ -1056,7 +1057,7 @@ sub provision_subdom_dc($$$)
 					       "SAMBASUBDOM",
 					       "sub.samba.example.com",
 					       "2008",
-					       31, $dcvars->{PASSWORD},
+					       $dcvars->{PASSWORD},
 					       undef);
 
 	$ctx->{smb_conf_extra_options} = "
@@ -1119,7 +1120,6 @@ sub provision_dc($$)
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
-				   21,
 				   "locDCpass1",
 				   undef, "netbios aliases = localDC1-a");
 
@@ -1149,7 +1149,6 @@ sub provision_fl2000dc($$)
 				   "SAMBA2000",
 				   "samba2000.example.com",
 				   "2000",
-				   25,
 				   "locDCpass5",
 				   undef, "");
 
@@ -1172,7 +1171,6 @@ sub provision_fl2003dc($$)
 				   "SAMBA2003",
 				   "samba2003.example.com",
 				   "2003",
-				   26,
 				   "locDCpass6",
 				   undef, "");
 
@@ -1195,7 +1193,6 @@ sub provision_fl2008r2dc($$)
 				   "SAMBA2008R2",
 				   "samba2008R2.example.com",
 				   "2008_R2",
-				   27,
 				   "locDCpass7",
 				   undef, "");
 
@@ -1219,7 +1216,7 @@ sub provision_rodc($$$)
 					       "SAMBADOMAIN",
 					       "samba.example.com",
 					       "2008",
-					       28, $dcvars->{PASSWORD},
+					       $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP});
 	unless ($ctx) {
 		return undef;
@@ -1306,7 +1303,6 @@ dcerpc endpoint servers = -unixinfo -rpcecho -spoolss -winreg -wkssvc -srvsvc
 				   "PLUGINDOMAIN",
 				   "plugin.samba.example.com",
 				   "2008",
-				   30,
 				   "locDCpass1",
 				   undef, $extra_smbconf_options);
 
@@ -1336,7 +1332,6 @@ sub provision_chgdcpass($$)
 				   "CHDCDOMAIN",
 				   "chgdcpassword.samba.example.com",
 				   "2008",
-				   31,
 				   "chgDCpass1",
 				   undef);
 
