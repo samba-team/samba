@@ -1,0 +1,78 @@
+.IX Title "SELFTEST 1"
+.TH SELFTEST 1 "2012-02-24" "selftest" "Samba"
+.if n .ad l
+.nh
+.SH "NAME"
+selftest \- Samba test runner
+.SH "SYNOPSIS"
+.IX Header "SYNOPSIS"
+selftest \-\-help
+.PP
+selftest [\-\-srcdir=DIR] [\-\-bindir=DIR] [\-\-target=samba|samba3|win] [\-\-socket\-wrapper] [\-\-quick] [\-\-exclude=FILE] [\-\-include=FILE] [\-\-one] [\-\-prefix=prefix] [\-\-testlist=FILE] [\s-1TESTS\s0]
+.SH "DESCRIPTION"
+.IX Header "DESCRIPTION"
+A simple test runner. \s-1TESTS\s0 is a regular expression with tests to run.
+.SH "OPTIONS"
+.IX Header "OPTIONS"
+.IP "\fI\-\-help\fR" 4
+.IX Item "--help"
+Show list of available options.
+.IP "\fI\-\-srcdir=DIR\fR" 4
+.IX Item "--srcdir=DIR"
+Source directory.
+.IP "\fI\-\-bindir=DIR\fR" 4
+.IX Item "--bindir=DIR"
+Built binaries directory.
+.IP "\fI\-\-prefix=DIR\fR" 4
+.IX Item "--prefix=DIR"
+Change directory to run tests in. Default is 'st'.
+.IP "\fI\-\-target samba|samba3|win\fR" 4
+.IX Item "--target samba|samba3|win"
+Specify test target against which to run. Default is 'samba4'.
+.IP "\fI\-\-quick\fR" 4
+.IX Item "--quick"
+Run only a limited number of tests. Intended to run in about 30 seconds on 
+moderately recent systems.
+.IP "\fI\-\-socket\-wrapper\fR" 4
+.IX Item "--socket-wrapper"
+Use socket wrapper library for communication with server. Only works 
+when the server is running locally.
+.Sp
+Will prevent \s-1TCP\s0 and \s-1UDP\s0 ports being opened on the local host but 
+(transparently) redirects these calls to use unix domain sockets.
+.IP "\fI\-\-exclude\fR" 4
+.IX Item "--exclude"
+Specify a file containing a list of tests that should be skipped. Possible 
+candidates are tests that segfault the server, flip or don't end.
+.IP "\fI\-\-include\fR" 4
+.IX Item "--include"
+Specify a file containing a list of tests that should be run. Same format 
+as the \-\-exclude flag.
+.Sp
+Not includes specified means all tests will be run.
+.IP "\fI\-\-one\fR" 4
+.IX Item "--one"
+Abort as soon as one test fails.
+.IP "\fI\-\-testlist\fR" 4
+.IX Item "--testlist"
+Load a list of tests from the specified location.
+.SH "ENVIRONMENT"
+.IX Header "ENVIRONMENT"
+.IP "\fI\s-1SMBD_VALGRIND\s0\fR" 4
+.IX Item "SMBD_VALGRIND"
+.PD 0
+.IP "\fI\s-1TORTURE_MAXTIME\s0\fR" 4
+.IX Item "TORTURE_MAXTIME"
+.IP "\fI\s-1VALGRIND\s0\fR" 4
+.IX Item "VALGRIND"
+.IP "\fI\s-1TLS_ENABLED\s0\fR" 4
+.IX Item "TLS_ENABLED"
+.IP "\fIsrcdir\fR" 4
+.IX Item "srcdir"
+.PD
+.SH "LICENSE"
+.IX Header "LICENSE"
+selftest is licensed under the \s-1GNU\s0 General Public License <http://www.gnu.org/licenses/gpl.html>.
+.SH "AUTHOR"
+.IX Header "AUTHOR"
+Pidl was written by Jelmer Vernooij.
