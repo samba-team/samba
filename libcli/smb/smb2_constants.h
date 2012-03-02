@@ -123,7 +123,11 @@
 #define SMB2_SHAREFLAG_FORCE_SHARED_DELETE               0x0200
 #define SMB2_SHAREFLAG_ALLOW_NAMESPACE_CACHING           0x0400
 #define SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM       0x0800
-#define SMB2_SHAREFLAG_ALL                               0x0F33
+#define SMB2_SHAREFLAG_FORCE_LEVELII_OPLOCKS             0x1000
+#define SMB2_SHAREFLAG_ENABLE_HASH_V1                    0x2000
+#define SMB2_SHAREFLAG_ENABLE_HASH_V2                    0x4000
+#define SMB2_SHAREFLAG_ENCRYPT_DATA                      0x8000
+#define SMB2_SHAREFLAG_ALL                               0xFF33
 
 /* SMB2 share capabilities */
 #define SMB2_SHARE_CAP_DFS			0x8
