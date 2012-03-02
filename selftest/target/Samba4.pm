@@ -158,7 +158,7 @@ sub check_or_start($$$)
 	}
 	print "DONE\n";
 
-	open(DATA, ">$env_vars->{SAMBA_TEST_FIFO}");
+	open($env_vars->{STDIN_PIPE}, ">$env_vars->{SAMBA_TEST_FIFO}");
 
 	return $pid;
 }
@@ -1354,20 +1354,19 @@ sub teardown_env($$)
 	my ($self, $envvars) = @_;
 	my $pid;
 
-	close(DATA);
+	# This should cause samba to terminate gracefully
+	close($envvars->{STDIN_PIPE});
 
 	if (open(IN, "<$envvars->{PIDDIR}/samba.pid")) {
 		$pid = <IN>;
 		close(IN);
-
-		# Give the process 20 seconds to exit.  gcov needs
-		# this time to write out the covarge data
 		my $count = 0;
+
 		until (kill(0, $pid) == 0) {
-			# if no process sucessfully signalled, then we are done
-			sleep(1);
-			$count++;
-			last if $count > 20;
+		    # This should give it time to write out the gcov data
+		    sleep(1);
+		    $count++;
+		    last if $count > 20;
 		}
 
 		# If it is still around, kill it
