@@ -3508,7 +3508,7 @@ static int setup_readX_header(struct smb_request *req, char *outbuf,
 	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 	SSVAL(outbuf,smb_vwv5,smb_maxcnt);
 	SSVAL(outbuf,smb_vwv6,
-	      req_wct_ofs(req)
+	      (smb_wct - 4)	/* offset from smb header to wct */
 	      + 1 		/* the wct field */
 	      + 12 * sizeof(uint16_t) /* vwv */
 	      + 2);		/* the buflen field */

@@ -479,7 +479,7 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 
 	SSVAL(req->outbuf,smb_vwv5,nread);
 	SSVAL(req->outbuf,smb_vwv6,
-	      req_wct_ofs(req)
+	      (smb_wct - 4)	/* offset from smb header to wct */
 	      + 1 		/* the wct field */
 	      + 12 * sizeof(uint16_t) /* vwv */
 	      + 2);		/* the buflen field */

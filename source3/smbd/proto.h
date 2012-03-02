@@ -784,7 +784,6 @@ const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);
 void remove_from_common_flags2(uint32 v);
 void construct_reply_common_req(struct smb_request *req, char *outbuf);
-size_t req_wct_ofs(struct smb_request *req);
 bool smb1_is_chain(const uint8_t *buf);
 bool smb1_walk_chain(const uint8_t *buf,
 		     bool (*fn)(uint8_t cmd,
