@@ -221,6 +221,53 @@
 		</varlistentry>
 		<varlistentry>
 
+		<term>gpfs:dfreequota = [ yes | no ]</term>
+		<listitem>
+		<para>
+		Adjust reporting of the size and free space of a share
+		according to quotas. If this setting is "yes", a
+		request for size and free space will also evaluate the
+		following quotas:
+		</para>
+
+		<itemizedlist>
+		<listitem><para>The user quota of the user requesting
+		    the data.</para></listitem>
+		<listitem><para>The group quota of the primary group
+		    of the user.</para></listitem>
+		<listitem><para>The fileset quota for the fileset
+		    containing the top level directory of the share.
+		</para></listitem>
+		</itemizedlist>
+
+		<para>
+		If any of the soft or hard quota limits has been
+		reached, the free space will be reported as 0. If a
+		quota is in place, but the limits have not been
+		reached, the free space will be reported according to
+		the space left in the quota. If more than one quota
+		applies the free space will be reported as the smallest
+		space left in those quotas. The size of the share
+		will be reported according to the quota usage. If more
+		than one quota applies, the smallest size will be
+		reported for the share size according to these quotas.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>yes</command> - include the quotas
+		when reporting the share size and free space
+		</para></listitem>
+		<listitem><para>
+		<command>no(default)</command> - do not include quotas,
+		simply report the size and free space of the file system
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+		<varlistentry>
+
 		<term>nfs4:mode = [ simple | special ]</term>
 		<listitem>
 		<para>

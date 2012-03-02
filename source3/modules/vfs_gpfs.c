@@ -33,6 +33,7 @@
 #include "nfs4_acls.h"
 #include "vfs_gpfs.h"
 #include "system/filesys.h"
+#include "auth.h"
 
 struct gpfs_config_data {
 	bool sharemodes;
@@ -42,6 +43,7 @@ struct gpfs_config_data {
 	bool winattr;
 	bool ftruncate;
 	bool getrealfilename;
+	bool dfreequota;
 };
 
 
@@ -1385,11 +1387,137 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 	config->getrealfilename = lp_parm_bool(SNUM(handle->conn), "gpfs",
 					       "getrealfilename", true);
 
+	config->dfreequota = lp_parm_bool(SNUM(handle->conn), "gpfs",
+					  "dfreequota", false);
+
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,
 				return -1);
 
 	return 0;
+}
+
+static int vfs_gpfs_get_quotas(const char *path, uid_t uid, gid_t gid,
+			       int *fset_id,
+			       struct gpfs_quotaInfo *qi_user,
+			       struct gpfs_quotaInfo *qi_group,
+			       struct gpfs_quotaInfo *qi_fset)
+{
+	int err;
+
+	err = get_gpfs_fset_id(path, fset_id);
+	if (err) {
+		DEBUG(0, ("Get fset id failed, errno %d.\n", errno));
+		return err;
+	}
+
+	err = get_gpfs_quota(path, GPFS_USRQUOTA, uid, qi_user);
+	if (err) {
+		return err;
+	}
+
+	err = get_gpfs_quota(path, GPFS_GRPQUOTA, gid, qi_group);
+	if (err) {
+		return err;
+	}
+
+	err = get_gpfs_quota(path, GPFS_FILESETQUOTA, *fset_id, qi_fset);
+	if (err) {
+		return err;
+	}
+
+	return 0;
+}
+
+static void vfs_gpfs_disk_free_quota(struct gpfs_quotaInfo qi, time_t cur_time,
+				     uint64_t *dfree, uint64_t *dsize)
+{
+	uint64_t usage, limit;
+
+	/*
+	 * The quota reporting is done in units of 1024 byte blocks, but
+	 * sys_fsusage uses units of 512 byte blocks, adjust the block number
+	 * accordingly. Also filter possibly negative usage counts from gpfs.
+	 */
+	usage = qi.blockUsage < 0 ? 0 : (uint64_t)qi.blockUsage * 2;
+	limit = (uint64_t)qi.blockHardLimit * 2;
+
+	/*
+	 * When the grace time for the exceeded soft block quota has been
+	 * exceeded, the soft block quota becomes an additional hard limit.
+	 */
+	if (qi.blockGraceTime && cur_time > qi.blockGraceTime) {
+		/* report disk as full */
+		*dfree = 0;
+		*dsize = MIN(*dsize, usage);
+	}
+
+	if (!qi.blockHardLimit)
+		return;
+
+	if (usage >= limit) {
+		/* report disk as full */
+		*dfree = 0;
+		*dsize = MIN(*dsize, usage);
+
+	} else {
+		/* limit has not been reached, determine "free space" */
+		*dfree = MIN(*dfree, limit - usage);
+		*dsize = MIN(*dsize, limit);
+	}
+}
+
+static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
+				   bool small_query, uint64_t *bsize,
+				   uint64_t *dfree, uint64_t *dsize)
+{
+	struct security_unix_token *utok;
+	struct gpfs_quotaInfo qi_user, qi_group, qi_fset;
+	struct gpfs_config_data *config;
+	int err, fset_id;
+	time_t cur_time;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct gpfs_config_data,
+				return (uint64_t)-1);
+	if (!config->dfreequota) {
+		return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query,
+					      bsize, dfree, dsize);
+	}
+
+	err = sys_fsusage(path, dfree, dsize);
+	if (err) {
+		DEBUG (0, ("Could not get fs usage, errno %d\n", errno));
+		return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query,
+					      bsize, dfree, dsize);
+	}
+
+	/* sys_fsusage returns units of 512 bytes */
+	*bsize = 512;
+
+	DEBUG(10, ("fs dfree %llu, dsize %llu\n",
+		   (unsigned long long)*dfree, (unsigned long long)*dsize));
+
+	utok = handle->conn->session_info->unix_token;
+	err = vfs_gpfs_get_quotas(path, utok->uid, utok->gid, &fset_id,
+				  &qi_user, &qi_group, &qi_fset);
+	if (err) {
+		return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query,
+					      bsize, dfree, dsize);
+	}
+
+	cur_time = time(NULL);
+
+	/* Adjust free space and size according to quota limits. */
+	vfs_gpfs_disk_free_quota(qi_user, cur_time, dfree, dsize);
+	vfs_gpfs_disk_free_quota(qi_group, cur_time, dfree, dsize);
+
+	/* Id 0 indicates the default quota, not an actual quota */
+	if (fset_id != 0) {
+		vfs_gpfs_disk_free_quota(qi_fset, cur_time, dfree, dsize);
+	}
+
+	disk_norm(small_query, bsize, dfree, dsize);
+	return *dfree;
 }
 
 static uint32_t vfs_gpfs_capabilities(struct vfs_handle_struct *handle,
@@ -1429,6 +1557,7 @@ static int vfs_gpfs_open(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.connect_fn = vfs_gpfs_connect,
+	.disk_free_fn = vfs_gpfs_disk_free,
 	.fs_capabilities_fn = vfs_gpfs_capabilities,
 	.kernel_flock_fn = vfs_gpfs_kernel_flock,
 	.linux_setlease_fn = vfs_gpfs_setlease,
