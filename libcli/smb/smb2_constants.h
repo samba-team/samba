@@ -215,4 +215,9 @@
 
 #define SMB2_WRITEFLAG_WRITE_THROUGH	0x00000001
 
+/*
+ * Flags for durable handle v2 requests
+ */
+#define SMB2_DHANDLE_FLAG_PERSISTENT 0x00000002
+
 #endif
