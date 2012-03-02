@@ -538,7 +538,6 @@ static bool init_smb_request(struct smb_request *req,
 	req->sconn = sconn;
 	req->conn = conn_find(sconn,req->tid);
 	req->chain_fsp = NULL;
-	req->done = false;
 	req->smb2req = NULL;
 	req->priv_paths = NULL;
 	smb_init_perfcount_data(&req->pcd);
@@ -1536,11 +1535,6 @@ static void construct_reply(struct smbd_server_connection *sconn,
 	}
 
 	conn = switch_message(req->cmd, req);
-
-	if (req->done) {
-		TALLOC_FREE(req);
-		return;
-	}
 
 	if (req->outbuf == NULL) {
 		return;

@@ -485,8 +485,6 @@ struct smb_request {
 	 */
 	void *async_priv;
 
-	bool done;
-
 	/*
 	 * Back pointer to smb2 request.
 	 */
