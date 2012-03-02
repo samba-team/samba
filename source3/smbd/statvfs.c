@@ -97,7 +97,7 @@ static int darwin_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 
 	return 0;
 }
-#elif defined(BSD) && defined(MNT_RDONLY)
+#elif defined(BSD) && defined(BSD_STATVFS_BSIZE)
 static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {
 	struct statfs statfs_buf;
@@ -172,7 +172,7 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {
 #if defined(DARWINOS)
 	return darwin_statvfs(path, statbuf);
-#elif defined(BSD) && defined(MNT_RDONLY)
+#elif defined(BSD) && defined(BSD_STATVFS_BSIZE)
 	return bsd_statvfs(path, statbuf);
 #elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
 	return linux_statvfs(path, statbuf);

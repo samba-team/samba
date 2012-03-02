@@ -6834,25 +6834,48 @@ fi
 
 CFLAGS=$CFLAGS_SAVE
 
-# Checks for the vfs_fileid module
+# Checks for *BSD bsd_statvfs() function
 # Start
-AC_CHECK_FUNC(getmntent)
+AC_CHECK_HEADERS(sys/param.h sys/mount.h)
 
-AC_CHECK_HEADERS(sys/param.h sys/statfs.h sys/mount.h)
-
-AC_MSG_CHECKING([vfs_fileid: checking for statfs() and struct statfs.f_fsid)])
-AC_CACHE_VAL(vfsfileid_cv_statfs,[
+AC_MSG_CHECKING([bsd_statvfs: checking for statfs() and struct statfs.bsize])
+AC_CACHE_VAL(bsdstatvfs_cv_statfs,[
 	     AC_TRY_RUN([
-		#include <sys/types.h>
 		#ifdef HAVE_SYS_PARAM_H
 		#include <sys/param.h>
 		#endif
 		#ifdef HAVE_SYS_MOUNT_H
 		#include <sys/mount.h>
 		#endif
-		#ifdef HAVE_SYS_STATFS_H
+		int main (void)
+		{
+			struct statfs fsd;
+			fsd.f_bsize = 0;
+			exit (statfs (".", &fsd));
+		}],
+		bsdstatvfs_cv_statfs=yes,
+		bsdstatvfs_cv_statfs=no,
+		bsdstatvfs_cv_statfs=no)])
+AC_MSG_RESULT($bsdstatvfs_cv_statfs)
+
+if test $bsdstatvfs_cv_statfs = yes; then
+  AC_DEFINE(BSD_STATVFS_BSIZE,1,[Whether statfs exists and struct statfs has bsize property])
+fi
+
+# End
+# Checks for *BSD sys_statvfs() function
+
+# Checks for the vfs_fileid module
+# Start
+AC_CHECK_FUNC(getmntent)
+
+AC_CHECK_HEADERS(sys/statfs.h)
+
+AC_MSG_CHECKING([vfs_fileid: checking for statfs() and struct statfs.f_fsid])
+AC_CACHE_VAL(vfsfileid_cv_statfs,[
+	     AC_TRY_RUN([
+		#include <sys/types.h>
 		#include <sys/statfs.h>
-		#endif
 		int main(void)
 		{
 			struct statfs fsd;
