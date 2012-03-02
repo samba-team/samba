@@ -614,6 +614,11 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 			ret = run_rpc_command(c, cli, &ndr_table_netlogon,
 					      0,
 					      rpc_vampire_keytab_internals, argc, argv);
+		} else {
+#ifndef HAVE_ADS
+			printf(_("Vampire requested against AD DC but ADS"
+				" support not built in: HAVE_ADS is not defined\n"));
+#endif
 		}
 	}
 
