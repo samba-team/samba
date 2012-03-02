@@ -952,10 +952,10 @@ bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRe
 		return strcmp(rec1->data.ipv4, rec2->data.ipv4) == 0;
 
 	case DNS_TYPE_NS:
-		return dns_name_equal(rec1->data.ns, rec1->data.ns);
+		return dns_name_equal(rec1->data.ns, rec2->data.ns);
 
 	case DNS_TYPE_CNAME:
-		return dns_name_equal(rec1->data.cname, rec1->data.cname);
+		return dns_name_equal(rec1->data.cname, rec2->data.cname);
 
 	case DNS_TYPE_SOA:
 		return dns_name_equal(rec1->data.soa.mname, rec2->data.soa.mname) == 0 &&
