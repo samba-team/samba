@@ -29,10 +29,6 @@
 
 #include "torture/smb2/proto.h"
 
-#define FNAME "scan-getinfo.dat"
-#define DNAME "scan-getinfo.dir"
-
-
 /* 
    scan for valid SMB2 getinfo levels
 */
@@ -44,6 +40,11 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 	struct smb2_handle fhandle, dhandle;
 	int c, i;
 
+	static const char *FNAME  = "scan-getinfo.dat";
+	static const char *FNAME2 = "scan-getinfo.dat:2ndstream";
+	static const char *DNAME  = "scan-getinfo.dir";
+	static const char *DNAME2 = "scan-getinfo.dir:2ndstream";
+
 	if (!torture_smb2_connection(torture, &tree)) {
 		return false;
 	}
@@ -53,7 +54,7 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 		printf("Failed to setup complex file '%s'\n", FNAME);
 		return false;
 	}
-	torture_setup_complex_file(tree, FNAME ":2ndstream");
+	torture_setup_complex_file(tree, FNAME2);
 
 	status = torture_setup_complex_dir(tree, DNAME);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -61,7 +62,7 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 		smb2_util_unlink(tree, FNAME);
 		return false;
 	}
-	torture_setup_complex_file(tree, DNAME ":2ndstream");
+	torture_setup_complex_file(tree, DNAME2);
 
 	torture_smb2_testfile(tree, FNAME, &fhandle);
 	torture_smb2_testdir(tree, DNAME, &dhandle);
@@ -107,6 +108,9 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 */
 bool torture_smb2_setinfo_scan(struct torture_context *torture)
 {
+	static const char *FNAME  = "scan-setinfo.dat";
+	static const char *FNAME2 = "scan-setinfo.dat:2ndstream";
+
 	struct smb2_tree *tree;
 	NTSTATUS status;
 	struct smb2_setinfo io;
@@ -122,7 +126,7 @@ bool torture_smb2_setinfo_scan(struct torture_context *torture)
 		printf("Failed to setup complex file '%s'\n", FNAME);
 		return false;
 	}
-	torture_setup_complex_file(tree, FNAME ":2ndstream");
+	torture_setup_complex_file(tree, FNAME2);
 
 	torture_smb2_testfile(tree, FNAME, &handle);
 
