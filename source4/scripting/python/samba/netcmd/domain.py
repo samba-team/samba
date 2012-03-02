@@ -578,7 +578,7 @@ class cmd_domain_level(Command):
                     samdb.modify(m)
                     # Under partitions
                     m = ldb.Message()
-                    m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup") + ",CN=Partitions,%s" % ldb.get_config_basedn())
+                    m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup") + ",CN=Partitions,%s" % samdb.get_config_basedn())
                     m["nTMixedDomain"] = ldb.MessageElement("0",
                       ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
                     try:
@@ -597,7 +597,7 @@ class cmd_domain_level(Command):
                 # Under partitions
                 m = ldb.Message()
                 m.dn = ldb.Dn(samdb, "CN=" + lp.get("workgroup")
-                  + ",CN=Partitions,%s" % ldb.get_config_basedn())
+                  + ",CN=Partitions,%s" % samdb.get_config_basedn())
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
                   str(new_level_domain), ldb.FLAG_MOD_REPLACE,
                           "msDS-Behavior-Version")
@@ -622,7 +622,7 @@ class cmd_domain_level(Command):
                 if new_level_forest > level_domain:
                     raise CommandError("Forest function level can't be higher than the domain function level(s). Please raise it/them first!")
                 m = ldb.Message()
-                m.dn = ldb.Dn(samdb, "CN=Partitions,%s" % ldb.get_config_basedn())
+                m.dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
                 m["msDS-Behavior-Version"]= ldb.MessageElement(
                   str(new_level_forest), ldb.FLAG_MOD_REPLACE,
                           "msDS-Behavior-Version")
