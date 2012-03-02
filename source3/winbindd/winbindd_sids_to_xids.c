@@ -135,7 +135,7 @@ static bool winbindd_sids_to_xids_in_cache(struct dom_sid *sid,
 	 * sids. So we check groups before users.
 	 */
 	if (idmap_cache_find_sid2gid(sid, &gid, &expired)) {
-		if (expired && is_domain_offline(find_our_domain())) {
+		if (expired && is_domain_online(find_our_domain())) {
 			return false;
 		}
 		map->sid = sid;
