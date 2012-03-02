@@ -141,6 +141,7 @@ bool torture_smb2_setinfo_scan(struct torture_context *torture)
 		}
 	}
 
+	smb2_util_unlink(tree, FNAME);
 	return true;
 }
 
