@@ -956,8 +956,6 @@ out_free:
 
 	poptFreeContext(pc);
 
-	load_interfaces();
-
 	if (!init_names()) {
 		result = 1;
 		goto done;
@@ -967,6 +965,9 @@ out_free:
 
 	if (!lp_load_global(get_dyn_CONFIGFILE()))
 		fprintf(stderr, "Can't load %s\n", get_dyn_CONFIGFILE());
+
+	/* We must load interfaces after we load the smb.conf */
+	load_interfaces();
 
 	/*
 	 * Get password
