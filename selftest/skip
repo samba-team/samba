@@ -42,6 +42,7 @@
 ^samba3.*raw.qfsinfo
 ^samba3.*raw.sfileinfo.base
 ^samba3.smb2.hold-oplock                # Not a test, but a way to block other clients for a test
+^samba3.smb2.scan                       # No tests
 ^samba3.smb2.session                    # Hangs
 ^samba4.raw.composite
 ^samba4.base.iometer
