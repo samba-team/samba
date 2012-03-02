@@ -1363,10 +1363,12 @@ sub teardown_env($$)
 		my $count = 0;
 
 		until (kill(0, $pid) == 0) {
+		    my $childpid = waitpid(-1, WNOHANG);
+	
 		    # This should give it time to write out the gcov data
 		    sleep(1);
 		    $count++;
-		    last if $count > 20;
+		    last if $childpid == 0 or $count > 20;
 		}
 
 		# If it is still around, kill it
@@ -1408,6 +1410,8 @@ sub getlog_env($$)
 sub check_env($$)
 {
 	my ($self, $envvars) = @_;
+
+	my $childpid = waitpid(-1, WNOHANG);
 
 	return (-p $envvars->{SAMBA_TEST_FIFO});
 }

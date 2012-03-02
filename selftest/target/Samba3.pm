@@ -43,17 +43,45 @@ sub new($$) {
 sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
+	my $count = 0;
+	
+	# This should cause smbd to terminate gracefully
+	close($envvars->{STDIN_PIPE});
 
 	my $smbdpid = read_pid($envvars, "smbd");
 	my $nmbdpid = read_pid($envvars, "nmbd");
 	my $winbinddpid = read_pid($envvars, "winbindd");
 
+	until (kill(0, $smbdpid, $nmbdpid, $winbinddpid) == 0) {
+	    my $childpid = waitpid(-1, WNOHANG);
+	    # This should give it time to write out the gcov data
+	    sleep(1);
+	    $count++;
+	    last if $childpid == 0 or $count > 20;
+	}
+
+	if ($count <= 20) {
+	    return;
+	}
+
 	$self->stop_sig_term($smbdpid);
 	$self->stop_sig_term($nmbdpid);
 	$self->stop_sig_term($winbinddpid);
 
-	sleep(2);
+	$count = 0;
+	until (kill(0, $smbdpid, $nmbdpid, $winbinddpid) == 0) {
+	    # if no process sucessfully signalled, then we are done
+	    my $childpid = waitpid(-1, WNOHANG);
+	    sleep(1);
+	    $count++;
+	    last if $childpid == 0 or $count > 20;
+	}
+	
+	if ($count <= 10) {
+	    return;
+	}
 
+	warn("timelimit process did not quit on SIGTERM, sending SIGKILL");
 	$self->stop_sig_kill($smbdpid);
 	$self->stop_sig_kill($nmbdpid);
 	$self->stop_sig_kill($winbinddpid);
@@ -97,6 +125,8 @@ sub getlog_env($$)
 sub check_env($$)
 {
 	my ($self, $envvars) = @_;
+
+	my $childpid = waitpid(-1, WNOHANG);
 
 	# TODO ...
 	return 1;
