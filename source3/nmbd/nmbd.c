@@ -88,6 +88,24 @@ static void nmbd_sig_term_handler(struct tevent_context *ev,
 	terminate(msg);
 }
 
+/*
+  handle stdin becoming readable when we are in --foreground mode
+ */
+static void nmbd_stdin_handler(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       uint16_t flags,
+			       void *private_data)
+{
+	char c;
+	if (read(0, &c, 1) != 1) {
+		struct messaging_context *msg = talloc_get_type_abort(
+			private_data, struct messaging_context);
+		
+		DEBUG(0,("EOF on stdin\n"));
+		terminate(msg);
+	}
+}
+
 static bool nmbd_setup_sig_term_handler(struct messaging_context *msg)
 {
 	struct tevent_signal *se;
@@ -100,6 +118,19 @@ static bool nmbd_setup_sig_term_handler(struct messaging_context *msg)
 	if (!se) {
 		DEBUG(0,("failed to setup SIGTERM handler"));
 		return false;
+	}
+
+	return true;
+}
+
+static bool nmbd_setup_stdin_handler(struct messaging_context *msg, bool foreground)
+{
+	if (foreground) {
+		/* if we are running in the foreground then look for
+		   EOF on stdin, and exit if it happens. This allows
+		   us to die if the parent process dies
+		*/
+		tevent_add_fd(nmbd_event_context(), nmbd_event_context(), 0, TEVENT_FD_READ, nmbd_stdin_handler, msg);
 	}
 
 	return true;
@@ -917,6 +948,8 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 
 	if (!nmbd_setup_sig_term_handler(msg))
+		exit(1);
+	if (!nmbd_setup_stdin_handler(msg, !Fork))
 		exit(1);
 	if (!nmbd_setup_sig_hup_handler(msg))
 		exit(1);
