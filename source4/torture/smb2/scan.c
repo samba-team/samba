@@ -58,6 +58,7 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 	status = torture_setup_complex_dir(tree, DNAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to setup complex dir  '%s'\n", DNAME);
+		smb2_util_unlink(tree, FNAME);
 		return false;
 	}
 	torture_setup_complex_file(tree, DNAME ":2ndstream");
@@ -96,6 +97,8 @@ bool torture_smb2_getinfo_scan(struct torture_context *torture)
 		}
 	}
 
+	smb2_util_unlink(tree, FNAME);
+	smb2_util_rmdir(tree, DNAME);
 	return true;
 }
 
