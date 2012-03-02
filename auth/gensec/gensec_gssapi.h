@@ -43,9 +43,9 @@ struct gensec_gssapi_state {
 
 	gss_cred_id_t delegated_cred_handle;
 
-	gss_krb5_lucid_context_v1_t *lucid;
 
 	/* gensec_gssapi only */
+	gss_krb5_lucid_context_v1_t *lucid;
 	gss_OID gss_oid;
 
 	struct gss_channel_bindings_struct *input_chan_bindings;
