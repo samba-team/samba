@@ -1300,6 +1300,7 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 	int ret;
 
 	header->flags &= ~(CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY);
+	header->flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 	header->rsn   -= 1;
 
 	if ((rc = talloc_zero(ctdb_db, struct revokechild_handle)) == NULL) {

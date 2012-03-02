@@ -28,8 +28,11 @@ struct ctdb_persistent_write_state {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_marshall_buffer *m;
 	struct ctdb_req_control *c;
+	uint32_t flags;
 };
 
+/* dont create/update records that does not exist locally */
+#define UPDATE_FLAGS_REPLACE_ONLY	1
 
 /*
   called from a child process to write the data
@@ -60,6 +63,19 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 					 i, state->ctdb_db->db_id));
 			talloc_free(tmp_ctx);
 			goto failed;
+		}
+
+		/* we must check if the record exists or not because
+		   ctdb_ltdb_fetch will unconditionally create a record
+		 */
+		if (state->flags & UPDATE_FLAGS_REPLACE_ONLY) {
+			TDB_DATA rec;
+			rec = tdb_fetch(state->ctdb_db->ltdb->tdb, key);
+			if (rec.dsize == 0) {
+				talloc_free(tmp_ctx);
+				continue;
+			}
+			free(rec.dptr);
 		}
 
 		/* fetch the old header and ensure the rsn is less than the new rsn */
@@ -309,6 +325,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->ctdb_db = ctdb_db;
 	state->c       = c;
 	state->m       = m;
+	state->flags   = UPDATE_FLAGS_REPLACE_ONLY;
 
 	/* create a child process to take out a transaction and
 	   write the data.
