@@ -27,12 +27,6 @@ samba3srcdir = srcdir() + "/source3"
 configuration = "--configfile=$SMB_CONF_PATH"
 scriptdir=os.path.join(samba3srcdir, "../script/tests")
 
-# see if we support ADS on the Samba3 side
-try:
-    config_h = os.environ["CONFIG_H"]
-except KeyError:
-    config_h = os.path.join(samba3srcdir, "include/autoconf/config.h")
-
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
                    "--target=samba3", "--basedir=$SELFTEST_TMPDIR",
                    '--option="torture:winbindd_netbios_name=$SERVER"',
