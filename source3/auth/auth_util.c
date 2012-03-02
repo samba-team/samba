@@ -1618,3 +1618,31 @@ NTSTATUS do_map_to_guest_server_info(NTSTATUS status,
 
 	return status;
 }
+
+/*
+  Extract session key from a session info and return it in a blob
+  if intent is KEY_USE_16BYTES, truncate it to 16 bytes
+
+  See sections 3.2.4.15 and 3.3.4.2 of MS-SMB
+  Also see https://lists.samba.org/archive/cifs-protocol/2012-January/002265.html for details
+
+  Note that returned session_key is referencing the original key, it is supposed to be
+  short-lived. If original session_info->session_key is gone, the reference will be broken.
+*/
+NTSTATUS session_extract_session_key(const struct auth_session_info *session_info, DATA_BLOB *session_key, enum session_key_use_intent intent)
+{
+
+	if (session_key == NULL || session_info == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (session_info->session_key.length == 0) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	*session_key = session_info->session_key;
+	if (intent == KEY_USE_16BYTES) {
+		session_key->length = MIN(session_info->session_key.length, 16);
+	}
+	return NT_STATUS_OK;
+}

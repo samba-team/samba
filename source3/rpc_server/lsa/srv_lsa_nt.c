@@ -287,7 +287,7 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		DEBUG(5, ("init_lsa_sids: looking up name %s\n", full_name));
+		DEBUG(5, ("lookup_lsa_sids: looking up name %s\n", full_name));
 
 		if (!lookup_name(mem_ctx, full_name, flags, &domain, NULL,
 				 &sid, &type)) {
@@ -300,12 +300,12 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 		case SID_NAME_DOMAIN:
 		case SID_NAME_ALIAS:
 		case SID_NAME_WKN_GRP:
-			DEBUG(5, ("init_lsa_sids: %s found\n", full_name));
+			DEBUG(5, ("lookup_lsa_sids: %s found\n", full_name));
 			/* Leave these unchanged */
 			break;
 		default:
 			/* Don't hand out anything but the list above */
-			DEBUG(5, ("init_lsa_sids: %s not found\n", full_name));
+			DEBUG(5, ("lookup_lsa_sids: %s not found\n", full_name));
 			type = SID_NAME_UNKNOWN;
 			break;
 		}
@@ -1309,10 +1309,7 @@ NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
 		DEBUG(5,("_lsa_LookupNames3: truncating name lookup list to %d\n", num_entries));
 	}
 
-	/* Probably the lookup_level is some sort of bitmask. */
-	if (r->in.level == 1) {
-		flags = LOOKUP_NAME_ALL;
-	}
+	flags = lsa_lookup_level_to_flags(r->in.level);
 
 	domains = talloc_zero(p->mem_ctx, struct lsa_RefDomainList);
 	if (!domains) {
@@ -1660,6 +1657,46 @@ NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
 					   r->out.trustdom_handle);
 }
 
+static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
+				       TALLOC_CTX *mem_ctx, DATA_BLOB *auth_blob,
+				       struct trustDomainPasswords *auth_struct)
+{
+	enum ndr_err_code ndr_err;
+	DATA_BLOB lsession_key;
+	NTSTATUS status;
+
+	status = session_extract_session_key(p->session_info, &lsession_key, KEY_USE_16BYTES);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	arcfour_crypt_blob(auth_blob->data, auth_blob->length, &lsession_key);
+	ndr_err = ndr_pull_struct_blob(auth_blob, mem_ctx,
+				       auth_struct,
+				       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS get_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
+					 struct trustAuthInOutBlob *iopw,
+					 DATA_BLOB *trustauth_blob)
+{
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_push_struct_blob(trustauth_blob, mem_ctx,
+				       iopw,
+				       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /***************************************************************************
  _lsa_CreateTrustedDomainEx2
  ***************************************************************************/
@@ -1674,7 +1711,6 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 	size_t sd_size;
 	struct pdb_trusted_domain td;
 	struct trustDomainPasswords auth_struct;
-	enum ndr_err_code ndr_err;
 	DATA_BLOB auth_blob;
 
 	if (!IS_DC) {
@@ -1738,27 +1774,18 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		auth_blob.length = r->in.auth_info_internal->auth_blob.size;
 		auth_blob.data = r->in.auth_info_internal->auth_blob.data;
 
-		arcfour_crypt_blob(auth_blob.data, auth_blob.length,
-				   &p->session_info->session_key);
-
-		ndr_err = ndr_pull_struct_blob(&auth_blob, p->mem_ctx,
-					       &auth_struct,
-					       (ndr_pull_flags_fn_t) ndr_pull_trustDomainPasswords);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = get_trustdom_auth_blob(p, p->mem_ctx, &auth_blob, &auth_struct);
+		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		ndr_err = ndr_push_struct_blob(&td.trust_auth_incoming, p->mem_ctx,
-					       &auth_struct.incoming,
-					       (ndr_push_flags_fn_t) ndr_push_trustAuthInOutBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = get_trustauth_inout_blob(p->mem_ctx, &auth_struct.incoming, &td.trust_auth_incoming);
+		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		ndr_err = ndr_push_struct_blob(&td.trust_auth_outgoing, p->mem_ctx,
-					       &auth_struct.outgoing,
-					       (ndr_push_flags_fn_t) ndr_push_trustAuthInOutBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = get_trustauth_inout_blob(p->mem_ctx, &auth_struct.outgoing, &td.trust_auth_outgoing);
+		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	} else {
@@ -2244,6 +2271,7 @@ NTSTATUS _lsa_SetSecret(struct pipes_struct *p,
 	DATA_BLOB cleartext_blob_old = data_blob_null;
 	DATA_BLOB *cleartext_blob_new_p = NULL;
 	DATA_BLOB *cleartext_blob_old_p = NULL;
+	DATA_BLOB session_key;
 
 	if (!find_policy_by_hnd(p, r->in.sec_handle, (void **)(void *)&info)) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -2257,12 +2285,17 @@ NTSTATUS _lsa_SetSecret(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+	if(!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	if (r->in.new_val) {
 		blob_new = data_blob_const(r->in.new_val->data,
 					   r->in.new_val->length);
 
 		status = sess_decrypt_blob(p->mem_ctx, &blob_new,
-					   &p->session_info->session_key,
+					   &session_key,
 					   &cleartext_blob_new);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -2276,7 +2309,7 @@ NTSTATUS _lsa_SetSecret(struct pipes_struct *p,
 					   r->in.old_val->length);
 
 		status = sess_decrypt_blob(p->mem_ctx, &blob_old,
-					   &p->session_info->session_key,
+					   &session_key,
 					   &cleartext_blob_old);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -2310,6 +2343,7 @@ NTSTATUS _lsa_QuerySecret(struct pipes_struct *p,
 	struct lsa_info *info = NULL;
 	DATA_BLOB blob_new, blob_old;
 	DATA_BLOB blob_new_crypt, blob_old_crypt;
+	DATA_BLOB session_key;
 	NTTIME nttime_new, nttime_old;
 	NTSTATUS status;
 
@@ -2333,6 +2367,11 @@ NTSTATUS _lsa_QuerySecret(struct pipes_struct *p,
 		return status;
 	}
 
+	status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+	if(!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	if (r->in.new_val) {
 		if (blob_new.length) {
 			if (!r->out.new_val->buf) {
@@ -2343,7 +2382,7 @@ NTSTATUS _lsa_QuerySecret(struct pipes_struct *p,
 			}
 
 			blob_new_crypt = sess_encrypt_blob(p->mem_ctx, &blob_new,
-							   &p->session_info->session_key);
+							   &session_key);
 			if (!blob_new_crypt.length) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -2364,7 +2403,7 @@ NTSTATUS _lsa_QuerySecret(struct pipes_struct *p,
 			}
 
 			blob_old_crypt = sess_encrypt_blob(p->mem_ctx, &blob_old,
-							   &p->session_info->session_key);
+							   &session_key);
 			if (!blob_old_crypt.length) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -3464,40 +3503,6 @@ static NTSTATUS info_ex_2_pdb_trusted_domain(
 	td->trust_direction = info_ex->trust_direction;
 	td->trust_type = info_ex->trust_type;
 	td->trust_attributes = info_ex->trust_attributes;
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
-				       TALLOC_CTX *mem_ctx, DATA_BLOB *auth_blob,
-				       struct trustDomainPasswords *auth_struct)
-{
-	enum ndr_err_code ndr_err;
-
-	arcfour_crypt_blob(auth_blob->data, auth_blob->length,
-			   &p->session_info->session_key);
-	ndr_err = ndr_pull_struct_blob(auth_blob, mem_ctx,
-				       auth_struct,
-				       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS get_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
-					 struct trustAuthInOutBlob *iopw,
-					 DATA_BLOB *trustauth_blob)
-{
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_push_struct_blob(trustauth_blob, mem_ctx,
-				       iopw,
-				       (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	return NT_STATUS_OK;
 }

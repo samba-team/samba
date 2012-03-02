@@ -128,6 +128,12 @@ struct auth_init_function_entry {
 
 extern const struct gensec_security_ops gensec_ntlmssp3_server_ops;
 
+/* Intent of use for session key. LSA and SAMR pipes use 16 bytes of session key when doing create/modify calls */
+enum session_key_use_intent {
+	KEY_USE_FULL = 0,
+	KEY_USE_16BYTES
+};
+
 /* Changed from 1 -> 2 to add the logon_parameters field. */
 /* Changed from 2 -> 3 when we reworked many auth structures to use IDL or be in common with Samba4 */
 #define AUTH_INTERFACE_VERSION 3

@@ -248,6 +248,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  struct auth_serversupplied_info **server_info);
 void free_user_info(struct auth_usersupplied_info **user_info);
 bool is_trusted_domain(const char* dom_name);
+NTSTATUS session_extract_session_key(const struct auth_session_info *session_info, DATA_BLOB *session_key, enum session_key_use_intent intent);
 
 /* The following definitions come from auth/user_info.c  */
 

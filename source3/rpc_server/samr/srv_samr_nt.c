@@ -5036,6 +5036,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	uint32_t fields = 0;
 	bool ret;
 	char *rhost;
+	DATA_BLOB session_key;
 
 	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
 
@@ -5193,10 +5194,14 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 18:
+			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+			if(!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			/* Used by AS/U JRA. */
 			status = set_user_info_18(&info->info18,
 						  p->mem_ctx,
-						  &p->session_info->session_key,
+						  &session_key,
 						  pwd);
 			break;
 
@@ -5206,18 +5211,20 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 21:
+			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+			if(!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			status = set_user_info_21(&info->info21,
 						  p->mem_ctx,
-						  &p->session_info->session_key,
+						  &session_key,
 						  pwd);
 			break;
 
 		case 23:
-			if (!p->session_info->session_key.length) {
-				status = NT_STATUS_NO_USER_SESSION_KEY;
-			}
+			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			arcfour_crypt_blob(info->info23.password.data, 516,
-					   &p->session_info->session_key);
+					   &session_key);
 
 			dump_data(100, info->info23.password.data, 516);
 
@@ -5228,12 +5235,10 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 24:
-			if (!p->session_info->session_key.length) {
-				status = NT_STATUS_NO_USER_SESSION_KEY;
-			}
+			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			arcfour_crypt_blob(info->info24.password.data,
 					   516,
-					   &p->session_info->session_key);
+					   &session_key);
 
 			dump_data(100, info->info24.password.data, 516);
 
@@ -5243,12 +5248,10 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 25:
-			if (!p->session_info->session_key.length) {
-				status = NT_STATUS_NO_USER_SESSION_KEY;
-			}
+			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			encode_or_decode_arc4_passwd_buffer(
 				info->info25.password.data,
-				&p->session_info->session_key);
+				&session_key);
 
 			dump_data(100, info->info25.password.data, 532);
 
@@ -5258,12 +5261,10 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 26:
-			if (!p->session_info->session_key.length) {
-				status = NT_STATUS_NO_USER_SESSION_KEY;
-			}
+			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			encode_or_decode_arc4_passwd_buffer(
 				info->info26.password.data,
-				&p->session_info->session_key);
+				&session_key);
 
 			dump_data(100, info->info26.password.data, 516);
 
