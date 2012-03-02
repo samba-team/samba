@@ -187,7 +187,5 @@
 ^samba3.smb2.streams .rename
 ^samba3.smb2.streams .rename2
 ^samba3.smb2.streams .attributes
-^samba3.smb2.scangetinfo .scangetinfo
-^samba3.smb2.scansetinfo .scansetinfo
 ^samba3.smb2.getinfo .getinfo
 ^samba3.smb2.setinfo .setinfo
