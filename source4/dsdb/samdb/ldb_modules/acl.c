@@ -516,7 +516,7 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	if (strlen(instanceName) == (strlen(samAccountName) - 1)
 	    && strncasecmp(instanceName, samAccountName, strlen(samAccountName) - 1) == 0) {
 		goto success;
-	} else if (strcasecmp(instanceName, dnsHostName) == 0) {
+	} else if (dnsHostName != NULL && strcasecmp(instanceName, dnsHostName) == 0) {
 		goto success;
 	} else if (is_dc) {
 		const char *guid_str;
