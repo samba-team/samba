@@ -169,6 +169,7 @@ bool claim_connection(connection_struct *conn, const char *name);
 
 /* The following definitions come from smbd/dfree.c  */
 
+void disk_norm(bool small_query, uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
 uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_query,
                               uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
 uint64_t get_dfree_info(connection_struct *conn,
