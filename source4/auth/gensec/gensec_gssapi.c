@@ -415,6 +415,9 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	OM_uint32 min_stat2;
 	gss_buffer_desc input_token, output_token;
 	gss_OID gss_oid_p = NULL;
+	OM_uint32 time_rec = 0;
+	struct timeval tv;
+
 	input_token.length = in.length;
 	input_token.value = in.data;
 
@@ -455,7 +458,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							&gss_oid_p,
 							&output_token, 
 							&gensec_gssapi_state->gss_got_flags, /* ret flags */
-							NULL);
+							&time_rec);
 			if (gss_oid_p) {
 				gensec_gssapi_state->gss_oid = gss_oid_p;
 			}
@@ -484,7 +487,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							  &gss_oid_p,
 							  &output_token, 
 							  &gensec_gssapi_state->gss_got_flags, 
-							  NULL, 
+							  &time_rec,
 							  &gensec_gssapi_state->delegated_cred_handle);
 			if (gss_oid_p) {
 				gensec_gssapi_state->gss_oid = gss_oid_p;
@@ -507,6 +510,9 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			} else {
 				DEBUG(5, ("gensec_gssapi: NO credentials were delegated\n"));
 			}
+
+			tv = timeval_current_ofs(time_rec, 0);
+			gensec_gssapi_state->expire_time = timeval_to_nttime(&tv);
 
 			/* We may have been invoked as SASL, so there
 			 * is more work to do */

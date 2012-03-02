@@ -43,6 +43,7 @@ struct gensec_gssapi_state {
 
 	gss_cred_id_t delegated_cred_handle;
 
+	NTTIME expire_time;
 
 	/* gensec_gssapi only */
 	gss_krb5_lucid_context_v1_t *lucid;
