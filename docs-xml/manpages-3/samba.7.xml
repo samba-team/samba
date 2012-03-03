@@ -76,16 +76,6 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term><citerefentry><refentrytitle>testprns</refentrytitle>
-		<manvolnum>1</manvolnum></citerefentry></term>
-		<listitem><para>The <command>testprns</command>
-		utility supports testing printer names defined 
-		in your <filename>printcap</filename> file used 
-		by Samba.</para>
-		</listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term><citerefentry><refentrytitle>smbstatus</refentrytitle>
 		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para>The <command>smbstatus</command>
@@ -118,14 +108,6 @@
 		<listitem><para>The <command>smbcacls</command> command is 
 		a tool to set ACL's on remote CIFS servers. </para>
 		</listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term><citerefentry><refentrytitle>smbsh</refentrytitle>
-		<manvolnum>1</manvolnum></citerefentry></term>
-		<listitem><para>The <command>smbsh</command> command is 
-		a program that allows you to run a unix shell with 
-		with an overloaded VFS.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
