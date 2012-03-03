@@ -113,7 +113,7 @@
 #define SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM       0x0800
 #define SMB2_SHAREFLAG_ALL                               0x0F33
 
-/* SMB2 share capafilities */
+/* SMB2 share capabilities */
 #define SMB2_SHARE_CAP_DFS		0x8
 
 /* SMB2 create security flags */
