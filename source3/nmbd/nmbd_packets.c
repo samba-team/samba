@@ -963,9 +963,10 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 			return;
 	}
 
-	DEBUG(4,("reply_netbios_packet: sending a reply of packet type: %s %s to ip %s \
-for id %hu\n", packet_type, nmb_namestr(&orig_nmb->question.question_name),
-			inet_ntoa(packet.ip), orig_nmb->header.name_trn_id));
+	DEBUG(4, ("reply_netbios_packet: sending a reply of packet type: %s "
+		  "%s to ip %s for id %d\n", packet_type,
+		  nmb_namestr(&orig_nmb->question.question_name),
+		  inet_ntoa(packet.ip), orig_nmb->header.name_trn_id));
 
 	nmb->header.name_trn_id = orig_nmb->header.name_trn_id;
 	nmb->header.opcode = opcode;
@@ -1435,15 +1436,17 @@ static struct subnet_record *find_subnet_for_nmb_packet( struct packet_struct *p
 
 		rrec = find_response_record( &subrec, nmb->header.name_trn_id);
 		if(rrec == NULL) {
-			DEBUG(3,("find_subnet_for_nmb_packet: response record not found for response id %hu\n",
-				nmb->header.name_trn_id));
+			DEBUG(3, ("find_subnet_for_nmb_packet: response "
+				  "record not found for response id %d\n",
+				  nmb->header.name_trn_id));
 			nb_packet_dispatch(packet_server, p);
 			return NULL;
 		}
 
 		if(subrec == NULL) {
-			DEBUG(0,("find_subnet_for_nmb_packet: subnet record not found for response id %hu\n",
-				nmb->header.name_trn_id));
+			DEBUG(0, ("find_subnet_for_nmb_packet: subnet record "
+				  "not found for response id %d\n",
+				  nmb->header.name_trn_id));
 			return NULL;
 		}
 
@@ -1565,8 +1568,9 @@ static void process_nmb_response(struct packet_struct *p)
 		return;
 
 	if(rrec == NULL) {
-		DEBUG(0,("process_nmb_response: response packet received but no response record \
-found for id = %hu. Ignoring packet.\n", nmb->header.name_trn_id));
+		DEBUG(0, ("process_nmb_response: response packet received but "
+			  "no response record found for id = %d. Ignoring "
+			  "packet.\n", nmb->header.name_trn_id));
 		return;
 	}
 
