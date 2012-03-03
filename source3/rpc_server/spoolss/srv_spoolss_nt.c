@@ -2677,7 +2677,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 	int snum = -1;
 	struct spoolss_NotifyOption *option = r->in.notify_options;
 	struct sockaddr_storage client_ss;
-	socklen_t client_len;
+	ssize_t client_len;
 
 	/* store the notify value in the printer struct */
 
