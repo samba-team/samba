@@ -1355,6 +1355,17 @@ static bool gensec_spnego_have_feature(struct gensec_security *gensec_security,
 				   feature);
 }
 
+static NTTIME gensec_spnego_expire_time(struct gensec_security *gensec_security)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+
+	if (!spnego_state->sub_sec_security) {
+		return GENSEC_EXPIRE_TIME_INFINITY;
+	}
+
+	return gensec_expire_time(spnego_state->sub_sec_security);
+}
+
 static const char *gensec_spnego_oids[] = { 
 	GENSEC_OID_SPNEGO,
 	NULL 
@@ -1384,6 +1395,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.session_info     = gensec_spnego_session_info,
 	.want_feature     = gensec_spnego_want_feature,
 	.have_feature     = gensec_spnego_have_feature,
+	.expire_time      = gensec_spnego_expire_time,
 	.enabled          = true,
 	.priority         = GENSEC_SPNEGO
 };
