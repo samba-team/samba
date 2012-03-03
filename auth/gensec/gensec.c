@@ -395,6 +395,14 @@ _PUBLIC_ bool gensec_have_feature(struct gensec_security *gensec_security,
 	return gensec_security->ops->have_feature(gensec_security, feature);
 }
 
+_PUBLIC_ NTTIME gensec_expire_time(struct gensec_security *gensec_security)
+{
+	if (!gensec_security->ops->expire_time) {
+		return GENSEC_EXPIRE_TIME_INFINITY;
+	}
+
+	return gensec_security->ops->expire_time(gensec_security);
+}
 /**
  * Return the credentials structure associated with a GENSEC context
  *

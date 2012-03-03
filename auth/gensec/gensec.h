@@ -61,6 +61,8 @@ struct gensec_target {
 #define GENSEC_FEATURE_NEW_SPNEGO	0x00000080
 #define GENSEC_FEATURE_UNIX_TOKEN	0x00000100
 
+#define GENSEC_EXPIRE_TIME_INFINITY (NTTIME)0x8000000000000000LL
+
 /* GENSEC mode */
 enum gensec_role
 {
@@ -153,6 +155,7 @@ struct gensec_security_ops {
 				    uint32_t feature);
 	bool (*have_feature)(struct gensec_security *gensec_security,
 				    uint32_t feature);
+	NTTIME (*expire_time)(struct gensec_security *gensec_security);
 	bool enabled;
 	bool kerberos;
 	enum gensec_priority priority;
@@ -245,6 +248,7 @@ void gensec_want_feature(struct gensec_security *gensec_security,
 			 uint32_t feature);
 bool gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32_t feature);
+NTTIME gensec_expire_time(struct gensec_security *gensec_security);
 NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct cli_credentials *credentials);
 NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, const char *service);
 const char *gensec_get_target_service(struct gensec_security *gensec_security);
