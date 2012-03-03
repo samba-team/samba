@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Pipe SMB reply routines
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998
    Copyright (C) Paul Ashton  1997-1998.
    Copyright (C) Jeremy Allison 2005.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -479,7 +479,7 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 	      + 12 * sizeof(uint16_t) /* vwv */
 	      + 2);		/* the buflen field */
 	SSVAL(req->outbuf,smb_vwv11,state->smb_maxcnt);
-  
+
 	DEBUG(3,("readX-IPC min=%d max=%d nread=%d\n",
 		 state->smb_mincnt, state->smb_maxcnt, (int)nread));
 
