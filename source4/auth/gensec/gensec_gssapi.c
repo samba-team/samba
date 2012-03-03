@@ -129,6 +129,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->client_name = GSS_C_NO_NAME;
 	
 	gensec_gssapi_state->gss_want_flags = 0;
+	gensec_gssapi_state->expire_time = GENSEC_EXPIRE_TIME_INFINITY;
 
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "delegation_by_kdc_policy", true)) {
 		gensec_gssapi_state->gss_want_flags |= GSS_C_DELEG_POLICY_FLAG;
@@ -1262,6 +1263,15 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	return false;
 }
 
+static NTTIME gensec_gssapi_expire_time(struct gensec_security *gensec_security)
+{
+	struct gensec_gssapi_state *gensec_gssapi_state =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gensec_gssapi_state);
+
+	return gensec_gssapi_state->expire_time;
+}
+
 /*
  * Extract the 'sesssion key' needed by SMB signing and ncacn_np 
  * (for encrypting some passwords).
@@ -1472,6 +1482,7 @@ static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
+	.expire_time    = gensec_gssapi_expire_time,
 	.enabled        = false,
 	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI
@@ -1496,6 +1507,7 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
+	.expire_time    = gensec_gssapi_expire_time,
 	.enabled        = true,
 	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI
@@ -1515,6 +1527,7 @@ static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
 	.wrap             = gensec_gssapi_wrap,
 	.unwrap           = gensec_gssapi_unwrap,
 	.have_feature     = gensec_gssapi_have_feature,
+	.expire_time      = gensec_gssapi_expire_time,
 	.enabled          = true,
 	.kerberos         = true,
 	.priority         = GENSEC_GSSAPI
