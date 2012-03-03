@@ -147,6 +147,8 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor((TALLOC_CTX *)gse_ctx, gse_context_destructor);
 
+	gse_ctx->expire_time = GENSEC_EXPIRE_TIME_INFINITY;
+
 	memcpy(&gse_ctx->gss_mech, gss_mech_krb5, sizeof(gss_OID_desc));
 
 	gse_ctx->gss_want_flags = GSS_C_MUTUAL_FLAG |
@@ -1036,6 +1038,15 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 	return false;
 }
 
+static NTTIME gensec_gse_expire_time(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+
+	return gse_ctx->expire_time;
+}
+
 /*
  * Extract the 'sesssion key' needed by SMB signing and ncacn_np
  * (for encrypting some passwords).
@@ -1167,6 +1178,7 @@ const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.wrap           = gensec_gse_wrap,
 	.unwrap         = gensec_gse_unwrap,
 	.have_feature   = gensec_gse_have_feature,
+	.expire_time    = gensec_gse_expire_time,
 	.enabled        = true,
 	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI
