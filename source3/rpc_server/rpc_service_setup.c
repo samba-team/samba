@@ -53,24 +53,6 @@
 #include "rpc_server/rpc_config.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
 
-static bool rpc_setup_epmapper(struct tevent_context *ev_ctx,
-			       struct messaging_context *msg_ctx)
-{
-	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
-	enum rpc_daemon_type_e epm_type = rpc_epmapper_daemon();
-	NTSTATUS status;
-
-	if (epm_mode != RPC_SERVICE_MODE_DISABLED &&
-	    epm_type != RPC_DAEMON_DISABLED) {
-		status = rpc_epmapper_init(NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 /* Common routine for embedded RPC servers */
 static bool rpc_setup_embedded(struct tevent_context *ev_ctx,
 			       struct messaging_context *msg_ctx,
@@ -513,11 +495,6 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 					   &v);
 	if (!NT_STATUS_IS_OK(status)) {
 		ok = false;
-		goto done;
-	}
-
-	ok = rpc_setup_epmapper(ev_ctx, msg_ctx);
-	if (!ok) {
 		goto done;
 	}
 
