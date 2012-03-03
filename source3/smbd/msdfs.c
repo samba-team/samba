@@ -263,6 +263,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	}
 
 	conn->params->service = snum;
+	conn->cnum = (unsigned)-1;
 
 	conn->sconn = sconn;
 	conn->sconn->num_tcons_open++;
