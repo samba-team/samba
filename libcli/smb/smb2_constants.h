@@ -161,6 +161,9 @@
 #define SMB2_CREATE_TAG_QFID "QFid"
 #define SMB2_CREATE_TAG_RQLS "RqLs"
 
+/* SMB2 notify flags */
+#define SMB2_WATCH_TREE 0x0001
+
 /* SMB2 Create ignore some more create_options */
 #define SMB2_CREATE_OPTIONS_NOT_SUPPORTED_MASK	(NTCREATEX_OPTIONS_TREE_CONNECTION | \
 						 NTCREATEX_OPTIONS_OPFILTER)
