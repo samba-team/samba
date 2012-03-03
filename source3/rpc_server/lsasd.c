@@ -930,21 +930,21 @@ void start_lsasd(struct tevent_context *ev_ctx,
 
 	status = rpc_lsarpc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register winreg rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register lsarpc rpc inteface in lsasd! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}
 
 	status = rpc_samr_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register lsasd rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register samr rpc inteface in lsasd! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}
 
 	status = rpc_netlogon_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register lsasd rpc inteface! (%s)\n",
+		DEBUG(0, ("Failed to register netlogon rpc inteface in lsasd! (%s)\n",
 			  nt_errstr(status)));
 		exit(1);
 	}
