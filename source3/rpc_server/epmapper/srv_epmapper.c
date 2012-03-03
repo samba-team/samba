@@ -743,7 +743,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 					if (r->in.interface_id->vers_major ==
 					    (eps->e[i].syntax_id.if_version >> 16) &&
 					    r->in.interface_id->vers_minor <=
-					    (eps->e[i].syntax_id.if_version && 0xFFFF)) {
+					    (eps->e[i].syntax_id.if_version & 0xFFFF)) {
 						match = true;
 					}
 					break;
@@ -756,7 +756,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 					if (r->in.interface_id->vers_major ==
 					    (eps->e[i].syntax_id.if_version >> 16) &&
 					    r->in.interface_id->vers_minor ==
-					    (eps->e[i].syntax_id.if_version && 0xFFFF)) {
+					    (eps->e[i].syntax_id.if_version & 0xFFFF)) {
 						match = true;
 					}
 					match = true;
@@ -789,7 +789,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 						if (r->in.interface_id->vers_major ==
 						    (eps->e[i].syntax_id.if_version >> 16) &&
 						    r->in.interface_id->vers_minor >=
-						    (eps->e[i].syntax_id.if_version && 0xFFFF)) {
+						    (eps->e[i].syntax_id.if_version & 0xFFFF)) {
 							match = true;
 						}
 					}
