@@ -52,7 +52,7 @@ static user_struct *get_valid_user_struct_internal(
 	if (vuid == UID_FIELD_INVALID)
 		return NULL;
 
-	usp=sconn->smb1.sessions.validated_users;
+	usp=sconn->users;
 	for (;usp;usp=usp->next,count++) {
 		if (vuid == usp->vuid) {
 			switch (server_allocated) {
@@ -69,8 +69,7 @@ static user_struct *get_valid_user_struct_internal(
 					break;
 			}
 			if (count > 10) {
-				DLIST_PROMOTE(sconn->smb1.sessions.validated_users,
-					      usp);
+				DLIST_PROMOTE(sconn->users, usp);
 			}
 			return usp;
 		}
@@ -128,14 +127,15 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid)
 		TALLOC_FREE(vuser->gensec_security);
 	}
 
-	DLIST_REMOVE(sconn->smb1.sessions.validated_users, vuser);
+	DLIST_REMOVE(sconn->users, vuser);
+	SMB_ASSERT(sconn->num_users > 0);
+	sconn->num_users--;
 
 	/* clear the vuid from the 'cache' on each connection, and
 	   from the vuid 'owner' of connections */
 	conn_clear_vuid_caches(sconn, vuid);
 
 	TALLOC_FREE(vuser);
-	sconn->smb1.sessions.num_validated_vuids--;
 }
 
 /****************************************************************************
@@ -148,9 +148,8 @@ void invalidate_all_vuids(struct smbd_server_connection *sconn)
 		return;
 	}
 
-	while (sconn->smb1.sessions.validated_users != NULL) {
-		invalidate_vuid(sconn,
-				sconn->smb1.sessions.validated_users->vuid);
+	while (sconn->users != NULL) {
+		invalidate_vuid(sconn, sconn->users->vuid);
 	}
 }
 
@@ -173,7 +172,7 @@ int register_initial_vuid(struct smbd_server_connection *sconn)
 	user_struct *vuser;
 
 	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
-	if (sconn->smb1.sessions.num_validated_vuids >= 0xFFFF-VUID_OFFSET) {
+	if (sconn->num_users >= 0xFFFF-VUID_OFFSET) {
 		return UID_FIELD_INVALID;
 	}
 
@@ -201,9 +200,10 @@ int register_initial_vuid(struct smbd_server_connection *sconn)
 	 * to NTLMSSP.
 	 */
 	increment_next_vuid(&sconn->smb1.sessions.next_vuid);
-	sconn->smb1.sessions.num_validated_vuids++;
 
-	DLIST_ADD(sconn->smb1.sessions.validated_users, vuser);
+	sconn->num_users++;
+	DLIST_ADD(sconn->users, vuser);
+
 	return vuser->vuid;
 }
 

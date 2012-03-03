@@ -173,7 +173,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 	session->compat_vuser->session_info = session->session_info;
 	session->compat_vuser->session_keystr = NULL;
 	session->compat_vuser->vuid = session->vuid;
-	DLIST_ADD(session->sconn->smb1.sessions.validated_users, session->compat_vuser);
+	DLIST_ADD(session->sconn->users, session->compat_vuser);
+	session->sconn->num_users++;
 
 	if (security_session_user_level(session->session_info, NULL) >= SECURITY_USER) {
 		session->compat_vuser->homes_snum =

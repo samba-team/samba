@@ -2984,20 +2984,17 @@ static void smbd_id_cache_kill(struct messaging_context *msg_ctx,
 {
 	const char *msg = (data && data->data)
 		? (const char *)data->data : "<NULL>";
-	struct user_struct *validated_users;
 	struct id_cache_ref id;
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
-
-	validated_users = sconn->smb1.sessions.validated_users;
 
 	if (!id_cache_ref_parse(msg, &id)) {
 		DEBUG(0, ("Invalid ?ID: %s\n", msg));
 		return;
 	}
 
-	if (id_in_use(validated_users, &id)) {
+	if (id_in_use(sconn->users, &id)) {
 		exit_server_cleanly(msg);
 	}
 	id_cache_delete_from_cache(&id);
@@ -3265,9 +3262,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->smb1.sessions.max_send = BUFFER_SIZE;
 	sconn->smb1.sessions.last_session_tag = UID_FIELD_INVALID;
 	/* this holds info on user ids that are already validated for this VC */
-	sconn->smb1.sessions.validated_users = NULL;
 	sconn->smb1.sessions.next_vuid = VUID_OFFSET;
-	sconn->smb1.sessions.num_validated_vuids = 0;
 
 	conn_init(sconn);
 	if (!init_dptrs(sconn)) {

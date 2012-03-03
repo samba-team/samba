@@ -452,6 +452,9 @@ struct smbd_server_connection {
 	bool using_smb2;
 	int trans_num;
 
+	size_t num_users;
+	struct user_struct *users;
+
 	struct files_struct *files;
 	struct bitmap *file_bmap;
 	int real_max_open_files;
@@ -535,9 +538,7 @@ struct smbd_server_connection {
 			 * this holds info on user ids that are already
 			 * validated for this VC
 			 */
-			user_struct *validated_users;
 			uint16_t next_vuid;
-			int num_validated_vuids;
 		} sessions;
 		struct {
 			connection_struct *Connections;
