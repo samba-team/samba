@@ -178,6 +178,20 @@ NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
 					struct smbd_smb2_write_state);
 	files_struct *fsp = state->fsp;
 
+	if (nwritten == -1) {
+		status = map_nt_error_from_unix(err);
+
+		DEBUG(2, ("smb2_write failed: fnum=[%d/%s] "
+			  "length=%lu offset=%lu nwritten=-1: %s\n",
+			  fsp->fnum,
+			  fsp_str_dbg(fsp),
+			  (unsigned long)state->in_length,
+			  (unsigned long)state->in_offset,
+			  nt_errstr(status)));
+
+		return status;
+	}
+
 	DEBUG(3,("smb2: fnum=[%d/%s] "
 		"length=%lu offset=%lu wrote=%lu\n",
 		fsp->fnum,
@@ -185,10 +199,6 @@ NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
 		(unsigned long)state->in_length,
 		(unsigned long)state->in_offset,
 		(unsigned long)nwritten));
-
-	if (nwritten == -1) {
-		return map_nt_error_from_unix(err);
-	}
 
 	if ((nwritten == 0) && (state->in_length != 0)) {
 		DEBUG(5,("smb2: write [%s] disk full\n",
