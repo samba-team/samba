@@ -458,10 +458,11 @@ struct smbd_server_connection {
 	size_t num_connections;
 	struct connection_struct *connections;
 
+	size_t num_files;
 	struct files_struct *files;
+
 	struct bitmap *file_bmap;
 	int real_max_open_files;
-	int files_used;
 	struct fsp_singleton_cache fsp_fi_cache;
 	unsigned long file_gen_counter;
 	int first_file;

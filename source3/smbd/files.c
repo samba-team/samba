@@ -105,7 +105,6 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	sconn->first_file = (i+1) % (sconn->real_max_open_files);
 
 	bitmap_set(sconn->file_bmap, i);
-	sconn->files_used += 1;
 
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
 	SMB_ASSERT(fsp->fnum < 65536);
@@ -123,9 +122,10 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	}
 
 	DLIST_ADD(sconn->files, fsp);
+	sconn->num_files += 1;
 
-	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
-		 i, fsp->fnum, sconn->files_used));
+	DEBUG(5,("allocated file structure %d, fnum = %d (%u used)\n",
+		 i, fsp->fnum, (unsigned int)sconn->num_files));
 
 	if (req != NULL) {
 		req->chain_fsp = fsp;
@@ -435,6 +435,8 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 
 	DLIST_REMOVE(sconn->files, fsp);
+	SMB_ASSERT(sconn->num_files > 0);
+	sconn->num_files--;
 
 	TALLOC_FREE(fsp->fake_file_handle);
 
@@ -460,10 +462,8 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	TALLOC_FREE(fsp->update_write_time_event);
 
 	bitmap_clear(sconn->file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
-	sconn->files_used--;
-
-	DEBUG(5,("freed files structure %d (%d used)\n",
-		 fsp->fnum, sconn->files_used));
+	DEBUG(5,("freed files structure %d (%u used)\n",
+		 fsp->fnum, (unsigned int)sconn->num_files));
 
 	fsp->conn->num_files_open--;
 
