@@ -452,12 +452,6 @@ struct smbd_server_connection {
 	bool using_smb2;
 	int trans_num;
 
-	/*
-	 * Cache for calling poll(2) to avoid allocations in our
-	 * central event loop
-	 */
-	struct pollfd *pfds;
-
 	struct files_struct *files;
 	struct bitmap *file_bmap;
 	int real_max_open_files;
