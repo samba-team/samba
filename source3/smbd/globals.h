@@ -455,6 +455,9 @@ struct smbd_server_connection {
 	size_t num_users;
 	struct user_struct *users;
 
+	size_t num_connections;
+	struct connection_struct *connections;
+
 	struct files_struct *files;
 	struct bitmap *file_bmap;
 	int real_max_open_files;
@@ -462,9 +465,6 @@ struct smbd_server_connection {
 	struct fsp_singleton_cache fsp_fi_cache;
 	unsigned long file_gen_counter;
 	int first_file;
-
-	/* number of open connections (tcons) */
-	int num_tcons_open;
 
 	struct pending_message_list *deferred_open_queue;
 
@@ -541,7 +541,6 @@ struct smbd_server_connection {
 			uint16_t next_vuid;
 		} sessions;
 		struct {
-			connection_struct *Connections;
 			/* number of open connections */
 			struct bitmap *bmap;
 		} tcons;

@@ -131,8 +131,6 @@ static int smbd_smb2_tcon_destructor(struct smbd_smb2_tcon *tcon)
 
 	idr_remove(tcon->session->tcons.idtree, tcon->tid);
 	DLIST_REMOVE(tcon->session->tcons.list, tcon);
-	SMB_ASSERT(tcon->session->sconn->num_tcons_open > 0);
-	tcon->session->sconn->num_tcons_open--;
 
 	if (tcon->compat_conn) {
 		set_current_service(tcon->compat_conn, 0, true);
@@ -226,7 +224,6 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	DLIST_ADD_END(req->session->tcons.list, tcon,
 		      struct smbd_smb2_tcon *);
 	tcon->session = req->session;
-	tcon->session->sconn->num_tcons_open++;
 	talloc_set_destructor(tcon, smbd_smb2_tcon_destructor);
 
 	compat_conn = make_connection_smb2(req->sconn,

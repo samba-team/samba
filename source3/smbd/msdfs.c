@@ -266,7 +266,8 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	conn->cnum = (unsigned)-1;
 
 	conn->sconn = sconn;
-	conn->sconn->num_tcons_open++;
+	DLIST_ADD(sconn->connections, conn);
+	conn->sconn->num_connections++;
 
 	if (session_info != NULL) {
 		conn->session_info = copy_session_info(conn, session_info);
