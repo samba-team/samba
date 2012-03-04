@@ -60,7 +60,6 @@ def read_includes(fn):
 parser = optparse.OptionParser("TEST-REGEXES")
 parser.add_option("--target", type="choice", choices=["samba", "samba3", "none"], default="samba", help="Samba version to target")
 parser.add_option("--quick", help="run quick overall test", action="store_true", default=False)
-parser.add_option("--verbose", help="be verbose", action="store_true", default=False)
 parser.add_option("--list", help="list available tests", action="store_true", default=False)
 parser.add_option("--socket-wrapper", help="enable socket wrapper", action="store_true", default=False)
 parser.add_option("--socket-wrapper-pcap", help="save traffic to pcap directories", type="str")
@@ -401,10 +400,6 @@ if opts.socket_wrapper:
     os.environ["SELFTEST_INTERFACES"] = interfaces
 else:
     os.environ["SELFTEST_INTERFACES"] = ""
-if opts.verbose:
-    os.environ["SELFTEST_VERBOSE"] = "1"
-else:
-    os.environ["SELFTEST_VERBOSE"] = ""
 if opts.quick:
     os.environ["SELFTEST_QUICK"] = "1"
 else:
