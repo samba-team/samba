@@ -64,6 +64,11 @@ class EnvironmentManagerTests(unittest.TestCase):
         self.assertEquals(env.name, "something")
         self.assertEquals(env.prefix, "prefix")
 
+    def test_setup_reuses(self):
+        env1 = self.mgr.setup_env("something", "prefix")
+        env2 = self.mgr.setup_env("something", "prefix")
+        self.assertIs(env1, env2)
+
     def test_check(self):
         env = self.mgr.setup_env("something", "prefix")
         self.assertTrue(env.check())
