@@ -29,6 +29,14 @@ class EnvironmentDown(Exception):
         super(EnvironmentDown, self).__init__("environment went down: %s" % msg)
 
 
+class UnsupportedEnvironment(Exception):
+    """Indicates a particular environment is not supported."""
+
+    def __init__(self, target, envname):
+        super(UnsupportedEnvironment, self).__init__(
+            "Target %s does not support environment %s" % (target, envname))
+
+
 class Target(object):
     """A target for Samba tests."""
 
@@ -91,6 +99,15 @@ class NoneEnvironment(Environment):
 
     def get_vars(self):
         return {}
+
+
+class NoneTarget(Target):
+    """Target that can only provide the 'none' environment."""
+
+    name = "none"
+
+    def setup_env(self, envname, prefix):
+        raise UnsupportedEnvironment(self.name, envname)
 
 
 class EnvironmentManager(object):

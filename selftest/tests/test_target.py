@@ -24,7 +24,9 @@ from selftest.target import (
     EnvironmentDown,
     EnvironmentManager,
     NoneEnvironment,
+    NoneTarget,
     Target,
+    UnsupportedEnvironment,
     )
 
 import unittest
@@ -65,6 +67,17 @@ class NoneEnvironmentTests(unittest.TestCase):
 
     def test_get_log(self):
         self.assertEquals("", self.env.get_log())
+
+
+class NoneTargetTests(unittest.TestCase):
+
+    def setUp(self):
+        super(NoneTargetTests, self).setUp()
+        self.target = NoneTarget()
+
+    def test_setup_env(self):
+        self.assertRaises(UnsupportedEnvironment, self.target.setup_env,
+            "something", "prefx")
 
 
 class EnvironmentManagerTests(unittest.TestCase):
