@@ -50,9 +50,26 @@ class DummyTarget(Target):
         return DummyEnvironment(name, prefix)
 
 
+class NoneEnvironmentTests(unittest.TestCase):
+
+    def setUp(self):
+        super(NoneEnvironmentTests, self).setUp()
+        self.env = NoneEnvironment()
+
+    def test_get_vars(self):
+        self.assertEquals({}, self.env.get_vars())
+
+    def test_check(self):
+        self.assertEquals(True, self.env.check())
+
+    def test_get_log(self):
+        self.assertEquals("", self.env.get_log())
+
+
 class EnvironmentManagerTests(unittest.TestCase):
 
     def setUp(self):
+        super(EnvironmentManagerTests, self).setUp()
         self.mgr = EnvironmentManager(DummyTarget())
 
     def test_none(self):
