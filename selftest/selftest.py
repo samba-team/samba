@@ -82,11 +82,12 @@ opts, args = parser.parse_args()
 
 subunit_ops = subunithelper.SubunitOps(sys.stdout)
 
-def pipe_handler(sig, frame):
-    sys.stderr.write("Exiting early because of SIGPIPE.\n")
+def handle_signal(sig, frame):
+    sys.stderr.write("Exiting early because of signal %s.\n" % sig)
     sys.exit(1)
 
-signal.signal(signal.SIGPIPE, pipe_handler)
+for sig in (signal.SIGINT, signal.SIGQUIT, signal.SIGTERm, signal.SIGPIPE):
+    signal.signal(sig, handle_signal)
 
 def skip(name):
     return testlist.find_in_list(excludes, name)
@@ -127,7 +128,14 @@ def expand_environment_strings(s):
     return s
 
 
-def run_testsuite(envname, name, cmd, i, totalsuites):
+def run_testsuite(envname, name, cmd):
+    """Run a single testsuite.
+
+    :param envname: Name of the environment to ru nin
+    :param name: Name of the testsuite
+    :param cmd: Name of the (fully expanded) command to run
+    :return: exitcode of the command
+    """
     pcap_file = setup_pcap(name)
 
     subunit_ops.start_testsuite(name)
@@ -172,7 +180,7 @@ if opts.list and opts.testenv:
 
 tests = args
 
-# quick hack to disable rpc validation when using valgrind - its way too slow
+# quick hack to disable rpc validation when using valgrind - it is way too slow
 if not os.environ.get("VALGRIND"):
     os.environ["VALIDATE"] = "validate"
     os.environ["MALLOC_CHECK_"] = "2"
@@ -201,9 +209,8 @@ if prefix == "":
 
 # Ensure we have the test prefix around.
 #
-# We need restrictive
-# permissions on this as some subdirectories in this tree will have
-# wider permissions (ie 0777) and this would allow other users on the
+# We need restrictive permissions on this as some subdirectories in this tree
+# will have wider permissions (ie 0777) and this would allow other users on the
 # host to subvert the test process.
 if not os.path.isdir(prefix):
     os.mkdir(prefix, 0700)
@@ -458,8 +465,6 @@ if not opts.list:
     subunit_ops.progress(suitestotal, subunit.PROGRESS_SET)
     subunit_ops.time(now())
 
-i = 0
-
 exported_envvars = [
     # domain stuff
     "DOMAIN",
@@ -509,14 +514,6 @@ exported_envvars = [
     "NMBD_SOCKET_DIR",
     "LOCAL_PATH"
 ]
-
-def handle_sigdie(signame, frame):
-    sys.stderr.write("Received signal %s" % signame)
-    sys.exit(1)
-
-signal.signal(signal.SIGINT, handle_sigdie)
-signal.signal(signal.SIGQUIT, handle_sigdie)
-signal.signal(signal.SIGTERM, handle_sigdie)
 
 def exported_envvars_str(testenv_vars):
     out = ""
@@ -636,7 +633,7 @@ else:
             elif supports_idlist:
                 cmd += " ".join(subtests)
 
-        run_testsuite(envname, name, cmd, i, suitestotal)
+        run_testsuite(envname, name, cmd)
 
         if opts.resetup_environment:
             env_manager.teardown_env(envname)
