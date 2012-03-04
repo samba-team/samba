@@ -1264,7 +1264,7 @@ sub provision_plugin_s4_dc($$)
 
 	my $extra_smbconf_options = "
 server services = -smb +s3fs
-dcerpc endpoint servers = -unixinfo -rpcecho -spoolss -winreg -wkssvc -srvsvc
+dcerpc endpoint servers = -unixinfo -spoolss -winreg -wkssvc -srvsvc
 
 [IPC\$]
 	vfs objects = dfs_samba4
