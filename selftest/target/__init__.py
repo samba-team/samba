@@ -128,11 +128,10 @@ class EnvironmentManager(object):
                 raise EnvironmentDown(running_env.get_log())
             return running_env
 
-
         env = self.target.setup_env(envname, prefix)
         if env is None:
             return None
 
-        self.running_envs[env] = env
+        self.running_envs[envname] = env
 
         return env
