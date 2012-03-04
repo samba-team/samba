@@ -17,13 +17,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cStringIO import StringIO
+import datetime
+import iso8601
 import os
 import sys
 import signal
 import shutil
 import subprocess
+import subunit
 import tempfile
-import time
+import traceback
 import warnings
 
 import optparse
@@ -35,10 +38,17 @@ from selftest import (
     subunithelper,
     testlist,
     )
-from selftest.target import EnvironmentManager
+from selftest.target import (
+    EnvironmentManager,
+    NoneTarget,
+    UnsupportedEnvironment,
+    )
 
 includes = ()
 excludes = ()
+
+def now():
+    return datetime.datetime.utcnow().replace(tzinfo=iso8601.iso8601.Utc())
 
 def read_excludes(fn):
     excludes.extend(testlist.read_test_regexes(fn))
@@ -47,7 +57,7 @@ def read_includes(fn):
     includes.extend(testlist.read_test_regexes(fn))
 
 parser = optparse.OptionParser("TEST-REGEXES")
-parser.add_option("--target", type="choice", choices=["samba", "samba3"], default="samba", help="Samba version to target")
+parser.add_option("--target", type="choice", choices=["samba", "samba3", "none"], default="samba", help="Samba version to target")
 parser.add_option("--quick", help="run quick overall test")
 parser.add_option("--verbose", help="be verbose")
 parser.add_option("--list", help="list available tests")
@@ -120,19 +130,18 @@ def run_testsuite(envname, name, cmd, i, totalsuites):
     pcap_file = setup_pcap(name)
 
     subunit_ops.start_testsuite(name)
-    subunit_ops.progress_push()
-    subunit_ops.report_time(time.time())
+    subunit_ops.progress(None, subunit.PROGRESS_PUSH)
+    subunit_ops.time(now())
     try:
-        exitcode = subprocess.call(cmd)
+        exitcode = subprocess.call(cmd, shell=True)
     except Exception, e:
-        subunit_ops.report_time(time.time())
-        subunit_ops.progress_pop()
-        subunit_ops.progress_pop()
-        subunit_ops.end_testsuite(name, "error", "Unable to run %s: %s" % (cmd, e))
+        subunit_ops.time(now())
+        subunit_ops.progress(None, subunit.PROGRESS_POP)
+        subunit_ops.end_testsuite(name, "error", "Unable to run %r: %s" % (cmd, e))
         sys.exit(1)
 
-    subunit_ops.report_time(time.time())
-    subunit_ops.progress_pop()
+    subunit_ops.time(now())
+    subunit_ops.progress(None, subunit.PROGRESS_POP)
 
     envlog = env_manager.getlog_env(envname)
     if envlog != "":
@@ -201,7 +210,7 @@ else:
     os.chmod(prefix, 0700)
 
 prefix_abs = os.path.abspath(prefix)
-tmpdir_abs = os.path.abspath(os.path.join(prefix, "tmp"))
+tmpdir_abs = os.path.abspath(os.path.join(prefix_abs, "tmp"))
 if not os.path.isdir(tmpdir_abs):
     os.mkdir(tmpdir_abs, 0777)
 
@@ -290,6 +299,9 @@ if not opts.list:
         testenv_default = "member"
         from selftest.target.samba3 import Samba3
         target = Samba3(opts.bindir, binary_mapping, srcdir_abs, server_maxtime)
+    elif opts.target == "none":
+        testenv_default = "none"
+        target = NoneTarget()
 
     env_manager = EnvironmentManager(target)
 
@@ -312,7 +324,8 @@ def write_clientconf(conffile, clientdir, vars):
 
     for n in ["private", "lockdir", "statedir", "cachedir"]:
         p = os.path.join(clientdir, n)
-        shutil.rmtree(p)
+        if os.path.isdir(p):
+            shutil.rmtree(p)
         os.mkdir(p, 0777)
 
     # this is ugly, but the ncalrpcdir needs exactly 0755
@@ -321,7 +334,8 @@ def write_clientconf(conffile, clientdir, vars):
 
     for n in ["ncalrpcdir", "ncalrpcdir/np"]:
         p = os.path.join(clientdir, n)
-        shutil.rmtree(p)
+        if os.path.isdir(p):
+            shutil.rmtree(p)
         os.mkdir(p, 0777)
     os.umask(mask)
 
@@ -341,10 +355,10 @@ def write_clientconf(conffile, clientdir, vars):
         "client lanman auth": "Yes",
         "log level": "1",
         "torture:basedir": clientdir,
-    #We don't want to pass our self-tests if the PAC code is wrong
+        # We don't want to pass our self-tests if the PAC code is wrong
         "gensec:require_pac": "true",
         "resolv:host file": os.path.join(prefix_abs, "dns_host_file"),
-    #We don't want to run 'speed' tests for very long
+        # We don't want to run 'speed' tests for very long
         "torture:timelimit": "1",
         }
 
@@ -365,7 +379,7 @@ def write_clientconf(conffile, clientdir, vars):
 
 todo = []
 
-if testlists == []:
+if not opts.testlist:
     sys.stderr.write("No testlists specified\n")
     sys.exit(1)
 
@@ -386,15 +400,25 @@ else:
     os.environ["SELFTEST_QUICK"] = ""
 os.environ["SELFTEST_MAXTIME"] = str(torture_maxtime)
 
+
+def open_file_or_pipe(path, mode):
+    if path.endswith("|"):
+        return os.popen(path[:-1], mode)
+    return open(path, mode)
+
 available = []
-for fn in testlists:
-    for testsuite in testlist.read_testlist(fn):
-        if not should_run_test(tests, testsuite):
-            continue
-        name = testsuite[0]
-        if includes is not None and testlist.find_in_list(includes, name) is not None:
-            continue
-        available.append(testsuite)
+for fn in opts.testlist:
+    inf = open_file_or_pipe(fn, 'r')
+    try:
+        for testsuite in testlist.read_testlist(inf, sys.stdout):
+            if not testlist.should_run_test(tests, testsuite):
+                continue
+            name = testsuite[0]
+            if includes is not None and testlist.find_in_list(includes, name) is not None:
+                continue
+            available.append(testsuite)
+    finally:
+        inf.close()
 
 if opts.load_list:
     restricted_mgr = testlist.RestrictedTestManager.from_path(opts.load_list)
@@ -427,8 +451,8 @@ if todo == []:
 suitestotal = len(todo)
 
 if not opts.list:
-    subunit_ops.progress(suitestotal)
-    subunit_ops.report_time(time.time())
+    subunit_ops.progress(suitestotal, subunit.PROGRESS_SET)
+    subunit_ops.time(now())
 
 i = 0
 
@@ -527,13 +551,15 @@ def switch_env(name, prefix):
     for name in exported_envvars:
         if name in testenv_vars:
             os.environ[name] = testenv_vars[name]
-        else:
+        elif name in os.environ:
             del os.environ[name]
 
     return testenv_vars
 
 # This 'global' file needs to be empty when we start
-os.unlink(os.path.join(prefix_abs, "dns_host_file"))
+dns_host_file_path = os.path.join(prefix_abs, "dns_host_file")
+if os.path.exists(dns_host_file_path):
+    os.unlink(dns_host_file_path)
 
 if opts.testenv:
     testenv_name = os.environ.get("SELFTEST_TESTENV", testenv_default)
@@ -560,7 +586,7 @@ $envvarstr
 \" && LD_LIBRARY_PATH=%(LD_LIBRARY_PATH)s $(SHELL)'""" % {
         "testenv_name": testenv_name,
         "LD_LIBRARY_PATH": os.environ["LD_LIBRARY_PATH"]}
-    subprocess.call(term + ' ' + cmd)
+    subprocess.call(term + ' ' + cmd, shell=True)
     env_manager.teardown_env(testenv_name)
 elif opts.list:
     for (name, envname, cmd, supports_loadfile, supports_idlist, subtests) in todo:
@@ -570,7 +596,7 @@ elif opts.list:
 
         cmd = cmd.replace("$LISTOPT", "--list")
 
-        exitcode = subprocess.call(cmd)
+        exitcode = subprocess.call(cmd, shell=True)
 
         if exitcode != 0:
             sys.stderr.write("%s exited with exit code %s\n" % (cmd, exitcode))
@@ -579,15 +605,16 @@ else:
     for (name, envname, cmd, supports_loadfile, supports_idlist, subtests) in todo:
         try:
             envvars = switch_env(envname, prefix)
-        except Exception:
-            subunit_ops.start_testsuite(name);
-            subunit_ops.end_testsuite(name, "error",
-                "unable to set up environment %s" % envname);
-            continue
-        if envvars is None:
-            subunit_ops.start_testsuite(name);
+        except UnsupportedEnvironment:
+            subunit_ops.start_testsuite(name)
             subunit_ops.end_testsuite(name, "skip",
-                "environment is unknown in this test backend - skipping" % envname)
+                "environment %s is unknown in this test backend - skipping" % envname)
+            continue
+        except Exception, e:
+            subunit_ops.start_testsuite(name)
+            traceback.print_exc()
+            subunit_ops.end_testsuite(name, "error",
+                "unable to set up environment %s: %s" % (envname, e))
             continue
 
         # Generate a file with the individual tests to run, if the
@@ -608,7 +635,7 @@ else:
 
         run_testsuite(envname, name, cmd, i, suitestotal)
 
-        if opts.resetup_env:
+        if opts.resetup_environment:
             env_manager.teardown_env(envname)
 
 sys.stdout.write("\n")
