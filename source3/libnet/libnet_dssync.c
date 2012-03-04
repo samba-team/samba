@@ -652,9 +652,11 @@ static NTSTATUS libnet_dssync_process(TALLOC_CTX *mem_ctx,
 		status = libnet_dssync_getncchanges(mem_ctx, ctx, level, &req,
 						    &pnew_utdv);
 		if (!NT_STATUS_IS_OK(status)) {
-			ctx->error_message = talloc_asprintf(ctx,
-				"Failed to call DsGetNCCHanges: %s",
-				nt_errstr(status));
+			if (!ctx->error_message) {
+				ctx->error_message = talloc_asprintf(ctx,
+					"Failed to call DsGetNCCHanges: %s",
+					nt_errstr(status));
+			}
 			goto out;
 		}
 	}
