@@ -91,13 +91,15 @@ class EnvironmentManager(object):
 
     def get_running_env(self, name):
         envname = name.split(":")[0]
-        return self.running_envs[envname]
+        if envname == "none":
+            return NoneEnvironment()
+        return self.running_envs.get(envname)
 
     def getlog_env(self, envname):
         env = self.get_running_env(envname)
         return env.get_log()
 
-    def check_env(envname):
+    def check_env(self, envname):
         """Check if an environment is still up.
 
         :param envname: Environment to check
@@ -115,13 +117,11 @@ class EnvironmentManager(object):
         del self.running_envs[envname]
 
     def teardown_all(self):
+        """Teardown all environments."""
         for env in self.running_envs.iterkeys():
             self.teardown_env(env)
 
     def setup_env(self, envname, prefix):
-        if envname == "none":
-            return NoneEnvironment()
-
         running_env = self.get_running_env(envname)
         if running_env is not None:
             if not running_env.check():

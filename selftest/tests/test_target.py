@@ -26,7 +26,6 @@ from selftest.target import (
     Target,
     )
 
-import os
 import unittest
 
 
@@ -47,8 +46,8 @@ class DummyEnvironment(Environment):
 
 class DummyTarget(Target):
 
-    def get_target(self, name, prefix):
-        return DummyTarget(name, prefix)
+    def setup_env(self, name, prefix):
+        return DummyEnvironment(name, prefix)
 
 
 class EnvironmentManagerTests(unittest.TestCase):
@@ -57,4 +56,10 @@ class EnvironmentManagerTests(unittest.TestCase):
         self.mgr = EnvironmentManager(DummyTarget())
 
     def test_none(self):
-        self.assertIs(NoneEnvironment, type(self.mgr.setup_env("none", "prefix")))
+        self.assertIs(
+            NoneEnvironment, type(self.mgr.setup_env("none", "prefix")))
+
+    def test_setup(self):
+        env = self.mgr.setup_env("something", "prefix")
+        self.assertEquals(env.name, "something")
+        self.assertEquals(env.prefix, "prefix")
