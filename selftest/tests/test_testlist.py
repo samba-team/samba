@@ -21,7 +21,10 @@
 
 from selftest.testlist import (
     find_in_list,
+    read_test_regexes,
     )
+
+from cStringIO import StringIO
 
 import unittest
 
@@ -34,3 +37,19 @@ class FindInListTests(unittest.TestCase):
     def test_no_reason(self):
         self.assertEquals("because",
             find_in_list([("foo.*bar", "because")], "foo.bla.bar"))
+
+
+class ReadTestRegexesTests(unittest.TestCase):
+
+    def test_comment(self):
+        f = StringIO("# I am a comment\n # I am also a comment\n")
+        self.assertEquals([], list(read_test_regexes(f)))
+
+    def test_no_reason(self):
+        f = StringIO(" foo\n")
+        self.assertEquals([("foo", None)], list(read_test_regexes(f)))
+
+    def test_reason(self):
+        f = StringIO(" foo # because\nbar\n")
+        self.assertEquals([("foo", "because"), ("bar", None)],
+            list(read_test_regexes(f)))

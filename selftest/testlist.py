@@ -19,13 +19,14 @@
 
 """Selftest test list management."""
 
-__all__ = ['find_in_list']
+__all__ = ['find_in_list', 'read_test_regexes']
 
 import re
 
 def find_in_list(list, fullname):
     """Find test in list.
 
+    :param list: List with 2-tuples with regex and reason
     """
     for (regex, reason) in list:
         if re.match(regex, fullname):
@@ -34,3 +35,21 @@ def find_in_list(list, fullname):
             else:
                 return ""
     return None
+
+
+def read_test_regexes(f):
+    """Read tuples with regular expression and optional string from a file.
+
+    :param f: File-like object to read from
+    :return: Iterator over tuples with regular expression and test name
+    """
+    for l in f.readlines():
+        l = l.strip()
+        if l[0] == "#":
+            continue
+        try:
+            (test, reason) = l.split("#", 1)
+        except ValueError:
+            yield l, None
+        else:
+            yield test.strip(), reason.strip()
