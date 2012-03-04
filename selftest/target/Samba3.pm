@@ -48,19 +48,22 @@ sub teardown_env($$)
 	# This should cause smbd to terminate gracefully
 	close($envvars->{STDIN_PIPE});
 
-	my $smbdpid = read_pid($envvars, "smbd");
-	my $nmbdpid = read_pid($envvars, "nmbd");
-	my $winbinddpid = read_pid($envvars, "winbindd");
+	my $smbdpid = $envvars->{SMBD_TL_PID};
+	my $nmbdpid = $envvars->{NMBD_TL_PID};
+	my $winbinddpid = $envvars->{WINBINDD_TL_PID};
 
-	until (kill(0, $smbdpid, $nmbdpid, $winbinddpid) == 0) {
-	    my $childpid = waitpid(-1, WNOHANG);
-	    # This should give it time to write out the gcov data
+	# This should give it time to write out the gcov data
+	until ($count > 20) {
+	    if (Samba::cleanup_child($smbdpid, "smbd") == -1
+		&& Samba::cleanup_child($nmbdpid, "nmbd") == -1
+		&& Samba::cleanup_child($winbinddpid, "winbindd") == -1) {
+		last;
+	    }
 	    sleep(1);
 	    $count++;
-	    last if $childpid == -1 or $count > 20;
 	}
 
-	if ($count <= 20) {
+	if ($count <= 20 && kill(0, $smbdpid, $nmbdpid, $winbinddpid) == 0) {
 	    return;
 	}
 
@@ -69,15 +72,17 @@ sub teardown_env($$)
 	$self->stop_sig_term($winbinddpid);
 
 	$count = 0;
-	until (kill(0, $smbdpid, $nmbdpid, $winbinddpid) == 0) {
-	    # if no process sucessfully signalled, then we are done
-	    my $childpid = waitpid(-1, WNOHANG);
+	until ($count > 10) {
+	    if (Samba::cleanup_child($smbdpid, "smbd") == -1
+		&& Samba::cleanup_child($nmbdpid, "nmbd") == -1
+		&& Samba::cleanup_child($winbinddpid, "winbindd") == -1) {
+		last;
+	    }
 	    sleep(1);
 	    $count++;
-	    last if $childpid == -1 or $count > 20;
 	}
-	
-	if ($count <= 10) {
+
+	if ($count <= 10 && kill(0, $smbdpid, $nmbdpid, $winbinddpid) == 0) {
 	    return;
 	}
 
@@ -591,6 +596,7 @@ sub check_or_start($$$$$) {
 
 		exec(@preargs, Samba::bindir_path($self, "nmbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
+	$env_vars->{NMBD_TL_PID} = $pid;
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
 
@@ -642,6 +648,7 @@ sub check_or_start($$$$$) {
 
 		exec(@preargs, Samba::bindir_path($self, "winbindd"), "-F", "--no-process-group", "--stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
 	}
+	$env_vars->{WINBINDD_TL_PID} = $pid;
 	write_pid($env_vars, "winbindd", $pid);
 	print "DONE\n";
 
@@ -689,6 +696,7 @@ sub check_or_start($$$$$) {
 
 		exec(@preargs, Samba::bindir_path($self, "smbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
 	}
+	$env_vars->{SMBD_TL_PID} = $pid;
 	write_pid($env_vars, "smbd", $pid);
 	print "DONE\n";
 
