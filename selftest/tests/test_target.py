@@ -71,3 +71,11 @@ class EnvironmentManagerTests(unittest.TestCase):
         env.check_ret = False
         self.assertFalse(env.check())
         self.assertFalse(self.mgr.check_env("something"))
+
+    def test_get_log(self):
+        env = self.mgr.setup_env("something", "prefix")
+        self.assertEquals("", env.get_log())
+        self.assertEquals("", self.mgr.getlog_env("something"))
+        env.log_ret = 'bla'
+        self.assertEquals('bla', env.get_log())
+        self.assertEquals('bla', self.mgr.getlog_env("something"))
