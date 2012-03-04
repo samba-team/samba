@@ -98,6 +98,14 @@ class RestrictedTestManager(object):
         self.test_list = test_list
         self.unused = set(self.test_list)
 
+    @classmethod
+    def from_path(cls, path):
+        f = open(path, 'r')
+        try:
+            return cls(read_restricted_test_list(f))
+        finally:
+            f.close()
+
     def should_run_testsuite(self, name):
         """Determine whether a testsuite should be run.
 

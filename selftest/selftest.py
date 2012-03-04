@@ -104,24 +104,20 @@ def expand_environment_strings(s):
 def run_testsuite(envname, name, cmd, i, totalsuites):
     pcap_file = setup_pcap(name)
 
-	Subunit::start_testsuite(name);
-	Subunit::progress_push();
-	Subunit::report_time(time());
-    os.system(cmd)
-	Subunit::report_time(time());
-	Subunit::progress_pop();
+    Subunit::start_testsuite(name)
+    Subunit::progress_push()
+    Subunit::report_time(time())
+    try:
+        exitcode = subprocess.call(cmd)
+    except Exception, e:
+        Subunit::report_time(time())
+        Subunit::progress_pop()
+        Subunit::progress_pop()
+        Subunit::end_testsuite(name, "error", "Unable to run $cmd: $!")
+        sys.exit(1)
 
-	if ($? == -1) {
-		Subunit::progress_pop();
-		Subunit::end_testsuite(name, "error", "Unable to run $cmd: $!");
-		exit(1);
-	} elsif ($? & 127) {
-		Subunit::end_testsuite(name, "error",
-			sprintf("%s died with signal %d, %s coredump\n", $cmd, ($? & 127),  ($? & 128) ? 'with' : 'without'));
-		exit(1);
-	}
-
-	my $exitcode = $? >> 8;
+    Subunit::report_time(time())
+    Subunit::progress_pop()
 
     envlog = env_manager.getlog_env(envname)
     if envlog != "":
@@ -264,14 +260,14 @@ if not opts.list:
         if opts.socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "":
             die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....")
         testenv_default = "dc"
-        require target::Samba
-        target = new Samba($bindir, binary_mapping, $ldap, $srcdir, $server_maxtime)
+        from selftest.target.samba import Samba
+        target = Samba(bindir, binary_mapping, ldap, srcdir, server_maxtime)
     elif opts.target == "samba3":
         if opts.socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "":
             die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....")
         testenv_default = "member"
-        require target::Samba3
-        $target = new Samba3($bindir, binary_mapping, $srcdir_abs, $server_maxtime)
+        from selftest.target.samba3 import Samba3
+        target = Samba3(bindir, binary_mapping, srcdir_abs, server_maxtime)
 
 interfaces = ",".join([
     "127.0.0.11/8",
@@ -377,16 +373,9 @@ for fn in testlists:
         available.append(testsuite)
 
 if opts.load_list:
-    individual_tests = {}
-    restricted = []
-    f = open(opts.load_list, 'r')
-    try:
-        restricted_mgr = RestrictedTestManager(read_restricted_test_list(f))
-    finally:
-        f.close()
+    restricted_mgr = RestrictedTestManager.from_path(opts.load_list)
 else:
     restricted_mgr = None
-    individual_tests = None
 
 
 for testsuite in available:
@@ -555,15 +544,8 @@ elif opts.list:
 
         cmd = cmd.replace("$LISTOPT", "--list")
 
-        os.system(cmd)
+        exitcode = subprocess.call(cmd)
 
-        if ($? == -1) {
-			die("Unable to run $cmd: $!");
-		} elsif ($? & 127) {
-			die(snprintf("%s died with signal %d, %s coredump\n", $cmd, ($? & 127),  ($? & 128) ? 'with' : 'without'));
-		}
-
-        my $exitcode = $? >> 8;
         if exitcode != 0:
             sys.stderr.write("%s exited with exit code %s\n" % (cmd, exitcode))
             sys.exit(1)
