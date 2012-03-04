@@ -79,3 +79,10 @@ class EnvironmentManagerTests(unittest.TestCase):
         env.log_ret = 'bla'
         self.assertEquals('bla', env.get_log())
         self.assertEquals('bla', self.mgr.getlog_env("something"))
+
+    def test_get_running_env(self):
+        env = self.mgr.setup_env("something", "prefix")
+        self.assertIs(env, self.mgr.get_running_env("something"))
+
+    def test_get_running_env_nonexistant(self):
+        self.assertIs(None, self.mgr.get_running_env("something"))
