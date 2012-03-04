@@ -28,6 +28,7 @@ class EnvironmentDown(Exception):
     def __init__(self, msg):
         super(EnvironmentDown, self).__init__("environment went down: %s" % msg)
 
+
 class Target(object):
     """A target for Samba tests."""
 
@@ -67,6 +68,13 @@ class Environment(object):
         """
         raise NotImplementedError(self.teardown)
 
+    def get_vars(self):
+        """Retrieve the environment variables for this environment.
+
+        :return: Dictionary with string -> string values
+        """
+        raise NotImplementedError(self.get_vars)
+
 
 class NoneEnvironment(Environment):
     """Empty environment.
@@ -80,6 +88,9 @@ class NoneEnvironment(Environment):
 
     def teardown(self):
         return
+
+    def get_vars(self):
+        return {}
 
 
 class EnvironmentManager(object):
