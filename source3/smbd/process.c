@@ -540,6 +540,7 @@ static bool init_smb_request(struct smb_request *req,
 	req->chain_fsp = NULL;
 	req->smb2req = NULL;
 	req->priv_paths = NULL;
+	req->chain = NULL;
 	smb_init_perfcount_data(&req->pcd);
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
@@ -1562,79 +1563,110 @@ static void construct_reply_chain(struct smbd_server_connection *sconn,
 				  bool encrypted,
 				  struct smb_perfcount_data *deferred_pcd)
 {
-	struct connection_struct *conn = NULL;
 	struct smb_request **reqs = NULL;
-	struct smb_request *req, *first_req, *last_req;
-	unsigned i, num_reqs;
-	NTSTATUS status;
+	struct smb_request *req;
+	unsigned num_reqs;
 	bool ok;
 
 	ok = smb1_parse_chain(talloc_tos(), (uint8_t *)inbuf, sconn, encrypted,
 			      seqnum, &reqs, &num_reqs);
 	if (!ok) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto error;
+		char errbuf[smb_size];
+		error_packet(errbuf, 0, 0, NT_STATUS_INVALID_PARAMETER,
+			     __LINE__, __FILE__);
+		if (!srv_send_smb(sconn, errbuf, true, seqnum, encrypted,
+				  NULL)) {
+			exit_server_cleanly("construct_reply_chain: "
+					    "srv_send_smb failed.");
+		}
+		return;
 	}
 
-	for (i=0; i<num_reqs; i++) {
-		req = reqs[i];
+	req = reqs[0];
+	req->inbuf = (uint8_t *)talloc_move(reqs, &inbuf);
 
-		if (i > 0) {
-			/*
-			 * Get the session and tree ids and chain fsp
-			 * from the previous request into the current
-			 * one
-			 */
-			struct smb_request *prev_req = reqs[i-1];
-			const uint8_t *prev_outbuf = prev_req->outbuf;
+	req->conn = switch_message(req->cmd, req);
 
-			req->vuid = SVAL(prev_outbuf, smb_uid);
-			req->tid  = SVAL(prev_outbuf, smb_tid);
-			req->conn = conn_find(req->sconn, req->tid);
-			req->chain_fsp = prev_req->chain_fsp;
-		}
-		req->inbuf = (uint8_t *)inbuf;
-		conn = switch_message(req->cmd, req);
-
-		if (req->outbuf == NULL) {
-			if (open_was_deferred(req->sconn, req->mid)) {
-				TALLOC_FREE(reqs);
-				return;
-			}
-			status = NT_STATUS_INTERNAL_ERROR;
-			goto error;
-		}
-		if (IVAL(req->outbuf, smb_rcls) != 0) {
-			break;
-		}
-	}
-
-	first_req = reqs[0];
-	last_req = req;
-
-	if (i == 0) {
+	if (req->outbuf == NULL) {
 		/*
-		 * The first request already gave an error, no need to
-		 * do any splicing
+		 * Request has suspended itself, will come
+		 * back here.
 		 */
+		return;
+	}
+	smb_request_done(req);
+}
+
+/*
+ * To be called from an async SMB handler that is potentially chained
+ * when it is finished for shipping.
+ */
+
+void smb_request_done(struct smb_request *req)
+{
+	struct smb_request **reqs = NULL;
+	struct smb_request *first_req;
+	size_t i, num_reqs, next_index;
+	NTSTATUS status;
+
+	if (req->chain == NULL) {
+		first_req = req;
 		goto shipit;
 	}
 
-	for (i=1; i<next_index; i++) {
-		req = reqs[i];
+	reqs = req->chain;
+	num_reqs = talloc_array_length(reqs);
 
-		ok = smb_splice_chain(&first_req->outbuf, req->outbuf);
+	for (i=0; i<num_reqs; i++) {
+		if (reqs[i] == req) {
+			break;
+		}
+	}
+	if (i == num_reqs) {
+		/*
+		 * Invalid chain, should not happen
+		 */
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto error;
+	}
+	next_index = i+1;
+
+	while ((next_index < num_reqs) && (IVAL(req->outbuf, smb_rcls) == 0)) {
+		struct smb_request *next = reqs[next_index];
+
+		next->vuid = SVAL(req->outbuf, smb_uid);
+		next->tid  = SVAL(req->outbuf, smb_tid);
+		next->conn = conn_find(req->sconn, req->tid);
+		next->chain_fsp = req->chain_fsp;
+		next->inbuf = (uint8_t *)req->inbuf;
+
+		req = next;
+		req->conn = switch_message(req->cmd, req);
+
+		if (req->outbuf == NULL) {
+			/*
+			 * Request has suspended itself, will come
+			 * back here.
+			 */
+			return;
+		}
+		next_index += 1;
+	}
+
+	first_req = reqs[0];
+
+	for (i=1; i<next_index; i++) {
+		bool ok;
+
+		ok = smb_splice_chain(&first_req->outbuf, reqs[i]->outbuf);
 		if (!ok) {
 			status = NT_STATUS_INTERNAL_ERROR;
 			goto error;
 		}
-		if (req == last_req) {
-			break;
-		}
 	}
 
-	SSVAL(first_req->outbuf, smb_uid, SVAL(last_req->outbuf, smb_uid));
-	SSVAL(first_req->outbuf, smb_tid, SVAL(last_req->outbuf, smb_tid));
+	SSVAL(first_req->outbuf, smb_uid, SVAL(req->outbuf, smb_uid));
+	SSVAL(first_req->outbuf, smb_tid, SVAL(req->outbuf, smb_tid));
 
 	/*
 	 * This scary statement intends to set the
@@ -1643,42 +1675,43 @@ static void construct_reply_chain(struct smbd_server_connection *sconn,
 	 */
 	SSVAL(first_req->outbuf, smb_flg2,
 	      (SVAL(first_req->outbuf, smb_flg2) & ~FLAGS2_32_BIT_ERROR_CODES)
-	      |(SVAL(last_req->outbuf, smb_flg2) & FLAGS2_32_BIT_ERROR_CODES));
+	      |(SVAL(req->outbuf, smb_flg2) & FLAGS2_32_BIT_ERROR_CODES));
 
 	/*
 	 * Transfer the error codes from the subrequest to the main one
 	 */
-	SSVAL(first_req->outbuf, smb_rcls, SVAL(last_req->outbuf, smb_rcls));
-	SSVAL(first_req->outbuf, smb_err,  SVAL(last_req->outbuf, smb_err));
+	SSVAL(first_req->outbuf, smb_rcls, SVAL(req->outbuf, smb_rcls));
+	SSVAL(first_req->outbuf, smb_err,  SVAL(req->outbuf, smb_err));
 
-	goto shipit;
+	_smb_setlen_large(
+		first_req->outbuf, talloc_get_size(first_req->outbuf) - 4);
 
 shipit:
-	_smb_setlen_large(first_req->outbuf,
-			  talloc_get_size(first_req->outbuf) - 4);
-
 	if (!srv_send_smb(first_req->sconn,
 			  (char *)first_req->outbuf,
 			  true, first_req->seqnum+1,
-			  IS_CONN_ENCRYPTED(conn)||first_req->encrypted,
+			  IS_CONN_ENCRYPTED(req->conn)||first_req->encrypted,
 			  &first_req->pcd)) {
 		exit_server_cleanly("construct_reply_chain: srv_send_smb "
 				    "failed.");
 	}
-	TALLOC_FREE(reqs);
+	TALLOC_FREE(req);	/* non-chained case */
+	TALLOC_FREE(reqs);	/* chained case */
 	return;
 
 error:
 	{
 		char errbuf[smb_size];
 		error_packet(errbuf, 0, 0, status, __LINE__, __FILE__);
-		if (!srv_send_smb(sconn, errbuf, true, seqnum, encrypted,
+		if (!srv_send_smb(req->sconn, errbuf, true,
+				  req->seqnum+1, req->encrypted,
 				  NULL)) {
 			exit_server_cleanly("construct_reply_chain: "
 					    "srv_send_smb failed.");
 		}
 	}
-	TALLOC_FREE(reqs);
+	TALLOC_FREE(req);	/* non-chained case */
+	TALLOC_FREE(reqs);	/* chained case */
 }
 
 /****************************************************************************
@@ -2220,6 +2253,7 @@ bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
 		      struct smb_request ***reqs, unsigned *num_reqs)
 {
 	struct smb1_parse_chain_state state;
+	unsigned i;
 
 	state.mem_ctx = mem_ctx;
 	state.buf = buf;
@@ -2232,6 +2266,9 @@ bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
 	if (!smb1_walk_chain(buf, smb1_parse_chain_cb, &state)) {
 		TALLOC_FREE(state.reqs);
 		return false;
+	}
+	for (i=0; i<state.num_reqs; i++) {
+		state.reqs[i]->chain = state.reqs;
 	}
 	*reqs = state.reqs;
 	*num_reqs = state.num_reqs;

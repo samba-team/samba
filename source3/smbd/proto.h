@@ -780,6 +780,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 				size_t priv_len);
 NTSTATUS allow_new_trans(struct trans_state *list, uint64_t mid);
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
+void smb_request_done(struct smb_request *req);
 const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);
 void remove_from_common_flags2(uint32 v);

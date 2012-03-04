@@ -495,6 +495,11 @@ struct smb_request {
 	 * under privilege.
 	 */
 	struct privilege_paths *priv_paths;
+
+	/*
+	 * Request list for chained requests, we're part of it.
+	 */
+	struct smb_request **chain;
 };
 
 /* Defines for the sent_oplock_break field above. */
