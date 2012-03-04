@@ -58,4 +58,4 @@ def setup_pcap(pcap_file):
     os.environ["SOCKET_WRAPPER_PCAP_FILE"] = pcap_file
 
 def set_default_iface(i):
-    os.environ["SOCKET_WRAPPER_DEFAULT_IFACE"] = i
+    os.environ["SOCKET_WRAPPER_DEFAULT_IFACE"] = str(i)
