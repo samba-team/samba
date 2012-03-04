@@ -387,31 +387,6 @@ unless ($opt_list) {
 	}
 }
 
-#
-# Start a Virtual Distributed Ethernet Switch
-# Returns the pid of the switch.
-#
-sub start_vde_switch($)
-{
-	my ($path) = @_;
-
-	system("vde_switch --pidfile $path/vde.pid --sock $path/vde.sock --daemon");
-
-	open(PID, "$path/vde.pid");
-	<PID> =~ /([0-9]+)/;
-	my $pid = $1;
-	close(PID);
-
-	return $pid;
-}
-
-# Stop a Virtual Distributed Ethernet Switch
-sub stop_vde_switch($)
-{
-	my ($pid) = @_;
-	kill 9, $pid;
-}
-
 sub read_test_regexes($)
 {
 	my ($name) = @_;
