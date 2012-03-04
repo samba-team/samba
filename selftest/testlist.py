@@ -19,9 +19,10 @@
 
 """Selftest test list management."""
 
-__all__ = ['find_in_list', 'read_test_regexes']
+__all__ = ['find_in_list', 'read_test_regexes', 'read_testlist']
 
 import re
+import sys
 
 def find_in_list(list, fullname):
     """Find test in list.
@@ -53,3 +54,34 @@ def read_test_regexes(f):
             yield l, None
         else:
             yield test.strip(), reason.strip()
+
+
+def should_run_test(tests, name):
+    if tests == []:
+        return True
+    for test in tests:
+        if re.match(test, name):
+            return True
+    return False
+
+
+def read_testlist(inf, outf):
+    """Read a list of tests from a file.
+
+    :param inf: File-like object to read from.
+    :param outf: File-like object to write to.
+    :return: Iterator over tuples describing tests
+    """
+    while True:
+        l = inf.readline()
+        if l == '':
+            return
+        if l.startswith("-- TEST") and l.endswith(" --\n"):
+            supports_loadlist = l.startswith("-- TEST-LOADLIST")
+            supports_idlist = l.startswith("-- TEST-IDLIST")
+            name = inf.readline().rstrip("\n")
+            env = inf.readline().rstrip("\n")
+            cmdline = inf.readline().rstrip("\n")
+            yield (name, env, cmdline, supports_loadlist, supports_idlist)
+        else:
+            outf.write(l)

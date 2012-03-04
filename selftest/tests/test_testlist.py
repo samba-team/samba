@@ -22,6 +22,7 @@
 from selftest.testlist import (
     find_in_list,
     read_test_regexes,
+    read_testlist,
     )
 
 from cStringIO import StringIO
@@ -53,3 +54,20 @@ class ReadTestRegexesTests(unittest.TestCase):
         f = StringIO(" foo # because\nbar\n")
         self.assertEquals([("foo", "because"), ("bar", None)],
             list(read_test_regexes(f)))
+
+
+class ReadTestlistTests(unittest.TestCase):
+
+    def test_read_list(self):
+        inf = StringIO("-- TEST --\nfoo\nbar\nbla\n")
+        outf = StringIO()
+        self.assertEquals([('foo', 'bar', 'bla', False, False)],
+                list(read_testlist(inf, outf)))
+        self.assertEquals("", outf.getvalue())
+
+    def test_read_list_passes_through(self):
+        inf = StringIO("MORENOISE\n-- TEST --\nfoo\nbar\nbla\nNOISE\n")
+        outf = StringIO()
+        self.assertEquals([('foo', 'bar', 'bla', False, False)],
+                list(read_testlist(inf, outf)))
+        self.assertEquals("MORENOISE\nNOISE\n", outf.getvalue())
