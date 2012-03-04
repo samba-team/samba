@@ -84,22 +84,22 @@ The environments are currently available include
    be set:
 
      * USERNAME: Administrator user name
-	 * PASSWORD: Administrator password
-	 * DOMAIN: Domain name
-	 * REALM: Realm name
-	 * SERVER: DC host name 
-	 * SERVER_IP: DC IPv4 address
-	 * NETBIOSNAME: DC NetBIOS name
-	 * NETIOSALIAS: DC NetBIOS alias
+     * PASSWORD: Administrator password
+     * DOMAIN: Domain name
+     * REALM: Realm name
+     * SERVER: DC host name 
+     * SERVER_IP: DC IPv4 address
+     * NETBIOSNAME: DC NetBIOS name
+     * NETIOSALIAS: DC NetBIOS alias
 
  - member,s4member,s3member: Domain controller and member server that is joined to it set up. The
    following environment variables will be set:
 
      * USERNAME: Domain administrator user name
-	 * PASSWORD: Domain administrator password
-	 * DOMAIN: Domain name
-	 * REALM: Realm name
-	 * SERVER: Name of the member server
+     * PASSWORD: Domain administrator password
+     * DOMAIN: Domain name
+     * REALM: Realm name
+     * SERVER: Name of the member server
 
 See Samba.pm, Samba3.pm and Samba4.pm for the full list.
 
