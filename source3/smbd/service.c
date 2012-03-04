@@ -383,49 +383,43 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
                                               struct auth_session_info *session_info,
                                               struct auth_session_info **presult)
 {
+	struct auth_session_info *result;
+
         if (lp_guest_only(snum)) {
                 return make_session_info_guest(mem_ctx, presult);
         }
 
-        if (session_info != NULL) {
+	/*
+	 * This is the normal security != share case where we have a
+	 * valid vuid from the session setup.                 */
 
-		struct auth_session_info *result;
-
-                /*
-                 * This is the normal security != share case where we have a
-                 * valid vuid from the session setup.                 */
-
-		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
-                      if (!lp_guest_ok(snum)) {
-                                DEBUG(2, ("guest user (from session setup) "
-                                          "not permitted to access this share "
-                                          "(%s)\n", lp_servicename(snum)));
-                                return NT_STATUS_ACCESS_DENIED;
-                        }
-                } else {
-                        if (!user_ok_token(session_info->unix_info->unix_name,
-					   session_info->info->domain_name,
-                                           session_info->security_token, snum)) {
-                                DEBUG(2, ("user '%s' (from session setup) not "
-                                          "permitted to access this share "
-                                          "(%s)\n",
-                                          session_info->unix_info->unix_name,
-                                          lp_servicename(snum)));
-                                return NT_STATUS_ACCESS_DENIED;
-                        }
-                }
-
-                result = copy_session_info(mem_ctx, session_info);
-		if (result == NULL) {
-			return NT_STATUS_NO_MEMORY;
+	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
+		if (!lp_guest_ok(snum)) {
+			DEBUG(2, ("guest user (from session setup) "
+				  "not permitted to access this share "
+				  "(%s)\n", lp_servicename(snum)));
+			return NT_STATUS_ACCESS_DENIED;
 		}
+	} else {
+		if (!user_ok_token(session_info->unix_info->unix_name,
+				   session_info->info->domain_name,
+				   session_info->security_token, snum)) {
+			DEBUG(2, ("user '%s' (from session setup) not "
+				  "permitted to access this share "
+				  "(%s)\n",
+				  session_info->unix_info->unix_name,
+				  lp_servicename(snum)));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
 
-		*presult = result;
-		return NT_STATUS_OK;
-        }
+	result = copy_session_info(mem_ctx, session_info);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	DEBUG(0, ("invalid VUID (vuser)\n"));
-	return NT_STATUS_ACCESS_DENIED;
+	*presult = result;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -558,7 +552,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	conn->params->service = snum;
 
 	status = create_connection_session_info(sconn,
-		conn, snum, vuser ? vuser->session_info : NULL,
+		conn, snum, vuser->session_info,
 		&conn->session_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
