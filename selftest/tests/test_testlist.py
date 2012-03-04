@@ -1,4 +1,4 @@
-# __init__.py -- The tests for selftest
+# test_testlist.py -- The tests for selftest testlist code
 # Copyright (C) 2012 Jelmer Vernooij <jelmer@samba.org>
 #
 # This program is free software; you can redistribute it and/or
@@ -17,14 +17,20 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA  02110-1301, USA.
 
-"""Tests for selftest."""
+"""Tests for selftest.testlist."""
+
+from selftest.testlist import (
+    find_in_list,
+    )
 
 import unittest
 
-def test_suite():
-    result = unittest.TestSuite()
-    names = ['socket_wrapper', 'target', 'testlist']
-    module_names = ['selftest.tests.test_' + name for name in names]
-    loader = unittest.TestLoader()
-    result.addTests(loader.loadTestsFromNames(module_names))
-    return result
+
+class FindInListTests(unittest.TestCase):
+
+    def test_empty(self):
+        self.assertIs(None, find_in_list([], "foo.test"))
+
+    def test_no_reason(self):
+        self.assertEquals("because",
+            find_in_list([("foo.*bar", "because")], "foo.bla.bar"))
