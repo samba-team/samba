@@ -20,9 +20,10 @@
 """Tests for selftest.target."""
 
 from selftest.target import (
+    Environment,
+    EnvironmentDown,
     EnvironmentManager,
     NoneEnvironment,
-    Environment,
     Target,
     )
 
@@ -85,6 +86,11 @@ class EnvironmentManagerTests(unittest.TestCase):
         env1 = self.mgr.setup_env("something", "prefix")
         env2 = self.mgr.setup_env("something", "prefix")
         self.assertIs(env1, env2)
+
+    def test_setup_down(self):
+        env1 = self.mgr.setup_env("something", "prefix")
+        env1.check_ret = False
+        self.assertRaises(EnvironmentDown, self.mgr.setup_env, "something", "")
 
     def test_check(self):
         env = self.mgr.setup_env("something", "prefix")
