@@ -45,7 +45,6 @@ my $opt_socket_wrapper_keep_pcap = undef;
 my $opt_one = 0;
 my @opt_exclude = ();
 my @opt_include = ();
-my $opt_verbose = 0;
 my $opt_testenv = 0;
 my $opt_list = 0;
 my $ldap = undef;
@@ -213,7 +212,6 @@ Samba4 Specific:
 Behaviour:
  --quick                    run quick overall test
  --one                      abort when the first test fails
- --verbose                  be verbose
  --testenv                  run a shell in the requested test environment
  --list                     list available tests
 ";
@@ -233,7 +231,6 @@ my $result = GetOptions (
 		'include=s' => \@opt_include,
 		'srcdir=s' => \$srcdir,
 		'bindir=s' => \$bindir,
-		'verbose' => \$opt_verbose,
 		'testenv' => \$opt_testenv,
 		'list' => \$opt_list,
 		'ldap:s' => \$ldap,
@@ -562,11 +559,6 @@ if ($opt_socket_wrapper) {
 	$ENV{SELFTEST_INTERFACES} = $interfaces;
 } else {
 	$ENV{SELFTEST_INTERFACES} = "";
-}
-if ($opt_verbose) {
-	$ENV{SELFTEST_VERBOSE} = "1";
-} else {
-	$ENV{SELFTEST_VERBOSE} = "";
 }
 if ($opt_quick) {
 	$ENV{SELFTEST_QUICK} = "1";
