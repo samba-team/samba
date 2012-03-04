@@ -29,7 +29,7 @@ from selftest.target import (
     UnsupportedEnvironment,
     )
 
-import unittest
+from selftest.tests import TestCase
 
 
 class DummyEnvironment(Environment):
@@ -53,7 +53,7 @@ class DummyTarget(Target):
         return DummyEnvironment(name, prefix)
 
 
-class NoneEnvironmentTests(unittest.TestCase):
+class NoneEnvironmentTests(TestCase):
 
     def setUp(self):
         super(NoneEnvironmentTests, self).setUp()
@@ -69,7 +69,7 @@ class NoneEnvironmentTests(unittest.TestCase):
         self.assertEquals("", self.env.get_log())
 
 
-class NoneTargetTests(unittest.TestCase):
+class NoneTargetTests(TestCase):
 
     def setUp(self):
         super(NoneTargetTests, self).setUp()
@@ -80,7 +80,7 @@ class NoneTargetTests(unittest.TestCase):
             "something", "prefx")
 
 
-class EnvironmentManagerTests(unittest.TestCase):
+class EnvironmentManagerTests(TestCase):
 
     def setUp(self):
         super(EnvironmentManagerTests, self).setUp()

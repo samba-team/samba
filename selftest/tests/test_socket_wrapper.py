@@ -19,12 +19,13 @@
 
 """Tests for selftest/socket_wrapper."""
 
+from selftest.tests import TestCase
+
 from selftest import socket_wrapper
 
 import os
-import unittest
 
-class SocketWrapperTests(unittest.TestCase):
+class SocketWrapperTests(TestCase):
 
     def test_setup_pcap(self):
         socket_wrapper.setup_pcap("somefile")

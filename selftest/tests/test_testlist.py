@@ -19,6 +19,8 @@
 
 """Tests for selftest.testlist."""
 
+from selftest.tests import TestCase
+
 from selftest.testlist import (
     RestrictedTestManager,
     find_in_list,
@@ -28,10 +30,8 @@ from selftest.testlist import (
 
 from cStringIO import StringIO
 
-import unittest
 
-
-class FindInListTests(unittest.TestCase):
+class FindInListTests(TestCase):
 
     def test_empty(self):
         self.assertIs(None, find_in_list([], "foo.test"))
@@ -41,7 +41,7 @@ class FindInListTests(unittest.TestCase):
             find_in_list([("foo.*bar", "because")], "foo.bla.bar"))
 
 
-class ReadTestRegexesTests(unittest.TestCase):
+class ReadTestRegexesTests(TestCase):
 
     def test_comment(self):
         f = StringIO("# I am a comment\n # I am also a comment\n")
@@ -57,7 +57,7 @@ class ReadTestRegexesTests(unittest.TestCase):
             list(read_test_regexes(f)))
 
 
-class ReadTestlistTests(unittest.TestCase):
+class ReadTestlistTests(TestCase):
 
     def test_read_list(self):
         inf = StringIO("-- TEST --\nfoo\nbar\nbla\n")
@@ -75,7 +75,7 @@ class ReadTestlistTests(unittest.TestCase):
 
 
 
-class RestrictedTestManagerTests(unittest.TestCase):
+class RestrictedTestManagerTests(TestCase):
 
     def test_unused(self):
         mgr = RestrictedTestManager(["foo.bar"])
