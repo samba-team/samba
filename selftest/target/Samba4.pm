@@ -1335,16 +1335,33 @@ sub teardown_env($$)
 	$pid = $envvars->{SAMBA_PID};
 	my $count = 0;
 	my $childpid;
-	until (Samba::cleanup_child($pid, "samba") < 0) {
-	    # This should give it time to write out the gcov data
+
+	# This should give it time to write out the gcov data
+	until ($count > 20) {
+	    if (Samba::cleanup_child($pid, "samba") == -1) {
+		last;
+	    }
 	    sleep(1);
 	    $count++;
-	    last if $count > 20;
 	}
-	
+
+	if ($count <= 20 && kill(0, $pid) == 0) {
+	    return;
+	}
+
+	kill "TERM", $pid;
+
+	until ($count > 20) {
+	    if (Samba::cleanup_child($pid, "samba") == -1) {
+		last;
+	    }
+	    sleep(1);
+	    $count++;
+	}
+
 	# If it is still around, kill it
-	if ($count > 20) {
-	    print "server process $pid took more than $count seconds to exit, killing\n";
+	if ($count > 20 && kill(0, $pid) == 0) {
+	    warn "server process $pid took more than $count seconds to exit, killing\n";
 	    kill 9, $pid;
 	}
 
