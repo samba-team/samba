@@ -23,10 +23,8 @@ import unittest
 
 def test_suite():
     result = unittest.TestSuite()
-    names = ['socketwrapper']
+    names = ['socket_wrapper']
     module_names = ['selftest.tests.test_' + name for name in names]
     loader = unittest.TestLoader()
     result.addTests(loader.loadTestsFromNames(module_names))
-    from dulwich.tests.compat import test_suite as compat_test_suite
-    result.addTests(compat_test_suite())
     return result

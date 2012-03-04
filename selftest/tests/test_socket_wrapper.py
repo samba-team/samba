@@ -18,3 +18,18 @@
 # MA  02110-1301, USA.
 
 """Tests for selftest/socket_wrapper."""
+
+from selftest import socket_wrapper
+
+import os
+import unittest
+
+class SocketWrapperTests(unittest.TestCase):
+
+    def test_setup_pcap(self):
+        socket_wrapper.setup_pcap("somefile")
+        self.assertEquals("somefile", os.environ["SOCKET_WRAPPER_PCAP_FILE"])
+
+    def test_set_default_iface(self):
+        socket_wrapper.set_default_iface(4)
+        self.assertEquals("4", os.environ["SOCKET_WRAPPER_DEFAULT_IFACE"])
