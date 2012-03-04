@@ -21,6 +21,13 @@ import os
 import shutil
 
 def setup_dir(dir, pcap):
+    """Setup a socket wrapper directory.
+
+    :param dir: Socket wrapper directory (None if socket wrapper should be
+        disabled)
+    :param pcap: Whether to generate pcap files
+    :return: The socket wrapper directory
+    """
     pcap_dir = None
 
     if dir is not None:
@@ -28,7 +35,7 @@ def setup_dir(dir, pcap):
             shutil.rmtree(dir)
         os.mkdir(dir, 0777)
 
-        if pcap is not None:
+        if pcap:
             pcap_dir = os.path.join(dir, "pcap")
 
             if os.path.isdir(pcap_dir):
