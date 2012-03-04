@@ -140,6 +140,10 @@ static bool rpc_setup_winreg(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_winreg;
 	const char *pipe_name = "winreg";
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_winreg_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -156,6 +160,10 @@ static bool rpc_setup_srvsvc(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_srvsvc;
 	const char *pipe_name = "srvsvc";
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_srvsvc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -171,20 +179,19 @@ static bool rpc_setup_lsarpc(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_lsarpc;
 	const char *pipe_name = "lsarpc";
-	enum rpc_service_mode_e lsarpc_mode = rpc_lsarpc_mode();
 	enum rpc_daemon_type_e lsasd_type = rpc_lsasd_daemon();
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED || lsasd_type != RPC_DAEMON_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_lsarpc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	if (lsarpc_mode == RPC_SERVICE_MODE_EMBEDDED &&
-	    lsasd_type != RPC_DAEMON_DISABLED) {
-		return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
-	}
-	return true;
+	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
 }
 
 static bool rpc_setup_samr(struct tevent_context *ev_ctx,
@@ -193,21 +200,19 @@ static bool rpc_setup_samr(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_samr;
 	const char *pipe_name = "samr";
-	enum rpc_service_mode_e samr_mode = rpc_samr_mode();
 	enum rpc_daemon_type_e lsasd_type = rpc_lsasd_daemon();
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED || lsasd_type != RPC_DAEMON_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_samr_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	if (samr_mode == RPC_SERVICE_MODE_EMBEDDED &&
-	    lsasd_type != RPC_DAEMON_DISABLED) {
-		return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
-	}
-
-	return true;
+	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
 }
 
 static bool rpc_setup_netlogon(struct tevent_context *ev_ctx,
@@ -216,21 +221,19 @@ static bool rpc_setup_netlogon(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_netlogon;
 	const char *pipe_name = "netlogon";
-	enum rpc_service_mode_e netlogon_mode = rpc_netlogon_mode();
 	enum rpc_daemon_type_e lsasd_type = rpc_lsasd_daemon();
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED || lsasd_type != RPC_DAEMON_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_netlogon_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	if (netlogon_mode == RPC_SERVICE_MODE_EMBEDDED &&
-	    lsasd_type != RPC_DAEMON_DISABLED) {
-		return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
-	}
-
-	return true;
+	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
 }
 
 static bool rpc_setup_netdfs(struct tevent_context *ev_ctx,
@@ -240,6 +243,10 @@ static bool rpc_setup_netdfs(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_netdfs;
 	const char *pipe_name = "netdfs";
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_netdfs_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -257,6 +264,10 @@ static bool rpc_setup_rpcecho(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_rpcecho;
 	const char *pipe_name = "rpcecho";
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_rpcecho_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -274,6 +285,10 @@ static bool rpc_setup_dssetup(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_dssetup;
 	const char *pipe_name = "dssetup";
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_dssetup_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -290,6 +305,10 @@ static bool rpc_setup_wkssvc(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_wkssvc;
 	const char *pipe_name = "wkssvc";
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_wkssvc_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -328,34 +347,28 @@ static bool rpc_setup_spoolss(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_spoolss;
 	struct rpc_srv_callbacks spoolss_cb;
-	enum rpc_service_mode_e spoolss_mode = rpc_spoolss_mode();
 	enum rpc_daemon_type_e spoolss_type = rpc_spoolss_daemon();
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
 
-	if (_lp_disable_spoolss() ||
-	    spoolss_type == RPC_DAEMON_DISABLED ||
-	    spoolss_mode == RPC_SERVICE_MODE_DISABLED) {
+	if (_lp_disable_spoolss()) {
 		return true;
 	}
 
-	if (spoolss_type == RPC_DAEMON_EMBEDDED) {
-		spoolss_cb.init         = spoolss_init_cb;
-		spoolss_cb.shutdown     = spoolss_shutdown_cb;
-		spoolss_cb.private_data = msg_ctx;
-
-		status = rpc_spoolss_init(&spoolss_cb);
-	} else if (spoolss_type == RPC_DAEMON_FORK) {
-		status = rpc_spoolss_init(NULL);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED || spoolss_type != RPC_DAEMON_EMBEDDED) {
+		return true;
 	}
+
+	spoolss_cb.init         = spoolss_init_cb;
+	spoolss_cb.shutdown     = spoolss_shutdown_cb;
+	spoolss_cb.private_data = msg_ctx;
+
+	status = rpc_spoolss_init(&spoolss_cb);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
-	if (spoolss_type == RPC_DAEMON_EMBEDDED) {
-		return rpc_setup_embedded(ev_ctx, msg_ctx, NULL, t, NULL);
-	}
-
-	return true;
+	return rpc_setup_embedded(ev_ctx, msg_ctx, NULL, t, NULL);
 }
 
 static bool svcctl_init_cb(void *ptr)
@@ -389,6 +402,10 @@ static bool rpc_setup_svcctl(struct tevent_context *ev_ctx,
 	const char *pipe_name = "svcctl";
 	struct rpc_srv_callbacks svcctl_cb;
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	svcctl_cb.init         = svcctl_init_cb;
 	svcctl_cb.shutdown     = svcctl_shutdown_cb;
@@ -407,6 +424,10 @@ static bool rpc_setup_ntsvcs(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_ntsvcs;
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_ntsvcs_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -438,6 +459,10 @@ static bool rpc_setup_eventlog(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_eventlog;
 	struct rpc_srv_callbacks eventlog_cb;
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	eventlog_cb.init         = eventlog_init_cb;
 	eventlog_cb.shutdown     = NULL;
@@ -456,6 +481,10 @@ static bool rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_initshutdown;
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
+		return true;
+	}
 
 	status = rpc_initshutdown_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
