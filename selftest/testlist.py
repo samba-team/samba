@@ -85,3 +85,16 @@ def read_testlist(inf, outf):
             yield (name, env, cmdline, supports_loadlist, supports_idlist)
         else:
             outf.write(l)
+
+
+class TestListFilter(object):
+    """Interface for something that can filter a test list."""
+
+    def should_run_testsuite(self, name):
+        """Whether to run a specific testsuite.
+
+        :param name: Name of the testsuite
+        :return: List of tests to run.  None means run the whole testsuite.
+            Return an empty list to not run this testsuite
+        """
+        raise NotImplementedError(self.should_run_testsuite)
