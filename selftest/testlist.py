@@ -22,7 +22,6 @@
 __all__ = ['find_in_list', 'read_test_regexes', 'read_testlist']
 
 import re
-import sys
 
 def find_in_list(list, fullname):
     """Find test in list.
@@ -87,14 +86,30 @@ def read_testlist(inf, outf):
             outf.write(l)
 
 
-class TestListFilter(object):
-    """Interface for something that can filter a test list."""
+def read_restricted_test_list(f):
+    for l in f.readlines():
+        yield l.strip()
+
+
+class RestrictedTestManager(object):
+
+    def __init__(self, test_list):
+        self.test_list = test_list
+        self.unused = set(self.test_list)
 
     def should_run_testsuite(self, name):
-        """Whether to run a specific testsuite.
+        match = []
+        for r in self.test_list:
+            if r == name:
+                match = None
+                if r in self.unused:
+                    self.unused.remove(r)
+            elif r.startswith(name + "."):
+                if match is not None:
+                    match.append(r[len(name+"."):])
+                if r in self.unused:
+                    self.unused.remove(r)
+        return match
 
-        :param name: Name of the testsuite
-        :return: List of tests to run.  None means run the whole testsuite.
-            Return an empty list to not run this testsuite
-        """
-        raise NotImplementedError(self.should_run_testsuite)
+    def iter_unused(self):
+        return iter(self.unused)

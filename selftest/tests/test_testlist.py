@@ -20,6 +20,7 @@
 """Tests for selftest.testlist."""
 
 from selftest.testlist import (
+    RestrictedTestManager,
     find_in_list,
     read_test_regexes,
     read_testlist,
@@ -71,3 +72,31 @@ class ReadTestlistTests(unittest.TestCase):
         self.assertEquals([('foo', 'bar', 'bla', False, False)],
                 list(read_testlist(inf, outf)))
         self.assertEquals("MORENOISE\nNOISE\n", outf.getvalue())
+
+
+
+class RestrictedTestManagerTests(unittest.TestCase):
+
+    def test_unused(self):
+        mgr = RestrictedTestManager(["foo.bar"])
+        self.assertEquals(["foo.bar"], list(mgr.iter_unused()))
+
+    def test_run_testsuite(self):
+        mgr = RestrictedTestManager(["foo.bar"])
+        self.assertEquals(None, mgr.should_run_testsuite("foo.bar"))
+
+    def test_run_subtest(self):
+        mgr = RestrictedTestManager(["foo.bar.bla"])
+        self.assertEquals(["bla"], mgr.should_run_testsuite("foo.bar"))
+
+    def test_run_subtest_after_testsuite(self):
+        mgr = RestrictedTestManager(["foo.bar", "foo.bar.bla"])
+        self.assertEquals(None, mgr.should_run_testsuite("foo.bar"))
+
+    def test_run_multiple_subtests(self):
+        mgr = RestrictedTestManager(["foo.bar.blie", "foo.bar.bla"])
+        self.assertEquals(["blie", "bla"], mgr.should_run_testsuite("foo.bar"))
+
+    def test_run_nomatch(self):
+        mgr = RestrictedTestManager(["foo.bar"])
+        self.assertEquals([], mgr.should_run_testsuite("foo.blie.bla"))
