@@ -57,7 +57,7 @@ sub teardown_env($$)
 	    # This should give it time to write out the gcov data
 	    sleep(1);
 	    $count++;
-	    last if $childpid == 0 or $count > 20;
+	    last if $childpid == -1 or $count > 20;
 	}
 
 	if ($count <= 20) {
@@ -74,7 +74,7 @@ sub teardown_env($$)
 	    my $childpid = waitpid(-1, WNOHANG);
 	    sleep(1);
 	    $count++;
-	    last if $childpid == 0 or $count > 20;
+	    last if $childpid == -1 or $count > 20;
 	}
 	
 	if ($count <= 10) {
