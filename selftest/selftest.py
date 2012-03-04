@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python -u
 # Bootstrap Samba and run a number of tests against it.
 # Copyright (C) 2005-2012 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2007-2009 Stefan Metzmacher <metze@samba.org>
@@ -16,21 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from cStringIO import StringIO
 import os
 import sys
 import signal
+import shutil
+import subprocess
+import tempfile
+import time
 import warnings
 
 import optparse
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from selftest import (
+    socket_wrapper,
+    subunithelper,
+    testlist,
+    )
+from selftest.target import EnvironmentManager
 
 includes = ()
 excludes = ()
 
 def read_excludes(fn):
-    excludes.extend(read_test_regexes(fn))
+    excludes.extend(testlist.read_test_regexes(fn))
 
 def read_includes(fn):
-    includes.extend(read_test_regexes(fn))
+    includes.extend(testlist.read_test_regexes(fn))
 
 parser = optparse.OptionParser("TEST-REGEXES")
 parser.add_option("--target", type="choice", choices=["samba", "samba3"], default="samba", help="Samba version to target")
@@ -51,9 +65,11 @@ parser.add_option("--prefix", help="prefix to run tests in", type=str, default="
 parser.add_option("--srcdir", type=str, default=".", help="source directory")
 parser.add_option("--bindir", type=str, default="./bin", help="binaries directory")
 parser.add_option("--testlist", type=str, action="append", help="file to read available tests from")
-parser.add_option("--ldap", help="back samba onto specified ldap server", choices=["openldap", "fedora-ds"], type=str)
+parser.add_option("--ldap", help="back samba onto specified ldap server", choices=["openldap", "fedora-ds"], type="choice")
 
 opts, args = parser.parse_args()
+
+subunit_ops = subunithelper.SubunitOps(sys.stdout)
 
 def pipe_handler(sig):
     sys.stderr.write("Exiting early because of SIGPIPE.\n")
@@ -62,18 +78,17 @@ def pipe_handler(sig):
 signal.signal(signal.SIGPIPE, pipe_handler)
 
 def skip(name):
-    return find_in_list(excludes, name)
+    return testlist.find_in_list(excludes, name)
 
 def setup_pcap(name):
     if (not opts.socket_wrapper_pcap or
-        not os.environ.get("SOCKET_WRAPPER_PCAP_DIR"):
+        not os.environ.get("SOCKET_WRAPPER_PCAP_DIR")):
         return
 
-    fname = name
-    fname =~ s%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g;
+    fname = "".join([x for x in name if x.isalnum() or x == '-'])
 
-    pcap_file = os.path.join(os.environ["SOCKET_WRAPPER_PCAP_DIR"], "%s.pcap" %
-        fname)
+    pcap_file = os.path.join(
+        os.environ["SOCKET_WRAPPER_PCAP_DIR"], "%s.pcap" % fname)
 
     socket_wrapper.setup_pcap(pcap_file)
     return pcap_file
@@ -94,30 +109,30 @@ def cleanup_pcap(pcap_file, exit_code):
 
 # expand strings from %ENV
 def expand_environment_strings(s):
-	# we use a reverse sort so we do the longer ones first
-	foreach my $k (sort { $b cmp $a } keys %ENV) {
-		$s =~ s/\$$k/$ENV{$k}/g;
-	}
-	return $s;
+    # we use a reverse sort so we do the longer ones first
+    for k in sorted(os.environ.keys(), reverse=True):
+        v = os.environ[k]
+        s = s.replace("$%s" % k, v)
+    return s
 
 
 def run_testsuite(envname, name, cmd, i, totalsuites):
     pcap_file = setup_pcap(name)
 
-    Subunit::start_testsuite(name)
-    Subunit::progress_push()
-    Subunit::report_time(time())
+    subunit_ops.start_testsuite(name)
+    subunit_ops.progress_push()
+    subunit_ops.report_time(time.time())
     try:
         exitcode = subprocess.call(cmd)
     except Exception, e:
-        Subunit::report_time(time())
-        Subunit::progress_pop()
-        Subunit::progress_pop()
-        Subunit::end_testsuite(name, "error", "Unable to run $cmd: $!")
+        subunit_ops.report_time(time.time())
+        subunit_ops.progress_pop()
+        subunit_ops.progress_pop()
+        subunit_ops.end_testsuite(name, "error", "Unable to run %s: %s" % (cmd, e))
         sys.exit(1)
 
-    Subunit::report_time(time())
-    Subunit::progress_pop()
+    subunit_ops.report_time(time.time())
+    subunit_ops.progress_pop()
 
     envlog = env_manager.getlog_env(envname)
     if envlog != "":
@@ -127,9 +142,9 @@ def run_testsuite(envname, name, cmd, i, totalsuites):
     sys.stdout.write("expanded command: %s\n" % expand_environment_strings(cmd))
 
     if exitcode == 0:
-        Subunit::end_testsuite(name, "success")
+        subunit_ops.end_testsuite(name, "success")
     else:
-        Subunit::end_testsuite(name, "failure", "Exit code was %d" % exitcode)
+        subunit_ops.end_testsuite(name, "failure", "Exit code was %d" % exitcode)
 
     cleanup_pcap(pcap_file, exitcode)
 
@@ -145,20 +160,17 @@ if opts.list and opts.testenv:
     sys.stderr.write("--list and --testenv are mutually exclusive\n")
     sys.exit(1)
 
-# we want unbuffered output
-$| = 1;
-
 tests = args
 
 # quick hack to disable rpc validation when using valgrind - its way too slow
 if not os.environ.get("VALGRIND"):
-    os.environ"VALIDATE"] = "validate"
-    os.environ["MALLOC_CHECK_"] = 2
+    os.environ["VALIDATE"] = "validate"
+    os.environ["MALLOC_CHECK_"] = "2"
 
 # make all our python scripts unbuffered
 os.environ["PYTHONUNBUFFERED"] = "1"
 
-bindir_abs = os.path.abspath(bindir)
+bindir_abs = os.path.abspath(opts.bindir)
 
 # Backwards compatibility:
 if os.environ.get("TEST_LDAP") == "yes":
@@ -168,13 +180,11 @@ if os.environ.get("TEST_LDAP") == "yes":
         ldap = "openldap"
 
 torture_maxtime = int(os.getenv("TORTURE_MAXTIME", "1200"))
-if ldap:
+if opts.ldap:
     # LDAP is slow
     torture_maxtime *= 2
 
-$prefix =~ s+//+/+;
-$prefix =~ s+/./+/+;
-$prefix =~ s+/$++;
+prefix = os.path.normpath(opts.prefix)
 
 if prefix == "":
     raise Exception("using an empty prefix isn't allowed")
@@ -195,7 +205,7 @@ tmpdir_abs = os.path.abspath(os.path.join(prefix, "tmp"))
 if not os.path.isdir(tmpdir_abs):
     os.mkdir(tmpdir_abs, 0777)
 
-srcdir_abs = os.path.abspath(srcdir)
+srcdir_abs = os.path.abspath(opts.srcdir)
 
 if prefix_abs == "":
     raise Exception("using an empty absolute prefix isn't allowed")
@@ -205,7 +215,7 @@ if prefix_abs == "/":
 os.environ["PREFIX"] = prefix
 os.environ["KRB5CCNAME"] = os.path.join(prefix, "krb5ticket")
 os.environ["PREFIX_ABS"] = prefix_abs
-os.environ["SRCDIR"] = srcdir
+os.environ["SRCDIR"] = opts.srcdir
 os.environ["SRCDIR_ABS"] = srcdir_abs
 os.environ["BINDIR"] = bindir_abs
 
@@ -219,7 +229,7 @@ def prefix_pathvar(name, newpath):
     if name in os.environ:
         os.environ[name] = "%s:%s" % (newpath, os.environ[name])
     else:
-        .environ[name] = newpath
+        os.environ[name] = newpath
 prefix_pathvar("PKG_CONFIG_PATH", os.path.join(bindir_abs, "pkgconfig"))
 prefix_pathvar("PYTHONPATH", os.path.join(bindir_abs, "python"))
 
@@ -235,17 +245,17 @@ if opts.socket_wrapper:
     socket_wrapper_dir = socket_wrapper.setup_dir(os.path.join(prefix_abs, "w"), opts.socket_wrapper_pcap)
     sys.stdout.write("SOCKET_WRAPPER_DIR=%s\n" % socket_wrapper_dir)
 elif not opts.list:
-    if sys.getuid() != 0:
+    if os.getuid() != 0:
         warnings.warn("not using socket wrapper, but also not running as root. Will not be able to listen on proper ports")
 
 testenv_default = "none"
 
 if opts.binary_mapping:
     binary_mapping = dict([l.split(":") for l in opts.binary_mapping.split(",")])
+    os.environ["BINARY_MAPPING"] = opts.binary_mapping
 else:
     binary_mapping = {}
-
-os.environ["BINARY_MAPPING"] = opts.binary_mapping
+    os.environ["BINARY_MAPPING"] = ""
 
 # After this many seconds, the server will self-terminate.  All tests
 # must terminate in this time, and testenv will only stay alive this
@@ -255,19 +265,33 @@ server_maxtime = 7500
 if os.environ.get("SMBD_MAXTIME", ""):
     server_maxtime = int(os.environ["SMBD_MAXTIME"])
 
+
+def has_socket_wrapper(bindir):
+    f = StringIO()
+    subprocess.check_call([os.path.join(bindir, "smbd"), "-b"], stdout=f)
+    for l in f.readlines():
+        if "SOCKET_WRAPPER" in l:
+            return True
+    return False
+
+
 if not opts.list:
     if opts.target == "samba":
-        if opts.socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "":
-            die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....")
+        if opts.socket_wrapper and not has_socket_wrapper(opts.bindir):
+            sys.stderr.write("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....\n")
+            sys.exit(1)
         testenv_default = "dc"
         from selftest.target.samba import Samba
-        target = Samba(bindir, binary_mapping, ldap, srcdir, server_maxtime)
+        target = Samba(opts.bindir, binary_mapping, ldap, opts.srcdir, server_maxtime)
     elif opts.target == "samba3":
-        if opts.socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "":
-            die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....")
+        if opts.socket_wrapper and not has_socket_wrapper(opts.bindir):
+            sys.stderr.write("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....\n")
+            sys.exit(1)
         testenv_default = "member"
         from selftest.target.samba3 import Samba3
-        target = Samba3(bindir, binary_mapping, srcdir_abs, server_maxtime)
+        target = Samba3(opts.bindir, binary_mapping, srcdir_abs, server_maxtime)
+
+    env_manager = EnvironmentManager(target)
 
 interfaces = ",".join([
     "127.0.0.11/8",
@@ -309,7 +333,7 @@ def write_clientconf(conffile, clientdir, vars):
         "cache directory": os.path.join(clientdir, "cachedir"),
         "ncalrpc dir": os.path.join(clientdir, "ncalrpcdir"),
         "name resolve order": "file bcast",
-        "panic action": os.path.join(RealBin, "gdb_backtrace \%d"),
+        "panic action": os.path.join(os.path.dirname(__file__), "gdb_backtrace \%d"),
         "max xmit": "32K",
         "notify:inotify": "false",
         "ldb:nosync": "true",
@@ -364,16 +388,16 @@ os.environ["SELFTEST_MAXTIME"] = str(torture_maxtime)
 
 available = []
 for fn in testlists:
-    for testsuite in read_testlist(fn):
+    for testsuite in testlist.read_testlist(fn):
         if not should_run_test(tests, testsuite):
             continue
         name = testsuite[0]
-        if includes is not None and find_in_list(includes, name) is not None:
+        if includes is not None and testlist.find_in_list(includes, name) is not None:
             continue
         available.append(testsuite)
 
 if opts.load_list:
-    restricted_mgr = RestrictedTestManager.from_path(opts.load_list)
+    restricted_mgr = testlist.RestrictedTestManager.from_path(opts.load_list)
 else:
     restricted_mgr = None
 
@@ -389,7 +413,7 @@ for testsuite in available:
         match = None
     if skipreason is not None:
         if not opts.list:
-            Subunit::skip_testsuite(name, skipreason)
+            subunit_ops.skip_testsuite(name, skipreason)
     else:
         todo.append(testsuite + (match,))
 
@@ -403,11 +427,10 @@ if todo == []:
 suitestotal = len(todo)
 
 if not opts.list:
-    Subunit::progress($suitestotal)
-    Subunit::report_time(time())
+    subunit_ops.progress(suitestotal)
+    subunit_ops.report_time(time.time())
 
 i = 0
-$| = 1;
 
 exported_envvars = [
     # domain stuff
@@ -523,8 +546,8 @@ if opts.testenv:
     envvarstr = exported_envvars_str(testenv_vars)
 
     term = os.environ.get("TERMINAL", "xterm -e")
-    os.system("$term 'echo -e \"
-Welcome to the Samba4 Test environment '$testenv_name'
+    cmd = """'echo -e "
+Welcome to the Samba4 Test environment '%(testenv_name)'
 
 This matches the client environment used in make test
 server is pid `cat \$PIDDIR/samba.pid`
@@ -534,7 +557,10 @@ TORTURE_OPTIONS=\$TORTURE_OPTIONS
 SMB_CONF_PATH=\$SMB_CONF_PATH
 
 $envvarstr
-\" && LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} bash'");
+\" && LD_LIBRARY_PATH=%(LD_LIBRARY_PATH)s $(SHELL)'""" % {
+        "testenv_name": testenv_name,
+        "LD_LIBRARY_PATH": os.environ["LD_LIBRARY_PATH"]}
+    subprocess.call(term + ' ' + cmd)
     env_manager.teardown_env(testenv_name)
 elif opts.list:
     for (name, envname, cmd, supports_loadfile, supports_idlist, subtests) in todo:
@@ -554,13 +580,13 @@ else:
         try:
             envvars = switch_env(envname, prefix)
         except Exception:
-            Subunit::start_testsuite(name);
-            Subunit::end_testsuite(name, "error",
+            subunit_ops.start_testsuite(name);
+            subunit_ops.end_testsuite(name, "error",
                 "unable to set up environment %s" % envname);
             continue
         if envvars is None:
-            Subunit::start_testsuite(name);
-            Subunit::end_testsuite(name, "skip",
+            subunit_ops.start_testsuite(name);
+            subunit_ops.end_testsuite(name, "skip",
                 "environment is unknown in this test backend - skipping" % envname)
             continue
 
