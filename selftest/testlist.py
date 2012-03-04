@@ -92,12 +92,20 @@ def read_restricted_test_list(f):
 
 
 class RestrictedTestManager(object):
+    """Test manager which can filter individual tests that should be run."""
 
     def __init__(self, test_list):
         self.test_list = test_list
         self.unused = set(self.test_list)
 
     def should_run_testsuite(self, name):
+        """Determine whether a testsuite should be run.
+
+        :param name: Name of the testsuite
+        :return: None if full testsuite should be run,
+            a list of subtests to run or [] if it should
+            not be run.
+        """
         match = []
         for r in self.test_list:
             if r == name:
@@ -112,4 +120,8 @@ class RestrictedTestManager(object):
         return match
 
     def iter_unused(self):
+        """Iterate over entry entries that were unused.
+
+        :return: Iterator over test list entries that were not used.
+        """
         return iter(self.unused)
