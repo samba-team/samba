@@ -81,7 +81,7 @@ opts, args = parser.parse_args()
 
 subunit_ops = subunithelper.SubunitOps(sys.stdout)
 
-def pipe_handler(sig):
+def pipe_handler(sig, frame):
     sys.stderr.write("Exiting early because of SIGPIPE.\n")
     sys.exit(1)
 
@@ -276,6 +276,8 @@ if os.environ.get("SMBD_MAXTIME", ""):
 
 
 def has_socket_wrapper(bindir):
+    """Check if Samba has been built with socket wrapper support.
+    """
     f = StringIO()
     subprocess.check_call([os.path.join(bindir, "smbd"), "-b"], stdout=f)
     for l in f.readlines():
@@ -506,7 +508,7 @@ exported_envvars = [
     "LOCAL_PATH"
 ]
 
-def handle_sigdie(signame):
+def handle_sigdie(signame, frame):
     env_manager.teardown_all()
     sys.stderr.write("Received signal %s" % signame)
     sys.exit(1)
