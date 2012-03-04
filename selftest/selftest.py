@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import atexit
 from cStringIO import StringIO
 import datetime
 import iso8601
@@ -58,17 +59,17 @@ def read_includes(fn):
 
 parser = optparse.OptionParser("TEST-REGEXES")
 parser.add_option("--target", type="choice", choices=["samba", "samba3", "none"], default="samba", help="Samba version to target")
-parser.add_option("--quick", help="run quick overall test")
-parser.add_option("--verbose", help="be verbose")
-parser.add_option("--list", help="list available tests")
-parser.add_option("--socket-wrapper", help="enable socket wrapper")
+parser.add_option("--quick", help="run quick overall test", action="store_true", default=False)
+parser.add_option("--verbose", help="be verbose", action="store_true", default=False)
+parser.add_option("--list", help="list available tests", action="store_true", default=False)
+parser.add_option("--socket-wrapper", help="enable socket wrapper", action="store_true", default=False)
 parser.add_option("--socket-wrapper-pcap", help="save traffic to pcap directories", type="str")
-parser.add_option("--socket-wrapper-keep-pcap", help="keep all pcap files, not just those for tests that failed")
-parser.add_option("--one", help="abort when the first test fails")
+parser.add_option("--socket-wrapper-keep-pcap", help="keep all pcap files, not just those for tests that failed", action="store_true", default=False)
+parser.add_option("--one", help="abort when the first test fails", action="store_true", default=False)
 parser.add_option("--exclude", action="callback", help="Add file to exclude files", callback=read_excludes)
 parser.add_option("--include", action="callback", help="Add file to include files", callback=read_includes)
-parser.add_option("--testenv", help="run a shell in the requested test environment")
-parser.add_option("--resetup-environment", help="Re-setup environment")
+parser.add_option("--testenv", help="run a shell in the requested test environment", action="store_true", default=False)
+parser.add_option("--resetup-environment", help="Re-setup environment", action="store_true", default=False)
 parser.add_option("--binary-mapping", help="Map binaries to use", type=str)
 parser.add_option("--load-list", help="Load list of tests to load from a file", type=str)
 parser.add_option("--prefix", help="prefix to run tests in", type=str, default="./st")
@@ -306,6 +307,7 @@ if not opts.list:
         target = NoneTarget()
 
     env_manager = EnvironmentManager(target)
+    atexit.register(env_manager.teardown_all)
 
 interfaces = ",".join([
     "127.0.0.11/8",
@@ -509,7 +511,6 @@ exported_envvars = [
 ]
 
 def handle_sigdie(signame, frame):
-    env_manager.teardown_all()
     sys.stderr.write("Received signal %s" % signame)
     sys.exit(1)
 
@@ -642,7 +643,8 @@ else:
 
 sys.stdout.write("\n")
 
-env_manager.teardown_all()
+if not opts.list:
+    env_manager.teardown_all()
 
 # if there were any valgrind failures, show them
 for fn in os.listdir(prefix):
