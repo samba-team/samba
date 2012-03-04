@@ -85,18 +85,18 @@ sub slapd_stop($$)
 
 sub check_or_start($$$)
 {
-	my ($self, $env_vars, $process_model) = @_;
-	return 0 if ( -p $env_vars->{SAMBA_TEST_FIFO});
+        my ($self, $env_vars, $process_model) = @_;
 
-	unlink($env_vars->{SAMBA_TEST_FIFO});
-	POSIX::mkfifo($env_vars->{SAMBA_TEST_FIFO}, 0700);
-	unlink($env_vars->{SAMBA_TEST_LOG});
-	
-	my $pwd = `pwd`;
-	print "STARTING SAMBA for $ENV{ENVNAME}\n";
+	return 0 if $self->check_env($env_vars);
+
+	# use a pipe for stdin in the child processes. This allows
+	# those processes to monitor the pipe for EOF to ensure they
+	# exit when the test script exits
+	pipe(STDIN_READER, $env_vars->{STDIN_PIPE});
+
+	print "STARTING SAMBA...";
 	my $pid = fork();
 	if ($pid == 0) {
-		open STDIN, $env_vars->{SAMBA_TEST_FIFO};
 		# we want out from samba to go to the log file, but also
 		# to the users terminal when running 'make test' on the command
 		# line. This puts it on stderr on the terminal
@@ -105,13 +105,9 @@ sub check_or_start($$$)
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		my $valgrind = "";
-		if (defined($ENV{SAMBA_VALGRIND})) {
-		    $valgrind = $ENV{SAMBA_VALGRIND};
-		}
-
 		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
@@ -119,46 +115,25 @@ sub check_or_start($$$)
 
 		$ENV{UID_WRAPPER} = "1";
 
-		# Start slapd before samba, but with the fifo on stdin
-		if (defined($self->{ldap})) {
-		 	unless($self->slapd_start($env_vars)) {
-				warn("couldn't start slapd (main run)");
-				return undef;
-			}
-		}
-
-		my $optarg = "";
-		$optarg = "--maximum-runtime=$self->{server_maxtime}";
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "samba");
+		my @preargs = ();
+		my @optargs = ();
 		if (defined($ENV{SAMBA_OPTIONS})) {
-			$optarg.= " $ENV{SAMBA_OPTIONS}";
+			@optargs = split(/ /, $ENV{SAMBA_OPTIONS});
 		}
-		my $samba =  Samba::bindir_path($self, "samba");
+		if(defined($ENV{SAMBA_VALGRIND})) {
+			@preargs = split(/ /,$ENV{SAMBA_VALGRIND});
+		}
 
-		chomp($pwd);
-		my $cmdline = "$valgrind ${pwd}/$samba $optarg $env_vars->{CONFIGURATION} -M $process_model -i";
-		my $ret = system("$cmdline");
-		if ($ret == -1) {
-			print "Unable to start $cmdline: $ret: $!\n";
-			exit 1;
-		}
-		my $exit = ($ret >> 8);
-		unlink($env_vars->{SAMBA_TEST_FIFO});
-		if ($ret == 0) {
-			print "$samba exited with no error\n";
-			exit 0;
-		} elsif ( $ret & 127 ) {
-			print "$samba got signal ".($ret & 127)." and exits with $exit!\n";
-		} else {
-			print "$samba failed with status $exit!\n";
-		}
-		if ($exit == 0) {
-			$exit = -1;
-		}
-		exit $exit;
+		close($env_vars->{STDIN_PIPE});
+		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
+
+		exec(@preargs, Samba::bindir_path($self, "samba"), "-M", $process_model, "-i", "--maximum-runtime=$self->{server_maxtime}", $env_vars->{CONFIGURATION}, @optargs) or die("Unable to start samba: $!");
 	}
+	$env_vars->{SAMBA_PID} = $pid;
 	print "DONE\n";
 
-	open($env_vars->{STDIN_PIPE}, ">$env_vars->{SAMBA_TEST_FIFO}");
+	close(STDIN_READER);
 
 	return $pid;
 }
@@ -1357,34 +1332,27 @@ sub teardown_env($$)
 	# This should cause samba to terminate gracefully
 	close($envvars->{STDIN_PIPE});
 
-	if (open(IN, "<$envvars->{PIDDIR}/samba.pid")) {
-		$pid = <IN>;
-		close(IN);
-		my $count = 0;
-
-		until (kill(0, $pid) == 0) {
-		    my $childpid = waitpid(-1, WNOHANG);
-	
-		    # This should give it time to write out the gcov data
-		    sleep(1);
-		    $count++;
-		    last if $childpid == 0 or $count > 20;
-		}
-
-		# If it is still around, kill it
-		if ($count > 20) {
-			print "server process $pid took more than $count seconds to exit, killing\n";
-			kill 9, $pid;
-		}
+	$pid = $envvars->{SAMBA_PID};
+	my $count = 0;
+	my $childpid;
+	until (Samba::cleanup_child($pid, "samba") < 0) {
+	    # This should give it time to write out the gcov data
+	    sleep(1);
+	    $count++;
+	    last if $count > 20;
 	}
-
-	my $failed = $? >> 8;
+	
+	# If it is still around, kill it
+	if ($count > 20) {
+	    print "server process $pid took more than $count seconds to exit, killing\n";
+	    kill 9, $pid;
+	}
 
 	$self->slapd_stop($envvars) if ($self->{ldap});
 
 	print $self->getlog_env($envvars);
 
-	return $failed;
+	return;
 }
 
 sub getlog_env($$)
@@ -1411,9 +1379,9 @@ sub check_env($$)
 {
 	my ($self, $envvars) = @_;
 
-	my $childpid = waitpid(-1, WNOHANG);
+	my $childpid = Samba::cleanup_child($envvars->{SAMBA_PID}, "samba");
 
-	return (-p $envvars->{SAMBA_TEST_FIFO});
+	return ($childpid == 0);
 }
 
 sub setup_env($$$)

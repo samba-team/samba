@@ -8,6 +8,7 @@ package Samba;
 use strict;
 use target::Samba3;
 use target::Samba4;
+use POSIX;
 
 sub new($$$$$) {
 	my ($classname, $bindir, $binary_mapping,$ldap, $srcdir, $server_maxtime) = @_;
@@ -172,4 +173,23 @@ sub get_interface($)
 
     return $interfaces{$netbiosname};
 }
+
+sub cleanup_child($$)
+{
+    my ($pid, $name) = @_;
+    my $childpid = waitpid($pid, WNOHANG);
+    if ($childpid == 0) {
+    } elsif ($childpid < 0) {
+	printf STDERR "%s child process %d isn't here any more\n",
+	return $childpid;
+    }
+    elsif ($? & 127) {
+	printf STDERR "%s child process %d, died with signal %d, %s coredump\n",
+	$name, $childpid, ($? & 127),  ($? & 128) ? 'with' : 'without';
+    } else {
+	printf STDERR "%s child process %d exited with value %d\n", $name, $childpid, $? >> 8;
+    }
+    return $childpid;
+}
+
 1;
