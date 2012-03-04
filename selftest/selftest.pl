@@ -384,12 +384,6 @@ unless ($opt_list) {
 		$testenv_default = "member";
 		require target::Samba3;
 		$target = new Samba3($bindir, \%binary_mapping, $srcdir_abs, $server_maxtime);
-	} elsif ($opt_target eq "win") {
-		die("Windows tests will not run with socket wrapper enabled.") 
-			if ($opt_socket_wrapper);
-		$testenv_default = "dc";
-		require target::Windows;
-		$target = new Windows();
 	}
 }
 
