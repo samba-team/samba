@@ -23,7 +23,6 @@ import iso8601
 import os
 import sys
 import signal
-import shutil
 import subprocess
 import subunit
 import traceback
@@ -38,6 +37,7 @@ from selftest import (
     subunithelper,
     testlist,
     )
+from selftest.client import write_clientconf
 from selftest.run import (
     expand_environment_strings,
     expand_command_list,
@@ -323,65 +323,6 @@ clientdir = os.path.join(prefix_abs, "client")
 conffile = os.path.join(clientdir, "client.conf")
 os.environ["SMB_CONF_PATH"] = conffile
 
-def write_clientconf(conffile, clientdir, vars):
-    if not os.path.isdir(clientdir):
-        os.mkdir(clientdir, 0777)
-
-    for n in ["private", "lockdir", "statedir", "cachedir"]:
-        p = os.path.join(clientdir, n)
-        if os.path.isdir(p):
-            shutil.rmtree(p)
-        os.mkdir(p, 0777)
-
-    # this is ugly, but the ncalrpcdir needs exactly 0755
-    # otherwise tests fail.
-    mask = os.umask(0022)
-
-    for n in ["ncalrpcdir", "ncalrpcdir/np"]:
-        p = os.path.join(clientdir, n)
-        if os.path.isdir(p):
-            shutil.rmtree(p)
-        os.mkdir(p, 0777)
-    os.umask(mask)
-
-    settings = {
-        "netbios name": "client",
-        "private dir": os.path.join(clientdir, "private"),
-        "lock dir": os.path.join(clientdir, "lockdir"),
-        "state directory": os.path.join(clientdir, "statedir"),
-        "cache directory": os.path.join(clientdir, "cachedir"),
-        "ncalrpc dir": os.path.join(clientdir, "ncalrpcdir"),
-        "name resolve order": "file bcast",
-        "panic action": os.path.join(os.path.dirname(__file__), "gdb_backtrace \%d"),
-        "max xmit": "32K",
-        "notify:inotify": "false",
-        "ldb:nosync": "true",
-        "system:anonymous": "true",
-        "client lanman auth": "Yes",
-        "log level": "1",
-        "torture:basedir": clientdir,
-        # We don't want to pass our self-tests if the PAC code is wrong
-        "gensec:require_pac": "true",
-        "resolv:host file": os.path.join(prefix_abs, "dns_host_file"),
-        # We don't want to run 'speed' tests for very long
-        "torture:timelimit": "1",
-        }
-
-    if "DOMAIN" in vars:
-        settings["workgroup"] = vars["DOMAIN"]
-    if "REALM" in vars:
-        settings["realm"] = vars["REALM"]
-    if opts.socket_wrapper:
-        settings["interfaces"] = interfaces
-
-    f = open(conffile, 'w')
-    try:
-        f.write("[global]\n")
-        for item in settings.iteritems():
-            f.write("\t%s = %s\n" % item)
-    finally:
-        f.close()
-
 todo = []
 
 if not opts.testlist:
@@ -415,7 +356,8 @@ for fn in opts.testlist:
             if not testlist.should_run_test(tests, testsuite):
                 continue
             name = testsuite[0]
-            if includes is not None and testlist.find_in_list(includes, name) is not None:
+            if (includes is not None and
+                testlist.find_in_list(includes, name) is not None):
                 continue
             available.append(testsuite)
     finally:
@@ -425,7 +367,6 @@ if opts.load_list:
     restricted_mgr = testlist.RestrictedTestManager.from_path(opts.load_list)
 else:
     restricted_mgr = None
-
 
 for testsuite in available:
     name = testsuite[0]
