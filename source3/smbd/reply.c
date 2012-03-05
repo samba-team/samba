@@ -4494,8 +4494,7 @@ void reply_write_and_X(struct smb_request *req)
 
 	if ((req->wct != 12) && (req->wct != 14)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		END_PROFILE(SMBwriteX);
-		return;
+		goto out;
 	}
 
 	numtowrite = SVAL(req->vwv+10, 0);
@@ -4512,20 +4511,17 @@ void reply_write_and_X(struct smb_request *req)
 		/* Can't do a recvfile write on IPC$ */
 		if (IS_IPC(conn)) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			END_PROFILE(SMBwriteX);
-			return;
+			goto out;
 		}
 	       	if (numtowrite != req->unread_bytes) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			END_PROFILE(SMBwriteX);
-			return;
+			goto out;
 		}
 	} else {
 		if (smb_doff > smblen || smb_doff + numtowrite < numtowrite ||
 				smb_doff + numtowrite > smblen) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			END_PROFILE(SMBwriteX);
-			return;
+			goto out;
 		}
 	}
 
@@ -4533,12 +4529,10 @@ void reply_write_and_X(struct smb_request *req)
 	if (IS_IPC(conn)) {
 		if (req->unread_bytes) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			END_PROFILE(SMBwriteX);
-			return;
+			goto out;
 		}
 		reply_pipe_write_and_X(req);
-		END_PROFILE(SMBwriteX);
-		return;
+		goto out;
 	}
 
 	fsp = file_fsp(req, SVAL(req->vwv+2, 0));
@@ -4546,14 +4540,12 @@ void reply_write_and_X(struct smb_request *req)
 	write_through = BITSETW(req->vwv+7,0);
 
 	if (!check_fsp(conn, req, fsp)) {
-		END_PROFILE(SMBwriteX);
-		return;
+		goto out;
 	}
 
 	if (!CHECK_WRITE(fsp)) {
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-		END_PROFILE(SMBwriteX);
-		return;
+		goto out;
 	}
 
 	data = smb_base(req->inbuf) + smb_doff;
@@ -4576,8 +4568,7 @@ void reply_write_and_X(struct smb_request *req)
 				 "used and we don't support 64 bit offsets.\n",
 				 (unsigned int)IVAL(req->vwv+12, 0) ));
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			END_PROFILE(SMBwriteX);
-			return;
+			goto out;
 		}
 
 #endif /* LARGE_SMB_OFF_T */
