@@ -1345,7 +1345,7 @@ static void smb_dump(const char *name, int type, const char *data)
  find.
 ****************************************************************************/
 
-static connection_struct *switch_message(uint8 type, struct smb_request *req, int size)
+static connection_struct *switch_message(uint8 type, struct smb_request *req)
 {
 	int flags;
 	uint16 session_tag;
@@ -1519,7 +1519,7 @@ static void construct_reply(struct smbd_server_connection *sconn,
 		SMB_PERFCOUNT_SET_MSGLEN_IN(&req->pcd, size);
 	}
 
-	conn = switch_message(req->cmd, req, size);
+	conn = switch_message(req->cmd, req);
 
 	if (req->unread_bytes) {
 		/* writeX failed. drain socket. */
@@ -2064,7 +2064,7 @@ void chain_reply(struct smb_request *req)
 	req->buflen = buflen;
 	req->buf = buf;
 
-	switch_message(chain_cmd, req, smblen);
+	switch_message(chain_cmd, req);
 
 	if (req->outbuf == NULL) {
 		/*
