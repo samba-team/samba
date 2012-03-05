@@ -124,7 +124,7 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 
 	status = share_get_config(req, req->smb_conn->share_context, service, &scfg);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("make_connection: couldn't find service %s\n", service));
+		DEBUG(0,("make_connection: couldn't find service %s: %s\n", service, nt_errstr(status)));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
