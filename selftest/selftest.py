@@ -344,25 +344,16 @@ else:
 os.environ["SELFTEST_MAXTIME"] = str(torture_maxtime)
 
 
-def open_file_or_pipe(path, mode):
-    if path.endswith("|"):
-        return os.popen(path[:-1], mode)
-    return open(path, mode)
-
 available = []
 for fn in opts.testlist:
-    inf = open_file_or_pipe(fn, 'r')
-    try:
-        for testsuite in testlist.read_testlist(inf, sys.stdout):
-            if not testlist.should_run_test(tests, testsuite):
-                continue
-            name = testsuite[0]
-            if (includes is not None and
-                testlist.find_in_list(includes, name) is not None):
-                continue
-            available.append(testsuite)
-    finally:
-        inf.close()
+    for testsuite in testlist.read_testlist_file(fn):
+        if not testlist.should_run_test(tests, testsuite):
+            continue
+        name = testsuite[0]
+        if (includes is not None and
+            testlist.find_in_list(includes, name) is not None):
+            continue
+        available.append(testsuite)
 
 if opts.load_list:
     restricted_mgr = testlist.RestrictedTestManager.from_path(opts.load_list)

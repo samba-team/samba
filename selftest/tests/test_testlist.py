@@ -19,13 +19,18 @@
 
 """Tests for selftest.testlist."""
 
+import os
+import tempfile
+
 from selftest.tests import TestCase
 
 from selftest.testlist import (
     RestrictedTestManager,
     find_in_list,
+    open_file_or_pipe,
     read_test_regexes,
     read_testlist,
+    read_testlist_file,
     )
 
 from cStringIO import StringIO
@@ -100,3 +105,44 @@ class RestrictedTestManagerTests(TestCase):
     def test_run_nomatch(self):
         mgr = RestrictedTestManager(["foo.bar"])
         self.assertEquals([], mgr.should_run_testsuite("foo.blie.bla"))
+
+
+class OpenFileOrPipeTests(TestCase):
+
+    def test_regular_file(self):
+        (fd, p) = tempfile.mkstemp()
+        self.addCleanup(os.remove, p)
+        f = os.fdopen(fd, 'w')
+        try:
+            f.write('data\nbla\n')
+        finally:
+            f.close()
+        f = open_file_or_pipe(p, 'r')
+        try:
+            self.assertEquals("data\nbla\n", f.read())
+        finally:
+            f.close()
+
+    def test_pipe(self):
+        f = open_file_or_pipe('echo foo|', 'r')
+        try:
+            self.assertEquals("foo\n", f.read())
+        finally:
+            f.close()
+
+
+class ReadTestListFileTests(TestCase):
+
+    def test_regular_file(self):
+        (fd, p) = tempfile.mkstemp()
+        self.addCleanup(os.remove, p)
+        f = os.fdopen(fd, 'w')
+        try:
+            f.write('noise\n-- TEST --\ndata\nenv\ncmd\n')
+        finally:
+            f.close()
+        outf = StringIO()
+        self.assertEquals(
+            [('data', 'env', 'cmd', False, False)],
+            list(read_testlist_file(p, outf)))
+        self.assertEquals("noise\n", outf.getvalue())

@@ -21,7 +21,9 @@
 
 __all__ = ['find_in_list', 'read_test_regexes', 'read_testlist']
 
+import os
 import re
+import sys
 
 def find_in_list(list, fullname):
     """Find test in list.
@@ -133,3 +135,34 @@ class RestrictedTestManager(object):
         :return: Iterator over test list entries that were not used.
         """
         return iter(self.unused)
+
+
+def open_file_or_pipe(path, mode):
+    """Open a file or pipe.
+
+    :param path: Path to open; if it ends with | it is assumed to be a
+        command to run
+    :param mode: Mode with which to open it
+    :return: File-like object
+    """
+    if path.endswith("|"):
+        return os.popen(path[:-1], mode)
+    return open(path, mode)
+
+
+def read_testlist_file(fn, outf=None):
+    """Read testlist file.
+
+    :param fn: Path to read (assumed to be a command to run if it ends with |)
+    :param outf: File-like object to pass non-test data through to
+        (defaults to stdout)
+    :return: Iterator over test suites (see read_testlist)
+    """
+    if outf is None:
+        outf = sys.stdout
+    inf = open_file_or_pipe(fn, 'r')
+    try:
+        for testsuite in read_testlist(inf, outf):
+            yield testsuite
+    finally:
+        inf.close()
