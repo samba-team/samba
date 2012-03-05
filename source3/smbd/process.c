@@ -1304,15 +1304,16 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
  Dump a packet to a file.
 ********************************************************************/
 
-static void smb_dump(const char *name, int type, const char *data, ssize_t len)
+static void smb_dump(const char *name, int type, const char *data)
 {
+	size_t len;
 	int fd, i;
 	char *fname = NULL;
 	if (DEBUGLEVEL < 50) {
 		return;
 	}
 
-	if (len < 4) len = smb_len(data)+4;
+	len = smb_len_tcp(data)+4;
 	for (i=1;i<100;i++) {
 		if (asprintf(&fname, "/tmp/%s.%d.%s", name, i,
 			     type ? "req" : "resp") == -1) {
@@ -1356,7 +1357,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 	if (smb_messages[type].fn == NULL) {
 		DEBUG(0,("Unknown message type %d!\n",type));
-		smb_dump("Unknown", 1, (const char *)req->inbuf, size);
+		smb_dump("Unknown", 1, (const char *)req->inbuf);
 		reply_unknown_new(req, type);
 		return NULL;
 	}
@@ -1370,7 +1371,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n", smb_fn_name(type),
 		 (int)sys_getpid(), (unsigned long)conn));
 
-	smb_dump(smb_fn_name(type), 1, (const char *)req->inbuf, size);
+	smb_dump(smb_fn_name(type), 1, (const char *)req->inbuf);
 
 	/* Ensure this value is replaced in the incoming packet. */
 	SSVAL(discard_const_p(uint8_t, req->inbuf),smb_uid,session_tag);
