@@ -4647,6 +4647,15 @@ void reply_write_and_X(struct smb_request *req)
 	return;
 
 out:
+	if (req->unread_bytes) {
+		/* writeX failed. drain socket. */
+		if (drain_socket(req->sconn->sock, req->unread_bytes) !=
+				req->unread_bytes) {
+			smb_panic("failed to drain pending bytes");
+		}
+		req->unread_bytes = 0;
+	}
+
 	END_PROFILE(SMBwriteX);
 	return;
 }

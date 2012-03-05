@@ -1521,15 +1521,6 @@ static void construct_reply(struct smbd_server_connection *sconn,
 
 	conn = switch_message(req->cmd, req);
 
-	if (req->unread_bytes) {
-		/* writeX failed. drain socket. */
-		if (drain_socket(req->sconn->sock, req->unread_bytes) !=
-				req->unread_bytes) {
-			smb_panic("failed to drain pending bytes");
-		}
-		req->unread_bytes = 0;
-	}
-
 	if (req->done) {
 		TALLOC_FREE(req);
 		return;
