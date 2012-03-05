@@ -42,6 +42,7 @@ from selftest.run import (
     expand_environment_strings,
     expand_command_list,
     expand_command_run,
+    exported_envvars_str,
     )
 from selftest.target import (
     EnvironmentManager,
@@ -446,17 +447,6 @@ exported_envvars = [
     "LOCAL_PATH"
 ]
 
-def exported_envvars_str(testenv_vars):
-    out = ""
-
-    for n in exported_envvars:
-        if not n in testenv_vars:
-            continue
-        out += "%s=%s\n" % (n, testenv_vars[n])
-
-    return out
-
-
 def switch_env(name, prefix):
     if ":" in name:
         (envname, option) = name.split(":", 1)
@@ -500,7 +490,7 @@ if opts.testenv:
     os.environ["PIDDIR"] = testenv_vars["PIDDIR"]
     os.environ["ENVNAME"] = testenv_name
 
-    envvarstr = exported_envvars_str(testenv_vars)
+    envvarstr = exported_envvars_str(testenv_vars, exported_envvars)
 
     term = os.environ.get("TERMINAL", "xterm -e")
     cmd = """'echo -e "

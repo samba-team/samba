@@ -68,3 +68,12 @@ def expand_command_run(cmd, supports_loadfile, supports_idlist, subtests=None):
             "Running subtests requested, but command does not support "
             "this.")
         return (cmd, None)
+
+
+def exported_envvars_str(vars, names):
+    out = ""
+    for n in names:
+        if not n in vars:
+            continue
+        out += "%s=%s\n" % (n, vars[n])
+    return out

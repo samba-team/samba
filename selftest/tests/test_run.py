@@ -25,6 +25,7 @@ from selftest.run import (
     expand_command_list,
     expand_environment_strings,
     expand_command_run,
+    exported_envvars_str,
     )
 
 from selftest.tests import TestCase
@@ -77,3 +78,17 @@ class ExpandCommandRunTests(TestCase):
     def test_loadlist_all(self):
         self.assertEquals(("test ", None),
             expand_command_run("test $LOADLIST", True, False))
+
+
+class ExportedEnvvarsStrTests(TestCase):
+
+    def test_no_vars(self):
+        self.assertEquals("", exported_envvars_str({}, ["foo", "bar"]))
+
+    def test_vars(self):
+        self.assertEquals("foo=1\n",
+            exported_envvars_str({"foo": "1"}, ["foo", "bar"]))
+
+    def test_vars_unknown(self):
+        self.assertEquals("foo=1\n",
+            exported_envvars_str({"foo": "1", "bla": "2"}, ["foo", "bar"]))
