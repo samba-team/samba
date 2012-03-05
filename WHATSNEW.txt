@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.5.13
-			  , 2011
+			  March 12, 2012
                    ==============================
 
 
@@ -14,6 +14,44 @@ Changes since 3.5.12:
 --------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8561: Fully observe password change settings.
+    * BUG 8631: Fix POSIX ACE x permission mapping to and from a DACL.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 8176: Fix perl path.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8652: Document the ignore system acls option of vfs_acl_xattr and
+      vfs_acl_tdb.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * BUG 8648: Document more undocumented mount.cifs options.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 8639: Fix the vfs_commit module.
+
+
+o   Stefan Metzmacher <metze@samba.org
+    * BUG 5326: Fix cli_write_and_x() against OS/2 print shares.
+    * BUG 8562: Fix double free error (talloc).
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8608: Don't fail on users without a uid (Winbind).
+    * BUG 8645: Add missing prefixpath options for mount.cifs manpage.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 7705: Fix rpm build issues on RHEL4.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 8607: Simplify building modules outside the Samba source tree.
 
 
 ######################################################################
