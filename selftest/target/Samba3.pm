@@ -54,9 +54,12 @@ sub teardown_env($$)
 
 	# This should give it time to write out the gcov data
 	until ($count > 20) {
-	    if (Samba::cleanup_child($smbdpid, "smbd") == -1
-		&& Samba::cleanup_child($nmbdpid, "nmbd") == -1
-		&& Samba::cleanup_child($winbinddpid, "winbindd") == -1) {
+	    my $smbdchild = Samba::cleanup_child($smbdpid, "smbd");
+	    my $nmbdchild = Samba::cleanup_child($nmbdpid, "nmbd");
+	    my $winbinddchild = Samba::cleanup_child($winbinddpid, "winbindd");
+	    if ($smbdchild == -1
+		&& $nmbdchild == -1
+		&& $winbinddchild == -1) {
 		last;
 	    }
 	    sleep(1);
@@ -73,9 +76,12 @@ sub teardown_env($$)
 
 	$count = 0;
 	until ($count > 10) {
-	    if (Samba::cleanup_child($smbdpid, "smbd") == -1
-		&& Samba::cleanup_child($nmbdpid, "nmbd") == -1
-		&& Samba::cleanup_child($winbinddpid, "winbindd") == -1) {
+	    my $smbdchild = Samba::cleanup_child($smbdpid, "smbd");
+	    my $nmbdchild = Samba::cleanup_child($nmbdpid, "nmbd");
+	    my $winbinddchild = Samba::cleanup_child($winbinddpid, "winbindd");
+	    if ($smbdchild == -1
+		&& $nmbdchild == -1
+		&& $winbinddchild == -1) {
 		last;
 	    }
 	    sleep(1);
