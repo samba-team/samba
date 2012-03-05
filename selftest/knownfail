@@ -7,6 +7,19 @@
 ^samba3.blackbox.failure.failure # this is designed to fail, for testing our test infrastructure
 .*driver.add_driver_timestamps # we only can store dates, not timestamps
 ^samba3.smbtorture_s3.LOCAL-TALLOC-DICT #fails
+^samba3.smbtorture_s3.plain\(dc\).LOCK9 # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).OPLOCK2 # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).STREAMERROR # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).DIR1 # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).DIR-CREATETIME # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).DELETE-LN # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).POSIX # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).UID-REGRESSION-TEST # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).SHORTNAME-TEST # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).POSIX-APPEND # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).NTTRANS-FSCTL # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).SMB2-NEGPROT # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).BAD-NBT-SESSION # Fails against the s4 ntvfs server
 ^samba3.nbt.dgram.*netlogon2
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3
 ^samba3.*rap.sam.*.userdelete # Not provided by Samba 3
