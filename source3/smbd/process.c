@@ -1351,7 +1351,6 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 	uint16 session_tag;
 	connection_struct *conn = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
-	char *raddr;
 
 	errno = 0;
 
@@ -1466,21 +1465,38 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 		conn->num_smb_operations++;
 	}
 
-	raddr = tsocket_address_inet_addr_string(sconn->remote_address,
-						 talloc_tos());
-	if (raddr == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return conn;
-	}
+	/*
+	 * Does this protocol need to be run as guest? (Only archane
+	 * messenger service requests have this...)
+	 */
+	if (flags & AS_GUEST) {
+		char *raddr;
+		bool ok;
 
-	/* does this protocol need to be run as guest? */
-	if ((flags & AS_GUEST)
-	    && (!change_to_guest() ||
-		!allow_access(lp_hostsdeny(-1), lp_hostsallow(-1),
-			      sconn->remote_hostname,
-			      raddr))) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return conn;
+		if (!change_to_guest()) {
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return conn;
+		}
+
+		raddr = tsocket_address_inet_addr_string(sconn->remote_address,
+							 talloc_tos());
+		if (raddr == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return conn;
+		}
+
+		/*
+		 * Haven't we checked this in smbd_process already???
+		 */
+
+		ok = allow_access(lp_hostsdeny(-1), lp_hostsallow(-1),
+				  sconn->remote_hostname, raddr);
+		TALLOC_FREE(raddr);
+
+		if (!ok) {
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return conn;
+		}
 	}
 
 	smb_messages[type].fn(req);
