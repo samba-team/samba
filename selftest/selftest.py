@@ -538,11 +538,9 @@ else:
 
         if opts.resetup_environment:
             env_manager.teardown_env(envname)
+    env_manager.teardown_all()
 
 sys.stdout.write("\n")
-
-if not opts.list:
-    env_manager.teardown_all()
 
 # if there were any valgrind failures, show them
 for fn in os.listdir(prefix):
