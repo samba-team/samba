@@ -26,7 +26,6 @@ import signal
 import shutil
 import subprocess
 import subunit
-import tempfile
 import traceback
 import warnings
 
@@ -42,6 +41,7 @@ from selftest import (
 from selftest.run import (
     expand_environment_strings,
     expand_command_list,
+    expand_command_run,
     )
 from selftest.target import (
     EnvironmentManager,
@@ -606,23 +606,13 @@ else:
                 "unable to set up environment %s: %s" % (envname, e))
             continue
 
-        # Generate a file with the individual tests to run, if the
-        # test runner for this test suite supports it.
-        if subtests is not None:
-            if supports_loadfile:
-                (fd, listid_file) = tempfile.mkstemp()
-                # FIXME: Remove tempfile afterwards
-                f = os.fdopen(fd)
-                try:
-                    for test in subtests:
-                        f.write(test+"\n")
-                finally:
-                    f.close()
-                cmd = cmd.replace("$LOADLIST", "--load-list=%s" % listid_file)
-            elif supports_idlist:
-                cmd += " ".join(subtests)
+        cmd, tmpf = expand_command_run(cmd, supports_loadfile, supports_idlist,
+            subtests)
 
         run_testsuite(envname, name, cmd)
+
+        if tmpf is not None:
+            os.remove(tmpf)
 
         if opts.resetup_environment:
             env_manager.teardown_env(envname)

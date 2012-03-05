@@ -19,9 +19,12 @@
 
 """Tests for selftest.run."""
 
+import os
+
 from selftest.run import (
     expand_command_list,
     expand_environment_strings,
+    expand_command_run,
     )
 
 from selftest.tests import TestCase
@@ -48,3 +51,29 @@ class ExpandCommandListTests(TestCase):
 
     def test_list(self):
         self.assertEquals("test --list", expand_command_list("test $LISTOPT"))
+
+
+class ExpandCommandRunTests(TestCase):
+
+    def test_idlist(self):
+        self.assertEquals(("test foo bar", None),
+            expand_command_run("test", False, True, subtests=["foo", "bar"]))
+
+    def test_idlist_all(self):
+        self.assertEquals(("test", None),
+            expand_command_run("test", False, True))
+
+    def test_loadlist(self):
+        (cmd, tmpf) = expand_command_run("test $LOADLIST", True, False,
+            subtests=["foo", "bar"])
+        self.addCleanup(os.remove, tmpf)
+        f = open(tmpf, 'r')
+        try:
+            self.assertEquals(f.read(), "foo\nbar\n")
+        finally:
+            f.close()
+        self.assertEquals("test --load-list=%s" % tmpf, cmd)
+
+    def test_loadlist_all(self):
+        self.assertEquals(("test ", None),
+            expand_command_run("test $LOADLIST", True, False))
