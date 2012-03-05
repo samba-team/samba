@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+import subprocess
+import warnings
 
 # expand strings from %ENV
 def expand_environment_strings(s, vars):
@@ -26,4 +27,7 @@ def expand_environment_strings(s, vars):
     return s
 
 
-
+def expand_command_list(cmd):
+    if not "$LISTOPT" in cmd:
+        return None
+    return cmd.replace("$LISTOPT", "--list")

@@ -39,7 +39,10 @@ from selftest import (
     subunithelper,
     testlist,
     )
-from selftest.run import expand_environment_strings
+from selftest.run import (
+    expand_environment_strings,
+    expand_command_list,
+    )
 from selftest.target import (
     EnvironmentManager,
     NoneTarget,
@@ -577,11 +580,10 @@ $envvarstr
     env_manager.teardown_env(testenv_name)
 elif opts.list:
     for (name, envname, cmd, supports_loadfile, supports_idlist, subtests) in todo:
-        if not "$LISTOPT" in cmd:
+        cmd = expand_command_list(cmd)
+        if cmd is None:
             warnings.warn("Unable to list tests in %s" % name)
             continue
-
-        cmd = cmd.replace("$LISTOPT", "--list")
 
         exitcode = subprocess.call(cmd, shell=True)
 

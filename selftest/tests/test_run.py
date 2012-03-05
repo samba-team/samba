@@ -19,7 +19,10 @@
 
 """Tests for selftest.run."""
 
-from selftest.run import expand_environment_strings
+from selftest.run import (
+    expand_command_list,
+    expand_environment_strings,
+    )
 
 from selftest.tests import TestCase
 
@@ -36,3 +39,12 @@ class ExpandEnvironmentStringsTests(TestCase):
     def test_unknown(self):
         self.assertEquals("foo $BLA",
             expand_environment_strings("foo $BLA", {}))
+
+
+class ExpandCommandListTests(TestCase):
+
+    def test_no_list(self):
+        self.assertIs(None, expand_command_list("test bla"))
+
+    def test_list(self):
+        self.assertEquals("test --list", expand_command_list("test $LISTOPT"))
