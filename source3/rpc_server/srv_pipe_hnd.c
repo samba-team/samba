@@ -687,7 +687,7 @@ struct np_read_state {
 	struct np_proxy_state *p;
 	struct np_ipc_readv_next_vector_state next_vector;
 
-	size_t nread;
+	ssize_t nread;
 	bool is_data_outstanding;
 };
 
