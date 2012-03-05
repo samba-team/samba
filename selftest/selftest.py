@@ -39,6 +39,7 @@ from selftest import (
     subunithelper,
     testlist,
     )
+from selftest.run import expand_environment_strings
 from selftest.target import (
     EnvironmentManager,
     NoneTarget,
@@ -118,15 +119,6 @@ def cleanup_pcap(pcap_file, exit_code):
     os.unlink(pcap_file)
 
 
-# expand strings from %ENV
-def expand_environment_strings(s):
-    # we use a reverse sort so we do the longer ones first
-    for k in sorted(os.environ.keys(), reverse=True):
-        v = os.environ[k]
-        s = s.replace("$%s" % k, v)
-    return s
-
-
 def run_testsuite(envname, name, cmd):
     """Run a single testsuite.
 
@@ -156,7 +148,7 @@ def run_testsuite(envname, name, cmd):
         sys.stdout.write("envlog: %s\n" % envlog)
 
     sys.stdout.write("command: %s\n" % cmd)
-    sys.stdout.write("expanded command: %s\n" % expand_environment_strings(cmd))
+    sys.stdout.write("expanded command: %s\n" % expand_environment_strings(cmd, os.environ))
 
     if exitcode == 0:
         subunit_ops.end_testsuite(name, "success")
