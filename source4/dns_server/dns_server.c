@@ -233,13 +233,13 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 		return;
 	}
 
-	DEBUG(10,("Received krb5 TCP packet of length %lu from %s\n",
+	DEBUG(10,("Received DNS TCP packet of length %lu from %s\n",
 		 (long) call->in.length,
 		 tsocket_address_string(dns_conn->conn->remote_address, call)));
 
 	/* skip length header */
-	call->in.data += 4;
-	call->in.length -= 4;
+	call->in.data += 2;
+	call->in.length -= 2;
 
 	/* Call dns */
 	status = dns_process(dns_conn->dns_socket->dns, call, &call->in, &call->out);
@@ -251,9 +251,9 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 	}
 
 	/* First add the length of the out buffer */
-	RSIVAL(call->out_hdr, 0, call->out.length);
+	RSSVAL(call->out_hdr, 0, call->out.length);
 	call->out_iov[0].iov_base = (char *) call->out_hdr;
-	call->out_iov[0].iov_len = 4;
+	call->out_iov[0].iov_len = 2;
 
 	call->out_iov[1].iov_base = (char *) call->out.data;
 	call->out_iov[1].iov_len = call->out.length;
@@ -271,14 +271,14 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 	tevent_req_set_callback(subreq, dns_tcp_call_writev_done, call);
 
 	/*
-	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
-	 * packet_full_request_u32 provides the pdu length then.
+	 * The dns tcp pdu's has the length as 2 byte (initial_read_size),
+	 * packet_full_request_u16 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(dns_conn,
 					    dns_conn->conn->event.ctx,
 					    dns_conn->tstream,
-					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    2, /* initial_read_size */
+					    packet_full_request_u16,
 					    dns_conn);
 	if (subreq == NULL) {
 		dns_tcp_terminate_connection(dns_conn, "dns_tcp_call_loop: "
@@ -358,14 +358,14 @@ static void dns_tcp_accept(struct stream_connection *conn)
 	conn->private_data = dns_conn;
 
 	/*
-	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
-	 * packet_full_request_u32 provides the pdu length then.
+	 * The dns tcp pdu's has the length as 2 byte (initial_read_size),
+	 * packet_full_request_u16 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(dns_conn,
 					    dns_conn->conn->event.ctx,
 					    dns_conn->tstream,
-					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    2, /* initial_read_size */
+					    packet_full_request_u16,
 					    dns_conn);
 	if (subreq == NULL) {
 		dns_tcp_terminate_connection(dns_conn, "dns_tcp_accept: "
