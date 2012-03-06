@@ -76,6 +76,7 @@ struct smb2_session_setup_spnego_state {
 	struct smb2_session *session;
 	struct cli_credentials *credentials;
 	uint64_t previous_session_id;
+	bool reauth;
 	NTSTATUS gensec_status;
 	DATA_BLOB in_secblob;
 	DATA_BLOB out_secblob;
@@ -95,6 +96,7 @@ struct tevent_req *smb2_session_setup_spnego_send(
 {
 	struct tevent_req *req;
 	struct smb2_session_setup_spnego_state *state;
+	uint64_t current_session_id;
 	const char *chosen_oid;
 	struct tevent_req *subreq;
 	NTSTATUS status;
@@ -113,6 +115,11 @@ struct tevent_req *smb2_session_setup_spnego_send(
 	state->session = session;
 	state->credentials = credentials;
 	state->previous_session_id = previous_session_id;
+
+	current_session_id = smb2cli_session_current_id(state->session->smbXcli);
+	if (current_session_id != 0) {
+		state->reauth = true;
+	}
 
 	server_gss_blob = smbXcli_conn_server_gss_blob(session->transport->conn);
 	if (server_gss_blob) {
@@ -218,6 +225,11 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 
 	if (NT_STATUS_IS_OK(peer_status) && NT_STATUS_IS_OK(state->gensec_status)) {
 		DATA_BLOB session_key;
+
+		if (state->reauth) {
+			tevent_req_done(req);
+			return;
+		}
 
 		status = gensec_session_key(session->gensec, state,
 					    &session_key);
