@@ -1092,8 +1092,6 @@ void reply_transs2(struct smb_request *req);
 
 bool change_to_guest(void);
 bool change_to_user(connection_struct *conn, uint16 vuid);
-bool change_to_user_by_session(connection_struct *conn,
-			       const struct auth_session_info *session_info);
 bool change_to_root_user(void);
 bool smbd_change_to_root_user(void);
 bool become_authenticated_pipe_user(struct auth_session_info *session_info);

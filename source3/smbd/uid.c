@@ -314,8 +314,8 @@ bool change_to_user(connection_struct *conn, uint16_t vuid)
 	return change_to_user_internal(conn, session_info, vuid);
 }
 
-bool change_to_user_by_session(connection_struct *conn,
-			       const struct auth_session_info *session_info)
+static bool change_to_user_by_session(connection_struct *conn,
+				      const struct auth_session_info *session_info)
 {
 	SMB_ASSERT(conn != NULL);
 	SMB_ASSERT(session_info != NULL);
