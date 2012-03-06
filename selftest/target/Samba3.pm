@@ -188,6 +188,17 @@ sub setup_s3dc($$)
 	domain master = yes
 	domain logons = yes
 	lanman auth = yes
+
+	rpc_server:epmapper = external
+	rpc_server:spoolss = external
+	rpc_server:lsarpc = external
+	rpc_server:samr = external
+	rpc_server:netlogon = external
+	rpc_server:tcpip = yes
+
+	rpc_daemon:epmd = fork
+	rpc_daemon:spoolssd = fork
+	rpc_daemon:lsasd = fork
 ";
 
 	my $vars = $self->provision($path,
@@ -943,17 +954,6 @@ sub provision($$$$$$)
 	lpq cache time = 0
 
 	ncalrpc dir = $prefix_abs/ncalrpc
-	rpc_server:epmapper = external
-	rpc_server:spoolss = external
-	rpc_server:lsarpc = external
-	rpc_server:samr = external
-	rpc_server:netlogon = external
-	rpc_server:tcpip = yes
-
-	rpc_daemon:epmd = fork
-	rpc_daemon:spoolssd = fork
-	rpc_daemon:lsasd = fork
-
         resolv:host file = $dns_host_file
 
         # The samba3.blackbox.smbclient_s3 test uses this to test that
