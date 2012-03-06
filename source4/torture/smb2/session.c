@@ -25,6 +25,7 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/cmdline/popt_common.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -129,12 +130,68 @@ done:
 	return ret;
 }
 
+bool test_session_reauth(struct torture_context *tctx, struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_create io1;
+	bool ret = true;
+	union smb_fileinfo qfinfo;
+
+	/* Add some random component to the file name. */
+	snprintf(fname, 256, "session_reconnect_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+
+	status = smb2_create(tree, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+
+	status = smb2_session_setup_spnego(tree->session,
+					   cmdline_credentials,
+					   0 /* previous_session_id */);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* try to access the file via the old handle */
+
+	ZERO_STRUCT(qfinfo);
+	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo.generic.in.file.handle = _h1;
+	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	if (h1 != NULL) {
+		smb2_util_close(tree, *h1);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_session_init(void)
 {
 	struct torture_suite *suite =
 	    torture_suite_create(talloc_autofree_context(), "session");
 
 	torture_suite_add_1smb2_test(suite, "reconnect", test_session_reconnect);
+	torture_suite_add_1smb2_test(suite, "reauth", test_session_reauth);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
 
