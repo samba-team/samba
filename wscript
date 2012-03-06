@@ -151,7 +151,7 @@ def build(bld):
 
 def pydoctor(ctx):
     '''build python apidocs'''
-    cmd='PYTHONPATH=bin/python pydoctor --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba'
+    cmd='PYTHONPATH=%s pydoctor --introspect-c-modules --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba' % os.path.abspath('bin/python')
     print("Running: %s" % cmd)
     os.system(cmd)
 
