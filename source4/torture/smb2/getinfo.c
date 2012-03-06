@@ -196,13 +196,17 @@ bool torture_smb2_getinfo(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status,
 				   "setup complex file " FNAME);
 
-	torture_setup_complex_file(tree, FNAME ":streamtwo");
+	status = torture_setup_complex_file(tree, FNAME ":streamtwo");
+	torture_assert_ntstatus_ok(torture, status,
+				   "setup complex file " FNAME ":streamtwo");
 
 	status = torture_setup_complex_dir(tree, DNAME);
 	torture_assert_ntstatus_ok(torture, status,
 				   "setup complex dir " DNAME);
 
-	torture_setup_complex_file(tree, DNAME ":streamtwo");
+	status = torture_setup_complex_file(tree, DNAME ":streamtwo");
+	torture_assert_ntstatus_ok(torture, status,
+				   "setup complex dir " DNAME ":streamtwo");
 
 	ret &= torture_smb2_fileinfo(torture, tree);
 	ret &= torture_smb2_fsinfo(torture, tree);
