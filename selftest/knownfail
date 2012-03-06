@@ -129,6 +129,7 @@
 ^samba4.smb2.oplock.batch9$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch10$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.batch20$ # samba 4 oplocks are a mess
+^samba4.smb2.getinfo.getinfo # streams on directories does not work
 ^samba4.ntvfs.cifs.krb5.base.createx_access.createx_access$
 ^samba4.ldap.acl.*.AclSearchTests.test_search_anonymous3$  # ACL search behaviour not enabled by default
 ^samba4.ldap.acl.*.AclSearchTests.test_search1$  # ACL search behaviour not enabled by default
