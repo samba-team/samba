@@ -151,7 +151,16 @@ def build(bld):
 
 def pydoctor(ctx):
     '''build python apidocs'''
-    cmd='PYTHONPATH=%s pydoctor --introspect-c-modules --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba' % os.path.abspath('bin/python')
+    bp = os.path.abspath('bin/python')
+    mpaths = {}
+    for m in ['talloc', 'tdb', 'ldb']:
+        f = os.popen("PYTHONPATH=%s python -c 'import %s; print %s.__file__'" % (bp, m, m), 'r')
+        try:
+            mpaths[m] = f.read().strip()
+        finally:
+            f.close()
+    cmd='PYTHONPATH=%s pydoctor --introspect-c-modules --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba --add-module %s --add-module %s --add-module %s' % (
+        bp, mpaths['tdb'], mpaths['ldb'], mpaths['talloc'])
     print("Running: %s" % cmd)
     os.system(cmd)
 
