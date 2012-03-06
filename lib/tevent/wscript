@@ -103,7 +103,7 @@ def build(bld):
                          pattern='tevent.py',
                          installdir='python')
 
-        bld.INSTALL_WILDCARD('${PYTHONDIR}', 'tevent.py', flat=False)
+        bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'tevent.py', flat=False)
 
 
 def test(ctx):
