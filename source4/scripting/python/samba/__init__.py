@@ -347,7 +347,7 @@ def dn_from_dns_name(dnsdomain):
     """return a DN from a DNS name domain/forest root"""
     return "DC=" + ",DC=".join(dnsdomain.split("."))
 
-from samba import _glue
+import _glue
 version = _glue.version
 interface_ips = _glue.interface_ips
 set_debug_level = _glue.set_debug_level
