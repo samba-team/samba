@@ -56,57 +56,28 @@
 /* Common routine for embedded RPC servers */
 static bool rpc_setup_embedded(struct tevent_context *ev_ctx,
 			       struct messaging_context *msg_ctx,
-			       const struct dcerpc_binding_vector *v,
 			       const struct ndr_interface_table *t,
 			       const char *pipe_name)
 {
-	struct dcerpc_binding_vector *v2;
+	struct dcerpc_binding_vector *v;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
-	bool ok;
 
 	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
-		if (v) {
-			v2 = dcerpc_binding_vector_dup(talloc_tos(), v);
-			if (v2 == NULL) {
-				return false;
-			}
-			status = dcerpc_binding_vector_replace_iface(t, v2);
-			if (!NT_STATUS_IS_OK(status)) {
-				return false;
-			}
-
-		} else {
-			status = dcerpc_binding_vector_new(talloc_tos(), &v2);
-			if (!NT_STATUS_IS_OK(status)) {
-				return false;
-			}
-		}
-
-		status = dcerpc_binding_vector_add_np_default(t, v2);
+		status = dcerpc_binding_vector_new(talloc_tos(), &v);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
 
-		if (pipe_name) {
-			ok = setup_dcerpc_ncalrpc_socket(ev_ctx,
-							 msg_ctx,
-							 pipe_name,
-							 NULL);
-			if (!ok) {
-				return false;
-			}
-
-			status = dcerpc_binding_vector_add_unix(t, v2, pipe_name);
-			if (!NT_STATUS_IS_OK(status)) {
-				return false;
-			}
+		status = dcerpc_binding_vector_add_np_default(t, v);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
 		}
 
 		status = rpc_ep_register(ev_ctx,
 					 msg_ctx,
 					 t,
-					 v2);
+					 v);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
@@ -116,8 +87,7 @@ static bool rpc_setup_embedded(struct tevent_context *ev_ctx,
 }
 
 static bool rpc_setup_winreg(struct tevent_context *ev_ctx,
-			     struct messaging_context *msg_ctx,
-			     const struct dcerpc_binding_vector *v)
+			     struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_winreg;
 	const char *pipe_name = "winreg";
@@ -132,12 +102,11 @@ static bool rpc_setup_winreg(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 static bool rpc_setup_srvsvc(struct tevent_context *ev_ctx,
-			     struct messaging_context *msg_ctx,
-			     const struct dcerpc_binding_vector *v)
+			     struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_srvsvc;
 	const char *pipe_name = "srvsvc";
@@ -152,12 +121,11 @@ static bool rpc_setup_srvsvc(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 static bool rpc_setup_lsarpc(struct tevent_context *ev_ctx,
-			     struct messaging_context *msg_ctx,
-			     const struct dcerpc_binding_vector *v)
+			     struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_lsarpc;
 	const char *pipe_name = "lsarpc";
@@ -173,12 +141,11 @@ static bool rpc_setup_lsarpc(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 static bool rpc_setup_samr(struct tevent_context *ev_ctx,
-			   struct messaging_context *msg_ctx,
-			   const struct dcerpc_binding_vector *v)
+			   struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_samr;
 	const char *pipe_name = "samr";
@@ -194,12 +161,11 @@ static bool rpc_setup_samr(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 static bool rpc_setup_netlogon(struct tevent_context *ev_ctx,
-			       struct messaging_context *msg_ctx,
-			       const struct dcerpc_binding_vector *v)
+			       struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_netlogon;
 	const char *pipe_name = "netlogon";
@@ -215,12 +181,11 @@ static bool rpc_setup_netlogon(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 static bool rpc_setup_netdfs(struct tevent_context *ev_ctx,
-			     struct messaging_context *msg_ctx,
-			     const struct dcerpc_binding_vector *v)
+			     struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_netdfs;
 	const char *pipe_name = "netdfs";
@@ -235,13 +200,12 @@ static bool rpc_setup_netdfs(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 #ifdef DEVELOPER
 static bool rpc_setup_rpcecho(struct tevent_context *ev_ctx,
-			      struct messaging_context *msg_ctx,
-			      const struct dcerpc_binding_vector *v)
+			      struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_rpcecho;
 	const char *pipe_name = "rpcecho";
@@ -256,13 +220,12 @@ static bool rpc_setup_rpcecho(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 #endif
 
 static bool rpc_setup_dssetup(struct tevent_context *ev_ctx,
-			      struct messaging_context *msg_ctx,
-			      const struct dcerpc_binding_vector *v)
+			      struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_dssetup;
 	const char *pipe_name = "dssetup";
@@ -277,12 +240,11 @@ static bool rpc_setup_dssetup(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 static bool rpc_setup_wkssvc(struct tevent_context *ev_ctx,
-			     struct messaging_context *msg_ctx,
-			     const struct dcerpc_binding_vector *v)
+			     struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_wkssvc;
 	const char *pipe_name = "wkssvc";
@@ -297,7 +259,7 @@ static bool rpc_setup_wkssvc(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, v, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 static bool spoolss_init_cb(void *ptr)
@@ -350,7 +312,7 @@ static bool rpc_setup_spoolss(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, NULL, t, NULL);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, NULL);
 }
 
 static bool svcctl_init_cb(void *ptr)
@@ -398,7 +360,7 @@ static bool rpc_setup_svcctl(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, NULL, t, pipe_name);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 }
 
 static bool rpc_setup_ntsvcs(struct tevent_context *ev_ctx,
@@ -416,9 +378,7 @@ static bool rpc_setup_ntsvcs(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, NULL, t, NULL);
-
-	return true;
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, NULL);
 }
 
 static bool eventlog_init_cb(void *ptr)
@@ -455,7 +415,7 @@ static bool rpc_setup_eventlog(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, NULL, t, NULL);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, NULL);
 }
 
 static bool rpc_setup_initshutdown(struct tevent_context *ev_ctx,
@@ -473,17 +433,13 @@ static bool rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, NULL, t, NULL);
+	return rpc_setup_embedded(ev_ctx, msg_ctx, t, NULL);
 }
 
 bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx)
 {
-	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
-	struct dcerpc_binding_vector *v;
-	const char *rpcsrv_type;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
 	bool ok;
 
 	tmp_ctx = talloc_stackframe();
@@ -491,75 +447,49 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	status = dcerpc_binding_vector_new(tmp_ctx,
-					   &v);
-	if (!NT_STATUS_IS_OK(status)) {
-		ok = false;
-		goto done;
-	}
-
-	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
-					   "rpc_server",
-					   "tcpip",
-					   "no");
-
-	if ((strcasecmp_m(rpcsrv_type, "yes") == 0 ||
-	     strcasecmp_m(rpcsrv_type, "true") == 0)
-	    && epm_mode != RPC_SERVICE_MODE_DISABLED) {
-		status = rpc_setup_tcpip_sockets(ev_ctx,
-						 msg_ctx,
-						 &ndr_table_winreg,
-						 v,
-						 0);
-		if (!NT_STATUS_IS_OK(status)) {
-			ok = false;
-			goto done;
-		}
-	}
-
-	ok = rpc_setup_winreg(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_winreg(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
 
-	ok = rpc_setup_srvsvc(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_srvsvc(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
 
-	ok = rpc_setup_lsarpc(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_lsarpc(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
 
-	ok = rpc_setup_samr(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_samr(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
 
-	ok = rpc_setup_netlogon(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_netlogon(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
 
-	ok = rpc_setup_netdfs(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_netdfs(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
 
 #ifdef DEVELOPER
-	ok = rpc_setup_rpcecho(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_rpcecho(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
 #endif
 
-	ok = rpc_setup_dssetup(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_dssetup(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
 
-	ok = rpc_setup_wkssvc(ev_ctx, msg_ctx, v);
+	ok = rpc_setup_wkssvc(ev_ctx, msg_ctx);
 	if (!ok) {
 		goto done;
 	}
