@@ -106,13 +106,13 @@ class SamDB(samba.Ldb):
 
     def toggle_userAccountFlags(self, search_filter, flags, flags_str=None,
                                 on=True, strict=False):
-        """toggle_userAccountFlags
+        """Toggle_userAccountFlags
 
         :param search_filter: LDAP filter to find the user (eg
             samccountname=name)
-        :flags: samba.dsdb.UF_* flags
-        :on: on=True (default) => set, on=False => unset
-        :strict: strict=False (default) ignore if no action is needed
+        :param flags: samba.dsdb.UF_* flags
+        :param on: on=True (default) => set, on=False => unset
+        :param strict: strict=False (default) ignore if no action is needed
                  strict=True raises an Exception if...
         """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
