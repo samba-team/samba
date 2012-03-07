@@ -1354,10 +1354,6 @@ extern void build_options(bool screen);
 		}
 	}
 
-	if (!dcesrv_ep_setup(ev_ctx, msg_ctx)) {
-		exit(1);
-	}
-
 	/* only start other daemons if we are running as a daemon
 	 * -- bad things will happen if smbd is launched via inetd
 	 *  and we fork a copy of ourselves here */
@@ -1380,6 +1376,10 @@ extern void build_options(bool screen);
 		if (!printing_subsystem_init(ev_ctx, msg_ctx, false, false)) {
 			exit(1);
 		}
+	}
+
+	if (!dcesrv_ep_setup(ev_ctx, msg_ctx)) {
+		exit(1);
 	}
 
 	if (!is_daemon) {
