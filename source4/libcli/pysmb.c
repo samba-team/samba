@@ -340,7 +340,7 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 						SECINFO_DACL |
 						SECINFO_PROTECTED_DACL |
 						SECINFO_UNPROTECTED_DACL |
-						SECINFO_DACL |
+						SECINFO_SACL |
 						SECINFO_PROTECTED_SACL |
 						SECINFO_UNPROTECTED_SACL;
 
