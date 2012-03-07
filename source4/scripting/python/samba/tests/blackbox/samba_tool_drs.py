@@ -19,7 +19,6 @@
 
 """Blackbox tests for samba-tool drs."""
 
-import os
 import samba.tests
 
 
