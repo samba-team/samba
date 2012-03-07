@@ -12,6 +12,8 @@ shift 1
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
+[ ! -d $PREFIX ] && mkdir $PREFIX
+
 upgradeprovision() {
   if [ -d $PREFIX/upgradeprovision ]; then
     rm -fr $PREFIX/upgradeprovision
