@@ -823,30 +823,6 @@ delete_ip_from_iface()
 	return $?
 }
 
-setup_iface_ip_readd_script()
-{
-	local _iface=$1
-	local _ip=$2
-	local _maskbits=$3
-	local _readd_script=$4
-	local _state_dir="$CTDB_VARDIR/state/interface_modify"
-	local _lockfile="$_state_dir/$_iface.flock"
-	local _readd_base="$_state_dir/$_iface.readd.d"
-
-	mkdir -p $_state_dir || {
-		ret=$?
-		echo "Failed to mkdir -p $_state_dir - $ret"
-		return $ret
-	}
-
-	test -f $_lockfile || {
-		touch $_lockfile
-	}
-
-	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh readd_script "$_iface" "$_ip" "$_maskbits" "$_readd_base" "$_readd_script"
-	return $?
-}
-
 ########################################################
 # some simple logic for counting events - per eventscript
 # usage: ctdb_counter_init

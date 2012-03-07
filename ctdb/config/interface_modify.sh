@@ -62,23 +62,6 @@ delete_ip_from_iface()
 		    echo "re-adding secondary address $_i to dev $_iface"
 		    ip addr add $_i brd + dev $_iface || _failed=1
 		fi
-		local _s_ip=`echo "$_i" | cut -d '/' -f1`
-		local _s_maskbits=`echo "$_i" | cut -d '/' -f2`
-		local _s_script_dir="$_readd_base/$_s_ip.$_s_maskbits"
-
-		local _s_script=""
-		for _s_script in $_s_script_dir/*; do
-			test -x "$_s_script" || {
-				continue
-			}
-			echo "call $_s_script '$_iface' '$_s_ip' '$_s_maskbits'"
-			$_s_script "$_iface" "$_s_ip" "$_s_maskbits" || {
-				ret=$?
-				echo "$_s_script '$_iface' '$_s_ip' '$_s_maskbits' - failed - $ret"
-				_failed=1
-			}
-		done
-
 	    done
 	}
 
@@ -93,36 +76,6 @@ delete_ip_from_iface()
 	return 0;
 }
 
-setup_iface_ip_readd_script()
-{
-	local _iface=$1
-	local _ip=$2
-	local _maskbits=$3
-	local _readd_base=$4
-	local _readd_script=$5
-	local _script_dir="$_readd_base/$_ip.$_maskbits"
-
-	test -x "$_readd_script" || {
-		echo "Script '$_readd_script' isn't executable"
-		return 1;
-	}
-
-	local _readd_basename=`basename $_readd_script`
-	local _readd_final="$_script_dir/$_readd_basename"
-
-	mkdir -p $_script_dir || {
-		echo "Failed to mkdir -p $_script_dir"
-		return 1;
-	}
-
-	cp -a $_readd_script $_readd_final || {
-		echo "Failed to - cp -a $_readd_script $_readd_final"
-		return 1;
-	}
-
-	return 0
-}
-
 case "$OP" in
 	add)
 		add_ip_to_iface $IFACE $IP $MASKBITS $READD_BASE
@@ -130,10 +83,6 @@ case "$OP" in
 		;;
 	delete)
 		delete_ip_from_iface $IFACE $IP $MASKBITS $READD_BASE
-		exit $?
-		;;
-	readd_script)
-		setup_iface_ip_readd_script $IFACE $IP $MASKBITS $READD_BASE $READD_SCRIPT
 		exit $?
 		;;
 esac
