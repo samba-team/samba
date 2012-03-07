@@ -165,6 +165,14 @@ static bool dcerpc_bh_is_connected(struct dcerpc_binding_handle *h)
 		return false;
 	}
 
+	if (!hs->p->conn) {
+		return false;
+	}
+
+	if (hs->p->conn->dead) {
+		return false;
+	}
+
 	return true;
 }
 
