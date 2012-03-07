@@ -19,6 +19,7 @@ builddirs = {
     "samba4"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
+    "tdb2"    : "lib/tdb2",
     "talloc"  : "lib/talloc",
     "replace" : "lib/replace",
     "tevent"  : "lib/tevent",
@@ -28,7 +29,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "samba3", "samba4", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "samba3", "samba4", "ldb", "tdb", "tdb2", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
     "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
@@ -68,6 +69,14 @@ tasks = {
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain") ],
+
+    "tdb2" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+               ("make", "make -j", "text/plain"),
+               ("install", "make install", "text/plain"),
+               ("test", "make test", "text/plain"),
+               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+               ("distcheck", "make distcheck", "text/plain"),
+               ("clean", "make clean", "text/plain") ],
 
     "talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make -j", "text/plain"),
