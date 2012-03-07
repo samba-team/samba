@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import Options
+
+def configure(conf):
+    conf.CHECK_HEADERS('sys/uuid.h')

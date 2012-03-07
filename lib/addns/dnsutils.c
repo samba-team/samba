@@ -25,6 +25,10 @@
 #include "dns.h"
 #include <ctype.h>
 
+#ifdef HAVE_SYS_UUID_H
+#include <sys/uuid.h>
+#endif
+
 static DNS_ERROR LabelList( TALLOC_CTX *mem_ctx,
 			    const char *name,
 			    struct dns_domain_label **presult )
