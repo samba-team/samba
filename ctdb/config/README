@@ -14,12 +14,6 @@ Selected highlights:
 
     Support functions, sourced by eventscripts and other scripts.
 
-  interface_modify.sh
-
-    Script to support add/remove IPs and other funky stuff.  Not sure
-    why this is separate... but it certainly allows easy wrapping by
-    flock.
-
   statd-callout
 
     rpc.statd high-availability callout to support lock migration on
