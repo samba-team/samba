@@ -35,8 +35,22 @@
 	</listitem>
 	<listitem>
 	    <para><constant>SMB2</constant>: Re-implementation of the SMB protocol.
-	    Used by Windows Vista and newer. The Samba implementation of SMB2 is
-	    currently marked experimental!</para>
+	    Used by Windows Vista and later versions of Windows. SMB2 has sub protocols available.</para>
+	    <itemizedlist>
+		<listitem>
+			<para><constant>SMB2_02</constant>: The earliest SMB2 version.</para>
+		</listitem>
+		<listitem>
+			<para><constant>SMB2_10</constant>: Windows 7 SMB2 version.</para>
+		</listitem>
+		<listitem>
+			<para><constant>SMB2_22</constant>: Early Windows 8 SMB2 version.</para>
+		</listitem>
+		<listitem>
+			<para><constant>SMB2_24</constant>: Windows 8 SMB2 version.</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>By default SMB2 selects the SMB2_02 varient.</para>
 	</listitem>
     </itemizedlist>
 
@@ -48,6 +62,6 @@
 <related>min protocol</related>
 <synonym>protocol</synonym>
 
-<value type="default">NT1</value>
+<value type="default">SMB2</value>
 <value type="example">LANMAN1</value>
 </samba:parameter>
