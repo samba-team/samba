@@ -346,6 +346,7 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 		STATISTICS_FIELD(total_ro_delegations),
 		STATISTICS_FIELD(total_ro_revokes),
 	};
+	
 	tmp = s->statistics_current_time.tv_sec - s->statistics_start_time.tv_sec;
 	seconds = tmp%60;
 	tmp    /= 60;
@@ -441,6 +442,11 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 			       preflen?0:4, "",
 			       *(uint32_t *)(fields[i].offset+(uint8_t *)s));
 		}
+		printf("Max hop count buckets:");
+		for (i=0;i<MAX_HOP_COUNT_BUCKETS;i++) {
+			printf(" %d", s->hop_count_bucket[i]);
+		}
+		printf("\n");
 		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "reclock_ctdbd       MIN/AVG/MAX", s->reclock.ctdbd.min, s->reclock.ctdbd.num?s->reclock.ctdbd.total/s->reclock.ctdbd.num:0.0, s->reclock.ctdbd.max, s->reclock.ctdbd.num);
 
 		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "reclock_recd       MIN/AVG/MAX", s->reclock.recd.min, s->reclock.recd.num?s->reclock.recd.total/s->reclock.recd.num:0.0, s->reclock.recd.max, s->reclock.recd.num);
