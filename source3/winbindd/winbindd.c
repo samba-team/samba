@@ -1404,6 +1404,10 @@ int main(int argc, char **argv, char **envp)
 		mkdir(lp_lockdir(), 0755);
 	}
 
+	if (!directory_exist(lp_piddir())) {
+		mkdir(lp_piddir(), 0755);
+	}
+
 	/* Setup names. */
 
 	if (!init_names())

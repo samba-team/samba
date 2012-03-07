@@ -937,6 +937,10 @@ static bool open_sockets(bool isdaemon, int port)
 		mkdir(lp_lockdir(), 0755);
 	}
 
+	if (!directory_exist(lp_piddir())) {
+		mkdir(lp_piddir(), 0755);
+	}
+
 	pidfile_create("nmbd");
 
 	status = reinit_after_fork(msg, nmbd_event_context(),
