@@ -86,6 +86,15 @@ debug ()
     fi
 }
 
+die ()
+{
+    _msg="$1"
+    _rc="${2:-1}"
+
+    echo "$_msg"
+    exit $_rc
+}
+
 ##############################################################
 # check number of args for different events
 ctdb_check_args ()
