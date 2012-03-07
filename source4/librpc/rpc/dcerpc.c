@@ -194,6 +194,7 @@ static uint32_t dcerpc_bh_set_timeout(struct dcerpc_binding_handle *h,
 }
 
 struct dcerpc_bh_raw_call_state {
+	struct tevent_context *ev;
 	struct dcerpc_binding_handle *h;
 	DATA_BLOB in_data;
 	DATA_BLOB out_data;
@@ -223,6 +224,7 @@ static struct tevent_req *dcerpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 	state->h = h;
 	state->in_data.data = discard_const_p(uint8_t, in_data);
 	state->in_data.length = in_length;
@@ -268,6 +270,19 @@ static void dcerpc_bh_raw_call_done(struct rpc_request *subreq)
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 		status = dcerpc_fault_to_nt_status(fault_code);
 	}
+
+	/*
+	 * We trigger the callback in the next event run
+	 * because the code in this file might trigger
+	 * multiple request callbacks from within a single
+	 * while loop.
+	 *
+	 * In order to avoid segfaults from within
+	 * dcerpc_connection_dead() we call
+	 * tevent_req_defer_callback().
+	 */
+	tevent_req_defer_callback(req, state->ev);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
