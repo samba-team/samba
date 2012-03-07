@@ -194,6 +194,7 @@ sub setup_s3dc($$)
 	rpc_server:lsarpc = external
 	rpc_server:samr = external
 	rpc_server:netlogon = external
+	rpc_server:register_embedded_np = yes
 
 	rpc_daemon:epmd = fork
 	rpc_daemon:spoolssd = fork

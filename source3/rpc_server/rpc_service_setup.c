@@ -63,7 +63,14 @@ static bool rpc_setup_embedded(struct tevent_context *ev_ctx,
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	NTSTATUS status;
 
-	if (epm_mode != RPC_SERVICE_MODE_DISABLED) {
+	/* Registration of ncacn_np services is problematic.  The
+	 * ev_ctx passed in here is passed down to all children of the
+	 * smbd process, and if the end point mapper ever goes away,
+	 * they will all attempt to re-register.  But we want to test
+	 * the code for now, so it is enabled in on environment in
+	 * make test */
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED && 
+	    (lp_parm_bool(-1, "rpc_server", "register_embedded_np", false))) {
 		status = dcerpc_binding_vector_new(talloc_tos(), &v);
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
