@@ -1216,6 +1216,9 @@ extern void build_options(bool screen);
 	if (!directory_exist(lp_lockdir()))
 		mkdir(lp_lockdir(), 0755);
 
+	if (!directory_exist(lp_piddir()))
+		mkdir(lp_piddir(), 0755);
+
 	if (is_daemon)
 		pidfile_create("smbd");
 
