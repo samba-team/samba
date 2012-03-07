@@ -19,7 +19,7 @@ bld.SAMBA_MODULE('TORTURE_BASIC',
 
 
 bld.SAMBA_MODULE('TORTURE_RAW',
-	source='raw/qfsinfo.c raw/qfileinfo.c raw/setfileinfo.c raw/search.c raw/close.c raw/open.c raw/mkdir.c raw/oplock.c raw/notify.c raw/mux.c raw/ioctl.c raw/chkpath.c raw/unlink.c raw/read.c raw/context.c raw/write.c raw/lock.c raw/pingpong.c raw/lockbench.c raw/lookuprate.c raw/tconrate.c raw/openbench.c raw/rename.c raw/eas.c raw/streams.c raw/acls.c raw/seek.c raw/samba3hide.c raw/samba3misc.c raw/composite.c raw/raw.c raw/offline.c',
+	source='raw/qfsinfo.c raw/qfileinfo.c raw/setfileinfo.c raw/search.c raw/close.c raw/open.c raw/mkdir.c raw/oplock.c raw/notify.c raw/mux.c raw/ioctl.c raw/chkpath.c raw/unlink.c raw/read.c raw/context.c raw/session.c raw/write.c raw/lock.c raw/pingpong.c raw/lockbench.c raw/lookuprate.c raw/tconrate.c raw/openbench.c raw/rename.c raw/eas.c raw/streams.c raw/acls.c raw/seek.c raw/samba3hide.c raw/samba3misc.c raw/composite.c raw/raw.c raw/offline.c',
 	autoproto='raw/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_raw_init',

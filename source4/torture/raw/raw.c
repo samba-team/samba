@@ -56,6 +56,7 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_suite(suite, torture_raw_write(suite));
 	torture_suite_add_suite(suite, torture_raw_lock(suite));
 	torture_suite_add_1smb_test(suite, "context", torture_raw_context);
+	torture_suite_add_suite(suite, torture_raw_session(suite));
 	torture_suite_add_suite(suite, torture_raw_rename(suite));
 	torture_suite_add_1smb_test(suite, "seek", torture_raw_seek);
 	torture_suite_add_1smb_test(suite, "eas", torture_raw_eas);
