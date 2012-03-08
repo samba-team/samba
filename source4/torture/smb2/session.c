@@ -96,6 +96,15 @@ bool test_session_reconnect(struct torture_context *tctx, struct smb2_tree *tree
 		goto done;
 	}
 
+	/* try to access the file via the old handle */
+
+	ZERO_STRUCT(qfinfo);
+	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
+	qfinfo.generic.in.file.handle = _h1;
+	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
+	CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
+	h1 = NULL;
+
 	smb2_oplock_create_share(&io2, fname,
 				 smb2_util_share_access(""),
 				 smb2_util_oplock_level("b"));
@@ -107,15 +116,10 @@ bool test_session_reconnect(struct torture_context *tctx, struct smb2_tree *tree
 	_h2 = io2.out.file.handle;
 	h2 = &_h2;
 
-	/* try to access the file via the old handle */
-
-	ZERO_STRUCT(qfinfo);
-	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	qfinfo.generic.in.file.handle = _h1;
-	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
-	CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
-
 done:
+	if (h1 != NULL) {
+		smb2_util_close(tree, *h1);
+	}
 	if (h2 != NULL) {
 		smb2_util_close(tree2, *h2);
 	}
