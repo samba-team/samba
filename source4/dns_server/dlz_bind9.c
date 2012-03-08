@@ -532,6 +532,31 @@ static NTSTATUS b9_generate_session_info_pac(struct auth4_context *auth_context,
 	return status;
 }
 
+/* Callback for the DEBUG() system, to catch the remaining messages */
+static void b9_debug(void *private_ptr, int msg_level, const char *msg)
+{
+	static const int isc_log_map[] = {
+		ISC_LOG_CRITICAL, /* 0 */
+		ISC_LOG_ERROR,    /* 1 */
+		ISC_LOG_WARNING,   /* 2 */
+		ISC_LOG_NOTICE    /* 3 */
+	};
+	struct dlz_bind9_data *state = private_ptr;
+	int     isc_log_level;
+	
+	if (msg_level >= ARRAY_SIZE(isc_log_map) || msg_level < 0) {
+		isc_log_level = ISC_LOG_INFO;
+	} else {
+		isc_log_level = isc_log_map[msg_level];
+	}
+	state->log(isc_log_level, "samba_dlz: %s", msg);
+}
+
+int dlz_state_debug_unregister(struct dlz_bind9_data *state)
+{
+	/* Stop logging (to the bind9 logs) */
+	debug_set_callback(NULL, NULL);
+}
 
 /*
   called to initialise the driver
@@ -552,6 +577,8 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		return ISC_R_NOMEMORY;
 	}
 
+	talloc_set_destructor(state, dlz_state_debug_unregister);
+
 	/* fill in the helper functions */
 	va_start(ap, dbdata);
 	while ((helper_name = va_arg(ap, const char *)) != NULL) {
@@ -562,8 +589,8 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	/* Do not install samba signal handlers */
 	fault_setup_disable();
 
-	/* Start logging */
-	setup_logging("samba_dlz", DEBUG_DEFAULT_STDERR);
+	/* Start logging (to the bind9 logs) */
+	debug_set_callback(state, b9_debug);
 
 	state->ev_ctx = s4_event_context_init(state);
 	if (state->ev_ctx == NULL) {
