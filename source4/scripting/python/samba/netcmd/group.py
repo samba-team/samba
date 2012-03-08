@@ -260,6 +260,38 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
             raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
         self.outf.write("Removed members from group %s\n" % groupname)
 
+class cmd_group_list(Command):
+    """List all groups"""
+
+    synopsis = "%prog [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, sambaopts=None, credopts=None, versionopts=None, H=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+
+        samdb = SamDB(url=H, session_info=system_session(),
+            credentials=creds, lp=lp)
+
+        domain_dn = samdb.domain_dn()
+        res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
+                    expression=("(objectClass=group)"),
+                    attrs=["samaccountname"])
+        if (len(res) == 0):
+            return
+
+        for msg in res:
+            self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
 
 class cmd_group(SuperCommand):
     """Group management"""
@@ -269,3 +301,4 @@ class cmd_group(SuperCommand):
     subcommands["delete"] = cmd_group_delete()
     subcommands["addmembers"] = cmd_group_add_members()
     subcommands["removemembers"] = cmd_group_remove_members()
+    subcommands["list"] = cmd_group_list()
