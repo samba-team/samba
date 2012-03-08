@@ -120,6 +120,10 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
             if password is not None and password is not '':
                 break
             password = getpass("New Password: ")
+            passwordverify = getpass("Retype Password: ")
+            if not password == passwordverify:
+                password = None
+                self.outf.write("Sorry, passwords do not match.\n")
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
