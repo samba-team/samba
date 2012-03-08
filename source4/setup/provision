@@ -165,11 +165,17 @@ if opts.interactive:
 
     opts.server_role = ask("Server Role (dc, member, standalone)", "dc")
     for i in range(3):
-        opts.adminpass = getpass("Administrator password: ")
-        if not opts.adminpass:
+        adminpass = getpass("Administrator password: ")
+        if not adminpass:
             print >>sys.stderr, "Invalid administrator password."
         else:
-            break
+            adminpassverify = getpass("Retype password: ")
+            if not adminpass == adminpassverify:
+                print >>sys.stderr, "Sorry, passwords do not match."
+            else:
+                opts.adminpass = adminpass
+                break
+
 else:
     if opts.realm in (None, ""):
         opts.realm = sambaopts._lp.get('realm')
