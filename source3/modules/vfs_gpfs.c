@@ -44,6 +44,7 @@ struct gpfs_config_data {
 	bool ftruncate;
 	bool getrealfilename;
 	bool dfreequota;
+	bool prealloc;
 };
 
 
@@ -1263,6 +1264,42 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 
 }
 
+int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
+		       struct files_struct *fsp, enum vfs_fallocate_mode mode,
+		       SMB_OFF_T offset, SMB_OFF_T len)
+{
+	int ret;
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (!config->prealloc) {
+		/* you should better not run fallocate() on GPFS at all */
+		errno = ENOTSUP;
+		return -1;
+	}
+
+	if (mode == VFS_FALLOCATE_KEEP_SIZE) {
+		DEBUG(10, ("Unsupported VFS_FALLOCATE_KEEP_SIZE\n"));
+		errno = ENOTSUP;
+		return -1;
+	}
+
+	ret = smbd_gpfs_prealloc(fsp->fh->fd, offset, len);
+
+	if (ret == -1 && errno != ENOSYS) {
+		DEBUG(0, ("GPFS prealloc failed: %s\n", strerror(errno)));
+	} else if (ret == -1 && errno == ENOSYS) {
+		DEBUG(10, ("GPFS prealloc not supported.\n"));
+	} else {
+		DEBUG(10, ("GPFS prealloc succeeded.\n"));
+	}
+
+	return ret;
+}
+
 static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 				SMB_OFF_T len)
 {
@@ -1389,6 +1426,9 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 
 	config->dfreequota = lp_parm_bool(SNUM(handle->conn), "gpfs",
 					  "dfreequota", false);
+
+	config->prealloc = lp_parm_bool(SNUM(handle->conn), "gpfs",
+				   "prealloc", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,
@@ -1582,6 +1622,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.is_offline_fn = vfs_gpfs_is_offline,
 	.aio_force_fn = vfs_gpfs_aio_force,
 	.sendfile_fn = vfs_gpfs_sendfile,
+	.fallocate_fn = vfs_gpfs_fallocate,
 	.open_fn = vfs_gpfs_open,
 	.ftruncate_fn = vfs_gpfs_ftruncate
 };

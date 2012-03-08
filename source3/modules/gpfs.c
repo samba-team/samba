@@ -35,6 +35,7 @@ static int (*gpfs_get_realfilename_path_fn)(char *pathname, char *filenamep,
 static int (*gpfs_set_winattrs_path_fn)(char *pathname, int flags, struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_path_fn)(char *pathname, struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
+static int (*gpfs_prealloc_fn)(int fd, gpfs_off64_t startOffset, gpfs_off64_t bytesToPrealloc);
 static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
 static int (*gpfs_lib_init_fn)(int flags);
 static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufferP);
@@ -175,6 +176,16 @@ int smbd_fget_gpfs_winattrs(int fd, struct gpfs_winattr *attrs)
         }
         DEBUG(10, ("gpfs_get_winattrs_path:open call %d\n", fd));
         return gpfs_get_winattrs_fn(fd, attrs);
+}
+
+int smbd_gpfs_prealloc(int fd, gpfs_off64_t start, gpfs_off64_t bytes)
+{
+	if (gpfs_prealloc_fn == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	return gpfs_prealloc_fn(fd, start, bytes);
 }
 
 int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
@@ -329,6 +340,7 @@ void init_gpfs(void)
 	init_gpfs_function(&gpfs_get_winattrs_path_fn,"gpfs_get_winattrs_path");
         init_gpfs_function(&gpfs_set_winattrs_path_fn,"gpfs_set_winattrs_path");
         init_gpfs_function(&gpfs_get_winattrs_fn,"gpfs_get_winattrs");
+	init_gpfs_function(&gpfs_prealloc_fn, "gpfs_prealloc");
 	init_gpfs_function(&gpfs_ftruncate_fn, "gpfs_ftruncate");
         init_gpfs_function(&gpfs_lib_init_fn,"gpfs_lib_init");
 	init_gpfs_function(&gpfs_quotactl_fn, "gpfs_quotactl");
