@@ -59,12 +59,10 @@ struct dlz_bind9_data {
 	char *update_name;
 
 	/* helper functions from the dlz_dlopen driver */
-	void (*log)(int level, const char *fmt, ...);
-	isc_result_t (*putrr)(dns_sdlzlookup_t *handle, const char *type,
-			      dns_ttl_t ttl, const char *data);
-	isc_result_t (*putnamedrr)(dns_sdlzlookup_t *handle, const char *name,
-				   const char *type, dns_ttl_t ttl, const char *data);
-	isc_result_t (*writeable_zone)(dns_view_t *view, const char *zone_name);
+	log_t *log;
+	dns_sdlz_putrr_t *putrr;
+	dns_sdlz_putnamedrr_t *putnamedrr;
+	dns_dlz_writeablezone_t *writeable_zone;
 };
 
 
@@ -849,7 +847,9 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
   lookup one record
  */
 _PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name,
-				 void *dbdata, dns_sdlzlookup_t *lookup)
+				 void *dbdata, dns_sdlzlookup_t *lookup,
+				 dns_clientinfomethods_t *methods,
+				 dns_clientinfo_t *clientinfo)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	return dlz_lookup_types(state, zone, name, lookup, NULL);
@@ -1184,7 +1184,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	tmp_ctx = talloc_new(NULL);
 	if (tmp_ctx == NULL) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: no memory");
-		return false;
+		return ISC_FALSE;
 	}
 
 	ap_req = data_blob_const(keydata, keydatalen);
@@ -1192,7 +1192,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	if (!server_credentials) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to init server credentials");
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 
 	cli_credentials_set_krb5_context(server_credentials, state->smb_krb5_ctx);
@@ -1206,7 +1206,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to obtain server credentials from %s",
 			   keytab_name);
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 	talloc_free(keytab_name);
 
@@ -1216,7 +1216,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to start gensec server");
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 
 	gensec_set_credentials(gensec_ctx, server_credentials);
@@ -1225,21 +1225,21 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to start spnego");
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 
 	nt_status = gensec_update(gensec_ctx, tmp_ctx, state->ev_ctx, ap_req, &ap_req);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: spnego update failed");
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 
 	nt_status = gensec_session_info(gensec_ctx, tmp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to create session info");
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 
 	/* Get the DN from name */
@@ -1247,7 +1247,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	if (result != ISC_R_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to find name %s", name);
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 
 	/* make sure the dn exists, or find parent dn in case new object is being added */
@@ -1262,7 +1262,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 		talloc_free(res);
 	} else {
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 
 	/* Do ACL check */
@@ -1274,7 +1274,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 			"samba_dlz: disallowing update of signer=%s name=%s type=%s error=%s",
 			signer, name, type, ldb_strerror(ldb_ret));
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 
 	/* Cache session_info, so it can be used in the actual add/delete operation */
@@ -1282,7 +1282,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	if (state->update_name == NULL) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: memory allocation error");
 		talloc_free(tmp_ctx);
-		return false;
+		return ISC_FALSE;
 	}
 	state->session_info = talloc_steal(state, session_info);
 
@@ -1290,7 +1290,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 		   signer, name, tcpaddr, type, key);
 
 	talloc_free(tmp_ctx);
-	return true;
+	return ISC_TRUE;
 }
 
 
