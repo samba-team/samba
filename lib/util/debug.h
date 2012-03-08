@@ -197,7 +197,7 @@ extern int  *DEBUGLEVEL_CLASS;
  * for example.  This makes it easy to override for debug to stderr on
  * the command line, as the smb.conf cannot reset it back to
  * file-based logging */
-enum debug_logtype {DEBUG_DEFAULT_STDERR = 0, DEBUG_DEFAULT_STDOUT = 1, DEBUG_FILE = 2, DEBUG_STDOUT = 3, DEBUG_STDERR = 4};
+enum debug_logtype {DEBUG_DEFAULT_STDERR = 0, DEBUG_DEFAULT_STDOUT = 1, DEBUG_FILE = 2, DEBUG_STDOUT = 3, DEBUG_STDERR = 4, DEBUG_CALLBACK = 5};
 
 struct debug_settings {
 	size_t max_log_size;
@@ -232,6 +232,13 @@ bool debug_get_output_is_stderr(void);
 bool debug_get_output_is_stdout(void);
 void debug_schedule_reopen_logs(void);
 char *debug_list_class_names_and_levels(void);
+
+typedef void (*debug_callback_fn)(void *private_ptr, int level, const char *msg);
+
+/**
+   Set a callback for all debug messages.  Use in dlz_bind9 to push output to the bind logs
+ */
+void debug_set_callback(void *private_ptr, debug_callback_fn fn);
 
 /**
   log suspicious usage - print comments and backtrace

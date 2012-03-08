@@ -88,6 +88,8 @@ static struct {
 
 	struct debug_settings settings;
 	char *debugf;
+	debug_callback_fn callback;
+	void *callback_private;
 } state = {
 	.settings = {
 		.timestamp_logs = true
@@ -125,7 +127,7 @@ int     *DEBUGLEVEL_CLASS = discard_const_p(int, debug_class_list_initial);
  *  debug_count     - Number of debug messages that have been output.
  *                    Used to check log size.
  *
- *  syslog_level    - Internal copy of the message debug level.  Written by
+ *  current_msg_level    - Internal copy of the message debug level.  Written by
  *                    dbghdr() and read by Debug1().
  *
  *  format_bufr     - Used to format debug messages.  The dbgtext() function
@@ -143,9 +145,7 @@ int     *DEBUGLEVEL_CLASS = discard_const_p(int, debug_class_list_initial);
  */
 
 static int     debug_count    = 0;
-#ifdef WITH_SYSLOG
-static int     syslog_level   = 0;
-#endif
+static int     current_msg_level   = 0;
 static char *format_bufr = NULL;
 static size_t     format_pos     = 0;
 static bool    log_overflow   = false;
@@ -519,6 +519,20 @@ bool debug_get_output_is_stdout(void)
 	return (state.logtype == DEBUG_DEFAULT_STDOUT) || (state.logtype == DEBUG_STDOUT);
 }
 
+void debug_set_callback(void *private_ptr, debug_callback_fn fn)
+{
+	debug_init();
+	if (fn) {
+		state.logtype = DEBUG_CALLBACK;
+		state.callback_private = private_ptr;
+		state.callback = fn;
+	} else {
+		state.logtype = DEBUG_DEFAULT_STDERR;
+		state.callback_private = NULL;
+		state.callback = NULL;
+	}
+}
+
 /**************************************************************************
  reopen the log files
  note that we now do this unconditionally
@@ -546,6 +560,8 @@ bool reopen_logs_internal(void)
 	state.schedule_reopen_logs = false;
 
 	switch (state.logtype) {
+	case DEBUG_CALLBACK:
+		return true;
 	case DEBUG_STDOUT:
 	case DEBUG_DEFAULT_STDOUT:
 		debug_close_fd(state.fd);
@@ -735,7 +751,23 @@ void check_log_size( void )
 
 	debug_count++;
 
-	if ( state.logtype != DEBUG_FILE ) {
+	if (state.logtype == DEBUG_CALLBACK) {
+		char *msg;
+		int ret;
+		va_start( ap, format_str );
+		ret = vasprintf( &msg, format_str, ap );
+		if (ret != -1) {
+			if (msg[ret - 1] == '\n') {
+				msg[ret - 1] = '\0';
+			}
+			state.callback(state.callback_private, current_msg_level, msg);
+			free(msg);
+		}
+		va_end( ap );
+
+		goto done;
+
+	} else if ( state.logtype != DEBUG_FILE ) {
 		va_start( ap, format_str );
 		if (state.fd > 0)
 			(void)vdprintf( state.fd, format_str, ap );
@@ -760,8 +792,9 @@ void check_log_size( void )
 		}
 	}
 
+
 #ifdef WITH_SYSLOG
-	if( syslog_level < state.settings.syslog ) {
+	if( current_msg_level < state.settings.syslog ) {
 		/* map debug levels to syslog() priorities
 		 * note that not all DEBUG(0, ...) calls are
 		 * necessarily errors */
@@ -775,10 +808,10 @@ void check_log_size( void )
 		char *msgbuf = NULL;
 		int ret;
 
-		if( syslog_level >= ARRAY_SIZE(priority_map) || syslog_level < 0)
+		if( current_msg_level >= ARRAY_SIZE(priority_map) || current_msg_level < 0)
 			priority = LOG_DEBUG;
 		else
-			priority = priority_map[syslog_level];
+			priority = priority_map[current_msg_level];
 
 		/*
 		 * Specify the facility to interoperate with other syslog
@@ -913,7 +946,7 @@ void dbgflush( void )
           in a macro, since the function can be called as part of a test.
           Eg: ( (level <= DEBUGLEVEL) && (dbghdr(level,"",line)) )
 
-  Notes:  This function takes care of setting syslog_level.
+  Notes:  This function takes care of setting current_msg_level.
 
 ****************************************************************************/
 
@@ -935,10 +968,8 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 		return( true );
 	}
 
-#ifdef WITH_SYSLOG
-	/* Set syslog_level. */
-	syslog_level = level;
-#endif
+	/* Set current_msg_level. */
+	current_msg_level = level;
 
 	/* Don't print a header if we're logging to stdout. */
 	if ( state.logtype != DEBUG_FILE ) {
