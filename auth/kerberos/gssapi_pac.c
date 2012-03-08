@@ -209,10 +209,7 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 		krb5_free_keyblock(NULL /* should be krb5_context */, subkey);
 		return NT_STATUS_OK;
 #else
-		DEBUG(0, ("gss_inquire_sec_context_by_oid returned unknown "
-			  "OID for data in results:\n"));
-		dump_data(1, (uint8_t *)set->elements[1].value,
-			     set->elements[1].length);
+		DEBUG(0, ("gss_inquire_sec_context_by_oid didn't return any session key (and no alternative method available)\n"));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 #endif
 	}
