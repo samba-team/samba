@@ -190,3 +190,5 @@
 ^samba3.smb2.streams .attributes
 ^samba3.smb2.getinfo .getinfo
 ^samba3.smb2.setinfo .setinfo
+^samba3.smb2.session .reconnect
+^samba3.smb2.session .reauth
