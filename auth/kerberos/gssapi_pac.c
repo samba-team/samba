@@ -223,10 +223,29 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 		char *oid;
 		char *p, *q = NULL;
 		
-		if (set->count < 2
-		    || memcmp(set->elements[1].value,
-			      gse_sesskeytype_oid.elements,
-			      gse_sesskeytype_oid.length) != 0) {
+		if (set->count < 2) {
+
+#ifdef HAVE_GSSKRB5_GET_SUBKEY
+			krb5_keyblock *subkey;
+			gss_maj = gsskrb5_get_subkey(&gss_min,
+						     gssapi_context,
+						     &subkey);
+			if (gss_maj == 0) {
+				*keytype = KRB5_KEY_TYPE(subkey);
+				krb5_free_keyblock(NULL /* should be krb5_context */, subkey);
+			} else
+#else
+			{
+				*keytype = 0;
+			}
+#endif
+			gss_maj = gss_release_buffer_set(&gss_min, &set);
+	
+			return NT_STATUS_OK;
+
+		} else if (memcmp(set->elements[1].value,
+				  gse_sesskeytype_oid.elements,
+				  gse_sesskeytype_oid.length) != 0) {
 			/* Perhaps a non-krb5 session key */
 			*keytype = 0;
 			gss_maj = gss_release_buffer_set(&gss_min, &set);
