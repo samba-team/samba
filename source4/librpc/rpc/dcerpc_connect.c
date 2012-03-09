@@ -733,15 +733,12 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 {
 	struct composite_context *c;
 	struct pipe_connect_state *s;
-	struct tevent_context *new_ev = NULL;
 
 	/* composite context allocation and setup */
 	c = composite_create(parent_ctx, ev);
 	if (c == NULL) {
-		talloc_free(new_ev);
 		return NULL;
 	}
-	talloc_steal(c, new_ev);
 
 	s = talloc_zero(c, struct pipe_connect_state);
 	if (composite_nomem(s, c)) return c;
