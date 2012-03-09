@@ -18,8 +18,6 @@
 #
 
 import os
-import sys
-import pprint
 import time
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
