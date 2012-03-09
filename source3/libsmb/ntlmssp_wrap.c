@@ -93,13 +93,13 @@ static NTSTATUS gensec_ntlmssp3_client_start(struct gensec_security *gensec_secu
 		return nt_status;
 	}
 
-	if (gensec_ntlmssp->gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
+	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
 		gensec_ntlmssp->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
-	if (gensec_ntlmssp->gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		gensec_ntlmssp->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
-	if (gensec_ntlmssp->gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		gensec_ntlmssp->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 		gensec_ntlmssp->ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}

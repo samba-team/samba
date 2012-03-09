@@ -62,10 +62,10 @@ static const struct ntlmssp_callbacks {
 };
 
 
-static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_context *gensec_ntlmssp,
+static NTSTATUS gensec_ntlmssp_update_find(struct gensec_security *gensec_security,
+					   struct gensec_ntlmssp_context *gensec_ntlmssp,
 					   const DATA_BLOB input, uint32_t *idx)
 {
-	struct gensec_security *gensec_security = gensec_ntlmssp->gensec_security;
 	uint32_t ntlmssp_command;
 	uint32_t i;
 
@@ -156,7 +156,7 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 		out_mem_ctx = ntlmssp_state;
 	}
 
-	status = gensec_ntlmssp_update_find(gensec_ntlmssp, input, &i);
+	status = gensec_ntlmssp_update_find(gensec_security, gensec_ntlmssp, input, &i);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = ntlmssp_callbacks[i].sync_fn(gensec_security, out_mem_ctx, input, out);

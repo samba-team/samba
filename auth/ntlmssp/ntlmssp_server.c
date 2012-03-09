@@ -426,7 +426,7 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 					      DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	struct auth4_context *auth_context = gensec_ntlmssp->gensec_security->auth_context;
+	struct auth4_context *auth_context = gensec_security->auth_context;
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	struct auth_usersupplied_info *user_info;
 
@@ -441,7 +441,7 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	user_info->client.account_name = ntlmssp_state->user;
 	user_info->client.domain_name = ntlmssp_state->domain;
 	user_info->workstation_name = ntlmssp_state->client.netbios_name;
-	user_info->remote_host = gensec_get_remote_address(gensec_ntlmssp->gensec_security);
+	user_info->remote_host = gensec_get_remote_address(gensec_security);
 
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = ntlmssp_state->lm_resp;

@@ -43,7 +43,6 @@ union ntlmssp_crypt_state {
 
 struct gensec_ntlmssp_context {
 	/* For GENSEC users */
-	struct gensec_security *gensec_security;
 	void *server_returned_info;
 
 	/* used by both client and server implementation */

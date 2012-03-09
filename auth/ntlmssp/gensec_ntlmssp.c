@@ -114,8 +114,6 @@ NTSTATUS gensec_ntlmssp_start(struct gensec_security *gensec_security)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	gensec_ntlmssp->gensec_security = gensec_security;
-
 	gensec_security->private_data = gensec_ntlmssp;
 	return NT_STATUS_OK;
 }
