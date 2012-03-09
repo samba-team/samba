@@ -531,6 +531,7 @@ NTSTATUS torture_rpc_init(void)
 #ifdef AD_DC_BUILD_IS_ENABLED /* Add Heimdal-specific KDC test */
 	torture_suite_add_suite(suite, torture_rpc_backupkey(suite));
 #endif
+	torture_suite_add_suite(suite, torture_rpc_fsrvp(suite));
 
 	suite->description = talloc_strdup(suite, "DCE/RPC protocol and interface tests");
 
