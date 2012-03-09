@@ -624,14 +624,13 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	struct ntlmssp_server_auth_state *state;
 	NTSTATUS nt_status;
 
 	/* zero the outbound NTLMSSP packet */
 	*out = data_blob_null;
 
-	state = talloc_zero(ntlmssp_state, struct ntlmssp_server_auth_state);
+	state = talloc_zero(gensec_ntlmssp, struct ntlmssp_server_auth_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -655,10 +654,6 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 						  &state->user_session_key,
 						  &state->lm_session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(5,("%s: Checking NTLMSSP password for %s\\%s failed: %s\n",
-			 __location__,
-			 ntlmssp_state->domain, ntlmssp_state->user,
-			 nt_errstr(nt_status)));
 		TALLOC_FREE(state);
 		return nt_status;
 	}
