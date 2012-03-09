@@ -28,7 +28,6 @@ from samba.samdb import SamDB
 from cStringIO import StringIO
 from samba.netcmd.main import cmd_sambatool
 import samba.tests
-from testtools.matchers import Contains
 
 class SambaToolCmdTest(samba.tests.TestCase):
 
@@ -89,7 +88,7 @@ class SambaToolCmdTest(samba.tests.TestCase):
         self.assertIsNotNone(val, msg)
 
     def assertMatch(self, base, string, msg=""):
-        self.assertThat(base, Contains(string), msg)
+        self.assertTrue(string in base, msg)
 
     def randomName(self, count=8):
         """Create a random name, cap letters and numbers, and always starting with a letter"""
