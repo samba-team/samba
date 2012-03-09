@@ -299,7 +299,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 			domains[i] = talloc_strdup(domains,
 						   dom_name ? dom_name : "");
 			(types)[i] = lsa_names.names[i].sid_type;
-			if (((domains)[i] == NULL)) {
+			if ((domains)[i] == NULL) {
 				DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
 				*presult = NT_STATUS_UNSUCCESSFUL;
 				return status;
