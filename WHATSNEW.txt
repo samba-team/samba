@@ -8,19 +8,50 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.13 include:
 
-o  
+o  Fix a crash bug in cldap_socket_recv_dgram() (bug #8593).
+o  Fully observe password change settings (bug #8561).
+o  Fix NT ACL issue (bug #8673).
+o  Fix segfault in Winbind if we can't map the last user (bug #8678).
+
 
 Changes since 3.5.12:
 --------------------
 
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 8327: Fix config reload to reload shares from registry.
+
+
 o   Jeremy Allison <jra@samba.org>
+    * BUG 8139: Ignore SMBecho errors.
+    * BUG 8521: Fix Winbind cache timeout expiry test.
     * BUG 8561: Fully observe password change settings.
     * BUG 8631: Fix POSIX ACE x permission mapping to and from a DACL.
+    * BUG 8636: When returning an ACL without SECINFO_DACL requested, we still
+      set SEC_DESC_DACL_PRESENT in the type field.
+    * BUG 8644: Make sure that vfs_acl_xattr and vfs_acl_tdb modules add
+      inheritable entries on a directory with no stored ACL.
+    * BUG 8663: Fix deleting a symlink if the symlink target is outside of the
+    * share.
+    * BUG 8664: Fix renaming a symlink if the symlink target is outside of the
+      share.
+    * BUG 8673: Fix NT ACL issue.
+    * BUG 8679: Make sure that recvfile code path using splice() on Linux
+      does not leave data in the pipe on short write.
+    * BUG 8687: Fix typo in 'net memberships' usage.
+
+
+o   Christian Ambach <christian.ambach@de.ibm.com>
+    * BUG 8658: Add timeouts to Winbind cache.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8727: Do not limit read replies to NBT packet sizes.
 
 
 o   Günther Deschner <gd@samba.org>
     * BUG 8176: Fix perl path.
+    * BUG 8692: Fix malloc/talloc mismatch in ads_keytab_verify_ticket().
 
 
 o   Björn Jacke <bj@sernet.de>
@@ -34,16 +65,32 @@ o   Jeff Layton <jlayton@redhat.com>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 8639: Fix the vfs_commit module.
+    * BUG 8686: Packet validation checks can be done before length validation
+      causing uninitialized memory read.
 
 
 o   Stefan Metzmacher <metze@samba.org
     * BUG 5326: Fix cli_write_and_x() against OS/2 print shares.
     * BUG 8562: Fix double free error (talloc).
+    * BUG 8593: Fix a crash bug in cldap_socket_recv_dgram().
+    * BUG 8684: Try ctdbd_init_connection() as root.
+
+
+o   Masafumi Nakayama <MASA23@jp.ibm.com>
+    * BUG 563: Fix 'smbclient tar' for files greater than 8GB on BE machines.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 8599: Make WINBINDD_PAM_AUTH_CRAP return valid user session key.
+    * BUG 8771: Make Winbind change faster from DC1 to DC2.
 
 
 o   Andreas Schneider <asn@samba.org>
     * BUG 8608: Don't fail on users without a uid (Winbind).
+    * BUG 8628: Don't duplicate Kerberos service tickets.
     * BUG 8645: Add missing prefixpath options for mount.cifs manpage.
+    * BUG 8658: Add an update function for Winbind cache.
+    * BUG 8678: Fix segfault in Winbind if we can't map the last user.
 
 
 o   Karolin Seeger <kseeger@samba.org>
