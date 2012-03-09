@@ -193,9 +193,11 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	}
 
 	/* Do notify operations on the base_name. */
-	if (asprintf(&fullpath, "%s/%s", fsp->conn->connectpath,
-		     fsp->fsp_name->base_name) == -1) {
-		DEBUG(0, ("asprintf failed\n"));
+	fullpath = talloc_asprintf(
+		talloc_tos(), "%s/%s", fsp->conn->connectpath,
+		fsp->fsp_name->base_name);
+	if (fullpath == NULL) {
+		DEBUG(0, ("talloc_asprintf failed\n"));
 		TALLOC_FREE(fsp->notify);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -211,7 +213,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	}
 
 	status = notify_add(fsp->conn->notify_ctx, &e, notify_callback, fsp);
-	SAFE_FREE(fullpath);
+	TALLOC_FREE(fullpath);
 
 	return status;
 }
