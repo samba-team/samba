@@ -19,7 +19,10 @@ import os
 import time
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
-from samba import nttime2unix
+from samba import (
+        nttime2unix,
+        dsdb
+        )
 
 class UserCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool user subcommands"""
@@ -172,6 +175,29 @@ class UserCmdTestCase(SambaToolCmdTest):
             else:
                 expires = nttime2unix(int("%s" % found.get("accountExpires")))
                 self.assertWithin(expires, twodays, 5, "Ensure account expires is within 5 seconds of the expected time")
+
+
+    def test_list(self):
+        (result, out, err) = self.runsubcmd("user", "list",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, "Error runing list")
+
+        search_filter = ("(&(objectClass=user)(userAccountControl:%s:=%u))" %
+                         (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT))
+
+        userlist = self.samdb.search(base=self.samdb.domain_dn(),
+                                     scope=ldb.SCOPE_SUBTREE,
+                                     expression=search_filter,
+                                     attrs=["samaccountname"])
+
+        self.assertTrue(len(userlist) > 0, "no users found in samdb")
+
+        for userobj in userlist:
+            name = userobj.get("samaccountname", idx=0)
+            found = self.assertMatch(out, name,
+                                     "user '%s' not found" % name)
 
 
     def _randomUser(self, base={}):
