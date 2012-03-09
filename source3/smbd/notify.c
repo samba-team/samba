@@ -181,7 +181,11 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	struct notify_entry e;
 	NTSTATUS status;
 
-	SMB_ASSERT(fsp->notify == NULL);
+	if (fsp->notify != NULL) {
+		DEBUG(1, ("change_notify_create: fsp->notify != NULL, "
+			  "fname = %s\n", fsp->fsp_name->base_name));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (!(fsp->notify = talloc_zero(NULL, struct notify_change_buf))) {
 		DEBUG(0, ("talloc failed\n"));
