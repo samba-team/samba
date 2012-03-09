@@ -642,7 +642,7 @@ class MatchesException(Matcher):
 
 
 class Contains(Matcher):
-    """Checks whether something is container in another thing."""
+    """Checks whether something is contained in another thing."""
 
     def __init__(self, needle):
         """Create a Contains Matcher.
