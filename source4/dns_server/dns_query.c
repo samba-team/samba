@@ -66,6 +66,9 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		ans[ai].rdata.soa_record.expire	 = rec->data.soa.expire;
 		ans[ai].rdata.soa_record.minimum = rec->data.soa.minimum;
 		break;
+	case DNS_QTYPE_PTR:
+		ans[ai].rdata.ptr_record = talloc_strdup(ans, rec->data.ptr);
+		break;
 	default:
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
@@ -109,7 +112,8 @@ static WERROR handle_question(struct dns_server *dns,
 		    (recs[ri].wType != question->question_type)) {
 			continue;
 		}
-		create_response_rr(question, &recs[ri], &ans, &ai);
+		werror = create_response_rr(question, &recs[ri], &ans, &ai);
+		W_ERROR_NOT_OK_RETURN(werror);
 	}
 
 	if (ai == 0) {
