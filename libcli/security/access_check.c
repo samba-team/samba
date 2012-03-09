@@ -178,36 +178,10 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			bits_remaining));
 	}
 
-	/* s3 had this with #if 0 previously. To be sure the merge
-	   doesn't change any behaviour, we have the above #if check
-	   on _SAMBA_BUILD_. */
-	if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
-		if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
-			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
-		} else {
-			return NT_STATUS_PRIVILEGE_NOT_HELD;
-		}
-	}
-
 	/* the owner always gets SEC_STD_WRITE_DAC and SEC_STD_READ_CONTROL */
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
 	    security_token_has_sid(token, sd->owner_sid)) {
 		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
-	}
-
-	/* TODO: remove this, as it is file server specific */
-	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
-	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
-	}
-	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
-	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
-		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
-	}
-
-	if ((bits_remaining & SEC_STD_WRITE_OWNER) &&
-	     security_token_has_privilege(token, SEC_PRIV_TAKE_OWNERSHIP)) {
-		bits_remaining &= ~(SEC_STD_WRITE_OWNER);
 	}
 
 	/* a NULL dacl allows access */
@@ -246,6 +220,34 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 	}
 
 	bits_remaining |= explicitly_denied_bits;
+
+	/*
+	 * We check privileges here because they override even DENY entries.
+	 */
+
+	/* Does the user have the privilege to gain SEC_PRIV_SECURITY? */
+	if (bits_remaining & SEC_FLAG_SYSTEM_SECURITY) {
+		if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
+			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
+		} else {
+			return NT_STATUS_PRIVILEGE_NOT_HELD;
+		}
+	}
+
+	/* TODO: remove this, as it is file server specific */
+	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
+	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
+	}
+	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
+	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
+	}
+
+	if ((bits_remaining & SEC_STD_WRITE_OWNER) &&
+	     security_token_has_privilege(token, SEC_PRIV_TAKE_OWNERSHIP)) {
+		bits_remaining &= ~(SEC_STD_WRITE_OWNER);
+	}
 
 done:
 	if (bits_remaining != 0) {
