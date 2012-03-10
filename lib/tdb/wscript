@@ -183,7 +183,8 @@ def testonly(ctx):
         # Symlink back to source dir so it can find tests in test/
         link = os.path.join(testdir, 'test')
         if not os.path.exists(link):
-            os.symlink(os.path.abspath(os.path.normpath(os.path.join(os.path.dirname(Utils.g_module.root_path), Utils.g_module.srcdir, 'lib', 'tdb', 'test'))), link)
+            os.symlink(os.path.abspath(os.path.join(env.cwd, 'test')), link)
+
         for f in 'tdb1-run-3G-file', 'tdb1-run-bad-tdb-header', 'tdb1-run', 'tdb1-run-check', 'tdb1-run-corrupt', 'tdb1-run-die-during-transaction', 'tdb1-run-endian', 'tdb1-run-incompatible', 'tdb1-run-nested-transactions', 'tdb1-run-nested-traverse', 'tdb1-run-no-lock-during-traverse', 'tdb1-run-oldhash', 'tdb1-run-open-during-transaction', 'tdb1-run-readonly-check', 'tdb1-run-rwlock-check', 'tdb1-run-summary', 'tdb1-run-transaction-expand', 'tdb1-run-traverse-in-transaction', 'tdb1-run-wronghash-fail', 'tdb1-run-zero-append':
             cmd = "cd " + testdir + " && " + os.path.abspath(os.path.join(Utils.g_module.blddir, f)) + " > test-output 2>&1"
             print("..." + f)
