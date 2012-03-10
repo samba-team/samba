@@ -22,7 +22,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
-#include "tsocket.h"
+#include "../lib/tsocket/tsocket.h"
 
 /*
  * this is the entry point if SMB2 is selected via
