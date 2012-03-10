@@ -35,6 +35,8 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 {
 	struct dns_res_rec *ans = *answers;
 	uint16_t ai = *ancount;
+	char *tmp;
+	uint32_t i;
 
 	ZERO_STRUCT(ans[ai]);
 
@@ -69,7 +71,16 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 	case DNS_QTYPE_PTR:
 		ans[ai].rdata.ptr_record = talloc_strdup(ans, rec->data.ptr);
 		break;
+	case DNS_QTYPE_TXT:
+		tmp = talloc_asprintf(ans, "\"%s\"", rec->data.txt.str[0]);
+		for (i=1; i<rec->data.txt.count; i++) {
+			tmp = talloc_asprintf_append(tmp, " \"%s\"",
+						     rec->data.txt.str[i]);
+		}
+		ans[ai].rdata.txt_record.txt = tmp;
+		break;
 	default:
+		DEBUG(0, ("Got unhandled type %u query.\n", rec->wType));
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
