@@ -1544,10 +1544,9 @@ bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,
                  talloc
                  KRB5_WRAP
                  LIBINIPARSER
-                 SLCACHE
                  libsmb
                  popt_samba3
-                 LIBADS_SERVER''',
+                 LIBNTLMSSP gse gensec''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('timelimit',

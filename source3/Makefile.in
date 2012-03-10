@@ -1537,8 +1537,7 @@ TDBTORTURE_OBJ = @tdbdir@/tools/tdbtorture.o $(LIBREPLACE_OBJ) \
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o
 
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} \
-		libsmb/samlogon_cache.o \
-		$(LIBADS_SERVER_OBJ) \
+	        ${LIBADS_SERVER_OBJ} \
 		$(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(WBCOMMON_OBJ) \
 		$(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
