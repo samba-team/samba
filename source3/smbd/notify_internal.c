@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2006
@@ -62,7 +62,7 @@ struct notify_list {
 
 static NTSTATUS notify_remove_all(struct notify_context *notify,
 				  const struct server_id *server);
-static void notify_handler(struct messaging_context *msg_ctx, void *private_data, 
+static void notify_handler(struct messaging_context *msg_ctx, void *private_data,
 			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data);
 
 /*
@@ -84,7 +84,7 @@ static int notify_destructor(struct notify_context *notify)
   talloc_free(). We need the messaging_ctx to allow for notifications
   via internal messages
 */
-struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server, 
+struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 				   struct messaging_context *messaging_ctx,
 				   struct event_context *ev,
 				   connection_struct *conn)
@@ -129,7 +129,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 
 	/* register with the messaging subsystem for the notify
 	   message type */
-	messaging_register(notify->messaging_ctx, notify, 
+	messaging_register(notify->messaging_ctx, notify,
 			   MSG_PVFS_NOTIFY, notify_handler);
 
 	notify->sys_notify_ctx = sys_notify_context_create(conn, notify, ev);
@@ -315,7 +315,7 @@ static NTSTATUS notify_save(struct notify_context *notify, struct db_record *rec
 /*
   handle incoming notify messages
 */
-static void notify_handler(struct messaging_context *msg_ctx, void *private_data, 
+static void notify_handler(struct messaging_context *msg_ctx, void *private_data,
 			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
 {
 	struct notify_context *notify = talloc_get_type(private_data, struct notify_context);
@@ -342,13 +342,13 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private_data
 		}
 	}
 
-	talloc_free(tmp_ctx);	
+	talloc_free(tmp_ctx);
 }
 
 /*
   callback from sys_notify telling us about changes from the OS
 */
-static void sys_notify_callback(struct sys_notify_context *ctx, 
+static void sys_notify_callback(struct sys_notify_context *ctx,
 				void *ptr, struct notify_event *ev)
 {
 	struct notify_list *listel = talloc_get_type(ptr, struct notify_list);
@@ -371,7 +371,7 @@ static NTSTATUS notify_add_array(struct notify_context *notify, struct db_record
 
 	/* possibly expand the depths array */
 	if (depth >= notify->array->num_depths) {
-		d = talloc_realloc(notify->array, notify->array->depth, 
+		d = talloc_realloc(notify->array, notify->array->depth,
 				   struct notify_depth, depth+1);
 		NT_STATUS_HAVE_NO_MEMORY(d);
 		for (i=notify->array->num_depths;i<=depth;i++) {
@@ -506,7 +506,7 @@ static void notify_add_onelevel(struct notify_context *notify,
   directory handle.
 */
 NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
-		    void (*callback)(void *, const struct notify_event *), 
+		    void (*callback)(void *, const struct notify_event *),
 		    void *private_data)
 {
 	struct notify_entry e = *e0;
@@ -562,7 +562,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		  to remove bits handled by the backend
 		*/
 		status = sys_notify_watch(notify->sys_notify_ctx, &e,
-					  sys_notify_callback, listel, 
+					  sys_notify_callback, listel,
 					  &listel->sys_notify_handle);
 		if (NT_STATUS_IS_OK(status)) {
 			talloc_steal(listel, listel->sys_notify_handle);
@@ -748,7 +748,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 	}
 
 	if (i < d->num_entries-1) {
-		memmove(&d->entries[i], &d->entries[i+1], 
+		memmove(&d->entries[i], &d->entries[i+1],
 			sizeof(d->entries[i])*(d->num_entries-(i+1)));
 	}
 	d->num_entries--;
@@ -786,7 +786,7 @@ static NTSTATUS notify_remove_all(struct notify_context *notify,
 		for (i=0;i<d->num_entries;i++) {
 			if (cluster_id_equal(server, &d->entries[i].server)) {
 				if (i < d->num_entries-1) {
-					memmove(&d->entries[i], &d->entries[i+1], 
+					memmove(&d->entries[i], &d->entries[i+1],
 						sizeof(d->entries[i])*(d->num_entries-(i+1)));
 				}
 				i--;
@@ -831,7 +831,7 @@ static NTSTATUS notify_send(struct notify_context *notify, struct notify_entry *
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	status = messaging_send(notify->messaging_ctx, e->server, 
+	status = messaging_send(notify->messaging_ctx, e->server,
 				MSG_PVFS_NOTIFY, &data);
 	talloc_free(tmp_ctx);
 	return status;
