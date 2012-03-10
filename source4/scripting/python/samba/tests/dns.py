@@ -429,6 +429,45 @@ class DNSTest(TestCase):
         self.assertEquals(response.answers[0].rdata.txt, '"This is a test" "and this is a test, too"')
 
 
+    def test_delete_record(self):
+        "Test if deleting records works"
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = self.get_dns_domain()
+
+        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        updates.append(u)
+        self.finish_name_packet(p, updates)
+
+        updates = []
+        r = dns.res_rec()
+        r.name = "textrec.%s" % self.get_dns_domain()
+        r.rr_type = dns.DNS_QTYPE_TXT
+        r.rr_class = dns.DNS_QCLASS_NONE
+        r.ttl = 0
+        r.length = 0xffff
+        r.rdata = dns.txt_record()
+        r.rdata.txt = '"This is a test"'
+        updates.append(r)
+        p.nscount = len(updates)
+        p.nsrecs = updates
+
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "textrec.%s" % self.get_dns_domain()
+        q = self.make_name_question(name, dns.DNS_QTYPE_TXT, dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXDOMAIN)
+
+
 if __name__ == "__main__":
     import unittest
     unittest.main()

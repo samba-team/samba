@@ -628,6 +628,10 @@ static WERROR handle_one_update(struct dns_server *dns,
 				ZERO_STRUCT(recs[i]);
 			}
 		}
+
+		werror = dns_replace_records(dns, mem_ctx, dn,
+					     needs_add, recs, rcount);
+		W_ERROR_NOT_OK_RETURN(werror);
 	}
 
 	return WERR_OK;
