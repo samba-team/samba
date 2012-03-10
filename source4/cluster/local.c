@@ -23,7 +23,7 @@
 #include "cluster/cluster.h"
 #include "cluster/cluster_private.h"
 #include "tdb_compat.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "system/filesys.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/server_id.h"

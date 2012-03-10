@@ -30,7 +30,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "smbd/smbd.h"
 #include "messages.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "util_tdb.h"
 #include "lib/param/param.h"
 

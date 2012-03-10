@@ -27,7 +27,7 @@
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/security.h"
 #include "tdb_compat.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
 #include "param/param.h"

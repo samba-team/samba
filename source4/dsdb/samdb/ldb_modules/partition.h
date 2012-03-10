@@ -21,7 +21,7 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <ldb_module.h>
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "system/locale.h"

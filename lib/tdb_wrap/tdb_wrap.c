@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "lib/util/dlinklist.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/param/param.h"
 
 /* FIXME: TDB2 does this internally, so no need to wrap multiple opens! */

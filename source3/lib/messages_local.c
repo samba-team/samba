@@ -45,7 +45,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "messages.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/param/param.h"
 
 struct messaging_tdb_context {

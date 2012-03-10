@@ -28,7 +28,7 @@
 #include "../lib/param/param.h"
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 
 #define SECRETS_SCHANNEL_STATE "SECRETS/SCHANNEL"
 

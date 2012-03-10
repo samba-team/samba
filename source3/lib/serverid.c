@@ -23,7 +23,7 @@
 #include "util_tdb.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/param/param.h"
 #include "ctdbd_conn.h"
 #include "messages.h"

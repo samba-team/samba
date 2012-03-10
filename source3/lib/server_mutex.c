@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "util_tdb.h"
 #include "lib/param/param.h"
 

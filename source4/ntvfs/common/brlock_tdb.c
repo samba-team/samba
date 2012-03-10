@@ -28,7 +28,7 @@
 #include "system/filesys.h"
 #include "tdb_compat.h"
 #include "messaging/messaging.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/libcli.h"
 #include "cluster/cluster.h"

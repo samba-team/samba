@@ -1,0 +1,8 @@
+#!/usr/bin/python
+
+bld.SAMBA_LIBRARY('tdb-wrap',
+                  source='tdb_wrap.c',
+                  deps='tdb_compat talloc samba-util samba-hostconfig',
+                  private_library=True,
+                  local_include=False
+                 )
