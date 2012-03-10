@@ -108,15 +108,15 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 	connection_struct *conn = handle->conn;
 	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 	struct smb_filename *smb_fname_cpath = NULL;
-	NTSTATUS status;
-	int ret = -1;
-
-#if defined(DARWINOS) || (defined(BSD) && defined(BSD_STATVFS_BSIZE))
 	struct vfs_statvfs_struct statbuf;
+	NTSTATUS status;
+	int ret;
+
 	ZERO_STRUCT(statbuf);
-	sys_statvfs(conn->connectpath, &statbuf);
-	caps = statbuf.FsCapabilities;
-#endif
+	ret = sys_statvfs(conn->connectpath, &statbuf);
+	if (ret == 0) {
+		caps = statbuf.FsCapabilities;
+	}
 
 	*p_ts_res = TIMESTAMP_SET_SECONDS;
 

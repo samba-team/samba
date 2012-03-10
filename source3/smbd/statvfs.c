@@ -151,12 +151,17 @@ static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 		statbuf->TotalFileNodes = statvfs_buf.f_files;
 		statbuf->FreeFileNodes = statvfs_buf.f_ffree;
 		statbuf->FsIdentifier = statvfs_buf.f_fsid;
-
-		/* Good defaults for Linux filesystems are case sensitive
-		 * and case preserving.
+		/* Try to extrapolate some of the fs flags into the
+		 * capabilities
 		 */
 		statbuf->FsCapabilities =
 		    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+#ifdef ST_QUOTA
+		if (statvfs_buf.f_flag & ST_QUOTA)
+			statbuf->FsCapabilities |= FILE_VOLUME_QUOTAS;
+#endif
+		if (statvfs_buf.f_flag & ST_RDONLY)
+			statbuf->FsCapabilities |= FILE_READ_ONLY_VOLUME;
 	}
 	return result;
 }
