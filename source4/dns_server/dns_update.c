@@ -285,6 +285,10 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     const struct dns_res_rec *rrec,
 			     struct dnsp_DnssrvRpcRecord *r)
 {
+	char *tmp;
+	char *txt_record_txt;
+	char *saveptr = NULL;
+
 	if (rrec->rr_type == DNS_QTYPE_ALL) {
 		return DNS_ERR(FORMAT_ERROR);
 	}
@@ -334,15 +338,30 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->data.mx.nameTarget);
 		break;
 	case DNS_QTYPE_TXT:
-		/* FIXME: This converts the TXT rr data into a single string.
-		 *        Since dns server does not reply to qtype TXT,
-		 *        this is not yet relevant.
-		 */
-		r->data.txt.count = 1;
-		r->data.txt.str = talloc_array(mem_ctx, const char *, 1);
+		r->data.txt.count = 0;
+		r->data.txt.str = talloc_array(mem_ctx, const char *,
+					       r->data.txt.count);
 		W_ERROR_HAVE_NO_MEMORY(r->data.txt.str);
-		r->data.txt.str[0] = talloc_strdup(mem_ctx, rrec->rdata.txt_record.txt);
-		W_ERROR_HAVE_NO_MEMORY(r->data.txt.str[0]);
+
+		txt_record_txt = talloc_strdup(r->data.txt.str,
+					       rrec->rdata.txt_record.txt);
+		W_ERROR_HAVE_NO_MEMORY(txt_record_txt);
+
+		tmp = strtok_r(txt_record_txt, "\"", &saveptr);
+		while (tmp) {
+			if (strcmp(tmp, " ") == 0) {
+				tmp = strtok_r(NULL, "\"", &saveptr);
+				continue;
+			}
+			r->data.txt.str = talloc_realloc(mem_ctx, r->data.txt.str, const char *,
+							r->data.txt.count+1);
+			r->data.txt.str[r->data.txt.count] = talloc_strdup(r->data.txt.str, tmp);
+			W_ERROR_HAVE_NO_MEMORY(r->data.txt.str[r->data.txt.count]);
+
+			r->data.txt.count++;
+			tmp = strtok_r(NULL, "\"", &saveptr);
+		}
+
 		break;
 	default:
 		DEBUG(0, ("Got a qytpe of %d\n", rrec->rr_type));
@@ -390,6 +409,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 	case DNS_QTYPE_TXT:
 		break;
 	default:
+		DEBUG(0, ("Can't handle updates of type %u yet\n",
+			  update->rr_type));
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
