@@ -8,6 +8,7 @@
    Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000
    Copyright (C) Robert O'Callahan 2006 (added cached credential code).
    Copyright (C) Kai Blin <kai@samba.org> 2008
+   Copyright (C) Simo Sorce 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,6 +42,9 @@
 #include "librpc/gen_ndr/krb5pac.h"
 #include "../lib/util/asn1.h"
 #include "auth/common_auth.h"
+#include "source3/include/auth.h"
+#include "source3/auth/proto.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"
@@ -709,6 +713,145 @@ static NTSTATUS ntlm_auth_generate_session_info(struct auth4_context *auth_conte
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ntlm_auth_generate_session_info_pac(struct auth4_context *auth_ctx,
+						    TALLOC_CTX *mem_ctx,
+						    struct smb_krb5_context *smb_krb5_context,
+						    DATA_BLOB *pac_blob,
+						    const char *princ_name,
+						    const struct tsocket_address *remote_address,
+						    uint32_t session_info_flags,
+						    struct auth_session_info **session_info)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct PAC_DATA *pac_data = NULL;
+	struct PAC_LOGON_INFO *logon_info = NULL;
+	unsigned int i;
+	char *unixuser;
+	NTSTATUS status;
+	char *domain = NULL;
+	char *realm = NULL;
+	char *user = NULL;
+	char *p;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (pac_blob) {
+#ifdef HAVE_KRB5
+		status = kerberos_decode_pac(tmp_ctx,
+				     *pac_blob,
+				     NULL, NULL, NULL, NULL, 0, &pac_data);
+#else
+		status = NT_STATUS_ACCESS_DENIED;
+#endif
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		/* get logon name and logon info */
+		for (i = 0; i < pac_data->num_buffers; i++) {
+			struct PAC_BUFFER *data_buf = &pac_data->buffers[i];
+
+			switch (data_buf->type) {
+			case PAC_TYPE_LOGON_INFO:
+				if (!data_buf->info) {
+					break;
+				}
+				logon_info = data_buf->info->logon_info.info;
+				break;
+			default:
+				break;
+			}
+		}
+		if (!logon_info) {
+			DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
+			status = NT_STATUS_NOT_FOUND;
+			goto done;
+		}
+	}
+
+	DEBUG(3, ("Kerberos ticket principal name is [%s]\n", princ_name));
+
+	p = strchr_m(princ_name, '@');
+	if (!p) {
+		DEBUG(3, ("[%s] Doesn't look like a valid principal\n",
+			  princ_name));
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	user = talloc_strndup(mem_ctx, princ_name, p - princ_name);
+	if (!user) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	realm = talloc_strdup(talloc_tos(), p + 1);
+	if (!realm) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!strequal(realm, lp_realm())) {
+		DEBUG(3, ("Ticket for foreign realm %s@%s\n", user, realm));
+		if (!lp_allow_trusted_domains()) {
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	}
+
+	if (logon_info && logon_info->info3.base.logon_domain.string) {
+		domain = talloc_strdup(mem_ctx,
+					logon_info->info3.base.logon_domain.string);
+		if (!domain) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		DEBUG(10, ("Domain is [%s] (using PAC)\n", domain));
+	} else {
+
+		/* If we have winbind running, we can (and must) shorten the
+		   username by using the short netbios name. Otherwise we will
+		   have inconsistent user names. With Kerberos, we get the
+		   fully qualified realm, with ntlmssp we get the short
+		   name. And even w2k3 does use ntlmssp if you for example
+		   connect to an ip address. */
+
+		wbcErr wbc_status;
+		struct wbcDomainInfo *info = NULL;
+
+		DEBUG(10, ("Mapping [%s] to short name using winbindd\n",
+			   realm));
+
+		wbc_status = wbcDomainInfo(realm, &info);
+
+		if (WBC_ERROR_IS_OK(wbc_status)) {
+			domain = talloc_strdup(mem_ctx,
+						info->short_name);
+			wbcFreeMemory(info);
+		} else {
+			DEBUG(3, ("Could not find short name: %s\n",
+				  wbcErrorString(wbc_status)));
+			domain = talloc_strdup(mem_ctx, realm);
+		}
+		if (!domain) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		DEBUG(10, ("Domain is [%s] (using Winbind)\n", domain));
+	}
+
+	unixuser = talloc_asprintf(tmp_ctx, "%s%c%s", domain, winbind_separator(), user);
+	if (!unixuser) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = ntlm_auth_generate_session_info(auth_ctx, mem_ctx, unixuser, NULL, session_info_flags, session_info);
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
+}
+
+
+
 /**
  * Return the challenge as determined by the authentication subsystem 
  * @return an 8 byte random challenge
@@ -916,6 +1059,7 @@ static struct auth4_context *make_auth4_context_ntlm_auth(TALLOC_CTX *mem_ctx, b
 		return NULL;
 	}
 	auth4_context->generate_session_info = ntlm_auth_generate_session_info;
+	auth4_context->generate_session_info_pac = ntlm_auth_generate_session_info_pac;
 	auth4_context->get_ntlm_challenge = ntlm_auth_get_challenge;
 	auth4_context->set_ntlm_challenge = ntlm_auth_set_challenge;
 	auth4_context->challenge_may_be_modified = ntlm_auth_may_set_challenge;
