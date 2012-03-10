@@ -1090,6 +1090,8 @@ sub provision_dc($$)
 	my ($self, $prefix) = @_;
 
 	print "PROVISIONING DC...";
+        my $extra_conf_options = "netbios aliases = localDC1-a
+allow dns updates = True";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
@@ -1097,7 +1099,7 @@ sub provision_dc($$)
 				   "samba.example.com",
 				   "2008",
 				   "locDCpass1",
-				   undef, "netbios aliases = localDC1-a");
+				   undef, $extra_conf_options);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
