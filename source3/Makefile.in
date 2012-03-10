@@ -3398,7 +3398,7 @@ cleanlibs::
 		../libcli/*.o ../libcli/*/*.o ../libcli/*/*/*.o \
 		../librpc/*/*.o \
 		../libgpo/*.o ../libgpo/*/*.o \
-		../libds/*.o ../libds/*/*.o ../dynconfig/*.o
+		../libds/*.o ../libds/*/*.o ../dynconfig/*.o ../auth/*.o ../auth/*/*.o
 
 clean:: cleanlibs
 	-rm -f include/build_env.h
