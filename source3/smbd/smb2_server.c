@@ -1307,7 +1307,7 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 
 	needed_charge = (data_length - 1)/ 65536 + 1;
 
-	DEBUG(10, ("mid %lu, CreditCharge: %d, NeededCharge: %d\n",
+	DEBUG(10, ("mid %llu, CreditCharge: %d, NeededCharge: %d\n",
 		   BVAL(inhdr, SMB2_HDR_MESSAGE_ID), credit_charge,
 		   needed_charge));
 
