@@ -350,7 +350,12 @@ def configure(conf):
     conf.CHECK_HEADERS('stdio.h sys/types.h sys/stat.h stdlib.h stddef.h memory.h string.h',
                        add_headers=True)
     conf.CHECK_HEADERS('strings.h inttypes.h stdint.h unistd.h minix/config.h', add_headers=True)
-    conf.CHECK_HEADERS('ctype.h standards.h stdbool.h stdint.h stdarg.h vararg.h', add_headers=True)
+    conf.CHECK_HEADERS('ctype.h', add_headers=True)
+
+    if sys.platform != 'darwin':
+        conf.CHECK_HEADERS('standards.h', add_headers=True)
+
+    conf.CHECK_HEADERS('stdbool.h stdint.h stdarg.h vararg.h', add_headers=True)
     conf.CHECK_HEADERS('limits.h assert.h')
 
     # see if we need special largefile flags
