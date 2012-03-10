@@ -77,24 +77,13 @@ enum ntlm_auth_cli_state {
 	CLIENT_ERROR
 };
 
-enum ntlm_auth_svr_state {
-	SERVER_INITIAL = 0,
-	SERVER_CHALLENGE,
-	SERVER_FINISHED,
-	SERVER_ERROR
-};
-
 struct ntlm_auth_state {
 	TALLOC_CTX *mem_ctx;
 	enum stdio_helper_mode helper_mode;
 	enum ntlm_auth_cli_state cli_state;
-	enum ntlm_auth_svr_state svr_state;
 	struct ntlmssp_state *ntlmssp_state;
-	struct gensec_security *gensec_security;
 	uint32_t neg_flags;
 	char *want_feature_list;
-	char *spnego_mech;
-	char *spnego_mech_oid;
 	bool have_session_key;
 	DATA_BLOB session_key;
 	DATA_BLOB initial_message;
@@ -1257,173 +1246,6 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
-static void manage_squid_ntlmssp_request_int(struct loadparm_context *lp_ctx,
-					     struct ntlm_auth_state *state,
-					     char *buf, int length,
-					     TALLOC_CTX *mem_ctx,
-					     char **response)
-{
-	DATA_BLOB request, reply;
-	NTSTATUS nt_status;
-
-	if (strlen(buf) < 2) {
-		DEBUG(1, ("NTLMSSP query [%s] invalid\n", buf));
-		*response = talloc_strdup(mem_ctx, "BH NTLMSSP query invalid");
-		return;
-	}
-
-	if (strlen(buf) > 3) {
-		if(strncmp(buf, "SF ", 3) == 0){
-			DEBUG(10, ("Setting flags to negotioate\n"));
-			TALLOC_FREE(state->want_feature_list);
-			state->want_feature_list = talloc_strdup(state->mem_ctx,
-					buf+3);
-			*response = talloc_strdup(mem_ctx, "OK");
-			return;
-		}
-		request = base64_decode_data_blob(buf + 3);
-	} else {
-		request = data_blob_null;
-	}
-
-	if ((strncmp(buf, "PW ", 3) == 0)) {
-		/* The calling application wants us to use a local password
-		 * (rather than winbindd) */
-
-		opt_password = SMB_STRNDUP((const char *)request.data,
-				request.length);
-
-		if (opt_password == NULL) {
-			DEBUG(1, ("Out of memory\n"));
-			*response = talloc_strdup(mem_ctx, "BH Out of memory");
-			data_blob_free(&request);
-			return;
-		}
-
-		*response = talloc_strdup(mem_ctx, "OK");
-		data_blob_free(&request);
-		return;
-	}
-
-	if (strncmp(buf, "YR", 2) == 0) {
-		TALLOC_FREE(state->gensec_security);
-		state->svr_state = SERVER_INITIAL;
-	} else if (strncmp(buf, "KK", 2) == 0) {
-		/* No special preprocessing required */
-	} else if (strncmp(buf, "GF", 2) == 0) {
-		DEBUG(10, ("Requested negotiated NTLMSSP flags\n"));
-
-		if (state->svr_state == SERVER_FINISHED) {
-			*response = talloc_asprintf(mem_ctx, "GF 0x%08x",
-						    gensec_ntlmssp_neg_flags(state->gensec_security));
-		}
-		else {
-			*response = talloc_strdup(mem_ctx, "BH\n");
-		}
-		data_blob_free(&request);
-		return;
-	} else if (strncmp(buf, "GK", 2) == 0) {
-		DEBUG(10, ("Requested NTLMSSP session key\n"));
-		if(state->have_session_key) {
-			DATA_BLOB session_key;
-			char *key64;
-			nt_status = gensec_session_key(state->gensec_security, talloc_tos(), &session_key);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				*response = talloc_asprintf(
-					mem_ctx, "BH %s", nt_errstr(nt_status));
-				return;
-			}
-			key64 = base64_encode_data_blob(state->mem_ctx, session_key);
-			data_blob_free(&session_key);
-			*response = talloc_asprintf(mem_ctx, "GK %s",
-						 key64 ? key64 : "<NULL>");
-			TALLOC_FREE(key64);
-		} else {
-			*response = talloc_strdup(mem_ctx, "BH");
-		}
-
-		data_blob_free(&request);
-		return;
-	} else {
-		DEBUG(1, ("NTLMSSP query [%s] invalid\n", buf));
-		*response = talloc_strdup(mem_ctx, "BH NTLMSSP query invalid");
-		return;
-	}
-
-	if (!state->gensec_security) {
-		nt_status = ntlm_auth_start_ntlmssp_server(state, 
-							   lp_ctx,
-				&state->gensec_security);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			*response = talloc_asprintf(
-				mem_ctx, "BH %s", nt_errstr(nt_status));
-			return;
-		}
-		gensec_want_feature_list(state->gensec_security,
-					 state->want_feature_list);
-	}
-
-	DEBUG(10, ("got NTLMSSP packet:\n"));
-	dump_data(10, request.data, request.length);
-
-	nt_status = gensec_update(state->gensec_security, talloc_tos(), NULL, request, &reply);
-
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		char *reply_base64 = base64_encode_data_blob(state->mem_ctx,
-				reply);
-		*response = talloc_asprintf(mem_ctx, "TT %s", reply_base64);
-		TALLOC_FREE(reply_base64);
-		data_blob_free(&reply);
-		state->svr_state = SERVER_CHALLENGE;
-		DEBUG(10, ("NTLMSSP challenge\n"));
-	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
-		*response = talloc_asprintf(mem_ctx, "BH %s",
-					 nt_errstr(nt_status));
-		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
-
-		TALLOC_FREE(state->gensec_security);
-	} else if (!NT_STATUS_IS_OK(nt_status)) {
-		*response = talloc_asprintf(mem_ctx, "NA %s",
-					 nt_errstr(nt_status));
-		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
-	} else {
-		struct auth_session_info *session_info;
-		nt_status = gensec_session_info(state->gensec_security, state->gensec_security, &session_info);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
-			TALLOC_FREE(state->gensec_security);
-			return;
-		}
-		*response = talloc_asprintf(
-			mem_ctx, "AF %s",
-			session_info->unix_info->unix_name);
-		DEBUG(10, ("NTLMSSP OK!\n"));
-
-		state->have_session_key = true;
-		state->svr_state = SERVER_FINISHED;
-	}
-
-	data_blob_free(&request);
-}
-
-static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode,
-				   struct loadparm_context *lp_ctx,
-				   struct ntlm_auth_state *state,
-					 char *buf, int length, void **private2)
-{
-	char *response;
-
-	manage_squid_ntlmssp_request_int(lp_ctx, state,buf, length,
-					 talloc_tos(), &response);
-
-	if (response == NULL) {
-		x_fprintf(x_stdout, "BH Out of memory\n");
-		return;
-	}
-	x_fprintf(x_stdout, "%s\n", response);
-	TALLOC_FREE(response);
-}
-
 static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode,
 				   struct loadparm_context *lp_ctx,
 				   struct ntlm_auth_state *state,
@@ -1920,6 +1742,15 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 				   struct loadparm_context *lp_ctx,
 				   struct ntlm_auth_state *state,
 				      char *buf, int length, void **private2)
+{
+	manage_gensec_request(stdio_helper_mode, lp_ctx, buf, length, &state->gensec_private_1);
+	return;
+}
+
+static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode,
+				   struct loadparm_context *lp_ctx,
+				   struct ntlm_auth_state *state,
+					 char *buf, int length, void **private2)
 {
 	manage_gensec_request(stdio_helper_mode, lp_ctx, buf, length, &state->gensec_private_1);
 	return;
