@@ -30,7 +30,7 @@
 #include "../librpc/gen_ndr/dcerpc.h"
 #include "lib/util/asn1.h"
 
-#if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
+#if defined(HAVE_KRB5)
 
 #include "smb_krb5.h"
 #include "gse_krb5.h"
@@ -1180,4 +1180,4 @@ const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.priority       = GENSEC_GSSAPI
 };
 
-#endif /* HAVE_KRB5 && HAVE_GSS_WRAP_IOV */
+#endif /* HAVE_KRB5 */

@@ -85,7 +85,7 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 
 	gensec_settings->backends[idx++] = &gensec_ntlmssp3_client_ops;
 
-#if defined(HAVE_KRB5) && defined(HAVE_GSS_WRAP_IOV)
+#if defined(HAVE_KRB5)
 	gensec_settings->backends[idx++] = &gensec_gse_krb5_security_ops;
 #endif
 
