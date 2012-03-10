@@ -333,7 +333,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 	}
 
 	if (sconn->smb2.supports_multicredit) {
-		credit_charge = IVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
+		credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
 		credit_charge = MAX(credit_charge, 1);
 	}
 
@@ -1297,7 +1297,7 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 	}
 
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
-	credit_charge = IVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
+	credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
 
 	/* requests larger than 64 KB need credit charge */
 	if (credit_charge == 0 && data_length > 65536) {
