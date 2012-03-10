@@ -386,8 +386,10 @@ static WERROR handle_one_update(struct dns_server *dns,
 	WERROR werror;
 	bool needs_add = false;
 
-	DEBUG(1, ("Looking at record: \n"));
-	NDR_PRINT_DEBUG(dns_res_rec, discard_const(update));
+	DEBUG(2, ("Looking at record: \n"));
+	if (DEBUGLVL(2)) {
+		NDR_PRINT_DEBUG(dns_res_rec, discard_const(update));
+	}
 
 	switch (update->rr_type) {
 	case DNS_QTYPE_A:
@@ -700,7 +702,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 		return DNS_ERR(FORMAT_ERROR);
 	}
 
-	DEBUG(0, ("Got a dns update request.\n"));
+	DEBUG(2, ("Got a dns update request.\n"));
 
 	for (z = dns->zones; z != NULL; z = z->next) {
 		bool match;
@@ -732,7 +734,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	 * key-based GSSAPI, key-based bind-style TSIG and "never" as
 	 * smb.conf options. */
 	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) != DNS_UPDATE_ON) {
-		DEBUG(0, ("Update not allowed."));
+		DEBUG(0, ("Update not allowed.\n"));
 		return DNS_ERR(REFUSED);
 	}
 
