@@ -24,9 +24,10 @@
  *
  */
 
+#include "includes.h"
+
 #include "interact.h"
 
-#include "includes.h"
 #include <termios.h>
 
 static const char* get_editor(void) {
