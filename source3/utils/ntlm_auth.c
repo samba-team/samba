@@ -1130,12 +1130,13 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
 	
 	gensec_init();
 	
-	gensec_settings->backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
-	
+	/* These need to be in priority order, krb5 before NTLMSSP */
 #if defined(HAVE_KRB5)
 	gensec_settings->backends[idx++] = &gensec_gse_krb5_security_ops;
 #endif
 	
+	gensec_settings->backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
+
 	gensec_settings->backends[idx++] = gensec_security_by_oid(NULL,
 								  GENSEC_OID_SPNEGO);
 	
