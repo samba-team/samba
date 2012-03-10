@@ -59,7 +59,7 @@ enum stdio_helper_mode {
 	SQUID_2_5_BASIC,
 	SQUID_2_5_NTLMSSP,
 	NTLMSSP_CLIENT_1,
-	GSS_SPNEGO,
+	GSS_SPNEGO_SERVER,
 	GSS_SPNEGO_CLIENT,
 	NTLM_SERVER_1,
 	NTLM_CHANGE_PASSWORD_1,
@@ -94,31 +94,52 @@ struct ntlm_auth_state {
 	bool have_session_key;
 	DATA_BLOB session_key;
 	DATA_BLOB initial_message;
+	void *gensec_private_1;
 };
+typedef void (*stdio_helper_function)(enum stdio_helper_mode stdio_helper_mode,
+				      struct loadparm_context *lp_ctx,
+				      struct ntlm_auth_state *state, char *buf,
+					int length, void **private2);
 
-typedef void (*stdio_helper_function)(struct ntlm_auth_state *state, char *buf,
-					int length);
+static void manage_squid_request(enum stdio_helper_mode stdio_helper_mode,
+				 struct loadparm_context *lp_ctx,
+				 struct ntlm_auth_state *state,
+				 stdio_helper_function fn, void **private2);
 
-static void manage_squid_basic_request (struct ntlm_auth_state *state,
-					char *buf, int length);
+static void manage_squid_basic_request (enum stdio_helper_mode stdio_helper_mode,
+				      struct loadparm_context *lp_ctx,
+				      struct ntlm_auth_state *state,
+					char *buf, int length, void **private2);
 
-static void manage_squid_ntlmssp_request (struct ntlm_auth_state *state,
-					char *buf, int length);
+static void manage_squid_ntlmssp_request (enum stdio_helper_mode stdio_helper_mode,
+				      struct loadparm_context *lp_ctx,
+				      struct ntlm_auth_state *state,
+					char *buf, int length, void **private2);
 
-static void manage_client_ntlmssp_request (struct ntlm_auth_state *state,
-					char *buf, int length);
+static void manage_client_ntlmssp_request (enum stdio_helper_mode stdio_helper_mode,
+				      struct loadparm_context *lp_ctx,
+				      struct ntlm_auth_state *state,
+					char *buf, int length, void **private2);
 
-static void manage_gss_spnego_request (struct ntlm_auth_state *state,
-					char *buf, int length);
+static void manage_gss_spnego_request (enum stdio_helper_mode stdio_helper_mode,
+				      struct loadparm_context *lp_ctx,
+				      struct ntlm_auth_state *state,
+					char *buf, int length, void **private2);
 
-static void manage_gss_spnego_client_request (struct ntlm_auth_state *state,
-					char *buf, int length);
+static void manage_gss_spnego_client_request (enum stdio_helper_mode stdio_helper_mode,
+				      struct loadparm_context *lp_ctx,
+				      struct ntlm_auth_state *state,
+					char *buf, int length, void **private2);
 
-static void manage_ntlm_server_1_request (struct ntlm_auth_state *state,
-					char *buf, int length);
+static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode,
+				      struct loadparm_context *lp_ctx,
+				      struct ntlm_auth_state *state,
+					char *buf, int length, void **private2);
 
-static void manage_ntlm_change_password_1_request(struct ntlm_auth_state *state,
-					char *buf, int length);
+static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_helper_mode,
+				      struct loadparm_context *lp_ctx,
+				      struct ntlm_auth_state *state,
+					char *buf, int length, void **private2);
 
 static const struct {
 	enum stdio_helper_mode mode;
@@ -129,7 +150,7 @@ static const struct {
 	{ SQUID_2_5_BASIC, "squid-2.5-basic", manage_squid_basic_request},
 	{ SQUID_2_5_NTLMSSP, "squid-2.5-ntlmssp", manage_squid_ntlmssp_request},
 	{ NTLMSSP_CLIENT_1, "ntlmssp-client-1", manage_client_ntlmssp_request},
-	{ GSS_SPNEGO, "gss-spnego", manage_gss_spnego_request},
+	{ GSS_SPNEGO_SERVER, "gss-spnego", manage_gss_spnego_request},
 	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gss_spnego_client_request},
 	{ NTLM_SERVER_1, "ntlm-server-1", manage_ntlm_server_1_request},
 	{ NTLM_CHANGE_PASSWORD_1, "ntlm-change-password-1", manage_ntlm_change_password_1_request},
@@ -153,6 +174,68 @@ static const char *opt_pam_winbind_conf;
 
 const char *opt_target_service;
 const char *opt_target_hostname;
+
+
+/* This is a bit hairy, but the basic idea is to do a password callback
+   to the calling application.  The callback comes from within gensec */
+
+static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mode,
+					 struct loadparm_context *lp_ctx,
+					 struct ntlm_auth_state *state, char *buf, int length,
+					 void **password)
+{
+	DATA_BLOB in;
+	if (strlen(buf) < 2) {
+		DEBUG(1, ("query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH Query invalid\n");
+		return;
+	}
+
+	if (strlen(buf) > 3) {
+		in = base64_decode_data_blob(buf + 3);
+	} else {
+		in = data_blob(NULL, 0);
+	}
+
+	if (strncmp(buf, "PW ", 3) == 0) {
+
+		*password = talloc_strndup(NULL,
+					   (const char *)in.data, in.length);
+
+		if (*password == NULL) {
+			DEBUG(1, ("Out of memory\n"));
+			x_fprintf(x_stdout, "BH Out of memory\n");
+			data_blob_free(&in);
+			return;
+		}
+
+		x_fprintf(x_stdout, "OK\n");
+		data_blob_free(&in);
+		return;
+	}
+	DEBUG(1, ("Asked for (and expected) a password\n"));
+	x_fprintf(x_stdout, "BH Expected a password\n");
+	data_blob_free(&in);
+}
+
+/**
+ * Callback for password credentials.  This is not async, and when
+ * GENSEC and the credentials code is made async, it will look rather
+ * different.
+ */
+
+static const char *get_password(struct cli_credentials *credentials)
+{
+	char *password = NULL;
+
+	/* Ask for a password */
+	x_fprintf(x_stdout, "PW\n");
+	credentials->priv_data = NULL;
+
+	manage_squid_request(NUM_HELPER_MODES /* bogus */, NULL, NULL, manage_gensec_get_pw_request, (void **)&password);
+	talloc_steal(credentials, password);
+	return password;
+}
 
 /**
  * A limited set of features are defined with text strings as needed
@@ -846,6 +929,7 @@ static struct auth4_context *make_auth4_context_ntlm_auth(TALLOC_CTX *mem_ctx, b
 }
 
 static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
+					       struct loadparm_context *lp_ctx,
 					       struct gensec_security **gensec_security_out)
 {
 	struct gensec_security *gensec_security;
@@ -855,7 +939,6 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	struct gensec_settings *gensec_settings;
-	struct loadparm_context *lp_ctx;
 	size_t idx = 0;
 	struct cli_credentials *server_credentials;
 	
@@ -863,13 +946,6 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
 	if (auth4_context == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
-	}
-	
-	lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_context());
-	if (lp_ctx == NULL) {
-		DEBUG(10, ("loadparm_init_s3 failed\n"));
-		TALLOC_FREE(tmp_ctx);
-		return NT_STATUS_INVALID_SERVER_STATE;
 	}
 	
 	gensec_settings = lpcfg_gensec_settings(tmp_ctx, lp_ctx);
@@ -1036,7 +1112,8 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
-static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
+static void manage_squid_ntlmssp_request_int(struct loadparm_context *lp_ctx,
+					     struct ntlm_auth_state *state,
 					     char *buf, int length,
 					     TALLOC_CTX *mem_ctx,
 					     char **response)
@@ -1130,6 +1207,7 @@ static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
 
 	if (!state->gensec_security) {
 		nt_status = ntlm_auth_start_ntlmssp_server(state, 
+							   lp_ctx,
 				&state->gensec_security);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			*response = talloc_asprintf(
@@ -1183,12 +1261,14 @@ static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
 	data_blob_free(&request);
 }
 
-static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
-					 char *buf, int length)
+static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode,
+				   struct loadparm_context *lp_ctx,
+				   struct ntlm_auth_state *state,
+					 char *buf, int length, void **private2)
 {
 	char *response;
 
-	manage_squid_ntlmssp_request_int(state, buf, length,
+	manage_squid_ntlmssp_request_int(lp_ctx, state,buf, length,
 					 talloc_tos(), &response);
 
 	if (response == NULL) {
@@ -1199,8 +1279,10 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 	TALLOC_FREE(response);
 }
 
-static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
-					 	char *buf, int length)
+static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode,
+				   struct loadparm_context *lp_ctx,
+				   struct ntlm_auth_state *state,
+						char *buf, int length, void **private2)
 {
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
@@ -1372,8 +1454,10 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 	data_blob_free(&request);
 }
 
-static void manage_squid_basic_request(struct ntlm_auth_state *state,
-					char *buf, int length)
+static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
+				   struct loadparm_context *lp_ctx,
+				   struct ntlm_auth_state *state,
+					char *buf, int length, void **private2)
 {
 	char *user, *pass;	
 	user=buf;
@@ -1399,414 +1483,300 @@ static void manage_squid_basic_request(struct ntlm_auth_state *state,
 	}
 }
 
-static void offer_gss_spnego_mechs(void) {
-
-	DATA_BLOB token;
-	struct spnego_data spnego;
-	ssize_t len;
-	char *reply_base64;
-	TALLOC_CTX *ctx = talloc_tos();
-	char *principal;
-	char *myname_lower;
-
-	ZERO_STRUCT(spnego);
-
-	myname_lower = talloc_strdup(ctx, lp_netbios_name());
-	if (!myname_lower) {
-		return;
-	}
-	strlower_m(myname_lower);
-
-	principal = talloc_asprintf(ctx, "%s$@%s", myname_lower, lp_realm());
-	if (!principal) {
-		return;
-	}
-
-	/* Server negTokenInit (mech offerings) */
-	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = talloc_array(ctx, const char *, 4);
-#ifdef HAVE_KRB5
-	spnego.negTokenInit.mechTypes[0] = talloc_strdup(ctx, OID_KERBEROS5_OLD);
-	spnego.negTokenInit.mechTypes[1] = talloc_strdup(ctx, OID_KERBEROS5);
-	spnego.negTokenInit.mechTypes[2] = talloc_strdup(ctx, OID_NTLMSSP);
-	spnego.negTokenInit.mechTypes[3] = NULL;
-#else
-	spnego.negTokenInit.mechTypes[0] = talloc_strdup(ctx, OID_NTLMSSP);
-	spnego.negTokenInit.mechTypes[1] = NULL;
-#endif
-
-
-	spnego.negTokenInit.mechListMIC = data_blob_talloc(ctx, principal,
-						    strlen(principal));
-
-	len = spnego_write_data(ctx, &token, &spnego);
-	spnego_free_data(&spnego);
-
-	if (len == -1) {
-		DEBUG(1, ("Could not write SPNEGO data blob\n"));
-		x_fprintf(x_stdout, "BH Could not write SPNEGO data blob\n");
-		return;
-	}
-
-	reply_base64 = base64_encode_data_blob(talloc_tos(), token);
-	x_fprintf(x_stdout, "TT %s *\n", reply_base64);
-
-	TALLOC_FREE(reply_base64);
-	data_blob_free(&token);
-	DEBUG(10, ("sent SPNEGO negTokenInit\n"));
-	return;
-}
-
-static void manage_gss_spnego_request(struct ntlm_auth_state *state,
-					char *buf, int length)
+static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
+				  struct loadparm_context *lp_ctx,
+				  char *buf, int length, void **private1)
 {
-	struct spnego_data request, response;
-	DATA_BLOB token;
-	DATA_BLOB raw_in_token = data_blob_null;
-	DATA_BLOB raw_out_token = data_blob_null;
-	NTSTATUS status;
-	ssize_t len;
-	TALLOC_CTX *ctx = talloc_tos();
+	DATA_BLOB in;
+	DATA_BLOB out = data_blob(NULL, 0);
+	char *out_base64 = NULL;
+	const char *reply_arg = NULL;
+	struct gensec_ntlm_state {
+		struct gensec_security *gensec_state;
+		const char *set_password;
+	};
+	struct gensec_ntlm_state *state;
 
-	const char *unix_username = NULL;
-
+	NTSTATUS nt_status;
+	bool first = false;
 	const char *reply_code;
-	char       *reply_base64;
-	char *reply_argument = NULL;
-	char *supportedMech = NULL;
+	struct cli_credentials *creds;
+
+	static char *want_feature_list = NULL;
+	static DATA_BLOB session_key;
+
+	TALLOC_CTX *mem_ctx;
+
+	if (*private1) {
+		state = (struct gensec_ntlm_state *)*private1;
+	} else {
+		state = talloc_zero(NULL, struct gensec_ntlm_state);
+		if (!state) {
+			x_fprintf(x_stdout, "BH No Memory\n");
+			exit(1);
+		}
+		*private1 = state;
+		if (opt_password) {
+			state->set_password = opt_password;
+		}
+	}
 
 	if (strlen(buf) < 2) {
-		DEBUG(1, ("SPENGO query [%s] invalid\n", buf));
-		x_fprintf(x_stdout, "BH SPENGO query invalid\n");
+		DEBUG(1, ("query [%s] invalid", buf));
+		x_fprintf(x_stdout, "BH Query invalid\n");
 		return;
+	}
+
+	if (strlen(buf) > 3) {
+		if(strncmp(buf, "SF ", 3) == 0) {
+			DEBUG(10, ("Setting flags to negotiate\n"));
+			talloc_free(want_feature_list);
+			want_feature_list = talloc_strndup(state, buf+3, strlen(buf)-3);
+			x_fprintf(x_stdout, "OK\n");
+			return;
+		}
+		in = base64_decode_data_blob(buf + 3);
+	} else {
+		in = data_blob(NULL, 0);
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		TALLOC_FREE(state->gensec_security);
-		TALLOC_FREE(state->spnego_mech);
-		TALLOC_FREE(state->spnego_mech_oid);
-	} else if (strncmp(buf, "KK", 2) == 0) {
-		;
-	} else {
-		DEBUG(1, ("SPENGO query [%s] invalid\n", buf));
-		x_fprintf(x_stdout, "BH SPENGO query invalid\n");
+		if (state->gensec_state) {
+			talloc_free(state->gensec_state);
+			state->gensec_state = NULL;
+		}
+	} else if ( (strncmp(buf, "OK", 2) == 0)) {
+		/* Just return BH, like ntlm_auth from Samba 3 does. */
+		x_fprintf(x_stdout, "BH Command expected\n");
+		data_blob_free(&in);
+		return;
+	} else if ( (strncmp(buf, "TT ", 3) != 0) &&
+		    (strncmp(buf, "KK ", 3) != 0) &&
+		    (strncmp(buf, "AF ", 3) != 0) &&
+		    (strncmp(buf, "NA ", 3) != 0) &&
+		    (strncmp(buf, "UG", 2) != 0) &&
+		    (strncmp(buf, "PW ", 3) != 0) &&
+		    (strncmp(buf, "GK", 2) != 0) &&
+		    (strncmp(buf, "GF", 2) != 0)) {
+		DEBUG(1, ("SPNEGO request [%s] invalid prefix\n", buf));
+		x_fprintf(x_stdout, "BH SPNEGO request invalid prefix\n");
+		data_blob_free(&in);
 		return;
 	}
 
-	if ( (strlen(buf) == 2)) {
+	mem_ctx = talloc_named(NULL, 0, "manage_gensec_request internal mem_ctx");
 
-		/* no client data, get the negTokenInit offering
-                   mechanisms */
+	/* setup gensec */
+	if (!(state->gensec_state)) {
+		switch (stdio_helper_mode) {
+		case GSS_SPNEGO_CLIENT:
+		case NTLMSSP_CLIENT_1:
+			/* setup the client side */
 
-		offer_gss_spnego_mechs();
-		return;
-	}
+			nt_status = gensec_client_start(NULL, &state->gensec_state,
+							lpcfg_gensec_settings(NULL, lp_ctx));
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				x_fprintf(x_stdout, "BH GENSEC mech failed to start: %s\n", nt_errstr(nt_status));
+				talloc_free(mem_ctx);
+				return;
+			}
 
-	/* All subsequent requests have a blob. This might be negTokenInit or negTokenTarg */
+			creds = cli_credentials_init(state->gensec_state);
+			cli_credentials_set_conf(creds, lp_ctx);
+			if (opt_username) {
+				cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
+			}
+			if (opt_domain) {
+				cli_credentials_set_domain(creds, opt_domain, CRED_SPECIFIED);
+			}
+			if (state->set_password) {
+				cli_credentials_set_password(creds, state->set_password, CRED_SPECIFIED);
+			} else {
+				cli_credentials_set_password_callback(creds, get_password);
+			}
+			if (opt_workstation) {
+				cli_credentials_set_workstation(creds, opt_workstation, CRED_SPECIFIED);
+			}
 
-	if (strlen(buf) <= 3) {
-		DEBUG(1, ("GSS-SPNEGO query [%s] invalid\n", buf));
-		x_fprintf(x_stdout, "BH GSS-SPNEGO query invalid\n");
-		return;
-	}
+			gensec_set_credentials(state->gensec_state, creds);
 
-	token = base64_decode_data_blob(buf + 3);
+			break;
+		case GSS_SPNEGO_SERVER:
+		case SQUID_2_5_NTLMSSP:
+		{
+			nt_status = ntlm_auth_start_ntlmssp_server(state, lp_ctx,
+								   &state->gensec_state);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				x_fprintf(x_stdout, "BH GENSEC mech failed to start: %s\n", nt_errstr(nt_status));
+				talloc_free(mem_ctx);
+				return;
+			}
+			break;
+		}
+		default:
+			talloc_free(mem_ctx);
+			abort();
+		}
 
-	if ((token.length >= 7)
-	    && (strncmp((char *)token.data, "NTLMSSP", 7) == 0)) {
-		char *reply;
+		gensec_want_feature_list(state->gensec_state, want_feature_list);
 
-		data_blob_free(&token);
+		switch (stdio_helper_mode) {
+		case GSS_SPNEGO_CLIENT:
+		case GSS_SPNEGO_SERVER:
+			nt_status = gensec_start_mech_by_oid(state->gensec_state, GENSEC_OID_SPNEGO);
+			if (!in.length) {
+				first = true;
+			}
+			break;
+		case NTLMSSP_CLIENT_1:
+			if (!in.length) {
+				first = true;
+			}
+			/* fall through */
+		case SQUID_2_5_NTLMSSP:
+			nt_status = gensec_start_mech_by_oid(state->gensec_state, GENSEC_OID_NTLMSSP);
+			break;
+		default:
+			talloc_free(mem_ctx);
+			abort();
+		}
 
-		DEBUG(10, ("Could not parse GSS-SPNEGO, trying raw "
-			   "ntlmssp\n"));
-
-		manage_squid_ntlmssp_request_int(state, buf, length,
-						 talloc_tos(), &reply);
-		if (reply == NULL) {
-			x_fprintf(x_stdout, "BH Out of memory\n");
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1, ("GENSEC mech failed to start: %s\n", nt_errstr(nt_status)));
+			x_fprintf(x_stdout, "BH GENSEC mech failed to start\n");
+			talloc_free(mem_ctx);
 			return;
 		}
 
-		if (strncmp(reply, "AF ", 3) == 0) {
-			x_fprintf(x_stdout, "AF * %s\n", reply+3);
+	}
+
+	/* update */
+
+	if (strncmp(buf, "PW ", 3) == 0) {
+		state->set_password = talloc_strndup(state,
+						     (const char *)in.data,
+						     in.length);
+
+		cli_credentials_set_password(gensec_get_credentials(state->gensec_state),
+					     state->set_password,
+					     CRED_SPECIFIED);
+		x_fprintf(x_stdout, "OK\n");
+		data_blob_free(&in);
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	if (strncmp(buf, "GK", 2) == 0) {
+		char *base64_key;
+		DEBUG(10, ("Requested session key\n"));
+		nt_status = gensec_session_key(state->gensec_state, mem_ctx, &session_key);
+		if(!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(1, ("gensec_session_key failed: %s\n", nt_errstr(nt_status)));
+			x_fprintf(x_stdout, "BH No session key\n");
+			talloc_free(mem_ctx);
+			return;
 		} else {
-			x_fprintf(x_stdout, "%s *\n", reply);
+			base64_key = base64_encode_data_blob(state, session_key);
+			x_fprintf(x_stdout, "GK %s\n", base64_key);
+			talloc_free(base64_key);
 		}
-
-		TALLOC_FREE(reply);
+		talloc_free(mem_ctx);
 		return;
 	}
 
-	ZERO_STRUCT(request);
-	len = spnego_read_data(ctx, token, &request);
-	data_blob_free(&token);
+	if (stdio_helper_mode == SQUID_2_5_NTLMSSP && strncmp(buf, "GF", 2) == 0) {
+		uint32_t neg_flags;
 
-	if (len == -1) {
-		DEBUG(1, ("GSS-SPNEGO query [%s] invalid\n", buf));
-		x_fprintf(x_stdout, "BH GSS-SPNEGO query invalid\n");
+		neg_flags = gensec_ntlmssp_neg_flags(state->gensec_state);
+
+		DEBUG(10, ("Requested negotiated feature flags\n"));
+		x_fprintf(x_stdout, "GF 0x%08x\n", neg_flags);
 		return;
 	}
 
-	if (request.type == SPNEGO_NEG_TOKEN_INIT) {
-#ifdef HAVE_KRB5
-		int krb5_idx = -1;
-#endif
-		int ntlm_idx = -1;
-		int used_idx = -1;
-		int i;
+	nt_status = gensec_update(state->gensec_state, mem_ctx, NULL, in, &out);
 
-		if (state->spnego_mech) {
-			DEBUG(1, ("Client restarted SPNEGO with NegTokenInit "
-				  "while mech[%s] was already negotiated\n",
-				  state->spnego_mech));
-			x_fprintf(x_stdout, "BH Client send NegTokenInit twice\n");
-			return;
-		}
+	/* don't leak 'bad password'/'no such user' info to the network client */
+	nt_status = nt_status_squash(nt_status);
 
-		/* Second request from Client. This is where the
-		   client offers its mechanism to use. */
+	if (out.length) {
+		out_base64 = base64_encode_data_blob(mem_ctx, out);
+	} else {
+		out_base64 = NULL;
+	}
 
-		if ( (request.negTokenInit.mechTypes == NULL) ||
-		     (request.negTokenInit.mechTypes[0] == NULL) ) {
-			DEBUG(1, ("Client did not offer any mechanism\n"));
-			x_fprintf(x_stdout, "BH Client did not offer any "
-					    "mechanism\n");
-			return;
-		}
-
-		status = NT_STATUS_UNSUCCESSFUL;
-		for (i = 0; request.negTokenInit.mechTypes[i] != NULL; i++) {
-			DEBUG(10,("got mech[%d][%s]\n",
-				i, request.negTokenInit.mechTypes[i]));
-#ifdef HAVE_KRB5
-			if (strcmp(request.negTokenInit.mechTypes[i], OID_KERBEROS5_OLD) == 0) {
-				krb5_idx = i;
-				break;
-			}
-			if (strcmp(request.negTokenInit.mechTypes[i], OID_KERBEROS5) == 0) {
-				krb5_idx = i;
-				break;
-			}
-#endif
-			if (strcmp(request.negTokenInit.mechTypes[i], OID_NTLMSSP) == 0) {
-				ntlm_idx = i;
-				break;
-			}
-		}
-
-		used_idx = ntlm_idx;
-#ifdef HAVE_KRB5
-		if (krb5_idx != -1) {
-			ntlm_idx = -1;
-			used_idx = krb5_idx;
-		}
-#endif
-		if (ntlm_idx > -1) {
-			state->spnego_mech = talloc_strdup(state, "ntlmssp");
-			if (state->spnego_mech == NULL) {
-				x_fprintf(x_stdout, "BH Out of memory\n");
-				return;
-			}
-
-			if (state->gensec_security) {
-				DEBUG(1, ("Client wants a new NTLMSSP challenge, but "
-					  "already got one\n"));
-				x_fprintf(x_stdout, "BH Client wants a new "
-						    "NTLMSSP challenge, but "
-						    "already got one\n");
-				TALLOC_FREE(state->gensec_security);
-				return;
-			}
-
-			status = ntlm_auth_start_ntlmssp_server(state, &state->gensec_security);
-			if (!NT_STATUS_IS_OK(status)) {
-				x_fprintf(x_stdout, "BH %s\n", nt_errstr(status));
-				return;
-			}
-		}
-
-#ifdef HAVE_KRB5
-		if (krb5_idx > -1) {
-			state->spnego_mech = talloc_strdup(state, "krb5");
-			if (state->spnego_mech == NULL) {
-				x_fprintf(x_stdout, "BH Out of memory\n");
-				return;
-			}
-		}
-#endif
-		if (used_idx > -1) {
-			state->spnego_mech_oid = talloc_strdup(state,
-				request.negTokenInit.mechTypes[used_idx]);
-			if (state->spnego_mech_oid == NULL) {
-				x_fprintf(x_stdout, "BH Out of memory\n");
-				return;
-			}
-			supportedMech = talloc_strdup(ctx, state->spnego_mech_oid);
-			if (supportedMech == NULL) {
-				x_fprintf(x_stdout, "BH Out of memory\n");
-				return;
-			}
-
-			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		reply_arg = "*";
+		if (first && state->gensec_state->gensec_role == GENSEC_CLIENT) {
+			reply_code = "YR";
+		} else if (state->gensec_state->gensec_role == GENSEC_CLIENT) {
+			reply_code = "KK";
+		} else if (state->gensec_state->gensec_role == GENSEC_SERVER) {
+			reply_code = "TT";
 		} else {
-			status = NT_STATUS_NOT_SUPPORTED;
-		}
-		if (used_idx == 0) {
-			status = NT_STATUS_OK;
-			raw_in_token = request.negTokenInit.mechToken;
-		}
-	} else {
-		if (state->spnego_mech == NULL) {
-			DEBUG(1,("Got netTokenTarg without negTokenInit\n"));
-			x_fprintf(x_stdout, "BH Got a negTokenTarg without "
-					    "negTokenInit\n");
-			return;
+			abort();
 		}
 
-		if ((request.negTokenTarg.supportedMech != NULL) &&
-		     (strcmp(request.negTokenTarg.supportedMech, state->spnego_mech_oid) != 0 ) ) {
-			DEBUG(1, ("Got a negTokenTarg with mech[%s] while [%s] was already negotiated\n",
-				  request.negTokenTarg.supportedMech,
-				  state->spnego_mech_oid));
-			x_fprintf(x_stdout, "BH Got a negTokenTarg with speficied mech\n");
-			return;
-		}
 
-		status = NT_STATUS_OK;
-		raw_in_token = request.negTokenTarg.responseToken;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		/* error or more processing */
-	} else if (strcmp(state->spnego_mech, "ntlmssp") == 0) {
-
-		DEBUG(10, ("got NTLMSSP packet:\n"));
-		dump_data(10, raw_in_token.data, raw_in_token.length);
-
-		status = gensec_update(state->gensec_security,
-				       talloc_tos(), NULL,
-				       raw_in_token,
-				       &raw_out_token);
-		if (NT_STATUS_IS_OK(status)) {
-			struct auth_session_info *session_info;
-			status = gensec_session_info(state->gensec_security, state->gensec_security, &session_info);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(status)));
-				TALLOC_FREE(state->gensec_security);
-				return;
-			}
-			unix_username = session_info->unix_info->unix_name;
-			DEBUG(10, ("NTLMSSP OK!\n"));
-		}
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			TALLOC_FREE(state->ntlmssp_state);
-		}
-#ifdef HAVE_KRB5
-	} else if (strcmp(state->spnego_mech, "krb5") == 0) {
-		char *principal;
-		DATA_BLOB ap_rep;
-		DATA_BLOB session_key;
-		struct PAC_LOGON_INFO *logon_info = NULL;
-		DATA_BLOB ticket;
-		uint8_t tok_id[2];
-
-		if (!spnego_parse_krb5_wrap(ctx, raw_in_token,
-					    &ticket, tok_id)) {
-			DEBUG(1, ("spnego_parse_krb5_wrap failed\n"));
-			x_fprintf(x_stdout, "BH spnego_parse_krb5_wrap failed\n");
-			return;
-		}
-
-		status = ads_verify_ticket(ctx, lp_realm(), 0,
-					   &ticket,
-					   &principal, &logon_info, &ap_rep,
-					   &session_key, True);
-
-		/* Now in "principal" we have the name we are authenticated as. */
-
-		if (NT_STATUS_IS_OK(status)) {
-			char *domain;
-			char *user;
-			domain = strchr_m(principal, '@');
-
-			if (domain == NULL) {
-				DEBUG(1, ("Did not get a valid principal "
-					  "from ads_verify_ticket\n"));
-				x_fprintf(x_stdout, "BH Did not get a "
-					  "valid principal from "
-					  "ads_verify_ticket\n");
-				return;
-			}
-
-			*domain++ = '\0';
-			domain = talloc_strdup(ctx, domain);
-			user = talloc_strdup(ctx, principal);
-
-			if (logon_info) {
-				netsamlogon_cache_store(
-					user, &logon_info->info3);
-			}
-
-			data_blob_free(&ap_rep);
-			data_blob_free(&session_key);
-			unix_username = talloc_asprintf(ctx, "%s\\%s", domain, user);
-		}
-		data_blob_free(&ticket);
-#endif
-	}
-
-	spnego_free_data(&request);
-	ZERO_STRUCT(response);
-	response.type = SPNEGO_NEG_TOKEN_TARG;
-
-	if (NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(state->spnego_mech);
-		TALLOC_FREE(state->spnego_mech_oid);
-		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
-		response.negTokenTarg.responseToken = raw_out_token;
-		reply_code = "AF";
-		reply_argument = unix_username;
-	} else if (NT_STATUS_EQUAL(status,
-				   NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		response.negTokenTarg.supportedMech = supportedMech;
-		response.negTokenTarg.responseToken = raw_out_token;
-		response.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-		reply_code = "TT";
-		reply_argument = talloc_strdup(ctx, "*");
-	} else {
-		TALLOC_FREE(state->spnego_mech);
-		TALLOC_FREE(state->spnego_mech_oid);
-		data_blob_free(&raw_out_token);
-		response.negTokenTarg.negResult = SPNEGO_REJECT;
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
+		reply_code = "BH NT_STATUS_ACCESS_DENIED";
+		reply_arg = nt_errstr(nt_status);
+		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
+	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_UNSUCCESSFUL)) {
+		reply_code = "BH NT_STATUS_UNSUCCESSFUL";
+		reply_arg = nt_errstr(nt_status);
+		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_code = "NA";
-		reply_argument = talloc_strdup(ctx, nt_errstr(status));
+		reply_arg = nt_errstr(nt_status);
+		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
+	} else if /* OK */ (state->gensec_state->gensec_role == GENSEC_SERVER) {
+		struct auth_session_info *session_info;
+
+		nt_status = gensec_session_info(state->gensec_state, mem_ctx, &session_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			reply_code = "BH Failed to retrive session info";
+			reply_arg = nt_errstr(nt_status);
+			DEBUG(1, ("GENSEC failed to retrieve the session info: %s\n", nt_errstr(nt_status)));
+		} else {
+
+			reply_code = "AF";
+			reply_arg = session_info->unix_info->unix_name;
+			talloc_free(session_info);
+		}
+	} else if (state->gensec_state->gensec_role == GENSEC_CLIENT) {
+		reply_code = "AF";
+		reply_arg = out_base64;
+	} else {
+		abort();
 	}
 
-	if (!reply_argument) {
-		DEBUG(1, ("Could not write SPNEGO data blob\n"));
-		x_fprintf(x_stdout, "BH Could not write SPNEGO data blob\n");
-		spnego_free_data(&response);
-		return;
+	switch (stdio_helper_mode) {
+	case GSS_SPNEGO_SERVER:
+		x_fprintf(x_stdout, "%s %s %s\n", reply_code,
+			  out_base64 ? out_base64 : "*",
+			  reply_arg ? reply_arg : "*");
+		break;
+	default:
+		if (out_base64) {
+			x_fprintf(x_stdout, "%s %s\n", reply_code, out_base64);
+		} else if (reply_arg) {
+			x_fprintf(x_stdout, "%s %s\n", reply_code, reply_arg);
+		} else {
+			x_fprintf(x_stdout, "%s\n", reply_code);
+		}
 	}
 
-	len = spnego_write_data(ctx, &token, &response);
-	spnego_free_data(&response);
+	talloc_free(mem_ctx);
+	return;
+}
 
-	if (len == -1) {
-		DEBUG(1, ("Could not write SPNEGO data blob\n"));
-		x_fprintf(x_stdout, "BH Could not write SPNEGO data blob\n");
-		return;
-	}
-
-	reply_base64 = base64_encode_data_blob(talloc_tos(), token);
-
-	x_fprintf(x_stdout, "%s %s %s\n",
-		  reply_code, reply_base64, reply_argument);
-
-	TALLOC_FREE(reply_base64);
-	data_blob_free(&token);
-
+static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
+				   struct loadparm_context *lp_ctx,
+				   struct ntlm_auth_state *state,
+				      char *buf, int length, void **private2)
+{
+	manage_gensec_request(stdio_helper_mode, lp_ctx, buf, length, &state->gensec_private_1);
 	return;
 }
 
@@ -2071,8 +2041,10 @@ static void manage_client_krb5_targ(struct spnego_data spnego)
 
 #endif
 
-static void manage_gss_spnego_client_request(struct ntlm_auth_state *state,
-						char *buf, int length)
+static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper_mode,
+				   struct loadparm_context *lp_ctx,
+				   struct ntlm_auth_state *state,
+					     char *buf, int length, void **private2)
 {
 	DATA_BLOB request;
 	struct spnego_data spnego;
@@ -2212,8 +2184,10 @@ static void manage_gss_spnego_client_request(struct ntlm_auth_state *state,
 	return;
 }
 
-static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
-						char *buf, int length)
+static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mode,
+				   struct loadparm_context *lp_ctx,
+				   struct ntlm_auth_state *state,
+						char *buf, int length, void **private2)
 {
 	char *request, *parameter;	
 	static DATA_BLOB challenge;
@@ -2405,8 +2379,10 @@ static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
 	}
 }
 
-static void manage_ntlm_change_password_1_request(struct ntlm_auth_state *state,
-							char *buf, int length)
+static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_helper_mode,
+						  struct loadparm_context *lp_ctx,
+						  struct ntlm_auth_state *state,
+						  char *buf, int length, void **private2)
 {
 	char *request, *parameter;	
 	static DATA_BLOB new_nt_pswd;
@@ -2616,8 +2592,10 @@ static void manage_ntlm_change_password_1_request(struct ntlm_auth_state *state,
 	}
 }
 
-static void manage_squid_request(struct ntlm_auth_state *state,
-		stdio_helper_function fn)
+static void manage_squid_request(enum stdio_helper_mode stdio_helper_mode,
+				   struct loadparm_context *lp_ctx,
+				   struct ntlm_auth_state *state,
+		stdio_helper_function fn, void **private2)
 {
 	char *buf;
 	char tmp[INITIAL_BUFFER_SIZE+1];
@@ -2671,12 +2649,14 @@ static void manage_squid_request(struct ntlm_auth_state *state,
 		return;
 	}
 
-	fn(state, buf, length);
+	fn(stdio_helper_mode, lp_ctx, state, buf, length, private2);
 	talloc_free(buf);
 }
 
 
-static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_function fn) {
+static void squid_stream(enum stdio_helper_mode stdio_mode,
+			 struct loadparm_context *lp_ctx,
+			 stdio_helper_function fn) {
 	TALLOC_CTX *mem_ctx;
 	struct ntlm_auth_state *state;
 
@@ -2703,7 +2683,7 @@ static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_functio
 
 	while(1) {
 		TALLOC_CTX *frame = talloc_stackframe();
-		manage_squid_request(state, fn);
+		manage_squid_request(stdio_mode, lp_ctx, state, fn, NULL);
 		TALLOC_FREE(frame);
 	}
 }
@@ -2801,7 +2781,7 @@ enum {
 	static const char *hex_challenge;
 	static const char *hex_lm_response;
 	static const char *hex_nt_response;
-
+	struct loadparm_context *lp_ctx;
 	poptContext pc;
 
 	/* NOTE: DO NOT change this interface without considering the implications!
@@ -2935,11 +2915,17 @@ enum {
 		opt_workstation = "";
 	}
 
+	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_context());
+	if (lp_ctx == NULL) {
+		x_fprintf(x_stderr, "loadparm_init_s3() failed!\n");
+		exit(1);
+	}
+
 	if (helper_protocol) {
 		int i;
 		for (i=0; i<NUM_HELPER_MODES; i++) {
 			if (strcmp(helper_protocol, stdio_helper_protocols[i].name) == 0) {
-				squid_stream(stdio_helper_protocols[i].mode, stdio_helper_protocols[i].fn);
+				squid_stream(stdio_helper_protocols[i].mode, lp_ctx, stdio_helper_protocols[i].fn);
 				exit(0);
 			}
 		}
