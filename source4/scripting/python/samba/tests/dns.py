@@ -18,7 +18,6 @@
 #
 
 import os
-import sys
 import struct
 import random
 from samba import socket
@@ -324,7 +323,7 @@ class DNSTest(TestCase):
 #        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
 
     def test_update_prereq_nonexisting_name(self):
-        "test update with a non-null TTL"
+        "test update with a nonexisting name"
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
         updates = []
 
