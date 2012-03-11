@@ -174,9 +174,6 @@ if opts.ldap:
 
 prefix = os.path.normpath(opts.prefix)
 
-if prefix == "":
-    raise Exception("using an empty prefix isn't allowed")
-
 # Ensure we have the test prefix around.
 #
 # We need restrictive permissions on this as some subdirectories in this tree
@@ -194,10 +191,8 @@ if not os.path.isdir(tmpdir_abs):
 
 srcdir_abs = os.path.abspath(opts.srcdir)
 
-if prefix_abs == "":
-    raise Exception("using an empty absolute prefix isn't allowed")
 if prefix_abs == "/":
-    raise Exception("using '/' as absolute prefix isn't allowed")
+    raise Exception("using '/' as absolute prefix is a bad idea")
 
 os.environ["PREFIX"] = prefix
 os.environ["KRB5CCNAME"] = os.path.join(prefix, "krb5ticket")
