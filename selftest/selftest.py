@@ -18,8 +18,6 @@
 
 import atexit
 from cStringIO import StringIO
-import datetime
-import iso8601
 import os
 import sys
 import signal
@@ -39,10 +37,11 @@ from selftest import (
     )
 from selftest.client import write_clientconf
 from selftest.run import (
-    expand_environment_strings,
     expand_command_list,
     expand_command_run,
     exported_envvars_str,
+    now,
+    run_testsuite_command,
     )
 from selftest.target import (
     EnvironmentManager,
@@ -52,9 +51,6 @@ from selftest.target import (
 
 includes = ()
 excludes = ()
-
-def now():
-    return datetime.datetime.utcnow().replace(tzinfo=iso8601.iso8601.Utc())
 
 def read_excludes(fn):
     excludes.extend(testlist.read_test_regexes(fn))
@@ -123,41 +119,19 @@ def cleanup_pcap(pcap_file, exit_code):
     os.unlink(pcap_file)
 
 
-def run_testsuite(envname, name, cmd):
+def run_testsuite(name, cmd, subunit_ops, env=None):
     """Run a single testsuite.
 
-    :param envname: Name of the environment to ru nin
+    :param env: Environment to run in
     :param name: Name of the testsuite
     :param cmd: Name of the (fully expanded) command to run
     :return: exitcode of the command
     """
     pcap_file = setup_pcap(name)
 
-    subunit_ops.start_testsuite(name)
-    subunit_ops.progress(None, subunit.PROGRESS_PUSH)
-    subunit_ops.time(now())
-    try:
-        exitcode = subprocess.call(cmd, shell=True)
-    except Exception, e:
-        subunit_ops.time(now())
-        subunit_ops.progress(None, subunit.PROGRESS_POP)
-        subunit_ops.end_testsuite(name, "error", "Unable to run %r: %s" % (cmd, e))
+    exitcode = run_testsuite_command(name, cmd, subunit_ops, env)
+    if exitcode is None:
         sys.exit(1)
-
-    subunit_ops.time(now())
-    subunit_ops.progress(None, subunit.PROGRESS_POP)
-
-    envlog = env_manager.getlog_env(envname)
-    if envlog != "":
-        sys.stdout.write("envlog: %s\n" % envlog)
-
-    sys.stdout.write("command: %s\n" % cmd)
-    sys.stdout.write("expanded command: %s\n" % expand_environment_strings(cmd, os.environ))
-
-    if exitcode == 0:
-        subunit_ops.end_testsuite(name, "success")
-    else:
-        subunit_ops.end_testsuite(name, "failure", "Exit code was %d" % exitcode)
 
     cleanup_pcap(pcap_file, exitcode)
 
@@ -168,6 +142,7 @@ def run_testsuite(envname, name, cmd):
         sys.exit(1)
 
     return exitcode
+
 
 if opts.list and opts.testenv:
     sys.stderr.write("--list and --testenv are mutually exclusive\n")
@@ -273,9 +248,10 @@ else:
 # must terminate in this time, and testenv will only stay alive this
 # long
 
-server_maxtime = 7500
 if os.environ.get("SMBD_MAXTIME", ""):
     server_maxtime = int(os.environ["SMBD_MAXTIME"])
+else:
+    server_maxtime = 7500
 
 
 def has_socket_wrapper(bindir):
@@ -466,7 +442,7 @@ def switch_env(name, prefix):
         elif name in os.environ:
             del os.environ[name]
 
-    return testenv_vars
+    return env
 
 # This 'global' file needs to be empty when we start
 dns_host_file_path = os.path.join(prefix_abs, "dns_host_file")
@@ -476,7 +452,8 @@ if os.path.exists(dns_host_file_path):
 if opts.testenv:
     testenv_name = os.environ.get("SELFTEST_TESTENV", testenv_default)
 
-    testenv_vars = switch_env(testenv_name, prefix)
+    env = switch_env(testenv_name, prefix)
+    testenv_vars = env.get_vars()
 
     os.environ["PIDDIR"] = testenv_vars["PIDDIR"]
     os.environ["ENVNAME"] = testenv_name
@@ -515,7 +492,7 @@ elif opts.list:
 else:
     for (name, envname, cmd, supports_loadfile, supports_idlist, subtests) in todo:
         try:
-            envvars = switch_env(envname, prefix)
+            env = switch_env(envname, prefix)
         except UnsupportedEnvironment:
             subunit_ops.start_testsuite(name)
             subunit_ops.end_testsuite(name, "skip",
@@ -531,7 +508,7 @@ else:
         cmd, tmpf = expand_command_run(cmd, supports_loadfile, supports_idlist,
             subtests)
 
-        run_testsuite(envname, name, cmd)
+        run_testsuite(name, cmd, subunit_ops, env=env)
 
         if tmpf is not None:
             os.remove(tmpf)

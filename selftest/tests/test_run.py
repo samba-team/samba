@@ -19,13 +19,18 @@
 
 """Tests for selftest.run."""
 
+import datetime
 import os
+import subunit
+import tempfile
 
 from selftest.run import (
     expand_command_list,
     expand_environment_strings,
     expand_command_run,
     exported_envvars_str,
+    now,
+    run_testsuite_command,
     )
 
 from selftest.tests import TestCase
@@ -92,3 +97,91 @@ class ExportedEnvvarsStrTests(TestCase):
     def test_vars_unknown(self):
         self.assertEquals("foo=1\n",
             exported_envvars_str({"foo": "1", "bla": "2"}, ["foo", "bar"]))
+
+
+
+class NowTests(TestCase):
+
+    def test_basic(self):
+        self.assertIsInstance(now(), datetime.datetime)
+        self.assertIsNot(now().tzinfo, None)
+
+
+class MockSubunitOps(object):
+
+    def __init__(self):
+        self.calls = []
+
+    def start_testsuite(self, name):
+        self.calls.append(("start-testsuite", name))
+
+    def progress(self, count, whence):
+        self.calls.append(("progress", count, whence))
+
+    def time(self, t):
+        self.calls.append(("time", ))
+
+    def end_testsuite(self, name, result, details=None):
+        self.calls.append(("end-testsuite", name, result, details))
+
+
+class RunTestsuiteCommandTests(TestCase):
+
+    def test_success_no_env(self):
+        outf = tempfile.TemporaryFile()
+        subunit_ops = MockSubunitOps()
+        exit_code = run_testsuite_command("thetestsuitename", "echo doing something", subunit_ops, outf=outf)
+        self.assertEquals([
+            ("start-testsuite", "thetestsuitename"),
+            ("progress", None, subunit.PROGRESS_PUSH),
+            ("time", ),
+            ("time", ),
+            ("progress", None, subunit.PROGRESS_POP),
+            ("end-testsuite", "thetestsuitename", "success", None),
+            ], subunit_ops.calls)
+        self.assertEquals(0, exit_code)
+        outf.seek(0)
+        self.assertEquals("""\
+doing something
+command: echo doing something
+expanded command: echo doing something
+""", outf.read())
+
+    def test_failure(self):
+        outf = tempfile.TemporaryFile()
+        subunit_ops = MockSubunitOps()
+        exit_code = run_testsuite_command("thetestsuitename", "exit 3", subunit_ops, outf=outf)
+        self.assertEquals([
+            ("start-testsuite", "thetestsuitename"),
+            ("progress", None, subunit.PROGRESS_PUSH),
+            ("time", ),
+            ("time", ),
+            ("progress", None, subunit.PROGRESS_POP),
+            ("end-testsuite", "thetestsuitename", "failure", "Exit code was 3"),
+            ], subunit_ops.calls)
+        self.assertEquals(3, exit_code)
+        outf.seek(0)
+        self.assertEquals("""\
+command: exit 3
+expanded command: exit 3
+""", outf.read())
+
+    def test_error(self):
+        outf = tempfile.TemporaryFile()
+        subunit_ops = MockSubunitOps()
+        exit_code = run_testsuite_command("thetestsuitename",
+            "thisisacommandthatdoesnotexist 2>/dev/null", subunit_ops, outf=outf)
+        self.assertEquals([
+            ("start-testsuite", "thetestsuitename"),
+            ("progress", None, subunit.PROGRESS_PUSH),
+            ("time", ),
+            ("time", ),
+            ("progress", None, subunit.PROGRESS_POP),
+            ("end-testsuite", "thetestsuitename", "failure", "Exit code was 127"),
+            ], subunit_ops.calls)
+        self.assertEquals(127, exit_code)
+        outf.seek(0)
+        self.assertEquals("""\
+command: thisisacommandthatdoesnotexist 2>/dev/null
+expanded command: thisisacommandthatdoesnotexist 2>/dev/null
+""", outf.read())

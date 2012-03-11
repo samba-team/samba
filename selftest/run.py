@@ -15,7 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Test command running."""
+
+import datetime
+import iso8601
 import os
+import subprocess
+import subunit
+import sys
 import tempfile
 import warnings
 
@@ -77,3 +84,51 @@ def exported_envvars_str(vars, names):
             continue
         out += "%s=%s\n" % (n, vars[n])
     return out
+
+
+def now():
+    """Return datetime instance for current time in UTC.
+    """
+    return datetime.datetime.utcnow().replace(tzinfo=iso8601.iso8601.Utc())
+
+
+def run_testsuite_command(name, cmd, subunit_ops, env=None, outf=None):
+    """Run a testsuite command.
+
+    :param name: Name of the testsuite
+    :param cmd: Command to run
+    :param subunit_ops: Subunit ops to use for reporting results
+    :param env: Environment the test is run in
+    :param outf: File-like object to write standard out to (defaults to sys.stdout)
+    :return: Exit code or None if the test failed to run completely
+    """
+    if outf is None:
+        outf = sys.stdout
+    subunit_ops.start_testsuite(name)
+    subunit_ops.progress(None, subunit.PROGRESS_PUSH)
+    subunit_ops.time(now())
+    try:
+        exitcode = subprocess.call(cmd, shell=True, stdout=outf)
+    except Exception, e:
+        subunit_ops.time(now())
+        subunit_ops.progress(None, subunit.PROGRESS_POP)
+        subunit_ops.end_testsuite(name, "error", "Unable to run %r: %s" % (cmd, e))
+        return None
+
+    subunit_ops.time(now())
+    subunit_ops.progress(None, subunit.PROGRESS_POP)
+
+    if env is not None:
+        envlog = env.get_log()
+        if envlog != "":
+            outf.write("envlog: %s\n" % envlog)
+
+    outf.write("command: %s\n" % cmd)
+    outf.write("expanded command: %s\n" % expand_environment_strings(cmd, os.environ))
+
+    if exitcode == 0:
+        subunit_ops.end_testsuite(name, "success")
+    else:
+        subunit_ops.end_testsuite(name, "failure", "Exit code was %d" % exitcode)
+
+    return exitcode
