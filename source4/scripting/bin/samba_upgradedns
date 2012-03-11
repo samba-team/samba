@@ -56,7 +56,6 @@ from samba.provision.sambadns import (
     SRVRecord,
     TXTRecord,
     get_dnsadmins_sid,
-    get_domainguid,
     add_dns_accounts,
     create_dns_partitions,
     fill_dns_data_partitions,
