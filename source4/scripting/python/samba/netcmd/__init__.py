@@ -172,7 +172,7 @@ class Command(object):
         """Get a logger object."""
         import logging
         logger = logging.getLogger(name)
-        logger.addHandler(logging.StreamHandler(self.outf))
+        logger.addHandler(logging.StreamHandler(self.errf))
         return logger
 
 
