@@ -858,7 +858,6 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 			       char **principal,
 			       DATA_BLOB *secblob);
 DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8 tok_id[2]);
-bool spnego_parse_krb5_wrap(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2]);
 int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 			    const char *principal, int time_offset,
 			    DATA_BLOB *targ,
