@@ -1873,8 +1873,8 @@ if __name__ == '__main__':
             # 18) We rebuild SD if a we have a list of DN to recalculate or if the
             # defSDmodified is set.
             if defSDmodified or len(dnToRecalculate) >0:
-                message(SIMPLE, "Some defaultSecurityDescriptors and/or"
-                                "securityDescriptor have changed, recalculating SD ")
+                message(SIMPLE, "Some (default) security descriptors (SDs) have "
+                                "changed, recalculating them")
                 ldbs.sam.set_session_info(adm_session)
                 rebuild_sd(ldbs.sam, names)
 
@@ -1922,7 +1922,7 @@ if __name__ == '__main__':
             # But the second part of the update (when we update existing objects
             # can also have an influence on indexing as some attribute might have their
             # searchflag modificated
-            message(SIMPLE, "Reopenning samdb to trigger reindexing if needed "
+            message(SIMPLE, "Reopening samdb to trigger reindexing if needed "
                     "after modification")
             samdb = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp)
             message(SIMPLE, "Reindexing finished")
