@@ -88,11 +88,15 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 bool conn_close_all(struct smbd_server_connection *sconn)
 {
 	bool ret = false;
+
 	if (sconn->using_smb2) {
 		/* SMB2 */
 		struct smbd_smb2_session *sess;
+
 		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
 			struct smbd_smb2_tcon *tcon, *tc_next;
+
+			file_close_user(sconn, sess->vuid);
 
 			for (tcon = sess->tcons.list; tcon; tcon = tc_next) {
 				tc_next = tcon->next;

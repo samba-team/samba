@@ -122,6 +122,8 @@ static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
 		return 0;
 	}
 
+	file_close_user(session->sconn, session->vuid);
+
 	/* first free all tcons */
 	while (session->tcons.list) {
 		talloc_free(session->tcons.list);
