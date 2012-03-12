@@ -338,15 +338,6 @@ bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_
 	return False;
 }
 
- krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt)
-{
-#if defined(HAVE_KRB5_TKT_ENC_PART2)
-	return tkt->enc_part2->client;
-#else
-	return tkt->client;
-#endif
-}
-
 static bool ads_cleanup_expired_creds(krb5_context context, 
 				      krb5_ccache  ccache,
 				      krb5_creds  *credsp)

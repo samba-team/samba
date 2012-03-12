@@ -66,7 +66,6 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr);
 int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype, bool no_salt);
 bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_ticket *tkt);
-krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt);
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
 			      krb5_context context,
