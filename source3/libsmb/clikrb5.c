@@ -794,15 +794,6 @@ done:
 }
 #endif
 
- time_t get_authtime_from_tkt(krb5_ticket *tkt)
-{
-#if defined(HAVE_KRB5_TKT_ENC_PART2)
-	return tkt->enc_part2->times.authtime;
-#else
-	return tkt->ticket.authtime;
-#endif
-}
-
 #ifdef HAVE_KRB5_DECODE_AP_REQ	/* Heimdal */
 static int get_kvno_from_ap_req(krb5_ap_req *ap_req)
 {
