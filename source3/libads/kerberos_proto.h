@@ -34,18 +34,6 @@ struct PAC_LOGON_INFO;
 
 #include "libads/ads_status.h"
 
-/* The following definitions come from libads/kerberos_verify.c  */
-
-NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
-			   const char *realm,
-			   time_t time_offset,
-			   const DATA_BLOB *ticket,
-			   char **principal,
-			   struct PAC_LOGON_INFO **logon_info,
-			   DATA_BLOB *ap_rep,
-			   DATA_BLOB *session_key,
-			   bool use_replay_cache);
-
 /* The following definitions come from libads/kerberos.c  */
 
 int kerberos_kinit_password_ext(const char *principal,
