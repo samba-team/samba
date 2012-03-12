@@ -142,8 +142,7 @@ class dnsobj(object):
         elif self.type == 'NS':
             self.dest = list[2].lower()
         else:
-            print "Received unexpected DNS reply of type %s" % self.type
-            raise
+            raise Exception("Received unexpected DNS reply of type %s" % self.type)
 
     def __str__(self):
         if d.type == "A":     return "%s %s %s" % (self.type, self.name, self.ip)
