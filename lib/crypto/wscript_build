@@ -4,7 +4,7 @@ extra_source = ''
 extra_deps = ''
 if bld.CONFIG_SET('HAVE_BSD_MD5_H'):
 	extra_deps += ' bsd'
-else:
+elif not bld.CONFIG_SET('HAVE_COMMONCRYPTO_COMMONDIGEST_H'):
 	extra_source += ' md5.c'
 
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',

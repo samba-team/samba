@@ -1,2 +1,4 @@
 conf.CHECK_FUNCS_IN('MD5Init', 'bsd', headers='bsd/md5.h',
     checklibc=True)
+conf.CHECK_FUNCS_IN('CC_MD5_Init', '', headers='CommonCrypto/CommonDigest.h',
+    checklibc=True)

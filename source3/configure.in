@@ -750,12 +750,19 @@ AC_CHECK_HEADERS(xfs/libxfs.h)
 AC_CHECK_HEADERS(netgroup.h)
 AC_CHECK_HEADERS(linux/falloc.h)
 AC_CHECK_HEADERS(sys/uuid.h)
+AC_CHECK_HEADERS(CommonCrypto/CommonDigest.h)
 
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
 #if HAVE_RPC_RPC_H
 #include <rpc/rpc.h>
 #endif
 ]])
+CRYPTO_MD5_OBJ=
+if test "x$ac_cv_header_CommonCrypto_CommonDigest_h" != "xyes"
+then
+	CRYPTO_MD5_OBJ="../lib/crypto/md5.o"
+fi
+AC_SUBST(CRYPTO_MD5_OBJ)
 
 ## These fail to compile on IRIX so just check for their presence
 AC_CHECK_HEADERS(sys/mode.h,,,)
