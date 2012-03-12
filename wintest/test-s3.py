@@ -70,6 +70,9 @@ def test_wbinfo(t):
                 ["plaintext password authentication succeeded",
                  "challenge/response password authentication succeeded"])
 
+    t.retry_cmd("bin/wbinfo --krb5auth=${WIN_DOMAIN}/administrator%${WIN_PASS}",
+                ["succeeded"])
+
 
 def test_smbclient(t):
     t.info('Testing smbclient')
