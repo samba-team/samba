@@ -4063,17 +4063,6 @@ if test x"$with_ads_support" != x"no"; then
               [Whether the krb5_address struct has a addr_type property])
   fi
 
-  AC_CACHE_CHECK([for enc_part2 in krb5_ticket],
-		 samba_cv_HAVE_KRB5_TKT_ENC_PART2,
-                 [AC_TRY_COMPILE([#include <krb5.h>],
-    [krb5_ticket tkt; tkt.enc_part2->authorization_data[0]->contents = NULL;],
-    samba_cv_HAVE_KRB5_TKT_ENC_PART2=yes,samba_cv_HAVE_KRB5_TKT_ENC_PART2=no)])
-
-  if test x"$samba_cv_HAVE_KRB5_TKT_ENC_PART2" = x"yes"; then
-    AC_DEFINE(HAVE_KRB5_TKT_ENC_PART2,1,
-              [Whether the krb5_ticket struct has a enc_part2 property])
-  fi
-
   AC_CACHE_CHECK([for keyvalue in krb5_keyblock],
                  samba_cv_HAVE_KRB5_KEYBLOCK_KEYVALUE,[
     AC_TRY_COMPILE([#include <krb5.h>],

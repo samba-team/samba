@@ -611,8 +611,6 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
                                     define='HAVE_MAGIC_IN_KRB5_ADDRESS')
         conf.CHECK_STRUCTURE_MEMBER('krb5_address', 'addrtype', headers='krb5.h',
                                     define='HAVE_ADDRTYPE_IN_KRB5_ADDRESS')
-        conf.CHECK_STRUCTURE_MEMBER('krb5_ticket', 'enc_part2', headers='krb5.h',
-                                    define='HAVE_KRB5_TKT_ENC_PART2')
         conf.CHECK_STRUCTURE_MEMBER('krb5_ap_req', 'ticket', headers='krb5.h',
                                     define='HAVE_TICKET_POINTER_IN_KRB5_AP_REQ')
 
