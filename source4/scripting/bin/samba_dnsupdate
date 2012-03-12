@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: expandtab
 #
 # update our DNS names using TSIG-GSS
 #
@@ -104,9 +105,9 @@ for i in IPs:
 if opts.verbose:
     print "IPs: %s" % IPs
 
-########################################################
-# get credentials if we haven't got them already
+
 def get_credentials(lp):
+    """# get credentials if we haven't got them already."""
     from samba import credentials
     global ccachename, creds
     if creds is not None:
@@ -119,9 +120,9 @@ def get_credentials(lp):
     creds.get_named_ccache(lp, ccachename)
 
 
-#############################################
-# an object to hold a parsed DNS line
 class dnsobj(object):
+    """an object to hold a parsed DNS line"""
+
     def __init__(self, string_form):
         list = string_form.split()
         self.dest = None
@@ -152,9 +153,8 @@ class dnsobj(object):
         if d.type == "NS":    return "%s %s %s" % (self.type, self.name, self.dest)
 
 
-################################################
-# parse a DNS line from
 def parse_dns_line(line, sub_vars):
+    """parse a DNS line from."""
     if line.startswith("SRV _ldap._tcp.pdc._msdcs.") and not samdb.am_pdc():
         if opts.verbose:
             print "Skipping PDC entry (%s) as we are not a PDC" % line
@@ -163,27 +163,26 @@ def parse_dns_line(line, sub_vars):
     d = dnsobj(subline)
     return d
 
-############################################
-# see if two hostnames match
+
 def hostname_match(h1, h2):
+    """see if two hostnames match."""
     h1 = str(h1)
     h2 = str(h2)
     return h1.lower().rstrip('.') == h2.lower().rstrip('.')
 
 
-############################################
-# check that a DNS entry exists
 def check_dns_name(d):
+    """check that a DNS entry exists."""
     normalised_name = d.name.rstrip('.') + '.'
     if opts.verbose:
         print "Looking for DNS entry %s as %s" % (d, normalised_name)
- 
+
     if opts.use_file is not None:
         try:
             dns_file = open(opts.use_file, "r")
         except IOError:
             return False
-        
+
         for line in dns_file:
             line = line.strip()
             if line == '' or line[0] == "#":
@@ -226,15 +225,15 @@ def check_dns_name(d):
         for rdata in ans:
             if str(rdata) == str(d.ip):
                 return True
-    if d.type == 'CNAME':
+    elif d.type == 'CNAME':
         for i in range(len(ans)):
             if hostname_match(ans[i].target, d.dest):
                 return True
-    if d.type == 'NS':
+    elif d.type == 'NS':
         for i in range(len(ans)):
             if hostname_match(ans[i].target, d.dest):
                 return True
-    if d.type == 'SRV':
+    elif d.type == 'SRV':
         for rdata in ans:
             if opts.verbose:
                 print "Checking %s against %s" % (rdata, d)
@@ -251,9 +250,8 @@ def check_dns_name(d):
     return False
 
 
-###########################################
-# get the list of substitution vars
 def get_subst_vars(samdb):
+    """get the list of substitution vars."""
     global lp, am_rodc
     vars = {}
 
@@ -270,9 +268,8 @@ def get_subst_vars(samdb):
     return vars
 
 
-############################################
-# call nsupdate for an entry
 def call_nsupdate(d):
+    """call nsupdate for an entry."""
     global ccachename, nsupdate_cmd
 
     if opts.verbose:
@@ -426,8 +423,7 @@ os.environ['KRB5_CONFIG'] = krb5conf
 
 file = open(dns_update_list, "r")
 
-samdb = SamDB(url=lp.samdb_url(), session_info=system_session(),
-              lp=lp)
+samdb = SamDB(url=lp.samdb_url(), session_info=system_session(), lp=lp)
 
 # get the substitution dictionary
 sub_vars = get_subst_vars(samdb)
