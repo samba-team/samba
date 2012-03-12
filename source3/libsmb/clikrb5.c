@@ -709,65 +709,6 @@ static krb5_enctype get_enctype_from_ap_req(krb5_ap_req *ap_req)
 }
 #endif	/* HAVE_KRB5_DECODE_AP_REQ */
 
-static krb5_error_code
-get_key_from_keytab(krb5_context context,
-		    krb5_const_principal server,
-		    krb5_enctype enctype,
-		    krb5_kvno kvno,
-		    krb5_keyblock **out_key)
-{
-	krb5_keytab_entry entry;
-	krb5_error_code ret;
-	krb5_keytab keytab;
-	char *name = NULL;
-	krb5_keyblock *keyp;
-
-	/* We have to open a new keytab handle here, as MIT does
-	   an implicit open/getnext/close on krb5_kt_get_entry. We
-	   may be in the middle of a keytab enumeration when this is
-	   called. JRA. */
-
-	ret = smb_krb5_open_keytab(context, NULL, False, &keytab);
-	if (ret) {
-		DEBUG(1,("get_key_from_keytab: smb_krb5_open_keytab failed (%s)\n", error_message(ret)));
-		return ret;
-	}
-
-	if ( DEBUGLEVEL >= 10 ) {
-		if (smb_krb5_unparse_name(talloc_tos(), context, server, &name) == 0) {
-			DEBUG(10,("get_key_from_keytab: will look for kvno %d, enctype %d and name: %s\n", 
-				kvno, enctype, name));
-			TALLOC_FREE(name);
-		}
-	}
-
-	ret = krb5_kt_get_entry(context,
-				keytab,
-				server,
-				kvno,
-				enctype,
-				&entry);
-
-	if (ret) {
-		DEBUG(0,("get_key_from_keytab: failed to retrieve key: %s\n", error_message(ret)));
-		goto out;
-	}
-
-	keyp = KRB5_KT_KEY(&entry);
-
-	ret = krb5_copy_keyblock(context, keyp, out_key);
-	if (ret) {
-		DEBUG(0,("get_key_from_keytab: failed to copy key: %s\n", error_message(ret)));
-		goto out;
-	}
-		
-	smb_krb5_kt_free_entry(context, &entry);
-	
-out:    
-	krb5_kt_close(context, keytab);
-	return ret;
-}
-
 /* Prototypes */
 
  krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context, 
