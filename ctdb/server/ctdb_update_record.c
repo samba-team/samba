@@ -325,7 +325,10 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->ctdb_db = ctdb_db;
 	state->c       = c;
 	state->m       = m;
-	state->flags   = UPDATE_FLAGS_REPLACE_ONLY;
+	state->flags   = 0;
+	if (!ctdb_db->persistent) {
+		state->flags   = UPDATE_FLAGS_REPLACE_ONLY;
+	}
 
 	/* create a child process to take out a transaction and
 	   write the data.
