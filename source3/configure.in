@@ -3879,8 +3879,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_krbhst_get_addrinfo, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_crypto_init, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_crypto_destroy, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_decode_ap_req, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(free_AP_REQ, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_c_verify_checksum, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
@@ -3922,30 +3920,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_DECLS(krb5_auth_con_set_req_cksumtype, [], [], [#include <krb5.h>])
 
   LIBS="$KRB5_LIBS $LIBS"
-
-  AC_CACHE_CHECK(whether krb5_ticket contains kvno and enctype,
-	smb_krb5_cv_ticket_has_keyinfo,
-	[
-	    AC_TRY_COMPILE(
-	    [
-		#include <krb5.h>
-	    ],
-	    [
-		krb5_ticket ticket;
-		krb5_kvno kvno;
-		krb5_enctype enctype;
-
-		enctype = ticket.enc_part.enctype;
-		kvno = ticket.enc_part.kvno;
-	    ],
-	    [ smb_krb5_cv_ticket_has_keyinfo=yes ],
-	    [ smb_krb5_cv_ticket_has_keyinfo=no ])
-	])
-
-  if test x"$smb_krb5_cv_ticket_has_keyinfo" = x"yes" ; then
-	AC_DEFINE(KRB5_TICKET_HAS_KEYINFO, 1,
-	    [Whether the krb5_ticket structure contains the kvno and enctype])
-  fi
 
   AC_CACHE_CHECK(whether krb5_get_init_creds_opt_free takes a context argument,
 	  smb_krb5_cv_creds_opt_free_context,
@@ -4446,25 +4420,6 @@ if test x"$with_ads_support" != x"no"; then
   then
     AC_MSG_WARN(krb5_c_verify_checksum not found in -lkrb5)
     use_ads=no
-  fi
-
-  if test x"$smb_krb5_cv_ticket_has_keyinfo" != x"yes" ; then
-
-      # We only need the following functions if we can't get the enctype
-      # and kvno out of the ticket directly (ie. on Heimdal).
-
-      if test x"$ac_cv_func_ext_free_AP_REQ" != x"yes"
-      then
-	AC_MSG_WARN(no KRB5_AP_REQ_FREE_FUNCTION detected)
-	use_ads=no
-      fi
-
-      if test x"$ac_cv_func_ext_krb5_decode_ap_req" != x"yes"
-      then
-	AC_MSG_WARN(no KRB5_AP_REQ_DECODING_FUNCTION detected)
-	use_ads=no
-      fi
-
   fi
 
   if test x"$ac_cv_func_ext_gss_get_name_attribute" != x"yes" ; then

@@ -583,7 +583,7 @@ krb5_get_default_in_tkt_etypes krb5_free_data_contents
 krb5_principal_get_comp_string krb5_free_unparsed_name
 krb5_free_keytab_entry_contents krb5_kt_free_entry krb5_krbhst_init
 krb5_krbhst_get_addrinfo
-krb5_crypto_init krb5_crypto_destroy krb5_decode_ap_req free_AP_REQ
+krb5_crypto_init krb5_crypto_destroy
 krb5_c_verify_checksum krb5_principal_compare_any_realm
 krb5_parse_name_norealm krb5_princ_size krb5_get_init_creds_opt_set_pac_request
 krb5_get_renewed_creds krb5_free_error_contents
@@ -616,16 +616,6 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
 
         conf.CHECK_TYPE('krb5_encrypt_block', headers='krb5.h')
 
-        conf.CHECK_CODE('''
-krb5_ticket ticket;
-krb5_kvno kvno;
-krb5_enctype enctype;
-enctype = ticket.enc_part.enctype;
-kvno = ticket.enc_part.kvno;
-''',
-                        'KRB5_TICKET_HAS_KEYINFO',
-                        headers='krb5.h', link=False,
-                        msg="Checking whether the krb5_ticket structure contains the kvno and enctype")
         conf.CHECK_CODE('''
 krb5_context ctx;
 krb5_get_init_creds_opt *opt = NULL;
@@ -779,15 +769,6 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         if not conf.CONFIG_SET('HAVE_KRB5_C_VERIFY_CHECKSUM'):
             Logs.warn("krb5_c_verify_checksum_compare not found in -lkrb5")
             use_ads=False
-        if not conf.CONFIG_SET('KRB5_TICKET_HAS_KEYINFO'):
-            # We only need the following functions if we can't get the enctype
-            # and kvno out of the ticket directly (ie. on Heimdal).
-            if not conf.CONFIG_SET('HAVE_FREE_AP_REQ'):
-                Logs.warn("no KRB5_AP_REQ_FREE_FUNCTION detected")
-                use_ads=False
-            if not conf.CONFIG_SET('HAVE_KRB5_DECODE_AP_REQ'):
-                Logs.warn("no KRB5_AP_REQ_DECODING_FUNCTION detected")
-                use_ads=False
 
         # We don't actually use
         # gsskrb5_extract_authz_data_from_sec_context, but it is a
