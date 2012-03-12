@@ -81,14 +81,6 @@ krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context,
 						 const krb5_data *inbuf,
 						 krb5_kvno *kvno,
 						 krb5_enctype *enctype);
-krb5_error_code krb5_rd_req_return_keyblock_from_keytab(krb5_context context,
-							krb5_auth_context *auth_context,
-							const krb5_data *inbuf,
-							krb5_const_principal server,
-							krb5_keytab keytab,
-							krb5_flags *ap_req_options,
-							krb5_ticket **ticket,
-							krb5_keyblock **keyblock);
 krb5_error_code smb_krb5_parse_name_norealm(krb5_context context,
 					    const char *name,
 					    krb5_principal *principal);

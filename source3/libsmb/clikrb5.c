@@ -913,61 +913,6 @@ out:
  	return KRB5KDC_ERR_BADOPTION;
 }
 
- krb5_error_code krb5_rd_req_return_keyblock_from_keytab(krb5_context context,
-							krb5_auth_context *auth_context,
-							const krb5_data *inbuf,
-							krb5_const_principal server,
-							krb5_keytab keytab,
-							krb5_flags *ap_req_options,
-							krb5_ticket **ticket, 
-							krb5_keyblock **keyblock)
-{
-	krb5_error_code ret;
-	krb5_kvno kvno;
-	krb5_enctype enctype;
-	krb5_keyblock *local_keyblock;
-
-	ret = krb5_rd_req(context, 
-			  auth_context, 
-			  inbuf, 
-			  server, 
-			  keytab, 
-			  ap_req_options, 
-			  ticket);
-	if (ret) {
-		return ret;
-	}
-	
-#ifdef KRB5_TICKET_HAS_KEYINFO
-	enctype = (*ticket)->enc_part.enctype;
-	kvno = (*ticket)->enc_part.kvno;
-#else
-	ret = smb_krb5_get_keyinfo_from_ap_req(context, inbuf, &kvno, &enctype);
-	if (ret) {
-		return ret;
-	}
-#endif
-
-	ret = get_key_from_keytab(context, 
-				  server,
-				  enctype,
-				  kvno,
-				  &local_keyblock);
-	if (ret) {
-		DEBUG(0,("krb5_rd_req_return_keyblock_from_keytab: failed to call get_key_from_keytab\n"));
-		goto out;
-	}
-
-out:
-	if (ret && local_keyblock != NULL) {
-	        krb5_free_keyblock(context, local_keyblock);
-	} else {
-		*keyblock = local_keyblock;
-	}
-
-	return ret;
-}
-
  krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,	/* FILE:/tmp/krb5cc_0 */
 				       const char *client_string,	/* gd@BER.SUSE.DE */
 				       const char *service_string,	/* krbtgt/BER.SUSE.DE@BER.SUSE.DE */
