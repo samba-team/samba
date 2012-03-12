@@ -28,6 +28,18 @@ cpp_quote("#define smbXsrv_session smbXsrv_session0")
  */
 cpp_quote("#define smbXsrv_tcon smbXsrv_tcon0")
 
+/*
+ * The main server code should just work with
+ * 'struct smbXsrv_open' and never use
+ * smbXsrv_open0, smbXsrv_openU
+ * and smbXsrv_openB directly.
+ *
+ * If we need to change the smbXsrv_open,
+ * we can just point it to smbXsrv_open1
+ * and could implement transparent mapping.
+ */
+cpp_quote("#define smbXsrv_open smbXsrv_open0")
+
 [
 	uuid("07408340-ae31-11e1-97dc-539f7fddc06f"),
 	version(0.0),
@@ -252,5 +264,64 @@ interface smbXsrv
 
 	void smbXsrv_tcon_decode(
 		[in] smbXsrv_tconB blob
+		);
+
+	/* open files */
+
+	typedef struct {
+		[ignore] db_record 			*db_rec;
+		server_id				server_id;
+		uint32					open_global_id;
+		hyper					open_persistent_id;
+		hyper					open_volatile_id;
+		dom_sid					open_owner;
+		NTTIME					open_time;
+		/*
+		 * TODO: for durable/resilient/persistent handles we need more
+		 *       things here. See [MS-SMB2] 3.3.1.10 Per Open
+		 *
+		 * NOTE: this is still version 0, which is not a stable format!
+		 */
+	} smbXsrv_open_global0;
+
+	typedef union {
+		[case(0)] smbXsrv_open_global0		*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_open_globalU;
+
+	typedef [public] struct {
+
+		smbXsrv_version_values			version;
+		uint32					seqnum;
+		[switch_is(version)] smbXsrv_open_globalU info;
+	} smbXsrv_open_globalB;
+
+	void smbXsrv_open_global_decode(
+		[in] smbXsrv_open_globalB blob
+		);
+
+	typedef struct {
+		[ignore] smbXsrv_open_table		*table;
+		[ignore] db_record 			*db_rec;
+		uint32					local_id;
+		[ref] smbXsrv_open_global0		*global;
+		NTSTATUS				status;
+		NTTIME					idle_time;
+		[ignore] files_struct			*compat;
+	} smbXsrv_open0;
+
+	typedef union {
+		[case(0)] smbXsrv_open0			*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_openU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		[value(0)] uint32			reserved;
+		[switch_is(version)] smbXsrv_openU	info;
+	} smbXsrv_openB;
+
+	void smbXsrv_open_decode(
+		[in] smbXsrv_openB blob
 		);
 }
