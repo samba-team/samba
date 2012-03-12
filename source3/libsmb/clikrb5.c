@@ -711,32 +711,6 @@ static krb5_enctype get_enctype_from_ap_req(krb5_ap_req *ap_req)
 
 /* Prototypes */
 
- krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context, 
-						 const krb5_data *inbuf, 
-						 krb5_kvno *kvno, 
-						 krb5_enctype *enctype)
-{
-#ifdef HAVE_KRB5_DECODE_AP_REQ /* Heimdal */
-	{
-		krb5_error_code ret;
-		krb5_ap_req ap_req;
-		
-		ret = krb5_decode_ap_req(context, inbuf, &ap_req);
-		if (ret)
-			return ret;
-
-		*kvno = get_kvno_from_ap_req(&ap_req);
-		*enctype = get_enctype_from_ap_req(&ap_req);
-
- 		free_AP_REQ(&ap_req);
- 		return 0;
-	}
-#endif
-
- 	/* Possibly not an appropriate error code. */
- 	return KRB5KDC_ERR_BADOPTION;
-}
-
  krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,	/* FILE:/tmp/krb5cc_0 */
 				       const char *client_string,	/* gd@BER.SUSE.DE */
 				       const char *service_string,	/* krbtgt/BER.SUSE.DE@BER.SUSE.DE */

@@ -75,10 +75,6 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context, kr
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
 bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
-krb5_error_code smb_krb5_get_keyinfo_from_ap_req(krb5_context context,
-						 const krb5_data *inbuf,
-						 krb5_kvno *kvno,
-						 krb5_enctype *enctype);
 krb5_error_code smb_krb5_parse_name_norealm(krb5_context context,
 					    const char *name,
 					    krb5_principal *principal);
