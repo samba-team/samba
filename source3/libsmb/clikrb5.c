@@ -686,19 +686,6 @@ done:
 }
 #endif
 
-#ifdef HAVE_KRB5_DECODE_AP_REQ	/* Heimdal */
-static int get_kvno_from_ap_req(krb5_ap_req *ap_req)
-{
-#ifdef HAVE_TICKET_POINTER_IN_KRB5_AP_REQ /* MIT */
-	if (ap_req->ticket->enc_part.kvno)
-		return ap_req->ticket->enc_part.kvno;
-#else /* Heimdal */
-	if (ap_req->ticket.enc_part.kvno) 
-		return *ap_req->ticket.enc_part.kvno;
-#endif
-	return 0;
-}
-
 /* Prototypes */
 
  krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,	/* FILE:/tmp/krb5cc_0 */
