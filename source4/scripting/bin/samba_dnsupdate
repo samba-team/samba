@@ -125,6 +125,8 @@ class dnsobj(object):
 
     def __init__(self, string_form):
         list = string_form.split()
+        if len(list) < 3:
+            raise Exception("Invalid DNS entry %r" % string_form)
         self.dest = None
         self.port = None
         self.ip = None
@@ -133,6 +135,8 @@ class dnsobj(object):
         self.type = list[0]
         self.name = list[1].lower()
         if self.type == 'SRV':
+            if len(list) < 4:
+                raise Exception("Invalid DNS entry %r" % string_form)
             self.dest = list[2].lower()
             self.port = list[3]
         elif self.type in ['A', 'AAAA']:
@@ -159,8 +163,7 @@ def parse_dns_line(line, sub_vars):
             print "Skipping PDC entry (%s) as we are not a PDC" % line
         return None
     subline = samba.substitute_var(line, sub_vars)
-    d = dnsobj(subline)
-    return d
+    return dnsobj(subline)
 
 
 def hostname_match(h1, h2):
