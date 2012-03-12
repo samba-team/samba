@@ -138,6 +138,5 @@ int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
 bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *edata,
 			   DATA_BLOB *edata_out);
-bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data);
 
 #endif /* _INCLUDE_KRB5_PROTOS_H_ */

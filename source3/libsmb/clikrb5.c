@@ -230,48 +230,6 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 }
 
 
-bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
-{
-	DATA_BLOB pac_contents;
-	ASN1_DATA *data;
-	int data_type;
-
-	if (!auth_data->length) {
-		return False;
-	}
-
-	data = asn1_init(mem_ctx);
-	if (data == NULL) {
-		return false;
-	}
-
-	asn1_load(data, *auth_data);
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
-	asn1_start_tag(data, ASN1_CONTEXT(0));
-	asn1_read_Integer(data, &data_type);
-	
-	if (data_type != KRB5_AUTHDATA_WIN2K_PAC ) {
-		DEBUG(10,("authorization data is not a Windows PAC (type: %d)\n", data_type));
-		asn1_free(data);
-		return False;
-	}
-	
-	asn1_end_tag(data);
-	asn1_start_tag(data, ASN1_CONTEXT(1));
-	asn1_read_OctetString(data, talloc_tos(), &pac_contents);
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-	asn1_end_tag(data);
-	asn1_free(data);
-
-	*unwrapped_pac_data = data_blob_talloc(mem_ctx, pac_contents.data, pac_contents.length);
-
-	data_blob_free(&pac_contents);
-
-	return True;
-}
-
 static bool ads_cleanup_expired_creds(krb5_context context, 
 				      krb5_ccache  ccache,
 				      krb5_creds  *credsp)
@@ -1600,12 +1558,6 @@ char *smb_krb5_principal_get_realm(krb5_context context,
 {
 	 DEBUG(0,("NO KERBEROS SUPPORT\n"));
 	 return 1;
-}
-
-bool unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, DATA_BLOB *unwrapped_pac_data)
-{
-	DEBUG(0,("NO KERBEROS SUPPORT\n"));
-	return false;
 }
 
 #endif /* HAVE_KRB5 */
