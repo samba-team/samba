@@ -166,6 +166,8 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 
 static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 					       TALLOC_CTX *mem_ctx,
+					       TALLOC_CTX *domains_ctx,
+					       TALLOC_CTX *names_ctx,
 					       struct policy_handle *pol,
 					       int num_sids,
 					       const struct dom_sid *sids,
@@ -287,7 +289,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 			name = lsa_names.names[i].name.string;
 
 			if (name) {
-				(names)[i] = talloc_strdup(names, name);
+				(names)[i] = talloc_strdup(names_ctx, name);
 				if ((names)[i] == NULL) {
 					DEBUG(0, ("cli_lsa_lookup_sids_noalloc(): out of memory\n"));
 					*presult = NT_STATUS_UNSUCCESSFUL;
@@ -296,7 +298,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 			} else {
 				(names)[i] = NULL;
 			}
-			domains[i] = talloc_strdup(domains,
+			domains[i] = talloc_strdup(domains_ctx,
 						   dom_name ? dom_name : "");
 			(types)[i] = lsa_names.names[i].sid_type;
 			if (((domains)[i] == NULL)) {
@@ -394,6 +396,8 @@ static NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 
 		status = dcerpc_lsa_lookup_sids_noalloc(h,
 							mem_ctx,
+							(TALLOC_CTX *)domains,
+							(TALLOC_CTX *)names,
 							pol,
 							hunk_num_sids,
 							hunk_sids,
@@ -433,7 +437,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 		}
 
 		sids_left -= hunk_num_sids;
-		sids_processed += hunk_num_sids; /* only used in DEBUG */
+		sids_processed += hunk_num_sids;
 		hunk_sids += hunk_num_sids;
 		hunk_domains += hunk_num_sids;
 		hunk_names += hunk_num_sids;
