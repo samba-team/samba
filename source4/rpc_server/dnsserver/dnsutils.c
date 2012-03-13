@@ -159,6 +159,7 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	struct dnsserver_zoneinfo *zoneinfo;
 	uint32_t fReverse;
 	const char *revzone = "in-addr.arpa";
+	const char *revzone6 = "ip6.arpa";
 	int len1, len2;
 
 	zoneinfo = talloc_zero(zone, struct dnsserver_zoneinfo);
@@ -167,11 +168,17 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	}
 
 	/* If the zone name ends with in-addr.arpa, it's reverse zone */
+	/* If the zone name ends with ip6.arpa, it's reverse zone (IPv6) */
 	fReverse = 0;
 	len1 = strlen(zone->name);
 	len2 = strlen(revzone);
 	if (len1 > len2 && strcasecmp(&zone->name[len1-len2], revzone) == 0) {
 		fReverse = 1;
+	} else {
+		len2 = strlen(revzone6);
+		if (len1 > len2 && strcasecmp(&zone->name[len1-len2], revzone6) == 0) {
+			fReverse = 1;
+		}
 	}
 
 	zoneinfo->Version = 0x32;
