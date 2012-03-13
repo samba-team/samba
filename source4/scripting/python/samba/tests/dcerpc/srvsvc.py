@@ -1,6 +1,5 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+#
 # Unix SMB/CIFS implementation.
 # Copyright © Dhananjay Sathe <dhanajaysathe@gmail.com> 2011
 # Copyright © Jelmer Vernooij <jelmer@samba.org> 2011

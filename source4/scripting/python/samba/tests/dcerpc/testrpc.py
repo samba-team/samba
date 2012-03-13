@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # test generated python code from pidl
 # Copyright (C) Andrew Tridgell August 2010
 #
