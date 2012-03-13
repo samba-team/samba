@@ -83,7 +83,8 @@ _PUBLIC_ NTSTATUS dcerpc_init(void)
 static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS status);
 static void dcerpc_schedule_io_trigger(struct dcecli_connection *c);
 
-static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
+static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
+					       struct dcerpc_pipe *p,
 					       const struct GUID *object,
 					       uint16_t opnum,
 					       DATA_BLOB *stub_data);
@@ -240,7 +241,8 @@ static struct tevent_req *dcerpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = dcerpc_request_send(hs->p,
+	subreq = dcerpc_request_send(state,
+				     hs->p,
 				     object,
 				     opnum,
 				     &state->in_data);
@@ -1462,7 +1464,8 @@ req_done:
 /*
   perform the send side of a async dcerpc request
 */
-static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
+static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
+					       struct dcerpc_pipe *p,
 					       const struct GUID *object,
 					       uint16_t opnum,
 					       DATA_BLOB *stub_data)
@@ -1471,7 +1474,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 
 	p->conn->transport.recv_data = dcerpc_recv_data;
 
-	req = talloc(p, struct rpc_request);
+	req = talloc(mem_ctx, struct rpc_request);
 	if (req == NULL) {
 		return NULL;
 	}
