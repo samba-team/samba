@@ -1710,6 +1710,10 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
+	if (!*r->in.printername) {
+		return WERR_INVALID_PARAM;
+	}
+
 	if (r->in.level > 3) {
 		return WERR_INVALID_PARAM;
 	}
