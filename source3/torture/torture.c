@@ -7971,6 +7971,7 @@ static bool run_local_talloc_dict(int dummy)
 	struct talloc_dict *dict;
 	struct talloc_dict_test *t;
 	int key, count, res;
+	bool ok;
 
 	dict = talloc_dict_init(talloc_tos());
 	if (dict == NULL) {
@@ -7984,7 +7985,8 @@ static bool run_local_talloc_dict(int dummy)
 
 	key = 1;
 	t->content = 1;
-	if (!talloc_dict_set(dict, data_blob_const(&key, sizeof(key)), t)) {
+	ok = talloc_dict_set(dict, data_blob_const(&key, sizeof(key)), &t);
+	if (!ok) {
 		return false;
 	}
 
