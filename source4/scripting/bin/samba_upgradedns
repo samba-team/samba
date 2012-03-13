@@ -323,6 +323,8 @@ if __name__ == '__main__':
         logger.info("Adding DNS accounts")
         add_dns_accounts(ldbs.sam, domaindn)
         dnsadmins_sid = get_dnsadmins_sid(ldbs.sam, domaindn)
+    else:
+        logger.info("DNS accounts already exist")
 
     # Import dns records from zone file
     if os.path.exists(paths.dns):
@@ -340,55 +342,70 @@ if __name__ == '__main__':
         logger.warn("DNS records will be automatically created")
         autofill = True
 
-    # Fill DNS information
-    logger.info("Creating DNS partitions")
-    create_dns_partitions(ldbs.sam, domainsid, names, domaindn, forestdn,
+    # Create DNS partitions if missing and fill DNS information
+    try:
+        expression = '(|(dnsRoot=DomainDnsZones.%s)(dnsRoot=ForestDnsZones.%s))' % \
+                     (dnsdomain, dnsdomain)
+        msg = ldbs.sam.search(base=names.configdn, scope=ldb.SCOPE_DEFAULT,
+                              expression=expression, attrs=['nCName'])
+        ncname = msg[0]['nCName'][0]
+    except Exception, e:
+        logger.info("Creating DNS partitions")
+        create_dns_partitions(ldbs.sam, domainsid, names, domaindn, forestdn,
                           dnsadmins_sid)
 
-    logger.info("Populating DNS partitions")
-    fill_dns_data_partitions(ldbs.sam, domainsid, site, domaindn, forestdn,
+        logger.info("Populating DNS partitions")
+        fill_dns_data_partitions(ldbs.sam, domainsid, site, domaindn, forestdn,
                              dnsdomain, dnsforest, hostname, hostip, hostip6,
                              domainguid, ntdsguid, dnsadmins_sid,
                              autofill=autofill)
 
-    if not autofill:
-        logger.info("Importing records from zone file")
-        import_zone_data(ldbs.sam, logger, zone, serial, domaindn, forestdn,
-                         dnsdomain, dnsforest)
+        if not autofill:
+            logger.info("Importing records from zone file")
+            import_zone_data(ldbs.sam, logger, zone, serial, domaindn, forestdn,
+                             dnsdomain, dnsforest)
+    else:
+        logger.info("DNS partitions already exist")
 
-    if opts.dns_backend == "BIND9_DLZ":
-        create_dns_dir(logger, paths)
+    # Check if dns-HOSTNAME account exists and create it if required
+    try:
+        dn = 'samAccountName=dns-%s,CN=Principals' % hostname
+        msg = ldbs.secrets.search(expression='(dn=%s)' % dn, attrs=['secret'])
+        dnssecret = msg[0]['secret'][0]
+    except Exception:
+        logger.info("Adding dns-%s account" % hostname)
 
-        # Check if dns-HOSTNAME account exists and create it if required
         try:
-            dn = 'samAccountName=dns-%s,CN=Principals' % hostname
-            msg = ldbs.secrets.search(expression='(dn=%s)' % dn, attrs=['secret'])
-            dnssecret = msg[0]['secret'][0]
+            msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
+                                  expression='(sAMAccountName=dns-%s)' % (hostname),
+                                  attrs=['clearTextPassword'])
+            dn = msg[0].dn
+            ldbs.sam.delete(dn)
         except Exception:
-            logger.info("Creating DNS account for BIND9")
+            pass
 
-            try:
-                msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
-                                      expression='(sAMAccountName=dns-%s)' % (hostname),
-                                      attrs=['clearTextPassword'])
-                dn = msg[0].dn
-                ldbs.sam.delete(dn)
-            except Exception:
-                pass
+        dnspass = samba.generate_random_password(128, 255)
+        setup_add_ldif(ldbs.sam, setup_path("provision_dns_add_samba.ldif"), {
+                       "DNSDOMAIN": dnsdomain,
+                       "DOMAINDN": domaindn,
+                       "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
+                       "HOSTNAME" : hostname,
+                       "DNSNAME" : dnsname }
+                       )
 
-            dnspass = samba.generate_random_password(128, 255)
-            setup_add_ldif(ldbs.sam, setup_path("provision_dns_add_samba.ldif"), {
-                           "DNSDOMAIN": dnsdomain,
-                           "DOMAINDN": domaindn,
-                           "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
-                           "HOSTNAME" : hostname,
-                           "DNSNAME" : dnsname }
-                           )
+        secretsdb_setup_dns(ldbs.secrets, names,
+                            paths.private_dir, realm=names.realm,
+                            dnsdomain=names.dnsdomain,
+                            dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+    else:
+        logger.info("dns-%s account already exists" % hostname)
 
-            secretsdb_setup_dns(ldbs.secrets, names,
-                                paths.private_dir, realm=names.realm,
-                                dnsdomain=names.dnsdomain,
-                                dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+    # Special stuff for DLZ backend
+    if opts.dns_backend == "BIND9_DLZ":
+        # This forces a re-creation of dns directory and all the files within
+        # It's an overkill, but it's easier to re-create a samdb copy, rather
+        # than trying to fix a broken copy.
+        create_dns_dir(logger, paths)
 
         # Setup a copy of SAM for BIND9
         create_samdb_copy(ldbs.sam, logger, paths, names, domainsid,
