@@ -38,6 +38,7 @@ extern const struct dom_sid global_sid_Authenticated_Users;
 extern const struct dom_sid global_sid_Network;
 extern const struct dom_sid global_sid_Creator_Owner;
 extern const struct dom_sid global_sid_Creator_Group;
+extern const struct dom_sid global_sid_Owner_Rights;
 extern const struct dom_sid global_sid_Anonymous;
 extern const struct dom_sid global_sid_Builtin;
 extern const struct dom_sid global_sid_Builtin_Administrators;

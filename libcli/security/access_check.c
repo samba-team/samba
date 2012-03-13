@@ -159,6 +159,16 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 	uint32_t i;
 	uint32_t bits_remaining;
 	uint32_t explicitly_denied_bits = 0;
+	/*
+	 * Up until Windows Server 2008, owner always had these rights. Now
+	 * we have to use Owner Rights perms if they are on the file.
+	 *
+	 * In addition we have to accumulate these bits and apply them
+	 * correctly. See bug #8795
+	 */
+	uint32_t owner_rights_allowed = 0;
+	uint32_t owner_rights_denied = 0;
+	bool owner_rights_default = true;
 
 	*access_granted = access_desired;
 	bits_remaining = access_desired;
@@ -176,12 +186,6 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			orig_access_desired,
 			*access_granted,
 			bits_remaining));
-	}
-
-	/* the owner always gets SEC_STD_WRITE_DAC and SEC_STD_READ_CONTROL */
-	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
-	    security_token_has_sid(token, sd->owner_sid)) {
-		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
 	}
 
 	/* a NULL dacl allows access */
@@ -202,6 +206,26 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			continue;
 		}
 
+		/*
+		 * We need the Owner Rights permissions to ensure we
+		 * give or deny the correct permissions to the owner. Replace
+		 * owner_rights with the perms here if it is present.
+		 *
+		 * We don't care if we are not the owner because that is taken
+		 * care of below when we check if our token has the owner SID.
+		 *
+		 */
+		if (dom_sid_equal(&ace->trustee, &global_sid_Owner_Rights)) {
+			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {
+				owner_rights_allowed |= ace->access_mask;
+				owner_rights_default = false;
+			} else if (ace->type == SEC_ACE_TYPE_ACCESS_DENIED) {
+				owner_rights_denied |= ace->access_mask;
+				owner_rights_default = false;
+			}
+			continue;
+		}
+
 		if (!security_token_has_sid(token, &ace->trustee)) {
 			continue;
 		}
@@ -219,6 +243,22 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		}
 	}
 
+	/* The owner always gets owner rights as defined above. */
+	if (security_token_has_sid(token, sd->owner_sid)) {
+		if (owner_rights_default) {
+			/*
+			 * Just remove them, no need to check if they are
+			 * there.
+			 */
+			bits_remaining &= ~(SEC_STD_WRITE_DAC |
+						SEC_STD_READ_CONTROL);
+		} else {
+			bits_remaining &= ~owner_rights_allowed;
+			bits_remaining |= owner_rights_denied;
+		}
+	}
+
+	/* Explicitly denied bits always override */
 	bits_remaining |= explicitly_denied_bits;
 
 	/*

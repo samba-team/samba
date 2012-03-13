@@ -62,6 +62,8 @@ const struct dom_sid global_sid_Creator_Owner =		/* Creator Owner */
 { 1, 1, {0,0,0,0,0,3}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const struct dom_sid global_sid_Creator_Group =		/* Creator Group */
 { 1, 1, {0,0,0,0,0,3}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const struct dom_sid global_sid_Owner_Rights =		/* Owner Rights */
+{ 1, 1, {0,0,0,0,0,3}, {4,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const struct dom_sid global_sid_Anonymous =			/* Anonymous login */
 { 1, 1, {0,0,0,0,0,5}, {7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 const struct dom_sid global_sid_Enterprise_DCs =		/* Enterprise DCs */
