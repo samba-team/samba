@@ -27,7 +27,6 @@
 #include "librpc/rpc/dcerpc_proto.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
-#include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "lib/util/tevent_ntstatus.h"
@@ -955,16 +954,6 @@ static NTSTATUS dcerpc_map_reason(uint16_t reason)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	return NT_STATUS_UNSUCCESSFUL;
-}
-
-/*
-  a bind or alter context has failed
-*/
-static void dcerpc_composite_fail(struct rpc_request *req)
-{
-	struct composite_context *c = talloc_get_type(req->async.private_data, 
-						      struct composite_context);
-	composite_error(c, req->status);
 }
 
 /*
@@ -1921,76 +1910,35 @@ uint32_t dcerpc_auth_level(struct dcecli_connection *c)
 	return auth_level;
 }
 
-/*
-  Receive an alter reply from the transport
-*/
-static void dcerpc_alter_recv_handler(struct rpc_request *req,
-				      DATA_BLOB *raw_packet, struct ncacn_packet *pkt)
+struct dcerpc_alter_context_state {
+	struct dcerpc_pipe *p;
+};
+
+static void dcerpc_alter_context_fail_handler(struct rpc_request *subreq);
+static void dcerpc_alter_context_recv_handler(struct rpc_request *req,
+					      DATA_BLOB *raw_packet,
+					      struct ncacn_packet *pkt);
+
+struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct dcerpc_pipe *p,
+					     const struct ndr_syntax_id *syntax,
+					     const struct ndr_syntax_id *transfer_syntax)
 {
-	struct composite_context *c;
-	struct dcerpc_pipe *recv_pipe;
-
-	c = talloc_get_type(req->async.private_data, struct composite_context);
-	recv_pipe = talloc_get_type(c->private_data, struct dcerpc_pipe);
-
-	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
-	    pkt->u.alter_resp.num_results == 1 &&
-	    pkt->u.alter_resp.ctx_list[0].result != 0) {
-		DEBUG(2,("dcerpc: alter_resp failed - reason %d\n", 
-			 pkt->u.alter_resp.ctx_list[0].reason));
-		composite_error(c, dcerpc_map_reason(pkt->u.alter_resp.ctx_list[0].reason));
-		return;
-	}
-
-	if (pkt->ptype == DCERPC_PKT_FAULT) {
-		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt->u.fault.status)));
-		recv_pipe->last_fault_code = pkt->u.fault.status;
-		composite_error(c, NT_STATUS_NET_WRITE_FAULT);
-		return;
-	}
-
-	if (pkt->ptype != DCERPC_PKT_ALTER_RESP ||
-	    pkt->u.alter_resp.num_results == 0 ||
-	    pkt->u.alter_resp.ctx_list[0].result != 0) {
-		recv_pipe->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
-		composite_error(c, NT_STATUS_NET_WRITE_FAULT);
-		return;
-	}
-
-	/* the alter_resp might contain a reply set of credentials */
-	if (recv_pipe->conn->security_state.auth_info &&
-	    pkt->u.alter_resp.auth_info.length) {
-		struct dcecli_connection *conn = recv_pipe->conn;
-		NTSTATUS status;
-		uint32_t auth_length;
-		status = dcerpc_pull_auth_trailer(pkt, conn, &pkt->u.alter_resp.auth_info,
-						  conn->security_state.auth_info, &auth_length, true);
-		if (!NT_STATUS_IS_OK(status)) {
-			composite_error(c, status);
-			return;
-		}
-	}
-
-	composite_done(c);
-}
-
-/* 
-   send a dcerpc alter_context request
-*/
-struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p, 
-						    TALLOC_CTX *mem_ctx,
-						    const struct ndr_syntax_id *syntax,
-						    const struct ndr_syntax_id *transfer_syntax)
-{
-	struct composite_context *c;
+	struct tevent_req *req;
+	struct dcerpc_alter_context_state *state;
 	struct ncacn_packet pkt;
 	DATA_BLOB blob;
-	struct rpc_request *req;
+	NTSTATUS status;
+	struct rpc_request *subreq;
 
-	c = composite_create(mem_ctx, p->conn->event_ctx);
-	if (c == NULL) return NULL;
+	req = tevent_req_create(mem_ctx, &state,
+				struct dcerpc_alter_context_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
-	c->private_data = p;
+	state->p = p;
 
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
@@ -2014,8 +1962,10 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	pkt.u.alter.max_recv_frag = 5840;
 	pkt.u.alter.assoc_group_id = p->binding->assoc_group_id;
 	pkt.u.alter.num_contexts = 1;
-	pkt.u.alter.ctx_list = talloc_array(c, struct dcerpc_ctx_list, 1);
-	if (composite_nomem(pkt.u.alter.ctx_list, c)) return c;
+	pkt.u.alter.ctx_list = talloc_array(state, struct dcerpc_ctx_list, 1);
+	if (tevent_req_nomem(pkt.u.alter.ctx_list, req)) {
+		return tevent_req_post(req, ev);
+	}
 	pkt.u.alter.ctx_list[0].context_id = p->context_id;
 	pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
 	pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
@@ -2023,9 +1973,11 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	pkt.u.alter.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	c->status = ncacn_push_auth(&blob, mem_ctx, &pkt,
-				    p->conn->security_state.auth_info);
-	if (!composite_is_ok(c)) return c;
+	status = ncacn_push_auth(&blob, state, &pkt,
+				 p->conn->security_state.auth_info);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
 
 	p->conn->transport.recv_data = dcerpc_recv_data;
 
@@ -2033,33 +1985,109 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	 * we allocate a dcerpc_request so we can be in the same
 	 * request queue as normal requests
 	 */
-	req = talloc_zero(c, struct rpc_request);
-	if (composite_nomem(req, c)) return c;
+	subreq = talloc_zero(state, struct rpc_request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
 
-	req->state = RPC_REQUEST_PENDING;
-	req->call_id = pkt.call_id;
-	req->async.private_data = c;
-	req->async.callback = dcerpc_composite_fail;
-	req->p = p;
-	req->recv_handler = dcerpc_alter_recv_handler;
-	DLIST_ADD_END(p->conn->pending, req, struct rpc_request *);
-	talloc_set_destructor(req, dcerpc_req_dequeue);
+	subreq->state = RPC_REQUEST_PENDING;
+	subreq->call_id = pkt.call_id;
+	subreq->async.private_data = req;
+	subreq->async.callback = dcerpc_alter_context_fail_handler;
+	subreq->p = p;
+	subreq->recv_handler = dcerpc_alter_context_recv_handler;
+	DLIST_ADD_END(p->conn->pending, subreq, struct rpc_request *);
+	talloc_set_destructor(subreq, dcerpc_req_dequeue);
 
-	c->status = p->conn->transport.send_request(p->conn, &blob, true);
-	if (!composite_is_ok(c)) return c;
+	status = p->conn->transport.send_request(p->conn, &blob, true);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
 
-	tevent_add_timer(c->event_ctx, req,
-			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
-			dcerpc_timeout_handler, req);
+	tevent_add_timer(ev, subreq,
+			 timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
+			 dcerpc_timeout_handler, subreq);
 
-	return c;
+	return req;
 }
 
-NTSTATUS dcerpc_alter_context_recv(struct composite_context *ctx)
+static void dcerpc_alter_context_fail_handler(struct rpc_request *subreq)
 {
-	NTSTATUS result = composite_wait(ctx);
-	talloc_free(ctx);
-	return result;
+	struct tevent_req *req =
+		talloc_get_type_abort(subreq->async.private_data,
+		struct tevent_req);
+	NTSTATUS status = subreq->status;
+
+	TALLOC_FREE(subreq);
+
+	tevent_req_nterror(req, status);
+}
+
+static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
+					      DATA_BLOB *raw_packet,
+					      struct ncacn_packet *pkt)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(subreq->async.private_data,
+		struct tevent_req);
+	struct dcerpc_alter_context_state *state =
+		tevent_req_data(req,
+		struct dcerpc_alter_context_state);
+	struct dcecli_connection *conn = state->p->conn;
+	NTSTATUS status;
+
+	/*
+	 * Note that pkt is allocated under raw_packet->data,
+	 * while raw_packet->data is a child of subreq.
+	 */
+	talloc_steal(state, raw_packet->data);
+	TALLOC_FREE(subreq);
+
+	if (pkt->ptype == DCERPC_PKT_ALTER_RESP &&
+	    pkt->u.alter_resp.num_results == 1 &&
+	    pkt->u.alter_resp.ctx_list[0].result != 0) {
+		status = dcerpc_map_reason(pkt->u.alter_resp.ctx_list[0].reason);
+		DEBUG(2,("dcerpc: alter_resp failed - reason %d - %s\n",
+			 pkt->u.alter_resp.ctx_list[0].reason,
+			 nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (pkt->ptype == DCERPC_PKT_FAULT) {
+		DEBUG(5,("dcerpc: alter_resp - rpc fault: %s\n",
+			 dcerpc_errstr(state, pkt->u.fault.status)));
+		state->p->last_fault_code = pkt->u.fault.status;
+		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+
+	if (pkt->ptype != DCERPC_PKT_ALTER_RESP ||
+	    pkt->u.alter_resp.num_results == 0 ||
+	    pkt->u.alter_resp.ctx_list[0].result != 0) {
+		state->p->last_fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		return;
+	}
+
+	/* the alter_resp might contain a reply set of credentials */
+	if (conn->security_state.auth_info &&
+	    pkt->u.alter_resp.auth_info.length) {
+		uint32_t auth_length;
+
+		status = dcerpc_pull_auth_trailer(pkt, conn, &pkt->u.alter_resp.auth_info,
+						  conn->security_state.auth_info, &auth_length, true);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS dcerpc_alter_context_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 /* 
@@ -2070,8 +2098,25 @@ _PUBLIC_ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 			      const struct ndr_syntax_id *syntax,
 			      const struct ndr_syntax_id *transfer_syntax)
 {
-	struct composite_context *creq;
-	creq = dcerpc_alter_context_send(p, mem_ctx, syntax, transfer_syntax);
-	return dcerpc_alter_context_recv(creq);
+	struct tevent_req *subreq;
+	struct tevent_context *ev = p->conn->event_ctx;
+	bool ok;
+
+	/* TODO: create a new event context here */
+
+	subreq = dcerpc_alter_context_send(mem_ctx, p->conn->event_ctx,
+					   p, syntax, transfer_syntax);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = tevent_req_poll(subreq, ev);
+	if (!ok) {
+		NTSTATUS status;
+		status = map_nt_error_from_unix_common(errno);
+		return status;
+	}
+
+	return dcerpc_alter_context_recv(subreq);
 }
 

@@ -129,13 +129,13 @@ struct bind_auth_state {
 				 * first bind itself received? */
 };
 
-static void bind_auth_recv_alter(struct composite_context *creq);
+static void bind_auth_recv_alter(struct tevent_req *subreq);
 
 static void bind_auth_next_step(struct composite_context *c)
 {
 	struct bind_auth_state *state;
 	struct dcecli_security *sec;
-	struct composite_context *creq;
+	struct tevent_req *subreq;
 	bool more_processing = false;
 
 	state = talloc_get_type(c->private_data, struct bind_auth_state);
@@ -188,23 +188,25 @@ static void bind_auth_next_step(struct composite_context *c)
 
 	/* We are demanding a reply, so use a request that will get us one */
 
-	creq = dcerpc_alter_context_send(state->pipe, state,
-					 &state->pipe->syntax,
-					 &state->pipe->transfer_syntax);
+	subreq = dcerpc_alter_context_send(state, state->pipe->conn->event_ctx,
+					   state->pipe,
+					   &state->pipe->syntax,
+					   &state->pipe->transfer_syntax);
 	data_blob_free(&state->credentials);
 	sec->auth_info->credentials = data_blob(NULL, 0);
-	if (composite_nomem(creq, c)) return;
-
-	composite_continue(c, creq, bind_auth_recv_alter, c);
+	if (composite_nomem(subreq, c)) return;
+	tevent_req_set_callback(subreq, bind_auth_recv_alter, c);
 }
 
 
-static void bind_auth_recv_alter(struct composite_context *creq)
+static void bind_auth_recv_alter(struct tevent_req *subreq)
 {
-	struct composite_context *c = talloc_get_type(creq->async.private_data,
-						      struct composite_context);
+	struct composite_context *c =
+		tevent_req_callback_data(subreq,
+		struct composite_context);
 
-	c->status = dcerpc_alter_context_recv(creq);
+	c->status = dcerpc_alter_context_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	bind_auth_next_step(c);
