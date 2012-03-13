@@ -7970,7 +7970,7 @@ static bool run_local_talloc_dict(int dummy)
 {
 	struct talloc_dict *dict;
 	struct talloc_dict_test *t;
-	int key, count;
+	int key, count, res;
 
 	dict = talloc_dict_init(talloc_tos());
 	if (dict == NULL) {
@@ -7989,11 +7989,16 @@ static bool run_local_talloc_dict(int dummy)
 	}
 
 	count = 0;
-	if (talloc_dict_traverse(dict, talloc_dict_traverse_fn, &count) != 0) {
+	res = talloc_dict_traverse(dict, talloc_dict_traverse_fn, &count);
+	if (res == -1) {
 		return false;
 	}
 
 	if (count != 1) {
+		return false;
+	}
+
+	if (count != res) {
 		return false;
 	}
 
