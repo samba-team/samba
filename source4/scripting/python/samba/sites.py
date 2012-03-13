@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # python site manipulation code
 # Copyright Matthieu Patou <mat@matws.net> 2011
 #

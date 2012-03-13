@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # DRS utility code
 #
 # Copyright Andrew Tridgell 2010

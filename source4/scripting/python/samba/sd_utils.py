@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Utility methods for security descriptor manipulation
 #
 # Copyright Nadezhda Ivanova 2010 <nivanova@samba.org>

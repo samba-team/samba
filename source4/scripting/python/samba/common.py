@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Samba common functions
 #
 # Copyright (C) Matthieu Patou <mat@matws.net>

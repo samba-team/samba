@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Unix SMB/CIFS implementation.
 # Copyright (C) Matthieu Patou <mat@matws.net> 2009-2010
 #

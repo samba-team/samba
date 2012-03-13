@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # python join code
 # Copyright Andrew Tridgell 2010
 # Copyright Andrew Bartlett 2010

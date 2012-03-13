@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # KCC topology utilities
 #
 # Copyright (C) Dave Craft 2011

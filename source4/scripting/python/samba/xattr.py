@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# vim: expandtab
-#
 # Utility code for dealing with POSIX extended attributes
 #
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2012
