@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Unix SMB/CIFS implementation.
 # Copyright (C) Kai Blin  <kai@samba.org> 2011
 #

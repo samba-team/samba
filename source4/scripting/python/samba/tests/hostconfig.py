@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Unix SMB/CIFS implementation. Tests for shares
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009
 #

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # subunit test cases for Samba string functions.
 
 # Copyright (C) 2003 by Martin Pool <mbp@samba.org>

@@ -1,5 +1,3 @@
-#! /usr/bin/python
-
 # Copyright (C) 2003 by Martin Pool <mbp@samba.org>
 
 # This program is free software; you can redistribute it and/or modify

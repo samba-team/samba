@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Unix SMB/CIFS implementation. Tests for SamDB
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
 #

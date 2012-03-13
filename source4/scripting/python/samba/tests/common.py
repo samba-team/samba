@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Unix SMB/CIFS implementation. Tests for common.py routines
 # Copyright (C) Andrew Tridgell 2011
 #
