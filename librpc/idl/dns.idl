@@ -46,17 +46,23 @@ interface dns
 
 	/* rcode values */
 	typedef [public] enum {
-		DNS_RCODE_OK       = 0x0,
-		DNS_RCODE_FORMERR  = 0x1,
-		DNS_RCODE_SERVFAIL = 0x2,
-		DNS_RCODE_NXDOMAIN = 0x3,
-		DNS_RCODE_NOTIMP   = 0x4,
-		DNS_RCODE_REFUSED  = 0x5,
-		DNS_RCODE_YXDOMAIN = 0x6,
-		DNS_RCODE_YXRRSET  = 0x7,
-		DNS_RCODE_NXRRSET  = 0x8,
-		DNS_RCODE_NOTAUTH  = 0x9,
-		DNS_RCODE_NOTZONE  = 0xA
+		DNS_RCODE_OK       = 0x00,
+		DNS_RCODE_FORMERR  = 0x01,
+		DNS_RCODE_SERVFAIL = 0x02,
+		DNS_RCODE_NXDOMAIN = 0x03,
+		DNS_RCODE_NOTIMP   = 0x04,
+		DNS_RCODE_REFUSED  = 0x05,
+		DNS_RCODE_YXDOMAIN = 0x06,
+		DNS_RCODE_YXRRSET  = 0x07,
+		DNS_RCODE_NXRRSET  = 0x08,
+		DNS_RCODE_NOTAUTH  = 0x09,
+		DNS_RCODE_NOTZONE  = 0x0A,
+		DNS_RCODE_BADSIG   = 0x10,
+		DNS_RCODE_BADKEY   = 0x11,
+		DNS_RCODE_BADTIME  = 0x12,
+		DNS_RCODE_BADMODE  = 0x13,
+		DNS_RCODE_BADNAME  = 0x14,
+		DNS_RCODE_BADALG   = 0x15
 	} dns_rcode;
 
 	typedef [public,enum16bit] enum {
@@ -105,11 +111,23 @@ interface dns
 		DNS_QTYPE_NSEC   = 0x002F,
 		DNS_QTYPE_DNSKEY = 0x0030,
 		DNS_QTYPE_DHCID  = 0x0031,
+		DNS_QTYPE_TKEY   = 0x00F9,
+		DNS_QTYPE_TSIG   = 0x00FA,
 		DNS_QTYPE_AXFR   = 0x00FC,
 		DNS_QTYPE_MAILB  = 0x00FD,
 		DNS_QTYPE_MAILA  = 0x00FE,
 		DNS_QTYPE_ALL    = 0x00FF
 	} dns_qtype;
+
+	typedef [public,enum16bit] enum {
+		DNS_TKEY_MODE_NULL   = 0x0000,
+		DNS_TKEY_MODE_SERVER = 0x0001,
+		DNS_TKEY_MODE_DH     = 0x0002,
+		DNS_TKEY_MODE_GSSAPI = 0x0003,
+		DNS_TKEY_MODE_CLIENT = 0x0004,
+		DNS_TKEY_MODE_DELETE = 0x0005,
+		DNS_TKEY_MODE_LAST   = 0xFFFF
+	} dns_tkey_mode;
 
 	typedef [public] struct {
 		dns_string name;
@@ -149,6 +167,31 @@ interface dns
 		dns_string target;
 	} dns_srv_record;
 
+	typedef [public] struct {
+		dns_string     algorithm;
+		uint32         inception;
+		uint32         expiration;
+		dns_tkey_mode  mode;
+		uint16         error;
+		uint16         key_size;
+		uint8          key_data[key_size];
+		uint16         other_size;
+		uint8          other_data[other_size];
+	} dns_tkey_record;
+
+	typedef [public] struct {
+		dns_string algorithm_name;
+		uint16     time_prefix; /* 0 until February 2106*/
+		uint32     time;
+		uint16     fudge;
+		uint16     mac_size;
+		uint8      mac[mac_size];
+		uint16     original_id;
+		uint16     error;
+		uint16     other_size;
+		uint8      other_data[other_size];
+	} dns_tsig_record;
+
 	typedef [nodiscriminant,public,flag(NDR_NOALIGN)] union {
 		[case(DNS_QTYPE_A)]     ipv4address	 ipv4_record;
 		[case(DNS_QTYPE_NS)]    dns_string       ns_record;
@@ -159,6 +202,8 @@ interface dns
 		[case(DNS_QTYPE_TXT)]	dns_txt_record   txt_record;
 		[case(DNS_QTYPE_AAAA)]	ipv6address	 ipv6_record;
 		[case(DNS_QTYPE_SRV)]	dns_srv_record	 srv_record;
+		[case(DNS_QTYPE_TSIG)]	dns_tsig_record	 tsig_record;
+		[case(DNS_QTYPE_TKEY)]	dns_tkey_record	 tkey_record;
 		[default];
 	} dns_rdata;
 
