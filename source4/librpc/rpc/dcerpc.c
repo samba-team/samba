@@ -1082,6 +1082,7 @@ static void dcerpc_timeout_handler(struct tevent_context *ev, struct tevent_time
 }
 
 struct dcerpc_bind_state {
+	struct tevent_context *ev;
 	struct dcerpc_pipe *p;
 };
 
@@ -1109,6 +1110,7 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	state->ev = ev;
 	state->p = p;
 
 	p->syntax = *syntax;
@@ -1187,9 +1189,24 @@ static void dcerpc_bind_fail_handler(struct rpc_request *subreq)
 	struct tevent_req *req =
 		talloc_get_type_abort(subreq->async.private_data,
 		struct tevent_req);
+	struct dcerpc_bind_state *state =
+		tevent_req_data(req,
+		struct dcerpc_bind_state);
 	NTSTATUS status = subreq->status;
 
 	TALLOC_FREE(subreq);
+
+	/*
+	 * We trigger the callback in the next event run
+	 * because the code in this file might trigger
+	 * multiple request callbacks from within a single
+	 * while loop.
+	 *
+	 * In order to avoid segfaults from within
+	 * dcerpc_connection_dead() we call
+	 * tevent_req_defer_callback().
+	 */
+	tevent_req_defer_callback(req, state->ev);
 
 	tevent_req_nterror(req, status);
 }
@@ -1213,6 +1230,18 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 	 */
 	talloc_steal(state, raw_packet->data);
 	TALLOC_FREE(subreq);
+
+	/*
+	 * We trigger the callback in the next event run
+	 * because the code in this file might trigger
+	 * multiple request callbacks from within a single
+	 * while loop.
+	 *
+	 * In order to avoid segfaults from within
+	 * dcerpc_connection_dead() we call
+	 * tevent_req_defer_callback().
+	 */
+	tevent_req_defer_callback(req, state->ev);
 
 	if (pkt->ptype == DCERPC_PKT_BIND_NAK) {
 		status = dcerpc_map_reason(pkt->u.bind_nak.reject_reason);
