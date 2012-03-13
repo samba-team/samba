@@ -774,9 +774,9 @@ AC_CHECK_HEADERS([CoreFoundation/CFStringEncodingConverter.h], [], [AC_CHECK_HEA
 CPPFLAGS="$old_CPPFLAGS"
 
 # To link lib/util/charset/charset_macosxfs.c, we need to tell the linker
-# about CoreFoundation
+# about CoreFoundation, at least on os X 10.6 and 10.7
 case "$host_os" in
-    *darwin11*)
+    *darwin11*|*darwin10*)
 		LDFLAGS="$LDFLAGS -framework CoreFoundation"
 	;;
 esac
