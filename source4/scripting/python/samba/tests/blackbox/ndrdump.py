@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # Blackbox tests for ndrdump
 # Copyright (C) 2008 Andrew Tridgell <tridge@samba.org>
 # Copyright (C) 2008 Andrew Bartlett <abartlet@samba.org>
