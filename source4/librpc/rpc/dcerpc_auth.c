@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "libcli/composite/composite.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/rpc/dcerpc.h"
@@ -52,6 +53,8 @@ static NTSTATUS dcerpc_init_syntaxes(const struct ndr_interface_table *table,
 /*
   Send request to do a non-authenticated dcerpc bind
 */
+static void dcerpc_bind_auth_none_done(struct tevent_req *subreq);
+
 struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 						     struct dcerpc_pipe *p,
 						     const struct ndr_interface_table *table)
@@ -60,6 +63,7 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 	struct ndr_syntax_id transfer_syntax;
 
 	struct composite_context *c;
+	struct tevent_req *subreq;
 
 	c = composite_create(mem_ctx, p->conn->event_ctx);
 	if (c == NULL) return NULL;
@@ -73,19 +77,35 @@ struct composite_context *dcerpc_bind_auth_none_send(TALLOC_CTX *mem_ctx,
 		return c;
 	}
 
-	/* c was only allocated as a container for a possible error */
-	talloc_free(c);
+	subreq = dcerpc_bind_send(mem_ctx, p->conn->event_ctx, p,
+				  &syntax, &transfer_syntax);
+	if (composite_nomem(subreq, c)) return c;
+	tevent_req_set_callback(subreq, dcerpc_bind_auth_none_done, c);
 
-	return dcerpc_bind_send(p, mem_ctx, &syntax, &transfer_syntax);
+	return c;
 }
 
+static void dcerpc_bind_auth_none_done(struct tevent_req *subreq)
+{
+	struct composite_context *ctx =
+		tevent_req_callback_data(subreq,
+		struct composite_context);
+
+	ctx->status = dcerpc_bind_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!composite_is_ok(ctx)) return;
+
+	composite_done(ctx);
+}
 
 /*
   Receive result of a non-authenticated dcerpc bind
 */
 NTSTATUS dcerpc_bind_auth_none_recv(struct composite_context *ctx)
 {
-	return dcerpc_bind_recv(ctx);
+	NTSTATUS result = composite_wait(ctx);
+	TALLOC_FREE(ctx);
+	return result;
 }
 
 
@@ -191,14 +211,16 @@ static void bind_auth_recv_alter(struct composite_context *creq)
 }
 
 
-static void bind_auth_recv_bindreply(struct composite_context *creq)
+static void bind_auth_recv_bindreply(struct tevent_req *subreq)
 {
-	struct composite_context *c = talloc_get_type(creq->async.private_data,
-						      struct composite_context);
+	struct composite_context *c =
+		tevent_req_callback_data(subreq,
+		struct composite_context);
 	struct bind_auth_state *state =	talloc_get_type(c->private_data,
 							struct bind_auth_state);
 
-	c->status = dcerpc_bind_recv(creq);
+	c->status = dcerpc_bind_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	if (!state->more_processing) {
@@ -232,9 +254,10 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 						uint8_t auth_type, uint8_t auth_level,
 						const char *service)
 {
-	struct composite_context *c, *creq;
+	struct composite_context *c;
 	struct bind_auth_state *state;
 	struct dcecli_security *sec;
+	struct tevent_req *subreq;
 
 	struct ndr_syntax_id syntax, transfer_syntax;
 
@@ -355,12 +378,13 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 
 	/* The first request always is a dcerpc_bind. The subsequent ones
 	 * depend on gensec results */
-	creq = dcerpc_bind_send(p, state, &syntax, &transfer_syntax);
+	subreq = dcerpc_bind_send(state, p->conn->event_ctx, p,
+				  &syntax, &transfer_syntax);
 	data_blob_free(&state->credentials);
 	sec->auth_info->credentials = data_blob(NULL, 0);
-	if (composite_nomem(creq, c)) return c;
+	if (composite_nomem(subreq, c)) return c;
+	tevent_req_set_callback(subreq, bind_auth_recv_bindreply, c);
 
-	composite_continue(c, creq, bind_auth_recv_bindreply, c);
 	return c;
 }
 
