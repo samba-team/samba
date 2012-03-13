@@ -1503,10 +1503,7 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 
 	req->opnum = opnum;
 	req->request_data.length = stub_data->length;
-	req->request_data.data = talloc_reference(req, stub_data->data);
-	if (req->request_data.length && req->request_data.data == NULL) {
-		return NULL;
-	}
+	req->request_data.data = stub_data->data;
 
 	DLIST_ADD_END(p->conn->request_queue, req, struct rpc_request *);
 	talloc_set_destructor(req, dcerpc_req_dequeue);
