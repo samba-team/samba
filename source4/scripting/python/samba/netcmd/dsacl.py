@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Manipulate ACLs on directory objects
 #
 # Copyright (C) Nadezhda Ivanova <nivanova@samba.org> 2010

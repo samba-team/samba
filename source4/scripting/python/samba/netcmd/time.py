@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # time
 #
 # Copyright Jelmer Vernooij 2010 <jelmer@samba.org>

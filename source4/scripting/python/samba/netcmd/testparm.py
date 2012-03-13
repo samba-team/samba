@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# vim: expandtab ft=python
-#
 #   Unix SMB/CIFS implementation.
 #   Test validity of smb.conf
 #   Copyright (C) 2010-2011 Jelmer Vernooij <jelmer@samba.org>

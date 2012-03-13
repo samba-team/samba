@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Vampire
 #
 # Copyright Jelmer Vernooij 2010 <jelmer@samba.org>

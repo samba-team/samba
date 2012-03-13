@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Manipulate file NT ACLs
 #
 # Copyright Matthieu Patou 2010 <mat@matws.net>

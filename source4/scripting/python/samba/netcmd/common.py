@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # common functions for samba-tool python commands
 #
 # Copyright Andrew Tridgell 2010

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Adds a new user to a Samba4 server
 # Copyright Jelmer Vernooij 2008
 #

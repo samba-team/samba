@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # spn management
 #
 # Copyright Matthieu Patou mat@samba.org 2010

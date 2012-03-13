@@ -1,6 +1,3 @@
-
-#!/usr/bin/env python
-#
 # sites management
 #
 # Copyright Matthieu Patou <mat@matws.net> 2011

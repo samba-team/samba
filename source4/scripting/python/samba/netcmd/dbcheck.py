@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Samba4 AD database checker
 #
 # Copyright (C) Andrew Tridgell 2011

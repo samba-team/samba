@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Unix SMB/CIFS implementation.
 # A command to compare differences of objects and attributes between
 # two LDAP servers both running at the same time. It generally compares

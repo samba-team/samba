@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # domain management
 #
 # Copyright Matthias Dieter Wallnoefer 2009

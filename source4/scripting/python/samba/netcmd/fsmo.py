@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Changes a FSMO role owner
 #
 # Copyright Nadezhda Ivanova 2009

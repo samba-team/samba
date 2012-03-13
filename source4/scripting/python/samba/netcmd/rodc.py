@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # rodc related commands
 #
 # Copyright Andrew Tridgell 2010

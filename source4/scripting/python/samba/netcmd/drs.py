@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # implement samba_tool drs commands
 #
 # Copyright Andrew Tridgell 2010

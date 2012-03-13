@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # DNS management tool
 #
 # Copyright (C) Amitay Isaacs 2011-2012
