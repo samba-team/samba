@@ -1502,20 +1502,22 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		   then if the ownership or group ownership of this file or
 		   directory gets changed, the user or group can lose their
 		   access. */
+		bool got_duplicate_user = false;
+		bool got_duplicate_group = false;
 
 		for (pace = *pp_ace; pace; pace = pace->next) {
 			if (pace->type == SMB_ACL_USER &&
 					pace->unix_ug.uid == pace_user->unix_ug.uid) {
 				/* Already got one. */
-				pace_user = NULL;
+				got_duplicate_user = true;
 			} else if (pace->type == SMB_ACL_USER &&
 					pace->unix_ug.uid == pace_user->unix_ug.uid) {
 				/* Already got one. */
-				pace_group = NULL;
+				got_duplicate_group = true;
 			}
 		}
 
-		if (pace_user) {
+		if (!got_duplicate_user) {
 			/* Add a duplicate SMB_ACL_USER entry. */
 			if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
 				DEBUG(0,("ensure_canon_entry_valid: talloc fail.\n"));
@@ -1533,7 +1535,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 			DLIST_ADD(*pp_ace, pace);
 		}
 
-		if (pace_group) {
+		if (!got_duplicate_group) {
 			/* Add a duplicate SMB_ACL_GROUP entry. */
 			if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
 				DEBUG(0,("ensure_canon_entry_valid: talloc fail.\n"));
