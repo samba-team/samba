@@ -6,7 +6,6 @@
 
 ^samba3.blackbox.failure.failure # this is designed to fail, for testing our test infrastructure
 .*driver.add_driver_timestamps # we only can store dates, not timestamps
-^samba3.smbtorture_s3.LOCAL-TALLOC-DICT #fails
 ^samba3.smbtorture_s3.plain\(dc\).LOCK9 # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(dc\).OPLOCK2 # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(dc\).STREAMERROR # Fails against the s4 ntvfs server
