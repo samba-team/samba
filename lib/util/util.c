@@ -153,7 +153,7 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 		if (errno == ENOENT) {
 			/* Create directory */
 			if (mkdir(dname, dir_perms) == -1) {
-				DEBUG(0, ("error creating directory "
+				DEBUG(0, ("mkdir failed on directory "
 					  "%s: %s\n", dname, 
 					  strerror(errno)));
 				umask(old_umask);
