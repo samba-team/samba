@@ -367,6 +367,46 @@ if __name__ == '__main__':
     else:
         logger.info("DNS partitions already exist")
 
+    # Mark that we are hosting DNS partitions
+    try:
+        dns_nclist = [ 'DC=DomainDnsZones,%s' % domaindn,
+                       'DC=ForestDnsZones,%s' % forestdn ]
+
+        msgs = ldbs.sam.search(base=names.serverdn, scope=ldb.SCOPE_DEFAULT,
+                               expression='(objectclass=nTDSDSa)',
+                               attrs=['hasPartialReplicaNCs',
+                                      'msDS-hasMasterNCs'])
+        msg = msgs[0]
+
+        master_nclist = []
+        for nc in msg["msDS-hasMasterNCs"]:
+            master_nclist.append(nc)
+
+        partial_nclist = []
+        for nc in msg["hasPartialReplicaNCs"]:
+            partial_nclist.append(nc)
+
+        modified = False
+        for nc in dns_nclist:
+            if nc not in master_nclist:
+                master_nclist.append(nc)
+                modified = True
+            if nc in partial_nclist:
+                partial_nclist.remove(nc)
+                modified = True
+
+        if modified:
+            logger.debug("Updating msDS-hasMasterNCs and hasPartialReplicaNCs attributes")
+            msg["msDS-hasMasterNCs"] = ldb.MessageElement(master_nclist,
+                                                          ldb.FLAG_MOD_REPLACE,
+                                                          "msDS-hasMasterNCs")
+            msg["hasPartialReplicaNCs"] = ldb.MessageElement(partial_nclist,
+                                                             ldb.FLAG_MOD_REPLACE,
+                                                             "hasPartialReplicaNCs")
+            ldbs.sam.modify(msg)
+    except Exception:
+        raise
+
     # Check if dns-HOSTNAME account exists and create it if required
     try:
         dn = 'samAccountName=dns-%s,CN=Principals' % hostname
