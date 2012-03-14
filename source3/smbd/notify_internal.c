@@ -431,7 +431,7 @@ static void notify_add_onelevel(struct notify_context *notify,
 		return;
 	}
 
-	rec = dbwrap_fetch_locked(notify->db_onelevel, talloc_tos(),
+	rec = dbwrap_fetch_locked(notify->db_onelevel, array,
 				  make_tdb_data((uint8_t *)&e->dir_id,
 				   sizeof(e->dir_id)));
 	if (rec == NULL) {
