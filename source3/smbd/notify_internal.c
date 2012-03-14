@@ -515,20 +515,10 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	struct notify_list *listel;
 	size_t len;
 	int depth;
-	struct db_record *rec;
 
 	/* see if change notify is enabled at all */
 	if (notify == NULL) {
 		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	status = notify_fetch_locked(notify, &rec);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	status = notify_load(notify, rec);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(rec);
-		return status;
 	}
 
 	/* cope with /. on the end of the path */
@@ -579,11 +569,23 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	   then we need to install it in the array used for the
 	   intra-samba notify handling */
 	if (e.filter != 0 || e.subdir_filter != 0) {
-		status = notify_add_array(notify, rec, &e, private_data, depth);
-	}
+		struct db_record *rec;
 
+		status = notify_fetch_locked(notify, &rec);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		status = notify_load(notify, rec);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(rec);
+			goto done;
+		}
+		status = notify_add_array(notify, rec, &e, private_data,
+					  depth);
+		TALLOC_FREE(rec);
+	}
+	status = NT_STATUS_OK;
 done:
-	talloc_free(rec);
 	talloc_free(tmp_path);
 
 	return status;
