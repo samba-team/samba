@@ -989,6 +989,8 @@ static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS stat
 
 	conn->dead = true;
 
+	conn->transport.recv_data = NULL;
+
 	if (conn->transport.shutdown_pipe) {
 		conn->transport.shutdown_pipe(conn, status);
 	}
