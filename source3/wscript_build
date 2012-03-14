@@ -813,7 +813,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source=LIB_UTIL_SRC,
-                   deps='ndr security NDR_SECURITY samba-util UTIL_TDB',
+                   deps='ndr security NDR_SECURITY samba-util UTIL_TDB ccan',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
