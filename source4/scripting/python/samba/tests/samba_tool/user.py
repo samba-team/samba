@@ -67,7 +67,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         # try to add all the users again, this should fail
         for user in self.users:
             (result, out, err) = self._create_user(user)
-            self.assertCmdFail(result, "Ensure that create user files")
+            self.assertCmdFail(result, "Ensure that create user fails")
             self.assertIn("LDAP error 68 LDAP_ENTRY_ALREADY_EXISTS", err)
 
         # try to delete all the 4 users we just added
