@@ -161,7 +161,7 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 
 		/* Create directory */
 		ret = mkdir(dname, dir_perms);
-		if (ret == -1) {
+		if (ret == -1 && errno != EEXIST) {
 			DEBUG(0, ("mkdir failed on directory "
 				  "%s: %s\n", dname,
 				  strerror(errno)));
@@ -169,7 +169,13 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 			return false;
 		}
 
-		return true;
+		ret = lstat(dname, &st);
+		if (ret == -1) {
+			DEBUG(0, ("lstat failed on created directory %s: %s\n",
+				  dname, strerror(errno)));
+			umask(old_umask);
+			return false;
+		}
 	}
 
 	/* Check ownership and permission on existing directory */
