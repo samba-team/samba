@@ -1015,6 +1015,17 @@ static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS stat
 		}
 	}	
 
+	/* all requests, which are not shipped */
+	while (conn->request_queue) {
+		struct rpc_request *req = conn->request_queue;
+		dcerpc_req_dequeue(req);
+		req->state = RPC_REQUEST_DONE;
+		req->status = status;
+		if (req->async.callback) {
+			req->async.callback(req);
+		}
+	}
+
 	talloc_set_destructor(conn, NULL);
 	if (conn->free_skipped) {
 		talloc_free(conn);
