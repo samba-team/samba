@@ -817,24 +817,20 @@ static NTSTATUS notify_send(struct notify_context *notify, struct notify_entry *
 	DATA_BLOB data;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
-	TALLOC_CTX *tmp_ctx;
 
 	ev.action = action;
 	ev.path = path;
 	ev.private_data = e->private_data;
 
-	tmp_ctx = talloc_new(notify);
-
-	ndr_err = ndr_push_struct_blob(&data, tmp_ctx, &ev,
+	ndr_err = ndr_push_struct_blob(&data, talloc_tos(), &ev,
 				       (ndr_push_flags_fn_t)ndr_push_notify_event);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(tmp_ctx);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	status = messaging_send(notify->messaging_ctx, e->server,
 				MSG_PVFS_NOTIFY, &data);
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(data.data);
 	return status;
 }
 
