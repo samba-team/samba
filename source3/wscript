@@ -825,6 +825,8 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
             conf.undefine('HAVE_GSSAPI_GSSAPI_H')
 
     if Options.options.with_utmp:
+        conf.env.with_utmp = True
+        if not conf.CHECK_HEADERS('utmp.h'): conf.env.with_utmp = False
         conf.CHECK_FUNCS('pututline pututxline updwtmp updwtmpx getutmpx getutxent')
         conf.CHECK_STRUCTURE_MEMBER('struct utmp', 'ut_name', headers='utmp.h',
                                     define='HAVE_UT_UT_NAME')
@@ -853,7 +855,8 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         conf.CHECK_CODE('struct utmp utarg; struct utmp *utreturn; utreturn = pututline(&utarg);',
                         'PUTUTLINE_RETURNS_UTMP', headers='utmp.h',
                         msg="Checking whether pututline returns pointer")
-        conf.DEFINE('WITH_UTMP', 1)
+        if conf.env.with_utmp:
+            conf.DEFINE('WITH_UTMP', 1)
 
     if Options.options.with_avahi:
         conf.env.with_avahi = True
