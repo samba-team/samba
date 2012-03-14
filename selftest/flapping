@@ -18,3 +18,4 @@
 .*rpc.spoolss.printer # seems to be flakey currently, but should be fixed
 ^samba3.rap.printing # fails sometimes on sn-devel
 ^samba3.smb2.lock.*.rw-exclusive # another intermittent failure
+^samba4.blackbox.gentest # is flakey due to timing
