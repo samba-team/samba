@@ -988,6 +988,7 @@ extern void build_options(bool screen);
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 	struct tevent_signal *se;
+	char *np_dir = NULL;
 
 	/*
 	 * Do this before any other talloc operation
@@ -1348,6 +1349,18 @@ extern void build_options(bool screen);
 	if (!directory_create_or_exist(lp_ncalrpc_dir(), geteuid(), 0755)) {
 		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
 			  lp_ncalrpc_dir(), strerror(errno)));
+		return -1;
+	}
+
+	np_dir = talloc_asprintf(talloc_tos(), "%s/np", lp_ncalrpc_dir());
+	if (!np_dir) {
+		DEBUG(0, ("%s: Out of memory\n", __location__));
+		return -1;
+	}
+
+	if (!directory_create_or_exist(np_dir, geteuid(), 0700)) {
+		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
+			  np_dir, strerror(errno)));
 		return -1;
 	}
 
