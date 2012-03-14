@@ -84,7 +84,7 @@ static int notify_destructor(struct notify_context *notify)
   talloc_free(). We need the messaging_ctx to allow for notifications
   via internal messages
 */
-struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
+struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *messaging_ctx,
 				   struct event_context *ev,
 				   connection_struct *conn)
@@ -118,7 +118,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 		return NULL;
 	}
 
-	notify->server = server;
+	notify->server = messaging_server_id(messaging_ctx);
 	notify->messaging_ctx = messaging_ctx;
 	notify->list = NULL;
 	notify->array = NULL;

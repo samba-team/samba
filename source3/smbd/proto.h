@@ -541,7 +541,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 
 /* The following definitions come from smbd/notify_internal.c  */
 
-struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
+struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *messaging_ctx,
 				   struct event_context *ev,
 				   connection_struct *conn);

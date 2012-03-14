@@ -699,7 +699,6 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 
 	if ((!conn->printer) && (!conn->ipc)) {
 		conn->notify_ctx = notify_init(conn,
-					       messaging_server_id(sconn->msg_ctx),
 					       sconn->msg_ctx,
 					       sconn->ev_ctx,
 					       conn);
