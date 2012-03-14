@@ -642,8 +642,7 @@ NTSTATUS notify_remove_onelevel(struct notify_context *notify,
 
 	for (i=0; i<array->num_entries; i++) {
 		if ((private_data == array->entries[i].private_data) &&
-		    cluster_id_equal(&notify->server,
-				     &array->entries[i].server)) {
+		    procid_equal(&notify->server, &array->entries[i].server)) {
 			break;
 		}
 	}
@@ -738,7 +737,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 
 	for (i=0;i<d->num_entries;i++) {
 		if (private_data == d->entries[i].private_data &&
-		    cluster_id_equal(&notify->server, &d->entries[i].server)) {
+		    procid_equal(&notify->server, &d->entries[i].server)) {
 			break;
 		}
 	}
@@ -784,7 +783,7 @@ static NTSTATUS notify_remove_all(struct notify_context *notify,
 	for (depth=0;depth<notify->array->num_depths;depth++) {
 		struct notify_depth *d = &notify->array->depth[depth];
 		for (i=0;i<d->num_entries;i++) {
-			if (cluster_id_equal(server, &d->entries[i].server)) {
+			if (procid_equal(server, &d->entries[i].server)) {
 				if (i < d->num_entries-1) {
 					memmove(&d->entries[i], &d->entries[i+1],
 						sizeof(d->entries[i])*(d->num_entries-(i+1)));
