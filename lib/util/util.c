@@ -146,20 +146,20 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 			       mode_t dir_perms)
 {
 	int ret;
-	mode_t old_umask;
   	struct stat st;
       
-	old_umask = umask(0);
 	ret = lstat(dname, &st);
 	if (ret == -1) {
+		mode_t old_umask;
+
 		if (errno != ENOENT) {
 			DEBUG(0, ("lstat failed on directory %s: %s\n",
 				  dname, strerror(errno)));
-			umask(old_umask);
 			return false;
 		}
 
 		/* Create directory */
+		old_umask = umask(0);
 		ret = mkdir(dname, dir_perms);
 		if (ret == -1 && errno != EEXIST) {
 			DEBUG(0, ("mkdir failed on directory "
@@ -168,12 +168,12 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 			umask(old_umask);
 			return false;
 		}
+		umask(old_umask);
 
 		ret = lstat(dname, &st);
 		if (ret == -1) {
 			DEBUG(0, ("lstat failed on created directory %s: %s\n",
 				  dname, strerror(errno)));
-			umask(old_umask);
 			return false;
 		}
 	}
@@ -182,20 +182,17 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 	if (!S_ISDIR(st.st_mode)) {
 		DEBUG(0, ("directory %s isn't a directory\n",
 			dname));
-		umask(old_umask);
 		return false;
 	}
 	if (st.st_uid != uid && !uwrap_enabled()) {
 		DEBUG(0, ("invalid ownership on directory "
 			  "%s\n", dname));
-		umask(old_umask);
 		return false;
 	}
 	if ((st.st_mode & 0777) != dir_perms) {
 		DEBUG(0, ("invalid permissions on directory "
 			  "'%s': has 0%o should be 0%o\n", dname,
 			  (st.st_mode & 0777), dir_perms));
-		umask(old_umask);
 		return false;
 	}
 
