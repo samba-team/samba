@@ -165,28 +165,31 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 			umask(old_umask);
 			return false;
 		}
-	} else {
-		/* Check ownership and permission on existing directory */
-		if (!S_ISDIR(st.st_mode)) {
-			DEBUG(0, ("directory %s isn't a directory\n",
-				dname));
-			umask(old_umask);
-			return false;
-		}
-		if (st.st_uid != uid && !uwrap_enabled()) {
-			DEBUG(0, ("invalid ownership on directory "
-				  "%s\n", dname));
-			umask(old_umask);
-			return false;
-		}
-		if ((st.st_mode & 0777) != dir_perms) {
-			DEBUG(0, ("invalid permissions on directory "
-				  "'%s': has 0%o should be 0%o\n", dname,
-				  (st.st_mode & 0777), dir_perms));
-			umask(old_umask);
-			return false;
-		}
+
+		return true;
 	}
+
+	/* Check ownership and permission on existing directory */
+	if (!S_ISDIR(st.st_mode)) {
+		DEBUG(0, ("directory %s isn't a directory\n",
+			dname));
+		umask(old_umask);
+		return false;
+	}
+	if (st.st_uid != uid && !uwrap_enabled()) {
+		DEBUG(0, ("invalid ownership on directory "
+			  "%s\n", dname));
+		umask(old_umask);
+		return false;
+	}
+	if ((st.st_mode & 0777) != dir_perms) {
+		DEBUG(0, ("invalid permissions on directory "
+			  "'%s': has 0%o should be 0%o\n", dname,
+			  (st.st_mode & 0777), dir_perms));
+		umask(old_umask);
+		return false;
+	}
+
 	return true;
 }       
 
