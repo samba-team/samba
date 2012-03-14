@@ -41,7 +41,7 @@
 WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 {
 	WERROR status;
-	static const char *attrs[] = { "hasMasterNCs", "msDs-hasMasterNCs", "hasPartialReplicaNCs", "msDS-HasFullReplicaNCs", NULL };
+	static const char *attrs[] = { "hasMasterNCs", "msDS-hasMasterNCs", "hasPartialReplicaNCs", "msDS-HasFullReplicaNCs", NULL };
 	unsigned int a;
 	int ret;
 	TALLOC_CTX *tmp_ctx;

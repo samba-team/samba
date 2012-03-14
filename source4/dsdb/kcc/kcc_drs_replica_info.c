@@ -386,7 +386,7 @@ struct ncList {
 static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 			     const char *ntds_guid_str, struct ncList **master_nc_list)
 {
-	const char *post_2003_attrs[] = { "msDs-hasMasterNCs", "hasPartialReplicaNCs", NULL };
+	const char *post_2003_attrs[] = { "msDS-hasMasterNCs", "hasPartialReplicaNCs", NULL };
 	const char *pre_2003_attrs[] = { "hasMasterNCs", "hasPartialReplicaNCs", NULL };
 	const char **attrs = post_2003_attrs;
 	struct ldb_result *res;
@@ -397,7 +397,7 @@ static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 	char *nc_str;
 	int is_level_post_2003;
 
-	/* In W2003 and greater, msDs-hasMasterNCs attribute lists the writable NC replicas */
+	/* In W2003 and greater, msDS-hasMasterNCs attribute lists the writable NC replicas */
 	is_level_post_2003 = 1;
 	ret = ldb_search(samdb, mem_ctx, &res, ldb_get_config_basedn(samdb),
 			LDB_SCOPE_DEFAULT, post_2003_attrs, "(objectguid=%s)", ntds_guid_str);
