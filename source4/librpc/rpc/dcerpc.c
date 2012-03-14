@@ -82,7 +82,7 @@ _PUBLIC_ NTSTATUS dcerpc_init(void)
 }
 
 static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS status);
-static void dcerpc_ship_next_request(struct dcecli_connection *c);
+static void dcerpc_schedule_io_trigger(struct dcecli_connection *c);
 
 static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 					       const struct GUID *object,
@@ -146,6 +146,12 @@ static struct dcecli_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	c->srv_max_xmit_frag = 0;
 	c->srv_max_recv_frag = 0;
 	c->pending = NULL;
+
+	c->io_trigger = tevent_create_immediate(c);
+	if (c->io_trigger == NULL) {
+		talloc_free(c);
+		return NULL;
+	}
 
 	talloc_set_destructor(c, dcerpc_connection_destructor);
 
@@ -989,6 +995,9 @@ static void dcerpc_connection_dead(struct dcecli_connection *conn, NTSTATUS stat
 
 	conn->dead = true;
 
+	TALLOC_FREE(conn->io_trigger);
+	conn->io_trigger_pending = false;
+
 	conn->transport.recv_data = NULL;
 
 	if (conn->transport.shutdown_pipe) {
@@ -1376,11 +1385,11 @@ req_done:
 	req->state = RPC_REQUEST_DONE;
 	DLIST_REMOVE(c->pending, req);
 
-	if (c->request_queue != NULL) {
-		/* We have to look at shipping further requests before calling
-		 * the async function, that one might close the pipe */
-		dcerpc_ship_next_request(c);
-	}
+	/*
+	 * We have to look at shipping further requests before calling
+	 * the async function, that one might close the pipe
+	 */
+	dcerpc_schedule_io_trigger(c);
 
 	if (req->async.callback) {
 		req->async.callback(req);
@@ -1436,7 +1445,7 @@ static struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	DLIST_ADD_END(p->conn->request_queue, req, struct rpc_request *);
 	talloc_set_destructor(req, dcerpc_req_dequeue);
 
-	dcerpc_ship_next_request(p->conn);
+	dcerpc_schedule_io_trigger(p->conn);
 
 	if (p->request_timeout) {
 		tevent_add_timer(dcerpc_event_context(p), req,
@@ -1562,6 +1571,43 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 
 		remaining -= chunk;
 	}
+}
+
+static void dcerpc_io_trigger(struct tevent_context *ctx,
+			      struct tevent_immediate *im,
+			      void *private_data)
+{
+	struct dcecli_connection *c =
+		talloc_get_type_abort(private_data,
+		struct dcecli_connection);
+
+	c->io_trigger_pending = false;
+
+	dcerpc_schedule_io_trigger(c);
+
+	dcerpc_ship_next_request(c);
+}
+
+static void dcerpc_schedule_io_trigger(struct dcecli_connection *c)
+{
+	if (c->dead) {
+		return;
+	}
+
+	if (c->request_queue == NULL) {
+		return;
+	}
+
+	if (c->io_trigger_pending) {
+		return;
+	}
+
+	c->io_trigger_pending = true;
+
+	tevent_schedule_immediate(c->io_trigger,
+				  c->event_ctx,
+				  dcerpc_io_trigger,
+				  c);
 }
 
 /*

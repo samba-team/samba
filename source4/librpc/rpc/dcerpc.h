@@ -63,6 +63,9 @@ struct dcecli_connection {
 	const char *binding_string;
 	struct tevent_context *event_ctx;
 
+	struct tevent_immediate *io_trigger;
+	bool io_trigger_pending;
+
 	/** Directory in which to save ndrdump-parseable files */
 	const char *packet_log_dir;
 
