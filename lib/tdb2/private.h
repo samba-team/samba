@@ -740,10 +740,11 @@ TDB_DATA tdb1_firstkey(struct tdb_context *tdb);
 TDB_DATA tdb1_nextkey(struct tdb_context *tdb, TDB_DATA key);
 
 /* tdb.c: */
-enum TDB_ERROR COLD tdb_logerr(struct tdb_context *tdb,
-			       enum TDB_ERROR ecode,
-			       enum tdb_log_level level,
-			       const char *fmt, ...);
+enum TDB_ERROR COLD PRINTF_FMT(4, 5)
+	tdb_logerr(struct tdb_context *tdb,
+		   enum TDB_ERROR ecode,
+		   enum tdb_log_level level,
+		   const char *fmt, ...);
 
 #ifdef TDB_TRACE
 void tdb_trace(struct tdb_context *tdb, const char *op);
