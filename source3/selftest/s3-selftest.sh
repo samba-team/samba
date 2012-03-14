@@ -5,6 +5,10 @@ if [ "x${SUBUNIT_FORMATTER}" = x"" ]; then
 	SUBUNIT_FORMATTER="${PYTHON} -u ${SELFTESTDIR}/format-subunit --prefix=${SELFTESTPREFIX} --immediate"
 fi
 
+if [ x"${FAIL_IMMEDIATELY}" != x"" ]; then
+	FILTER_XFAIL="${FILTER_XFAIL} --fail-immediately"
+fi
+
 cleanup_and_exit() {
 	if test "$1" = 0 -o -z "$1"; then
 		exit 0
