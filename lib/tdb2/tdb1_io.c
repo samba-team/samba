@@ -230,8 +230,9 @@ void tdb1_mmap(struct tdb_context *tdb)
 		if (tdb->file->map_ptr == MAP_FAILED) {
 			tdb->file->map_ptr = NULL;
 			tdb_logerr(tdb, TDB_ERR_IO, TDB_LOG_WARNING,
-				   "tdb1_mmap failed for size %d (%s)",
-				   tdb->file->map_size, strerror(errno));
+				   "tdb1_mmap failed for size %llu (%s)",
+				   (long long)tdb->file->map_size,
+				   strerror(errno));
 		}
 	} else {
 		tdb->file->map_ptr = NULL;

@@ -420,7 +420,8 @@ int tdb1_check(struct tdb_context *tdb,
 
 			tdb_logerr(tdb, TDB_SUCCESS, TDB_LOG_WARNING,
 				   "Dead space at %d-%d (of %u)\n",
-				   off, off + dead, tdb->file->map_size);
+				   off, off + dead,
+				   (unsigned)tdb->file->map_size);
 			rec.rec_len = dead - sizeof(rec);
 			break;
 		case TDB1_RECOVERY_MAGIC:

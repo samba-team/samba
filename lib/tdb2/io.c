@@ -134,8 +134,8 @@ static enum TDB_ERROR tdb_oob(struct tdb_context *tdb,
 			return TDB_SUCCESS;
 
 		tdb_logerr(tdb, TDB_ERR_IO, TDB_LOG_ERROR,
-			   "tdb_oob len %llu beyond eof at %zu",
-			   (long long)(off + len), st.st_size);
+			   "tdb_oob len %llu beyond eof at %llu",
+			   (long long)(off + len), (long long)st.st_size);
 		return TDB_ERR_IO;
 	}
 
