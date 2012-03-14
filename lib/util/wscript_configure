@@ -1,5 +1,8 @@
 #!/usr/bin/env python
+import Options
 
+if Options.options.disable_fault_handling:
+    conf.DEFINE('HAVE_DISABLE_FAULT_HANDLING',1)
 
 # backtrace could be in libexecinfo or in libc
 conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')

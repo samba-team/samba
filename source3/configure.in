@@ -6799,6 +6799,7 @@ if test x"$enable_pthreadpool" = x"yes" -a x"$samba_cv_HAVE_PTHREAD" = x"yes"; t
     fi
 fi
 
+
 #################################################
 # Check to see if we should use the included iniparser
 
@@ -6833,6 +6834,12 @@ fi
 AC_SUBST(BUILD_INIPARSER)
 AC_SUBST(INIPARSERLIBS)
 AC_SUBST(FLAGS1)
+
+AC_ARG_ENABLE(fault-handler,[AS_HELP_STRING([--disable-fault-handler], [Disable the default handler])])
+
+if test x"$enable_fault_handler" = x"no"; then
+	AC_DEFINE(HAVE_DISABLE_FAULT_HANDLER, 1, [Disable the default signal handler])
+fi
 
 ###################################################
 # Check for different/missing (set|get|end)netgrent prototypes

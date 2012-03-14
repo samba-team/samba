@@ -96,6 +96,7 @@ void fault_setup(void)
 	if (fault_state.disabled) {
 		return;
 	}
+#if !defined(HAVE_DISABLE_FAULT_HANDLING)
 #ifdef SIGSEGV
 	CatchSignal(SIGSEGV, sig_fault);
 #endif
@@ -104,6 +105,7 @@ void fault_setup(void)
 #endif
 #ifdef SIGABRT
 	CatchSignal(SIGABRT, sig_fault);
+#endif
 #endif
 }
 

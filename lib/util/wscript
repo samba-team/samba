@@ -1,0 +1,3 @@
+def set_options(opt):
+    ''' This is a bit strange, but disable is the flag, not enable. '''
+    opt.add_option('--disable-fault-handling', action='store_true', dest='disable_fault_handling', help=('disable the fault handlers'), default=False)

@@ -30,6 +30,7 @@ def set_options(opt):
     opt.RECURSE('lib/uid_wrapper')
     opt.RECURSE('pidl')
     opt.RECURSE('source3')
+    opt.RECURSE('lib/util')
 
     gr = opt.option_group('developer options')
     gr.add_option('--enable-build-farm',
