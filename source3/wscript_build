@@ -754,7 +754,7 @@ bld.SAMBA_GENERATOR('param/param_global_h',
 
 bld.SAMBA3_SUBSYSTEM('param',
                    source=PARAM_WITHOUT_REG_SRC,
-                   deps='samba-util PARAM_UTIL ldap lber LOADPARM_CTX samba3core smbconf param_local_h param/param_global_h''')
+                   deps='samba-util PARAM_UTIL ldap lber LOADPARM_CTX samba3core smbconf param_local_h param/param_global_h cups''')
 
 bld.SAMBA3_PYTHON('pys3param',
                   source='param/pyparam.c',
