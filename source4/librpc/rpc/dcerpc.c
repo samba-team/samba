@@ -1045,6 +1045,7 @@ static void dcerpc_recv_data(struct dcecli_connection *conn, DATA_BLOB *blob, NT
 	if (!NT_STATUS_IS_OK(status)) {
 		data_blob_free(blob);
 		dcerpc_connection_dead(conn, status);
+		return;
 	}
 
 	dcerpc_request_recv_data(conn, blob, &pkt);
