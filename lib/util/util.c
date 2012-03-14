@@ -145,11 +145,13 @@ _PUBLIC_ bool directory_exist(const char *dname)
 _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid, 
 			       mode_t dir_perms)
 {
+	int ret;
 	mode_t old_umask;
   	struct stat st;
       
 	old_umask = umask(0);
-	if (lstat(dname, &st) == -1) {
+	ret = lstat(dname, &st);
+	if (ret == -1) {
 		if (errno != ENOENT) {
 			DEBUG(0, ("lstat failed on directory %s: %s\n",
 				  dname, strerror(errno)));
@@ -158,7 +160,8 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 		}
 
 		/* Create directory */
-		if (mkdir(dname, dir_perms) == -1) {
+		ret = mkdir(dname, dir_perms);
+		if (ret == -1) {
 			DEBUG(0, ("mkdir failed on directory "
 				  "%s: %s\n", dname,
 				  strerror(errno)));
