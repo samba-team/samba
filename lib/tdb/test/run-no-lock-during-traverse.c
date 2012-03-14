@@ -1,5 +1,3 @@
-#define _XOPEN_SOURCE 500
-#include <unistd.h>
 #include "lock-tracking.h"
 
 #define fcntl fcntl_with_lockcheck

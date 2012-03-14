@@ -1,6 +1,3 @@
-/* We need this otherwise fcntl locking fails. */
-#define _FILE_OFFSET_BITS 64
-#define _XOPEN_SOURCE 500
 #include "../common/tdb_private.h"
 #include "../common/io.c"
 #include "../common/tdb.c"

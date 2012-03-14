@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 500
 #include "../common/tdb_private.h"
 #include "../common/io.c"
 #include "../common/tdb.c"

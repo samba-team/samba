@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 500
 #include <unistd.h>
 #include "lock-tracking.h"
 static ssize_t pwrite_check(int fd, const void *buf, size_t count, off_t offset);

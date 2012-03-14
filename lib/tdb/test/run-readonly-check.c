@@ -1,6 +1,5 @@
 /* We should be able to tdb_check a O_RDONLY tdb, and we were previously allowed
  * to tdb_check() inside a transaction (though that's paranoia!). */
-#define _XOPEN_SOURCE 500
 #include "../common/tdb_private.h"
 #include "../common/io.c"
 #include "../common/tdb.c"

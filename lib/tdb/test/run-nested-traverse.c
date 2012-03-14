@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 500
 #include "lock-tracking.h"
 #define fcntl fcntl_with_lockcheck
 #include "../common/tdb_private.h"
