@@ -73,7 +73,8 @@ static enum TDB_ERROR summarize(struct tdb_context *tdb,
 				struct tally *data,
 				struct tally *extra,
 				struct tally *uncoal,
-				struct tally *chains)
+				struct tally *chains,
+				size_t *num_caps)
 {
 	tdb_off_t off;
 	tdb_len_t len;
@@ -140,6 +141,11 @@ static enum TDB_ERROR summarize(struct tdb_context *tdb,
 				+ rec_extra_padding(&p->u);
 			tally_add(chains, 1);
 			tally_add(extra, rec_extra_padding(&p->u));
+		} else if (rec_magic(&p->u) == TDB_CAP_MAGIC) {
+			len = sizeof(p->u)
+				+ rec_data_length(&p->u)
+				+ rec_extra_padding(&p->u);
+			(*num_caps)++;
 		} else {
 			len = dead_space(tdb, off);
 			if (TDB_OFF_IS_ERR(len)) {
@@ -153,30 +159,7 @@ static enum TDB_ERROR summarize(struct tdb_context *tdb,
 	return TDB_SUCCESS;
 }
 
-static size_t num_capabilities(struct tdb_context *tdb)
-{
-	tdb_off_t off, next;
-	const struct tdb_capability *cap;
-	size_t count = 0;
-
-	off = tdb_read_off(tdb, offsetof(struct tdb_header, capabilities));
-	if (TDB_OFF_IS_ERR(off))
-		return count;
-
-	/* Count capability list. */
-	for (; off; off = next) {
-		cap = tdb_access_read(tdb, off, sizeof(*cap), true);
-		if (TDB_PTR_IS_ERR(cap)) {
-			break;
-		}
-		count++;
-		next = cap->next;
-		tdb_access_release(tdb, cap);
-	}
-	return count;
-}
-
-static void add_capabilities(struct tdb_context *tdb, size_t num, char *summary)
+static void add_capabilities(struct tdb_context *tdb, char *summary)
 {
 	tdb_off_t off, next;
 	const struct tdb_capability *cap;
@@ -216,7 +199,7 @@ _PUBLIC_ enum TDB_ERROR tdb_summary(struct tdb_context *tdb,
 			   char **summary)
 {
 	tdb_len_t len;
-	size_t num_caps;
+	size_t num_caps = 0;
 	struct tally *ftables, *hashes, *freet, *keys, *data, *extra, *uncoal,
 		*chains;
 	char *hashesg, *freeg, *keysg, *datag, *extrag, *uncoalg;
@@ -261,7 +244,7 @@ _PUBLIC_ enum TDB_ERROR tdb_summary(struct tdb_context *tdb,
 	}
 
 	ecode = summarize(tdb, hashes, ftables, freet, keys, data, extra,
-			  uncoal, chains);
+			  uncoal, chains, &num_caps);
 	if (ecode != TDB_SUCCESS) {
 		goto unlock;
 	}
@@ -275,8 +258,6 @@ _PUBLIC_ enum TDB_ERROR tdb_summary(struct tdb_context *tdb,
 		uncoalg = tally_histogram(uncoal, HISTO_WIDTH, HISTO_HEIGHT);
 	}
 
-	num_caps = num_capabilities(tdb);
-
 	/* 20 is max length of a %llu. */
 	len = strlen(SUMMARY_FORMAT) + 33*20 + 1
 		+ (hashesg ? strlen(hashesg) : 0)
@@ -285,7 +266,8 @@ _PUBLIC_ enum TDB_ERROR tdb_summary(struct tdb_context *tdb,
 		+ (datag ? strlen(datag) : 0)
 		+ (extrag ? strlen(extrag) : 0)
 		+ (uncoalg ? strlen(uncoalg) : 0)
-		+ num_caps * (strlen(CAPABILITY_FORMAT) + 20*4);
+		+ num_caps * (strlen(CAPABILITY_FORMAT) + 20
+			      + strlen(" (uncheckable,read-only)"));
 
 	*summary = malloc(len);
 	if (!*summary) {
@@ -332,7 +314,7 @@ _PUBLIC_ enum TDB_ERROR tdb_summary(struct tdb_context *tdb,
 		 + sizeof(struct tdb_chain) * tally_num(chains))
 		* 100.0 / tdb->file->map_size);
 
-	add_capabilities(tdb, num_caps, *summary);
+	add_capabilities(tdb, *summary);
 
 unlock:
 	free(hashesg);
