@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Wrapper for socket wrapper (based on python socket wrapper)
 # Copyright (C) Amitay Isaacs 2011
 #
