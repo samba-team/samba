@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 # based on playground/evil in the waf svn tree
 
 import os, datetime
