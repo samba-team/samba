@@ -341,6 +341,20 @@ sub ParseArrayPullGetSize($$$$$$)
 	$self->pidl("size_$e->{NAME}_$l->{LEVEL_INDEX} = $size;");
 	my $array_size = "size_$e->{NAME}_$l->{LEVEL_INDEX}";
 
+	if (my $range = has_property($e, "range")) {
+		my ($low, $high) = split(/,/, $range, 2);
+		if ($low < 0) {
+			warning(0, "$low is invalid for the range of an array size");
+		}
+		if ($low == 0) {
+			$self->pidl("if ($array_size > $high) {");
+		} else {
+			$self->pidl("if ($array_size < $low || $array_size > $high) {");
+		}
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
+		$self->pidl("}");
+	}
+
 	return $array_size;
 }
 
@@ -354,12 +368,13 @@ sub ParseArrayPullGetLength($$$$$$;$)
 		$array_size = $self->ParseArrayPullGetSize($e, $l, $ndr, $var_name, $env);
 	}
 
-	my $array_length = $array_size;
-	if ($l->{IS_VARYING}) {
-		my $length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
-		$self->pidl("length_$e->{NAME}_$l->{LEVEL_INDEX} = $length;");
-		$array_length = "length_$e->{NAME}_$l->{LEVEL_INDEX}";
+	if (not $l->{IS_VARYING}) {
+		return $array_size;
 	}
+
+	my $length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
+	$self->pidl("length_$e->{NAME}_$l->{LEVEL_INDEX} = $length;");
+	my $array_length = "length_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 	if (my $range = has_property($e, "range")) {
 		my ($low, $high) = split(/,/, $range, 2);
