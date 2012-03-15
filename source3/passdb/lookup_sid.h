@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/lsa.h"
 
 struct passwd;
+struct unixid;
 
 #define LOOKUP_NAME_NONE		0x00000000
 #define LOOKUP_NAME_ISOLATED             0x00000001  /* Look up unqualified names */

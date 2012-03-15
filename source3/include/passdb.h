@@ -33,6 +33,7 @@
 
 #include "../librpc/gen_ndr/lsa.h"
 #include <tevent.h>
+struct unixid;
 
 /* group mapping headers */
 
@@ -561,7 +562,7 @@ struct pdb_methods
 	bool (*gid_to_sid)(struct pdb_methods *methods, gid_t gid,
 			   struct dom_sid *sid);
 	bool (*sid_to_id)(struct pdb_methods *methods, const struct dom_sid *sid,
-			  uid_t *uid, gid_t *gid, enum lsa_SidType *type);
+			  struct unixid *id);
 
 	uint32_t (*capabilities)(struct pdb_methods *methods);
 	bool (*new_rid)(struct pdb_methods *methods, uint32_t *rid);
@@ -866,8 +867,7 @@ bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
 bool pdb_uid_to_sid(uid_t uid, struct dom_sid *sid);
 bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid);
-bool pdb_sid_to_id(const struct dom_sid *sid, uid_t *uid, gid_t *gid,
-		   enum lsa_SidType *type);
+bool pdb_sid_to_id(const struct dom_sid *sid, struct unixid *id);
 uint32_t pdb_capabilities(void);
 bool pdb_new_rid(uint32_t *rid);
 bool initialize_password_db(bool reload, struct tevent_context *tevent_ctx);

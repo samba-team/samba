@@ -28,6 +28,7 @@
 #include "../librpc/gen_ndr/samr.h"
 #include "../librpc/gen_ndr/drsblobs.h"
 #include "../librpc/gen_ndr/ndr_drsblobs.h"
+#include "../librpc/gen_ndr/idmap.h"
 #include "memcache.h"
 #include "nsswitch/winbind_client.h"
 #include "../libcli/security/security.h"
@@ -1232,11 +1233,10 @@ bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid)
 	return pdb->gid_to_sid(pdb, gid, sid);
 }
 
-bool pdb_sid_to_id(const struct dom_sid *sid, uid_t *uid, gid_t *gid,
-		   enum lsa_SidType *type)
+bool pdb_sid_to_id(const struct dom_sid *sid, struct unixid *id)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->sid_to_id(pdb, sid, uid, gid, type);
+	return pdb->sid_to_id(pdb, sid, id);
 }
 
 uint32_t pdb_capabilities(void)
@@ -1441,16 +1441,12 @@ static bool pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 
 static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 				  const struct dom_sid *sid,
-				  uid_t *uid, gid_t *gid,
-				  enum lsa_SidType *type)
+				  struct unixid *id)
 {
 	TALLOC_CTX *mem_ctx;
 	bool ret = False;
-	const char *name;
 	uint32_t rid;
-
-	*uid = -1;
-	*gid = -1;
+	id->id = -1;
 
 	mem_ctx = talloc_new(NULL);
 
@@ -1460,16 +1456,33 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	}
 
 	if (sid_peek_check_rid(get_global_sam_sid(), sid, &rid)) {
+		const char *name;
+		enum lsa_SidType type;
+		uid_t uid;
+		gid_t gid;
 		/* Here we might have users as well as groups and aliases */
-		ret = lookup_global_sam_rid(mem_ctx, rid, &name, type, uid, gid);
+		ret = lookup_global_sam_rid(mem_ctx, rid, &name, &type, &uid, &gid);
+		if (ret) {
+			switch (type) {
+			case SID_NAME_DOM_GRP:
+			case SID_NAME_ALIAS:
+				id->type = ID_TYPE_GID;
+				id->id = gid;
+				break;
+			case SID_NAME_USER:
+				id->type = ID_TYPE_UID;
+				id->id = uid;
+				break;
+			}
+		}
 		goto done;
 	}
 
 	/* check for "Unix User" */
 
 	if ( sid_peek_check_rid(&global_sid_Unix_Users, sid, &rid) ) {
-		*uid = rid;
-		*type = SID_NAME_USER;
+		id->id = rid;
+		id->type = ID_TYPE_UID;
 		ret = True;		
 		goto done;		
 	}
@@ -1477,8 +1490,8 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	/* check for "Unix Group" */
 
 	if ( sid_peek_check_rid(&global_sid_Unix_Groups, sid, &rid) ) {
-		*gid = rid;
-		*type = SID_NAME_ALIAS;
+		id->id = rid;
+		id->type = ID_TYPE_GID;
 		ret = True;		
 		goto done;		
 	}
@@ -1509,8 +1522,8 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 			goto done;
 		}
 
-		*gid = map->gid;
-		*type = SID_NAME_ALIAS;
+		id->id = map->gid;
+		id->type = ID_TYPE_GID;
 		ret = True;
 		goto done;
 	}

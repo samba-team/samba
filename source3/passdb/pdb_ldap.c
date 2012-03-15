@@ -51,6 +51,7 @@
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
 #include "lib/winbind_util.h"
+#include "librpc/gen_ndr/idmap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -4970,8 +4971,7 @@ static bool ldapsam_new_rid(struct pdb_methods *methods, uint32_t *rid)
 
 static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 			      const struct dom_sid *sid,
-			      uid_t *uid, gid_t *gid,
-			      enum lsa_SidType *type)
+			      struct unixid *id)
 {
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
@@ -5033,9 +5033,9 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 			goto done;
 		}
 
-		*gid = strtoul(gid_str, NULL, 10);
-		*type = (enum lsa_SidType)strtoul(value, NULL, 10);
-		idmap_cache_set_sid2gid(sid, *gid);
+		id->id = strtoul(gid_str, NULL, 10);
+		id->type = ID_TYPE_GID;
+		idmap_cache_set_sid2gid(sid, id->id);
 		ret = True;
 		goto done;
 	}
@@ -5050,9 +5050,9 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 		goto done;
 	}
 
-	*uid = strtoul(value, NULL, 10);
-	*type = SID_NAME_USER;
-	idmap_cache_set_sid2uid(sid, *uid);
+	id->id = strtoul(value, NULL, 10);
+	id->type = ID_TYPE_UID;
+	idmap_cache_set_sid2uid(sid, id->id);
 
 	ret = True;
  done:

@@ -51,7 +51,7 @@ static NTSTATUS pdb_samba4_getsamupriv(struct pdb_samba4_state *state,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **pmsg);
 static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
-				 uid_t *uid, gid_t *gid, enum lsa_SidType *type);
+				 struct unixid *id);
 
 static bool pdb_samba4_pull_time(struct ldb_message *msg, const char *attr,
 			      time_t *ptime)
@@ -852,7 +852,7 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 {
 	struct pdb_samba4_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba4_state);
-	const char *attrs[] = { "objectSid", "description", "samAccountName",
+	const char *attrs[] = { "objectSid", "description", "samAccountName", "groupType",
 				NULL };
 	struct ldb_message *msg;
 	va_list ap;
@@ -860,7 +860,8 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	struct dom_sid *sid;
 	const char *str;
 	int rc;
-	uid_t uid;
+	struct id_map id_map;
+	struct id_map *id_maps[2];
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 	
@@ -893,12 +894,46 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	
 	map->sid = *sid;
 	
-	if (!pdb_samba4_sid_to_id(m, sid, &uid, &map->gid, &map->sid_name_use)) {
+	if (samdb_find_attribute(state->ldb, msg, "objectClass", "group")) {
+		NTSTATUS status;
+		uint32_t grouptype = ldb_msg_find_attr_as_uint(msg, "groupType", 0);
+		switch (grouptype) {
+		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
+		case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
+			map->sid_name_use = SID_NAME_ALIAS;
+			break;
+		case GTYPE_SECURITY_GLOBAL_GROUP:
+			map->sid_name_use = SID_NAME_DOM_GRP;
+			break;
+		default:
+			talloc_free(tmp_ctx);
+			DEBUG(10, ("Could not pull groupType\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		map->sid_name_use = SID_NAME_DOM_GRP;
+
+		ZERO_STRUCT(id_map);
+		id_map.sid = sid;
+		id_maps[0] = &id_map;
+		id_maps[1] = NULL;
+
+		status = idmap_sids_to_xids(state->idmap_ctx, tmp_ctx, id_maps);
 		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_SUCH_GROUP;
-	}
-	if (map->sid_name_use == SID_NAME_USER) {
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
+		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
+			map->gid = id_map.xid.id;
+		} else {
+			DEBUG(1, (__location__ "Did not get GUID when mapping SID for %s", expression));
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	} else if (samdb_find_attribute(state->ldb, msg, "objectClass", "user")) {
 		DEBUG(1, (__location__ "Got SID_NAME_USER when searching for a group with %s", expression));
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -2008,13 +2043,13 @@ static bool pdb_samba4_gid_to_sid(struct pdb_methods *m, gid_t gid,
 }
 
 static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
-				 uid_t *uid, gid_t *gid, enum lsa_SidType *type)
+				 struct unixid *id)
 {
 	struct pdb_samba4_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba4_state);
 	struct id_map id_map;
 	struct id_map *id_maps[2];
-	const char *attrs[] = { "objectClass", "groupType", NULL };
+	const char *attrs[] = { "objectClass", NULL };
 	struct ldb_message *msg;
 	struct ldb_dn *dn;
 	NTSTATUS status;
@@ -2038,22 +2073,7 @@ static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *si
 		return false;
 	}
 	if (samdb_find_attribute(state->ldb, msg, "objectClass", "group")) {
-		uint32_t grouptype = ldb_msg_find_attr_as_uint(msg, "groupType", 0);
-		switch (grouptype) {
-		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
-		case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
-			*type = SID_NAME_ALIAS;
-			break;
-		case GTYPE_SECURITY_GLOBAL_GROUP:
-			*type = SID_NAME_DOM_GRP;
-			break;
-		default:
-			talloc_free(tmp_ctx);
-			DEBUG(10, ("Could not pull groupType\n"));
-			return false;
-		}
-
-		*type = SID_NAME_DOM_GRP;
+		id->type = ID_TYPE_GID;
 
 		ZERO_STRUCT(id_map);
 		id_map.sid = sid;
@@ -2066,12 +2086,12 @@ static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *si
 			return false;
 		}
 		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
-			*gid = id_map.xid.id;
+			id->id = id_map.xid.id;
 			return true;
 		}
 		return false;
 	} else if (samdb_find_attribute(state->ldb, msg, "objectClass", "user")) {
-		*type = SID_NAME_USER;
+		id->type = ID_TYPE_UID;
 		ZERO_STRUCT(id_map);
 		id_map.sid = sid;
 		id_maps[0] = &id_map;
@@ -2083,7 +2103,7 @@ static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *si
 			return false;
 		}
 		if (id_map.xid.type == ID_TYPE_UID || id_map.xid.type == ID_TYPE_BOTH) {
-			*uid = id_map.xid.id;
+			id->id = id_map.xid.id;
 			return true;
 		}
 		return false;

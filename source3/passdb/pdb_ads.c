@@ -24,6 +24,7 @@
 #include "../libds/common/flags.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/samr.h"
+#include "../librpc/gen_ndr/idmap.h"
 #include "../libcli/ldap/ldap_ndr.h"
 #include "../libcli/security/security.h"
 #include "../libds/common/flag_mapping.h"
@@ -2204,7 +2205,7 @@ static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
 }
 
 static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
-			      uid_t *uid, gid_t *gid, enum lsa_SidType *type)
+			      struct unixid *id)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
@@ -2216,8 +2217,8 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 	int rc;
 	bool ret = false;
 
-	*uid = -1;
-	*gid = -1;
+	id->id = -1;
+	id->type = ID_TYPE_NOT_SPECIFIED;
 
 	sidstr = sid_binstring_hex(sid);
 	if (sidstr == NULL) {
@@ -2247,17 +2248,21 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 		goto fail;
 	}
 	if (atype == ATYPE_ACCOUNT) {
-		*type = SID_NAME_USER;
-		if (!tldap_pull_uint32(msg[0], "uidNumber", uid)) {
+		uid_t uid;
+		id->type = ID_TYPE_UID;
+		if (!tldap_pull_uint32(msg[0], "uidNumber", &uid)) {
 			DEBUG(10, ("Did not find uidNumber\n"));
 			goto fail;
 		}
+		id->id = uid;
 	} else {
-		*type = SID_NAME_DOM_GRP;
+		gid_t gid;
+		id->type = ID_TYPE_GID;
 		if (!tldap_pull_uint32(msg[0], "gidNumber", gid)) {
 			DEBUG(10, ("Did not find gidNumber\n"));
 			goto fail;
 		}
+		id->id = gid;
 	}
 	ret = true;
 fail:

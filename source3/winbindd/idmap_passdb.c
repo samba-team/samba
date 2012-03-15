@@ -76,31 +76,8 @@ static NTSTATUS idmap_pdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	int i;
 
 	for (i = 0; ids[i]; i++) {
-		enum lsa_SidType type;
-		uid_t uid;
-		gid_t gid;
-
-		if (pdb_sid_to_id(ids[i]->sid, &uid, &gid, &type)) {
-			switch (type) {
-			case SID_NAME_USER:
-				ids[i]->xid.id = uid;
-				ids[i]->xid.type = ID_TYPE_UID;
-				ids[i]->status = ID_MAPPED;
-				break;
-
-			case SID_NAME_DOM_GRP:
-			case SID_NAME_ALIAS:
-			case SID_NAME_WKN_GRP:
-				ids[i]->xid.id = gid;
-				ids[i]->xid.type = ID_TYPE_GID;
-				ids[i]->status = ID_MAPPED;
-				break;
-
-			default: /* ?? */
-				/* make sure it is marked as unmapped */
-				ids[i]->status = ID_UNKNOWN;
-				break;
-			}
+		if (pdb_sid_to_id(ids[i]->sid, &ids[i]->xid)) {
+			ids[i]->status = ID_MAPPED;
 		} else {
 			/* Query Failed */
 			ids[i]->status = ID_UNMAPPED;

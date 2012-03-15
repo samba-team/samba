@@ -27,6 +27,7 @@
 #include "idmap_cache.h"
 #include "../libcli/security/security.h"
 #include "lib/winbind_util.h"
+#include "../librpc/gen_ndr/idmap.h"
 
 /*****************************************************************
  Dissect a user-provided name into domain, name, sid and type.
@@ -1074,34 +1075,49 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 }
 
 /*****************************************************************
- *THE LEGACY* convert SID to uid function.
+ *THE LEGACY* convert SID to id function.
 *****************************************************************/  
 
-static bool legacy_sid_to_uid(const struct dom_sid *psid, uid_t *puid)
+static bool legacy_sid_to_id(const struct dom_sid *psid, struct unixid *id)
 {
-	enum lsa_SidType type;
-
+	GROUP_MAP *map;
 	if (sid_check_is_in_our_domain(psid)) {
-		uid_t uid;
-		gid_t gid;
 		bool ret;
 
 		become_root();
-		ret = pdb_sid_to_id(psid, &uid, &gid, &type);
+		ret = pdb_sid_to_id(psid, id);
 		unbecome_root();
 
 		if (ret) {
-			if (type != SID_NAME_USER) {
-				DEBUG(5, ("sid %s is a %s, expected a user\n",
-					  sid_string_dbg(psid),
-					  sid_type_lookup(type)));
-				return false;
-			}
-			*puid = uid;
 			goto done;
 		}
 
 		/* This was ours, but it was not mapped.  Fail */
+	}
+
+	if ((sid_check_is_in_builtin(psid) ||
+	     sid_check_is_in_wellknown_domain(psid))) {
+		bool ret;
+
+		map = talloc_zero(NULL, GROUP_MAP);
+		if (!map) {
+			return false;
+		}
+
+		become_root();
+		ret = pdb_getgrsid(map, *psid);
+		unbecome_root();
+
+		if (ret) {
+			id->id = map->gid;
+			id->type = ID_TYPE_GID;
+			TALLOC_FREE(map);
+			goto done;
+		}
+		TALLOC_FREE(map);
+		DEBUG(10,("LEGACY: mapping failed for sid %s\n",
+			  sid_string_dbg(psid)));
+		return false;
 	}
 
 	DEBUG(10,("LEGACY: mapping failed for sid %s\n",
@@ -1109,78 +1125,33 @@ static bool legacy_sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 	return false;
 
 done:
-	DEBUG(10,("LEGACY: sid %s -> uid %u\n", sid_string_dbg(psid),
-		  (unsigned int)*puid ));
-
 	return true;
 }
 
-/*****************************************************************
- *THE LEGACY* convert SID to gid function.
- Group mapping is used for gids that maps to Wellknown SIDs
-*****************************************************************/  
-
 static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 {
-	GROUP_MAP *map;
-	enum lsa_SidType type;
-
-	map = talloc_zero(NULL, GROUP_MAP);
-	if (!map) {
+	struct unixid id;
+	if (!legacy_sid_to_id(psid, &id)) {
 		return false;
 	}
-
-	if ((sid_check_is_in_builtin(psid) ||
-	     sid_check_is_in_wellknown_domain(psid))) {
-		bool ret;
-
-		become_root();
-		ret = pdb_getgrsid(map, *psid);
-		unbecome_root();
-
-		if (ret) {
-			*pgid = map->gid;
-			goto done;
-		}
-		DEBUG(10,("LEGACY: mapping failed for sid %s\n",
-			  sid_string_dbg(psid)));
-		return false;
+	if (id.type == ID_TYPE_GID || id.type == ID_TYPE_BOTH) {
+		*pgid = id.id;
+		return true;
 	}
-
-	if (sid_check_is_in_our_domain(psid)) {
-		uid_t uid;
-		gid_t gid;
-		bool ret;
-
-		become_root();
-		ret = pdb_sid_to_id(psid, &uid, &gid, &type);
-		unbecome_root();
-
-		if (ret) {
-			if ((type != SID_NAME_DOM_GRP) &&
-			    (type != SID_NAME_ALIAS)) {
-				DEBUG(5, ("LEGACY: sid %s is a %s, expected "
-					  "a group\n", sid_string_dbg(psid),
-					  sid_type_lookup(type)));
-				return false;
-			}
-			*pgid = gid;
-			goto done;
-		}
-
-		/* This was ours, but it was not mapped.  Fail */
-	}
-
-	DEBUG(10,("LEGACY: mapping failed for sid %s\n",
-		  sid_string_dbg(psid)));
 	return false;
+}
 
- done:
-	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_dbg(psid),
-		  (unsigned int)*pgid ));
-
-	TALLOC_FREE(map);
-	return true;
+static bool legacy_sid_to_uid(const struct dom_sid *psid, uid_t *puid)
+{
+	struct unixid id;
+	if (!legacy_sid_to_id(psid, &id)) {
+		return false;
+	}
+	if (id.type == ID_TYPE_UID || id.type == ID_TYPE_BOTH) {
+		*puid = id.id;
+		return true;
+	}
+	return false;
 }
 
 /*****************************************************************

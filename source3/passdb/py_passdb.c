@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/util/talloc_stack.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/idmap.h"
 #include "passdb.h"
 #include "secrets.h"
 
@@ -2669,9 +2670,7 @@ static PyObject *py_pdb_sid_to_id(pytalloc_Object *self, PyObject *args)
 	TALLOC_CTX *tframe;
 	PyObject *py_sid;
 	struct dom_sid *sid;
-	uid_t uid = -1;
-	gid_t gid = -1;
-	enum lsa_SidType type;
+	struct unixid id;
 
 	if (!PyArg_ParseTuple(args, "O!:sid_to_id", dom_sid_Type, &py_sid)) {
 		return NULL;
@@ -2686,7 +2685,7 @@ static PyObject *py_pdb_sid_to_id(pytalloc_Object *self, PyObject *args)
 
 	sid = pytalloc_get_ptr(py_sid);
 
-	if (!methods->sid_to_id(methods, sid, &uid, &gid, &type)) {
+	if (!methods->sid_to_id(methods, sid, &id)) {
 		PyErr_Format(py_pdb_error, "Unable to get id for sid");
 		talloc_free(tframe);
 		return NULL;
@@ -2694,7 +2693,7 @@ static PyObject *py_pdb_sid_to_id(pytalloc_Object *self, PyObject *args)
 
 	talloc_free(tframe);
 
-	return Py_BuildValue("(II)", (uid != -1)?uid:gid, type);
+	return Py_BuildValue("(II)", id.id, id.type);
 }
 
 
