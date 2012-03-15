@@ -1028,6 +1028,7 @@ sub ParseElementPullLevel
 	my($self,$e,$l,$ndr,$var_name,$env,$primitives,$deferred) = @_;
 
 	my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
+	my $array_length = undef;
 
 	if ($l->{TYPE} eq "ARRAY" and ($l->{IS_VARYING} or $l->{IS_CONFORMANT})) {
 		$var_name = get_pointer_to($var_name);
@@ -1041,6 +1042,7 @@ sub ParseElementPullLevel
 			$self->ParseSubcontextPullEnd($e, $l, $ndr, $env);
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length = $self->ParseArrayPullHeader($e, $l, $ndr, $var_name, $env);
+			$array_length = $length;
 
 			if (my $range = has_property($e, "range")) {
 				my ($low, $high) = split(/,/, $range, 2);
@@ -1120,9 +1122,13 @@ sub ParseElementPullLevel
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and 
 			not has_fast_array($e,$l) and not is_charset_array($e, $l)) {
-		my $length = $self->ParseArrayPullGetLength($e, $l, $ndr, $var_name, $env);
+		my $length = $array_length;
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 		my $array_name = $var_name;
+
+		if (not defined($length)) {
+			$length = $self->ParseArrayPullGetLength($e, $l, $ndr, $var_name, $env);
+		}
 
 		if (my $range = has_property($e, "range")) {
 			my ($low, $high) = split(/,/, $range, 2);
