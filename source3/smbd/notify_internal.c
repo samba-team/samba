@@ -958,6 +958,7 @@ void notify_trigger(struct notify_context *notify,
 		int p_len = p - path;
 		int min_i, max_i, i;
 		struct notify_depth *d = &notify->array->depth[depth];
+		uint32_t d_max_mask;
 		next_p = strchr(p+1, '/');
 
 		/* see if there are any entries at this depth */
@@ -966,14 +967,11 @@ void notify_trigger(struct notify_context *notify,
 		/* try to skip based on the maximum mask. If next_p is
 		 NULL then we know it will be a 'this directory'
 		 match, otherwise it must be a subdir match */
-		if (next_p != NULL) {
-			if (0 == (filter & d->max_mask_subdir)) {
-				continue;
-			}
-		} else {
-			if (0 == (filter & d->max_mask)) {
-				continue;
-			}
+
+		d_max_mask = next_p ? d->max_mask_subdir : d->max_mask;
+
+		if ((filter & d_max_mask) == 0) {
+			continue;
 		}
 
 		/* we know there is an entry here worth looking
@@ -1009,17 +1007,16 @@ void notify_trigger(struct notify_context *notify,
 		/* we now know that the entries start at min_i */
 		for (i=min_i;i<d->num_entries;i++) {
 			struct notify_entry *e = &d->entries[i];
+			uint32_t e_filter;
 			if (p_len != e->path_len ||
 			    strncmp(path, e->path, p_len) != 0) break;
-			if (next_p != NULL) {
-				if (0 == (filter & e->subdir_filter)) {
-					continue;
-				}
-			} else {
-				if (0 == (filter & e->filter)) {
-					continue;
-				}
+
+			e_filter = next_p ? e->subdir_filter : e->filter;
+
+			if ((filter & e_filter) == 0) {
+				continue;
 			}
+
 			status = notify_send(notify, e,	path + e->path_len + 1,
 					     action);
 
