@@ -33,7 +33,6 @@ from samba.tests import (
     )
 
 
-
 def get_python_source_files():
     """Iterate over all Python source files."""
     library_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "samba"))
@@ -183,6 +182,26 @@ class TestSource(TestCase):
         if illegal_newlines:
             self.fail(self._format_message(illegal_newlines,
                 'Non-unix newlines were found in the following source files:'))
+
+    def test_shebang_lines(self):
+        """Check that files with shebang lines and only those are executable."""
+        files_with_shebang = {}
+        files_without_shebang= {}
+        for fname, line_no, line in self._iter_source_files_lines():
+            if line_no >= 1:
+                continue
+            executable = (os.stat(fname).st_mode & 0111)
+            has_shebang = line.startswith("#!")
+            if has_shebang and not executable:
+                self._push_file(files_with_shebang, fname, line_no)
+            if not has_shebang and executable:
+                self._push_file(files_without_shebang, fname, line_no)
+        if files_with_shebang:
+            self.fail(self._format_message(files_with_shebang,
+                'Files with shebang line that are not executable:'))
+        if files_without_shebang:
+            self.fail(self._format_message(files_without_shebang,
+                'Files without shebang line that are executable:'))
 
     pep8_ignore = [
         'E401',      # multiple imports on one line
