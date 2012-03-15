@@ -2,7 +2,7 @@
 
 bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
                      source='pthreadpool.c',
-                     deps='pthread rt',
+                     deps='pthread rt replace',
                      enabled=bld.env.WITH_PTHREADPOOL)
 
 bld.SAMBA3_BINARY('pthreadpooltest',
