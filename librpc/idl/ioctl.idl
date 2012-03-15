@@ -30,4 +30,61 @@ interface copychunk
 		uint32 chunk_bytes_written;
 		uint32 total_bytes_written;
 	} srv_copychunk_rsp;
+
+	typedef [public] struct {
+		uint32 version;
+		uint32 size;
+		uint32 maximum_token_lifetime;
+		uint32 default_token_lifetime;
+		hyper maximum_xfer_size;
+		hyper optimal_xfer_count;
+		uint32 maximum_data_descriptors;
+		uint32 maximum_xfer_length_per_descriptor;
+		uint32 optimal_xfer_length_per_descriptor;
+		uint16 optimal_xfer_length_granularity;
+		uint8 reserved[2];
+	} device_copy_offload_descriptor;
+
+	/* XXX: 0x00000001 is unconfirmed */
+	const uint32 STORAGE_OFFLOAD_TOKEN_TYPE_ZERO_DATA = 0x00000001;
+	typedef [public] struct {
+		uint32 token_type;
+		uint8 reserved[2];
+		uint16 token_id_len;
+		[size_is(token_id_len)] uint8 token[];
+	} storage_offload_token;
+
+	typedef [public] struct {
+		uint32 size;
+		uint32 flags;
+		uint32 token_time_to_live;
+		uint32 reserved;
+		hyper file_offset;
+		hyper length;
+	} fsctl_offload_read_input;
+
+	const uint32 OFFLOAD_READ_FLAG_FILE_TOO_SMALL = 0x00000001;
+	const uint32 OFFLOAD_READ_FLAG_ALL_ZERO_BEYOND_RANGE = 0x00000002;
+	const uint32 OFFLOAD_READ_FLAG_CANNOT_OFFLOAD_BEYOND_RANGE = 0x00000004;
+	typedef [public] struct {
+		uint32 size;
+		uint32 flags;
+		hyper xfer_length;
+		uint8 token[512];
+	} fsctl_offload_read_output;
+
+	typedef [public] struct {
+		uint32 size;
+		uint32 flags;
+		hyper file_offset;
+		hyper copy_length;
+		hyper xfer_offset;
+		uint8 token[512];
+	} fsctl_offload_write_input;
+
+	typedef [public] struct {
+		uint32 size;
+		uint32 flags;
+		hyper length_written;
+	} fsctl_offload_write_output;
 }
