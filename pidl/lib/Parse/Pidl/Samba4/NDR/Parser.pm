@@ -1157,13 +1157,9 @@ sub ParseElementPullLevel
 		}
 	} elsif ($l->{TYPE} eq "ARRAY" and 
 			not has_fast_array($e,$l) and not is_charset_array($e, $l)) {
-		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
+		my $length = $self->ParseArrayPullGetLength($e, $l, $ndr, $var_name, $env);
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 		my $array_name = $var_name;
-
-		if ($l->{IS_VARYING}) {
-			$length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
-		}
 
 		if (my $range = has_property($e, "range")) {
 			my ($low, $high) = split(/,/, $range, 2);
