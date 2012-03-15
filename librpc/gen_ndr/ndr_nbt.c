@@ -247,15 +247,17 @@ static enum ndr_err_code ndr_push_nbt_rdata_netbios(struct ndr_push *ndr, int nd
 
 static enum ndr_err_code ndr_pull_nbt_rdata_netbios(struct ndr_pull *ndr, int ndr_flags, struct nbt_rdata_netbios *r)
 {
+	uint32_t size_addresses_0 = 0;
 	uint32_t cntr_addresses_0;
 	TALLOC_CTX *_mem_save_addresses_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
-		NDR_PULL_ALLOC_N(ndr, r->addresses, r->length / 6);
+		size_addresses_0 = r->length / 6;
+		NDR_PULL_ALLOC_N(ndr, r->addresses, size_addresses_0);
 		_mem_save_addresses_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->addresses, 0);
-		for (cntr_addresses_0 = 0; cntr_addresses_0 < r->length / 6; cntr_addresses_0++) {
+		for (cntr_addresses_0 = 0; cntr_addresses_0 < size_addresses_0; cntr_addresses_0++) {
 			NDR_CHECK(ndr_pull_nbt_rdata_address(ndr, NDR_SCALARS, &r->addresses[cntr_addresses_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_addresses_0, 0);
@@ -318,9 +320,11 @@ static enum ndr_err_code ndr_push_nbt_statistics(struct ndr_push *ndr, int ndr_f
 
 static enum ndr_err_code ndr_pull_nbt_statistics(struct ndr_pull *ndr, int ndr_flags, struct nbt_statistics *r)
 {
+	uint32_t size_unit_id_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->unit_id, 6));
+		size_unit_id_0 = 6;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->unit_id, size_unit_id_0));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->jumpers));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->test_result));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->version_number));
@@ -390,9 +394,11 @@ static enum ndr_err_code ndr_push_nbt_status_name(struct ndr_push *ndr, int ndr_
 
 static enum ndr_err_code ndr_pull_nbt_status_name(struct ndr_pull *ndr, int ndr_flags, struct nbt_status_name *r)
 {
+	uint32_t size_name_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, 15, sizeof(uint8_t), CH_DOS));
+		size_name_0 = 15;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, size_name_0, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_nbt_name_type(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_pull_nb_flags(ndr, NDR_SCALARS, &r->nb_flags));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
@@ -432,16 +438,18 @@ static enum ndr_err_code ndr_push_nbt_rdata_status(struct ndr_push *ndr, int ndr
 
 static enum ndr_err_code ndr_pull_nbt_rdata_status(struct ndr_pull *ndr, int ndr_flags, struct nbt_rdata_status *r)
 {
+	uint32_t size_names_0 = 0;
 	uint32_t cntr_names_0;
 	TALLOC_CTX *_mem_save_names_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->num_names));
-		NDR_PULL_ALLOC_N(ndr, r->names, r->num_names);
+		size_names_0 = r->num_names;
+		NDR_PULL_ALLOC_N(ndr, r->names, size_names_0);
 		_mem_save_names_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->names, 0);
-		for (cntr_names_0 = 0; cntr_names_0 < r->num_names; cntr_names_0++) {
+		for (cntr_names_0 = 0; cntr_names_0 < size_names_0; cntr_names_0++) {
 			NDR_CHECK(ndr_pull_nbt_status_name(ndr, NDR_SCALARS, &r->names[cntr_names_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_names_0, 0);
@@ -489,11 +497,13 @@ static enum ndr_err_code ndr_push_nbt_rdata_data(struct ndr_push *ndr, int ndr_f
 
 static enum ndr_err_code ndr_pull_nbt_rdata_data(struct ndr_pull *ndr, int ndr_flags, struct nbt_rdata_data *r)
 {
+	uint32_t size_data_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 2));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
-		NDR_PULL_ALLOC_N(ndr, r->data, r->length);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, r->length));
+		size_data_0 = r->length;
+		NDR_PULL_ALLOC_N(ndr, r->data, size_data_0);
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, size_data_0));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -691,12 +701,16 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_name_packet(struct ndr_push *ndr, int nd
 
 _PUBLIC_ enum ndr_err_code ndr_pull_nbt_name_packet(struct ndr_pull *ndr, int ndr_flags, struct nbt_name_packet *r)
 {
+	uint32_t size_questions_0 = 0;
 	uint32_t cntr_questions_0;
 	TALLOC_CTX *_mem_save_questions_0;
+	uint32_t size_answers_0 = 0;
 	uint32_t cntr_answers_0;
 	TALLOC_CTX *_mem_save_answers_0;
+	uint32_t size_nsrecs_0 = 0;
 	uint32_t cntr_nsrecs_0;
 	TALLOC_CTX *_mem_save_nsrecs_0;
+	uint32_t size_additional_0 = 0;
 	uint32_t cntr_additional_0;
 	TALLOC_CTX *_mem_save_additional_0;
 	{
@@ -710,31 +724,35 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_name_packet(struct ndr_pull *ndr, int nd
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->ancount));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->nscount));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->arcount));
-			NDR_PULL_ALLOC_N(ndr, r->questions, r->qdcount);
+			size_questions_0 = r->qdcount;
+			NDR_PULL_ALLOC_N(ndr, r->questions, size_questions_0);
 			_mem_save_questions_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->questions, 0);
-			for (cntr_questions_0 = 0; cntr_questions_0 < r->qdcount; cntr_questions_0++) {
+			for (cntr_questions_0 = 0; cntr_questions_0 < size_questions_0; cntr_questions_0++) {
 				NDR_CHECK(ndr_pull_nbt_name_question(ndr, NDR_SCALARS, &r->questions[cntr_questions_0]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_questions_0, 0);
-			NDR_PULL_ALLOC_N(ndr, r->answers, r->ancount);
+			size_answers_0 = r->ancount;
+			NDR_PULL_ALLOC_N(ndr, r->answers, size_answers_0);
 			_mem_save_answers_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->answers, 0);
-			for (cntr_answers_0 = 0; cntr_answers_0 < r->ancount; cntr_answers_0++) {
+			for (cntr_answers_0 = 0; cntr_answers_0 < size_answers_0; cntr_answers_0++) {
 				NDR_CHECK(ndr_pull_nbt_res_rec(ndr, NDR_SCALARS, &r->answers[cntr_answers_0]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_answers_0, 0);
-			NDR_PULL_ALLOC_N(ndr, r->nsrecs, r->nscount);
+			size_nsrecs_0 = r->nscount;
+			NDR_PULL_ALLOC_N(ndr, r->nsrecs, size_nsrecs_0);
 			_mem_save_nsrecs_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->nsrecs, 0);
-			for (cntr_nsrecs_0 = 0; cntr_nsrecs_0 < r->nscount; cntr_nsrecs_0++) {
+			for (cntr_nsrecs_0 = 0; cntr_nsrecs_0 < size_nsrecs_0; cntr_nsrecs_0++) {
 				NDR_CHECK(ndr_pull_nbt_res_rec(ndr, NDR_SCALARS, &r->nsrecs[cntr_nsrecs_0]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_nsrecs_0, 0);
-			NDR_PULL_ALLOC_N(ndr, r->additional, r->arcount);
+			size_additional_0 = r->arcount;
+			NDR_PULL_ALLOC_N(ndr, r->additional, size_additional_0);
 			_mem_save_additional_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->additional, 0);
-			for (cntr_additional_0 = 0; cntr_additional_0 < r->arcount; cntr_additional_0++) {
+			for (cntr_additional_0 = 0; cntr_additional_0 < size_additional_0; cntr_additional_0++) {
 				NDR_CHECK(ndr_pull_nbt_res_rec(ndr, NDR_SCALARS, &r->additional[cntr_additional_0]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_additional_0, 0);
@@ -1117,6 +1135,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_dgram_smb_packet(struct ndr_push *ndr, int n
 
 _PUBLIC_ enum ndr_err_code ndr_pull_dgram_smb_packet(struct ndr_pull *ndr, int ndr_flags, struct dgram_smb_packet *r)
 {
+	uint32_t size_signature_0 = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_LITTLE_ENDIAN|LIBNDR_PRINT_ARRAY_HEX);
@@ -1129,7 +1148,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dgram_smb_packet(struct ndr_pull *ndr, int n
 			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->flags));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->flags2));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->pid_high));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->signature, 8));
+			size_signature_0 = 8;
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->signature, size_signature_0));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->reserved));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->tid));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->pid));
@@ -2355,6 +2375,7 @@ static enum ndr_err_code ndr_push_NETLOGON_DB_CHANGE(struct ndr_push *ndr, int n
 
 static enum ndr_err_code ndr_pull_NETLOGON_DB_CHANGE(struct ndr_pull *ndr, int ndr_flags, struct NETLOGON_DB_CHANGE *r)
 {
+	uint32_t size_dbchange_0 = 0;
 	uint32_t cntr_dbchange_0;
 	TALLOC_CTX *_mem_save_dbchange_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -2394,10 +2415,11 @@ static enum ndr_err_code ndr_pull_NETLOGON_DB_CHANGE(struct ndr_pull *ndr, int n
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->db_count));
-		NDR_PULL_ALLOC_N(ndr, r->dbchange, r->db_count);
+		size_dbchange_0 = r->db_count;
+		NDR_PULL_ALLOC_N(ndr, r->dbchange, size_dbchange_0);
 		_mem_save_dbchange_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->dbchange, 0);
-		for (cntr_dbchange_0 = 0; cntr_dbchange_0 < r->db_count; cntr_dbchange_0++) {
+		for (cntr_dbchange_0 = 0; cntr_dbchange_0 < size_dbchange_0; cntr_dbchange_0++) {
 			NDR_CHECK(ndr_pull_nbt_db_change_info(ndr, NDR_SCALARS, &r->dbchange[cntr_dbchange_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dbchange_0, 0);
@@ -2674,11 +2696,13 @@ static enum ndr_err_code ndr_push_nbt_browse_host_announcement(struct ndr_push *
 
 static enum ndr_err_code ndr_pull_nbt_browse_host_announcement(struct ndr_pull *ndr, int ndr_flags, struct nbt_browse_host_announcement *r)
 {
+	uint32_t size_ServerName_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->UpdateCount));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->Periodicity));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ServerName, 16, sizeof(uint8_t), CH_DOS));
+		size_ServerName_0 = 16;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ServerName, size_ServerName_0, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->OSMajor));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->OSMinor));
 		NDR_CHECK(ndr_pull_svcctl_ServerType(ndr, NDR_SCALARS, &r->ServerType));
@@ -2868,16 +2892,18 @@ static enum ndr_err_code ndr_push_nbt_browse_backup_list_response(struct ndr_pus
 
 static enum ndr_err_code ndr_pull_nbt_browse_backup_list_response(struct ndr_pull *ndr, int ndr_flags, struct nbt_browse_backup_list_response *r)
 {
+	uint32_t size_BackupServerList_0 = 0;
 	uint32_t cntr_BackupServerList_0;
 	TALLOC_CTX *_mem_save_BackupServerList_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->BackupCount));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->Token));
-		NDR_PULL_ALLOC_N(ndr, r->BackupServerList, r->BackupCount);
+		size_BackupServerList_0 = r->BackupCount;
+		NDR_PULL_ALLOC_N(ndr, r->BackupServerList, size_BackupServerList_0);
 		_mem_save_BackupServerList_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->BackupServerList, 0);
-		for (cntr_BackupServerList_0 = 0; cntr_BackupServerList_0 < r->BackupCount; cntr_BackupServerList_0++) {
+		for (cntr_BackupServerList_0 = 0; cntr_BackupServerList_0 < size_BackupServerList_0; cntr_BackupServerList_0++) {
 			NDR_CHECK(ndr_pull_nbt_name(ndr, NDR_SCALARS, &r->BackupServerList[cntr_BackupServerList_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_BackupServerList_0, 0);
@@ -2976,11 +3002,13 @@ static enum ndr_err_code ndr_push_nbt_browse_domain_announcement(struct ndr_push
 
 static enum ndr_err_code ndr_pull_nbt_browse_domain_announcement(struct ndr_pull *ndr, int ndr_flags, struct nbt_browse_domain_announcement *r)
 {
+	uint32_t size_ServerName_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->UpdateCount));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->Periodicity));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ServerName, 16, sizeof(uint8_t), CH_DOS));
+		size_ServerName_0 = 16;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ServerName, size_ServerName_0, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->OSMajor));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->OSMinor));
 		NDR_CHECK(ndr_pull_svcctl_ServerType(ndr, NDR_SCALARS, &r->ServerType));
@@ -3115,11 +3143,13 @@ static enum ndr_err_code ndr_push_nbt_browse_local_master_announcement(struct nd
 
 static enum ndr_err_code ndr_pull_nbt_browse_local_master_announcement(struct ndr_pull *ndr, int ndr_flags, struct nbt_browse_local_master_announcement *r)
 {
+	uint32_t size_ServerName_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->UpdateCount));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->Periodicity));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ServerName, 16, sizeof(uint8_t), CH_DOS));
+		size_ServerName_0 = 16;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ServerName, size_ServerName_0, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->OSMajor));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->OSMinor));
 		NDR_CHECK(ndr_pull_svcctl_ServerType(ndr, NDR_SCALARS, &r->ServerType));

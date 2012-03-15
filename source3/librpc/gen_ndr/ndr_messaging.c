@@ -148,24 +148,27 @@ _PUBLIC_ enum ndr_err_code ndr_push_messaging_array(struct ndr_push *ndr, int nd
 
 _PUBLIC_ enum ndr_err_code ndr_pull_messaging_array(struct ndr_pull *ndr, int ndr_flags, struct messaging_array *r)
 {
+	uint32_t size_messages_0 = 0;
 	uint32_t cntr_messages_0;
 	TALLOC_CTX *_mem_save_messages_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_messages));
-		NDR_PULL_ALLOC_N(ndr, r->messages, r->num_messages);
+		size_messages_0 = r->num_messages;
+		NDR_PULL_ALLOC_N(ndr, r->messages, size_messages_0);
 		_mem_save_messages_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->messages, 0);
-		for (cntr_messages_0 = 0; cntr_messages_0 < r->num_messages; cntr_messages_0++) {
+		for (cntr_messages_0 = 0; cntr_messages_0 < size_messages_0; cntr_messages_0++) {
 			NDR_CHECK(ndr_pull_messaging_rec(ndr, NDR_SCALARS, &r->messages[cntr_messages_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_messages_0, 0);
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		size_messages_0 = r->num_messages;
 		_mem_save_messages_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->messages, 0);
-		for (cntr_messages_0 = 0; cntr_messages_0 < r->num_messages; cntr_messages_0++) {
+		for (cntr_messages_0 = 0; cntr_messages_0 < size_messages_0; cntr_messages_0++) {
 			NDR_CHECK(ndr_pull_messaging_rec(ndr, NDR_BUFFERS, &r->messages[cntr_messages_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_messages_0, 0);
@@ -219,27 +222,35 @@ _PUBLIC_ enum ndr_err_code ndr_push_dbwrap_tdb2_changes(struct ndr_push *ndr, in
 
 _PUBLIC_ enum ndr_err_code ndr_pull_dbwrap_tdb2_changes(struct ndr_pull *ndr, int ndr_flags, struct dbwrap_tdb2_changes *r)
 {
+	uint32_t size_magic_string_0 = 0;
+	uint32_t size_name_0 = 0;
+	uint32_t length_name_0 = 0;
+	uint32_t size_keys_0 = 0;
 	uint32_t cntr_keys_0;
 	TALLOC_CTX *_mem_save_keys_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->magic_string, 4, sizeof(uint8_t), CH_DOS));
+		size_magic_string_0 = 4;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->magic_string, size_magic_string_0, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->magic_version));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->name));
-		if (ndr_get_array_length(ndr, &r->name) > ndr_get_array_size(ndr, &r->name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->name), ndr_get_array_length(ndr, &r->name));
+		size_name_0 = ndr_get_array_size(ndr, &r->name);
+		length_name_0 = ndr_get_array_length(ndr, &r->name);
+		if (length_name_0 > size_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_name_0, length_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->name), sizeof(uint8_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, ndr_get_array_length(ndr, &r->name), sizeof(uint8_t), CH_UTF8));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_name_0, sizeof(uint8_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, length_name_0, sizeof(uint8_t), CH_UTF8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->old_seqnum));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->new_seqnum));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_changes));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_keys));
-		NDR_PULL_ALLOC_N(ndr, r->keys, r->num_keys);
+		size_keys_0 = r->num_keys;
+		NDR_PULL_ALLOC_N(ndr, r->keys, size_keys_0);
 		_mem_save_keys_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->keys, 0);
-		for (cntr_keys_0 = 0; cntr_keys_0 < r->num_keys; cntr_keys_0++) {
+		for (cntr_keys_0 = 0; cntr_keys_0 < size_keys_0; cntr_keys_0++) {
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->keys[cntr_keys_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keys_0, 0);

@@ -24,6 +24,7 @@ static enum ndr_err_code ndr_push_dcerpc_ctx_list(struct ndr_push *ndr, int ndr_
 
 static enum ndr_err_code ndr_pull_dcerpc_ctx_list(struct ndr_pull *ndr, int ndr_flags, struct dcerpc_ctx_list *r)
 {
+	uint32_t size_transfer_syntaxes_0 = 0;
 	uint32_t cntr_transfer_syntaxes_0;
 	TALLOC_CTX *_mem_save_transfer_syntaxes_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -31,10 +32,11 @@ static enum ndr_err_code ndr_pull_dcerpc_ctx_list(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->context_id));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->num_transfer_syntaxes));
 		NDR_CHECK(ndr_pull_ndr_syntax_id(ndr, NDR_SCALARS, &r->abstract_syntax));
-		NDR_PULL_ALLOC_N(ndr, r->transfer_syntaxes, r->num_transfer_syntaxes);
+		size_transfer_syntaxes_0 = r->num_transfer_syntaxes;
+		NDR_PULL_ALLOC_N(ndr, r->transfer_syntaxes, size_transfer_syntaxes_0);
 		_mem_save_transfer_syntaxes_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->transfer_syntaxes, 0);
-		for (cntr_transfer_syntaxes_0 = 0; cntr_transfer_syntaxes_0 < r->num_transfer_syntaxes; cntr_transfer_syntaxes_0++) {
+		for (cntr_transfer_syntaxes_0 = 0; cntr_transfer_syntaxes_0 < size_transfer_syntaxes_0; cntr_transfer_syntaxes_0++) {
 			NDR_CHECK(ndr_pull_ndr_syntax_id(ndr, NDR_SCALARS, &r->transfer_syntaxes[cntr_transfer_syntaxes_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_transfer_syntaxes_0, 0);
@@ -99,6 +101,7 @@ static enum ndr_err_code ndr_push_dcerpc_bind(struct ndr_push *ndr, int ndr_flag
 
 static enum ndr_err_code ndr_pull_dcerpc_bind(struct ndr_pull *ndr, int ndr_flags, struct dcerpc_bind *r)
 {
+	uint32_t size_ctx_list_0 = 0;
 	uint32_t cntr_ctx_list_0;
 	TALLOC_CTX *_mem_save_ctx_list_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -107,10 +110,11 @@ static enum ndr_err_code ndr_pull_dcerpc_bind(struct ndr_pull *ndr, int ndr_flag
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->max_recv_frag));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->assoc_group_id));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->num_contexts));
-		NDR_PULL_ALLOC_N(ndr, r->ctx_list, r->num_contexts);
+		size_ctx_list_0 = r->num_contexts;
+		NDR_PULL_ALLOC_N(ndr, r->ctx_list, size_ctx_list_0);
 		_mem_save_ctx_list_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->ctx_list, 0);
-		for (cntr_ctx_list_0 = 0; cntr_ctx_list_0 < r->num_contexts; cntr_ctx_list_0++) {
+		for (cntr_ctx_list_0 = 0; cntr_ctx_list_0 < size_ctx_list_0; cntr_ctx_list_0++) {
 			NDR_CHECK(ndr_pull_dcerpc_ctx_list(ndr, NDR_SCALARS, &r->ctx_list[cntr_ctx_list_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctx_list_0, 0);
@@ -406,6 +410,8 @@ static enum ndr_err_code ndr_push_dcerpc_bind_ack(struct ndr_push *ndr, int ndr_
 
 static enum ndr_err_code ndr_pull_dcerpc_bind_ack(struct ndr_pull *ndr, int ndr_flags, struct dcerpc_bind_ack *r)
 {
+	uint32_t size_secondary_address_0 = 0;
+	uint32_t size_ctx_list_0 = 0;
 	uint32_t cntr_ctx_list_0;
 	TALLOC_CTX *_mem_save_ctx_list_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -414,7 +420,8 @@ static enum ndr_err_code ndr_pull_dcerpc_bind_ack(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->max_recv_frag));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->assoc_group_id));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->secondary_address_size));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->secondary_address, r->secondary_address_size, sizeof(uint8_t), CH_DOS));
+		size_secondary_address_0 = r->secondary_address_size;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->secondary_address, size_secondary_address_0, sizeof(uint8_t), CH_DOS));
 		{
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
@@ -422,10 +429,11 @@ static enum ndr_err_code ndr_pull_dcerpc_bind_ack(struct ndr_pull *ndr, int ndr_
 			ndr->flags = _flags_save_DATA_BLOB;
 		}
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->num_results));
-		NDR_PULL_ALLOC_N(ndr, r->ctx_list, r->num_results);
+		size_ctx_list_0 = r->num_results;
+		NDR_PULL_ALLOC_N(ndr, r->ctx_list, size_ctx_list_0);
 		_mem_save_ctx_list_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->ctx_list, 0);
-		for (cntr_ctx_list_0 = 0; cntr_ctx_list_0 < r->num_results; cntr_ctx_list_0++) {
+		for (cntr_ctx_list_0 = 0; cntr_ctx_list_0 < size_ctx_list_0; cntr_ctx_list_0++) {
 			NDR_CHECK(ndr_pull_dcerpc_ack_ctx(ndr, NDR_SCALARS, &r->ctx_list[cntr_ctx_list_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ctx_list_0, 0);
@@ -486,15 +494,17 @@ static enum ndr_err_code ndr_push_dcerpc_bind_nak_versions(struct ndr_push *ndr,
 
 static enum ndr_err_code ndr_pull_dcerpc_bind_nak_versions(struct ndr_pull *ndr, int ndr_flags, struct dcerpc_bind_nak_versions *r)
 {
+	uint32_t size_versions_0 = 0;
 	uint32_t cntr_versions_0;
 	TALLOC_CTX *_mem_save_versions_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_versions));
-		NDR_PULL_ALLOC_N(ndr, r->versions, r->num_versions);
+		size_versions_0 = r->num_versions;
+		NDR_PULL_ALLOC_N(ndr, r->versions, size_versions_0);
 		_mem_save_versions_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->versions, 0);
-		for (cntr_versions_0 = 0; cntr_versions_0 < r->num_versions; cntr_versions_0++) {
+		for (cntr_versions_0 = 0; cntr_versions_0 < size_versions_0; cntr_versions_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->versions[cntr_versions_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_versions_0, 0);
@@ -1107,6 +1117,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_dcerpc_fack(struct ndr_push *ndr, int ndr_fl
 
 _PUBLIC_ enum ndr_err_code ndr_pull_dcerpc_fack(struct ndr_pull *ndr, int ndr_flags, struct dcerpc_fack *r)
 {
+	uint32_t size_selack_0 = 0;
 	uint32_t cntr_selack_0;
 	TALLOC_CTX *_mem_save_selack_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -1118,10 +1129,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dcerpc_fack(struct ndr_pull *ndr, int ndr_fl
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->max_frag_size));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->serial_no));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->selack_size));
-		NDR_PULL_ALLOC_N(ndr, r->selack, r->selack_size);
+		size_selack_0 = r->selack_size;
+		NDR_PULL_ALLOC_N(ndr, r->selack, size_selack_0);
 		_mem_save_selack_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->selack, 0);
-		for (cntr_selack_0 = 0; cntr_selack_0 < r->selack_size; cntr_selack_0++) {
+		for (cntr_selack_0 = 0; cntr_selack_0 < size_selack_0; cntr_selack_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->selack[cntr_selack_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_selack_0, 0);
@@ -1753,13 +1765,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_ncacn_packet(struct ndr_push *ndr, int ndr_f
 
 _PUBLIC_ enum ndr_err_code ndr_pull_ncacn_packet(struct ndr_pull *ndr, int ndr_flags, struct ncacn_packet *r)
 {
+	uint32_t size_drep_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->rpc_vers));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->rpc_vers_minor));
 		NDR_CHECK(ndr_pull_dcerpc_pkt_type(ndr, NDR_SCALARS, &r->ptype));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->pfc_flags));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->drep, 4));
+		size_drep_0 = 4;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->drep, size_drep_0));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->frag_length));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->auth_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->call_id));
@@ -1825,13 +1839,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_ncadg_packet(struct ndr_push *ndr, int ndr_f
 
 _PUBLIC_ enum ndr_err_code ndr_pull_ncadg_packet(struct ndr_pull *ndr, int ndr_flags, struct ncadg_packet *r)
 {
+	uint32_t size_drep_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->rpc_vers));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->ptype));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->pfc_flags));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->ncadg_flags));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->drep, 3));
+		size_drep_0 = 3;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->drep, size_drep_0));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->serial_high));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->object));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->iface));
