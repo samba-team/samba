@@ -31,7 +31,8 @@ torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME",
                    "--target=samba3", "--basedir=$SELFTEST_TMPDIR",
                    '--option="torture:winbindd_netbios_name=$SERVER"',
                    '--option="torture:winbindd_netbios_domain=$DOMAIN"', 
-                   '--option=torture:sharedelay=100000']
+                   '--option=torture:sharedelay=100000',
+                   '--option=torture:writetimeupdatedelay=500000' ]
 
 if not os.getenv("SELFTEST_VERBOSE"):
     torture_options.append("--option=torture:progress=no")
