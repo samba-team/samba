@@ -356,12 +356,57 @@ ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos
 #endif
 }
 
+static int reinit_after_fork_pipe[2] = { -1, -1 };
+
+NTSTATUS init_before_fork(void)
+{
+	int ret;
+
+	ret = pipe(reinit_after_fork_pipe);
+	if (ret == -1) {
+		NTSTATUS status;
+
+		status = map_nt_error_from_unix_common(errno);
+
+		DEBUG(0, ("Error creating child_pipe: %s\n",
+			  nt_errstr(status)));
+
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * Detect died parent by detecting EOF on the pipe
+ */
+static void reinit_after_fork_pipe_handler(struct tevent_context *ev,
+					   struct tevent_fd *fde,
+					   uint16_t flags,
+					   void *private_data)
+{
+	char c;
+
+	if (read(reinit_after_fork_pipe[0], &c, 1) != 1) {
+		/*
+		 * we have reached EOF on stdin, which means the
+		 * parent has exited. Shutdown the server
+		 */
+		(void)kill(getpid(), SIGTERM);
+	}
+}
+
 
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct event_context *ev_ctx,
 			   bool parent_longlived)
 {
 	NTSTATUS status = NT_STATUS_OK;
+
+	if (reinit_after_fork_pipe[1] != -1) {
+		close(reinit_after_fork_pipe[1]);
+		reinit_after_fork_pipe[1] = -1;
+	}
 
 	/* Reset the state of the random
 	 * number generation system, so
@@ -378,6 +423,17 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 
 	if (ev_ctx && tevent_re_initialise(ev_ctx) != 0) {
 		smb_panic(__location__ ": Failed to re-initialise event context");
+	}
+
+	if (reinit_after_fork_pipe[0] != -1) {
+		struct tevent_fd *fde;
+
+		fde = tevent_add_fd(ev_ctx, ev_ctx /* TALLOC_CTX */,
+				    reinit_after_fork_pipe[0], TEVENT_FD_READ,
+				    reinit_after_fork_pipe_handler, NULL);
+		if (fde == NULL) {
+			smb_panic(__location__ ": Failed to add reinit_after_fork pipe event");
+		}
 	}
 
 	if (msg_ctx) {

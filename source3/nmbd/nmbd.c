@@ -951,6 +951,17 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
+	/*
+	 * Do not initialize the parent-child-pipe before becoming
+	 * a daemon: this is used to detect a died parent in the child
+	 * process.
+	 */
+	status = init_before_fork();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("init_before_fork failed: %s\n", nt_errstr(status)));
+		exit(1);
+	}
+
 	if (!nmbd_setup_sig_term_handler(msg))
 		exit(1);
 	if (!nmbd_setup_stdin_handler(msg, !Fork))

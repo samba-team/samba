@@ -1461,6 +1461,17 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 
+	/*
+	 * Do not initialize the parent-child-pipe before becoming
+	 * a daemon: this is used to detect a died parent in the child
+	 * process.
+	 */
+	status = init_before_fork();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("init_before_fork failed: %s\n", nt_errstr(status)));
+		exit(1);
+	}
+
 	winbindd_register_handlers(!Fork);
 
 	status = init_system_info();

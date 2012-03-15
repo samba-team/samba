@@ -57,6 +57,8 @@ struct smbd_parent_context {
 	/* the list of current child processes */
 	struct smbd_child_pid *children;
 	size_t num_children;
+	/* pipe for detecting death of parent process in child: */
+	int child_pipe[2];
 
 	struct timed_event *cleanup_te;
 };
@@ -1228,6 +1230,17 @@ extern void build_options(bool screen);
 				   false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
+		exit(1);
+	}
+
+	/*
+	 * Do not initialize the parent-child-pipe before becoming
+	 * a daemon: this is used to detect a died parent in the child
+	 * process.
+	 */
+	status = init_before_fork();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("init_before_fork failed: %s\n", nt_errstr(status)));
 		exit(1);
 	}
 
