@@ -733,14 +733,14 @@ sub provision($$$$$$$$)
 	read only = no
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 500000
+	posix:writetimeupdatedelay = 50000
 
 [xcopy_share]
 	path = $ctx->{tmpdir}
 	read only = no
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 500000
+	posix:writetimeupdatedelay = 50000
 	create mask = 777
 	force create mode = 777
 
@@ -1220,7 +1220,7 @@ sub provision_rodc($$$)
 	read only = no
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 500000
+	posix:writetimeupdatedelay = 50000
 
 ";
 
