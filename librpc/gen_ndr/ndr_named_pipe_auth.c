@@ -117,6 +117,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_named_pipe_auth_req(struct ndr_push *ndr, in
 
 _PUBLIC_ enum ndr_err_code ndr_pull_named_pipe_auth_req(struct ndr_pull *ndr, int ndr_flags, struct named_pipe_auth_req *r)
 {
+	uint32_t size_magic_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		{
@@ -125,7 +126,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_named_pipe_auth_req(struct ndr_pull *ndr, in
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
 			ndr->flags = _flags_save_uint32;
 		}
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->magic, 4, sizeof(uint8_t), CH_DOS));
+		size_magic_0 = 4;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->magic, size_magic_0, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->info, r->level));
 		NDR_CHECK(ndr_pull_named_pipe_auth_req_info(ndr, NDR_SCALARS, &r->info));
@@ -262,6 +264,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_named_pipe_auth_rep(struct ndr_push *ndr, in
 
 _PUBLIC_ enum ndr_err_code ndr_pull_named_pipe_auth_rep(struct ndr_pull *ndr, int ndr_flags, struct named_pipe_auth_rep *r)
 {
+	uint32_t size_magic_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		{
@@ -270,7 +273,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_named_pipe_auth_rep(struct ndr_pull *ndr, in
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
 			ndr->flags = _flags_save_uint32;
 		}
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->magic, 4, sizeof(uint8_t), CH_DOS));
+		size_magic_0 = 4;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->magic, size_magic_0, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->info, r->level));
 		NDR_CHECK(ndr_pull_named_pipe_auth_rep_info(ndr, NDR_SCALARS, &r->info));

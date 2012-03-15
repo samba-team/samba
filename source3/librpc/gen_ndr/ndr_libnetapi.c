@@ -46,17 +46,21 @@ _PUBLIC_ enum ndr_err_code ndr_push_domsid(struct ndr_push *ndr, int ndr_flags, 
 
 _PUBLIC_ enum ndr_err_code ndr_pull_domsid(struct ndr_pull *ndr, int ndr_flags, struct domsid *r)
 {
+	uint32_t size_id_auth_0 = 0;
+	uint32_t size_sub_auths_0 = 0;
 	uint32_t cntr_sub_auths_0;
 	TALLOC_CTX *_mem_save_sub_auths_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sid_rev_num));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->num_auths));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->id_auth, 6));
-		NDR_PULL_ALLOC_N(ndr, r->sub_auths, MAXSUBAUTHS);
+		size_id_auth_0 = 6;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->id_auth, size_id_auth_0));
+		size_sub_auths_0 = MAXSUBAUTHS;
+		NDR_PULL_ALLOC_N(ndr, r->sub_auths, size_sub_auths_0);
 		_mem_save_sub_auths_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->sub_auths, 0);
-		for (cntr_sub_auths_0 = 0; cntr_sub_auths_0 < MAXSUBAUTHS; cntr_sub_auths_0++) {
+		for (cntr_sub_auths_0 = 0; cntr_sub_auths_0 < size_sub_auths_0; cntr_sub_auths_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sub_auths[cntr_sub_auths_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sub_auths_0, 0);
@@ -4664,10 +4668,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_21(struct ndr_push *ndr, int ndr_f
 
 _PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_21(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_21 *r)
 {
+	uint32_t size_usri21_password_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
-		NDR_PULL_ALLOC_N(ndr, r->usri21_password, ENCRYPTED_PWLEN);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->usri21_password, ENCRYPTED_PWLEN));
+		size_usri21_password_0 = ENCRYPTED_PWLEN;
+		NDR_PULL_ALLOC_N(ndr, r->usri21_password, size_usri21_password_0);
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->usri21_password, size_usri21_password_0));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -4721,13 +4727,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_USER_INFO_22(struct ndr_push *ndr, int ndr_f
 
 _PUBLIC_ enum ndr_err_code ndr_pull_USER_INFO_22(struct ndr_pull *ndr, int ndr_flags, struct USER_INFO_22 *r)
 {
+	uint32_t size_usri22_password_0 = 0;
 	uint32_t _ptr_usri22_logon_hours;
 	TALLOC_CTX *_mem_save_usri22_logon_hours_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_name));
-		NDR_PULL_ALLOC_N(ndr, r->usri22_password, ENCRYPTED_PWLEN);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->usri22_password, ENCRYPTED_PWLEN));
+		size_usri22_password_0 = ENCRYPTED_PWLEN;
+		NDR_PULL_ALLOC_N(ndr, r->usri22_password, size_usri22_password_0);
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->usri22_password, size_usri22_password_0));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_password_age));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->usri22_priv));
 		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->usri22_home_dir));
