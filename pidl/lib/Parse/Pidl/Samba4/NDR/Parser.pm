@@ -332,7 +332,8 @@ sub ParseArrayPullGetSize($$$$$$)
 			check_fully_dereferenced($e, $env));
 	}
 
-	my $array_size = $size;
+	$self->pidl("size_$e->{NAME}_$l->{LEVEL_INDEX} = $size;");
+	my $array_size = "size_$e->{NAME}_$l->{LEVEL_INDEX}";
 
 	return $array_size;
 }
@@ -350,7 +351,8 @@ sub ParseArrayPullGetLength($$$$$$;$)
 	my $array_length = $array_size;
 	if ($l->{IS_VARYING}) {
 		my $length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
-		$array_length = $length;
+		$self->pidl("length_$e->{NAME}_$l->{LEVEL_INDEX} = $length;");
+		$array_length = "length_$e->{NAME}_$l->{LEVEL_INDEX}";
 	}
 
 	return $array_length;
@@ -1538,12 +1540,18 @@ sub DeclarePtrVariables($$)
 	}
 }
 
-sub DeclareArrayVariables($$)
+sub DeclareArrayVariables($$;$)
 {
-	my ($self,$e) = @_;
+	my ($self,$e,$pull) = @_;
 
 	foreach my $l (@{$e->{LEVELS}}) {
 		next if ($l->{TYPE} ne "ARRAY");
+		if (defined($pull)) {
+			$self->pidl("uint32_t size_$e->{NAME}_$l->{LEVEL_INDEX} = 0;");
+			if ($l->{IS_VARYING}) {
+				$self->pidl("uint32_t length_$e->{NAME}_$l->{LEVEL_INDEX} = 0;");
+			}
+		}
 		next if has_fast_array($e,$l);
 		next if is_charset_array($e,$l);
 		$self->pidl("uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};");
@@ -1626,7 +1634,7 @@ sub ParseStructPull($$$$)
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		$self->DeclarePtrVariables($e);
-		$self->DeclareArrayVariables($e);
+		$self->DeclareArrayVariables($e, "pull");
 		$self->DeclareMemCtxVariables($e);
 	}
 
@@ -1939,7 +1947,7 @@ sub ParseUnionPull($$$$)
 		next if ($double_cases{"$el->{NAME}"});
 		$self->DeclareMemCtxVariables($el);
 		$self->DeclarePtrVariables($el);
-		$self->DeclareArrayVariables($el);
+		$self->DeclareArrayVariables($el, "pull");
 		$double_cases{"$el->{NAME}"} = 1;
 	}
 
@@ -2211,7 +2219,7 @@ sub ParseFunctionPull($$)
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{ELEMENTS}}) { 
 		$self->DeclarePtrVariables($e);
-		$self->DeclareArrayVariables($e);
+		$self->DeclareArrayVariables($e, "pull");
 	}
 
 	my %double_cases = ();
