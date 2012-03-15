@@ -387,7 +387,7 @@ static void reinit_after_fork_pipe_handler(struct tevent_context *ev,
 {
 	char c;
 
-	if (read(reinit_after_fork_pipe[0], &c, 1) != 1) {
+	if (sys_read(reinit_after_fork_pipe[0], &c, 1) != 1) {
 		/*
 		 * we have reached EOF on stdin, which means the
 		 * parent has exited. Shutdown the server
