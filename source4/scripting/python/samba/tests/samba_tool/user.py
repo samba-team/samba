@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Unix SMB/CIFS implementation.
 # Copyright (C) Sean Dague <sdague@linux.vnet.ibm.com> 2011
 #
@@ -182,7 +184,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                                           os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, "Error runing list")
+        self.assertCmdSuccess(result, "Error running list")
 
         search_filter = ("(&(objectClass=user)(userAccountControl:%s:=%u))" %
                          (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT))
