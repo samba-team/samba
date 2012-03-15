@@ -96,10 +96,16 @@ static enum ndr_err_code ndr_push_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_p
 static enum ndr_err_code ndr_pull_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_pull *ndr, int ndr_flags, struct dssetup_DsRolePrimaryDomInfoBasic *r)
 {
 	uint32_t _ptr_domain;
+	uint32_t size_domain_1 = 0;
+	uint32_t length_domain_1 = 0;
 	TALLOC_CTX *_mem_save_domain_0;
 	uint32_t _ptr_dns_domain;
+	uint32_t size_dns_domain_1 = 0;
+	uint32_t length_dns_domain_1 = 0;
 	TALLOC_CTX *_mem_save_dns_domain_0;
 	uint32_t _ptr_forest;
+	uint32_t size_forest_1 = 0;
+	uint32_t length_forest_1 = 0;
 	TALLOC_CTX *_mem_save_forest_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -132,11 +138,13 @@ static enum ndr_err_code ndr_pull_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_p
 			NDR_PULL_SET_MEM_CTX(ndr, r->domain, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->domain));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->domain));
-			if (ndr_get_array_length(ndr, &r->domain) > ndr_get_array_size(ndr, &r->domain)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->domain), ndr_get_array_length(ndr, &r->domain));
+			size_domain_1 = ndr_get_array_size(ndr, &r->domain);
+			length_domain_1 = ndr_get_array_length(ndr, &r->domain);
+			if (length_domain_1 > size_domain_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_1, length_domain_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, length_domain_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
 		}
 		if (r->dns_domain) {
@@ -144,11 +152,13 @@ static enum ndr_err_code ndr_pull_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_p
 			NDR_PULL_SET_MEM_CTX(ndr, r->dns_domain, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dns_domain));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dns_domain));
-			if (ndr_get_array_length(ndr, &r->dns_domain) > ndr_get_array_size(ndr, &r->dns_domain)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dns_domain), ndr_get_array_length(ndr, &r->dns_domain));
+			size_dns_domain_1 = ndr_get_array_size(ndr, &r->dns_domain);
+			length_dns_domain_1 = ndr_get_array_length(ndr, &r->dns_domain);
+			if (length_dns_domain_1 > size_dns_domain_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dns_domain_1, length_dns_domain_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dns_domain), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dns_domain, ndr_get_array_length(ndr, &r->dns_domain), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dns_domain_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dns_domain, length_dns_domain_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dns_domain_0, 0);
 		}
 		if (r->forest) {
@@ -156,11 +166,13 @@ static enum ndr_err_code ndr_pull_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_p
 			NDR_PULL_SET_MEM_CTX(ndr, r->forest, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->forest));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->forest));
-			if (ndr_get_array_length(ndr, &r->forest) > ndr_get_array_size(ndr, &r->forest)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->forest), ndr_get_array_length(ndr, &r->forest));
+			size_forest_1 = ndr_get_array_size(ndr, &r->forest);
+			length_forest_1 = ndr_get_array_length(ndr, &r->forest);
+			if (length_forest_1 > size_forest_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_forest_1, length_forest_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->forest), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->forest, ndr_get_array_length(ndr, &r->forest), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_forest_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->forest, length_forest_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_forest_0, 0);
 		}
 	}

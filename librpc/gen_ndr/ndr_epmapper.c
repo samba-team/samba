@@ -1590,6 +1590,7 @@ static enum ndr_err_code ndr_push_epm_tower(struct ndr_push *ndr, int ndr_flags,
 
 static enum ndr_err_code ndr_pull_epm_tower(struct ndr_pull *ndr, int ndr_flags, struct epm_tower *r)
 {
+	uint32_t size_floors_0 = 0;
 	uint32_t cntr_floors_0;
 	TALLOC_CTX *_mem_save_floors_0;
 	{
@@ -1598,10 +1599,11 @@ static enum ndr_err_code ndr_pull_epm_tower(struct ndr_pull *ndr, int ndr_flags,
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 2));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_floors));
-			NDR_PULL_ALLOC_N(ndr, r->floors, r->num_floors);
+			size_floors_0 = r->num_floors;
+			NDR_PULL_ALLOC_N(ndr, r->floors, size_floors_0);
 			_mem_save_floors_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->floors, 0);
-			for (cntr_floors_0 = 0; cntr_floors_0 < r->num_floors; cntr_floors_0++) {
+			for (cntr_floors_0 = 0; cntr_floors_0 < size_floors_0; cntr_floors_0++) {
 				NDR_CHECK(ndr_pull_epm_floor(ndr, NDR_SCALARS, &r->floors[cntr_floors_0]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_floors_0, 0);
@@ -1712,6 +1714,7 @@ static enum ndr_err_code ndr_pull_epm_entry_t(struct ndr_pull *ndr, int ndr_flag
 {
 	uint32_t _ptr_tower;
 	TALLOC_CTX *_mem_save_tower_0;
+	uint32_t size_annotation_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS, &r->object));
@@ -1723,7 +1726,8 @@ static enum ndr_err_code ndr_pull_epm_entry_t(struct ndr_pull *ndr, int ndr_flag
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__annotation_offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__annotation_length));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->annotation, r->__annotation_length, sizeof(uint8_t), CH_DOS));
+		size_annotation_0 = r->__annotation_length;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->annotation, size_annotation_0, sizeof(uint8_t), CH_DOS));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -1867,18 +1871,20 @@ static enum ndr_err_code ndr_push_epm_Insert(struct ndr_push *ndr, int flags, co
 
 static enum ndr_err_code ndr_pull_epm_Insert(struct ndr_pull *ndr, int flags, struct epm_Insert *r)
 {
+	uint32_t size_entries_0 = 0;
 	uint32_t cntr_entries_0;
 	TALLOC_CTX *_mem_save_entries_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_ents));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.entries));
-		NDR_PULL_ALLOC_N(ndr, r->in.entries, ndr_get_array_size(ndr, &r->in.entries));
+		size_entries_0 = ndr_get_array_size(ndr, &r->in.entries);
+		NDR_PULL_ALLOC_N(ndr, r->in.entries, size_entries_0);
 		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.entries, 0);
-		for (cntr_entries_0 = 0; cntr_entries_0 < r->in.num_ents; cntr_entries_0++) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < size_entries_0; cntr_entries_0++) {
 			NDR_CHECK(ndr_pull_epm_entry_t(ndr, NDR_SCALARS, &r->in.entries[cntr_entries_0]));
 		}
-		for (cntr_entries_0 = 0; cntr_entries_0 < r->in.num_ents; cntr_entries_0++) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < size_entries_0; cntr_entries_0++) {
 			NDR_CHECK(ndr_pull_epm_entry_t(ndr, NDR_BUFFERS, &r->in.entries[cntr_entries_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
@@ -1948,18 +1954,20 @@ static enum ndr_err_code ndr_push_epm_Delete(struct ndr_push *ndr, int flags, co
 
 static enum ndr_err_code ndr_pull_epm_Delete(struct ndr_pull *ndr, int flags, struct epm_Delete *r)
 {
+	uint32_t size_entries_0 = 0;
 	uint32_t cntr_entries_0;
 	TALLOC_CTX *_mem_save_entries_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_ents));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.entries));
-		NDR_PULL_ALLOC_N(ndr, r->in.entries, ndr_get_array_size(ndr, &r->in.entries));
+		size_entries_0 = ndr_get_array_size(ndr, &r->in.entries);
+		NDR_PULL_ALLOC_N(ndr, r->in.entries, size_entries_0);
 		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.entries, 0);
-		for (cntr_entries_0 = 0; cntr_entries_0 < r->in.num_ents; cntr_entries_0++) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < size_entries_0; cntr_entries_0++) {
 			NDR_CHECK(ndr_pull_epm_entry_t(ndr, NDR_SCALARS, &r->in.entries[cntr_entries_0]));
 		}
-		for (cntr_entries_0 = 0; cntr_entries_0 < r->in.num_ents; cntr_entries_0++) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < size_entries_0; cntr_entries_0++) {
 			NDR_CHECK(ndr_pull_epm_entry_t(ndr, NDR_BUFFERS, &r->in.entries[cntr_entries_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
@@ -2053,6 +2061,8 @@ static enum ndr_err_code ndr_pull_epm_Lookup(struct ndr_pull *ndr, int flags, st
 {
 	uint32_t _ptr_object;
 	uint32_t _ptr_interface_id;
+	uint32_t size_entries_0 = 0;
+	uint32_t length_entries_0 = 0;
 	uint32_t cntr_entries_0;
 	TALLOC_CTX *_mem_save_object_0;
 	TALLOC_CTX *_mem_save_interface_id_0;
@@ -2118,16 +2128,18 @@ static enum ndr_err_code ndr_pull_epm_Lookup(struct ndr_pull *ndr, int flags, st
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_num_ents_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.entries));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->out.entries));
-		if (ndr_get_array_length(ndr, &r->out.entries) > ndr_get_array_size(ndr, &r->out.entries)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.entries), ndr_get_array_length(ndr, &r->out.entries));
+		size_entries_0 = ndr_get_array_size(ndr, &r->out.entries);
+		length_entries_0 = ndr_get_array_length(ndr, &r->out.entries);
+		if (length_entries_0 > size_entries_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_entries_0, length_entries_0);
 		}
-		NDR_PULL_ALLOC_N(ndr, r->out.entries, ndr_get_array_size(ndr, &r->out.entries));
+		NDR_PULL_ALLOC_N(ndr, r->out.entries, size_entries_0);
 		_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.entries, 0);
-		for (cntr_entries_0 = 0; cntr_entries_0 < ndr_get_array_length(ndr, &r->out.entries); cntr_entries_0++) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < length_entries_0; cntr_entries_0++) {
 			NDR_CHECK(ndr_pull_epm_entry_t(ndr, NDR_SCALARS, &r->out.entries[cntr_entries_0]));
 		}
-		for (cntr_entries_0 = 0; cntr_entries_0 < ndr_get_array_length(ndr, &r->out.entries); cntr_entries_0++) {
+		for (cntr_entries_0 = 0; cntr_entries_0 < length_entries_0; cntr_entries_0++) {
 			NDR_CHECK(ndr_pull_epm_entry_t(ndr, NDR_BUFFERS, &r->out.entries[cntr_entries_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
@@ -2246,6 +2258,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_epm_Map(struct ndr_pull *ndr, int flags, str
 {
 	uint32_t _ptr_object;
 	uint32_t _ptr_map_tower;
+	uint32_t size_towers_0 = 0;
+	uint32_t length_towers_0 = 0;
 	uint32_t cntr_towers_0;
 	TALLOC_CTX *_mem_save_object_0;
 	TALLOC_CTX *_mem_save_map_tower_0;
@@ -2309,16 +2323,18 @@ _PUBLIC_ enum ndr_err_code ndr_pull_epm_Map(struct ndr_pull *ndr, int flags, str
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_num_towers_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.towers));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->out.towers));
-		if (ndr_get_array_length(ndr, &r->out.towers) > ndr_get_array_size(ndr, &r->out.towers)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.towers), ndr_get_array_length(ndr, &r->out.towers));
+		size_towers_0 = ndr_get_array_size(ndr, &r->out.towers);
+		length_towers_0 = ndr_get_array_length(ndr, &r->out.towers);
+		if (length_towers_0 > size_towers_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_towers_0, length_towers_0);
 		}
-		NDR_PULL_ALLOC_N(ndr, r->out.towers, ndr_get_array_size(ndr, &r->out.towers));
+		NDR_PULL_ALLOC_N(ndr, r->out.towers, size_towers_0);
 		_mem_save_towers_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.towers, 0);
-		for (cntr_towers_0 = 0; cntr_towers_0 < ndr_get_array_length(ndr, &r->out.towers); cntr_towers_0++) {
+		for (cntr_towers_0 = 0; cntr_towers_0 < length_towers_0; cntr_towers_0++) {
 			NDR_CHECK(ndr_pull_epm_twr_p_t(ndr, NDR_SCALARS, &r->out.towers[cntr_towers_0]));
 		}
-		for (cntr_towers_0 = 0; cntr_towers_0 < ndr_get_array_length(ndr, &r->out.towers); cntr_towers_0++) {
+		for (cntr_towers_0 = 0; cntr_towers_0 < length_towers_0; cntr_towers_0++) {
 			NDR_CHECK(ndr_pull_epm_twr_p_t(ndr, NDR_BUFFERS, &r->out.towers[cntr_towers_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_towers_0, 0);

@@ -62,12 +62,20 @@ static enum ndr_err_code ndr_push_netr_UasInfo(struct ndr_push *ndr, int ndr_fla
 static enum ndr_err_code ndr_pull_netr_UasInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_UasInfo *r)
 {
 	uint32_t _ptr_account_name;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
 	TALLOC_CTX *_mem_save_account_name_0;
 	uint32_t _ptr_computer;
+	uint32_t size_computer_1 = 0;
+	uint32_t length_computer_1 = 0;
 	TALLOC_CTX *_mem_save_computer_0;
 	uint32_t _ptr_domain;
+	uint32_t size_domain_1 = 0;
+	uint32_t length_domain_1 = 0;
 	TALLOC_CTX *_mem_save_domain_0;
 	uint32_t _ptr_script_path;
+	uint32_t size_script_path_1 = 0;
+	uint32_t length_script_path_1 = 0;
 	TALLOC_CTX *_mem_save_script_path_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -115,11 +123,13 @@ static enum ndr_err_code ndr_pull_netr_UasInfo(struct ndr_pull *ndr, int ndr_fla
 			NDR_PULL_SET_MEM_CTX(ndr, r->account_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->account_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->account_name));
-			if (ndr_get_array_length(ndr, &r->account_name) > ndr_get_array_size(ndr, &r->account_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->account_name), ndr_get_array_length(ndr, &r->account_name));
+			size_account_name_1 = ndr_get_array_size(ndr, &r->account_name);
+			length_account_name_1 = ndr_get_array_length(ndr, &r->account_name);
+			if (length_account_name_1 > size_account_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->account_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->account_name, ndr_get_array_length(ndr, &r->account_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_account_name_0, 0);
 		}
 		if (r->computer) {
@@ -127,11 +137,13 @@ static enum ndr_err_code ndr_pull_netr_UasInfo(struct ndr_pull *ndr, int ndr_fla
 			NDR_PULL_SET_MEM_CTX(ndr, r->computer, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->computer));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->computer));
-			if (ndr_get_array_length(ndr, &r->computer) > ndr_get_array_size(ndr, &r->computer)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->computer), ndr_get_array_length(ndr, &r->computer));
+			size_computer_1 = ndr_get_array_size(ndr, &r->computer);
+			length_computer_1 = ndr_get_array_length(ndr, &r->computer);
+			if (length_computer_1 > size_computer_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_1, length_computer_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->computer), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->computer, ndr_get_array_length(ndr, &r->computer), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->computer, length_computer_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_0, 0);
 		}
 		if (r->domain) {
@@ -139,11 +151,13 @@ static enum ndr_err_code ndr_pull_netr_UasInfo(struct ndr_pull *ndr, int ndr_fla
 			NDR_PULL_SET_MEM_CTX(ndr, r->domain, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->domain));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->domain));
-			if (ndr_get_array_length(ndr, &r->domain) > ndr_get_array_size(ndr, &r->domain)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->domain), ndr_get_array_length(ndr, &r->domain));
+			size_domain_1 = ndr_get_array_size(ndr, &r->domain);
+			length_domain_1 = ndr_get_array_length(ndr, &r->domain);
+			if (length_domain_1 > size_domain_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_1, length_domain_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, length_domain_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
 		}
 		if (r->script_path) {
@@ -151,11 +165,13 @@ static enum ndr_err_code ndr_pull_netr_UasInfo(struct ndr_pull *ndr, int ndr_fla
 			NDR_PULL_SET_MEM_CTX(ndr, r->script_path, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->script_path));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->script_path));
-			if (ndr_get_array_length(ndr, &r->script_path) > ndr_get_array_size(ndr, &r->script_path)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->script_path), ndr_get_array_length(ndr, &r->script_path));
+			size_script_path_1 = ndr_get_array_size(ndr, &r->script_path);
+			length_script_path_1 = ndr_get_array_length(ndr, &r->script_path);
+			if (length_script_path_1 > size_script_path_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_script_path_1, length_script_path_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->script_path), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->script_path, ndr_get_array_length(ndr, &r->script_path), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_script_path_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->script_path, length_script_path_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_script_path_0, 0);
 		}
 	}
@@ -442,6 +458,8 @@ static enum ndr_err_code ndr_push_netr_ChallengeResponse(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_netr_ChallengeResponse(struct ndr_pull *ndr, int ndr_flags, struct netr_ChallengeResponse *r)
 {
 	uint32_t _ptr_data;
+	uint32_t size_data_1 = 0;
+	uint32_t length_data_1 = 0;
 	TALLOC_CTX *_mem_save_data_0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -464,11 +482,13 @@ static enum ndr_err_code ndr_pull_netr_ChallengeResponse(struct ndr_pull *ndr, i
 				NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
 				NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
 				NDR_CHECK(ndr_pull_array_length(ndr, &r->data));
-				if (ndr_get_array_length(ndr, &r->data) > ndr_get_array_size(ndr, &r->data)) {
-					return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data), ndr_get_array_length(ndr, &r->data));
+				size_data_1 = ndr_get_array_size(ndr, &r->data);
+				length_data_1 = ndr_get_array_length(ndr, &r->data);
+				if (length_data_1 > size_data_1) {
+					return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_1, length_data_1);
 				}
-				NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
-				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, ndr_get_array_length(ndr, &r->data)));
+				NDR_PULL_ALLOC_N(ndr, r->data, size_data_1);
+				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, length_data_1));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
 			}
 			if (r->data) {
@@ -528,13 +548,15 @@ static enum ndr_err_code ndr_push_netr_NetworkInfo(struct ndr_push *ndr, int ndr
 
 static enum ndr_err_code ndr_pull_netr_NetworkInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_NetworkInfo *r)
 {
+	uint32_t size_challenge_0 = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 5));
 			NDR_CHECK(ndr_pull_netr_IdentityInfo(ndr, NDR_SCALARS, &r->identity_info));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->challenge, 8));
+			size_challenge_0 = 8;
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->challenge, size_challenge_0));
 			NDR_CHECK(ndr_pull_netr_ChallengeResponse(ndr, NDR_SCALARS, &r->nt));
 			NDR_CHECK(ndr_pull_netr_ChallengeResponse(ndr, NDR_SCALARS, &r->lm));
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
@@ -594,6 +616,7 @@ static enum ndr_err_code ndr_push_netr_GenericInfo(struct ndr_push *ndr, int ndr
 static enum ndr_err_code ndr_pull_netr_GenericInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_GenericInfo *r)
 {
 	uint32_t _ptr_data;
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_data_0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -618,8 +641,9 @@ static enum ndr_err_code ndr_pull_netr_GenericInfo(struct ndr_pull *ndr, int ndr
 				_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
 				NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
-				NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
-				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, ndr_get_array_size(ndr, &r->data)));
+				size_data_1 = ndr_get_array_size(ndr, &r->data);
+				NDR_PULL_ALLOC_N(ndr, r->data, size_data_1);
+				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, size_data_1));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
 			}
 			if (r->data) {
@@ -778,8 +802,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 	int level;
 	uint16_t _level;
 	TALLOC_CTX *_mem_save_password_0;
+	uint32_t _ptr_password;
 	TALLOC_CTX *_mem_save_network_0;
+	uint32_t _ptr_network;
 	TALLOC_CTX *_mem_save_generic_0;
+	uint32_t _ptr_generic;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
@@ -789,7 +816,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case NetlogonInteractiveInformation: {
-				uint32_t _ptr_password;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_password));
 				if (_ptr_password) {
 					NDR_PULL_ALLOC(ndr, r->password);
@@ -799,7 +825,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonNetworkInformation: {
-				uint32_t _ptr_network;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_network));
 				if (_ptr_network) {
 					NDR_PULL_ALLOC(ndr, r->network);
@@ -809,7 +834,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonServiceInformation: {
-				uint32_t _ptr_password;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_password));
 				if (_ptr_password) {
 					NDR_PULL_ALLOC(ndr, r->password);
@@ -819,7 +843,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonGenericInformation: {
-				uint32_t _ptr_generic;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_generic));
 				if (_ptr_generic) {
 					NDR_PULL_ALLOC(ndr, r->generic);
@@ -829,7 +852,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonInteractiveTransitiveInformation: {
-				uint32_t _ptr_password;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_password));
 				if (_ptr_password) {
 					NDR_PULL_ALLOC(ndr, r->password);
@@ -839,7 +861,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonNetworkTransitiveInformation: {
-				uint32_t _ptr_network;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_network));
 				if (_ptr_network) {
 					NDR_PULL_ALLOC(ndr, r->network);
@@ -849,7 +870,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonServiceTransitiveInformation: {
-				uint32_t _ptr_password;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_password));
 				if (_ptr_password) {
 					NDR_PULL_ALLOC(ndr, r->password);
@@ -1027,12 +1047,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_UserSessionKey(struct ndr_push *ndr, in
 
 _PUBLIC_ enum ndr_err_code ndr_pull_netr_UserSessionKey(struct ndr_pull *ndr, int ndr_flags, struct netr_UserSessionKey *r)
 {
+	uint32_t size_key_0 = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 1));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->key, 16));
+			size_key_0 = 16;
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->key, size_key_0));
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
@@ -1074,12 +1096,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_LMSessionKey(struct ndr_push *ndr, int 
 
 _PUBLIC_ enum ndr_err_code ndr_pull_netr_LMSessionKey(struct ndr_pull *ndr, int ndr_flags, struct netr_LMSessionKey *r)
 {
+	uint32_t size_key_0 = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 1));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->key, 8));
+			size_key_0 = 8;
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->key, size_key_0));
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
@@ -1189,6 +1213,7 @@ static enum ndr_err_code ndr_pull_netr_SamBaseInfo(struct ndr_pull *ndr, int ndr
 {
 	uint32_t _ptr_domain_sid;
 	TALLOC_CTX *_mem_save_domain_sid_0;
+	uint32_t size_unknown_0 = 0;
 	uint32_t cntr_unknown_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -1221,7 +1246,8 @@ static enum ndr_err_code ndr_pull_netr_SamBaseInfo(struct ndr_pull *ndr, int ndr
 		}
 		NDR_CHECK(ndr_pull_netr_LMSessionKey(ndr, NDR_SCALARS, &r->LMSessKey));
 		NDR_CHECK(ndr_pull_samr_AcctFlags(ndr, NDR_SCALARS, &r->acct_flags));
-		for (cntr_unknown_0 = 0; cntr_unknown_0 < 7; cntr_unknown_0++) {
+		size_unknown_0 = 7;
+		for (cntr_unknown_0 = 0; cntr_unknown_0 < size_unknown_0; cntr_unknown_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown[cntr_unknown_0]));
 		}
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
@@ -1411,6 +1437,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_SamInfo3(struct ndr_push *ndr, int ndr_
 _PUBLIC_ enum ndr_err_code ndr_pull_netr_SamInfo3(struct ndr_pull *ndr, int ndr_flags, struct netr_SamInfo3 *r)
 {
 	uint32_t _ptr_sids;
+	uint32_t size_sids_1 = 0;
 	uint32_t cntr_sids_1;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_sids_1;
@@ -1432,13 +1459,14 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_SamInfo3(struct ndr_pull *ndr, int ndr_
 			_mem_save_sids_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sids, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->sids));
-			NDR_PULL_ALLOC_N(ndr, r->sids, ndr_get_array_size(ndr, &r->sids));
+			size_sids_1 = ndr_get_array_size(ndr, &r->sids);
+			NDR_PULL_ALLOC_N(ndr, r->sids, size_sids_1);
 			_mem_save_sids_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sids, 0);
-			for (cntr_sids_1 = 0; cntr_sids_1 < r->sidcount; cntr_sids_1++) {
+			for (cntr_sids_1 = 0; cntr_sids_1 < size_sids_1; cntr_sids_1++) {
 				NDR_CHECK(ndr_pull_netr_SidAttr(ndr, NDR_SCALARS, &r->sids[cntr_sids_1]));
 			}
-			for (cntr_sids_1 = 0; cntr_sids_1 < r->sidcount; cntr_sids_1++) {
+			for (cntr_sids_1 = 0; cntr_sids_1 < size_sids_1; cntr_sids_1++) {
 				NDR_CHECK(ndr_pull_netr_SidAttr(ndr, NDR_BUFFERS, &r->sids[cntr_sids_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_1, 0);
@@ -1512,9 +1540,11 @@ static enum ndr_err_code ndr_push_netr_SamInfo6(struct ndr_push *ndr, int ndr_fl
 static enum ndr_err_code ndr_pull_netr_SamInfo6(struct ndr_pull *ndr, int ndr_flags, struct netr_SamInfo6 *r)
 {
 	uint32_t _ptr_sids;
+	uint32_t size_sids_1 = 0;
 	uint32_t cntr_sids_1;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_sids_1;
+	uint32_t size_unknown4_0 = 0;
 	uint32_t cntr_unknown4_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -1528,7 +1558,8 @@ static enum ndr_err_code ndr_pull_netr_SamInfo6(struct ndr_pull *ndr, int ndr_fl
 		}
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->forest));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->principle));
-		for (cntr_unknown4_0 = 0; cntr_unknown4_0 < 20; cntr_unknown4_0++) {
+		size_unknown4_0 = 20;
+		for (cntr_unknown4_0 = 0; cntr_unknown4_0 < size_unknown4_0; cntr_unknown4_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown4[cntr_unknown4_0]));
 		}
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
@@ -1539,13 +1570,14 @@ static enum ndr_err_code ndr_pull_netr_SamInfo6(struct ndr_pull *ndr, int ndr_fl
 			_mem_save_sids_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sids, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->sids));
-			NDR_PULL_ALLOC_N(ndr, r->sids, ndr_get_array_size(ndr, &r->sids));
+			size_sids_1 = ndr_get_array_size(ndr, &r->sids);
+			NDR_PULL_ALLOC_N(ndr, r->sids, size_sids_1);
 			_mem_save_sids_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sids, 0);
-			for (cntr_sids_1 = 0; cntr_sids_1 < r->sidcount; cntr_sids_1++) {
+			for (cntr_sids_1 = 0; cntr_sids_1 < size_sids_1; cntr_sids_1++) {
 				NDR_CHECK(ndr_pull_netr_SidAttr(ndr, NDR_SCALARS, &r->sids[cntr_sids_1]));
 			}
-			for (cntr_sids_1 = 0; cntr_sids_1 < r->sidcount; cntr_sids_1++) {
+			for (cntr_sids_1 = 0; cntr_sids_1 < size_sids_1; cntr_sids_1++) {
 				NDR_CHECK(ndr_pull_netr_SidAttr(ndr, NDR_BUFFERS, &r->sids[cntr_sids_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_1, 0);
@@ -1643,9 +1675,12 @@ static enum ndr_err_code ndr_push_netr_PacInfo(struct ndr_push *ndr, int ndr_fla
 static enum ndr_err_code ndr_pull_netr_PacInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_PacInfo *r)
 {
 	uint32_t _ptr_pac;
+	uint32_t size_pac_1 = 0;
 	TALLOC_CTX *_mem_save_pac_0;
 	uint32_t _ptr_auth;
+	uint32_t size_auth_1 = 0;
 	TALLOC_CTX *_mem_save_auth_0;
+	uint32_t size_expansionroom_0 = 0;
 	uint32_t cntr_expansionroom_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -1667,7 +1702,8 @@ static enum ndr_err_code ndr_pull_netr_PacInfo(struct ndr_pull *ndr, int ndr_fla
 			r->auth = NULL;
 		}
 		NDR_CHECK(ndr_pull_netr_UserSessionKey(ndr, NDR_SCALARS, &r->user_session_key));
-		for (cntr_expansionroom_0 = 0; cntr_expansionroom_0 < 10; cntr_expansionroom_0++) {
+		size_expansionroom_0 = 10;
+		for (cntr_expansionroom_0 = 0; cntr_expansionroom_0 < size_expansionroom_0; cntr_expansionroom_0++) {
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->expansionroom[cntr_expansionroom_0]));
 		}
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->unknown1));
@@ -1681,8 +1717,9 @@ static enum ndr_err_code ndr_pull_netr_PacInfo(struct ndr_pull *ndr, int ndr_fla
 			_mem_save_pac_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->pac, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->pac));
-			NDR_PULL_ALLOC_N(ndr, r->pac, ndr_get_array_size(ndr, &r->pac));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->pac, ndr_get_array_size(ndr, &r->pac)));
+			size_pac_1 = ndr_get_array_size(ndr, &r->pac);
+			NDR_PULL_ALLOC_N(ndr, r->pac, size_pac_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->pac, size_pac_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pac_0, 0);
 		}
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->logon_domain));
@@ -1692,8 +1729,9 @@ static enum ndr_err_code ndr_pull_netr_PacInfo(struct ndr_pull *ndr, int ndr_fla
 			_mem_save_auth_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->auth, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->auth));
-			NDR_PULL_ALLOC_N(ndr, r->auth, ndr_get_array_size(ndr, &r->auth));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->auth, ndr_get_array_size(ndr, &r->auth)));
+			size_auth_1 = ndr_get_array_size(ndr, &r->auth);
+			NDR_PULL_ALLOC_N(ndr, r->auth, size_auth_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->auth, size_auth_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_auth_0, 0);
 		}
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown1));
@@ -1775,6 +1813,7 @@ static enum ndr_err_code ndr_push_netr_GenericInfo2(struct ndr_push *ndr, int nd
 static enum ndr_err_code ndr_pull_netr_GenericInfo2(struct ndr_pull *ndr, int ndr_flags, struct netr_GenericInfo2 *r)
 {
 	uint32_t _ptr_data;
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_data_0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -1795,8 +1834,9 @@ static enum ndr_err_code ndr_pull_netr_GenericInfo2(struct ndr_pull *ndr, int nd
 				_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
 				NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
-				NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
-				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, ndr_get_array_size(ndr, &r->data)));
+				size_data_1 = ndr_get_array_size(ndr, &r->data);
+				NDR_PULL_ALLOC_N(ndr, r->data, size_data_1);
+				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, size_data_1));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
 			}
 			if (r->data) {
@@ -1903,10 +1943,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_Validation(struct ndr_pull *ndr, int nd
 	int level;
 	uint16_t _level;
 	TALLOC_CTX *_mem_save_sam2_0;
+	uint32_t _ptr_sam2;
 	TALLOC_CTX *_mem_save_sam3_0;
+	uint32_t _ptr_sam3;
 	TALLOC_CTX *_mem_save_pac_0;
+	uint32_t _ptr_pac;
 	TALLOC_CTX *_mem_save_generic_0;
+	uint32_t _ptr_generic;
 	TALLOC_CTX *_mem_save_sam6_0;
+	uint32_t _ptr_sam6;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
@@ -1916,7 +1961,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_Validation(struct ndr_pull *ndr, int nd
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case NetlogonValidationSamInfo: {
-				uint32_t _ptr_sam2;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sam2));
 				if (_ptr_sam2) {
 					NDR_PULL_ALLOC(ndr, r->sam2);
@@ -1926,7 +1970,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_Validation(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonValidationSamInfo2: {
-				uint32_t _ptr_sam3;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sam3));
 				if (_ptr_sam3) {
 					NDR_PULL_ALLOC(ndr, r->sam3);
@@ -1936,7 +1979,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_Validation(struct ndr_pull *ndr, int nd
 			break; }
 
 			case 4: {
-				uint32_t _ptr_pac;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_pac));
 				if (_ptr_pac) {
 					NDR_PULL_ALLOC(ndr, r->pac);
@@ -1946,7 +1988,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_Validation(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonValidationGenericInfo2: {
-				uint32_t _ptr_generic;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_generic));
 				if (_ptr_generic) {
 					NDR_PULL_ALLOC(ndr, r->generic);
@@ -1956,7 +1997,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_Validation(struct ndr_pull *ndr, int nd
 			break; }
 
 			case NetlogonValidationSamInfo4: {
-				uint32_t _ptr_sam6;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sam6));
 				if (_ptr_sam6) {
 					NDR_PULL_ALLOC(ndr, r->sam6);
@@ -2098,12 +2138,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_Credential(struct ndr_push *ndr, int nd
 
 _PUBLIC_ enum ndr_err_code ndr_pull_netr_Credential(struct ndr_pull *ndr, int ndr_flags, struct netr_Credential *r)
 {
+	uint32_t size_data_0 = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 1));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, 8));
+			size_data_0 = 8;
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, size_data_0));
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 1));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
@@ -2194,6 +2236,8 @@ static enum ndr_err_code ndr_push_netr_DELTA_DELETE_USER(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_netr_DELTA_DELETE_USER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_DELETE_USER *r)
 {
 	uint32_t _ptr_account_name;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
 	TALLOC_CTX *_mem_save_account_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -2219,11 +2263,13 @@ static enum ndr_err_code ndr_pull_netr_DELTA_DELETE_USER(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->account_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->account_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->account_name));
-			if (ndr_get_array_length(ndr, &r->account_name) > ndr_get_array_size(ndr, &r->account_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->account_name), ndr_get_array_length(ndr, &r->account_name));
+			size_account_name_1 = ndr_get_array_size(ndr, &r->account_name);
+			length_account_name_1 = ndr_get_array_length(ndr, &r->account_name);
+			if (length_account_name_1 > size_account_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->account_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->account_name, ndr_get_array_length(ndr, &r->account_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_account_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown1));
@@ -2317,6 +2363,8 @@ static enum ndr_err_code ndr_push_netr_PasswordHistory(struct ndr_push *ndr, int
 
 static enum ndr_err_code ndr_pull_netr_PasswordHistory(struct ndr_pull *ndr, int ndr_flags, struct netr_PasswordHistory *r)
 {
+	uint32_t size_nt_history_0 = 0;
+	uint32_t size_lm_history_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->nt_length));
@@ -2325,10 +2373,12 @@ static enum ndr_err_code ndr_pull_netr_PasswordHistory(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm_length));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->lm_size));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->lm_flags));
-		NDR_PULL_ALLOC_N(ndr, r->nt_history, r->nt_length);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->nt_history, r->nt_length));
-		NDR_PULL_ALLOC_N(ndr, r->lm_history, r->lm_length);
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->lm_history, r->lm_length));
+		size_nt_history_0 = r->nt_length;
+		NDR_PULL_ALLOC_N(ndr, r->nt_history, size_nt_history_0);
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->nt_history, size_nt_history_0));
+		size_lm_history_0 = r->lm_length;
+		NDR_PULL_ALLOC_N(ndr, r->lm_history, size_lm_history_0);
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->lm_history, size_lm_history_0));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -2487,6 +2537,7 @@ static enum ndr_err_code ndr_push_netr_USER_PRIVATE_INFO(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_netr_USER_PRIVATE_INFO(struct ndr_pull *ndr, int ndr_flags, struct netr_USER_PRIVATE_INFO *r)
 {
 	uint32_t _ptr_SensitiveData;
+	uint32_t size_SensitiveData_1 = 0;
 	TALLOC_CTX *_mem_save_SensitiveData_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -2513,8 +2564,9 @@ static enum ndr_err_code ndr_pull_netr_USER_PRIVATE_INFO(struct ndr_pull *ndr, i
 				_mem_save_SensitiveData_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->SensitiveData, 0);
 				NDR_CHECK(ndr_pull_array_size(ndr, &r->SensitiveData));
-				NDR_PULL_ALLOC_N(ndr, r->SensitiveData, ndr_get_array_size(ndr, &r->SensitiveData));
-				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->SensitiveData, ndr_get_array_size(ndr, &r->SensitiveData)));
+				size_SensitiveData_1 = ndr_get_array_size(ndr, &r->SensitiveData);
+				NDR_PULL_ALLOC_N(ndr, r->SensitiveData, size_SensitiveData_1);
+				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->SensitiveData, size_SensitiveData_1));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_SensitiveData_0, 0);
 			}
 			ndr->flags = _flags_save_uint8;
@@ -3004,10 +3056,12 @@ static enum ndr_err_code ndr_push_netr_DELTA_GROUP_MEMBER(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_netr_DELTA_GROUP_MEMBER(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_GROUP_MEMBER *r)
 {
 	uint32_t _ptr_rids;
+	uint32_t size_rids_1 = 0;
 	uint32_t cntr_rids_1;
 	TALLOC_CTX *_mem_save_rids_0;
 	TALLOC_CTX *_mem_save_rids_1;
 	uint32_t _ptr_attribs;
+	uint32_t size_attribs_1 = 0;
 	uint32_t cntr_attribs_1;
 	TALLOC_CTX *_mem_save_attribs_0;
 	TALLOC_CTX *_mem_save_attribs_1;
@@ -3037,10 +3091,11 @@ static enum ndr_err_code ndr_pull_netr_DELTA_GROUP_MEMBER(struct ndr_pull *ndr, 
 			_mem_save_rids_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->rids, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->rids));
-			NDR_PULL_ALLOC_N(ndr, r->rids, ndr_get_array_size(ndr, &r->rids));
+			size_rids_1 = ndr_get_array_size(ndr, &r->rids);
+			NDR_PULL_ALLOC_N(ndr, r->rids, size_rids_1);
 			_mem_save_rids_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->rids, 0);
-			for (cntr_rids_1 = 0; cntr_rids_1 < r->num_rids; cntr_rids_1++) {
+			for (cntr_rids_1 = 0; cntr_rids_1 < size_rids_1; cntr_rids_1++) {
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->rids[cntr_rids_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rids_1, 0);
@@ -3050,10 +3105,11 @@ static enum ndr_err_code ndr_pull_netr_DELTA_GROUP_MEMBER(struct ndr_pull *ndr, 
 			_mem_save_attribs_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->attribs, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->attribs));
-			NDR_PULL_ALLOC_N(ndr, r->attribs, ndr_get_array_size(ndr, &r->attribs));
+			size_attribs_1 = ndr_get_array_size(ndr, &r->attribs);
+			NDR_PULL_ALLOC_N(ndr, r->attribs, size_attribs_1);
 			_mem_save_attribs_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->attribs, 0);
-			for (cntr_attribs_1 = 0; cntr_attribs_1 < r->num_rids; cntr_attribs_1++) {
+			for (cntr_attribs_1 = 0; cntr_attribs_1 < size_attribs_1; cntr_attribs_1++) {
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->attribs[cntr_attribs_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_attribs_1, 0);
@@ -3333,6 +3389,7 @@ static enum ndr_err_code ndr_push_netr_DELTA_POLICY(struct ndr_push *ndr, int nd
 static enum ndr_err_code ndr_pull_netr_DELTA_POLICY(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_POLICY *r)
 {
 	uint32_t _ptr_eventauditoptions;
+	uint32_t size_eventauditoptions_1 = 0;
 	uint32_t cntr_eventauditoptions_1;
 	TALLOC_CTX *_mem_save_eventauditoptions_0;
 	TALLOC_CTX *_mem_save_eventauditoptions_1;
@@ -3377,10 +3434,11 @@ static enum ndr_err_code ndr_pull_netr_DELTA_POLICY(struct ndr_pull *ndr, int nd
 			_mem_save_eventauditoptions_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->eventauditoptions, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->eventauditoptions));
-			NDR_PULL_ALLOC_N(ndr, r->eventauditoptions, ndr_get_array_size(ndr, &r->eventauditoptions));
+			size_eventauditoptions_1 = ndr_get_array_size(ndr, &r->eventauditoptions);
+			NDR_PULL_ALLOC_N(ndr, r->eventauditoptions, size_eventauditoptions_1);
 			_mem_save_eventauditoptions_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->eventauditoptions, 0);
-			for (cntr_eventauditoptions_1 = 0; cntr_eventauditoptions_1 < r->maxauditeventcount + 1; cntr_eventauditoptions_1++) {
+			for (cntr_eventauditoptions_1 = 0; cntr_eventauditoptions_1 < size_eventauditoptions_1; cntr_eventauditoptions_1++) {
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->eventauditoptions[cntr_eventauditoptions_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_eventauditoptions_1, 0);
@@ -3495,6 +3553,7 @@ static enum ndr_err_code ndr_push_netr_DELTA_TRUSTED_DOMAIN(struct ndr_push *ndr
 static enum ndr_err_code ndr_pull_netr_DELTA_TRUSTED_DOMAIN(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_TRUSTED_DOMAIN *r)
 {
 	uint32_t _ptr_controller_names;
+	uint32_t size_controller_names_1 = 0;
 	uint32_t cntr_controller_names_1;
 	TALLOC_CTX *_mem_save_controller_names_0;
 	TALLOC_CTX *_mem_save_controller_names_1;
@@ -3526,13 +3585,14 @@ static enum ndr_err_code ndr_pull_netr_DELTA_TRUSTED_DOMAIN(struct ndr_pull *ndr
 			_mem_save_controller_names_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->controller_names, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->controller_names));
-			NDR_PULL_ALLOC_N(ndr, r->controller_names, ndr_get_array_size(ndr, &r->controller_names));
+			size_controller_names_1 = ndr_get_array_size(ndr, &r->controller_names);
+			NDR_PULL_ALLOC_N(ndr, r->controller_names, size_controller_names_1);
 			_mem_save_controller_names_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->controller_names, 0);
-			for (cntr_controller_names_1 = 0; cntr_controller_names_1 < r->num_controllers; cntr_controller_names_1++) {
+			for (cntr_controller_names_1 = 0; cntr_controller_names_1 < size_controller_names_1; cntr_controller_names_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->controller_names[cntr_controller_names_1]));
 			}
-			for (cntr_controller_names_1 = 0; cntr_controller_names_1 < r->num_controllers; cntr_controller_names_1++) {
+			for (cntr_controller_names_1 = 0; cntr_controller_names_1 < size_controller_names_1; cntr_controller_names_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->controller_names[cntr_controller_names_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_controller_names_1, 0);
@@ -3669,10 +3729,12 @@ static enum ndr_err_code ndr_push_netr_DELTA_ACCOUNT(struct ndr_push *ndr, int n
 static enum ndr_err_code ndr_pull_netr_DELTA_ACCOUNT(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ACCOUNT *r)
 {
 	uint32_t _ptr_privilege_attrib;
+	uint32_t size_privilege_attrib_1 = 0;
 	uint32_t cntr_privilege_attrib_1;
 	TALLOC_CTX *_mem_save_privilege_attrib_0;
 	TALLOC_CTX *_mem_save_privilege_attrib_1;
 	uint32_t _ptr_privilege_name;
+	uint32_t size_privilege_name_1 = 0;
 	uint32_t cntr_privilege_name_1;
 	TALLOC_CTX *_mem_save_privilege_name_0;
 	TALLOC_CTX *_mem_save_privilege_name_1;
@@ -3711,10 +3773,11 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ACCOUNT(struct ndr_pull *ndr, int n
 			_mem_save_privilege_attrib_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->privilege_attrib, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->privilege_attrib));
-			NDR_PULL_ALLOC_N(ndr, r->privilege_attrib, ndr_get_array_size(ndr, &r->privilege_attrib));
+			size_privilege_attrib_1 = ndr_get_array_size(ndr, &r->privilege_attrib);
+			NDR_PULL_ALLOC_N(ndr, r->privilege_attrib, size_privilege_attrib_1);
 			_mem_save_privilege_attrib_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->privilege_attrib, 0);
-			for (cntr_privilege_attrib_1 = 0; cntr_privilege_attrib_1 < r->privilege_entries; cntr_privilege_attrib_1++) {
+			for (cntr_privilege_attrib_1 = 0; cntr_privilege_attrib_1 < size_privilege_attrib_1; cntr_privilege_attrib_1++) {
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->privilege_attrib[cntr_privilege_attrib_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_privilege_attrib_1, 0);
@@ -3724,13 +3787,14 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ACCOUNT(struct ndr_pull *ndr, int n
 			_mem_save_privilege_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->privilege_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->privilege_name));
-			NDR_PULL_ALLOC_N(ndr, r->privilege_name, ndr_get_array_size(ndr, &r->privilege_name));
+			size_privilege_name_1 = ndr_get_array_size(ndr, &r->privilege_name);
+			NDR_PULL_ALLOC_N(ndr, r->privilege_name, size_privilege_name_1);
 			_mem_save_privilege_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->privilege_name, 0);
-			for (cntr_privilege_name_1 = 0; cntr_privilege_name_1 < r->privilege_entries; cntr_privilege_name_1++) {
+			for (cntr_privilege_name_1 = 0; cntr_privilege_name_1 < size_privilege_name_1; cntr_privilege_name_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->privilege_name[cntr_privilege_name_1]));
 			}
-			for (cntr_privilege_name_1 = 0; cntr_privilege_name_1 < r->privilege_entries; cntr_privilege_name_1++) {
+			for (cntr_privilege_name_1 = 0; cntr_privilege_name_1 < size_privilege_name_1; cntr_privilege_name_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->privilege_name[cntr_privilege_name_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_privilege_name_1, 0);
@@ -3891,6 +3955,8 @@ static enum ndr_err_code ndr_push_netr_CIPHER_VALUE(struct ndr_push *ndr, int nd
 static enum ndr_err_code ndr_pull_netr_CIPHER_VALUE(struct ndr_pull *ndr, int ndr_flags, struct netr_CIPHER_VALUE *r)
 {
 	uint32_t _ptr_cipher_data;
+	uint32_t size_cipher_data_1 = 0;
+	uint32_t length_cipher_data_1 = 0;
 	TALLOC_CTX *_mem_save_cipher_data_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -3910,11 +3976,13 @@ static enum ndr_err_code ndr_pull_netr_CIPHER_VALUE(struct ndr_pull *ndr, int nd
 			NDR_PULL_SET_MEM_CTX(ndr, r->cipher_data, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->cipher_data));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->cipher_data));
-			if (ndr_get_array_length(ndr, &r->cipher_data) > ndr_get_array_size(ndr, &r->cipher_data)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->cipher_data), ndr_get_array_length(ndr, &r->cipher_data));
+			size_cipher_data_1 = ndr_get_array_size(ndr, &r->cipher_data);
+			length_cipher_data_1 = ndr_get_array_length(ndr, &r->cipher_data);
+			if (length_cipher_data_1 > size_cipher_data_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_cipher_data_1, length_cipher_data_1);
 			}
-			NDR_PULL_ALLOC_N(ndr, r->cipher_data, ndr_get_array_size(ndr, &r->cipher_data));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->cipher_data, ndr_get_array_length(ndr, &r->cipher_data)));
+			NDR_PULL_ALLOC_N(ndr, r->cipher_data, size_cipher_data_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->cipher_data, length_cipher_data_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_cipher_data_0, 0);
 		}
 		if (r->cipher_data) {
@@ -4297,21 +4365,37 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 	int level;
 	uint16_t _level;
 	TALLOC_CTX *_mem_save_domain_0;
+	uint32_t _ptr_domain;
 	TALLOC_CTX *_mem_save_group_0;
+	uint32_t _ptr_group;
 	TALLOC_CTX *_mem_save_rename_group_0;
+	uint32_t _ptr_rename_group;
 	TALLOC_CTX *_mem_save_user_0;
+	uint32_t _ptr_user;
 	TALLOC_CTX *_mem_save_rename_user_0;
+	uint32_t _ptr_rename_user;
 	TALLOC_CTX *_mem_save_group_member_0;
+	uint32_t _ptr_group_member;
 	TALLOC_CTX *_mem_save_alias_0;
+	uint32_t _ptr_alias;
 	TALLOC_CTX *_mem_save_rename_alias_0;
+	uint32_t _ptr_rename_alias;
 	TALLOC_CTX *_mem_save_alias_member_0;
+	uint32_t _ptr_alias_member;
 	TALLOC_CTX *_mem_save_policy_0;
+	uint32_t _ptr_policy;
 	TALLOC_CTX *_mem_save_trusted_domain_0;
+	uint32_t _ptr_trusted_domain;
 	TALLOC_CTX *_mem_save_account_0;
+	uint32_t _ptr_account;
 	TALLOC_CTX *_mem_save_secret_0;
+	uint32_t _ptr_secret;
 	TALLOC_CTX *_mem_save_delete_group_0;
+	uint32_t _ptr_delete_group;
 	TALLOC_CTX *_mem_save_delete_user_0;
+	uint32_t _ptr_delete_user;
 	TALLOC_CTX *_mem_save_modified_count_0;
+	uint32_t _ptr_modified_count;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
@@ -4321,7 +4405,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case NETR_DELTA_DOMAIN: {
-				uint32_t _ptr_domain;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
 				if (_ptr_domain) {
 					NDR_PULL_ALLOC(ndr, r->domain);
@@ -4331,7 +4414,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_GROUP: {
-				uint32_t _ptr_group;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_group));
 				if (_ptr_group) {
 					NDR_PULL_ALLOC(ndr, r->group);
@@ -4344,7 +4426,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_RENAME_GROUP: {
-				uint32_t _ptr_rename_group;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_rename_group));
 				if (_ptr_rename_group) {
 					NDR_PULL_ALLOC(ndr, r->rename_group);
@@ -4354,7 +4435,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_USER: {
-				uint32_t _ptr_user;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_user));
 				if (_ptr_user) {
 					NDR_PULL_ALLOC(ndr, r->user);
@@ -4367,7 +4447,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_RENAME_USER: {
-				uint32_t _ptr_rename_user;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_rename_user));
 				if (_ptr_rename_user) {
 					NDR_PULL_ALLOC(ndr, r->rename_user);
@@ -4377,7 +4456,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_GROUP_MEMBER: {
-				uint32_t _ptr_group_member;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_group_member));
 				if (_ptr_group_member) {
 					NDR_PULL_ALLOC(ndr, r->group_member);
@@ -4387,7 +4465,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_ALIAS: {
-				uint32_t _ptr_alias;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_alias));
 				if (_ptr_alias) {
 					NDR_PULL_ALLOC(ndr, r->alias);
@@ -4400,7 +4477,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_RENAME_ALIAS: {
-				uint32_t _ptr_rename_alias;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_rename_alias));
 				if (_ptr_rename_alias) {
 					NDR_PULL_ALLOC(ndr, r->rename_alias);
@@ -4410,7 +4486,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_ALIAS_MEMBER: {
-				uint32_t _ptr_alias_member;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_alias_member));
 				if (_ptr_alias_member) {
 					NDR_PULL_ALLOC(ndr, r->alias_member);
@@ -4420,7 +4495,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_POLICY: {
-				uint32_t _ptr_policy;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_policy));
 				if (_ptr_policy) {
 					NDR_PULL_ALLOC(ndr, r->policy);
@@ -4430,7 +4504,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_TRUSTED_DOMAIN: {
-				uint32_t _ptr_trusted_domain;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_trusted_domain));
 				if (_ptr_trusted_domain) {
 					NDR_PULL_ALLOC(ndr, r->trusted_domain);
@@ -4444,7 +4517,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_ACCOUNT: {
-				uint32_t _ptr_account;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_account));
 				if (_ptr_account) {
 					NDR_PULL_ALLOC(ndr, r->account);
@@ -4458,7 +4530,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_SECRET: {
-				uint32_t _ptr_secret;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secret));
 				if (_ptr_secret) {
 					NDR_PULL_ALLOC(ndr, r->secret);
@@ -4472,7 +4543,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_DELETE_GROUP2: {
-				uint32_t _ptr_delete_group;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_delete_group));
 				if (_ptr_delete_group) {
 					NDR_PULL_ALLOC(ndr, r->delete_group);
@@ -4482,7 +4552,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_DELETE_USER2: {
-				uint32_t _ptr_delete_user;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_delete_user));
 				if (_ptr_delete_user) {
 					NDR_PULL_ALLOC(ndr, r->delete_user);
@@ -4492,7 +4561,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_UNION(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case NETR_DELTA_MODIFY_COUNT: {
-				uint32_t _ptr_modified_count;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_modified_count));
 				if (_ptr_modified_count) {
 					NDR_PULL_ALLOC(ndr, r->modified_count);
@@ -5058,7 +5126,11 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 	int level;
 	uint16_t _level;
 	TALLOC_CTX *_mem_save_sid_0;
+	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_name_0;
+	uint32_t _ptr_name;
+	uint32_t size_name_1 = 0;
+	uint32_t length_name_1 = 0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint1632(ndr, NDR_SCALARS, &_level));
@@ -5116,7 +5188,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 			break; }
 
 			case NETR_DELTA_POLICY: {
-				uint32_t _ptr_sid;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
 				if (_ptr_sid) {
 					NDR_PULL_ALLOC(ndr, r->sid);
@@ -5126,7 +5197,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 			break; }
 
 			case NETR_DELTA_TRUSTED_DOMAIN: {
-				uint32_t _ptr_sid;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
 				if (_ptr_sid) {
 					NDR_PULL_ALLOC(ndr, r->sid);
@@ -5136,7 +5206,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 			break; }
 
 			case NETR_DELTA_DELETE_TRUST: {
-				uint32_t _ptr_sid;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
 				if (_ptr_sid) {
 					NDR_PULL_ALLOC(ndr, r->sid);
@@ -5146,7 +5215,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 			break; }
 
 			case NETR_DELTA_ACCOUNT: {
-				uint32_t _ptr_sid;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
 				if (_ptr_sid) {
 					NDR_PULL_ALLOC(ndr, r->sid);
@@ -5156,7 +5224,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 			break; }
 
 			case NETR_DELTA_DELETE_ACCOUNT: {
-				uint32_t _ptr_sid;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sid));
 				if (_ptr_sid) {
 					NDR_PULL_ALLOC(ndr, r->sid);
@@ -5166,7 +5233,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 			break; }
 
 			case NETR_DELTA_SECRET: {
-				uint32_t _ptr_name;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_name));
 				if (_ptr_name) {
 					NDR_PULL_ALLOC(ndr, r->name);
@@ -5176,7 +5242,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 			break; }
 
 			case NETR_DELTA_DELETE_SECRET: {
-				uint32_t _ptr_name;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_name));
 				if (_ptr_name) {
 					NDR_PULL_ALLOC(ndr, r->name);
@@ -5289,11 +5354,13 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 					NDR_PULL_SET_MEM_CTX(ndr, r->name, 0);
 					NDR_CHECK(ndr_pull_array_size(ndr, &r->name));
 					NDR_CHECK(ndr_pull_array_length(ndr, &r->name));
-					if (ndr_get_array_length(ndr, &r->name) > ndr_get_array_size(ndr, &r->name)) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->name), ndr_get_array_length(ndr, &r->name));
+					size_name_1 = ndr_get_array_size(ndr, &r->name);
+					length_name_1 = ndr_get_array_length(ndr, &r->name);
+					if (length_name_1 > size_name_1) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_name_1, length_name_1);
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->name), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, ndr_get_array_length(ndr, &r->name), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, length_name_1, sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, length_name_1, sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, 0);
 				}
 			break;
@@ -5304,11 +5371,13 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ID_UNION(struct ndr_pull *ndr, int 
 					NDR_PULL_SET_MEM_CTX(ndr, r->name, 0);
 					NDR_CHECK(ndr_pull_array_size(ndr, &r->name));
 					NDR_CHECK(ndr_pull_array_length(ndr, &r->name));
-					if (ndr_get_array_length(ndr, &r->name) > ndr_get_array_size(ndr, &r->name)) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->name), ndr_get_array_length(ndr, &r->name));
+					size_name_1 = ndr_get_array_size(ndr, &r->name);
+					length_name_1 = ndr_get_array_length(ndr, &r->name);
+					if (length_name_1 > size_name_1) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_name_1, length_name_1);
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->name), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, ndr_get_array_length(ndr, &r->name), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, length_name_1, sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, length_name_1, sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, 0);
 				}
 			break;
@@ -5536,6 +5605,7 @@ static enum ndr_err_code ndr_push_netr_DELTA_ENUM_ARRAY(struct ndr_push *ndr, in
 static enum ndr_err_code ndr_pull_netr_DELTA_ENUM_ARRAY(struct ndr_pull *ndr, int ndr_flags, struct netr_DELTA_ENUM_ARRAY *r)
 {
 	uint32_t _ptr_delta_enum;
+	uint32_t size_delta_enum_1 = 0;
 	uint32_t cntr_delta_enum_1;
 	TALLOC_CTX *_mem_save_delta_enum_0;
 	TALLOC_CTX *_mem_save_delta_enum_1;
@@ -5555,13 +5625,14 @@ static enum ndr_err_code ndr_pull_netr_DELTA_ENUM_ARRAY(struct ndr_pull *ndr, in
 			_mem_save_delta_enum_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->delta_enum, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->delta_enum));
-			NDR_PULL_ALLOC_N(ndr, r->delta_enum, ndr_get_array_size(ndr, &r->delta_enum));
+			size_delta_enum_1 = ndr_get_array_size(ndr, &r->delta_enum);
+			NDR_PULL_ALLOC_N(ndr, r->delta_enum, size_delta_enum_1);
 			_mem_save_delta_enum_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->delta_enum, 0);
-			for (cntr_delta_enum_1 = 0; cntr_delta_enum_1 < r->num_deltas; cntr_delta_enum_1++) {
+			for (cntr_delta_enum_1 = 0; cntr_delta_enum_1 < size_delta_enum_1; cntr_delta_enum_1++) {
 				NDR_CHECK(ndr_pull_netr_DELTA_ENUM(ndr, NDR_SCALARS, &r->delta_enum[cntr_delta_enum_1]));
 			}
-			for (cntr_delta_enum_1 = 0; cntr_delta_enum_1 < r->num_deltas; cntr_delta_enum_1++) {
+			for (cntr_delta_enum_1 = 0; cntr_delta_enum_1 < size_delta_enum_1; cntr_delta_enum_1++) {
 				NDR_CHECK(ndr_pull_netr_DELTA_ENUM(ndr, NDR_BUFFERS, &r->delta_enum[cntr_delta_enum_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_delta_enum_1, 0);
@@ -5619,12 +5690,14 @@ static enum ndr_err_code ndr_push_netr_UAS_INFO_0(struct ndr_push *ndr, int ndr_
 
 static enum ndr_err_code ndr_pull_netr_UAS_INFO_0(struct ndr_pull *ndr, int ndr_flags, struct netr_UAS_INFO_0 *r)
 {
+	uint32_t size_computer_name_0 = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 4));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->computer_name, 16));
+			size_computer_name_0 = 16;
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->computer_name, size_computer_name_0));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->timecreated));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->serial_number));
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
@@ -5781,6 +5854,8 @@ static enum ndr_err_code ndr_push_netr_NETLOGON_INFO_2(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_netr_NETLOGON_INFO_2(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_2 *r)
 {
 	uint32_t _ptr_trusted_dc_name;
+	uint32_t size_trusted_dc_name_1 = 0;
+	uint32_t length_trusted_dc_name_1 = 0;
 	TALLOC_CTX *_mem_save_trusted_dc_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -5801,11 +5876,13 @@ static enum ndr_err_code ndr_pull_netr_NETLOGON_INFO_2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->trusted_dc_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->trusted_dc_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->trusted_dc_name));
-			if (ndr_get_array_length(ndr, &r->trusted_dc_name) > ndr_get_array_size(ndr, &r->trusted_dc_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->trusted_dc_name), ndr_get_array_length(ndr, &r->trusted_dc_name));
+			size_trusted_dc_name_1 = ndr_get_array_size(ndr, &r->trusted_dc_name);
+			length_trusted_dc_name_1 = ndr_get_array_length(ndr, &r->trusted_dc_name);
+			if (length_trusted_dc_name_1 > size_trusted_dc_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_trusted_dc_name_1, length_trusted_dc_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->trusted_dc_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->trusted_dc_name, ndr_get_array_length(ndr, &r->trusted_dc_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_trusted_dc_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->trusted_dc_name, length_trusted_dc_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_dc_name_0, 0);
 		}
 	}
@@ -5906,8 +5983,12 @@ static enum ndr_err_code ndr_push_netr_NETLOGON_INFO_4(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_netr_NETLOGON_INFO_4(struct ndr_pull *ndr, int ndr_flags, struct netr_NETLOGON_INFO_4 *r)
 {
 	uint32_t _ptr_trusted_dc_name;
+	uint32_t size_trusted_dc_name_1 = 0;
+	uint32_t length_trusted_dc_name_1 = 0;
 	TALLOC_CTX *_mem_save_trusted_dc_name_0;
 	uint32_t _ptr_trusted_domain_name;
+	uint32_t size_trusted_domain_name_1 = 0;
+	uint32_t length_trusted_domain_name_1 = 0;
 	TALLOC_CTX *_mem_save_trusted_domain_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -5931,11 +6012,13 @@ static enum ndr_err_code ndr_pull_netr_NETLOGON_INFO_4(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->trusted_dc_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->trusted_dc_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->trusted_dc_name));
-			if (ndr_get_array_length(ndr, &r->trusted_dc_name) > ndr_get_array_size(ndr, &r->trusted_dc_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->trusted_dc_name), ndr_get_array_length(ndr, &r->trusted_dc_name));
+			size_trusted_dc_name_1 = ndr_get_array_size(ndr, &r->trusted_dc_name);
+			length_trusted_dc_name_1 = ndr_get_array_length(ndr, &r->trusted_dc_name);
+			if (length_trusted_dc_name_1 > size_trusted_dc_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_trusted_dc_name_1, length_trusted_dc_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->trusted_dc_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->trusted_dc_name, ndr_get_array_length(ndr, &r->trusted_dc_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_trusted_dc_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->trusted_dc_name, length_trusted_dc_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_dc_name_0, 0);
 		}
 		if (r->trusted_domain_name) {
@@ -5943,11 +6026,13 @@ static enum ndr_err_code ndr_pull_netr_NETLOGON_INFO_4(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->trusted_domain_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->trusted_domain_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->trusted_domain_name));
-			if (ndr_get_array_length(ndr, &r->trusted_domain_name) > ndr_get_array_size(ndr, &r->trusted_domain_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->trusted_domain_name), ndr_get_array_length(ndr, &r->trusted_domain_name));
+			size_trusted_domain_name_1 = ndr_get_array_size(ndr, &r->trusted_domain_name);
+			length_trusted_domain_name_1 = ndr_get_array_length(ndr, &r->trusted_domain_name);
+			if (length_trusted_domain_name_1 > size_trusted_domain_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_trusted_domain_name_1, length_trusted_domain_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->trusted_domain_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->trusted_domain_name, ndr_get_array_length(ndr, &r->trusted_domain_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_trusted_domain_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->trusted_domain_name, length_trusted_domain_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_domain_name_0, 0);
 		}
 	}
@@ -6041,9 +6126,13 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_info1_0;
+	uint32_t _ptr_info1;
 	TALLOC_CTX *_mem_save_info2_0;
+	uint32_t _ptr_info2;
 	TALLOC_CTX *_mem_save_info3_0;
+	uint32_t _ptr_info3;
 	TALLOC_CTX *_mem_save_info4_0;
+	uint32_t _ptr_info4;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -6053,7 +6142,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_info1;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info1));
 				if (_ptr_info1) {
 					NDR_PULL_ALLOC(ndr, r->info1);
@@ -6063,7 +6151,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull
 			break; }
 
 			case 2: {
-				uint32_t _ptr_info2;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info2));
 				if (_ptr_info2) {
 					NDR_PULL_ALLOC(ndr, r->info2);
@@ -6073,7 +6160,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull
 			break; }
 
 			case 3: {
-				uint32_t _ptr_info3;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info3));
 				if (_ptr_info3) {
 					NDR_PULL_ALLOC(ndr, r->info3);
@@ -6083,7 +6169,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_QUERY_INFORMATION(struct ndr_pull
 			break; }
 
 			case 4: {
-				uint32_t _ptr_info4;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info4));
 				if (_ptr_info4) {
 					NDR_PULL_ALLOC(ndr, r->info4);
@@ -6343,7 +6428,13 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_domain_0;
+	uint32_t _ptr_domain;
+	uint32_t size_domain_1 = 0;
+	uint32_t length_domain_1 = 0;
 	TALLOC_CTX *_mem_save_user_0;
+	uint32_t _ptr_user;
+	uint32_t size_user_1 = 0;
+	uint32_t length_user_1 = 0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -6353,7 +6444,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case NETLOGON_CONTROL_REDISCOVER: {
-				uint32_t _ptr_domain;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
 				if (_ptr_domain) {
 					NDR_PULL_ALLOC(ndr, r->domain);
@@ -6363,7 +6453,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 			break; }
 
 			case NETLOGON_CONTROL_TC_QUERY: {
-				uint32_t _ptr_domain;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
 				if (_ptr_domain) {
 					NDR_PULL_ALLOC(ndr, r->domain);
@@ -6373,7 +6462,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 			break; }
 
 			case NETLOGON_CONTROL_TRANSPORT_NOTIFY: {
-				uint32_t _ptr_domain;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
 				if (_ptr_domain) {
 					NDR_PULL_ALLOC(ndr, r->domain);
@@ -6383,7 +6471,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 			break; }
 
 			case NETLOGON_CONTROL_CHANGE_PASSWORD: {
-				uint32_t _ptr_domain;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
 				if (_ptr_domain) {
 					NDR_PULL_ALLOC(ndr, r->domain);
@@ -6393,7 +6480,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 			break; }
 
 			case NETLOGON_CONTROL_TC_VERIFY: {
-				uint32_t _ptr_domain;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
 				if (_ptr_domain) {
 					NDR_PULL_ALLOC(ndr, r->domain);
@@ -6403,7 +6489,6 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 			break; }
 
 			case NETLOGON_CONTROL_FIND_USER: {
-				uint32_t _ptr_user;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_user));
 				if (_ptr_user) {
 					NDR_PULL_ALLOC(ndr, r->user);
@@ -6429,11 +6514,13 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 					NDR_PULL_SET_MEM_CTX(ndr, r->domain, 0);
 					NDR_CHECK(ndr_pull_array_size(ndr, &r->domain));
 					NDR_CHECK(ndr_pull_array_length(ndr, &r->domain));
-					if (ndr_get_array_length(ndr, &r->domain) > ndr_get_array_size(ndr, &r->domain)) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->domain), ndr_get_array_length(ndr, &r->domain));
+					size_domain_1 = ndr_get_array_size(ndr, &r->domain);
+					length_domain_1 = ndr_get_array_length(ndr, &r->domain);
+					if (length_domain_1 > size_domain_1) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_1, length_domain_1);
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_1, sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, length_domain_1, sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
 				}
 			break;
@@ -6444,11 +6531,13 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 					NDR_PULL_SET_MEM_CTX(ndr, r->domain, 0);
 					NDR_CHECK(ndr_pull_array_size(ndr, &r->domain));
 					NDR_CHECK(ndr_pull_array_length(ndr, &r->domain));
-					if (ndr_get_array_length(ndr, &r->domain) > ndr_get_array_size(ndr, &r->domain)) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->domain), ndr_get_array_length(ndr, &r->domain));
+					size_domain_1 = ndr_get_array_size(ndr, &r->domain);
+					length_domain_1 = ndr_get_array_length(ndr, &r->domain);
+					if (length_domain_1 > size_domain_1) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_1, length_domain_1);
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_1, sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, length_domain_1, sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
 				}
 			break;
@@ -6459,11 +6548,13 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 					NDR_PULL_SET_MEM_CTX(ndr, r->domain, 0);
 					NDR_CHECK(ndr_pull_array_size(ndr, &r->domain));
 					NDR_CHECK(ndr_pull_array_length(ndr, &r->domain));
-					if (ndr_get_array_length(ndr, &r->domain) > ndr_get_array_size(ndr, &r->domain)) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->domain), ndr_get_array_length(ndr, &r->domain));
+					size_domain_1 = ndr_get_array_size(ndr, &r->domain);
+					length_domain_1 = ndr_get_array_length(ndr, &r->domain);
+					if (length_domain_1 > size_domain_1) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_1, length_domain_1);
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_1, sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, length_domain_1, sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
 				}
 			break;
@@ -6474,11 +6565,13 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 					NDR_PULL_SET_MEM_CTX(ndr, r->domain, 0);
 					NDR_CHECK(ndr_pull_array_size(ndr, &r->domain));
 					NDR_CHECK(ndr_pull_array_length(ndr, &r->domain));
-					if (ndr_get_array_length(ndr, &r->domain) > ndr_get_array_size(ndr, &r->domain)) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->domain), ndr_get_array_length(ndr, &r->domain));
+					size_domain_1 = ndr_get_array_size(ndr, &r->domain);
+					length_domain_1 = ndr_get_array_length(ndr, &r->domain);
+					if (length_domain_1 > size_domain_1) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_1, length_domain_1);
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_1, sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, length_domain_1, sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
 				}
 			break;
@@ -6489,11 +6582,13 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 					NDR_PULL_SET_MEM_CTX(ndr, r->domain, 0);
 					NDR_CHECK(ndr_pull_array_size(ndr, &r->domain));
 					NDR_CHECK(ndr_pull_array_length(ndr, &r->domain));
-					if (ndr_get_array_length(ndr, &r->domain) > ndr_get_array_size(ndr, &r->domain)) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->domain), ndr_get_array_length(ndr, &r->domain));
+					size_domain_1 = ndr_get_array_size(ndr, &r->domain);
+					length_domain_1 = ndr_get_array_length(ndr, &r->domain);
+					if (length_domain_1 > size_domain_1) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_1, length_domain_1);
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, ndr_get_array_length(ndr, &r->domain), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_1, sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain, length_domain_1, sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
 				}
 			break;
@@ -6504,11 +6599,13 @@ static enum ndr_err_code ndr_pull_netr_CONTROL_DATA_INFORMATION(struct ndr_pull 
 					NDR_PULL_SET_MEM_CTX(ndr, r->user, 0);
 					NDR_CHECK(ndr_pull_array_size(ndr, &r->user));
 					NDR_CHECK(ndr_pull_array_length(ndr, &r->user));
-					if (ndr_get_array_length(ndr, &r->user) > ndr_get_array_size(ndr, &r->user)) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->user), ndr_get_array_length(ndr, &r->user));
+					size_user_1 = ndr_get_array_size(ndr, &r->user);
+					length_user_1 = ndr_get_array_length(ndr, &r->user);
+					if (length_user_1 > size_user_1) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_user_1, length_user_1);
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->user), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user, ndr_get_array_length(ndr, &r->user), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, length_user_1, sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user, length_user_1, sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_0, 0);
 				}
 			break;
@@ -6881,6 +6978,7 @@ static enum ndr_err_code ndr_push_netr_Blob(struct ndr_push *ndr, int ndr_flags,
 static enum ndr_err_code ndr_pull_netr_Blob(struct ndr_pull *ndr, int ndr_flags, struct netr_Blob *r)
 {
 	uint32_t _ptr_data;
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_data_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -6898,8 +6996,9 @@ static enum ndr_err_code ndr_pull_netr_Blob(struct ndr_pull *ndr, int ndr_flags,
 			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
-			NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, ndr_get_array_size(ndr, &r->data)));
+			size_data_1 = ndr_get_array_size(ndr, &r->data);
+			NDR_PULL_ALLOC_N(ndr, r->data, size_data_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, size_data_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
 		}
 		if (r->data) {
@@ -7084,16 +7183,28 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, 
 _PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRGetDCNameInfo *r)
 {
 	uint32_t _ptr_dc_unc;
+	uint32_t size_dc_unc_1 = 0;
+	uint32_t length_dc_unc_1 = 0;
 	TALLOC_CTX *_mem_save_dc_unc_0;
 	uint32_t _ptr_dc_address;
+	uint32_t size_dc_address_1 = 0;
+	uint32_t length_dc_address_1 = 0;
 	TALLOC_CTX *_mem_save_dc_address_0;
 	uint32_t _ptr_domain_name;
+	uint32_t size_domain_name_1 = 0;
+	uint32_t length_domain_name_1 = 0;
 	TALLOC_CTX *_mem_save_domain_name_0;
 	uint32_t _ptr_forest_name;
+	uint32_t size_forest_name_1 = 0;
+	uint32_t length_forest_name_1 = 0;
 	TALLOC_CTX *_mem_save_forest_name_0;
 	uint32_t _ptr_dc_site_name;
+	uint32_t size_dc_site_name_1 = 0;
+	uint32_t length_dc_site_name_1 = 0;
 	TALLOC_CTX *_mem_save_dc_site_name_0;
 	uint32_t _ptr_client_site_name;
+	uint32_t size_client_site_name_1 = 0;
+	uint32_t length_client_site_name_1 = 0;
 	TALLOC_CTX *_mem_save_client_site_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -7144,11 +7255,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->dc_unc, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dc_unc));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dc_unc));
-			if (ndr_get_array_length(ndr, &r->dc_unc) > ndr_get_array_size(ndr, &r->dc_unc)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dc_unc), ndr_get_array_length(ndr, &r->dc_unc));
+			size_dc_unc_1 = ndr_get_array_size(ndr, &r->dc_unc);
+			length_dc_unc_1 = ndr_get_array_length(ndr, &r->dc_unc);
+			if (length_dc_unc_1 > size_dc_unc_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dc_unc_1, length_dc_unc_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dc_unc), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dc_unc, ndr_get_array_length(ndr, &r->dc_unc), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dc_unc_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dc_unc, length_dc_unc_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dc_unc_0, 0);
 		}
 		if (r->dc_address) {
@@ -7156,11 +7269,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->dc_address, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dc_address));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dc_address));
-			if (ndr_get_array_length(ndr, &r->dc_address) > ndr_get_array_size(ndr, &r->dc_address)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dc_address), ndr_get_array_length(ndr, &r->dc_address));
+			size_dc_address_1 = ndr_get_array_size(ndr, &r->dc_address);
+			length_dc_address_1 = ndr_get_array_length(ndr, &r->dc_address);
+			if (length_dc_address_1 > size_dc_address_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dc_address_1, length_dc_address_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dc_address), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dc_address, ndr_get_array_length(ndr, &r->dc_address), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dc_address_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dc_address, length_dc_address_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dc_address_0, 0);
 		}
 		if (r->domain_name) {
@@ -7168,11 +7283,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->domain_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->domain_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->domain_name));
-			if (ndr_get_array_length(ndr, &r->domain_name) > ndr_get_array_size(ndr, &r->domain_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->domain_name), ndr_get_array_length(ndr, &r->domain_name));
+			size_domain_name_1 = ndr_get_array_size(ndr, &r->domain_name);
+			length_domain_name_1 = ndr_get_array_length(ndr, &r->domain_name);
+			if (length_domain_name_1 > size_domain_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_name_1, length_domain_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->domain_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain_name, ndr_get_array_length(ndr, &r->domain_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->domain_name, length_domain_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_0, 0);
 		}
 		if (r->forest_name) {
@@ -7180,11 +7297,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->forest_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->forest_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->forest_name));
-			if (ndr_get_array_length(ndr, &r->forest_name) > ndr_get_array_size(ndr, &r->forest_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->forest_name), ndr_get_array_length(ndr, &r->forest_name));
+			size_forest_name_1 = ndr_get_array_size(ndr, &r->forest_name);
+			length_forest_name_1 = ndr_get_array_length(ndr, &r->forest_name);
+			if (length_forest_name_1 > size_forest_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_forest_name_1, length_forest_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->forest_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->forest_name, ndr_get_array_length(ndr, &r->forest_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_forest_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->forest_name, length_forest_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_forest_name_0, 0);
 		}
 		if (r->dc_site_name) {
@@ -7192,11 +7311,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->dc_site_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dc_site_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dc_site_name));
-			if (ndr_get_array_length(ndr, &r->dc_site_name) > ndr_get_array_size(ndr, &r->dc_site_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dc_site_name), ndr_get_array_length(ndr, &r->dc_site_name));
+			size_dc_site_name_1 = ndr_get_array_size(ndr, &r->dc_site_name);
+			length_dc_site_name_1 = ndr_get_array_length(ndr, &r->dc_site_name);
+			if (length_dc_site_name_1 > size_dc_site_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dc_site_name_1, length_dc_site_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dc_site_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dc_site_name, ndr_get_array_length(ndr, &r->dc_site_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dc_site_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dc_site_name, length_dc_site_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dc_site_name_0, 0);
 		}
 		if (r->client_site_name) {
@@ -7204,11 +7325,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->client_site_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->client_site_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->client_site_name));
-			if (ndr_get_array_length(ndr, &r->client_site_name) > ndr_get_array_size(ndr, &r->client_site_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->client_site_name), ndr_get_array_length(ndr, &r->client_site_name));
+			size_client_site_name_1 = ndr_get_array_size(ndr, &r->client_site_name);
+			length_client_site_name_1 = ndr_get_array_length(ndr, &r->client_site_name);
+			if (length_client_site_name_1 > size_client_site_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_client_site_name_1, length_client_site_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->client_site_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->client_site_name, ndr_get_array_length(ndr, &r->client_site_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_client_site_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->client_site_name, length_client_site_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_client_site_name_0, 0);
 		}
 	}
@@ -7466,6 +7589,7 @@ static enum ndr_err_code ndr_push_netr_LsaPolicyInformation(struct ndr_push *ndr
 static enum ndr_err_code ndr_pull_netr_LsaPolicyInformation(struct ndr_pull *ndr, int ndr_flags, struct netr_LsaPolicyInformation *r)
 {
 	uint32_t _ptr_policy;
+	uint32_t size_policy_1 = 0;
 	TALLOC_CTX *_mem_save_policy_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -7483,8 +7607,9 @@ static enum ndr_err_code ndr_pull_netr_LsaPolicyInformation(struct ndr_pull *ndr
 			_mem_save_policy_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->policy, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->policy));
-			NDR_PULL_ALLOC_N(ndr, r->policy, ndr_get_array_size(ndr, &r->policy));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->policy, ndr_get_array_size(ndr, &r->policy)));
+			size_policy_1 = ndr_get_array_size(ndr, &r->policy);
+			NDR_PULL_ALLOC_N(ndr, r->policy, size_policy_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->policy, size_policy_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_policy_0, 0);
 		}
 		if (r->policy) {
@@ -7760,16 +7885,28 @@ static enum ndr_err_code ndr_push_netr_WorkstationInformation(struct ndr_push *n
 static enum ndr_err_code ndr_pull_netr_WorkstationInformation(struct ndr_pull *ndr, int ndr_flags, struct netr_WorkstationInformation *r)
 {
 	uint32_t _ptr_dns_hostname;
+	uint32_t size_dns_hostname_1 = 0;
+	uint32_t length_dns_hostname_1 = 0;
 	TALLOC_CTX *_mem_save_dns_hostname_0;
 	uint32_t _ptr_sitename;
+	uint32_t size_sitename_1 = 0;
+	uint32_t length_sitename_1 = 0;
 	TALLOC_CTX *_mem_save_sitename_0;
 	uint32_t _ptr_dummy1;
+	uint32_t size_dummy1_1 = 0;
+	uint32_t length_dummy1_1 = 0;
 	TALLOC_CTX *_mem_save_dummy1_0;
 	uint32_t _ptr_dummy2;
+	uint32_t size_dummy2_1 = 0;
+	uint32_t length_dummy2_1 = 0;
 	TALLOC_CTX *_mem_save_dummy2_0;
 	uint32_t _ptr_dummy3;
+	uint32_t size_dummy3_1 = 0;
+	uint32_t length_dummy3_1 = 0;
 	TALLOC_CTX *_mem_save_dummy3_0;
 	uint32_t _ptr_dummy4;
+	uint32_t size_dummy4_1 = 0;
+	uint32_t length_dummy4_1 = 0;
 	TALLOC_CTX *_mem_save_dummy4_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -7827,11 +7964,13 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInformation(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->dns_hostname, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dns_hostname));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dns_hostname));
-			if (ndr_get_array_length(ndr, &r->dns_hostname) > ndr_get_array_size(ndr, &r->dns_hostname)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dns_hostname), ndr_get_array_length(ndr, &r->dns_hostname));
+			size_dns_hostname_1 = ndr_get_array_size(ndr, &r->dns_hostname);
+			length_dns_hostname_1 = ndr_get_array_length(ndr, &r->dns_hostname);
+			if (length_dns_hostname_1 > size_dns_hostname_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dns_hostname_1, length_dns_hostname_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dns_hostname), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dns_hostname, ndr_get_array_length(ndr, &r->dns_hostname), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dns_hostname_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dns_hostname, length_dns_hostname_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dns_hostname_0, 0);
 		}
 		if (r->sitename) {
@@ -7839,11 +7978,13 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInformation(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->sitename, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->sitename));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->sitename));
-			if (ndr_get_array_length(ndr, &r->sitename) > ndr_get_array_size(ndr, &r->sitename)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->sitename), ndr_get_array_length(ndr, &r->sitename));
+			size_sitename_1 = ndr_get_array_size(ndr, &r->sitename);
+			length_sitename_1 = ndr_get_array_length(ndr, &r->sitename);
+			if (length_sitename_1 > size_sitename_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_sitename_1, length_sitename_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->sitename), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->sitename, ndr_get_array_length(ndr, &r->sitename), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_sitename_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->sitename, length_sitename_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sitename_0, 0);
 		}
 		if (r->dummy1) {
@@ -7851,11 +7992,13 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInformation(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->dummy1, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dummy1));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dummy1));
-			if (ndr_get_array_length(ndr, &r->dummy1) > ndr_get_array_size(ndr, &r->dummy1)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dummy1), ndr_get_array_length(ndr, &r->dummy1));
+			size_dummy1_1 = ndr_get_array_size(ndr, &r->dummy1);
+			length_dummy1_1 = ndr_get_array_length(ndr, &r->dummy1);
+			if (length_dummy1_1 > size_dummy1_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dummy1_1, length_dummy1_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dummy1), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dummy1, ndr_get_array_length(ndr, &r->dummy1), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dummy1_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dummy1, length_dummy1_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dummy1_0, 0);
 		}
 		if (r->dummy2) {
@@ -7863,11 +8006,13 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInformation(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->dummy2, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dummy2));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dummy2));
-			if (ndr_get_array_length(ndr, &r->dummy2) > ndr_get_array_size(ndr, &r->dummy2)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dummy2), ndr_get_array_length(ndr, &r->dummy2));
+			size_dummy2_1 = ndr_get_array_size(ndr, &r->dummy2);
+			length_dummy2_1 = ndr_get_array_length(ndr, &r->dummy2);
+			if (length_dummy2_1 > size_dummy2_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dummy2_1, length_dummy2_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dummy2), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dummy2, ndr_get_array_length(ndr, &r->dummy2), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dummy2_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dummy2, length_dummy2_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dummy2_0, 0);
 		}
 		if (r->dummy3) {
@@ -7875,11 +8020,13 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInformation(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->dummy3, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dummy3));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dummy3));
-			if (ndr_get_array_length(ndr, &r->dummy3) > ndr_get_array_size(ndr, &r->dummy3)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dummy3), ndr_get_array_length(ndr, &r->dummy3));
+			size_dummy3_1 = ndr_get_array_size(ndr, &r->dummy3);
+			length_dummy3_1 = ndr_get_array_length(ndr, &r->dummy3);
+			if (length_dummy3_1 > size_dummy3_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dummy3_1, length_dummy3_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dummy3), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dummy3, ndr_get_array_length(ndr, &r->dummy3), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dummy3_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dummy3, length_dummy3_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dummy3_0, 0);
 		}
 		if (r->dummy4) {
@@ -7887,11 +8034,13 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInformation(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->dummy4, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dummy4));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dummy4));
-			if (ndr_get_array_length(ndr, &r->dummy4) > ndr_get_array_size(ndr, &r->dummy4)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dummy4), ndr_get_array_length(ndr, &r->dummy4));
+			size_dummy4_1 = ndr_get_array_size(ndr, &r->dummy4);
+			length_dummy4_1 = ndr_get_array_length(ndr, &r->dummy4);
+			if (length_dummy4_1 > size_dummy4_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dummy4_1, length_dummy4_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dummy4), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dummy4, ndr_get_array_length(ndr, &r->dummy4), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dummy4_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dummy4, length_dummy4_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dummy4_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_OsVersionContainer(ndr, NDR_BUFFERS, &r->os_version));
@@ -8000,7 +8149,9 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInfo(struct ndr_pull *ndr, int
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_workstation_info_0;
+	uint32_t _ptr_workstation_info;
 	TALLOC_CTX *_mem_save_lsa_policy_info_0;
+	uint32_t _ptr_lsa_policy_info;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -8010,7 +8161,6 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInfo(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_workstation_info;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_workstation_info));
 				if (_ptr_workstation_info) {
 					NDR_PULL_ALLOC(ndr, r->workstation_info);
@@ -8020,7 +8170,6 @@ static enum ndr_err_code ndr_pull_netr_WorkstationInfo(struct ndr_pull *ndr, int
 			break; }
 
 			case 2: {
-				uint32_t _ptr_lsa_policy_info;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_lsa_policy_info));
 				if (_ptr_lsa_policy_info) {
 					NDR_PULL_ALLOC(ndr, r->lsa_policy_info);
@@ -8369,6 +8518,7 @@ static enum ndr_err_code ndr_push_netr_DomainInformation(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_netr_DomainInformation(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainInformation *r)
 {
 	uint32_t _ptr_trusted_domains;
+	uint32_t size_trusted_domains_1 = 0;
 	uint32_t cntr_trusted_domains_1;
 	TALLOC_CTX *_mem_save_trusted_domains_0;
 	TALLOC_CTX *_mem_save_trusted_domains_1;
@@ -8399,13 +8549,14 @@ static enum ndr_err_code ndr_pull_netr_DomainInformation(struct ndr_pull *ndr, i
 			_mem_save_trusted_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->trusted_domains, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->trusted_domains));
-			NDR_PULL_ALLOC_N(ndr, r->trusted_domains, ndr_get_array_size(ndr, &r->trusted_domains));
+			size_trusted_domains_1 = ndr_get_array_size(ndr, &r->trusted_domains);
+			NDR_PULL_ALLOC_N(ndr, r->trusted_domains, size_trusted_domains_1);
 			_mem_save_trusted_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->trusted_domains, 0);
-			for (cntr_trusted_domains_1 = 0; cntr_trusted_domains_1 < r->trusted_domain_count; cntr_trusted_domains_1++) {
+			for (cntr_trusted_domains_1 = 0; cntr_trusted_domains_1 < size_trusted_domains_1; cntr_trusted_domains_1++) {
 				NDR_CHECK(ndr_pull_netr_OneDomainInfo(ndr, NDR_SCALARS, &r->trusted_domains[cntr_trusted_domains_1]));
 			}
-			for (cntr_trusted_domains_1 = 0; cntr_trusted_domains_1 < r->trusted_domain_count; cntr_trusted_domains_1++) {
+			for (cntr_trusted_domains_1 = 0; cntr_trusted_domains_1 < size_trusted_domains_1; cntr_trusted_domains_1++) {
 				NDR_CHECK(ndr_pull_netr_OneDomainInfo(ndr, NDR_BUFFERS, &r->trusted_domains[cntr_trusted_domains_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_domains_1, 0);
@@ -8503,7 +8654,9 @@ static enum ndr_err_code ndr_pull_netr_DomainInfo(struct ndr_pull *ndr, int ndr_
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_domain_info_0;
+	uint32_t _ptr_domain_info;
 	TALLOC_CTX *_mem_save_lsa_policy_info_0;
+	uint32_t _ptr_lsa_policy_info;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -8513,7 +8666,6 @@ static enum ndr_err_code ndr_pull_netr_DomainInfo(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_domain_info;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_info));
 				if (_ptr_domain_info) {
 					NDR_PULL_ALLOC(ndr, r->domain_info);
@@ -8523,7 +8675,6 @@ static enum ndr_err_code ndr_pull_netr_DomainInfo(struct ndr_pull *ndr, int ndr_
 			break; }
 
 			case 2: {
-				uint32_t _ptr_lsa_policy_info;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_lsa_policy_info));
 				if (_ptr_lsa_policy_info) {
 					NDR_PULL_ALLOC(ndr, r->lsa_policy_info);
@@ -8612,12 +8763,14 @@ static enum ndr_err_code ndr_push_netr_CryptPassword(struct ndr_push *ndr, int n
 
 static enum ndr_err_code ndr_pull_netr_CryptPassword(struct ndr_pull *ndr, int ndr_flags, struct netr_CryptPassword *r)
 {
+	uint32_t size_data_0 = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 4));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, 512));
+			size_data_0 = 512;
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, size_data_0));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
@@ -8668,6 +8821,7 @@ static enum ndr_err_code ndr_push_netr_DsRAddressToSitenamesWCtr(struct ndr_push
 static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesWCtr(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRAddressToSitenamesWCtr *r)
 {
 	uint32_t _ptr_sitename;
+	uint32_t size_sitename_1 = 0;
 	uint32_t cntr_sitename_1;
 	TALLOC_CTX *_mem_save_sitename_0;
 	TALLOC_CTX *_mem_save_sitename_1;
@@ -8687,13 +8841,14 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesWCtr(struct ndr_pull
 			_mem_save_sitename_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sitename, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->sitename));
-			NDR_PULL_ALLOC_N(ndr, r->sitename, ndr_get_array_size(ndr, &r->sitename));
+			size_sitename_1 = ndr_get_array_size(ndr, &r->sitename);
+			NDR_PULL_ALLOC_N(ndr, r->sitename, size_sitename_1);
 			_mem_save_sitename_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sitename, 0);
-			for (cntr_sitename_1 = 0; cntr_sitename_1 < r->count; cntr_sitename_1++) {
+			for (cntr_sitename_1 = 0; cntr_sitename_1 < size_sitename_1; cntr_sitename_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->sitename[cntr_sitename_1]));
 			}
-			for (cntr_sitename_1 = 0; cntr_sitename_1 < r->count; cntr_sitename_1++) {
+			for (cntr_sitename_1 = 0; cntr_sitename_1 < size_sitename_1; cntr_sitename_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->sitename[cntr_sitename_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sitename_1, 0);
@@ -8750,6 +8905,7 @@ static enum ndr_err_code ndr_push_netr_DsRAddress(struct ndr_push *ndr, int ndr_
 static enum ndr_err_code ndr_pull_netr_DsRAddress(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRAddress *r)
 {
 	uint32_t _ptr_buffer;
+	uint32_t size_buffer_1 = 0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
@@ -8767,8 +8923,9 @@ static enum ndr_err_code ndr_pull_netr_DsRAddress(struct ndr_pull *ndr, int ndr_
 			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->buffer, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->buffer));
-			NDR_PULL_ALLOC_N(ndr, r->buffer, ndr_get_array_size(ndr, &r->buffer));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->buffer, ndr_get_array_size(ndr, &r->buffer)));
+			size_buffer_1 = ndr_get_array_size(ndr, &r->buffer);
+			NDR_PULL_ALLOC_N(ndr, r->buffer, size_buffer_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->buffer, size_buffer_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		if (r->buffer) {
@@ -8884,8 +9041,12 @@ static enum ndr_err_code ndr_push_netr_DomainTrust(struct ndr_push *ndr, int ndr
 static enum ndr_err_code ndr_pull_netr_DomainTrust(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainTrust *r)
 {
 	uint32_t _ptr_netbios_name;
+	uint32_t size_netbios_name_1 = 0;
+	uint32_t length_netbios_name_1 = 0;
 	TALLOC_CTX *_mem_save_netbios_name_0;
 	uint32_t _ptr_dns_name;
+	uint32_t size_dns_name_1 = 0;
+	uint32_t length_dns_name_1 = 0;
 	TALLOC_CTX *_mem_save_dns_name_0;
 	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -8922,11 +9083,13 @@ static enum ndr_err_code ndr_pull_netr_DomainTrust(struct ndr_pull *ndr, int ndr
 			NDR_PULL_SET_MEM_CTX(ndr, r->netbios_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->netbios_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->netbios_name));
-			if (ndr_get_array_length(ndr, &r->netbios_name) > ndr_get_array_size(ndr, &r->netbios_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->netbios_name), ndr_get_array_length(ndr, &r->netbios_name));
+			size_netbios_name_1 = ndr_get_array_size(ndr, &r->netbios_name);
+			length_netbios_name_1 = ndr_get_array_length(ndr, &r->netbios_name);
+			if (length_netbios_name_1 > size_netbios_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_netbios_name_1, length_netbios_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->netbios_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->netbios_name, ndr_get_array_length(ndr, &r->netbios_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_netbios_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->netbios_name, length_netbios_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_netbios_name_0, 0);
 		}
 		if (r->dns_name) {
@@ -8934,11 +9097,13 @@ static enum ndr_err_code ndr_pull_netr_DomainTrust(struct ndr_pull *ndr, int ndr
 			NDR_PULL_SET_MEM_CTX(ndr, r->dns_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->dns_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->dns_name));
-			if (ndr_get_array_length(ndr, &r->dns_name) > ndr_get_array_size(ndr, &r->dns_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dns_name), ndr_get_array_length(ndr, &r->dns_name));
+			size_dns_name_1 = ndr_get_array_size(ndr, &r->dns_name);
+			length_dns_name_1 = ndr_get_array_length(ndr, &r->dns_name);
+			if (length_dns_name_1 > size_dns_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dns_name_1, length_dns_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dns_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dns_name, ndr_get_array_length(ndr, &r->dns_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dns_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dns_name, length_dns_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dns_name_0, 0);
 		}
 		if (r->sid) {
@@ -9007,6 +9172,7 @@ static enum ndr_err_code ndr_push_netr_DomainTrustList(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_netr_DomainTrustList(struct ndr_pull *ndr, int ndr_flags, struct netr_DomainTrustList *r)
 {
 	uint32_t _ptr_array;
+	uint32_t size_array_1 = 0;
 	uint32_t cntr_array_1;
 	TALLOC_CTX *_mem_save_array_0;
 	TALLOC_CTX *_mem_save_array_1;
@@ -9026,13 +9192,14 @@ static enum ndr_err_code ndr_pull_netr_DomainTrustList(struct ndr_pull *ndr, int
 			_mem_save_array_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->array, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->array));
-			NDR_PULL_ALLOC_N(ndr, r->array, ndr_get_array_size(ndr, &r->array));
+			size_array_1 = ndr_get_array_size(ndr, &r->array);
+			NDR_PULL_ALLOC_N(ndr, r->array, size_array_1);
 			_mem_save_array_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->array, 0);
-			for (cntr_array_1 = 0; cntr_array_1 < r->count; cntr_array_1++) {
+			for (cntr_array_1 = 0; cntr_array_1 < size_array_1; cntr_array_1++) {
 				NDR_CHECK(ndr_pull_netr_DomainTrust(ndr, NDR_SCALARS, &r->array[cntr_array_1]));
 			}
-			for (cntr_array_1 = 0; cntr_array_1 < r->count; cntr_array_1++) {
+			for (cntr_array_1 = 0; cntr_array_1 < size_array_1; cntr_array_1++) {
 				NDR_CHECK(ndr_pull_netr_DomainTrust(ndr, NDR_BUFFERS, &r->array[cntr_array_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_array_1, 0);
@@ -9106,10 +9273,12 @@ static enum ndr_err_code ndr_push_netr_DsRAddressToSitenamesExWCtr(struct ndr_pu
 static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesExWCtr(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRAddressToSitenamesExWCtr *r)
 {
 	uint32_t _ptr_sitename;
+	uint32_t size_sitename_1 = 0;
 	uint32_t cntr_sitename_1;
 	TALLOC_CTX *_mem_save_sitename_0;
 	TALLOC_CTX *_mem_save_sitename_1;
 	uint32_t _ptr_subnetname;
+	uint32_t size_subnetname_1 = 0;
 	uint32_t cntr_subnetname_1;
 	TALLOC_CTX *_mem_save_subnetname_0;
 	TALLOC_CTX *_mem_save_subnetname_1;
@@ -9135,13 +9304,14 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesExWCtr(struct ndr_pu
 			_mem_save_sitename_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sitename, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->sitename));
-			NDR_PULL_ALLOC_N(ndr, r->sitename, ndr_get_array_size(ndr, &r->sitename));
+			size_sitename_1 = ndr_get_array_size(ndr, &r->sitename);
+			NDR_PULL_ALLOC_N(ndr, r->sitename, size_sitename_1);
 			_mem_save_sitename_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sitename, 0);
-			for (cntr_sitename_1 = 0; cntr_sitename_1 < r->count; cntr_sitename_1++) {
+			for (cntr_sitename_1 = 0; cntr_sitename_1 < size_sitename_1; cntr_sitename_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->sitename[cntr_sitename_1]));
 			}
-			for (cntr_sitename_1 = 0; cntr_sitename_1 < r->count; cntr_sitename_1++) {
+			for (cntr_sitename_1 = 0; cntr_sitename_1 < size_sitename_1; cntr_sitename_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->sitename[cntr_sitename_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sitename_1, 0);
@@ -9151,13 +9321,14 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesExWCtr(struct ndr_pu
 			_mem_save_subnetname_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->subnetname, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->subnetname));
-			NDR_PULL_ALLOC_N(ndr, r->subnetname, ndr_get_array_size(ndr, &r->subnetname));
+			size_subnetname_1 = ndr_get_array_size(ndr, &r->subnetname);
+			NDR_PULL_ALLOC_N(ndr, r->subnetname, size_subnetname_1);
 			_mem_save_subnetname_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->subnetname, 0);
-			for (cntr_subnetname_1 = 0; cntr_subnetname_1 < r->count; cntr_subnetname_1++) {
+			for (cntr_subnetname_1 = 0; cntr_subnetname_1 < size_subnetname_1; cntr_subnetname_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->subnetname[cntr_subnetname_1]));
 			}
-			for (cntr_subnetname_1 = 0; cntr_subnetname_1 < r->count; cntr_subnetname_1++) {
+			for (cntr_subnetname_1 = 0; cntr_subnetname_1 < size_subnetname_1; cntr_subnetname_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->subnetname[cntr_subnetname_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_subnetname_1, 0);
@@ -9239,6 +9410,7 @@ static enum ndr_err_code ndr_push_DcSitesCtr(struct ndr_push *ndr, int ndr_flags
 static enum ndr_err_code ndr_pull_DcSitesCtr(struct ndr_pull *ndr, int ndr_flags, struct DcSitesCtr *r)
 {
 	uint32_t _ptr_sites;
+	uint32_t size_sites_1 = 0;
 	uint32_t cntr_sites_1;
 	TALLOC_CTX *_mem_save_sites_0;
 	TALLOC_CTX *_mem_save_sites_1;
@@ -9258,13 +9430,14 @@ static enum ndr_err_code ndr_pull_DcSitesCtr(struct ndr_pull *ndr, int ndr_flags
 			_mem_save_sites_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sites, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->sites));
-			NDR_PULL_ALLOC_N(ndr, r->sites, ndr_get_array_size(ndr, &r->sites));
+			size_sites_1 = ndr_get_array_size(ndr, &r->sites);
+			NDR_PULL_ALLOC_N(ndr, r->sites, size_sites_1);
 			_mem_save_sites_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->sites, 0);
-			for (cntr_sites_1 = 0; cntr_sites_1 < r->num_sites; cntr_sites_1++) {
+			for (cntr_sites_1 = 0; cntr_sites_1 < size_sites_1; cntr_sites_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->sites[cntr_sites_1]));
 			}
-			for (cntr_sites_1 = 0; cntr_sites_1 < r->num_sites; cntr_sites_1++) {
+			for (cntr_sites_1 = 0; cntr_sites_1 < size_sites_1; cntr_sites_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->sites[cntr_sites_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sites_1, 0);
@@ -9336,10 +9509,12 @@ static enum ndr_err_code ndr_push_netr_TrustInfo(struct ndr_push *ndr, int ndr_f
 static enum ndr_err_code ndr_pull_netr_TrustInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_TrustInfo *r)
 {
 	uint32_t _ptr_data;
+	uint32_t size_data_1 = 0;
 	uint32_t cntr_data_1;
 	TALLOC_CTX *_mem_save_data_0;
 	TALLOC_CTX *_mem_save_data_1;
 	uint32_t _ptr_entries;
+	uint32_t size_entries_1 = 0;
 	uint32_t cntr_entries_1;
 	TALLOC_CTX *_mem_save_entries_0;
 	TALLOC_CTX *_mem_save_entries_1;
@@ -9366,10 +9541,11 @@ static enum ndr_err_code ndr_pull_netr_TrustInfo(struct ndr_pull *ndr, int ndr_f
 			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
-			NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
+			size_data_1 = ndr_get_array_size(ndr, &r->data);
+			NDR_PULL_ALLOC_N(ndr, r->data, size_data_1);
 			_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
-			for (cntr_data_1 = 0; cntr_data_1 < r->count; cntr_data_1++) {
+			for (cntr_data_1 = 0; cntr_data_1 < size_data_1; cntr_data_1++) {
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->data[cntr_data_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_1, 0);
@@ -9379,13 +9555,14 @@ static enum ndr_err_code ndr_pull_netr_TrustInfo(struct ndr_pull *ndr, int ndr_f
 			_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->entries));
-			NDR_PULL_ALLOC_N(ndr, r->entries, ndr_get_array_size(ndr, &r->entries));
+			size_entries_1 = ndr_get_array_size(ndr, &r->entries);
+			NDR_PULL_ALLOC_N(ndr, r->entries, size_entries_1);
 			_mem_save_entries_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
-			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+			for (cntr_entries_1 = 0; cntr_entries_1 < size_entries_1; cntr_entries_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->entries[cntr_entries_1]));
 			}
-			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+			for (cntr_entries_1 = 0; cntr_entries_1 < size_entries_1; cntr_entries_1++) {
 				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->entries[cntr_entries_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_1, 0);
@@ -9483,6 +9660,12 @@ static enum ndr_err_code ndr_push_netr_LogonUasLogon(struct ndr_push *ndr, int f
 static enum ndr_err_code ndr_pull_netr_LogonUasLogon(struct ndr_pull *ndr, int flags, struct netr_LogonUasLogon *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_workstation_1 = 0;
+	uint32_t length_workstation_1 = 0;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_info_0;
@@ -9501,27 +9684,33 @@ static enum ndr_err_code ndr_pull_netr_LogonUasLogon(struct ndr_pull *ndr, int f
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.workstation));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.workstation));
-		if (ndr_get_array_length(ndr, &r->in.workstation) > ndr_get_array_size(ndr, &r->in.workstation)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.workstation), ndr_get_array_length(ndr, &r->in.workstation));
+		size_workstation_1 = ndr_get_array_size(ndr, &r->in.workstation);
+		length_workstation_1 = ndr_get_array_length(ndr, &r->in.workstation);
+		if (length_workstation_1 > size_workstation_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_workstation_1, length_workstation_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.workstation), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.workstation, ndr_get_array_length(ndr, &r->in.workstation), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_workstation_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.workstation, length_workstation_1, sizeof(uint16_t), CH_UTF16));
 		NDR_PULL_ALLOC(ndr, r->out.info);
 		ZERO_STRUCTP(r->out.info);
 	}
@@ -9631,6 +9820,12 @@ static enum ndr_err_code ndr_push_netr_LogonUasLogoff(struct ndr_push *ndr, int 
 static enum ndr_err_code ndr_pull_netr_LogonUasLogoff(struct ndr_pull *ndr, int flags, struct netr_LogonUasLogoff *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_workstation_1 = 0;
+	uint32_t length_workstation_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -9647,27 +9842,33 @@ static enum ndr_err_code ndr_pull_netr_LogonUasLogoff(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.workstation));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.workstation));
-		if (ndr_get_array_length(ndr, &r->in.workstation) > ndr_get_array_size(ndr, &r->in.workstation)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.workstation), ndr_get_array_length(ndr, &r->in.workstation));
+		size_workstation_1 = ndr_get_array_size(ndr, &r->in.workstation);
+		length_workstation_1 = ndr_get_array_length(ndr, &r->in.workstation);
+		if (length_workstation_1 > size_workstation_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_workstation_1, length_workstation_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.workstation), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.workstation, ndr_get_array_length(ndr, &r->in.workstation), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_workstation_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.workstation, length_workstation_1, sizeof(uint16_t), CH_UTF16));
 		NDR_PULL_ALLOC(ndr, r->out.info);
 		ZERO_STRUCTP(r->out.info);
 	}
@@ -9778,7 +9979,11 @@ static enum ndr_err_code ndr_push_netr_LogonSamLogon(struct ndr_push *ndr, int f
 static enum ndr_err_code ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogon *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_computer_name;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	uint32_t _ptr_credential;
 	uint32_t _ptr_return_authenticator;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -9802,11 +10007,13 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int f
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_computer_name));
@@ -9820,11 +10027,13 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int f
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.computer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-			if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+			size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+			length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+			if (length_computer_name_1 > size_computer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_credential));
@@ -10008,7 +10217,11 @@ static enum ndr_err_code ndr_push_netr_LogonSamLogoff(struct ndr_push *ndr, int 
 static enum ndr_err_code ndr_pull_netr_LogonSamLogoff(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogoff *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_computer_name;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	uint32_t _ptr_credential;
 	uint32_t _ptr_return_authenticator;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -10029,11 +10242,13 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogoff(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_computer_name));
@@ -10047,11 +10262,13 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogoff(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.computer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-			if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+			size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+			length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+			if (length_computer_name_1 > size_computer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_credential));
@@ -10189,6 +10406,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_ServerReqChallenge(struct ndr_push *ndr
 _PUBLIC_ enum ndr_err_code ndr_pull_netr_ServerReqChallenge(struct ndr_pull *ndr, int flags, struct netr_ServerReqChallenge *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
 	TALLOC_CTX *_mem_save_return_credentials_0;
@@ -10206,20 +10427,24 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_ServerReqChallenge(struct ndr_pull *ndr
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credentials);
 		}
@@ -10325,6 +10550,12 @@ static enum ndr_err_code ndr_push_netr_ServerAuthenticate(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_netr_ServerAuthenticate(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
 	TALLOC_CTX *_mem_save_return_credentials_0;
@@ -10342,28 +10573,34 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credentials);
 		}
@@ -10478,6 +10715,12 @@ static enum ndr_err_code ndr_push_netr_ServerPasswordSet(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_netr_ServerPasswordSet(struct ndr_pull *ndr, int flags, struct netr_ServerPasswordSet *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -10496,28 +10739,34 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordSet(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -10651,6 +10900,10 @@ static enum ndr_err_code ndr_push_netr_DatabaseDeltas(struct ndr_push *ndr, int 
 
 static enum ndr_err_code ndr_pull_netr_DatabaseDeltas(struct ndr_pull *ndr, int flags, struct netr_DatabaseDeltas *r)
 {
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
+	uint32_t size_computername_1 = 0;
+	uint32_t length_computername_1 = 0;
 	uint32_t _ptr_delta_enum_array;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -10662,18 +10915,22 @@ static enum ndr_err_code ndr_pull_netr_DatabaseDeltas(struct ndr_pull *ndr, int 
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-		if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+		size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+		length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+		if (length_logon_server_1 > size_logon_server_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computername));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computername));
-		if (ndr_get_array_length(ndr, &r->in.computername) > ndr_get_array_size(ndr, &r->in.computername)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computername), ndr_get_array_length(ndr, &r->in.computername));
+		size_computername_1 = ndr_get_array_size(ndr, &r->in.computername);
+		length_computername_1 = ndr_get_array_length(ndr, &r->in.computername);
+		if (length_computername_1 > size_computername_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computername_1, length_computername_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computername_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, length_computername_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -10857,6 +11114,10 @@ static enum ndr_err_code ndr_push_netr_DatabaseSync(struct ndr_push *ndr, int fl
 
 static enum ndr_err_code ndr_pull_netr_DatabaseSync(struct ndr_pull *ndr, int flags, struct netr_DatabaseSync *r)
 {
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
+	uint32_t size_computername_1 = 0;
+	uint32_t length_computername_1 = 0;
 	uint32_t _ptr_delta_enum_array;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -10868,18 +11129,22 @@ static enum ndr_err_code ndr_pull_netr_DatabaseSync(struct ndr_pull *ndr, int fl
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-		if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+		size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+		length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+		if (length_logon_server_1 > size_logon_server_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computername));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computername));
-		if (ndr_get_array_length(ndr, &r->in.computername) > ndr_get_array_size(ndr, &r->in.computername)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computername), ndr_get_array_length(ndr, &r->in.computername));
+		size_computername_1 = ndr_get_array_size(ndr, &r->in.computername);
+		length_computername_1 = ndr_get_array_length(ndr, &r->in.computername);
+		if (length_computername_1 > size_computername_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computername_1, length_computername_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computername_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, length_computername_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -11069,6 +11334,10 @@ static enum ndr_err_code ndr_push_netr_AccountDeltas(struct ndr_push *ndr, int f
 static enum ndr_err_code ndr_pull_netr_AccountDeltas(struct ndr_pull *ndr, int flags, struct netr_AccountDeltas *r)
 {
 	uint32_t _ptr_logon_server;
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
+	uint32_t size_computername_1 = 0;
+	uint32_t length_computername_1 = 0;
 	TALLOC_CTX *_mem_save_logon_server_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
 	TALLOC_CTX *_mem_save_buffer_0;
@@ -11089,20 +11358,24 @@ static enum ndr_err_code ndr_pull_netr_AccountDeltas(struct ndr_pull *ndr, int f
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.logon_server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-			if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+			size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+			length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+			if (length_logon_server_1 > size_logon_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computername));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computername));
-		if (ndr_get_array_length(ndr, &r->in.computername) > ndr_get_array_size(ndr, &r->in.computername)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computername), ndr_get_array_length(ndr, &r->in.computername));
+		size_computername_1 = ndr_get_array_size(ndr, &r->in.computername);
+		length_computername_1 = ndr_get_array_length(ndr, &r->in.computername);
+		if (length_computername_1 > size_computername_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computername_1, length_computername_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computername_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, length_computername_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.return_authenticator);
@@ -11300,6 +11573,10 @@ static enum ndr_err_code ndr_push_netr_AccountSync(struct ndr_push *ndr, int fla
 static enum ndr_err_code ndr_pull_netr_AccountSync(struct ndr_pull *ndr, int flags, struct netr_AccountSync *r)
 {
 	uint32_t _ptr_logon_server;
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
+	uint32_t size_computername_1 = 0;
+	uint32_t length_computername_1 = 0;
 	TALLOC_CTX *_mem_save_logon_server_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
 	TALLOC_CTX *_mem_save_buffer_0;
@@ -11321,20 +11598,24 @@ static enum ndr_err_code ndr_pull_netr_AccountSync(struct ndr_pull *ndr, int fla
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.logon_server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-			if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+			size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+			length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+			if (length_logon_server_1 > size_logon_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computername));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computername));
-		if (ndr_get_array_length(ndr, &r->in.computername) > ndr_get_array_size(ndr, &r->in.computername)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computername), ndr_get_array_length(ndr, &r->in.computername));
+		size_computername_1 = ndr_get_array_size(ndr, &r->in.computername);
+		length_computername_1 = ndr_get_array_length(ndr, &r->in.computername);
+		if (length_computername_1 > size_computername_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computername_1, length_computername_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computername_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, length_computername_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, &r->in.credential));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.return_authenticator);
@@ -11522,8 +11803,14 @@ static enum ndr_err_code ndr_push_netr_GetDcName(struct ndr_push *ndr, int flags
 
 static enum ndr_err_code ndr_pull_netr_GetDcName(struct ndr_pull *ndr, int flags, struct netr_GetDcName *r)
 {
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
 	uint32_t _ptr_domainname;
+	uint32_t size_domainname_1 = 0;
+	uint32_t length_domainname_1 = 0;
 	uint32_t _ptr_dcname;
+	uint32_t size_dcname_2 = 0;
+	uint32_t length_dcname_2 = 0;
 	TALLOC_CTX *_mem_save_domainname_0;
 	TALLOC_CTX *_mem_save_dcname_0;
 	TALLOC_CTX *_mem_save_dcname_1;
@@ -11532,11 +11819,13 @@ static enum ndr_err_code ndr_pull_netr_GetDcName(struct ndr_pull *ndr, int flags
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-		if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+		size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+		length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+		if (length_logon_server_1 > size_logon_server_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domainname));
 		if (_ptr_domainname) {
 			NDR_PULL_ALLOC(ndr, r->in.domainname);
@@ -11548,11 +11837,13 @@ static enum ndr_err_code ndr_pull_netr_GetDcName(struct ndr_pull *ndr, int flags
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.domainname, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domainname));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domainname));
-			if (ndr_get_array_length(ndr, &r->in.domainname) > ndr_get_array_size(ndr, &r->in.domainname)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domainname), ndr_get_array_length(ndr, &r->in.domainname));
+			size_domainname_1 = ndr_get_array_size(ndr, &r->in.domainname);
+			length_domainname_1 = ndr_get_array_length(ndr, &r->in.domainname);
+			if (length_domainname_1 > size_domainname_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domainname_1, length_domainname_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domainname), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domainname, ndr_get_array_length(ndr, &r->in.domainname), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domainname_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domainname, length_domainname_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domainname_0, 0);
 		}
 		NDR_PULL_ALLOC(ndr, r->out.dcname);
@@ -11575,11 +11866,13 @@ static enum ndr_err_code ndr_pull_netr_GetDcName(struct ndr_pull *ndr, int flags
 			NDR_PULL_SET_MEM_CTX(ndr, *r->out.dcname, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, r->out.dcname));
 			NDR_CHECK(ndr_pull_array_length(ndr, r->out.dcname));
-			if (ndr_get_array_length(ndr, r->out.dcname) > ndr_get_array_size(ndr, r->out.dcname)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.dcname), ndr_get_array_length(ndr, r->out.dcname));
+			size_dcname_2 = ndr_get_array_size(ndr, r->out.dcname);
+			length_dcname_2 = ndr_get_array_length(ndr, r->out.dcname);
+			if (length_dcname_2 > size_dcname_2) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dcname_2, length_dcname_2);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.dcname), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.dcname, ndr_get_array_length(ndr, r->out.dcname), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dcname_2, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.dcname, length_dcname_2, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dcname_1, 0);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dcname_0, LIBNDR_FLAG_REF_ALLOC);
@@ -11655,6 +11948,8 @@ static enum ndr_err_code ndr_push_netr_LogonControl(struct ndr_push *ndr, int fl
 static enum ndr_err_code ndr_pull_netr_LogonControl(struct ndr_pull *ndr, int flags, struct netr_LogonControl *r)
 {
 	uint32_t _ptr_logon_server;
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
 	TALLOC_CTX *_mem_save_logon_server_0;
 	TALLOC_CTX *_mem_save_query_0;
 	if (flags & NDR_IN) {
@@ -11671,11 +11966,13 @@ static enum ndr_err_code ndr_pull_netr_LogonControl(struct ndr_pull *ndr, int fl
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.logon_server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-			if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+			size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+			length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+			if (length_logon_server_1 > size_logon_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_LogonControlCode(ndr, NDR_SCALARS, &r->in.function_code));
@@ -11768,8 +12065,14 @@ static enum ndr_err_code ndr_push_netr_GetAnyDCName(struct ndr_push *ndr, int fl
 static enum ndr_err_code ndr_pull_netr_GetAnyDCName(struct ndr_pull *ndr, int flags, struct netr_GetAnyDCName *r)
 {
 	uint32_t _ptr_logon_server;
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
 	uint32_t _ptr_domainname;
+	uint32_t size_domainname_1 = 0;
+	uint32_t length_domainname_1 = 0;
 	uint32_t _ptr_dcname;
+	uint32_t size_dcname_2 = 0;
+	uint32_t length_dcname_2 = 0;
 	TALLOC_CTX *_mem_save_logon_server_0;
 	TALLOC_CTX *_mem_save_domainname_0;
 	TALLOC_CTX *_mem_save_dcname_0;
@@ -11788,11 +12091,13 @@ static enum ndr_err_code ndr_pull_netr_GetAnyDCName(struct ndr_pull *ndr, int fl
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.logon_server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-			if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+			size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+			length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+			if (length_logon_server_1 > size_logon_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domainname));
@@ -11806,11 +12111,13 @@ static enum ndr_err_code ndr_pull_netr_GetAnyDCName(struct ndr_pull *ndr, int fl
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.domainname, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domainname));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domainname));
-			if (ndr_get_array_length(ndr, &r->in.domainname) > ndr_get_array_size(ndr, &r->in.domainname)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domainname), ndr_get_array_length(ndr, &r->in.domainname));
+			size_domainname_1 = ndr_get_array_size(ndr, &r->in.domainname);
+			length_domainname_1 = ndr_get_array_length(ndr, &r->in.domainname);
+			if (length_domainname_1 > size_domainname_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domainname_1, length_domainname_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domainname), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domainname, ndr_get_array_length(ndr, &r->in.domainname), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domainname_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domainname, length_domainname_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domainname_0, 0);
 		}
 		NDR_PULL_ALLOC(ndr, r->out.dcname);
@@ -11833,11 +12140,13 @@ static enum ndr_err_code ndr_pull_netr_GetAnyDCName(struct ndr_pull *ndr, int fl
 			NDR_PULL_SET_MEM_CTX(ndr, *r->out.dcname, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, r->out.dcname));
 			NDR_CHECK(ndr_pull_array_length(ndr, r->out.dcname));
-			if (ndr_get_array_length(ndr, r->out.dcname) > ndr_get_array_size(ndr, r->out.dcname)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.dcname), ndr_get_array_length(ndr, r->out.dcname));
+			size_dcname_2 = ndr_get_array_size(ndr, r->out.dcname);
+			length_dcname_2 = ndr_get_array_length(ndr, r->out.dcname);
+			if (length_dcname_2 > size_dcname_2) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dcname_2, length_dcname_2);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.dcname), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.dcname, ndr_get_array_length(ndr, r->out.dcname), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_dcname_2, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.dcname, length_dcname_2, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dcname_1, 0);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dcname_0, LIBNDR_FLAG_REF_ALLOC);
@@ -11920,6 +12229,8 @@ static enum ndr_err_code ndr_push_netr_LogonControl2(struct ndr_push *ndr, int f
 static enum ndr_err_code ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int flags, struct netr_LogonControl2 *r)
 {
 	uint32_t _ptr_logon_server;
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
 	TALLOC_CTX *_mem_save_logon_server_0;
 	TALLOC_CTX *_mem_save_data_0;
 	TALLOC_CTX *_mem_save_query_0;
@@ -11937,11 +12248,13 @@ static enum ndr_err_code ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int f
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.logon_server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-			if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+			size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+			length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+			if (length_logon_server_1 > size_logon_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_LogonControlCode(ndr, NDR_SCALARS, &r->in.function_code));
@@ -12061,6 +12374,12 @@ static enum ndr_err_code ndr_push_netr_ServerAuthenticate2(struct ndr_push *ndr,
 static enum ndr_err_code ndr_pull_netr_ServerAuthenticate2(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate2 *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
 	TALLOC_CTX *_mem_save_return_credentials_0;
@@ -12079,28 +12398,34 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate2(struct ndr_pull *ndr,
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credentials);
 		}
@@ -12248,6 +12573,10 @@ static enum ndr_err_code ndr_push_netr_DatabaseSync2(struct ndr_push *ndr, int f
 
 static enum ndr_err_code ndr_pull_netr_DatabaseSync2(struct ndr_pull *ndr, int flags, struct netr_DatabaseSync2 *r)
 {
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
+	uint32_t size_computername_1 = 0;
+	uint32_t length_computername_1 = 0;
 	uint32_t _ptr_delta_enum_array;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -12259,18 +12588,22 @@ static enum ndr_err_code ndr_pull_netr_DatabaseSync2(struct ndr_pull *ndr, int f
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-		if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+		size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+		length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+		if (length_logon_server_1 > size_logon_server_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computername));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computername));
-		if (ndr_get_array_length(ndr, &r->in.computername) > ndr_get_array_size(ndr, &r->in.computername)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computername), ndr_get_array_length(ndr, &r->in.computername));
+		size_computername_1 = ndr_get_array_size(ndr, &r->in.computername);
+		length_computername_1 = ndr_get_array_length(ndr, &r->in.computername);
+		if (length_computername_1 > size_computername_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computername_1, length_computername_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computername_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, length_computername_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -12453,6 +12786,10 @@ static enum ndr_err_code ndr_push_netr_DatabaseRedo(struct ndr_push *ndr, int fl
 
 static enum ndr_err_code ndr_pull_netr_DatabaseRedo(struct ndr_pull *ndr, int flags, struct netr_DatabaseRedo *r)
 {
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
+	uint32_t size_computername_1 = 0;
+	uint32_t length_computername_1 = 0;
 	uint32_t _ptr_delta_enum_array;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -12463,18 +12800,22 @@ static enum ndr_err_code ndr_pull_netr_DatabaseRedo(struct ndr_pull *ndr, int fl
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-		if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+		size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+		length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+		if (length_logon_server_1 > size_logon_server_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computername));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computername));
-		if (ndr_get_array_length(ndr, &r->in.computername) > ndr_get_array_size(ndr, &r->in.computername)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computername), ndr_get_array_length(ndr, &r->in.computername));
+		size_computername_1 = ndr_get_array_size(ndr, &r->in.computername);
+		length_computername_1 = ndr_get_array_length(ndr, &r->in.computername);
+		if (length_computername_1 > size_computername_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computername_1, length_computername_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, ndr_get_array_length(ndr, &r->in.computername), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computername_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computername, length_computername_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -12616,6 +12957,8 @@ static enum ndr_err_code ndr_push_netr_LogonControl2Ex(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_netr_LogonControl2Ex(struct ndr_pull *ndr, int flags, struct netr_LogonControl2Ex *r)
 {
 	uint32_t _ptr_logon_server;
+	uint32_t size_logon_server_1 = 0;
+	uint32_t length_logon_server_1 = 0;
 	TALLOC_CTX *_mem_save_logon_server_0;
 	TALLOC_CTX *_mem_save_data_0;
 	TALLOC_CTX *_mem_save_query_0;
@@ -12633,11 +12976,13 @@ static enum ndr_err_code ndr_pull_netr_LogonControl2Ex(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.logon_server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.logon_server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.logon_server));
-			if (ndr_get_array_length(ndr, &r->in.logon_server) > ndr_get_array_size(ndr, &r->in.logon_server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.logon_server), ndr_get_array_length(ndr, &r->in.logon_server));
+			size_logon_server_1 = ndr_get_array_size(ndr, &r->in.logon_server);
+			length_logon_server_1 = ndr_get_array_length(ndr, &r->in.logon_server);
+			if (length_logon_server_1 > size_logon_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_logon_server_1, length_logon_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, ndr_get_array_length(ndr, &r->in.logon_server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_logon_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.logon_server, length_logon_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_LogonControlCode(ndr, NDR_SCALARS, &r->in.function_code));
@@ -12730,6 +13075,8 @@ static enum ndr_err_code ndr_push_netr_NetrEnumerateTrustedDomains(struct ndr_pu
 static enum ndr_err_code ndr_pull_netr_NetrEnumerateTrustedDomains(struct ndr_pull *ndr, int flags, struct netr_NetrEnumerateTrustedDomains *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_trusted_domains_blob_0;
 	if (flags & NDR_IN) {
@@ -12746,11 +13093,13 @@ static enum ndr_err_code ndr_pull_netr_NetrEnumerateTrustedDomains(struct ndr_pu
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_PULL_ALLOC(ndr, r->out.trusted_domains_blob);
@@ -12843,7 +13192,11 @@ static enum ndr_err_code ndr_push_netr_DsRGetDCName(struct ndr_push *ndr, int fl
 static enum ndr_err_code ndr_pull_netr_DsRGetDCName(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCName *r)
 {
 	uint32_t _ptr_server_unc;
+	uint32_t size_server_unc_1 = 0;
+	uint32_t length_server_unc_1 = 0;
 	uint32_t _ptr_domain_name;
+	uint32_t size_domain_name_1 = 0;
+	uint32_t length_domain_name_1 = 0;
 	uint32_t _ptr_domain_guid;
 	uint32_t _ptr_site_guid;
 	uint32_t _ptr_info;
@@ -12867,11 +13220,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCName(struct ndr_pull *ndr, int fl
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_unc, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_unc));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_unc));
-			if (ndr_get_array_length(ndr, &r->in.server_unc) > ndr_get_array_size(ndr, &r->in.server_unc)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_unc), ndr_get_array_length(ndr, &r->in.server_unc));
+			size_server_unc_1 = ndr_get_array_size(ndr, &r->in.server_unc);
+			length_server_unc_1 = ndr_get_array_length(ndr, &r->in.server_unc);
+			if (length_server_unc_1 > size_server_unc_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_unc_1, length_server_unc_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_unc), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_unc, ndr_get_array_length(ndr, &r->in.server_unc), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_unc_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_unc, length_server_unc_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_unc_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_name));
@@ -12885,11 +13240,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCName(struct ndr_pull *ndr, int fl
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domain_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domain_name));
-			if (ndr_get_array_length(ndr, &r->in.domain_name) > ndr_get_array_size(ndr, &r->in.domain_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domain_name), ndr_get_array_length(ndr, &r->in.domain_name));
+			size_domain_name_1 = ndr_get_array_size(ndr, &r->in.domain_name);
+			length_domain_name_1 = ndr_get_array_length(ndr, &r->in.domain_name);
+			if (length_domain_name_1 > size_domain_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_name_1, length_domain_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, length_domain_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_guid));
@@ -13043,7 +13400,11 @@ static enum ndr_err_code ndr_push_netr_LogonGetCapabilities(struct ndr_push *ndr
 
 static enum ndr_err_code ndr_pull_netr_LogonGetCapabilities(struct ndr_pull *ndr, int flags, struct netr_LogonGetCapabilities *r)
 {
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_computer_name;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_computer_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -13053,11 +13414,13 @@ static enum ndr_err_code ndr_pull_netr_LogonGetCapabilities(struct ndr_pull *ndr
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-		if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+		size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+		length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+		if (length_server_name_1 > size_server_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_computer_name));
 		if (_ptr_computer_name) {
 			NDR_PULL_ALLOC(ndr, r->in.computer_name);
@@ -13069,11 +13432,13 @@ static enum ndr_err_code ndr_pull_netr_LogonGetCapabilities(struct ndr_pull *ndr
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.computer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-			if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+			size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+			length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+			if (length_computer_name_1 > size_computer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -13238,7 +13603,11 @@ static enum ndr_err_code ndr_push_netr_LogonGetTrustRid(struct ndr_push *ndr, in
 static enum ndr_err_code ndr_pull_netr_LogonGetTrustRid(struct ndr_pull *ndr, int flags, struct netr_LogonGetTrustRid *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_domain_name;
+	uint32_t size_domain_name_1 = 0;
+	uint32_t length_domain_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_domain_name_0;
 	TALLOC_CTX *_mem_save_rid_0;
@@ -13256,11 +13625,13 @@ static enum ndr_err_code ndr_pull_netr_LogonGetTrustRid(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_name));
@@ -13274,11 +13645,13 @@ static enum ndr_err_code ndr_pull_netr_LogonGetTrustRid(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domain_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domain_name));
-			if (ndr_get_array_length(ndr, &r->in.domain_name) > ndr_get_array_size(ndr, &r->in.domain_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domain_name), ndr_get_array_length(ndr, &r->in.domain_name));
+			size_domain_name_1 = ndr_get_array_size(ndr, &r->in.domain_name);
+			length_domain_name_1 = ndr_get_array_length(ndr, &r->in.domain_name);
+			if (length_domain_name_1 > size_domain_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_name_1, length_domain_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, length_domain_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_0, 0);
 		}
 		NDR_PULL_ALLOC(ndr, r->out.rid);
@@ -13471,6 +13844,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_ServerAuthenticate3(struct ndr_push *nd
 _PUBLIC_ enum ndr_err_code ndr_pull_netr_ServerAuthenticate3(struct ndr_pull *ndr, int flags, struct netr_ServerAuthenticate3 *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
 	TALLOC_CTX *_mem_save_return_credentials_0;
@@ -13490,28 +13869,34 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_ServerAuthenticate3(struct ndr_pull *nd
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credentials);
 		}
@@ -13662,9 +14047,15 @@ static enum ndr_err_code ndr_push_netr_DsRGetDCNameEx(struct ndr_push *ndr, int 
 static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCNameEx *r)
 {
 	uint32_t _ptr_server_unc;
+	uint32_t size_server_unc_1 = 0;
+	uint32_t length_server_unc_1 = 0;
 	uint32_t _ptr_domain_name;
+	uint32_t size_domain_name_1 = 0;
+	uint32_t length_domain_name_1 = 0;
 	uint32_t _ptr_domain_guid;
 	uint32_t _ptr_site_name;
+	uint32_t size_site_name_1 = 0;
+	uint32_t length_site_name_1 = 0;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_domain_name_0;
@@ -13686,11 +14077,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_unc, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_unc));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_unc));
-			if (ndr_get_array_length(ndr, &r->in.server_unc) > ndr_get_array_size(ndr, &r->in.server_unc)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_unc), ndr_get_array_length(ndr, &r->in.server_unc));
+			size_server_unc_1 = ndr_get_array_size(ndr, &r->in.server_unc);
+			length_server_unc_1 = ndr_get_array_length(ndr, &r->in.server_unc);
+			if (length_server_unc_1 > size_server_unc_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_unc_1, length_server_unc_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_unc), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_unc, ndr_get_array_length(ndr, &r->in.server_unc), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_unc_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_unc, length_server_unc_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_unc_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_name));
@@ -13704,11 +14097,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domain_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domain_name));
-			if (ndr_get_array_length(ndr, &r->in.domain_name) > ndr_get_array_size(ndr, &r->in.domain_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domain_name), ndr_get_array_length(ndr, &r->in.domain_name));
+			size_domain_name_1 = ndr_get_array_size(ndr, &r->in.domain_name);
+			length_domain_name_1 = ndr_get_array_length(ndr, &r->in.domain_name);
+			if (length_domain_name_1 > size_domain_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_name_1, length_domain_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, length_domain_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_guid));
@@ -13734,11 +14129,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.site_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.site_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.site_name));
-			if (ndr_get_array_length(ndr, &r->in.site_name) > ndr_get_array_size(ndr, &r->in.site_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.site_name), ndr_get_array_length(ndr, &r->in.site_name));
+			size_site_name_1 = ndr_get_array_size(ndr, &r->in.site_name);
+			length_site_name_1 = ndr_get_array_length(ndr, &r->in.site_name);
+			if (length_site_name_1 > size_site_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_site_name_1, length_site_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.site_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.site_name, ndr_get_array_length(ndr, &r->in.site_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_site_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.site_name, length_site_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_site_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_DsRGetDCName_flags(ndr, NDR_SCALARS, &r->in.flags));
@@ -13854,7 +14251,11 @@ static enum ndr_err_code ndr_push_netr_DsRGetSiteName(struct ndr_push *ndr, int 
 static enum ndr_err_code ndr_pull_netr_DsRGetSiteName(struct ndr_pull *ndr, int flags, struct netr_DsRGetSiteName *r)
 {
 	uint32_t _ptr_computer_name;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	uint32_t _ptr_site;
+	uint32_t size_site_2 = 0;
+	uint32_t length_site_2 = 0;
 	TALLOC_CTX *_mem_save_computer_name_0;
 	TALLOC_CTX *_mem_save_site_0;
 	TALLOC_CTX *_mem_save_site_1;
@@ -13872,11 +14273,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetSiteName(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.computer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-			if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+			size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+			length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+			if (length_computer_name_1 > size_computer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		NDR_PULL_ALLOC(ndr, r->out.site);
@@ -13899,11 +14302,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetSiteName(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, *r->out.site, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, r->out.site));
 			NDR_CHECK(ndr_pull_array_length(ndr, r->out.site));
-			if (ndr_get_array_length(ndr, r->out.site) > ndr_get_array_size(ndr, r->out.site)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.site), ndr_get_array_length(ndr, r->out.site));
+			size_site_2 = ndr_get_array_size(ndr, r->out.site);
+			length_site_2 = ndr_get_array_length(ndr, r->out.site);
+			if (length_site_2 > size_site_2) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_site_2, length_site_2);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.site), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.site, ndr_get_array_length(ndr, r->out.site), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_site_2, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.site, length_site_2, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_site_1, 0);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_site_0, LIBNDR_FLAG_REF_ALLOC);
@@ -13997,7 +14402,11 @@ static enum ndr_err_code ndr_push_netr_LogonGetDomainInfo(struct ndr_push *ndr, 
 
 static enum ndr_err_code ndr_pull_netr_LogonGetDomainInfo(struct ndr_pull *ndr, int flags, struct netr_LogonGetDomainInfo *r)
 {
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_computer_name;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_computer_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -14008,11 +14417,13 @@ static enum ndr_err_code ndr_pull_netr_LogonGetDomainInfo(struct ndr_pull *ndr, 
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-		if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+		size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+		length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+		if (length_server_name_1 > size_server_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_computer_name));
 		if (_ptr_computer_name) {
 			NDR_PULL_ALLOC(ndr, r->in.computer_name);
@@ -14024,11 +14435,13 @@ static enum ndr_err_code ndr_pull_netr_LogonGetDomainInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.computer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-			if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+			size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+			length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+			if (length_computer_name_1 > size_computer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -14181,6 +14594,12 @@ static enum ndr_err_code ndr_push_netr_ServerPasswordSet2(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_netr_ServerPasswordSet2(struct ndr_pull *ndr, int flags, struct netr_ServerPasswordSet2 *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -14199,28 +14618,34 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordSet2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -14346,6 +14771,12 @@ static enum ndr_err_code ndr_push_netr_ServerPasswordGet(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_netr_ServerPasswordGet(struct ndr_pull *ndr, int flags, struct netr_ServerPasswordGet *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -14364,28 +14795,34 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordGet(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -14546,6 +14983,9 @@ static enum ndr_err_code ndr_push_netr_DsRAddressToSitenamesW(struct ndr_push *n
 static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesW(struct ndr_pull *ndr, int flags, struct netr_DsRAddressToSitenamesW *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_addresses_1 = 0;
 	uint32_t cntr_addresses_1;
 	uint32_t _ptr_ctr;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -14566,11 +15006,13 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesW(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
@@ -14578,15 +15020,16 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesW(struct ndr_pull *n
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.addresses));
+		size_addresses_1 = ndr_get_array_size(ndr, &r->in.addresses);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->in.addresses, ndr_get_array_size(ndr, &r->in.addresses));
+			NDR_PULL_ALLOC_N(ndr, r->in.addresses, size_addresses_1);
 		}
 		_mem_save_addresses_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.addresses, 0);
-		for (cntr_addresses_1 = 0; cntr_addresses_1 < r->in.count; cntr_addresses_1++) {
+		for (cntr_addresses_1 = 0; cntr_addresses_1 < size_addresses_1; cntr_addresses_1++) {
 			NDR_CHECK(ndr_pull_netr_DsRAddress(ndr, NDR_SCALARS, &r->in.addresses[cntr_addresses_1]));
 		}
-		for (cntr_addresses_1 = 0; cntr_addresses_1 < r->in.count; cntr_addresses_1++) {
+		for (cntr_addresses_1 = 0; cntr_addresses_1 < size_addresses_1; cntr_addresses_1++) {
 			NDR_CHECK(ndr_pull_netr_DsRAddress(ndr, NDR_BUFFERS, &r->in.addresses[cntr_addresses_1]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_addresses_1, 0);
@@ -14725,10 +15168,18 @@ static enum ndr_err_code ndr_push_netr_DsRGetDCNameEx2(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int flags, struct netr_DsRGetDCNameEx2 *r)
 {
 	uint32_t _ptr_server_unc;
+	uint32_t size_server_unc_1 = 0;
+	uint32_t length_server_unc_1 = 0;
 	uint32_t _ptr_client_account;
+	uint32_t size_client_account_1 = 0;
+	uint32_t length_client_account_1 = 0;
 	uint32_t _ptr_domain_name;
+	uint32_t size_domain_name_1 = 0;
+	uint32_t length_domain_name_1 = 0;
 	uint32_t _ptr_domain_guid;
 	uint32_t _ptr_site_name;
+	uint32_t size_site_name_1 = 0;
+	uint32_t length_site_name_1 = 0;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_client_account_0;
@@ -14751,11 +15202,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_unc, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_unc));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_unc));
-			if (ndr_get_array_length(ndr, &r->in.server_unc) > ndr_get_array_size(ndr, &r->in.server_unc)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_unc), ndr_get_array_length(ndr, &r->in.server_unc));
+			size_server_unc_1 = ndr_get_array_size(ndr, &r->in.server_unc);
+			length_server_unc_1 = ndr_get_array_length(ndr, &r->in.server_unc);
+			if (length_server_unc_1 > size_server_unc_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_unc_1, length_server_unc_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_unc), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_unc, ndr_get_array_length(ndr, &r->in.server_unc), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_unc_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_unc, length_server_unc_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_unc_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_client_account));
@@ -14769,11 +15222,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.client_account, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.client_account));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.client_account));
-			if (ndr_get_array_length(ndr, &r->in.client_account) > ndr_get_array_size(ndr, &r->in.client_account)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.client_account), ndr_get_array_length(ndr, &r->in.client_account));
+			size_client_account_1 = ndr_get_array_size(ndr, &r->in.client_account);
+			length_client_account_1 = ndr_get_array_length(ndr, &r->in.client_account);
+			if (length_client_account_1 > size_client_account_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_client_account_1, length_client_account_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.client_account), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.client_account, ndr_get_array_length(ndr, &r->in.client_account), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_client_account_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.client_account, length_client_account_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_client_account_0, 0);
 		}
 		NDR_CHECK(ndr_pull_samr_AcctFlags(ndr, NDR_SCALARS, &r->in.mask));
@@ -14788,11 +15243,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domain_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domain_name));
-			if (ndr_get_array_length(ndr, &r->in.domain_name) > ndr_get_array_size(ndr, &r->in.domain_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domain_name), ndr_get_array_length(ndr, &r->in.domain_name));
+			size_domain_name_1 = ndr_get_array_size(ndr, &r->in.domain_name);
+			length_domain_name_1 = ndr_get_array_length(ndr, &r->in.domain_name);
+			if (length_domain_name_1 > size_domain_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_name_1, length_domain_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, length_domain_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_guid));
@@ -14818,11 +15275,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.site_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.site_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.site_name));
-			if (ndr_get_array_length(ndr, &r->in.site_name) > ndr_get_array_size(ndr, &r->in.site_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.site_name), ndr_get_array_length(ndr, &r->in.site_name));
+			size_site_name_1 = ndr_get_array_size(ndr, &r->in.site_name);
+			length_site_name_1 = ndr_get_array_length(ndr, &r->in.site_name);
+			if (length_site_name_1 > size_site_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_site_name_1, length_site_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.site_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.site_name, ndr_get_array_length(ndr, &r->in.site_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_site_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.site_name, length_site_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_site_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_DsRGetDCName_flags(ndr, NDR_SCALARS, &r->in.flags));
@@ -14980,6 +15439,8 @@ static enum ndr_err_code ndr_push_netr_NetrEnumerateTrustedDomainsEx(struct ndr_
 static enum ndr_err_code ndr_pull_netr_NetrEnumerateTrustedDomainsEx(struct ndr_pull *ndr, int flags, struct netr_NetrEnumerateTrustedDomainsEx *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_dom_trust_list_0;
 	if (flags & NDR_IN) {
@@ -14996,11 +15457,13 @@ static enum ndr_err_code ndr_pull_netr_NetrEnumerateTrustedDomainsEx(struct ndr_
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_PULL_ALLOC(ndr, r->out.dom_trust_list);
@@ -15089,6 +15552,9 @@ static enum ndr_err_code ndr_push_netr_DsRAddressToSitenamesExW(struct ndr_push 
 static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesExW(struct ndr_pull *ndr, int flags, struct netr_DsRAddressToSitenamesExW *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_addresses_1 = 0;
 	uint32_t cntr_addresses_1;
 	uint32_t _ptr_ctr;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -15109,11 +15575,13 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesExW(struct ndr_pull 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
@@ -15121,15 +15589,16 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesExW(struct ndr_pull 
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.addresses));
+		size_addresses_1 = ndr_get_array_size(ndr, &r->in.addresses);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->in.addresses, ndr_get_array_size(ndr, &r->in.addresses));
+			NDR_PULL_ALLOC_N(ndr, r->in.addresses, size_addresses_1);
 		}
 		_mem_save_addresses_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.addresses, 0);
-		for (cntr_addresses_1 = 0; cntr_addresses_1 < r->in.count; cntr_addresses_1++) {
+		for (cntr_addresses_1 = 0; cntr_addresses_1 < size_addresses_1; cntr_addresses_1++) {
 			NDR_CHECK(ndr_pull_netr_DsRAddress(ndr, NDR_SCALARS, &r->in.addresses[cntr_addresses_1]));
 		}
-		for (cntr_addresses_1 = 0; cntr_addresses_1 < r->in.count; cntr_addresses_1++) {
+		for (cntr_addresses_1 = 0; cntr_addresses_1 < size_addresses_1; cntr_addresses_1++) {
 			NDR_CHECK(ndr_pull_netr_DsRAddress(ndr, NDR_BUFFERS, &r->in.addresses[cntr_addresses_1]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_addresses_1, 0);
@@ -15241,6 +15710,8 @@ static enum ndr_err_code ndr_push_netr_DsrGetDcSiteCoverageW(struct ndr_push *nd
 static enum ndr_err_code ndr_pull_netr_DsrGetDcSiteCoverageW(struct ndr_pull *ndr, int flags, struct netr_DsrGetDcSiteCoverageW *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_ctr;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_ctr_0;
@@ -15259,11 +15730,13 @@ static enum ndr_err_code ndr_pull_netr_DsrGetDcSiteCoverageW(struct ndr_pull *nd
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_PULL_ALLOC(ndr, r->out.ctr);
@@ -15380,7 +15853,11 @@ static enum ndr_err_code ndr_push_netr_LogonSamLogonEx(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogonEx *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_computer_name;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_computer_name_0;
 	TALLOC_CTX *_mem_save_logon_0;
@@ -15401,11 +15878,13 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_computer_name));
@@ -15419,11 +15898,13 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.computer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-			if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+			size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+			length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+			if (length_computer_name_1 > size_computer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_LogonInfoClass(ndr, NDR_SCALARS, &r->in.logon_level));
@@ -15560,6 +16041,8 @@ static enum ndr_err_code ndr_push_netr_DsrEnumerateDomainTrusts(struct ndr_push 
 static enum ndr_err_code ndr_pull_netr_DsrEnumerateDomainTrusts(struct ndr_pull *ndr, int flags, struct netr_DsrEnumerateDomainTrusts *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_trusts_0;
 	if (flags & NDR_IN) {
@@ -15576,11 +16059,13 @@ static enum ndr_err_code ndr_pull_netr_DsrEnumerateDomainTrusts(struct ndr_pull 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_netr_TrustFlags(ndr, NDR_SCALARS, &r->in.trust_flags));
@@ -15674,9 +16159,15 @@ static enum ndr_err_code ndr_push_netr_DsrDeregisterDNSHostRecords(struct ndr_pu
 static enum ndr_err_code ndr_pull_netr_DsrDeregisterDNSHostRecords(struct ndr_pull *ndr, int flags, struct netr_DsrDeregisterDNSHostRecords *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_domain;
+	uint32_t size_domain_1 = 0;
+	uint32_t length_domain_1 = 0;
 	uint32_t _ptr_domain_guid;
 	uint32_t _ptr_dsa_guid;
+	uint32_t size_dns_host_1 = 0;
+	uint32_t length_dns_host_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_domain_0;
 	TALLOC_CTX *_mem_save_domain_guid_0;
@@ -15693,11 +16184,13 @@ static enum ndr_err_code ndr_pull_netr_DsrDeregisterDNSHostRecords(struct ndr_pu
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
@@ -15711,11 +16204,13 @@ static enum ndr_err_code ndr_pull_netr_DsrDeregisterDNSHostRecords(struct ndr_pu
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domain));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domain));
-			if (ndr_get_array_length(ndr, &r->in.domain) > ndr_get_array_size(ndr, &r->in.domain)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domain), ndr_get_array_length(ndr, &r->in.domain));
+			size_domain_1 = ndr_get_array_size(ndr, &r->in.domain);
+			length_domain_1 = ndr_get_array_length(ndr, &r->in.domain);
+			if (length_domain_1 > size_domain_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_domain_1, length_domain_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domain), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain, ndr_get_array_length(ndr, &r->in.domain), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_domain_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain, length_domain_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_guid));
@@ -15744,11 +16239,13 @@ static enum ndr_err_code ndr_pull_netr_DsrDeregisterDNSHostRecords(struct ndr_pu
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.dns_host));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.dns_host));
-		if (ndr_get_array_length(ndr, &r->in.dns_host) > ndr_get_array_size(ndr, &r->in.dns_host)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.dns_host), ndr_get_array_length(ndr, &r->in.dns_host));
+		size_dns_host_1 = ndr_get_array_size(ndr, &r->in.dns_host);
+		length_dns_host_1 = ndr_get_array_length(ndr, &r->in.dns_host);
+		if (length_dns_host_1 > size_dns_host_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_dns_host_1, length_dns_host_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.dns_host), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.dns_host, ndr_get_array_length(ndr, &r->in.dns_host), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_dns_host_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.dns_host, length_dns_host_1, sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -15856,6 +16353,12 @@ static enum ndr_err_code ndr_push_netr_ServerTrustPasswordsGet(struct ndr_push *
 static enum ndr_err_code ndr_pull_netr_ServerTrustPasswordsGet(struct ndr_pull *ndr, int flags, struct netr_ServerTrustPasswordsGet *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
@@ -15875,28 +16378,34 @@ static enum ndr_err_code ndr_pull_netr_ServerTrustPasswordsGet(struct ndr_pull *
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -16025,7 +16534,11 @@ static enum ndr_err_code ndr_push_netr_DsRGetForestTrustInformation(struct ndr_p
 static enum ndr_err_code ndr_pull_netr_DsRGetForestTrustInformation(struct ndr_pull *ndr, int flags, struct netr_DsRGetForestTrustInformation *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_trusted_domain_name;
+	uint32_t size_trusted_domain_name_1 = 0;
+	uint32_t length_trusted_domain_name_1 = 0;
 	uint32_t _ptr_forest_trust_info;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_trusted_domain_name_0;
@@ -16045,11 +16558,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetForestTrustInformation(struct ndr_p
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_trusted_domain_name));
@@ -16063,11 +16578,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetForestTrustInformation(struct ndr_p
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.trusted_domain_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.trusted_domain_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.trusted_domain_name));
-			if (ndr_get_array_length(ndr, &r->in.trusted_domain_name) > ndr_get_array_size(ndr, &r->in.trusted_domain_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.trusted_domain_name), ndr_get_array_length(ndr, &r->in.trusted_domain_name));
+			size_trusted_domain_name_1 = ndr_get_array_size(ndr, &r->in.trusted_domain_name);
+			length_trusted_domain_name_1 = ndr_get_array_length(ndr, &r->in.trusted_domain_name);
+			if (length_trusted_domain_name_1 > size_trusted_domain_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_trusted_domain_name_1, length_trusted_domain_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.trusted_domain_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.trusted_domain_name, ndr_get_array_length(ndr, &r->in.trusted_domain_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_trusted_domain_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.trusted_domain_name, length_trusted_domain_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_domain_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
@@ -16184,6 +16701,10 @@ static enum ndr_err_code ndr_push_netr_GetForestTrustInformation(struct ndr_push
 static enum ndr_err_code ndr_pull_netr_GetForestTrustInformation(struct ndr_pull *ndr, int flags, struct netr_GetForestTrustInformation *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_trusted_domain_name_1 = 0;
+	uint32_t length_trusted_domain_name_1 = 0;
 	uint32_t _ptr_forest_trust_info;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
@@ -16204,20 +16725,24 @@ static enum ndr_err_code ndr_pull_netr_GetForestTrustInformation(struct ndr_pull
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.trusted_domain_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.trusted_domain_name));
-		if (ndr_get_array_length(ndr, &r->in.trusted_domain_name) > ndr_get_array_size(ndr, &r->in.trusted_domain_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.trusted_domain_name), ndr_get_array_length(ndr, &r->in.trusted_domain_name));
+		size_trusted_domain_name_1 = ndr_get_array_size(ndr, &r->in.trusted_domain_name);
+		length_trusted_domain_name_1 = ndr_get_array_length(ndr, &r->in.trusted_domain_name);
+		if (length_trusted_domain_name_1 > size_trusted_domain_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_trusted_domain_name_1, length_trusted_domain_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.trusted_domain_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.trusted_domain_name, ndr_get_array_length(ndr, &r->in.trusted_domain_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_trusted_domain_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.trusted_domain_name, length_trusted_domain_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}
@@ -16374,7 +16899,11 @@ static enum ndr_err_code ndr_push_netr_LogonSamLogonWithFlags(struct ndr_push *n
 static enum ndr_err_code ndr_pull_netr_LogonSamLogonWithFlags(struct ndr_pull *ndr, int flags, struct netr_LogonSamLogonWithFlags *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	uint32_t _ptr_computer_name;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	uint32_t _ptr_credential;
 	uint32_t _ptr_return_authenticator;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -16399,11 +16928,13 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogonWithFlags(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_computer_name));
@@ -16417,11 +16948,13 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogonWithFlags(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.computer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-			if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+			size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+			length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+			if (length_computer_name_1 > size_computer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_credential));
@@ -16645,6 +17178,12 @@ static enum ndr_err_code ndr_push_netr_ServerGetTrustInfo(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_netr_ServerGetTrustInfo(struct ndr_pull *ndr, int flags, struct netr_ServerGetTrustInfo *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_account_name_1 = 0;
+	uint32_t length_account_name_1 = 0;
+	uint32_t size_computer_name_1 = 0;
+	uint32_t length_computer_name_1 = 0;
 	uint32_t _ptr_trust_info;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
@@ -16667,28 +17206,34 @@ static enum ndr_err_code ndr_pull_netr_ServerGetTrustInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
-		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		size_account_name_1 = ndr_get_array_size(ndr, &r->in.account_name);
+		length_account_name_1 = ndr_get_array_length(ndr, &r->in.account_name);
+		if (length_account_name_1 > size_account_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_account_name_1, length_account_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_account_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, length_account_name_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
-		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		size_computer_name_1 = ndr_get_array_size(ndr, &r->in.computer_name);
+		length_computer_name_1 = ndr_get_array_length(ndr, &r->in.computer_name);
+		if (length_computer_name_1 > size_computer_name_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_computer_name_1, length_computer_name_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_computer_name_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, length_computer_name_1, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.credential);
 		}

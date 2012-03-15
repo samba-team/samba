@@ -461,6 +461,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_xattr_DosEAs(struct ndr_push *ndr, int ndr_f
 _PUBLIC_ enum ndr_err_code ndr_pull_xattr_DosEAs(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosEAs *r)
 {
 	uint32_t _ptr_eas;
+	uint32_t size_eas_1 = 0;
 	uint32_t cntr_eas_1;
 	TALLOC_CTX *_mem_save_eas_0;
 	TALLOC_CTX *_mem_save_eas_1;
@@ -480,10 +481,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_xattr_DosEAs(struct ndr_pull *ndr, int ndr_f
 			_mem_save_eas_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->eas, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->eas));
-			NDR_PULL_ALLOC_N(ndr, r->eas, ndr_get_array_size(ndr, &r->eas));
+			size_eas_1 = ndr_get_array_size(ndr, &r->eas);
+			NDR_PULL_ALLOC_N(ndr, r->eas, size_eas_1);
 			_mem_save_eas_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->eas, 0);
-			for (cntr_eas_1 = 0; cntr_eas_1 < r->num_eas; cntr_eas_1++) {
+			for (cntr_eas_1 = 0; cntr_eas_1 < size_eas_1; cntr_eas_1++) {
 				NDR_CHECK(ndr_pull_xattr_EA(ndr, NDR_SCALARS, &r->eas[cntr_eas_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_eas_1, 0);
@@ -538,15 +540,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_tdb_xattrs(struct ndr_push *ndr, int ndr_fla
 
 _PUBLIC_ enum ndr_err_code ndr_pull_tdb_xattrs(struct ndr_pull *ndr, int ndr_flags, struct tdb_xattrs *r)
 {
+	uint32_t size_eas_0 = 0;
 	uint32_t cntr_eas_0;
 	TALLOC_CTX *_mem_save_eas_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_eas));
-		NDR_PULL_ALLOC_N(ndr, r->eas, r->num_eas);
+		size_eas_0 = r->num_eas;
+		NDR_PULL_ALLOC_N(ndr, r->eas, size_eas_0);
 		_mem_save_eas_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->eas, 0);
-		for (cntr_eas_0 = 0; cntr_eas_0 < r->num_eas; cntr_eas_0++) {
+		for (cntr_eas_0 = 0; cntr_eas_0 < size_eas_0; cntr_eas_0++) {
 			NDR_CHECK(ndr_pull_xattr_EA(ndr, NDR_SCALARS, &r->eas[cntr_eas_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_eas_0, 0);
@@ -650,6 +654,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_xattr_DosStreams(struct ndr_push *ndr, int n
 _PUBLIC_ enum ndr_err_code ndr_pull_xattr_DosStreams(struct ndr_pull *ndr, int ndr_flags, struct xattr_DosStreams *r)
 {
 	uint32_t _ptr_streams;
+	uint32_t size_streams_1 = 0;
 	uint32_t cntr_streams_1;
 	TALLOC_CTX *_mem_save_streams_0;
 	TALLOC_CTX *_mem_save_streams_1;
@@ -669,10 +674,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_xattr_DosStreams(struct ndr_pull *ndr, int n
 			_mem_save_streams_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->streams, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->streams));
-			NDR_PULL_ALLOC_N(ndr, r->streams, ndr_get_array_size(ndr, &r->streams));
+			size_streams_1 = ndr_get_array_size(ndr, &r->streams);
+			NDR_PULL_ALLOC_N(ndr, r->streams, size_streams_1);
 			_mem_save_streams_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->streams, 0);
-			for (cntr_streams_1 = 0; cntr_streams_1 < r->num_streams; cntr_streams_1++) {
+			for (cntr_streams_1 = 0; cntr_streams_1 < size_streams_1; cntr_streams_1++) {
 				NDR_CHECK(ndr_pull_xattr_DosStream(ndr, NDR_SCALARS, &r->streams[cntr_streams_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_streams_1, 0);
@@ -729,6 +735,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_hash_v2(struct ndr_pull 
 {
 	uint32_t _ptr_sd;
 	TALLOC_CTX *_mem_save_sd_0;
+	uint32_t size_hash_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd));
@@ -737,7 +744,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_hash_v2(struct ndr_pull 
 		} else {
 			r->sd = NULL;
 		}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, 16));
+		size_hash_0 = 16;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, size_hash_0));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -786,6 +794,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_hash_v3(struct ndr_pull 
 {
 	uint32_t _ptr_sd;
 	TALLOC_CTX *_mem_save_sd_0;
+	uint32_t size_hash_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd));
@@ -795,7 +804,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_hash_v3(struct ndr_pull 
 			r->sd = NULL;
 		}
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->hash_type));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, 64));
+		size_hash_0 = 64;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, size_hash_0));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -880,8 +890,11 @@ static enum ndr_err_code ndr_pull_xattr_NTACL_Info(struct ndr_pull *ndr, int ndr
 	int level;
 	uint16_t _level;
 	TALLOC_CTX *_mem_save_sd_0;
+	uint32_t _ptr_sd;
 	TALLOC_CTX *_mem_save_sd_hs2_0;
+	uint32_t _ptr_sd_hs2;
 	TALLOC_CTX *_mem_save_sd_hs3_0;
+	uint32_t _ptr_sd_hs3;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
@@ -891,7 +904,6 @@ static enum ndr_err_code ndr_pull_xattr_NTACL_Info(struct ndr_pull *ndr, int ndr
 		NDR_CHECK(ndr_pull_union_align(ndr, 5));
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_sd;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd));
 				if (_ptr_sd) {
 					NDR_PULL_ALLOC(ndr, r->sd);
@@ -901,7 +913,6 @@ static enum ndr_err_code ndr_pull_xattr_NTACL_Info(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case 2: {
-				uint32_t _ptr_sd_hs2;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd_hs2));
 				if (_ptr_sd_hs2) {
 					NDR_PULL_ALLOC(ndr, r->sd_hs2);
@@ -911,7 +922,6 @@ static enum ndr_err_code ndr_pull_xattr_NTACL_Info(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case 3: {
-				uint32_t _ptr_sd_hs3;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd_hs3));
 				if (_ptr_sd_hs3) {
 					NDR_PULL_ALLOC(ndr, r->sd_hs3);

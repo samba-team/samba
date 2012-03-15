@@ -32,13 +32,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_TRUSTED_DOM_PASS(struct ndr_push *ndr, int n
 
 _PUBLIC_ enum ndr_err_code ndr_pull_TRUSTED_DOM_PASS(struct ndr_pull *ndr, int ndr_flags, struct TRUSTED_DOM_PASS *r)
 {
+	uint32_t size_uni_name_0 = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 4));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->uni_name_len));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->uni_name, 32, sizeof(uint16_t), CH_UTF16));
+			size_uni_name_0 = 32;
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->uni_name, size_uni_name_0, sizeof(uint16_t), CH_UTF16));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pass_len));
 			{
 				uint32_t _flags_save_string = ndr->flags;

@@ -21,13 +21,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, co
 
 _PUBLIC_ enum ndr_err_code ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, struct GUID *r)
 {
+	uint32_t size_clock_seq_0 = 0;
+	uint32_t size_node_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->time_low));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->time_mid));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->time_hi_and_version));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->clock_seq, 2));
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->node, 6));
+		size_clock_seq_0 = 2;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->clock_seq, size_clock_seq_0));
+		size_node_0 = 6;
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->node, size_node_0));
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
