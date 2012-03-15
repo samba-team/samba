@@ -156,6 +156,9 @@ def set_options(opt):
     opt.add_option('--host',
 		   help=SUPPRESS_HELP,
 		   action='store', dest='AUTOCONF_HOST', default='')
+    opt.add_option('--target',
+		   help=SUPPRESS_HELP,
+		   action='store', dest='AUTOCONF_TARGET', default='')
     opt.add_option('--program-prefix',
 		   help=SUPPRESS_HELP,
 		   action='store', dest='AUTOCONF_PROGRAM_PREFIX', default='')
