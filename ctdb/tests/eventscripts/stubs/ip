@@ -220,9 +220,131 @@ ip_addr_del ()
 
 ######################################################################
 
+ip_rule ()
+{
+    case "$2" in
+	show|list|"") ip_rule_show "$@" ;;
+	add*)         ip_rule_add  "$@" ;;
+	del*)         ip_rule_del  "$@" ;;
+	*) not_implemented "$2 in \"$*\"" ;;
+    esac
+
+}
+
+# All non-default rules are in $FAKE_IP_STATE_RULES/rules.  As with
+# the real version, rules can be repeated.  Deleting just deletes the
+# 1st match.
+
+ip_rule_show ()
+{
+    ip_rule_show_1 ()
+    {
+	_pre="$1"
+	_table="$2"
+	_selectors="$3"
+	# potentially more options
+
+	printf "%d:\t%s lookup %s \n" $_pre "$_selectors" "$_table"
+    }
+
+    ip_rule_show_some ()
+    {
+	_min="$1"
+	_max="$2"
+
+	[ -f "${FAKE_IP_STATE}/rules" ] || return
+
+	while read _pre _table _selectors ; do
+	    # Only print those in range
+	    [ $_min -le $_pre -a $_pre -le $_max ] || continue
+
+	    ip_rule_show_1 $_pre "$_table" "$_selectors"
+	done <"${FAKE_IP_STATE}/rules"
+    }
+
+    ip_rule_show_1 0 "local" "from all"
+
+    ip_rule_show_some 1 32765
+
+    ip_rule_show_1 32766 "main" "from all"
+    ip_rule_show_1 32767 "default" "from all"
+
+    ip_rule_show_some 32768 2147483648
+}
+
+ip_rule_common ()
+{
+    _args="$*"
+
+    shift 2
+    _from=""
+    _pre=""
+    _table=""
+    while [ -n "$1" ] ; do
+	case "$1" in
+	    from)  _from="$2"  ; shift 2 ;;
+	    pref)  _pre="$2"   ; shift 2 ;;
+	    table) _table="$2" ; shift 2 ;;
+	    *) not_implemented "$1 in \"$_args\"" ;;
+	esac
+    done
+
+    [ -n "$_pre" ]   || not_implemented "ip rule without \"pref\""
+    [ -n "$_table" ] || not_implemented "ip rule without \"table\""
+    # Relax this if more selectors added later...
+    [ -n "$_from" ]  || not_implemented "ip rule without \"from\""
+}
+
+ip_rule_add ()
+{
+    ip_rule_common "$@"
+
+    _f="${FAKE_IP_STATE}/rules"
+    touch "$_f"
+    (
+	flock 0
+	# Filter order must be consistent with the comparison in ip_rule_del()
+	echo "$_pre $_table${_from:+ from }$_from" >>"$_f"
+    ) <"$_f"
+}
+
+ip_rule_del ()
+{
+    ip_rule_common "$@"
+
+    _f="${FAKE_IP_STATE}/rules"
+    touch "$_f"
+    (
+	flock 0
+	_tmp="$(mktemp)"
+	_found=false
+	while read _p _t _s ; do
+	    if ! $_found && \
+		[ "$_p" = "$_pre" -a "$_t" = "$_table" -a \
+		"$_s" = "${_from:+from }$_from" ] ; then
+		# Found.  Skip this one but not future ones.
+		_found=true
+	    else
+		echo "$_p $_t $_s" >>"$_tmp"
+	    fi
+	done
+	if cmp -s "$_tmp" "$_f" ; then
+	    # No changes, must not have found what we wanted to delete
+	    echo "RTNETLINK answers: No such file or directory"
+	    rm -f "$_tmp"
+	    exit 2
+	else
+	    mv "$_tmp" "$_f"
+	fi
+    ) <"$_f" || exit $?
+}
+
+######################################################################
+
 case "$1" in
     link)   ip_link "$@" ;;
     addr*)  ip_addr "$@" ;;
+    rule)   ip_rule "$@" ;;
     *) not_implemented "$1" ;;
 esac
 
