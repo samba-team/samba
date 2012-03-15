@@ -1845,8 +1845,6 @@ sub ParseUnionPullPrimitives($$$$$)
 
 		if ($el->{TYPE} ne "EMPTY") {
 			$self->indent;
-			$self->DeclarePtrVariables($el);
-			$self->DeclareArrayVariables($el);
 			if (defined($e->{PROPERTIES}{relative_base})) {
 				$self->pidl("NDR_CHECK(ndr_pull_align($ndr, $el->{ALIGN}));");
 				# set the current offset as base for relative pointers
@@ -1923,6 +1921,8 @@ sub ParseUnionPull($$$$)
 		next if ($el->{TYPE} eq "EMPTY");
 		next if ($double_cases{"$el->{NAME}"});
 		$self->DeclareMemCtxVariables($el);
+		$self->DeclarePtrVariables($el);
+		$self->DeclareArrayVariables($el);
 		$double_cases{"$el->{NAME}"} = 1;
 	}
 
