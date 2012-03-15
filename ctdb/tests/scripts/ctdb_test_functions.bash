@@ -720,10 +720,9 @@ daemons_setup ()
 
     mkdir -p $var_dir/test.db/persistent
 
-    local nodes=$var_dir/nodes.txt
     local public_addresses=$var_dir/public_addresses.txt
     local no_public_addresses=$var_dir/no_public_addresses.txt
-    rm -f $nodes $public_addresses $no_public_addresses
+    rm -f $CTDB_NODES $public_addresses $no_public_addresses
 
     # If there are (strictly) greater than 2 nodes then we'll randomly
     # choose a node to have no public addresses.
@@ -737,7 +736,7 @@ daemons_setup ()
 	    echo ::$i >> $nodes
 	    ip addr add ::$i/128 dev lo
 	else
-	    echo 127.0.0.$i >> $nodes
+	    echo 127.0.0.$i >> $CTDB_NODES
 	    # 2 public addresses on most nodes, just to make things interesting.
 	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
 		echo "192.0.2.$i/24 lo" >> $public_addresses
@@ -754,7 +753,6 @@ daemons_start_1 ()
 
     local var_dir=$CTDB_DIR/tests/var
 
-    local nodes=$var_dir/nodes.txt
     local public_addresses=$var_dir/public_addresses.txt
     local no_public_addresses=$var_dir/no_public_addresses.txt
 
@@ -765,7 +763,7 @@ daemons_start_1 ()
 	echo "Node $no_public_ips will have no public IPs."
     fi
 
-    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $nodes --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent --dbdir-state=$var_dir/test.db/state"
+    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $CTDB_NODES --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent --dbdir-state=$var_dir/test.db/state"
 
     if [ $(id -u) -eq 0 ]; then
         ctdb_options="$ctdb_options --public-interface=lo"

@@ -54,15 +54,15 @@ try_command_on_node $test_node $CTDB shutdown
 
 wait_until_node_has_status $test_node disconnected 30 0
 
-pat="ctdb_control error: 'ctdb_control to disconnected node'|ctdb_control error: 'node is disconnected'|Node $test_node is DISCONNECTED"
+pat="ctdb_control error: 'ctdb_control to disconnected node'|ctdb_control error: 'node is disconnected'|Node $test_node is DISCONNECTED|Node $test_node has status DISCONNECTED\|UNHEALTHY\|INACTIVE"
 
 for i in ip disable enable "ban 0" unban listvars ; do
     try_command_on_node -v 0 ! $CTDB $i -n $test_node
 
     if egrep -q "$pat" <<<"$out" ; then
-	echo "OK: \"ctdb ${i}\" fails with \"disconnected node\""
+	echo "OK: \"ctdb ${i}\" fails with expected \"disconnected node\" message"
     else
-	echo "BAD: \"ctdb ${i}\" does not fail with \"disconnected node\""
+	echo "BAD: \"ctdb ${i}\" does not fail with expected \"disconnected node\" message"
 	exit 1
     fi
 done

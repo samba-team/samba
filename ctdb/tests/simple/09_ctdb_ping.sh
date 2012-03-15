@@ -53,5 +53,5 @@ try_command_on_node -v 0 "! $CTDB ping -n 1"
 
 sanity_check_output \
     1 \
-    "(: ctdb_control error: ('ctdb_control to disconnected node'|'node is disconnected')|Unable to get ping response from node 1|Node 1 is DISCONNECTED|ctdb_control for getpnn failed|: Can not access node. Node is not operational\.)" \
+    "(: ctdb_control error: ('ctdb_control to disconnected node'|'node is disconnected')|Unable to get ping response from node 1|Node 1 is DISCONNECTED|ctdb_control for getpnn failed|: Can not access node. Node is not operational\.|Node 1 has status DISCONNECTED\|UNHEALTHY\|INACTIVE$)" \
     "$out"

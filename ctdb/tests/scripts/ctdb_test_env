@@ -32,6 +32,8 @@ if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
     done
 
     PATH="${CTDB_DIR}/bin:${CTDB_DIR}/tests/bin:${PATH}"
+
+    export CTDB_NODES="$var_dir/nodes.txt"
 fi
 
 # If $VALGRIND is set then use it whenever ctdb is called, but only if
