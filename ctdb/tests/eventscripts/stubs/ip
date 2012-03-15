@@ -341,10 +341,114 @@ ip_rule_del ()
 
 ######################################################################
 
+ip_route ()
+{
+    case "$2" in
+	show|list)    ip_route_show  "$@" ;;
+	flush)        ip_route_flush "$@" ;;
+	add)          ip_route_add   "$@" ;;
+	*) not_implemented "$2 in \"$*\"" ;;
+    esac
+}
+
+ip_route_check_table ()
+{
+    [ -n "$_table" ] || not_implemented "ip rule without \"table\""
+
+    # Only allow tables names from 13.per_ip_routing.  This is a cheap
+    # way of avoiding implementing the default/main/local tables.
+    case "$_table" in
+	ctdb.*) : ;;
+	*) not_implemented "table=${_table} in ${_args}" ;;
+    esac
+}
+
+ip_route_common ()
+{
+    _args="$*"
+    shift 2
+    [ "$1" = table ] || not_implemented "$1 in \"$_args\""
+    _table="$2"
+
+    ip_route_check_table
+}
+
+# Routes are in a file per table in the directory
+# $FAKE_IP_STATE/routes.  These routes just use the table ID
+# that is passed and don't do any lookup.  This could be "improved" if
+# necessary.
+
+ip_route_show ()
+{
+    ip_route_common "$@"
+
+    # Missing file is just an empty table
+    cat "$FAKE_IP_STATE/routes/${_table}" 2>/dev/null || true
+}
+
+ip_route_flush ()
+{
+    ip_route_common "$@"
+
+    rm -f "$FAKE_IP_STATE/routes/${_table}"
+}
+
+ip_route_add ()
+{
+    _args="$*"
+
+    shift 2
+
+    _prefix=""
+    _dev=""
+    _gw=""
+    _table=""
+
+    while [ -n "$1" ] ; do
+	case "$1" in
+	    *.*.*.*/*|*.*.*.*) _prefix="$1" ; shift 1 ;;
+	    local) _prefix="$2" ; shift 2 ;;
+	    dev)   _dev="$2"   ; shift 2 ;;
+	    via)   _gw="$2"    ; shift 2 ;;
+	    table) _table="$2" ; shift 2 ;;
+	    *) not_implemented "$1 in \"$_args\"" ;;
+	esac
+    done
+
+    ip_route_check_table
+    [ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$_args\""
+    [ -n "$_dev" ] || not_implemented "ip route without \"dev\" in \"$_args\""
+
+    # Alias or add missing bits
+    case "$_prefix" in
+	0.0.0.0/0) _prefix="default" ;;
+	*/*) : ;;
+	*) _prefix="${_prefix}/32" ;;
+    esac
+
+    _f="$FAKE_IP_STATE/routes/${_table}"
+    mkdir -p "$FAKE_IP_STATE/routes"
+    touch "$_f"
+
+    (
+	flock 0
+
+	if [ -n "$_gw" ] ; then
+	    echo "${_prefix} via ${_gw} dev ${_dev} "
+	else
+	    echo "${_prefix} dev ${_dev}  scope link "
+	fi >>"$_f"
+    ) <"$_f"
+}
+
+
+######################################################################
+
 case "$1" in
-    link)   ip_link "$@" ;;
-    addr*)  ip_addr "$@" ;;
-    rule)   ip_rule "$@" ;;
+    link)   ip_link  "$@" ;;
+    addr*)  ip_addr  "$@" ;;
+    rule)   ip_rule  "$@" ;;
+    route)  ip_route "$@" ;;
     *) not_implemented "$1" ;;
 esac
 
