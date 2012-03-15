@@ -321,25 +321,52 @@ sub check_null_pointer($$$$)
 	}
 }
 
+sub ParseArrayPullGetSize($$$$$$)
+{
+	my ($self,$e,$l,$ndr,$var_name,$env) = @_;
+
+	my $size;
+
+	if ($l->{IS_CONFORMANT}) {
+		$size = "ndr_get_array_size($ndr, " . get_pointer_to($var_name) . ")";
+	} elsif ($l->{IS_ZERO_TERMINATED} and $l->{SIZE_IS} == 0 and $l->{LENGTH_IS} == 0) { # Noheader arrays
+		$size = "ndr_get_string_size($ndr, sizeof(*$var_name))";
+	} else {
+		$size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL},
+			check_null_pointer($e, $env, sub { $self->pidl(shift); },
+					   "return ndr_pull_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
+			check_fully_dereferenced($e, $env));
+	}
+
+	my $array_size = $size;
+
+	return $array_size;
+}
+
+#####################################################################
+# parse an array - pull side
+sub ParseArrayPullGetLength($$$$$$;$)
+{
+	my ($self,$e,$l,$ndr,$var_name,$env,$array_size) = @_;
+
+	if (not defined($array_size)) {
+		$array_size = $self->ParseArrayPullGetSize($e, $l, $ndr, $var_name, $env);
+	}
+
+	my $array_length = $array_size;
+	if ($l->{IS_VARYING}) {
+		my $length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
+		$array_length = $length;
+	}
+
+	return $array_length;
+}
+
 #####################################################################
 # parse an array - pull side
 sub ParseArrayPullHeader($$$$$$)
 {
 	my ($self,$e,$l,$ndr,$var_name,$env) = @_;
-
-	my $length;
-	my $size;
-
-	if ($l->{IS_CONFORMANT}) {
-		$length = $size = "ndr_get_array_size($ndr, " . get_pointer_to($var_name) . ")";
-	} elsif ($l->{IS_ZERO_TERMINATED} and $l->{SIZE_IS} == 0 and $l->{LENGTH_IS} == 0) { # Noheader arrays
-		$length = $size = "ndr_get_string_size($ndr, sizeof(*$var_name))";
-	} else {
-		$length = $size = ParseExprExt($l->{SIZE_IS}, $env, $e->{ORIGINAL},
-			check_null_pointer($e, $env, sub { $self->pidl(shift); },
-					   "return ndr_pull_error($ndr, NDR_ERR_INVALID_POINTER, \"NULL Pointer for size_is()\");"),
-			check_fully_dereferenced($e, $env));
-	}
 
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
 		$self->pidl("NDR_CHECK(ndr_pull_array_size($ndr, " . get_pointer_to($var_name) . "));");
@@ -347,13 +374,15 @@ sub ParseArrayPullHeader($$$$$$)
 
 	if ($l->{IS_VARYING}) {
 		$self->pidl("NDR_CHECK(ndr_pull_array_length($ndr, " . get_pointer_to($var_name) . "));");
-		$length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
 	}
 
-	if ($length ne $size) {
-		$self->pidl("if ($length > $size) {");
+	my $array_size = $self->ParseArrayPullGetSize($e, $l, $ndr, $var_name, $env);
+	my $array_length = $self->ParseArrayPullGetLength($e, $l, $ndr, $var_name, $env, $array_size);
+
+	if ($array_length ne $array_size) {
+		$self->pidl("if ($array_length > $array_size) {");
 		$self->indent;
-		$self->pidl("return ndr_pull_error($ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should exceed array length %u\", $size, $length);");
+		$self->pidl("return ndr_pull_error($ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should exceed array length %u\", $array_size, $array_length);");
 		$self->deindent;
 		$self->pidl("}");
 	}
@@ -383,10 +412,10 @@ sub ParseArrayPullHeader($$$$$$)
 	}
 
 	if (ArrayDynamicallyAllocated($e,$l) and not is_charset_array($e,$l)) {
-		$self->AllocateArrayLevel($e,$l,$ndr,$var_name,$size);
+		$self->AllocateArrayLevel($e,$l,$ndr,$var_name,$array_size);
 	}
 
-	return $length;
+	return $array_length;
 }
 
 sub compression_alg($$)
