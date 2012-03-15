@@ -511,25 +511,12 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 {
 	struct notify_entry e = *e0;
 	NTSTATUS status;
-	char *tmp_path = NULL;
 	struct notify_list *listel;
-	size_t len;
 	int depth;
 
 	/* see if change notify is enabled at all */
 	if (notify == NULL) {
 		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	/* cope with /. on the end of the path */
-	len = strlen(e.path);
-	if (len > 1 && e.path[len-1] == '.' && e.path[len-2] == '/') {
-		tmp_path = talloc_strndup(notify, e.path, len-2);
-		if (tmp_path == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		e.path = tmp_path;
 	}
 
 	depth = count_chars(e.path, '/');
@@ -586,8 +573,6 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	}
 	status = NT_STATUS_OK;
 done:
-	talloc_free(tmp_path);
-
 	return status;
 }
 

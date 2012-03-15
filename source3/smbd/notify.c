@@ -178,6 +178,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 			      bool recursive)
 {
 	char *fullpath;
+	size_t len;
 	struct notify_entry e;
 	NTSTATUS status;
 
@@ -200,6 +201,14 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 		DEBUG(0, ("talloc_asprintf failed\n"));
 		TALLOC_FREE(fsp->notify);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * Avoid /. at the end of the path name. notify can't deal with it.
+	 */
+	len = strlen(fullpath);
+	if (len > 1 && fullpath[len-1] == '.' && fullpath[len-2] == '/') {
+		fullpath[len-2] = '\0';
 	}
 
 	ZERO_STRUCT(e);
