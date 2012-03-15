@@ -1512,11 +1512,10 @@ sub DeclareArrayVariables($$)
 	my ($self,$e) = @_;
 
 	foreach my $l (@{$e->{LEVELS}}) {
+		next if ($l->{TYPE} ne "ARRAY");
 		next if has_fast_array($e,$l);
 		next if is_charset_array($e,$l);
-		if ($l->{TYPE} eq "ARRAY") {
-			$self->pidl("uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};");
-		}
+		$self->pidl("uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};");
 	}
 }
 
@@ -1525,15 +1524,14 @@ sub DeclareArrayVariablesNoZero($$$)
 	my ($self,$e,$env) = @_;
 
 	foreach my $l (@{$e->{LEVELS}}) {
+		next if ($l->{TYPE} ne "ARRAY");
 		next if has_fast_array($e,$l);
 		next if is_charset_array($e,$l);
-		if ($l->{TYPE} eq "ARRAY") {
-		    my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
-		    if ($length eq "0") {
+		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
+		if ($length eq "0") {
 			warning($e->{ORIGINAL}, "pointless array cntr: 'cntr_$e->{NAME}_$l->{LEVEL_INDEX}': length=$length");
-		    } else {
+		} else {
 			$self->pidl("uint32_t cntr_$e->{NAME}_$l->{LEVEL_INDEX};");
-		    }
 		}
 	}
 }
