@@ -1505,6 +1505,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	db_path = ctdbd_dbpath(conn, db_ctdb, db_ctdb->db_id);
 
 	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
+	result->lock_order = lock_order;
 
 	/* only pass through specific flags */
 	tdb_flags &= TDB_SEQNUM;

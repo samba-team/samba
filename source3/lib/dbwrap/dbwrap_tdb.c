@@ -343,7 +343,8 @@ static int db_tdb_transaction_cancel(struct db_context *db)
 struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 			       const char *name,
 			       int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode)
+			       int open_flags, mode_t mode,
+			       enum dbwrap_lock_order lock_order)
 {
 	struct db_context *result = NULL;
 	struct db_tdb_ctx *db_tdb;
@@ -361,6 +362,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
 	}
+	result->lock_order = lock_order;
 
 	db_tdb->wtdb = tdb_wrap_open(db_tdb, name, hash_size, tdb_flags,
 				     open_flags, mode, lp_ctx);
