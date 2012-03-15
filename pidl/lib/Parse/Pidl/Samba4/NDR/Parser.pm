@@ -361,6 +361,20 @@ sub ParseArrayPullGetLength($$$$$$;$)
 		$array_length = "length_$e->{NAME}_$l->{LEVEL_INDEX}";
 	}
 
+	if (my $range = has_property($e, "range")) {
+		my ($low, $high) = split(/,/, $range, 2);
+		if ($low < 0) {
+			warning(0, "$low is invalid for the range of an array size");
+		}
+		if ($low == 0) {
+			$self->pidl("if ($array_length > $high) {");
+		} else {
+			$self->pidl("if ($array_length < $low || $array_length > $high) {");
+		}
+		$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
+		$self->pidl("}");
+	}
+
 	return $array_length;
 }
 
@@ -1081,20 +1095,6 @@ sub ParseElementPullLevel
 			my $length = $self->ParseArrayPullHeader($e, $l, $ndr, $var_name, $env);
 			$array_length = $length;
 
-			if (my $range = has_property($e, "range")) {
-				my ($low, $high) = split(/,/, $range, 2);
-				if ($low < 0) {
-					warning(0, "$low is invalid for the range of an array size");
-				}
-				if ($low == 0) {
-					$self->pidl("if ($length > $high) {");
-				} else {
-					$self->pidl("if ($length < $low || $length > $high) {");
-				}
-				$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
-				$self->pidl("}");
-			}
-
 			my $nl = GetNextLevel($e, $l);
 
 			if (is_charset_array($e,$l)) {
@@ -1167,20 +1167,6 @@ sub ParseElementPullLevel
 
 		if (not defined($length)) {
 			$length = $self->ParseArrayPullGetLength($e, $l, $ndr, $var_name, $env);
-		}
-
-		if (my $range = has_property($e, "range")) {
-			my ($low, $high) = split(/,/, $range, 2);
-			if ($low < 0) {
-				warning(0, "$low is invalid for the range of an array size");
-			}
-			if ($low == 0) {
-				$self->pidl("if ($length > $high) {");
-			} else {
-				$self->pidl("if ($length < $low || $length > $high) {");
-			}
-			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
-			$self->pidl("}");
 		}
 
 		$var_name = get_array_element($var_name, $counter);
