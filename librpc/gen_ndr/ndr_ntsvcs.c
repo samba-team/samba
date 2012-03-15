@@ -53,11 +53,13 @@ static enum ndr_err_code ndr_push_PNP_HwProfInfo(struct ndr_push *ndr, int ndr_f
 
 static enum ndr_err_code ndr_pull_PNP_HwProfInfo(struct ndr_pull *ndr, int ndr_flags, struct PNP_HwProfInfo *r)
 {
+	uint32_t size_friendly_name_0 = 0;
 	uint32_t cntr_friendly_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->profile_handle));
-		for (cntr_friendly_name_0 = 0; cntr_friendly_name_0 < 80; cntr_friendly_name_0++) {
+		size_friendly_name_0 = 80;
+		for (cntr_friendly_name_0 = 0; cntr_friendly_name_0 < size_friendly_name_0; cntr_friendly_name_0++) {
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->friendly_name[cntr_friendly_name_0]));
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
@@ -373,14 +375,18 @@ static enum ndr_err_code ndr_push_PNP_ValidateDeviceInstance(struct ndr_push *nd
 
 static enum ndr_err_code ndr_pull_PNP_ValidateDeviceInstance(struct ndr_pull *ndr, int flags, struct PNP_ValidateDeviceInstance *r)
 {
+	uint32_t size_devicepath_1 = 0;
+	uint32_t length_devicepath_1 = 0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.devicepath));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.devicepath));
-		if (ndr_get_array_length(ndr, &r->in.devicepath) > ndr_get_array_size(ndr, &r->in.devicepath)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.devicepath), ndr_get_array_length(ndr, &r->in.devicepath));
+		size_devicepath_1 = ndr_get_array_size(ndr, &r->in.devicepath);
+		length_devicepath_1 = ndr_get_array_length(ndr, &r->in.devicepath);
+		if (length_devicepath_1 > size_devicepath_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_devicepath_1, length_devicepath_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicepath, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_devicepath_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicepath, length_devicepath_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
 	}
 	if (flags & NDR_OUT) {
@@ -577,6 +583,10 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceList(struct ndr_push *ndr, int fl
 static enum ndr_err_code ndr_pull_PNP_GetDeviceList(struct ndr_pull *ndr, int flags, struct PNP_GetDeviceList *r)
 {
 	uint32_t _ptr_filter;
+	uint32_t size_filter_1 = 0;
+	uint32_t length_filter_1 = 0;
+	uint32_t size_buffer_1 = 0;
+	uint32_t length_buffer_1 = 0;
 	uint32_t cntr_buffer_1;
 	TALLOC_CTX *_mem_save_filter_0;
 	TALLOC_CTX *_mem_save_buffer_1;
@@ -595,11 +605,13 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceList(struct ndr_pull *ndr, int fl
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.filter, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.filter));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.filter));
-			if (ndr_get_array_length(ndr, &r->in.filter) > ndr_get_array_size(ndr, &r->in.filter)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.filter), ndr_get_array_length(ndr, &r->in.filter));
+			size_filter_1 = ndr_get_array_size(ndr, &r->in.filter);
+			length_filter_1 = ndr_get_array_length(ndr, &r->in.filter);
+			if (length_filter_1 > size_filter_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_filter_1, length_filter_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.filter), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.filter, ndr_get_array_length(ndr, &r->in.filter), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_filter_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.filter, length_filter_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_filter_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -618,15 +630,17 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceList(struct ndr_pull *ndr, int fl
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.buffer));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->out.buffer));
-		if (ndr_get_array_length(ndr, &r->out.buffer) > ndr_get_array_size(ndr, &r->out.buffer)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.buffer), ndr_get_array_length(ndr, &r->out.buffer));
+		size_buffer_1 = ndr_get_array_size(ndr, &r->out.buffer);
+		length_buffer_1 = ndr_get_array_length(ndr, &r->out.buffer);
+		if (length_buffer_1 > size_buffer_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_buffer_1, length_buffer_1);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.buffer, ndr_get_array_size(ndr, &r->out.buffer));
+			NDR_PULL_ALLOC_N(ndr, r->out.buffer, size_buffer_1);
 		}
 		_mem_save_buffer_1 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.buffer, 0);
-		for (cntr_buffer_1 = 0; cntr_buffer_1 < *r->out.length; cntr_buffer_1++) {
+		for (cntr_buffer_1 = 0; cntr_buffer_1 < length_buffer_1; cntr_buffer_1++) {
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.buffer[cntr_buffer_1]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_1, 0);
@@ -723,6 +737,8 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceListSize(struct ndr_push *ndr, in
 static enum ndr_err_code ndr_pull_PNP_GetDeviceListSize(struct ndr_pull *ndr, int flags, struct PNP_GetDeviceListSize *r)
 {
 	uint32_t _ptr_devicename;
+	uint32_t size_devicename_1 = 0;
+	uint32_t length_devicename_1 = 0;
 	TALLOC_CTX *_mem_save_devicename_0;
 	TALLOC_CTX *_mem_save_size_0;
 	if (flags & NDR_IN) {
@@ -739,11 +755,13 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceListSize(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.devicename, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.devicename));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.devicename));
-			if (ndr_get_array_length(ndr, &r->in.devicename) > ndr_get_array_size(ndr, &r->in.devicename)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.devicename), ndr_get_array_length(ndr, &r->in.devicename));
+			size_devicename_1 = ndr_get_array_size(ndr, &r->in.devicename);
+			length_devicename_1 = ndr_get_array_length(ndr, &r->in.devicename);
+			if (length_devicename_1 > size_devicename_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_devicename_1, length_devicename_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.devicename), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicename, ndr_get_array_length(ndr, &r->in.devicename), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_devicename_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicename, length_devicename_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devicename_0, 0);
 		}
 		NDR_CHECK(ndr_pull_PNP_GetIdListFlags(ndr, NDR_SCALARS, &r->in.flags));
@@ -888,6 +906,10 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceRegProp(struct ndr_push *ndr, int
 
 static enum ndr_err_code ndr_pull_PNP_GetDeviceRegProp(struct ndr_pull *ndr, int flags, struct PNP_GetDeviceRegProp *r)
 {
+	uint32_t size_devicepath_1 = 0;
+	uint32_t length_devicepath_1 = 0;
+	uint32_t size_buffer_1 = 0;
+	uint32_t length_buffer_1 = 0;
 	TALLOC_CTX *_mem_save_reg_data_type_0;
 	TALLOC_CTX *_mem_save_buffer_size_0;
 	TALLOC_CTX *_mem_save_needed_0;
@@ -896,11 +918,13 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceRegProp(struct ndr_pull *ndr, int
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.devicepath));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.devicepath));
-		if (ndr_get_array_length(ndr, &r->in.devicepath) > ndr_get_array_size(ndr, &r->in.devicepath)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.devicepath), ndr_get_array_length(ndr, &r->in.devicepath));
+		size_devicepath_1 = ndr_get_array_size(ndr, &r->in.devicepath);
+		length_devicepath_1 = ndr_get_array_length(ndr, &r->in.devicepath);
+		if (length_devicepath_1 > size_devicepath_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_devicepath_1, length_devicepath_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicepath, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_devicepath_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicepath, length_devicepath_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.property));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.reg_data_type);
@@ -943,13 +967,15 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceRegProp(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_reg_data_type_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.buffer));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->out.buffer));
-		if (ndr_get_array_length(ndr, &r->out.buffer) > ndr_get_array_size(ndr, &r->out.buffer)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.buffer), ndr_get_array_length(ndr, &r->out.buffer));
+		size_buffer_1 = ndr_get_array_size(ndr, &r->out.buffer);
+		length_buffer_1 = ndr_get_array_length(ndr, &r->out.buffer);
+		if (length_buffer_1 > size_buffer_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_buffer_1, length_buffer_1);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.buffer, ndr_get_array_size(ndr, &r->out.buffer));
+			NDR_PULL_ALLOC_N(ndr, r->out.buffer, size_buffer_1);
 		}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.buffer, ndr_get_array_length(ndr, &r->out.buffer)));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.buffer, length_buffer_1));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.buffer_size);
 		}
@@ -2152,9 +2178,15 @@ static enum ndr_err_code ndr_push_PNP_HwProfFlags(struct ndr_push *ndr, int flag
 
 static enum ndr_err_code ndr_pull_PNP_HwProfFlags(struct ndr_pull *ndr, int flags, struct PNP_HwProfFlags *r)
 {
+	uint32_t size_devicepath_1 = 0;
+	uint32_t length_devicepath_1 = 0;
 	uint32_t _ptr_veto_type;
 	uint32_t _ptr_unknown5;
+	uint32_t size_unknown5_1 = 0;
+	uint32_t length_unknown5_1 = 0;
 	uint32_t _ptr_unknown5a;
+	uint32_t size_unknown5a_2 = 0;
+	uint32_t length_unknown5a_2 = 0;
 	TALLOC_CTX *_mem_save_profile_flags_0;
 	TALLOC_CTX *_mem_save_veto_type_0;
 	TALLOC_CTX *_mem_save_unknown5_0;
@@ -2166,11 +2198,13 @@ static enum ndr_err_code ndr_pull_PNP_HwProfFlags(struct ndr_pull *ndr, int flag
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.action));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.devicepath));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.devicepath));
-		if (ndr_get_array_length(ndr, &r->in.devicepath) > ndr_get_array_size(ndr, &r->in.devicepath)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.devicepath), ndr_get_array_length(ndr, &r->in.devicepath));
+		size_devicepath_1 = ndr_get_array_size(ndr, &r->in.devicepath);
+		length_devicepath_1 = ndr_get_array_length(ndr, &r->in.devicepath);
+		if (length_devicepath_1 > size_devicepath_1) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_devicepath_1, length_devicepath_1);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicepath, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_devicepath_1, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicepath, length_devicepath_1, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.config));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.profile_flags);
@@ -2202,11 +2236,13 @@ static enum ndr_err_code ndr_pull_PNP_HwProfFlags(struct ndr_pull *ndr, int flag
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.unknown5, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.unknown5));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.unknown5));
-			if (ndr_get_array_length(ndr, &r->in.unknown5) > ndr_get_array_size(ndr, &r->in.unknown5)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.unknown5), ndr_get_array_length(ndr, &r->in.unknown5));
+			size_unknown5_1 = ndr_get_array_size(ndr, &r->in.unknown5);
+			length_unknown5_1 = ndr_get_array_length(ndr, &r->in.unknown5);
+			if (length_unknown5_1 > size_unknown5_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_unknown5_1, length_unknown5_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.unknown5), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.unknown5, ndr_get_array_length(ndr, &r->in.unknown5), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_unknown5_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.unknown5, length_unknown5_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown5_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.name_length));
@@ -2254,11 +2290,13 @@ static enum ndr_err_code ndr_pull_PNP_HwProfFlags(struct ndr_pull *ndr, int flag
 				NDR_PULL_SET_MEM_CTX(ndr, *r->out.unknown5a, 0);
 				NDR_CHECK(ndr_pull_array_size(ndr, r->out.unknown5a));
 				NDR_CHECK(ndr_pull_array_length(ndr, r->out.unknown5a));
-				if (ndr_get_array_length(ndr, r->out.unknown5a) > ndr_get_array_size(ndr, r->out.unknown5a)) {
-					return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.unknown5a), ndr_get_array_length(ndr, r->out.unknown5a));
+				size_unknown5a_2 = ndr_get_array_size(ndr, r->out.unknown5a);
+				length_unknown5a_2 = ndr_get_array_length(ndr, r->out.unknown5a);
+				if (length_unknown5a_2 > size_unknown5a_2) {
+					return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_unknown5a_2, length_unknown5a_2);
 				}
-				NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.unknown5a), sizeof(uint16_t)));
-				NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.unknown5a, ndr_get_array_length(ndr, r->out.unknown5a), sizeof(uint16_t), CH_UTF16));
+				NDR_CHECK(ndr_check_string_terminator(ndr, length_unknown5a_2, sizeof(uint16_t)));
+				NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.unknown5a, length_unknown5a_2, sizeof(uint16_t), CH_UTF16));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown5a_1, 0);
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown5a_0, 0);

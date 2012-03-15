@@ -21,11 +21,13 @@ static enum ndr_err_code ndr_push_PAC_LOGON_NAME(struct ndr_push *ndr, int ndr_f
 
 static enum ndr_err_code ndr_pull_PAC_LOGON_NAME(struct ndr_pull *ndr, int ndr_flags, struct PAC_LOGON_NAME *r)
 {
+	uint32_t size_account_name_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->logon_time));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->account_name, r->size, sizeof(uint8_t), CH_UTF16));
+		size_account_name_0 = r->size;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->account_name, size_account_name_0, sizeof(uint8_t), CH_UTF16));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -456,24 +458,27 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_DATA(struct ndr_push *ndr, int ndr_flags
 
 _PUBLIC_ enum ndr_err_code ndr_pull_PAC_DATA(struct ndr_pull *ndr, int ndr_flags, struct PAC_DATA *r)
 {
+	uint32_t size_buffers_0 = 0;
 	uint32_t cntr_buffers_0;
 	TALLOC_CTX *_mem_save_buffers_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_buffers));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
-		NDR_PULL_ALLOC_N(ndr, r->buffers, r->num_buffers);
+		size_buffers_0 = r->num_buffers;
+		NDR_PULL_ALLOC_N(ndr, r->buffers, size_buffers_0);
 		_mem_save_buffers_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->buffers, 0);
-		for (cntr_buffers_0 = 0; cntr_buffers_0 < r->num_buffers; cntr_buffers_0++) {
+		for (cntr_buffers_0 = 0; cntr_buffers_0 < size_buffers_0; cntr_buffers_0++) {
 			NDR_CHECK(ndr_pull_PAC_BUFFER(ndr, NDR_SCALARS, &r->buffers[cntr_buffers_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffers_0, 0);
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		size_buffers_0 = r->num_buffers;
 		_mem_save_buffers_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->buffers, 0);
-		for (cntr_buffers_0 = 0; cntr_buffers_0 < r->num_buffers; cntr_buffers_0++) {
+		for (cntr_buffers_0 = 0; cntr_buffers_0 < size_buffers_0; cntr_buffers_0++) {
 			NDR_CHECK(ndr_pull_PAC_BUFFER(ndr, NDR_BUFFERS, &r->buffers[cntr_buffers_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffers_0, 0);
@@ -619,24 +624,27 @@ _PUBLIC_ enum ndr_err_code ndr_push_PAC_DATA_RAW(struct ndr_push *ndr, int ndr_f
 
 _PUBLIC_ enum ndr_err_code ndr_pull_PAC_DATA_RAW(struct ndr_pull *ndr, int ndr_flags, struct PAC_DATA_RAW *r)
 {
+	uint32_t size_buffers_0 = 0;
 	uint32_t cntr_buffers_0;
 	TALLOC_CTX *_mem_save_buffers_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_buffers));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
-		NDR_PULL_ALLOC_N(ndr, r->buffers, r->num_buffers);
+		size_buffers_0 = r->num_buffers;
+		NDR_PULL_ALLOC_N(ndr, r->buffers, size_buffers_0);
 		_mem_save_buffers_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->buffers, 0);
-		for (cntr_buffers_0 = 0; cntr_buffers_0 < r->num_buffers; cntr_buffers_0++) {
+		for (cntr_buffers_0 = 0; cntr_buffers_0 < size_buffers_0; cntr_buffers_0++) {
 			NDR_CHECK(ndr_pull_PAC_BUFFER_RAW(ndr, NDR_SCALARS, &r->buffers[cntr_buffers_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffers_0, 0);
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		size_buffers_0 = r->num_buffers;
 		_mem_save_buffers_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->buffers, 0);
-		for (cntr_buffers_0 = 0; cntr_buffers_0 < r->num_buffers; cntr_buffers_0++) {
+		for (cntr_buffers_0 = 0; cntr_buffers_0 < size_buffers_0; cntr_buffers_0++) {
 			NDR_CHECK(ndr_pull_PAC_BUFFER_RAW(ndr, NDR_BUFFERS, &r->buffers[cntr_buffers_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffers_0, 0);

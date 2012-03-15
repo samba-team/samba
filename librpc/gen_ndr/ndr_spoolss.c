@@ -625,9 +625,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DeviceMode *r)
 {
+	uint32_t size_devicename_0 = 0;
+	uint32_t size_formname_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->devicename, 32, sizeof(uint16_t), CH_UTF16));
+		size_devicename_0 = 32;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->devicename, size_devicename_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->specversion));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->driverversion));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
@@ -646,7 +649,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->yresolution));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->ttoption));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->collate));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->formname, 32, sizeof(uint16_t), CH_UTF16));
+		size_formname_0 = 32;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->formname, size_formname_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->logpixels));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->bitsperpel));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->pelswidth));
@@ -4530,16 +4534,28 @@ static enum ndr_err_code ndr_push_spoolss_SetJobInfo1(struct ndr_push *ndr, int 
 static enum ndr_err_code ndr_pull_spoolss_SetJobInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetJobInfo1 *r)
 {
 	uint32_t _ptr_printer_name;
+	uint32_t size_printer_name_1 = 0;
+	uint32_t length_printer_name_1 = 0;
 	TALLOC_CTX *_mem_save_printer_name_0;
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	uint32_t _ptr_user_name;
+	uint32_t size_user_name_1 = 0;
+	uint32_t length_user_name_1 = 0;
 	TALLOC_CTX *_mem_save_user_name_0;
 	uint32_t _ptr_document_name;
+	uint32_t size_document_name_1 = 0;
+	uint32_t length_document_name_1 = 0;
 	TALLOC_CTX *_mem_save_document_name_0;
 	uint32_t _ptr_data_type;
+	uint32_t size_data_type_1 = 0;
+	uint32_t length_data_type_1 = 0;
 	TALLOC_CTX *_mem_save_data_type_0;
 	uint32_t _ptr_text_status;
+	uint32_t size_text_status_1 = 0;
+	uint32_t length_text_status_1 = 0;
 	TALLOC_CTX *_mem_save_text_status_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -4596,11 +4612,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo1(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->printer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->printer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->printer_name));
-			if (ndr_get_array_length(ndr, &r->printer_name) > ndr_get_array_size(ndr, &r->printer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->printer_name), ndr_get_array_length(ndr, &r->printer_name));
+			size_printer_name_1 = ndr_get_array_size(ndr, &r->printer_name);
+			length_printer_name_1 = ndr_get_array_length(ndr, &r->printer_name);
+			if (length_printer_name_1 > size_printer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printer_name_1, length_printer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->printer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printer_name, ndr_get_array_length(ndr, &r->printer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printer_name, length_printer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printer_name_0, 0);
 		}
 		if (r->server_name) {
@@ -4608,11 +4626,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo1(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->server_name));
-			if (ndr_get_array_length(ndr, &r->server_name) > ndr_get_array_size(ndr, &r->server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->server_name), ndr_get_array_length(ndr, &r->server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->server_name, ndr_get_array_length(ndr, &r->server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		if (r->user_name) {
@@ -4620,11 +4640,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo1(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->user_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->user_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->user_name));
-			if (ndr_get_array_length(ndr, &r->user_name) > ndr_get_array_size(ndr, &r->user_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->user_name), ndr_get_array_length(ndr, &r->user_name));
+			size_user_name_1 = ndr_get_array_size(ndr, &r->user_name);
+			length_user_name_1 = ndr_get_array_length(ndr, &r->user_name);
+			if (length_user_name_1 > size_user_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_user_name_1, length_user_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->user_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user_name, ndr_get_array_length(ndr, &r->user_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_user_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user_name, length_user_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_name_0, 0);
 		}
 		if (r->document_name) {
@@ -4632,11 +4654,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo1(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->document_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->document_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->document_name));
-			if (ndr_get_array_length(ndr, &r->document_name) > ndr_get_array_size(ndr, &r->document_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->document_name), ndr_get_array_length(ndr, &r->document_name));
+			size_document_name_1 = ndr_get_array_size(ndr, &r->document_name);
+			length_document_name_1 = ndr_get_array_length(ndr, &r->document_name);
+			if (length_document_name_1 > size_document_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_document_name_1, length_document_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->document_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->document_name, ndr_get_array_length(ndr, &r->document_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_document_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->document_name, length_document_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_document_name_0, 0);
 		}
 		if (r->data_type) {
@@ -4644,11 +4668,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo1(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->data_type, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_type));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_type));
-			if (ndr_get_array_length(ndr, &r->data_type) > ndr_get_array_size(ndr, &r->data_type)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_type), ndr_get_array_length(ndr, &r->data_type));
+			size_data_type_1 = ndr_get_array_size(ndr, &r->data_type);
+			length_data_type_1 = ndr_get_array_length(ndr, &r->data_type);
+			if (length_data_type_1 > size_data_type_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_type_1, length_data_type_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_type), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_type, ndr_get_array_length(ndr, &r->data_type), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_type_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_type, length_data_type_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_type_0, 0);
 		}
 		if (r->text_status) {
@@ -4656,11 +4682,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo1(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->text_status, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->text_status));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->text_status));
-			if (ndr_get_array_length(ndr, &r->text_status) > ndr_get_array_size(ndr, &r->text_status)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->text_status), ndr_get_array_length(ndr, &r->text_status));
+			size_text_status_1 = ndr_get_array_size(ndr, &r->text_status);
+			length_text_status_1 = ndr_get_array_length(ndr, &r->text_status);
+			if (length_text_status_1 > size_text_status_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_text_status_1, length_text_status_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->text_status, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_text_status_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->text_status, length_text_status_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_text_status_0, 0);
 		}
 	}
@@ -4813,24 +4841,44 @@ static enum ndr_err_code ndr_push_spoolss_SetJobInfo2(struct ndr_push *ndr, int 
 static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetJobInfo2 *r)
 {
 	uint32_t _ptr_printer_name;
+	uint32_t size_printer_name_1 = 0;
+	uint32_t length_printer_name_1 = 0;
 	TALLOC_CTX *_mem_save_printer_name_0;
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	uint32_t _ptr_user_name;
+	uint32_t size_user_name_1 = 0;
+	uint32_t length_user_name_1 = 0;
 	TALLOC_CTX *_mem_save_user_name_0;
 	uint32_t _ptr_document_name;
+	uint32_t size_document_name_1 = 0;
+	uint32_t length_document_name_1 = 0;
 	TALLOC_CTX *_mem_save_document_name_0;
 	uint32_t _ptr_notify_name;
+	uint32_t size_notify_name_1 = 0;
+	uint32_t length_notify_name_1 = 0;
 	TALLOC_CTX *_mem_save_notify_name_0;
 	uint32_t _ptr_data_type;
+	uint32_t size_data_type_1 = 0;
+	uint32_t length_data_type_1 = 0;
 	TALLOC_CTX *_mem_save_data_type_0;
 	uint32_t _ptr_print_processor;
+	uint32_t size_print_processor_1 = 0;
+	uint32_t length_print_processor_1 = 0;
 	TALLOC_CTX *_mem_save_print_processor_0;
 	uint32_t _ptr_parameters;
+	uint32_t size_parameters_1 = 0;
+	uint32_t length_parameters_1 = 0;
 	TALLOC_CTX *_mem_save_parameters_0;
 	uint32_t _ptr_driver_name;
+	uint32_t size_driver_name_1 = 0;
+	uint32_t length_driver_name_1 = 0;
 	TALLOC_CTX *_mem_save_driver_name_0;
 	uint32_t _ptr_text_status;
+	uint32_t size_text_status_1 = 0;
+	uint32_t length_text_status_1 = 0;
 	TALLOC_CTX *_mem_save_text_status_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -4917,11 +4965,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->printer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->printer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->printer_name));
-			if (ndr_get_array_length(ndr, &r->printer_name) > ndr_get_array_size(ndr, &r->printer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->printer_name), ndr_get_array_length(ndr, &r->printer_name));
+			size_printer_name_1 = ndr_get_array_size(ndr, &r->printer_name);
+			length_printer_name_1 = ndr_get_array_length(ndr, &r->printer_name);
+			if (length_printer_name_1 > size_printer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printer_name_1, length_printer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->printer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printer_name, ndr_get_array_length(ndr, &r->printer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printer_name, length_printer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printer_name_0, 0);
 		}
 		if (r->server_name) {
@@ -4929,11 +4979,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->server_name));
-			if (ndr_get_array_length(ndr, &r->server_name) > ndr_get_array_size(ndr, &r->server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->server_name), ndr_get_array_length(ndr, &r->server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->server_name, ndr_get_array_length(ndr, &r->server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		if (r->user_name) {
@@ -4941,11 +4993,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->user_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->user_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->user_name));
-			if (ndr_get_array_length(ndr, &r->user_name) > ndr_get_array_size(ndr, &r->user_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->user_name), ndr_get_array_length(ndr, &r->user_name));
+			size_user_name_1 = ndr_get_array_size(ndr, &r->user_name);
+			length_user_name_1 = ndr_get_array_length(ndr, &r->user_name);
+			if (length_user_name_1 > size_user_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_user_name_1, length_user_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->user_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user_name, ndr_get_array_length(ndr, &r->user_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_user_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user_name, length_user_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_name_0, 0);
 		}
 		if (r->document_name) {
@@ -4953,11 +5007,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->document_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->document_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->document_name));
-			if (ndr_get_array_length(ndr, &r->document_name) > ndr_get_array_size(ndr, &r->document_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->document_name), ndr_get_array_length(ndr, &r->document_name));
+			size_document_name_1 = ndr_get_array_size(ndr, &r->document_name);
+			length_document_name_1 = ndr_get_array_length(ndr, &r->document_name);
+			if (length_document_name_1 > size_document_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_document_name_1, length_document_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->document_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->document_name, ndr_get_array_length(ndr, &r->document_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_document_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->document_name, length_document_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_document_name_0, 0);
 		}
 		if (r->notify_name) {
@@ -4965,11 +5021,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->notify_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->notify_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->notify_name));
-			if (ndr_get_array_length(ndr, &r->notify_name) > ndr_get_array_size(ndr, &r->notify_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->notify_name), ndr_get_array_length(ndr, &r->notify_name));
+			size_notify_name_1 = ndr_get_array_size(ndr, &r->notify_name);
+			length_notify_name_1 = ndr_get_array_length(ndr, &r->notify_name);
+			if (length_notify_name_1 > size_notify_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_notify_name_1, length_notify_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->notify_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->notify_name, ndr_get_array_length(ndr, &r->notify_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_notify_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->notify_name, length_notify_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_notify_name_0, 0);
 		}
 		if (r->data_type) {
@@ -4977,11 +5035,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->data_type, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_type));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_type));
-			if (ndr_get_array_length(ndr, &r->data_type) > ndr_get_array_size(ndr, &r->data_type)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_type), ndr_get_array_length(ndr, &r->data_type));
+			size_data_type_1 = ndr_get_array_size(ndr, &r->data_type);
+			length_data_type_1 = ndr_get_array_length(ndr, &r->data_type);
+			if (length_data_type_1 > size_data_type_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_type_1, length_data_type_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_type), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_type, ndr_get_array_length(ndr, &r->data_type), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_type_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_type, length_data_type_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_type_0, 0);
 		}
 		if (r->print_processor) {
@@ -4989,11 +5049,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->print_processor, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->print_processor));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->print_processor));
-			if (ndr_get_array_length(ndr, &r->print_processor) > ndr_get_array_size(ndr, &r->print_processor)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->print_processor), ndr_get_array_length(ndr, &r->print_processor));
+			size_print_processor_1 = ndr_get_array_size(ndr, &r->print_processor);
+			length_print_processor_1 = ndr_get_array_length(ndr, &r->print_processor);
+			if (length_print_processor_1 > size_print_processor_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_print_processor_1, length_print_processor_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->print_processor), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->print_processor, ndr_get_array_length(ndr, &r->print_processor), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_print_processor_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->print_processor, length_print_processor_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_print_processor_0, 0);
 		}
 		if (r->parameters) {
@@ -5001,11 +5063,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->parameters, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->parameters));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->parameters));
-			if (ndr_get_array_length(ndr, &r->parameters) > ndr_get_array_size(ndr, &r->parameters)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->parameters), ndr_get_array_length(ndr, &r->parameters));
+			size_parameters_1 = ndr_get_array_size(ndr, &r->parameters);
+			length_parameters_1 = ndr_get_array_length(ndr, &r->parameters);
+			if (length_parameters_1 > size_parameters_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_parameters_1, length_parameters_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->parameters), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->parameters, ndr_get_array_length(ndr, &r->parameters), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_parameters_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->parameters, length_parameters_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_parameters_0, 0);
 		}
 		if (r->driver_name) {
@@ -5013,11 +5077,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
-			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			size_driver_name_1 = ndr_get_array_size(ndr, &r->driver_name);
+			length_driver_name_1 = ndr_get_array_length(ndr, &r->driver_name);
+			if (length_driver_name_1 > size_driver_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_name_1, length_driver_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, length_driver_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
 		if (r->text_status) {
@@ -5025,11 +5091,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo2(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->text_status, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->text_status));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->text_status));
-			if (ndr_get_array_length(ndr, &r->text_status) > ndr_get_array_size(ndr, &r->text_status)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->text_status), ndr_get_array_length(ndr, &r->text_status));
+			size_text_status_1 = ndr_get_array_size(ndr, &r->text_status);
+			length_text_status_1 = ndr_get_array_length(ndr, &r->text_status);
+			if (length_text_status_1 > size_text_status_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_text_status_1, length_text_status_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->text_status, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_text_status_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->text_status, length_text_status_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_text_status_0, 0);
 		}
 	}
@@ -5213,24 +5281,44 @@ static enum ndr_err_code ndr_push_spoolss_SetJobInfo4(struct ndr_push *ndr, int 
 static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetJobInfo4 *r)
 {
 	uint32_t _ptr_printer_name;
+	uint32_t size_printer_name_1 = 0;
+	uint32_t length_printer_name_1 = 0;
 	TALLOC_CTX *_mem_save_printer_name_0;
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	uint32_t _ptr_user_name;
+	uint32_t size_user_name_1 = 0;
+	uint32_t length_user_name_1 = 0;
 	TALLOC_CTX *_mem_save_user_name_0;
 	uint32_t _ptr_document_name;
+	uint32_t size_document_name_1 = 0;
+	uint32_t length_document_name_1 = 0;
 	TALLOC_CTX *_mem_save_document_name_0;
 	uint32_t _ptr_notify_name;
+	uint32_t size_notify_name_1 = 0;
+	uint32_t length_notify_name_1 = 0;
 	TALLOC_CTX *_mem_save_notify_name_0;
 	uint32_t _ptr_data_type;
+	uint32_t size_data_type_1 = 0;
+	uint32_t length_data_type_1 = 0;
 	TALLOC_CTX *_mem_save_data_type_0;
 	uint32_t _ptr_print_processor;
+	uint32_t size_print_processor_1 = 0;
+	uint32_t length_print_processor_1 = 0;
 	TALLOC_CTX *_mem_save_print_processor_0;
 	uint32_t _ptr_parameters;
+	uint32_t size_parameters_1 = 0;
+	uint32_t length_parameters_1 = 0;
 	TALLOC_CTX *_mem_save_parameters_0;
 	uint32_t _ptr_driver_name;
+	uint32_t size_driver_name_1 = 0;
+	uint32_t length_driver_name_1 = 0;
 	TALLOC_CTX *_mem_save_driver_name_0;
 	uint32_t _ptr_text_status;
+	uint32_t size_text_status_1 = 0;
+	uint32_t length_text_status_1 = 0;
 	TALLOC_CTX *_mem_save_text_status_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -5318,11 +5406,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->printer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->printer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->printer_name));
-			if (ndr_get_array_length(ndr, &r->printer_name) > ndr_get_array_size(ndr, &r->printer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->printer_name), ndr_get_array_length(ndr, &r->printer_name));
+			size_printer_name_1 = ndr_get_array_size(ndr, &r->printer_name);
+			length_printer_name_1 = ndr_get_array_length(ndr, &r->printer_name);
+			if (length_printer_name_1 > size_printer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printer_name_1, length_printer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->printer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printer_name, ndr_get_array_length(ndr, &r->printer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printer_name, length_printer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printer_name_0, 0);
 		}
 		if (r->server_name) {
@@ -5330,11 +5420,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->server_name));
-			if (ndr_get_array_length(ndr, &r->server_name) > ndr_get_array_size(ndr, &r->server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->server_name), ndr_get_array_length(ndr, &r->server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->server_name, ndr_get_array_length(ndr, &r->server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		if (r->user_name) {
@@ -5342,11 +5434,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->user_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->user_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->user_name));
-			if (ndr_get_array_length(ndr, &r->user_name) > ndr_get_array_size(ndr, &r->user_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->user_name), ndr_get_array_length(ndr, &r->user_name));
+			size_user_name_1 = ndr_get_array_size(ndr, &r->user_name);
+			length_user_name_1 = ndr_get_array_length(ndr, &r->user_name);
+			if (length_user_name_1 > size_user_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_user_name_1, length_user_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->user_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user_name, ndr_get_array_length(ndr, &r->user_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_user_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user_name, length_user_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_name_0, 0);
 		}
 		if (r->document_name) {
@@ -5354,11 +5448,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->document_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->document_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->document_name));
-			if (ndr_get_array_length(ndr, &r->document_name) > ndr_get_array_size(ndr, &r->document_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->document_name), ndr_get_array_length(ndr, &r->document_name));
+			size_document_name_1 = ndr_get_array_size(ndr, &r->document_name);
+			length_document_name_1 = ndr_get_array_length(ndr, &r->document_name);
+			if (length_document_name_1 > size_document_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_document_name_1, length_document_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->document_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->document_name, ndr_get_array_length(ndr, &r->document_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_document_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->document_name, length_document_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_document_name_0, 0);
 		}
 		if (r->notify_name) {
@@ -5366,11 +5462,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->notify_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->notify_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->notify_name));
-			if (ndr_get_array_length(ndr, &r->notify_name) > ndr_get_array_size(ndr, &r->notify_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->notify_name), ndr_get_array_length(ndr, &r->notify_name));
+			size_notify_name_1 = ndr_get_array_size(ndr, &r->notify_name);
+			length_notify_name_1 = ndr_get_array_length(ndr, &r->notify_name);
+			if (length_notify_name_1 > size_notify_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_notify_name_1, length_notify_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->notify_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->notify_name, ndr_get_array_length(ndr, &r->notify_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_notify_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->notify_name, length_notify_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_notify_name_0, 0);
 		}
 		if (r->data_type) {
@@ -5378,11 +5476,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->data_type, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_type));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_type));
-			if (ndr_get_array_length(ndr, &r->data_type) > ndr_get_array_size(ndr, &r->data_type)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_type), ndr_get_array_length(ndr, &r->data_type));
+			size_data_type_1 = ndr_get_array_size(ndr, &r->data_type);
+			length_data_type_1 = ndr_get_array_length(ndr, &r->data_type);
+			if (length_data_type_1 > size_data_type_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_type_1, length_data_type_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_type), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_type, ndr_get_array_length(ndr, &r->data_type), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_type_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_type, length_data_type_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_type_0, 0);
 		}
 		if (r->print_processor) {
@@ -5390,11 +5490,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->print_processor, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->print_processor));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->print_processor));
-			if (ndr_get_array_length(ndr, &r->print_processor) > ndr_get_array_size(ndr, &r->print_processor)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->print_processor), ndr_get_array_length(ndr, &r->print_processor));
+			size_print_processor_1 = ndr_get_array_size(ndr, &r->print_processor);
+			length_print_processor_1 = ndr_get_array_length(ndr, &r->print_processor);
+			if (length_print_processor_1 > size_print_processor_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_print_processor_1, length_print_processor_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->print_processor), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->print_processor, ndr_get_array_length(ndr, &r->print_processor), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_print_processor_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->print_processor, length_print_processor_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_print_processor_0, 0);
 		}
 		if (r->parameters) {
@@ -5402,11 +5504,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->parameters, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->parameters));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->parameters));
-			if (ndr_get_array_length(ndr, &r->parameters) > ndr_get_array_size(ndr, &r->parameters)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->parameters), ndr_get_array_length(ndr, &r->parameters));
+			size_parameters_1 = ndr_get_array_size(ndr, &r->parameters);
+			length_parameters_1 = ndr_get_array_length(ndr, &r->parameters);
+			if (length_parameters_1 > size_parameters_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_parameters_1, length_parameters_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->parameters), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->parameters, ndr_get_array_length(ndr, &r->parameters), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_parameters_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->parameters, length_parameters_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_parameters_0, 0);
 		}
 		if (r->driver_name) {
@@ -5414,11 +5518,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
-			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			size_driver_name_1 = ndr_get_array_size(ndr, &r->driver_name);
+			length_driver_name_1 = ndr_get_array_length(ndr, &r->driver_name);
+			if (length_driver_name_1 > size_driver_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_name_1, length_driver_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, length_driver_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
 		if (r->text_status) {
@@ -5426,11 +5532,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetJobInfo4(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, r->text_status, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->text_status));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->text_status));
-			if (ndr_get_array_length(ndr, &r->text_status) > ndr_get_array_size(ndr, &r->text_status)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->text_status), ndr_get_array_length(ndr, &r->text_status));
+			size_text_status_1 = ndr_get_array_size(ndr, &r->text_status);
+			length_text_status_1 = ndr_get_array_length(ndr, &r->text_status);
+			if (length_text_status_1 > size_text_status_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_text_status_1, length_text_status_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->text_status, ndr_get_array_length(ndr, &r->text_status), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_text_status_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->text_status, length_text_status_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_text_status_0, 0);
 		}
 	}
@@ -5585,9 +5693,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_SetJobInfo(struct ndr_pull *ndr, int
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_info1_0;
+	uint32_t _ptr_info1;
 	TALLOC_CTX *_mem_save_info2_0;
+	uint32_t _ptr_info2;
 	TALLOC_CTX *_mem_save_info3_0;
+	uint32_t _ptr_info3;
 	TALLOC_CTX *_mem_save_info4_0;
+	uint32_t _ptr_info4;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -5596,7 +5708,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_SetJobInfo(struct ndr_pull *ndr, int
 		}
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_info1;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info1));
 				if (_ptr_info1) {
 					NDR_PULL_ALLOC(ndr, r->info1);
@@ -5606,7 +5717,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_SetJobInfo(struct ndr_pull *ndr, int
 			break; }
 
 			case 2: {
-				uint32_t _ptr_info2;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info2));
 				if (_ptr_info2) {
 					NDR_PULL_ALLOC(ndr, r->info2);
@@ -5616,7 +5726,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_SetJobInfo(struct ndr_pull *ndr, int
 			break; }
 
 			case 3: {
-				uint32_t _ptr_info3;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info3));
 				if (_ptr_info3) {
 					NDR_PULL_ALLOC(ndr, r->info3);
@@ -5626,7 +5735,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_SetJobInfo(struct ndr_pull *ndr, int
 			break; }
 
 			case 4: {
-				uint32_t _ptr_info4;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info4));
 				if (_ptr_info4) {
 					NDR_PULL_ALLOC(ndr, r->info4);
@@ -5886,8 +5994,12 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo0(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo0(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetPrinterInfo0 *r)
 {
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	TALLOC_CTX *_mem_save_servername_0;
 	uint32_t _ptr_printername;
+	uint32_t size_printername_1 = 0;
+	uint32_t length_printername_1 = 0;
 	TALLOC_CTX *_mem_save_printername_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -5937,11 +6049,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo0(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->servername));
-			if (ndr_get_array_length(ndr, &r->servername) > ndr_get_array_size(ndr, &r->servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->servername), ndr_get_array_length(ndr, &r->servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->servername, ndr_get_array_length(ndr, &r->servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 		if (r->printername) {
@@ -5949,11 +6063,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo0(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->printername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->printername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->printername));
-			if (ndr_get_array_length(ndr, &r->printername) > ndr_get_array_size(ndr, &r->printername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->printername), ndr_get_array_length(ndr, &r->printername));
+			size_printername_1 = ndr_get_array_size(ndr, &r->printername);
+			length_printername_1 = ndr_get_array_length(ndr, &r->printername);
+			if (length_printername_1 > size_printername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printername_1, length_printername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->printername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printername, ndr_get_array_length(ndr, &r->printername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printername, length_printername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printername_0, 0);
 		}
 	}
@@ -6041,10 +6157,16 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo1(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetPrinterInfo1 *r)
 {
 	uint32_t _ptr_description;
+	uint32_t size_description_1 = 0;
+	uint32_t length_description_1 = 0;
 	TALLOC_CTX *_mem_save_description_0;
 	uint32_t _ptr_name;
+	uint32_t size_name_1 = 0;
+	uint32_t length_name_1 = 0;
 	TALLOC_CTX *_mem_save_name_0;
 	uint32_t _ptr_comment;
+	uint32_t size_comment_1 = 0;
+	uint32_t length_comment_1 = 0;
 	TALLOC_CTX *_mem_save_comment_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -6074,11 +6196,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo1(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->description, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->description));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->description));
-			if (ndr_get_array_length(ndr, &r->description) > ndr_get_array_size(ndr, &r->description)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->description), ndr_get_array_length(ndr, &r->description));
+			size_description_1 = ndr_get_array_size(ndr, &r->description);
+			length_description_1 = ndr_get_array_length(ndr, &r->description);
+			if (length_description_1 > size_description_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_description_1, length_description_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->description), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->description, ndr_get_array_length(ndr, &r->description), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_description_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->description, length_description_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_description_0, 0);
 		}
 		if (r->name) {
@@ -6086,11 +6210,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo1(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->name));
-			if (ndr_get_array_length(ndr, &r->name) > ndr_get_array_size(ndr, &r->name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->name), ndr_get_array_length(ndr, &r->name));
+			size_name_1 = ndr_get_array_size(ndr, &r->name);
+			length_name_1 = ndr_get_array_length(ndr, &r->name);
+			if (length_name_1 > size_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_name_1, length_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, ndr_get_array_length(ndr, &r->name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->name, length_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, 0);
 		}
 		if (r->comment) {
@@ -6098,11 +6224,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo1(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->comment, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->comment));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->comment));
-			if (ndr_get_array_length(ndr, &r->comment) > ndr_get_array_size(ndr, &r->comment)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->comment), ndr_get_array_length(ndr, &r->comment));
+			size_comment_1 = ndr_get_array_size(ndr, &r->comment);
+			length_comment_1 = ndr_get_array_length(ndr, &r->comment);
+			if (length_comment_1 > size_comment_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_comment_1, length_comment_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->comment), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->comment, ndr_get_array_length(ndr, &r->comment), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_comment_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->comment, length_comment_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_comment_0, 0);
 		}
 	}
@@ -6235,26 +6363,48 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo2(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetPrinterInfo2 *r)
 {
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	TALLOC_CTX *_mem_save_servername_0;
 	uint32_t _ptr_printername;
+	uint32_t size_printername_1 = 0;
+	uint32_t length_printername_1 = 0;
 	TALLOC_CTX *_mem_save_printername_0;
 	uint32_t _ptr_sharename;
+	uint32_t size_sharename_1 = 0;
+	uint32_t length_sharename_1 = 0;
 	TALLOC_CTX *_mem_save_sharename_0;
 	uint32_t _ptr_portname;
+	uint32_t size_portname_1 = 0;
+	uint32_t length_portname_1 = 0;
 	TALLOC_CTX *_mem_save_portname_0;
 	uint32_t _ptr_drivername;
+	uint32_t size_drivername_1 = 0;
+	uint32_t length_drivername_1 = 0;
 	TALLOC_CTX *_mem_save_drivername_0;
 	uint32_t _ptr_comment;
+	uint32_t size_comment_1 = 0;
+	uint32_t length_comment_1 = 0;
 	TALLOC_CTX *_mem_save_comment_0;
 	uint32_t _ptr_location;
+	uint32_t size_location_1 = 0;
+	uint32_t length_location_1 = 0;
 	TALLOC_CTX *_mem_save_location_0;
 	uint32_t _ptr_sepfile;
+	uint32_t size_sepfile_1 = 0;
+	uint32_t length_sepfile_1 = 0;
 	TALLOC_CTX *_mem_save_sepfile_0;
 	uint32_t _ptr_printprocessor;
+	uint32_t size_printprocessor_1 = 0;
+	uint32_t length_printprocessor_1 = 0;
 	TALLOC_CTX *_mem_save_printprocessor_0;
 	uint32_t _ptr_datatype;
+	uint32_t size_datatype_1 = 0;
+	uint32_t length_datatype_1 = 0;
 	TALLOC_CTX *_mem_save_datatype_0;
 	uint32_t _ptr_parameters;
+	uint32_t size_parameters_1 = 0;
+	uint32_t length_parameters_1 = 0;
 	TALLOC_CTX *_mem_save_parameters_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -6344,11 +6494,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->servername));
-			if (ndr_get_array_length(ndr, &r->servername) > ndr_get_array_size(ndr, &r->servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->servername), ndr_get_array_length(ndr, &r->servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->servername, ndr_get_array_length(ndr, &r->servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 		if (r->printername) {
@@ -6356,11 +6508,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->printername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->printername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->printername));
-			if (ndr_get_array_length(ndr, &r->printername) > ndr_get_array_size(ndr, &r->printername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->printername), ndr_get_array_length(ndr, &r->printername));
+			size_printername_1 = ndr_get_array_size(ndr, &r->printername);
+			length_printername_1 = ndr_get_array_length(ndr, &r->printername);
+			if (length_printername_1 > size_printername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printername_1, length_printername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->printername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printername, ndr_get_array_length(ndr, &r->printername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printername, length_printername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printername_0, 0);
 		}
 		if (r->sharename) {
@@ -6368,11 +6522,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->sharename, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->sharename));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->sharename));
-			if (ndr_get_array_length(ndr, &r->sharename) > ndr_get_array_size(ndr, &r->sharename)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->sharename), ndr_get_array_length(ndr, &r->sharename));
+			size_sharename_1 = ndr_get_array_size(ndr, &r->sharename);
+			length_sharename_1 = ndr_get_array_length(ndr, &r->sharename);
+			if (length_sharename_1 > size_sharename_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_sharename_1, length_sharename_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->sharename), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->sharename, ndr_get_array_length(ndr, &r->sharename), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_sharename_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->sharename, length_sharename_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sharename_0, 0);
 		}
 		if (r->portname) {
@@ -6380,11 +6536,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->portname, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->portname));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->portname));
-			if (ndr_get_array_length(ndr, &r->portname) > ndr_get_array_size(ndr, &r->portname)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->portname), ndr_get_array_length(ndr, &r->portname));
+			size_portname_1 = ndr_get_array_size(ndr, &r->portname);
+			length_portname_1 = ndr_get_array_length(ndr, &r->portname);
+			if (length_portname_1 > size_portname_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_portname_1, length_portname_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->portname), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, ndr_get_array_length(ndr, &r->portname), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_portname_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, length_portname_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_portname_0, 0);
 		}
 		if (r->drivername) {
@@ -6392,11 +6550,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->drivername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->drivername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->drivername));
-			if (ndr_get_array_length(ndr, &r->drivername) > ndr_get_array_size(ndr, &r->drivername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->drivername), ndr_get_array_length(ndr, &r->drivername));
+			size_drivername_1 = ndr_get_array_size(ndr, &r->drivername);
+			length_drivername_1 = ndr_get_array_length(ndr, &r->drivername);
+			if (length_drivername_1 > size_drivername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_drivername_1, length_drivername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->drivername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->drivername, ndr_get_array_length(ndr, &r->drivername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_drivername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->drivername, length_drivername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_drivername_0, 0);
 		}
 		if (r->comment) {
@@ -6404,11 +6564,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->comment, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->comment));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->comment));
-			if (ndr_get_array_length(ndr, &r->comment) > ndr_get_array_size(ndr, &r->comment)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->comment), ndr_get_array_length(ndr, &r->comment));
+			size_comment_1 = ndr_get_array_size(ndr, &r->comment);
+			length_comment_1 = ndr_get_array_length(ndr, &r->comment);
+			if (length_comment_1 > size_comment_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_comment_1, length_comment_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->comment), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->comment, ndr_get_array_length(ndr, &r->comment), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_comment_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->comment, length_comment_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_comment_0, 0);
 		}
 		if (r->location) {
@@ -6416,11 +6578,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->location, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->location));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->location));
-			if (ndr_get_array_length(ndr, &r->location) > ndr_get_array_size(ndr, &r->location)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->location), ndr_get_array_length(ndr, &r->location));
+			size_location_1 = ndr_get_array_size(ndr, &r->location);
+			length_location_1 = ndr_get_array_length(ndr, &r->location);
+			if (length_location_1 > size_location_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_location_1, length_location_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->location), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->location, ndr_get_array_length(ndr, &r->location), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_location_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->location, length_location_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_location_0, 0);
 		}
 		if (r->sepfile) {
@@ -6428,11 +6592,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->sepfile, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->sepfile));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->sepfile));
-			if (ndr_get_array_length(ndr, &r->sepfile) > ndr_get_array_size(ndr, &r->sepfile)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->sepfile), ndr_get_array_length(ndr, &r->sepfile));
+			size_sepfile_1 = ndr_get_array_size(ndr, &r->sepfile);
+			length_sepfile_1 = ndr_get_array_length(ndr, &r->sepfile);
+			if (length_sepfile_1 > size_sepfile_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_sepfile_1, length_sepfile_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->sepfile), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->sepfile, ndr_get_array_length(ndr, &r->sepfile), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_sepfile_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->sepfile, length_sepfile_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sepfile_0, 0);
 		}
 		if (r->printprocessor) {
@@ -6440,11 +6606,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->printprocessor, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->printprocessor));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->printprocessor));
-			if (ndr_get_array_length(ndr, &r->printprocessor) > ndr_get_array_size(ndr, &r->printprocessor)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->printprocessor), ndr_get_array_length(ndr, &r->printprocessor));
+			size_printprocessor_1 = ndr_get_array_size(ndr, &r->printprocessor);
+			length_printprocessor_1 = ndr_get_array_length(ndr, &r->printprocessor);
+			if (length_printprocessor_1 > size_printprocessor_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printprocessor_1, length_printprocessor_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->printprocessor), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printprocessor, ndr_get_array_length(ndr, &r->printprocessor), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printprocessor_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printprocessor, length_printprocessor_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printprocessor_0, 0);
 		}
 		if (r->datatype) {
@@ -6452,11 +6620,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->datatype, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->datatype));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->datatype));
-			if (ndr_get_array_length(ndr, &r->datatype) > ndr_get_array_size(ndr, &r->datatype)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->datatype), ndr_get_array_length(ndr, &r->datatype));
+			size_datatype_1 = ndr_get_array_size(ndr, &r->datatype);
+			length_datatype_1 = ndr_get_array_length(ndr, &r->datatype);
+			if (length_datatype_1 > size_datatype_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_datatype_1, length_datatype_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->datatype), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->datatype, ndr_get_array_length(ndr, &r->datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_datatype_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->datatype, length_datatype_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_datatype_0, 0);
 		}
 		if (r->parameters) {
@@ -6464,11 +6634,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo2(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->parameters, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->parameters));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->parameters));
-			if (ndr_get_array_length(ndr, &r->parameters) > ndr_get_array_size(ndr, &r->parameters)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->parameters), ndr_get_array_length(ndr, &r->parameters));
+			size_parameters_1 = ndr_get_array_size(ndr, &r->parameters);
+			length_parameters_1 = ndr_get_array_length(ndr, &r->parameters);
+			if (length_parameters_1 > size_parameters_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_parameters_1, length_parameters_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->parameters), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->parameters, ndr_get_array_length(ndr, &r->parameters), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_parameters_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->parameters, length_parameters_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_parameters_0, 0);
 		}
 	}
@@ -6616,8 +6788,12 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo4(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo4(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetPrinterInfo4 *r)
 {
 	uint32_t _ptr_printername;
+	uint32_t size_printername_1 = 0;
+	uint32_t length_printername_1 = 0;
 	TALLOC_CTX *_mem_save_printername_0;
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	TALLOC_CTX *_mem_save_servername_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -6641,11 +6817,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo4(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->printername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->printername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->printername));
-			if (ndr_get_array_length(ndr, &r->printername) > ndr_get_array_size(ndr, &r->printername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->printername), ndr_get_array_length(ndr, &r->printername));
+			size_printername_1 = ndr_get_array_size(ndr, &r->printername);
+			length_printername_1 = ndr_get_array_length(ndr, &r->printername);
+			if (length_printername_1 > size_printername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printername_1, length_printername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->printername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printername, ndr_get_array_length(ndr, &r->printername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printername, length_printername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printername_0, 0);
 		}
 		if (r->servername) {
@@ -6653,11 +6831,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo4(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->servername));
-			if (ndr_get_array_length(ndr, &r->servername) > ndr_get_array_size(ndr, &r->servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->servername), ndr_get_array_length(ndr, &r->servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->servername, ndr_get_array_length(ndr, &r->servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 	}
@@ -6714,8 +6894,12 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo5(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo5(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetPrinterInfo5 *r)
 {
 	uint32_t _ptr_printername;
+	uint32_t size_printername_1 = 0;
+	uint32_t length_printername_1 = 0;
 	TALLOC_CTX *_mem_save_printername_0;
 	uint32_t _ptr_portname;
+	uint32_t size_portname_1 = 0;
+	uint32_t length_portname_1 = 0;
 	TALLOC_CTX *_mem_save_portname_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -6741,11 +6925,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo5(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->printername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->printername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->printername));
-			if (ndr_get_array_length(ndr, &r->printername) > ndr_get_array_size(ndr, &r->printername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->printername), ndr_get_array_length(ndr, &r->printername));
+			size_printername_1 = ndr_get_array_size(ndr, &r->printername);
+			length_printername_1 = ndr_get_array_length(ndr, &r->printername);
+			if (length_printername_1 > size_printername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printername_1, length_printername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->printername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printername, ndr_get_array_length(ndr, &r->printername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->printername, length_printername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printername_0, 0);
 		}
 		if (r->portname) {
@@ -6753,11 +6939,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo5(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->portname, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->portname));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->portname));
-			if (ndr_get_array_length(ndr, &r->portname) > ndr_get_array_size(ndr, &r->portname)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->portname), ndr_get_array_length(ndr, &r->portname));
+			size_portname_1 = ndr_get_array_size(ndr, &r->portname);
+			length_portname_1 = ndr_get_array_length(ndr, &r->portname);
+			if (length_portname_1 > size_portname_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_portname_1, length_portname_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->portname), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, ndr_get_array_length(ndr, &r->portname), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_portname_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, length_portname_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_portname_0, 0);
 		}
 	}
@@ -6837,6 +7025,8 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo7(struct ndr_push *ndr, 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo7(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetPrinterInfo7 *r)
 {
 	uint32_t _ptr_guid;
+	uint32_t size_guid_1 = 0;
+	uint32_t length_guid_1 = 0;
 	TALLOC_CTX *_mem_save_guid_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -6854,11 +7044,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo7(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->guid, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->guid));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->guid));
-			if (ndr_get_array_length(ndr, &r->guid) > ndr_get_array_size(ndr, &r->guid)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->guid), ndr_get_array_length(ndr, &r->guid));
+			size_guid_1 = ndr_get_array_size(ndr, &r->guid);
+			length_guid_1 = ndr_get_array_length(ndr, &r->guid);
+			if (length_guid_1 > size_guid_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_guid_1, length_guid_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->guid), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->guid, ndr_get_array_length(ndr, &r->guid), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_guid_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->guid, length_guid_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_guid_0, 0);
 		}
 	}
@@ -7066,15 +7258,25 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_info0_0;
+	uint32_t _ptr_info0;
 	TALLOC_CTX *_mem_save_info1_0;
+	uint32_t _ptr_info1;
 	TALLOC_CTX *_mem_save_info2_0;
+	uint32_t _ptr_info2;
 	TALLOC_CTX *_mem_save_info3_0;
+	uint32_t _ptr_info3;
 	TALLOC_CTX *_mem_save_info4_0;
+	uint32_t _ptr_info4;
 	TALLOC_CTX *_mem_save_info5_0;
+	uint32_t _ptr_info5;
 	TALLOC_CTX *_mem_save_info6_0;
+	uint32_t _ptr_info6;
 	TALLOC_CTX *_mem_save_info7_0;
+	uint32_t _ptr_info7;
 	TALLOC_CTX *_mem_save_info8_0;
+	uint32_t _ptr_info8;
 	TALLOC_CTX *_mem_save_info9_0;
+	uint32_t _ptr_info9;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -7083,7 +7285,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 		}
 		switch (level) {
 			case 0: {
-				uint32_t _ptr_info0;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info0));
 				if (_ptr_info0) {
 					NDR_PULL_ALLOC(ndr, r->info0);
@@ -7093,7 +7294,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 1: {
-				uint32_t _ptr_info1;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info1));
 				if (_ptr_info1) {
 					NDR_PULL_ALLOC(ndr, r->info1);
@@ -7103,7 +7303,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 2: {
-				uint32_t _ptr_info2;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info2));
 				if (_ptr_info2) {
 					NDR_PULL_ALLOC(ndr, r->info2);
@@ -7113,7 +7312,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 3: {
-				uint32_t _ptr_info3;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info3));
 				if (_ptr_info3) {
 					NDR_PULL_ALLOC(ndr, r->info3);
@@ -7123,7 +7321,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 4: {
-				uint32_t _ptr_info4;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info4));
 				if (_ptr_info4) {
 					NDR_PULL_ALLOC(ndr, r->info4);
@@ -7133,7 +7330,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 5: {
-				uint32_t _ptr_info5;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info5));
 				if (_ptr_info5) {
 					NDR_PULL_ALLOC(ndr, r->info5);
@@ -7143,7 +7339,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 6: {
-				uint32_t _ptr_info6;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info6));
 				if (_ptr_info6) {
 					NDR_PULL_ALLOC(ndr, r->info6);
@@ -7153,7 +7348,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 7: {
-				uint32_t _ptr_info7;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info7));
 				if (_ptr_info7) {
 					NDR_PULL_ALLOC(ndr, r->info7);
@@ -7163,7 +7357,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 8: {
-				uint32_t _ptr_info8;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info8));
 				if (_ptr_info8) {
 					NDR_PULL_ALLOC(ndr, r->info8);
@@ -7173,7 +7366,6 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 			break; }
 
 			case 9: {
-				uint32_t _ptr_info9;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info9));
 				if (_ptr_info9) {
 					NDR_PULL_ALLOC(ndr, r->info9);
@@ -7490,6 +7682,8 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo1(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddDriverInfo1 *r)
 {
 	uint32_t _ptr_driver_name;
+	uint32_t size_driver_name_1 = 0;
+	uint32_t length_driver_name_1 = 0;
 	TALLOC_CTX *_mem_save_driver_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -7506,11 +7700,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo1(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
-			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			size_driver_name_1 = ndr_get_array_size(ndr, &r->driver_name);
+			length_driver_name_1 = ndr_get_array_length(ndr, &r->driver_name);
+			if (length_driver_name_1 > size_driver_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_name_1, length_driver_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, length_driver_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
 	}
@@ -7606,14 +7802,24 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo2(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddDriverInfo2 *r)
 {
 	uint32_t _ptr_driver_name;
+	uint32_t size_driver_name_1 = 0;
+	uint32_t length_driver_name_1 = 0;
 	TALLOC_CTX *_mem_save_driver_name_0;
 	uint32_t _ptr_architecture;
+	uint32_t size_architecture_1 = 0;
+	uint32_t length_architecture_1 = 0;
 	TALLOC_CTX *_mem_save_architecture_0;
 	uint32_t _ptr_driver_path;
+	uint32_t size_driver_path_1 = 0;
+	uint32_t length_driver_path_1 = 0;
 	TALLOC_CTX *_mem_save_driver_path_0;
 	uint32_t _ptr_data_file;
+	uint32_t size_data_file_1 = 0;
+	uint32_t length_data_file_1 = 0;
 	TALLOC_CTX *_mem_save_data_file_0;
 	uint32_t _ptr_config_file;
+	uint32_t size_config_file_1 = 0;
+	uint32_t length_config_file_1 = 0;
 	TALLOC_CTX *_mem_save_config_file_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -7655,11 +7861,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo2(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
-			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			size_driver_name_1 = ndr_get_array_size(ndr, &r->driver_name);
+			length_driver_name_1 = ndr_get_array_length(ndr, &r->driver_name);
+			if (length_driver_name_1 > size_driver_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_name_1, length_driver_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, length_driver_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
 		if (r->architecture) {
@@ -7667,11 +7875,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo2(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->architecture, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->architecture));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->architecture));
-			if (ndr_get_array_length(ndr, &r->architecture) > ndr_get_array_size(ndr, &r->architecture)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->architecture), ndr_get_array_length(ndr, &r->architecture));
+			size_architecture_1 = ndr_get_array_size(ndr, &r->architecture);
+			length_architecture_1 = ndr_get_array_length(ndr, &r->architecture);
+			if (length_architecture_1 > size_architecture_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_1, length_architecture_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, length_architecture_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_architecture_0, 0);
 		}
 		if (r->driver_path) {
@@ -7679,11 +7889,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo2(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_path, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_path));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_path));
-			if (ndr_get_array_length(ndr, &r->driver_path) > ndr_get_array_size(ndr, &r->driver_path)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_path), ndr_get_array_length(ndr, &r->driver_path));
+			size_driver_path_1 = ndr_get_array_size(ndr, &r->driver_path);
+			length_driver_path_1 = ndr_get_array_length(ndr, &r->driver_path);
+			if (length_driver_path_1 > size_driver_path_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_path_1, length_driver_path_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_path_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, length_driver_path_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_path_0, 0);
 		}
 		if (r->data_file) {
@@ -7691,11 +7903,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo2(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->data_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_file));
-			if (ndr_get_array_length(ndr, &r->data_file) > ndr_get_array_size(ndr, &r->data_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_file), ndr_get_array_length(ndr, &r->data_file));
+			size_data_file_1 = ndr_get_array_size(ndr, &r->data_file);
+			length_data_file_1 = ndr_get_array_length(ndr, &r->data_file);
+			if (length_data_file_1 > size_data_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_file_1, length_data_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, length_data_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_file_0, 0);
 		}
 		if (r->config_file) {
@@ -7703,11 +7917,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo2(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->config_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->config_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->config_file));
-			if (ndr_get_array_length(ndr, &r->config_file) > ndr_get_array_size(ndr, &r->config_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->config_file), ndr_get_array_length(ndr, &r->config_file));
+			size_config_file_1 = ndr_get_array_size(ndr, &r->config_file);
+			length_config_file_1 = ndr_get_array_length(ndr, &r->config_file);
+			if (length_config_file_1 > size_config_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_config_file_1, length_config_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_config_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, length_config_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_config_file_0, 0);
 		}
 	}
@@ -7827,20 +8043,36 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo3(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddDriverInfo3 *r)
 {
 	uint32_t _ptr_driver_name;
+	uint32_t size_driver_name_1 = 0;
+	uint32_t length_driver_name_1 = 0;
 	TALLOC_CTX *_mem_save_driver_name_0;
 	uint32_t _ptr_architecture;
+	uint32_t size_architecture_1 = 0;
+	uint32_t length_architecture_1 = 0;
 	TALLOC_CTX *_mem_save_architecture_0;
 	uint32_t _ptr_driver_path;
+	uint32_t size_driver_path_1 = 0;
+	uint32_t length_driver_path_1 = 0;
 	TALLOC_CTX *_mem_save_driver_path_0;
 	uint32_t _ptr_data_file;
+	uint32_t size_data_file_1 = 0;
+	uint32_t length_data_file_1 = 0;
 	TALLOC_CTX *_mem_save_data_file_0;
 	uint32_t _ptr_config_file;
+	uint32_t size_config_file_1 = 0;
+	uint32_t length_config_file_1 = 0;
 	TALLOC_CTX *_mem_save_config_file_0;
 	uint32_t _ptr_help_file;
+	uint32_t size_help_file_1 = 0;
+	uint32_t length_help_file_1 = 0;
 	TALLOC_CTX *_mem_save_help_file_0;
 	uint32_t _ptr_monitor_name;
+	uint32_t size_monitor_name_1 = 0;
+	uint32_t length_monitor_name_1 = 0;
 	TALLOC_CTX *_mem_save_monitor_name_0;
 	uint32_t _ptr_default_datatype;
+	uint32_t size_default_datatype_1 = 0;
+	uint32_t length_default_datatype_1 = 0;
 	TALLOC_CTX *_mem_save_default_datatype_0;
 	uint32_t _ptr_dependent_files;
 	TALLOC_CTX *_mem_save_dependent_files_0;
@@ -7909,11 +8141,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
-			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			size_driver_name_1 = ndr_get_array_size(ndr, &r->driver_name);
+			length_driver_name_1 = ndr_get_array_length(ndr, &r->driver_name);
+			if (length_driver_name_1 > size_driver_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_name_1, length_driver_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, length_driver_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
 		if (r->architecture) {
@@ -7921,11 +8155,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->architecture, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->architecture));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->architecture));
-			if (ndr_get_array_length(ndr, &r->architecture) > ndr_get_array_size(ndr, &r->architecture)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->architecture), ndr_get_array_length(ndr, &r->architecture));
+			size_architecture_1 = ndr_get_array_size(ndr, &r->architecture);
+			length_architecture_1 = ndr_get_array_length(ndr, &r->architecture);
+			if (length_architecture_1 > size_architecture_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_1, length_architecture_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, length_architecture_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_architecture_0, 0);
 		}
 		if (r->driver_path) {
@@ -7933,11 +8169,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_path, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_path));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_path));
-			if (ndr_get_array_length(ndr, &r->driver_path) > ndr_get_array_size(ndr, &r->driver_path)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_path), ndr_get_array_length(ndr, &r->driver_path));
+			size_driver_path_1 = ndr_get_array_size(ndr, &r->driver_path);
+			length_driver_path_1 = ndr_get_array_length(ndr, &r->driver_path);
+			if (length_driver_path_1 > size_driver_path_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_path_1, length_driver_path_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_path_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, length_driver_path_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_path_0, 0);
 		}
 		if (r->data_file) {
@@ -7945,11 +8183,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->data_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_file));
-			if (ndr_get_array_length(ndr, &r->data_file) > ndr_get_array_size(ndr, &r->data_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_file), ndr_get_array_length(ndr, &r->data_file));
+			size_data_file_1 = ndr_get_array_size(ndr, &r->data_file);
+			length_data_file_1 = ndr_get_array_length(ndr, &r->data_file);
+			if (length_data_file_1 > size_data_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_file_1, length_data_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, length_data_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_file_0, 0);
 		}
 		if (r->config_file) {
@@ -7957,11 +8197,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->config_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->config_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->config_file));
-			if (ndr_get_array_length(ndr, &r->config_file) > ndr_get_array_size(ndr, &r->config_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->config_file), ndr_get_array_length(ndr, &r->config_file));
+			size_config_file_1 = ndr_get_array_size(ndr, &r->config_file);
+			length_config_file_1 = ndr_get_array_length(ndr, &r->config_file);
+			if (length_config_file_1 > size_config_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_config_file_1, length_config_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_config_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, length_config_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_config_file_0, 0);
 		}
 		if (r->help_file) {
@@ -7969,11 +8211,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->help_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->help_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->help_file));
-			if (ndr_get_array_length(ndr, &r->help_file) > ndr_get_array_size(ndr, &r->help_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->help_file), ndr_get_array_length(ndr, &r->help_file));
+			size_help_file_1 = ndr_get_array_size(ndr, &r->help_file);
+			length_help_file_1 = ndr_get_array_length(ndr, &r->help_file);
+			if (length_help_file_1 > size_help_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_help_file_1, length_help_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_help_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, length_help_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_help_file_0, 0);
 		}
 		if (r->monitor_name) {
@@ -7981,11 +8225,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->monitor_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->monitor_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->monitor_name));
-			if (ndr_get_array_length(ndr, &r->monitor_name) > ndr_get_array_size(ndr, &r->monitor_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->monitor_name), ndr_get_array_length(ndr, &r->monitor_name));
+			size_monitor_name_1 = ndr_get_array_size(ndr, &r->monitor_name);
+			length_monitor_name_1 = ndr_get_array_length(ndr, &r->monitor_name);
+			if (length_monitor_name_1 > size_monitor_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_monitor_name_1, length_monitor_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_monitor_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, length_monitor_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_monitor_name_0, 0);
 		}
 		if (r->default_datatype) {
@@ -7993,11 +8239,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo3(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->default_datatype, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->default_datatype));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->default_datatype));
-			if (ndr_get_array_length(ndr, &r->default_datatype) > ndr_get_array_size(ndr, &r->default_datatype)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->default_datatype), ndr_get_array_length(ndr, &r->default_datatype));
+			size_default_datatype_1 = ndr_get_array_size(ndr, &r->default_datatype);
+			length_default_datatype_1 = ndr_get_array_length(ndr, &r->default_datatype);
+			if (length_default_datatype_1 > size_default_datatype_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_default_datatype_1, length_default_datatype_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_default_datatype_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, length_default_datatype_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_default_datatype_0, 0);
 		}
 		if (r->dependent_files) {
@@ -8153,20 +8401,36 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo4(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddDriverInfo4 *r)
 {
 	uint32_t _ptr_driver_name;
+	uint32_t size_driver_name_1 = 0;
+	uint32_t length_driver_name_1 = 0;
 	TALLOC_CTX *_mem_save_driver_name_0;
 	uint32_t _ptr_architecture;
+	uint32_t size_architecture_1 = 0;
+	uint32_t length_architecture_1 = 0;
 	TALLOC_CTX *_mem_save_architecture_0;
 	uint32_t _ptr_driver_path;
+	uint32_t size_driver_path_1 = 0;
+	uint32_t length_driver_path_1 = 0;
 	TALLOC_CTX *_mem_save_driver_path_0;
 	uint32_t _ptr_data_file;
+	uint32_t size_data_file_1 = 0;
+	uint32_t length_data_file_1 = 0;
 	TALLOC_CTX *_mem_save_data_file_0;
 	uint32_t _ptr_config_file;
+	uint32_t size_config_file_1 = 0;
+	uint32_t length_config_file_1 = 0;
 	TALLOC_CTX *_mem_save_config_file_0;
 	uint32_t _ptr_help_file;
+	uint32_t size_help_file_1 = 0;
+	uint32_t length_help_file_1 = 0;
 	TALLOC_CTX *_mem_save_help_file_0;
 	uint32_t _ptr_monitor_name;
+	uint32_t size_monitor_name_1 = 0;
+	uint32_t length_monitor_name_1 = 0;
 	TALLOC_CTX *_mem_save_monitor_name_0;
 	uint32_t _ptr_default_datatype;
+	uint32_t size_default_datatype_1 = 0;
+	uint32_t length_default_datatype_1 = 0;
 	TALLOC_CTX *_mem_save_default_datatype_0;
 	uint32_t _ptr_dependent_files;
 	TALLOC_CTX *_mem_save_dependent_files_0;
@@ -8244,11 +8508,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
-			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			size_driver_name_1 = ndr_get_array_size(ndr, &r->driver_name);
+			length_driver_name_1 = ndr_get_array_length(ndr, &r->driver_name);
+			if (length_driver_name_1 > size_driver_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_name_1, length_driver_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, length_driver_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
 		if (r->architecture) {
@@ -8256,11 +8522,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->architecture, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->architecture));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->architecture));
-			if (ndr_get_array_length(ndr, &r->architecture) > ndr_get_array_size(ndr, &r->architecture)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->architecture), ndr_get_array_length(ndr, &r->architecture));
+			size_architecture_1 = ndr_get_array_size(ndr, &r->architecture);
+			length_architecture_1 = ndr_get_array_length(ndr, &r->architecture);
+			if (length_architecture_1 > size_architecture_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_1, length_architecture_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, length_architecture_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_architecture_0, 0);
 		}
 		if (r->driver_path) {
@@ -8268,11 +8536,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_path, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_path));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_path));
-			if (ndr_get_array_length(ndr, &r->driver_path) > ndr_get_array_size(ndr, &r->driver_path)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_path), ndr_get_array_length(ndr, &r->driver_path));
+			size_driver_path_1 = ndr_get_array_size(ndr, &r->driver_path);
+			length_driver_path_1 = ndr_get_array_length(ndr, &r->driver_path);
+			if (length_driver_path_1 > size_driver_path_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_path_1, length_driver_path_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_path_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, length_driver_path_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_path_0, 0);
 		}
 		if (r->data_file) {
@@ -8280,11 +8550,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->data_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_file));
-			if (ndr_get_array_length(ndr, &r->data_file) > ndr_get_array_size(ndr, &r->data_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_file), ndr_get_array_length(ndr, &r->data_file));
+			size_data_file_1 = ndr_get_array_size(ndr, &r->data_file);
+			length_data_file_1 = ndr_get_array_length(ndr, &r->data_file);
+			if (length_data_file_1 > size_data_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_file_1, length_data_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, length_data_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_file_0, 0);
 		}
 		if (r->config_file) {
@@ -8292,11 +8564,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->config_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->config_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->config_file));
-			if (ndr_get_array_length(ndr, &r->config_file) > ndr_get_array_size(ndr, &r->config_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->config_file), ndr_get_array_length(ndr, &r->config_file));
+			size_config_file_1 = ndr_get_array_size(ndr, &r->config_file);
+			length_config_file_1 = ndr_get_array_length(ndr, &r->config_file);
+			if (length_config_file_1 > size_config_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_config_file_1, length_config_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_config_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, length_config_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_config_file_0, 0);
 		}
 		if (r->help_file) {
@@ -8304,11 +8578,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->help_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->help_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->help_file));
-			if (ndr_get_array_length(ndr, &r->help_file) > ndr_get_array_size(ndr, &r->help_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->help_file), ndr_get_array_length(ndr, &r->help_file));
+			size_help_file_1 = ndr_get_array_size(ndr, &r->help_file);
+			length_help_file_1 = ndr_get_array_length(ndr, &r->help_file);
+			if (length_help_file_1 > size_help_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_help_file_1, length_help_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_help_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, length_help_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_help_file_0, 0);
 		}
 		if (r->monitor_name) {
@@ -8316,11 +8592,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->monitor_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->monitor_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->monitor_name));
-			if (ndr_get_array_length(ndr, &r->monitor_name) > ndr_get_array_size(ndr, &r->monitor_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->monitor_name), ndr_get_array_length(ndr, &r->monitor_name));
+			size_monitor_name_1 = ndr_get_array_size(ndr, &r->monitor_name);
+			length_monitor_name_1 = ndr_get_array_length(ndr, &r->monitor_name);
+			if (length_monitor_name_1 > size_monitor_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_monitor_name_1, length_monitor_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_monitor_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, length_monitor_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_monitor_name_0, 0);
 		}
 		if (r->default_datatype) {
@@ -8328,11 +8606,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo4(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->default_datatype, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->default_datatype));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->default_datatype));
-			if (ndr_get_array_length(ndr, &r->default_datatype) > ndr_get_array_size(ndr, &r->default_datatype)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->default_datatype), ndr_get_array_length(ndr, &r->default_datatype));
+			size_default_datatype_1 = ndr_get_array_size(ndr, &r->default_datatype);
+			length_default_datatype_1 = ndr_get_array_length(ndr, &r->default_datatype);
+			if (length_default_datatype_1 > size_default_datatype_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_default_datatype_1, length_default_datatype_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_default_datatype_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, length_default_datatype_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_default_datatype_0, 0);
 		}
 		if (r->dependent_files) {
@@ -8553,32 +8833,56 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo6(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddDriverInfo6 *r)
 {
 	uint32_t _ptr_driver_name;
+	uint32_t size_driver_name_1 = 0;
+	uint32_t length_driver_name_1 = 0;
 	TALLOC_CTX *_mem_save_driver_name_0;
 	uint32_t _ptr_architecture;
+	uint32_t size_architecture_1 = 0;
+	uint32_t length_architecture_1 = 0;
 	TALLOC_CTX *_mem_save_architecture_0;
 	uint32_t _ptr_driver_path;
+	uint32_t size_driver_path_1 = 0;
+	uint32_t length_driver_path_1 = 0;
 	TALLOC_CTX *_mem_save_driver_path_0;
 	uint32_t _ptr_data_file;
+	uint32_t size_data_file_1 = 0;
+	uint32_t length_data_file_1 = 0;
 	TALLOC_CTX *_mem_save_data_file_0;
 	uint32_t _ptr_config_file;
+	uint32_t size_config_file_1 = 0;
+	uint32_t length_config_file_1 = 0;
 	TALLOC_CTX *_mem_save_config_file_0;
 	uint32_t _ptr_help_file;
+	uint32_t size_help_file_1 = 0;
+	uint32_t length_help_file_1 = 0;
 	TALLOC_CTX *_mem_save_help_file_0;
 	uint32_t _ptr_monitor_name;
+	uint32_t size_monitor_name_1 = 0;
+	uint32_t length_monitor_name_1 = 0;
 	TALLOC_CTX *_mem_save_monitor_name_0;
 	uint32_t _ptr_default_datatype;
+	uint32_t size_default_datatype_1 = 0;
+	uint32_t length_default_datatype_1 = 0;
 	TALLOC_CTX *_mem_save_default_datatype_0;
 	uint32_t _ptr_dependent_files;
 	TALLOC_CTX *_mem_save_dependent_files_0;
 	uint32_t _ptr_previous_names;
 	TALLOC_CTX *_mem_save_previous_names_0;
 	uint32_t _ptr_manufacturer_name;
+	uint32_t size_manufacturer_name_1 = 0;
+	uint32_t length_manufacturer_name_1 = 0;
 	TALLOC_CTX *_mem_save_manufacturer_name_0;
 	uint32_t _ptr_manufacturer_url;
+	uint32_t size_manufacturer_url_1 = 0;
+	uint32_t length_manufacturer_url_1 = 0;
 	TALLOC_CTX *_mem_save_manufacturer_url_0;
 	uint32_t _ptr_hardware_id;
+	uint32_t size_hardware_id_1 = 0;
+	uint32_t length_hardware_id_1 = 0;
 	TALLOC_CTX *_mem_save_hardware_id_0;
 	uint32_t _ptr_provider;
+	uint32_t size_provider_1 = 0;
+	uint32_t length_provider_1 = 0;
 	TALLOC_CTX *_mem_save_provider_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -8678,11 +8982,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
-			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			size_driver_name_1 = ndr_get_array_size(ndr, &r->driver_name);
+			length_driver_name_1 = ndr_get_array_length(ndr, &r->driver_name);
+			if (length_driver_name_1 > size_driver_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_name_1, length_driver_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, length_driver_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
 		if (r->architecture) {
@@ -8690,11 +8996,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->architecture, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->architecture));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->architecture));
-			if (ndr_get_array_length(ndr, &r->architecture) > ndr_get_array_size(ndr, &r->architecture)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->architecture), ndr_get_array_length(ndr, &r->architecture));
+			size_architecture_1 = ndr_get_array_size(ndr, &r->architecture);
+			length_architecture_1 = ndr_get_array_length(ndr, &r->architecture);
+			if (length_architecture_1 > size_architecture_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_1, length_architecture_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, length_architecture_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_architecture_0, 0);
 		}
 		if (r->driver_path) {
@@ -8702,11 +9010,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_path, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_path));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_path));
-			if (ndr_get_array_length(ndr, &r->driver_path) > ndr_get_array_size(ndr, &r->driver_path)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_path), ndr_get_array_length(ndr, &r->driver_path));
+			size_driver_path_1 = ndr_get_array_size(ndr, &r->driver_path);
+			length_driver_path_1 = ndr_get_array_length(ndr, &r->driver_path);
+			if (length_driver_path_1 > size_driver_path_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_path_1, length_driver_path_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_path_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, length_driver_path_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_path_0, 0);
 		}
 		if (r->data_file) {
@@ -8714,11 +9024,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->data_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_file));
-			if (ndr_get_array_length(ndr, &r->data_file) > ndr_get_array_size(ndr, &r->data_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_file), ndr_get_array_length(ndr, &r->data_file));
+			size_data_file_1 = ndr_get_array_size(ndr, &r->data_file);
+			length_data_file_1 = ndr_get_array_length(ndr, &r->data_file);
+			if (length_data_file_1 > size_data_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_file_1, length_data_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, length_data_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_file_0, 0);
 		}
 		if (r->config_file) {
@@ -8726,11 +9038,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->config_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->config_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->config_file));
-			if (ndr_get_array_length(ndr, &r->config_file) > ndr_get_array_size(ndr, &r->config_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->config_file), ndr_get_array_length(ndr, &r->config_file));
+			size_config_file_1 = ndr_get_array_size(ndr, &r->config_file);
+			length_config_file_1 = ndr_get_array_length(ndr, &r->config_file);
+			if (length_config_file_1 > size_config_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_config_file_1, length_config_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_config_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, length_config_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_config_file_0, 0);
 		}
 		if (r->help_file) {
@@ -8738,11 +9052,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->help_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->help_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->help_file));
-			if (ndr_get_array_length(ndr, &r->help_file) > ndr_get_array_size(ndr, &r->help_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->help_file), ndr_get_array_length(ndr, &r->help_file));
+			size_help_file_1 = ndr_get_array_size(ndr, &r->help_file);
+			length_help_file_1 = ndr_get_array_length(ndr, &r->help_file);
+			if (length_help_file_1 > size_help_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_help_file_1, length_help_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_help_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, length_help_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_help_file_0, 0);
 		}
 		if (r->monitor_name) {
@@ -8750,11 +9066,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->monitor_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->monitor_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->monitor_name));
-			if (ndr_get_array_length(ndr, &r->monitor_name) > ndr_get_array_size(ndr, &r->monitor_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->monitor_name), ndr_get_array_length(ndr, &r->monitor_name));
+			size_monitor_name_1 = ndr_get_array_size(ndr, &r->monitor_name);
+			length_monitor_name_1 = ndr_get_array_length(ndr, &r->monitor_name);
+			if (length_monitor_name_1 > size_monitor_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_monitor_name_1, length_monitor_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_monitor_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, length_monitor_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_monitor_name_0, 0);
 		}
 		if (r->default_datatype) {
@@ -8762,11 +9080,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->default_datatype, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->default_datatype));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->default_datatype));
-			if (ndr_get_array_length(ndr, &r->default_datatype) > ndr_get_array_size(ndr, &r->default_datatype)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->default_datatype), ndr_get_array_length(ndr, &r->default_datatype));
+			size_default_datatype_1 = ndr_get_array_size(ndr, &r->default_datatype);
+			length_default_datatype_1 = ndr_get_array_length(ndr, &r->default_datatype);
+			if (length_default_datatype_1 > size_default_datatype_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_default_datatype_1, length_default_datatype_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_default_datatype_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, length_default_datatype_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_default_datatype_0, 0);
 		}
 		if (r->dependent_files) {
@@ -8786,11 +9106,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->manufacturer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->manufacturer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->manufacturer_name));
-			if (ndr_get_array_length(ndr, &r->manufacturer_name) > ndr_get_array_size(ndr, &r->manufacturer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->manufacturer_name), ndr_get_array_length(ndr, &r->manufacturer_name));
+			size_manufacturer_name_1 = ndr_get_array_size(ndr, &r->manufacturer_name);
+			length_manufacturer_name_1 = ndr_get_array_length(ndr, &r->manufacturer_name);
+			if (length_manufacturer_name_1 > size_manufacturer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_manufacturer_name_1, length_manufacturer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->manufacturer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_name, ndr_get_array_length(ndr, &r->manufacturer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_manufacturer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_name, length_manufacturer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_manufacturer_name_0, 0);
 		}
 		if (r->manufacturer_url) {
@@ -8798,11 +9120,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->manufacturer_url, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->manufacturer_url));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->manufacturer_url));
-			if (ndr_get_array_length(ndr, &r->manufacturer_url) > ndr_get_array_size(ndr, &r->manufacturer_url)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->manufacturer_url), ndr_get_array_length(ndr, &r->manufacturer_url));
+			size_manufacturer_url_1 = ndr_get_array_size(ndr, &r->manufacturer_url);
+			length_manufacturer_url_1 = ndr_get_array_length(ndr, &r->manufacturer_url);
+			if (length_manufacturer_url_1 > size_manufacturer_url_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_manufacturer_url_1, length_manufacturer_url_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->manufacturer_url), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_url, ndr_get_array_length(ndr, &r->manufacturer_url), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_manufacturer_url_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_url, length_manufacturer_url_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_manufacturer_url_0, 0);
 		}
 		if (r->hardware_id) {
@@ -8810,11 +9134,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->hardware_id, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->hardware_id));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->hardware_id));
-			if (ndr_get_array_length(ndr, &r->hardware_id) > ndr_get_array_size(ndr, &r->hardware_id)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->hardware_id), ndr_get_array_length(ndr, &r->hardware_id));
+			size_hardware_id_1 = ndr_get_array_size(ndr, &r->hardware_id);
+			length_hardware_id_1 = ndr_get_array_length(ndr, &r->hardware_id);
+			if (length_hardware_id_1 > size_hardware_id_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_hardware_id_1, length_hardware_id_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->hardware_id), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hardware_id, ndr_get_array_length(ndr, &r->hardware_id), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_hardware_id_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hardware_id, length_hardware_id_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_hardware_id_0, 0);
 		}
 		if (r->provider) {
@@ -8822,11 +9148,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo6(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->provider, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->provider));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->provider));
-			if (ndr_get_array_length(ndr, &r->provider) > ndr_get_array_size(ndr, &r->provider)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->provider), ndr_get_array_length(ndr, &r->provider));
+			size_provider_1 = ndr_get_array_size(ndr, &r->provider);
+			length_provider_1 = ndr_get_array_length(ndr, &r->provider);
+			if (length_provider_1 > size_provider_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_provider_1, length_provider_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->provider), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->provider, ndr_get_array_length(ndr, &r->provider), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_provider_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->provider, length_provider_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_provider_0, 0);
 		}
 	}
@@ -9073,40 +9401,70 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo8(struct ndr_push *ndr, i
 static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddDriverInfo8 *r)
 {
 	uint32_t _ptr_driver_name;
+	uint32_t size_driver_name_1 = 0;
+	uint32_t length_driver_name_1 = 0;
 	TALLOC_CTX *_mem_save_driver_name_0;
 	uint32_t _ptr_architecture;
+	uint32_t size_architecture_1 = 0;
+	uint32_t length_architecture_1 = 0;
 	TALLOC_CTX *_mem_save_architecture_0;
 	uint32_t _ptr_driver_path;
+	uint32_t size_driver_path_1 = 0;
+	uint32_t length_driver_path_1 = 0;
 	TALLOC_CTX *_mem_save_driver_path_0;
 	uint32_t _ptr_data_file;
+	uint32_t size_data_file_1 = 0;
+	uint32_t length_data_file_1 = 0;
 	TALLOC_CTX *_mem_save_data_file_0;
 	uint32_t _ptr_config_file;
+	uint32_t size_config_file_1 = 0;
+	uint32_t length_config_file_1 = 0;
 	TALLOC_CTX *_mem_save_config_file_0;
 	uint32_t _ptr_help_file;
+	uint32_t size_help_file_1 = 0;
+	uint32_t length_help_file_1 = 0;
 	TALLOC_CTX *_mem_save_help_file_0;
 	uint32_t _ptr_monitor_name;
+	uint32_t size_monitor_name_1 = 0;
+	uint32_t length_monitor_name_1 = 0;
 	TALLOC_CTX *_mem_save_monitor_name_0;
 	uint32_t _ptr_default_datatype;
+	uint32_t size_default_datatype_1 = 0;
+	uint32_t length_default_datatype_1 = 0;
 	TALLOC_CTX *_mem_save_default_datatype_0;
 	uint32_t _ptr_dependent_files;
 	TALLOC_CTX *_mem_save_dependent_files_0;
 	uint32_t _ptr_previous_names;
 	TALLOC_CTX *_mem_save_previous_names_0;
 	uint32_t _ptr_manufacturer_name;
+	uint32_t size_manufacturer_name_1 = 0;
+	uint32_t length_manufacturer_name_1 = 0;
 	TALLOC_CTX *_mem_save_manufacturer_name_0;
 	uint32_t _ptr_manufacturer_url;
+	uint32_t size_manufacturer_url_1 = 0;
+	uint32_t length_manufacturer_url_1 = 0;
 	TALLOC_CTX *_mem_save_manufacturer_url_0;
 	uint32_t _ptr_hardware_id;
+	uint32_t size_hardware_id_1 = 0;
+	uint32_t length_hardware_id_1 = 0;
 	TALLOC_CTX *_mem_save_hardware_id_0;
 	uint32_t _ptr_provider;
+	uint32_t size_provider_1 = 0;
+	uint32_t length_provider_1 = 0;
 	TALLOC_CTX *_mem_save_provider_0;
 	uint32_t _ptr_print_processor;
+	uint32_t size_print_processor_1 = 0;
+	uint32_t length_print_processor_1 = 0;
 	TALLOC_CTX *_mem_save_print_processor_0;
 	uint32_t _ptr_vendor_setup;
+	uint32_t size_vendor_setup_1 = 0;
+	uint32_t length_vendor_setup_1 = 0;
 	TALLOC_CTX *_mem_save_vendor_setup_0;
 	uint32_t _ptr_color_profiles;
 	TALLOC_CTX *_mem_save_color_profiles_0;
 	uint32_t _ptr_inf_path;
+	uint32_t size_inf_path_1 = 0;
+	uint32_t length_inf_path_1 = 0;
 	TALLOC_CTX *_mem_save_inf_path_0;
 	uint32_t _ptr_core_driver_dependencies;
 	TALLOC_CTX *_mem_save_core_driver_dependencies_0;
@@ -9243,11 +9601,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
-			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			size_driver_name_1 = ndr_get_array_size(ndr, &r->driver_name);
+			length_driver_name_1 = ndr_get_array_length(ndr, &r->driver_name);
+			if (length_driver_name_1 > size_driver_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_name_1, length_driver_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, length_driver_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
 		}
 		if (r->architecture) {
@@ -9255,11 +9615,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->architecture, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->architecture));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->architecture));
-			if (ndr_get_array_length(ndr, &r->architecture) > ndr_get_array_size(ndr, &r->architecture)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->architecture), ndr_get_array_length(ndr, &r->architecture));
+			size_architecture_1 = ndr_get_array_size(ndr, &r->architecture);
+			length_architecture_1 = ndr_get_array_length(ndr, &r->architecture);
+			if (length_architecture_1 > size_architecture_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_1, length_architecture_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, length_architecture_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_architecture_0, 0);
 		}
 		if (r->driver_path) {
@@ -9267,11 +9629,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->driver_path, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_path));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_path));
-			if (ndr_get_array_length(ndr, &r->driver_path) > ndr_get_array_size(ndr, &r->driver_path)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_path), ndr_get_array_length(ndr, &r->driver_path));
+			size_driver_path_1 = ndr_get_array_size(ndr, &r->driver_path);
+			length_driver_path_1 = ndr_get_array_length(ndr, &r->driver_path);
+			if (length_driver_path_1 > size_driver_path_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_path_1, length_driver_path_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_path_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, length_driver_path_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_path_0, 0);
 		}
 		if (r->data_file) {
@@ -9279,11 +9643,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->data_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_file));
-			if (ndr_get_array_length(ndr, &r->data_file) > ndr_get_array_size(ndr, &r->data_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_file), ndr_get_array_length(ndr, &r->data_file));
+			size_data_file_1 = ndr_get_array_size(ndr, &r->data_file);
+			length_data_file_1 = ndr_get_array_length(ndr, &r->data_file);
+			if (length_data_file_1 > size_data_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_file_1, length_data_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, length_data_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_file_0, 0);
 		}
 		if (r->config_file) {
@@ -9291,11 +9657,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->config_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->config_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->config_file));
-			if (ndr_get_array_length(ndr, &r->config_file) > ndr_get_array_size(ndr, &r->config_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->config_file), ndr_get_array_length(ndr, &r->config_file));
+			size_config_file_1 = ndr_get_array_size(ndr, &r->config_file);
+			length_config_file_1 = ndr_get_array_length(ndr, &r->config_file);
+			if (length_config_file_1 > size_config_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_config_file_1, length_config_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_config_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, length_config_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_config_file_0, 0);
 		}
 		if (r->help_file) {
@@ -9303,11 +9671,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->help_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->help_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->help_file));
-			if (ndr_get_array_length(ndr, &r->help_file) > ndr_get_array_size(ndr, &r->help_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->help_file), ndr_get_array_length(ndr, &r->help_file));
+			size_help_file_1 = ndr_get_array_size(ndr, &r->help_file);
+			length_help_file_1 = ndr_get_array_length(ndr, &r->help_file);
+			if (length_help_file_1 > size_help_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_help_file_1, length_help_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_help_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, length_help_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_help_file_0, 0);
 		}
 		if (r->monitor_name) {
@@ -9315,11 +9685,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->monitor_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->monitor_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->monitor_name));
-			if (ndr_get_array_length(ndr, &r->monitor_name) > ndr_get_array_size(ndr, &r->monitor_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->monitor_name), ndr_get_array_length(ndr, &r->monitor_name));
+			size_monitor_name_1 = ndr_get_array_size(ndr, &r->monitor_name);
+			length_monitor_name_1 = ndr_get_array_length(ndr, &r->monitor_name);
+			if (length_monitor_name_1 > size_monitor_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_monitor_name_1, length_monitor_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_monitor_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, length_monitor_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_monitor_name_0, 0);
 		}
 		if (r->default_datatype) {
@@ -9327,11 +9699,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->default_datatype, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->default_datatype));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->default_datatype));
-			if (ndr_get_array_length(ndr, &r->default_datatype) > ndr_get_array_size(ndr, &r->default_datatype)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->default_datatype), ndr_get_array_length(ndr, &r->default_datatype));
+			size_default_datatype_1 = ndr_get_array_size(ndr, &r->default_datatype);
+			length_default_datatype_1 = ndr_get_array_length(ndr, &r->default_datatype);
+			if (length_default_datatype_1 > size_default_datatype_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_default_datatype_1, length_default_datatype_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_default_datatype_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, length_default_datatype_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_default_datatype_0, 0);
 		}
 		if (r->dependent_files) {
@@ -9351,11 +9725,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->manufacturer_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->manufacturer_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->manufacturer_name));
-			if (ndr_get_array_length(ndr, &r->manufacturer_name) > ndr_get_array_size(ndr, &r->manufacturer_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->manufacturer_name), ndr_get_array_length(ndr, &r->manufacturer_name));
+			size_manufacturer_name_1 = ndr_get_array_size(ndr, &r->manufacturer_name);
+			length_manufacturer_name_1 = ndr_get_array_length(ndr, &r->manufacturer_name);
+			if (length_manufacturer_name_1 > size_manufacturer_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_manufacturer_name_1, length_manufacturer_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->manufacturer_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_name, ndr_get_array_length(ndr, &r->manufacturer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_manufacturer_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_name, length_manufacturer_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_manufacturer_name_0, 0);
 		}
 		if (r->manufacturer_url) {
@@ -9363,11 +9739,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->manufacturer_url, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->manufacturer_url));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->manufacturer_url));
-			if (ndr_get_array_length(ndr, &r->manufacturer_url) > ndr_get_array_size(ndr, &r->manufacturer_url)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->manufacturer_url), ndr_get_array_length(ndr, &r->manufacturer_url));
+			size_manufacturer_url_1 = ndr_get_array_size(ndr, &r->manufacturer_url);
+			length_manufacturer_url_1 = ndr_get_array_length(ndr, &r->manufacturer_url);
+			if (length_manufacturer_url_1 > size_manufacturer_url_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_manufacturer_url_1, length_manufacturer_url_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->manufacturer_url), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_url, ndr_get_array_length(ndr, &r->manufacturer_url), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_manufacturer_url_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_url, length_manufacturer_url_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_manufacturer_url_0, 0);
 		}
 		if (r->hardware_id) {
@@ -9375,11 +9753,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->hardware_id, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->hardware_id));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->hardware_id));
-			if (ndr_get_array_length(ndr, &r->hardware_id) > ndr_get_array_size(ndr, &r->hardware_id)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->hardware_id), ndr_get_array_length(ndr, &r->hardware_id));
+			size_hardware_id_1 = ndr_get_array_size(ndr, &r->hardware_id);
+			length_hardware_id_1 = ndr_get_array_length(ndr, &r->hardware_id);
+			if (length_hardware_id_1 > size_hardware_id_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_hardware_id_1, length_hardware_id_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->hardware_id), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hardware_id, ndr_get_array_length(ndr, &r->hardware_id), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_hardware_id_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hardware_id, length_hardware_id_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_hardware_id_0, 0);
 		}
 		if (r->provider) {
@@ -9387,11 +9767,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->provider, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->provider));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->provider));
-			if (ndr_get_array_length(ndr, &r->provider) > ndr_get_array_size(ndr, &r->provider)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->provider), ndr_get_array_length(ndr, &r->provider));
+			size_provider_1 = ndr_get_array_size(ndr, &r->provider);
+			length_provider_1 = ndr_get_array_length(ndr, &r->provider);
+			if (length_provider_1 > size_provider_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_provider_1, length_provider_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->provider), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->provider, ndr_get_array_length(ndr, &r->provider), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_provider_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->provider, length_provider_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_provider_0, 0);
 		}
 		if (r->print_processor) {
@@ -9399,11 +9781,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->print_processor, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->print_processor));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->print_processor));
-			if (ndr_get_array_length(ndr, &r->print_processor) > ndr_get_array_size(ndr, &r->print_processor)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->print_processor), ndr_get_array_length(ndr, &r->print_processor));
+			size_print_processor_1 = ndr_get_array_size(ndr, &r->print_processor);
+			length_print_processor_1 = ndr_get_array_length(ndr, &r->print_processor);
+			if (length_print_processor_1 > size_print_processor_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_print_processor_1, length_print_processor_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->print_processor), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->print_processor, ndr_get_array_length(ndr, &r->print_processor), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_print_processor_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->print_processor, length_print_processor_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_print_processor_0, 0);
 		}
 		if (r->vendor_setup) {
@@ -9411,11 +9795,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->vendor_setup, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->vendor_setup));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->vendor_setup));
-			if (ndr_get_array_length(ndr, &r->vendor_setup) > ndr_get_array_size(ndr, &r->vendor_setup)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->vendor_setup), ndr_get_array_length(ndr, &r->vendor_setup));
+			size_vendor_setup_1 = ndr_get_array_size(ndr, &r->vendor_setup);
+			length_vendor_setup_1 = ndr_get_array_length(ndr, &r->vendor_setup);
+			if (length_vendor_setup_1 > size_vendor_setup_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_vendor_setup_1, length_vendor_setup_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->vendor_setup), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->vendor_setup, ndr_get_array_length(ndr, &r->vendor_setup), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_vendor_setup_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->vendor_setup, length_vendor_setup_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_vendor_setup_0, 0);
 		}
 		if (r->color_profiles) {
@@ -9429,11 +9815,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, i
 			NDR_PULL_SET_MEM_CTX(ndr, r->inf_path, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->inf_path));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->inf_path));
-			if (ndr_get_array_length(ndr, &r->inf_path) > ndr_get_array_size(ndr, &r->inf_path)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->inf_path), ndr_get_array_length(ndr, &r->inf_path));
+			size_inf_path_1 = ndr_get_array_size(ndr, &r->inf_path);
+			length_inf_path_1 = ndr_get_array_length(ndr, &r->inf_path);
+			if (length_inf_path_1 > size_inf_path_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_inf_path_1, length_inf_path_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->inf_path), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->inf_path, ndr_get_array_length(ndr, &r->inf_path), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_inf_path_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->inf_path, length_inf_path_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_inf_path_0, 0);
 		}
 		if (r->core_driver_dependencies) {
@@ -9662,11 +10050,17 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_info1_0;
+	uint32_t _ptr_info1;
 	TALLOC_CTX *_mem_save_info2_0;
+	uint32_t _ptr_info2;
 	TALLOC_CTX *_mem_save_info3_0;
+	uint32_t _ptr_info3;
 	TALLOC_CTX *_mem_save_info4_0;
+	uint32_t _ptr_info4;
 	TALLOC_CTX *_mem_save_info6_0;
+	uint32_t _ptr_info6;
 	TALLOC_CTX *_mem_save_info8_0;
+	uint32_t _ptr_info8;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -9675,7 +10069,6 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 		}
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_info1;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info1));
 				if (_ptr_info1) {
 					NDR_PULL_ALLOC(ndr, r->info1);
@@ -9685,7 +10078,6 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 			break; }
 
 			case 2: {
-				uint32_t _ptr_info2;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info2));
 				if (_ptr_info2) {
 					NDR_PULL_ALLOC(ndr, r->info2);
@@ -9695,7 +10087,6 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 			break; }
 
 			case 3: {
-				uint32_t _ptr_info3;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info3));
 				if (_ptr_info3) {
 					NDR_PULL_ALLOC(ndr, r->info3);
@@ -9705,7 +10096,6 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 			break; }
 
 			case 4: {
-				uint32_t _ptr_info4;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info4));
 				if (_ptr_info4) {
 					NDR_PULL_ALLOC(ndr, r->info4);
@@ -9715,7 +10105,6 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 			break; }
 
 			case 6: {
-				uint32_t _ptr_info6;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info6));
 				if (_ptr_info6) {
 					NDR_PULL_ALLOC(ndr, r->info6);
@@ -9725,7 +10114,6 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 			break; }
 
 			case 8: {
-				uint32_t _ptr_info8;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info8));
 				if (_ptr_info8) {
 					NDR_PULL_ALLOC(ndr, r->info8);
@@ -14386,10 +14774,16 @@ static enum ndr_err_code ndr_push_spoolss_DocumentInfo1(struct ndr_push *ndr, in
 static enum ndr_err_code ndr_pull_spoolss_DocumentInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DocumentInfo1 *r)
 {
 	uint32_t _ptr_document_name;
+	uint32_t size_document_name_1 = 0;
+	uint32_t length_document_name_1 = 0;
 	TALLOC_CTX *_mem_save_document_name_0;
 	uint32_t _ptr_output_file;
+	uint32_t size_output_file_1 = 0;
+	uint32_t length_output_file_1 = 0;
 	TALLOC_CTX *_mem_save_output_file_0;
 	uint32_t _ptr_datatype;
+	uint32_t size_datatype_1 = 0;
+	uint32_t length_datatype_1 = 0;
 	TALLOC_CTX *_mem_save_datatype_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -14418,11 +14812,13 @@ static enum ndr_err_code ndr_pull_spoolss_DocumentInfo1(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, r->document_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->document_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->document_name));
-			if (ndr_get_array_length(ndr, &r->document_name) > ndr_get_array_size(ndr, &r->document_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->document_name), ndr_get_array_length(ndr, &r->document_name));
+			size_document_name_1 = ndr_get_array_size(ndr, &r->document_name);
+			length_document_name_1 = ndr_get_array_length(ndr, &r->document_name);
+			if (length_document_name_1 > size_document_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_document_name_1, length_document_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->document_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->document_name, ndr_get_array_length(ndr, &r->document_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_document_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->document_name, length_document_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_document_name_0, 0);
 		}
 		if (r->output_file) {
@@ -14430,11 +14826,13 @@ static enum ndr_err_code ndr_pull_spoolss_DocumentInfo1(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, r->output_file, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->output_file));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->output_file));
-			if (ndr_get_array_length(ndr, &r->output_file) > ndr_get_array_size(ndr, &r->output_file)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->output_file), ndr_get_array_length(ndr, &r->output_file));
+			size_output_file_1 = ndr_get_array_size(ndr, &r->output_file);
+			length_output_file_1 = ndr_get_array_length(ndr, &r->output_file);
+			if (length_output_file_1 > size_output_file_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_output_file_1, length_output_file_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->output_file), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->output_file, ndr_get_array_length(ndr, &r->output_file), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_output_file_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->output_file, length_output_file_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_output_file_0, 0);
 		}
 		if (r->datatype) {
@@ -14442,11 +14840,13 @@ static enum ndr_err_code ndr_pull_spoolss_DocumentInfo1(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, r->datatype, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->datatype));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->datatype));
-			if (ndr_get_array_length(ndr, &r->datatype) > ndr_get_array_size(ndr, &r->datatype)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->datatype), ndr_get_array_length(ndr, &r->datatype));
+			size_datatype_1 = ndr_get_array_size(ndr, &r->datatype);
+			length_datatype_1 = ndr_get_array_length(ndr, &r->datatype);
+			if (length_datatype_1 > size_datatype_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_datatype_1, length_datatype_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->datatype), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->datatype, ndr_get_array_length(ndr, &r->datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_datatype_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->datatype, length_datatype_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_datatype_0, 0);
 		}
 	}
@@ -14527,6 +14927,7 @@ static enum ndr_err_code ndr_pull_spoolss_DocumentInfo(struct ndr_pull *ndr, int
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_info1_0;
+	uint32_t _ptr_info1;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -14535,7 +14936,6 @@ static enum ndr_err_code ndr_pull_spoolss_DocumentInfo(struct ndr_pull *ndr, int
 		}
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_info1;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info1));
 				if (_ptr_info1) {
 					NDR_PULL_ALLOC(ndr, r->info1);
@@ -15562,6 +15962,8 @@ static enum ndr_err_code ndr_push_spoolss_AddFormInfo1(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_spoolss_AddFormInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddFormInfo1 *r)
 {
 	uint32_t _ptr_form_name;
+	uint32_t size_form_name_1 = 0;
+	uint32_t length_form_name_1 = 0;
 	TALLOC_CTX *_mem_save_form_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -15581,11 +15983,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo1(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->form_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->form_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->form_name));
-			if (ndr_get_array_length(ndr, &r->form_name) > ndr_get_array_size(ndr, &r->form_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->form_name), ndr_get_array_length(ndr, &r->form_name));
+			size_form_name_1 = ndr_get_array_size(ndr, &r->form_name);
+			length_form_name_1 = ndr_get_array_length(ndr, &r->form_name);
+			if (length_form_name_1 > size_form_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_form_name_1, length_form_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->form_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->form_name, ndr_get_array_length(ndr, &r->form_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_form_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->form_name, length_form_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_form_name_0, 0);
 		}
 	}
@@ -15655,12 +16059,20 @@ static enum ndr_err_code ndr_push_spoolss_AddFormInfo2(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_spoolss_AddFormInfo2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddFormInfo2 *r)
 {
 	uint32_t _ptr_form_name;
+	uint32_t size_form_name_1 = 0;
+	uint32_t length_form_name_1 = 0;
 	TALLOC_CTX *_mem_save_form_name_0;
 	uint32_t _ptr_keyword;
+	uint32_t size_keyword_1 = 0;
+	uint32_t length_keyword_1 = 0;
 	TALLOC_CTX *_mem_save_keyword_0;
 	uint32_t _ptr_mui_dll;
+	uint32_t size_mui_dll_1 = 0;
+	uint32_t length_mui_dll_1 = 0;
 	TALLOC_CTX *_mem_save_mui_dll_0;
 	uint32_t _ptr_display_name;
+	uint32_t size_display_name_1 = 0;
+	uint32_t length_display_name_1 = 0;
 	TALLOC_CTX *_mem_save_display_name_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -15701,11 +16113,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->form_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->form_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->form_name));
-			if (ndr_get_array_length(ndr, &r->form_name) > ndr_get_array_size(ndr, &r->form_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->form_name), ndr_get_array_length(ndr, &r->form_name));
+			size_form_name_1 = ndr_get_array_size(ndr, &r->form_name);
+			length_form_name_1 = ndr_get_array_length(ndr, &r->form_name);
+			if (length_form_name_1 > size_form_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_form_name_1, length_form_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->form_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->form_name, ndr_get_array_length(ndr, &r->form_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_form_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->form_name, length_form_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_form_name_0, 0);
 		}
 		if (r->keyword) {
@@ -15713,11 +16127,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->keyword, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->keyword));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->keyword));
-			if (ndr_get_array_length(ndr, &r->keyword) > ndr_get_array_size(ndr, &r->keyword)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->keyword), ndr_get_array_length(ndr, &r->keyword));
+			size_keyword_1 = ndr_get_array_size(ndr, &r->keyword);
+			length_keyword_1 = ndr_get_array_length(ndr, &r->keyword);
+			if (length_keyword_1 > size_keyword_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_keyword_1, length_keyword_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->keyword), sizeof(uint8_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->keyword, ndr_get_array_length(ndr, &r->keyword), sizeof(uint8_t), CH_DOS));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_keyword_1, sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->keyword, length_keyword_1, sizeof(uint8_t), CH_DOS));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_keyword_0, 0);
 		}
 		if (r->mui_dll) {
@@ -15725,11 +16141,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->mui_dll, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->mui_dll));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->mui_dll));
-			if (ndr_get_array_length(ndr, &r->mui_dll) > ndr_get_array_size(ndr, &r->mui_dll)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->mui_dll), ndr_get_array_length(ndr, &r->mui_dll));
+			size_mui_dll_1 = ndr_get_array_size(ndr, &r->mui_dll);
+			length_mui_dll_1 = ndr_get_array_length(ndr, &r->mui_dll);
+			if (length_mui_dll_1 > size_mui_dll_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_mui_dll_1, length_mui_dll_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->mui_dll), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->mui_dll, ndr_get_array_length(ndr, &r->mui_dll), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_mui_dll_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->mui_dll, length_mui_dll_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_mui_dll_0, 0);
 		}
 		if (r->display_name) {
@@ -15737,11 +16155,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo2(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->display_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->display_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->display_name));
-			if (ndr_get_array_length(ndr, &r->display_name) > ndr_get_array_size(ndr, &r->display_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->display_name), ndr_get_array_length(ndr, &r->display_name));
+			size_display_name_1 = ndr_get_array_size(ndr, &r->display_name);
+			length_display_name_1 = ndr_get_array_length(ndr, &r->display_name);
+			if (length_display_name_1 > size_display_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_display_name_1, length_display_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->display_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->display_name, ndr_get_array_length(ndr, &r->display_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_display_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->display_name, length_display_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_display_name_0, 0);
 		}
 	}
@@ -15830,7 +16250,9 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo(struct ndr_pull *ndr, int 
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_info1_0;
+	uint32_t _ptr_info1;
 	TALLOC_CTX *_mem_save_info2_0;
+	uint32_t _ptr_info2;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -15839,7 +16261,6 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo(struct ndr_pull *ndr, int 
 		}
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_info1;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info1));
 				if (_ptr_info1) {
 					NDR_PULL_ALLOC(ndr, r->info1);
@@ -15849,7 +16270,6 @@ static enum ndr_err_code ndr_pull_spoolss_AddFormInfo(struct ndr_pull *ndr, int 
 			break; }
 
 			case 2: {
-				uint32_t _ptr_info2;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info2));
 				if (_ptr_info2) {
 					NDR_PULL_ALLOC(ndr, r->info2);
@@ -17462,6 +17882,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyOptionType(struct ndr_push *ndr,
 static enum ndr_err_code ndr_pull_spoolss_NotifyOptionType(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyOptionType *r)
 {
 	uint32_t _ptr_fields;
+	uint32_t size_fields_1 = 0;
 	uint32_t cntr_fields_1;
 	TALLOC_CTX *_mem_save_fields_0;
 	TALLOC_CTX *_mem_save_fields_1;
@@ -17484,10 +17905,11 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyOptionType(struct ndr_pull *ndr,
 			_mem_save_fields_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->fields, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->fields));
-			NDR_PULL_ALLOC_N(ndr, r->fields, ndr_get_array_size(ndr, &r->fields));
+			size_fields_1 = ndr_get_array_size(ndr, &r->fields);
+			NDR_PULL_ALLOC_N(ndr, r->fields, size_fields_1);
 			_mem_save_fields_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->fields, 0);
-			for (cntr_fields_1 = 0; cntr_fields_1 < r->count; cntr_fields_1++) {
+			for (cntr_fields_1 = 0; cntr_fields_1 < size_fields_1; cntr_fields_1++) {
 				NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->fields[cntr_fields_1], r->type));
 				NDR_CHECK(ndr_pull_spoolss_Field(ndr, NDR_SCALARS, &r->fields[cntr_fields_1]));
 			}
@@ -17579,6 +18001,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyOption(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_spoolss_NotifyOption(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyOption *r)
 {
 	uint32_t _ptr_types;
+	uint32_t size_types_1 = 0;
 	uint32_t cntr_types_1;
 	TALLOC_CTX *_mem_save_types_0;
 	TALLOC_CTX *_mem_save_types_1;
@@ -17599,13 +18022,14 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyOption(struct ndr_pull *ndr, int
 			_mem_save_types_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->types, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->types));
-			NDR_PULL_ALLOC_N(ndr, r->types, ndr_get_array_size(ndr, &r->types));
+			size_types_1 = ndr_get_array_size(ndr, &r->types);
+			NDR_PULL_ALLOC_N(ndr, r->types, size_types_1);
 			_mem_save_types_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->types, 0);
-			for (cntr_types_1 = 0; cntr_types_1 < r->count; cntr_types_1++) {
+			for (cntr_types_1 = 0; cntr_types_1 < size_types_1; cntr_types_1++) {
 				NDR_CHECK(ndr_pull_spoolss_NotifyOptionType(ndr, NDR_SCALARS, &r->types[cntr_types_1]));
 			}
-			for (cntr_types_1 = 0; cntr_types_1 < r->count; cntr_types_1++) {
+			for (cntr_types_1 = 0; cntr_types_1 < size_types_1; cntr_types_1++) {
 				NDR_CHECK(ndr_pull_spoolss_NotifyOptionType(ndr, NDR_BUFFERS, &r->types[cntr_types_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_types_1, 0);
@@ -17663,6 +18087,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyString(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_spoolss_NotifyString(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyString *r)
 {
 	uint32_t _ptr_string;
+	uint32_t size_string_1 = 0;
 	TALLOC_CTX *_mem_save_string_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -17679,7 +18104,8 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyString(struct ndr_pull *ndr, int
 			_mem_save_string_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->string, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->string));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string, ndr_get_array_size(ndr, &r->string), sizeof(uint16_t), CH_UTF16));
+			size_string_1 = ndr_get_array_size(ndr, &r->string);
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string, size_string_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
 		}
 		if (r->string) {
@@ -17797,6 +18223,8 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 {
 	int level;
 	uint32_t _level;
+	uint32_t size_integer_0 = 0;
+	uint32_t cntr_integer_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -17805,8 +18233,8 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 		}
 		switch (level) {
 			case 1: {
-				uint32_t cntr_integer_0;
-				for (cntr_integer_0 = 0; cntr_integer_0 < 2; cntr_integer_0++) {
+				size_integer_0 = 2;
+				for (cntr_integer_0 = 0; cntr_integer_0 < size_integer_0; cntr_integer_0++) {
 					NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->integer[cntr_integer_0]));
 				}
 			break; }
@@ -17973,6 +18401,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyInfo(struct ndr_push *ndr, int n
 
 static enum ndr_err_code ndr_pull_spoolss_NotifyInfo(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyInfo *r)
 {
+	uint32_t size_notifies_0 = 0;
 	uint32_t cntr_notifies_0;
 	TALLOC_CTX *_mem_save_notifies_0;
 	if (ndr_flags & NDR_SCALARS) {
@@ -17981,10 +18410,11 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyInfo(struct ndr_pull *ndr, int n
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		NDR_PULL_ALLOC_N(ndr, r->notifies, ndr_get_array_size(ndr, &r->notifies));
+		size_notifies_0 = ndr_get_array_size(ndr, &r->notifies);
+		NDR_PULL_ALLOC_N(ndr, r->notifies, size_notifies_0);
 		_mem_save_notifies_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->notifies, 0);
-		for (cntr_notifies_0 = 0; cntr_notifies_0 < r->count; cntr_notifies_0++) {
+		for (cntr_notifies_0 = 0; cntr_notifies_0 < size_notifies_0; cntr_notifies_0++) {
 			NDR_CHECK(ndr_pull_spoolss_Notify(ndr, NDR_SCALARS, &r->notifies[cntr_notifies_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_notifies_0, 0);
@@ -17993,9 +18423,10 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyInfo(struct ndr_pull *ndr, int n
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		size_notifies_0 = ndr_get_array_size(ndr, &r->notifies);
 		_mem_save_notifies_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->notifies, 0);
-		for (cntr_notifies_0 = 0; cntr_notifies_0 < r->count; cntr_notifies_0++) {
+		for (cntr_notifies_0 = 0; cntr_notifies_0 < size_notifies_0; cntr_notifies_0++) {
 			NDR_CHECK(ndr_pull_spoolss_Notify(ndr, NDR_BUFFERS, &r->notifies[cntr_notifies_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_notifies_0, 0);
@@ -18059,6 +18490,7 @@ static enum ndr_err_code ndr_pull_spoolss_ReplyPrinterInfo(struct ndr_pull *ndr,
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_info0_0;
+	uint32_t _ptr_info0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -18067,7 +18499,6 @@ static enum ndr_err_code ndr_pull_spoolss_ReplyPrinterInfo(struct ndr_pull *ndr,
 		}
 		switch (level) {
 			case 0: {
-				uint32_t _ptr_info0;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info0));
 				if (_ptr_info0) {
 					NDR_PULL_ALLOC(ndr, r->info0);
@@ -18174,8 +18605,12 @@ static enum ndr_err_code ndr_push_spoolss_UserLevel1(struct ndr_push *ndr, int n
 static enum ndr_err_code ndr_pull_spoolss_UserLevel1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_UserLevel1 *r)
 {
 	uint32_t _ptr_client;
+	uint32_t size_client_1 = 0;
+	uint32_t length_client_1 = 0;
 	TALLOC_CTX *_mem_save_client_0;
 	uint32_t _ptr_user;
+	uint32_t size_user_1 = 0;
+	uint32_t length_user_1 = 0;
 	TALLOC_CTX *_mem_save_user_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -18203,11 +18638,13 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel1(struct ndr_pull *ndr, int n
 			NDR_PULL_SET_MEM_CTX(ndr, r->client, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->client));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->client));
-			if (ndr_get_array_length(ndr, &r->client) > ndr_get_array_size(ndr, &r->client)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->client), ndr_get_array_length(ndr, &r->client));
+			size_client_1 = ndr_get_array_size(ndr, &r->client);
+			length_client_1 = ndr_get_array_length(ndr, &r->client);
+			if (length_client_1 > size_client_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_client_1, length_client_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->client), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->client, ndr_get_array_length(ndr, &r->client), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_client_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->client, length_client_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_client_0, 0);
 		}
 		if (r->user) {
@@ -18215,11 +18652,13 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel1(struct ndr_pull *ndr, int n
 			NDR_PULL_SET_MEM_CTX(ndr, r->user, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->user));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->user));
-			if (ndr_get_array_length(ndr, &r->user) > ndr_get_array_size(ndr, &r->user)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->user), ndr_get_array_length(ndr, &r->user));
+			size_user_1 = ndr_get_array_size(ndr, &r->user);
+			length_user_1 = ndr_get_array_length(ndr, &r->user);
+			if (length_user_1 > size_user_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_user_1, length_user_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->user), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user, ndr_get_array_length(ndr, &r->user), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_user_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user, length_user_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_0, 0);
 		}
 	}
@@ -18315,8 +18754,12 @@ static enum ndr_err_code ndr_push_spoolss_UserLevel3(struct ndr_push *ndr, int n
 static enum ndr_err_code ndr_pull_spoolss_UserLevel3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_UserLevel3 *r)
 {
 	uint32_t _ptr_client;
+	uint32_t size_client_1 = 0;
+	uint32_t length_client_1 = 0;
 	TALLOC_CTX *_mem_save_client_0;
 	uint32_t _ptr_user;
+	uint32_t size_user_1 = 0;
+	uint32_t length_user_1 = 0;
 	TALLOC_CTX *_mem_save_user_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -18347,11 +18790,13 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel3(struct ndr_pull *ndr, int n
 			NDR_PULL_SET_MEM_CTX(ndr, r->client, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->client));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->client));
-			if (ndr_get_array_length(ndr, &r->client) > ndr_get_array_size(ndr, &r->client)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->client), ndr_get_array_length(ndr, &r->client));
+			size_client_1 = ndr_get_array_size(ndr, &r->client);
+			length_client_1 = ndr_get_array_length(ndr, &r->client);
+			if (length_client_1 > size_client_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_client_1, length_client_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->client), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->client, ndr_get_array_length(ndr, &r->client), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_client_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->client, length_client_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_client_0, 0);
 		}
 		if (r->user) {
@@ -18359,11 +18804,13 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel3(struct ndr_pull *ndr, int n
 			NDR_PULL_SET_MEM_CTX(ndr, r->user, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->user));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->user));
-			if (ndr_get_array_length(ndr, &r->user) > ndr_get_array_size(ndr, &r->user)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->user), ndr_get_array_length(ndr, &r->user));
+			size_user_1 = ndr_get_array_size(ndr, &r->user);
+			length_user_1 = ndr_get_array_length(ndr, &r->user);
+			if (length_user_1 > size_user_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_user_1, length_user_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->user), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user, ndr_get_array_length(ndr, &r->user), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_user_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->user, length_user_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_0, 0);
 		}
 	}
@@ -18452,8 +18899,11 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel(struct ndr_pull *ndr, int nd
 	int level;
 	uint32_t _level;
 	TALLOC_CTX *_mem_save_level1_0;
+	uint32_t _ptr_level1;
 	TALLOC_CTX *_mem_save_level2_0;
+	uint32_t _ptr_level2;
 	TALLOC_CTX *_mem_save_level3_0;
+	uint32_t _ptr_level3;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -18462,7 +18912,6 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel(struct ndr_pull *ndr, int nd
 		}
 		switch (level) {
 			case 1: {
-				uint32_t _ptr_level1;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_level1));
 				if (_ptr_level1) {
 					NDR_PULL_ALLOC(ndr, r->level1);
@@ -18472,7 +18921,6 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel(struct ndr_pull *ndr, int nd
 			break; }
 
 			case 2: {
-				uint32_t _ptr_level2;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_level2));
 				if (_ptr_level2) {
 					NDR_PULL_ALLOC(ndr, r->level2);
@@ -18482,7 +18930,6 @@ static enum ndr_err_code ndr_pull_spoolss_UserLevel(struct ndr_pull *ndr, int nd
 			break; }
 
 			case 3: {
-				uint32_t _ptr_level3;
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_level3));
 				if (_ptr_level3) {
 					NDR_PULL_ALLOC(ndr, r->level3);
@@ -18968,20 +19415,34 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortData1(struct ndr_push *ndr, int 
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortData1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortData1 *r)
 {
+	uint32_t size_portname_0 = 0;
+	uint32_t size_hostaddress_0 = 0;
+	uint32_t size_snmpcommunity_0 = 0;
+	uint32_t size_queue_0 = 0;
+	uint32_t size_ip_address_0 = 0;
+	uint32_t size_hardware_address_0 = 0;
+	uint32_t size_device_type_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, 64, sizeof(uint16_t), CH_UTF16));
+		size_portname_0 = 64;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, size_portname_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
 		NDR_CHECK(ndr_pull_spoolss_PortProtocol(ndr, NDR_SCALARS, &r->protocol));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hostaddress, 49, sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->snmpcommunity, 33, sizeof(uint16_t), CH_UTF16));
+		size_hostaddress_0 = 49;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hostaddress, size_hostaddress_0, sizeof(uint16_t), CH_UTF16));
+		size_snmpcommunity_0 = 33;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->snmpcommunity, size_snmpcommunity_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dblspool));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->queue, 33, sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ip_address, 16, sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hardware_address, 13, sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->device_type, 257, sizeof(uint16_t), CH_UTF16));
+		size_queue_0 = 33;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->queue, size_queue_0, sizeof(uint16_t), CH_UTF16));
+		size_ip_address_0 = 16;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ip_address, size_ip_address_0, sizeof(uint16_t), CH_UTF16));
+		size_hardware_address_0 = 13;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hardware_address, size_hardware_address_0, sizeof(uint16_t), CH_UTF16));
+		size_device_type_0 = 257;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->device_type, size_device_type_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->port_number));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->snmp_enabled));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->snmp_dev_index));
@@ -19039,18 +19500,28 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortData2(struct ndr_push *ndr, int 
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortData2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortData2 *r)
 {
+	uint32_t size_portname_0 = 0;
+	uint32_t size_hostaddress_0 = 0;
+	uint32_t size_snmpcommunity_0 = 0;
+	uint32_t size_queue_0 = 0;
+	uint32_t size_device_type_0 = 0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, 64, sizeof(uint16_t), CH_UTF16));
+		size_portname_0 = 64;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, size_portname_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
 		NDR_CHECK(ndr_pull_spoolss_PortProtocol(ndr, NDR_SCALARS, &r->protocol));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hostaddress, 128, sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->snmpcommunity, 33, sizeof(uint16_t), CH_UTF16));
+		size_hostaddress_0 = 128;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hostaddress, size_hostaddress_0, sizeof(uint16_t), CH_UTF16));
+		size_snmpcommunity_0 = 33;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->snmpcommunity, size_snmpcommunity_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dblspool));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->queue, 33, sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->device_type, 257, sizeof(uint16_t), CH_UTF16));
+		size_queue_0 = 33;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->queue, size_queue_0, sizeof(uint16_t), CH_UTF16));
+		size_device_type_0 = 257;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->device_type, size_device_type_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->port_number));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->snmp_enabled));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->snmp_dev_index));
@@ -19190,6 +19661,8 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrinters(struct ndr_push *ndr, 
 _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinters(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrinters *r)
 {
 	uint32_t _ptr_server;
+	uint32_t size_server_1 = 0;
+	uint32_t length_server_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_0;
@@ -19212,11 +19685,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinters(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
-			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			size_server_1 = ndr_get_array_size(ndr, &r->in.server);
+			length_server_1 = ndr_get_array_length(ndr, &r->in.server);
+			if (length_server_1 > size_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_1, length_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, length_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -19291,6 +19766,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumPrinters(struct ndr_push *ndr,
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrinters(struct ndr_pull *ndr, int flags, struct __spoolss_EnumPrinters *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -19300,14 +19776,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrinters(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 			NDR_CHECK(ndr_pull_spoolss_PrinterInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_PrinterInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -19412,7 +19889,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_OpenPrinter(struct ndr_push *ndr, in
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OpenPrinter(struct ndr_pull *ndr, int flags, struct spoolss_OpenPrinter *r)
 {
 	uint32_t _ptr_printername;
+	uint32_t size_printername_1 = 0;
+	uint32_t length_printername_1 = 0;
 	uint32_t _ptr_datatype;
+	uint32_t size_datatype_1 = 0;
+	uint32_t length_datatype_1 = 0;
 	TALLOC_CTX *_mem_save_printername_0;
 	TALLOC_CTX *_mem_save_datatype_0;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -19430,11 +19911,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OpenPrinter(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.printername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.printername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.printername));
-			if (ndr_get_array_length(ndr, &r->in.printername) > ndr_get_array_size(ndr, &r->in.printername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.printername), ndr_get_array_length(ndr, &r->in.printername));
+			size_printername_1 = ndr_get_array_size(ndr, &r->in.printername);
+			length_printername_1 = ndr_get_array_length(ndr, &r->in.printername);
+			if (length_printername_1 > size_printername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printername_1, length_printername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.printername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.printername, ndr_get_array_length(ndr, &r->in.printername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.printername, length_printername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printername_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_datatype));
@@ -19448,11 +19931,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OpenPrinter(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.datatype, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.datatype));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.datatype));
-			if (ndr_get_array_length(ndr, &r->in.datatype) > ndr_get_array_size(ndr, &r->in.datatype)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.datatype), ndr_get_array_length(ndr, &r->in.datatype));
+			size_datatype_1 = ndr_get_array_size(ndr, &r->in.datatype);
+			length_datatype_1 = ndr_get_array_length(ndr, &r->in.datatype);
+			if (length_datatype_1 > size_datatype_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_datatype_1, length_datatype_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.datatype), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.datatype, ndr_get_array_length(ndr, &r->in.datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_datatype_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.datatype, length_datatype_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_datatype_0, 0);
 		}
 		NDR_CHECK(ndr_pull_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.devmode_ctr));
@@ -19873,6 +20358,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumJobs(struct ndr_push *ndr, int
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumJobs(struct ndr_pull *ndr, int flags, struct __spoolss_EnumJobs *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -19882,14 +20368,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumJobs(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 			NDR_CHECK(ndr_pull_spoolss_JobInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_JobInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -20334,6 +20821,8 @@ static enum ndr_err_code ndr_push_spoolss_AddPrinterDriver(struct ndr_push *ndr,
 static enum ndr_err_code ndr_pull_spoolss_AddPrinterDriver(struct ndr_pull *ndr, int flags, struct spoolss_AddPrinterDriver *r)
 {
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	TALLOC_CTX *_mem_save_servername_0;
 	TALLOC_CTX *_mem_save_info_ctr_0;
 	if (flags & NDR_IN) {
@@ -20348,11 +20837,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddPrinterDriver(struct ndr_pull *ndr,
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
-			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->in.servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->in.servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -20445,7 +20936,11 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrinterDrivers(struct ndr_push 
 _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinterDrivers(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrinterDrivers *r)
 {
 	uint32_t _ptr_server;
+	uint32_t size_server_1 = 0;
+	uint32_t length_server_1 = 0;
 	uint32_t _ptr_environment;
+	uint32_t size_environment_1 = 0;
+	uint32_t length_environment_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_0;
@@ -20468,11 +20963,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinterDrivers(struct ndr_pull 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
-			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			size_server_1 = ndr_get_array_size(ndr, &r->in.server);
+			length_server_1 = ndr_get_array_length(ndr, &r->in.server);
+			if (length_server_1 > size_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_1, length_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, length_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_environment));
@@ -20486,11 +20983,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinterDrivers(struct ndr_pull 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.environment, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.environment));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.environment));
-			if (ndr_get_array_length(ndr, &r->in.environment) > ndr_get_array_size(ndr, &r->in.environment)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.environment), ndr_get_array_length(ndr, &r->in.environment));
+			size_environment_1 = ndr_get_array_size(ndr, &r->in.environment);
+			length_environment_1 = ndr_get_array_length(ndr, &r->in.environment);
+			if (length_environment_1 > size_environment_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_environment_1, length_environment_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.environment), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.environment, ndr_get_array_length(ndr, &r->in.environment), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_environment_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.environment, length_environment_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_environment_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -20565,6 +21064,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumPrinterDrivers(struct ndr_push
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrinterDrivers(struct ndr_pull *ndr, int flags, struct __spoolss_EnumPrinterDrivers *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -20574,14 +21074,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrinterDrivers(struct ndr_pull
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 			NDR_CHECK(ndr_pull_spoolss_DriverInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_DriverInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -20746,7 +21247,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_GetPrinterDriverDirectory(struct ndr
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_GetPrinterDriverDirectory(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterDriverDirectory *r)
 {
 	uint32_t _ptr_server;
+	uint32_t size_server_1 = 0;
+	uint32_t length_server_1 = 0;
 	uint32_t _ptr_environment;
+	uint32_t size_environment_1 = 0;
+	uint32_t length_environment_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_0;
@@ -20768,11 +21273,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_GetPrinterDriverDirectory(struct ndr
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
-			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			size_server_1 = ndr_get_array_size(ndr, &r->in.server);
+			length_server_1 = ndr_get_array_length(ndr, &r->in.server);
+			if (length_server_1 > size_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_1, length_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, length_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_environment));
@@ -20786,11 +21293,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_GetPrinterDriverDirectory(struct ndr
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.environment, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.environment));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.environment));
-			if (ndr_get_array_length(ndr, &r->in.environment) > ndr_get_array_size(ndr, &r->in.environment)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.environment), ndr_get_array_length(ndr, &r->in.environment));
+			size_environment_1 = ndr_get_array_size(ndr, &r->in.environment);
+			length_environment_1 = ndr_get_array_length(ndr, &r->in.environment);
+			if (length_environment_1 > size_environment_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_environment_1, length_environment_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.environment), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.environment, ndr_get_array_length(ndr, &r->in.environment), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_environment_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.environment, length_environment_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_environment_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -20921,6 +21430,12 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterDriver(struct ndr_push *n
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterDriver(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterDriver *r)
 {
 	uint32_t _ptr_server;
+	uint32_t size_server_1 = 0;
+	uint32_t length_server_1 = 0;
+	uint32_t size_architecture_0 = 0;
+	uint32_t length_architecture_0 = 0;
+	uint32_t size_driver_0 = 0;
+	uint32_t length_driver_0 = 0;
 	TALLOC_CTX *_mem_save_server_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server));
@@ -20934,27 +21449,33 @@ static enum ndr_err_code ndr_pull_spoolss_DeletePrinterDriver(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
-			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			size_server_1 = ndr_get_array_size(ndr, &r->in.server);
+			length_server_1 = ndr_get_array_length(ndr, &r->in.server);
+			if (length_server_1 > size_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_1, length_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, length_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.architecture));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.architecture));
-		if (ndr_get_array_length(ndr, &r->in.architecture) > ndr_get_array_size(ndr, &r->in.architecture)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.architecture), ndr_get_array_length(ndr, &r->in.architecture));
+		size_architecture_0 = ndr_get_array_size(ndr, &r->in.architecture);
+		length_architecture_0 = ndr_get_array_length(ndr, &r->in.architecture);
+		if (length_architecture_0 > size_architecture_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_0, length_architecture_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, length_architecture_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.driver));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.driver));
-		if (ndr_get_array_length(ndr, &r->in.driver) > ndr_get_array_size(ndr, &r->in.driver)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.driver), ndr_get_array_length(ndr, &r->in.driver));
+		size_driver_0 = ndr_get_array_size(ndr, &r->in.driver);
+		length_driver_0 = ndr_get_array_length(ndr, &r->in.driver);
+		if (length_driver_0 > size_driver_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_0, length_driver_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.driver), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.driver, ndr_get_array_length(ndr, &r->in.driver), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.driver, length_driver_0, sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -21023,6 +21544,14 @@ static enum ndr_err_code ndr_push_spoolss_AddPrintProcessor(struct ndr_push *ndr
 static enum ndr_err_code ndr_pull_spoolss_AddPrintProcessor(struct ndr_pull *ndr, int flags, struct spoolss_AddPrintProcessor *r)
 {
 	uint32_t _ptr_server;
+	uint32_t size_server_1 = 0;
+	uint32_t length_server_1 = 0;
+	uint32_t size_architecture_0 = 0;
+	uint32_t length_architecture_0 = 0;
+	uint32_t size_path_name_0 = 0;
+	uint32_t length_path_name_0 = 0;
+	uint32_t size_print_processor_name_0 = 0;
+	uint32_t length_print_processor_name_0 = 0;
 	TALLOC_CTX *_mem_save_server_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server));
@@ -21036,34 +21565,42 @@ static enum ndr_err_code ndr_pull_spoolss_AddPrintProcessor(struct ndr_pull *ndr
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
-			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			size_server_1 = ndr_get_array_size(ndr, &r->in.server);
+			length_server_1 = ndr_get_array_length(ndr, &r->in.server);
+			if (length_server_1 > size_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_1, length_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, length_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.architecture));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.architecture));
-		if (ndr_get_array_length(ndr, &r->in.architecture) > ndr_get_array_size(ndr, &r->in.architecture)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.architecture), ndr_get_array_length(ndr, &r->in.architecture));
+		size_architecture_0 = ndr_get_array_size(ndr, &r->in.architecture);
+		length_architecture_0 = ndr_get_array_length(ndr, &r->in.architecture);
+		if (length_architecture_0 > size_architecture_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_0, length_architecture_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, length_architecture_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.path_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.path_name));
-		if (ndr_get_array_length(ndr, &r->in.path_name) > ndr_get_array_size(ndr, &r->in.path_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.path_name), ndr_get_array_length(ndr, &r->in.path_name));
+		size_path_name_0 = ndr_get_array_size(ndr, &r->in.path_name);
+		length_path_name_0 = ndr_get_array_length(ndr, &r->in.path_name);
+		if (length_path_name_0 > size_path_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_path_name_0, length_path_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.path_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.path_name, ndr_get_array_length(ndr, &r->in.path_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_path_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.path_name, length_path_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.print_processor_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.print_processor_name));
-		if (ndr_get_array_length(ndr, &r->in.print_processor_name) > ndr_get_array_size(ndr, &r->in.print_processor_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.print_processor_name), ndr_get_array_length(ndr, &r->in.print_processor_name));
+		size_print_processor_name_0 = ndr_get_array_size(ndr, &r->in.print_processor_name);
+		length_print_processor_name_0 = ndr_get_array_length(ndr, &r->in.print_processor_name);
+		if (length_print_processor_name_0 > size_print_processor_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_print_processor_name_0, length_print_processor_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.print_processor_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.print_processor_name, ndr_get_array_length(ndr, &r->in.print_processor_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_print_processor_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.print_processor_name, length_print_processor_name_0, sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -21146,7 +21683,11 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrintProcessors(struct ndr_push
 _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrintProcessors *r)
 {
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	uint32_t _ptr_environment;
+	uint32_t size_environment_1 = 0;
+	uint32_t length_environment_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_servername_0;
@@ -21169,11 +21710,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcessors(struct ndr_pull
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
-			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->in.servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->in.servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_environment));
@@ -21187,11 +21730,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcessors(struct ndr_pull
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.environment, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.environment));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.environment));
-			if (ndr_get_array_length(ndr, &r->in.environment) > ndr_get_array_size(ndr, &r->in.environment)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.environment), ndr_get_array_length(ndr, &r->in.environment));
+			size_environment_1 = ndr_get_array_size(ndr, &r->in.environment);
+			length_environment_1 = ndr_get_array_length(ndr, &r->in.environment);
+			if (length_environment_1 > size_environment_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_environment_1, length_environment_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.environment), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.environment, ndr_get_array_length(ndr, &r->in.environment), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_environment_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.environment, length_environment_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_environment_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -21266,6 +21811,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumPrintProcessors(struct ndr_pus
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int flags, struct __spoolss_EnumPrintProcessors *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -21275,14 +21821,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrintProcessors(struct ndr_pul
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 			NDR_CHECK(ndr_pull_spoolss_PrintProcessorInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_PrintProcessorInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -21406,7 +21953,11 @@ static enum ndr_err_code ndr_push_spoolss_GetPrintProcessorDirectory(struct ndr_
 static enum ndr_err_code ndr_pull_spoolss_GetPrintProcessorDirectory(struct ndr_pull *ndr, int flags, struct spoolss_GetPrintProcessorDirectory *r)
 {
 	uint32_t _ptr_server;
+	uint32_t size_server_1 = 0;
+	uint32_t length_server_1 = 0;
 	uint32_t _ptr_environment;
+	uint32_t size_environment_1 = 0;
+	uint32_t length_environment_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_0;
@@ -21428,11 +21979,13 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrintProcessorDirectory(struct ndr_
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
-			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			size_server_1 = ndr_get_array_size(ndr, &r->in.server);
+			length_server_1 = ndr_get_array_length(ndr, &r->in.server);
+			if (length_server_1 > size_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_1, length_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, length_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_environment));
@@ -21446,11 +21999,13 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrintProcessorDirectory(struct ndr_
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.environment, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.environment));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.environment));
-			if (ndr_get_array_length(ndr, &r->in.environment) > ndr_get_array_size(ndr, &r->in.environment)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.environment), ndr_get_array_length(ndr, &r->in.environment));
+			size_environment_1 = ndr_get_array_size(ndr, &r->in.environment);
+			length_environment_1 = ndr_get_array_length(ndr, &r->in.environment);
+			if (length_environment_1 > size_environment_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_environment_1, length_environment_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.environment), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.environment, ndr_get_array_length(ndr, &r->in.environment), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_environment_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.environment, length_environment_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_environment_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -21919,6 +22474,7 @@ static enum ndr_err_code ndr_push_spoolss_ReadPrinter(struct ndr_push *ndr, int 
 
 static enum ndr_err_code ndr_pull_spoolss_ReadPrinter(struct ndr_pull *ndr, int flags, struct spoolss_ReadPrinter *r)
 {
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save__data_size_0;
 	if (flags & NDR_IN) {
@@ -21939,10 +22495,11 @@ static enum ndr_err_code ndr_pull_spoolss_ReadPrinter(struct ndr_pull *ndr, int 
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.data));
+		size_data_1 = ndr_get_array_size(ndr, &r->out.data);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.data, ndr_get_array_size(ndr, &r->out.data));
+			NDR_PULL_ALLOC_N(ndr, r->out.data, size_data_1);
 		}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.data, ndr_get_array_size(ndr, &r->out.data)));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.data, size_data_1));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out._data_size);
 		}
@@ -22082,6 +22639,7 @@ static enum ndr_err_code ndr_push_spoolss_AddJob(struct ndr_push *ndr, int flags
 static enum ndr_err_code ndr_pull_spoolss_AddJob(struct ndr_pull *ndr, int flags, struct spoolss_AddJob *r)
 {
 	uint32_t _ptr_buffer;
+	uint32_t size_buffer_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_needed_0;
@@ -22106,8 +22664,9 @@ static enum ndr_err_code ndr_pull_spoolss_AddJob(struct ndr_pull *ndr, int flags
 			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.buffer, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.buffer));
-			NDR_PULL_ALLOC_N(ndr, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer)));
+			size_buffer_1 = ndr_get_array_size(ndr, &r->in.buffer);
+			NDR_PULL_ALLOC_N(ndr, r->in.buffer, size_buffer_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, size_buffer_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
@@ -22128,8 +22687,9 @@ static enum ndr_err_code ndr_pull_spoolss_AddJob(struct ndr_pull *ndr, int flags
 			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->out.buffer, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->out.buffer));
-			NDR_PULL_ALLOC_N(ndr, r->out.buffer, ndr_get_array_size(ndr, &r->out.buffer));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.buffer, ndr_get_array_size(ndr, &r->out.buffer)));
+			size_buffer_1 = ndr_get_array_size(ndr, &r->out.buffer);
+			NDR_PULL_ALLOC_N(ndr, r->out.buffer, size_buffer_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.buffer, size_buffer_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -22284,6 +22844,9 @@ static enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, i
 
 static enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterData *r)
 {
+	uint32_t size_value_name_0 = 0;
+	uint32_t length_value_name_0 = 0;
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_type_0;
 	TALLOC_CTX *_mem_save_needed_0;
@@ -22299,11 +22862,13 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, i
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.value_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.value_name));
-		if (ndr_get_array_length(ndr, &r->in.value_name) > ndr_get_array_size(ndr, &r->in.value_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.value_name), ndr_get_array_length(ndr, &r->in.value_name));
+		size_value_name_0 = ndr_get_array_size(ndr, &r->in.value_name);
+		length_value_name_0 = ndr_get_array_length(ndr, &r->in.value_name);
+		if (length_value_name_0 > size_value_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_value_name_0, length_value_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_value_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, length_value_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		NDR_PULL_ALLOC(ndr, r->out.type);
 		ZERO_STRUCTP(r->out.type);
@@ -22321,10 +22886,11 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, r->out.type));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_type_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.data));
+		size_data_1 = ndr_get_array_size(ndr, &r->out.data);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.data, ndr_get_array_size(ndr, &r->out.data));
+			NDR_PULL_ALLOC_N(ndr, r->out.data, size_data_1);
 		}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.data, ndr_get_array_size(ndr, &r->out.data)));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.data, size_data_1));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.needed);
 		}
@@ -22406,6 +22972,9 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, i
 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterData(struct ndr_pull *ndr, int flags, struct spoolss_SetPrinterData *r)
 {
+	uint32_t size_value_name_0 = 0;
+	uint32_t length_value_name_0 = 0;
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -22417,17 +22986,20 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterData(struct ndr_pull *ndr, i
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.value_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.value_name));
-		if (ndr_get_array_length(ndr, &r->in.value_name) > ndr_get_array_size(ndr, &r->in.value_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.value_name), ndr_get_array_length(ndr, &r->in.value_name));
+		size_value_name_0 = ndr_get_array_size(ndr, &r->in.value_name);
+		length_value_name_0 = ndr_get_array_length(ndr, &r->in.value_name);
+		if (length_value_name_0 > size_value_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_value_name_0, length_value_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_value_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, length_value_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.data));
+		size_data_1 = ndr_get_array_size(ndr, &r->in.data);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->in.data, ndr_get_array_size(ndr, &r->in.data));
+			NDR_PULL_ALLOC_N(ndr, r->in.data, size_data_1);
 		}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.data, ndr_get_array_size(ndr, &r->in.data)));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.data, size_data_1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		if (r->in.data) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.data, r->in.offered));
@@ -22674,6 +23246,8 @@ static enum ndr_err_code ndr_push_spoolss_DeleteForm(struct ndr_push *ndr, int f
 
 static enum ndr_err_code ndr_pull_spoolss_DeleteForm(struct ndr_pull *ndr, int flags, struct spoolss_DeleteForm *r)
 {
+	uint32_t size_form_name_0 = 0;
+	uint32_t length_form_name_0 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -22685,11 +23259,13 @@ static enum ndr_err_code ndr_pull_spoolss_DeleteForm(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.form_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.form_name));
-		if (ndr_get_array_length(ndr, &r->in.form_name) > ndr_get_array_size(ndr, &r->in.form_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.form_name), ndr_get_array_length(ndr, &r->in.form_name));
+		size_form_name_0 = ndr_get_array_size(ndr, &r->in.form_name);
+		length_form_name_0 = ndr_get_array_length(ndr, &r->in.form_name);
+		if (length_form_name_0 > size_form_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_form_name_0, length_form_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.form_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.form_name, ndr_get_array_length(ndr, &r->in.form_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_form_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.form_name, length_form_name_0, sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -22763,6 +23339,8 @@ static enum ndr_err_code ndr_push_spoolss_GetForm(struct ndr_push *ndr, int flag
 
 static enum ndr_err_code ndr_pull_spoolss_GetForm(struct ndr_pull *ndr, int flags, struct spoolss_GetForm *r)
 {
+	uint32_t size_form_name_0 = 0;
+	uint32_t length_form_name_0 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -22781,11 +23359,13 @@ static enum ndr_err_code ndr_pull_spoolss_GetForm(struct ndr_pull *ndr, int flag
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.form_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.form_name));
-		if (ndr_get_array_length(ndr, &r->in.form_name) > ndr_get_array_size(ndr, &r->in.form_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.form_name), ndr_get_array_length(ndr, &r->in.form_name));
+		size_form_name_0 = ndr_get_array_size(ndr, &r->in.form_name);
+		length_form_name_0 = ndr_get_array_length(ndr, &r->in.form_name);
+		if (length_form_name_0 > size_form_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_form_name_0, length_form_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.form_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.form_name, ndr_get_array_length(ndr, &r->in.form_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_form_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.form_name, length_form_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_buffer));
 		if (_ptr_buffer) {
@@ -22902,6 +23482,8 @@ static enum ndr_err_code ndr_push_spoolss_SetForm(struct ndr_push *ndr, int flag
 
 static enum ndr_err_code ndr_pull_spoolss_SetForm(struct ndr_pull *ndr, int flags, struct spoolss_SetForm *r)
 {
+	uint32_t size_form_name_0 = 0;
+	uint32_t length_form_name_0 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -22913,11 +23495,13 @@ static enum ndr_err_code ndr_pull_spoolss_SetForm(struct ndr_pull *ndr, int flag
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.form_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.form_name));
-		if (ndr_get_array_length(ndr, &r->in.form_name) > ndr_get_array_size(ndr, &r->in.form_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.form_name), ndr_get_array_length(ndr, &r->in.form_name));
+		size_form_name_0 = ndr_get_array_size(ndr, &r->in.form_name);
+		length_form_name_0 = ndr_get_array_length(ndr, &r->in.form_name);
+		if (length_form_name_0 > size_form_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_form_name_0, length_form_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.form_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.form_name, ndr_get_array_length(ndr, &r->in.form_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_form_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.form_name, length_form_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.info, r->in.level));
 		NDR_CHECK(ndr_pull_spoolss_AddFormInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
@@ -23080,6 +23664,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumForms(struct ndr_push *ndr, in
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumForms(struct ndr_pull *ndr, int flags, struct __spoolss_EnumForms *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -23089,14 +23674,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumForms(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 			NDR_CHECK(ndr_pull_spoolss_FormInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_FormInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -23203,6 +23789,8 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPorts(struct ndr_push *ndr, int
 _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPorts(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPorts *r)
 {
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_servername_0;
@@ -23224,11 +23812,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPorts(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
-			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->in.servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->in.servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -23303,6 +23893,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumPorts(struct ndr_push *ndr, in
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPorts(struct ndr_pull *ndr, int flags, struct __spoolss_EnumPorts *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -23312,14 +23903,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPorts(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 			NDR_CHECK(ndr_pull_spoolss_PortInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_PortInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -23428,6 +24020,8 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumMonitors(struct ndr_push *ndr, 
 _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumMonitors(struct ndr_pull *ndr, int flags, struct _spoolss_EnumMonitors *r)
 {
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_servername_0;
@@ -23449,11 +24043,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumMonitors(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
-			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->in.servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->in.servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -23528,6 +24124,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumMonitors(struct ndr_push *ndr,
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumMonitors(struct ndr_pull *ndr, int flags, struct __spoolss_EnumMonitors *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -23537,14 +24134,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumMonitors(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 			NDR_CHECK(ndr_pull_spoolss_MonitorInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_MonitorInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -23640,6 +24238,10 @@ static enum ndr_err_code ndr_push_spoolss_AddPort(struct ndr_push *ndr, int flag
 static enum ndr_err_code ndr_pull_spoolss_AddPort(struct ndr_pull *ndr, int flags, struct spoolss_AddPort *r)
 {
 	uint32_t _ptr_server_name;
+	uint32_t size_server_name_1 = 0;
+	uint32_t length_server_name_1 = 0;
+	uint32_t size_monitor_name_0 = 0;
+	uint32_t length_monitor_name_0 = 0;
 	TALLOC_CTX *_mem_save_server_name_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server_name));
@@ -23653,21 +24255,25 @@ static enum ndr_err_code ndr_pull_spoolss_AddPort(struct ndr_pull *ndr, int flag
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			size_server_name_1 = ndr_get_array_size(ndr, &r->in.server_name);
+			length_server_name_1 = ndr_get_array_length(ndr, &r->in.server_name);
+			if (length_server_name_1 > size_server_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_1, length_server_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.monitor_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.monitor_name));
-		if (ndr_get_array_length(ndr, &r->in.monitor_name) > ndr_get_array_size(ndr, &r->in.monitor_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.monitor_name), ndr_get_array_length(ndr, &r->in.monitor_name));
+		size_monitor_name_0 = ndr_get_array_size(ndr, &r->in.monitor_name);
+		length_monitor_name_0 = ndr_get_array_length(ndr, &r->in.monitor_name);
+		if (length_monitor_name_0 > size_monitor_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_monitor_name_0, length_monitor_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.monitor_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.monitor_name, ndr_get_array_length(ndr, &r->in.monitor_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_monitor_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.monitor_name, length_monitor_name_0, sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -24282,7 +24888,11 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrintProcDataTypes(struct ndr_p
 _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrintProcDataTypes *r)
 {
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	uint32_t _ptr_print_processor_name;
+	uint32_t size_print_processor_name_1 = 0;
+	uint32_t length_print_processor_name_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_servername_0;
@@ -24305,11 +24915,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcDataTypes(struct ndr_p
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
-			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->in.servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->in.servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_print_processor_name));
@@ -24323,11 +24935,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcDataTypes(struct ndr_p
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.print_processor_name, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.print_processor_name));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.print_processor_name));
-			if (ndr_get_array_length(ndr, &r->in.print_processor_name) > ndr_get_array_size(ndr, &r->in.print_processor_name)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.print_processor_name), ndr_get_array_length(ndr, &r->in.print_processor_name));
+			size_print_processor_name_1 = ndr_get_array_size(ndr, &r->in.print_processor_name);
+			length_print_processor_name_1 = ndr_get_array_length(ndr, &r->in.print_processor_name);
+			if (length_print_processor_name_1 > size_print_processor_name_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_print_processor_name_1, length_print_processor_name_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.print_processor_name), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.print_processor_name, ndr_get_array_length(ndr, &r->in.print_processor_name), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_print_processor_name_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.print_processor_name, length_print_processor_name_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_print_processor_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -24402,6 +25016,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumPrintProcDataTypes(struct ndr_
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, int flags, struct __spoolss_EnumPrintProcDataTypes *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -24411,14 +25026,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrintProcDataTypes(struct ndr_
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 			NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_PrintProcDataTypesInfo(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -24523,6 +25139,8 @@ static enum ndr_err_code ndr_push_spoolss_ResetPrinter(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_spoolss_ResetPrinter(struct ndr_pull *ndr, int flags, struct spoolss_ResetPrinter *r)
 {
 	uint32_t _ptr_data_type;
+	uint32_t size_data_type_1 = 0;
+	uint32_t length_data_type_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_data_type_0;
 	TALLOC_CTX *_mem_save_devmode_ctr_0;
@@ -24545,11 +25163,13 @@ static enum ndr_err_code ndr_pull_spoolss_ResetPrinter(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.data_type, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.data_type));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.data_type));
-			if (ndr_get_array_length(ndr, &r->in.data_type) > ndr_get_array_size(ndr, &r->in.data_type)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.data_type), ndr_get_array_length(ndr, &r->in.data_type));
+			size_data_type_1 = ndr_get_array_size(ndr, &r->in.data_type);
+			length_data_type_1 = ndr_get_array_length(ndr, &r->in.data_type);
+			if (length_data_type_1 > size_data_type_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_data_type_1, length_data_type_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.data_type), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.data_type, ndr_get_array_length(ndr, &r->in.data_type), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_data_type_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.data_type, length_data_type_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_type_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -24655,6 +25275,8 @@ static enum ndr_err_code ndr_push_spoolss_GetPrinterDriver2(struct ndr_push *ndr
 static enum ndr_err_code ndr_pull_spoolss_GetPrinterDriver2(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterDriver2 *r)
 {
 	uint32_t _ptr_architecture;
+	uint32_t size_architecture_1 = 0;
+	uint32_t length_architecture_1 = 0;
 	uint32_t _ptr_buffer;
 	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -24685,11 +25307,13 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrinterDriver2(struct ndr_pull *ndr
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.architecture, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.architecture));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.architecture));
-			if (ndr_get_array_length(ndr, &r->in.architecture) > ndr_get_array_size(ndr, &r->in.architecture)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.architecture), ndr_get_array_length(ndr, &r->in.architecture));
+			size_architecture_1 = ndr_get_array_size(ndr, &r->in.architecture);
+			length_architecture_1 = ndr_get_array_length(ndr, &r->in.architecture);
+			if (length_architecture_1 > size_architecture_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_1, length_architecture_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, length_architecture_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_architecture_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
@@ -25028,7 +25652,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_ReplyOpenPrinter(struct ndr_push *nd
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_ReplyOpenPrinter(struct ndr_pull *ndr, int flags, struct spoolss_ReplyOpenPrinter *r)
 {
+	uint32_t size_server_name_0 = 0;
+	uint32_t length_server_name_0 = 0;
 	uint32_t _ptr_buffer;
+	uint32_t size_buffer_1 = 0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -25036,11 +25663,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_ReplyOpenPrinter(struct ndr_pull *nd
 
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
-		if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+		size_server_name_0 = ndr_get_array_size(ndr, &r->in.server_name);
+		length_server_name_0 = ndr_get_array_length(ndr, &r->in.server_name);
+		if (length_server_name_0 > size_server_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_name_0, length_server_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_server_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, length_server_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.printer_local));
 		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.bufsize));
@@ -25057,8 +25686,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_ReplyOpenPrinter(struct ndr_pull *nd
 			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.buffer, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.buffer));
-			NDR_PULL_ALLOC_N(ndr, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer)));
+			size_buffer_1 = ndr_get_array_size(ndr, &r->in.buffer);
+			NDR_PULL_ALLOC_N(ndr, r->in.buffer, size_buffer_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, size_buffer_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_PULL_ALLOC(ndr, r->out.handle);
@@ -25139,6 +25769,7 @@ static enum ndr_err_code ndr_push_spoolss_RouterReplyPrinter(struct ndr_push *nd
 static enum ndr_err_code ndr_pull_spoolss_RouterReplyPrinter(struct ndr_pull *ndr, int flags, struct spoolss_RouterReplyPrinter *r)
 {
 	uint32_t _ptr_buffer;
+	uint32_t size_buffer_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	if (flags & NDR_IN) {
@@ -25164,8 +25795,9 @@ static enum ndr_err_code ndr_pull_spoolss_RouterReplyPrinter(struct ndr_pull *nd
 			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.buffer, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.buffer));
-			NDR_PULL_ALLOC_N(ndr, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer)));
+			size_buffer_1 = ndr_get_array_size(ndr, &r->in.buffer);
+			NDR_PULL_ALLOC_N(ndr, r->in.buffer, size_buffer_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, size_buffer_1));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		if (r->in.buffer) {
@@ -25482,6 +26114,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_RemoteFindFirstPrinterChangeNotifyEx
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct ndr_pull *ndr, int flags, struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
 	uint32_t _ptr_local_machine;
+	uint32_t size_local_machine_1 = 0;
+	uint32_t length_local_machine_1 = 0;
 	uint32_t _ptr_notify_options;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_local_machine_0;
@@ -25507,11 +26141,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_RemoteFindFirstPrinterChangeNotifyEx
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.local_machine, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.local_machine));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.local_machine));
-			if (ndr_get_array_length(ndr, &r->in.local_machine) > ndr_get_array_size(ndr, &r->in.local_machine)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.local_machine), ndr_get_array_length(ndr, &r->in.local_machine));
+			size_local_machine_1 = ndr_get_array_size(ndr, &r->in.local_machine);
+			length_local_machine_1 = ndr_get_array_length(ndr, &r->in.local_machine);
+			if (length_local_machine_1 > size_local_machine_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_local_machine_1, length_local_machine_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.local_machine), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.local_machine, ndr_get_array_length(ndr, &r->in.local_machine), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_local_machine_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.local_machine, length_local_machine_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_local_machine_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.printer_local));
@@ -25868,7 +26504,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_OpenPrinterEx(struct ndr_push *ndr, 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OpenPrinterEx(struct ndr_pull *ndr, int flags, struct spoolss_OpenPrinterEx *r)
 {
 	uint32_t _ptr_printername;
+	uint32_t size_printername_1 = 0;
+	uint32_t length_printername_1 = 0;
 	uint32_t _ptr_datatype;
+	uint32_t size_datatype_1 = 0;
+	uint32_t length_datatype_1 = 0;
 	TALLOC_CTX *_mem_save_printername_0;
 	TALLOC_CTX *_mem_save_datatype_0;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -25886,11 +26526,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OpenPrinterEx(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.printername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.printername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.printername));
-			if (ndr_get_array_length(ndr, &r->in.printername) > ndr_get_array_size(ndr, &r->in.printername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.printername), ndr_get_array_length(ndr, &r->in.printername));
+			size_printername_1 = ndr_get_array_size(ndr, &r->in.printername);
+			length_printername_1 = ndr_get_array_length(ndr, &r->in.printername);
+			if (length_printername_1 > size_printername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_printername_1, length_printername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.printername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.printername, ndr_get_array_length(ndr, &r->in.printername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_printername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.printername, length_printername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_printername_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_datatype));
@@ -25904,11 +26546,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OpenPrinterEx(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.datatype, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.datatype));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.datatype));
-			if (ndr_get_array_length(ndr, &r->in.datatype) > ndr_get_array_size(ndr, &r->in.datatype)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.datatype), ndr_get_array_length(ndr, &r->in.datatype));
+			size_datatype_1 = ndr_get_array_size(ndr, &r->in.datatype);
+			length_datatype_1 = ndr_get_array_length(ndr, &r->in.datatype);
+			if (length_datatype_1 > size_datatype_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_datatype_1, length_datatype_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.datatype), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.datatype, ndr_get_array_length(ndr, &r->in.datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_datatype_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.datatype, length_datatype_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_datatype_0, 0);
 		}
 		NDR_CHECK(ndr_pull_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.devmode_ctr));
@@ -26014,6 +26658,8 @@ static enum ndr_err_code ndr_push_spoolss_AddPrinterEx(struct ndr_push *ndr, int
 static enum ndr_err_code ndr_pull_spoolss_AddPrinterEx(struct ndr_pull *ndr, int flags, struct spoolss_AddPrinterEx *r)
 {
 	uint32_t _ptr_server;
+	uint32_t size_server_1 = 0;
+	uint32_t length_server_1 = 0;
 	TALLOC_CTX *_mem_save_server_0;
 	TALLOC_CTX *_mem_save_info_ctr_0;
 	TALLOC_CTX *_mem_save_devmode_ctr_0;
@@ -26034,11 +26680,13 @@ static enum ndr_err_code ndr_pull_spoolss_AddPrinterEx(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
-			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			size_server_1 = ndr_get_array_size(ndr, &r->in.server);
+			length_server_1 = ndr_get_array_length(ndr, &r->in.server);
+			if (length_server_1 > size_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_1, length_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, length_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -26216,6 +26864,8 @@ static enum ndr_err_code ndr_push_spoolss_EnumPrinterData(struct ndr_push *ndr, 
 
 static enum ndr_err_code ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrinterData *r)
 {
+	uint32_t size_value_name_0 = 0;
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_value_needed_0;
 	TALLOC_CTX *_mem_save_type_0;
@@ -26244,7 +26894,8 @@ static enum ndr_err_code ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, 
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.value_name));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->out.value_name, ndr_get_array_size(ndr, &r->out.value_name), sizeof(uint16_t), CH_UTF16));
+		size_value_name_0 = ndr_get_array_size(ndr, &r->out.value_name);
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->out.value_name, size_value_name_0, sizeof(uint16_t), CH_UTF16));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.value_needed);
 		}
@@ -26263,10 +26914,11 @@ static enum ndr_err_code ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, 
 			uint32_t _flags_save_uint8 = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->out.data));
+			size_data_1 = ndr_get_array_size(ndr, &r->out.data);
 			if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-				NDR_PULL_ALLOC_N(ndr, r->out.data, ndr_get_array_size(ndr, &r->out.data));
+				NDR_PULL_ALLOC_N(ndr, r->out.data, size_data_1);
 			}
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.data, ndr_get_array_size(ndr, &r->out.data)));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.data, size_data_1));
 			ndr->flags = _flags_save_uint8;
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -26352,6 +27004,8 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterData(struct ndr_push *ndr
 
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterData(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterData *r)
 {
+	uint32_t size_value_name_0 = 0;
+	uint32_t length_value_name_0 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -26363,11 +27017,13 @@ static enum ndr_err_code ndr_pull_spoolss_DeletePrinterData(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.value_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.value_name));
-		if (ndr_get_array_length(ndr, &r->in.value_name) > ndr_get_array_size(ndr, &r->in.value_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.value_name), ndr_get_array_length(ndr, &r->in.value_name));
+		size_value_name_0 = ndr_get_array_size(ndr, &r->in.value_name);
+		length_value_name_0 = ndr_get_array_length(ndr, &r->in.value_name);
+		if (length_value_name_0 > size_value_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_value_name_0, length_value_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_value_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, length_value_name_0, sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -26555,6 +27211,11 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterDataEx(struct ndr_push *ndr,
 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterDataEx(struct ndr_pull *ndr, int flags, struct spoolss_SetPrinterDataEx *r)
 {
+	uint32_t size_key_name_0 = 0;
+	uint32_t length_key_name_0 = 0;
+	uint32_t size_value_name_0 = 0;
+	uint32_t length_value_name_0 = 0;
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -26566,24 +27227,29 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterDataEx(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.key_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.key_name));
-		if (ndr_get_array_length(ndr, &r->in.key_name) > ndr_get_array_size(ndr, &r->in.key_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.key_name), ndr_get_array_length(ndr, &r->in.key_name));
+		size_key_name_0 = ndr_get_array_size(ndr, &r->in.key_name);
+		length_key_name_0 = ndr_get_array_length(ndr, &r->in.key_name);
+		if (length_key_name_0 > size_key_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_key_name_0, length_key_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_key_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, length_key_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.value_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.value_name));
-		if (ndr_get_array_length(ndr, &r->in.value_name) > ndr_get_array_size(ndr, &r->in.value_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.value_name), ndr_get_array_length(ndr, &r->in.value_name));
+		size_value_name_0 = ndr_get_array_size(ndr, &r->in.value_name);
+		length_value_name_0 = ndr_get_array_length(ndr, &r->in.value_name);
+		if (length_value_name_0 > size_value_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_value_name_0, length_value_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_value_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, length_value_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.data));
+		size_data_1 = ndr_get_array_size(ndr, &r->in.data);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->in.data, ndr_get_array_size(ndr, &r->in.data));
+			NDR_PULL_ALLOC_N(ndr, r->in.data, size_data_1);
 		}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.data, ndr_get_array_size(ndr, &r->in.data)));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.data, size_data_1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		if (r->in.data) {
 			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.data, r->in.offered));
@@ -26666,6 +27332,11 @@ static enum ndr_err_code ndr_push_spoolss_GetPrinterDataEx(struct ndr_push *ndr,
 
 static enum ndr_err_code ndr_pull_spoolss_GetPrinterDataEx(struct ndr_pull *ndr, int flags, struct spoolss_GetPrinterDataEx *r)
 {
+	uint32_t size_key_name_0 = 0;
+	uint32_t length_key_name_0 = 0;
+	uint32_t size_value_name_0 = 0;
+	uint32_t length_value_name_0 = 0;
+	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_type_0;
 	TALLOC_CTX *_mem_save_needed_0;
@@ -26681,18 +27352,22 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrinterDataEx(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.key_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.key_name));
-		if (ndr_get_array_length(ndr, &r->in.key_name) > ndr_get_array_size(ndr, &r->in.key_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.key_name), ndr_get_array_length(ndr, &r->in.key_name));
+		size_key_name_0 = ndr_get_array_size(ndr, &r->in.key_name);
+		length_key_name_0 = ndr_get_array_length(ndr, &r->in.key_name);
+		if (length_key_name_0 > size_key_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_key_name_0, length_key_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_key_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, length_key_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.value_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.value_name));
-		if (ndr_get_array_length(ndr, &r->in.value_name) > ndr_get_array_size(ndr, &r->in.value_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.value_name), ndr_get_array_length(ndr, &r->in.value_name));
+		size_value_name_0 = ndr_get_array_size(ndr, &r->in.value_name);
+		length_value_name_0 = ndr_get_array_length(ndr, &r->in.value_name);
+		if (length_value_name_0 > size_value_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_value_name_0, length_value_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_value_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, length_value_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		NDR_PULL_ALLOC(ndr, r->out.type);
 		ZERO_STRUCTP(r->out.type);
@@ -26710,10 +27385,11 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrinterDataEx(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, r->out.type));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_type_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.data));
+		size_data_1 = ndr_get_array_size(ndr, &r->out.data);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.data, ndr_get_array_size(ndr, &r->out.data));
+			NDR_PULL_ALLOC_N(ndr, r->out.data, size_data_1);
 		}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.data, ndr_get_array_size(ndr, &r->out.data)));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.data, size_data_1));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.needed);
 		}
@@ -26799,6 +27475,8 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrinterDataEx(struct ndr_push *
 
 _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinterDataEx(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrinterDataEx *r)
 {
+	uint32_t size_key_name_0 = 0;
+	uint32_t length_key_name_0 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_needed_0;
 	TALLOC_CTX *_mem_save_count_0;
@@ -26814,11 +27492,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinterDataEx(struct ndr_pull *
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.key_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.key_name));
-		if (ndr_get_array_length(ndr, &r->in.key_name) > ndr_get_array_size(ndr, &r->in.key_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.key_name), ndr_get_array_length(ndr, &r->in.key_name));
+		size_key_name_0 = ndr_get_array_size(ndr, &r->in.key_name);
+		length_key_name_0 = ndr_get_array_length(ndr, &r->in.key_name);
+		if (length_key_name_0 > size_key_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_key_name_0, length_key_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_key_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, length_key_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		NDR_PULL_ALLOC(ndr, r->out.needed);
 		ZERO_STRUCTP(r->out.needed);
@@ -26865,6 +27545,7 @@ _PUBLIC_ enum ndr_err_code ndr_push___spoolss_EnumPrinterDataEx(struct ndr_push 
 
 _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrinterDataEx(struct ndr_pull *ndr, int flags, struct __spoolss_EnumPrinterDataEx *r)
 {
+	uint32_t size_info_0 = 0;
 	uint32_t cntr_info_0;
 	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
@@ -26873,13 +27554,14 @@ _PUBLIC_ enum ndr_err_code ndr_pull___spoolss_EnumPrinterDataEx(struct ndr_pull 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_PULL_ALLOC_N(ndr, r->out.info, r->in.count);
+		size_info_0 = r->in.count;
+		NDR_PULL_ALLOC_N(ndr, r->out.info, size_info_0);
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_PrinterEnumValues(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 		}
-		for (cntr_info_0 = 0; cntr_info_0 < r->in.count; cntr_info_0++) {
+		for (cntr_info_0 = 0; cntr_info_0 < size_info_0; cntr_info_0++) {
 			NDR_CHECK(ndr_pull_spoolss_PrinterEnumValues(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -26980,6 +27662,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_EnumPrinterKey(struct ndr_push *ndr,
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_EnumPrinterKey(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrinterKey *r)
 {
+	uint32_t size_key_name_0 = 0;
+	uint32_t length_key_name_0 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save__ndr_size_0;
 	TALLOC_CTX *_mem_save_key_buffer_0;
@@ -26996,11 +27680,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_EnumPrinterKey(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.key_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.key_name));
-		if (ndr_get_array_length(ndr, &r->in.key_name) > ndr_get_array_size(ndr, &r->in.key_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.key_name), ndr_get_array_length(ndr, &r->in.key_name));
+		size_key_name_0 = ndr_get_array_size(ndr, &r->in.key_name);
+		length_key_name_0 = ndr_get_array_length(ndr, &r->in.key_name);
+		if (length_key_name_0 > size_key_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_key_name_0, length_key_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_key_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, length_key_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		NDR_PULL_ALLOC(ndr, r->out._ndr_size);
 		ZERO_STRUCTP(r->out._ndr_size);
@@ -27106,6 +27792,10 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterDataEx(struct ndr_push *n
 
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterDataEx(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterDataEx *r)
 {
+	uint32_t size_key_name_0 = 0;
+	uint32_t length_key_name_0 = 0;
+	uint32_t size_value_name_0 = 0;
+	uint32_t length_value_name_0 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -27117,18 +27807,22 @@ static enum ndr_err_code ndr_pull_spoolss_DeletePrinterDataEx(struct ndr_pull *n
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.key_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.key_name));
-		if (ndr_get_array_length(ndr, &r->in.key_name) > ndr_get_array_size(ndr, &r->in.key_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.key_name), ndr_get_array_length(ndr, &r->in.key_name));
+		size_key_name_0 = ndr_get_array_size(ndr, &r->in.key_name);
+		length_key_name_0 = ndr_get_array_length(ndr, &r->in.key_name);
+		if (length_key_name_0 > size_key_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_key_name_0, length_key_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_key_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, length_key_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.value_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.value_name));
-		if (ndr_get_array_length(ndr, &r->in.value_name) > ndr_get_array_size(ndr, &r->in.value_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.value_name), ndr_get_array_length(ndr, &r->in.value_name));
+		size_value_name_0 = ndr_get_array_size(ndr, &r->in.value_name);
+		length_value_name_0 = ndr_get_array_length(ndr, &r->in.value_name);
+		if (length_value_name_0 > size_value_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_value_name_0, length_value_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_value_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, length_value_name_0, sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -27183,6 +27877,8 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterKey(struct ndr_push *ndr,
 
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterKey(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterKey *r)
 {
+	uint32_t size_key_name_0 = 0;
+	uint32_t length_key_name_0 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -27194,11 +27890,13 @@ static enum ndr_err_code ndr_pull_spoolss_DeletePrinterKey(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.key_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.key_name));
-		if (ndr_get_array_length(ndr, &r->in.key_name) > ndr_get_array_size(ndr, &r->in.key_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.key_name), ndr_get_array_length(ndr, &r->in.key_name));
+		size_key_name_0 = ndr_get_array_size(ndr, &r->in.key_name);
+		length_key_name_0 = ndr_get_array_length(ndr, &r->in.key_name);
+		if (length_key_name_0 > size_key_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_key_name_0, length_key_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_key_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, length_key_name_0, sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -27303,6 +28001,12 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterDriverEx(struct ndr_push 
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterDriverEx(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterDriverEx *r)
 {
 	uint32_t _ptr_server;
+	uint32_t size_server_1 = 0;
+	uint32_t length_server_1 = 0;
+	uint32_t size_architecture_0 = 0;
+	uint32_t length_architecture_0 = 0;
+	uint32_t size_driver_0 = 0;
+	uint32_t length_driver_0 = 0;
 	TALLOC_CTX *_mem_save_server_0;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server));
@@ -27316,27 +28020,33 @@ static enum ndr_err_code ndr_pull_spoolss_DeletePrinterDriverEx(struct ndr_pull 
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
-			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			size_server_1 = ndr_get_array_size(ndr, &r->in.server);
+			length_server_1 = ndr_get_array_length(ndr, &r->in.server);
+			if (length_server_1 > size_server_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_server_1, length_server_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_server_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, length_server_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.architecture));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.architecture));
-		if (ndr_get_array_length(ndr, &r->in.architecture) > ndr_get_array_size(ndr, &r->in.architecture)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.architecture), ndr_get_array_length(ndr, &r->in.architecture));
+		size_architecture_0 = ndr_get_array_size(ndr, &r->in.architecture);
+		length_architecture_0 = ndr_get_array_length(ndr, &r->in.architecture);
+		if (length_architecture_0 > size_architecture_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_architecture_0, length_architecture_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_architecture_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, length_architecture_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.driver));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.driver));
-		if (ndr_get_array_length(ndr, &r->in.driver) > ndr_get_array_size(ndr, &r->in.driver)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.driver), ndr_get_array_length(ndr, &r->in.driver));
+		size_driver_0 = ndr_get_array_size(ndr, &r->in.driver);
+		length_driver_0 = ndr_get_array_length(ndr, &r->in.driver);
+		if (length_driver_0 > size_driver_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_driver_0, length_driver_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.driver), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.driver, ndr_get_array_length(ndr, &r->in.driver), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_driver_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.driver, length_driver_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_spoolss_DeleteDriverFlags(ndr, NDR_SCALARS, &r->in.delete_flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.version));
 	}
@@ -27540,6 +28250,9 @@ static enum ndr_err_code ndr_push_spoolss_XcvData(struct ndr_push *ndr, int flag
 
 static enum ndr_err_code ndr_pull_spoolss_XcvData(struct ndr_pull *ndr, int flags, struct spoolss_XcvData *r)
 {
+	uint32_t size_function_name_0 = 0;
+	uint32_t length_function_name_0 = 0;
+	uint32_t size_out_data_1 = 0;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_needed_0;
 	TALLOC_CTX *_mem_save_status_code_0;
@@ -27555,11 +28268,13 @@ static enum ndr_err_code ndr_pull_spoolss_XcvData(struct ndr_pull *ndr, int flag
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.function_name));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.function_name));
-		if (ndr_get_array_length(ndr, &r->in.function_name) > ndr_get_array_size(ndr, &r->in.function_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.function_name), ndr_get_array_length(ndr, &r->in.function_name));
+		size_function_name_0 = ndr_get_array_size(ndr, &r->in.function_name);
+		length_function_name_0 = ndr_get_array_length(ndr, &r->in.function_name);
+		if (length_function_name_0 > size_function_name_0) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_function_name_0, length_function_name_0);
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.function_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.function_name, ndr_get_array_length(ndr, &r->in.function_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_check_string_terminator(ndr, length_function_name_0, sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.function_name, length_function_name_0, sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->in.in_data));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in._in_data_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.out_data_size));
@@ -27579,10 +28294,11 @@ static enum ndr_err_code ndr_pull_spoolss_XcvData(struct ndr_pull *ndr, int flag
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.out_data));
+		size_out_data_1 = ndr_get_array_size(ndr, &r->out.out_data);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.out_data, ndr_get_array_size(ndr, &r->out.out_data));
+			NDR_PULL_ALLOC_N(ndr, r->out.out_data, size_out_data_1);
 		}
-		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.out_data, ndr_get_array_size(ndr, &r->out.out_data)));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.out_data, size_out_data_1));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.needed);
 		}
@@ -27675,6 +28391,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_AddPrinterDriverEx(struct ndr_push *
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_AddPrinterDriverEx(struct ndr_pull *ndr, int flags, struct spoolss_AddPrinterDriverEx *r)
 {
 	uint32_t _ptr_servername;
+	uint32_t size_servername_1 = 0;
+	uint32_t length_servername_1 = 0;
 	TALLOC_CTX *_mem_save_servername_0;
 	TALLOC_CTX *_mem_save_info_ctr_0;
 	if (flags & NDR_IN) {
@@ -27689,11 +28407,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_AddPrinterDriverEx(struct ndr_pull *
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
 			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
 			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
-			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			size_servername_1 = ndr_get_array_size(ndr, &r->in.servername);
+			length_servername_1 = ndr_get_array_length(ndr, &r->in.servername);
+			if (length_servername_1 > size_servername_1) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", size_servername_1, length_servername_1);
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_CHECK(ndr_check_string_terminator(ndr, length_servername_1, sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, length_servername_1, sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
