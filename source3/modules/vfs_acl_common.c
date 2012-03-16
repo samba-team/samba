@@ -179,7 +179,7 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
  CREATOR_OWNER/CREATOR_GROUP/WORLD.
 *******************************************************************/
 
-static void add_directory_inheritable_components(vfs_handle_struct *handle,
+static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
                                 const char *name,
 				SMB_STRUCT_STAT *psbuf,
 				struct security_descriptor *psd)
@@ -197,7 +197,7 @@ static void add_directory_inheritable_components(vfs_handle_struct *handle,
 						num_aces + 3);
 
 	if (new_ace_list == NULL) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Fake a quick smb_filename. */
@@ -249,8 +249,19 @@ static void add_directory_inheritable_components(vfs_handle_struct *handle,
 			SEC_ACE_FLAG_CONTAINER_INHERIT|
 				SEC_ACE_FLAG_OBJECT_INHERIT|
 				SEC_ACE_FLAG_INHERIT_ONLY);
-	psd->dacl->aces = new_ace_list;
-	psd->dacl->num_aces += 3;
+	if (psd->dacl) {
+		psd->dacl->aces = new_ace_list;
+		psd->dacl->num_aces += 3;
+	} else {
+		psd->dacl = make_sec_acl(talloc_tos(),
+				NT4_ACL_REVISION,
+				3,
+				new_ace_list);
+		if (psd->dacl == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -406,10 +417,14 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			if (is_directory &&
 				!sd_has_inheritable_components(psd,
 							true)) {
-				add_directory_inheritable_components(handle,
+				status = add_directory_inheritable_components(
+							handle,
 							name,
 							psbuf,
 							psd);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
 			}
 			/* The underlying POSIX module always sets
 			   the ~SEC_DESC_DACL_PROTECTED bit, as ACLs
