@@ -108,11 +108,6 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sconn->smb2.sessions.idtree = idr_init(sconn);
-	if (sconn->smb2.sessions.idtree == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	sconn->smb2.sessions.limit = 0x0000FFFE;
 	sconn->smb2.sessions.list = NULL;
 	sconn->smb2.seqnum_low = 0;
 	sconn->smb2.credits_granted = 0;
@@ -816,9 +811,13 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	/* Re-sign if needed. */
 	if (nreq->do_signing) {
 		NTSTATUS status;
-		status = smb2_signing_sign_pdu(nreq->session->session_key,
-					get_Protocol(),
-					&nreq->out.vector[i], 3);
+		struct smbXsrv_session *x = nreq->session->smbXsrv;
+		struct smbXsrv_connection *conn = x->connection;
+		DATA_BLOB signing_key = x->global->channels[0].signing_key;
+
+		status = smb2_signing_sign_pdu(signing_key,
+					       conn->protocol,
+					       &nreq->out.vector[i], 3);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -1101,10 +1100,13 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	if (req->do_signing) {
 		NTSTATUS status;
+		struct smbXsrv_session *x = req->session->smbXsrv;
+		struct smbXsrv_connection *conn = x->connection;
+		DATA_BLOB signing_key = x->global->channels[0].signing_key;
 
-		status = smb2_signing_sign_pdu(req->session->session_key,
-					get_Protocol(),
-					&state->vector[1], 2);
+		status = smb2_signing_sign_pdu(signing_key,
+					       conn->protocol,
+					       &state->vector[1], 2);
 		if (!NT_STATUS_IS_OK(status)) {
 			smbd_server_connection_terminate(req->sconn,
 						nt_errstr(status));
@@ -1247,8 +1249,10 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	int i = req->current_idx;
 	uint32_t in_flags;
 	uint64_t in_session_id;
-	void *p;
 	struct smbd_smb2_session *session;
+	struct smbXsrv_session *smbXsrv;
+	NTSTATUS status;
+	NTTIME now = timeval_to_nttime(&req->request_time);
 
 	req->session = NULL;
 	req->tcon = NULL;
@@ -1263,12 +1267,13 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	}
 
 	/* lookup an existing session */
-	p = idr_find(req->sconn->smb2.sessions.idtree, in_session_id);
-	if (p == NULL) {
-		return NT_STATUS_USER_SESSION_DELETED;
+	status = smb2srv_session_lookup(req->sconn->conn,
+					in_session_id, now,
+					&smbXsrv);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	session = talloc_get_type_abort(p, struct smbd_smb2_session);
-
+	session = smbXsrv->smb2sess;
 	if (!NT_STATUS_IS_OK(session->status)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1388,6 +1393,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	NTSTATUS session_status;
 	uint32_t allowed_flags;
 	NTSTATUS return_value;
+	struct smbXsrv_session *x = NULL;
 
 	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
 
@@ -1439,23 +1445,29 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	 * we defer the check of the session_status
 	 */
 	session_status = smbd_smb2_request_check_session(req);
+	if (req->session) {
+		x = req->session->smbXsrv;
+	}
 
 	req->do_signing = false;
 	if (flags & SMB2_HDR_FLAG_SIGNED) {
+		struct smbXsrv_connection *conn = x->connection;
+		DATA_BLOB signing_key = x->global->channels[0].signing_key;
+
 		if (!NT_STATUS_IS_OK(session_status)) {
 			return smbd_smb2_request_error(req, session_status);
 		}
 
 		req->do_signing = true;
-		status = smb2_signing_check_pdu(req->session->session_key,
-						get_Protocol(),
+		status = smb2_signing_check_pdu(signing_key,
+						conn->protocol,
 						&req->in.vector[i], 3);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
 	} else if (opcode == SMB2_OP_CANCEL) {
 		/* Cancel requests are allowed to skip the signing */
-	} else if (req->session && req->session->do_signing) {
+	} else if (x && x->global->signing_required) {
 		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
 	}
 
@@ -1937,8 +1949,12 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	if (req->do_signing) {
 		NTSTATUS status;
-		status = smb2_signing_sign_pdu(req->session->session_key,
-					       get_Protocol(),
+		struct smbXsrv_session *x = req->session->smbXsrv;
+		struct smbXsrv_connection *conn = x->connection;
+		DATA_BLOB signing_key = x->global->channels[0].signing_key;
+
+		status = smb2_signing_sign_pdu(signing_key,
+					       conn->protocol,
 					       &req->out.vector[i], 3);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

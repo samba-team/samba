@@ -494,8 +494,8 @@ struct smbd_smb2_session {
 	uint64_t vuid;
 	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
-	DATA_BLOB session_key;
-	bool do_signing;
+
+	struct smbXsrv_session *smbXsrv;
 
 	struct user_struct *compat_vuser;
 
@@ -532,6 +532,8 @@ struct user_struct {
 	struct auth_session_info *session_info;
 
 	struct gensec_security *gensec_security;
+
+	struct smbXsrv_session0 *session;
 };
 
 struct smbd_server_connection {
@@ -672,14 +674,6 @@ struct smbd_server_connection {
 		struct tstream_context *stream;
 		bool negprot_2ff;
 		struct {
-			/* an id tree used to allocate vuids */
-			/* this holds info on session vuids that are already
-			 * validated for this VC */
-			struct idr_context *idtree;
-
-			/* this is the limit of vuid values for this connection */
-			uint64_t limit;
-
 			struct smbd_smb2_session *list;
 		} sessions;
 		struct {
