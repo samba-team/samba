@@ -357,6 +357,7 @@ struct smbXsrv_connection {
 	uint64_t smbd_idle_profstamp;
 
 	struct smbXsrv_session_table *session_table;
+	struct smbXsrv_tcon_table *tcon_table;
 };
 
 NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id);
@@ -380,6 +381,26 @@ NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn);
 NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
 				uint64_t session_id, NTTIME now,
 				struct smbXsrv_session **session);
+
+NTSTATUS smbXsrv_tcon_global_init(void);
+NTSTATUS smbXsrv_tcon_update(struct smbXsrv_tcon *tcon);
+NTSTATUS smbXsrv_tcon_disconnect(struct smbXsrv_tcon *tcon, uint64_t vuid);
+NTSTATUS smb1srv_tcon_table_init(struct smbXsrv_connection *conn);
+NTSTATUS smb1srv_tcon_create(struct smbXsrv_connection *conn,
+			     NTTIME now,
+			     struct smbXsrv_tcon **_tcon);
+NTSTATUS smb1srv_tcon_lookup(struct smbXsrv_connection *conn,
+			     uint16_t tree_id, NTTIME now,
+			     struct smbXsrv_tcon **tcon);
+NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_connection *conn);
+NTSTATUS smb2srv_tcon_table_init(struct smbXsrv_session *session);
+NTSTATUS smb2srv_tcon_create(struct smbXsrv_session *session,
+			     NTTIME now,
+			     struct smbXsrv_tcon **_tcon);
+NTSTATUS smb2srv_tcon_lookup(struct smbXsrv_session *session,
+			     uint32_t tree_id, NTTIME now,
+			     struct smbXsrv_tcon **tcon);
+NTSTATUS smb2srv_tcon_disconnect_all(struct smbXsrv_session *session);
 
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;

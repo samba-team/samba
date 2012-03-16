@@ -377,6 +377,7 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/smb2_break.c
                smbd/smbXsrv_version.c
                smbd/smbXsrv_session.c
+               smbd/smbXsrv_tcon.c
                smbd/server_exit.c
                ${MANGLE_SRC}'''
 

@@ -1392,8 +1392,13 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	if (!connections_init(True))
+	if (!connections_init(true)) {
 		exit(1);
+	}
+	status = smbXsrv_tcon_global_init();
+	if (!NT_STATUS_IS_OK(status)) {
+		exit(1);
+	}
 
 	if (!locking_init())
 		exit(1);
