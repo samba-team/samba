@@ -16,6 +16,18 @@ import "auth.idl";
  */
 cpp_quote("#define smbXsrv_session smbXsrv_session0")
 
+/*
+ * The main server code should just work with
+ * 'struct smbXsrv_tcon' and never use
+ * smbXsrv_tcon0, smbXsrv_tconU
+ * and smbXsrv_tconB directly.
+ *
+ * If we need to change the smbXsrv_tcon,
+ * we can just point it to smbXsrv_tcon1
+ * and could implement transparent mapping.
+ */
+cpp_quote("#define smbXsrv_tcon smbXsrv_tcon0")
+
 [
 	uuid("07408340-ae31-11e1-97dc-539f7fddc06f"),
 	version(0.0),
@@ -164,5 +176,56 @@ interface smbXsrv
 
 	void smbXsrv_session_decode(
 		[in] smbXsrv_sessionB blob
+		);
+
+	/* tree connects */
+
+	typedef struct {
+		[ignore] db_record 			*db_rec;
+		uint32					tcon_global_id;
+		uint32					tcon_wire_id;
+		server_id				server_id;
+		NTTIME					creation_time;
+		[charset(UTF8),string] char		share_name[];
+	} smbXsrv_tcon_global0;
+
+	typedef union {
+		[case(0)] smbXsrv_tcon_global0		*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_tcon_globalU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		uint32					seqnum;
+		[switch_is(version)] smbXsrv_tcon_globalU info;
+	} smbXsrv_tcon_globalB;
+
+	void smbXsrv_tcon_global_decode(
+		[in] smbXsrv_tcon_globalB blob
+		);
+
+	typedef struct {
+		[ignore] smbXsrv_tcon_table		*table;
+		[ignore] db_record 			*db_rec;
+		uint32					local_id;
+		[ref] smbXsrv_tcon_global0		*global;
+		NTSTATUS				status;
+		NTTIME					idle_time;
+		[ignore] connection_struct		*compat;
+	} smbXsrv_tcon0;
+
+	typedef union {
+		[case(0)] smbXsrv_tcon0			*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_tconU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		[value(0)] uint32			reserved;
+		[switch_is(version)] smbXsrv_tconU	info;
+	} smbXsrv_tconB;
+
+	void smbXsrv_tcon_decode(
+		[in] smbXsrv_tconB blob
 		);
 }
