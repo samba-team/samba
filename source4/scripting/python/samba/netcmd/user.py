@@ -169,7 +169,6 @@ sudo samba-tool user delete User2
 
 Example2 shows how to delete a user in the domain against the local server.   sudo is used so a user may run the command as root.
 
-<<<<<<< HEAD
 """
     synopsis = "%prog <username> [options]"
 
