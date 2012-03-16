@@ -212,6 +212,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 	bool guest = false;
 	uint8_t session_key[16];
 	struct smbXsrv_session *x = session->smbXsrv;
+	struct auth_session_info *session_info = session->session_info;
+	struct smbXsrv_connection *conn = x->connection;
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == SMB_SIGNING_REQUIRED) {
@@ -240,6 +242,16 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCMAC");
+		const DATA_BLOB context = data_blob_string_const_null("SmbSign");
+
+		smb2_key_derivation(session_key, sizeof(session_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    x->global->signing_key.data);
+	}
+
 	x->global->application_key = data_blob_dup_talloc(x->global,
 						x->global->signing_key);
 	if (x->global->application_key.data == NULL) {
@@ -248,11 +260,28 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+		const DATA_BLOB label = data_blob_string_const_null("SMB2APP");
+		const DATA_BLOB context = data_blob_string_const_null("SmbRpc");
+
+		smb2_key_derivation(session_key, sizeof(session_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    x->global->application_key.data);
+	}
 	ZERO_STRUCT(session_key);
 
 	x->global->channels[0].signing_key = data_blob_dup_talloc(x->global->channels,
 						x->global->signing_key);
 	if (x->global->channels[0].signing_key.data == NULL) {
+		TALLOC_FREE(session);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	data_blob_clear_free(&session_info->session_key);
+	session_info->session_key = data_blob_dup_talloc(session_info,
+						x->global->application_key);
+	if (session_info->session_key.data == NULL) {
 		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
