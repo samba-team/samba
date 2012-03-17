@@ -1,5 +1,5 @@
 # Helpers for provision stuff
-# Copyright (C) Matthieu Patou <mat@matws.net> 2009-2010
+# Copyright (C) Matthieu Patou <mat@matws.net> 2009-2012
 #
 # Based on provision a Samba4 server by
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
@@ -33,9 +33,12 @@ from samba.provision import (provision_paths_from_lp,
                             getpolicypath, set_gpos_acl, create_gpo_struct,
                             FILL_FULL, provision, ProvisioningError,
                             setsysvolacl, secretsdb_self_join)
-from samba.dcerpc import xattr
+from samba.dcerpc import xattr, drsblobs
 from samba.dcerpc.misc import SEC_CHAN_BDC
+from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
+from samba import _glue
+import tempfile
 
 # All the ldb related to registry are commented because the path for them is
 # relative in the provisionPath object
@@ -832,6 +835,125 @@ def search_constructed_attrs_stored(samdb, rootdn, attrs):
                     hashAtt[att][str(ent.dn).lower()] = str(ent[att])
 
     return hashAtt
+
+def findprovisionrange(samdb, basedn):
+    """ Find ranges of usn grouped by invocation id and then by timestamp
+        rouned at 1 minute
+
+        :param samdb: An LDB object pointing to the samdb
+        :param basedn: The DN of the forest
+
+        :return: A two level dictionary with invoication id as the
+                first level, timestamp as the second one and then
+                max, min, and number as subkeys, representing respectivily
+                the maximum usn for the range, the minimum usn and the number
+                of object with usn in this range.
+    """
+    nb_obj = 0
+    hash_id = {}
+
+    res = samdb.search(base=basedn, expression="objectClass=*",
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    attrs=["replPropertyMetaData"],
+                                    controls=["search_options:1:2"])
+
+    for e in res:
+        nb_obj = nb_obj + 1
+        obj = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                            str(e["replPropertyMetaData"])).ctr
+
+        for o in obj.array:
+            # like a timestamp but with the resolution of 1 minute
+            minutestamp =_glue.nttime2unix(o.originating_change_time)/60
+            hash_ts = hash_id.get(str(o.originating_invocation_id))
+
+            if hash_ts == None:
+                ob = {}
+                ob["min"] = o.originating_usn
+                ob["max"] = o.originating_usn
+                ob["num"] = 1
+                ob["list"] = [str(e.dn)]
+                hash_ts = {}
+            else:
+                ob = hash_ts.get(minutestamp)
+                if ob == None:
+                    ob = {}
+                    ob["min"] = o.originating_usn
+                    ob["max"] = o.originating_usn
+                    ob["num"] = 1
+                    ob["list"] = [str(e.dn)]
+                else:
+                    if ob["min"] > o.originating_usn:
+                        ob["min"] = o.originating_usn
+                    if ob["max"] < o.originating_usn:
+                        ob["max"] = o.originating_usn
+                    if not (str(e.dn) in ob["list"]):
+                        ob["num"] = ob["num"] + 1
+                        ob["list"].append(str(e.dn))
+            hash_ts[minutestamp] = ob
+            hash_id[str(o.originating_invocation_id)] = hash_ts
+
+    return (hash_id, nb_obj)
+
+def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
+    """ print the differents ranges passed as parameter
+
+        :param dic: A dictionnary as returned by findprovisionrange
+        :param limit_print: minimum number of object in a range in order to print it
+        :param dest: Destination directory
+        :param samdb_path: Path to the sam.ldb file
+        :param invoicationid: Invocation ID for the current provision
+    """
+    ldif = ""
+
+    for id in dic:
+        hash_ts = dic[id]
+        sorted_keys = []
+        sorted_keys.extend(hash_ts.keys())
+        sorted_keys.sort()
+
+        kept_record = []
+        for k in sorted_keys:
+            obj = hash_ts[k]
+            if obj["num"] > limit_print:
+                dt = _glue.nttime2string(_glue.unix2nttime(k*60))
+                print "%s # of modification: %d  \tmin: %d max: %d" % (dt , obj["num"],
+                                                                    obj["min"],
+                                                                    obj["max"])
+            if hash_ts[k]["num"] > 600:
+                kept_record.append(k)
+
+        # Let's try to concatenate consecutive block if they are in the almost same minutestamp
+        for i in range(0, len(kept_record)):
+            if i != 0:
+                key1 = kept_record[i]
+                key2 = kept_record[i-1]
+                if key1 - key2 == 1:
+                    # previous record is just 1 minute away from current
+                    if int(hash_ts[key1]["min"]) == int(hash_ts[key2]["max"]) + 1:
+                        # Copy the highest USN in the previous record
+                        # and mark the current as skipped
+                        hash_ts[key2]["max"] = hash_ts[key1]["max"]
+                        hash_ts[key1]["skipped"] = True
+
+        for k in kept_record:
+                obj = hash_ts[k]
+                if obj.get("skipped") == None:
+                    ldif = "%slastProvisionUSN: %d-%d;%s\n" % (ldif, obj["min"],
+                                obj["max"], id)
+
+    if ldif != "":
+        if dest == None:
+            dest = "/tmp"
+
+        file = tempfile.mktemp(dir=dest, prefix="usnprov", suffix=".ldif")
+        print
+        print "To track the USNs modified/created by provision and upgrade proivsion,"
+        print " the following ranges are proposed to be added to your provision sam.ldb: \n%s" % ldif
+        print "We recommend to review them, and if it's correct to integrate the following ldif: %s in your sam.ldb" % file
+        print "You can load this file like this: ldbadd -H %s %s\n"%(str(samdb_path),file)
+        ldif = "dn: @PROVISION\nprovisionnerID: %s\n%s" % (invocationid, ldif)
+        open(file,'w').write(ldif)
 
 def int64range2str(value):
     """Display the int64 range stored in value as xxx-yyy
