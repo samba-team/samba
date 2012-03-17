@@ -53,7 +53,7 @@ from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
 from samba.dcerpc import security, drsblobs
 from samba.ndr import ndr_unpack
 from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
-                                 get_ldbs,
+                                 get_ldbs, findprovisionrange,
                                  usn_in_range, identic_rename, get_diff_sddls,
                                  update_secrets, CHANGE, ERROR, SIMPLE,
                                  CHANGEALL, GUESS, CHANGESD, PROVISION,
@@ -62,7 +62,8 @@ from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  update_machine_account_password,
                                  search_constructed_attrs_stored,
                                  int64range2str, update_dns_account_password,
-                                 increment_calculated_keyversion_number)
+                                 increment_calculated_keyversion_number,
+                                 print_provision_ranges)
 from samba.xattr import copytree_with_xattrs
 
 replace=2**FLAG_MOD_REPLACE
@@ -1698,12 +1699,16 @@ if __name__ == '__main__':
             message(SIMPLE, "Your provision lacks provision range information")
             if confirm("Do you want to run findprovisionusnranges to try to find them ?", False):
                 ldbs.groupedRollback()
-                os.system("%s %s %s %s %s" % (os.path.join(os.path.dirname(sys.argv[0]),
-                                            "findprovisionusnranges"),
-                                        "--storedir",
-                                        paths.private_dir,
-                                        "-s",
-                                        smbconf))
+                minobj = 5
+                (hash_id, nb_obj) = findprovisionrange(ldbs.sam, ldb.Dn(ldbs.sam, str(names.rootdn)))
+                message(SIMPLE, "Here is a list of changes that modified more than %d objects in 1 minute." % minobj)
+                message(SIMPLE, "Usually changes made by provision and upgradeprovision are those who affect a couple"\
+                        " of hundred of objects or more")
+                message(SIMPLE, "Total number of objects: %d" % nb_obj)
+                message(SIMPLE, "")
+
+                print_provision_ranges(hash_id, minobj, None, str(paths.samdb), str(names.invocation))
+
                 message(SIMPLE, "Once you applied/adapted the change(s) please restart the upgradeprovision script")
                 sys.exit(0)
 
