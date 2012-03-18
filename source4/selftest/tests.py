@@ -433,6 +433,7 @@ planpythontestsuite("none", "samba.tests.samba3sam")
 
 planpythontestsuite("dc:local", "samba.tests.samba_tool.timecmd")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.user")
+planpythontestsuite("dc:local", "samba.tests.samba_tool.group")
 
 planpythontestsuite("none", "subunit")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.rpcecho")
