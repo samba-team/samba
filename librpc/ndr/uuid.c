@@ -336,11 +336,6 @@ _PUBLIC_ bool ndr_policy_handle_empty(const struct policy_handle *h)
 	return (h->handle_type == 0 && GUID_all_zero(&h->uuid));
 }
 
-_PUBLIC_ bool is_valid_policy_hnd(const struct policy_handle *hnd)
-{
-	return !ndr_policy_handle_empty(hnd);
-}
-
 _PUBLIC_ bool ndr_policy_handle_equal(const struct policy_handle *hnd1,
 				  const struct policy_handle *hnd2)
 {
