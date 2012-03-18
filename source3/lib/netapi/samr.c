@@ -283,7 +283,7 @@ void libnetapi_samr_close_domain_handle(struct libnetapi_ctx *ctx,
 	priv = talloc_get_type_abort(ctx->private_data,
 		struct libnetapi_private_ctx);
 
-	if (!policy_handle_equal(handle, &priv->samr.domain_handle)) {
+	if (!ndr_policy_handle_equal(handle, &priv->samr.domain_handle)) {
 		return;
 	}
 
@@ -311,7 +311,7 @@ void libnetapi_samr_close_builtin_handle(struct libnetapi_ctx *ctx,
 	priv = talloc_get_type_abort(ctx->private_data,
 		struct libnetapi_private_ctx);
 
-	if (!policy_handle_equal(handle, &priv->samr.builtin_handle)) {
+	if (!ndr_policy_handle_equal(handle, &priv->samr.builtin_handle)) {
 		return;
 	}
 
@@ -339,7 +339,7 @@ void libnetapi_samr_close_connect_handle(struct libnetapi_ctx *ctx,
 	priv = talloc_get_type_abort(ctx->private_data,
 		struct libnetapi_private_ctx);
 
-	if (!policy_handle_equal(handle, &priv->samr.connect_handle)) {
+	if (!ndr_policy_handle_equal(handle, &priv->samr.connect_handle)) {
 		return;
 	}
 

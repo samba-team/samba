@@ -341,7 +341,7 @@ _PUBLIC_ bool is_valid_policy_hnd(const struct policy_handle *hnd)
 	return !policy_handle_empty(hnd);
 }
 
-_PUBLIC_ bool policy_handle_equal(const struct policy_handle *hnd1,
+_PUBLIC_ bool ndr_policy_handle_equal(const struct policy_handle *hnd1,
 				  const struct policy_handle *hnd2)
 {
 	if (!hnd1 || !hnd2) {
