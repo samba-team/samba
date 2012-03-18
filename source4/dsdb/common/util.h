@@ -19,6 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __DSDB_COMMON_UTIL_H__
+#define __DSDB_COMMON_UTIL_H__
+
 /*
    flags for dsdb_request_add_controls(). For the module functions,
    the upper 16 bits are in dsdb/samdb/ldb_modules/util.h
@@ -57,3 +60,10 @@ bool is_attr_in_list(const char * const * attrs, const char *attr);
 
 #define DSDB_SECRET_ATTRIBUTES_COMMA ,
 #define DSDB_SECRET_ATTRIBUTES DSDB_SECRET_ATTRIBUTES_EX(DSDB_SECRET_ATTRIBUTES_COMMA)
+
+struct GUID;
+
+char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);
+NTSTATUS NS_GUID_from_string(const char *s, struct GUID *guid);
+
+#endif /* __DSDB_COMMON_UTIL_H__ */
