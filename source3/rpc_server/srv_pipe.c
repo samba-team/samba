@@ -341,7 +341,7 @@ static bool check_bind_req(struct pipes_struct *p,
 
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 	if (rpc_srv_pipe_exists_by_id(abstract) &&
-	   ndr_syntax_id_equal(transfer, &ndr_transfer_syntax)) {
+	   ndr_syntax_id_equal(transfer, &ndr_transfer_syntax_ndr)) {
 		DEBUG(3, ("check_bind_req: %s -> %s rpc service\n",
 			  rpc_srv_get_pipe_cli_name(abstract),
 			  rpc_srv_get_pipe_srv_name(abstract)));
@@ -759,7 +759,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		/* Rejection reason: abstract syntax not supported */
 		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
 		bind_ack_ctx.reason = DCERPC_BIND_REASON_ASYNTAX;
-		bind_ack_ctx.syntax = null_ndr_syntax_id;
+		bind_ack_ctx.syntax = ndr_syntax_id_null;
 	}
 
 	/*
@@ -1107,7 +1107,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 		/* Rejection reason: abstract syntax not supported */
 		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
 		bind_ack_ctx.reason = DCERPC_BIND_REASON_ASYNTAX;
-		bind_ack_ctx.syntax = null_ndr_syntax_id;
+		bind_ack_ctx.syntax = ndr_syntax_id_null;
 	}
 
 	/*

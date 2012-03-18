@@ -1,20 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    libndr interface
 
    Copyright (C) Andrew Tridgell 2003
-   
+   Copyright (C) Jelmer Vernooij 2005-2008
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -33,17 +34,17 @@
 #define NDR_BASE_MARSHALL_SIZE 1024
 
 /* this guid indicates NDR encoding in a protocol tower */
-const struct ndr_syntax_id ndr_transfer_syntax = {
+const struct ndr_syntax_id ndr_transfer_syntax_ndr = {
   { 0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60} },
   2
 };
 
-const struct ndr_syntax_id ndr64_transfer_syntax = {
+const struct ndr_syntax_id ndr_transfer_syntax_ndr64 = {
   { 0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36} },
   1
 };
 
-const struct ndr_syntax_id null_ndr_syntax_id = {
+const struct ndr_syntax_id ndr_syntax_id_null = {
   { 0, 0, 0, { 0, 0 }, { 0, 0, 0, 0, 0, 0 } },
   0
 };

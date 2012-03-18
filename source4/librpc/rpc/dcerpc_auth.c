@@ -41,9 +41,9 @@ static NTSTATUS dcerpc_init_syntaxes(const struct ndr_interface_table *table,
 	syntax->if_version = table->syntax_id.if_version;
 
 	if (pipe_flags & DCERPC_NDR64) {
-		*transfer_syntax = ndr64_transfer_syntax;
+		*transfer_syntax = ndr_transfer_syntax_ndr64;
 	} else {
-		*transfer_syntax = ndr_transfer_syntax;
+		*transfer_syntax = ndr_transfer_syntax_ndr;
 	}
 
 	return NT_STATUS_OK;

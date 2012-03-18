@@ -353,9 +353,9 @@ typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, cons
 #include "../libcli/util/error.h"
 #include "librpc/gen_ndr/misc.h"
 
-extern const struct ndr_syntax_id ndr_transfer_syntax;
-extern const struct ndr_syntax_id ndr64_transfer_syntax;
-extern const struct ndr_syntax_id null_ndr_syntax_id;
+extern const struct ndr_syntax_id ndr_transfer_syntax_ndr;
+extern const struct ndr_syntax_id ndr_transfer_syntax_ndr64;
+extern const struct ndr_syntax_id ndr_syntax_id_null;
 
 struct ndr_interface_call_pipe {
 	const char *name;

@@ -262,10 +262,9 @@ static PyObject *py_iface_alter_context(PyObject *self, PyObject *args, PyObject
 		return NULL;
 
 	if (py_transfer_syntax == Py_None) {
-		transfer_syntax = ndr_transfer_syntax;
+		transfer_syntax = ndr_transfer_syntax_ndr;
 	} else {
-		if (!ndr_syntax_from_py_object(py_transfer_syntax, 
-					       &transfer_syntax))
+		if (!ndr_syntax_from_py_object(py_transfer_syntax, &transfer_syntax))
 			return NULL;
 	}
 

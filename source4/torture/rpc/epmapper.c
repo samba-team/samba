@@ -204,7 +204,7 @@ static bool test_Map_tcpip(struct torture_context *tctx,
 			ndr_interface_name(&syntax.uuid, syntax.if_version));
 
 	dcerpc_floor_get_lhs_data(&t.floors[1], &syntax);
-	torture_assert(tctx, ndr_syntax_id_equal(&syntax, &ndr_transfer_syntax),
+	torture_assert(tctx, ndr_syntax_id_equal(&syntax, &ndr_transfer_syntax_ndr),
 		       "epm_Map_tcpip failed: floor 2 is not NDR encoded");
 
 	torture_assert(tctx, t.floors[2].lhs.protocol == EPM_PROTOCOL_NCACN,

@@ -477,7 +477,7 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	result->abstract_syntax = *abstract_syntax;
-	result->transfer_syntax = ndr_transfer_syntax;
+	result->transfer_syntax = ndr_transfer_syntax_ndr;
 
 	if (remote_address == NULL) {
 		struct tsocket_address *local;
@@ -675,7 +675,7 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 	}
 
 	result->abstract_syntax = *abstract_syntax;
-	result->transfer_syntax = ndr_transfer_syntax;
+	result->transfer_syntax = ndr_transfer_syntax_ndr;
 
 	result->desthost = get_myname(result);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
