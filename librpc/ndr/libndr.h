@@ -555,7 +555,7 @@ NDR_SCALAR_PROTO(double, double)
 enum ndr_err_code ndr_pull_policy_handle(struct ndr_pull *ndr, int ndr_flags, struct policy_handle *r);
 enum ndr_err_code ndr_push_policy_handle(struct ndr_push *ndr, int ndr_flags, const struct policy_handle *r);
 void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, const struct policy_handle *r);
-bool policy_handle_empty(const struct policy_handle *h);
+bool ndr_policy_handle_empty(const struct policy_handle *h);
 bool is_valid_policy_hnd(const struct policy_handle *hnd);
 bool ndr_policy_handle_equal(const struct policy_handle *hnd1,
 			 const struct policy_handle *hnd2);

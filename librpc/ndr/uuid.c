@@ -331,14 +331,14 @@ _PUBLIC_ char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 			       guid->node[4], guid->node[5]);
 }
 
-_PUBLIC_ bool policy_handle_empty(const struct policy_handle *h)
+_PUBLIC_ bool ndr_policy_handle_empty(const struct policy_handle *h)
 {
 	return (h->handle_type == 0 && GUID_all_zero(&h->uuid));
 }
 
 _PUBLIC_ bool is_valid_policy_hnd(const struct policy_handle *hnd)
 {
-	return !policy_handle_empty(hnd);
+	return !ndr_policy_handle_empty(hnd);
 }
 
 _PUBLIC_ bool ndr_policy_handle_equal(const struct policy_handle *hnd1,

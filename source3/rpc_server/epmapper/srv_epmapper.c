@@ -537,7 +537,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 		  r->in.max_ents));
 
 	if (r->in.entry_handle == NULL ||
-	    policy_handle_empty(r->in.entry_handle)) {
+	    ndr_policy_handle_empty(r->in.entry_handle)) {
 		struct GUID *obj;
 		char *srv_addr = NULL;
 
@@ -924,7 +924,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	}
 
 	if (r->in.entry_handle == NULL ||
-	    policy_handle_empty(r->in.entry_handle)) {
+	    ndr_policy_handle_empty(r->in.entry_handle)) {
 		struct GUID *obj;
 		char *srv_addr = NULL;
 

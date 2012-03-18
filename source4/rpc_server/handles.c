@@ -82,7 +82,7 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
 
 	sid = &context->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
-	if (policy_handle_empty(p)) {
+	if (ndr_policy_handle_empty(p)) {
 		/* TODO: we should probably return a NULL handle here */
 		return dcesrv_handle_new(context, handle_type);
 	}

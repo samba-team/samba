@@ -308,7 +308,7 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 
 	/* libnet context's domain handle is not empty, so check out what
 	   was opened first, before doing anything */
-	if (!policy_handle_empty(&ctx->samr.handle)) {
+	if (!ndr_policy_handle_empty(&ctx->samr.handle)) {
 		if (strequal(ctx->samr.name, io->in.domain_name) &&
 		    ctx->samr.access_mask == io->in.access_mask) {
 

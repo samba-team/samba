@@ -4,6 +4,7 @@
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
+   Copyright (C) Jelmer Vernooij 2005-2007
    Copyright (C) Guenther Deschner 2008-2010
 
    This program is free software; you can redistribute it and/or modify
@@ -5536,7 +5537,7 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 				ret = false;
 			}
 
-			if (!policy_handle_empty(&user_handle)) {
+			if (!ndr_policy_handle_empty(&user_handle)) {
 				torture_comment(tctx, "Testing DeleteUser (createuser2 test)\n");
 
 				d.in.user_handle = &user_handle;
@@ -7483,7 +7484,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 		default:
 			return false;
 		}
-		if (!policy_handle_empty(&handles[i])) {
+		if (!ndr_policy_handle_empty(&handles[i])) {
 			num_created++;
 		}
 	}
@@ -7534,7 +7535,7 @@ static bool test_ManyObjects(struct dcerpc_pipe *p,
 
 	for (i=0; i < num_total; i++) {
 
-		if (policy_handle_empty(&handles[i])) {
+		if (ndr_policy_handle_empty(&handles[i])) {
 			continue;
 		}
 
@@ -7694,17 +7695,17 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		break;
 	}
 
-	if (!policy_handle_empty(&user_handle) &&
+	if (!ndr_policy_handle_empty(&user_handle) &&
 	    !test_DeleteUser(b, tctx, &user_handle)) {
 		ret = false;
 	}
 
-	if (!policy_handle_empty(&alias_handle) &&
+	if (!ndr_policy_handle_empty(&alias_handle) &&
 	    !test_DeleteAlias(b, tctx, &alias_handle)) {
 		ret = false;
 	}
 
-	if (!policy_handle_empty(&group_handle) &&
+	if (!ndr_policy_handle_empty(&group_handle) &&
 	    !test_DeleteDomainGroup(b, tctx, &group_handle)) {
 		ret = false;
 	}

@@ -45,7 +45,7 @@ bool samr_domain_opened(struct libnet_context *ctx, const char *domain_name,
 		 * if it's not been explicitly specified.
 		 */
 
-		if (policy_handle_empty(&ctx->samr.handle)) {
+		if (ndr_policy_handle_empty(&ctx->samr.handle)) {
 			domain_open->in.type        = DOMAIN_SAMR;
 			domain_open->in.domain_name = cli_credentials_get_domain(ctx->cred);
 			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -62,7 +62,7 @@ bool samr_domain_opened(struct libnet_context *ctx, const char *domain_name,
 		 * opening a new domain otherwise.
 		 */
 
-		if (policy_handle_empty(&ctx->samr.handle) ||
+		if (ndr_policy_handle_empty(&ctx->samr.handle) ||
 		    !strequal(domain_name, ctx->samr.name)) {
 			domain_open->in.type        = DOMAIN_SAMR;
 			domain_open->in.domain_name = domain_name;
@@ -100,7 +100,7 @@ bool lsa_domain_opened(struct libnet_context *ctx, const char *domain_name,
 		 * if it's not been explicitly specified.
 		 */
 
-		if (policy_handle_empty(&ctx->lsa.handle)) {
+		if (ndr_policy_handle_empty(&ctx->lsa.handle)) {
 			domain_open->in.type        = DOMAIN_LSA;
 			domain_open->in.domain_name = cli_credentials_get_domain(ctx->cred);
 			domain_open->in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -119,7 +119,7 @@ bool lsa_domain_opened(struct libnet_context *ctx, const char *domain_name,
 		 * opening a new domain otherwise.
 		 */
 
-		if (policy_handle_empty(&ctx->lsa.handle) ||
+		if (ndr_policy_handle_empty(&ctx->lsa.handle) ||
 		    !strequal(domain_name, ctx->lsa.name)) {
 			domain_open->in.type        = DOMAIN_LSA;
 			domain_open->in.domain_name = domain_name;
