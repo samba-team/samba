@@ -31,7 +31,8 @@ bool db_is_local(const char *name);
 
 enum dbwrap_lock_order {
 	DBWRAP_LOCK_ORDER_1 = 1,
-	DBWRAP_LOCK_ORDER_2 = 2
+	DBWRAP_LOCK_ORDER_2 = 2,
+	DBWRAP_LOCK_ORDER_3 = 3
 };
 
 /**

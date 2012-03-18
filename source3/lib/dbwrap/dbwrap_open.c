@@ -66,11 +66,14 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 	const char *sockname;
 #endif
 
-	if ((lock_order != DBWRAP_LOCK_ORDER_1) &&
-	    (lock_order != DBWRAP_LOCK_ORDER_2)) {
+	switch (lock_order) {
+	case DBWRAP_LOCK_ORDER_1:
+	case DBWRAP_LOCK_ORDER_2:
+	case DBWRAP_LOCK_ORDER_3:
+		break;
+	default:
 		/*
-		 * Only allow 2 levels. ctdb gives us 3, and we will
-		 * have the watchers database soon.
+		 * Only allow the 3 levels ctdb gives us.
 		 */
 		errno = EINVAL;
 		return NULL;
