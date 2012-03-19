@@ -442,10 +442,14 @@ class cmd_user_password(Command):
         net = Net(creds, lp, server=credopts.ipaddress)
 
         password = newpassword
-        while 1:
+        while True:
             if password is not None and password is not '':
                 break
             password = getpass("New Password: ")
+            passwordverify = getpass("Retype Password: ")
+            if not password == passwordverify:
+                password = None
+                self.outf.write("Sorry, passwords do not match.\n")
 
         try:
             net.change_password(password)
