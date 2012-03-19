@@ -548,12 +548,13 @@ struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
 
 NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
 			  struct notify_entry *e,
+			  const char *path,
 			  void (*callback)(struct sys_notify_context *ctx, 
 					   void *private_data,
 					   struct notify_event *ev),
 			  void *private_data, void *handle)
 {
-	return SMB_VFS_NOTIFY_WATCH(ctx->conn, ctx, e, callback, private_data,
-				    handle);
+	return SMB_VFS_NOTIFY_WATCH(ctx->conn, ctx, e, path, callback,
+				    private_data, handle);
 }
 

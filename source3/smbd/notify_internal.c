@@ -538,7 +538,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 		  this call will modify e.filter and e.subdir_filter
 		  to remove bits handled by the backend
 		*/
-		status = sys_notify_watch(notify->sys_notify_ctx, &e,
+		status = sys_notify_watch(notify->sys_notify_ctx, &e, e.path,
 					  sys_notify_callback, listel,
 					  &listel->sys_notify_handle);
 		if (NT_STATUS_IS_OK(status)) {

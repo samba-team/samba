@@ -357,12 +357,16 @@ static char *skel_realpath(vfs_handle_struct *handle,  const char *path)
 	return SMB_VFS_NEXT_REALPATH(handle, path);
 }
 
-static NTSTATUS skel_notify_watch(struct vfs_handle_struct *handle,
-	    struct sys_notify_context *ctx, struct notify_entry *e,
-	    void (*callback)(struct sys_notify_context *ctx, void *private_data, struct notify_event *ev),
-	    void *private_data, void *handle_p)
+static NTSTATUS skel_notify_watch(
+	struct vfs_handle_struct *handle,
+	struct sys_notify_context *ctx,
+	struct notify_entry *e,
+	const char *path,
+	void (*callback)(struct sys_notify_context *ctx, void *private_data,
+			 struct notify_event *ev),
+	void *private_data, void *handle_p)
 {
-	return SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, e, callback,
+	return SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, e, path, callback,
 		private_data, handle_p);
 }
 

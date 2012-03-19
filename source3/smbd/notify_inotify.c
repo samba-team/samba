@@ -372,6 +372,7 @@ static int watch_destructor(struct inotify_watch_context *w)
 */
 NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 		       struct notify_entry *e,
+		       const char *path,
 		       void (*callback)(struct sys_notify_context *ctx, 
 					void *private_data,
 					struct notify_event *ev),
@@ -405,7 +406,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	mask |= (IN_MASK_ADD | IN_ONLYDIR);
 
 	/* get a new watch descriptor for this path */
-	wd = inotify_add_watch(in->fd, e->path, mask);
+	wd = inotify_add_watch(in->fd, path, mask);
 	if (wd == -1) {
 		e->filter = filter;
 		DEBUG(1, ("inotify_add_watch returned %s\n", strerror(errno)));
@@ -428,7 +429,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	w->private_data = private_data;
 	w->mask = mask;
 	w->filter = filter;
-	w->path = talloc_strdup(w, e->path);
+	w->path = talloc_strdup(w, path);
 	if (w->path == NULL) {
 		inotify_rm_watch(in->fd, wd);
 		e->filter = filter;

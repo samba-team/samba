@@ -1633,6 +1633,7 @@ static char *vfswrap_realpath(vfs_handle_struct *handle,  const char *path)
 static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 				     struct sys_notify_context *ctx,
 				     struct notify_entry *e,
+				     const char *path,
 				     void (*callback)(struct sys_notify_context *ctx, 
 						      void *private_data,
 						      struct notify_event *ev),
@@ -1648,7 +1649,8 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 	 */
 #ifdef HAVE_INOTIFY
 	if (lp_kernel_change_notify(ctx->conn->params)) {
-		return inotify_watch(ctx, e, callback, private_data, handle);
+		return inotify_watch(ctx, e, path, callback, private_data,
+				     handle);
 	}
 #endif
 	/*

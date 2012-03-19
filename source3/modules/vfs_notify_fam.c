@@ -222,6 +222,7 @@ static int fam_watch_context_destructor(struct fam_watch_context *ctx)
 static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
 			  struct sys_notify_context *ctx,
 			  struct notify_entry *e,
+			  const char *path,
 			  void (*callback)(struct sys_notify_context *ctx, 
 					   void *private_data,
 					   struct notify_event *ev),
@@ -259,7 +260,8 @@ static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
 	watch->private_data = private_data;
 	watch->sys_ctx = ctx;
 
-	if (!(watch->path = talloc_strdup(watch, e->path))) {
+	watch->path = talloc_strdup(watch, path);
+	if (watch->path == NULL) {
 		DEBUG(0, ("talloc_asprintf failed\n"));
 		TALLOC_FREE(watch);
 		return NT_STATUS_NO_MEMORY;
