@@ -633,6 +633,7 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 	SSVAL(req->out.vwv, VWV(1), req->out.size - NBT_HDR_SIZE);
 
 	/* cleanup somestuff for the next request */
+	DLIST_REMOVE(req->smb_conn->requests, req);
 	talloc_free(req->ntvfs);
 	req->ntvfs = NULL;
 	talloc_free(req->io_ptr);
