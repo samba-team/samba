@@ -690,8 +690,8 @@ cat <<EOF
 --------------------------------------------------
 Output (Exit status: ${_rc}):
 --------------------------------------------------
-$_out
 EOF
+	echo "$_out" | cat $EVENTSCRIPT_TESTS_CAT_RESULTS_OPTS
     fi
 
     if ! $_passed ; then
@@ -699,8 +699,24 @@ EOF
 --------------------------------------------------
 Required output (Exit status: ${required_rc}):
 --------------------------------------------------
-$required_output
 EOF
+	echo "$required_output" | cat $EVENTSCRIPT_TESTS_CAT_RESULTS_OPTS
+
+	if $EVENTSCRIPT_TESTS_DIFF_RESULTS ; then
+	    _outr=$(mktemp)
+	    echo "$required_output" >"$_outr"
+
+	    _outf=$(mktemp)
+	    echo "$_out" >"$_outf"
+
+	    cat <<EOF
+--------------------------------------------------
+Diff:
+--------------------------------------------------
+EOF
+	    diff -u "$_outr" "$_outf" | cat -A
+	    rm "$_outr" "$_outf"
+	fi
     fi
 }
 
