@@ -800,22 +800,8 @@ EOF
     fi
 }
 
-# Run an eventscript once.  The test passes if the return code and
-# output match those required.
-
-# Any args are passed to the eventscript.
-
-# Eventscript tracing can be done by setting:
-#   EVENTSCRIPTS_TESTS_TRACE="sh -x"
-
-# or similar.  This will almost certainly make a test fail but is
-# useful for debugging.
-simple_test ()
+result_check ()
 {
-    [ -n "$event" ] || die 'simple_test: $event not set'
-
-    echo "Running \"$script $event${1:+ }$*\""
-    _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
     _rc=$?
 
     if [ -n "$OUT_FILTER" ] ; then
@@ -834,6 +820,26 @@ simple_test ()
     result_footer "$_passed"
 }
 
+# Run an eventscript once.  The test passes if the return code and
+# output match those required.
+
+# Any args are passed to the eventscript.
+
+# Eventscript tracing can be done by setting:
+#   EVENTSCRIPTS_TESTS_TRACE="sh -x"
+
+# or similar.  This will almost certainly make a test fail but is
+# useful for debugging.
+simple_test ()
+{
+    [ -n "$event" ] || die 'simple_test: $event not set'
+
+    echo "Running eventscript \"$script $event${1:+ }$*\""
+    _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
+
+    result_check
+}
+
 simple_test_event ()
 {
     # If something has previously failed then don't continue.
@@ -843,6 +849,19 @@ simple_test_event ()
     event="$1" ; shift
     echo "##################################################"
     simple_test "$@"
+}
+
+simple_test_command ()
+{
+    # If something has previously failed then don't continue.
+    : ${_passed:=true}
+    $_passed || return 1
+
+    echo "##################################################"
+    echo "Running command \"$*\""
+    _out=$("$@" 2>&1)
+
+    result_check
 }
 
 # Run an eventscript iteratively.
