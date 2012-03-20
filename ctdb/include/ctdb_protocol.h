@@ -603,6 +603,8 @@ struct ctdb_traverse_start_ext {
 /*
   ctdb statistics information
  */
+#define MAX_COUNT_BUCKETS 16
+
 struct ctdb_statistics {
 	uint32_t num_clients;
 	uint32_t frozen;
@@ -646,8 +648,7 @@ struct ctdb_statistics {
 	uint32_t memory_used;
 	uint32_t __last_counter; /* hack for control_statistics_all */
 	uint32_t max_hop_count;
-#define MAX_HOP_COUNT_BUCKETS 16
-	uint32_t hop_count_bucket[MAX_HOP_COUNT_BUCKETS];
+	uint32_t hop_count_bucket[MAX_COUNT_BUCKETS];
 	struct latency_counter call_latency;
 	struct latency_counter lockwait_latency;
 	struct latency_counter childwrite_latency;
@@ -672,6 +673,7 @@ struct ctdb_statistics_wire {
 struct ctdb_db_statistics {
 	uint32_t db_ro_delegations;
 	uint32_t db_ro_revokes;
+	uint32_t hop_count_bucket[MAX_COUNT_BUCKETS];
 };
 
 /*

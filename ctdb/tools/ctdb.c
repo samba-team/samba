@@ -443,7 +443,7 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 			       *(uint32_t *)(fields[i].offset+(uint8_t *)s));
 		}
 		printf(" hop_count_buckets:");
-		for (i=0;i<MAX_HOP_COUNT_BUCKETS;i++) {
+		for (i=0;i<MAX_COUNT_BUCKETS;i++) {
 			printf(" %d", s->hop_count_bucket[i]);
 		}
 		printf("\n");
@@ -615,6 +615,11 @@ static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char 
 	printf("DB Statistics:\n");
 	printf("RO Delegations: %d\n", dbstatistics->db_ro_delegations);
 	printf("RO Revokes:     %d\n", dbstatistics->db_ro_revokes);
+	printf(" hop_count_buckets:");
+	for (i=0;i<MAX_COUNT_BUCKETS;i++) {
+		printf(" %d", dbstatistics->hop_count_bucket[i]);
+	}
+	printf("\n");
 
 	ctdb_free_dbstat(dbstatistics);
 	return 0;

@@ -636,10 +636,11 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		tmp_count >>= 2;
 		bucket++;
 	}
-	if (bucket >= MAX_HOP_COUNT_BUCKETS) {
-		bucket = MAX_HOP_COUNT_BUCKETS - 1;
+	if (bucket >= MAX_COUNT_BUCKETS) {
+		bucket = MAX_COUNT_BUCKETS - 1;
 	}
 	CTDB_INCREMENT_STAT(ctdb, hop_count_bucket[bucket]);
+	CTDB_INCREMENT_DB_STAT(ctdb_db, hop_count_bucket[bucket]);
 
 
 	/* Try if possible to migrate the record off to the caller node.
