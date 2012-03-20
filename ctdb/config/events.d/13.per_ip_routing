@@ -84,7 +84,7 @@ ensure_table_id_for_ip ()
     _f="$CTDB_ETCDIR/iproute2/rt_tables"
     # This file should always exist, but...
     if [ ! -f "$_f" ] ; then
-	mkdir -p $(basename "$_f")
+	mkdir -p $(dirname "$_f")
 	touch "$_f"
     fi
 
