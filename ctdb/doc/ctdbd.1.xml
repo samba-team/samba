@@ -963,6 +963,29 @@
     </para>
     </refsect2>
 
+    <refsect2><title>FetchCollapse</title>
+    <para>Default: 1</para>
+    <para>
+    When many clients across many nodes try to access the same record at the
+    same time this can lead to a fetch storm where the record becomes very
+    active and bounces between nodes very fast. This leads to high CPU
+    utilization of the ctdbd daemon, trying to bounce that record around
+    very fast, and poor performance.
+    </para>
+    <para>
+    This parameter is used to activate a fetch-collapse. A fetch-collapse
+    is when we track which records we have requests in flight so that we only
+    keep one request in flight from a certain node, even if multiple smbd
+    processes are attemtping to fetch the record at the same time. This 
+    can improve performance and reduce CPU utilization for certain
+    workloads.
+    </para>
+    <para>
+    This timeout controls if we should collapse multiple fetch operations
+    of the same record into a single request and defer all duplicates or not.
+    </para>
+    </refsect2>
+
   </refsect1>
 
   <refsect1><title>LVS</title>
