@@ -930,6 +930,19 @@
     </para>
     </refsect2>
 
+    <refsect2><title>MaxLACount</title>
+    <para>Default: 20</para>
+    <para>
+    When record content is fetched from a remote node, if it is only for 
+    reading the record, pass back the content of the record but do not yet 
+    migrate the record. Once MaxLACount identical requests from the 
+    same remote node have been seen will the record be forcefully migrated
+    onto the requesting node. This reduces the amount of migration for a 
+    database read-mostly workload at the expense of more frequent network
+    roundtrips.
+    </para>
+    </refsect2>
+
     <refsect2><title>StatHistoryInterval</title>
     <para>Default: 1</para>
     <para>
