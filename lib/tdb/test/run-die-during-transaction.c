@@ -1,4 +1,4 @@
-#include <unistd.h>
+#include "../common/tdb_private.h"
 #include "lock-tracking.h"
 static ssize_t pwrite_check(int fd, const void *buf, size_t count, off_t offset);
 static ssize_t write_check(int fd, const void *buf, size_t count);
@@ -9,7 +9,6 @@ static int ftruncate_check(int fd, off_t length);
 #define fcntl fcntl_with_lockcheck
 #define ftruncate ftruncate_check
 
-#include "../common/tdb_private.h"
 #include "../common/io.c"
 #include "../common/tdb.c"
 #include "../common/lock.c"

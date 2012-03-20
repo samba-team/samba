@@ -1,8 +1,8 @@
+#include "../common/tdb_private.h"
 #include "lock-tracking.h"
 
 #define fcntl fcntl_with_lockcheck
 
-#include "../common/tdb_private.h"
 #include "../common/io.c"
 #include "../common/tdb.c"
 #include "../common/lock.c"
