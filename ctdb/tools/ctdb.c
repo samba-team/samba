@@ -442,7 +442,7 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 			       preflen?0:4, "",
 			       *(uint32_t *)(fields[i].offset+(uint8_t *)s));
 		}
-		printf("Max hop count buckets:");
+		printf(" hop_count_buckets:");
 		for (i=0;i<MAX_HOP_COUNT_BUCKETS;i++) {
 			printf(" %d", s->hop_count_bucket[i]);
 		}
