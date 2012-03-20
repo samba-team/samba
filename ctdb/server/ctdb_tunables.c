@@ -74,7 +74,8 @@ static const struct {
 	{ "AllowClientDBAttach", 1, offsetof(struct ctdb_tunable, allow_client_db_attach), false },
 	{ "RecoverPDBBySeqNum",  0, offsetof(struct ctdb_tunable, recover_pdb_by_seqnum), false },
 	{ "DeferredRebalanceOnNodeAdd", 300, offsetof(struct ctdb_tunable, deferred_rebalance_on_node_add) },
-	{ "FetchCollapse",       1, offsetof(struct ctdb_tunable, fetch_collapse) }
+	{ "FetchCollapse",       1, offsetof(struct ctdb_tunable, fetch_collapse) },
+	{ "MaxLACount",         20,  offsetof(struct ctdb_tunable, max_lacount) }
 };
 
 /*
