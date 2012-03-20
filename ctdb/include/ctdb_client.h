@@ -219,6 +219,7 @@ struct ctdb_dbid_map {
 		uint32_t dbid;
 #define CTDB_DB_FLAGS_PERSISTENT	0x01
 #define CTDB_DB_FLAGS_READONLY		0x02
+#define CTDB_DB_FLAGS_STICKY		0x04
 		uint8_t flags;
 	} dbs[1];
 };
@@ -620,5 +621,10 @@ struct ctdb_client_control_state *
 ctdb_ctrl_set_db_readonly_send(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
 int ctdb_ctrl_set_db_readonly_recv(struct ctdb_context *ctdb, struct ctdb_client_control_state *state);
 int ctdb_ctrl_set_db_readonly(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
+
+struct ctdb_client_control_state *
+ctdb_ctrl_set_db_sticky_send(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
+int ctdb_ctrl_set_db_sticky_recv(struct ctdb_context *ctdb, struct ctdb_client_control_state *state);
+int ctdb_ctrl_set_db_sticky(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid);
 
 #endif /* _CTDB_CLIENT_H */

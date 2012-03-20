@@ -3937,13 +3937,14 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 	}
 
 	if(options.machinereadable){
-		printf(":ID:Name:Path:Persistent:Unhealthy:ReadOnly:\n");
+		printf(":ID:Name:Path:Persistent:Sticky:Unhealthy:ReadOnly:\n");
 		for(i=0;i<dbmap->num;i++){
 			const char *path;
 			const char *name;
 			const char *health;
 			bool persistent;
 			bool readonly;
+			bool sticky;
 
 			ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn,
 					    dbmap->dbs[i].dbid, ctdb, &path);
@@ -3953,9 +3954,11 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 					      dbmap->dbs[i].dbid, ctdb, &health);
 			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 			readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
-			printf(":0x%08X:%s:%s:%d:%d:%d:\n",
+			sticky     = dbmap->dbs[i].flags & CTDB_DB_FLAGS_STICKY;
+			printf(":0x%08X:%s:%s:%d:%d:%d:%d:\n",
 			       dbmap->dbs[i].dbid, name, path,
-			       !!(persistent), !!(health), !!(readonly));
+			       !!(persistent), !!(sticky),
+			       !!(health), !!(readonly));
 		}
 		return 0;
 	}
@@ -3967,15 +3970,18 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 		const char *health;
 		bool persistent;
 		bool readonly;
+		bool sticky;
 
 		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
 		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 		readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
-		printf("dbid:0x%08x name:%s path:%s%s%s%s\n",
+		sticky     = dbmap->dbs[i].flags & CTDB_DB_FLAGS_STICKY;
+		printf("dbid:0x%08x name:%s path:%s%s%s%s%s\n",
 		       dbmap->dbs[i].dbid, name, path,
 		       persistent?" PERSISTENT":"",
+		       sticky?" STICKY":"",
 		       readonly?" READONLY":"",
 		       health?" UNHEALTHY":"");
 	}
@@ -4010,6 +4016,7 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 		const char *health;
 		bool persistent;
 		bool readonly;
+		bool sticky;
 
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		if (strcmp(name, db_name) != 0) {
@@ -4020,9 +4027,11 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
 		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 		readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
-		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nREADONLY: %s\nHEALTH: %s\n",
+		sticky     = dbmap->dbs[i].flags & CTDB_DB_FLAGS_STICKY;
+		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nSTICKY: %s\nREADONLY: %s\nHEALTH: %s\n",
 		       dbmap->dbs[i].dbid, name, path,
 		       persistent?"yes":"no",
+		       sticky?"yes":"no",
 		       readonly?"yes":"no",
 		       health?health:"OK");
 		return 0;
@@ -4459,6 +4468,58 @@ static int control_getdbprio(struct ctdb_context *ctdb, int argc, const char **a
 
 	DEBUG(DEBUG_ERR,("Priority:%u\n", priority));
 
+	return 0;
+}
+
+/*
+  set the sticky records capability for a database
+ */
+static int control_setdbsticky(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	uint32_t db_id;
+	struct ctdb_dbid_map *dbmap=NULL;
+	int i, ret;
+
+	if (argc < 1) {
+		usage();
+	}
+
+	if (!strncmp(argv[0], "0x", 2)) {
+		db_id = strtoul(argv[0] + 2, NULL, 0);
+	} else {
+		ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		for(i=0;i<dbmap->num;i++){
+			const char *name;
+
+			ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
+			if(!strcmp(argv[0], name)){
+				talloc_free(discard_const(name));
+				break;
+			}
+			talloc_free(discard_const(name));
+		}
+		if (i == dbmap->num) {
+			DEBUG(DEBUG_ERR,("No database with name '%s' found\n", argv[0]));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+		db_id = dbmap->dbs[i].dbid;
+	}
+
+	ret = ctdb_ctrl_set_db_sticky(ctdb, options.pnn, db_id);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Unable to set db to support sticky records\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -5541,7 +5602,8 @@ static const struct {
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
 	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbid> <prio:1-3>"},
 	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
-	{ "setdbreadonly",    control_setdbreadonly,	false,	false, "Set DB readonly capable", "<dbid>"},
+	{ "setdbreadonly",    control_setdbreadonly,	false,	false, "Set DB readonly capable", "<dbid>|<name>"},
+	{ "setdbsticky",      control_setdbsticky,	false,	false, "Set DB sticky-records capable", "<dbid>|<name>"},
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
 	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },

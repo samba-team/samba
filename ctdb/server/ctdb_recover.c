@@ -193,6 +193,9 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 		if (ctdb_db->readonly != 0) {
 			dbid_map->dbs[i].flags |= CTDB_DB_FLAGS_READONLY;
 		}
+		if (ctdb_db->sticky != 0) {
+			dbid_map->dbs[i].flags |= CTDB_DB_FLAGS_STICKY;
+		}
 	}
 
 	return 0;

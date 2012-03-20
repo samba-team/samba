@@ -27,6 +27,13 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "../include/ctdb_private.h"
+#include "../common/rb_tree.h"
+
+struct ctdb_sticky_record {
+	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
+	TDB_CONTEXT *pindown;
+};
 
 /*
   find the ctdb_db from a db index
@@ -122,21 +129,30 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
  * going back to the LMASTER is configurable by the tunable
  * "MaxRedirectCount".
  */
-static void ctdb_call_send_redirect(struct ctdb_context *ctdb, 
+static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
+				    struct ctdb_db_context *ctdb_db,
 				    TDB_DATA key,
 				    struct ctdb_req_call *c, 
 				    struct ctdb_ltdb_header *header)
 {
 	
 	uint32_t lmaster = ctdb_lmaster(ctdb, &key);
+
+	c->hdr.destnode = lmaster;
 	if (ctdb->pnn == lmaster) {
-		c->hdr.destnode = header->dmaster;
-	} else if ((c->hopcount % ctdb->tunable.max_redirect_count) == 0) {
-		c->hdr.destnode = lmaster;
-	} else {
 		c->hdr.destnode = header->dmaster;
 	}
 	c->hopcount++;
+
+	if (c->hopcount%100 == 99) {
+		DEBUG(DEBUG_WARNING,("High hopcount %d dbid:0x%08x "
+			"key:0x%08x pnn:%d src:%d lmaster:%d "
+			"header->dmaster:%d dst:%d\n",
+			c->hopcount, ctdb_db->db_id, ctdb_hash(&key),
+			ctdb->pnn, c->hdr.srcnode, lmaster,
+			header->dmaster, c->hdr.destnode));
+	}
+
 	ctdb_queue_packet(ctdb, &c->hdr);
 }
 
@@ -258,6 +274,57 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	talloc_free(r);
 }
 
+static void ctdb_sticky_pindown_timeout(struct event_context *ev, struct timed_event *te, 
+				       struct timeval t, void *private_data)
+{
+	struct ctdb_sticky_record *sr = talloc_get_type(private_data, 
+						       struct ctdb_sticky_record);
+
+	DEBUG(DEBUG_ERR,("Pindown timeout db:%s  unstick record\n", sr->ctdb_db->db_name));
+	if (sr->pindown != NULL) {
+		talloc_free(sr->pindown);
+		sr->pindown = NULL;
+	}
+}
+
+static int
+ctdb_set_sticky_pindown(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	uint32_t *k;
+	struct ctdb_sticky_record *sr;
+
+	k = talloc_zero_size(tmp_ctx, ((key.dsize + 3) & 0xfffffffc) + 4);
+	if (k == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate key for sticky record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	k[0] = (key.dsize + 3) / 4 + 1;
+	memcpy(&k[1], key.dptr, key.dsize);
+
+	sr = trbt_lookuparray32(ctdb_db->sticky_records, k[0], &k[0]);
+	if (sr == NULL) {
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	talloc_free(tmp_ctx);
+
+	if (sr->pindown == NULL) {
+		DEBUG(DEBUG_ERR,("Pinning down record in %s for %d ms\n", ctdb_db->db_name, ctdb->tunable.sticky_pindown));
+		sr->pindown = talloc_new(sr);
+		if (sr->pindown == NULL) {
+			DEBUG(DEBUG_ERR,("Failed to allocate pindown context for sticky record\n"));
+			return -1;
+		}
+		event_add_timed(ctdb->ev, sr->pindown, timeval_current_ofs(ctdb->tunable.sticky_pindown / 1000, (ctdb->tunable.sticky_pindown * 1000) % 1000000), ctdb_sticky_pindown_timeout, sr);
+	}
+
+	return 0;
+}
+
 /*
   called when a CTDB_REPLY_DMASTER packet comes in, or when the lmaster
   gets a CTDB_REQUEST_DMASTER for itself. We become the dmaster.
@@ -305,6 +372,13 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
+	/* we just became DMASTER and this database is "sticky",
+	   see if the record is flagged as "hot" and set up a pin-down
+	   context to stop migrations for a little while if so
+	*/
+	if (ctdb_db->sticky) {
+		ctdb_set_sticky_pindown(ctdb, ctdb_db, key);
+	}
 
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_become_dmaster from node %u\n",
@@ -452,6 +526,147 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 }
 
+static void ctdb_sticky_record_timeout(struct event_context *ev, struct timed_event *te, 
+				       struct timeval t, void *private_data)
+{
+	struct ctdb_sticky_record *sr = talloc_get_type(private_data, 
+						       struct ctdb_sticky_record);
+	talloc_free(sr);
+}
+
+static void *ctdb_make_sticky_record_callback(void *parm, void *data)
+{
+        if (data) {
+		DEBUG(DEBUG_ERR,("Already have sticky record registered. Free old %p and create new %p\n", data, parm));
+                talloc_free(data);
+        }
+        return parm;
+}
+
+static int
+ctdb_make_record_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	uint32_t *k;
+	struct ctdb_sticky_record *sr;
+
+	k = talloc_zero_size(tmp_ctx, ((key.dsize + 3) & 0xfffffffc) + 4);
+	if (k == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate key for sticky record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	k[0] = (key.dsize + 3) / 4 + 1;
+	memcpy(&k[1], key.dptr, key.dsize);
+
+	sr = trbt_lookuparray32(ctdb_db->sticky_records, k[0], &k[0]);
+	if (sr != NULL) {
+		talloc_free(tmp_ctx);
+		return 0;
+	}
+
+	sr = talloc(ctdb_db->sticky_records, struct ctdb_sticky_record);
+	if (sr == NULL) {
+		talloc_free(tmp_ctx);
+		DEBUG(DEBUG_ERR,("Failed to allocate sticky record structure\n"));
+		return -1;
+	}
+
+	sr->ctdb    = ctdb;
+	sr->ctdb_db = ctdb_db;
+	sr->pindown = NULL;
+
+	DEBUG(DEBUG_ERR,("Make record sticky in db %s\n", ctdb_db->db_name));
+
+	trbt_insertarray32_callback(ctdb_db->sticky_records, k[0], &k[0], ctdb_make_sticky_record_callback, sr);
+
+	event_add_timed(ctdb->ev, sr, timeval_current_ofs(ctdb->tunable.sticky_duration, 0), ctdb_sticky_record_timeout, sr);
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+struct pinned_down_requeue_handle {
+	struct ctdb_context *ctdb;
+	struct ctdb_req_header *hdr;
+};
+
+struct pinned_down_deferred_call {
+	struct ctdb_context *ctdb;
+	struct ctdb_req_header *hdr;
+};
+
+static void pinned_down_requeue(struct event_context *ev, struct timed_event *te, 
+		       struct timeval t, void *private_data)
+{
+	struct pinned_down_requeue_handle *handle = talloc_get_type(private_data, struct pinned_down_requeue_handle);
+	struct ctdb_context *ctdb = handle->ctdb;
+
+	talloc_steal(ctdb, handle->hdr);
+	ctdb_call_input_pkt(ctdb, handle->hdr);
+
+	talloc_free(handle);
+}
+
+static int pinned_down_destructor(struct pinned_down_deferred_call *pinned_down)
+{
+	struct ctdb_context *ctdb = pinned_down->ctdb;
+	struct pinned_down_requeue_handle *handle = talloc(ctdb, struct pinned_down_requeue_handle);
+
+	handle->ctdb = pinned_down->ctdb;
+	handle->hdr  = pinned_down->hdr;
+	talloc_steal(handle, handle->hdr);
+
+	event_add_timed(ctdb->ev, handle, timeval_zero(), pinned_down_requeue, handle);
+
+	return 0;
+}
+
+static int
+ctdb_defer_pinned_down_request(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	uint32_t *k;
+	struct ctdb_sticky_record *sr;
+	struct pinned_down_deferred_call *pinned_down;
+
+	k = talloc_zero_size(tmp_ctx, ((key.dsize + 3) & 0xfffffffc) + 4);
+	if (k == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate key for sticky record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	k[0] = (key.dsize + 3) / 4 + 1;
+	memcpy(&k[1], key.dptr, key.dsize);
+
+	sr = trbt_lookuparray32(ctdb_db->sticky_records, k[0], &k[0]);
+	if (sr == NULL) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+
+	if (sr->pindown == NULL) {
+		return -1;
+	}
+	
+	pinned_down = talloc(sr->pindown, struct pinned_down_deferred_call);
+	if (pinned_down == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to allocate structure for deferred pinned down request\n"));
+		return -1;
+	}
+
+	pinned_down->ctdb = ctdb;
+	pinned_down->hdr  = hdr;
+
+	talloc_set_destructor(pinned_down, pinned_down_destructor);
+	talloc_steal(pinned_down, hdr);
+
+	return 0;
+}
 
 /*
   called when a CTDB_REQ_CALL packet comes in
@@ -491,6 +706,18 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	call->call_data.dsize = c->calldatalen;
 	call->reply_data.dptr  = NULL;
 	call->reply_data.dsize = 0;
+
+
+	/* If this record is pinned down we should defer the
+	   request until the pindown times out
+	*/
+	if (ctdb_db->sticky) {
+		if (ctdb_defer_pinned_down_request(ctdb, ctdb_db, call->key, hdr) == 0) {
+		  DEBUG(DEBUG_WARNING,("Defer request for pinned down record in %s\n", ctdb_db->db_name));
+			return;
+		}
+	}
+
 
 	/* determine if we are the dmaster for this key. This also
 	   fetches the record data (if any), thus avoiding a 2nd fetch of the data 
@@ -544,7 +771,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	if ((header.dmaster != ctdb->pnn) 
 	    && (!(header.flags & CTDB_REC_RO_HAVE_DELEGATIONS)) ) {
 		talloc_free(data.dptr);
-		ctdb_call_send_redirect(ctdb, call->key, c, &header);
+		ctdb_call_send_redirect(ctdb, ctdb_db, call->key, c, &header);
 
 		ret = ctdb_ltdb_unlock(ctdb_db, call->key);
 		if (ret != 0) {
@@ -641,6 +868,16 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 	CTDB_INCREMENT_STAT(ctdb, hop_count_bucket[bucket]);
 	CTDB_INCREMENT_DB_STAT(ctdb_db, hop_count_bucket[bucket]);
+
+
+	/* If this database supports sticky records, then check if the
+	   hopcount is big. If it is it means the record is hot and we
+	   should make it sticky.
+	*/
+	if (ctdb_db->sticky && c->hopcount >= ctdb->tunable.hopcount_make_sticky) {
+		DEBUG(DEBUG_ERR, ("Hot record in database %s. Hopcount is %d. Make record sticky for %d seconds\n", ctdb_db->db_name, c->hopcount, ctdb->tunable.sticky_duration));
+		ctdb_make_record_sticky(ctdb, ctdb_db, call->key);
+	}
 
 
 	/* if this nodes has done enough consecutive calls on the same record

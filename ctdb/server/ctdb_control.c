@@ -150,6 +150,17 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_reload_nodes_file(ctdb, opcode);
 
+	case CTDB_CONTROL_SET_DB_STICKY: {
+		uint32_t db_id;
+		struct ctdb_db_context *ctdb_db;
+
+		CHECK_CONTROL_DATA_SIZE(sizeof(db_id));
+		db_id = *(uint32_t *)indata.dptr;
+		ctdb_db = find_ctdb_db(ctdb, db_id);
+		if (ctdb_db == NULL) return -1;
+		return ctdb_set_db_sticky(ctdb, ctdb_db);
+	}
+
 	case CTDB_CONTROL_SETVNNMAP:
 		return ctdb_control_setvnnmap(ctdb, opcode, indata, outdata);
 

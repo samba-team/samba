@@ -127,6 +127,9 @@ struct ctdb_tunable {
 	uint32_t deferred_rebalance_on_node_add;
 	uint32_t fetch_collapse;
 	uint32_t max_lacount;
+	uint32_t hopcount_make_sticky;
+	uint32_t sticky_duration;
+	uint32_t sticky_pindown;
 };
 
 /*
@@ -501,6 +504,7 @@ struct ctdb_db_context {
 	uint32_t priority;
 	bool persistent;
 	bool readonly; /* Do we support read-only delegations ? */
+	bool sticky; /* Do we support sticky records ? */
 	const char *db_name;
 	const char *db_path;
 	struct tdb_wrap *ltdb;
@@ -518,6 +522,7 @@ struct ctdb_db_context {
 	struct revokechild_handle *revokechild_active;
 	struct ctdb_persistent_state *persistent_state;
 	struct trbt_tree *delete_queue;
+	struct trbt_tree *sticky_records; 
 	int (*ctdb_ltdb_store_fn)(struct ctdb_db_context *ctdb_db,
 				  TDB_DATA key,
 				  struct ctdb_ltdb_header *header,
@@ -1460,5 +1465,7 @@ int ctdb_fetch_with_header_func(struct ctdb_call_info *call);
 int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 				uint32_t db_id,
 				TDB_DATA *outdata);
+
+int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
 
 #endif

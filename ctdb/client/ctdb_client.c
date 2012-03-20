@@ -4630,3 +4630,41 @@ int ctdb_ctrl_set_db_readonly(struct ctdb_context *ctdb, uint32_t destnode, uint
 	state = ctdb_ctrl_set_db_readonly_send(ctdb, destnode, dbid);
 	return ctdb_ctrl_set_db_readonly_recv(ctdb, state);
 }
+
+/*
+  set a database to be sticky
+ */
+struct ctdb_client_control_state *
+ctdb_ctrl_set_db_sticky_send(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid)
+{
+	TDB_DATA data;
+
+	data.dptr = (uint8_t *)&dbid;
+	data.dsize = sizeof(dbid);
+
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_SET_DB_STICKY, 0, data, 
+			   ctdb, NULL, NULL);
+}
+
+int ctdb_ctrl_set_db_sticky_recv(struct ctdb_context *ctdb, struct ctdb_client_control_state *state)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control_recv(ctdb, state, ctdb, NULL, &res, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_set_db_sticky_recv failed  ret:%d res:%d\n", ret, res));
+		return -1;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_set_db_sticky(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid)
+{
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_ctrl_set_db_sticky_send(ctdb, destnode, dbid);
+	return ctdb_ctrl_set_db_sticky_recv(ctdb, state);
+}
