@@ -22,18 +22,22 @@ not_implemented ()
 }
 
 # Don't set $POSIXLY_CORRECT here.
-_temp=$(getopt -n "$prog" -o "Yvh" -l help -- "$@") || \
+_temp=$(getopt -n "$prog" -o "Yvhn:" -l help -- "$@") || \
     usage
 
 eval set -- "$_temp"
 
 verbose=false
 machine_readable=false
+nodespec=""
+
+args="$*"
 
 while true ; do
     case "$1" in
 	-Y) machine_readable=true ; shift ;;
 	-v) verbose=true ; shift ;;
+	-n) nodespec="$2" ; shift 2 ;;
 	--) shift ; break ;;
 	-h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
     esac
@@ -55,6 +59,18 @@ setup_pstore ()
     mkdir -p "$pstore_dir"
 }
 
+parse_nodespec ()
+{
+    if [ "$nodespec" = "all" ] ; then
+	nodes="$(seq 0 $((FAKE_CTDB_NUMNODES - 1)) )"
+    elif [ -n "$nodespec" ] ; then
+	nodes="$(echo $nodespec | sed -e 's@,@ @g')"
+    else
+	_t=$(ctdb_pnn)
+	nodes="${_t#PNN:}"
+    fi
+}
+
 # For testing backward compatibility...
 for i in $CTDB_NOT_IMPLEMENTED ; do
     if [ "$i" = "$1" ] ; then
@@ -62,58 +78,145 @@ for i in $CTDB_NOT_IMPLEMENTED ; do
     fi
 done
 
-case "$1" in
-    ip)
-	# NOTE: all nodes share the same public addresses file.
+ctdb_pnn ()
+{
+    # Defaults to 0
+    echo "PNN:${FAKE_CTDB_PNN:-0}"
+}
 
-	# This is completely stateless and IPs move unnecessarily.
-	_f="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
-	if [ -f "$_f" ] ; then
-	    if $verbose ; then
-		echo ":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:"
+######################################################################
 
-	    else
-		echo ":Public IP:Node:"
-	    fi
-	    # Here IPs are distributed across nodes in a stupid way...
-	    _n=0
-	    while read _ip _ifaces ; do
-		case "_$ip" in
-		    \#*) : ;;
-		    *)
-			# Find a node that is up... but don't loop forever.
-			_orig=$_n
-			while [ -f "${FAKE_CTDB_NODES_DOWN}/${_n}" ] ; do
-			    _n=$(($_n + 1))
-			    if [ _n -eq $FAKE_CTDB_NUMNODES ] ; then
-				_n=0
-			    fi
-			    if [ $_n -eq $_orig ] ; then
-				_n=-1 # Never down!  :-)
-			    fi
-			done
-			if $verbose ; then
-			    # If more than 1 interface, assume all
-			    # addresses are on the 1st.
-			    _first_iface="${_ifaces%%,*}"
-			    # Only show interface if address is on
-			    # this node.
-			    _my_iface=""
-			    if [ "PNN:$_n" = $(ctdb -Y pnn) ]; then
-				_my_iface="$_first_iface"
-			    fi
-			    echo ":${_ip}:${_n}:${_my_iface}:${_first_iface}:${_ifaces}:"
-			else
-			    echo ":${_ip}:${_n}:"
-			fi
-		esac
-	    done <"$_f"
+FAKE_CTDB_NODE_STATE="$FAKE_CTDB_STATE/node-state"
+FAKE_CTDB_NODES_DISABLED="$FAKE_CTDB_NODE_STATE/0x4"
+
+######################################################################
+
+# NOTE: all nodes share $CTDB_PUBLIC_ADDRESSES
+
+FAKE_CTDB_IP_LAYOUT="$FAKE_CTDB_STATE/ip-layout"
+
+ip_reallocate ()
+{
+    touch "$FAKE_CTDB_IP_LAYOUT"
+
+    (
+	flock 0
+
+	_pa="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+
+	if [ ! -s "$FAKE_CTDB_IP_LAYOUT" ] ; then
+	    sed -n -e 's@^\([^#][^/]*\)/.*@\1 -1@p' \
+		"$_pa" >"$FAKE_CTDB_IP_LAYOUT"
 	fi
-	;;
-    pnn|xpnn)
-	# Defaults to 0
-	echo "PNN:${FAKE_CTDB_PNN:-0}"
-	;;
+
+	_t="${FAKE_CTDB_IP_LAYOUT}.new"
+
+	_flags=""
+	for _i in $(seq 0 $((FAKE_CTDB_NUMNODES - 1)) ) ; do
+	    if ls "$FAKE_CTDB_STATE/node-state/"*"/$_i" >/dev/null 2>&1 ; then
+		# Have non-zero flags
+		_this=0
+		for _j in "$FAKE_CTDB_STATE/node-state/"*"/$_i" ; do
+		    _t="${_j%/*}" # dirname
+		    _f="${_t%/*}" # basename
+		    _this=$(( $_this | $_f ))
+		done
+	    else
+		_this="0"
+	    fi
+	    _flags="${_flags}${_flags:+,}${_this}"
+	done
+	"$(dirname ${EVENTSCRIPTS_TESTS_DIR})/bin/ctdb_takeover_tests" \
+	    "ctdb_takeover_run_core" "$_flags" <"$FAKE_CTDB_IP_LAYOUT" |
+	    sort >"$_t"
+	mv "$_t" "$FAKE_CTDB_IP_LAYOUT"
+    ) <"$FAKE_CTDB_IP_LAYOUT"
+}
+
+ctdb_ip ()
+{
+    # If nobody has done any IP-fu then generate a layout.
+    [ -f "$FAKE_CTDB_IP_LAYOUT" ] || ip_reallocate
+
+    if $verbose ; then
+	echo ":Public IP:Node:ActiveInterface:AvailableInterfaces:ConfiguredInterfaces:"
+    else
+	echo ":Public IP:Node:"
+    fi
+
+    _mypnn=$(ctdb_pnn | sed -e 's@PNN:@@')
+
+    # Join public addresses file with $FAKE_CTDB_IP_LAYOUT, and
+    # process output line by line...
+    _pa="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+    sed -e 's@/@ @' "$_pa" | sort | join - "$FAKE_CTDB_IP_LAYOUT" |
+    while read _ip _bit _ifaces _pnn ; do
+	if $verbose ; then
+	    # If more than 1 interface, assume all addresses are on the 1st.
+	    _first_iface="${_ifaces%%,*}"
+	    # Only show interface if address is on this node.
+	    _my_iface=""
+	    if [ "$_pnn" = "$_mypnn" ]; then
+		_my_iface="$_first_iface"
+	    fi
+	    echo ":${_ip}:${_pnn}:${_my_iface}:${_first_iface}:${_ifaces}:"
+	else
+	    echo ":${_ip}:${_pnn}:"
+	fi
+    done
+}
+
+ctdb_moveip ()
+{
+    _ip="$1"
+    _target="$2"
+
+    ip_reallocate  # should be harmless and ensures we have good state
+
+    (
+	flock 0
+
+	_t="${FAKE_CTDB_IP_LAYOUT}.new"
+
+	while read _i _pnn ; do
+	    if [ "$_ip" = "$_i" ] ; then
+		echo "$_ip $_target"
+	    else
+		echo "$_ip $_pnn"
+	    fi
+	done | sort >"$_t"
+	mv "$_t" "$FAKE_CTDB_IP_LAYOUT"
+    ) <"$FAKE_CTDB_IP_LAYOUT"
+}
+
+######################################################################
+
+ctdb_enable ()
+{
+    parse_nodespec
+    
+    for _i in $nodes ; do
+	rm -f "${FAKE_CTDB_NODES_DISABLED}/${_i}"
+    done
+
+    ip_reallocate
+}
+
+ctdb_disable ()
+{
+    parse_nodespec
+
+    for _i in $nodes ; do
+	mkdir -p "$FAKE_CTDB_NODES_DISABLED"
+	touch "${FAKE_CTDB_NODES_DISABLED}/${_i}"
+    done
+
+    ip_reallocate
+}
+
+######################################################################
+
+case "$1" in
     gettickles)
 	setup_tickles
 	echo ":source ip:port:destination ip:port:"
@@ -222,6 +325,11 @@ EOF
 	    echo ":${2:-monitor}:${_b}:${_code}:${_status}:${_d1}:${_d2}:${_err_out}:"
 	done
 	;;
-    *)
-	not_implemented "$1"
+    gratiousarp) : ;;  # Do nothing for now
+    ip)          ctdb_ip "$@" ;;
+    pnn|xpnn)    ctdb_pnn ;;
+    enable)      ctdb_enable "$@";;
+    disable)     ctdb_disable "$@";;
+    moveip)      ctdb_moveip "$@";;
+    *) not_implemented "$1" ;;
 esac
