@@ -930,6 +930,41 @@
     </para>
     </refsect2>
 
+    <refsect2><title>HopcountMakeSticky</title>
+    <para>Default: 50</para>
+    <para>
+    If the database is set to 'STICKY' mode, using the 'ctdb setdbsticky' 
+    command, any record that is seen as very hot and migrating so fast that
+    hopcount surpasses 50 is set to become a STICKY record for StickyDuration
+    seconds. This means that after each migration the record will be kept on
+    the node and prevented from being migrated off the node.
+    </para>
+    <para>
+    This setting allows to try to identify such records and stop them from 
+    migrating across the cluster so fast. This will improve performance for
+    certain workloads, such as locking.tdb if many clients are opening/closing
+    the same file concurrently.
+    </para>
+    </refsect2>
+
+    <refsect2><title>StickyDuration</title>
+    <para>Default: 600</para>
+    <para>
+    Once a record has been found to be fetch-lock hot and has been flagged to
+    become STICKY, this is for how long, in seconds, the record will be 
+    flagged as a STICKY record.
+    </para>
+    </refsect2>
+
+    <refsect2><title>StickyPindown</title>
+    <para>Default: 200</para>
+    <para>
+    Once a STICKY record has been migrated onto a node, it will be pinned down
+    on that node for this number of ms. Any request from other nodes to migrate
+    the record off the node will be deferred until the pindown timer expires.
+    </para>
+    </refsect2>
+
     <refsect2><title>MaxLACount</title>
     <para>Default: 20</para>
     <para>
