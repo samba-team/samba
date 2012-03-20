@@ -286,8 +286,8 @@ case "$1" in
 
 	# make sure that we only respond to ARP messages from the NIC
 	# where a particular ip address is associated.
-	[ -f /proc/sys/net/ipv4/conf/all/arp_filter ] && {
-	    echo 1 > /proc/sys/net/ipv4/conf/all/arp_filter
+	get_proc sys/net/ipv4/conf/all/arp_filter >/dev/null 2>&1 && {
+	    set_proc sys/net/ipv4/conf/all/arp_filter 1
 	}
 	;;
 
@@ -305,7 +305,7 @@ case "$1" in
 	add_routing_for_ip "$iface" "$ip"
 
 	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	set_proc sys/net/ipv4/route/flush 1
 
 	ctdb gratiousarp "$ip" "$iface"
 	;;
@@ -320,7 +320,7 @@ case "$1" in
 	add_routing_for_ip "$niface" "$ip"
 
 	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	set_proc sys/net/ipv4/route/flush 1
 
 	ctdb gratiousarp "$ip" "$niface"
 	tickle_tcp_connections "$ip"
