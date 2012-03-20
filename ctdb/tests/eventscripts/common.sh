@@ -316,22 +316,40 @@ ctdb_get_1_interface ()
     echo ${_t%% *}
 }
 
-ctdb_get_public_addresses ()
+# Print all public addresses as: interface IP maskbits
+# Each line is suitable for passing to takeip/releaseip
+ctdb_get_all_public_addresses ()
 {
     _f="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
-    echo $(if [ -r "$_f" ] ; then 
-	while read _ip _iface ; do
-	    echo "${_ip}@${_iface}"
-	done <"$_f"
-	fi)
+    while IFS="/$IFS" read _ip _maskbits _ifaces ; do
+	echo "$_ifaces $_ip $_maskbits"
+    done <"$_f"
+}
+
+# Print public addresses on this node as: interface IP maskbits
+# Each line is suitable for passing to takeip/releaseip
+ctdb_get_my_public_addresses ()
+{
+    ctdb ip -v -Y | {
+	read _x # skip header line
+
+	while IFS=":" read _x _ip _x _iface _x ; do
+	    [ -n "$_iface" ] || continue
+	    while IFS="/$IFS" read _i _maskbits _x ; do
+		if [ "$_ip" = "$_i" ] ; then
+		    echo $_iface $_ip $_maskbits
+		    break
+		fi
+	    done <"${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+	done
+    }
 }
 
 # Prints the 1st public address as: interface IP maskbits
-# This is suitable for passing to 10.interfaces takeip/releaseip
+# This is suitable for passing to takeip/releaseip
 ctdb_get_1_public_address ()
 {
-    _addrs=$(ctdb_get_public_addresses)
-    echo "${_addrs%% *}" | sed -r -e 's#(.*)/(.*)@(.*)#\3 \1 \2#g'
+    ctdb_get_my_public_addresses | head -n 1
 }
 
 ctdb_not_implemented ()
