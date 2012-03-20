@@ -183,6 +183,50 @@ setup_nmap_output_filter ()
     OUT_FILTER="-e 's@^(DEBUG: # Nmap 5.21 scan initiated) .+ (as:)@\1 DATE \2@' -e 's@^(DEBUG: # Nmap done at) .+ (--)@\1 DATE \2@'"
 }
 
+dump_routes ()
+{
+    echo "# ip rule show"
+    ip rule show
+
+    ip rule show |
+    while read _p _x _i _x _t ; do
+	# Remove trailing colon after priority/preference.
+	_p="${_p%:}"
+	# Only remove rules that match our priority/preference.
+	[ "$CTDB_PER_IP_ROUTING_RULE_PREF" = "$_p" ] || continue
+
+	echo "# ip route show table $_t"
+	ip route show table "$_t"
+    done
+}
+
+# Copied from 13.per_ip_routing for now... so this is lazy testing  :-(
+ipv4_host_addr_to_net ()
+{
+    _host="$1"
+    _maskbits="$2"
+
+    # Convert the host address to an unsigned long by splitting out
+    # the octets and doing the math.
+    _host_ul=0
+    for _o in $(export IFS="." ; echo $_host) ; do
+	_host_ul=$(( ($_host_ul << 8) + $_o)) # work around Emacs color bug
+    done
+
+    # Calculate the mask and apply it.
+    _mask_ul=$(( 0xffffffff << (32 - $_maskbits) ))
+    _net_ul=$(( $_host_ul & $_mask_ul ))
+
+    # Now convert to a network address one byte at a time.
+    _net=""
+    for _o in $(seq 1 4) ; do
+	_net="$(($_net_ul & 255))${_net:+.}${_net}"
+	_net_ul=$(($_net_ul >> 8))
+    done
+
+    echo "${_net}/${_maskbits}"
+}
+
 ######################################################################
 
 # CTDB fakery
@@ -307,6 +351,17 @@ ctdb_fake_scriptstatus ()
     _d2=$(date '+%s.%N')
 
     echo "$_code $_status $_err_out" >"$FAKE_CTDB_SCRIPTSTATUS/$script"
+}
+
+setup_ctdb_policy_routing ()
+{
+    export CTDB_PER_IP_ROUTING_CONF="$CTDB_BASE/policy_routing"
+    export CTDB_PER_IP_ROUTING_RULE_PREF=100
+    export CTDB_PER_IP_ROUTING_TABLE_ID_LOW=1000
+    export CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=2000
+
+    # Tests need to create and populate this file
+    rm -f "$CTDB_PER_IP_ROUTING_CONF"
 }
 
 ######################################################################
