@@ -166,6 +166,7 @@ clean_up_table_ids ()
 # This prints the config for an IP, which is either relevant entries
 # from the config file or, if set to the magic link local value, some
 # link local routing config for the IP.
+# NOTE: non-zero return indicates missing configuration file
 get_config_for_ip ()
 {
     _ip="$1"
@@ -179,6 +180,8 @@ get_config_for_ip ()
 	    fi
 	done <"${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE:-/dev/null}${CTDB:+/public_addresses}}"
     else
+	[ -f "$CTDB_PER_IP_ROUTING_CONF" ] || return 1
+
 	while read _i _rest ; do
 	    if [ "$_ip" = "$_i" ] ; then
 		printf "%s\t%s\n" "$_ip" "$_rest"
@@ -191,7 +194,9 @@ ip_has_configuration ()
 {
     _ip="$1"
 
-    [ -n "$(get_config_for_ip $_ip)" ]
+    _config="$(get_config_for_ip $_ip)" || \
+	die "error: CTDB_PER_IP_ROUTING_CONF=$CTDB_PER_IP_ROUTING_CONF file not found"
+    [ -n "$_config" ]
 }
 
 add_routing_for_ip ()
@@ -273,7 +278,7 @@ add_missing_routes ()
 		add_routing_for_ip "$_iface" "$_ip"
 	    fi
 	done
-    }
+    } || exit $?
 }
 
 ######################################################################
