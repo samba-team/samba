@@ -330,7 +330,7 @@ ip_rule_del ()
 	done
 	if cmp -s "$_tmp" "$_f" ; then
 	    # No changes, must not have found what we wanted to delete
-	    echo "RTNETLINK answers: No such file or directory"
+	    echo "RTNETLINK answers: No such file or directory" >&2
 	    rm -f "$_tmp"
 	    exit 2
 	else
