@@ -275,33 +275,15 @@ setup_ctdb ()
 	eventscripts_test_add_cleanup "rm -f $CTDB_PUBLIC_ADDRESSES"
     fi
 
-    export FAKE_CTDB_IFACES_DOWN="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb/ifaces-down"
+    export FAKE_CTDB_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb"
+
+    export FAKE_CTDB_IFACES_DOWN="$FAKE_CTDB_STATE/ifaces-down"
     mkdir -p "$FAKE_CTDB_IFACES_DOWN"
     rm -f "$FAKE_CTDB_IFACES_DOWN"/*
 
-    export FAKE_CTDB_NODES_DOWN="$EVENTSCRIPTS_TESTS_VAR_DIR/nodes-down"
-    mkdir -p "$FAKE_CTDB_NODES_DOWN"
-    rm -f "$FAKE_CTDB_NODES_DOWN"/*
-
-    export FAKE_CTDB_SCRIPTSTATUS="$EVENTSCRIPTS_TESTS_VAR_DIR/scriptstatus"
+    export FAKE_CTDB_SCRIPTSTATUS="$FAKE_CTDB_STATE/scriptstatus"
     mkdir -p "$FAKE_CTDB_SCRIPTSTATUS"
     rm -f "$FAKE_CTDB_SCRIPTSTATUS"/*
-}
-
-
-
-ctdb_nodes_up ()
-{
-    for _i ; do
-	rm -f "${FAKE_CTDB_NODES_DOWN}/${_i}"
-    done
-}
-
-ctdb_nodes_down ()
-{
-    for _i ; do
-	touch "${FAKE_CTDB_NODES_DOWN}/${_i}"
-    done
 }
 
 ctdb_get_interfaces ()
