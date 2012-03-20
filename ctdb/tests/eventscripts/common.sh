@@ -688,7 +688,7 @@ define_test ()
 	    die "Internal error - unknown testcase filename format"
     esac
 
-    printf "%-14s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
+    printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 }
 
 # Set the required result for a test.
