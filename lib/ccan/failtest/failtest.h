@@ -155,7 +155,7 @@ struct lseek_call {
  */
 struct failtest_call {
 	/* We're in the history list. */
-	struct list_node list;
+	struct ccan_list_node list;
 	enum failtest_call_type type;
 	/* Where we were called from. */
 	const char *file;

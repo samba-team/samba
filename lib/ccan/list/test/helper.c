@@ -9,7 +9,7 @@
   (42)
 
 struct opaque {
-  struct list_node list;
+  struct ccan_list_node list;
   size_t secret_offset;
   char   secret_drawer[42];
 };

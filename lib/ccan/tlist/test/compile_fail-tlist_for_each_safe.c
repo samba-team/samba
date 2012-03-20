@@ -4,12 +4,12 @@ TLIST_TYPE(children, struct child);
 
 struct child {
 	const char *name;
-	struct list_node list;
+	struct ccan_list_node list;
 };
 
 struct cousin {
 	const char *name;
-	struct list_node list;
+	struct ccan_list_node list;
 };
 
 int main(int argc, char *argv[])

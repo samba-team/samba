@@ -6,39 +6,39 @@
 
 struct child {
 	const char *name;
-	struct list_node list;
+	struct ccan_list_node list;
 };
 
-static bool children(const struct list_head *list)
+static bool children(const struct ccan_list_head *list)
 {
-	return !list_empty(list);
+	return !ccan_list_empty(list);
 }
 
-static const struct child *first_child(const struct list_head *list)
+static const struct child *first_child(const struct ccan_list_head *list)
 {
-	return list_top(list, struct child, list);
+	return ccan_list_top(list, struct child, list);
 }
 
-static const struct child *last_child(const struct list_head *list)
+static const struct child *last_child(const struct ccan_list_head *list)
 {
-	return list_tail(list, struct child, list);
+	return ccan_list_tail(list, struct child, list);
 }
 
-static void check_children(const struct list_head *list)
+static void check_children(const struct ccan_list_head *list)
 {
-	list_check(list, "bad child list");
+	ccan_list_check(list, "bad child list");
 }
 
-static void print_children(const struct list_head *list)
+static void print_children(const struct ccan_list_head *list)
 {
 	const struct child *c;
-	list_for_each(list, c, list)
+	ccan_list_for_each(list, c, list)
 		printf("%s\n", c->name);
 }
 
 int main(void)
 {
-	LIST_HEAD(h);
+	CCAN_LIST_HEAD(h);
 
 	children(&h);
 	first_child(&h);

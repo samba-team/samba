@@ -24,12 +24,12 @@
  *
  *	struct child {
  *		const char *name;
- *		struct list_node list;
+ *		struct ccan_list_node list;
  *	};
  */
 #define TLIST_TYPE(suffix, type)			\
 	struct tlist_##suffix {				\
-		struct list_head raw;			\
+		struct ccan_list_head raw;			\
 		TCON(type *canary);			\
 	}
 
@@ -45,7 +45,7 @@
  * Example:
  *	static struct tlist_children my_list = TLIST_INIT(my_list);
  */
-#define TLIST_INIT(name) { LIST_HEAD_INIT(name.raw) }
+#define TLIST_INIT(name) { CCAN_LIST_HEAD_INIT(name.raw) }
 
 /**
  * tlist_check - check head of a list for consistency
@@ -60,7 +60,7 @@
  * Returns non-NULL if the list is consistent, NULL otherwise (it
  * can never return NULL if @abortstr is set).
  *
- * See also: list_check()
+ * See also: ccan_list_check()
  *
  * Example:
  *	static void dump_parent(struct parent *p)
@@ -74,7 +74,7 @@
  *	}
  */
 #define tlist_check(h, abortstr) \
-	list_check(&(h)->raw, (abortstr))
+	ccan_list_check(&(h)->raw, (abortstr))
 
 /**
  * tlist_init - initialize a tlist
@@ -87,7 +87,7 @@
  *	tlist_init(&parent->children);
  *	parent->num_children = 0;
  */
-#define tlist_init(h) list_head_init(&(h)->raw)
+#define tlist_init(h) ccan_list_head_init(&(h)->raw)
 
 /**
  * tlist_raw - unwrap the typed list and check the type
@@ -106,7 +106,7 @@
  * @n: the entry to add to the list.
  * @member: the member of n to add to the list.
  *
- * The entry's list_node does not need to be initialized; it will be
+ * The entry's ccan_list_node does not need to be initialized; it will be
  * overwritten.
  * Example:
  *	struct child *child = malloc(sizeof(*child));
@@ -115,7 +115,7 @@
  *	tlist_add(&parent->children, child, list);
  *	parent->num_children++;
  */
-#define tlist_add(h, n, member) list_add(tlist_raw((h), (n)), &(n)->member)
+#define tlist_add(h, n, member) ccan_list_add(tlist_raw((h), (n)), &(n)->member)
 
 /**
  * tlist_add_tail - add an entry at the end of a linked list.
@@ -123,13 +123,13 @@
  * @n: the entry to add to the list.
  * @member: the member of n to add to the list.
  *
- * The list_node does not need to be initialized; it will be overwritten.
+ * The ccan_list_node does not need to be initialized; it will be overwritten.
  * Example:
  *	tlist_add_tail(&parent->children, child, list);
  *	parent->num_children++;
  */
 #define tlist_add_tail(h, n, member) \
-	list_add_tail(tlist_raw((h), (n)), &(n)->member)
+	ccan_list_add_tail(tlist_raw((h), (n)), &(n)->member)
 
 /**
  * tlist_del_from - delete an entry from a linked list.
@@ -150,7 +150,7 @@
  *	parent->num_children--;
  */
 #define tlist_del_from(h, n, member) \
-	list_del_from(tlist_raw((h), (n)), &(n)->member)
+	ccan_list_del_from(tlist_raw((h), (n)), &(n)->member)
 
 /**
  * tlist_del - delete an entry from an unknown linked list.
@@ -162,7 +162,7 @@
  *	parent->num_children--;
  */
 #define tlist_del(n, member) \
-	list_del(&(n)->member)
+	ccan_list_del(&(n)->member)
 
 /**
  * tlist_empty - is a list empty?
@@ -173,12 +173,12 @@
  * Example:
  *	assert(tlist_empty(&parent->children) == (parent->num_children == 0));
  */
-#define tlist_empty(h) list_empty(&(h)->raw)
+#define tlist_empty(h) ccan_list_empty(&(h)->raw)
 
 /**
  * tlist_top - get the first entry in a list
  * @h: the tlist
- * @member: the list_node member of the type
+ * @member: the ccan_list_node member of the type
  *
  * If the list is empty, returns NULL.
  *
@@ -188,14 +188,14 @@
  */
 #define tlist_top(h, member)						\
 	((tcon_type((h), canary))					\
-	 list_top_(&(h)->raw,						\
+	 ccan_list_top_(&(h)->raw,						\
 		   (char *)(&(h)->_tcon[0].canary->member) -		\
 		   (char *)((h)->_tcon[0].canary)))
 
 /**
  * tlist_tail - get the last entry in a list
  * @h: the tlist
- * @member: the list_node member of the type
+ * @member: the ccan_list_node member of the type
  *
  * If the list is empty, returns NULL.
  *
@@ -205,7 +205,7 @@
  */
 #define tlist_tail(h, member)						\
 	((tcon_type((h), canary))					\
-	 list_tail_(&(h)->raw,						\
+	 ccan_list_tail_(&(h)->raw,						\
 		    (char *)(&(h)->_tcon[0].canary->member) -		\
 		    (char *)((h)->_tcon[0].canary)))
 
@@ -213,7 +213,7 @@
  * tlist_for_each - iterate through a list.
  * @h: the tlist
  * @i: an iterator of suitable type for this list.
- * @member: the list_node member of @i
+ * @member: the ccan_list_node member of @i
  *
  * This is a convenient wrapper to iterate @i over the entire list.  It's
  * a for loop, so you can break and continue as normal.
@@ -223,13 +223,13 @@
  *		printf("Name: %s\n", child->name);
  */
 #define tlist_for_each(h, i, member)					\
-	list_for_each(tlist_raw((h), (i)), (i), member)
+	ccan_list_for_each(tlist_raw((h), (i)), (i), member)
 
 /**
  * tlist_for_each - iterate through a list backwards.
  * @h: the tlist
  * @i: an iterator of suitable type for this list.
- * @member: the list_node member of @i
+ * @member: the ccan_list_node member of @i
  *
  * This is a convenient wrapper to iterate @i over the entire list.  It's
  * a for loop, so you can break and continue as normal.
@@ -239,14 +239,14 @@
  *		printf("Name: %s\n", child->name);
  */
 #define tlist_for_each_rev(h, i, member)					\
-	list_for_each_rev(tlist_raw((h), (i)), (i), member)
+	ccan_list_for_each_rev(tlist_raw((h), (i)), (i), member)
 
 /**
  * tlist_for_each_safe - iterate through a list, maybe during deletion
  * @h: the tlist
  * @i: an iterator of suitable type for this list.
  * @nxt: another iterator to store the next entry.
- * @member: the list_node member of the structure
+ * @member: the ccan_list_node member of the structure
  *
  * This is a convenient wrapper to iterate @i over the entire list.  It's
  * a for loop, so you can break and continue as normal.  The extra variable
@@ -260,6 +260,6 @@
  *	}
  */
 #define tlist_for_each_safe(h, i, nxt, member)				\
-	list_for_each_safe(tlist_raw((h), (i)), (i), (nxt), member)
+	ccan_list_for_each_safe(tlist_raw((h), (i)), (i), (nxt), member)
 
 #endif /* CCAN_TLIST_H */

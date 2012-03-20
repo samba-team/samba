@@ -12,7 +12,7 @@ struct parent {
 
 struct child {
 	const char *name;
-	struct list_node list;
+	struct ccan_list_node list;
 };
 
 int main(int argc, char *argv[])
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 
 	c1.name = "c1";
 	tlist_add(&parent.children, &c1, list);
-	/* Test list_add and !list_empty. */
+	/* Test ccan_list_add and !ccan_list_empty. */
 	ok1(!tlist_empty(&parent.children));
 	ok1(c2.list.next == &parent.children.raw.n);
 	ok1(c2.list.prev == &c1.list);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
 	c3.name = "c3";
 	tlist_add_tail(&parent.children, &c3, list);
-	/* Test list_add_tail and !list_empty. */
+	/* Test ccan_list_add_tail and !ccan_list_empty. */
 	ok1(!tlist_empty(&parent.children));
 	ok1(parent.children.raw.n.next == &c1.list);
 	ok1(parent.children.raw.n.prev == &c3.list);
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 	/* Test tlist_top */
 	ok1(tlist_top(&parent.children, list) == &c1);
 
-	/* Test list_tail */
+	/* Test ccan_list_tail */
 	ok1(tlist_tail(&parent.children, list) == &c3);
 
 	/* Test tlist_for_each. */
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 	ok1(i == 3);
 	ok1(tlist_empty(&parent.children));
 
-	/* Test list_top/list_tail on empty list. */
+	/* Test ccan_list_top/ccan_list_tail on empty list. */
 	ok1(tlist_top(&parent.children, list) == (struct child *)NULL);
 	ok1(tlist_tail(&parent.children, list) == (struct child *)NULL);
 	return exit_status();
