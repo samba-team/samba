@@ -69,7 +69,7 @@ o   Volker Lendecke <vl@samba.org>
       causing uninitialized memory read.
 
 
-o   Stefan Metzmacher <metze@samba.org
+o   Stefan Metzmacher <metze@samba.org>
     * BUG 5326: Fix cli_write_and_x() against OS/2 print shares.
     * BUG 8562: Fix double free error (talloc).
     * BUG 8593: Fix a crash bug in cldap_socket_recv_dgram().
