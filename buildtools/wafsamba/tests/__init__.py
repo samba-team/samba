@@ -23,6 +23,7 @@ from unittest import (
 
 def test_suite():
     names = [
+        'abi',
         'utils',
         ]
     module_names = ['wafsamba.tests.test_' + name for name in names]

@@ -18,6 +18,7 @@ def normalise_signature(sig):
     sig = re.sub('^\$[0-9]+\s=\s\{*', '', sig)
     sig = re.sub('\}(\s0x[0-9a-f]+\s<\w+>)?$', '', sig)
     sig = re.sub('0x[0-9a-f]+', '0xXXXX', sig)
+    sig = re.sub('", <incomplete sequence (\\\\[a-z0-9]+)>', r'\1"', sig)
 
     for t in abi_type_maps:
         # we need to cope with non-word characters in mapped types
@@ -30,10 +31,12 @@ def normalise_signature(sig):
         sig = re.sub(m, abi_type_maps[t], sig)
     return sig
 
+
 def normalise_varargs(sig):
     '''cope with older versions of gdb'''
     sig = re.sub(',\s\.\.\.', '', sig)
     return sig
+
 
 def parse_sigs(sigs, abi_match):
     '''parse ABI signatures file'''
@@ -54,6 +57,7 @@ def parse_sigs(sigs, abi_match):
                     break
             if not matched:
                 continue
+        print "%s -> %s" % (sa[1], normalise_signature(sa[1]))
         ret[sa[0]] = normalise_signature(sa[1])
     return ret
 
