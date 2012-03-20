@@ -673,11 +673,12 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		return;
 	}
 
-	if (c->flags & CTDB_IMMEDIATE_MIGRATION) {
-		/* check if this fetch-lock request is a duplicate for a
-		   request we already have in flight. If so defer it until
-		   the first request completes.
-		 */
+
+	/* check if this fetch request is a duplicate for a
+	   request we already have in flight. If so defer it until
+	   the first request completes.
+	*/
+	if (ctdb->tunable.fetch_collapse == 1) {
 		if (requeue_duplicate_fetch(ctdb_db, client, key, c) == 0) {
 			ret = ctdb_ltdb_unlock(ctdb_db, key);
 			if (ret != 0) {
@@ -790,7 +791,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		state = ctdb_call_local_send(ctdb_db, call, &header, &data);
 	} else {
 		state = ctdb_daemon_call_send_remote(ctdb_db, call, &header);
-		if (call->flags & CTDB_IMMEDIATE_MIGRATION) {
+		if (ctdb->tunable.fetch_collapse == 1) {
 			/* This request triggered a remote fetch-lock.
 			   set up a deferral for this key so any additional
 			   fetch-locks are deferred until the current one
