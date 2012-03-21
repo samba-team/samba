@@ -33,6 +33,10 @@ TALLOC_LIBS = @TALLOC_LIBS@
 TALLOC_CFLAGS = @TALLOC_CFLAGS@
 TALLOC_OBJ = @TALLOC_OBJ@
 
+TEVENT_LIBS = @TEVENT_LIBS@
+TEVENT_CFLAGS = @TEVENT_CFLAGS@
+TEVENT_OBJ = @TEVENT_OBJ@
+
 SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
 
 PMDA_LIBS = -lpcp -lpcp_pmda
@@ -40,7 +44,7 @@ PMDA_INSTALL = @CTDB_PMDA_INSTALL@
 PMDA_DEST_DIR = /var/lib/pcp/pmdas
 
 CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
-       $(TALLOC_CFLAGS) -I@tdbdir@/include -I@libreplacedir@ \
+       $(TALLOC_CFLAGS) $(TEVENT_CFLAGS) -I@tdbdir@/include -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
 	-DLOGDIR=\"$(logdir)\" \
 	-DUSE_MMAP=1 -DTEVENT_DEPRECATED_QUIET=1 @CFLAGS@ -Wno-format-zero-length $(POPT_CFLAGS) \
@@ -50,7 +54,7 @@ LDSHFLAGS=-fPIC -shared
 #LDSHFLAGS=-fPIC -shared -Wl,-Bsymbolic -Wl,-z,relo -Wl,-Bsymbolic-funtions -Wl,--as-needed -Wl,-z,defs
 SHLD=${CC} ${CFLAGS} ${LDSHFLAGS} -o $@
 
-LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) $(TALLOC_LIBS) @INFINIBAND_LIBS@ @CTDB_PCAP_LDFLAGS@
+LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) $(TALLOC_LIBS) $(TEVENT_LIBS) @INFINIBAND_LIBS@ @CTDB_PCAP_LDFLAGS@
 
 UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util.o \
 	lib/util/util_time.o lib/util/util_file.o lib/util/fault.o lib/util/substitute.o \
@@ -69,7 +73,7 @@ CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
 CTDB_CLIENT_OBJ = client/ctdb_client.o \
 	$(CTDB_COMMON_OBJ) $(POPT_OBJ) $(UTIL_OBJ) $(TALLOC_OBJ) @TDB_OBJ@ \
-	@LIBREPLACEOBJ@ $(EXTRA_OBJ) @TEVENT_OBJ@ $(SOCKET_WRAPPER_OBJ)
+	@LIBREPLACEOBJ@ $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	server/ctdb_recoverd.o server/ctdb_recover.o server/ctdb_freeze.o \
@@ -250,7 +254,7 @@ CTDBD_TEST_C = $(CTDB_SERVER_MOST_OBJ:.o=.c) tests/src/ctdbd_test.c
 CTDB_TEST_C = $(CTDB_CLIENT_OBJ:.o=.c) tools/ctdb.c tools/ctdb_vacuum.c  tests/src/ctdb_test.c
 
 CTDB_TEST_OBJ =  $(TALLOC_OBJ) @TDB_OBJ@ \
-	@CTDB_SYSTEM_OBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) @TEVENT_OBJ@ $(SOCKET_WRAPPER_OBJ)
+	@CTDB_SYSTEM_OBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 tests/src/ctdb_takeover_tests.o: tests/src/ctdb_takeover_tests.c $(CTDBD_TEST_C)
 
