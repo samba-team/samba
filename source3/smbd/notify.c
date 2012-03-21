@@ -530,8 +530,7 @@ char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter)
 	return result;
 }
 
-struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
-						     TALLOC_CTX *mem_ctx, 
+struct sys_notify_context *sys_notify_context_create(TALLOC_CTX *mem_ctx,
 						     struct event_context *ev)
 {
 	struct sys_notify_context *ctx;

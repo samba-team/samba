@@ -519,8 +519,7 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		  const char *path);
 char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter);
-struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
-						     TALLOC_CTX *mem_ctx,
+struct sys_notify_context *sys_notify_context_create(TALLOC_CTX *mem_ctx,
 						     struct event_context *ev);
 NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
 			  connection_struct *conn,
