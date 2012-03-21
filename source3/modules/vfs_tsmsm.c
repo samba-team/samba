@@ -27,7 +27,7 @@
 	 where <operation> is currently 'offline' to set offline status of the <filepath>
 
   tsmsm: online ratio = ratio to check reported size against actual file size (0.5 by default)
-  tsmsm: attribute name = name of DMAPI attribute that is present when a file is offline. 
+  tsmsm: dmapi attribute = name of DMAPI attribute that is present when a file is offline.
   Default is "IBMobj" (which is what GPFS uses)
 
   The TSMSM VFS module tries to avoid calling expensive DMAPI calls with some heuristics
