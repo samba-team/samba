@@ -697,11 +697,11 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	/* Any error exit after here needs to call the disconnect hook. */
 	on_err_call_dis_hook = true;
 
-	if ((!conn->printer) && (!conn->ipc)) {
+	if ((!conn->printer) && (!conn->ipc) &&
+	    lp_change_notify(conn->params)) {
 		conn->notify_ctx = notify_init(conn,
 					       sconn->msg_ctx,
-					       sconn->ev_ctx,
-					       conn);
+					       sconn->ev_ctx);
 	}
 
 	/*

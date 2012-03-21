@@ -545,8 +545,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *messaging_ctx,
-				   struct event_context *ev,
-				   connection_struct *conn);
+				   struct event_context *ev);
 bool notify_internal_parent_init(TALLOC_CTX *mem_ctx);
 NTSTATUS notify_add(struct notify_context *notify, connection_struct *conn,
 		    struct notify_entry *e0,

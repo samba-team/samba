@@ -86,14 +86,9 @@ static int notify_destructor(struct notify_context *notify)
 */
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *messaging_ctx,
-				   struct event_context *ev,
-				   connection_struct *conn)
+				   struct event_context *ev)
 {
 	struct notify_context *notify;
-
-	if (!lp_change_notify(conn->params)) {
-		return NULL;
-	}
 
 	notify = talloc(mem_ctx, struct notify_context);
 	if (notify == NULL) {
