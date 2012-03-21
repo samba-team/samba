@@ -449,6 +449,7 @@ struct smbd_server_connection {
 	const char *remote_hostname;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct notify_context *notify_ctx;
 	struct {
 		bool got_session;
 	} nbt;

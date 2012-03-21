@@ -221,7 +221,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 		e.subdir_filter = filter;
 	}
 
-	status = notify_add(fsp->conn->notify_ctx, fsp->conn, &e,
+	status = notify_add(fsp->conn->sconn->notify_ctx, fsp->conn, &e,
 			    notify_callback, fsp);
 	TALLOC_FREE(fullpath);
 
@@ -364,6 +364,7 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		  const char *path)
 {
+	struct notify_context *notify_ctx = conn->sconn->notify_ctx;
 	char *fullpath;
 	char *parent;
 	const char *name;
@@ -378,7 +379,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		smb_fname_parent.base_name = parent;
 
 		if (SMB_VFS_STAT(conn, &smb_fname_parent) != -1) {
-			notify_onelevel(conn->notify_ctx, action, filter,
+			notify_onelevel(notify_ctx, action, filter,
 			    SMB_VFS_FILE_ID_CREATE(conn, &smb_fname_parent.st),
 			    name);
 		}
@@ -390,7 +391,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		DEBUG(0, ("asprintf failed\n"));
 		return;
 	}
-	notify_trigger(conn->notify_ctx, action, filter, fullpath);
+	notify_trigger(notify_ctx, action, filter, fullpath);
 	TALLOC_FREE(fullpath);
 }
 
