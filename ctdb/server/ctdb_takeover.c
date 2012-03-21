@@ -1175,6 +1175,12 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 
 	pnn    = -1;
 	for (i=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_NOIPFAILBACK) {
+			/* This node is not allowed to takeover any addresses
+			*/
+			continue;
+		}
+
 		if (nodemap->nodes[i].flags & mask) {
 			/* This node is not healty and can not be used to serve
 			   a public address 
@@ -1465,6 +1471,11 @@ static bool basic_failback(struct ctdb_context *ctdb,
 				continue;
 			}
 
+			/* Only check nodes that are allowed to takeover an ip */
+			if (nodemap->nodes[i].flags & NODE_FLAGS_NOIPFAILBACK) {
+				continue;
+			}
+
 			/* only check nodes that can actually serve this ip */
 			if (can_node_serve_ip(ctdb, i, tmp_ip)) {
 				/* no it couldnt   so skip to the next node */
@@ -1640,6 +1651,11 @@ static void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 			}
 
 			for (dstnode=0; dstnode < nodemap->num; dstnode++) {
+				/* Only check nodes that are allowed to takeover an ip */
+				if (nodemap->nodes[dstnode].flags & NODE_FLAGS_NOIPFAILBACK) {
+					continue;
+				}
+
 				/* only check nodes that can actually serve this ip */
 				if (can_node_serve_ip(ctdb, dstnode, tmp_ip)) {
 					/* no it couldnt   so skip to the next node */
@@ -1748,6 +1764,12 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 			if (! newly_healthy[dstnode]) {
 				continue;
 			}
+
+			/* Only check nodes that are allowed to takeover an ip */
+			if (nodemap->nodes[dstnode].flags & NODE_FLAGS_NOIPFAILBACK) {
+				continue;
+			}
+
 			/* only check nodes that can actually serve this ip */
 			if (can_node_serve_ip(ctdb, dstnode, tmp_ip)) {
 				/* no it couldnt   so skip to the next node */
