@@ -118,7 +118,7 @@
 		<command>no(default)</command> - Do not announce HSM.
 		</para></listitem>
 		<listitem><para>
-		<command>no</command> - Announce HSM.
+		<command>yes</command> - Announce HSM.
 		</para></listitem>
 		</itemizedlist>
 		</listitem>
