@@ -221,7 +221,8 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 		e.subdir_filter = filter;
 	}
 
-	status = notify_add(fsp->conn->notify_ctx, &e, notify_callback, fsp);
+	status = notify_add(fsp->conn->notify_ctx, fsp->conn, &e,
+			    notify_callback, fsp);
 	TALLOC_FREE(fullpath);
 
 	return status;

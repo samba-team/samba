@@ -548,7 +548,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct event_context *ev,
 				   connection_struct *conn);
 bool notify_internal_parent_init(TALLOC_CTX *mem_ctx);
-NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
+NTSTATUS notify_add(struct notify_context *notify, connection_struct *conn,
+		    struct notify_entry *e0,
 		    void (*callback)(void *, const struct notify_event *),
 		    void *private_data);
 NTSTATUS notify_remove(struct notify_context *notify, void *private_data);

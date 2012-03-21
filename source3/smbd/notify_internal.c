@@ -505,7 +505,8 @@ static void notify_add_onelevel(struct notify_context *notify,
   add a notify watch. This is called when a notify is first setup on a open
   directory handle.
 */
-NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
+NTSTATUS notify_add(struct notify_context *notify, connection_struct *conn,
+		    struct notify_entry *e0,
 		    void (*callback)(void *, const struct notify_event *),
 		    void *private_data)
 {
