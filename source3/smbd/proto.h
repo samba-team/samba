@@ -523,6 +523,7 @@ struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
 						     TALLOC_CTX *mem_ctx,
 						     struct event_context *ev);
 NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
+			  connection_struct *conn,
 			  struct notify_entry *e,
 			  const char *path,
 			  void (*callback)(struct sys_notify_context *ctx,
