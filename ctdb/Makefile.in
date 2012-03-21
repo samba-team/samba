@@ -102,7 +102,7 @@ all: showflags dirs doc $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(CTDB_LIB_OBJ) $(
 showflags:
 	@echo 'ctdb will be compiled with flags:'
 	@echo '  CFLAGS = $(CFLAGS)'
-	@echo '  LIBS = $(LIBS)'
+	@echo '  LIBS = $(LIB_FLAGS)'
 
 showlayout::
 	@echo "ctdb will be installed into:"
