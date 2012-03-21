@@ -1648,7 +1648,7 @@ static NTSTATUS vfswrap_notify_watch(vfs_handle_struct *vfs_handle,
 	 * Until that is the case, hard-code inotify here.
 	 */
 #ifdef HAVE_INOTIFY
-	if (lp_kernel_change_notify(ctx->conn->params)) {
+	if (lp_kernel_change_notify(vfs_handle->conn->params)) {
 		return inotify_watch(ctx, e, path, callback, private_data,
 				     handle);
 	}

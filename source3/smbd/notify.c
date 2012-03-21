@@ -542,7 +542,6 @@ struct sys_notify_context *sys_notify_context_create(connection_struct *conn,
 	}
 
 	ctx->ev = ev;
-	ctx->conn = conn;
 	ctx->private_data = NULL;
 	return ctx;
 }

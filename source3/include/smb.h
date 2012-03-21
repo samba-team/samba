@@ -192,7 +192,6 @@ struct notify_change_request;
 struct sys_notify_backend;
 struct sys_notify_context {
 	struct event_context *ev;
-	struct connection_struct *conn;
 	void *private_data; 	/* For use by the system backend */
 };
 
