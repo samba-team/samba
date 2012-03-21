@@ -367,6 +367,9 @@ install_pmda:
 test: all
 	tests/run_tests.sh
 
+test_cluster: all
+	tests/run_cluster_tests.sh
+
 valgrindtest: all
 	VALGRIND="valgrind -q --trace-children=yes" tests/run_tests.sh
 
