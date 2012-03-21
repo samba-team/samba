@@ -287,9 +287,9 @@
 		  values:
 		</para>
 		<itemizedlist>
-		<listitem><para><command>yes</command>Open files with O_SYNC
+		<listitem><para><command>yes</command> - Open files with O_SYNC
 		</para></listitem>
-		<listitem><para><command>no (default)</command>Open files as
+		<listitem><para><command>no (default)</command> - Open files as
 		    normal Samba would do
 		</para></listitem>
 		</itemizedlist>
