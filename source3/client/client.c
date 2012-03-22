@@ -4617,7 +4617,7 @@ static struct {
   {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
-  {"notify",cmd_notify,"<file>Get notified by dir changes",{COMPL_REMOTE,COMPL_NONE}},
+  {"notify",cmd_notify,"<file>Get notified of dir changes",{COMPL_REMOTE,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
   {"posix_encrypt",cmd_posix_encrypt,"<domain> <user> <password> start up transport encryption",{COMPL_REMOTE,COMPL_NONE}},
