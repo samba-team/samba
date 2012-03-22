@@ -5028,7 +5028,7 @@ static void cli_notify_done(struct tevent_req *subreq)
 		ssize_t ret;
 		char *name;
 
-		if ((next != 0) && (len+12 != next)) {
+		if (trans_oob(num_params, ofs + 12, len)) {
 			TALLOC_FREE(params);
 			tevent_req_nterror(
 				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
