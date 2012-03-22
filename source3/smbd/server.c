@@ -57,8 +57,6 @@ struct smbd_parent_context {
 	/* the list of current child processes */
 	struct smbd_child_pid *children;
 	size_t num_children;
-	/* pipe for detecting death of parent process in child: */
-	int child_pipe[2];
 
 	struct timed_event *cleanup_te;
 };
