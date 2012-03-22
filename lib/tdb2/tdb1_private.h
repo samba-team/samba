@@ -121,7 +121,7 @@ struct tdb1_methods {
   internal prototypes
 */
 int tdb1_munmap(struct tdb_context *tdb);
-void tdb1_mmap(struct tdb_context *tdb);
+int tdb1_mmap(struct tdb_context *tdb);
 int tdb1_lock(struct tdb_context *tdb, int list, int ltype);
 int tdb1_nest_lock(struct tdb_context *tdb, uint32_t offset, int ltype,
 		  enum tdb_lock_flags flags);

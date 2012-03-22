@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
 	tdb1_off_t rec_ptr;
 	struct tdb1_record rec;
 	union tdb_attribute hsize;
+	int ret;
 
 	hsize.base.attr = TDB_ATTRIBUTE_TDB1_HASHSIZE;
 	hsize.base.next = &tap_log_attr;
@@ -75,15 +76,33 @@ int main(int argc, char *argv[])
 	ok1(tdb);
 	tdb->tdb1.io = &large_io_methods;
 
-	/* Enlarge the file (internally multiplies by 2). */
-	ok1(tdb1_expand(tdb, 1500000000) == 0);
-
-	/* Put an entry in, and check it. */
 	key.dsize = strlen("hi");
 	key.dptr = (void *)"hi";
 	orig_data.dsize = strlen("world");
 	orig_data.dptr = (void *)"world";
 
+	/* Enlarge the file (internally multiplies by 2). */
+	ret = tdb1_expand(tdb, 1500000000);
+
+#ifdef HAVE_INCOHERENT_MMAP
+	/* This can fail due to mmap failure on 32 bit systems. */
+	if (ret == -1) {
+		/* These should now fail. */
+		ok1(tdb_store(tdb, key, orig_data, TDB_INSERT) == TDB_ERR_IO);
+		ok1(tdb_fetch(tdb, key, &data) == TDB_ERR_IO);
+		ok1(tdb_traverse(tdb, test_traverse, &orig_data) == TDB_ERR_IO);
+		ok1(tdb_delete(tdb, key) == TDB_ERR_IO);
+		ok1(tdb_traverse(tdb, test_traverse, NULL) == TDB_ERR_IO);
+		/* Skip the rest... */
+		for (ret = 0; ret < 26 - 6; ret++)
+			ok1(1);
+		tdb_close(tdb);
+		return exit_status();
+	}
+#endif
+	ok1(ret == 0);
+
+	/* Put an entry in, and check it. */
 	ok1(tdb_store(tdb, key, orig_data, TDB_INSERT) == TDB_SUCCESS);
 
 	ok1(tdb_fetch(tdb, key, &data) == TDB_SUCCESS);
