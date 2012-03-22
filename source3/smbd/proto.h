@@ -522,14 +522,6 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter);
 struct sys_notify_context *sys_notify_context_create(TALLOC_CTX *mem_ctx,
 						     struct event_context *ev);
-NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
-			  connection_struct *conn,
-			  struct notify_entry *e,
-			  const char *path,
-			  void (*callback)(struct sys_notify_context *ctx,
-					   void *private_data,
-					   struct notify_event *ev),
-			  void *private_data, void *handle);
 
 /* The following definitions come from smbd/notify_inotify.c  */
 

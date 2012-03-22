@@ -42,7 +42,6 @@ struct notify_context {
 	struct notify_list *list;
 	struct notify_array *array;
 	int seqnum;
-	struct sys_notify_context *sys_notify_ctx;
 	TDB_DATA key;
 };
 
@@ -51,7 +50,6 @@ struct notify_list {
 	struct notify_list *next, *prev;
 	void *private_data;
 	void (*callback)(void *, const struct notify_event *);
-	void *sys_notify_handle;
 	int depth;
 };
 
@@ -126,8 +124,6 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 	   message type */
 	messaging_register(notify->messaging_ctx, notify,
 			   MSG_PVFS_NOTIFY, notify_handler);
-
-	notify->sys_notify_ctx = sys_notify_context_create(notify, ev);
 
 	return notify;
 }
@@ -341,19 +337,6 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private_data
 }
 
 /*
-  callback from sys_notify telling us about changes from the OS
-*/
-static void sys_notify_callback(struct sys_notify_context *ctx,
-				void *ptr, struct notify_event *ev)
-{
-	struct notify_list *listel = talloc_get_type(ptr, struct notify_list);
-	ev->private_data = listel;
-	DEBUG(10, ("sys_notify_callback called with action=%d, for %s\n",
-		   ev->action, ev->path));
-	listel->callback(listel->private_data, ev);
-}
-
-/*
   add an entry to the notify array
 */
 static NTSTATUS notify_add_array(struct notify_context *notify, struct db_record *rec,
@@ -527,21 +510,6 @@ NTSTATUS notify_add(struct notify_context *notify, connection_struct *conn,
 	listel->callback = callback;
 	listel->depth = depth;
 	DLIST_ADD(notify->list, listel);
-
-	/* ignore failures from sys_notify */
-	if (notify->sys_notify_ctx != NULL) {
-		/*
-		  this call will modify e.filter and e.subdir_filter
-		  to remove bits handled by the backend
-		*/
-		status = sys_notify_watch(notify->sys_notify_ctx, conn,
-					  &e, e.path,
-					  sys_notify_callback, listel,
-					  &listel->sys_notify_handle);
-		if (NT_STATUS_IS_OK(status)) {
-			talloc_steal(listel, listel->sys_notify_handle);
-		}
-	}
 
 	if (e.filter != 0) {
 		notify_add_onelevel(notify, &e, private_data);

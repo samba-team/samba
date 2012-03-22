@@ -698,11 +698,15 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	on_err_call_dis_hook = true;
 
 	if ((!conn->printer) && (!conn->ipc) &&
-	    lp_change_notify(conn->params) &&
-	    sconn->notify_ctx == NULL) {
-		sconn->notify_ctx = notify_init(sconn,
-						sconn->msg_ctx,
-						sconn->ev_ctx);
+	    lp_change_notify(conn->params)) {
+		if (sconn->notify_ctx == NULL) {
+			sconn->notify_ctx = notify_init(
+				sconn, sconn->msg_ctx, sconn->ev_ctx);
+		}
+		if (sconn->sys_notify_ctx == NULL) {
+			sconn->sys_notify_ctx = sys_notify_context_create(
+				sconn, sconn->ev_ctx);
+		}
 	}
 
 	/*

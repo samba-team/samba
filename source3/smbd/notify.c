@@ -174,13 +174,22 @@ static void notify_callback(void *private_data, const struct notify_event *e)
 	notify_fsp(fsp, e->action, e->path);
 }
 
+static void sys_notify_callback(struct sys_notify_context *ctx,
+				void *private_data,
+				struct notify_event *e)
+{
+	files_struct *fsp = (files_struct *)private_data;
+	DEBUG(10, ("sys_notify_callback called for %s\n", fsp_str_dbg(fsp)));
+	notify_fsp(fsp, e->action, e->path);
+}
+
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 			      bool recursive)
 {
 	char *fullpath;
 	size_t len;
 	struct notify_entry e;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
 
 	if (fsp->notify != NULL) {
 		DEBUG(1, ("change_notify_create: fsp->notify != NULL, "
@@ -221,10 +230,24 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 		e.subdir_filter = filter;
 	}
 
-	status = notify_add(fsp->conn->sconn->notify_ctx, fsp->conn, &e,
-			    notify_callback, fsp);
-	TALLOC_FREE(fullpath);
+	if (fsp->conn->sconn->sys_notify_ctx != NULL) {
+		void *sys_notify_handle = NULL;
 
+		status = SMB_VFS_NOTIFY_WATCH(
+			fsp->conn, fsp->conn->sconn->sys_notify_ctx,
+			&e, e.path, sys_notify_callback, fsp,
+			&sys_notify_handle);
+
+		if (NT_STATUS_IS_OK(status)) {
+			talloc_steal(fsp->notify, sys_notify_handle);
+		}
+	}
+
+	if ((e.filter != 0) || (e.subdir_filter != 0)) {
+		status = notify_add(fsp->conn->sconn->notify_ctx, fsp->conn,
+				    &e, notify_callback, fsp);
+	}
+	TALLOC_FREE(fullpath);
 	return status;
 }
 
@@ -545,17 +568,3 @@ struct sys_notify_context *sys_notify_context_create(TALLOC_CTX *mem_ctx,
 	ctx->private_data = NULL;
 	return ctx;
 }
-
-NTSTATUS sys_notify_watch(struct sys_notify_context *ctx,
-			  connection_struct *conn,
-			  struct notify_entry *e,
-			  const char *path,
-			  void (*callback)(struct sys_notify_context *ctx, 
-					   void *private_data,
-					   struct notify_event *ev),
-			  void *private_data, void *handle)
-{
-	return SMB_VFS_NOTIFY_WATCH(conn, ctx, e, path, callback,
-				    private_data, handle);
-}
-
