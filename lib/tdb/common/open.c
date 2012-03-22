@@ -587,7 +587,9 @@ static int tdb_reopen_internal(struct tdb_context *tdb, bool active_lock)
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: file dev/inode has changed!\n"));
 		goto fail;
 	}
-	tdb_mmap(tdb);
+	if (tdb_mmap(tdb) != 0) {
+		goto fail;
+	}
 #endif /* fake pread or pwrite */
 
 	/* We may still think we hold the active lock. */

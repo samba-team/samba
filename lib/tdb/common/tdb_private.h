@@ -222,7 +222,7 @@ struct tdb_context {
   internal prototypes
 */
 int tdb_munmap(struct tdb_context *tdb);
-void tdb_mmap(struct tdb_context *tdb);
+int tdb_mmap(struct tdb_context *tdb);
 int tdb_lock(struct tdb_context *tdb, int list, int ltype);
 int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
 int tdb_nest_lock(struct tdb_context *tdb, uint32_t offset, int ltype,

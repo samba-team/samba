@@ -88,8 +88,7 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
 		return -1;
 	}
 	tdb->map_size = st.st_size;
-	tdb_mmap(tdb);
-	return 0;
+	return tdb_mmap(tdb);
 }
 
 /* write a lump of data at a specified offset */
@@ -111,6 +110,10 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 	if (tdb->map_ptr) {
 		memcpy(off + (char *)tdb->map_ptr, buf, len);
 	} else {
+#ifdef HAVE_INCOHERENT_MMAP
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+#else
 		ssize_t written = pwrite(tdb->fd, buf, len, off);
 		if ((written != (ssize_t)len) && (written != -1)) {
 			/* try once more */
@@ -135,6 +138,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 				 len, off));
 			return -1;
 		}
+#endif
 	}
 	return 0;
 }
@@ -160,6 +164,10 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 	if (tdb->map_ptr) {
 		memcpy(buf, off + (char *)tdb->map_ptr, len);
 	} else {
+#ifdef HAVE_INCOHERENT_MMAP
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+#else
 		ssize_t ret = pread(tdb->fd, buf, len, off);
 		if (ret != (ssize_t)len) {
 			/* Ensure ecode is set for log fn. */
@@ -170,6 +178,7 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 				 (int)tdb->map_size));
 			return -1;
 		}
+#endif
 	}
 	if (cv) {
 		tdb_convert(buf, len);
@@ -222,13 +231,23 @@ int tdb_munmap(struct tdb_context *tdb)
 	return 0;
 }
 
-void tdb_mmap(struct tdb_context *tdb)
+/* If mmap isn't coherent, *everyone* must always mmap. */
+static bool should_mmap(const struct tdb_context *tdb)
+{
+#ifdef HAVE_INCOHERENT_MMAP
+	return true;
+#else
+	return !(tdb->flags & TDB_NOMMAP);
+#endif
+}
+
+int tdb_mmap(struct tdb_context *tdb)
 {
 	if (tdb->flags & TDB_INTERNAL)
 		return;
 
 #ifdef HAVE_MMAP
-	if (!(tdb->flags & TDB_NOMMAP)) {
+	if (should_mmap(tdb)) {
 		tdb->map_ptr = mmap(NULL, tdb->map_size, 
 				    PROT_READ|(tdb->read_only? 0:PROT_WRITE), 
 				    MAP_SHARED|MAP_FILE, tdb->fd, 0);
@@ -241,6 +260,10 @@ void tdb_mmap(struct tdb_context *tdb)
 			tdb->map_ptr = NULL;
 			TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_mmap failed for size %d (%s)\n", 
 				 tdb->map_size, strerror(errno)));
+#ifdef HAVE_INCOHERENT_MMAP
+			tdb->ecode = TDB_ERR_IO;
+			return -1;
+#endif
 		}
 	} else {
 		tdb->map_ptr = NULL;
@@ -248,6 +271,7 @@ void tdb_mmap(struct tdb_context *tdb)
 #else
 	tdb->map_ptr = NULL;
 #endif
+	return 0;
 }
 
 /* expand a file.  we prefer to use ftruncate, as that is what posix
@@ -360,12 +384,6 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	if (!(tdb->flags & TDB_INTERNAL))
 		tdb_munmap(tdb);
 
-	/*
-	 * We must ensure the file is unmapped before doing this
-	 * to ensure consistency with systems like OpenBSD where
-	 * writes and mmaps are not consistent.
-	 */
-
 	/* expand the file itself */
 	if (!(tdb->flags & TDB_INTERNAL)) {
 		if (tdb->methods->tdb_expand_file(tdb, tdb->map_size, size) != 0)
@@ -383,14 +401,9 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 		}
 		tdb->map_ptr = new_map_ptr;
 	} else {
-		/*
-		 * We must ensure the file is remapped before adding the space
-		 * to ensure consistency with systems like OpenBSD where
-		 * writes and mmaps are not consistent.
-		 */
-
-		/* We're ok if the mmap fails as we'll fallback to read/write */
-		tdb_mmap(tdb);
+		if (tdb_mmap(tdb) != 0) {
+			goto fail;
+		}
 	}
 
 	/* form a new freelist record */
