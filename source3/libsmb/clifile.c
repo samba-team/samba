@@ -5004,13 +5004,13 @@ static void cli_notify_done(struct tevent_req *subreq)
 	ofs = 0;
 
 	while (num_params - ofs > 12) {
-		uint32_t len = IVAL(params, ofs);
+		uint32_t next = IVAL(params, ofs);
 		state->num_changes += 1;
 
-		if ((len == 0) || (ofs+len >= num_params)) {
+		if ((next == 0) || (ofs+next >= num_params)) {
 			break;
 		}
-		ofs += len;
+		ofs += next;
 	}
 
 	state->changes = talloc_array(state, struct notify_change,
