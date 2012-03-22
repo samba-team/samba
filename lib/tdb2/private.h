@@ -454,7 +454,7 @@ void *tdb_convert(const struct tdb_context *tdb, void *buf, tdb_len_t size);
 
 /* Unmap and try to map the tdb. */
 void tdb_munmap(struct tdb_file *file);
-void tdb_mmap(struct tdb_context *tdb);
+enum TDB_ERROR tdb_mmap(struct tdb_context *tdb);
 
 /* Either alloc a copy, or give direct access.  Release frees or noop. */
 const void *tdb_access_read(struct tdb_context *tdb,

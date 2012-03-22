@@ -40,15 +40,17 @@ void tdb_munmap(struct tdb_file *file)
 	}
 }
 
-void tdb_mmap(struct tdb_context *tdb)
+enum TDB_ERROR tdb_mmap(struct tdb_context *tdb)
 {
 	int mmap_flags;
 
 	if (tdb->flags & TDB_INTERNAL)
-		return;
+		return TDB_SUCCESS;
 
+#ifndef HAVE_INCOHERENT_MMAP
 	if (tdb->flags & TDB_NOMMAP)
-		return;
+		return TDB_SUCCESS;
+#endif
 
 	if ((tdb->open_flags & O_ACCMODE) == O_RDONLY)
 		mmap_flags = PROT_READ;
@@ -68,10 +70,19 @@ void tdb_mmap(struct tdb_context *tdb)
 	 */
 	if (tdb->file->map_ptr == MAP_FAILED) {
 		tdb->file->map_ptr = NULL;
+#ifdef HAVE_INCOHERENT_MMAP
+		/* Incoherent mmap means everyone must mmap! */
+		return tdb_logerr(tdb, TDB_ERR_IO, TDB_LOG_ERROR,
+				  "tdb_mmap failed for size %lld (%s)",
+				  (long long)tdb->file->map_size,
+				  strerror(errno));
+#else
 		tdb_logerr(tdb, TDB_SUCCESS, TDB_LOG_WARNING,
 			   "tdb_mmap failed for size %lld (%s)",
 			   (long long)tdb->file->map_size, strerror(errno));
+#endif
 	}
+	return TDB_SUCCESS;
 }
 
 /* check for an out of bounds access - if it is out of bounds then
@@ -143,8 +154,7 @@ static enum TDB_ERROR tdb_oob(struct tdb_context *tdb,
 	tdb_munmap(tdb->file);
 
 	tdb->file->map_size = st.st_size;
-	tdb_mmap(tdb);
-	return TDB_SUCCESS;
+	return tdb_mmap(tdb);
 }
 
 /* Endian conversion: we only ever deal with 8 byte quantities */
@@ -270,6 +280,9 @@ static enum TDB_ERROR tdb_write(struct tdb_context *tdb, tdb_off_t off,
 	if (tdb->file->map_ptr) {
 		memcpy(off + (char *)tdb->file->map_ptr, buf, len);
 	} else {
+#ifdef HAVE_INCOHERENT_MMAP
+		return TDB_ERR_IO;
+#else
 		ssize_t ret;
 		ret = pwrite(tdb->file->fd, buf, len, off);
 		if (ret != len) {
@@ -282,6 +295,7 @@ static enum TDB_ERROR tdb_write(struct tdb_context *tdb, tdb_off_t off,
 					  ret, (size_t)off, (size_t)len,
 					  strerror(errno));
 		}
+#endif
 	}
 	return TDB_SUCCESS;
 }
@@ -300,6 +314,9 @@ static enum TDB_ERROR tdb_read(struct tdb_context *tdb, tdb_off_t off,
 	if (tdb->file->map_ptr) {
 		memcpy(buf, off + (char *)tdb->file->map_ptr, len);
 	} else {
+#ifdef HAVE_INCOHERENT_MMAP
+		return TDB_ERR_IO;
+#else
 		ssize_t r = pread(tdb->file->fd, buf, len, off);
 		if (r != len) {
 			return tdb_logerr(tdb, TDB_ERR_IO, TDB_LOG_ERROR,
@@ -309,6 +326,7 @@ static enum TDB_ERROR tdb_read(struct tdb_context *tdb, tdb_off_t off,
 					  strerror(errno),
 					  (size_t)tdb->file->map_size);
 		}
+#endif
 	}
 	return TDB_SUCCESS;
 }
@@ -439,6 +457,7 @@ static enum TDB_ERROR tdb_expand_file(struct tdb_context *tdb,
 		}
 		tdb->file->map_ptr = new;
 		tdb->file->map_size += addition;
+		return TDB_SUCCESS;
 	} else {
 		/* Unmap before trying to write; old TDB claimed OpenBSD had
 		 * problem with this otherwise. */
@@ -457,9 +476,8 @@ static enum TDB_ERROR tdb_expand_file(struct tdb_context *tdb,
 		if (ecode != TDB_SUCCESS)
 			return ecode;
 		tdb->file->map_size += addition;
-		tdb_mmap(tdb);
+		return tdb_mmap(tdb);
 	}
-	return TDB_SUCCESS;
 }
 
 const void *tdb_access_read(struct tdb_context *tdb,

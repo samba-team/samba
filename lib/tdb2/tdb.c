@@ -386,7 +386,9 @@ _PUBLIC_ void tdb_add_flag(struct tdb_context *tdb, unsigned flag)
 		break;
 	case TDB_NOMMAP:
 		tdb->flags |= TDB_NOMMAP;
+#ifndef HAVE_INCOHERENT_MMAP
 		tdb_munmap(tdb->file);
+#endif
 		break;
 	case TDB_NOSYNC:
 		tdb->flags |= TDB_NOSYNC;
@@ -423,7 +425,10 @@ _PUBLIC_ void tdb_remove_flag(struct tdb_context *tdb, unsigned flag)
 		break;
 	case TDB_NOMMAP:
 		tdb->flags &= ~TDB_NOMMAP;
+#ifndef HAVE_INCOHERENT_MMAP
+		/* If mmap incoherent, we were mmaping anyway. */
 		tdb_mmap(tdb);
+#endif
 		break;
 	case TDB_NOSYNC:
 		tdb->flags &= ~TDB_NOSYNC;
