@@ -107,6 +107,13 @@ if test x"$libreplace_cv_HAVE_MREMAP" = x"yes"; then
     AC_DEFINE(HAVE_MREMAP,1,[Whether mremap works])
 fi
 
+AC_CACHE_CHECK([for incoherent mmap],libreplace_cv_HAVE_INCOHERENT_MMAP,[
+AC_TRY_RUN([#include "$libreplacedir/test/incoherent_mmap.c"],
+           libreplace_cv_HAVE_INCOHERENT_MMAP=yes,libreplace_cv_HAVE_INCOHERENT_MMAP=no,libreplace_cv_HAVE_INCOHERENT_MMAP=cross)])
+if test x"$libreplace_cv_HAVE_INCOHERENT_MMAP" = x"yes"; then
+    AC_DEFINE(HAVE_INCOHERENT_MMAP,1,[Whether mmap is incoherent against write])
+fi
+
 
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(sys/time.h time.h)
