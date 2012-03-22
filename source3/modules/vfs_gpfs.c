@@ -53,6 +53,7 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 {
 
 	struct gpfs_config_data *config;
+	int ret = 0;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
@@ -64,12 +65,12 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 
 	if (config->sharemodes
 		&& !set_gpfs_sharemode(fsp, access_mask, fsp->share_access)) {
-		return -1;
+		ret = -1;
 	}
 
 	END_PROFILE(syscall_kernel_flock);
 
-	return 0;
+	return ret;
 }
 
 static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
@@ -98,10 +99,10 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 				struct gpfs_config_data,
 				return -1);
 
-	START_PROFILE(syscall_linux_setlease);
-
 	if (linux_set_lease_sighandler(fsp->fh->fd) == -1)
 		return -1;
+
+	START_PROFILE(syscall_linux_setlease);
 
 	if (config->leases) {
 		ret = set_gpfs_lease(fsp->fh->fd,leasetype);
