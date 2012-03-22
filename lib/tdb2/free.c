@@ -585,7 +585,7 @@ unlock_err:
 enum TDB_ERROR add_free_record(struct tdb_context *tdb,
 			       tdb_off_t off, tdb_len_t len_with_header,
 			       enum tdb_lock_flags waitflag,
-			       bool coalesce)
+			       bool coalesce_ok)
 {
 	tdb_off_t b_off;
 	tdb_len_t len;
@@ -601,11 +601,11 @@ enum TDB_ERROR add_free_record(struct tdb_context *tdb,
 		return ecode;
 	}
 
-	ecode = enqueue_in_free(tdb, b_off, off, len, &coalesce);
+	ecode = enqueue_in_free(tdb, b_off, off, len, &coalesce_ok);
 	check_list(tdb, b_off);
 
 	/* Coalescing unlocks free list. */
-	if (!ecode && coalesce)
+	if (!ecode && coalesce_ok)
 		ecode = coalesce_list(tdb, tdb->tdb2.ftable_off, b_off, 2);
 	else
 		tdb_unlock_free_bucket(tdb, b_off);

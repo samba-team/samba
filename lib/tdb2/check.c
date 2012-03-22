@@ -84,7 +84,7 @@ static enum TDB_ERROR check_header(struct tdb_context *tdb, tdb_off_t *recovery,
 
 	for (off = hdr.capabilities; off && ecode == TDB_SUCCESS; off = next) {
 		const struct tdb_capability *cap;
-		enum TDB_ERROR err;
+		enum TDB_ERROR e;
 
 		cap = tdb_access_read(tdb, off, sizeof(*cap), true);
 		if (TDB_PTR_IS_ERR(cap)) {
@@ -92,11 +92,11 @@ static enum TDB_ERROR check_header(struct tdb_context *tdb, tdb_off_t *recovery,
 		}
 
 		/* All capabilities are unknown. */
-		err = unknown_capability(tdb, "tdb_check", cap->type);
+		e = unknown_capability(tdb, "tdb_check", cap->type);
 		next = cap->next;
 		tdb_access_release(tdb, cap);
-		if (err)
-			return err;
+		if (e)
+			return e;
 		(*num_capabilities)++;
 	}
 

@@ -9,7 +9,7 @@
 static tdb_off_t tdb_offset(struct tdb_context *tdb, struct tdb_data key)
 {
 	tdb_off_t off;
-	struct tdb_used_record rec;
+	struct tdb_used_record urec;
 	struct hash_info h;
 
 	if (tdb_get_flags(tdb) & TDB_VERSION1) {
@@ -18,7 +18,7 @@ static tdb_off_t tdb_offset(struct tdb_context *tdb, struct tdb_data key)
 				 &rec);
 	}
 
-	off = find_and_lock(tdb, key, F_RDLCK, &h, &rec, NULL);
+	off = find_and_lock(tdb, key, F_RDLCK, &h, &urec, NULL);
 	if (TDB_OFF_IS_ERR(off))
 		return 0;
 	tdb_unlock_hashes(tdb, h.hlock_start, h.hlock_range, F_RDLCK);

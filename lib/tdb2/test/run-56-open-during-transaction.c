@@ -44,14 +44,14 @@ static bool is_same(const char *snapshot, const char *latest, off_t len)
 static bool compare_file(int fd, const char *snapshot, off_t snapshot_len)
 {
 	char *contents;
-	bool same;
+	bool ret;
 
 	/* over-length read serves as length check. */
 	contents = malloc(snapshot_len+1);
-	same = pread(fd, contents, snapshot_len+1, 0) == snapshot_len
+	ret = pread(fd, contents, snapshot_len+1, 0) == snapshot_len
 		&& is_same(snapshot, contents, snapshot_len);
 	free(contents);
-	return same;
+	return ret;
 }
 
 static void check_file_intact(int fd)

@@ -35,9 +35,9 @@ static int mylock(int fd, int rw, off_t off, off_t len, bool waitflag,
 }
 
 static int trav_err;
-static int trav(struct tdb_context *tdb, TDB_DATA k, TDB_DATA d, int *err)
+static int trav(struct tdb_context *tdb, TDB_DATA k, TDB_DATA d, int *terr)
 {
-	*err = trav_err;
+	*terr = trav_err;
 	return 0;
 }
 
