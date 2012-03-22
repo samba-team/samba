@@ -1175,7 +1175,7 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 
 	pnn    = -1;
 	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_NOIPFAILBACK) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_NOIPTAKEOVER) {
 			/* This node is not allowed to takeover any addresses
 			*/
 			continue;
@@ -1472,7 +1472,7 @@ static bool basic_failback(struct ctdb_context *ctdb,
 			}
 
 			/* Only check nodes that are allowed to takeover an ip */
-			if (nodemap->nodes[i].flags & NODE_FLAGS_NOIPFAILBACK) {
+			if (nodemap->nodes[i].flags & NODE_FLAGS_NOIPTAKEOVER) {
 				continue;
 			}
 
@@ -1652,7 +1652,7 @@ static void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 
 			for (dstnode=0; dstnode < nodemap->num; dstnode++) {
 				/* Only check nodes that are allowed to takeover an ip */
-				if (nodemap->nodes[dstnode].flags & NODE_FLAGS_NOIPFAILBACK) {
+				if (nodemap->nodes[dstnode].flags & NODE_FLAGS_NOIPTAKEOVER) {
 					continue;
 				}
 
@@ -1766,7 +1766,7 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 			}
 
 			/* Only check nodes that are allowed to takeover an ip */
-			if (nodemap->nodes[dstnode].flags & NODE_FLAGS_NOIPFAILBACK) {
+			if (nodemap->nodes[dstnode].flags & NODE_FLAGS_NOIPTAKEOVER) {
 				continue;
 			}
 
@@ -2002,6 +2002,19 @@ try_again:
 		basic_allocate_unassigned(ctdb, nodemap, mask, all_ips);
 	}
 
+	/* If we dont want ips to fail back after a node becomes healthy
+	   again, we wont even try to reallocat the ip addresses so that
+	   they are evenly spread out.
+	   This can NOT be used at the same time as DeterministicIPs !
+	*/
+	if (1 == ctdb->tunable.no_ip_failback) {
+		if (1 == ctdb->tunable.deterministic_public_ips) {
+			DEBUG(DEBUG_ERR, ("ERROR: You can not use 'DeterministicIPs' and 'NoIPFailback' at the same time\n"));
+		}
+		goto finished;
+	}
+
+
 	/* now, try to make sure the ip adresses are evenly distributed
 	   across the node.
 	*/
@@ -2016,35 +2029,36 @@ try_again:
 	}
 
 	/* finished distributing the public addresses, now just send the 
-	   info out to the nodes
-	   at this point ->pnn is the node which will own each IP
+	   info out to the nodes */
+finished:
+	/* at this point ->pnn is the node which will own each IP
 	   or -1 if there is no node that can cover this ip
 	*/
 
 	return;
 }
 
-static void noipfailback_cb(struct ctdb_context *ctdb, uint32_t pnn, int32_t res, TDB_DATA outdata, void *callback)
+static void noiptakeover_cb(struct ctdb_context *ctdb, uint32_t pnn, int32_t res, TDB_DATA outdata, void *callback)
 {
 	struct ctdb_node_map *nodemap = (struct ctdb_node_map *)callback;
 
 	if (res != 0) {
-		DEBUG(DEBUG_ERR,("Failure to read NoIPFailback tunable from remote node %d\n", pnn));
+		DEBUG(DEBUG_ERR,("Failure to read NoIPTakeover tunable from remote node %d\n", pnn));
 		return;
 	}
 
 	if (outdata.dsize != sizeof(uint32_t)) {
-		DEBUG(DEBUG_ERR,("Wrong size of returned data when reading NoIPFailback tunable from node %d. Expected %d bytes but received %d bytes\n", pnn, (int)sizeof(uint32_t), (int)outdata.dsize));
+		DEBUG(DEBUG_ERR,("Wrong size of returned data when reading NoIPTakeover tunable from node %d. Expected %d bytes but received %d bytes\n", pnn, (int)sizeof(uint32_t), (int)outdata.dsize));
 		return;
 	}
 
 	if (pnn >= nodemap->num) {
-		DEBUG(DEBUG_ERR,("Got NoIPFailback reply from node %d but nodemap only has %d entries\n", pnn, nodemap->num));
+		DEBUG(DEBUG_ERR,("Got NoIPTakeover reply from node %d but nodemap only has %d entries\n", pnn, nodemap->num));
 		return;
 	}
 
 	if (*(uint32_t *)outdata.dptr != 0) {
-		nodemap->nodes[pnn].flags |= NODE_FLAGS_NOIPFAILBACK;
+		nodemap->nodes[pnn].flags |= NODE_FLAGS_NOIPTAKEOVER;
 	}
 }
 
@@ -2076,20 +2090,20 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 
 	/* assume all nodes do support failback */
 	for (i=0;i<nodemap->num;i++) {
-		nodemap->nodes[i].flags &= ~NODE_FLAGS_NOIPFAILBACK;
+		nodemap->nodes[i].flags &= ~NODE_FLAGS_NOIPTAKEOVER;
 	}
-	data.dsize = offsetof(struct ctdb_control_get_tunable, name) + strlen("NoIPFailback") + 1;
+	data.dsize = offsetof(struct ctdb_control_get_tunable, name) + strlen("NoIPTakeover") + 1;
 	data.dptr  = talloc_size(tmp_ctx, data.dsize);
 	t = (struct ctdb_control_get_tunable *)data.dptr;
-	t->length = strlen("NoIPFailback")+1;
-	memcpy(t->name, "NoIPFailback", t->length);
+	t->length = strlen("NoIPTakeover")+1;
+	memcpy(t->name, "NoIPTakeover", t->length);
 	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_TUNABLE,
 				      nodes, 0, TAKEOVER_TIMEOUT(),
 				      false, data,
-				      noipfailback_cb, NULL,
+				      noiptakeover_cb, NULL,
 				      nodemap) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to get noipfailback tunable failed\n"));
+		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to get noiptakeover tunable failed\n"));
 	}
 	talloc_free(nodes);
 	talloc_free(data.dptr);

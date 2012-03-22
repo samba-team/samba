@@ -130,6 +130,7 @@ struct ctdb_tunable {
 	uint32_t hopcount_make_sticky;
 	uint32_t sticky_duration;
 	uint32_t sticky_pindown;
+	uint32_t no_ip_takeover;
 };
 
 /*

@@ -559,7 +559,7 @@ struct ctdb_node_map {
 #define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED)
 #define NODE_FLAGS_INACTIVE		(NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)
 
-#define NODE_FLAGS_NOIPFAILBACK		0x01000000 /* this node can not be failed back onto, this flag is ONLY valid within the recovery daemon */
+#define NODE_FLAGS_NOIPTAKEOVER		0x01000000 /* this node can takeover any new ip addresses, this flag is ONLY valid within the recovery daemon */
 
 
 struct ctdb_public_ip {

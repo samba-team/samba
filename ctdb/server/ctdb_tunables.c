@@ -78,7 +78,8 @@ static const struct {
 	{ "MaxLACount",         20,  offsetof(struct ctdb_tunable, max_lacount) },
 	{ "HopcountMakeSticky",   50,  offsetof(struct ctdb_tunable, hopcount_make_sticky) },
 	{ "StickyDuration",      600,  offsetof(struct ctdb_tunable, sticky_duration) },
-	{ "StickyPindown",       200,  offsetof(struct ctdb_tunable, sticky_pindown) }
+	{ "StickyPindown",       200,  offsetof(struct ctdb_tunable, sticky_pindown) },
+	{ "NoIPTakeover",         0,  offsetof(struct ctdb_tunable, no_ip_takeover), false }
 };
 
 /*

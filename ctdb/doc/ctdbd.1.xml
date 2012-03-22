@@ -841,7 +841,7 @@
     <refsect2><title>DisableIPFailover</title>
     <para>Default: 0</para>
     <para>
-    When enabled, ctdb weill not perform failover or failback. Even if a
+    When enabled, ctdb will not perform failover or failback. Even if a
     node fails while holding public IPs, ctdb will not recover the IPs or
     assign them to another node.
     </para>
@@ -850,6 +850,15 @@
     the cluster by failing IP addresses over to other nodes. This leads to
     a service outage until the administrator has manually performed failover
     to replacement nodes using the 'ctdb moveip' command.
+    </para>
+    </refsect2>
+
+    <refsect2><title>NoIPTakeover</title>
+    <para>Default: 0</para>
+    <para>
+    When set to 1, ctdb will allow ip addresses to be failed over onto this
+    node. Any ip addresses that the node currently hosts will remain on the
+    node but no new ip addresses can be failed over onto the node.
     </para>
     </refsect2>
 
