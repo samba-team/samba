@@ -1259,7 +1259,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 
 }
 
-int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
+static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, enum vfs_fallocate_mode mode,
 		       SMB_OFF_T offset, SMB_OFF_T len)
 {
@@ -1377,8 +1377,8 @@ static ssize_t vfs_gpfs_sendfile(vfs_handle_struct *handle, int tofd,
 	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, hdr, offset, n);
 }
 
-int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
-			const char *user)
+static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
+			    const char *service, const char *user)
 {
 	struct gpfs_config_data *config;
 	int ret;

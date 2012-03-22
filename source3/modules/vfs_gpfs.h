@@ -40,4 +40,4 @@ int get_gpfs_quota(const char *pathname, int type, int id,
 int get_gpfs_fset_id(const char *pathname, int *fset_id);
 
 void init_gpfs(void);
-void smbd_gpfs_lib_init();
+void smbd_gpfs_lib_init(void);
