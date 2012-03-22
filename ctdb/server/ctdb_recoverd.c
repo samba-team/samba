@@ -1406,7 +1406,7 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 			return -1;
 		}
 
-		if (ctdb->tunable.disable_ip_failover == 0) {
+		if (ctdb->do_checkpublicip) {
 			if (rec->ip_check_disable_ctx == NULL) {
 				if (verify_remote_ip_allocation(ctdb, ctdb->nodes[j]->known_public_ips)) {
 					DEBUG(DEBUG_ERR,("Node %d has inconsistent public ip allocation and needs update.\n", ctdb->nodes[j]->pnn));

@@ -209,8 +209,6 @@ int main(int argc, const char *argv[])
 
 	ctdb_tunables_set_defaults(ctdb);
 
-	ctdb->tunable.disable_ip_failover = options.no_publicipcheck;
-
 	ret = ctdb_set_recovery_lock_file(ctdb, options.recovery_lock_file);
 	if (ret == -1) {
 		DEBUG(DEBUG_ALERT,("ctdb_set_recovery_lock_file failed - %s\n", ctdb_errstr(ctdb)));
@@ -322,6 +320,8 @@ int main(int argc, const char *argv[])
 	} else {
 		ctdb->do_setsched = 1;
 	}
+
+	ctdb->do_checkpublicip = !options.no_publicipcheck;
 
 	if (options.max_persistent_check_errors < 0) {
 		ctdb->max_persistent_check_errors = 0xFFFFFFFFFFFFFFFFLL;

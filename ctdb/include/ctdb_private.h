@@ -453,6 +453,7 @@ struct ctdb_context {
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_client_ip *client_ip_list;
+	bool do_checkpublicip;
 	struct trbt_tree *server_ids; 
 	bool do_setsched;
 	void *saved_scheduler_param;
