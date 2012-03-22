@@ -108,12 +108,6 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 		ret = set_gpfs_lease(fsp->fh->fd,leasetype);
 	}
 
-	if (ret < 0) {
-		/* This must have come from GPFS not being available */
-		/* or some other error, hence call the default */
-		ret = linux_setlease(fsp->fh->fd, leasetype);
-	}
-
 	END_PROFILE(syscall_linux_setlease);
 
 	return ret;
