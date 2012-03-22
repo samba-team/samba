@@ -1231,15 +1231,17 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	/*
-	 * Do not initialize the parent-child-pipe before becoming
-	 * a daemon: this is used to detect a died parent in the child
-	 * process.
-	 */
-	status = init_before_fork();
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("init_before_fork failed: %s\n", nt_errstr(status)));
-		exit(1);
+	if (!interactive) {
+		/*
+		 * Do not initialize the parent-child-pipe before becoming a
+		 * daemon: this is used to detect a died parent in the child
+		 * process.
+		 */
+		status = init_before_fork();
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("init_before_fork failed: %s\n", nt_errstr(status)));
+			exit(1);
+		}
 	}
 
 	smbd_server_conn->msg_ctx = msg_ctx;
