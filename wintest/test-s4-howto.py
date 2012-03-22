@@ -464,6 +464,9 @@ def test_join_as_dc(t, vm):
     t.retry_cmd("bin/smbclient -L ${HOSTNAME}.${WIN_REALM} -Utest3%${PASSWORD3} -k no", ['LOGON_FAILURE'])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
     t.retry_cmd("bin/smbclient -L ${HOSTNAME}.${WIN_REALM} -Utest3%${PASSWORD3} -k yes", ['LOGON_FAILURE'])
+
+    t.run_cmd('bin/samba-tool domain demote -Uadministrator@${WIN_REALM}%${WIN_PASS}')
+
     t.vm_poweroff("${WIN_VM}")
 
 
