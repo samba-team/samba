@@ -593,6 +593,10 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			 uint32_t *pnum_changes,
 			 struct notify_change **pchanges);
+NTSTATUS cli_notify(struct cli_state *cli, uint16_t fnum, uint32_t buffer_size,
+		    uint32_t completion_filter, bool recursive,
+		    TALLOC_CTX *mem_ctx, uint32_t *pnum_changes,
+		    struct notify_change **pchanges);
 
 struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 					   struct event_context *ev,

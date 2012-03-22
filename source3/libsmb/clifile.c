@@ -5069,6 +5069,41 @@ NTSTATUS cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS cli_notify(struct cli_state *cli, uint16_t fnum, uint32_t buffer_size,
+		    uint32_t completion_filter, bool recursive,
+		    TALLOC_CTX *mem_ctx, uint32_t *pnum_changes,
+		    struct notify_change **pchanges)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_notify_send(ev, ev, cli, fnum, buffer_size,
+			      completion_filter, recursive);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_notify_recv(req, mem_ctx, pnum_changes, pchanges);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 struct cli_qpathinfo_state {
 	uint8_t *param;
 	uint8_t *data;
