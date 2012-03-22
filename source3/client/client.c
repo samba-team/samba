@@ -3901,6 +3901,62 @@ static int cmd_newer(void)
 }
 
 /****************************************************************************
+ Watch directory changes
+****************************************************************************/
+
+static int cmd_notify(void)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *name, *buf;
+	NTSTATUS status;
+	uint16_t fnum;
+
+	name = talloc_strdup(talloc_tos(), client_get_cur_dir());
+	if (name == NULL) {
+		goto fail;
+	}
+	if (!next_token_talloc(talloc_tos(), &cmd_ptr, &buf, NULL)) {
+		goto usage;
+	}
+	name = talloc_asprintf_append(name, "%s", buf);
+	if (name == NULL) {
+		goto fail;
+	}
+	status = cli_ntcreate(
+		cli, name, 0, READ_CONTROL_ACCESS, 0,
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_OPEN, 0, 0, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Could not open file: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	while (1) {
+		uint32_t i, num_changes;
+		struct notify_change *changes;
+
+		status = cli_notify(cli, fnum, 1000, FILE_NOTIFY_CHANGE_ALL,
+				    true,
+				    talloc_tos(), &num_changes, &changes);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("notify returned %s\n",
+				 nt_errstr(status));
+			goto fail;
+		}
+		for (i=0; i<num_changes; i++) {
+			printf("%4.4x %s\n", changes[i].action,
+			       changes[i].name);
+		}
+		TALLOC_FREE(changes);
+	}
+usage:
+	d_printf("notify <file>\n");
+fail:
+	TALLOC_FREE(frame);
+	return 1;
+}
+
+/****************************************************************************
  Set the archive level.
 ****************************************************************************/
 
@@ -4561,6 +4617,7 @@ static struct {
   {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
   {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
+  {"notify",cmd_notify,"<file>Get notified by dir changes",{COMPL_REMOTE,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
   {"posix_encrypt",cmd_posix_encrypt,"<domain> <user> <password> start up transport encryption",{COMPL_REMOTE,COMPL_NONE}},
