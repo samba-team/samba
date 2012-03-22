@@ -87,8 +87,7 @@ int main(int argc, char *argv[])
 			       O_CREAT|O_RDWR|O_TRUNC, 0600, &log_attr);
 		ok1(tdb);
 		ok1(log_count == 0);
-		d.dptr = (void *)"Hello";
-		d.dsize = 5;
+		d = tdb_mkdata("Hello", strlen("Hello"));
 		ok1(tdb_store(tdb, d, d, TDB_INSERT) == TDB_SUCCESS);
 		tdb_close(tdb);
 
@@ -132,8 +131,7 @@ int main(int argc, char *argv[])
 			       &incompat_hash_attr);
 		ok1(tdb);
 		ok1(log_count == 0);
-		d.dptr = (void *)"Hello";
-		d.dsize = 5;
+		d = tdb_mkdata("Hello", strlen("Hello"));
 		ok1(tdb_store(tdb, d, d, TDB_INSERT) == TDB_SUCCESS);
 		tdb_close(tdb);
 
@@ -165,8 +163,7 @@ int main(int argc, char *argv[])
 			       O_RDWR, 0600, &log_attr);
 		ok1(tdb);
 		ok1(log_count == 0);
-		d.dptr = (void *)"Hello";
-		d.dsize = 5;
+		d = tdb_mkdata("Hello", strlen("Hello"));
 		ok1(tdb_fetch(tdb, d, &d) == TDB_SUCCESS);
 		ok1(d.dsize == 5);
 		free(d.dptr);
@@ -181,8 +178,7 @@ int main(int argc, char *argv[])
 			       O_CREAT|O_RDWR|O_TRUNC, 0600, &dumbhash_attr);
 		ok1(tdb);
 		ok1(log_count == 0);
-		d.dptr = (void *)"Hello";
-		d.dsize = 5;
+		d = tdb_mkdata("Hello", strlen("Hello"));
 		ok1(tdb_store(tdb, d, d, TDB_INSERT) == TDB_SUCCESS);
 		tdb_close(tdb);
 

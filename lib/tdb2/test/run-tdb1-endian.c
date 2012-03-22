@@ -20,10 +20,8 @@ int main(int argc, char *argv[])
 		       O_CREAT|O_TRUNC|O_RDWR, 0600, &hsize);
 
 	ok1(tdb);
-	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
-	data.dsize = strlen("world");
-	data.dptr = (void *)"world";
+	key = tdb_mkdata("hi", strlen("hi"));
+	data = tdb_mkdata("world", strlen("world"));
 
 	ok1(tdb_store(tdb, key, data, TDB_MODIFY) == TDB_ERR_NOEXIST);
 	ok1(tdb_store(tdb, key, data, TDB_INSERT) == TDB_SUCCESS);
@@ -44,8 +42,7 @@ int main(int argc, char *argv[])
 	tdb = tdb_open("run-endian.tdb1", 0, O_RDWR, 0, NULL);
 	ok1(tdb);
 
-	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
+	key = tdb_mkdata("hi", strlen("hi"));
 	ok1(tdb_fetch(tdb, key, &data) == TDB_SUCCESS);
 	ok1(data.dsize == strlen("world"));
 	ok1(memcmp(data.dptr, "world", strlen("world")) == 0);

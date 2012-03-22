@@ -16,8 +16,7 @@ int main(int argc, char *argv[])
 	hsize.tdb1_hashsize.hsize = 1024;
 
 	plan_tests(30);
-	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
+	key = tdb_mkdata("hi", strlen("hi"));
 
 	tdb = tdb_open("run-nested-transactions.tdb1",
 		       TDB_VERSION1, O_CREAT|O_TRUNC|O_RDWR, 0600, &hsize);
@@ -25,8 +24,7 @@ int main(int argc, char *argv[])
 
 	/* No nesting by default. */
 	ok1(tdb_transaction_start(tdb) == TDB_SUCCESS);
-	data.dptr = (void *)"world";
-	data.dsize = strlen("world");
+	data = tdb_mkdata("world", strlen("world"));
 	ok1(tdb_store(tdb, key, data, TDB_INSERT) == TDB_SUCCESS);
 	ok1(tdb_fetch(tdb, key, &data) == TDB_SUCCESS);
 	ok1(data.dsize == strlen("world"));

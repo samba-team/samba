@@ -71,10 +71,8 @@ int main(int argc, char *argv[])
 	ok1(external_agent_operation1(agent, TRANSACTION_COMMIT, tdb->name)
 	    == SUCCESS);
 
-	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
-	data.dptr = (void *)"world";
-	data.dsize = strlen("world");
+	key = tdb_mkdata("hi", strlen("hi"));
+	data = tdb_mkdata("world", strlen("world"));
 
 	ok1(tdb_store(tdb, key, data, TDB_INSERT) == TDB_SUCCESS);
 	tdb_traverse(tdb, traverse1, NULL);

@@ -47,9 +47,8 @@ static void check_test(struct tdb_context *tdb)
 
 	ok1(tdb_check(tdb, NULL, NULL) == TDB_SUCCESS);
 
-	key.dptr = (void *)"hello";
-	data.dsize = strlen("world");
-	data.dptr = (void *)"world";
+	key = tdb_mkdata("hello", strlen("hello"));
+	data = tdb_mkdata("world", strlen("world"));
 
 	/* Key and data size respectively. */
 	dsize = ksize = 0;

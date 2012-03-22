@@ -91,7 +91,7 @@ static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwarg
 	union tdb_attribute logattr;
 	const char *kwnames[] = { "name", "tdb_flags", "flags", "mode", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|siii", (char **)kwnames, &name, &tdb_flags, &flags, &mode))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|siii", cast_const2(char **, kwnames), &name, &tdb_flags, &flags, &mode))
 		return NULL;
 
 	if (name == NULL) {
@@ -450,9 +450,10 @@ static PyObject *obj_get_seqnum(PyTdbObject *self, void *closure)
 
 
 static PyGetSetDef tdb_object_getsetters[] = {
-	{ (char *)"flags", (getter)obj_get_flags, NULL, NULL },
-	{ (char *)"filename", (getter)obj_get_filename, NULL, (char *)"The filename of this TDB file."},
-	{ (char *)"seqnum", (getter)obj_get_seqnum, NULL, NULL },
+	{ cast_const(char *, "flags"), (getter)obj_get_flags, NULL, NULL },
+	{ cast_const(char *, "filename"), (getter)obj_get_filename, NULL,
+	  cast_const(char *, "The filename of this TDB file.")},
+	{ cast_const(char *, "seqnum"), (getter)obj_get_seqnum, NULL, NULL },
 	{ NULL }
 };
 

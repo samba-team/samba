@@ -58,8 +58,7 @@ int main(int argc, char *argv[])
 		       O_CREAT|O_RDWR|O_TRUNC, 0600, &log_attr);
 	ok1(tdb);
 	ok1(log_count == 0);
-	d.dptr = (void *)"Hello";
-	d.dsize = 5;
+	d = tdb_mkdata("Hello", strlen("Hello"));
 	ok1(tdb_store(tdb, d, d, TDB_INSERT) == TDB_SUCCESS);
 	tdb_close(tdb);
 

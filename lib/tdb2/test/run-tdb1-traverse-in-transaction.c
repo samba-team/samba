@@ -52,10 +52,8 @@ int main(int argc, char *argv[])
 		       0600, &hsize);
 	ok1(tdb);
 
-	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
-	data.dptr = (void *)"world";
-	data.dsize = strlen("world");
+	key = tdb_mkdata("hi", strlen("hi"));
+	data = tdb_mkdata("world", strlen("world"));
 
 	ok1(tdb_store(tdb, key, data, TDB_INSERT) == TDB_SUCCESS);
 

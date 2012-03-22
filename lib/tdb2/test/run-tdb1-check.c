@@ -21,10 +21,8 @@ int main(int argc, char *argv[])
 	ok1(tdb);
 	ok1(tdb_check(tdb, NULL, NULL) == TDB_SUCCESS);
 
-	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
-	data.dsize = strlen("world");
-	data.dptr = (void *)"world";
+	key = tdb_mkdata("hi", strlen("hi"));
+	data = tdb_mkdata("world", strlen("world"));
 
 	ok1(tdb_store(tdb, key, data, TDB_INSERT) == TDB_SUCCESS);
 	ok1(tdb_check(tdb, NULL, NULL) == TDB_SUCCESS);

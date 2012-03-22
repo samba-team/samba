@@ -22,8 +22,7 @@ static bool prepare_entries(struct tdb_context *tdb)
 	for (i = 0; i < NUM_ENTRIES; i++) {
 		key.dsize = sizeof(i);
 		key.dptr = (void *)&i;
-		data.dsize = strlen("world");
-		data.dptr = (void *)"world";
+		data = tdb_mkdata("world", strlen("world"));
 
 		if (tdb_store(tdb, key, data, 0) != TDB_SUCCESS)
 			return false;

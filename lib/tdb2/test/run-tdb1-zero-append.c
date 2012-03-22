@@ -20,10 +20,8 @@ int main(int argc, char *argv[])
 	ok1(tdb);
 
 	/* Tickle bug on appending zero length buffer to zero length buffer. */
-	key.dsize = strlen("hi");
-	key.dptr = (void *)"hi";
-	data.dptr = (void *)"world";
-	data.dsize = 0;
+	key = tdb_mkdata("hi", strlen("hi"));
+	data = tdb_mkdata("world", 0);
 
 	ok1(tdb_append(tdb, key, data) == TDB_SUCCESS);
 	ok1(tdb_append(tdb, key, data) == TDB_SUCCESS);
