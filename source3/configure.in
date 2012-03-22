@@ -3908,7 +3908,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(gss_oid_equal, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_inquire_sec_context_by_oid, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_wrap_iov, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(gss_krb5_export_lucid_sec_context, $KRB5_LIBS)
 
   # This is for FreeBSD (and possibly others). gss_mech_krb5 is a
   # #define to GSS_KRB5_MECHANISM, which is defined in -lgssapi_krb5
@@ -4486,11 +4485,6 @@ if test x"$with_ads_support" != x"no"; then
       AC_MSG_WARN(need either gss_get_name_attribute or gsskrb5_extract_authz_data_from_sec_context and gss_inquire_sec_context_by_oid in -lgssapi for PAC support)
       use_ads=no
     fi
-  fi
-
-  if test x"$ac_cv_func_ext_gss_krb5_export_lucid_sec_context" != x"yes" ; then
-    AC_MSG_WARN(need gss_krb5_export_lucid_sec_context for SPNEGO and gss_wrap support)
-    use_ads=no
   fi
 
   if test x"$use_ads" = x"yes"; then
