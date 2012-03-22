@@ -86,6 +86,15 @@ debug ()
     fi
 }
 
+die ()
+{
+    _msg="$1"
+    _rc="${2:-1}"
+
+    echo "$_msg"
+    exit $_rc
+}
+
 ##############################################################
 # check number of args for different events
 ctdb_check_args ()
@@ -770,72 +779,88 @@ startstop_nfslock() {
 
 add_ip_to_iface()
 {
-	local _iface=$1
-	local _ip=$2
-	local _maskbits=$3
-	local _state_dir="$CTDB_VARDIR/state/interface_modify"
-	local _lockfile="$_state_dir/$_iface.flock"
-	local _readd_base="$_state_dir/$_iface.readd.d"
+    _iface=$1
+    _ip=$2
+    _maskbits=$3
 
-	mkdir -p $_state_dir || {
-		ret=$?
-		echo "Failed to mkdir -p $_state_dir - $ret"
-		return $ret
-	}
+    _lockfile="${CTDB_VARDIR}/state/interface_modify_${_iface}.flock"
+    [ -f "$_lockfile" ] || touch "$_lockfile"
 
-	test -f $_lockfile || {
-		touch $_lockfile
-	}
+    (
+	# Note: use of return/exit/die() below only gets us out of the
+	# sub-shell, which is actually what we want.  That is, the
+	# function should just return non-zero.
 
-	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh add "$_iface" "$_ip" "$_maskbits" "$_readd_base"
-	return $?
+	flock --timeout 30 0 || \
+	    die "add_ip_to_iface: unable to get lock for ${_iface}"
+
+	# Ensure interface is up
+	ip link set "$_iface" up || \
+	    die "Failed to bringup interface $_iface"
+
+	ip addr add "$_ip/$_maskbits" brd + dev "$_iface" || \
+	    die "Failed to add $_ip/$_maskbits on dev $_iface"
+    ) <"$_lockfile"
+
+    # Do nothing here - return above only gets us out of the subshell
+    # and doing anything here will affect the return code.
 }
 
 delete_ip_from_iface()
 {
-	local _iface=$1
-	local _ip=$2
-	local _maskbits=$3
-	local _state_dir="$CTDB_VARDIR/state/interface_modify"
-	local _lockfile="$_state_dir/$_iface.flock"
-	local _readd_base="$_state_dir/$_iface.readd.d"
+    _iface=$1
+    _ip=$2
+    _maskbits=$3
 
-	mkdir -p $_state_dir || {
-		ret=$?
-		echo "Failed to mkdir -p $_state_dir - $ret"
-		return $ret
+    _lockfile="${CTDB_VARDIR}/state/interface_modify_${_iface}.flock"
+    [ -f "$_lockfile" ] || touch "$_lockfile"
+
+    (
+	# Note: use of return/exit/die() below only gets us out of the
+	# sub-shell, which is actually what we want.  That is, the
+	# function should just return non-zero.
+
+	flock --timeout 30 0 || \
+	    die "delete_ip_from_iface: unable to get lock for ${_iface}"
+
+	_im="$_ip/$_maskbits"  # shorthand for readability
+
+	# "ip addr del" will delete all secondary IPs if this is the
+	# primary.  To work around this _very_ annoying behaviour we
+	# have to keep a record of the secondaries and re-add them
+	# afterwards.  Yuck!
+
+	_secondaries=""
+	if ip addr list dev "$_iface" primary | grep -Fq "inet $_im " ; then
+	    _secondaries=$(ip addr list dev "$_iface" secondary | \
+		awk '$1 == "inet" { print $2 }')
+	fi
+
+	local _rc=0
+	ip addr del "$_im" dev "$_iface" || {
+	    echo "Failed to del $_ip on dev $_iface"
+	    _rc=1
 	}
 
-	test -f $_lockfile || {
-		touch $_lockfile
-	}
+	if [ -n "$_secondaries" ] ; then
+	    for _i in $_secondaries; do
+		if ip addr list dev "$_iface" | grep -Fq "inet $_i" ; then
+		    echo "Kept secondary $_i on dev $_iface"
+		else
+		    echo "Re-adding secondary address $_i to dev $_iface"
+		    ip addr add $_i brd + dev $_iface || {
+			echo "Failed to re-add address $_i to dev $_iface"
+			_rc=1
+		    }
+		fi
+	    done
+	fi
 
-	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh delete "$_iface" "$_ip" "$_maskbits" "$_readd_base"
-	return $?
-}
+	return $_rc
+    ) <"$_lockfile"
 
-setup_iface_ip_readd_script()
-{
-	local _iface=$1
-	local _ip=$2
-	local _maskbits=$3
-	local _readd_script=$4
-	local _state_dir="$CTDB_VARDIR/state/interface_modify"
-	local _lockfile="$_state_dir/$_iface.flock"
-	local _readd_base="$_state_dir/$_iface.readd.d"
-
-	mkdir -p $_state_dir || {
-		ret=$?
-		echo "Failed to mkdir -p $_state_dir - $ret"
-		return $ret
-	}
-
-	test -f $_lockfile || {
-		touch $_lockfile
-	}
-
-	flock --timeout 30 $_lockfile $CTDB_BASE/interface_modify.sh readd_script "$_iface" "$_ip" "$_maskbits" "$_readd_base" "$_readd_script"
-	return $?
+    # Do nothing here - return above only gets us out of the subshell
+    # and doing anything here will affect the return code.
 }
 
 ########################################################
@@ -1276,70 +1301,6 @@ ctdb_standard_event_handler ()
 	    exit
 	    ;;
     esac
-}
-
-ipv4_host_addr_to_net_addr()
-{
-	local HOST=$1
-	local MASKBITS=$2
-
-	local HOST0=$(echo $HOST | awk -F . '{print $4}')
-	local HOST1=$(echo $HOST | awk -F . '{print $3}')
-	local HOST2=$(echo $HOST | awk -F . '{print $2}')
-	local HOST3=$(echo $HOST | awk -F . '{print $1}')
-
-	local HOST_NUM=$(( $HOST0 + $HOST1 * 256 + $HOST2 * (256 ** 2) + $HOST3 * (256 ** 3) ))
-
-	local MASK_NUM=$(( ( (2**32 - 1) * (2**(32 - $MASKBITS)) ) & (2**32 - 1) ))
-
-	local NET_NUM=$(( $HOST_NUM & $MASK_NUM))
-
-	local NET0=$(( $NET_NUM & 255 ))
-	local NET1=$(( ($NET_NUM & (255 * 256)) / 256 ))
-	local NET2=$(( ($NET_NUM & (255 * 256**2)) / 256**2 ))
-	local NET3=$(( ($NET_NUM & (255 * 256**3)) / 256**3 ))
-
-	echo "$NET3.$NET2.$NET1.$NET0"
-}
-
-ipv4_maskbits_to_net_mask()
-{
-	local MASKBITS=$1
-
-	local MASK_NUM=$(( ( (2**32 - 1) * (2**(32 - $MASKBITS)) ) & (2**32 - 1) ))
-
-	local MASK0=$(( $MASK_NUM & 255 ))
-	local MASK1=$(( ($MASK_NUM & (255 * 256)) / 256 ))
-	local MASK2=$(( ($MASK_NUM & (255 * 256**2)) / 256**2 ))
-	local MASK3=$(( ($MASK_NUM & (255 * 256**3)) / 256**3 ))
-
-	echo "$MASK3.$MASK2.$MASK1.$MASK0"
-}
-
-ipv4_is_valid_addr()
-{
-	local ADDR=$1
-	local fail=0
-
-	local N=`echo $ADDR | sed -e 's/[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*//'`
-	test -n "$N" && fail=1
-
-	local ADDR0=$(echo $ADDR | awk -F . '{print $4}')
-	local ADDR1=$(echo $ADDR | awk -F . '{print $3}')
-	local ADDR2=$(echo $ADDR | awk -F . '{print $2}')
-	local ADDR3=$(echo $ADDR | awk -F . '{print $1}')
-
-	test "$ADDR0" -gt 255 && fail=1
-	test "$ADDR1" -gt 255 && fail=1
-	test "$ADDR2" -gt 255 && fail=1
-	test "$ADDR3" -gt 255 && fail=1
-
-	test x"$fail" != x"0" && {
-		#echo "IPv4: '$ADDR' is not a valid address"
-		return 1;
-	}
-
-	return 0;
 }
 
 # iptables doesn't like being re-entered, so flock-wrap it.

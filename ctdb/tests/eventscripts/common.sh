@@ -183,6 +183,50 @@ setup_nmap_output_filter ()
     OUT_FILTER="-e 's@^(DEBUG: # Nmap 5.21 scan initiated) .+ (as:)@\1 DATE \2@' -e 's@^(DEBUG: # Nmap done at) .+ (--)@\1 DATE \2@'"
 }
 
+dump_routes ()
+{
+    echo "# ip rule show"
+    ip rule show
+
+    ip rule show |
+    while read _p _x _i _x _t ; do
+	# Remove trailing colon after priority/preference.
+	_p="${_p%:}"
+	# Only remove rules that match our priority/preference.
+	[ "$CTDB_PER_IP_ROUTING_RULE_PREF" = "$_p" ] || continue
+
+	echo "# ip route show table $_t"
+	ip route show table "$_t"
+    done
+}
+
+# Copied from 13.per_ip_routing for now... so this is lazy testing  :-(
+ipv4_host_addr_to_net ()
+{
+    _host="$1"
+    _maskbits="$2"
+
+    # Convert the host address to an unsigned long by splitting out
+    # the octets and doing the math.
+    _host_ul=0
+    for _o in $(export IFS="." ; echo $_host) ; do
+	_host_ul=$(( ($_host_ul << 8) + $_o)) # work around Emacs color bug
+    done
+
+    # Calculate the mask and apply it.
+    _mask_ul=$(( 0xffffffff << (32 - $_maskbits) ))
+    _net_ul=$(( $_host_ul & $_mask_ul ))
+
+    # Now convert to a network address one byte at a time.
+    _net=""
+    for _o in $(seq 1 4) ; do
+	_net="$(($_net_ul & 255))${_net:+.}${_net}"
+	_net_ul=$(($_net_ul >> 8))
+    done
+
+    echo "${_net}/${_maskbits}"
+}
+
 ######################################################################
 
 # CTDB fakery
@@ -231,33 +275,15 @@ setup_ctdb ()
 	eventscripts_test_add_cleanup "rm -f $CTDB_PUBLIC_ADDRESSES"
     fi
 
-    export FAKE_CTDB_IFACES_DOWN="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb/ifaces-down"
+    export FAKE_CTDB_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb"
+
+    export FAKE_CTDB_IFACES_DOWN="$FAKE_CTDB_STATE/ifaces-down"
     mkdir -p "$FAKE_CTDB_IFACES_DOWN"
     rm -f "$FAKE_CTDB_IFACES_DOWN"/*
 
-    export FAKE_CTDB_NODES_DOWN="$EVENTSCRIPTS_TESTS_VAR_DIR/nodes-down"
-    mkdir -p "$FAKE_CTDB_NODES_DOWN"
-    rm -f "$FAKE_CTDB_NODES_DOWN"/*
-
-    export FAKE_CTDB_SCRIPTSTATUS="$EVENTSCRIPTS_TESTS_VAR_DIR/scriptstatus"
+    export FAKE_CTDB_SCRIPTSTATUS="$FAKE_CTDB_STATE/scriptstatus"
     mkdir -p "$FAKE_CTDB_SCRIPTSTATUS"
     rm -f "$FAKE_CTDB_SCRIPTSTATUS"/*
-}
-
-
-
-ctdb_nodes_up ()
-{
-    for _i ; do
-	rm -f "${FAKE_CTDB_NODES_DOWN}/${_i}"
-    done
-}
-
-ctdb_nodes_down ()
-{
-    for _i ; do
-	touch "${FAKE_CTDB_NODES_DOWN}/${_i}"
-    done
 }
 
 ctdb_get_interfaces ()
@@ -272,22 +298,40 @@ ctdb_get_1_interface ()
     echo ${_t%% *}
 }
 
-ctdb_get_public_addresses ()
+# Print all public addresses as: interface IP maskbits
+# Each line is suitable for passing to takeip/releaseip
+ctdb_get_all_public_addresses ()
 {
     _f="${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
-    echo $(if [ -r "$_f" ] ; then 
-	while read _ip _iface ; do
-	    echo "${_ip}@${_iface}"
-	done <"$_f"
-	fi)
+    while IFS="/$IFS" read _ip _maskbits _ifaces ; do
+	echo "$_ifaces $_ip $_maskbits"
+    done <"$_f"
+}
+
+# Print public addresses on this node as: interface IP maskbits
+# Each line is suitable for passing to takeip/releaseip
+ctdb_get_my_public_addresses ()
+{
+    ctdb ip -v -Y | {
+	read _x # skip header line
+
+	while IFS=":" read _x _ip _x _iface _x ; do
+	    [ -n "$_iface" ] || continue
+	    while IFS="/$IFS" read _i _maskbits _x ; do
+		if [ "$_ip" = "$_i" ] ; then
+		    echo $_iface $_ip $_maskbits
+		    break
+		fi
+	    done <"${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE}/public_addresses}"
+	done
+    }
 }
 
 # Prints the 1st public address as: interface IP maskbits
-# This is suitable for passing to 10.interfaces takeip/releaseip
+# This is suitable for passing to takeip/releaseip
 ctdb_get_1_public_address ()
 {
-    _addrs=$(ctdb_get_public_addresses)
-    echo "${_addrs%% *}" | sed -r -e 's#(.*)/(.*)@(.*)#\3 \1 \2#g'
+    ctdb_get_my_public_addresses | head -n 1
 }
 
 ctdb_not_implemented ()
@@ -307,6 +351,17 @@ ctdb_fake_scriptstatus ()
     _d2=$(date '+%s.%N')
 
     echo "$_code $_status $_err_out" >"$FAKE_CTDB_SCRIPTSTATUS/$script"
+}
+
+setup_ctdb_policy_routing ()
+{
+    export CTDB_PER_IP_ROUTING_CONF="$CTDB_BASE/policy_routing"
+    export CTDB_PER_IP_ROUTING_RULE_PREF=100
+    export CTDB_PER_IP_ROUTING_TABLE_ID_LOW=1000
+    export CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=2000
+
+    # Tests need to create and populate this file
+    rm -f "$CTDB_PER_IP_ROUTING_CONF"
 }
 
 ######################################################################
@@ -633,7 +688,7 @@ define_test ()
 	    die "Internal error - unknown testcase filename format"
     esac
 
-    printf "%-14s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
+    printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 }
 
 # Set the required result for a test.
@@ -690,8 +745,8 @@ cat <<EOF
 --------------------------------------------------
 Output (Exit status: ${_rc}):
 --------------------------------------------------
-$_out
 EOF
+	echo "$_out" | cat $EVENTSCRIPT_TESTS_CAT_RESULTS_OPTS
     fi
 
     if ! $_passed ; then
@@ -699,8 +754,24 @@ EOF
 --------------------------------------------------
 Required output (Exit status: ${required_rc}):
 --------------------------------------------------
-$required_output
 EOF
+	echo "$required_output" | cat $EVENTSCRIPT_TESTS_CAT_RESULTS_OPTS
+
+	if $EVENTSCRIPT_TESTS_DIFF_RESULTS ; then
+	    _outr=$(mktemp)
+	    echo "$required_output" >"$_outr"
+
+	    _outf=$(mktemp)
+	    echo "$_out" >"$_outf"
+
+	    cat <<EOF
+--------------------------------------------------
+Diff:
+--------------------------------------------------
+EOF
+	    diff -u "$_outr" "$_outf" | cat -A
+	    rm "$_outr" "$_outf"
+	fi
     fi
 }
 
@@ -729,22 +800,8 @@ EOF
     fi
 }
 
-# Run an eventscript once.  The test passes if the return code and
-# output match those required.
-
-# Any args are passed to the eventscript.
-
-# Eventscript tracing can be done by setting:
-#   EVENTSCRIPTS_TESTS_TRACE="sh -x"
-
-# or similar.  This will almost certainly make a test fail but is
-# useful for debugging.
-simple_test ()
+result_check ()
 {
-    [ -n "$event" ] || die 'simple_test: $event not set'
-
-    echo "Running \"$script $event${1:+ }$*\""
-    _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
     _rc=$?
 
     if [ -n "$OUT_FILTER" ] ; then
@@ -763,6 +820,26 @@ simple_test ()
     result_footer "$_passed"
 }
 
+# Run an eventscript once.  The test passes if the return code and
+# output match those required.
+
+# Any args are passed to the eventscript.
+
+# Eventscript tracing can be done by setting:
+#   EVENTSCRIPTS_TESTS_TRACE="sh -x"
+
+# or similar.  This will almost certainly make a test fail but is
+# useful for debugging.
+simple_test ()
+{
+    [ -n "$event" ] || die 'simple_test: $event not set'
+
+    echo "Running eventscript \"$script $event${1:+ }$*\""
+    _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
+
+    result_check
+}
+
 simple_test_event ()
 {
     # If something has previously failed then don't continue.
@@ -772,6 +849,19 @@ simple_test_event ()
     event="$1" ; shift
     echo "##################################################"
     simple_test "$@"
+}
+
+simple_test_command ()
+{
+    # If something has previously failed then don't continue.
+    : ${_passed:=true}
+    $_passed || return 1
+
+    echo "##################################################"
+    echo "Running command \"$*\""
+    _out=$("$@" 2>&1)
+
+    result_check
 }
 
 # Run an eventscript iteratively.

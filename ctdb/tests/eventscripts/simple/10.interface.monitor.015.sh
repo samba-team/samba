@@ -15,7 +15,7 @@ export CTDB_DELETE_UNEXPECTED_IPS="yes"
 
 ok <<EOF
 WARNING: Removing unmanaged IP address 192.168.253.253/24 from interface dev123
-re-adding secondary address 192.168.254.254/24 to dev dev123
+Re-adding secondary address 192.168.254.254/24 to dev dev123
 WARNING: Removing unmanaged IP address 192.168.254.254/24 from interface dev123
 EOF
 

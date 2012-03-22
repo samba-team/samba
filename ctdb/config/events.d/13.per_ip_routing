@@ -3,492 +3,350 @@
 . $CTDB_BASE/functions
 loadconfig
 
-ctdb_setup_service_state_dir "per_ip_routing"
+# Do nothing if unconfigured 
+[ -n "$CTDB_PER_IP_ROUTING_CONF" ] || exit 0
 
-[ -z "$CTDB_PER_IP_ROUTING_STATE" ] && {
-	CTDB_PER_IP_ROUTING_STATE="$service_state_dir"
-}
+table_id_prefix="ctdb."
 
-AUTO_LINK_LOCAL="no"
+[ -n "$CTDB_PER_IP_ROUTING_RULE_PREF" ] || \
+    die "error: CTDB_PER_IP_ROUTING_RULE_PREF not configured"
 
-case "$CTDB_PER_IP_ROUTING_CONF" in
-	__auto_link_local__)
-		AUTO_LINK_LOCAL="yes"
-		CTDB_PER_IP_ROUTING_CONF="$CTDB_PER_IP_ROUTING_STATE/auto_link_local.conf"
-		;;
-	*)
-		[ -z "$CTDB_PER_IP_ROUTING_CONF" ] && {
-			#echo "No config file found. Nothing to do for 13.per_ip_routing"
-			exit 0;
-		}
-		;;
-esac
+[ "$CTDB_PER_IP_ROUTING_TABLE_ID_LOW" -lt "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] 2>/dev/null || \
+    die "error: CTDB_PER_IP_ROUTING_TABLE_ID_LOW[$CTDB_PER_IP_ROUTING_TABLE_ID_LOW] and/or CTDB_PER_IP_ROUTING_TABLE_ID_HIGH[$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH] improperly configured"
 
-_low=$CTDB_PER_IP_ROUTING_TABLE_ID_LOW
-_high=$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH
+######################################################################
 
-test -z "$_low" && {
-	echo "$0: CTDB_PER_IP_ROUTING_TABLE_ID_LOW not configured";
-	exit 1;
-}
-test -z "$_high" && {
-	echo "$0: CTDB_PER_IP_ROUTING_TABLE_ID_HIGH not configured";
-	exit 1;
-}
-test "$_low" -ge "$_high" && {
-	echo "$0: CTDB_PER_IP_ROUTING_TABLE_ID_LOW[$_low] needs to be below CTDB_PER_IP_ROUTING_TABLE_ID_HIGH[$_high]";
-	exit 1;
-}
-
-test -z "$CTDB_PER_IP_ROUTING_RULE_PREF" && {
-	echo "$0: CTDB_PER_IP_ROUTING_RULE_PREF not configured";
-	exit 1;
-}
-
-locknesting=0
-lock_root="$CTDB_PER_IP_ROUTING_STATE"
-host=`hostname`
-
-lock_debug()
+ipv4_is_valid_addr()
 {
-	echo -n ""
+    _ip="$1"
+
+    _count=0
+    # Get the shell to break up the address into 1 word per octet 
+    for _o in $(export IFS="." ; echo $_ip) ; do
+	# The 2>/dev/null stops output from failures where an "octet"
+	# is not numeric.  The test will still fail.
+	if ! [ 0 -le $_o -a $_o -le 255 ] 2>/dev/null ; then
+	    return 1
+	fi
+	_count=$(($_count + 1))
+    done
+
+    # A valid IPv4 address has 4 octets
+    [ $_count -eq 4 ]
 }
 
-############################
-# grab a lock file. Not atomic, but close :)
-# tries to cope with NFS
-lock_file() {
-	if [ -z "$lock_root" ]; then
-		lock_root=`pwd`;
-	fi
-	lckf="$lock_root/$1"
-	machine=`cat "$lckf" 2> /dev/null | cut -d: -f1`
-	pid=`cat "$lckf" 2> /dev/null | cut -d: -f2`
+ensure_ipv4_is_valid_addr ()
+{
+    _event="$1"
+    _ip="$2"
 
-	if [ "$pid" = "$$" ]; then
-		locknesting=`expr $locknesting + 1`
-		lock_debug "lock nesting now $locknesting"
+    ipv4_is_valid_addr "$_ip" || {
+	echo "$0: $_event not an ipv4 address skipping IP:$_ip"
+	exit 0
+    }
+}
+
+ipv4_host_addr_to_net ()
+{
+    _host="$1"
+    _maskbits="$2"
+
+    # Convert the host address to an unsigned long by splitting out
+    # the octets and doing the math.
+    _host_ul=0
+    for _o in $(export IFS="." ; echo $_host) ; do
+	_host_ul=$(( ($_host_ul << 8) + $_o)) # work around Emacs color bug
+    done
+
+    # Calculate the mask and apply it.
+    _mask_ul=$(( 0xffffffff << (32 - $_maskbits) ))
+    _net_ul=$(( $_host_ul & $_mask_ul ))
+ 
+    # Now convert to a network address one byte at a time.
+    _net=""
+    for _o in $(seq 1 4) ; do
+	_net="$(($_net_ul & 255))${_net:+.}${_net}"
+	_net_ul=$(($_net_ul >> 8))
+    done
+
+    echo "${_net}/${_maskbits}"
+}
+
+######################################################################
+
+# Setup a table id to use for the given IP.  We don't need to know it,
+# it just needs to exist in /etc/iproute2/rt_tables.  Fail if no free
+# table id could be found in the configured range.
+ensure_table_id_for_ip ()
+{
+    _ip=$1
+
+    _f="$CTDB_ETCDIR/iproute2/rt_tables"
+    # This file should always exist, but...
+    if [ ! -f "$_f" ] ; then
+	mkdir -p $(dirname "$_f")
+	touch "$_f"
+    fi
+
+    # Maintain a table id for each IP address we've ever seen in
+    # rt_tables.  We use a "ctdb." prefix on the label.
+    _label="${table_id_prefix}${_ip}"
+
+    # This finds either the table id corresponding to the label or a
+    # new unused one (that is greater than all the used ones in the
+    # range).
+    (
+	# Note that die() just gets us out of the subshell...
+	flock --timeout 30 0 || \
+	    die "ensure_table_id_for_ip: failed to lock file $_f"
+
+	_new=$CTDB_PER_IP_ROUTING_TABLE_ID_LOW
+	while read _t _l ; do
+	    # Skip comments
+	    case "$_t" in
+		\#*) continue ;;
+	    esac
+	    # Found existing: done
+	    if [ "$_l" = "$_label" ] ; then
 		return 0
-	fi
+	    fi
+	    # Potentially update the new table id to be used.  The
+	    # redirect stops error spam for a non-numeric value.
+	    if [ $_new -le $_t -a \
+		$_t -le $CTDB_PER_IP_ROUTING_TABLE_ID_HIGH ] 2>/dev/null ; then
+		_new=$(($_t + 1))
+	    fi
+	done
 
-	if test -f "$lckf"; then
-		test $machine = $host || {
-			lock_debug "lock file $lckf is valid for other machine $machine"
-			stat -c%y "$lckf"
-			return 1
-		}
-		kill -0 $pid && {
-			lock_debug "lock file $lckf is valid for process $pid"
-			stat -c%y "$lckf"
-			return 1
-		}
-		lock_debug "stale lock file $lckf for $machine:$pid"
-		cat "$lckf"
-		rm -f "$lckf"
-	fi
-	echo "$host:$$" > "$lckf"
-	return 0
-}
-
-############################
-# unlock a lock file
-unlock_file() {
-	if [ -z "$lock_root" ]; then
-		lock_root=`pwd`;
-	fi
-	if [ "$locknesting" != "0" ]; then
-		locknesting=`expr $locknesting - 1`
-		lock_debug "lock nesting now $locknesting"
+	# If the new table id is legal then add it to the file and
+	# print it.
+	if [ $_new -le $CTDB_PER_IP_ROUTING_TABLE_ID_HIGH ] ; then
+	    printf "%d\t%s\n" "$_new" "$_label" >>"$_f"
+	    return 0
 	else
-		lckf="$lock_root/$1"
-		rm -f "$lckf"
+	    return 1
 	fi
+    ) <"$_f"
 }
 
-generate_table_id () {
-	local _ip=$1
-	local _ipsdir="$CTDB_PER_IP_ROUTING_STATE/ips"
-	local _ipdir="$_ipsdir/$_ip"
+# Clean up all the table ids that we might own.
+clean_up_table_ids ()
+{
+    _f="$CTDB_ETCDIR/iproute2/rt_tables"
+    # Even if this didn't exist on the system, adding a route will
+    # have created it.  What if we startup and immediately shutdown?
+    if [ ! -f "$_f" ] ; then
+	mkdir -p $(basename "$_f")
+	touch "$_f"
+    fi
 
-	mkdir -p $_ipdir
+    (
+	# Note that die() just gets us out of the subshell...
+	flock --timeout 30 0 || \
+	    die "clean_up_table_ids: failed to lock file $_f"
 
-	#echo "generate_table_id $_ip"
+	# Delete any items from the file that have a table id in our
+	# range or a label matching our label.  Preserve comments.
+	_tmp="${_f}.$$.ctdb"
+	awk -v min="$CTDB_PER_IP_ROUTING_TABLE_ID_LOW" \
+	    -v max="$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" \
+	    -v pre="$table_id_prefix" \
+	    '/^#/ || \
+	     !(min <= $1 && $1 <= max) && \
+	     !(index($2, pre) == 1) \
+	     { print $0 }' "$_f" >"$_tmp"
 
-	local _id=`cat $_ipdir/table_id 2>/dev/null| xargs`
-	test -n "$_id" && {
-		#echo "IP: $_ip => OLD TABLE: $_id"
-		table_id=$_id
-		return 0;
-	}
+	mv "$_tmp" "$_f"
+	# The lock is gone - don't do anything else here
+    ) <"$_f"
+}
 
-	local _low="$CTDB_PER_IP_ROUTING_TABLE_ID_LOW"
-	local _high="$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH"
+######################################################################
 
-	local _newid=""
-	for _id in `seq $_low $_high | xargs`; do
-		local _table_lck="table_id_$_id.lock"
-		lock_file $_table_lck 2>/dev/null || {
-			continue;
-		}
-		local _taken=`grep "^$_id$" $_ipsdir/*/table_id 2>/dev/null| wc -l | xargs`
-		test x"$_taken" != x"0" && {
-			unlock_file $_table_lck
-			#echo "tableid: $_id taken"
-			continue
-		}
-		_newid=$_id;
-		echo "$_newid" > $_ipdir/table_id
-		unlock_file $_table_lck
-		break;
+# This prints the config for an IP, which is either relevant entries
+# from the config file or, if set to the magic link local value, some
+# link local routing config for the IP.
+# NOTE: non-zero return indicates missing configuration file
+get_config_for_ip ()
+{
+    _ip="$1"
+
+    if [ "$CTDB_PER_IP_ROUTING_CONF" = "__auto_link_local__" ] ; then
+	# When parsing public_addresses also split on '/'.  This means
+	# that we get the maskbits as item #2 without further parsing.
+	while IFS="/$IFS" read _i _maskbits _x ; do
+	    if [ "$_ip" = "$_i" ] ; then
+		echo -n "$_ip "; ipv4_host_addr_to_net "$_ip" "$_maskbits"
+	    fi
+	done <"${CTDB_PUBLIC_ADDRESSES:-${CTDB_BASE:-/dev/null}${CTDB:+/public_addresses}}"
+    else
+	[ -f "$CTDB_PER_IP_ROUTING_CONF" ] || return 1
+
+	while read _i _rest ; do
+	    if [ "$_ip" = "$_i" ] ; then
+		printf "%s\t%s\n" "$_ip" "$_rest"
+	    fi
+	done <"$CTDB_PER_IP_ROUTING_CONF"
+    fi
+}
+
+ip_has_configuration ()
+{
+    _ip="$1"
+
+    _config="$(get_config_for_ip $_ip)" || \
+	die "error: CTDB_PER_IP_ROUTING_CONF=$CTDB_PER_IP_ROUTING_CONF file not found"
+    [ -n "$_config" ]
+}
+
+add_routing_for_ip ()
+{
+    _iface="$1"
+    _ip="$2"
+
+    # Do nothing if no config for this IP.
+    ip_has_configuration "$_ip" || return 0
+
+    ensure_table_id_for_ip "$_ip" || \
+	die "add_routing_for_ip: out of table ids in range $CTDB_PER_IP_ROUTING_TABLE_ID_LOW - $CTDB_PER_IP_ROUTING_TABLE_ID_HIGH"
+
+    _pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
+    _table_id="${table_id_prefix}${_ip}"
+
+    del_routing_for_ip "$_ip"
+
+    ip rule add from "$_ip" pref "$_pref" table "$_table_id" || \
+	die "add_routing_for_ip: failed to add rule for $_ip"
+
+    # Add routes to table for any lines matching the IP.
+    get_config_for_ip "$_ip" |
+    while read _i _dest _gw ; do
+	_r="$_dest ${_gw:+via} $_gw dev $_iface table $_table_id"
+	ip route add $_r || \
+	    die "add_routing_for_ip: failed to add route: $_r"
+    done
+}
+
+del_routing_for_ip ()
+{
+    _ip="$1"
+
+    _pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
+    _table_id="${table_id_prefix}${_ip}"
+
+    # Do this unconditionally since we own any matching table ids...
+    ip rule del from $_ip pref $_pref table $_table_id 2>/dev/null
+    ip route flush table $_table_id 2>/dev/null
+}
+
+######################################################################
+
+flush_rules_and_routes ()
+{
+	ip rule show |
+	while read _p _x _i _x _t ; do
+	    # Remove trailing colon after priority/preference.
+	    _p="${_p%:}"
+	    # Only remove rules that match our priority/preference.
+	    [ "$CTDB_PER_IP_ROUTING_RULE_PREF" = "$_p" ] || continue
+
+	    echo "Removing ip rule for public address $_i for routing table $_t"
+	    ip rule del from "$_i" table "$_t" pref "$_p"
+	    ip route flush table "$_t" 2>/dev/null
 	done
-
-	test -z "$_newid" && {
-		echo "generate_table_id: out of table ids: $_low - $_high"
-		exit 1;
-	}
-
-	#echo "IP: $_ip => NEW TABLE: $_newid"
-	table_id=$_newid
-	return 0;
 }
 
-run_release_script_once()
+# Add any missing routes.  Some might have gone missing if, for
+# example, all IPs on the network were removed (possibly if the
+# primary was removed).
+add_missing_routes ()
 {
-	local _script=$1
+    ctdb ip -v -Y | {
+	read _x # skip header line
 
-	#echo "run_release_script_once[$_script]"
-
-	test -x "$_script" && {
-		#echo "run it: start"
-		$_script || {
-			echo "release_script: $_script - failed $?"
-			return $?;
-		}
-		#echo "run it: end"
-	}
-
-	echo '#!/bin/sh' > $_script
-	echo '#' >> $_script
-	echo >> $_script
-
-	chmod +x $_script
-
-	return 0;
-}
-
-generate_auto_link_local()
-{
-	local _ip=$1
-	local _maskbits=$2
-
-	#echo "generate_auto_link_local $_ip $_maskbits"
-
-	local _netip=`ipv4_host_addr_to_net_addr $_ip $_maskbits`
-
-	local _line="$_ip $_netip/$_maskbits"
-
-	local _lockfile="$CTDB_PER_IP_ROUTING_CONF.lock"
-	local _script="$CTDB_PER_IP_ROUTING_CONF.$$.sh"
-
-	echo "#!/bin/sh" > $_script
-	echo "#" >> $_script
-	echo "" >> $_script
-	echo "_config=\`cat $CTDB_PER_IP_ROUTING_CONF 2>/dev/null\`" >> $_script
-	echo "_exact=\`echo -n \"\$_config\" | grep \"^$_line\$\" | wc -l | xargs\`" >> $_script
-	echo "" >> $_script
-
-	echo "test x\"\$_exact\" = x\"1\" && {" >> $_script
-	echo "    exit 0;" >> $_script
-	echo "}" >> $_script
-	echo "" >> $_script
-
-	echo "_tmp=\"$CTDB_PER_IP_ROUTING_CONF.$$.tmp\"" >> $_script
-	echo "echo -n \"\$_config\" | grep -v \"^$_ip \" | cat > \$_tmp || {" >> $_script
-	echo "    echo \"echo -n \\\"\$_config\\\" | grep -v \\\"^$_ip \\\" > \$_tmp - failed\"" >> $_script
-	echo "    exit 1;" >> $_script
-	echo "}" >> $_script
-	echo "echo \"$_line\" >> \$_tmp || {" >> $_script
-	echo "    echo \"echo \\\"$_line\\\" >> \$_tmp - failed\"" >> $_script
-	echo "    exit 1;" >> $_script
-	echo "}" >> $_script
-	echo "" >> $_script
-
-	echo "mv \$_tmp $CTDB_PER_IP_ROUTING_CONF || {" >> $_script
-	echo "    echo \"mv \$_tmp $CTDB_PER_IP_ROUTING_CONF - failed\"" >> $_script
-	echo "    exit 1;" >> $_script
-	echo "}" >> $_script
-	echo "" >> $_script
-
-	echo "echo \"Added '$_line' to $CTDB_PER_IP_ROUTING_CONF\"">> $_script
-	echo "exit 0" >> $_script
-
-	chmod +x $_script
-
-	test -f $_lockfile || {
-		touch $_lockfile
-	}
-
-	flock --timeout 30 $_lockfile $_script
-	ret=$?
-	rm $_script
-	return $ret
-}
-
-generate_per_ip_routing()
-{
-	local _ip=$1
-	local _maskbits=$2
-	local _iface=$3
-	local _readonly=$4
-	local _ipdir="$CTDB_PER_IP_ROUTING_STATE/ips/$_ip"
-
-	table_id=""
-	release_script="$_ipdir/per_ip_routing_release.sh"
-	setup_script="$_ipdir/per_ip_routing_setup.sh"
-
-	test x"$_readonly" = x"yes" && {
-		test -d $_ipdir || {
-			return 1;
-		}
-		return 0;
-	}
-
-	mkdir -p $_ipdir || {
-		echo "mkdir -p $_ipdir failed"
-		return 1;
-	}
-	echo "$_ip" > $_ipdir/ip
-
-	generate_table_id $_ip
-
-	test x"$AUTO_LINK_LOCAL" = x"yes" && {
-		generate_auto_link_local $_ip $_maskbits
-	}
-
-	run_release_script_once $release_script
-
-	echo '#!/bin/sh' > $setup_script
-	echo '#' >> $setup_script
-	echo >> $setup_script
-	chmod +x $setup_script
-
-	return 0;
-}
-
-setup_per_ip_routing()
-{
-	local _ip=$1
-	local _iface=$2
-	local _table_id=$3
-	local _release_script=$4
-	local _setup_script=$5
-
-	local _config=`cat $CTDB_PER_IP_ROUTING_CONF`
-	local _lines=`echo -n "$_config" | grep -n "^$_ip " | cut -d ':' -f1 | xargs`
-
-	local _pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
-
-	test -n "$_lines" && {
-		echo "ip rule del from $_ip pref $_pref table $_table_id" >> $_release_script
-		echo "ip route flush table $_table_id 2>/dev/null" >> $_release_script
-
-		cmd="ip rule del from $_ip pref $_pref 2>/dev/null"
-		echo "$cmd" >> $_setup_script
-
-		cmd="ip route flush table $_table_id 2>/dev/null"
-		echo "$cmd" >> $_setup_script
-
-		cmd="ip rule add from $_ip pref $_pref table $_table_id"
-		echo "$cmd || {" >> $_setup_script
-		echo "    echo \"$cmd - failed \$ret\"" >> $_setup_script
-		echo "    exit \$ret" >> $_setup_script
-		echo "}" >> $_setup_script
-	}
-	local _l
-	for _l in $_lines; do
-		local _line=`echo -n "$_config" | head -n $_l | tail -n 1`
-		local _dest=`echo -n "$_line" | cut -d ' ' -f 2`
-		local _gw=`echo -n "$_line" | cut -d ' ' -f 3`
-
-		local _via=""
-		test -n "$_gw" && {
-			_via="via $_gw"
-		}
-
-		cmd="ip route add $_dest $_via dev $_iface table $_table_id"
-		echo "$cmd || {" >> $_setup_script
-		echo "    echo \"$cmd - failed \$ret\"" >> $_setup_script
-		echo "    exit \$ret" >> $_setup_script
-		echo "}" >> $_setup_script
+	# Read the rest of the lines.  We're only interested in the
+	# "IP" and "ActiveInterface" columns.  The latter is only set
+	# for addresses local to this node, making it easy to skip
+	# non-local addresses.  For each IP local address we check if
+	# the relevant routing table is populated and populate it if
+	# not.
+	while IFS=":" read _x _ip _x _iface _x ; do
+	    [ -n "$_iface" ] || continue
+	    
+	    _table_id="${table_id_prefix}${_ip}"
+	    if [ -z "$(ip route show table $_table_id 2>/dev/null)" ]  ; then
+		add_routing_for_ip "$_iface" "$_ip"
+	    fi
 	done
-
-	$_setup_script
-	return $?;
+    } || exit $?
 }
+
+######################################################################
 
 ctdb_check_args "$@"
 
 case "$1" in
-     #############################
-     # called when ctdbd starts up
-     startup)
-	# cleanup old rules
-	pref=$CTDB_PER_IP_ROUTING_RULE_PREF
-	rules=`ip rule show | grep "^$pref:" | sed -e 's/.*from \([^ ][^ ]*\) lookup \([^ ][^ ]*\)/\2;\1/' | xargs`
-	for r in $rules; do
-		table_id=`echo -n "$r" | cut -d ';' -f1`
-		ip=`echo -n "$r" | cut -d ';' -f2-`
+    startup)
+	flush_rules_and_routes
 
-		echo "Removing ip rule for public address $ip for routing table $table_id"
-		cmd="ip rule del from $ip table $table_id pref $pref"
-		#echo $cmd
-		eval $cmd
-		cmd="ip route flush table $table_id"
-		#echo $cmd
-		eval $cmd 2>/dev/null
-	done
-
-	# make sure that we only respond to ARP messages from the NIC where
-	# a particular ip address is associated.
-	[ -f /proc/sys/net/ipv4/conf/all/arp_filter ] && {
-	    echo 1 > /proc/sys/net/ipv4/conf/all/arp_filter
+	# make sure that we only respond to ARP messages from the NIC
+	# where a particular ip address is associated.
+	get_proc sys/net/ipv4/conf/all/arp_filter >/dev/null 2>&1 && {
+	    set_proc sys/net/ipv4/conf/all/arp_filter 1
 	}
-
-	mkdir -p $CTDB_PER_IP_ROUTING_STATE
-
 	;;
 
-     shutdown)
-
-	for s in $CTDB_PER_IP_ROUTING_STATE/ips/*/per_ip_routing_release.sh; do
-		run_release_script_once "$s"
-	done
-	rm -rf $CTDB_PER_IP_ROUTING_STATE
-
+    shutdown)
+	flush_rules_and_routes
+	clean_up_table_ids
 	;;
 
-     ################################################
-     # called when ctdbd wants to claim an IP address
-     takeip)
+    takeip)
 	iface=$2
 	ip=$3
 	maskbits=$4
 
-	ipv4_is_valid_addr $ip || {
-		echo "$0: $1 not an ipv4 address skipping IP:$ip"
-		exit 0;
-	}
-
-	[ ! -d "$CTDB_PER_IP_ROUTING_STATE" ] && {
-		echo "$0: $1 No state directory found, waiting for startup."
-		exit 0;
-	}
-
-	generate_per_ip_routing $ip $maskbits $iface "no" || {
-		echo "$0: $1: generate_per_ip_routing $ip $maskbits $iface no - failed"
-		exit 1;
-	}
-
-	setup_per_ip_routing $ip $iface $table_id $release_script $setup_script || {
-		echo "$0: $1: setup_per_ip_routing $ip $iface $table_id $release_script $setup_script - failed"
-		exit 1;
-	}
-
-	setup_iface_ip_readd_script $iface $ip $maskbits $setup_script || {
-		echo "$0: $1: setup_iface_ip_readd_script $iface $ip $maskbits $setup_script - failed"
-		exit 1;
-	}
+	ensure_ipv4_is_valid_addr "$1" "$ip"
+	add_routing_for_ip "$iface" "$ip"
 
 	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
-	ctdb gratiousarp $ip $iface
+	set_proc sys/net/ipv4/route/flush 1
 
+	ctdb gratiousarp "$ip" "$iface"
 	;;
 
-     ################################################
-     # called when ctdbd wants to claim an IP address
-     updateip)
+    updateip)
 	oiface=$2
 	niface=$3
 	ip=$4
 	maskbits=$5
 
-	ipv4_is_valid_addr $ip || {
-		echo "$0: $1 not an ipv4 address skipping IP:$ip"
-		exit 0;
-	}
-
-	[ ! -d "$CTDB_PER_IP_ROUTING_STATE" ] && {
-		echo "$0: $1 No state directory found, waiting for startup."
-		exit 0;
-	}
-
-	generate_per_ip_routing $ip $maskbits $niface "no" || {
-		echo "$0: $1: generate_per_ip_routing $ip $maskbits $niface no - failed"
-		exit 1;
-	}
-
-	setup_per_ip_routing $ip $niface $table_id $release_script $setup_script || {
-		echo "$0: $1: setup_per_ip_routing $ip $niface $table_id $release_script $setup_script - failed"
-		exit 1;
-	}
-
-	setup_iface_ip_readd_script $niface $ip $maskbits $setup_script || {
-		echo "$0: $1: setup_iface_ip_readd_script $niface $ip $maskbits $setup_script - failed"
-		exit 1;
-	}
+	ensure_ipv4_is_valid_addr "$1" "$ip"
+	add_routing_for_ip "$niface" "$ip"
 
 	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	set_proc sys/net/ipv4/route/flush 1
 
-	ctdb gratiousarp $ip $niface
-	tickle_tcp_connections $ip
-
+	ctdb gratiousarp "$ip" "$niface"
+	tickle_tcp_connections "$ip"
 	;;
 
-     ##################################################
-     # called when ctdbd wants to release an IP address
-     releaseip)
+    releaseip)
 	iface=$2
 	ip=$3
 	maskbits=$4
 
-	ipv4_is_valid_addr $ip || {
-		echo "$0: $1 not an ipv4 address skipping IP:$ip"
-		exit 0;
-	}
-
-	[ ! -d "$CTDB_PER_IP_ROUTING_STATE" ] && {
-		echo "$0: $1 No state directory found, waiting for startup."
-		exit 0;
-	}
-
-	generate_per_ip_routing $ip $maskbits $iface "yes" || {
-		echo "$0: $1: generate_per_ip_routing $ip $maskbits $iface yes - failed"
-		exit 1;
-	}
-
-	run_release_script_once "$release_script"
-
+	ensure_ipv4_is_valid_addr "$1" "$ip"
+	del_routing_for_ip "$ip"
 	;;
 
-
-     ###########################################
-     # called when ctdbd has finished a recovery
-     recovered)
+    ipreallocated)
+	add_missing_routes
 	;;
 
-     ####################################
-     # called when ctdbd is shutting down
-     shutdown)
-	;;
-
-     monitor)
-	;;
     *)
 	ctdb_standard_event_handler "$@"
 	;;
 esac
 
 exit 0
-

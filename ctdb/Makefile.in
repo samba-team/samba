@@ -315,7 +315,6 @@ install: all $(PMDA_INSTALL)
 	${INSTALLCMD} -m 644 include/ctdb_typesafe_cb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
-	${INSTALLCMD} -m 755 config/interface_modify.sh $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)$(docdir)/ctdb/README.eventscripts
 	${INSTALLCMD} -m 644 doc/recovery-process.txt $(DESTDIR)$(docdir)/ctdb/recovery-process.txt
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d

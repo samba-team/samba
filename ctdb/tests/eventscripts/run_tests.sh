@@ -7,6 +7,9 @@ export EVENTSCRIPTS_TESTS_DIR=$(pwd)
 
 test_dir=$(dirname "$EVENTSCRIPTS_TESTS_DIR")
 
+export EVENTSCRIPT_TESTS_CAT_RESULTS_OPTS=""
+export EVENTSCRIPT_TESTS_DIFF_RESULTS=false
+
 opts="-d"
 
 for i ; do
@@ -19,6 +22,16 @@ for i ; do
 	    # This will cause tests to fail but is good for debugging
 	    # individual tests when they fail.
 	    export EVENTSCRIPTS_TESTS_TRACE="sh -x"
+	    shift
+	    ;;
+	-A)
+	    # Useful for detecting whitespace differences in results
+	    export EVENTSCRIPT_TESTS_CAT_RESULTS_OPTS="-A"
+	    shift
+	    ;;
+	-D)
+	    # Useful for detecting whitespace differences in results
+	    export EVENTSCRIPT_TESTS_DIFF_RESULTS=true
 	    shift
 	    ;;
 	-*)
