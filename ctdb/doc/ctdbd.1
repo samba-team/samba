@@ -2,12 +2,12 @@
 .\"     Title: ctdbd
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 03/20/2012
+.\"      Date: 03/22/2012
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDBD" "1" "03/20/2012" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDBD" "1" "03/22/2012" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -475,9 +475,14 @@ When you enable this tunable, CTDB will no longer attempt to rebalance the clust
 .PP
 Default: 0
 .PP
-When enabled, ctdb weill not perform failover or failback\&. Even if a node fails while holding public IPs, ctdb will not recover the IPs or assign them to another node\&.
+When enabled, ctdb will not perform failover or failback\&. Even if a node fails while holding public IPs, ctdb will not recover the IPs or assign them to another node\&.
 .PP
 When you enable this tunable, CTDB will no longer attempt to recover the cluster by failing IP addresses over to other nodes\&. This leads to a service outage until the administrator has manually performed failover to replacement nodes using the \*(Aqctdb moveip\*(Aq command\&.
+.SS "NoIPTakeover"
+.PP
+Default: 0
+.PP
+When set to 1, ctdb will allow ip addresses to be failed over onto this node\&. Any ip addresses that the node currently hosts will remain on the node but no new ip addresses can be failed over onto the node\&.
 .SS "VerboseMemoryNames"
 .PP
 Default: 0
