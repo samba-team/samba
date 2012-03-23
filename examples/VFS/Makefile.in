@@ -45,7 +45,7 @@ skel_transparent.@SHLIBEXT@: skel_transparent.@OBJEXT@
 
 .c.@OBJEXT@:
 	@echo "Compiling $<"
-	@$(CC) $(FLAGS) -c $<
+	@$(CC) $(FLAGS) -c $< -D$(basename $@)_init=samba_init_module
 
 
 install: default
