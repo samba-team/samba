@@ -19,11 +19,14 @@
 
 """Tests for selftest.target.samba."""
 
+from cStringIO import StringIO
+
 from selftest.tests import TestCase
 
 from selftest.target.samba import (
     bindir_path,
     mk_realms_stanza,
+    write_krb5_conf,
     )
 
 
@@ -64,3 +67,39 @@ class MkRealmsStanzaTests(TestCase):
  }
 
 ''')
+
+
+class WriteKrb5ConfTests(TestCase):
+
+    def test_simple(self):
+        f = StringIO()
+        write_krb5_conf(f, "rijk", "dnsnaam", "domein", "kdc_ipv4")
+        self.assertEquals('''\
+#Generated krb5.conf for rijk
+
+[libdefaults]
+\tdefault_realm = rijk
+\tdns_lookup_realm = false
+\tdns_lookup_kdc = false
+\tticket_lifetime = 24h
+\tforwardable = yes
+\tallow_weak_crypto = yes
+
+[realms]
+ rijk = {
+  kdc = kdc_ipv4:88
+  admin_server = kdc_ipv4:88
+  default_domain = dnsnaam
+ }
+ dnsnaam = {
+  kdc = kdc_ipv4:88
+  admin_server = kdc_ipv4:88
+  default_domain = dnsnaam
+ }
+ domein = {
+  kdc = kdc_ipv4:88
+  admin_server = kdc_ipv4:88
+  default_domain = dnsnaam
+ }
+
+''', f.getvalue())
