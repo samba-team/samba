@@ -267,24 +267,26 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 				type = 'G';
 			}
 		} else {
+
 			unix_id = state->ids.ids[num_non_cached].unix_id;
 			if (unix_id == -1) {
 				found = false;
 			}
+
 			switch(state->ids.ids[num_non_cached].type) {
-			case WBC_ID_TYPE_UID:
+			case ID_TYPE_UID:
 				type = 'U';
 				idmap_cache_set_sid2uid(
 					&state->non_cached[num_non_cached],
 					unix_id);
 				break;
-			case WBC_ID_TYPE_GID:
+			case ID_TYPE_GID:
 				type = 'G';
 				idmap_cache_set_sid2gid(
 					&state->non_cached[num_non_cached],
 					unix_id);
 				break;
-			case WBC_ID_TYPE_BOTH:
+			case ID_TYPE_BOTH:
 				type = 'B';
 				idmap_cache_set_sid2both(
 					&state->non_cached[num_non_cached],
