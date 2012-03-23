@@ -381,37 +381,36 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 
 	size = tdb_expand_adjust(tdb->map_size, size, tdb->page_size);
 
-	if (!(tdb->flags & TDB_INTERNAL))
-		tdb_munmap(tdb);
-
 	/* expand the file itself */
 	if (!(tdb->flags & TDB_INTERNAL)) {
 		if (tdb->methods->tdb_expand_file(tdb, tdb->map_size, size) != 0)
 			goto fail;
 	}
 
-	tdb->map_size += size;
+	/* form a new freelist record */
+	offset = tdb->map_size;
+	memset(&rec,'\0',sizeof(rec));
+	rec.rec_len = size - sizeof(rec);
 
 	if (tdb->flags & TDB_INTERNAL) {
 		char *new_map_ptr = (char *)realloc(tdb->map_ptr,
-						    tdb->map_size);
+						    tdb->map_size + size);
 		if (!new_map_ptr) {
-			tdb->map_size -= size;
 			goto fail;
 		}
 		tdb->map_ptr = new_map_ptr;
+		tdb->map_size += size;
 	} else {
+		/* Explicitly remap: if we're in a transaction, this won't
+		 * happen automatically! */
+		tdb_munmap(tdb);
+		tdb->map_size += size;
 		if (tdb_mmap(tdb) != 0) {
 			goto fail;
 		}
 	}
 
-	/* form a new freelist record */
-	memset(&rec,'\0',sizeof(rec));
-	rec.rec_len = size - sizeof(rec);
-
 	/* link it into the free list */
-	offset = tdb->map_size - size;
 	if (tdb_free(tdb, offset, &rec) == -1)
 		goto fail;
 
