@@ -194,7 +194,12 @@ reset:
 		return false;
 	}
 
+#ifdef HAVE_INCOHERENT_MMAP
+	/* This means we always mmap, which makes this test a noop. */
+	ok1(1);
+#else
 	ok1(needed_recovery);
+#endif
 	ok1(locking_errors == 0);
 	ok1(forget_locking() == 0);
 	locking_errors = 0;
