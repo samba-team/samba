@@ -1253,7 +1253,7 @@ void gid_to_sid(struct dom_sid *psid, gid_t gid)
 }
 
 bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
-		      struct wbcUnixId *ids)
+		      struct unixid *ids)
 {
 	struct wbcDomainSid *wbc_sids = NULL;
 	struct wbcUnixId *wbc_ids = NULL;
@@ -1274,29 +1274,29 @@ bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
 
 		if (sid_peek_check_rid(&global_sid_Unix_Users,
 				       &sids[i], &rid)) {
-			ids[i].type = WBC_ID_TYPE_UID;
-			ids[i].id.uid = rid;
+			ids[i].type = ID_TYPE_UID;
+			ids[i].id = rid;
 			continue;
 		}
 		if (sid_peek_check_rid(&global_sid_Unix_Groups,
 				       &sids[i], &rid)) {
-			ids[i].type = WBC_ID_TYPE_GID;
-			ids[i].id.gid = rid;
+			ids[i].type = ID_TYPE_GID;
+			ids[i].id = rid;
 			continue;
 		}
-		if (idmap_cache_find_sid2uid(&sids[i], &ids[i].id.uid,
+		if (idmap_cache_find_sid2uid(&sids[i], &ids[i].id,
 					     &expired)
 		    && !expired) {
-			ids[i].type = WBC_ID_TYPE_UID;
+			ids[i].type = ID_TYPE_UID;
 			continue;
 		}
-		if (idmap_cache_find_sid2gid(&sids[i], &ids[i].id.gid,
+		if (idmap_cache_find_sid2gid(&sids[i], &ids[i].id,
 					     &expired)
 		    && !expired) {
-			ids[i].type = WBC_ID_TYPE_GID;
+			ids[i].type = ID_TYPE_GID;
 			continue;
 		}
-		ids[i].type = WBC_ID_TYPE_NOT_SPECIFIED;
+		ids[i].type = ID_TYPE_NOT_SPECIFIED;
 		memcpy(&wbc_sids[num_not_cached], &sids[i],
 		       ndr_size_dom_sid(&sids[i], 0));
 		num_not_cached += 1;
@@ -1320,22 +1320,36 @@ bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
 	num_not_cached = 0;
 
 	for (i=0; i<num_sids; i++) {
-		if (ids[i].type == WBC_ID_TYPE_NOT_SPECIFIED) {
-			ids[i] = wbc_ids[num_not_cached];
+		if (ids[i].type == ID_TYPE_NOT_SPECIFIED) {
+			switch (wbc_ids[num_not_cached].type) {
+			case ID_TYPE_UID:
+				ids[i].type = WBC_ID_TYPE_UID;
+				ids[i].id = wbc_ids[num_not_cached].id.uid;
+				break;
+			case ID_TYPE_GID:
+				ids[i].type = WBC_ID_TYPE_GID;
+				ids[i].id = wbc_ids[num_not_cached].id.gid;
+				break;
+			default:
+				/* The types match, and wbcUnixId -> id is a union anyway */
+				ids[i].type = wbc_ids[num_not_cached].type;
+				ids[i].id = wbc_ids[num_not_cached].id.gid;
+				break;
+			}
 			num_not_cached += 1;
 		}
 	}
 
 	for (i=0; i<num_sids; i++) {
-		if (ids[i].type != WBC_ID_TYPE_NOT_SPECIFIED) {
+		if (ids[i].type != ID_TYPE_NOT_SPECIFIED) {
 			continue;
 		}
-		if (legacy_sid_to_gid(&sids[i], &ids[i].id.gid)) {
-			ids[i].type = WBC_ID_TYPE_GID;
+		if (legacy_sid_to_gid(&sids[i], &ids[i].id)) {
+			ids[i].type = ID_TYPE_GID;
 			continue;
 		}
-		if (legacy_sid_to_uid(&sids[i], &ids[i].id.uid)) {
-			ids[i].type = WBC_ID_TYPE_UID;
+		if (legacy_sid_to_uid(&sids[i], &ids[i].id)) {
+			ids[i].type = ID_TYPE_UID;
 			continue;
 		}
 	}

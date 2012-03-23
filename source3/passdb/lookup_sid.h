@@ -87,7 +87,7 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid);
 bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid);
 struct wbcUnixId;
 bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
-		      struct wbcUnixId *ids);
+		      struct unixid *ids);
 NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
 				const char *username,
 				struct passwd **_pwd,

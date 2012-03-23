@@ -32,6 +32,7 @@
 #include "passdb.h"
 #include "../librpc/gen_ndr/ndr_auth.h"
 #include "../auth/auth_sam_reply.h"
+#include "../librpc/gen_ndr/idmap.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -465,7 +466,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	size_t i;
 	struct dom_sid tmp_sid;
 	struct auth_session_info *session_info;
-	struct wbcUnixId *ids;
+	struct unixid *ids;
 	fstring tmp;
 
 	/* Ensure we can't possible take a code path leading to a
@@ -593,7 +594,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	t = session_info->security_token;
 
-	ids = talloc_array(talloc_tos(), struct wbcUnixId,
+	ids = talloc_array(talloc_tos(), struct unixid,
 			   t->num_sids);
 	if (ids == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -606,18 +607,18 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<t->num_sids; i++) {
 
-		if (i == 0 && ids[i].type != WBC_ID_TYPE_BOTH) {
+		if (i == 0 && ids[i].type != ID_TYPE_BOTH) {
 			continue;
 		}
 
-		if (ids[i].type != WBC_ID_TYPE_GID &&
-		    ids[i].type != WBC_ID_TYPE_BOTH) {
+		if (ids[i].type != ID_TYPE_GID &&
+		    ids[i].type != ID_TYPE_BOTH) {
 			DEBUG(10, ("Could not convert SID %s to gid, "
 				   "ignoring it\n",
 				   sid_string_dbg(&t->sids[i])));
 			continue;
 		}
-		if (!add_gid_to_array_unique(session_info, ids[i].id.gid,
+		if (!add_gid_to_array_unique(session_info, ids[i].id,
 					     &session_info->unix_token->groups,
 					     &session_info->unix_token->ngroups)) {
 			return NT_STATUS_NO_MEMORY;
