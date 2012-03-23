@@ -244,7 +244,7 @@ static bool should_mmap(const struct tdb_context *tdb)
 int tdb_mmap(struct tdb_context *tdb)
 {
 	if (tdb->flags & TDB_INTERNAL)
-		return;
+		return 0;
 
 #ifdef HAVE_MMAP
 	if (should_mmap(tdb)) {
