@@ -5,9 +5,7 @@
 
 import os
 import sys
-import warnings
 
-from selftest.target import Target
 
 def bindir_path(binary_mapping, bindir, path):
     """Find the executable to use.
@@ -94,3 +92,30 @@ def write_krb5_conf(f, realm, dnsname, domain, kdc_ipv4, tlsdir=None,
 	pkinit_anchors = FILE:%(tlsdir)s/ca.pem
 
     """ % {"tlsdir": tlsdir})
+
+
+def cleanup_child(pid, name, outf=None):
+    """Cleanup a child process.
+
+    :param pid: Parent pid process to be passed to waitpid()
+    :param name: Name to use when referring to process
+    :param outf: File-like object to write to (defaults to stderr)
+    :return: Child pid
+    """
+    if outf is None:
+        outf = sys.stderr
+    (childpid, status) = os.waitpid(pid, os.WNOHANG)
+    if childpid == 0:
+        pass
+    elif childpid < 0:
+        outf.write("%s child process %d isn't here any more.\n" % (name, pid))
+        return childpid
+    elif status & 127:
+        if status & 128:
+            core_status = 'with'
+        else:
+            core_status = 'without'
+        outf.write("%s child process %d, died with signal %d, %s coredump.\n" % (name, childpid, (status & 127), core_status))
+    else:
+        outf.write("%s child process %d exited with value %d.\n" % (name, childpid, status >> 8))
+    return childpid

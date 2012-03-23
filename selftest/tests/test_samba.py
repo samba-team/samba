@@ -19,12 +19,16 @@
 
 """Tests for selftest.target.samba."""
 
+import os
+import sys
+
 from cStringIO import StringIO
 
 from selftest.tests import TestCase
 
 from selftest.target.samba import (
     bindir_path,
+    cleanup_child,
     mk_realms_stanza,
     write_krb5_conf,
     )
