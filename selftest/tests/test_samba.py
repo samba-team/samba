@@ -1,4 +1,4 @@
-# __init__.py -- The tests for selftest
+# test_run.py -- Tests for selftest.target.samba
 # Copyright (C) 2012 Jelmer Vernooij <jelmer@samba.org>
 #
 # This program is free software; you can redistribute it and/or
@@ -17,16 +17,22 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA  02110-1301, USA.
 
-"""Tests for selftest."""
+"""Tests for selftest.target.samba."""
 
-from testtools import TestCase
+from selftest.tests import TestCase
 
-import unittest
+from selftest.target.samba import bindir_path
 
-def test_suite():
-    result = unittest.TestSuite()
-    names = ['socket_wrapper', 'target', 'testlist', 'run', 'samba']
-    module_names = ['selftest.tests.test_' + name for name in names]
-    loader = unittest.TestLoader()
-    result.addTests(loader.loadTestsFromNames(module_names))
-    return result
+
+class BinDirPathTests(TestCase):
+
+    def test_mapping(self):
+        self.assertEquals("exe4",
+            bindir_path({"exe": "exe4"}, "/some/path", "exe"))
+        self.assertEquals("/bin/ls",
+            bindir_path({"exe": "ls"}, "/bin", "exe"))
+
+    def test_no_mapping(self):
+        self.assertEquals("exe", bindir_path({}, "/some/path", "exe"))
+        self.assertEquals("/bin/ls",
+            bindir_path({}, "/bin", "ls"))
