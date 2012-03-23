@@ -123,34 +123,18 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 static bool winbindd_sids_to_xids_in_cache(struct dom_sid *sid,
 					   struct id_map *map)
 {
-	uid_t uid;
-	gid_t gid;
+	struct unixid id;
 	bool expired;
 
 	if (!winbindd_use_idmap_cache()) {
 		return false;
 	}
-	/*
-	 * SIDS_TO_XIDS is primarily used to resolve the user's group
-	 * sids. So we check groups before users.
-	 */
-	if (idmap_cache_find_sid2gid(sid, &gid, &expired)) {
+	if (idmap_cache_find_sid2unixid(sid, &id, &expired)) {
 		if (expired && is_domain_offline(find_our_domain())) {
 			return false;
 		}
 		map->sid = sid;
-		map->xid.id = gid;
-		map->xid.type = ID_TYPE_GID;
-		map->status = ID_MAPPED;
-		return true;
-	}
-	if (idmap_cache_find_sid2uid(sid, &uid, &expired)) {
-		if (expired && is_domain_online(find_our_domain())) {
-			return false;
-		}
-		map->sid = sid;
-		map->xid.id = uid;
-		map->xid.type = ID_TYPE_UID;
+		map->xid = id;
 		map->status = ID_MAPPED;
 		return true;
 	}
@@ -267,30 +251,27 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 				type = 'G';
 			}
 		} else {
-
+			struct unixid id;
 			unix_id = state->ids.ids[num_non_cached].unix_id;
 			if (unix_id == -1) {
 				found = false;
 			}
 
-			switch(state->ids.ids[num_non_cached].type) {
+			id.id = unix_id;
+			id.type = state->ids.ids[num_non_cached].type;
+			idmap_cache_set_sid2unixid(
+				&state->non_cached[num_non_cached],
+			        &id);
+
+			switch (id.type) {
 			case ID_TYPE_UID:
 				type = 'U';
-				idmap_cache_set_sid2uid(
-					&state->non_cached[num_non_cached],
-					unix_id);
 				break;
 			case ID_TYPE_GID:
 				type = 'G';
-				idmap_cache_set_sid2gid(
-					&state->non_cached[num_non_cached],
-					unix_id);
 				break;
 			case ID_TYPE_BOTH:
 				type = 'B';
-				idmap_cache_set_sid2both(
-					&state->non_cached[num_non_cached],
-					unix_id);
 				break;
 			default:
 				found = false;

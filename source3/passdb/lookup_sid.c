@@ -1284,16 +1284,9 @@ bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
 			ids[i].id = rid;
 			continue;
 		}
-		if (idmap_cache_find_sid2uid(&sids[i], &ids[i].id,
-					     &expired)
-		    && !expired) {
-			ids[i].type = ID_TYPE_UID;
-			continue;
-		}
-		if (idmap_cache_find_sid2gid(&sids[i], &ids[i].id,
-					     &expired)
-		    && !expired) {
-			ids[i].type = ID_TYPE_GID;
+		if (idmap_cache_find_sid2unixid(&sids[i], &ids[i], &expired)
+		    && !expired)
+		{
 			continue;
 		}
 		ids[i].type = ID_TYPE_NOT_SPECIFIED;

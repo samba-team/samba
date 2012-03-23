@@ -74,15 +74,18 @@ backend:
 	if (map.status != ID_MAPPED) {
 		if (winbindd_use_idmap_cache()) {
 			struct dom_sid null_sid;
+			struct unixid id;
+			id.type = ID_TYPE_UID;
+			id.id = uid;
 			ZERO_STRUCT(null_sid);
-			idmap_cache_set_sid2uid(&null_sid, uid);
+			idmap_cache_set_sid2unixid(&null_sid, &id);
 		}
 		DEBUG(10, ("uid [%lu] not mapped\n", (unsigned long)uid));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
 	if (winbindd_use_idmap_cache()) {
-		idmap_cache_set_sid2uid(sid, uid);
+		idmap_cache_set_sid2unixid(sid, &map.xid);
 	}
 
 	return NT_STATUS_OK;
@@ -134,15 +137,18 @@ backend:
 	if (map.status != ID_MAPPED) {
 		if (winbindd_use_idmap_cache()) {
 			struct dom_sid null_sid;
+			struct unixid id;
+			id.type = ID_TYPE_GID;
+			id.id = gid;
 			ZERO_STRUCT(null_sid);
-			idmap_cache_set_sid2gid(&null_sid, gid);
+			idmap_cache_set_sid2unixid(&null_sid, &id);
 		}
 		DEBUG(10, ("gid [%lu] not mapped\n", (unsigned long)gid));
 		return NT_STATUS_NONE_MAPPED;
 	}
 
 	if (winbindd_use_idmap_cache()) {
-		idmap_cache_set_sid2gid(sid, gid);
+		idmap_cache_set_sid2unixid(sid, &map.xid);
 	}
 
 	return NT_STATUS_OK;
@@ -217,7 +223,7 @@ backend:
 
 	*uid = (uid_t)map.xid.id;
 	if (winbindd_use_idmap_cache()) {
-		idmap_cache_set_sid2uid(sid, *uid);
+		idmap_cache_set_sid2unixid(sid, &map.xid);
 	}
 	return NT_STATUS_OK;
 }
@@ -291,7 +297,7 @@ backend:
 
 	*gid = map.xid.id;
 	if (winbindd_use_idmap_cache()) {
-		idmap_cache_set_sid2gid(sid, *gid);
+		idmap_cache_set_sid2unixid(sid, &map.xid);
 	}
 	return NT_STATUS_OK;
 }

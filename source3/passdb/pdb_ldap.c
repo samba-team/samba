@@ -1008,6 +1008,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		bool have_gid = false;
 		struct dom_sid mapped_gsid;
 		const struct dom_sid *primary_gsid;
+		struct unixid id;
 
 		ZERO_STRUCT(unix_pw);
 
@@ -1071,14 +1072,18 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			goto fn_exit;
 		}
 
-		idmap_cache_set_sid2uid(pdb_get_user_sid(sampass),
-					sampass->unix_pw->pw_uid);
+		id.id = sampass->unix_pw->pw_uid;
+		id.type = ID_TYPE_UID;
+
+		idmap_cache_set_sid2unixid(pdb_get_user_sid(sampass), &id);
 
 		gid_to_sid(&mapped_gsid, sampass->unix_pw->pw_gid);
 		primary_gsid = pdb_get_group_sid(sampass);
 		if (primary_gsid && dom_sid_equal(primary_gsid, &mapped_gsid)) {
-			idmap_cache_set_sid2gid(primary_gsid,
-						sampass->unix_pw->pw_gid);
+			id.id = sampass->unix_pw->pw_gid;
+			id.type = ID_TYPE_GID;
+
+			idmap_cache_set_sid2unixid(primary_gsid, &id);
 		}
 	}
 
@@ -2476,7 +2481,11 @@ for gidNumber(%lu)\n",(unsigned long)map->gid));
 	}
 
 	if (lp_parm_bool(-1, "ldapsam", "trusted", false)) {
-		idmap_cache_set_sid2gid(&map->sid, map->gid);
+		struct unixid id;
+		id.id = map->gid;
+		id.type = ID_TYPE_GID;
+
+		idmap_cache_set_sid2unixid(&map->sid, &id);
 	}
 
 	TALLOC_FREE(ctx);
@@ -5035,7 +5044,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 		id->id = strtoul(gid_str, NULL, 10);
 		id->type = ID_TYPE_GID;
-		idmap_cache_set_sid2gid(sid, id->id);
+		idmap_cache_set_sid2unixid(sid, id);
 		ret = True;
 		goto done;
 	}
@@ -5052,7 +5061,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 	id->id = strtoul(value, NULL, 10);
 	id->type = ID_TYPE_UID;
-	idmap_cache_set_sid2uid(sid, id->id);
+	idmap_cache_set_sid2unixid(sid, id);
 
 	ret = True;
  done:
@@ -5078,6 +5087,7 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	struct dom_sid user_sid;
 	int rc;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct unixid id;
 
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(uidNumber=%u)"
@@ -5122,7 +5132,10 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 
 	sid_copy(sid, &user_sid);
 
-	idmap_cache_set_sid2uid(sid, uid);
+	id.id = uid;
+	id.type = ID_TYPE_UID;
+
+	idmap_cache_set_sid2unixid(sid, &id);
 
 	ret = true;
 
@@ -5149,6 +5162,7 @@ static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	struct dom_sid group_sid;
 	int rc;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct unixid id;
 
 	filter = talloc_asprintf(tmp_ctx,
 				 "(&(gidNumber=%u)"
@@ -5191,7 +5205,10 @@ static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 
 	sid_copy(sid, &group_sid);
 
-	idmap_cache_set_sid2gid(sid, gid);
+	id.id = gid;
+	id.type = ID_TYPE_GID;
+
+	idmap_cache_set_sid2unixid(sid, &id);
 
 	ret = true;
 
