@@ -1078,7 +1078,7 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
  *THE LEGACY* convert SID to id function.
 *****************************************************************/  
 
-static bool legacy_sid_to_id(const struct dom_sid *psid, struct unixid *id)
+static bool legacy_sid_to_unixid(const struct dom_sid *psid, struct unixid *id)
 {
 	GROUP_MAP *map;
 	if (sid_check_is_in_our_domain(psid)) {
@@ -1131,7 +1131,7 @@ done:
 static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 {
 	struct unixid id;
-	if (!legacy_sid_to_id(psid, &id)) {
+	if (!legacy_sid_to_unixid(psid, &id)) {
 		return false;
 	}
 	if (id.type == ID_TYPE_GID || id.type == ID_TYPE_BOTH) {
@@ -1144,7 +1144,7 @@ static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 static bool legacy_sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 {
 	struct unixid id;
-	if (!legacy_sid_to_id(psid, &id)) {
+	if (!legacy_sid_to_unixid(psid, &id)) {
 		return false;
 	}
 	if (id.type == ID_TYPE_UID || id.type == ID_TYPE_BOTH) {
