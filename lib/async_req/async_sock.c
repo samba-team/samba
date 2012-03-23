@@ -596,6 +596,10 @@ static void read_packet_handler(struct tevent_context *ev,
 
 	nread = recv(state->fd, state->buf+state->nread, total-state->nread,
 		     0);
+	if ((nread == -1) && (errno == ENOTSOCK)) {
+		nread = read(state->fd, state->buf+state->nread,
+			     total-state->nread);
+	}
 	if ((nread == -1) && (errno == EINTR)) {
 		/* retry */
 		return;
