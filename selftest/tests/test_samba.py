@@ -21,7 +21,10 @@
 
 from selftest.tests import TestCase
 
-from selftest.target.samba import bindir_path
+from selftest.target.samba import (
+    bindir_path,
+    mk_realms_stanza,
+    )
 
 
 class BinDirPathTests(TestCase):
@@ -33,6 +36,31 @@ class BinDirPathTests(TestCase):
             bindir_path({"exe": "ls"}, "/bin", "exe"))
 
     def test_no_mapping(self):
-        self.assertEquals("exe", bindir_path({}, "/some/path", "exe"))
-        self.assertEquals("/bin/ls",
+        self.assertEqual("exe", bindir_path({}, "/some/path", "exe"))
+        self.assertEqual("/bin/ls",
             bindir_path({}, "/bin", "ls"))
+
+
+class MkRealmsStanzaTests(TestCase):
+
+    def test_basic(self):
+        self.assertEqual(
+           mk_realms_stanza("rijk", "dnsnaam", "domein", "ipv4_kdc"),
+          '''\
+ rijk = {
+  kdc = ipv4_kdc:88
+  admin_server = ipv4_kdc:88
+  default_domain = dnsnaam
+ }
+ dnsnaam = {
+  kdc = ipv4_kdc:88
+  admin_server = ipv4_kdc:88
+  default_domain = dnsnaam
+ }
+ domein = {
+  kdc = ipv4_kdc:88
+  admin_server = ipv4_kdc:88
+  default_domain = dnsnaam
+ }
+
+''')
