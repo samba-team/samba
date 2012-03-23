@@ -1381,6 +1381,236 @@ CTDB_CAPABILITY_RECMASTER=no
 
   </refsect1>
 
+  <refsect1>
+    <title>POLICY ROUTING</title>
+
+    <para>
+      A node running CTDB may be a component of a complex network
+      topology.  In particular, public addresses may be spread across
+      several different networks (or VLANs) and it may not be possible
+      to route packets from these public addresses via the system's
+      default route.  Therefore, CTDB has support for policy routing
+      via the 13.per_ip_routing eventscript.  This allows routing to
+      be specified for packets sourced from each public address.  The
+      routes are added and removed as CTDB moves public addresses
+      between nodes.
+    </para>
+
+    <refsect2>
+      <title>Configuration variables</title>
+
+      <para>
+	There are 4 configuration variables related to policy routing:
+      </para>
+
+      <variablelist>
+	<varlistentry><term><varname>CTDB_PER_IP_ROUTING_CONF</varname></term>
+	<listitem>
+	  <para>
+	    The name of a configuration file that specifies the
+	    desired routes for each source address.  The configuration
+	    file format is discussed below.  A recommended value is
+	    <filename>/etc/ctdb/policy_routing</filename>.
+	  </para>
+
+	  <para>
+	    The special value <constant>__auto_link_local__</constant>
+	    indicates that no configuration file is provided and that
+	    CTDB should generate reasonable link-local routes for each
+	    public address.
+	  </para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry><term><varname>CTDB_PER_IP_ROUTING_RULE_PREF</varname></term>
+	<listitem>
+	  <para>
+	    This sets the priority (or preference) for the routing
+	    rules that are added by CTDB.
+	  </para>
+
+	  <para>
+	    This should be (strictly) greater than 0 and (strictly)
+	    less than 32766.  A priority of 100 is recommended, unless
+	    this conflicts with a priority already in use on the
+	    system.  See ip(8) for more details.
+	  </para>
+	</listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>
+	    <varname>CTDB_PER_IP_ROUTING_TABLE_ID_LOW</varname>,
+	    <varname>CTDB_PER_IP_ROUTING_TABLE_ID_HIGH</varname>
+	  </term>
+	  <listitem>
+	    <para>
+	      CTDB determines a unique routing table number to use for
+	      the routing related to each public address.  These
+	      variables indicate the minimum and maximum routing table
+	      numbers that are used.
+	    </para>
+
+	    <para>
+	      The ip command uses some reserved routing table numbers
+	      below 255.  Therefore, CTDB_PER_IP_ROUTING_TABLE_ID_LOW
+	      should be (strictly) greater than 255.  1000 and 9000
+	      are recommended values, unless this range conflicts with
+	      routing tables numbers already in use on the system.
+	    </para>
+
+	    <para>
+	      CTDB uses the standard file
+	      <filename>/etc/iproute2/rt_tables</filename> to maintain
+	      a mapping between the routing table numbers and labels.
+	      The label for a public address &lt;addr;gt; will look
+	      like ctdb.&lt;addr&gt;.  This means that the associated
+	      rules and routes are easy to read (and manipulate).
+	    </para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </refsect2>
+
+    <refsect2>
+      <title>Configuration file</title>
+
+      <para>
+	The format of each line is:
+      </para>
+      
+      <screen>
+    &lt;public_address&gt; &lt;network&gt; [ &lt;gateway&gt; ]
+      </screen>
+
+      <para>
+	Leading whitespace is ignored and arbitrary whitespace may be
+	used as a separator.  Lines that have a "public address" item
+	that doesn't match an actual public address are ignored.  This
+	means that comment lines can be added using a leading
+	character such as '#', since this will never match an IP
+	address.
+      </para>
+
+      <para>
+	A line without a gateway indicates a link local route.
+      </para>
+
+      <para>
+	For example, consider the configuration line:
+      </para>
+
+      <screen>
+  192.168.1.99	192.168.1.1/24
+      </screen>
+
+      <para>
+	If the corresponding public_addresses line is:
+      </para>
+
+      <screen>
+  192.168.1.99/24     eth2,eth3
+      </screen>
+
+      <para>
+	<varname>CTDB_PER_IP_ROUTING_RULE_PREF</varname> is 100, and
+	CTDB adds the address to eth2 then the following routing
+	information is added:
+      </para>
+
+      <screen>
+  ip rule add from 192.168.1.99 pref 100 table ctdb.192.168.1.99
+  ip route add 192.168.1.0/24 dev eth2 table ctdb.192.168.1.99
+      </screen>
+
+      <para>  
+	This causes traffic from 192.168.1.1 to 192.168.1.0/24 go via
+	eth2.
+      </para>
+
+      <para>
+	The <command>ip rule</command> command will show (something
+	like - depending on other public addresses and other routes on
+	the system):
+      </para>
+
+      <screen>
+  0:		from all lookup local 
+  100:		from 192.168.1.99 lookup ctdb.192.168.1.99
+  32766:	from all lookup main 
+  32767:	from all lookup default 
+      </screen>
+
+      <para>
+	<command>ip route show table ctdb.192.168.1.99</command> will show:
+      </para>
+
+      <screen>
+  192.168.1.0/24 dev eth2 scope link
+      </screen>
+
+      <para>
+	The usual use for a line containing a gateway is to add a
+	default route corresponding to a particular source address.
+	Consider this line of configuration:
+      </para>
+
+      <screen>
+  192.168.1.99	0.0.0.0/0	192.168.1.1
+      </screen>
+
+      <para>
+	In the situation described above this will cause an extra
+	routing command to be executed:
+      </para>
+
+      <screen>
+  ip route add 0.0.0.0/0 via 192.168.1.1 dev eth2 table ctdb.192.168.1.99
+      </screen>
+
+      <para>
+	With both configuration lines, <command>ip route show table
+	ctdb.192.168.1.99</command> will show:
+      </para>
+
+      <screen>
+  192.168.1.0/24 dev eth2 scope link 
+  default via 192.168.1.1 dev eth2 
+      </screen>
+    </refsect2>
+
+    <refsect2>
+      <title>Example configuration</title>
+
+      <para>
+	Here is a more complete example configuration.
+      </para>
+
+      <screen>
+/etc/ctdb/public_addresses:
+
+  192.168.1.98	eth2,eth3
+  192.168.1.99	eth2,eth3
+
+/etc/ctdb/policy_routing:
+
+  192.168.1.98 192.168.1.0/24
+  192.168.1.98 192.168.200.0/24	192.168.1.254
+  192.168.1.98 0.0.0.0/0 	192.168.1.1
+  192.168.1.99 192.168.1.0/24
+  192.168.1.99 192.168.200.0/24	192.168.1.254
+  192.168.1.99 0.0.0.0/0 	192.168.1.1
+      </screen>
+
+      <para>
+	The routes local packets as expected, the default route is as
+	previously discussed, but packets to 192.168.200.0/24 are
+	routed via the alternate gateway 192.168.1.254.
+      </para>
+
+    </refsect2>
+  </refsect1>
+
   <refsect1><title>NOTIFICATION SCRIPT</title>
     <para>
       Notification scripts are used with ctdb to have a call-out from ctdb
