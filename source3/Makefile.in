@@ -942,6 +942,7 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
 	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
 	       lib/sysquotas_nfs.o \
 	       lib/smbd_shim.o \
+	       lib/background.o \
 	       smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o $(AFS_OBJ) smbd/msdfs.o \
 	       $(AFS_SETTOKEN_OBJ) smbd/aio.o smbd/statvfs.o \

@@ -360,6 +360,7 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                lib/sysquotas.c lib/sysquotas_linux.c
                lib/sysquotas_xfs.c lib/sysquotas_4A.c
                lib/sysquotas_nfs.c
+               lib/background.c
                smbd/fake_file.c
                smbd/quotas.c smbd/ntquotas.c smbd/msdfs.c
                smbd/aio.c smbd/statvfs.c
