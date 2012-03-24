@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-/* Max allowable allococation - 256mb - 0x10000000 */
-#define MAX_ALLOC_SIZE (1024*1024*256)
-
 #if defined(PARANOID_MALLOC_CHECKER)
 
 /****************************************************************************
