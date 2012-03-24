@@ -835,4 +835,10 @@ char *rep_getpass(const char *prompt);
 int rep_getpeereid(int s, uid_t *uid, gid_t *gid);
 #endif
 
+#ifndef HAVE_USLEEP
+#define usleep rep_usleep
+typedef long useconds_t;
+int usleep(useconds_t);
+#endif
+
 #endif /* _LIBREPLACE_REPLACE_H */

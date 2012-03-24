@@ -890,3 +890,17 @@ int rep_getpeereid(int s, uid_t *uid, gid_t *gid)
 #endif
 }
 #endif
+
+#ifndef HAVE_USLEEP
+int rep_usleep(useconds_t sec)
+{
+	struct timeval tval;
+	/*
+	 * Fake it with select...
+	 */
+	tval.tv_sec = 0;
+	tval.tv_usec = usecs/1000;
+	select(0,NULL,NULL,NULL,&tval);
+	return 0;
+}
+#endif /* HAVE_USLEEP */
