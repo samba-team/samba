@@ -70,38 +70,6 @@ static void *realloc_(void *ptr, size_t size)
 #endif /* PARANOID_MALLOC_CHECKER */
 
 /****************************************************************************
- Type-safe memalign
-****************************************************************************/
-
-void *memalign_array(size_t el_size, size_t align, unsigned int count)
-{
-	if (count >= MAX_ALLOC_SIZE/el_size) {
-		return NULL;
-	}
-
-	return memalign(align, el_size*count);
-}
-
-/****************************************************************************
- Type-safe calloc.
-****************************************************************************/
-
-void *calloc_array(size_t size, size_t nmemb)
-{
-	if (nmemb >= MAX_ALLOC_SIZE/size) {
-		return NULL;
-	}
-	if (size == 0 || nmemb == 0) {
-		return NULL;
-	}
-#if defined(PARANOID_MALLOC_CHECKER)
-	return calloc_(nmemb, size);
-#else
-	return calloc(nmemb, size);
-#endif
-}
-
-/****************************************************************************
  Expand a pointer to be a particular size.
  Note that this version of Realloc has an extra parameter that decides
  whether to free the passed in storage on allocation failure or if the

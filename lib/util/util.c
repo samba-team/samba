@@ -646,6 +646,34 @@ void *malloc_array(size_t el_size, unsigned int count)
 	return realloc_array(NULL, el_size, count, false);
 }
 
+/****************************************************************************
+ Type-safe memalign
+****************************************************************************/
+
+void *memalign_array(size_t el_size, size_t align, unsigned int count)
+{
+	if (count*el_size >= MAX_MALLOC_SIZE) {
+		return NULL;
+	}
+
+	return memalign(align, el_size*count);
+}
+
+/****************************************************************************
+ Type-safe calloc.
+****************************************************************************/
+
+void *calloc_array(size_t size, size_t nmemb)
+{
+	if (nmemb >= MAX_MALLOC_SIZE/size) {
+		return NULL;
+	}
+	if (size == 0 || nmemb == 0) {
+		return NULL;
+	}
+	return calloc(nmemb, size);
+}
+
 /**
  Trim the specified elements off the front and back of a string.
 **/

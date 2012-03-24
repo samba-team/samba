@@ -489,8 +489,6 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct event_context *ev_ctx,
 			   bool parent_longlived);
 void *malloc_(size_t size);
-void *memalign_array(size_t el_size, size_t align, unsigned int count);
-void *calloc_array(size_t size, size_t nmemb);
 void *Realloc(void *p, size_t size, bool free_old_on_error);
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			void *element, void *_array, uint32 *num_elements,

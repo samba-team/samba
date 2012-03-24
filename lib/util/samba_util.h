@@ -751,6 +751,10 @@ _PUBLIC_ void *realloc_array(void *ptr, size_t el_size, unsigned count, bool fre
 
 void *malloc_array(size_t el_size, unsigned int count);
 
+void *memalign_array(size_t el_size, size_t align, unsigned int count);
+
+void *calloc_array(size_t size, size_t nmemb);
+
 /* The following definitions come from lib/util/fsusage.c  */
 
 
