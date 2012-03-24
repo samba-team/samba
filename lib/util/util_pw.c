@@ -29,13 +29,8 @@
 #include "lib/util/util_pw.h"
 
 /**************************************************************************
- Wrappers for getgrnam(), getgrgid()
+ Wrappers for getgrgid()
 ****************************************************************************/
-
-struct group *sys_getgrnam(const char *name)
-{
-	return getgrnam(name);
-}
 
 struct group *sys_getgrgid(gid_t gid)
 {

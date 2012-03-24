@@ -24,7 +24,6 @@
 #ifndef __LIB_UTIL_UTIL_PW_H__
 #define __LIB_UTIL_UTIL_PW_H__
 
-struct group *sys_getgrnam(const char *name);
 struct group *sys_getgrgid(gid_t gid);
 struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx,
 			    const struct passwd *from);

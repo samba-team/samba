@@ -103,7 +103,7 @@ bool lookup_unix_group_name(const char *name, struct dom_sid *sid)
 {
 	struct group *grp;
 
-	grp = sys_getgrnam(name);
+	grp = getgrnam(name);
 	if (grp == NULL) {
 		return False;
 	}
