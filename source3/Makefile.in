@@ -262,6 +262,7 @@ TDB_LIB_OBJ = lib/util_tdb.o ../lib/util/util_tdb.o \
 	  lib/dbwrap/dbwrap_tdb.o \
 	  lib/dbwrap/dbwrap_ctdb.o \
 	  lib/g_lock.o \
+	  lib/dbwrap/dbwrap_cache.o \
 	  lib/dbwrap/dbwrap_rbt.o
 
 TDB_VALIDATE_OBJ = lib/tdb_validate.o

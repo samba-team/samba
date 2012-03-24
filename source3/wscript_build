@@ -1087,7 +1087,7 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('dbwrap',
-                   source='lib/dbwrap/dbwrap.c lib/dbwrap/dbwrap_util.c lib/dbwrap/dbwrap_rbt.c',
+                   source='lib/dbwrap/dbwrap.c lib/dbwrap/dbwrap_util.c lib/dbwrap/dbwrap_rbt.c lib/dbwrap/dbwrap_cache.c',
                    deps='samba-util UTIL_TDB errors',
                    private_library=True)
 
