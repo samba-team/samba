@@ -870,6 +870,7 @@ int rep_getpeereid(int s, uid_t *uid, gid_t *gid)
 	socklen_t cred_len = sizeof(struct ucred);
 	int ret;
 
+#undef getsockopt
 	ret = getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred, &cred_len);
 	if (ret != 0) {
 		return -1;
