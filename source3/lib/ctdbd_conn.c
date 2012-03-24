@@ -203,6 +203,7 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 	const char *sockname = lp_ctdbd_socket();
 	struct sockaddr_un addr;
 	int fd;
+	socklen_t salen;
 
 	if (!sockname || !*sockname) {
 		sockname = CTDB_PATH;
@@ -218,7 +219,8 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, sockname, sizeof(addr.sun_path));
 
-	if (sys_connect(fd, (struct sockaddr *)(void *)&addr) == -1) {
+	salen = sizeof(struct sockaddr_un);
+	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
 		DEBUG(1, ("connect(%s) failed: %s\n", sockname,
 			  strerror(errno)));
 		close(fd);
