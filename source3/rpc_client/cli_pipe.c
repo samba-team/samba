@@ -2502,6 +2502,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	struct sockaddr_un addr;
 	NTSTATUS status;
 	int fd;
+	socklen_t salen;
 
 	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
 	if (result == NULL) {
@@ -2531,8 +2532,9 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	ZERO_STRUCT(addr);
 	addr.sun_family = AF_UNIX;
 	strlcpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
+	salen = sizeof(struct sockaddr_un);
 
-	if (sys_connect(fd, (struct sockaddr *)(void *)&addr) == -1) {
+	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
 		DEBUG(0, ("connect(%s) failed: %s\n", socket_path,
 			  strerror(errno)));
 		close(fd);
