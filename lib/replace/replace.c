@@ -860,3 +860,31 @@ void *rep_memalign( size_t align, size_t size )
 #endif
 }
 #endif
+
+#ifndef HAVE_GETPEEREID
+int rep_getpeereid(int s, uid_t *uid, gid_t *gid)
+{
+#if defined(HAVE_PEERCRED)
+	struct ucred cred;
+	socklen_t cred_len = sizeof(struct ucred);
+	int ret;
+
+	ret = getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred, &cred_len);
+	if (ret != 0) {
+		return -1;
+	}
+
+	if (cred_len != sizeof(struct ucred)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*uid = cred.uid;
+	*gid = cred.gid;
+	return 0;
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+#endif

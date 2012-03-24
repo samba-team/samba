@@ -174,6 +174,16 @@ def configure(conf):
     if not conf.CHECK_FUNCS('strlcpy strlcat'):
         conf.CHECK_FUNCS_IN('strlcpy strlcat', 'bsd', headers='bsd/string.h',
                 checklibc=True)
+    if not conf.CHECK_FUNCS('getpeereid'):
+        conf.CHECK_FUNCS_IN('getpeereid', 'bsd', headers='sys/types.h bsd/unistd.h')
+
+    conf.CHECK_CODE('''
+                struct ucred cred;
+                socklen_t cred_len;
+                int ret = getsockopt(0, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len);''',
+                'HAVE_PEERCRED',
+                msg="Checking whether we can use SO_PEERCRED to get socket credentials",
+                headers='sys/types.h sys/socket.h')
 
     #Some OS (ie. freebsd) return EINVAL if the convertion could not be done, it's not what we expect
     #Let's detect those cases

@@ -123,8 +123,6 @@ _PUBLIC_ pid_t sys_fork(void);
  **/
 _PUBLIC_ pid_t sys_getpid(void);
 
-_PUBLIC_ int sys_getpeereid( int s, uid_t *uid);
-
 struct sockaddr;
 
 _PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,

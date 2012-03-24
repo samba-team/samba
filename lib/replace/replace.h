@@ -112,6 +112,10 @@
 #include <bsd/string.h>
 #endif
 
+#ifdef HAVE_BSD_UNISTD_H
+#include <bsd/unistd.h>
+#endif
+
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -824,6 +828,11 @@ int fdatasync(int );
 char *rep_getpass(const char *prompt);
 #endif
 #endif
+#endif
+
+#ifndef HAVE_GETPEEREID
+#define getpeereid rep_getpeereid
+int rep_getpeereid(int s, uid_t *uid, gid_t *gid);
 #endif
 
 #endif /* _LIBREPLACE_REPLACE_H */

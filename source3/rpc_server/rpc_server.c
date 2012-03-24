@@ -1008,6 +1008,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	NTSTATUS status;
 	int sys_errno;
 	uid_t uid;
+	gid_t gid;
 	int rc;
 
 	DEBUG(10, ("dcerpc_ncacn_accept\n"));
@@ -1068,7 +1069,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 			break;
 		case NCALRPC:
-			rc = sys_getpeereid(s, &uid);
+			rc = getpeereid(s, &uid, &gid);
 			if (rc < 0) {
 				DEBUG(2, ("Failed to get ncalrpc connecting "
 					  "uid - %s!\n", strerror(errno)));

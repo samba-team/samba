@@ -357,14 +357,6 @@ return acl_get_perm_np(permset_d, perm);
     conf.CHECK_DECLS('readahead', headers='fcntl.h', always=True)
 
     conf.CHECK_CODE('''
-                struct ucred cred;
-                socklen_t cred_len;
-                int ret = getsockopt(0, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len);''',
-                'HAVE_PEERCRED',
-                msg="Checking whether we can use SO_PEERCRED to get socket credentials",
-                headers='sys/types.h sys/socket.h')
-
-    conf.CHECK_CODE('''
                 #if defined(HAVE_LONGLONG) && (defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8)))
                 #include <sys/types.h>
                 #else

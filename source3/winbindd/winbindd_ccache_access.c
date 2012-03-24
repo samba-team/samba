@@ -157,10 +157,11 @@ static bool check_client_uid(struct winbindd_cli_state *state, uid_t uid)
 {
 	int ret;
 	uid_t ret_uid;
+	gid_t ret_gid;
 
 	ret_uid = (uid_t)-1;
 
-	ret = sys_getpeereid(state->sock, &ret_uid);
+	ret = getpeereid(state->sock, &ret_uid, &ret_gid);
 	if (ret != 0) {
 		DEBUG(1, ("check_client_uid: Could not get socket peer uid: %s; "
 			"denying access\n", strerror(errno)));

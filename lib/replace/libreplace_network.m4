@@ -473,6 +473,30 @@ fi
 LIBS=$old_LIBS
 CPPFLAGS="$libreplace_SAVE_CPPFLAGS"
 
+AC_CACHE_CHECK([for SO_PEERCRED],libreplace_cv_HAVE_PEERCRED,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/socket.h>],
+[struct ucred cred;
+ socklen_t cred_len;
+ int ret = getsockopt(0, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len);
+],
+libreplace_cv_HAVE_PEERCRED=yes,libreplace_cv_HAVE_PEERCRED=no,libreplace_cv_HAVE_PEERCRED=cross)])
+if test x"$libreplace_cv_HAVE_PEERCRED" = x"yes"; then
+    AC_DEFINE(HAVE_PEERCRED,1,[Whether we can use SO_PEERCRED to get socket credentials])
+fi
+
+AC_CACHE_CHECK([for getpeereid],libreplace_cv_HAVE_GETPEEREID,[
+AC_TRY_LINK([#include <sys/types.h>
+#include <unistd.h>],
+[uid_t uid; gid_t gid; int ret;
+ ret = getpeereid(0, &uid, &gid);
+],
+libreplace_cv_HAVE_GETPEEREID=yes,libreplace_cv_HAVE_GETPEEREID=no)])
+if test x"$libreplace_cv_HAVE_GETPEEREID" = xyes; then
+   AC_DEFINE(HAVE_GETPEEREID,1,
+	     [Whether we have getpeereid to get socket credentials])
+fi
+
 LIBREPLACEOBJ="${LIBREPLACEOBJ} ${LIBREPLACE_NETWORK_OBJS}"
 
 echo "LIBREPLACE_NETWORK_CHECKS: END"
