@@ -851,7 +851,7 @@ void *rep_memalign( size_t align, size_t size )
 	size_t pagesize = (size_t)-1;
 #endif
 	if (pagesize == (size_t)-1) {
-		DEBUG(0,("memalign functionality not available on this platform!\n"));
+		errno = ENOSYS;
 		return NULL;
 	}
 	if (size < pagesize) {
