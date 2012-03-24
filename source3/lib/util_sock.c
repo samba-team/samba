@@ -820,6 +820,7 @@ int open_udp_socket(const char *host, int port)
 {
 	struct sockaddr_storage ss;
 	int res;
+	socklen_t salen;
 
 	if (!interpret_string_addr(&ss, host, 0)) {
 		DEBUG(10,("open_udp_socket: can't resolve name %s\n",
@@ -842,15 +843,20 @@ int open_udp_socket(const char *host, int port)
 			setup_linklocal_scope_id(
 				(struct sockaddr *)&ss);
 		}
-	}
+		salen = sizeof(struct sockaddr_in6);
+	} else 
 #endif
-        if (ss.ss_family == AF_INET) {
-                struct sockaddr_in *psa;
-                psa = (struct sockaddr_in *)&ss;
-                psa->sin_port = htons(port);
-        }
+	if (ss.ss_family == AF_INET) {
+		struct sockaddr_in *psa;
+		psa = (struct sockaddr_in *)&ss;
+		psa->sin_port = htons(port);
+	    salen = sizeof(struct sockaddr_in);
+	} else {
+		DEBUG(1, ("unknown socket family %d", ss.ss_family));
+		return -1;
+	}
 
-	if (sys_connect(res,(struct sockaddr *)&ss)) {
+	if (connect(res, (struct sockaddr *)&ss, salen)) {
 		close(res);
 		return -1;
 	}
