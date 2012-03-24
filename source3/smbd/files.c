@@ -60,7 +60,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	   increases the chance that the errant client will get an error rather
 	   than causing corruption */
 	if (sconn->first_file == 0) {
-		sconn->first_file = (sys_getpid() ^ (int)time(NULL));
+		sconn->first_file = (getpid() ^ (int)time(NULL));
 		sconn->first_file %= sconn->real_max_open_files;
 	}
 

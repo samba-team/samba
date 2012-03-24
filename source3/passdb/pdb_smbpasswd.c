@@ -1095,7 +1095,7 @@ static bool del_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 
 	pfile2 = talloc_asprintf(talloc_tos(),
 			"%s.%u",
-			pfile, (unsigned)sys_getpid());
+			pfile, (unsigned)getpid());
 	if (!pfile2) {
 		return false;
 	}

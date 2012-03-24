@@ -28,8 +28,8 @@
  **********************************************************************/
 
 #define OUR_HANDLE(hnd) (((hnd)==NULL) ? "NULL" :\
-	( IVAL((hnd)->uuid.node,2) == (uint32)sys_getpid() ? "OURS" : \
+	( IVAL((hnd)->uuid.node,2) == (uint32)getpid() ? "OURS" : \
 		"OTHER")), ((unsigned int)IVAL((hnd)->uuid.node,2)),\
-		((unsigned int)sys_getpid() )
+		((unsigned int)getpid() )
 
 #endif /* _RPC_MISC_H */

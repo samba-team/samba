@@ -604,7 +604,7 @@ smbc_init_context(SMBCCTX *context)
                          * Hmmm, I want to get hostname as well, but I am too
                          * lazy for the moment
                          */
-                        pid = sys_getpid();
+                        pid = getpid();
                         netbios_name = (char *)SMB_MALLOC(17);
                         if (!netbios_name) {
                                 errno = ENOMEM;

@@ -271,7 +271,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	cli->smb1.pid = (uint16_t)sys_getpid();
+	cli->smb1.pid = (uint16_t)getpid();
 	cli->smb1.vc_num = cli->smb1.pid;
 	cli->smb1.tid = UINT16_MAX;
 	cli->smb1.uid = UID_FIELD_INVALID;

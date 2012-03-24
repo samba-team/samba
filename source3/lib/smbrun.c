@@ -92,7 +92,7 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 
 	CatchChildLeaveStatus();
                                    	
-	if ((pid=sys_fork()) < 0) {
+	if ((pid=fork()) < 0) {
 		DEBUG(0,("smbrun: fork failed with error %s\n", strerror(errno) ));
 		CatchChild(); 
 		if (outfd) {
@@ -255,7 +255,7 @@ int smbrunsecret(const char *cmd, const char *secret)
 
 	CatchChildLeaveStatus();
                                    	
-	if ((pid=sys_fork()) < 0) {
+	if ((pid=fork()) < 0) {
 		DEBUG(0, ("smbrunsecret: fork failed with error %s\n", strerror(errno)));
 		CatchChild(); 
 		return errno;

@@ -106,7 +106,7 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 		pfp->pool[i].allowed_clients = 1;
 		pfp->pool[i].started = now;
 
-		pid = sys_fork();
+		pid = fork();
 		switch (pid) {
 		case -1:
 			DEBUG(1, ("Failed to prefork child n. %d !\n", i));
@@ -194,7 +194,7 @@ int prefork_add_children(struct tevent_context *ev_ctx,
 		pfp->pool[i].allowed_clients = 1;
 		pfp->pool[i].started = now;
 
-		pid = sys_fork();
+		pid = fork();
 		switch (pid) {
 		case -1:
 			DEBUG(1, ("Failed to prefork child n. %d !\n", j));

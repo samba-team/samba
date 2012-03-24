@@ -70,7 +70,7 @@ static void fault_report(int sig)
 	counter++;
 
 	DEBUGSEP(0);
-	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)sys_getpid(),SAMBA_VERSION_STRING));
+	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)getpid(),SAMBA_VERSION_STRING));
 	DEBUG(0,("\nPlease read the Trouble-Shooting section of the Samba HOWTO\n"));
 	DEBUGSEP(0);
 

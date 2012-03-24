@@ -500,7 +500,7 @@ static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
 		goto fail;
 	}
 
-	result->pid = sys_fork();
+	result->pid = fork();
 	if (result->pid == -1) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(0, ("fork failed: %s\n", strerror(errno)));

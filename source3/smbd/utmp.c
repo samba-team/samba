@@ -528,7 +528,7 @@ static bool sys_utmp_fill(struct utmp *u,
 	utmp_strcpy(u->ut_line, id_str, sizeof(u->ut_line));
 
 #if defined(HAVE_UT_UT_PID)
-	u->ut_pid = sys_getpid();
+	u->ut_pid = getpid();
 #endif
 
 /*

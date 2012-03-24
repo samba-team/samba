@@ -1111,7 +1111,7 @@ static void set_updating_pid(const fstring sharename, bool updating)
 	fstring keystr;
 	TDB_DATA key;
 	TDB_DATA data;
-	pid_t updating_pid = sys_getpid();
+	pid_t updating_pid = getpid();
 	uint8 buffer[4];
 
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
@@ -1752,7 +1752,7 @@ bool print_notify_register_pid(int snum)
 	struct tdb_print_db *pdb = NULL;
 	TDB_CONTEXT *tdb = NULL;
 	const char *printername;
-	uint32 mypid = (uint32)sys_getpid();
+	uint32_t mypid = (uint32_t)getpid();
 	bool ret = False;
 	size_t i;
 
@@ -1843,7 +1843,7 @@ bool print_notify_deregister_pid(int snum)
 	struct tdb_print_db *pdb = NULL;
 	TDB_CONTEXT *tdb = NULL;
 	const char *printername;
-	uint32 mypid = (uint32)sys_getpid();
+	uint32_t mypid = (uint32_t)getpid();
 	size_t i;
 	bool ret = False;
 
@@ -1948,7 +1948,7 @@ bool print_job_exists(const char* sharename, uint32 jobid)
 char *print_job_fname(const char* sharename, uint32 jobid)
 {
 	struct printjob *pjob = print_job_find(sharename, jobid);
-	if (!pjob || pjob->spooled || pjob->pid != sys_getpid())
+	if (!pjob || pjob->spooled || pjob->pid != getpid())
 		return NULL;
 	return pjob->filename;
 }
@@ -1981,7 +1981,7 @@ bool print_job_set_name(struct tevent_context *ev,
 	struct printjob *pjob;
 
 	pjob = print_job_find(sharename, jobid);
-	if (!pjob || pjob->pid != sys_getpid())
+	if (!pjob || pjob->pid != getpid())
 		return False;
 
 	fstrcpy(pjob->jobname, name);
@@ -1997,7 +1997,7 @@ bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t job
 	struct printjob *pjob;
 
 	pjob = print_job_find(sharename, jobid);
-	if (!pjob || pjob->pid != sys_getpid()) {
+	if (!pjob || pjob->pid != getpid()) {
 		return false;
 	}
 
@@ -2361,7 +2361,7 @@ ssize_t print_job_write(struct tevent_context *ev,
 	if (!pjob)
 		return -1;
 	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != sys_getpid())
+	if (pjob->pid != getpid())
 		return -1;
 
 	/* if SMBD is spooling this can't be allowed */
@@ -2720,7 +2720,7 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 
 	ZERO_STRUCT(pjob);
 
-	pjob.pid = sys_getpid();
+	pjob.pid = getpid();
 	pjob.sysjob = -1;
 	pjob.fd = -1;
 	pjob.starttime = time(NULL);
@@ -2788,7 +2788,7 @@ void print_job_endpage(struct messaging_context *msg_ctx,
 	if (!pjob)
 		return;
 	/* don't allow another process to get this info - it is meaningless */
-	if (pjob->pid != sys_getpid())
+	if (pjob->pid != getpid())
 		return;
 
 	pjob->page_count++;
@@ -2817,7 +2817,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		return NT_STATUS_PRINT_CANCELLED;
 	}
 
-	if (pjob->spooled || pjob->pid != sys_getpid()) {
+	if (pjob->spooled || pjob->pid != getpid()) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

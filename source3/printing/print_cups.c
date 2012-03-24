@@ -411,7 +411,7 @@ static bool cups_pcap_load_async(struct tevent_context *ev,
 		return false;
 	}
 
-	pid = sys_fork();
+	pid = fork();
 	if (pid == (pid_t)-1) {
 		DEBUG(10,("cups_pcap_load_async: fork failed %s\n",
 			strerror(errno) ));

@@ -874,7 +874,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		dbgtext( "initially as user %s ",
 			 conn->session_info->unix_info->unix_name );
 		dbgtext( "(uid=%d, gid=%d) ", (int)effuid, (int)effgid );
-		dbgtext( "(pid %d)\n", (int)sys_getpid() );
+		dbgtext( "(pid %d)\n", (int)getpid() );
 	}
 
 	return status;

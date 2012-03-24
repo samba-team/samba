@@ -549,7 +549,7 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 					get_remote_arch_str());
 			break;
 		case 'd' :
-			slprintf(pidstr,sizeof(pidstr)-1, "%d",(int)sys_getpid());
+			slprintf(pidstr,sizeof(pidstr)-1, "%d",(int)getpid());
 			a_string = realloc_string_sub(a_string, "%d", pidstr);
 			break;
 		case 'h' :

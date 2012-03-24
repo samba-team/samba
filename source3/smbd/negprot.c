@@ -121,13 +121,13 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 	set_Protocol(PROTOCOL_LANMAN1);
 
 	/* Reply, SMBlockread, SMBwritelock supported. */
-	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(req->outbuf,smb_vwv2,sconn->smb1.negprot.max_recv);
-	SSVAL(req->outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
-	SSVAL(req->outbuf,smb_vwv4,1);
-	SSVAL(req->outbuf,smb_vwv5,raw); /* tell redirector we support
+	SCVAL(req->outbuf,smb_flg, FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
+	SSVAL(req->outbuf,smb_vwv2, sconn->smb1.negprot.max_recv);
+	SSVAL(req->outbuf,smb_vwv3, lp_maxmux()); /* maxmux */
+	SSVAL(req->outbuf,smb_vwv4, 1);
+	SSVAL(req->outbuf,smb_vwv5, raw); /* tell redirector we support
 		readbraw writebraw (possibly) */
-	SIVAL(req->outbuf,smb_vwv6,sys_getpid());
+	SIVAL(req->outbuf,smb_vwv6, getpid());
 	SSVAL(req->outbuf,smb_vwv10, set_server_zone_offset(t)/60);
 
 	srv_put_dos_date((char *)req->outbuf,smb_vwv8,t);
@@ -157,9 +157,9 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 
 	reply_outbuf(req, 13, sconn->smb1.negprot.encrypted_passwords?8:0);
 
-	SSVAL(req->outbuf,smb_vwv0,choice);
-	SSVAL(req->outbuf,smb_vwv1,secword);
-	SIVAL(req->outbuf,smb_vwv6,sys_getpid());
+	SSVAL(req->outbuf,smb_vwv0, choice);
+	SSVAL(req->outbuf,smb_vwv1, secword);
+	SIVAL(req->outbuf,smb_vwv6, getpid());
 
 	/* Create a token value and add it to the outgoing packet. */
 	if (sconn->smb1.negprot.encrypted_passwords) {
@@ -362,13 +362,13 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 
 	set_Protocol(PROTOCOL_NT1);
 
-	SSVAL(req->outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
-	SSVAL(req->outbuf,smb_vwv2+1,1); /* num vcs */
+	SSVAL(req->outbuf,smb_vwv1+1, lp_maxmux()); /* maxmpx */
+	SSVAL(req->outbuf,smb_vwv2+1, 1); /* num vcs */
 	SIVAL(req->outbuf,smb_vwv3+1,
 	      sconn->smb1.negprot.max_recv); /* max buffer. LOTS! */
-	SIVAL(req->outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
-	SIVAL(req->outbuf,smb_vwv7+1,sys_getpid()); /* session key */
-	SIVAL(req->outbuf,smb_vwv9+1,capabilities); /* capabilities */
+	SIVAL(req->outbuf,smb_vwv5+1, 0x10000); /* raw size. full 64k */
+	SIVAL(req->outbuf,smb_vwv7+1, getpid()); /* session key */
+	SIVAL(req->outbuf,smb_vwv9+1, capabilities); /* capabilities */
 	clock_gettime(CLOCK_REALTIME,&ts);
 	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,(char *)req->outbuf+smb_vwv11+1,ts);
 	SSVALS(req->outbuf,smb_vwv15+1,set_server_zone_offset(ts.tv_sec)/60);

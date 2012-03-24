@@ -860,7 +860,7 @@ void smb_panic_s3(const char *why)
 	int result;
 
 	DEBUG(0,("PANIC (pid %llu): %s\n",
-		    (unsigned long long)sys_getpid(), why));
+		    (unsigned long long)getpid(), why));
 	log_stack_trace();
 
 #if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
@@ -1985,7 +1985,7 @@ static uint32 my_vnn = NONCLUSTER_VNN;
 
 void set_my_vnn(uint32 vnn)
 {
-	DEBUG(10, ("vnn pid %d = %u\n", (int)sys_getpid(), (unsigned int)vnn));
+	DEBUG(10, ("vnn pid %d = %u\n", (int)getpid(), (unsigned int)vnn));
 	my_vnn = vnn;
 }
 
@@ -2013,7 +2013,7 @@ struct server_id pid_to_procid(pid_t pid)
 
 struct server_id procid_self(void)
 {
-	return pid_to_procid(sys_getpid());
+	return pid_to_procid(getpid());
 }
 
 bool procid_equal(const struct server_id *p1, const struct server_id *p2)
@@ -2035,7 +2035,7 @@ bool cluster_id_equal(const struct server_id *id1,
 
 bool procid_is_me(const struct server_id *pid)
 {
-	if (pid->pid != sys_getpid())
+	if (pid->pid != getpid())
 		return False;
 	if (pid->task_id != 0)
 		return False;

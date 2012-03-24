@@ -2292,12 +2292,12 @@ static int cmd_print(void)
 		rname = talloc_asprintf(ctx,
 					"%s-%d",
 					p+1,
-					(int)sys_getpid());
+					(int)getpid());
 	}
 	if (strequal(lname,"-")) {
 		rname = talloc_asprintf(ctx,
 				"stdin-%d",
-				(int)sys_getpid());
+				(int)getpid());
 	}
 	if (!rname) {
 		return 1;

@@ -76,7 +76,7 @@ static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 		return true;
 	}
 
-	DEBUG(10,("pid[%d] wait for socket lock\n", (int)sys_getpid()));
+	DEBUG(10,("pid[%d] wait for socket lock\n", (int)getpid()));
 
 	do {
 		ok = fcntl_lock(
@@ -89,7 +89,7 @@ static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 		return false;
 	}
 
-	DEBUG(10,("pid[%d] got for socket lock\n", (int)sys_getpid()));
+	DEBUG(10,("pid[%d] got for socket lock\n", (int)getpid()));
 
 	return true;
 }
@@ -126,7 +126,7 @@ static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
 		return false;
 	}
 
-	DEBUG(10,("pid[%d] unlocked socket\n", (int)sys_getpid()));
+	DEBUG(10,("pid[%d] unlocked socket\n", (int)getpid()));
 
 	return true;
 }
@@ -182,7 +182,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		 * client failed.
 		 */
 		DEBUG(1,("pid[%d] Error writing %d bytes to client %s. %d. (%s)\n",
-			 (int)sys_getpid(), (int)len,
+			 (int)getpid(), (int)len,
 			 get_peer_addr(sconn->sock, addr, sizeof(addr)),
 			 (int)ret, strerror(errno) ));
 
@@ -1373,7 +1373,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 	conn = req->conn;
 
 	DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n", smb_fn_name(type),
-		 (int)sys_getpid(), (unsigned long)conn));
+		 (int)getpid(), (unsigned long)conn));
 
 	smb_dump(smb_fn_name(type), 1, (const char *)req->inbuf);
 
@@ -2638,7 +2638,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 
 	if (!fd_is_readable(sconn->sock)) {
 		DEBUG(10,("echo_handler[%d] the parent smbd was faster\n",
-			  (int)sys_getpid()));
+			  (int)getpid()));
 
 		ok = smbd_unlock_socket_internal(sconn);
 		if (!ok) {
@@ -2667,7 +2667,7 @@ static void smbd_echo_read_waited(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		tevent_req_nterror(req, status);
 		DEBUG(1, ("echo_handler[%d]: receive_smb_raw_talloc failed: %s\n",
-			  (int)sys_getpid(), nt_errstr(status)));
+			  (int)getpid(), nt_errstr(status)));
 		return;
 	}
 
@@ -2751,7 +2751,7 @@ static void smbd_echo_writer_done(struct tevent_req *req)
 		DEBUG(1, ("writev to parent failed: %s\n", strerror(err)));
 		exit(1);
 	}
-	DEBUG(10,("echo_handler[%d]: forwarded pdu to main\n", (int)sys_getpid()));
+	DEBUG(10,("echo_handler[%d]: forwarded pdu to main\n", (int)getpid()));
 	smbd_echo_activate_writer(state);
 }
 
@@ -2932,7 +2932,7 @@ static void smbd_echo_got_packet(struct tevent_req *req)
 		iov->iov_len = buflen;
 
 		DEBUG(10,("echo_handler[%d]: forward to main\n",
-			  (int)sys_getpid()));
+			  (int)getpid()));
 		smbd_echo_activate_writer(state);
 	}
 
@@ -2965,7 +2965,7 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 		goto fail;
 	}
 
-	child = sys_fork();
+	child = fork();
 	if (child == 0) {
 		NTSTATUS status;
 
@@ -2987,7 +2987,7 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 	listener_pipe[1] = -1;
 	sconn->smb1.echo_handler.trusted_fd = listener_pipe[0];
 
-	DEBUG(10,("fork_echo_handler: main[%d] echo_child[%d]\n", (int)sys_getpid(), child));
+	DEBUG(10,("fork_echo_handler: main[%d] echo_child[%d]\n", (int)getpid(), child));
 
 	/*
 	 * Without smb signing this is the same as the normal smbd

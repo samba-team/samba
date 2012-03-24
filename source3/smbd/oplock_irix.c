@@ -50,7 +50,7 @@ static bool irix_oplocks_available(void)
 	tmpname = talloc_asprintf(ctx,
 				"%s/koplock.%d",
 				lp_lockdir(),
-				(int)sys_getpid());
+				(int)getpid());
 	if (!tmpname) {
 		TALLOC_FREE(ctx);
 		return False;

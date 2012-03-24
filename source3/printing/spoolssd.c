@@ -644,7 +644,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	BlockSignals(true, SIGTERM);
 	BlockSignals(true, SIGHUP);
 
-	pid = sys_fork();
+	pid = fork();
 
 	if (pid == -1) {
 		DEBUG(0, ("Failed to fork SPOOLSS [%s]\n",

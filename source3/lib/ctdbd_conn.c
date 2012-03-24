@@ -578,7 +578,7 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = register_with_ctdbd(conn, (uint64_t)sys_getpid());
+	status = register_with_ctdbd(conn, (uint64_t)getpid());
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -665,7 +665,7 @@ static NTSTATUS ctdb_handle_message(uint8_t *buf, size_t length,
 	}
 
 	/* only messages to our pid or the broadcast are valid here */
-	if (msg->srvid != sys_getpid() && msg->srvid != MSG_SRVID_SAMBA) {
+	if (msg->srvid != getpid() && msg->srvid != MSG_SRVID_SAMBA) {
 		DEBUG(0,("Got unexpected message with srvid=%llu\n", 
 			 (unsigned long long)msg->srvid));
 		TALLOC_FREE(buf);

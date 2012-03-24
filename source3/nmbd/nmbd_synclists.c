@@ -167,7 +167,7 @@ done:
 	/* the parent forks and returns, leaving the child to do the
 	   actual sync and call END_PROFILE*/
 	CatchChild();
-	if ((s->pid = sys_fork())) return;
+	if ((s->pid = fork())) return;
 
 	BlockSignals( False, SIGTERM );
 

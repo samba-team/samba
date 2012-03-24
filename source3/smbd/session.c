@@ -129,7 +129,7 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
 		}
 
 		snprintf(sessionid.id_str, sizeof(sessionid.id_str),
-			 SESSION_TEMPLATE, (long unsigned int)sys_getpid(),
+			 SESSION_TEMPLATE, (long unsigned int)getpid(),
 			 vuser->vuid);
 	}
 

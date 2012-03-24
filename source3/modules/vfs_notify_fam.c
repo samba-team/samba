@@ -87,7 +87,7 @@ static NTSTATUS fam_open_connection(FAMConnection *fam_conn,
 	setenv("GAM_CLIENT_ID","SAMBA",0);
 #endif
 
-	if (asprintf(&name, "smbd (%lu)", (unsigned long)sys_getpid()) == -1) {
+	if (asprintf(&name, "smbd (%lu)", (unsigned long)getpid()) == -1) {
 		DEBUG(0, ("No memory\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

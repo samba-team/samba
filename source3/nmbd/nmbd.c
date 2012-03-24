@@ -830,7 +830,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	StartupTime = time(NULL);
 
-	sys_srandom(time(NULL) ^ sys_getpid());
+	sys_srandom(time(NULL) ^ getpid());
 
 	if (!override_logfile) {
 		char *lfile = NULL;

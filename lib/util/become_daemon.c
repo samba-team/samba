@@ -75,7 +75,7 @@ _PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
 _PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout)
 {
 	if (do_fork) {
-		if (sys_fork()) {
+		if (fork()) {
 			_exit(0);
 		}
 	}

@@ -244,7 +244,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 	BlockSignals(true, SIGTERM);
 	BlockSignals(true, SIGHUP);
 
-	pid = sys_fork();
+	pid = fork();
 
 	/* parent or error */
 	if (pid != 0) {

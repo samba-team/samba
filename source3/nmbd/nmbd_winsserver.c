@@ -2470,7 +2470,7 @@ void wins_write_database(time_t t, bool background)
 	/* We will do the writing in a child process to ensure that the parent doesn't block while this is done */
 	if (background) {
 		CatchChild();
-		if (sys_fork()) {
+		if (fork()) {
 			return;
 		}
 		if (tdb_reopen(wins_tdb)) {
@@ -2487,7 +2487,7 @@ void wins_write_database(time_t t, bool background)
 	/* This is safe as the 0 length means "don't expand". */
 	all_string_sub(fname,"//", "/", 0);
 
-	if (asprintf(&fnamenew, "%s.%u", fname, (unsigned int)sys_getpid()) < 0) {
+	if (asprintf(&fnamenew, "%s.%u", fname, (unsigned int)getpid()) < 0) {
 		goto err_exit;
 	}
 

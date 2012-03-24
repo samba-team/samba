@@ -858,7 +858,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 	BlockSignals(true, SIGTERM);
 	BlockSignals(true, SIGHUP);
 
-	pid = sys_fork();
+	pid = fork();
 	if (pid == -1) {
 		DEBUG(0, ("Failed to fork LSASD [%s], aborting ...\n",
 			   strerror(errno)));

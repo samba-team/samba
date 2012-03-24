@@ -1404,7 +1404,7 @@ int sys_popen(const char *command)
 	if(!(argl = extract_args(NULL, command)))
 		goto err_exit;
 
-	entry->child_pid = sys_fork();
+	entry->child_pid = fork();
 
 	if (entry->child_pid == -1) {
 		goto err_exit;

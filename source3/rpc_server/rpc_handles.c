@@ -292,7 +292,7 @@ static struct dcesrv_handle *create_rpc_handle_internal(struct pipes_struct *p,
 	/* something random */
 	SSVAL(rpc_hnd->wire_handle.uuid.node, 0, t);
 	/* something more random */
-	SIVAL(rpc_hnd->wire_handle.uuid.node, 2, sys_getpid());
+	SIVAL(rpc_hnd->wire_handle.uuid.node, 2, getpid());
 
 	DLIST_ADD(p->pipe_handles->handles, rpc_hnd);
 	p->pipe_handles->count++;

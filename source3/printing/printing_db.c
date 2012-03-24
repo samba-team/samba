@@ -193,7 +193,7 @@ TDB_DATA get_printer_notify_pid_list(struct tdb_context *tdb, const char *printe
 	for( i = 0; i < data.dsize; i += 8) {
 		pid_t pid = (pid_t)IVAL(data.dptr, i);
 
-		if (pid == sys_getpid())
+		if (pid == getpid())
 			continue;
 
 		/* Entry is dead if process doesn't exist or refcount is zero. */

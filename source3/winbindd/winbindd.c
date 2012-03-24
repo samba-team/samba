@@ -431,7 +431,7 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 	 * so we don't block the main winbindd and the validation
 	 * code can safely use fork/waitpid...
 	 */
-	child_pid = sys_fork();
+	child_pid = fork();
 
 	if (child_pid == -1) {
 		DEBUG(1, ("winbind_msg_validate_cache: Could not fork: %s\n",

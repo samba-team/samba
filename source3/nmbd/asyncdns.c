@@ -147,7 +147,7 @@ void start_async_dns(struct messaging_context *msg)
 		return;
 	}
 
-	child_pid = sys_fork();
+	child_pid = fork();
 
 	if (child_pid) {
 		fd_in = fd1[0];

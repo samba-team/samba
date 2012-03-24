@@ -378,7 +378,7 @@ static bool dfs_auth(char *user, char *password)
 	}
 
 	DEBUG(0, ("DCE login succeeded for principal %s on pid %d\n",
-		  user, sys_getpid()));
+		  user, getpid()));
 
 	DEBUG(3, ("DCE principal: %s\n"
 		  "          uid: %d\n"
@@ -431,7 +431,7 @@ void dfs_unlogin(void)
 		dce_error_inq_text(err, dce_errstr, &err2);
 		DEBUG(0,
 		      ("DCE purge login context failed for server instance %d: %s\n",
-		       sys_getpid(), dce_errstr));
+		       getpid(), dce_errstr));
 	}
 }
 #endif

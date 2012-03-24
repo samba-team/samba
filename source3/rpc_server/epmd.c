@@ -146,7 +146,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 
 	DEBUG(1, ("Forking Endpoint Mapper Daemon\n"));
 
-	pid = sys_fork();
+	pid = fork();
 
 	if (pid == -1) {
 		DEBUG(0, ("Failed to fork Endpoint Mapper [%s], aborting ...\n",

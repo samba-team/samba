@@ -405,7 +405,7 @@ static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
 
 	CatchChildLeaveStatus();
 
-	if ((pid = sys_fork()) < 0) {
+	if ((pid = fork()) < 0) {
 		DEBUG(3, ("chat_with_program: Cannot fork() child for password change: %s\n", pass->pw_name));
 		SAFE_FREE(slavedev);
 		close(master);

@@ -184,7 +184,7 @@ static void msg_inject_fault(struct messaging_context *msg,
 		  procid_str_static(&src), sig));
 #endif
 
-	kill(sys_getpid(), sig);
+	kill(getpid(), sig);
 }
 #endif /* DEVELOPER */
 
@@ -484,7 +484,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	 */
 	unique_id = serverid_get_random_unique_id();
 
-	pid = sys_fork();
+	pid = fork();
 	if (pid == 0) {
 		NTSTATUS status = NT_STATUS_OK;
 
@@ -545,7 +545,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	}
 
 	if (pid < 0) {
-		DEBUG(0,("smbd_accept_connection: sys_fork() failed: %s\n",
+		DEBUG(0,("smbd_accept_connection: fork() failed: %s\n",
 			 strerror(errno)));
 	}
 

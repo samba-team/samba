@@ -118,7 +118,7 @@ int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn)
 	 * just let the child panic. we catch the signal. */
 
 	DEBUG(10, ("tdb_validate: forking to let child do validation.\n"));
-	child_pid = sys_fork();
+	child_pid = fork();
 	if (child_pid == 0) {
 		/* child code */
 		DEBUG(10, ("tdb_validate (validation child): created\n"));

@@ -637,7 +637,7 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 
 			/* Get the status of the service.. */
 			info->ops->service_status( info->name, &svc_stat_proc.status );
-			svc_stat_proc.process_id     = sys_getpid();
+			svc_stat_proc.process_id     = getpid();
 			svc_stat_proc.service_flags  = 0x0;
 
 			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &svc_stat_proc,

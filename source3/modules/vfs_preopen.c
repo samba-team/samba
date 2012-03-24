@@ -224,7 +224,7 @@ static NTSTATUS preopen_init_helper(struct preopen_helper *h)
 		return status;
 	}
 
-	h->pid = sys_fork();
+	h->pid = fork();
 
 	if (h->pid == -1) {
 		return map_nt_error_from_unix(errno);

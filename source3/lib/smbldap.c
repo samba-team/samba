@@ -1070,7 +1070,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 
 
 	ldap_state->last_ping = time_mono(NULL);
-	ldap_state->pid = sys_getpid();
+	ldap_state->pid = getpid();
 
 	TALLOC_FREE(ldap_state->idle_event);
 
@@ -1157,7 +1157,7 @@ static void setup_ldap_local_alarm(struct smbldap_state *ldap_state, time_t abso
 		alarm(absolute_endtime - now);
 	}
 
-	if (ldap_state->pid != sys_getpid()) {
+	if (ldap_state->pid != getpid()) {
 		smbldap_close(ldap_state);
 	}
 }

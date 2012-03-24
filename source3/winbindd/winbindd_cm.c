@@ -188,7 +188,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
 	TALLOC_CTX *mem_ctx = NULL;
-	pid_t parent_pid = sys_getpid();
+	pid_t parent_pid = getpid();
 	char *lfile = NULL;
 	NTSTATUS status;
 
@@ -206,7 +206,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 		domain->dc_probe_pid = (pid_t)-1;
 	}
 
-	domain->dc_probe_pid = sys_fork();
+	domain->dc_probe_pid = fork();
 
 	if (domain->dc_probe_pid == (pid_t)-1) {
 		DEBUG(0, ("fork_child_dc_connect: Could not fork: %s\n", strerror(errno)));
