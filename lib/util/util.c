@@ -34,6 +34,7 @@
 #undef strncasecmp
 #undef strdup
 #undef realloc
+#undef calloc
 
 /**
  * @file
