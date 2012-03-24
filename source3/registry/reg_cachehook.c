@@ -93,7 +93,10 @@ WERROR reghook_cache_add(const char *keyname, struct registry_ops *ops)
 	DEBUG(10, ("reghook_cache_add: Adding ops %p for key [%s]\n",
 		   (void *)ops, key));
 
-	werr = pathtree_add(cache_tree, key, ops);
+	if (!pathtree_add(cache_tree, key, ops))
+		werr = WERR_NOMEM;
+	else
+		werr = WERR_OK;
 
 done:
 	TALLOC_FREE(key);

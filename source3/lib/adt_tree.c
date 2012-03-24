@@ -206,11 +206,11 @@ static struct tree_node *pathtree_find_child(struct tree_node *node,
  Add a new node into the tree given a key path and a blob of data
  *************************************************************************/
 
-WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
+bool pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 {
 	char *str, *base, *path2;
 	struct tree_node *current, *next;
-	WERROR ret = WERR_OK;
+	bool ret = true;
 
 	DEBUG(8,("pathtree_add: Enter\n"));
 
@@ -259,7 +259,7 @@ WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 			next = pathtree_birth_child( current, base );
 			if ( !next ) {
 				DEBUG(0,("pathtree_add: Failed to create new child!\n"));
-				ret = WERR_NOMEM;
+				ret = false;
 				goto done;
 			}
 		}

@@ -32,7 +32,7 @@ struct sorted_tree *pathtree_init(void *data_p);
 
 /* add a new path component */
 
-WERROR pathtree_add(struct sorted_tree *tree, const char *path, void *data_p );
+bool pathtree_add(struct sorted_tree *tree, const char *path, void *data_p );
 
 /* search path */
 
