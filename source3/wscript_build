@@ -274,7 +274,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_ndr.c
                    winbindd/wb_ping.c
                    winbindd/wb_lookupsid.c
-		   winbindd/wb_lookupsids.c
+                   winbindd/wb_lookupsids.c
                    winbindd/wb_lookupname.c
                    winbindd/wb_sid2uid.c
                    winbindd/wb_sid2gid.c
@@ -295,13 +295,13 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/wb_next_grent.c
                    winbindd/wb_dsgetdcname.c
                    winbindd/winbindd_lookupsid.c
-		   winbindd/winbindd_lookupsids.c
+                   winbindd/winbindd_lookupsids.c
                    winbindd/winbindd_lookupname.c
                    winbindd/winbindd_sid_to_uid.c
                    winbindd/winbindd_sid_to_gid.c
                    winbindd/winbindd_uid_to_sid.c
                    winbindd/winbindd_gid_to_sid.c
-		   winbindd/winbindd_sids_to_xids.c
+                   winbindd/winbindd_sids_to_xids.c
                    winbindd/winbindd_allocate_uid.c
                    winbindd/winbindd_allocate_gid.c
                    winbindd/winbindd_getpwsid.c
@@ -542,7 +542,7 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_eventlog.c
               utils/net_printing.c
               utils/net_rpc_trust.c
-	      utils/net_rpc_conf.c
+              utils/net_rpc_conf.c
               registry/reg_parse.c registry/reg_format.c
               registry/reg_import.c
               '''
@@ -562,15 +562,15 @@ SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/
                 torture/test_async_echo.c
                 torture/test_addrchange.c
                 torture/test_posix_append.c
-		torture/test_nttrans_create.c
-		torture/test_nttrans_fsctl.c
-		torture/test_case_insensitive.c
-		torture/test_notify_online.c
-		torture/test_chain3.c
-		torture/test_smb2.c
-		torture/test_authinfo_structs.c
+                torture/test_nttrans_create.c
+                torture/test_nttrans_fsctl.c
+                torture/test_case_insensitive.c
+                torture/test_notify_online.c
+                torture/test_chain3.c
+                torture/test_smb2.c
+                torture/test_authinfo_structs.c
                 torture/test_smbsock_any_connect.c
-		torture/test_cleanup.c
+                torture/test_cleanup.c
                 torture/t_strappend.c'''
 
 SMBTORTURE_SRC = '''${SMBTORTURE_SRC1}
@@ -780,7 +780,7 @@ bld.SAMBA3_LIBRARY('smbregistry',
                    source=REG_BASE_SRC,
                    deps='''smbd_shim tdb-wrap3 NDR_SECURITY UTIL_TDB talloc
                    replace util_reg samba-util security
-                   errors3 adt_tree dbwrap util_str util_sec util_malloc''',
+                   errors3 dbwrap samba3-util''',
                    vars=locals(),
                    allow_undefined_symbols=True,
                    private_library=True)
@@ -828,11 +828,8 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         PTHREADPOOL
                         interfaces
                         param
-                        util_str
                         dbwrap
-                        util_sec
-                        util_malloc
-                        memcache
+                        samba3-util
                         ccan
                         errors3''',
                    vars=locals())
@@ -930,7 +927,6 @@ bld.SAMBA3_LIBRARY('smbconf',
                    param
                    samba-util
                    smbregistry
-                   string_init
                    talloc
                    util_reg''',
                    public_headers='../lib/smbconf/smbconf.h',
@@ -939,7 +935,7 @@ bld.SAMBA3_LIBRARY('smbconf',
 
 bld.SAMBA3_LIBRARY('smbd_conn',
                    source='smbd/conn.c',
-                   deps='string_init samba-util namearray',
+                   deps='samba3-util samba-util',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('smbd_base',
@@ -1094,45 +1090,15 @@ bld.SAMBA3_LIBRARY('dbwrap',
                    deps='samba-util UTIL_TDB errors',
                    private_library=True)
 
-bld.SAMBA3_LIBRARY('util_malloc',
-                   source='''lib/util_malloc.c''',
-                   deps='samba-util',
-                   private_library=True)
-
-bld.SAMBA3_LIBRARY('string_init',
-                   source='''lib/string_init.c''',
-                   deps='samba-util',
-                   private_library=True)
-
-bld.SAMBA3_LIBRARY('util_str',
-                   source='''lib/util_str.c''',
+bld.SAMBA3_LIBRARY('samba3-util',
+                   source='''lib/util_sec.c lib/util_str.c lib/adt_tree.c lib/util_malloc.c lib/memcache.c lib/string_init.c lib/namearray.c''',
                    deps='samba-util charset',
-                   private_library=True)
-
-bld.SAMBA3_LIBRARY('util_sec',
-                   source='''lib/util_sec.c''',
-                   deps='samba-util',
-                   private_library=True)
-
-bld.SAMBA3_LIBRARY('namearray',
-                   source='lib/namearray.c',
-                   deps='samba-util',
-                   private_library=True)
-
-bld.SAMBA3_LIBRARY('adt_tree',
-                   source='lib/adt_tree.c',
-                   deps='samba-util',
-                   private_library=True)
-
-bld.SAMBA3_LIBRARY('memcache',
-                   source='lib/memcache.c',
-                   deps='samba-util util_malloc',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('CHARSET3',
                     source='''lib/charcnv.c lib/fstring.c''',
                     public_deps='ICONV_WRAPPER charset',
-                    deps='samba-util util_str',
+                    deps='samba-util samba3-util',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('errors3',
