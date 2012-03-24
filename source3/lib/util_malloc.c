@@ -79,7 +79,7 @@ void *memalign_array(size_t el_size, size_t align, unsigned int count)
 		return NULL;
 	}
 
-	return sys_memalign(align, el_size*count);
+	return memalign(align, el_size*count);
 }
 
 /****************************************************************************

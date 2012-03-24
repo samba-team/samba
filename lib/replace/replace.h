@@ -56,6 +56,10 @@
 #include <inttypes.h>
 #endif
 
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 #ifndef __PRI64_PREFIX
 # if __WORDSIZE == 64
 #  define __PRI64_PREFIX	"l"
@@ -155,6 +159,11 @@ void *rep_memmove(void *dest,const void *src,int size);
 #define memmem rep_memmem
 void *rep_memmem(const void *haystack, size_t haystacklen,
 		 const void *needle, size_t needlelen);
+#endif
+
+#ifndef HAVE_MEMALIGN
+#define memalign rep_memalign
+void *rep_memalign(size_t boundary, size_t size);
 #endif
 
 #ifndef HAVE_MKTIME
