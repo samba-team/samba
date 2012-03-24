@@ -27,6 +27,7 @@
 
 #include "system/filesys.h"
 #include "system/time.h"
+#include "system/network.h"
 #include "system/passwd.h"
 #include "system/syslog.h"
 #include "system/locale.h"
