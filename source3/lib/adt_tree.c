@@ -217,12 +217,12 @@ bool pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 	if ( !path || *path != '\\' ) {
 		DEBUG(0,("pathtree_add: Attempt to add a node with a bad path [%s]\n",
 			path ? path : "NULL" ));
-		return WERR_INVALID_PARAM;
+		return false;
 	}
 
 	if ( !tree ) {
 		DEBUG(0,("pathtree_add: Attempt to add a node to an uninitialized tree!\n"));
-		return WERR_INVALID_PARAM;
+		return false;
 	}
 
 	/* move past the first '\\' */
@@ -231,7 +231,7 @@ bool pathtree_add(struct sorted_tree *tree, const char *path, void *data_p)
 	path2 = SMB_STRDUP( path );
 	if ( !path2 ) {
 		DEBUG(0,("pathtree_add: strdup() failed on string [%s]!?!?!\n", path));
-		return WERR_NOMEM;
+		return false;
 	}
 
 
