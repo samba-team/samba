@@ -24,9 +24,6 @@
 #ifndef __LIB_UTIL_UTIL_PW_H__
 #define __LIB_UTIL_UTIL_PW_H__
 
-void sys_setpwent(void);
-struct passwd *sys_getpwent(void);
-void sys_endpwent(void);
 struct passwd *sys_getpwnam(const char *name);
 struct passwd *sys_getpwuid(uid_t uid);
 struct group *sys_getgrnam(const char *name);

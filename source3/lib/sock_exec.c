@@ -70,7 +70,7 @@ static int socketpair_tcp(int fd[2])
 
 	close(listener);
 	if (connect_done == 0) {
-		if (connect(fd[1], (struct sockaddr *)&sock, salen) != 0
+		if (connect(fd[1], (struct sockaddr *)&sock, socklen) != 0
 		    && errno != EISCONN) goto failed;
 	}
 

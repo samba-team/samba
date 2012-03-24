@@ -29,25 +29,6 @@
 #include "lib/util/util_pw.h"
 
 /**************************************************************************
- Wrappers for setpwent(), getpwent() and endpwent()
-****************************************************************************/
-
-void sys_setpwent(void)
-{
-	setpwent();
-}
-
-struct passwd *sys_getpwent(void)
-{
-	return getpwent();
-}
-
-void sys_endpwent(void)
-{
-	endpwent();
-}
-
-/**************************************************************************
  Wrappers for getpwnam(), getpwuid(), getgrnam(), getgrgid()
 ****************************************************************************/
 

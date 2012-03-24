@@ -176,8 +176,8 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		return (-1);
 	}
 
-	sys_setpwent();
-	while ((usr = sys_getpwent()) != NULL) {
+	setpwent();
+	while ((usr = getpwent()) != NULL) {
 		SMB_NTQUOTA_STRUCT tmp_qt;
 		SMB_NTQUOTA_LIST *tmp_list_ent;
 		struct dom_sid	sid;
@@ -222,7 +222,7 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		DLIST_ADD((*qt_list),tmp_list_ent);
 		
 	}
-	sys_endpwent();
+	endpwent();
 
 	return 0;
 }
