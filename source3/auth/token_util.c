@@ -94,9 +94,9 @@ struct security_token *get_root_nt_token( void )
 	}
 
 	if ( !(pw = sys_getpwuid(0)) ) {
-		if ( !(pw = sys_getpwnam("root")) ) {
+		if ( !(pw = getpwnam("root")) ) {
 			DEBUG(0,("get_root_nt_token: both sys_getpwuid(0) "
-				"and sys_getpwnam(\"root\") failed!\n"));
+				"and getpwnam(\"root\") failed!\n"));
 			return NULL;
 		}
 	}

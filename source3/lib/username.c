@@ -42,7 +42,7 @@ static struct passwd *getpwnam_alloc_cached(TALLOC_CTX *mem_ctx, const char *nam
 		return tcopy_passwd(mem_ctx, pw);
 	}
 
-	pw = sys_getpwnam(name);
+	pw = getpwnam(name);
 	if (pw == NULL) {
 		return NULL;
 	}
@@ -92,7 +92,7 @@ char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user)
 }
 
 /****************************************************************************
- * A wrapper for sys_getpwnam().  The following variations are tried:
+ * A wrapper for getpwnam().  The following variations are tried:
  *   - as transmitted
  *   - in all lower case if this differs from transmitted
  *   - in all upper case if this differs from transmitted

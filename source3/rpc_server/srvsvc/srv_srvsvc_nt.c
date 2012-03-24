@@ -906,7 +906,7 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
 	for (; resume_handle < *total_entries; resume_handle++) {
 		uint32 num_files;
 		uint32 connect_time;
-		struct passwd *pw = sys_getpwnam(session_list[resume_handle].username);
+		struct passwd *pw = getpwnam(session_list[resume_handle].username);
 		bool guest;
 
 		if ( !pw ) {
