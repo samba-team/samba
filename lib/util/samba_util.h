@@ -138,7 +138,6 @@ _PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
 			     char *service,
 			     size_t servlen,
 			     int flags);
-_PUBLIC_ int sys_connect(int fd, const struct sockaddr * addr);
 
 /* The following definitions come from lib/util/genrand.c  */
 /**

@@ -123,22 +123,3 @@ _PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
 	}
 	return getnameinfo(psa, salen, host, hostlen, service, servlen, flags);
 }
-
-_PUBLIC_ int sys_connect(int fd, const struct sockaddr * addr)
-{
-	socklen_t salen = (socklen_t)-1;
-
-	if (addr->sa_family == AF_INET) {
-	    salen = sizeof(struct sockaddr_in);
-	} else if (addr->sa_family == AF_UNIX) {
-	    salen = sizeof(struct sockaddr_un);
-	}
-#if defined(HAVE_IPV6)
-	else if (addr->sa_family == AF_INET6) {
-	    salen = sizeof(struct sockaddr_in6);
-	}
-#endif
-
-	return connect(fd, addr, salen);
-}
-
