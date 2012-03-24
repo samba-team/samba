@@ -607,7 +607,7 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	st = smb_fname->st;
 	TALLOC_FREE(smb_fname);
 
-	pwd = sys_getpwuid(st.st_ex_uid);
+	pwd = getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
 	grp = sys_getgrgid(st.st_ex_gid);
@@ -678,7 +678,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	pwd = sys_getpwuid(st.st_ex_uid);
+	pwd = getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
 	grp = sys_getgrgid(st.st_ex_gid);
@@ -747,7 +747,7 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	st = smb_fname->st;
 	TALLOC_FREE(smb_fname);
 
-	pwd = sys_getpwuid(st.st_ex_uid);
+	pwd = getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
 	grp = sys_getgrgid(st.st_ex_gid);

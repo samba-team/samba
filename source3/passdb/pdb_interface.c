@@ -1387,7 +1387,7 @@ static bool pdb_default_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	struct passwd *unix_pw;
 	bool ret;
 
-	unix_pw = sys_getpwuid( uid );
+	unix_pw = getpwuid( uid );
 
 	if ( !unix_pw ) {
 		DEBUG(4,("pdb_default_uid_to_sid: host has no idea of uid "

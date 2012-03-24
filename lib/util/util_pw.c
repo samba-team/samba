@@ -29,13 +29,8 @@
 #include "lib/util/util_pw.h"
 
 /**************************************************************************
- Wrappers for getpwuid(), getgrnam(), getgrgid()
+ Wrappers for getgrnam(), getgrgid()
 ****************************************************************************/
-
-struct passwd *sys_getpwuid(uid_t uid)
-{
-	return getpwuid(uid);
-}
 
 struct group *sys_getgrnam(const char *name)
 {
@@ -92,7 +87,7 @@ struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid)
 {
 	struct passwd *temp;
 
-	temp = sys_getpwuid(uid);
+	temp = getpwuid(uid);
 	
 	if (!temp) {
 #if 0
