@@ -28,15 +28,6 @@
 #include "system/passwd.h"
 #include "lib/util/util_pw.h"
 
-/**************************************************************************
- Wrappers for getgrgid()
-****************************************************************************/
-
-struct group *sys_getgrgid(gid_t gid)
-{
-	return getgrgid(gid);
-}
-
 struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx,
 			    const struct passwd *from)
 {

@@ -610,7 +610,7 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	pwd = getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
-	grp = sys_getgrgid(st.st_ex_gid);
+	grp = getgrgid(st.st_ex_gid);
 	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
@@ -681,7 +681,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	pwd = getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
-	grp = sys_getgrgid(st.st_ex_gid);
+	grp = getgrgid(st.st_ex_gid);
 	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
@@ -750,7 +750,7 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	pwd = getpwuid(st.st_ex_uid);
 	if (pwd != NULL) user = pwd->pw_name;
 	else user = null_string;
-	grp = sys_getgrgid(st.st_ex_gid);
+	grp = getgrgid(st.st_ex_gid);
 	if (grp != NULL) group = grp->gr_name;
 	else group = null_string;
 
