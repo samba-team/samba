@@ -113,10 +113,6 @@ void CatchChild(void);
 **/
 void CatchChildLeaveStatus(void);
 
-/* The following definitions come from lib/util/system.c  */
-
-void *sys_memalign( size_t align, size_t size );
-
 /**
  * Wrapper for fork used to invalid pid cache.
  **/
