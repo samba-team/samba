@@ -200,7 +200,7 @@ static WERROR watch_service_state(struct rpc_pipe_client *pipe_hnd,
 
 		d_printf(".");
 		i++;
-		sys_usleep( 100 );
+		usleep( 100 );
 	}
 	d_printf("\n");
 

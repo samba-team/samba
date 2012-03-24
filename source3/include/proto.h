@@ -318,7 +318,6 @@ int sys_set_nfs_quota(const char *path, const char *bdev,
 
 /* The following definitions come from lib/system.c  */
 
-int sys_usleep(long usecs);
 ssize_t sys_read(int fd, void *buf, size_t count);
 ssize_t sys_write(int fd, const void *buf, size_t count);
 ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt);

@@ -1957,7 +1957,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		&& (RA_WIN2K == get_remote_arch()) )
 	{
 		DEBUG(10,("_spoolss_OpenPrinterEx: Enabling LAN/WAN hack for Win2k clients.\n"));
-		sys_usleep( 500000 );
+		usleep( 500000 );
 	}
 #endif
 

@@ -217,7 +217,7 @@ static FILE *startsmbfilepwent(const char *pfile, enum pwf_access_type type, int
 					if((fd = sys_open(pfile, O_CREAT|O_TRUNC|O_EXCL|O_RDWR, 0600))!=-1) {
 						break;
 					}
-					sys_usleep(200); /* Spin, spin... */
+					usleep(200); /* Spin, spin... */
 				}
 				if(fd == -1) {
 					DEBUG(0,("startsmbfilepwent_internal: too many race conditions \

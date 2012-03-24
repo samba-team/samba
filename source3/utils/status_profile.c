@@ -563,7 +563,7 @@ bool status_profile_rates(bool verbose)
 				    (unsigned long )usec_to_msec(remain_usec));
 			}
 
-			sys_usleep(remain_usec);
+			usleep(remain_usec);
 		}
 
 	}
