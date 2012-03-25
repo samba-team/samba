@@ -100,7 +100,9 @@ static int objectclass_sort(struct ldb_module *module,
 {
 	struct ldb_context *ldb;
 	unsigned int i, lowest;
-	struct class_list *unsorted = NULL, *sorted = NULL, *current = NULL, *poss_parent = NULL, *new_parent = NULL, *current_lowest = NULL;
+	struct class_list *unsorted = NULL, *sorted = NULL, *current = NULL,
+			  *poss_parent = NULL, *new_parent = NULL,
+			  *current_lowest = NULL, *current_lowest_struct = NULL;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -190,12 +192,24 @@ static int objectclass_sort(struct ldb_module *module,
 	/* For each object: order by hierarchy */
 	while (unsorted != NULL) {
 		lowest = UINT_MAX;
-		current_lowest = NULL;
+		current_lowest = current_lowest_struct = NULL;
 		for (current = unsorted; current != NULL; current = current->next) {
-			if(current->objectclass->subClass_order < lowest) {
-				current_lowest = current;
+			if (current->objectclass->subClass_order <= lowest) {
+				/*
+				 * According to MS-ADTS 3.1.1.1.4 structural
+				 * and 88 object classes are always listed after
+				 * the other class types in a subclass hierarchy
+				 */
+				if (current->objectclass->objectClassCategory > 1) {
+					current_lowest = current;
+				} else {
+					current_lowest_struct = current;
+				}
 				lowest = current->objectclass->subClass_order;
 			}
+		}
+		if (current_lowest == NULL) {
+			current_lowest = current_lowest_struct;
 		}
 
 		if (current_lowest != NULL) {
