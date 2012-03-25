@@ -163,9 +163,15 @@ static int objectclass_sort(struct ldb_module *module,
 	current->objectclass = dsdb_class_by_lDAPDisplayName(schema, "top");
 	DLIST_ADD_END(sorted, current, struct class_list *);
 
+	/* If we don't have a schema yet, then just merge the lists again */
+	if (!schema) {
+		DLIST_CONCATENATE(sorted, unsorted, struct class_list *);
+		*sorted_out = sorted;
+		return LDB_SUCCESS;
+	}
 
 	/* For each object:  find parent chain */
-	for (current = unsorted; schema && current; current = current->next) {
+	for (current = unsorted; current != NULL; current = current->next) {
 		for (poss_parent = unsorted; poss_parent; poss_parent = poss_parent->next) {
 			if (ldb_attr_cmp(poss_parent->objectclass->lDAPDisplayName, current->objectclass->subClassOf) == 0) {
 				break;
@@ -181,42 +187,25 @@ static int objectclass_sort(struct ldb_module *module,
 		DLIST_ADD_END(unsorted, new_parent, struct class_list *);
 	}
 
-	do
-	{
+	/* For each object: order by hierarchy */
+	while (unsorted != NULL) {
 		lowest = UINT_MAX;
 		current_lowest = NULL;
-		for (current = unsorted; schema && current; current = current->next) {
+		for (current = unsorted; current != NULL; current = current->next) {
 			if(current->objectclass->subClass_order < lowest) {
 				current_lowest = current;
 				lowest = current->objectclass->subClass_order;
 			}
 		}
 
-		if(current_lowest != NULL) {
+		if (current_lowest != NULL) {
 			DLIST_REMOVE(unsorted,current_lowest);
 			DLIST_ADD_END(sorted,current_lowest, struct class_list *);
 		}
-	} while(unsorted);
-
-
-	if (!unsorted) {
-		*sorted_out = sorted;
-		return LDB_SUCCESS;
 	}
 
-	if (!schema) {
-		/* If we don't have schema yet, then just merge the lists again */
-		DLIST_CONCATENATE(sorted, unsorted, struct class_list *);
-		*sorted_out = sorted;
-		return LDB_SUCCESS;
-	}
-
-	/* This shouldn't happen, and would break MMC, perhaps there
-	 * was no 'top', a conflict in the objectClasses or some other
-	 * schema error?
-	 */
-	ldb_asprintf_errstring(ldb, "objectclass %s is not a valid objectClass in objectClass chain", unsorted->objectclass->lDAPDisplayName);
-	return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	*sorted_out = sorted;
+	return LDB_SUCCESS;
 }
 
 /*
