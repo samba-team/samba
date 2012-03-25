@@ -29,14 +29,29 @@
 #include "libcli/security/security.h"
 #include "dsdb/samdb/ldb_modules/schema.h"
 
-
-const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element,
-						    struct ldb_request *parent)
+/*
+ * This function determines the (last) structural or 88 object class of a passed
+ * "objectClass" attribute.
+ * Without schema this does not work and hence NULL is returned. If the
+ * "objectClass" attribute has already been sorted then only a check on the
+ * last value is necessary (MS-ADTS 3.1.1.1.4)
+ */
+const struct dsdb_class *get_last_structural_class(const struct dsdb_schema *schema,
+						   const struct ldb_message_element *element,
+						   bool sorted)
 {
 	const struct dsdb_class *last_class = NULL;
-	unsigned int i;
+	unsigned int i = 0;
 
-	for (i = 0; i < element->num_values; i++){
+	if (schema == NULL) {
+		return NULL;
+	}
+
+	if (sorted && (element->num_values > 1)) {
+		i = element->num_values - 1;
+	}
+
+	for (; i < element->num_values; i++){
 		const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
 
 		if(tmp_class == NULL) {
