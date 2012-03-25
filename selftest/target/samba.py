@@ -119,3 +119,37 @@ def cleanup_child(pid, name, outf=None):
     else:
         outf.write("%s child process %d exited with value %d.\n" % (name, childpid, status >> 8))
     return childpid
+
+
+def get_interface(netbiosname):
+    """Return interface id for a particular server.
+    """
+    netbiosname = netbiosname.lower()
+
+    interfaces = {
+        "locals3dc2": 2,
+        "localmember3": 3,
+        "localshare4": 4,
+        "localserver5": 5,
+        "localktest6": 6,
+        "maptoguest": 7,
+
+        # 11-16 used by selftest.pl for client interfaces
+        "localdc": 21,
+        "localvampiredc": 22,
+        "s4member": 23,
+        "localrpcproxy": 24,
+        "dc5": 25,
+        "dc6": 26,
+        "dc7": 27,
+        "rodc": 28,
+        "localadmember": 29,
+        "plugindc": 30,
+        "localsubdc": 31,
+        "chgdcpass": 32,
+    }
+
+    # update lib/socket_wrapper/socket_wrapper.c
+    #  #define MAX_WRAPPED_INTERFACES 32
+    # if you wish to have more than 32 interfaces
+    return interfaces[netbiosname]

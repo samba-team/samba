@@ -19,16 +19,13 @@
 
 """Tests for selftest.target.samba."""
 
-import os
-import sys
-
 from cStringIO import StringIO
 
 from selftest.tests import TestCase
 
 from selftest.target.samba import (
     bindir_path,
-    cleanup_child,
+    get_interface,
     mk_realms_stanza,
     write_krb5_conf,
     )
@@ -107,3 +104,13 @@ class WriteKrb5ConfTests(TestCase):
  }
 
 ''', f.getvalue())
+
+
+class GetInterfaceTests(TestCase):
+
+    def test_get_interface(self):
+        self.assertEquals(21, get_interface("localdc"))
+        self.assertEquals(4, get_interface("localshare4"))
+
+    def test_unknown(self):
+        self.assertRaises(KeyError, get_interface, "unknown")
