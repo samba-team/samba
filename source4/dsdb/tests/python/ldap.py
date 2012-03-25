@@ -433,6 +433,21 @@ class BasicTests(samba.tests.TestCase):
           "objectClass")
         ldb.modify(m)
 
+        # Add a new auxiliary object class "posixAccount" to "ldaptestuser"
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("posixAccount", FLAG_MOD_ADD,
+          "objectClass")
+        ldb.modify(m)
+
+        # Be sure that "top" is the first and the (most) structural object class
+        # the last value of the "objectClass" attribute - MS-ADTS 3.1.1.1.4
+        res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["objectClass"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["objectClass"][0], "top")
+        self.assertEquals(res[0]["objectClass"][len(res[0]["objectClass"])-1], "user")
+
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
     def test_system_only(self):
