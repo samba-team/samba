@@ -9,7 +9,6 @@ bld.SAMBA_LIBRARY('cli_smb_common',
 		smbXcli_base.c
 		smb1cli_trans.c
 	''',
-	autoproto='smb_common_proto.h',
 	deps='LIBCRYPTO errors gssapi gensec KRB5_WRAP LIBASYNC_REQ',
 	public_deps='talloc samba-util',
 	private_library=True,
