@@ -20,7 +20,7 @@
 	<cmdsynopsis>
 		<command>smbcacls</command>
 		<arg choice="req">//server/share</arg>
-		<arg choice="req">filename</arg>
+		<arg choice="req">/filename</arg>
 		<arg choice="opt">-D|--delete acls</arg>
 		<arg choice="opt">-M|--modify acls</arg>
 		<arg choice="opt">-a|--add acls</arg>
