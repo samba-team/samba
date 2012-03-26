@@ -210,8 +210,10 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 		uint16_t opcode	= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
 		if (opcode == SMB2_OP_NEGPROT) {
 			smbsrv_terminate_connection(smb_conn, "Bad body size in SMB2 negprot");
+			return;
 		} else {
 			smb2srv_send_error(req, NT_STATUS_INVALID_PARAMETER);
+			return;
 		}
 	}
 
@@ -286,6 +288,7 @@ void smb2srv_send_reply(struct smb2srv_request *req)
 	status = packet_send(req->smb_conn->packet, blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+		return;
 	}
 	if (req->chain_offset) {
 		smb2srv_chain_reply(req);
