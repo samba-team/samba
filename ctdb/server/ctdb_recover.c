@@ -35,6 +35,10 @@ static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb, uint32_t prio
 {
 	struct ctdb_db_context *ctdb_db;
 
+	/* these are internal tdb functions */
+	int tdb_transaction_write_lock_mark(struct tdb_context *tdb);
+	int tdb_transaction_write_lock_unmark(struct tdb_context *tdb);
+
 	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
 		DEBUG(DEBUG_ERR,(__location__ " Illegal priority when trying to mark all databases Prio:%u\n", priority));
 		return -1;
@@ -89,6 +93,9 @@ static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb, uint32_t prio
 static int ctdb_lock_all_databases_unmark(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
+
+	/* this is an internal tdb functions */
+	int tdb_transaction_write_lock_unmark(struct tdb_context *tdb);
 
 	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
 		DEBUG(DEBUG_ERR,(__location__ " Illegal priority when trying to mark all databases Prio:%u\n", priority));
