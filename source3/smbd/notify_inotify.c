@@ -383,7 +383,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	int wd;
 	uint32_t mask;
 	struct inotify_watch_context *w;
-	uint32_t filter = e->filter;
+	uint32_t orig_filter = e->filter;
 	void **handle = (void **)handle_p;
 
 	/* maybe setup the inotify fd */
@@ -408,7 +408,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	/* get a new watch descriptor for this path */
 	wd = inotify_add_watch(in->fd, path, mask);
 	if (wd == -1) {
-		e->filter = filter;
+		e->filter = orig_filter;
 		DEBUG(1, ("inotify_add_watch returned %s\n", strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
@@ -419,7 +419,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	w = talloc(in, struct inotify_watch_context);
 	if (w == NULL) {
 		inotify_rm_watch(in->fd, wd);
-		e->filter = filter;
+		e->filter = orig_filter;
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -428,11 +428,11 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	w->callback = callback;
 	w->private_data = private_data;
 	w->mask = mask;
-	w->filter = filter;
+	w->filter = orig_filter;
 	w->path = talloc_strdup(w, path);
 	if (w->path == NULL) {
 		inotify_rm_watch(in->fd, wd);
-		e->filter = filter;
+		e->filter = orig_filter;
 		return NT_STATUS_NO_MEMORY;
 	}
 
