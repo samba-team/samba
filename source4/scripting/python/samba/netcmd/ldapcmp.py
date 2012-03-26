@@ -45,7 +45,8 @@ class LDAPBase(object):
 
     def __init__(self, host, creds, lp,
                  two=False, quiet=False, descriptor=False, sort_aces=False, verbose=False,
-                 view="section", base="", scope="SUB"):
+                 view="section", base="", scope="SUB",
+                 outf=sys.stdout, errf=sys.stderr):
         ldb_options = []
         samdb_url = host
         if not "://" in host:
@@ -56,6 +57,8 @@ class LDAPBase(object):
         # use 'paged_search' module when connecting remotely
         if samdb_url.lower().startswith("ldap://"):
             ldb_options = ["modules:paged_searches"]
+        self.outf = outf
+        self.errf = errf
         self.ldb = Ldb(url=samdb_url,
                        credentials=creds,
                        lp=lp,
@@ -274,7 +277,9 @@ class LDAPBase(object):
                 pass
 
 class Descriptor(object):
-    def __init__(self, connection, dn):
+    def __init__(self, connection, dn, outf=sys.stdout, errf=sys.stderr):
+        self.outf = outf
+        self.errf = errf
         self.con = connection
         self.dn = dn
         self.sddl = self.con.get_descriptor_sddl(self.dn)
@@ -414,7 +419,10 @@ class Descriptor(object):
         return (self_aces == [] and other_aces == [], res)
 
 class LDAPObject(object):
-    def __init__(self, connection, dn, summary, filter_list):
+    def __init__(self, connection, dn, summary, filter_list,
+                 outf=sys.stdout, errf=sys.stderr):
+        self.outf = outf
+        self.errf = errf
         self.con = connection
         self.two_domains = self.con.two_domains
         self.quiet = self.con.quiet
@@ -535,8 +543,8 @@ class LDAPObject(object):
         return self.cmp_attrs(other)
 
     def cmp_desc(self, other):
-        d1 = Descriptor(self.con, self.dn)
-        d2 = Descriptor(other.con, other.dn)
+        d1 = Descriptor(self.con, self.dn, outf=self.outf, errf=self.errf)
+        d2 = Descriptor(other.con, other.dn, outf=self.outf, errf=self.errf)
         if self.con.view == "section":
             res = d1.diff_2(d2)
         elif self.con.view == "collision":
@@ -668,7 +676,10 @@ class LDAPObject(object):
 
 class LDAPBundel(object):
 
-    def __init__(self, connection, context, dn_list=None, filter_list=None):
+    def __init__(self, connection, context, dn_list=None, filter_list=None,
+                 outf=sys.stdout, errf=sys.stderr):
+        self.outf = outf
+        self.errf = errf
         self.con = connection
         self.two_domains = self.con.two_domains
         self.quiet = self.con.quiet
@@ -759,7 +770,8 @@ class LDAPBundel(object):
                 object1 = LDAPObject(connection=self.con,
                                      dn=self.dn_list[index],
                                      summary=self.summary,
-                                     filter_list=self.filter_list)
+                                     filter_list=self.filter_list,
+                                     outf=self.outf, errf=self.errf)
             except LdbError, (enum, estr):
                 if enum == ERR_NO_SUCH_OBJECT:
                     self.log( "\n!!! Object not found: %s" % self.dn_list[index] )
@@ -769,7 +781,8 @@ class LDAPBundel(object):
                 object2 = LDAPObject(connection=other.con,
                         dn=other.dn_list[index],
                         summary=other.summary,
-                        filter_list=self.filter_list)
+                        filter_list=self.filter_list,
+                        outf=self.outf, errf=self.errf)
             except LdbError, (enum, estr):
                 if enum == ERR_NO_SUCH_OBJECT:
                     self.log( "\n!!! Object not found: %s" % other.dn_list[index] )
@@ -943,12 +956,14 @@ class cmd_ldapcmp(Command):
 
         con1 = LDAPBase(URL1, creds, lp,
                         two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
-                        verbose=verbose,view=view, base=base, scope=scope)
+                        verbose=verbose,view=view, base=base, scope=scope,
+                        outf=self.outf, errf=self.errf)
         assert len(con1.base_dn) > 0
 
         con2 = LDAPBase(URL2, creds2, lp,
                         two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
-                        verbose=verbose, view=view, base=base2, scope=scope)
+                        verbose=verbose, view=view, base=base2, scope=scope,
+                        outf=self.outf, errf=self.errf)
         assert len(con2.base_dn) > 0
 
         filter_list = filter.split(",")
@@ -958,8 +973,10 @@ class cmd_ldapcmp(Command):
             if not quiet:
                 self.outf.write("\n* Comparing [%s] context...\n" % context)
 
-            b1 = LDAPBundel(con1, context=context, filter_list=filter_list)
-            b2 = LDAPBundel(con2, context=context, filter_list=filter_list)
+            b1 = LDAPBundel(con1, context=context, filter_list=filter_list,
+                            outf=self.outf, errf=self.errf)
+            b2 = LDAPBundel(con2, context=context, filter_list=filter_list,
+                            outf=self.outf, errf=self.errf)
 
             if b1 == b2:
                 if not quiet:
