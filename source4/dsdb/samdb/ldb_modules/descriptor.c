@@ -543,7 +543,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	objectclass = get_last_structural_class(schema, objectclass_element,
-						false);
+						true);
 	if (objectclass == NULL) {
 		return ldb_operr(ldb);
 	}
@@ -662,7 +662,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	objectclass = get_last_structural_class(schema, objectclass_element,
-						false);
+						true);
 	if (objectclass == NULL) {
 		return ldb_operr(ldb);
 	}
