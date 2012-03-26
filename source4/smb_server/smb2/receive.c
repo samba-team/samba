@@ -252,7 +252,6 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 	status = smb2srv_reply(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
-		talloc_free(req);
 		return;
 	}
 }
