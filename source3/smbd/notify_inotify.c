@@ -328,14 +328,14 @@ static const struct {
 	{FILE_NOTIFY_CHANGE_SECURITY,    IN_ATTRIB}
 };
 
-static uint32_t inotify_map(struct notify_entry *e)
+static uint32_t inotify_map(uint32_t *filter)
 {
 	int i;
 	uint32_t out=0;
 	for (i=0;i<ARRAY_SIZE(inotify_mapping);i++) {
-		if (inotify_mapping[i].notify_mask & e->filter) {
+		if (inotify_mapping[i].notify_mask & *filter) {
 			out |= inotify_mapping[i].inotify_mask;
-			e->filter &= ~inotify_mapping[i].notify_mask;
+			*filter &= ~inotify_mapping[i].notify_mask;
 		}
 	}
 	return out;
@@ -395,7 +395,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 
 	in = talloc_get_type(ctx->private_data, struct inotify_private);
 
-	mask = inotify_map(e);
+	mask = inotify_map(&e->filter);
 	if (mask == 0) {
 		/* this filter can't be handled by inotify */
 		return NT_STATUS_INVALID_PARAMETER;
