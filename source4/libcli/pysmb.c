@@ -302,9 +302,10 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 	union smb_fileinfo fio;
 	struct smb_private_data *spdata;
 	const char *filename;
+	int sinfo = 0;
 	int fnum;
 
-	if (!PyArg_ParseTuple(args, "s:get_acl", &filename)) {
+	if (!PyArg_ParseTuple(args, "s|i:get_acl", &filename, &sinfo)) {
 		return NULL;
 	}
 
@@ -335,7 +336,10 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 
 	fio.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	fio.query_secdesc.in.file.fnum = fnum;
-	fio.query_secdesc.in.secinfo_flags = SECINFO_OWNER |
+	if (sinfo)
+		fio.query_secdesc.in.secinfo_flags = sinfo;
+	else
+		fio.query_secdesc.in.secinfo_flags = SECINFO_OWNER |
 						SECINFO_GROUP |
 						SECINFO_DACL |
 						SECINFO_PROTECTED_DACL |
@@ -343,7 +347,6 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 						SECINFO_SACL |
 						SECINFO_PROTECTED_SACL |
 						SECINFO_UNPROTECTED_SACL;
-
 
 	status = smb_raw_query_secdesc(spdata->tree, self->talloc_ctx, &fio);
 	smbcli_close(spdata->tree, fnum);
@@ -367,9 +370,10 @@ static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *
 	const char *filename;
 	PyObject *py_sd;
 	struct security_descriptor *sd;
+	uint32_t sinfo = 0;
 	int fnum;
 
-	if (!PyArg_ParseTuple(args, "sO:set_acl", &filename, &py_sd)) {
+	if (!PyArg_ParseTuple(args, "sO|i:get_acl", &filename, &py_sd, &sinfo)) {
 		return NULL;
 	}
 
@@ -410,7 +414,18 @@ static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *
 
 	fio.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
 	fio.set_secdesc.in.file.fnum = fnum;
-	fio.set_secdesc.in.secinfo_flags = 0;
+	if (sinfo)
+		fio.set_secdesc.in.secinfo_flags = sinfo;
+	else
+		fio.set_secdesc.in.secinfo_flags = SECINFO_OWNER |
+						SECINFO_GROUP |
+						SECINFO_DACL |
+						SECINFO_PROTECTED_DACL |
+						SECINFO_UNPROTECTED_DACL |
+						SECINFO_SACL |
+						SECINFO_PROTECTED_SACL |
+						SECINFO_UNPROTECTED_SACL;
+
 	fio.set_secdesc.in.sd = sd;
 
 	status = smb_raw_set_secdesc(spdata->tree, &fio);
@@ -447,10 +462,10 @@ static PyMethodDef py_smb_methods[] = {
 		"chkpath(path) -> True or False\n\n \
 		Return true if path exists, false otherwise." },
 	{ "get_acl", (PyCFunction)py_smb_getacl, METH_VARARGS,
-		"get_acl(path) -> security_descriptor object\n\n \
+		"get_acl(path[, security_info=0]) -> security_descriptor object\n\n \
 		Get security descriptor for file." },
 	{ "set_acl", (PyCFunction)py_smb_setacl, METH_VARARGS,
-		"set_acl(path, security_descriptor) -> None\n\n \
+		"set_acl(path, security_descriptor[, security_info=0]) -> None\n\n \
 		Set security descriptor for file." },
 	{ NULL },
 };
@@ -522,7 +537,7 @@ static PyTypeObject PySMB = {
 	.tp_new = py_smb_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_smb_methods,
-	.tp_doc = "SMB(hostname, service[, lp[, creds]]) -> SMB connection object\n",
+	.tp_doc = "SMB(hostname, service[, creds[, lp]]) -> SMB connection object\n",
 
 };
 
