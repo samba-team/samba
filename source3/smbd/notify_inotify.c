@@ -402,7 +402,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	}
 
 	/* using IN_MASK_ADD allows us to cope with inotify() returning the same
-	   watch descriptor for muliple watches on the same path */
+	   watch descriptor for multiple watches on the same path */
 	mask |= (IN_MASK_ADD | IN_ONLYDIR);
 
 	/* get a new watch descriptor for this path */
