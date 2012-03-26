@@ -380,6 +380,8 @@ LIBCLI_NETLOGON_OBJ = autoconf/librpc/gen_ndr/ndr_netlogon_c.o \
 
 LIBCLI_EPMAPPER_OBJ = autoconf/librpc/gen_ndr/ndr_epmapper_c.o
 
+LIBCLI_FSRVP_OBJ = autoconf/librpc/gen_ndr/ndr_fsrvp_c.o
+
 LIBNDR_GEN_OBJ = autoconf/librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 autoconf/librpc/gen_ndr/ndr_dfs.o \
@@ -393,7 +395,8 @@ LIBNDR_GEN_OBJ = autoconf/librpc/gen_ndr/ndr_wkssvc.o \
 		 autoconf/librpc/gen_ndr/ndr_dssetup.o \
 		 autoconf/librpc/gen_ndr/ndr_epmapper.o \
 		 autoconf/librpc/gen_ndr/ndr_ntsvcs.o \
-		 $(LIBNDR_SPOOLSS_OBJ)
+		 $(LIBNDR_SPOOLSS_OBJ) \
+		 autoconf/librpc/gen_ndr/ndr_fsrvp.o
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -1089,7 +1092,7 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_shutdown.o rpcclient/cmd_test.o \
 		 rpcclient/cmd_wkssvc.o rpcclient/cmd_ntsvcs.o \
 		 rpcclient/cmd_drsuapi.o rpcclient/cmd_eventlog.o \
-		 rpcclient/cmd_winreg.o \
+		 rpcclient/cmd_winreg.o rpcclient/cmd_fss.o \
 		 $(DISPLAY_SEC_OBJ)
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
@@ -1111,6 +1114,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBCLI_SAMR_OBJ) \
 	     $(LIBCLI_WINREG_OBJ) \
 	     $(LIBCLI_NETLOGON_OBJ) \
+	     $(LIBCLI_FSRVP_OBJ) \
 	     $(RPC_CLIENT_SCHANNEL_OBJ) \
 	     rpc_client/init_netlogon.o \
 	     rpc_client/init_samr.o

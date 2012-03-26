@@ -443,7 +443,7 @@ RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
                     rpcclient/cmd_shutdown.c rpcclient/cmd_test.c
                     rpcclient/cmd_wkssvc.c rpcclient/cmd_ntsvcs.c
                     rpcclient/cmd_drsuapi.c rpcclient/cmd_eventlog.c
-                    rpcclient/cmd_winreg.c'''
+                    rpcclient/cmd_winreg.c rpcclient/cmd_fss.c'''
 
 RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}'''
 
@@ -1214,6 +1214,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  RPC_NDR_NTSVCS
                  RPC_NDR_EVENTLOG
                  INIT_SAMR
+		 RPC_NDR_FSRVP
                  ''',
                  vars=locals())
 

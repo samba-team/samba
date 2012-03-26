@@ -35,6 +35,7 @@
 #include "../librpc/gen_ndr/ndr_ntsvcs.h"
 #include "../librpc/gen_ndr/ndr_epmapper.h"
 #include "../librpc/gen_ndr/ndr_drsuapi.h"
+#include "../librpc/gen_ndr/ndr_fsrvp.h"
 
 static const char *get_pipe_name_from_iface(
 	TALLOC_CTX *mem_ctx, const struct ndr_interface_table *interface)
@@ -138,6 +139,9 @@ static bool initialize_interfaces(void)
 		return false;
 	}
 	if (!smb_register_ndr_interface(&ndr_table_drsuapi)) {
+		return false;
+	}
+	if (!smb_register_ndr_interface(&ndr_table_FileServerVssAgent)) {
 		return false;
 	}
 	return true;
