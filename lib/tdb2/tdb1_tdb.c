@@ -146,17 +146,17 @@ tdb1_off_t tdb1_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t h
 
 static TDB_DATA _tdb1_fetch(struct tdb_context *tdb, TDB_DATA key);
 
-static int tdb_update_hash_cmp(TDB_DATA key, TDB_DATA data, void *private_data)
+static enum TDB_ERROR tdb_update_hash_cmp(TDB_DATA key, TDB_DATA data, void *private_data)
 {
 	TDB_DATA *dbuf = (TDB_DATA *)private_data;
 
 	if (dbuf->dsize != data.dsize) {
-		return -1;
+		return TDB_ERR_EINVAL;
 	}
 	if (memcmp(dbuf->dptr, data.dptr, data.dsize) != 0) {
-		return -1;
+		return TDB_ERR_EINVAL;
 	}
-	return 0;
+	return TDB_SUCCESS;
 }
 
 /* update an entry in place - this only works if the new data size
@@ -177,7 +177,7 @@ static int tdb1_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash
 	if (rec.key_len == key.dsize &&
 	    rec.data_len == dbuf.dsize &&
 	    rec.full_hash == hash &&
-	    tdb1_parse_record(tdb, key, tdb_update_hash_cmp, &dbuf) == 0) {
+	    tdb1_parse_record(tdb, key, tdb_update_hash_cmp, &dbuf) == TDB_SUCCESS) {
 			return 0;
 	}
 
