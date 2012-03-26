@@ -164,6 +164,8 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 	uint32_t flags;
 	uint32_t last_hdr_offset;
 
+	talloc_steal(req, p_req);
+
 	last_hdr_offset = p_req->in.hdr - p_req->in.buffer;
 
 	chain_offset = p_req->chain_offset;
