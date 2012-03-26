@@ -1130,8 +1130,9 @@ static char *smb_time_audit_realpath(vfs_handle_struct *handle,
 
 static NTSTATUS smb_time_audit_notify_watch(struct vfs_handle_struct *handle,
 			struct sys_notify_context *ctx,
-			struct notify_entry *e,
 			const char *path,
+			uint32_t *filter,
+			uint32_t *subdir_filter,
 			void (*callback)(struct sys_notify_context *ctx,
 					void *private_data,
 					struct notify_event *ev),
@@ -1142,7 +1143,8 @@ static NTSTATUS smb_time_audit_notify_watch(struct vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, e, path, callback,
+	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, path,
+					   filter, subdir_filter, callback,
 					   private_data, handle_p);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;

@@ -526,8 +526,9 @@ struct sys_notify_context *sys_notify_context_create(TALLOC_CTX *mem_ctx,
 /* The following definitions come from smbd/notify_inotify.c  */
 
 NTSTATUS inotify_watch(struct sys_notify_context *ctx,
-		       struct notify_entry *e,
 		       const char *path,
+		       uint32_t *filter,
+		       uint32_t *subdir_filter,
 		       void (*callback)(struct sys_notify_context *ctx,
 					void *private_data,
 					struct notify_event *ev),

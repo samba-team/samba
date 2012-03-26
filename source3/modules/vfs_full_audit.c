@@ -1379,8 +1379,9 @@ static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 
 static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
 			struct sys_notify_context *ctx,
-			struct notify_entry *e,
 			const char *path,
+			uint32_t *filter,
+			uint32_t *subdir_filter,
 			void (*callback)(struct sys_notify_context *ctx,
 					void *private_data,
 					struct notify_event *ev),
@@ -1388,7 +1389,8 @@ static NTSTATUS smb_full_audit_notify_watch(struct vfs_handle_struct *handle,
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, e, path, callback,
+	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, path,
+					   filter, subdir_filter, callback,
 					   private_data, handle_p);
 
 	do_log(SMB_VFS_OP_NOTIFY_WATCH, NT_STATUS_IS_OK(result), handle, "");

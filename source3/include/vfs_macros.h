@@ -313,10 +313,10 @@
 #define SMB_VFS_NEXT_REALPATH(handle, path) \
 	smb_vfs_call_realpath((handle)->next, (path))
 
-#define SMB_VFS_NOTIFY_WATCH(conn, ctx, e, path, callback, private_data, handle_p) \
-	smb_vfs_call_notify_watch((conn)->vfs_handles, (ctx), (e), (path), (callback), (private_data), (handle_p))
-#define SMB_VFS_NEXT_NOTIFY_WATCH(conn, ctx, e, path, callback, private_data, handle_p) \
-	smb_vfs_call_notify_watch((conn)->next, (ctx), (e), (path), (callback), (private_data), (handle_p))
+#define SMB_VFS_NOTIFY_WATCH(conn, ctx, path, filter, subdir_filter, callback, private_data, handle_p) \
+	smb_vfs_call_notify_watch((conn)->vfs_handles, (ctx), (path), (filter), (subdir_filter), (callback), (private_data), (handle_p))
+#define SMB_VFS_NEXT_NOTIFY_WATCH(conn, ctx, path, filter, subdir_filter, callback, private_data, handle_p) \
+	smb_vfs_call_notify_watch((conn)->next, (ctx), (path), (filter), (subdir_filter), (callback), (private_data), (handle_p))
 
 #define SMB_VFS_CHFLAGS(conn, path, flags) \
 	smb_vfs_call_chflags((conn)->vfs_handles, (path), (flags))

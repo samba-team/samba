@@ -1833,15 +1833,17 @@ char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path)
 
 NTSTATUS smb_vfs_call_notify_watch(struct vfs_handle_struct *handle,
 				   struct sys_notify_context *ctx,
-				   struct notify_entry *e,
 				   const char *path,
+				   uint32_t *filter,
+				   uint32_t *subdir_filter,
 				   void (*callback)(struct sys_notify_context *ctx,
 						    void *private_data,
 						    struct notify_event *ev),
 				   void *private_data, void *handle_p)
 {
 	VFS_FIND(notify_watch);
-	return handle->fns->notify_watch_fn(handle, ctx, e, path, callback,
+	return handle->fns->notify_watch_fn(handle, ctx, path,
+					    filter, subdir_filter, callback,
 					    private_data, handle_p);
 }
 

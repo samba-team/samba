@@ -221,8 +221,9 @@ static int fam_watch_context_destructor(struct fam_watch_context *ctx)
 */
 static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
 			  struct sys_notify_context *ctx,
-			  struct notify_entry *e,
 			  const char *path,
+			  uint32_t *filter,
+			  uint32_t *subdir_filter,
 			  void (*callback)(struct sys_notify_context *ctx, 
 					   void *private_data,
 					   struct notify_event *ev),
@@ -234,8 +235,8 @@ static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
 	struct fam_watch_context *watch;
 	void **handle = (void **)handle_p;
 
-	if ((e->filter & fam_mask) == 0) {
-		DEBUG(10, ("filter = %u, ignoring in FAM\n", e->filter));
+	if ((*filter & fam_mask) == 0) {
+		DEBUG(10, ("filter = %u, ignoring in FAM\n", *filter));
 		return NT_STATUS_OK;
 	}
 
@@ -274,7 +275,7 @@ static NTSTATUS fam_watch(vfs_handle_struct *vfs_handle,
 	 */
 
 	watch->filter = fam_mask;
-	e->filter &= ~fam_mask;
+	*filter &= ~fam_mask;
 
 	DLIST_ADD(fam_notify_list, watch);
 	talloc_set_destructor(watch, fam_watch_context_destructor);

@@ -371,8 +371,9 @@ static int watch_destructor(struct inotify_watch_context *w)
   talloc_free() on *handle
 */
 NTSTATUS inotify_watch(struct sys_notify_context *ctx,
-		       struct notify_entry *e,
 		       const char *path,
+		       uint32_t *filter,
+		       uint32_t *subdir_filter,
 		       void (*callback)(struct sys_notify_context *ctx, 
 					void *private_data,
 					struct notify_event *ev),
@@ -383,7 +384,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	int wd;
 	uint32_t mask;
 	struct inotify_watch_context *w;
-	uint32_t orig_filter = e->filter;
+	uint32_t orig_filter = *filter;
 	void **handle = (void **)handle_p;
 
 	/* maybe setup the inotify fd */
@@ -395,7 +396,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 
 	in = talloc_get_type(ctx->private_data, struct inotify_private);
 
-	mask = inotify_map(&e->filter);
+	mask = inotify_map(filter);
 	if (mask == 0) {
 		/* this filter can't be handled by inotify */
 		return NT_STATUS_INVALID_PARAMETER;
@@ -408,18 +409,18 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	/* get a new watch descriptor for this path */
 	wd = inotify_add_watch(in->fd, path, mask);
 	if (wd == -1) {
-		e->filter = orig_filter;
+		*filter = orig_filter;
 		DEBUG(1, ("inotify_add_watch returned %s\n", strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
 
 	DEBUG(10, ("inotify_add_watch for %s mask %x returned wd %d\n",
-		   e->path, mask, wd));
+		   path, mask, wd));
 
 	w = talloc(in, struct inotify_watch_context);
 	if (w == NULL) {
 		inotify_rm_watch(in->fd, wd);
-		e->filter = orig_filter;
+		*filter = orig_filter;
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -432,7 +433,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	w->path = talloc_strdup(w, path);
 	if (w->path == NULL) {
 		inotify_rm_watch(in->fd, wd);
-		e->filter = orig_filter;
+		*filter = orig_filter;
 		return NT_STATUS_NO_MEMORY;
 	}
 

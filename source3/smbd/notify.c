@@ -235,8 +235,8 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 
 		status = SMB_VFS_NOTIFY_WATCH(
 			fsp->conn, fsp->conn->sconn->sys_notify_ctx,
-			&e, e.path, sys_notify_callback, fsp,
-			&sys_notify_handle);
+			e.path, &e.filter, &e.subdir_filter,
+			sys_notify_callback, fsp, &sys_notify_handle);
 
 		if (NT_STATUS_IS_OK(status)) {
 			talloc_steal(fsp->notify, sys_notify_handle);
