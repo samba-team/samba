@@ -155,6 +155,7 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req);
 static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 {
 	NTSTATUS status;
+	struct smbsrv_connection *smb_conn = p_req->smb_conn;
 	struct smb2srv_request *req;
 	uint32_t chain_offset;
 	uint32_t protocol_version;
@@ -171,7 +172,7 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 	if (p_req->in.size < (last_hdr_offset + chain_offset + SMB2_MIN_SIZE_NO_BODY)) {
 		DEBUG(2,("Invalid SMB2 chained packet at offset 0x%X from last hdr 0x%X\n",
 			chain_offset, last_hdr_offset));
-		smbsrv_terminate_connection(p_req->smb_conn, "Invalid SMB2 chained packet");
+		smbsrv_terminate_connection(smb_conn, "Invalid SMB2 chained packet");
 		return;
 	}
 
@@ -179,13 +180,13 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 	if (protocol_version != SMB2_MAGIC) {
 		DEBUG(2,("Invalid SMB chained packet: protocol prefix: 0x%08X\n",
 			 protocol_version));
-		smbsrv_terminate_connection(p_req->smb_conn, "NON-SMB2 chained packet");
+		smbsrv_terminate_connection(smb_conn, "NON-SMB2 chained packet");
 		return;
 	}
 
-	req = smb2srv_init_request(p_req->smb_conn);
+	req = smb2srv_init_request(smb_conn);
 	if (!req) {
-		smbsrv_terminate_connection(p_req->smb_conn, "SMB2 chained packet - no memory");
+		smbsrv_terminate_connection(smb_conn, "SMB2 chained packet - no memory");
 		return;
 	}
 
@@ -206,7 +207,7 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 		   other packet types */
 		uint16_t opcode	= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
 		if (opcode == SMB2_OP_NEGPROT) {
-			smbsrv_terminate_connection(req->smb_conn, "Bad body size in SMB2 negprot");			
+			smbsrv_terminate_connection(smb_conn, "Bad body size in SMB2 negprot");
 		} else {
 			smb2srv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		}
@@ -248,7 +249,7 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 
 	status = smb2srv_reply(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+		smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 		talloc_free(req);
 		return;
 	}
