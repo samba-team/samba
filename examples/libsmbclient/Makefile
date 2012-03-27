@@ -7,7 +7,7 @@ EXTLIB_INCL = -I/usr/include/gtk-1.2 \
 	      -I/usr/lib/glib/include
 EXTLIB_INCL = `gtk-config --cflags`
 
-DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+DEFS = -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 CFLAGS = -O0 -g $(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
 
 LDFLAGS = -L/usr/local/samba/lib \
