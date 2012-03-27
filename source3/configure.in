@@ -5706,7 +5706,6 @@ samba_cv_HAVE_SENDFILEV=yes,samba_cv_HAVE_SENDFILEV=no)])
 	size_t total=0;
 	struct sf_parms hdtrl;
 	ssize_t nwritten;
-	off64_t offset;
 
 	hdtrl.header_data = 0;
 	hdtrl.header_length = 0;
