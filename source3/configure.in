@@ -2071,13 +2071,21 @@ if test x"$samba_cv_TIME_T_MAX" = x"yes"; then
 fi
 
 
+#
+# As a gating factor for large file support, in order to
+# use >4GB files we must have the following minimal support
+# available: a 64 bit off_t
+# If we don't have all of these then fail the build
+#
+
+AC_MSG_CHECKING([if large file support can be enabled])
 AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
 main() { exit((sizeof(off_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_OFF_T=yes,samba_cv_SIZEOF_OFF_T=no,samba_cv_SIZEOF_OFF_T=cross)])
-if test x"$samba_cv_SIZEOF_OFF_T" = x"yes"; then
-    AC_DEFINE(SIZEOF_OFF_T,8,[The size of the 'off_t' type])
+if test x"$samba_cv_SIZEOF_OFF_T" = x"no"; then
+    AC_MSG_ERROR(["large file support support not available: sizeof(off_t) != 8"])
 fi
 
 AC_CACHE_CHECK([for 64 bit ino_t],samba_cv_SIZEOF_INO_T,[
@@ -5066,28 +5074,6 @@ if test $space = no; then
     AC_DEFINE(STAT_STATFS2_FS_DATA,1,[Whether statfs requires 2 arguments and struct fs_data is available])
   fi
 fi
-
-#
-# As a gating factor for large file support, in order to
-# use <4GB files we must have the following minimal support
-# available: a 64 bit off_t
-# If we don't have all of these then fail the build
-#
-AC_MSG_CHECKING([if large file support can be enabled])
-AC_TRY_COMPILE([
-#if (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
-#include <sys/types.h>
-#else
-__COMPILE_ERROR_
-#endif
-],
-[int i],
-samba_cv_HAVE_LARGEFILE_SUPPORT=yes,samba_cv_HAVE_LARGEFILE_SUPPORT=no)
-if test x"$samba_cv_HAVE_LARGEFILE_SUPPORT" != x"yes"; then
-   	AC_MSG_ERROR(["large file support support not available: sizeof(off_t) != 8"])
-fi
-AC_MSG_RESULT([$samba_cv_HAVE_LARGEFILE_SUPPORT])
-
 
 #################################################
 # check for cluster extensions
