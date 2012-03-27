@@ -59,6 +59,8 @@ bool dns_name_match(const char *zone, const char *name, size_t *host_part_len);
 bool dns_name_equal(const char *name1, const char *name2);
 bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 		       struct dnsp_DnssrvRpcRecord *rec2);
+bool dns_authorative_for_zone(struct dns_server *dns,
+			      const char *name);
 WERROR dns_lookup_records(struct dns_server *dns,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_dn *dn,

@@ -226,8 +226,9 @@ WERROR dns_server_process_query(struct dns_server *dns,
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
-	werror = handle_question(dns, mem_ctx, &in->questions[0], &ans, &num_answers);
-	if(W_ERROR_EQUAL(DNS_ERR(NAME_ERROR), werror)) {
+	if (dns_authorative_for_zone(dns, in->questions[0].name)) {
+		werror = handle_question(dns, mem_ctx, &in->questions[0], &ans, &num_answers);
+	} else {
 		DEBUG(2, ("I don't feel responsible for '%s', forwarding\n", in->questions[0].name));
 		werror = ask_forwarder(mem_ctx, &in->questions[0], &ans, &num_answers,
 				       &ns, &num_nsrecs, &adds, &num_additional);
