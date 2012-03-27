@@ -426,6 +426,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	}
 
 	result->fetch_locked = db_rbt_fetch_locked;
+	result->try_fetch_locked = NULL;
 	result->traverse = db_rbt_traverse;
 	result->traverse_read = db_rbt_traverse;
 	result->get_seqnum = db_rbt_get_seqnum;

@@ -194,6 +194,7 @@ struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 	dbwrap_cache_validate(ctx);
 
 	db->fetch_locked = dbwrap_cache_fetch_locked;
+	db->try_fetch_locked = NULL;
 	db->traverse = dbwrap_cache_traverse;
 	db->traverse_read = dbwrap_cache_traverse_read;
 	db->get_seqnum = dbwrap_cache_get_seqnum;

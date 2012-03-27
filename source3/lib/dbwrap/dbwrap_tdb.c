@@ -101,19 +101,12 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 	return 0;
 }
 
-static struct db_record *db_tdb_fetch_locked(struct db_context *db,
-				     TALLOC_CTX *mem_ctx, TDB_DATA key)
+static struct db_record *db_tdb_fetch_locked_internal(
+	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 						       struct db_tdb_ctx);
 	struct tdb_fetch_locked_state state;
-
-	db_tdb_log_key("Locking", key);
-
-	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
-		DEBUG(3, ("tdb_chainlock failed\n"));
-		return NULL;
-	}
 
 	state.mem_ctx = mem_ctx;
 	state.result = NULL;
@@ -139,6 +132,35 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 
 	return state.result;
 }
+
+static struct db_record *db_tdb_fetch_locked(
+	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key)
+{
+	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
+						       struct db_tdb_ctx);
+
+	db_tdb_log_key("Locking", key);
+	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
+		DEBUG(3, ("tdb_chainlock failed\n"));
+		return NULL;
+	}
+	return db_tdb_fetch_locked_internal(db, mem_ctx, key);
+}
+
+static struct db_record *db_tdb_try_fetch_locked(
+	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key)
+{
+	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
+						       struct db_tdb_ctx);
+
+	db_tdb_log_key("Trying to lock", key);
+	if (tdb_chainlock_nonblock(ctx->wtdb->tdb, key) != 0) {
+		DEBUG(3, ("tdb_chainlock_nonblock failed\n"));
+		return NULL;
+	}
+	return db_tdb_fetch_locked_internal(db, mem_ctx, key);
+}
+
 
 static int db_tdb_exists(struct db_context *db, TDB_DATA key)
 {
@@ -373,6 +395,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	}
 
 	result->fetch_locked = db_tdb_fetch_locked;
+	result->try_fetch_locked = db_tdb_try_fetch_locked;
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
 	result->parse_record = db_tdb_parse;

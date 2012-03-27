@@ -141,9 +141,10 @@ static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
 	return state;
 }
 
-struct db_record *dbwrap_fetch_locked(struct db_context *db,
-				      TALLOC_CTX *mem_ctx,
-				      TDB_DATA key)
+static struct db_record *dbwrap_fetch_locked_internal(
+	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key,
+	struct db_record *(*db_fn)(struct db_context *db, TALLOC_CTX *mem_ctx,
+				   TDB_DATA key))
 {
 	struct db_record *rec;
 	struct dbwrap_lock_order_state *lock_order;
@@ -152,13 +153,31 @@ struct db_record *dbwrap_fetch_locked(struct db_context *db,
 	if (lock_order == NULL) {
 		return NULL;
 	}
-	rec = db->fetch_locked(db, mem_ctx, key);
+	rec = db_fn(db, mem_ctx, key);
 	if (rec == NULL) {
 		TALLOC_FREE(lock_order);
 		return NULL;
 	}
 	(void)talloc_steal(rec, lock_order);
 	return rec;
+}
+
+struct db_record *dbwrap_fetch_locked(struct db_context *db,
+				      TALLOC_CTX *mem_ctx,
+				      TDB_DATA key)
+{
+	return dbwrap_fetch_locked_internal(db, mem_ctx, key,
+					    db->fetch_locked);
+}
+
+struct db_record *dbwrap_try_fetch_locked(struct db_context *db,
+				      TALLOC_CTX *mem_ctx,
+				      TDB_DATA key)
+{
+	return dbwrap_fetch_locked_internal(
+		db, mem_ctx, key,
+		db->try_fetch_locked
+		? db->try_fetch_locked : db->fetch_locked);
 }
 
 struct dbwrap_fetch_state {

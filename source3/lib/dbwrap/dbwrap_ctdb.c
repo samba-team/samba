@@ -1028,13 +1028,15 @@ static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
 
 static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 					       TALLOC_CTX *mem_ctx,
-					       TDB_DATA key)
+					       TDB_DATA key,
+					       bool tryonly)
 {
 	struct db_record *result;
 	struct db_ctdb_rec *crec;
 	NTSTATUS status;
 	TDB_DATA ctdb_data;
 	int migrate_attempts = 0;
+	int lockret;
 
 	if (!(result = talloc(mem_ctx, struct db_record))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -1072,7 +1074,10 @@ again:
 		TALLOC_FREE(keystr);
 	}
 
-	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
+	lockret = tryonly
+		? tdb_chainlock_nonblock(ctx->wtdb->tdb, key)
+		: tdb_chainlock(ctx->wtdb->tdb, key);
+	if (lockret != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
@@ -1097,6 +1102,12 @@ again:
 		SAFE_FREE(ctdb_data.dptr);
 		tdb_chainunlock(ctx->wtdb->tdb, key);
 		talloc_set_destructor(result, NULL);
+
+		if (tryonly && (migrate_attempts != 0)) {
+			DEBUG(5, ("record migrated away again\n"));
+			TALLOC_FREE(result);
+			return NULL;
+		}
 
 		migrate_attempts += 1;
 
@@ -1163,7 +1174,25 @@ static struct db_record *db_ctdb_fetch_locked(struct db_context *db,
 		return db_ctdb_fetch_locked_persistent(ctx, mem_ctx, key);
 	}
 
-	return fetch_locked_internal(ctx, mem_ctx, key);
+	return fetch_locked_internal(ctx, mem_ctx, key, false);
+}
+
+static struct db_record *db_ctdb_try_fetch_locked(struct db_context *db,
+						  TALLOC_CTX *mem_ctx,
+						  TDB_DATA key)
+{
+	struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
+							struct db_ctdb_ctx);
+
+	if (ctx->transaction != NULL) {
+		return db_ctdb_fetch_locked_transaction(ctx, mem_ctx, key);
+	}
+
+	if (db->persistent) {
+		return db_ctdb_fetch_locked_persistent(ctx, mem_ctx, key);
+	}
+
+	return fetch_locked_internal(ctx, mem_ctx, key, true);
 }
 
 /*
@@ -1559,6 +1588,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	result->private_data = (void *)db_ctdb;
 	result->fetch_locked = db_ctdb_fetch_locked;
+	result->try_fetch_locked = db_ctdb_try_fetch_locked;
 	result->parse_record = db_ctdb_parse_record;
 	result->traverse = db_ctdb_traverse;
 	result->traverse_read = db_ctdb_traverse_read;

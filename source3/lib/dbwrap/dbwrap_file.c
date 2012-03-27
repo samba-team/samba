@@ -367,6 +367,7 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
 
 	result->private_data = ctx;
 	result->fetch_locked = db_file_fetch_locked;
+	result->try_fetch_locked = NULL;
 	result->traverse = db_file_traverse;
 	result->traverse_read = db_file_traverse;
 	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
