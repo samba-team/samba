@@ -957,14 +957,12 @@ AC_CHECK_FUNCS(setsid glob strpbrk crypt16 getauthuid)
 AC_CHECK_FUNCS(sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(getgrset)
-AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf stat64 fstat64)
-AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt lseek64 ftruncate64 posix_fallocate posix_fallocate64)
-AC_CHECK_FUNCS(fallocate fallocate64)
-AC_CHECK_FUNCS(fseeko fseek64 fseeko64 ftell64 ftello64 setluid getpwanam)
-AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
-AC_CHECK_FUNCS(fdopendir fdopendir64)
+AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf)
+AC_CHECK_FUNCS(atexit grantpt posix_fallocate)
+AC_CHECK_FUNCS(fallocate)
+AC_CHECK_FUNCS(fseeko setluid getpwanam)
+AC_CHECK_FUNCS(fdopendir)
 AC_CHECK_FUNCS(getpwent_r)
-AC_CHECK_FUNCS(getdents64)
 AC_CHECK_FUNCS(setenv strcasecmp fcvt fcvtl)
 AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale)
@@ -1137,11 +1135,9 @@ AC_CHECK_FUNCS(_acl __acl _facl __facl _open __open _chdir __chdir)
 AC_CHECK_FUNCS(_close __close _fchdir __fchdir _fcntl __fcntl)
 AC_CHECK_FUNCS(getdents __getdents _lseek __lseek _read __read)
 AC_CHECK_FUNCS(getdirentries _write __write _fork __fork)
-AC_CHECK_FUNCS(_stat64 __stat64 _fstat64 __fstat64 _lstat64 __lstat64)
-AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readdir64)
-AC_CHECK_FUNCS(pread _pread __pread pread64 _pread64 __pread64)
-AC_CHECK_FUNCS(pwrite _pwrite __pwrite pwrite64 _pwrite64 __pwrite64)
-AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
+AC_CHECK_FUNCS(__sys_llseek llseek _llseek __llseek)
+AC_CHECK_FUNCS(pread _pread __pread)
+AC_CHECK_FUNCS(pwrite _pwrite __pwrite)
 AC_CHECK_FUNCS(prctl)
 
 AC_TRY_COMPILE([
@@ -1185,52 +1181,6 @@ main() {
        AC_CHECK_FUNCS(getgrouplist)
        ;;
 esac
-
-#
-# stat64 family may need <sys/stat.h> on some systems, notably ReliantUNIX
-#
-
-if test x$ac_cv_func_stat64 = xno ; then
-  AC_MSG_CHECKING([for stat64 in <sys/stat.h>])
-  AC_TRY_LINK([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/stat.h>
-], [struct stat64 st64; exit(stat64(".",&st64));], [ac_cv_func_stat64=yes])
-  AC_MSG_RESULT([$ac_cv_func_stat64])
-  if test x$ac_cv_func_stat64 = xyes ; then
-    AC_DEFINE(HAVE_STAT64,1,[Whether stat64() is available])
-  fi
-fi
-
-if test x$ac_cv_func_lstat64 = xno ; then
-  AC_MSG_CHECKING([for lstat64 in <sys/stat.h>])
-  AC_TRY_LINK([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/stat.h>
-], [struct stat64 st64; exit(lstat64(".",&st64));], [ac_cv_func_lstat64=yes])
-  AC_MSG_RESULT([$ac_cv_func_lstat64])
-  if test x$ac_cv_func_lstat64 = xyes ; then
-    AC_DEFINE(HAVE_LSTAT64,[Whether lstat64() is available])
-  fi
-fi
-
-if test x$ac_cv_func_fstat64 = xno ; then
-  AC_MSG_CHECKING([for fstat64 in <sys/stat.h>])
-  AC_TRY_LINK([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/stat.h>
-], [struct stat64 st64; exit(fstat64(0,&st64));], [ac_cv_func_fstat64=yes])
-  AC_MSG_RESULT([$ac_cv_func_fstat64])
-  if test x$ac_cv_func_fstat64 = xyes ; then
-    AC_DEFINE(HAVE_FSTAT64,1,[Whether fstat64() is available])
-  fi
-fi
 
 #################################################
 # Check whether struct stat has timestamps with sub-second resolution.
@@ -2130,19 +2080,6 @@ if test x"$samba_cv_SIZEOF_OFF_T" = x"yes"; then
     AC_DEFINE(SIZEOF_OFF_T,8,[The size of the 'off_t' type])
 fi
 
-AC_CACHE_CHECK([for off64_t],samba_cv_HAVE_OFF64_T,[
-AC_TRY_RUN([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <stdio.h>
-#include <sys/stat.h>
-main() { struct stat64 st; off64_t s; if (sizeof(off_t) == sizeof(off64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
-samba_cv_HAVE_OFF64_T=yes,samba_cv_HAVE_OFF64_T=no,samba_cv_HAVE_OFF64_T=cross)])
-if test x"$samba_cv_HAVE_OFF64_T" = x"yes"; then
-    AC_DEFINE(HAVE_OFF64_T,1,[Whether off64_t is available])
-fi
-
 AC_CACHE_CHECK([for 64 bit ino_t],samba_cv_SIZEOF_INO_T,[
 AC_TRY_RUN([
 #if defined(HAVE_UNISTD_H)
@@ -2156,19 +2093,6 @@ if test x"$samba_cv_SIZEOF_INO_T" = x"yes"; then
     AC_DEFINE(SIZEOF_INO_T,8,[The size of the 'ino_t' type])
 fi
 
-AC_CACHE_CHECK([for ino64_t],samba_cv_HAVE_INO64_T,[
-AC_TRY_RUN([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <stdio.h>
-#include <sys/stat.h>
-main() { struct stat64 st; ino64_t s; if (sizeof(ino_t) == sizeof(ino64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
-samba_cv_HAVE_INO64_T=yes,samba_cv_HAVE_INO64_T=no,samba_cv_HAVE_INO64_T=cross)])
-if test x"$samba_cv_HAVE_INO64_T" = x"yes"; then
-    AC_DEFINE(HAVE_INO64_T,1,[Whether the 'ino64_t' type is available])
-fi
-
 AC_CACHE_CHECK([for 64 bit dev_t],samba_cv_SIZEOF_DEV_T,[
 AC_TRY_RUN([
 #if defined(HAVE_UNISTD_H)
@@ -2180,45 +2104,6 @@ main() { exit((sizeof(dev_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_DEV_T=yes,samba_cv_SIZEOF_DEV_T=no,samba_cv_SIZEOF_DEV_T=cross)])
 if test x"$samba_cv_SIZEOF_DEV_T" = x"yes"; then
     AC_DEFINE(SIZEOF_DEV_T,8,[The size of the 'dev_t' type])
-fi
-
-AC_CACHE_CHECK([for dev64_t],samba_cv_HAVE_DEV64_T,[
-AC_TRY_RUN([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <stdio.h>
-#include <sys/stat.h>
-main() { struct stat64 st; dev64_t s; if (sizeof(dev_t) == sizeof(dev64_t)) exit(1); exit((lstat64("/dev/null", &st)==0)?0:1); }],
-samba_cv_HAVE_DEV64_T=yes,samba_cv_HAVE_DEV64_T=no,samba_cv_HAVE_DEV64_T=cross)])
-if test x"$samba_cv_HAVE_DEV64_T" = x"yes"; then
-    AC_DEFINE(HAVE_DEV64_T,1,[Whether the 'dev64_t' type is available])
-fi
-
-AC_CACHE_CHECK([for struct dirent64],samba_cv_HAVE_STRUCT_DIR64,[
-AC_TRY_COMPILE([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/types.h>
-#include <dirent.h>],
-[DIR64 de;],
-samba_cv_HAVE_STRUCT_DIR64=yes,samba_cv_HAVE_STRUCT_DIR64=no)])
-if test x"$samba_cv_HAVE_STRUCT_DIR64" = x"yes" && test x"$ac_cv_func_readdir64" = x"yes"; then
-    AC_DEFINE(HAVE_STRUCT_DIR64,1,[Whether the 'DIR64' abstract data type is available])
-fi
-
-AC_CACHE_CHECK([for struct dirent64],samba_cv_HAVE_STRUCT_DIRENT64,[
-AC_TRY_COMPILE([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/types.h>
-#include <dirent.h>],
-[struct dirent64 de;],
-samba_cv_HAVE_STRUCT_DIRENT64=yes,samba_cv_HAVE_STRUCT_DIRENT64=no)])
-if test x"$samba_cv_HAVE_STRUCT_DIRENT64" = x"yes" && test x"$ac_cv_func_readdir64" = x"yes"; then
-    AC_DEFINE(HAVE_STRUCT_DIRENT64,1,[Whether the 'dirent64' struct is available])
 fi
 
 AC_CACHE_CHECK([for major macro],samba_cv_HAVE_DEVICE_MAJOR_FN,[
@@ -2453,23 +2338,6 @@ AC_TRY_COMPILE([
 samba_cv_HAVE_LINUX_FALLOCATE=yes,samba_cv_HAVE_LINUX_FALLOCATE=no)])
 if test x"$samba_cv_HAVE_LINUX_FALLOCATE" = x"yes" && test x"$ac_cv_func_fallocate" = x"yes"; then
     AC_DEFINE(HAVE_LINUX_FALLOCATE,1,[Whether the Linux 'fallocate' function is available])
-fi
-
-AC_CACHE_CHECK([for linux fallocate64],samba_cv_HAVE_LINUX_FALLOCATE64,[
-AC_TRY_COMPILE([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/types.h>
-#define _GNU_SOURCE
-#include <fcntl.h>
-#if defined(HAVE_LINUX_FALLOC_H)
-#include <linux/falloc.h>
-#endif],
-[int ret = fallocate64(0, FALLOC_FL_KEEP_SIZE, 0, 10);],
-samba_cv_HAVE_LINUX_FALLOCATE64=yes,samba_cv_HAVE_LINUX_FALLOCATE64=no)])
-if test x"$samba_cv_HAVE_LINUX_FALLOCATE64" = x"yes" && test x"$ac_cv_func_fallocate64" = x"yes"; then
-    AC_DEFINE(HAVE_LINUX_FALLOCATE64,1,[Whether the Linux 'fallocate64' function is available])
 fi
 
 AC_CACHE_CHECK([for getcwd takes NULL],samba_cv_GETCWD_TAKES_NULL,[
@@ -3030,48 +2898,6 @@ AC_TRY_RUN([#include "${srcdir-.}/../tests/fcntl_lock.c"],
            samba_cv_HAVE_FCNTL_LOCK=yes,samba_cv_HAVE_FCNTL_LOCK=no,samba_cv_HAVE_FCNTL_LOCK=cross)])
 if test x"$samba_cv_HAVE_FCNTL_LOCK" = x"yes"; then
     AC_DEFINE(HAVE_FCNTL_LOCK,1,[Whether fcntl locking is available])
-fi
-
-AC_CACHE_CHECK([for broken (glibc2.1/x86) 64 bit fcntl locking],samba_cv_HAVE_BROKEN_FCNTL64_LOCKS,[
-AC_TRY_RUN([#include "${srcdir-.}/../tests/fcntl_lock64.c"],
-           samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=yes,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=no,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=cross)])
-if test x"$samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" = x"yes"; then
-    AC_DEFINE(HAVE_BROKEN_FCNTL64_LOCKS,1,[Whether fcntl64 locks are broken])
-
-else
-
-dnl
-dnl Don't check for 64 bit fcntl locking if we know that the
-dnl glibc2.1 broken check has succeeded.
-dnl
-
-  AC_CACHE_CHECK([for 64 bit fcntl locking],samba_cv_HAVE_STRUCT_FLOCK64,[
-  AC_TRY_RUN([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-main() { struct flock64 fl64;
-#if defined(F_SETLKW64) && defined(F_SETLK64) && defined(F_GETLK64)
-exit(0);
-#else
-exit(1);
-#endif
-}],
-       samba_cv_HAVE_STRUCT_FLOCK64=yes,samba_cv_HAVE_STRUCT_FLOCK64=no,samba_cv_HAVE_STRUCT_FLOCK64=cross)])
-
-  if test x"$samba_cv_HAVE_STRUCT_FLOCK64" = x"yes"; then
-      AC_DEFINE(HAVE_STRUCT_FLOCK64,1,[Whether the flock64 struct is available])
-  fi
 fi
 
 # glibc up to 2.3.6 had dangerously broken posix_fallocate(). DON'T USE IT.
@@ -5068,30 +4894,6 @@ if test $space = no; then
   fi
 fi
 
-# Test for statvfs64.
-if test $space = no; then
-  # SVR4
-  AC_CACHE_CHECK([statvfs64 function (SVR4)], fu_cv_sys_stat_statvfs64,
-  [AC_TRY_RUN([
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <sys/types.h>
-#include <sys/statvfs.h>
-  main ()
-  {
-    struct statvfs64 fsd;
-    exit (statvfs64 (".", &fsd));
-  }],
-  fu_cv_sys_stat_statvfs64=yes,
-  fu_cv_sys_stat_statvfs64=no,
-  fu_cv_sys_stat_statvfs64=cross)])
-  if test $fu_cv_sys_stat_statvfs64 = yes; then
-    space=yes
-    AC_DEFINE(STAT_STATVFS64,1,[Whether statvfs64() is available])
-  fi
-fi
-
 # smbd/statvfs.c assumes that statvfs.f_fsid is an integer.
 # This is not the case on ancient Linux systems.
 
@@ -5686,24 +5488,9 @@ AC_ARG_WITH(aio-support,
 [ struct aiocb a; return aio_read(&a);],
 samba_cv_HAVE_AIO=yes,samba_cv_HAVE_AIO=no)
 		LIBS=$aio_LIBS])
-		AC_CACHE_CHECK([for 64-bit asynchronous io support],samba_cv_HAVE_AIO64,[
-		aio_LIBS=$LIBS
-		LIBS=$AIO_LIBS
-		AC_TRY_LINK([#include <sys/types.h>
-#include <aio.h>],
-[ struct aiocb64 a; return aio_read64(&a);],
-samba_cv_HAVE_AIO64=yes,samba_cv_HAVE_AIO64=no)
-		LIBS=$aio_LIBS])
-		if test x"$samba_cv_HAVE_AIO64" = x"yes"; then
-			AC_DEFINE(HAVE_AIOCB64,1,[Whether 64 bit aio is available])
-			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
-			LIBS=$AIO_LIBS
-		elif test x"$samba_cv_HAVE_AIO" = x"yes"; then
-			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
-			LIBS=$AIO_LIBS
-		fi
-
 		if test x"$samba_cv_HAVE_AIO" = x"yes"; then
+			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
+			LIBS=$AIO_LIBS
 			AC_MSG_CHECKING(for aio_read)
 			AC_LINK_IFELSE([#include <aio.h>
 int main() { struct aiocb a; return aio_read(&a); }],
@@ -5747,49 +5534,6 @@ int main() { struct aiocb a; return aio_suspend(&a, 1, NULL); }],
 [AC_MSG_RESULT(no)])
 		fi
 
-		if test x"$samba_cv_HAVE_AIO64" = x"yes"; then
-			AC_MSG_CHECKING(for aio_read64)
-			AC_LINK_IFELSE([#include <aio.h>
-int main() { struct aiocb a; return aio_read64(&a); }],
-[AC_DEFINE(HAVE_AIO_READ64, 1, [Have aio_read64]) AC_MSG_RESULT(yes)],
-[AC_MSG_RESULT(no)])
-
-			AC_MSG_CHECKING(for aio_write64)
-			AC_LINK_IFELSE([#include <aio.h>
-int main() { struct aiocb a; return aio_write64(&a); }],
-[AC_DEFINE(HAVE_AIO_WRITE64, 1, [Have aio_write64]) AC_MSG_RESULT(yes)],
-[AC_MSG_RESULT(no)])
-
-			AC_MSG_CHECKING(for aio_fsync64)
-			AC_LINK_IFELSE([#include <aio.h>
-int main() { struct aiocb a; return aio_fsync64(1, &a); }],
-[AC_DEFINE(HAVE_AIO_FSYNC64, 1, [Have aio_fsync64]) AC_MSG_RESULT(yes)],
-[AC_MSG_RESULT(no)])
-
-			AC_MSG_CHECKING(for aio_return64)
-			AC_LINK_IFELSE([#include <aio.h>
-int main() { struct aiocb a; return aio_return64(&a); }],
-[AC_DEFINE(HAVE_AIO_RETURN64, 1, [Have aio_return64]) AC_MSG_RESULT(yes)],
-[AC_MSG_RESULT(no)])
-
-			AC_MSG_CHECKING(for aio_error64)
-			AC_LINK_IFELSE([#include <aio.h>
-int main() { struct aiocb a; return aio_error64(&a); }],
-[AC_DEFINE(HAVE_AIO_ERROR64, 1, [Have aio_error64]) AC_MSG_RESULT(yes)],
-[AC_MSG_RESULT(no)])
-
-			AC_MSG_CHECKING(for aio_cancel64)
-			AC_LINK_IFELSE([#include <aio.h>
-int main() { struct aiocb a; return aio_cancel64(1, &a); }],
-[AC_DEFINE(HAVE_AIO_CANCEL64, 1, [Have aio_cancel64]) AC_MSG_RESULT(yes)],
-[AC_MSG_RESULT(no)])
-
-			AC_MSG_CHECKING(for aio_suspend64)
-			AC_LINK_IFELSE([#include <aio.h>
-int main() { struct aiocb a; return aio_suspend64(&a, 1, NULL); }],
-[AC_DEFINE(HAVE_AIO_SUSPEND64, 1, [Have aio_suspend64]) AC_MSG_RESULT(yes)],
-[AC_MSG_RESULT(no)])
-		fi
             ;;
         esac
         ;;
@@ -5823,16 +5567,6 @@ AC_ARG_WITH(sendfile-support,
 
 	case "$host_os" in
 	*linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu)
-		AC_CACHE_CHECK([for linux sendfile64 support],samba_cv_HAVE_SENDFILE64,[
-		AC_TRY_LINK([#include <sys/sendfile.h>],
-[\
-int tofd, fromfd;
-off64_t offset;
-size_t total;
-ssize_t nwritten = sendfile64(tofd, fromfd, &offset, total);
-],
-samba_cv_HAVE_SENDFILE64=yes,samba_cv_HAVE_SENDFILE64=no)])
-
 		AC_CACHE_CHECK([for linux sendfile support],samba_cv_HAVE_SENDFILE,[
 		AC_TRY_LINK([#include <sys/sendfile.h>],
 [\
@@ -5858,11 +5592,7 @@ ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
 ],
 samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)])
 
-	if test x"$samba_cv_HAVE_SENDFILE64" = x"yes"; then
-    		AC_DEFINE(HAVE_SENDFILE64,1,[Whether 64-bit sendfile() is available])
-		AC_DEFINE(LINUX_SENDFILE_API,1,[Whether linux sendfile() API is available])
-		AC_DEFINE(WITH_SENDFILE,1,[Whether sendfile() should be used])
-	elif test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
+        if test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
     		AC_DEFINE(HAVE_SENDFILE,1,[Whether sendfile() is available])
 		AC_DEFINE(LINUX_SENDFILE_API,1,[Whether linux sendfile() API is available])
 		AC_DEFINE(WITH_SENDFILE,1,[Whether sendfile() should be used])
@@ -5906,31 +5636,6 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 	;;
 
 	*hpux*)
-		AC_CACHE_CHECK([for hpux sendfile64 support],samba_cv_HAVE_SENDFILE64,[
-		AC_TRY_LINK([\
-#include <sys/socket.h>
-#include <sys/uio.h>],
-[\
-	int fromfd, tofd;
-	size_t total=0;
-	struct iovec hdtrl[2];
-	ssize_t nwritten;
-	off64_t offset;
-
-	hdtrl[0].iov_base = 0;
-	hdtrl[0].iov_len = 0;
-
-	nwritten = sendfile64(tofd, fromfd, offset, total, &hdtrl[0], 0);
-],
-samba_cv_HAVE_SENDFILE64=yes,samba_cv_HAVE_SENDFILE64=no)])
-	if test x"$samba_cv_HAVE_SENDFILE64" = x"yes"; then
-    		AC_DEFINE(HAVE_SENDFILE64,1,[Whether sendfile64() is available])
-		AC_DEFINE(HPUX_SENDFILE_API,1,[Whether the hpux sendfile() API is available])
-		AC_DEFINE(WITH_SENDFILE,1,[Whether sendfile() support should be included])
-	else
-		AC_MSG_RESULT(no);
-	fi
-
 		AC_CACHE_CHECK([for hpux sendfile support],samba_cv_HAVE_SENDFILE,[
 		AC_TRY_LINK([\
 #include <sys/socket.h>
@@ -5959,39 +5664,6 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 
 	*solaris*)
 		AC_CHECK_LIB(sendfile,sendfilev)
-		AC_CACHE_CHECK([for solaris sendfilev64 support],samba_cv_HAVE_SENDFILEV64,[
-		AC_TRY_LINK([\
-#include <sys/sendfile.h>],
-[\
-        int sfvcnt;
-        size_t xferred;
-        struct sendfilevec vec[2];
-	ssize_t nwritten;
-	int tofd;
-
-	sfvcnt = 2;
-
-	vec[0].sfv_fd = SFV_FD_SELF;
-	vec[0].sfv_flag = 0;
-	vec[0].sfv_off = 0;
-	vec[0].sfv_len = 0;
-
-	vec[1].sfv_fd = 0;
-	vec[1].sfv_flag = 0;
-	vec[1].sfv_off = 0;
-	vec[1].sfv_len = 0;
-	nwritten = sendfilev64(tofd, vec, sfvcnt, &xferred);
-],
-samba_cv_HAVE_SENDFILEV64=yes,samba_cv_HAVE_SENDFILEV64=no)])
-
-	if test x"$samba_cv_HAVE_SENDFILEV64" = x"yes"; then
-    		AC_DEFINE(HAVE_SENDFILEV64,1,[Whether sendfilev64() is available])
-		AC_DEFINE(SOLARIS_SENDFILE_API,1,[Whether the soloris sendfile() API is available])
-		AC_DEFINE(WITH_SENDFILE,1,[Whether sendfile() support should be included])
-	else
-		AC_MSG_RESULT(no);
-	fi
-
 		AC_CACHE_CHECK([for solaris sendfilev support],samba_cv_HAVE_SENDFILEV,[
 		AC_TRY_LINK([\
 #include <sys/sendfile.h>],

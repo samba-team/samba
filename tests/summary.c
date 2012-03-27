@@ -5,7 +5,7 @@ void exit(int);
 main()
 {
     exit (0);
-#if !(defined(HAVE_FCNTL_LOCK) || defined(HAVE_STRUCT_FLOCK64))
+#if !defined(HAVE_FCNTL_LOCK)
 	printf("ERROR: No locking available. Running Samba would be unsafe\n");
 	exit(1);
 #endif
@@ -19,7 +19,7 @@ main()
 	exit(1);
 #endif
 
-#if !(defined(STAT_STATVFS) || defined(STAT_STATVFS64) || defined(STAT_STATFS3_OSF1) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS4) || defined(STAT_STATFS2_FSIZE) || defined(STAT_STATFS2_FS_DATA))
+#if !(defined(STAT_STATVFS) || defined(STAT_STATFS3_OSF1) || defined(STAT_STATFS2_BSIZE) || defined(STAT_STATFS4) || defined(STAT_STATFS2_FSIZE) || defined(STAT_STATFS2_FS_DATA))
 	printf("ERROR: No disk free routine!\n");
 	exit(1);
 #endif

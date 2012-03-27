@@ -75,19 +75,18 @@ def configure(conf):
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h netdb.h')
     conf.CHECK_HEADERS('linux/falloc.h')
 
-    conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknod64')
+    conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod')
     conf.CHECK_FUNCS('strtol strchr strupr chflags')
     conf.CHECK_FUNCS('getrlimit fsync fdatasync setpgid')
     conf.CHECK_FUNCS('setsid glob strpbrk crypt16 getauthuid')
     conf.CHECK_FUNCS('sigprocmask sigblock sigaction sigset innetgr')
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
-    conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf stat64 fstat64')
-    conf.CHECK_FUNCS('lstat64 fopen64 atexit grantpt lseek64 ftruncate64 fallocate fallocate64 posix_fallocate posix_fallocate64')
-    conf.CHECK_FUNCS('fseeko fseek64 fseeko64 ftell64 ftello64 setluid')
+    conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf')
+    conf.CHECK_FUNCS('atexit grantpt fallocate posix_fallocate')
+    conf.CHECK_FUNCS('fseeko setluid')
     conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
-    conf.CHECK_FUNCS('opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64')
-    conf.CHECK_FUNCS('fdopendir fdopendir64')
-    conf.CHECK_FUNCS('getpwent_r getdents64 setenv strcasecmp fcvt fcvtl')
+    conf.CHECK_FUNCS('fdopendir')
+    conf.CHECK_FUNCS('getpwent_r setenv strcasecmp fcvt fcvtl')
     conf.CHECK_FUNCS('syslog vsyslog timegm setlocale')
     conf.CHECK_FUNCS_IN('nanosleep', 'rt')
     conf.CHECK_FUNCS('lutimes futimes utimensat futimens')
@@ -229,36 +228,36 @@ if (0) {
 _acl __acl add_proplist_entry atexit attr_getf attr_list attr_listf
 attropen attr_remove attr_removef attr_set attr_setf
 bindtextdomain _chdir __chdir chflags chmod _close __close _closedir
-__closedir closedir64 creat64 crypt16 delproplist devnm dgettext dirfd
+__closedir crypt16 delproplist devnm dgettext dirfd
 DNSServiceRegister _dup __dup _dup2 __dup2 endmntent execl
 extattr_delete_fd extattr_delete_link extattr_get_fd extattr_get_file
 extattr_get_link extattr_list_fd extattr_list_file extattr_list_link
 extattr_set_fd extattr_set_file extattr_set_link _facl __facl _fchdir
 __fchdir fchmod fchown _fcntl __fcntl fcvt fcvtl fdatasync
-fdelproplist fgetea fgetproplist fgetxattr flistea flistxattr fopen64
-_fork __fork fremoveea fremovexattr fseeko fseek64 fseeko64 fsetea
-fsetproplist fsetxattr _fstat __fstat fstat64 _fstat64 __fstat64 fsync
-ftell64 ftello64 ftruncate64 futimens futimes __fxstat getauthuid
-getcwd _getcwd __getcwd getdents __getdents getdents64 getdirentries
+fdelproplist fgetea fgetproplist fgetxattr flistea flistxattr
+_fork __fork fremoveea fremovexattr fseeko fsetea
+fsetproplist fsetxattr _fstat __fstat fsync
+futimens futimes __fxstat getauthuid
+getcwd _getcwd __getcwd getdents __getdents getdirentries
 getgrent getgrnam getgrouplist getgrset getmntent getpagesize
 getproplist get_proplist_entry getpwanam getpwent_r getrlimit gettext
 glob grantpt hstrerror initgroups innetgr
 inotify_init lgetea lgetxattr listea listxattr llistea llistxattr
-llseek _llseek __llseek lremoveea lremovexattr _lseek __lseek lseek64
-lsetea lsetxattr _lstat __lstat lstat64 _lstat64 __lstat64 lutimes
-__lxstat memalign mknod mknod64 mlock mlockall munlock munlockall
-_open __open open64 _open64 __open64 _opendir __opendir
-opendir64 pathconf poll posix_fallocate posix_fallocate64
-posix_memalign prctl pread _pread __pread pread64 _pread64 __pread64
-pwrite _pwrite __pwrite pwrite64 _pwrite64
-__pwrite64 rdchk _read __read _readdir __readdir readdir64 _readdir64
-__readdir64 removeea removexattr rewinddir64 _seekdir __seekdir
-seekdir64 select setea setenv setgidx setgroups setlocale setluid
+llseek _llseek __llseek lremoveea lremovexattr _lseek __lseek
+lsetea lsetxattr _lstat __lstat lutimes
+__lxstat memalign mknod mlock mlockall munlock munlockall
+_open __open _opendir __opendir
+pathconf poll posix_fallocate
+posix_memalign prctl pread _pread __pread
+pwrite _pwrite __pwrite
+rdchk _read __read _readdir __readdir
+removeea removexattr _seekdir __seekdir
+select setea setenv setgidx setgroups setlocale setluid
 setmntent setpgid setpriv setproplist setsid setuidx
 setxattr shmget shm_open sigaction sigblock sigprocmask sigset
-sizeof_proplist_entry _stat __stat stat64 _stat64 __stat64 statvfs
+sizeof_proplist_entry _stat __stat statvfs
 strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctl sysctlbyname
-__sys_llseek syslog _telldir __telldir telldir64 textdomain timegm
+__sys_llseek syslog _telldir __telldir textdomain timegm
 utimensat vsyslog _write __write __xstat
 ''')
 
@@ -343,12 +342,6 @@ return acl_get_perm_np(permset_d, perm);
                 'HAVE_LINUX_FALLOCATE',
                 msg="Checking whether the Linux 'fallocate' function is available",
                 headers='unistd.h sys/types.h fcntl.h linux/falloc.h')
-    if conf.CONFIG_SET('HAVE_FALLOCATE64'):
-        conf.CHECK_CODE('''
-                int ret = fallocate64(0, FALLOC_FL_KEEP_SIZE, 0, 10);''',
-                'HAVE_LINUX_FALLOCATE64',
-                msg="Checking whether the Linux 'fallocate64' function is available",
-                headers='unistd.h sys/types.h fcntl.h linux/falloc.h')
     conf.CHECK_CODE('''
                 ssize_t err = readahead(0,0,0x80000);''',
                 'HAVE_LINUX_READAHEAD',
@@ -364,15 +357,7 @@ return acl_get_perm_np(permset_d, perm);
                         msg='Checking for asynchronous io support',
                         headers='sys/types.h aio.h',
                         lib='aio rt')
-        conf.CHECK_CODE('struct aiocb64 a; return aio_read64(&a);',
-                        'HAVE_AIO64',
-                        msg='Checking for 64-bit asynchronous io support',
-                        headers='sys/types.h aio.h',
-                        lib='aio rt')
-        if conf.CONFIG_SET('HAVE_AIO64'):
-            conf.DEFINE('HAVE_AIOCB64', '1')
-            conf.DEFINE('WITH_AIO', '1')
-        elif conf.CONFIG_SET('HAVE_AIO'):
+        if conf.CONFIG_SET('HAVE_AIO'):
             conf.DEFINE('WITH_AIO', '1')
         if conf.CONFIG_SET('HAVE_AIO'):
             conf.CHECK_CODE('struct aiocb a; return aio_read(&a);', 'HAVE_AIO_READ', msg='Checking for aio_read', headers='aio.h', lib='aio rt')
@@ -382,14 +367,6 @@ return acl_get_perm_np(permset_d, perm);
             conf.CHECK_CODE('struct aiocb a; return aio_error(&a);', 'HAVE_AIO_ERROR', msg='Checking for aio_error', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_cancel(1, &a);', 'HAVE_AIO_CANCEL', msg='Checking for aio_cancel', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_suspend(&a, 1, NULL);', 'HAVE_AIO_SUSPEND', msg='Checking for aio_suspend', headers='aio.h', lib='aio rt')
-        if conf.CONFIG_SET('HAVE_AIO64'):
-            conf.CHECK_CODE('struct aiocb a; return aio_read64(&a);', 'HAVE_AIO_READ64', msg='Checking for aio_read64', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_write64(&a);', 'HAVE_AIO_WRITE64', msg='Checking for aio_write64', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_fsync64(1, &a);', 'HAVE_AIO_FSYNC64', msg='Checking for aio_fsync64', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_return64(&a);', 'HAVE_AIO_RETURN64', msg='Checking for aio_return64', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_error64(&a);', 'HAVE_AIO_ERROR64', msg='Checking for aio_error64', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_cancel64(1, &a);', 'HAVE_AIO_CANCEL64', msg='Checking for aio_cancel64', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; return aio_suspend64(&a, 1, NULL);', 'HAVE_AIO_SUSPEND64', msg='Checking for aio_suspend64', headers='aio.h', lib='aio rt')
         if not conf.CONFIG_SET('HAVE_AIO'):
             conf.DEFINE('HAVE_NO_AIO', '1')
     else:
@@ -982,11 +959,6 @@ int i; i = PAM_RADIO_TYPE;
 ''',
                 'HAVE_LINUX_RTNETLINK_H',
                 msg='Checking whether Linux rtnetlink is available')
-    if conf.CHECK_TYPE('struct dirent64', headers='sys/types.h dirent.h') and conf.CONFIG_SET('HAVE_READDIR64'):
-        conf.DEFINE('HAVE_STRUCT_DIRENT64', '1')
-    else:
-        conf.undefine('HAVE_STRUCT_DIRENT64')
-
     conf.CHECK_CODE('''
 #include "../tests/fcntl_lock.c"
 ''',
@@ -994,42 +966,6 @@ int i; i = PAM_RADIO_TYPE;
                 addmain=False,
                 execute=True,
                 msg='Checking whether fcntl locking is available')
-
-    conf.CHECK_CODE('''
-#include "../tests/fcntl_lock64.c"
-''',
-                'HAVE_BROKEN_FCNTL64_LOCKS',
-                addmain=False,
-                execute=True,
-                msg='Checking whether fcntl64 locks are broken')
-
-    if not conf.CONFIG_SET('HAVE_BROKEN_FCNTL64_LOCKS'):
-        conf.CHECK_CODE('''
-#if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-
-#ifdef HAVE_SYS_FCNTL_H
-#include <sys/fcntl.h>
-#endif
-main() { struct flock64 fl64;
-#if defined(F_SETLKW64) && defined(F_SETLK64) && defined(F_GETLK64)
-exit(0);
-#else
-exit(1);
-#endif
-}
-''',
-                'HAVE_STRUCT_FLOCK64',
-                addmain=False,
-                execute=True,
-                msg="Checking whether the flock64 struct is available")
 
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec',
                                 define='HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC') # Linux, Solaris
@@ -1170,15 +1106,6 @@ main() {
         if (host_os.rfind('linux') > -1) or (host_os.rfind('gnu') > -1) or (host_os.rfind('k*bsd*-gnu') > -1) or (host_os.rfind('kopensolaris*-gnu') > -1):
             conf.CHECK_CODE('''
                             int tofd, fromfd;
-                            off64_t offset;
-                            size_t total;
-                            ssize_t nwritten = sendfile64(tofd, fromfd, &offset, total);
-                            ''',
-                            '_HAVE_SENDFILE64',
-                            headers='sys/sendfile',
-                            msg='Checking for linux sendfile64 support')
-            conf.CHECK_CODE('''
-                            int tofd, fromfd;
                             off_t offset;
                             size_t total;
                             ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
@@ -1199,11 +1126,7 @@ main() {
                             ''',
                             '_HAVE_BROKEN_LINUX_SENDFILE',
                             msg='Checking for broken linux sendfile support')
-            if conf.CONFIG_SET('_HAVE_SENDFILE64'):
-                conf.DEFINE('HAVE_SENDFILE64', '1')
-                conf.DEFINE('LINUX_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
-            elif conf.CONFIG_SET('_HAVE_SENDFILE'):
+            if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('LINUX_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
@@ -1242,20 +1165,6 @@ main() {
                             size_t total=0;
                             struct iovec hdtrl[2];
                             ssize_t nwritten;
-                            off64_t offset;
-                            hdtrl[0].iov_base = 0;
-                            hdtrl[0].iov_len = 0;
-                            nwritten = sendfile64(tofd, fromfd, offset, total, &hdtrl[0], 0);
-                            ''',
-                            '_HAVE_SENDFILE64',
-                            msg='Checking for hpux sendfile64 support')
-            conf.CHECK_CODE('''
-                            #include <sys/socket.h>
-                            #include <sys/uio.h>
-                            int fromfd, tofd;
-                            size_t total=0;
-                            struct iovec hdtrl[2];
-                            ssize_t nwritten;
                             off_t offset;
                             hdtrl[0].iov_base = 0;
                             hdtrl[0].iov_len = 0;
@@ -1263,36 +1172,12 @@ main() {
                             ''',
                             '_HAVE_SENDFILE',
                             msg='Checking for hpux sendfile support')
-            if conf.CONFIG_SET('_HAVE_SENDFILE64'):
-                conf.DEFINE('HAVE_SENDFILE64', '1')
-                conf.DEFINE('HPUX_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
-            elif conf.CONFIG_SET('_HAVE_SENDFILE'):
+            if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('HPUX_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
         elif (host_os.rfind('solaris') > -1):
             conf.CHECK_FUNCS_IN('sendfile', 'sendfilev')
-            conf.CHECK_CODE('''
-                            #include <sys/sendfile.h>
-                            int sfvcnt;
-                            size_t xferred;
-                            struct sendfilevec vec[2];
-                            ssize_t nwritten;
-                            int tofd;
-                            sfvcnt = 2;
-                            vec[0].sfv_fd = SFV_FD_SELF;
-                            vec[0].sfv_flag = 0;
-                            vec[0].sfv_off = 0;
-                            vec[0].sfv_len = 0;
-                            vec[1].sfv_fd = 0;
-                            vec[1].sfv_flag = 0;
-                            vec[1].sfv_off = 0;
-                            vec[1].sfv_len = 0;
-                            nwritten = sendfilev64(tofd, vec, sfvcnt, &xferred);
-                            ''',
-                            '_HAVE_SENDFILEV64',
-                            msg='Checking for solaris sendfilev64 support')
             conf.CHECK_CODE('''
                             #include <sys/sendfile.h>,
                             int sfvcnt;
@@ -1313,11 +1198,7 @@ main() {
                             ''',
                             '_HAVE_SENDFILEV',
                             msg='Checking for solaris sendfilev support')
-            if conf.CONFIG_SET('_HAVE_SENDFILEV64'):
-                conf.DEFINE('HAVE_SENDFILEV64', '1')
-                conf.DEFINE('SOLARIS_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
-            elif conf.CONFIG_SET('_HAVE_SENDFILEV'):
+            if conf.CONFIG_SET('_HAVE_SENDFILEV'):
                 conf.DEFINE('HAVE_SENDFILEV', '1')
                 conf.DEFINE('SOLARIS_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
@@ -1328,7 +1209,6 @@ main() {
                             size_t total=0;
                             struct sf_parms hdtrl;
                             ssize_t nwritten;
-                            off64_t offset;
                             hdtrl.header_data = 0;
                             hdtrl.header_length = 0;
                             hdtrl.file_descriptor = fromfd;

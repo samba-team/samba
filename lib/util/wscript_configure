@@ -26,11 +26,6 @@ conf.CHECK_STRUCTURE_MEMBER('struct statvfs', 'f_frsize', define='HAVE_FRSIZE', 
 
 # all the different ways of doing statfs
 statfs_types = [
-    ( 'STAT_STATVFS64',
-      'Linux statvfs64',
-      'struct statvfs64 fsd; exit(statvfs64 (".", &fsd))',
-      'sys/statvfs.h' ),
-
     ( 'STAT_STATVFS',
       'statvfs (SVR4)',
       'struct statvfs fsd; exit(statvfs(0, &fsd))',
