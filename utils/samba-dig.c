@@ -42,7 +42,7 @@ static struct dns_name_packet *make_name_packet(TALLOC_CTX *mem_ctx,
 	}
 
 	packet->id = random();
-	packet->operation |= operation;
+	packet->operation |= operation | DNS_FLAG_RECURSION_DESIRED;
 
 	return packet;
 }

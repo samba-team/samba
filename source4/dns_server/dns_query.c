@@ -20,15 +20,18 @@
 */
 
 #include "includes.h"
+#include "smbd/service_task.h"
 #include "libcli/util/werror.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_dns.h"
 #include "librpc/gen_ndr/ndr_dnsp.h"
 #include <ldb.h>
+#include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 #include "libcli/dns/libdns.h"
+#include "lib/util/util_net.h"
 
 static WERROR create_response_rr(const struct dns_name_question *question,
 				 const struct dnsp_DnssrvRpcRecord *rec,
@@ -98,7 +101,8 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 	return WERR_OK;
 }
 
-static WERROR ask_forwarder(TALLOC_CTX *mem_ctx,
+static WERROR ask_forwarder(struct dns_server *dns,
+			    TALLOC_CTX *mem_ctx,
 			    struct dns_name_question *question,
 			    struct dns_res_rec **answers, uint16_t *ancount,
 			    struct dns_res_rec **nsrecs, uint16_t *nscount,
@@ -111,6 +115,13 @@ static WERROR ask_forwarder(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	WERROR werr = WERR_OK;
 	struct tevent_req *req;
+	const char *forwarder = lpcfg_dns_forwarder(dns->task->lp_ctx);
+
+	if (!is_ipaddress(forwarder)) {
+		DEBUG(0, ("Invalid 'dns forwarder' setting '%s', needs to be "
+			  "an IP address\n", forwarder));
+		return DNS_ERR(NAME_ERROR);
+	}
 
 	out_packet = talloc_zero(mem_ctx, struct dns_name_packet);
 	W_ERROR_HAVE_NO_MEMORY(out_packet);
@@ -127,8 +138,7 @@ static WERROR ask_forwarder(TALLOC_CTX *mem_ctx,
 		return DNS_ERR(SERVER_FAILURE);
 	}
 
-	/* FIXME: Don't hardcode this, get that from a configuration somewhere */
-	req = dns_udp_request_send(mem_ctx, ev, "127.0.0.1", out.data, out.length);
+	req = dns_udp_request_send(mem_ctx, ev, forwarder, out.data, out.length);
 	W_ERROR_HAVE_NO_MEMORY(req);
 
 	if(!tevent_req_poll(req, ev)) {
@@ -229,11 +239,20 @@ WERROR dns_server_process_query(struct dns_server *dns,
 
 	if (dns_authorative_for_zone(dns, in->questions[0].name)) {
 		state->flags |= DNS_FLAG_AUTHORITATIVE;
-		werror = handle_question(dns, mem_ctx, &in->questions[0], &ans, &num_answers);
+		werror = handle_question(dns, mem_ctx, &in->questions[0],
+					 &ans, &num_answers);
 	} else {
-		DEBUG(2, ("I don't feel responsible for '%s', forwarding\n", in->questions[0].name));
-		werror = ask_forwarder(mem_ctx, &in->questions[0], &ans, &num_answers,
-				       &ns, &num_nsrecs, &adds, &num_additional);
+		if (state->flags & DNS_FLAG_RECURSION_DESIRED &&
+		    state->flags & DNS_FLAG_RECURSION_AVAIL) {
+			DEBUG(2, ("Not authorative for '%s', forwarding\n",
+				  in->questions[0].name));
+			werror = ask_forwarder(dns, mem_ctx, &in->questions[0],
+					       &ans, &num_answers,
+					       &ns, &num_nsrecs,
+					       &adds, &num_additional);
+		} else {
+			werror = DNS_ERR(NAME_ERROR);
+		}
 	}
 	W_ERROR_NOT_OK_GOTO(werror, query_failed);
 
