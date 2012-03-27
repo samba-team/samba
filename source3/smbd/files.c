@@ -680,7 +680,7 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 		return NULL;
 	}
 
-	if (smb2req->tcon->compat_conn != fsp->conn) {
+	if (smb2req->tcon->compat != fsp->conn) {
 		return NULL;
 	}
 
@@ -688,7 +688,11 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 		return NULL;
 	}
 
-	if (smb2req->session->vuid != fsp->vuid) {
+	if (smb2req->session->compat == NULL) {
+		return NULL;
+	}
+
+	if (smb2req->session->compat->vuid != fsp->vuid) {
 		return NULL;
 	}
 

@@ -211,7 +211,7 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbd_smb2_find_state *state;
 	struct smb_request *smbreq;
-	connection_struct *conn = smb2req->tcon->compat_conn;
+	connection_struct *conn = smb2req->tcon->compat;
 	NTSTATUS status;
 	NTSTATUS empty_status;
 	uint32_t info_level;

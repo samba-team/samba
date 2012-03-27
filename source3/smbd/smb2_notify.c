@@ -195,7 +195,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbd_smb2_notify_state *state;
 	struct smb_request *smbreq;
-	connection_struct *conn = smb2req->tcon->compat_conn;
+	connection_struct *conn = smb2req->tcon->compat;
 	bool recursive = (in_flags & SMB2_WATCH_TREE) ? true : false;
 	NTSTATUS status;
 

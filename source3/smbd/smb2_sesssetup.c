@@ -174,33 +174,7 @@ static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
 	}
 }
 
-static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
-{
-	if (session->sconn == NULL) {
-		return 0;
-	}
-
-	file_close_user(session->sconn, session->vuid);
-
-	/* first free all tcons */
-	while (session->tcons.list) {
-		talloc_free(session->tcons.list);
-	}
-
-	DLIST_REMOVE(session->sconn->smb2.sessions.list, session);
-	invalidate_vuid(session->sconn, session->vuid);
-
-	session->vuid = 0;
-	session->status = NT_STATUS_USER_SESSION_DELETED;
-	session->sconn = NULL;
-
-	session->smbXsrv->compat = NULL;
-	TALLOC_FREE(session->smbXsrv);
-
-	return 0;
-}
-
-static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
+static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 					struct smbd_smb2_request *smb2req,
 					uint8_t in_security_mode,
 					uint64_t in_previous_session_id,
@@ -211,16 +185,24 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 	NTSTATUS status;
 	bool guest = false;
 	uint8_t session_key[16];
-	struct smbXsrv_session *x = session->smbXsrv;
-	struct auth_session_info *session_info = session->session_info;
-	struct smbXsrv_connection *conn = x->connection;
+	struct smbXsrv_session *x = session;
+	struct auth_session_info *session_info;
+	struct smbXsrv_connection *conn = session->connection;
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == SMB_SIGNING_REQUIRED) {
 		x->global->signing_required = true;
 	}
 
-	if (security_session_user_level(session->session_info, NULL) < SECURITY_USER) {
+	status = gensec_session_info(session->gensec,
+				     session->global,
+				     &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(session);
+		return status;
+	}
+
+	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
 		/* we map anonymous to guest internally */
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
@@ -230,8 +212,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 	}
 
 	ZERO_STRUCT(session_key);
-	memcpy(session_key, session->session_info->session_key.data,
-	       MIN(session->session_info->session_key.length, sizeof(session_key)));
+	memcpy(session_key, session_info->session_key.data,
+	       MIN(session_info->session_key.length, sizeof(session_key)));
 
 	x->global->signing_key = data_blob_talloc(x->global,
 						  session_key,
@@ -286,54 +268,52 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	session->compat_vuser = talloc_zero(session, struct user_struct);
-	if (session->compat_vuser == NULL) {
+	session->compat = talloc_zero(session, struct user_struct);
+	if (session->compat == NULL) {
 		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
-	session->compat_vuser->gensec_security = session->gensec_security;
-	session->compat_vuser->homes_snum = -1;
-	session->compat_vuser->session_info = session->session_info;
-	session->compat_vuser->session_keystr = NULL;
-	session->compat_vuser->vuid = session->vuid;
-	DLIST_ADD(session->sconn->users, session->compat_vuser);
-	session->sconn->num_users++;
+	session->compat->session = session;
+	session->compat->homes_snum = -1;
+	session->compat->session_info = session_info;
+	session->compat->session_keystr = NULL;
+	session->compat->vuid = session->global->session_wire_id;
+	DLIST_ADD(smb2req->sconn->users, session->compat);
+	smb2req->sconn->num_users++;
 
-	if (security_session_user_level(session->session_info, NULL) >= SECURITY_USER) {
-		session->compat_vuser->homes_snum =
-			register_homes_share(session->session_info->unix_info->unix_name);
+	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
+		session->compat->homes_snum =
+			register_homes_share(session_info->unix_info->unix_name);
 	}
 
-	if (!session_claim(session->sconn, session->compat_vuser)) {
+	if (!session_claim(smb2req->sconn, session->compat)) {
 		DEBUG(1, ("smb2: Failed to claim session "
 			"for vuid=%llu\n",
-			(unsigned long long)session->compat_vuser->vuid));
+			(unsigned long long)session->compat->vuid));
 		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	set_current_user_info(session->session_info->unix_info->sanitized_username,
-			      session->session_info->unix_info->unix_name,
-			      session->session_info->info->domain_name);
+	set_current_user_info(session_info->unix_info->sanitized_username,
+			      session_info->unix_info->unix_name,
+			      session_info->info->domain_name);
 
 	reload_services(smb2req->sconn, conn_snum_used, true);
 
-	session->smbXsrv->status = NT_STATUS_OK;
-	session->smbXsrv->global->auth_session_info = session->session_info;
-	session->smbXsrv->global->auth_session_info_seqnum += 1;
-	session->smbXsrv->global->channels[0].auth_session_info_seqnum =
-		session->smbXsrv->global->auth_session_info_seqnum;
+	session->status = NT_STATUS_OK;
+	session->global->auth_session_info = session_info;
+	session->global->auth_session_info_seqnum += 1;
+	session->global->channels[0].auth_session_info_seqnum =
+		session->global->auth_session_info_seqnum;
 
-	status = smbXsrv_session_update(session->smbXsrv);
+	status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
-			  (unsigned long long)session->compat_vuser->vuid,
+			  (unsigned long long)session->compat->vuid,
 			  nt_errstr(status)));
 		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
 	}
-
-	session->status = NT_STATUS_OK;
 
 	/*
 	 * we attach the session to the request
@@ -346,12 +326,12 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 
 	global_client_caps |= (CAP_LEVEL_II_OPLOCKS|CAP_STATUS32);
 
-	*out_session_id = session->vuid;
+	*out_session_id = session->global->session_wire_id;
 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_auth_generic(struct smbd_smb2_session *session,
+static NTSTATUS smbd_smb2_auth_generic(struct smbXsrv_session *session,
 				       struct smbd_smb2_request *smb2req,
 				       uint8_t in_security_mode,
 				       uint64_t in_previous_session_id,
@@ -364,18 +344,20 @@ static NTSTATUS smbd_smb2_auth_generic(struct smbd_smb2_session *session,
 
 	*out_security_buffer = data_blob_null;
 
-	if (session->gensec_security == NULL) {
-		status = auth_generic_prepare(session, session->sconn->remote_address,
-					    &session->gensec_security);
+	if (session->gensec == NULL) {
+		status = auth_generic_prepare(session,
+					      session->connection->remote_address,
+					      &session->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
 			return status;
 		}
 
-		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_SESSION_KEY);
-		gensec_want_feature(session->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
+		gensec_want_feature(session->gensec, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(session->gensec, GENSEC_FEATURE_UNIX_TOKEN);
 
-		status = gensec_start_mech_by_oid(session->gensec_security, GENSEC_OID_SPNEGO);
+		status = gensec_start_mech_by_oid(session->gensec,
+						  GENSEC_OID_SPNEGO);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
 			return status;
@@ -383,7 +365,7 @@ static NTSTATUS smbd_smb2_auth_generic(struct smbd_smb2_session *session,
 	}
 
 	become_root();
-	status = gensec_update(session->gensec_security,
+	status = gensec_update(session->gensec,
 			       smb2req, NULL,
 			       in_security_buffer,
 			       out_security_buffer);
@@ -395,19 +377,9 @@ static NTSTATUS smbd_smb2_auth_generic(struct smbd_smb2_session *session,
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		*out_session_id = session->vuid;
+		*out_session_id = session->global->session_wire_id;
 		return status;
 	}
-
-	status = gensec_session_info(session->gensec_security,
-				     session,
-				     &session->session_info);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(session);
-		return status;
-	}
-	*out_session_id = session->vuid;
 
 	return smbd_smb2_auth_generic_return(session,
 					     smb2req,
@@ -428,7 +400,6 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					DATA_BLOB *out_security_buffer,
 					uint64_t *out_session_id)
 {
-	struct smbd_smb2_session *smb2sess;
 	struct smbXsrv_session *session;
 	NTSTATUS status;
 	NTTIME now = timeval_to_nttime(&smb2req->request_time);
@@ -438,33 +409,11 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 
 	if (in_session_id == 0) {
 		/* create a new session */
-		smb2sess = talloc_zero(smb2req->sconn, struct smbd_smb2_session);
-		if (smb2sess == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		status = smbXsrv_session_create(smb2req->sconn->conn,
 					        now, &session);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		smb2sess->smbXsrv = session;
-		session->smb2sess = smb2sess;
-		talloc_set_destructor(smb2sess, smbd_smb2_session_destructor);
-
-		smb2sess->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-		smb2sess->vuid = session->global->session_wire_id;
-
-		smb2sess->tcons.idtree = idr_init(smb2sess);
-		if (smb2sess->tcons.idtree == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		smb2sess->tcons.limit = 0x0000FFFE;
-		smb2sess->tcons.list = NULL;
-
-		DLIST_ADD_END(smb2req->sconn->smb2.sessions.list, smb2sess,
-			      struct smbd_smb2_session *);
-		smb2sess->sconn = smb2req->sconn;
 	} else {
 		status = smb2srv_session_lookup(smb2req->sconn->conn,
 						in_session_id, now,
@@ -473,18 +422,11 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 			return NT_STATUS_REQUEST_NOT_ACCEPTED;
 		}
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-
 			return status;
 		}
-
-		smb2sess = session->smb2sess;
 	}
 
-	if (NT_STATUS_IS_OK(smb2sess->status)) {
-		return NT_STATUS_REQUEST_NOT_ACCEPTED;
-	}
-
-	return smbd_smb2_auth_generic(smb2sess,
+	return smbd_smb2_auth_generic(session,
 				      smb2req,
 				      in_security_mode,
 				      in_previous_session_id,
@@ -596,9 +538,19 @@ NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req)
 
 	/*
 	 * TODO: cancel all outstanding requests on the session
-	 *       and delete all tree connections.
 	 */
-	smbd_smb2_session_destructor(req->session);
+	status = smbXsrv_session_logoff(req->session);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("smbd_smb2_request_process_logoff: "
+			  "smbXsrv_session_logoff() failed: %s\n",
+			  nt_errstr(status)));
+		/*
+		 * If we hit this case, there is something completely
+		 * wrong, so we better disconnect the transport connection.
+		 */
+		return status;
+	}
+
 	/*
 	 * we may need to sign the response, so we need to keep
 	 * the session until the response is sent to the wire.

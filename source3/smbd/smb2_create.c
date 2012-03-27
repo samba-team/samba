@@ -435,7 +435,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(out_context_blobs);
 
-	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat_conn))) {
+	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
 		requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
 	} else {
 		requested_oplock_level = in_oplock_level;
@@ -783,7 +783,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	smb2req->compat_chain_fsp = smb1req->chain_fsp;
 
-	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat_conn))) {
+	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
 		state->out_oplock_level	= in_oplock_level;
 	} else {
 		state->out_oplock_level	= map_samba_oplock_levels_to_smb2(result->oplock_type);

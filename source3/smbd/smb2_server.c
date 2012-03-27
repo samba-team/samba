@@ -108,7 +108,6 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sconn->smb2.sessions.list = NULL;
 	sconn->smb2.seqnum_low = 0;
 	sconn->smb2.credits_granted = 0;
 	sconn->smb2.max_credits = lp_smb2_max_credits();
@@ -811,7 +810,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	/* Re-sign if needed. */
 	if (nreq->do_signing) {
 		NTSTATUS status;
-		struct smbXsrv_session *x = nreq->session->smbXsrv;
+		struct smbXsrv_session *x = nreq->session;
 		struct smbXsrv_connection *conn = x->connection;
 		DATA_BLOB signing_key = x->global->channels[0].signing_key;
 
@@ -1100,7 +1099,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	if (req->do_signing) {
 		NTSTATUS status;
-		struct smbXsrv_session *x = req->session->smbXsrv;
+		struct smbXsrv_session *x = req->session;
 		struct smbXsrv_connection *conn = x->connection;
 		DATA_BLOB signing_key = x->global->channels[0].signing_key;
 
@@ -1203,8 +1202,9 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 	int i = req->current_idx;
 	uint32_t in_flags;
 	uint32_t in_tid;
-	void *p;
-	struct smbd_smb2_tcon *tcon;
+	struct smbXsrv_tcon0 *tcon;
+	NTSTATUS status;
+	NTTIME now = timeval_to_nttime(&req->request_time);
 
 	req->tcon = NULL;
 
@@ -1217,19 +1217,18 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 		in_tid = req->last_tid;
 	}
 
-	/* lookup an existing session */
-	p = idr_find(req->session->tcons.idtree, in_tid);
-	if (p == NULL) {
-		return NT_STATUS_NETWORK_NAME_DELETED;
+	status = smb2srv_tcon_lookup(req->session,
+				     in_tid, now, &tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	tcon = talloc_get_type_abort(p, struct smbd_smb2_tcon);
 
-	if (!change_to_user(tcon->compat_conn,req->session->vuid)) {
+	if (!change_to_user(tcon->compat, req->session->compat->vuid)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* should we pass FLAG_CASELESS_PATHNAMES here? */
-	if (!set_current_service(tcon->compat_conn, 0, true)) {
+	if (!set_current_service(tcon->compat, 0, true)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1249,8 +1248,8 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	int i = req->current_idx;
 	uint32_t in_flags;
 	uint64_t in_session_id;
-	struct smbd_smb2_session *session;
-	struct smbXsrv_session *smbXsrv;
+	struct smbXsrv_session *session;
+	struct auth_session_info *session_info;
 	NTSTATUS status;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 
@@ -1269,18 +1268,19 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	/* lookup an existing session */
 	status = smb2srv_session_lookup(req->sconn->conn,
 					in_session_id, now,
-					&smbXsrv);
+					&session);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	session = smbXsrv->smb2sess;
-	if (!NT_STATUS_IS_OK(session->status)) {
-		return NT_STATUS_ACCESS_DENIED;
+
+	session_info = session->global->auth_session_info;
+	if (session_info == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	set_current_user_info(session->session_info->unix_info->sanitized_username,
-			      session->session_info->unix_info->unix_name,
-			      session->session_info->info->domain_name);
+	set_current_user_info(session_info->unix_info->sanitized_username,
+			      session_info->unix_info->unix_name,
+			      session_info->info->domain_name);
 
 	req->session = session;
 	req->last_session_id = in_session_id;
@@ -1445,9 +1445,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	 * we defer the check of the session_status
 	 */
 	session_status = smbd_smb2_request_check_session(req);
-	if (req->session) {
-		x = req->session->smbXsrv;
-	}
+	x = req->session;
 
 	req->do_signing = false;
 	if (flags & SMB2_HDR_FLAG_SIGNED) {
@@ -1949,7 +1947,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	if (req->do_signing) {
 		NTSTATUS status;
-		struct smbXsrv_session *x = req->session->smbXsrv;
+		struct smbXsrv_session *x = req->session;
 		struct smbXsrv_connection *conn = x->connection;
 		DATA_BLOB signing_key = x->global->channels[0].signing_key;
 

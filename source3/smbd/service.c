@@ -941,7 +941,8 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 ****************************************************************************/
 
 connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
-					struct smbd_smb2_tcon *tcon,
+					struct smbXsrv_tcon *tcon,
+					int snum,
 					struct user_struct *vuser,
 					const char *pdev,
 					NTSTATUS *pstatus)
@@ -952,10 +953,13 @@ connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}
-	conn->cnum = tcon->tid;
+
+	conn->cnum = tcon->global->tcon_wire_id;
+	conn->tcon = tcon;
+
 	*pstatus = make_connection_snum(sconn,
 					conn,
-					tcon->snum,
+					snum,
 					vuser,
 					pdev);
 	if (!NT_STATUS_IS_OK(*pstatus)) {

@@ -389,7 +389,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	struct smbd_smb2_read_state *state = NULL;
 	struct smb_request *smbreq = NULL;
-	connection_struct *conn = smb2req->tcon->compat_conn;
+	connection_struct *conn = smb2req->tcon->compat;
 	ssize_t nread = -1;
 	struct lock_struct lock;
 	int saved_errno;

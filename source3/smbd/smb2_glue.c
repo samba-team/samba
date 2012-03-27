@@ -37,9 +37,9 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 	}
 
 	smbreq->request_time = req->request_time;
-	smbreq->vuid = req->session->compat_vuser->vuid;
-	smbreq->tid = req->tcon->compat_conn->cnum;
-	smbreq->conn = req->tcon->compat_conn;
+	smbreq->vuid = req->session->compat->vuid;
+	smbreq->tid = req->tcon->compat->cnum;
+	smbreq->conn = req->tcon->compat;
 	smbreq->sconn = req->sconn;
 	smbreq->smbpid = (uint16_t)IVAL(inhdr, SMB2_HDR_PID);
 	smbreq->flags2 = FLAGS2_UNICODE_STRINGS |

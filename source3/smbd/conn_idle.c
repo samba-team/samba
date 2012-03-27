@@ -88,19 +88,7 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 void conn_close_all(struct smbd_server_connection *sconn)
 {
 	if (sconn->using_smb2) {
-		/* SMB2 */
-		struct smbd_smb2_session *sess;
-
-		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
-			struct smbd_smb2_tcon *tcon, *tc_next;
-
-			file_close_user(sconn, sess->vuid);
-
-			for (tcon = sess->tcons.list; tcon; tcon = tc_next) {
-				tc_next = tcon->next;
-				TALLOC_FREE(tcon);
-			}
-		}
+		smbXsrv_session_logoff_all(sconn->conn);
 	} else {
 		/* SMB1 */
 		connection_struct *conn, *next;
@@ -131,21 +119,20 @@ void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename
 	}
 
 	if (sconn->using_smb2) {
-		/* SMB2 */
-		struct smbd_smb2_session *sess;
-		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
-			struct smbd_smb2_tcon *tcon, *tc_next;
+		for (conn=sconn->connections;conn;conn=next) {
+			struct smbXsrv_tcon *tcon;
 
-			for (tcon = sess->tcons.list; tcon; tcon = tc_next) {
-				tc_next = tcon->next;
-				if (tcon->compat_conn &&
-						strequal(lp_servicename(SNUM(tcon->compat_conn)),
-								sharename)) {
-					DEBUG(1,("Forcing close of share %s cnum=%d\n",
-						sharename, tcon->compat_conn->cnum));
-					TALLOC_FREE(tcon);
-				}
+			next = conn->next;
+			tcon = conn->tcon;
+
+			if (!strequal(lp_servicename(SNUM(conn)), sharename)) {
+				continue;
 			}
+
+			DEBUG(1,("Forcing close of share %s cnum=%d\n",
+				sharename, conn->cnum));
+			smbXsrv_tcon_disconnect(tcon, conn->vuid);
+			TALLOC_FREE(tcon);
 		}
 	} else {
 		/* SMB1 */

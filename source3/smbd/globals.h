@@ -115,8 +115,6 @@ extern bool exit_firsttime;
 
 struct tstream_context;
 struct smbd_smb2_request;
-struct smbd_smb2_session;
-struct smbd_smb2_tcon;
 
 DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn);
 
@@ -411,11 +409,11 @@ struct smbd_smb2_request {
 	struct smbd_server_connection *sconn;
 
 	/* the session the request operates on, maybe NULL */
-	struct smbd_smb2_session *session;
+	struct smbXsrv_session *session;
 	uint64_t last_session_id;
 
 	/* the tcon the request operates on, maybe NULL */
-	struct smbd_smb2_tcon *tcon;
+	struct smbXsrv_tcon *tcon;
 	uint32_t last_tid;
 
 	int current_idx;
@@ -486,37 +484,6 @@ struct smbd_smb2_request {
 
 struct smbd_server_connection;
 struct user_struct;
-
-struct smbd_smb2_session {
-	struct smbd_smb2_session *prev, *next;
-	struct smbd_server_connection *sconn;
-	NTSTATUS status;
-	uint64_t vuid;
-	struct gensec_security *gensec_security;
-	struct auth_session_info *session_info;
-
-	struct smbXsrv_session *smbXsrv;
-
-	struct user_struct *compat_vuser;
-
-	struct {
-		/* an id tree used to allocate tids */
-		struct idr_context *idtree;
-
-		/* this is the limit of tid values for this connection */
-		uint32_t limit;
-
-		struct smbd_smb2_tcon *list;
-	} tcons;
-};
-
-struct smbd_smb2_tcon {
-	struct smbd_smb2_tcon *prev, *next;
-	struct smbd_smb2_session *session;
-	uint32_t tid;
-	int snum;
-	connection_struct *compat_conn;
-};
 
 struct pending_message_list;
 struct pending_auth_data;
@@ -673,9 +640,6 @@ struct smbd_server_connection {
 		struct tevent_queue *send_queue;
 		struct tstream_context *stream;
 		bool negprot_2ff;
-		struct {
-			struct smbd_smb2_session *list;
-		} sessions;
 		struct {
 			/* The event that makes us process our blocking lock queue */
 			struct timed_event *brl_timeout;

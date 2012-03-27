@@ -158,7 +158,7 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 {
 	NTSTATUS status;
 	struct smb_request *smbreq;
-	connection_struct *conn = req->tcon->compat_conn;
+	connection_struct *conn = req->tcon->compat;
 	struct smb_filename *smb_fname = NULL;
 	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
 	uint64_t allocation_size = 0;

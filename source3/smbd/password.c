@@ -145,6 +145,7 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 void invalidate_all_vuids(struct smbd_server_connection *sconn)
 {
 	if (sconn->using_smb2) {
+		smbXsrv_session_logoff_all(sconn->conn);
 		return;
 	}
 
