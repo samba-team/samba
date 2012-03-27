@@ -383,7 +383,7 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 	ret = ctdb_vnn_assign_iface(ctdb, vnn);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Takeover of IP %s/%u failed to "
-				 "assin a usable interface\n",
+				 "assign a usable interface\n",
 				 ctdb_addr_to_str(&vnn->public_address),
 				 vnn->public_netmask_bits));
 		return -1;
