@@ -475,6 +475,7 @@ if test "x$developer" = xyes; then
    default_shared_modules="$default_shared_modules perfcount_test"
 fi
 
+
 #
 # Config CPPFLAG settings for strange OS's that must be set
 # before other tests. Do NOT invoke AC_CHECK_HEADERS within this
@@ -507,51 +508,19 @@ case "$host_os" in
 #
     *aix4*)
 	  AC_MSG_RESULT([enabling large file support])
-      CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
+	  CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
 	  AC_DEFINE(_LARGE_FILES, 1, [Whether to enable large file support])
       ;;
 #
 # Defines needed for Solaris 2.6/2.7 aka 7.0 to make it admit
 # to the existance of large files..
-# Note that -D_LARGEFILE64_SOURCE is different from the Sun
-# recommendations on large file support, however it makes the
-# compile work using gcc 2.7 and 2.8, whereas using the Sun
-# recommendation makes the compile fail on gcc2.7. JRA.
 #
 # Solaris uses SYSV printing.  Make sure to set that here.  --jerry
 #
 	*solaris*)
 		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
-		case `uname -r` in
-			5.0|5.0.*|5.1|5.1.*|5.2|5.2.*|5.3|5.3.*|5.5|5.5.*)
-	  			AC_MSG_RESULT([no large file support])
-				;;
-			5.*)
-			LDFLAGS="$LDFLAGS -lthread"
-			CPPFLAGS="$CPPFLAGS -D_REENTRANT"
-			AC_MSG_RESULT([enabling large file support])
-			if test "$ac_cv_prog_gcc" = yes; then
-				${CC-cc} -v >conftest.c 2>&1
-				ac_cv_gcc_compiler_version_number=`grep 'gcc version' conftest.c`
-				rm -fr conftest.c
-				case "$ac_cv_gcc_compiler_version_number" in
-					*"gcc version 2.6"*|*"gcc version 2.7"*)
-						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
-						AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-						;;
-					*)
-						CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
-						AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-						AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
-						;;
-				esac
-			else
-				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
-				AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-				AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
-			fi
-			;;
-		esac
+		LDFLAGS="$LDFLAGS -lthread"
+		CPPFLAGS="$CPPFLAGS -D_REENTRANT"
 		;;
 #
 # IRIX uses SYSV printing.  Make sure to set that here
@@ -582,95 +551,11 @@ case "$host_os" in
 		AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
     esac
     ;;
+# GNU systems
 #
-# Tests needed for SINIX large file support.
-#
-    *sysv4*)
-      if test $host = mips-sni-sysv4 ; then
-        AC_MSG_CHECKING([for LFS support])
-        old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
-        AC_TRY_RUN([
-#include <unistd.h>
-main () {
-#if _LFS64_LARGEFILE == 1
-exit(0);
-#else
-exit(1);
-#endif
-}], [SINIX_LFS_SUPPORT=yes], [SINIX_LFS_SUPPORT=no], [SINIX_LFS_SUPPORT=cross])
-        CPPFLAGS="$old_CPPFLAGS"
-        if test x$SINIX_LFS_SUPPORT = xyes ; then
-          CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
-		  AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-          CFLAGS="`getconf LFS64_CFLAGS` $CFLAGS"
-          LDFLAGS="`getconf LFS64_LDFLAGS` $LDFLAGS"
-          LIBS="`getconf LFS64_LIBS` $LIBS"
-        fi
-      AC_MSG_RESULT([$SINIX_LFS_SUPPORT])
-      fi
-    ;;
-
-# Systems with LFS support.
-#
-    gnu* | k*bsd*-gnu | kopensolaris*-gnu)
-	CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
-	AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-	AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
+    *linux* | *hurd* | gnu* | k*bsd*-gnu | kopensolaris*-gnu)
+	CPPFLAGS="-D_GNU_SOURCE $CPPFLAGS"
 	AC_DEFINE(_GNU_SOURCE, 1, [Whether to use GNU libc extensions])
-	;;
-
-# Tests for linux LFS support. Need kernel 2.4 and glibc2.2 or greater support.
-#
-    *linux*)
-        AC_MSG_CHECKING([for LFS support])
-        old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
-       AC_TRY_RUN([
-#include <unistd.h>
-#include <sys/utsname.h>
-#include <string.h>
-#include <stdlib.h>
-main() {
-#if _LFS64_LARGEFILE == 1
-       struct utsname uts;
-       char *release;
-       int major, minor;
-
-       /* Ensure this is glibc 2.2 or higher */
-#if defined(__GLIBC__) && defined(__GLIBC_MINOR__)
-       int libc_major = __GLIBC__;
-       int libc_minor = __GLIBC_MINOR__;
-
-       if (libc_major < 2)
-              exit(1);
-       if (libc_minor < 2)
-              exit(1);
-#endif
-
-       /* Ensure this is kernel 2.4 or higher */
-
-       uname(&uts);
-       release = strdup(uts.release);
-       major = atoi(strsep(&release, "."));
-       minor = atoi(strsep(&release, "."));
-
-       if (major > 2 || (major == 2 && minor > 3))
-               exit(0);
-       exit(1);
-#else
-       exit(1);
-#endif
-}
-], [LINUX_LFS_SUPPORT=yes], [LINUX_LFS_SUPPORT=no], [LINUX_LFS_SUPPORT=cross])
-	CPPFLAGS="$old_CPPFLAGS"
-	if test x$LINUX_LFS_SUPPORT = xyes ; then
-		CPPFLAGS="-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE $CPPFLAGS"
-		AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-		AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
-		AC_DEFINE(_GNU_SOURCE, 1, [Whether to use GNU libc extensions])
-	fi
-	AC_MSG_RESULT([$LINUX_LFS_SUPPORT])
 	;;
 
 #
@@ -684,30 +569,7 @@ main() {
 	default_shared_modules="$default_shared_modules"
 
 	;;
-    *hurd*)
-        AC_MSG_CHECKING([for LFS support])
-        old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
-        AC_TRY_RUN([
-#include <unistd.h>
-main () {
-#if _LFS64_LARGEFILE == 1
-exit(0);
-#else
-exit(1);
-#endif
-}], [GLIBC_LFS_SUPPORT=yes], [GLIBC_LFS_SUPPORT=no], [GLIBC_LFS_SUPPORT=cross])
-        CPPFLAGS="$old_CPPFLAGS"
-        if test x$GLIBC_LFS_SUPPORT = xyes ; then
-          CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
-		  AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
-          AC_DEFINE(_GNU_SOURCE, 1, [Whether to use GNU libc extensions])
-        fi
-      AC_MSG_RESULT([$GLIBC_LFS_SUPPORT])
-    ;;
     *qnx*)
-        CPPFLAGS="-D_LARGEFILE64_SOURCE $CPPFLAGS"
-        AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
         ;;
 
 esac
