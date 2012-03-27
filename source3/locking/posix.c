@@ -97,9 +97,7 @@ static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 #if defined(MAX_POSITIVE_LOCK_OFFSET) /* Some systems have arbitrary limits. */
 
 	SMB_OFF_T max_positive_lock_offset = (MAX_POSITIVE_LOCK_OFFSET);
-
-#elif defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
-
+#else
 	/*
 	 * In this case SMB_OFF_T is 64 bits,
 	 * and the underlying system can handle 64 bit signed locks.
@@ -109,18 +107,7 @@ static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	SMB_OFF_T mask = (mask2<<1);
 	SMB_OFF_T max_positive_lock_offset = ~mask;
 
-#else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
-
-	/*
-	 * In this case either SMB_OFF_T is 32 bits,
-	 * or the underlying system cannot handle 64 bit signed locks.
-	 * All offsets & counts must be 2^31 or less.
-	 */
-
-	SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
-
-#endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
-
+#endif
 	/*
 	 * POSIX locks of length zero mean lock to end-of-file.
 	 * Win32 locks of length zero are point probes. Ignore

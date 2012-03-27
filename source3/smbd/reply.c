@@ -3207,27 +3207,8 @@ void reply_readbraw(struct smb_request *req)
 		/*
 		 * This is a large offset (64 bit) read.
 		 */
-#ifdef LARGE_SMB_OFF_T
 
 		startpos |= (((SMB_OFF_T)IVAL(req->vwv+8, 0)) << 32);
-
-#else /* !LARGE_SMB_OFF_T */
-
-		/*
-		 * Ensure we haven't been sent a >32 bit offset.
-		 */
-
-		if(IVAL(req->vwv+8, 0) != 0) {
-			DEBUG(0,("reply_readbraw: large offset "
-				"(%x << 32) used and we don't support "
-				"64 bit offsets.\n",
-			(unsigned int)IVAL(req->vwv+8, 0) ));
-			reply_readbraw_error(sconn);
-			END_PROFILE(SMBreadbraw);
-			return;
-		}
-
-#endif /* LARGE_SMB_OFF_T */
 
 		if(startpos < 0) {
 			DEBUG(0,("reply_readbraw: negative 64 bit "
@@ -3796,28 +3777,10 @@ void reply_read_and_X(struct smb_request *req)
 	}
 
 	if (req->wct == 12) {
-#ifdef LARGE_SMB_OFF_T
 		/*
 		 * This is a large offset (64 bit) read.
 		 */
 		startpos |= (((SMB_OFF_T)IVAL(req->vwv+10, 0)) << 32);
-
-#else /* !LARGE_SMB_OFF_T */
-
-		/*
-		 * Ensure we haven't been sent a >32 bit offset.
-		 */
-
-		if(IVAL(req->vwv+10, 0) != 0) {
-			DEBUG(0,("reply_read_and_X - large offset (%x << 32) "
-				 "used and we don't support 64 bit offsets.\n",
-				 (unsigned int)IVAL(req->vwv+10, 0) ));
-			END_PROFILE(SMBreadX);
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return;
-		}
-
-#endif /* LARGE_SMB_OFF_T */
 
 	}
 
@@ -4556,27 +4519,11 @@ void reply_write_and_X(struct smb_request *req)
 	data = smb_base(req->inbuf) + smb_doff;
 
 	if(req->wct == 14) {
-#ifdef LARGE_SMB_OFF_T
 		/*
 		 * This is a large offset (64 bit) write.
 		 */
 		startpos |= (((SMB_OFF_T)IVAL(req->vwv+12, 0)) << 32);
 
-#else /* !LARGE_SMB_OFF_T */
-
-		/*
-		 * Ensure we haven't been sent a >32 bit offset.
-		 */
-
-		if(IVAL(req->vwv+12, 0) != 0) {
-			DEBUG(0,("reply_write_and_X - large offset (%x << 32) "
-				 "used and we don't support 64 bit offsets.\n",
-				 (unsigned int)IVAL(req->vwv+12, 0) ));
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			goto out;
-		}
-
-#endif /* LARGE_SMB_OFF_T */
 	}
 
 	/* X/Open SMB protocol says that, unlike SMBwrite

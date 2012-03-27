@@ -5913,14 +5913,7 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 	}
 
 	position_information = (uint64_t)IVAL(pdata,0);
-#ifdef LARGE_SMB_OFF_T
 	position_information |= (((uint64_t)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if (IVAL(pdata,4) != 0) {
-		/* more than 32 bits? */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-#endif /* LARGE_SMB_OFF_T */
 
 	DEBUG(10,("smb_file_position_information: Set file position "
 		  "information for file %s to %.0f\n", fsp_str_dbg(fsp),
@@ -6671,15 +6664,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	}
 
 	allocation_size = (uint64_t)IVAL(pdata,0);
-#ifdef LARGE_SMB_OFF_T
 	allocation_size |= (((uint64_t)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if (IVAL(pdata,4) != 0) {
-		/* more than 32 bits? */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-#endif /* LARGE_SMB_OFF_T */
-
 	DEBUG(10,("smb_set_file_allocation_info: Set file allocation info for "
 		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)allocation_size));
@@ -6777,14 +6762,7 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 	}
 
 	size = IVAL(pdata,0);
-#ifdef LARGE_SMB_OFF_T
 	size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-	if (IVAL(pdata,4) != 0)	{
-		/* more than 32 bits? */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-#endif /* LARGE_SMB_OFF_T */
 	DEBUG(10,("smb_set_file_end_of_file_info: Set end of file info for "
 		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)size));
@@ -6917,14 +6895,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	if(IVAL(pdata, 0) != SMB_SIZE_NO_CHANGE_LO &&
 	   IVAL(pdata, 4) != SMB_SIZE_NO_CHANGE_HI) {
 		size=IVAL(pdata,0); /* first 8 Bytes are size */
-#ifdef LARGE_SMB_OFF_T
 		size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
-#else /* LARGE_SMB_OFF_T */
-		if (IVAL(pdata,4) != 0)	{
-			/* more than 32 bits? */
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-#endif /* LARGE_SMB_OFF_T */
 	}
 
 	ft.atime = interpret_long_date(pdata+24); /* access_time */
