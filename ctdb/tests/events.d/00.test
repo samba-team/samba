@@ -49,6 +49,7 @@ case $cmd in
 		exit 1
 	    }
 	}
+	echo "ctdb takeip event for $1 $2 $3"
 	exit 0;
 	;;
 
@@ -69,7 +70,7 @@ case $cmd in
 		exit 1
 	    }
 	}
-	echo "ctdb takeip event for $1 $2 $3"
+	echo "ctdb releaseip event for $1 $2 $3"
 	exit 0
 	;;
 
