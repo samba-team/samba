@@ -58,11 +58,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 	while (total) {
 		ssize_t nwritten;
 		do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_SENDFILE64)
-			nwritten = sendfile64(tofd, fromfd, &offset, total);
-#else
 			nwritten = sendfile(tofd, fromfd, &offset, total);
-#endif
 #if defined(EWOULDBLOCK)
 		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
 #else
@@ -229,11 +225,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 		xferred = 0;
 
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_SENDFILEV64)
-			nwritten = sendfilev64(tofd, vec, sfvcnt, &xferred);
-#else
 			nwritten = sendfilev(tofd, vec, sfvcnt, &xferred);
-#endif
 #if defined(EWOULDBLOCK)
 		if  (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) {
 #else
@@ -307,11 +299,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		 */
 
 		do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_SENDFILE64)
-			nwritten = sendfile64(tofd, fromfd, offset, total, &hdtrl[0], 0);
-#else
 			nwritten = sendfile(tofd, fromfd, offset, total, &hdtrl[0], 0);
-#endif
 #if defined(EWOULDBLOCK)
 		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
 #else

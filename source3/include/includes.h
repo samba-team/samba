@@ -259,15 +259,11 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
  */
 
 #ifndef SMB_DEV_T
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_DEV64_T)
-#    define SMB_DEV_T dev64_t
-#  else
-#    define SMB_DEV_T dev_t
-#  endif
+# define SMB_DEV_T dev_t
 #endif
 
 #ifndef LARGE_SMB_DEV_T
-#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_DEV64_T)) || (defined(SIZEOF_DEV_T) && (SIZEOF_DEV_T == 8))
+#  if (defined(SIZEOF_DEV_T) && (SIZEOF_DEV_T == 8))
 #    define LARGE_SMB_DEV_T 1
 #  endif
 #endif
@@ -285,15 +281,11 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
  */
 
 #ifndef SMB_INO_T
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)
-#    define SMB_INO_T ino64_t
-#  else
 #    define SMB_INO_T ino_t
-#  endif
 #endif
 
 #ifndef LARGE_SMB_INO_T
-#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_INO64_T)) || (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
+#  if (defined(SIZEOF_INO_T) && (SIZEOF_INO_T == 8))
 #    define LARGE_SMB_INO_T 1
 #  endif
 #endif
@@ -307,11 +299,7 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #endif
 
 #ifndef SMB_OFF_T
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)
-#    define SMB_OFF_T off64_t
-#  else
 #    define SMB_OFF_T off_t
-#  endif
 #endif
 
 /* TODO: remove this macros */
@@ -330,7 +318,7 @@ typedef uint64_t br_off;
  */
 
 #ifndef LARGE_SMB_OFF_T
-#  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
+#  if (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
 #    define LARGE_SMB_OFF_T 1
 #  endif
 #endif
@@ -396,11 +384,7 @@ typedef struct stat_ex SMB_STRUCT_STAT;
  */
 
 #ifndef SMB_STRUCT_DIRENT
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIRENT64)
-#    define SMB_STRUCT_DIRENT struct dirent64
-#  else
 #    define SMB_STRUCT_DIRENT struct dirent
-#  endif
 #endif
 
 /*
@@ -408,11 +392,7 @@ typedef struct stat_ex SMB_STRUCT_STAT;
  */
 
 #ifndef SMB_STRUCT_DIR
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_DIR64)
-#    define SMB_STRUCT_DIR DIR64
-#  else
 #    define SMB_STRUCT_DIR DIR
-#  endif
 #endif
 
 /*
@@ -420,35 +400,19 @@ typedef struct stat_ex SMB_STRUCT_STAT;
  */
 
 #ifndef SMB_STRUCT_FLOCK
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
-#    define SMB_STRUCT_FLOCK struct flock64
-#  else
 #    define SMB_STRUCT_FLOCK struct flock
-#  endif
 #endif
 
 #ifndef SMB_F_SETLKW
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
-#    define SMB_F_SETLKW F_SETLKW64
-#  else
 #    define SMB_F_SETLKW F_SETLKW
-#  endif
 #endif
 
 #ifndef SMB_F_SETLK
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
-#    define SMB_F_SETLK F_SETLK64
-#  else
 #    define SMB_F_SETLK F_SETLK
-#  endif
 #endif
 
 #ifndef SMB_F_GETLK
-#  if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_STRUCT_FLOCK64) && defined(HAVE_OFF64_T)
-#    define SMB_F_GETLK F_GETLK64
-#  else
 #    define SMB_F_GETLK F_GETLK
-#  endif
 #endif
 
 /*
@@ -457,11 +421,7 @@ typedef struct stat_ex SMB_STRUCT_STAT;
 
 #ifndef SMB_STRUCT_AIOCB
 #  if defined(WITH_AIO)
-#    if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64)
-#      define SMB_STRUCT_AIOCB struct aiocb64
-#    else
 #      define SMB_STRUCT_AIOCB struct aiocb
-#    endif
 #  else
 #    define SMB_STRUCT_AIOCB int /* AIO not being used but we still need the define.... */
 #  endif

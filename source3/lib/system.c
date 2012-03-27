@@ -117,40 +117,32 @@ ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt)
 }
 
 /*******************************************************************
-A pread wrapper that will deal with EINTR and 64-bit file offsets.
+A pread wrapper that will deal with EINTR
 ********************************************************************/
 
-#if defined(HAVE_PREAD) || defined(HAVE_PREAD64)
+#if defined(HAVE_PREAD)
 ssize_t sys_pread(int fd, void *buf, size_t count, SMB_OFF_T off)
 {
 	ssize_t ret;
 
 	do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_PREAD64)
-		ret = pread64(fd, buf, count, off);
-#else
 		ret = pread(fd, buf, count, off);
-#endif
 	} while (ret == -1 && errno == EINTR);
 	return ret;
 }
 #endif
 
 /*******************************************************************
-A write wrapper that will deal with EINTR and 64-bit file offsets.
+A write wrapper that will deal with EINTR
 ********************************************************************/
 
-#if defined(HAVE_PWRITE) || defined(HAVE_PWRITE64)
+#if defined(HAVE_PWRITE)
 ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off)
 {
 	ssize_t ret;
 
 	do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_PWRITE64)
-		ret = pwrite64(fd, buf, count, off);
-#else
 		ret = pwrite(fd, buf, count, off);
-#endif
 	} while (ret == -1 && errno == EINTR);
 	return ret;
 }
@@ -428,15 +420,9 @@ void update_stat_ex_create_time(struct stat_ex *dst,
 	dst->st_ex_calculated_birthtime = false;
 }
 
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-void init_stat_ex_from_stat (struct stat_ex *dst,
-			    const struct stat64 *src,
-			    bool fake_dir_create_times)
-#else
 void init_stat_ex_from_stat (struct stat_ex *dst,
 			    const struct stat *src,
 			    bool fake_dir_create_times)
-#endif
 {
 	dst->st_ex_dev = src->st_dev;
 	dst->st_ex_ino = src->st_ino;
@@ -470,20 +456,15 @@ void init_stat_ex_from_stat (struct stat_ex *dst,
 }
 
 /*******************************************************************
-A stat() wrapper that will deal with 64 bit filesizes.
+A stat() wrapper.
 ********************************************************************/
 
 int sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf,
 	     bool fake_dir_create_times)
 {
 	int ret;
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_STAT64)
-	struct stat64 statbuf;
-	ret = stat64(fname, &statbuf);
-#else
 	struct stat statbuf;
 	ret = stat(fname, &statbuf);
-#endif
 	if (ret == 0) {
 		/* we always want directories to appear zero size */
 		if (S_ISDIR(statbuf.st_mode)) {
@@ -495,19 +476,14 @@ int sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf,
 }
 
 /*******************************************************************
- An fstat() wrapper that will deal with 64 bit filesizes.
+ An fstat() wrapper.
 ********************************************************************/
 
 int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf, bool fake_dir_create_times)
 {
 	int ret;
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FSTAT64)
-	struct stat64 statbuf;
-	ret = fstat64(fd, &statbuf);
-#else
 	struct stat statbuf;
 	ret = fstat(fd, &statbuf);
-#endif
 	if (ret == 0) {
 		/* we always want directories to appear zero size */
 		if (S_ISDIR(statbuf.st_mode)) {
@@ -519,20 +495,15 @@ int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf, bool fake_dir_create_times)
 }
 
 /*******************************************************************
- An lstat() wrapper that will deal with 64 bit filesizes.
+ An lstat() wrapper.
 ********************************************************************/
 
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 	      bool fake_dir_create_times)
 {
 	int ret;
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSTAT64)
-	struct stat64 statbuf;
-	ret = lstat64(fname, &statbuf);
-#else
 	struct stat statbuf;
 	ret = lstat(fname, &statbuf);
-#endif
 	if (ret == 0) {
 		/* we always want directories to appear zero size */
 		if (S_ISDIR(statbuf.st_mode)) {
@@ -544,13 +515,11 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 }
 
 /*******************************************************************
- An posix_fallocate() wrapper that will deal with 64 bit filesizes.
+ An posix_fallocate() wrapper.
 ********************************************************************/
 int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_POSIX_FALLOCATE64) && !defined(HAVE_BROKEN_POSIX_FALLOCATE)
-	return posix_fallocate64(fd, offset, len);
-#elif defined(HAVE_POSIX_FALLOCATE) && !defined(HAVE_BROKEN_POSIX_FALLOCATE)
+#if defined(HAVE_POSIX_FALLOCATE) && !defined(HAVE_BROKEN_POSIX_FALLOCATE)
 	return posix_fallocate(fd, offset, len);
 #elif defined(F_RESVSP64)
 	/* this handles XFS on IRIX */
@@ -605,9 +574,7 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OF
 		errno = EINVAL;
 		return -1;
 	}
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LINUX_FALLOCATE64)
-	return fallocate64(fd, lmode, offset, len);
-#elif defined(HAVE_LINUX_FALLOCATE)
+#if defined(HAVE_LINUX_FALLOCATE)
 	return fallocate(fd, lmode, offset, len);
 #endif
 #else
@@ -618,87 +585,65 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OF
 }
 
 /*******************************************************************
- An ftruncate() wrapper that will deal with 64 bit filesizes.
+ An ftruncate() wrapper.
 ********************************************************************/
 
 int sys_ftruncate(int fd, SMB_OFF_T offset)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_FTRUNCATE64)
-	return ftruncate64(fd, offset);
-#else
 	return ftruncate(fd, offset);
-#endif
 }
 
 /*******************************************************************
- An lseek() wrapper that will deal with 64 bit filesizes.
+ An lseek() wrapper.
 ********************************************************************/
 
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
-	return lseek64(fd, offset, whence);
-#else
 	return lseek(fd, offset, whence);
-#endif
 }
 
 /*******************************************************************
- An ftell() wrapper that will deal with 64 bit filesizes.
+ An ftell() wrapper.
 ********************************************************************/
 
 SMB_OFF_T sys_ftell(FILE *fp)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
-	return (SMB_OFF_T)ftell64(fp);
-#elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELLO64)
-	return (SMB_OFF_T)ftello64(fp);
-#else
 	return (SMB_OFF_T)ftell(fp);
-#endif
 }
 
 /*******************************************************************
- A creat() wrapper that will deal with 64 bit filesizes.
+ A creat() wrapper.
 ********************************************************************/
 
 int sys_creat(const char *path, mode_t mode)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_CREAT64)
-	return creat64(path, mode);
+#if defined(HAVE_CREAT)
+	return creat(path, mode);
 #else
 	/*
-	 * If creat64 isn't defined then ensure we call a potential open64.
-	 * JRA.
+	 * If creat isn't defined then ensure we call open with the expected flags.
+	 *
 	 */
 	return sys_open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
 #endif
 }
 
 /*******************************************************************
- An open() wrapper that will deal with 64 bit filesizes.
+ An open() wrapper.
 ********************************************************************/
 
 int sys_open(const char *path, int oflag, mode_t mode)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OPEN64)
-	return open64(path, oflag, mode);
-#else
 	return open(path, oflag, mode);
-#endif
 }
 
 /*******************************************************************
- An fopen() wrapper that will deal with 64 bit filesizes.
+ An fopen() wrapper.
 ********************************************************************/
 
 FILE *sys_fopen(const char *path, const char *type)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_FOPEN64)
-	return fopen64(path, type);
-#else
 	return fopen(path, type);
-#endif
 }
 
 
@@ -736,29 +681,23 @@ void kernel_flock(int fd, uint32 share_mode, uint32 access_mask)
 
 
 /*******************************************************************
- An opendir wrapper that will deal with 64 bit filesizes.
+ An opendir wrapper.
 ********************************************************************/
 
 SMB_STRUCT_DIR *sys_opendir(const char *name)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OPENDIR64)
-	return opendir64(name);
-#else
 	return opendir(name);
-#endif
 }
 
 /*******************************************************************
- An fdopendir wrapper that will deal with 64 bit filesizes.
+ An fdopendir wrapper.
  Ugly hack - we need dirfd for this to work correctly in the
  calling code.. JRA.
 ********************************************************************/
 
 SMB_STRUCT_DIR *sys_fdopendir(int fd)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_FDOPENDIR64) && defined(HAVE_DIRFD)
-	return fdopendir64(fd);
-#elif defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
+#if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
 	return fdopendir(fd);
 #else
 	errno = ENOSYS;
@@ -767,82 +706,58 @@ SMB_STRUCT_DIR *sys_fdopendir(int fd)
 }
 
 /*******************************************************************
- A readdir wrapper that will deal with 64 bit filesizes.
+ A readdir wrapper.
 ********************************************************************/
 
 SMB_STRUCT_DIRENT *sys_readdir(SMB_STRUCT_DIR *dirp)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_READDIR64)
-	return readdir64(dirp);
-#else
 	return readdir(dirp);
-#endif
 }
 
 /*******************************************************************
- A seekdir wrapper that will deal with 64 bit filesizes.
+ A seekdir wrapper.
 ********************************************************************/
 
 void sys_seekdir(SMB_STRUCT_DIR *dirp, long offset)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_SEEKDIR64)
-	seekdir64(dirp, offset);
-#else
 	seekdir(dirp, offset);
-#endif
 }
 
 /*******************************************************************
- A telldir wrapper that will deal with 64 bit filesizes.
+ A telldir wrapper.
 ********************************************************************/
 
 long sys_telldir(SMB_STRUCT_DIR *dirp)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_TELLDIR64)
-	return (long)telldir64(dirp);
-#else
 	return (long)telldir(dirp);
-#endif
 }
 
 /*******************************************************************
- A rewinddir wrapper that will deal with 64 bit filesizes.
+ A rewinddir wrapper.
 ********************************************************************/
 
 void sys_rewinddir(SMB_STRUCT_DIR *dirp)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_REWINDDIR64)
-	rewinddir64(dirp);
-#else
 	rewinddir(dirp);
-#endif
 }
 
 /*******************************************************************
- A close wrapper that will deal with 64 bit filesizes.
+ A close wrapper.
 ********************************************************************/
 
 int sys_closedir(SMB_STRUCT_DIR *dirp)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_CLOSEDIR64)
-	return closedir64(dirp);
-#else
 	return closedir(dirp);
-#endif
 }
 
 /*******************************************************************
- An mknod() wrapper that will deal with 64 bit filesizes.
+ An mknod() wrapper.
 ********************************************************************/
 
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev)
 {
-#if defined(HAVE_MKNOD) || defined(HAVE_MKNOD64)
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_MKNOD64) && defined(HAVE_DEV64_T)
-	return mknod64(path, mode, dev);
-#else
+#if defined(HAVE_MKNOD)
 	return mknod(path, mode, dev);
-#endif
 #else
 	/* No mknod system call. */
 	errno = ENOSYS;
@@ -2429,14 +2344,12 @@ int sys_get_number_of_cores(void)
 #if defined(WITH_AIO)
 
 /*******************************************************************
- An aio_read wrapper that will deal with 64-bit sizes.
+ An aio_read wrapper.
 ********************************************************************/
 
 int sys_aio_read(SMB_STRUCT_AIOCB *aiocb)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_READ64)
-        return aio_read64(aiocb);
-#elif defined(HAVE_AIO_READ)
+#if defined(HAVE_AIO_READ)
         return aio_read(aiocb);
 #else
 	errno = ENOSYS;
@@ -2445,14 +2358,12 @@ int sys_aio_read(SMB_STRUCT_AIOCB *aiocb)
 }
 
 /*******************************************************************
- An aio_write wrapper that will deal with 64-bit sizes.
+ An aio_write wrapper.
 ********************************************************************/
 
 int sys_aio_write(SMB_STRUCT_AIOCB *aiocb)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_WRITE64)
-        return aio_write64(aiocb);
-#elif defined(HAVE_AIO_WRITE)
+#if defined(HAVE_AIO_WRITE)
         return aio_write(aiocb);
 #else
 	errno = ENOSYS;
@@ -2461,14 +2372,12 @@ int sys_aio_write(SMB_STRUCT_AIOCB *aiocb)
 }
 
 /*******************************************************************
- An aio_return wrapper that will deal with 64-bit sizes.
+ An aio_return wrapper.
 ********************************************************************/
 
 ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_RETURN64)
-        return aio_return64(aiocb);
-#elif defined(HAVE_AIO_RETURN)
+#if defined(HAVE_AIO_RETURN)
         return aio_return(aiocb);
 #else
 	errno = ENOSYS;
@@ -2477,14 +2386,12 @@ ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb)
 }
 
 /*******************************************************************
- An aio_cancel wrapper that will deal with 64-bit sizes.
+ An aio_cancel wrapper.
 ********************************************************************/
 
 int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_CANCEL64)
-        return aio_cancel64(fd, aiocb);
-#elif defined(HAVE_AIO_CANCEL)
+#if defined(HAVE_AIO_CANCEL)
         return aio_cancel(fd, aiocb);
 #else
 	errno = ENOSYS;
@@ -2493,14 +2400,12 @@ int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb)
 }
 
 /*******************************************************************
- An aio_error wrapper that will deal with 64-bit sizes.
+ An aio_error wrapper.
 ********************************************************************/
 
 int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_ERROR64)
-        return aio_error64(aiocb);
-#elif defined(HAVE_AIO_ERROR)
+#if defined(HAVE_AIO_ERROR)
         return aio_error(aiocb);
 #else
 	errno = ENOSYS;
@@ -2509,14 +2414,12 @@ int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb)
 }
 
 /*******************************************************************
- An aio_fsync wrapper that will deal with 64-bit sizes.
+ An aio_fsync wrapper.
 ********************************************************************/
 
 int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_FSYNC64)
-        return aio_fsync64(op, aiocb);
-#elif defined(HAVE_AIO_FSYNC)
+#if defined(HAVE_AIO_FSYNC)
         return aio_fsync(op, aiocb);
 #else
 	errno = ENOSYS;
@@ -2525,14 +2428,12 @@ int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb)
 }
 
 /*******************************************************************
- An aio_fsync wrapper that will deal with 64-bit sizes.
+ An aio_fsync wrapper.
 ********************************************************************/
 
 int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout)
 {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_AIOCB64) && defined(HAVE_AIO_SUSPEND64)
-        return aio_suspend64(cblist, n, timeout);
-#elif defined(HAVE_AIO_FSYNC)
+#if defined(HAVE_AIO_FSYNC)
         return aio_suspend(cblist, n, timeout);
 #else
 	errno = ENOSYS;

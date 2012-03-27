@@ -128,7 +128,7 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize)
 
 #endif /* STAT_STATFS4 */
 
-#if defined(STAT_STATVFS) || defined(STAT_STATVFS64)		/* SVR4 */
+#if defined(STAT_STATVFS)		/* SVR4 */
 #ifdef HAVE_FRSIZE
 # define CONVERT_BLOCKS(B) \
 	adjust_blocks ((uint64_t)(B), fsd.f_frsize ? (uint64_t)fsd.f_frsize : (uint64_t)fsd.f_bsize, (uint64_t)512)
@@ -137,13 +137,8 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize)
 	adjust_blocks ((uint64_t)(B), (uint64_t)fsd.f_bsize, (uint64_t)512)
 #endif
 
-#ifdef STAT_STATVFS64
-	struct statvfs64 fsd;
-	if (statvfs64(path, &fsd) < 0) return -1;
-#else
 	struct statvfs fsd;
 	if (statvfs(path, &fsd) < 0) return -1;
-#endif
 
 	/* f_frsize isn't guaranteed to be supported.  */
 
