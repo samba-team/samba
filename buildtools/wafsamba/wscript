@@ -362,7 +362,8 @@ def configure(conf):
     conf.CHECK_HEADERS('limits.h assert.h')
 
     # see if we need special largefile flags
-    conf.CHECK_LARGEFILE()
+    if not conf.CHECK_LARGEFILE():
+        raise Utils.WafError('Samba requires large file support support, but not available on this platform: sizeof(off_t) < 8')
 
     if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
         conf.DEFINE('STDC_HEADERS', 1)
