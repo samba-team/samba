@@ -546,7 +546,7 @@ msg.msg_acctrightslen = sizeof(fd);
 
     # Check for kerberos
     have_gssapi=False
-    if Options.options.with_mit_krb5_checks and conf.env.developer:
+    if Options.options.with_mit_krb5_checks:
         Logs.info("Looking for kerberos features")
         conf.find_program('krb5-config', var='KRB5_CONFIG')
         if conf.env.KRB5_CONFIG:
