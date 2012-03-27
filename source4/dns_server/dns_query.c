@@ -28,6 +28,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
+#include "libcli/dns/libdns.h"
 
 static WERROR create_response_rr(const struct dns_name_question *question,
 				 const struct dnsp_DnssrvRpcRecord *rec,
@@ -97,6 +98,73 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 	return WERR_OK;
 }
 
+static WERROR ask_forwarder(TALLOC_CTX *mem_ctx,
+			    struct dns_name_question *question,
+			    struct dns_res_rec **answers, uint16_t *ancount,
+			    struct dns_res_rec **nsrecs, uint16_t *nscount,
+			    struct dns_res_rec **additional, uint16_t *arcount)
+{
+	struct tevent_context *ev = tevent_context_init(mem_ctx);
+	struct dns_name_packet *out_packet, *in_packet;
+	uint16_t id = random();
+	DATA_BLOB out, in;
+	enum ndr_err_code ndr_err;
+	WERROR werr = WERR_OK;
+	struct tevent_req *req;
+
+	out_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+	W_ERROR_HAVE_NO_MEMORY(out_packet);
+
+	out_packet->id = id;
+	out_packet->operation |= DNS_OPCODE_QUERY | DNS_FLAG_RECURSION_DESIRED;
+
+	out_packet->qdcount = 1;
+	out_packet->questions = question;
+
+	ndr_err = ndr_push_struct_blob(&out, mem_ctx, out_packet,
+			(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	/* FIXME: Don't hardcode this, get that from a configuration somewhere */
+	req = dns_udp_request_send(mem_ctx, ev, "127.0.0.1", out.data, out.length);
+	W_ERROR_HAVE_NO_MEMORY(req);
+
+	if(!tevent_req_poll(req, ev)) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	werr = dns_udp_request_recv(req, mem_ctx, &in.data, &in.length);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	in_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+	W_ERROR_HAVE_NO_MEMORY(in_packet);
+
+	ndr_err = ndr_pull_struct_blob(&in, in_packet, in_packet,
+			(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	if (in_packet->id != id) {
+		DEBUG(0, ("DNS packet id mismatch: 0x%0x, expected 0x%0x\n",
+			  in_packet->id, id));
+		return DNS_ERR(NAME_ERROR);
+	}
+
+	*ancount = in_packet->ancount;
+	*answers = talloc_move(mem_ctx, &in_packet->answers);
+
+	*nscount = in_packet->nscount;
+	*nsrecs = talloc_move(mem_ctx, &in_packet->nsrecs);
+
+	*arcount = in_packet->arcount;
+	*additional = talloc_move(mem_ctx, &in_packet->additional);
+
+	return werr;
+}
+
 static WERROR handle_question(struct dns_server *dns,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dns_name_question *question,
@@ -145,8 +213,8 @@ WERROR dns_server_process_query(struct dns_server *dns,
 				struct dns_res_rec **nsrecs,     uint16_t *nscount,
 				struct dns_res_rec **additional, uint16_t *arcount)
 {
-	uint16_t num_answers=0;
-	struct dns_res_rec *ans=NULL;
+	uint16_t num_answers=0, num_nsrecs=0, num_additional=0;
+	struct dns_res_rec *ans=NULL, *ns=NULL, *adds=NULL;
 	WERROR werror;
 
 	if (in->qdcount != 1) {
@@ -159,17 +227,22 @@ WERROR dns_server_process_query(struct dns_server *dns,
 	}
 
 	werror = handle_question(dns, mem_ctx, &in->questions[0], &ans, &num_answers);
+	if(W_ERROR_EQUAL(DNS_ERR(NAME_ERROR), werror)) {
+		DEBUG(2, ("I don't feel responsible for '%s', forwarding\n", in->questions[0].name));
+		werror = ask_forwarder(mem_ctx, &in->questions[0], &ans, &num_answers,
+				       &ns, &num_nsrecs, &adds, &num_additional);
+	}
 	W_ERROR_NOT_OK_GOTO(werror, query_failed);
 
 	*answers = ans;
 	*ancount = num_answers;
 
 	/*FIXME: Do something for these */
-	*nsrecs  = NULL;
-	*nscount = 0;
+	*nsrecs  = ns;
+	*nscount = num_nsrecs;
 
-	*additional = NULL;
-	*arcount    = 0;
+	*additional = adds;
+	*arcount    = num_additional;
 
 	return WERR_OK;
 
