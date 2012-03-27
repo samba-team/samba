@@ -207,6 +207,7 @@ static WERROR handle_question(struct dns_server *dns,
 }
 
 WERROR dns_server_process_query(struct dns_server *dns,
+				struct dns_request_state *state,
 				TALLOC_CTX *mem_ctx,
 				struct dns_name_packet *in,
 				struct dns_res_rec **answers,    uint16_t *ancount,
@@ -227,6 +228,7 @@ WERROR dns_server_process_query(struct dns_server *dns,
 	}
 
 	if (dns_authorative_for_zone(dns, in->questions[0].name)) {
+		state->flags |= DNS_FLAG_AUTHORITATIVE;
 		werror = handle_question(dns, mem_ctx, &in->questions[0], &ans, &num_answers);
 	} else {
 		DEBUG(2, ("I don't feel responsible for '%s', forwarding\n", in->questions[0].name));

@@ -680,6 +680,7 @@ failed:
 }
 
 WERROR dns_server_process_update(struct dns_server *dns,
+				 struct dns_request_state *state,
 				 TALLOC_CTX *mem_ctx,
 				 struct dns_name_packet *in,
 				 struct dns_res_rec **prereqs,    uint16_t *prereq_count,

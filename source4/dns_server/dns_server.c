@@ -100,6 +100,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 {
 	enum ndr_err_code ndr_err;
 	WERROR ret;
+	struct dns_request_state *state;
 	struct dns_name_packet *in_packet;
 	struct dns_name_packet *out_packet;
 	struct dns_res_rec *answers = NULL, *nsrecs = NULL, *additional = NULL;
@@ -109,9 +110,11 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	in_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+	state = talloc_zero(mem_ctx, struct dns_request_state);
+
+	in_packet = talloc_zero(state, struct dns_name_packet);
 	/* TODO: We don't really need an out_packet. */
-	out_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+	out_packet = talloc_zero(state, struct dns_name_packet);
 
 	if (in_packet == NULL) return NT_STATUS_NO_MEMORY;
 	if (out_packet == NULL) return NT_STATUS_NO_MEMORY;
@@ -134,19 +137,24 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		NDR_PRINT_DEBUG(dns_name_packet, in_packet);
 	}
 	*out_packet = *in_packet;
-	out_packet->operation |= DNS_FLAG_REPLY;
+	state->flags |= in_packet->operation | DNS_FLAG_REPLY;
+
+	/* TODO: Allow setting the forwarding in smb.conf or the like */
+	state->flags |= DNS_FLAG_RECURSION_AVAIL;
 
 	switch (in_packet->operation & DNS_OPCODE) {
 	case DNS_OPCODE_QUERY:
 
-		ret = dns_server_process_query(dns, out_packet, in_packet,
+		ret = dns_server_process_query(dns, state,
+					       out_packet, in_packet,
 					       &answers, &num_answers,
 					       &nsrecs,  &num_nsrecs,
 					       &additional, &num_additional);
 
 		break;
 	case DNS_OPCODE_UPDATE:
-		ret = dns_server_process_update(dns, out_packet, in_packet,
+		ret = dns_server_process_update(dns, state,
+						out_packet, in_packet,
 						&answers, &num_answers,
 						&nsrecs,  &num_nsrecs,
 						&additional, &num_additional);
@@ -168,6 +176,8 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	} else {
 		out_packet->operation |= werr_to_dns_err(ret);
 	}
+
+	out_packet->operation |= state->flags;
 
 	if (DEBUGLVL(2)) {
 		NDR_PRINT_DEBUG(dns_name_packet, out_packet);
