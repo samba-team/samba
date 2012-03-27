@@ -20,7 +20,7 @@
 #include "smbd/smbd.h"
 
 #if defined(HAVE_LINUX_READAHEAD) && ! defined(HAVE_READAHEAD_DECL)
-ssize_t readahead(int fd, off64_t offset, size_t count);
+ssize_t readahead(int fd, off_t offset, size_t count);
 #endif
 
 struct readahead_data {

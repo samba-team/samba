@@ -122,7 +122,7 @@ static int prealloc_open(vfs_handle_struct* handle,
 			mode_t		    mode)
 {
 	int fd;
-	off64_t size = 0;
+	off_t size = 0;
 
 	const char * dot;
 	char fext[10];
