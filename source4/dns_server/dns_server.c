@@ -139,8 +139,9 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	*out_packet = *in_packet;
 	state->flags |= in_packet->operation | DNS_FLAG_REPLY;
 
-	/* TODO: Allow setting the forwarding in smb.conf or the like */
-	state->flags |= DNS_FLAG_RECURSION_AVAIL;
+	if (lpcfg_dns_recursive_queries(dns->task->lp_ctx)) {
+		state->flags |= DNS_FLAG_RECURSION_AVAIL;
+	}
 
 	switch (in_packet->operation & DNS_OPCODE) {
 	case DNS_OPCODE_QUERY:

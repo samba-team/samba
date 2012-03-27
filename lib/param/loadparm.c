@@ -1256,6 +1256,22 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= enum_dns_update_settings
 	},
+	{
+		.label		= "dns forwarder",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dns_forwarder),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dns recursive queries",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dns_recursive_queries),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
 };
@@ -1536,7 +1552,10 @@ FN_GLOBAL_INTEGER(srv_minprotocol, srv_minprotocol)
 FN_GLOBAL_INTEGER(cli_maxprotocol, cli_maxprotocol)
 FN_GLOBAL_INTEGER(cli_minprotocol, cli_minprotocol)
 FN_GLOBAL_BOOL(paranoid_server_security, paranoid_server_security)
+
 FN_GLOBAL_INTEGER(allow_dns_updates, allow_dns_updates)
+FN_GLOBAL_CONST_STRING(dns_forwarder, dns_forwarder)
+FN_GLOBAL_BOOL(dns_recursive_queries, dns_recursive_queries)
 
 FN_GLOBAL_INTEGER(server_signing, server_signing)
 FN_GLOBAL_INTEGER(client_signing, client_signing)
@@ -3403,6 +3422,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "nsupdate command", "/usr/bin/nsupdate -g");
 
         lpcfg_do_global_parameter(lp_ctx, "allow dns updates", "False");
+        lpcfg_do_global_parameter(lp_ctx, "dns recursive queries", "False");
+        lpcfg_do_global_parameter(lp_ctx, "dns forwarder", "");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
