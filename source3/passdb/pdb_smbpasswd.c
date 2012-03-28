@@ -788,7 +788,7 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 	 */
 	status = linebuf;
 	while (status && !feof(fp)) {
-		pwd_seekpos = sys_ftell(fp);
+		pwd_seekpos = ftell(fp);
 
 		linebuf[0] = '\0';
 
