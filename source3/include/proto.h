@@ -336,7 +336,6 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 	      bool fake_dir_create_times);
 int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len);
 int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OFF_T len);
-FILE *sys_fopen(const char *path, const char *type);
 void kernel_flock(int fd, uint32 share_mode, uint32 access_mask);
 SMB_STRUCT_DIR *sys_opendir(const char *name);
 SMB_STRUCT_DIR *sys_fdopendir(int fd);

@@ -237,14 +237,14 @@ creating file %s\n", pfile));
 	for(race_loop = 0; race_loop < 5; race_loop++) {
 		DEBUG(10, ("startsmbfilepwent_internal: opening file %s\n", pfile));
 
-		if((fp = sys_fopen(pfile, open_mode)) == NULL) {
+		if((fp = fopen(pfile, open_mode)) == NULL) {
 
 			/*
 			 * If smbpasswd file doesn't exist, then create new one. This helps to avoid
 			 * confusing error msg when adding user account first time.
 			 */
 			if (errno == ENOENT) {
-				if ((fp = sys_fopen(pfile, "a+")) != NULL) {
+				if ((fp = fopen(pfile, "a+")) != NULL) {
 					DEBUG(0, ("startsmbfilepwent_internal: file %s did not \
 exist. File successfully created.\n", pfile));
 				} else {
@@ -762,7 +762,7 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 	}
 	DEBUG(10, ("mod_smbfilepwd_entry: opening file %s\n", pfile));
 
-	fp = sys_fopen(pfile, "r+");
+	fp = fopen(pfile, "r+");
 
 	if (fp == NULL) {
 		DEBUG(0, ("mod_smbfilepwd_entry: unable to open file %s\n", pfile));

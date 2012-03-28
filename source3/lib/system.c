@@ -584,16 +584,6 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OF
 #endif
 }
 
-/*******************************************************************
- An fopen() wrapper.
-********************************************************************/
-
-FILE *sys_fopen(const char *path, const char *type)
-{
-	return fopen(path, type);
-}
-
-
 #if HAVE_KERNEL_SHARE_MODES
 #ifndef LOCK_MAND
 #define LOCK_MAND	32	/* This is a mandatory flock */

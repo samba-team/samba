@@ -807,7 +807,7 @@ bool disk_quotas(const char *path,
 	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n",
 		path, (unsigned int)devno));
 #if defined(SUNOS5)
-	if ((fd = sys_fopen(MNTTAB, "r")) == NULL) {
+	if ((fd = fopen(MNTTAB, "r")) == NULL) {
 		return false;
 	}
 

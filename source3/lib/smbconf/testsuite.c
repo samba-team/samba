@@ -183,7 +183,7 @@ static bool create_conf_file(const char *filename)
 	FILE *f;
 
 	printf("TEST: creating file\n");
-	f = sys_fopen(filename, "w");
+	f = fopen(filename, "w");
 	if (!f) {
 		printf("failure: failed to open %s for writing: %s\n",
 		       filename, strerror(errno));

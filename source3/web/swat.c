@@ -561,7 +561,7 @@ static int save_reload(int snum)
 	FILE *f;
 	struct stat st;
 
-	f = sys_fopen(get_dyn_CONFIGFILE(),"w");
+	f = fopen(get_dyn_CONFIGFILE(),"w");
 	if (!f) {
 		printf(_("failed to open %s for writing"), get_dyn_CONFIGFILE());
 		printf("\n");
