@@ -101,7 +101,7 @@ static int findpty(char **slave)
 		return (-1);
 	}
 
-	dirp = sys_opendir("/dev");
+	dirp = opendir("/dev");
 	if (!dirp) {
 		SAFE_FREE(line);
 		return (-1);

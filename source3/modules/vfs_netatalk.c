@@ -157,7 +157,7 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 
 	if (!path) return;
 
-	dir = sys_opendir(path);
+	dir = opendir(path);
 	if (!dir) return;
 
 	while (NULL != (dent = sys_readdir(dir))) {

@@ -618,15 +618,6 @@ void kernel_flock(int fd, uint32 share_mode, uint32 access_mask)
 
 
 /*******************************************************************
- An opendir wrapper.
-********************************************************************/
-
-SMB_STRUCT_DIR *sys_opendir(const char *name)
-{
-	return opendir(name);
-}
-
-/*******************************************************************
  An fdopendir wrapper.
  Ugly hack - we need dirfd for this to work correctly in the
  calling code.. JRA.

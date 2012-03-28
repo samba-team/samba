@@ -348,7 +348,7 @@ static SMB_STRUCT_DIR *vfswrap_opendir(vfs_handle_struct *handle,  const char *f
 	SMB_STRUCT_DIR *result;
 
 	START_PROFILE(syscall_opendir);
-	result = sys_opendir(fname);
+	result = opendir(fname);
 	END_PROFILE(syscall_opendir);
 	return result;
 }

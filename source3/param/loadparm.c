@@ -8388,7 +8388,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
         }
 
 	/* Ensure this is pointing to a directory. */
-	dp = sys_opendir(sharepath);
+	dp = opendir(sharepath);
 
 	if (!dp) {
 		DEBUG(2,("parse_usershare_file: share %s path %s is not a directory.\n",
@@ -8798,7 +8798,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 		}
 	}
 
-	dp = sys_opendir(usersharepath);
+	dp = opendir(usersharepath);
 	if (!dp) {
 		DEBUG(0,("load_usershare_shares:: failed to open directory %s. %s\n",
 			usersharepath, strerror(errno) ));

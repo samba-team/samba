@@ -2082,7 +2082,7 @@ static int file_find(struct file_list **list, const char *directory,
 	bool isdir;
 	const char *dname;
 
-        dir = sys_opendir(directory);
+        dir = opendir(directory);
 	if (!dir)
 		return -1;
 

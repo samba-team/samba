@@ -217,7 +217,7 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 	if (!basepath) {
 		return -1;
 	}
-	dp = sys_opendir(basepath);
+	dp = opendir(basepath);
 	if (!dp) {
 		d_fprintf(stderr,
 			_("get_share_list: cannot open usershare directory %s. "
@@ -556,7 +556,7 @@ static int count_num_usershares(void)
 		return -1;
 	}
 
-	dp = sys_opendir(basepath);
+	dp = opendir(basepath);
 	if (!dp) {
 		d_fprintf(stderr,
 			_("count_num_usershares: cannot open usershare "
@@ -1104,7 +1104,7 @@ int net_usershare(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	dp = sys_opendir(lp_usershare_path());
+	dp = opendir(lp_usershare_path());
 	if (!dp) {
 		int err = errno;
 		d_fprintf(stderr,
