@@ -8806,7 +8806,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 	}
 
 	for (num_dir_entries = 0, num_bad_dir_entries = 0, num_tmp_dir_entries = 0;
-			(de = sys_readdir(dp));
+			(de = readdir(dp));
 			num_dir_entries++ ) {
 		int r;
 		const char *n = de->d_name;

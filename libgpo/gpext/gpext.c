@@ -496,7 +496,7 @@ static NTSTATUS gp_glob_ext_list(TALLOC_CTX *mem_ctx,
 		return map_nt_error_from_unix_common(errno);
 	}
 
-	while ((dirent = sys_readdir(dir))) {
+	while ((dirent = readdir(dir))) {
 
 		fstring name; /* forgive me... */
 		char *p;

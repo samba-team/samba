@@ -374,7 +374,7 @@ static SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle,
 	SMB_STRUCT_DIRENT *result;
 
 	START_PROFILE(syscall_readdir);
-	result = sys_readdir(dirp);
+	result = readdir(dirp);
 	/* Default Posix readdir() does not give us stat info.
 	 * Set to invalid to indicate we didn't return this info. */
 	if (sbuf)

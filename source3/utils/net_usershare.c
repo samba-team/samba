@@ -226,7 +226,7 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 		return -1;
 	}
 
-	while((de = sys_readdir(dp)) != 0) {
+	while((de = readdir(dp)) != 0) {
 		SMB_STRUCT_STAT sbuf;
 		char *path;
 		const char *n = de->d_name;
@@ -565,7 +565,7 @@ static int count_num_usershares(void)
 		return -1;
 	}
 
-	while((de = sys_readdir(dp)) != 0) {
+	while((de = readdir(dp)) != 0) {
 		SMB_STRUCT_STAT sbuf;
 		char *path;
 		const char *n = de->d_name;

@@ -313,7 +313,7 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	if (!lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
 	    PARM_USE_READDIRPLUS, PARM_USE_READDIRPLUS_DEFAULT))
 	{
-		return sys_readdir(dirp);
+		return readdir(dirp);
 	}
 
 	/* Retrieve state based off DIR handle */

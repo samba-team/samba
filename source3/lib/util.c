@@ -1037,7 +1037,7 @@ const char *readdirname(SMB_STRUCT_DIR *p)
 	if (!p)
 		return(NULL);
 
-	ptr = (SMB_STRUCT_DIRENT *)sys_readdir(p);
+	ptr = (SMB_STRUCT_DIRENT *)readdir(p);
 	if (!ptr)
 		return(NULL);
 
