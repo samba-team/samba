@@ -394,7 +394,7 @@ static long vfswrap_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 {
 	long result;
 	START_PROFILE(syscall_telldir);
-	result = sys_telldir(dirp);
+	result = telldir(dirp);
 	END_PROFILE(syscall_telldir);
 	return result;
 }
