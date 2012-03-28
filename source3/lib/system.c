@@ -590,15 +590,7 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OF
 
 int sys_creat(const char *path, mode_t mode)
 {
-#if defined(HAVE_CREAT)
 	return creat(path, mode);
-#else
-	/*
-	 * If creat isn't defined then ensure we call open with the expected flags.
-	 *
-	 */
-	return sys_open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
-#endif
 }
 
 /*******************************************************************
