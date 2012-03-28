@@ -170,7 +170,7 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 		atalk_unlink_file(dpath);
 	}
 
-	sys_closedir(dir);
+	closedir(dir);
 }
 
 /* Disk operations */

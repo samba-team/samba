@@ -8402,11 +8402,11 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 	if (sys_stat(sharepath, &sbuf, false) == -1) {
 		DEBUG(2,("parse_usershare_file: share %s : stat failed on path %s. %s\n",
 			servicename, sharepath, strerror(errno) ));
-		sys_closedir(dp);
+		closedir(dp);
 		return USERSHARE_POSIX_ERR;
 	}
 
-	sys_closedir(dp);
+	closedir(dp);
 
 	if (!S_ISDIR(sbuf.st_ex_mode)) {
 		DEBUG(2,("parse_usershare_file: share %s path %s is not a directory.\n",
@@ -8862,7 +8862,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 		}
 	}
 
-	sys_closedir(dp);
+	closedir(dp);
 
 	/* Sweep through and delete any non-refreshed usershares that are
 	   not currently in use. */

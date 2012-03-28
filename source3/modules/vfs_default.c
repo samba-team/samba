@@ -455,7 +455,7 @@ static int vfswrap_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 	int result;
 
 	START_PROFILE(syscall_closedir);
-	result = sys_closedir(dirp);
+	result = closedir(dirp);
 	END_PROFILE(syscall_closedir);
 	return result;
 }

@@ -2111,14 +2111,14 @@ static int file_find(struct file_list **list, const char *directory,
 
 				if (ret == -1) {
 					SAFE_FREE(path);
-					sys_closedir(dir);
+					closedir(dir);
 					return -1;
 				}
 			}
 			entry = SMB_MALLOC_P(struct file_list);
 			if (!entry) {
 				d_printf("Out of memory in file_find\n");
-				sys_closedir(dir);
+				closedir(dir);
 				return -1;
 			}
 			entry->file_path = path;
@@ -2129,7 +2129,7 @@ static int file_find(struct file_list **list, const char *directory,
 		}
         }
 
-	sys_closedir(dir);
+	closedir(dir);
 	return 0;
 }
 

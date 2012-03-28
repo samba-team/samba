@@ -118,12 +118,12 @@ static int findpty(char **slave)
 				DEBUG(3, ("pty: opened %s\n", line));
 				line[5] = 't';
 				*slave = line;
-				sys_closedir(dirp);
+				closedir(dirp);
 				return (master);
 			}
 		}
 	}
-	sys_closedir(dirp);
+	closedir(dirp);
 	SAFE_FREE(line);
 	return (-1);
 }

@@ -508,7 +508,7 @@ static NTSTATUS gp_glob_ext_list(TALLOC_CTX *mem_ctx,
 
 		p = strrchr(dirent->d_name, '.');
 		if (!p) {
-			sys_closedir(dir);
+			closedir(dir);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -523,12 +523,12 @@ static NTSTATUS gp_glob_ext_list(TALLOC_CTX *mem_ctx,
 
 		if (!add_string_to_array(mem_ctx, name, ext_list,
 					 (int *)ext_list_len)) {
-			sys_closedir(dir);
+			closedir(dir);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	sys_closedir(dir);
+	closedir(dir);
 
 	return NT_STATUS_OK;
 }

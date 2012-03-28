@@ -339,7 +339,6 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OF
 void kernel_flock(int fd, uint32 share_mode, uint32 access_mask);
 SMB_STRUCT_DIR *sys_fdopendir(int fd);
 void sys_rewinddir(SMB_STRUCT_DIR *dirp);
-int sys_closedir(SMB_STRUCT_DIR *dirp);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(void);

@@ -249,7 +249,7 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 					basepath,
 					n);
 		if (!path) {
-			sys_closedir(dp);
+			closedir(dp);
 			return -1;
 		}
 
@@ -280,19 +280,19 @@ static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 		/* (Finally) - add to list. */
 		fl = talloc(ctx, struct file_list);
 		if (!fl) {
-			sys_closedir(dp);
+			closedir(dp);
 			return -1;
 		}
 		fl->pathname = talloc_strdup(ctx, n);
 		if (!fl->pathname) {
-			sys_closedir(dp);
+			closedir(dp);
 			return -1;
 		}
 
 		DLIST_ADD(flist, fl);
 	}
 
-	sys_closedir(dp);
+	closedir(dp);
 	return 0;
 }
 
@@ -588,7 +588,7 @@ static int count_num_usershares(void)
 				basepath,
 				n);
 		if (!path) {
-			sys_closedir(dp);
+			closedir(dp);
 			return -1;
 		}
 
@@ -610,7 +610,7 @@ static int count_num_usershares(void)
 		num_usershares++;
 	}
 
-	sys_closedir(dp);
+	closedir(dp);
 	return num_usershares;
 }
 
@@ -1123,7 +1123,7 @@ int net_usershare(struct net_context *c, int argc, const char **argv)
 		}
 		return -1;
 	}
-	sys_closedir(dp);
+	closedir(dp);
 
 	return net_run_function(c, argc, argv, "net usershare", func);
 }
