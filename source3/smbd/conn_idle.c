@@ -90,14 +90,7 @@ void conn_close_all(struct smbd_server_connection *sconn)
 	if (sconn->using_smb2) {
 		smbXsrv_session_logoff_all(sconn->conn);
 	} else {
-		/* SMB1 */
-		connection_struct *conn, *next;
-
-		for (conn=sconn->connections;conn;conn=next) {
-			next=conn->next;
-			set_current_service(conn, 0, True);
-			close_cnum(conn, conn->vuid);
-		}
+		smb1srv_tcon_disconnect_all(sconn->conn);
 	}
 }
 
@@ -111,38 +104,51 @@ void conn_close_all(struct smbd_server_connection *sconn)
 void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename)
 {
 	connection_struct *conn, *next;
+	bool close_all = false;
 
 	if (strcmp(sharename, "*") == 0) {
-		DEBUG(1,("Forcing close of all shares\n"));
-		conn_close_all(sconn);
-		return;
+		close_all = true;
+		DEBUG(1, ("conn_force_tdis: Forcing close of all shares\n"));
 	}
 
-	if (sconn->using_smb2) {
-		for (conn=sconn->connections;conn;conn=next) {
-			struct smbXsrv_tcon *tcon;
+	/* SMB1 and SMB 2*/
+	for (conn = sconn->connections; conn; conn = next) {
+		struct smbXsrv_tcon *tcon;
+		bool do_close = false;
+		NTSTATUS status;
+		uint64_t vuid = UID_FIELD_INVALID;
 
-			next = conn->next;
-			tcon = conn->tcon;
+		next = conn->next;
 
-			if (!strequal(lp_servicename(SNUM(conn)), sharename)) {
-				continue;
-			}
-
-			DEBUG(1,("Forcing close of share %s cnum=%d\n",
-				sharename, conn->cnum));
-			smbXsrv_tcon_disconnect(tcon, conn->vuid);
-			TALLOC_FREE(tcon);
+		if (close_all) {
+			do_close = true;
+		} else if (strequal(lp_servicename(SNUM(conn)), sharename)) {
+			DEBUG(1, ("conn_force_tdis: Forcing close of "
+				  "share '%s' (wire_id=0x%08x)\n",
+				  tcon->global->share_name,
+				  tcon->global->tcon_wire_id));
+			do_close = true;
 		}
-	} else {
-		/* SMB1 */
-		for (conn=sconn->connections;conn;conn=next) {
-			next=conn->next;
-			if (strequal(lp_servicename(SNUM(conn)), sharename)) {
-				DEBUG(1,("Forcing close of share %s cnum=%d\n",
-					sharename, conn->cnum));
-				close_cnum(conn, UID_FIELD_INVALID);
-			}
+
+		if (!do_close) {
+			continue;
 		}
+
+		if (sconn->using_smb2) {
+			vuid = conn->vuid;
+		}
+
+		conn = NULL;
+		status = smbXsrv_tcon_disconnect(tcon, vuid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("conn_force_tdis: "
+				  "smbXsrv_tcon_disconnect() of share '%s' "
+				  "(wire_id=0x%08x) failed: %s\n",
+				  tcon->global->share_name,
+				  tcon->global->tcon_wire_id,
+				  nt_errstr(status)));
+		}
+
+		TALLOC_FREE(tcon);
 	}
 }

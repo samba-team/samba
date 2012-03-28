@@ -516,6 +516,9 @@ static bool init_smb_request(struct smb_request *req,
 			     size_t unread_bytes, bool encrypted,
 			     uint32_t seqnum)
 {
+	struct smbXsrv_tcon *tcon;
+	NTSTATUS status;
+	NTTIME now;
 	size_t req_size = smb_len(inbuf) + 4;
 
 	/* Ensure we have at least smb_size bytes. */
@@ -526,6 +529,7 @@ static bool init_smb_request(struct smb_request *req,
 	}
 
 	req->request_time = timeval_current();
+	now = timeval_to_nttime(&req->request_time);
 
 	req->cmd    = CVAL(inbuf, smb_com);
 	req->flags2 = SVAL(inbuf, smb_flg2);
@@ -541,7 +545,12 @@ static bool init_smb_request(struct smb_request *req,
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->sconn = sconn;
-	req->conn = conn_find(sconn,req->tid);
+	status = smb1srv_tcon_lookup(sconn->conn, req->tid, now, &tcon);
+	if (NT_STATUS_IS_OK(status)) {
+		req->conn = tcon->compat;
+	} else {
+		req->conn = NULL;
+	}
 	req->chain_fsp = NULL;
 	req->smb2req = NULL;
 	req->priv_paths = NULL;
@@ -1643,10 +1652,18 @@ void smb_request_done(struct smb_request *req)
 
 	while ((next_index < num_reqs) && (IVAL(req->outbuf, smb_rcls) == 0)) {
 		struct smb_request *next = reqs[next_index];
+		struct smbXsrv_tcon *tcon;
+		NTTIME now = timeval_to_nttime(&req->request_time);
 
 		next->vuid = SVAL(req->outbuf, smb_uid);
 		next->tid  = SVAL(req->outbuf, smb_tid);
-		next->conn = conn_find(req->sconn, req->tid);
+		status = smb1srv_tcon_lookup(req->sconn->conn, req->tid,
+					     now, &tcon);
+		if (NT_STATUS_IS_OK(status)) {
+			req->conn = tcon->compat;
+		} else {
+			req->conn = NULL;
+		}
 		next->chain_fsp = req->chain_fsp;
 		next->inbuf = (uint8_t *)req->inbuf;
 
@@ -3167,6 +3184,11 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+	} else {
+		status = smb1srv_tcon_table_init(conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -3509,7 +3531,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	/* this holds info on user ids that are already validated for this VC */
 	sconn->smb1.sessions.next_vuid = VUID_OFFSET;
 
-	conn_init(sconn);
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");
 	}

@@ -917,12 +917,32 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
-	connection_struct *conn = conn_new(sconn);
+	struct smbXsrv_tcon *tcon;
+	NTSTATUS status;
+	NTTIME now = 0;
+	struct connection_struct *conn;
+	const char *share_name;
+
+	status = smb1srv_tcon_create(sconn->conn, now, &tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("make_connection_smb1: Couldn't find free tcon %s.\n",
+			 nt_errstr(status)));
+		*pstatus = status;
+		return NULL;
+	}
+
+	conn = conn_new(sconn);
 	if (!conn) {
+		TALLOC_FREE(tcon);
+
 		DEBUG(0,("make_connection_smb1: Couldn't find free connection.\n"));
 		*pstatus = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}
+
+	conn->cnum = tcon->global->tcon_wire_id;
+	conn->tcon = tcon;
+
 	*pstatus = make_connection_snum(sconn,
 					conn,
 					snum,
@@ -930,9 +950,29 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 					pdev);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
 		conn_free(conn);
+		TALLOC_FREE(tcon);
 		return NULL;
 	}
-	return conn;
+
+	share_name = lp_servicename(SNUM(conn));
+	tcon->global->share_name = talloc_strdup(tcon->global, share_name);
+	if (tcon->global->share_name == NULL) {
+		conn_free(conn);
+		TALLOC_FREE(tcon);
+		*pstatus = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
+
+	tcon->compat = talloc_move(tcon, &conn);
+	tcon->status = NT_STATUS_OK;
+
+	*pstatus = smbXsrv_tcon_update(tcon);
+	if (!NT_STATUS_IS_OK(*pstatus)) {
+		TALLOC_FREE(tcon);
+		return NULL;
+	}
+
+	return tcon->compat;
 }
 
 /****************************************************************************

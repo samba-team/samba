@@ -736,9 +736,31 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	/* we might have to close an old one */
 	if ((tcon_flags & 0x1) && conn) {
-		close_cnum(conn,req->vuid);
+		struct smbXsrv_tcon *tcon;
+		NTSTATUS status;
+
+		tcon = conn->tcon;
 		req->conn = NULL;
 		conn = NULL;
+
+		/*
+		 * TODO: cancel all outstanding requests on the tcon
+		 */
+		status = smbXsrv_tcon_disconnect(tcon, req->vuid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("reply_tcon_and_X: "
+				  "smbXsrv_tcon_disconnect() failed: %s\n",
+				  nt_errstr(status)));
+			/*
+			 * If we hit this case, there is something completely
+			 * wrong, so we better disconnect the transport connection.
+			 */
+			END_PROFILE(SMBtconX);
+			exit_server(__location__ ": smbXsrv_tcon_disconnect failed");
+			return;
+		}
+
+		TALLOC_FREE(tcon);
 	}
 
 	if ((passlen > MAX_PASS_LEN) || (passlen >= req->buflen)) {
@@ -4371,6 +4393,9 @@ bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
 	connection_struct *conn = NULL;
 	unsigned int doff = 0;
 	size_t len = smb_len_large(inbuf);
+	struct smbXsrv_tcon *tcon;
+	NTSTATUS status;
+	NTTIME now = 0;
 
 	if (is_encrypted_packet(sconn, inbuf)) {
 		/* Can't do this on encrypted
@@ -4389,11 +4414,14 @@ bool is_valid_writeX_buffer(struct smbd_server_connection *sconn,
 		return false;
 	}
 
-	conn = conn_find(sconn, SVAL(inbuf, smb_tid));
-	if (conn == NULL) {
+	status = smb1srv_tcon_lookup(sconn->conn, SVAL(inbuf, smb_tid),
+				     now, &tcon);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("is_valid_writeX_buffer: bad tid\n"));
 		return false;
 	}
+	conn = tcon->compat;
+
 	if (IS_IPC(conn)) {
 		DEBUG(10,("is_valid_writeX_buffer: IPC$ tid\n"));
 		return false;
@@ -5056,7 +5084,10 @@ void reply_unlock(struct smb_request *req)
 
 void reply_tdis(struct smb_request *req)
 {
+	NTSTATUS status;
 	connection_struct *conn = req->conn;
+	struct smbXsrv_tcon *tcon;
+
 	START_PROFILE(SMBtdis);
 
 	if (!conn) {
@@ -5066,8 +5097,27 @@ void reply_tdis(struct smb_request *req)
 		return;
 	}
 
-	close_cnum(conn,req->vuid);
+	tcon = conn->tcon;
 	req->conn = NULL;
+
+	/*
+	 * TODO: cancel all outstanding requests on the tcon
+	 */
+	status = smbXsrv_tcon_disconnect(tcon, req->vuid);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("reply_tdis: "
+			  "smbXsrv_tcon_disconnect() failed: %s\n",
+			  nt_errstr(status)));
+		/*
+		 * If we hit this case, there is something completely
+		 * wrong, so we better disconnect the transport connection.
+		 */
+		END_PROFILE(SMBtdis);
+		exit_server(__location__ ": smbXsrv_tcon_disconnect failed");
+		return;
+	}
+
+	TALLOC_FREE(tcon);
 
 	reply_outbuf(req, 0, 0);
 	END_PROFILE(SMBtdis);

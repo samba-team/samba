@@ -614,10 +614,6 @@ struct smbd_server_connection {
 			 */
 			uint16_t next_vuid;
 		} sessions;
-		struct {
-			/* number of open connections */
-			struct bitmap *bmap;
-		} tcons;
 		struct smb_signing_state *signing_state;
 
 		struct notify_mid_map *notify_mid_maps;

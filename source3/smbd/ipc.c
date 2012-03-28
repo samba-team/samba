@@ -631,8 +631,30 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
 		   state->max_param_return);
 
 	if (state->close_on_completion) {
-		close_cnum(conn,state->vuid);
+		struct smbXsrv_tcon *tcon;
+		NTSTATUS status;
+
+		tcon = conn->tcon;
 		req->conn = NULL;
+		conn = NULL;
+
+		/*
+		 * TODO: cancel all outstanding requests on the tcon
+		 */
+		status = smbXsrv_tcon_disconnect(tcon, state->vuid);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("handle_trans: "
+				  "smbXsrv_tcon_disconnect() failed: %s\n",
+				  nt_errstr(status)));
+			/*
+			 * If we hit this case, there is something completely
+			 * wrong, so we better disconnect the transport connection.
+			 */
+			exit_server(__location__ ": smbXsrv_tcon_disconnect failed");
+			return;
+		}
+
+		TALLOC_FREE(tcon);
 	}
 
 	return;

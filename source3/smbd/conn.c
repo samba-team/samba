@@ -24,22 +24,6 @@
 #include "smbd/globals.h"
 #include "lib/util/bitmap.h"
 
-/* The connections bitmap is expanded in increments of BITMAP_BLOCK_SZ. The
- * maximum size of the bitmap is the largest positive integer, but you will hit
- * the "max connections" limit, looong before that.
- */
-
-#define BITMAP_BLOCK_SZ 128
-
-/****************************************************************************
- Init the conn structures.
-****************************************************************************/
-
-void conn_init(struct smbd_server_connection *sconn)
-{
-	sconn->smb1.tcons.bmap = bitmap_talloc(sconn, BITMAP_BLOCK_SZ);
-}
-
 /****************************************************************************
  Return the number of open connections.
 ****************************************************************************/
@@ -68,27 +52,6 @@ bool conn_snum_used(struct smbd_server_connection *sconn,
 }
 
 /****************************************************************************
- Find a conn given a cnum.
-****************************************************************************/
-
-connection_struct *conn_find(struct smbd_server_connection *sconn, uint32_t cnum)
-{
-	size_t count=0;
-	struct connection_struct *conn;
-
-	for (conn=sconn->connections; conn; conn=conn->next,count++) {
-		if (conn->cnum == cnum) {
-			if (count > 10) {
-				DLIST_PROMOTE(sconn->connections, conn);
-			}
-			return conn;
-		}
-	}
-
-	return NULL;
-}
-
-/****************************************************************************
  Find first available connection slot, starting from a random position.
  The randomisation stops problems with the server dieing and clients
  thinking the server is still available.
@@ -97,71 +60,6 @@ connection_struct *conn_find(struct smbd_server_connection *sconn, uint32_t cnum
 connection_struct *conn_new(struct smbd_server_connection *sconn)
 {
 	connection_struct *conn;
-	int i;
-	uint32_t cnum;
-        int find_offset = 1;
-
-	if (sconn->using_smb2) {
-		/* SMB2 */
-		if (!(conn=talloc_zero(NULL, connection_struct)) ||
-		    !(conn->params = talloc(conn, struct share_params))) {
-			DEBUG(0,("TALLOC_ZERO() failed!\n"));
-			TALLOC_FREE(conn);
-			return NULL;
-		}
-		conn->sconn = sconn;
-
-		DLIST_ADD(sconn->connections, conn);
-		sconn->num_connections++;
-
-		return conn;
-	}
-
-	/* SMB1 */
-find_again:
-	i = bitmap_find(sconn->smb1.tcons.bmap, find_offset);
-
-	if (i == -1) {
-                /* Expand the connections bitmap. */
-                int             oldsz = sconn->smb1.tcons.bmap->n;
-                int             newsz = sconn->smb1.tcons.bmap->n +
-					BITMAP_BLOCK_SZ;
-                struct bitmap * nbmap;
-
-                if (newsz <= oldsz) {
-                        /* Integer wrap. */
-		        DEBUG(0,("ERROR! Out of connection structures\n"));
-                        return NULL;
-                }
-
-		DEBUG(4,("resizing connections bitmap from %d to %d\n",
-                        oldsz, newsz));
-
-                nbmap = bitmap_talloc(sconn, newsz);
-		if (!nbmap) {
-			DEBUG(0,("ERROR! malloc fail.\n"));
-			return NULL;
-		}
-
-                bitmap_copy(nbmap, sconn->smb1.tcons.bmap);
-		TALLOC_FREE(sconn->smb1.tcons.bmap);
-
-                sconn->smb1.tcons.bmap = nbmap;
-                find_offset = oldsz; /* Start next search in the new portion. */
-
-                goto find_again;
-	}
-
-	/* The bitmap position is used below as the connection number
-	 * conn->cnum). This ends up as the TID field in the SMB header,
-	 * which is limited to 16 bits (we skip 0xffff which is the
-	 * NULL TID).
-	 */
-	cnum = i + CNUM_OFFSET;
-	if (cnum >= 0xFFFF) {
-		DEBUG(0, ("Maximum connection limit reached\n"));
-		return NULL;
-	}
 
 	if (!(conn=talloc_zero(NULL, connection_struct)) ||
 	    !(conn->params = talloc(conn, struct share_params))) {
@@ -170,10 +68,7 @@ find_again:
 		return NULL;
 	}
 	conn->sconn = sconn;
-	conn->cnum = cnum;
 	conn->force_group_gid = (gid_t)-1;
-
-	bitmap_set(sconn->smb1.tcons.bmap, i);
 
 	string_set(&conn->connectpath,"");
 	string_set(&conn->origpath,"");
@@ -292,19 +187,6 @@ void conn_free(connection_struct *conn)
 	if (conn->sconn == NULL) {
 		conn_free_internal(conn);
 		return;
-	}
-
-	if (!conn->sconn->using_smb2 &&
-	    conn->sconn->smb1.tcons.bmap != NULL &&
-	    conn->cnum >= CNUM_OFFSET &&
-	    conn->cnum < 0xFFFF)
-	{
-		int i = conn->cnum - CNUM_OFFSET;
-		/*
-		 * Can be NULL for fake connections created by
-		 * create_conn_struct()
-		 */
-		bitmap_clear(conn->sconn->smb1.tcons.bmap, i);
 	}
 
 	DLIST_REMOVE(conn->sconn->connections, conn);
