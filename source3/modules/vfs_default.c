@@ -367,11 +367,11 @@ static SMB_STRUCT_DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
 }
 
 
-static SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle,
+static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 				          SMB_STRUCT_DIR *dirp,
 					  SMB_STRUCT_STAT *sbuf)
 {
-	SMB_STRUCT_DIRENT *result;
+	struct dirent *result;
 
 	START_PROFILE(syscall_readdir);
 	result = readdir(dirp);

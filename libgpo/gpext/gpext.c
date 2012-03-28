@@ -488,7 +488,7 @@ static NTSTATUS gp_glob_ext_list(TALLOC_CTX *mem_ctx,
 				 size_t *ext_list_len)
 {
 	SMB_STRUCT_DIR *dir = NULL;
-	SMB_STRUCT_DIRENT *dirent = NULL;
+	struct dirent *dirent = NULL;
 
 	dir = opendir(modules_path(talloc_tos(), 
 				       SAMBA_SUBSYSTEM_GPEXT));

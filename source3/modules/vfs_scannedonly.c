@@ -446,7 +446,7 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 		/* check the rest of the directory and notify the
 		   scanner if some file needs scanning */
 		long offset;
-		SMB_STRUCT_DIRENT *dire;
+		struct dirent *dire;
 
 		offset = SMB_VFS_NEXT_TELLDIR(handle, sDIR->DIR);
 		dire = SMB_VFS_NEXT_READDIR(handle, sDIR->DIR, NULL);
@@ -560,17 +560,17 @@ static SMB_STRUCT_DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
 }
 
 
-static SMB_STRUCT_DIRENT *scannedonly_readdir(vfs_handle_struct *handle,
+static struct dirent *scannedonly_readdir(vfs_handle_struct *handle,
 					      SMB_STRUCT_DIR * dirp,
 					      SMB_STRUCT_STAT *sbuf)
 {
-	SMB_STRUCT_DIRENT *result;
+	struct dirent *result;
 	int allowed = 0;
 	char *tmp;
 	struct smb_filename *smb_fname;
 	char *notify_name;
 	int namelen;
-	SMB_STRUCT_DIRENT *newdirent;
+	struct dirent *newdirent;
 	TALLOC_CTX *ctx=talloc_tos();
 
 	struct scannedonly_DIR *sDIR = (struct scannedonly_DIR *)dirp;
@@ -634,12 +634,12 @@ static SMB_STRUCT_DIRENT *scannedonly_readdir(vfs_handle_struct *handle,
 		ctx,"%s %s",result->d_name,
 		STRUCTSCANO(handle->data)->scanning_message);
 	namelen = strlen(notify_name);
-	newdirent = (SMB_STRUCT_DIRENT *)talloc_array(
-		ctx, char, sizeof(SMB_STRUCT_DIRENT) + namelen + 1);
+	newdirent = (struct dirent *)talloc_array(
+		ctx, char, sizeof(struct dirent) + namelen + 1);
 	if (!newdirent) {
 		return NULL;
 	}
-	memcpy(newdirent, result, sizeof(SMB_STRUCT_DIRENT));
+	memcpy(newdirent, result, sizeof(struct dirent));
 	memcpy(&newdirent->d_name, notify_name, namelen + 1);
 	DEBUG(SCANNEDONLY_DEBUG,
 	      ("scannedonly_readdir, return newdirent at %p with "
@@ -860,7 +860,7 @@ static int scannedonly_rmdir(vfs_handle_struct * handle, const char *path)
 	/* if there are only .scanned: .virus: or .failed: files, we delete
 	   those, because the client cannot see them */
 	DIR *dirp;
-	SMB_STRUCT_DIRENT *dire;
+	struct dirent *dire;
 	TALLOC_CTX *ctx = talloc_tos();
 	bool only_deletable_files = true, have_files = false;
 	char *path_w_slash;

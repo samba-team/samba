@@ -296,12 +296,12 @@ onefs_opendir(vfs_handle_struct *handle, const char *fname, const char *mask,
  *
  * @return dirent structure, NULL if at the end of the directory, NULL on error
  */
-SMB_STRUCT_DIRENT *
+struct dirent *
 onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	      SMB_STRUCT_STAT *sbuf)
 {
 	struct rdp_dir_state *dsp = NULL;
-	SMB_STRUCT_DIRENT *ret_direntp;
+	struct dirent *ret_direntp;
 	bool same_as_last, filled_cache = false;
 	int ret = -1;
 
@@ -355,7 +355,7 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	 * our cursor, then return the next entry */
 	if (!filled_cache) {
 		dsp->direntries_cursor +=
-		    ((SMB_STRUCT_DIRENT *)dsp->direntries_cursor)->d_reclen;
+		    ((struct dirent *)dsp->direntries_cursor)->d_reclen;
 		dsp->stat_cursor++;
 	}
 
@@ -366,7 +366,7 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	dsp->resume_cookie = rdp_cookies[dsp->stat_cursor];
 
 	/* Return an entry from cache */
-	ret_direntp = ((SMB_STRUCT_DIRENT *)dsp->direntries_cursor);
+	ret_direntp = ((struct dirent *)dsp->direntries_cursor);
 	if (sbuf) {
 		struct stat onefs_sbuf;
 

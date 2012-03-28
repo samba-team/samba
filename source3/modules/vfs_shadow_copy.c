@@ -60,7 +60,7 @@ static int vfs_shadow_copy_debug_level = DBGC_VFS;
 typedef struct {
 	int pos;
 	int num;
-	SMB_STRUCT_DIRENT *dirs;
+	struct dirent *dirs;
 } shadow_copy_Dir;
 
 static bool shadow_copy_match_name(const char *name)
@@ -93,7 +93,7 @@ static SMB_STRUCT_DIR *shadow_copy_opendir(vfs_handle_struct *handle, const char
 	ZERO_STRUCTP(dirp);
 
 	while (True) {
-		SMB_STRUCT_DIRENT *d;
+		struct dirent *d;
 
 		d = SMB_VFS_NEXT_READDIR(handle, p, NULL);
 		if (d == NULL) {
@@ -107,7 +107,7 @@ static SMB_STRUCT_DIR *shadow_copy_opendir(vfs_handle_struct *handle, const char
 
 		DEBUG(10,("shadow_copy_opendir: not hide [%s]\n",d->d_name));
 
-		dirp->dirs = SMB_REALLOC_ARRAY(dirp->dirs,SMB_STRUCT_DIRENT, dirp->num+1);
+		dirp->dirs = SMB_REALLOC_ARRAY(dirp->dirs,struct dirent, dirp->num+1);
 		if (!dirp->dirs) {
 			DEBUG(0,("shadow_copy_opendir: Out of memory\n"));
 			break;
@@ -143,7 +143,7 @@ static SMB_STRUCT_DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_st
 	ZERO_STRUCTP(dirp);
 
 	while (True) {
-		SMB_STRUCT_DIRENT *d;
+		struct dirent *d;
 
 		d = SMB_VFS_NEXT_READDIR(handle, p, NULL);
 		if (d == NULL) {
@@ -157,7 +157,7 @@ static SMB_STRUCT_DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_st
 
 		DEBUG(10,("shadow_copy_fdopendir: not hide [%s]\n",d->d_name));
 
-		dirp->dirs = SMB_REALLOC_ARRAY(dirp->dirs,SMB_STRUCT_DIRENT, dirp->num+1);
+		dirp->dirs = SMB_REALLOC_ARRAY(dirp->dirs,struct dirent, dirp->num+1);
 		if (!dirp->dirs) {
 			DEBUG(0,("shadow_copy_fdopendir: Out of memory\n"));
 			break;
@@ -172,7 +172,7 @@ static SMB_STRUCT_DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_st
 	return((SMB_STRUCT_DIR *)dirp);
 }
 
-static SMB_STRUCT_DIRENT *shadow_copy_readdir(vfs_handle_struct *handle,
+static struct dirent *shadow_copy_readdir(vfs_handle_struct *handle,
 					      SMB_STRUCT_DIR *_dirp,
 					      SMB_STRUCT_STAT *sbuf)
 {
@@ -233,7 +233,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 
 	while (True) {
 		SHADOW_COPY_LABEL *tlabels;
-		SMB_STRUCT_DIRENT *d;
+		struct dirent *d;
 
 		d = SMB_VFS_NEXT_READDIR(handle, p, NULL);
 		if (d == NULL) {

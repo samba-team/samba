@@ -8734,7 +8734,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 {
 	SMB_STRUCT_DIR *dp;
 	SMB_STRUCT_STAT sbuf;
-	SMB_STRUCT_DIRENT *de;
+	struct dirent *de;
 	int num_usershares = 0;
 	int max_user_shares = Globals.iUsershareMaxShares;
 	unsigned int num_dir_entries, num_bad_dir_entries, num_tmp_dir_entries;

@@ -99,7 +99,7 @@ static SMB_STRUCT_DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *f
 	return NULL;
 }
 
-static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle,
+static struct dirent *skel_readdir(vfs_handle_struct *handle,
 				       SMB_STRUCT_DIR *dirp,
 				       SMB_STRUCT_STAT *sbuf)
 {

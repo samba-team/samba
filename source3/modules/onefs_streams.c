@@ -584,7 +584,7 @@ static NTSTATUS walk_onefs_streams(connection_struct *conn, files_struct *fsp,
 	int stream_fd = -1;
 	int ret;
 	SMB_STRUCT_DIR *dirp = NULL;
-	SMB_STRUCT_DIRENT *dp = NULL;
+	struct dirent *dp = NULL;
 	files_struct fake_fs;
 	struct fd_handle fake_fh;
 	SMB_STRUCT_STAT stream_sbuf;

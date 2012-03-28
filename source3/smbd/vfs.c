@@ -721,7 +721,7 @@ SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 const char *vfs_readdirname(connection_struct *conn, void *p,
 			    SMB_STRUCT_STAT *sbuf, char **talloced)
 {
-	SMB_STRUCT_DIRENT *ptr= NULL;
+	struct dirent *ptr= NULL;
 	const char *dname;
 	char *translated;
 	NTSTATUS status;
@@ -1405,7 +1405,7 @@ SMB_STRUCT_DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 	return handle->fns->fdopendir_fn(handle, fsp, mask, attributes);
 }
 
-SMB_STRUCT_DIRENT *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
+struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 					      SMB_STRUCT_DIR *dirp,
 					      SMB_STRUCT_STAT *sbuf)
 {

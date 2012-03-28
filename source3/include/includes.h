@@ -368,14 +368,6 @@ struct stat_ex {
 typedef struct stat_ex SMB_STRUCT_STAT;
 
 /*
- * Type for dirent structure.
- */
-
-#ifndef SMB_STRUCT_DIRENT
-#    define SMB_STRUCT_DIRENT struct dirent
-#endif
-
-/*
  * Type for DIR structure.
  */
 

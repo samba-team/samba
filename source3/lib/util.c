@@ -1031,13 +1031,13 @@ libunwind_failed:
 
 const char *readdirname(SMB_STRUCT_DIR *p)
 {
-	SMB_STRUCT_DIRENT *ptr;
+	struct dirent *ptr;
 	char *dname;
 
 	if (!p)
 		return(NULL);
 
-	ptr = (SMB_STRUCT_DIRENT *)readdir(p);
+	ptr = (struct dirent *)readdir(p);
 	if (!ptr)
 		return(NULL);
 

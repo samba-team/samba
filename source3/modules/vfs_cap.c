@@ -54,12 +54,12 @@ static SMB_STRUCT_DIR *cap_opendir(vfs_handle_struct *handle, const char *fname,
 	return SMB_VFS_NEXT_OPENDIR(handle, capname, mask, attr);
 }
 
-static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle,
+static struct dirent *cap_readdir(vfs_handle_struct *handle,
 				      SMB_STRUCT_DIR *dirp,
 				      SMB_STRUCT_STAT *sbuf)
 {
-	SMB_STRUCT_DIRENT *result;
-	SMB_STRUCT_DIRENT *newdirent;
+	struct dirent *result;
+	struct dirent *newdirent;
 	char *newname;
 	size_t newnamelen;
 	DEBUG(3,("cap: cap_readdir\n"));
@@ -75,14 +75,14 @@ static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle,
 	}
 	DEBUG(3,("cap: cap_readdir: %s\n", newname));
 	newnamelen = strlen(newname)+1;
-	newdirent = (SMB_STRUCT_DIRENT *)talloc_array(talloc_tos(),
+	newdirent = (struct dirent *)talloc_array(talloc_tos(),
 			char,
-			sizeof(SMB_STRUCT_DIRENT)+
+			sizeof(struct dirent)+
 				newnamelen);
 	if (!newdirent) {
 		return NULL;
 	}
-	memcpy(newdirent, result, sizeof(SMB_STRUCT_DIRENT));
+	memcpy(newdirent, result, sizeof(struct dirent));
 	memcpy(&newdirent->d_name, newname, newnamelen);
 	return newdirent;
 }

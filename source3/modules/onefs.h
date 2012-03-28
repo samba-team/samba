@@ -28,7 +28,7 @@ SMB_STRUCT_DIR *onefs_opendir(struct vfs_handle_struct *handle,
 			      const char *fname, const char *mask,
 			      uint32 attributes);
 
-SMB_STRUCT_DIRENT *onefs_readdir(struct vfs_handle_struct *handle,
+struct dirent *onefs_readdir(struct vfs_handle_struct *handle,
 				 SMB_STRUCT_DIR *dirp, SMB_STRUCT_STAT *sbuf);
 
 void onefs_seekdir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,

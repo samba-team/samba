@@ -1078,7 +1078,7 @@ static int shadow_copy2_get_shadow_copy_data(
 {
 	SMB_STRUCT_DIR *p;
 	const char *snapdir;
-	SMB_STRUCT_DIRENT *d;
+	struct dirent *d;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle, fsp->fsp_name);

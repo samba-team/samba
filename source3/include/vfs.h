@@ -206,7 +206,7 @@ struct vfs_fn_pointers {
 
 	SMB_STRUCT_DIR *(*opendir_fn)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
 	SMB_STRUCT_DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attributes);
-	SMB_STRUCT_DIRENT *(*readdir_fn)(struct vfs_handle_struct *handle,
+	struct dirent *(*readdir_fn)(struct vfs_handle_struct *handle,
 					 SMB_STRUCT_DIR *dirp,
 					 SMB_STRUCT_STAT *sbuf);
 	void (*seekdir_fn)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset);
@@ -560,7 +560,7 @@ SMB_STRUCT_DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,
 					uint32 attributes);
-SMB_STRUCT_DIRENT *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
+struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 					SMB_STRUCT_DIR *dirp,
 					SMB_STRUCT_STAT *sbuf);
 void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,

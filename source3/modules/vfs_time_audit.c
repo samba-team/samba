@@ -243,11 +243,11 @@ static SMB_STRUCT_DIR *smb_time_audit_fdopendir(vfs_handle_struct *handle,
 	return result;
 }
 
-static SMB_STRUCT_DIRENT *smb_time_audit_readdir(vfs_handle_struct *handle,
+static struct dirent *smb_time_audit_readdir(vfs_handle_struct *handle,
 						 SMB_STRUCT_DIR *dirp,
 						 SMB_STRUCT_STAT *sbuf)
 {
-	SMB_STRUCT_DIRENT *result;
+	struct dirent *result;
 	struct timespec ts1,ts2;
 	double timediff;
 
