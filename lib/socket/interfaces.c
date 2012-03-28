@@ -212,8 +212,12 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 			continue;
 		}
 
-		strlcpy(ifaces[total].name, ifptr->ifa_name,
-			sizeof(ifaces[total].name));
+		if (strlcpy(ifaces[total].name, ifptr->ifa_name,
+			sizeof(ifaces[total].name)) >=
+				sizeof(ifaces[total].name)) {
+			/* Truncation ! Ignore. */
+			continue;
+		}
 		total++;
 	}
 

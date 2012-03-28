@@ -3037,7 +3037,9 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	client_socket_addr(sconn->sock, tmp_addr, sizeof(tmp_addr));
+	if (client_socket_addr(sconn->sock, tmp_addr, sizeof(tmp_addr)) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	addr = talloc_strdup(cconn, tmp_addr);
 	if (addr == NULL) {
 		return NT_STATUS_NO_MEMORY;

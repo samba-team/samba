@@ -107,9 +107,11 @@ static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
 		 */
 
 		if (p && (p > str) && ((scope_id = if_nametoindex(p+1)) != 0)) {
-			strlcpy(addr, str,
-				MIN(PTR_DIFF(p,str)+1,
-					sizeof(addr)));
+			size_t len = MIN(PTR_DIFF(p,str)+1, sizeof(addr));
+			if (strlcpy(addr, str, len) >= len) {
+				/* Truncate. */
+				return false;
+			}
 			str = addr;
 		}
 	}
@@ -332,9 +334,11 @@ bool is_ipaddress_v6(const char *str)
 		 */
 
 		if (p && (p > str) && (if_nametoindex(p+1) != 0)) {
-			strlcpy(addr, str,
-				MIN(PTR_DIFF(p,str)+1,
-					sizeof(addr)));
+			size_t len = MIN(PTR_DIFF(p,str)+1, sizeof(addr));
+			if (strlcpy(addr, str, len) >= len) {
+				/* Truncate. */
+				return false;
+			}
 			sp = addr;
 		}
 		ret = inet_pton(AF_INET6, sp, &dest6);
@@ -723,7 +727,10 @@ static const char *get_socket_addr(int fd, char *addr_buf, size_t addr_len)
 	 * zero IPv6 address. No good choice here.
 	 */
 
-	strlcpy(addr_buf, "0.0.0.0", addr_len);
+	if (strlcpy(addr_buf, "0.0.0.0", addr_len) >= addr_len) {
+		/* Truncate ! */
+		return NULL;
+	}
 
 	if (fd == -1) {
 		return addr_buf;
