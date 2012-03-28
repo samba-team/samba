@@ -227,18 +227,11 @@
 		Adjust reporting of the size and free space of a share
 		according to quotas. If this setting is "yes", a
 		request for size and free space will also evaluate the
-		following quotas:
+		user quota of the user requesting the data, the group
+		quota of the primary group of the user and the fileset
+		quota for the fileset containing the top level
+		directory of the share.
 		</para>
-
-		<itemizedlist>
-		<listitem><para>The user quota of the user requesting
-		    the data.</para></listitem>
-		<listitem><para>The group quota of the primary group
-		    of the user.</para></listitem>
-		<listitem><para>The fileset quota for the fileset
-		    containing the top level directory of the share.
-		</para></listitem>
-		</itemizedlist>
 
 		<para>
 		If any of the soft or hard quota limits has been
