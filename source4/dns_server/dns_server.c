@@ -100,6 +100,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 {
 	enum ndr_err_code ndr_err;
 	WERROR ret;
+	uint16_t dns_err = DNS_RCODE_OK;
 	struct dns_request_state *state;
 	struct dns_name_packet *in_packet;
 	struct dns_name_packet *out_packet;
@@ -126,12 +127,8 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		TALLOC_FREE(in_packet);
 		DEBUG(0, ("Failed to parse packet %d!\n", ndr_err));
-		*out = *in;
-
-		out->data[2] |= 0x80; /* Toggle DNS_FLAG_REPLY */
-		out->data[3] |= DNS_RCODE_FORMERR;
-
-		return NT_STATUS_OK;
+		dns_err = DNS_RCODE_FORMERR;
+		goto drop;
 	}
 	if (DEBUGLVL(8)) {
 		NDR_PRINT_DEBUG(dns_name_packet, in_packet);
@@ -189,15 +186,17 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		TALLOC_FREE(in_packet);
 		TALLOC_FREE(out_packet);
 		DEBUG(0, ("Failed to push packet %d!\n", ndr_err));
-		*out = *in;
-
-		out->data[2] |= 0x80; /* Toggle DNS_FLAG_REPLY */
-		out->data[3] |= DNS_RCODE_SERVFAIL;
-
-		return NT_STATUS_OK;
+		dns_err = DNS_RCODE_SERVFAIL;
+		goto drop;
 	}
 
 	dump_data(8, out->data, out->length);
+	return NT_STATUS_OK;
+
+drop:
+	*out = *in;
+	out->data[2] |= 0x80; /* Toggle DNS_FLAG_REPLY */
+	out->data[3] |= dns_err;
 	return NT_STATUS_OK;
 }
 
