@@ -368,14 +368,6 @@ struct stat_ex {
 typedef struct stat_ex SMB_STRUCT_STAT;
 
 /*
- * Type for DIR structure.
- */
-
-#ifndef SMB_STRUCT_DIR
-#    define SMB_STRUCT_DIR DIR
-#endif
-
-/*
  * Defines for 64 bit fcntl locks.
  */
 

@@ -729,7 +729,7 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 	if (!p)
 		return(NULL);
 
-	ptr = SMB_VFS_READDIR(conn, (SMB_STRUCT_DIR *)p, sbuf);
+	ptr = SMB_VFS_READDIR(conn, (DIR *)p, sbuf);
 	if (!ptr)
 		return(NULL);
 
@@ -1388,7 +1388,7 @@ NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return handle->fns->get_dfs_referrals_fn(handle, r);
 }
 
-SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
+DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
 				     uint32 attributes)
 {
@@ -1396,7 +1396,7 @@ SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 	return handle->fns->opendir_fn(handle, fname, mask, attributes);
 }
 
-SMB_STRUCT_DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
+DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,
 					uint32 attributes)
@@ -1406,7 +1406,7 @@ SMB_STRUCT_DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 }
 
 struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
-					      SMB_STRUCT_DIR *dirp,
+					      DIR *dirp,
 					      SMB_STRUCT_STAT *sbuf)
 {
 	VFS_FIND(readdir);
@@ -1414,21 +1414,21 @@ struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 }
 
 void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,
-			  SMB_STRUCT_DIR *dirp, long offset)
+			  DIR *dirp, long offset)
 {
 	VFS_FIND(seekdir);
 	handle->fns->seekdir_fn(handle, dirp, offset);
 }
 
 long smb_vfs_call_telldir(struct vfs_handle_struct *handle,
-			  SMB_STRUCT_DIR *dirp)
+			  DIR *dirp)
 {
 	VFS_FIND(telldir);
 	return handle->fns->telldir_fn(handle, dirp);
 }
 
 void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
-			     SMB_STRUCT_DIR *dirp)
+			     DIR *dirp)
 {
 	VFS_FIND(rewind_dir);
 	handle->fns->rewind_dir_fn(handle, dirp);
@@ -1448,14 +1448,14 @@ int smb_vfs_call_rmdir(struct vfs_handle_struct *handle, const char *path)
 }
 
 int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
-			  SMB_STRUCT_DIR *dir)
+			  DIR *dir)
 {
 	VFS_FIND(closedir);
 	return handle->fns->closedir_fn(handle, dir);
 }
 
 void smb_vfs_call_init_search_op(struct vfs_handle_struct *handle,
-				 SMB_STRUCT_DIR *dirp)
+				 DIR *dirp)
 {
 	VFS_FIND(init_search_op);
 	handle->fns->init_search_op_fn(handle, dirp);

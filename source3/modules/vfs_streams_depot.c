@@ -374,7 +374,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 			     void *private_data)
 {
 	char *dirname;
-	SMB_STRUCT_DIR *dirhandle = NULL;
+	DIR *dirhandle = NULL;
 	const char *dirent = NULL;
 	char *talloced = NULL;
 

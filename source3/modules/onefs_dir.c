@@ -49,7 +49,7 @@ static uint64_t *rdp_cookies = NULL;
 
 struct rdp_dir_state {
 	struct rdp_dir_state *next, *prev;
-	SMB_STRUCT_DIR *dirp;
+	DIR *dirp;
 	char *direntries_cursor; /* cursor to last returned direntry in cache */
 	size_t stat_count;	 /* number of entries stored in the cache */
 	size_t stat_cursor;	 /* cursor to last returned stat in the cache */
@@ -59,7 +59,7 @@ struct rdp_dir_state {
 
 static struct rdp_dir_state *dirstatelist = NULL;
 
-SMB_STRUCT_DIR *rdp_last_dirp = NULL;
+DIR *rdp_last_dirp = NULL;
 
 /**
  * Given a DIR pointer, return our internal state.
@@ -73,7 +73,7 @@ SMB_STRUCT_DIR *rdp_last_dirp = NULL;
  * @return 0 on success, 1 on failure
  */
 static int
-rdp_retrieve_dir_state(SMB_STRUCT_DIR *dirp, struct rdp_dir_state **dir_state,
+rdp_retrieve_dir_state(DIR *dirp, struct rdp_dir_state **dir_state,
 		       bool *same_as_last)
 {
 	struct rdp_dir_state *dsp;
@@ -198,7 +198,7 @@ rdp_fill_cache(struct rdp_dir_state *dsp)
  * call to VFS_CLOSEDIR().
  */
 int
-onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp)
+onefs_rdp_add_dir_state(connection_struct *conn, DIR *dirp)
 {
 	int ret = 0;
 	struct rdp_dir_state *dsp = NULL;
@@ -225,7 +225,7 @@ onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp)
 		return ret;
 	}
 
-	/* Set the SMB_STRUCT_DIR in the dsp */
+	/* Set the DIR in the dsp */
 	dsp->dirp = dirp;
 
 	DLIST_ADD(dirstatelist, dsp);
@@ -246,12 +246,12 @@ onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp)
  *
  * @return DIR pointer, NULL if directory does not exist, NULL on error
  */
-SMB_STRUCT_DIR *
+DIR *
 onefs_opendir(vfs_handle_struct *handle, const char *fname, const char *mask,
 	      uint32 attr)
 {
 	int ret = 0;
-	SMB_STRUCT_DIR *ret_dirp;
+	DIR *ret_dirp;
 
 	/* Fallback to default system routines if readdirplus is disabled */
 	if (!lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
@@ -297,7 +297,7 @@ onefs_opendir(vfs_handle_struct *handle, const char *fname, const char *mask,
  * @return dirent structure, NULL if at the end of the directory, NULL on error
  */
 struct dirent *
-onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
+onefs_readdir(vfs_handle_struct *handle, DIR *dirp,
 	      SMB_STRUCT_STAT *sbuf)
 {
 	struct rdp_dir_state *dsp = NULL;
@@ -320,7 +320,7 @@ onefs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	ret = rdp_retrieve_dir_state(dirp, &dsp, &same_as_last);
 	if (ret) {
 		DEBUG(1, ("Could not retrieve dir_state struct for "
-			 "SMB_STRUCT_DIR pointer.\n"));
+			 "DIR pointer.\n"));
 		ret_direntp = NULL;
 		goto end;
 	}
@@ -405,7 +405,7 @@ end:
  * @return no return value
  */
 void
-onefs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
+onefs_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset)
 {
 	struct rdp_dir_state *dsp = NULL;
 	bool same_as_last;
@@ -429,7 +429,7 @@ onefs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 	ret = rdp_retrieve_dir_state(dirp, &dsp, &same_as_last);
 	if (ret) {
 		DEBUG(1, ("Could not retrieve dir_state struct for "
-			 "SMB_STRUCT_DIR pointer.\n"));
+			 "DIR pointer.\n"));
 		/* XXX: we can't return an error, should we ABORT rather than
 		 * return without actually seeking? */
 		return;
@@ -469,7 +469,7 @@ onefs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
  * @return offset into the directory to resume reading from
  */
 long
-onefs_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+onefs_telldir(vfs_handle_struct *handle,  DIR *dirp)
 {
 	struct rdp_dir_state *dsp = NULL;
 	bool same_as_last;
@@ -487,7 +487,7 @@ onefs_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 	ret = rdp_retrieve_dir_state(dirp, &dsp, &same_as_last);
 	if (ret) {
 		DEBUG(1, ("Could not retrieve dir_state struct for "
-			 "SMB_STRUCT_DIR pointer.\n"));
+			 "DIR pointer.\n"));
 		return -1;
 	}
 
@@ -516,7 +516,7 @@ onefs_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
  * @return no return value
  */
 void
-onefs_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+onefs_rewinddir(vfs_handle_struct *handle,  DIR *dirp)
 {
 	struct rdp_dir_state *dsp = NULL;
 	bool same_as_last;
@@ -533,7 +533,7 @@ onefs_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 	ret = rdp_retrieve_dir_state(dirp, &dsp, &same_as_last);
 	if (ret) {
 		DEBUG(1, ("Could not retrieve dir_state struct for "
-			 "SMB_STRUCT_DIR pointer.\n"));
+			 "DIR pointer.\n"));
 		return;
 	}
 
@@ -560,7 +560,7 @@ onefs_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
  * @return -1 on failure, setting errno
  */
 int
-onefs_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+onefs_closedir(vfs_handle_struct *handle,  DIR *dirp)
 {
 	struct rdp_dir_state *dsp = NULL;
 	bool same_as_last;
@@ -578,7 +578,7 @@ onefs_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 	ret = rdp_retrieve_dir_state(dirp, &dsp, &same_as_last);
 	if (ret) {
 		DEBUG(1, ("Could not retrieve dir_state struct for "
-			 "SMB_STRUCT_DIR pointer.\n"));
+			 "DIR pointer.\n"));
 		errno = ENOENT;
 		return -1;
 	}
@@ -612,7 +612,7 @@ onefs_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
  * @return nothing
  */
 void
-onefs_init_search_op(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+onefs_init_search_op(vfs_handle_struct *handle,  DIR *dirp)
 {
 	/* Setting the rdp_last_dirp to NULL will cause the next readdir
 	 * operation to refill the cache. */

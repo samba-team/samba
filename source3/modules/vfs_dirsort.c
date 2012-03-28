@@ -32,7 +32,7 @@ struct dirsort_privates {
 	struct dirent *directory_list;
 	long number_of_entries;
 	time_t mtime;
-	SMB_STRUCT_DIR *source_directory;
+	DIR *source_directory;
 	int fd;
 };
 
@@ -90,7 +90,7 @@ static bool open_and_sort_dir (vfs_handle_struct *handle)
 	return true;
 }
 
-static SMB_STRUCT_DIR *dirsort_opendir(vfs_handle_struct *handle,
+static DIR *dirsort_opendir(vfs_handle_struct *handle,
 				       const char *fname, const char *mask,
 				       uint32 attr)
 {
@@ -124,7 +124,7 @@ static SMB_STRUCT_DIR *dirsort_opendir(vfs_handle_struct *handle,
 	return data->source_directory;
 }
 
-static SMB_STRUCT_DIR *dirsort_fdopendir(vfs_handle_struct *handle,
+static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 					files_struct *fsp,
 					const char *mask,
 					uint32 attr)
@@ -167,7 +167,7 @@ static SMB_STRUCT_DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 }
 
 static struct dirent *dirsort_readdir(vfs_handle_struct *handle,
-					  SMB_STRUCT_DIR *dirp,
+					  DIR *dirp,
 					  SMB_STRUCT_STAT *sbuf)
 {
 	struct dirsort_privates *data = NULL;
@@ -195,7 +195,7 @@ static struct dirent *dirsort_readdir(vfs_handle_struct *handle,
 	return &data->directory_list[data->pos++];
 }
 
-static void dirsort_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
+static void dirsort_seekdir(vfs_handle_struct *handle, DIR *dirp,
 			    long offset)
 {
 	struct dirsort_privates *data = NULL;
@@ -204,7 +204,7 @@ static void dirsort_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	data->pos = offset;
 }
 
-static long dirsort_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+static long dirsort_telldir(vfs_handle_struct *handle, DIR *dirp)
 {
 	struct dirsort_privates *data = NULL;
 	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates,
@@ -213,7 +213,7 @@ static long dirsort_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 	return data->pos;
 }
 
-static void dirsort_rewinddir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+static void dirsort_rewinddir(vfs_handle_struct *handle, DIR *dirp)
 {
 	struct dirsort_privates *data = NULL;
 	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates, return);

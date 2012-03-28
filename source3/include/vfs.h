@@ -204,18 +204,18 @@ struct vfs_fn_pointers {
 
 	/* Directory operations */
 
-	SMB_STRUCT_DIR *(*opendir_fn)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
-	SMB_STRUCT_DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attributes);
+	DIR *(*opendir_fn)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
+	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attributes);
 	struct dirent *(*readdir_fn)(struct vfs_handle_struct *handle,
-					 SMB_STRUCT_DIR *dirp,
+					 DIR *dirp,
 					 SMB_STRUCT_STAT *sbuf);
-	void (*seekdir_fn)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset);
-	long (*telldir_fn)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
-	void (*rewind_dir_fn)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
+	void (*seekdir_fn)(struct vfs_handle_struct *handle, DIR *dirp, long offset);
+	long (*telldir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
+	void (*rewind_dir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 	int (*mkdir_fn)(struct vfs_handle_struct *handle, const char *path, mode_t mode);
 	int (*rmdir_fn)(struct vfs_handle_struct *handle, const char *path);
-	int (*closedir_fn)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dir);
-	void (*init_search_op_fn)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
+	int (*closedir_fn)(struct vfs_handle_struct *handle, DIR *dir);
+	void (*init_search_op_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 
 	/* File operations */
 
@@ -553,29 +553,29 @@ uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
  */
 NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 					struct dfs_GetDFSReferral *r);
-SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
+DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
 				     uint32 attributes);
-SMB_STRUCT_DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
+DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,
 					uint32 attributes);
 struct dirent *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
-					SMB_STRUCT_DIR *dirp,
+					DIR *dirp,
 					SMB_STRUCT_STAT *sbuf);
 void smb_vfs_call_seekdir(struct vfs_handle_struct *handle,
-			  SMB_STRUCT_DIR *dirp, long offset);
+			  DIR *dirp, long offset);
 long smb_vfs_call_telldir(struct vfs_handle_struct *handle,
-			  SMB_STRUCT_DIR *dirp);
+			  DIR *dirp);
 void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
-			     SMB_STRUCT_DIR *dirp);
+			     DIR *dirp);
 int smb_vfs_call_mkdir(struct vfs_handle_struct *handle, const char *path,
 		       mode_t mode);
 int smb_vfs_call_rmdir(struct vfs_handle_struct *handle, const char *path);
 int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
-			  SMB_STRUCT_DIR *dir);
+			  DIR *dir);
 void smb_vfs_call_init_search_op(struct vfs_handle_struct *handle,
-				 SMB_STRUCT_DIR *dirp);
+				 DIR *dirp);
 int smb_vfs_call_open(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname, struct files_struct *fsp,
 		      int flags, mode_t mode);

@@ -343,9 +343,9 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 
 /* Directory operations */
 
-static SMB_STRUCT_DIR *vfswrap_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
+static DIR *vfswrap_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
 {
-	SMB_STRUCT_DIR *result;
+	DIR *result;
 
 	START_PROFILE(syscall_opendir);
 	result = opendir(fname);
@@ -353,12 +353,12 @@ static SMB_STRUCT_DIR *vfswrap_opendir(vfs_handle_struct *handle,  const char *f
 	return result;
 }
 
-static SMB_STRUCT_DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
+static DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
 			files_struct *fsp,
 			const char *mask,
 			uint32 attr)
 {
-	SMB_STRUCT_DIR *result;
+	DIR *result;
 
 	START_PROFILE(syscall_fdopendir);
 	result = sys_fdopendir(fsp->fh->fd);
@@ -368,7 +368,7 @@ static SMB_STRUCT_DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
 
 
 static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
-				          SMB_STRUCT_DIR *dirp,
+				          DIR *dirp,
 					  SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;
@@ -383,14 +383,14 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static void vfswrap_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)
+static void vfswrap_seekdir(vfs_handle_struct *handle,  DIR *dirp, long offset)
 {
 	START_PROFILE(syscall_seekdir);
 	seekdir(dirp, offset);
 	END_PROFILE(syscall_seekdir);
 }
 
-static long vfswrap_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static long vfswrap_telldir(vfs_handle_struct *handle,  DIR *dirp)
 {
 	long result;
 	START_PROFILE(syscall_telldir);
@@ -399,7 +399,7 @@ static long vfswrap_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 	return result;
 }
 
-static void vfswrap_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static void vfswrap_rewinddir(vfs_handle_struct *handle,  DIR *dirp)
 {
 	START_PROFILE(syscall_rewinddir);
 	rewinddir(dirp);
@@ -450,7 +450,7 @@ static int vfswrap_rmdir(vfs_handle_struct *handle,  const char *path)
 	return result;
 }
 
-static int vfswrap_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static int vfswrap_closedir(vfs_handle_struct *handle,  DIR *dirp)
 {
 	int result;
 
@@ -461,7 +461,7 @@ static int vfswrap_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 }
 
 static void vfswrap_init_search_op(vfs_handle_struct *handle,
-				   SMB_STRUCT_DIR *dirp)
+				   DIR *dirp)
 {
 	/* Default behavior is a NOOP */
 }

@@ -90,7 +90,7 @@ struct scannedonly_DIR {
 	char *base;
 	int recheck_tries_done; /* if 0 the directory listing has not yet
 	been checked for files that need to be scanned. */
-	SMB_STRUCT_DIR *DIR;
+	DIR *DIR;
 };
 #define SCANNEDONLY_DEBUG 9
 /*********************/
@@ -506,11 +506,11 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 /* VFS functions     */
 /*********************/
 
-static SMB_STRUCT_DIR *scannedonly_opendir(vfs_handle_struct * handle,
+static DIR *scannedonly_opendir(vfs_handle_struct * handle,
 					   const char *fname,
 					   const char *mask, uint32 attr)
 {
-	SMB_STRUCT_DIR *DIRp;
+	DIR *DIRp;
 	struct scannedonly_DIR *sDIR;
 
 	DIRp = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
@@ -528,14 +528,14 @@ static SMB_STRUCT_DIR *scannedonly_opendir(vfs_handle_struct * handle,
 			("scannedonly_opendir, fname=%s, base=%s\n",fname,sDIR->base));
 	sDIR->DIR = DIRp;
 	sDIR->recheck_tries_done = 0;
-	return (SMB_STRUCT_DIR *) sDIR;
+	return (DIR *) sDIR;
 }
 
-static SMB_STRUCT_DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
+static DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
 					   files_struct *fsp,
 					   const char *mask, uint32 attr)
 {
-	SMB_STRUCT_DIR *DIRp;
+	DIR *DIRp;
 	struct scannedonly_DIR *sDIR;
 	const char *fname;
 
@@ -556,12 +556,12 @@ static SMB_STRUCT_DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
 			("scannedonly_fdopendir, fname=%s, base=%s\n",fname,sDIR->base));
 	sDIR->DIR = DIRp;
 	sDIR->recheck_tries_done = 0;
-	return (SMB_STRUCT_DIR *) sDIR;
+	return (DIR *) sDIR;
 }
 
 
 static struct dirent *scannedonly_readdir(vfs_handle_struct *handle,
-					      SMB_STRUCT_DIR * dirp,
+					      DIR * dirp,
 					      SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;
@@ -648,28 +648,28 @@ static struct dirent *scannedonly_readdir(vfs_handle_struct *handle,
 }
 
 static void scannedonly_seekdir(struct vfs_handle_struct *handle,
-				SMB_STRUCT_DIR * dirp, long offset)
+				DIR * dirp, long offset)
 {
 	struct scannedonly_DIR *sDIR = (struct scannedonly_DIR *)dirp;
 	SMB_VFS_NEXT_SEEKDIR(handle, sDIR->DIR, offset);
 }
 
 static long scannedonly_telldir(struct vfs_handle_struct *handle,
-				SMB_STRUCT_DIR * dirp)
+				DIR * dirp)
 {
 	struct scannedonly_DIR *sDIR = (struct scannedonly_DIR *)dirp;
 	return SMB_VFS_NEXT_TELLDIR(handle, sDIR->DIR);
 }
 
 static void scannedonly_rewinddir(struct vfs_handle_struct *handle,
-				  SMB_STRUCT_DIR * dirp)
+				  DIR * dirp)
 {
 	struct scannedonly_DIR *sDIR = (struct scannedonly_DIR *)dirp;
 	SMB_VFS_NEXT_REWINDDIR(handle, sDIR->DIR);
 }
 
 static int scannedonly_closedir(vfs_handle_struct * handle,
-				SMB_STRUCT_DIR * dirp)
+				DIR * dirp)
 {
 	int retval;
 	struct scannedonly_DIR *sDIR = (struct scannedonly_DIR *)dirp;

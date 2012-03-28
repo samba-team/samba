@@ -43,7 +43,7 @@ struct name_cache_entry {
 
 struct smb_Dir {
 	connection_struct *conn;
-	SMB_STRUCT_DIR *dir;
+	DIR *dir;
 	long offset;
 	char *dir_path;
 	size_t name_cache_size;

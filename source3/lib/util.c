@@ -1029,7 +1029,7 @@ libunwind_failed:
   A readdir wrapper which just returns the file name.
  ********************************************************************/
 
-const char *readdirname(SMB_STRUCT_DIR *p)
+const char *readdirname(DIR *p)
 {
 	struct dirent *ptr;
 	char *dname;

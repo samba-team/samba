@@ -2074,7 +2074,7 @@ static int cmd_select(void)
 static int file_find(struct file_list **list, const char *directory,
 		      const char *expression, bool match)
 {
-	SMB_STRUCT_DIR *dir;
+	DIR *dir;
 	struct file_list *entry;
         struct stat statbuf;
         int ret;

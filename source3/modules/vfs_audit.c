@@ -106,9 +106,9 @@ static void audit_disconnect(vfs_handle_struct *handle)
 	return;
 }
 
-static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
 {
-	SMB_STRUCT_DIR *result;
+	DIR *result;
 	
 	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 

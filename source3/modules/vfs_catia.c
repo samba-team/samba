@@ -261,14 +261,14 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-static SMB_STRUCT_DIR *catia_opendir(vfs_handle_struct *handle,
+static DIR *catia_opendir(vfs_handle_struct *handle,
 				     const char *fname,
 				     const char *mask,
 				     uint32 attr)
 {
 	char *name_mapped = NULL;
 	NTSTATUS status;
-	SMB_STRUCT_DIR *ret;
+	DIR *ret;
 
 	status = catia_string_replace_allocate(handle->conn, fname,
 					&name_mapped, vfs_translate_to_unix);

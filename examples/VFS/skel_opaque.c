@@ -89,34 +89,34 @@ static NTSTATUS skel_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
+static DIR *skel_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
 {
 	return NULL;
 }
 
-static SMB_STRUCT_DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
+static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
 {
 	return NULL;
 }
 
 static struct dirent *skel_readdir(vfs_handle_struct *handle,
-				       SMB_STRUCT_DIR *dirp,
+				       DIR *dirp,
 				       SMB_STRUCT_STAT *sbuf)
 {
 	return NULL;
 }
 
-static void skel_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)
+static void skel_seekdir(vfs_handle_struct *handle,  DIR *dirp, long offset)
 {
 	;
 }
 
-static long skel_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static long skel_telldir(vfs_handle_struct *handle,  DIR *dirp)
 {
 	return (long)-1;
 }
 
-static void skel_rewind_dir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+static void skel_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 {
 	;
 }
@@ -133,13 +133,13 @@ static int skel_rmdir(vfs_handle_struct *handle,  const char *path)
 	return -1;
 }
 
-static int skel_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dir)
+static int skel_closedir(vfs_handle_struct *handle,  DIR *dir)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static void skel_init_search_op(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+static void skel_init_search_op(struct vfs_handle_struct *handle, DIR *dirp)
 {
 	;
 }

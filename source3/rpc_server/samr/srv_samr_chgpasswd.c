@@ -67,7 +67,7 @@ static int findpty(char **slave)
 {
 	int master = -1;
 	char *line = NULL;
-	SMB_STRUCT_DIR *dirp = NULL;
+	DIR *dirp = NULL;
 	const char *dpname;
 
 	*slave = NULL;

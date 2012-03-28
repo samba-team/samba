@@ -24,24 +24,24 @@
 /*
  * vfs interface handlers
  */
-SMB_STRUCT_DIR *onefs_opendir(struct vfs_handle_struct *handle,
+DIR *onefs_opendir(struct vfs_handle_struct *handle,
 			      const char *fname, const char *mask,
 			      uint32 attributes);
 
 struct dirent *onefs_readdir(struct vfs_handle_struct *handle,
-				 SMB_STRUCT_DIR *dirp, SMB_STRUCT_STAT *sbuf);
+				 DIR *dirp, SMB_STRUCT_STAT *sbuf);
 
-void onefs_seekdir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
+void onefs_seekdir(struct vfs_handle_struct *handle, DIR *dirp,
 		   long offset);
 
-long onefs_telldir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
+long onefs_telldir(struct vfs_handle_struct *handle, DIR *dirp);
 
-void onefs_rewinddir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
+void onefs_rewinddir(struct vfs_handle_struct *handle, DIR *dirp);
 
-int onefs_closedir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dir);
+int onefs_closedir(struct vfs_handle_struct *handle, DIR *dir);
 
 void onefs_init_search_op(struct vfs_handle_struct *handle,
-			  SMB_STRUCT_DIR *dirp);
+			  DIR *dirp);
 
 NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			   struct smb_request *req,
@@ -142,7 +142,7 @@ NTSTATUS onefs_stream_prep_smb_fname(TALLOC_CTX *ctx,
 				     const struct smb_filename *smb_fname_in,
 				     struct smb_filename **smb_fname_out);
 
-int onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp);
+int onefs_rdp_add_dir_state(connection_struct *conn, DIR *dirp);
 
 /*
  * System Interfaces

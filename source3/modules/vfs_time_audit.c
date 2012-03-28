@@ -203,11 +203,11 @@ static uint32_t smb_time_audit_fs_capabilities(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static SMB_STRUCT_DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
+static DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
 					      const char *fname,
 					      const char *mask, uint32 attr)
 {
-	SMB_STRUCT_DIR *result;
+	DIR *result;
 	struct timespec ts1,ts2;
 	double timediff;
 
@@ -223,11 +223,11 @@ static SMB_STRUCT_DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
 	return result;
 }
 
-static SMB_STRUCT_DIR *smb_time_audit_fdopendir(vfs_handle_struct *handle,
+static DIR *smb_time_audit_fdopendir(vfs_handle_struct *handle,
 					      files_struct *fsp,
 					      const char *mask, uint32 attr)
 {
-	SMB_STRUCT_DIR *result;
+	DIR *result;
 	struct timespec ts1,ts2;
 	double timediff;
 
@@ -244,7 +244,7 @@ static SMB_STRUCT_DIR *smb_time_audit_fdopendir(vfs_handle_struct *handle,
 }
 
 static struct dirent *smb_time_audit_readdir(vfs_handle_struct *handle,
-						 SMB_STRUCT_DIR *dirp,
+						 DIR *dirp,
 						 SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;
@@ -264,7 +264,7 @@ static struct dirent *smb_time_audit_readdir(vfs_handle_struct *handle,
 }
 
 static void smb_time_audit_seekdir(vfs_handle_struct *handle,
-				   SMB_STRUCT_DIR *dirp, long offset)
+				   DIR *dirp, long offset)
 {
 	struct timespec ts1,ts2;
 	double timediff;
@@ -282,7 +282,7 @@ static void smb_time_audit_seekdir(vfs_handle_struct *handle,
 }
 
 static long smb_time_audit_telldir(vfs_handle_struct *handle,
-				   SMB_STRUCT_DIR *dirp)
+				   DIR *dirp)
 {
 	long result;
 	struct timespec ts1,ts2;
@@ -301,7 +301,7 @@ static long smb_time_audit_telldir(vfs_handle_struct *handle,
 }
 
 static void smb_time_audit_rewinddir(vfs_handle_struct *handle,
-				     SMB_STRUCT_DIR *dirp)
+				     DIR *dirp)
 {
 	struct timespec ts1,ts2;
 	double timediff;
@@ -357,7 +357,7 @@ static int smb_time_audit_rmdir(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_closedir(vfs_handle_struct *handle,
-				   SMB_STRUCT_DIR *dirp)
+				   DIR *dirp)
 {
 	int result;
 	struct timespec ts1,ts2;
@@ -376,7 +376,7 @@ static int smb_time_audit_closedir(vfs_handle_struct *handle,
 }
 
 static void smb_time_audit_init_search_op(vfs_handle_struct *handle,
-					  SMB_STRUCT_DIR *dirp)
+					  DIR *dirp)
 {
 	struct timespec ts1,ts2;
 	double timediff;

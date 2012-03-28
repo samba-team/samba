@@ -86,34 +86,34 @@ static NTSTATUS skel_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_GET_DFS_REFERRALS(handle, r);
 }
 
-static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
+static DIR *skel_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
 {
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }
 
-static SMB_STRUCT_DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
+static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
 {
 	return SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
 }
 
 static struct dirent *skel_readdir(vfs_handle_struct *handle,
-				       SMB_STRUCT_DIR *dirp,
+				       DIR *dirp,
 				       SMB_STRUCT_STAT *sbuf)
 {
 	return SMB_VFS_NEXT_READDIR(handle, dirp, sbuf);
 }
 
-static void skel_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)
+static void skel_seekdir(vfs_handle_struct *handle,  DIR *dirp, long offset)
 {
 	SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
 }
 
-static long skel_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static long skel_telldir(vfs_handle_struct *handle,  DIR *dirp)
 {
 	return SMB_VFS_NEXT_TELLDIR(handle, dirp);
 }
 
-static void skel_rewind_dir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+static void skel_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 {
 	SMB_VFS_NEXT_REWINDDIR(handle, dirp);
 }
@@ -128,12 +128,12 @@ static int skel_rmdir(vfs_handle_struct *handle,  const char *path)
 	return SMB_VFS_NEXT_RMDIR(handle, path);
 }
 
-static int skel_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dir)
+static int skel_closedir(vfs_handle_struct *handle,  DIR *dir)
 {
 	return SMB_VFS_NEXT_CLOSEDIR(handle, dir);
 }
 
-static void skel_init_search_op(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+static void skel_init_search_op(struct vfs_handle_struct *handle, DIR *dirp)
 {
 	SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp);
 }

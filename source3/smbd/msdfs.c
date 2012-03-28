@@ -1288,7 +1288,7 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 {
 	size_t cnt = 0;
-	SMB_STRUCT_DIR *dirp = NULL;
+	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	const char *connect_path = lp_pathname(snum);
@@ -1355,7 +1355,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 				size_t jn_remain)
 {
 	size_t cnt = 0;
-	SMB_STRUCT_DIR *dirp = NULL;
+	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	const char *connect_path = lp_pathname(snum);

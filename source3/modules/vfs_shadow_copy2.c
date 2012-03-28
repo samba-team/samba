@@ -447,14 +447,14 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 	}
 }
 
-static SMB_STRUCT_DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
+static DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
 					    const char *fname,
 					    const char *mask,
 					    uint32 attr)
 {
 	time_t timestamp;
 	char *stripped;
-	SMB_STRUCT_DIR *ret;
+	DIR *ret;
 	int saved_errno;
 	char *conv;
 
@@ -1076,7 +1076,7 @@ static int shadow_copy2_get_shadow_copy_data(
 	struct shadow_copy_data *shadow_copy2_data,
 	bool labels)
 {
-	SMB_STRUCT_DIR *p;
+	DIR *p;
 	const char *snapdir;
 	struct dirent *d;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();

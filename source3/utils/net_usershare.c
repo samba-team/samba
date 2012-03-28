@@ -208,7 +208,7 @@ static struct file_list *flist;
 
 static int get_share_list(TALLOC_CTX *ctx, const char *wcard, bool only_ours)
 {
-	SMB_STRUCT_DIR *dp;
+	DIR *dp;
 	struct dirent *de;
 	uid_t myuid = geteuid();
 	struct file_list *fl = NULL;
@@ -546,7 +546,7 @@ static int net_usershare_info(struct net_context *c, int argc, const char **argv
 
 static int count_num_usershares(void)
 {
-	SMB_STRUCT_DIR *dp;
+	DIR *dp;
 	struct dirent *de;
 	int num_usershares = 0;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1059,7 +1059,7 @@ static int net_usershare_list(struct net_context *c, int argc,
 
 int net_usershare(struct net_context *c, int argc, const char **argv)
 {
-	SMB_STRUCT_DIR *dp;
+	DIR *dp;
 
 	struct functable func[] = {
 		{

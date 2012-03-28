@@ -337,7 +337,7 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len);
 int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OFF_T len);
 void kernel_flock(int fd, uint32 share_mode, uint32 access_mask);
-SMB_STRUCT_DIR *sys_fdopendir(int fd);
+DIR *sys_fdopendir(int fd);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(void);
@@ -487,7 +487,7 @@ uid_t nametouid(const char *name);
 gid_t nametogid(const char *name);
 void smb_panic_s3(const char *why);
 void log_stack_trace(void);
-const char *readdirname(SMB_STRUCT_DIR *p);
+const char *readdirname(DIR *p);
 bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive);
 void set_namearray(name_compare_entry **ppname_array, const char *namelist);
 void free_namearray(name_compare_entry *name_array);

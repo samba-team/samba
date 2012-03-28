@@ -43,7 +43,7 @@ static uint64_t cap_disk_free(vfs_handle_struct *handle, const char *path,
 					dfree, dsize);
 }
 
-static SMB_STRUCT_DIR *cap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *cap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
 {
 	char *capname = capencode(talloc_tos(), fname);
 
@@ -55,7 +55,7 @@ static SMB_STRUCT_DIR *cap_opendir(vfs_handle_struct *handle, const char *fname,
 }
 
 static struct dirent *cap_readdir(vfs_handle_struct *handle,
-				      SMB_STRUCT_DIR *dirp,
+				      DIR *dirp,
 				      SMB_STRUCT_STAT *sbuf)
 {
 	struct dirent *result;

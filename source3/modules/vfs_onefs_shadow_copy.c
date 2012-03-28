@@ -186,13 +186,13 @@ onefs_shadow_copy_statvfs(struct vfs_handle_struct *handle, const char *path,
 		    int);
 }
 
-static SMB_STRUCT_DIR *
+static DIR *
 onefs_shadow_copy_opendir(vfs_handle_struct *handle, const char *path,
 			  const char *mask, uint32_t attr)
 {
 	SHADOW_NEXT(OPENDIR,
 		    (handle, cpath ?: path, mask, attr),
-		    SMB_STRUCT_DIR *);
+		    DIR *);
 }
 
 static int

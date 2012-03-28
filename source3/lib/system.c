@@ -623,7 +623,7 @@ void kernel_flock(int fd, uint32 share_mode, uint32 access_mask)
  calling code.. JRA.
 ********************************************************************/
 
-SMB_STRUCT_DIR *sys_fdopendir(int fd)
+DIR *sys_fdopendir(int fd)
 {
 #if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
 	return fdopendir(fd);

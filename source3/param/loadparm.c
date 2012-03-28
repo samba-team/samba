@@ -8253,7 +8253,7 @@ enum usershare_err parse_usershare_file(TALLOC_CTX *ctx,
 	const char **prefixallowlist = lp_usershare_prefix_allow_list();
 	const char **prefixdenylist = lp_usershare_prefix_deny_list();
 	int us_vers;
-	SMB_STRUCT_DIR *dp;
+	DIR *dp;
 	SMB_STRUCT_STAT sbuf;
 	char *sharepath = NULL;
 	char *comment = NULL;
@@ -8732,7 +8732,7 @@ int load_usershare_service(const char *servicename)
 int load_usershare_shares(struct smbd_server_connection *sconn,
 			  bool (*snumused) (struct smbd_server_connection *, int))
 {
-	SMB_STRUCT_DIR *dp;
+	DIR *dp;
 	SMB_STRUCT_STAT sbuf;
 	struct dirent *de;
 	int num_usershares = 0;

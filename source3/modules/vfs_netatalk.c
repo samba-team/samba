@@ -153,7 +153,7 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 {
 	char *dpath;
 	struct dirent *dent = 0;
-	SMB_STRUCT_DIR *dir;
+	DIR *dir;
 
 	if (!path) return;
 
@@ -177,9 +177,9 @@ static void atalk_rrmdir(TALLOC_CTX *ctx, char *path)
 
 /* Directory operations */
 
-static SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
+static DIR *atalk_opendir(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
 {
-	SMB_STRUCT_DIR *ret = 0;
+	DIR *ret = 0;
 
 	ret = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 
@@ -198,9 +198,9 @@ static SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, const cha
 	return ret;
 }
 
-static SMB_STRUCT_DIR *atalk_fdopendir(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
+static DIR *atalk_fdopendir(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
 {
-	SMB_STRUCT_DIR *ret = 0;
+	DIR *ret = 0;
 
 	ret = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
 
