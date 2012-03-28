@@ -92,13 +92,13 @@ for i in $test_node_ips ; do
 	# Get the interface details for $i, which our address is a
 	# close relative of.  This should never fail but it can't hurt
 	# to be careful...
-	for k in $all_test_node_ips ; do
-	    if [ "$i" = "${k%/*}" ] ; then
-			# Found one!
-		add_ip="${try}/${k#*/}"
+	try_command_on_node $test_node "ctdb ip -v -Y"
+	while IFS=":" read x ip pnn iface x ; do
+	    if [ "$i" = "$ip" ]; then
+		add_ip="$try/32:$iface"
 		break 3
 	    fi
-	done
+	done <<<"$out"
     done
 done
 
