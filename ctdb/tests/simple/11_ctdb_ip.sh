@@ -41,15 +41,17 @@ machineout=$(echo "$out" | sed -r \
 	-e 's@[[:alpha:]]+\[@@g' \
 	-e 's@\]@@g')
 
-while read ip pnn ; do
-    try_command_on_node $pnn "ip addr show"
-    if [ "${out/inet ${ip}\/}" != "$out" ] ; then
-	echo "GOOD: node $pnn appears to have $ip assigned"
-    else
-	echo "BAD:  node $pnn does not appear to have $ip assigned"
-	testfailures=1
-    fi
-done <<<"$ips" # bashism to avoid problem setting variable in pipeline.
+if [ -n "$CTDB_TEST_REAL_CLUSTER" ]; then
+    while read ip pnn ; do
+        try_command_on_node $pnn "ip addr show"
+        if [ "${out/inet ${ip}\/}" != "$out" ] ; then
+            echo "GOOD: node $pnn appears to have $ip assigned"
+        else
+            echo "BAD:  node $pnn does not appear to have $ip assigned"
+            testfailures=1
+        fi
+    done <<<"$ips" # bashism to avoid problem setting variable in pipeline.
+fi
 
 [ "$testfailures" != 1 ] && echo "Looks good!"
 
