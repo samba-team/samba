@@ -1108,7 +1108,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		handle = fileno(stdout);
 	} else {
 		if (reget) {
-			handle = sys_open(lname, O_WRONLY|O_CREAT, 0644);
+			handle = open(lname, O_WRONLY|O_CREAT, 0644);
 			if (handle >= 0) {
 				start = lseek(handle, 0, SEEK_END);
 				if (start == -1) {
@@ -1117,7 +1117,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 				}
 			}
 		} else {
-			handle = sys_open(lname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+			handle = open(lname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 		}
 		newhandle = true;
 	}

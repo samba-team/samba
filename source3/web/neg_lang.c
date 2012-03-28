@@ -34,7 +34,7 @@ int web_open(const char *fname, int flags, mode_t mode)
 	int fd;
 	if (lang) {
 		if (asprintf(&p, "lang/%s/%s", lang, fname) != -1) {
-			fd = sys_open(p, flags, mode);
+			fd = open(p, flags, mode);
 			free(p);
 			if (fd != -1) {
 				return fd;
@@ -43,7 +43,7 @@ int web_open(const char *fname, int flags, mode_t mode)
 	}
 
 	/* fall through to default name */
-	return sys_open(fname, flags, mode);
+	return open(fname, flags, mode);
 }
 
 

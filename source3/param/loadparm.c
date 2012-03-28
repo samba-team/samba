@@ -8520,9 +8520,9 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	/* Try and open the file read only - no symlinks allowed. */
 #ifdef O_NOFOLLOW
-	fd = sys_open(fname, O_RDONLY|O_NOFOLLOW, 0);
+	fd = open(fname, O_RDONLY|O_NOFOLLOW, 0);
 #else
-	fd = sys_open(fname, O_RDONLY, 0);
+	fd = open(fname, O_RDONLY, 0);
 #endif
 
 	if (fd == -1) {

@@ -359,9 +359,9 @@ static int info_fn(struct file_list *fl, void *priv)
 	}
 
 #ifdef O_NOFOLLOW
-	fd = sys_open(basepath, O_RDONLY|O_NOFOLLOW, 0);
+	fd = open(basepath, O_RDONLY|O_NOFOLLOW, 0);
 #else
-	fd = sys_open(basepath, O_RDONLY, 0);
+	fd = open(basepath, O_RDONLY, 0);
 #endif
 
 	if (fd == -1) {

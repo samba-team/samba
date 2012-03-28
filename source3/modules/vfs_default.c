@@ -481,7 +481,7 @@ static int vfswrap_open(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	result = sys_open(smb_fname->base_name, flags, mode);
+	result = open(smb_fname->base_name, flags, mode);
  out:
 	END_PROFILE(syscall_open);
 	return result;

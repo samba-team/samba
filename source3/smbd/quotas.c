@@ -876,7 +876,7 @@ bool disk_quotas(const char *path,
 	}
 
 	DEBUG(5,("disk_quotas: looking for quotas file \"%s\"\n", name));
-	if((file=sys_open(name, O_RDONLY,0))<0) {
+	if((file=open(name, O_RDONLY,0))<0) {
 		unbecome_root();
 		return false;
 	}
@@ -1585,7 +1585,7 @@ bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize, uint64_t *d
   set_effective_uid(0);
 
   DEBUG(5,("disk_quotas: looking for VxFS quotas file \"%s\"\n", qfname));
-  if((file=sys_open(qfname, O_RDONLY,0))<0) {
+  if((file=open(qfname, O_RDONLY,0))<0) {
     set_effective_uid(euser_id);
     return(False);
   }

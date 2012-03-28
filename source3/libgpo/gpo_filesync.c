@@ -55,7 +55,7 @@ NTSTATUS gpo_copy_file(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if ((fd = sys_open(unix_path, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1) {
+	if ((fd = open(unix_path, O_WRONLY|O_CREAT|O_TRUNC, 0644)) == -1) {
 		result = map_nt_error_from_unix(errno);
 		goto out;
 	}

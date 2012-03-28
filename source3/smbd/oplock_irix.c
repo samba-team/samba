@@ -64,7 +64,7 @@ static bool irix_oplocks_available(void)
 		return False;
 	}
 
-	if((fd = sys_open(tmpname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC, 0600)) < 0) {
+	if((fd = open(tmpname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC, 0600)) < 0) {
 		DEBUG(0,("check_kernel_oplocks: Unable to open temp test file "
 			 "%s. Error was %s\n",
 			 tmpname, strerror(errno) ));

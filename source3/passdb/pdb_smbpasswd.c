@@ -214,7 +214,7 @@ static FILE *startsmbfilepwent(const char *pfile, enum pwf_access_type type, int
 				int i, fd = -1;
 
 				for(i = 0; i < 5; i++) {
-					if((fd = sys_open(pfile, O_CREAT|O_TRUNC|O_EXCL|O_RDWR, 0600))!=-1) {
+					if((fd = open(pfile, O_CREAT|O_TRUNC|O_EXCL|O_RDWR, 0600))!=-1) {
 						break;
 					}
 					usleep(200); /* Spin, spin... */

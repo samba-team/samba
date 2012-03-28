@@ -66,7 +66,7 @@ pid_t pidfile_pid(const char *program_name)
 
 	SAFE_FREE(name);
 
-	fd = sys_open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
+	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 	if (fd == -1) {
 		SAFE_FREE(pidFile);
 		return 0;
@@ -147,7 +147,7 @@ void pidfile_create(const char *program_name)
 		exit(1);
 	}
 
-	fd = sys_open(pidFile_name, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL,
+	fd = open(pidFile_name, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL,
 		      0644);
 	if (fd == -1) {
 		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile_name,

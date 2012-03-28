@@ -375,7 +375,7 @@ static void get_password_file(struct user_auth_info *auth_info)
 		sscanf(p, "%d", &fd);
 		close_it = false;
 	} else if ((p = getenv("PASSWD_FILE")) != NULL) {
-		fd = sys_open(p, O_RDONLY, 0);
+		fd = open(p, O_RDONLY, 0);
 		spec = SMB_STRDUP(p);
 		if (fd < 0) {
 			fprintf(stderr, "Error opening PASSWD_FILE %s: %s\n",

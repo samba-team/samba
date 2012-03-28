@@ -85,7 +85,7 @@ _PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout
 	if (!no_process_group) setsid();
 #elif defined(TIOCNOTTY)
 	if (!no_process_group) {
-		int i = sys_open("/dev/tty", O_RDWR, 0);
+		int i = open("/dev/tty", O_RDWR, 0);
 		if (i != -1) {
 			ioctl(i, (int) TIOCNOTTY, (char *)0);
 			close(i);

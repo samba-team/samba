@@ -585,15 +585,6 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OF
 }
 
 /*******************************************************************
- An open() wrapper.
-********************************************************************/
-
-int sys_open(const char *path, int oflag, mode_t mode)
-{
-	return open(path, oflag, mode);
-}
-
-/*******************************************************************
  An fopen() wrapper.
 ********************************************************************/
 
