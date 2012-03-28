@@ -368,22 +368,6 @@ struct stat_ex {
 typedef struct stat_ex SMB_STRUCT_STAT;
 
 /*
- * Defines for 64 bit fcntl locks.
- */
-
-#ifndef SMB_F_SETLKW
-#    define SMB_F_SETLKW F_SETLKW
-#endif
-
-#ifndef SMB_F_SETLK
-#    define SMB_F_SETLK F_SETLK
-#endif
-
-#ifndef SMB_F_GETLK
-#    define SMB_F_GETLK F_GETLK
-#endif
-
-/*
  * Type for aiocb structure.
  */
 

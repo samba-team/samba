@@ -1065,7 +1065,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 		DEBUG(5,("set_posix_lock_windows_flavour: Real lock: Type = %s: offset = %.0f, count = %.0f\n",
 			posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
 
-		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type)) {
+		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,posix_lock_type)) {
 			*errno_ret = errno;
 			DEBUG(5,("set_posix_lock_windows_flavour: Lock fail !: Type = %s: offset = %.0f, count = %.0f. Errno = %s\n",
 				posix_lock_type_name(posix_lock_type), (double)offset, (double)count, strerror(errno) ));
@@ -1087,7 +1087,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 			DEBUG(5,("set_posix_lock_windows_flavour: Backing out locks: Type = %s: offset = %.0f, count = %.0f\n",
 				posix_lock_type_name(posix_lock_type), (double)offset, (double)count ));
 
-			posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_UNLCK);
+			posix_fcntl_lock(fsp,F_SETLK,offset,count,F_UNLCK);
 		}
 	} else {
 		/* Remember the number of Windows locks we have on this dev/ino pair. */
@@ -1186,7 +1186,7 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 		DEBUG(5,("release_posix_lock_windows_flavour: downgrading lock to READ: offset = %.0f, count = %.0f\n",
 			(double)offset, (double)count ));
 
-		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_RDLCK)) {
+		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_RDLCK)) {
 			DEBUG(0,("release_posix_lock_windows_flavour: downgrade of lock failed with error %s !\n", strerror(errno) ));
 			talloc_destroy(ul_ctx);
 			return False;
@@ -1204,7 +1204,7 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 		DEBUG(5,("release_posix_lock_windows_flavour: Real unlock: offset = %.0f, count = %.0f\n",
 			(double)offset, (double)count ));
 
-		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_UNLCK)) {
+		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_UNLCK)) {
 			ret = False;
 		}
 	}
@@ -1251,7 +1251,7 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 		return True;
 	}
 
-	if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,posix_lock_type)) {
+	if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,posix_lock_type)) {
 		*errno_ret = errno;
 		DEBUG(5,("set_posix_lock_posix_flavour: Lock fail !: Type = %s: offset = %.0f, count = %.0f. Errno = %s\n",
 			posix_lock_type_name(posix_lock_type), (double)offset, (double)count, strerror(errno) ));
@@ -1341,7 +1341,7 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 		DEBUG(5,("release_posix_lock_posix_flavour: Real unlock: offset = %.0f, count = %.0f\n",
 			(double)offset, (double)count ));
 
-		if (!posix_fcntl_lock(fsp,SMB_F_SETLK,offset,count,F_UNLCK)) {
+		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_UNLCK)) {
 			ret = False;
 		}
 	}

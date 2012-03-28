@@ -102,7 +102,7 @@ static bool do_file_lock(int fd, int waitsecs, int type)
 
 	alarm(waitsecs);
 	/* Note we must *NOT* use sys_fcntl here ! JRA */
-	ret = fcntl(fd, SMB_F_SETLKW, &lock);
+	ret = fcntl(fd, F_SETLKW, &lock);
 	alarm(0);
 	CatchSignal(SIGALRM, oldsig_handler);
 

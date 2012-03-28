@@ -92,7 +92,7 @@ pid_t pidfile_pid(const char *program_name)
 		goto noproc;
 	}
 
-	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_RDLCK)) {
+	if (fcntl_lock(fd,F_SETLK,0,1,F_RDLCK)) {
 		/* we could get the lock - it can't be a Samba process */
 		goto noproc;
 	}
@@ -155,7 +155,7 @@ void pidfile_create(const char *program_name)
 		exit(1);
 	}
 
-	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)==False) {
+	if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==False) {
 		DEBUG(0,("ERROR: %s : fcntl lock of file %s failed. Error was %s\n",  
 			 name, pidFile_name, strerror(errno)));
 		exit(1);

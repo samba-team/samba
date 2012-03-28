@@ -1227,7 +1227,7 @@ bool fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pi
 	lock.l_len = *pcount;
 	lock.l_pid = 0;
 
-	ret = sys_fcntl_ptr(fd,SMB_F_GETLK,&lock);
+	ret = sys_fcntl_ptr(fd,F_GETLK,&lock);
 
 	if (ret == -1) {
 		int sav = errno;
