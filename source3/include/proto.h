@@ -338,7 +338,6 @@ int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len);
 int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OFF_T len);
 void kernel_flock(int fd, uint32 share_mode, uint32 access_mask);
 SMB_STRUCT_DIR *sys_fdopendir(int fd);
-void sys_seekdir(SMB_STRUCT_DIR *dirp, long offset);
 long sys_telldir(SMB_STRUCT_DIR *dirp);
 void sys_rewinddir(SMB_STRUCT_DIR *dirp);
 int sys_closedir(SMB_STRUCT_DIR *dirp);

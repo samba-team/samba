@@ -386,7 +386,7 @@ static SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle,
 static void vfswrap_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)
 {
 	START_PROFILE(syscall_seekdir);
-	sys_seekdir(dirp, offset);
+	seekdir(dirp, offset);
 	END_PROFILE(syscall_seekdir);
 }
 

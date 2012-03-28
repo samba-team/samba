@@ -416,7 +416,7 @@ onefs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 	if (!lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
 	    PARM_USE_READDIRPLUS, PARM_USE_READDIRPLUS_DEFAULT))
 	{
-		return sys_seekdir(dirp, offset);
+		return seekdir(dirp, offset);
 	}
 
 	/* Validate inputs */
