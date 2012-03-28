@@ -347,7 +347,7 @@ ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos
 	return (ssize_t)total;
 #else
 	/* Use lseek and write_data. */
-	if (sys_lseek(fd, pos, SEEK_SET) == -1) {
+	if (lseek(fd, pos, SEEK_SET) == -1) {
 		if (errno != ESPIPE) {
 			return -1;
 		}

@@ -585,15 +585,6 @@ int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OF
 }
 
 /*******************************************************************
- An lseek() wrapper.
-********************************************************************/
-
-SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
-{
-	return lseek(fd, offset, whence);
-}
-
-/*******************************************************************
  An ftell() wrapper.
 ********************************************************************/
 

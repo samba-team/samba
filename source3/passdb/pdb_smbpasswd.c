@@ -678,9 +678,9 @@ static NTSTATUS add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state,
 	 */
 	fd = fileno(fp);
 
-	if((offpos = sys_lseek(fd, 0, SEEK_END)) == -1) {
+	if((offpos = lseek(fd, 0, SEEK_END)) == -1) {
 		NTSTATUS result = map_nt_error_from_unix(errno);
-		DEBUG(0, ("add_smbfilepwd_entry(sys_lseek): Failed to add entry for user %s to file %s. \
+		DEBUG(0, ("add_smbfilepwd_entry(lseek): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 		endsmbfilepwent(fp, &smbpasswd_state->pw_file_lock_depth);
 		return result;
@@ -1039,7 +1039,7 @@ This is no longer supported.!\n", pwd->smb_name));
 
 	fd = fileno(fp);
 
-	if (sys_lseek(fd, pwd_seekpos - 1, SEEK_SET) != pwd_seekpos - 1) {
+	if (lseek(fd, pwd_seekpos - 1, SEEK_SET) != pwd_seekpos - 1) {
 		DEBUG(0, ("mod_smbfilepwd_entry: seek fail on file %s.\n", pfile));
 		pw_file_unlock(lockfd,&smbpasswd_state->pw_file_lock_depth);
 		fclose(fp);
@@ -1061,7 +1061,7 @@ This is no longer supported.!\n", pwd->smb_name));
 		return False;
 	}
  
-	if (sys_lseek(fd, pwd_seekpos, SEEK_SET) != pwd_seekpos) {
+	if (lseek(fd, pwd_seekpos, SEEK_SET) != pwd_seekpos) {
 		DEBUG(0, ("mod_smbfilepwd_entry: seek fail on file %s.\n", pfile));
 		pw_file_unlock(lockfd,&smbpasswd_state->pw_file_lock_depth);
 		fclose(fp);

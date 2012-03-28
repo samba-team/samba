@@ -63,7 +63,7 @@ static ssize_t default_sys_recvfile(int fromfd,
 	}
 
 	if (tofd != -1 && offset != (SMB_OFF_T)-1) {
-		if (sys_lseek(tofd, offset, SEEK_SET) == -1) {
+		if (lseek(tofd, offset, SEEK_SET) == -1) {
 			if (errno != ESPIPE) {
 				return -1;
 			}

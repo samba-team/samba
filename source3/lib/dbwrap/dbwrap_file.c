@@ -199,8 +199,8 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 
 static NTSTATUS db_file_store_root(int fd, TDB_DATA data)
 {
-	if (sys_lseek(fd, 0, SEEK_SET) != 0) {
-		DEBUG(0, ("sys_lseek failed: %s\n", strerror(errno)));
+	if (lseek(fd, 0, SEEK_SET) != 0) {
+		DEBUG(0, ("lseek failed: %s\n", strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
 

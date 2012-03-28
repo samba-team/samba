@@ -132,7 +132,7 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 
 		/* Reset the seek pointer. */
 		if (outfd) {
-			sys_lseek(*outfd, 0, SEEK_SET);
+			lseek(*outfd, 0, SEEK_SET);
 		}
 
 #if defined(WIFEXITED) && defined(WEXITSTATUS)

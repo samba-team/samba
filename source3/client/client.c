@@ -1110,7 +1110,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		if (reget) {
 			handle = sys_open(lname, O_WRONLY|O_CREAT, 0644);
 			if (handle >= 0) {
-				start = sys_lseek(handle, 0, SEEK_END);
+				start = lseek(handle, 0, SEEK_END);
 				if (start == -1) {
 					d_printf("Error seeking local file\n");
 					return 1;
