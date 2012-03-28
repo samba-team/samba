@@ -706,7 +706,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 Error was %s\n", wr_len, newpwd->smb_name, pfile, strerror(errno)));
 
 		/* Remove the entry we just wrote. */
-		if(sys_ftruncate(fd, offpos) == -1) {
+		if(ftruncate(fd, offpos) == -1) {
 			DEBUG(0, ("add_smbfilepwd_entry: ERROR failed to ftruncate file %s. \
 Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
 				newpwd->smb_name, strerror(errno)));

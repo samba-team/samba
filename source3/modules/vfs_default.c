@@ -1386,7 +1386,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 
 	/* Shrink - just ftruncate. */
 	if (pst->st_ex_size > len)
-		return sys_ftruncate(fsp->fh->fd, len);
+		return ftruncate(fsp->fh->fd, len);
 
 	space_to_write = len - pst->st_ex_size;
 
@@ -1444,12 +1444,12 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	}
 
 	/* we used to just check HAVE_FTRUNCATE_EXTEND and only use
-	   sys_ftruncate if the system supports it. Then I discovered that
+	   ftruncate if the system supports it. Then I discovered that
 	   you can have some filesystems that support ftruncate
 	   expansion and some that don't! On Linux fat can't do
 	   ftruncate extend but ext2 can. */
 
-	result = sys_ftruncate(fsp->fh->fd, len);
+	result = ftruncate(fsp->fh->fd, len);
 	if (result == 0)
 		goto done;
 
@@ -1480,7 +1480,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	}
 
 	if (pst->st_ex_size > len) {
-		/* the sys_ftruncate should have worked */
+		/* the ftruncate should have worked */
 		goto done;
 	}
 

@@ -209,8 +209,8 @@ static NTSTATUS db_file_store_root(int fd, TDB_DATA data)
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (sys_ftruncate(fd, data.dsize) != 0) {
-		DEBUG(3, ("sys_ftruncate failed: %s\n", strerror(errno)));
+	if (ftruncate(fd, data.dsize) != 0) {
+		DEBUG(3, ("ftruncate failed: %s\n", strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
 
