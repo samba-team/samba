@@ -765,7 +765,7 @@ daemons_start_1 ()
 
     local ctdb_options="--reclock=$var_dir/rec.lock --nlist $CTDB_NODES --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 3 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent --dbdir-state=$var_dir/test.db/state"
 
-    if [ $(id -u) -eq 0 ]; then
+    if [ -z "$CTDB_TEST_REAL_CLUSTER" ]; then
         ctdb_options="$ctdb_options --public-interface=lo"
     fi
 
