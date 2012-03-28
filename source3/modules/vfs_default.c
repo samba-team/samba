@@ -402,7 +402,7 @@ static long vfswrap_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 static void vfswrap_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 {
 	START_PROFILE(syscall_rewinddir);
-	sys_rewinddir(dirp);
+	rewinddir(dirp);
 	END_PROFILE(syscall_rewinddir);
 }
 

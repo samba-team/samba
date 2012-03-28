@@ -526,7 +526,7 @@ onefs_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 	if (!lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
 	    PARM_USE_READDIRPLUS, PARM_USE_READDIRPLUS_DEFAULT))
 	{
-		return sys_rewinddir(dirp);
+		return rewinddir(dirp);
 	}
 
 	/* Retrieve state based off DIR handle */
