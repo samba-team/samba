@@ -1968,8 +1968,8 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 	} else {
 		if (tar_type=='c' && dry_run) {
 			tarhandle=-1;
-		} else if ((tar_type=='x' && (tarhandle = sys_open(argv[Optind], O_RDONLY, 0)) == -1)
-					|| (tar_type=='c' && (tarhandle=sys_creat(argv[Optind], 0644)) < 0)) {
+		} else if ((tar_type=='x' && (tarhandle = open(argv[Optind], O_RDONLY, 0)) == -1)
+					|| (tar_type=='c' && (tarhandle=creat(argv[Optind], 0644)) < 0)) {
 			DEBUG(0,("Error opening local file %s - %s\n", argv[Optind], strerror(errno)));
 			return(0);
 		}
