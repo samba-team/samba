@@ -379,12 +379,16 @@ if __name__ == '__main__':
         msg = msgs[0]
 
         master_nclist = []
-        for nc in msg["msDS-hasMasterNCs"]:
-            master_nclist.append(nc)
+        ncs = msg.get("msDS-hasMasterNCs")
+        if ncs:
+            for nc in ncs:
+                master_nclist.append(nc)
 
         partial_nclist = []
-        for nc in msg["hasPartialReplicaNCs"]:
-            partial_nclist.append(nc)
+        ncs = msg.get("hasPartialReplicaNCs")
+        if ncs:
+            for nc in ncs:
+                partial_nclist.append(nc)
 
         modified = False
         for nc in dns_nclist:
