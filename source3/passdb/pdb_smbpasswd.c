@@ -87,7 +87,7 @@ static void gotalarm_sig(int signum)
 
 static bool do_file_lock(int fd, int waitsecs, int type)
 {
-	SMB_STRUCT_FLOCK lock;
+	struct flock lock;
 	int             ret;
 	void (*oldsig_handler)(int);
 

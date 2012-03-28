@@ -1215,7 +1215,7 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 
 bool fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
-	SMB_STRUCT_FLOCK lock;
+	struct flock lock;
 	int ret;
 
 	DEBUG(8,("fcntl_getlock fd=%d offset=%.0f count=%.0f type=%d\n",

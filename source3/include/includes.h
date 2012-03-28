@@ -371,10 +371,6 @@ typedef struct stat_ex SMB_STRUCT_STAT;
  * Defines for 64 bit fcntl locks.
  */
 
-#ifndef SMB_STRUCT_FLOCK
-#    define SMB_STRUCT_FLOCK struct flock
-#endif
-
 #ifndef SMB_F_SETLKW
 #    define SMB_F_SETLKW F_SETLKW
 #endif
