@@ -5499,6 +5499,7 @@ do {\
 
 	TEST_SET_SZ("description", comment, "newval");
 	TEST_SET_SZ("location", location, "newval");
+	TEST_SET_SZ("driverName", drivername, "newval");
 /*	TEST_SET_DWORD("priority", priority, 25); */
 
 	torture_assert(tctx,
