@@ -69,10 +69,17 @@ static void ping_message(struct messaging_context *msg_ctx,
 			 struct server_id src,
 			 DATA_BLOB *data)
 {
-	const char *msg = data->data ? (const char *)data->data : "none";
+	const char *msg = "none";
+	char *free_me = NULL;
 
+	if (data->data != NULL) {
+		free_me = talloc_strndup(talloc_tos(), (char *)data->data,
+					 data->length);
+		msg = free_me;
+	}
 	DEBUG(1,("INFO: Received PING message from PID %s [%s]\n",
 		 procid_str_static(&src), msg));
+	TALLOC_FREE(free_me);
 	messaging_send(msg_ctx, src, MSG_PONG, data);
 }
 
