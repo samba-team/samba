@@ -375,6 +375,43 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	return WERR_OK;
 }
 
+static WERROR reg_enumvalue_nocachefill(TALLOC_CTX *mem_ctx,
+					struct registry_key *key,
+					uint32 idx, char **pname,
+					struct registry_value **pval)
+{
+	struct registry_value *val;
+	struct regval_blob *blob;
+
+	if (!(key->key->access_granted & KEY_QUERY_VALUE)) {
+		return WERR_ACCESS_DENIED;
+	}
+
+	if (idx >= regval_ctr_numvals(key->values)) {
+		return WERR_NO_MORE_ITEMS;
+	}
+
+	blob = regval_ctr_specific_value(key->values, idx);
+
+	val = talloc_zero(mem_ctx, struct registry_value);
+	if (val == NULL) {
+		return WERR_NOMEM;
+	}
+
+	val->type = regval_type(blob);
+	val->data = data_blob_talloc(mem_ctx, regval_data_p(blob), regval_size(blob));
+
+	if (pname
+	    && !(*pname = talloc_strdup(
+			 mem_ctx, regval_name(blob)))) {
+		TALLOC_FREE(val);
+		return WERR_NOMEM;
+	}
+
+	*pval = val;
+	return WERR_OK;
+}
+
 WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		      const char *name, struct registry_value **pval)
 {
@@ -393,7 +430,14 @@ WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		struct regval_blob *blob;
 		blob = regval_ctr_specific_value(key->values, i);
 		if (strequal(regval_name(blob), name)) {
-			return reg_enumvalue(mem_ctx, key, i, NULL, pval);
+			/*
+			 * don't use reg_enumvalue here:
+			 * re-reading the values from the disk
+			 * would change the indexing and break
+			 * this function.
+			 */
+			return reg_enumvalue_nocachefill(mem_ctx, key, i,
+							 NULL, pval);
 		}
 	}
 
