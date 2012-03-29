@@ -116,7 +116,8 @@ ctdb_test_exit ()
 
     echo "*** TEST COMPLETED (RC=$status) AT $(date '+%F %T'), CLEANING UP..."
 
-    if [ -n "$CTDB_TEST_REAL_CLUSTER" -a $status -ne 0 ] ; then
+    if [ -n "$CTDB_TEST_REAL_CLUSTER"  -a -n "$CTDB_TEST_TIME_LOGGING" -a \
+	$status -ne 0 ] ; then
 	ctdb_check_time_logs
     fi
 
