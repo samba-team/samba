@@ -63,7 +63,9 @@ static krb5_error_code parse_principal(TALLOC_CTX *parent_ctx,
 			      princ_string, princ);
 
 	if (ret) {
-		(*error_string) = smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, parent_ctx);
+		(*error_string) = smb_get_krb5_error_message(
+						smb_krb5_context->krb5_context,
+						ret, parent_ctx);
 		return ret;
 	}
 
@@ -75,24 +77,27 @@ static krb5_error_code parse_principal(TALLOC_CTX *parent_ctx,
 
 	/* This song-and-dance effectivly puts the principal
 	 * into talloc, so we can't loose it. */
-	mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
+	mem_ctx->smb_krb5_context = talloc_reference(mem_ctx,
+						     smb_krb5_context);
 	mem_ctx->principal = *princ;
 	talloc_set_destructor(mem_ctx, free_principal);
 	return 0;
 }
 
 static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
-					   struct ldb_message *msg,
-					   struct smb_krb5_context *smb_krb5_context,
-					   struct principal_container ***principals_out,
-					   const char **error_string)
+			struct ldb_message *msg,
+			struct smb_krb5_context *smb_krb5_context,
+			struct principal_container ***principals_out,
+			const char **error_string)
 {
 	unsigned int i;
 	krb5_error_code ret;
 	char *upper_realm;
 	const char *realm = ldb_msg_find_attr_as_string(msg, "realm", NULL);
-	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
-	struct ldb_message_element *spn_el = ldb_msg_find_element(msg, "servicePrincipalName");
+	const char *samAccountName = ldb_msg_find_attr_as_string(msg,
+						"samAccountName", NULL);
+	struct ldb_message_element *spn_el = ldb_msg_find_element(msg,
+						"servicePrincipalName");
 	TALLOC_CTX *tmp_ctx;
 	struct principal_container **principals;
 	tmp_ctx = talloc_new(parent_ctx);
@@ -102,7 +107,8 @@ static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
 	}
 
 	if (!realm) {
-		*error_string = "Cannot have a kerberos secret in secrets.ldb without a realm";
+		*error_string = "Cannot have a kerberos secret in "
+				"secrets.ldb without a realm";
 		return EINVAL;
 	}
 
@@ -113,7 +119,8 @@ static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	principals = talloc_array(tmp_ctx, struct principal_container *, spn_el ? (spn_el->num_values + 2) : 2);
+	principals = talloc_array(tmp_ctx, struct principal_container *,
+				  spn_el ? (spn_el->num_values + 2) : 2);
 
 	spn_el = ldb_msg_find_element(msg, "servicePrincipalName");
 	for (i=0; spn_el && i < spn_el->num_values; i++) {
@@ -124,11 +131,14 @@ static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
 			return ENOMEM;
 		}
 
-		principals[i]->smb_krb5_context = talloc_reference(principals[i], smb_krb5_context);
-		principals[i]->string_form = talloc_asprintf(principals[i], "%*.*s@%s",
-							     (int)spn_el->values[i].length,
-							     (int)spn_el->values[i].length,
-							     (const char *)spn_el->values[i].data, upper_realm);
+		principals[i]->smb_krb5_context =
+			talloc_reference(principals[i], smb_krb5_context);
+		principals[i]->string_form =
+			talloc_asprintf(principals[i], "%*.*s@%s",
+					(int)spn_el->values[i].length,
+					(int)spn_el->values[i].length,
+					(const char *)spn_el->values[i].data,
+					upper_realm);
 		if (!principals[i]->string_form) {
 			talloc_free(tmp_ctx);
 			*error_string = "Cannot allocate full samAccountName";
@@ -136,11 +146,14 @@ static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
 		}
 
 		ret = krb5_parse_name(smb_krb5_context->krb5_context,
-				      principals[i]->string_form, &principals[i]->principal);
-		
+				      principals[i]->string_form,
+				      &principals[i]->principal);
+
 		if (ret) {
 			talloc_free(tmp_ctx);
-			(*error_string) = smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, parent_ctx);
+			(*error_string) = smb_get_krb5_error_message(
+						smb_krb5_context->krb5_context,
+						ret, parent_ctx);
 			return ret;
 		}
 
@@ -157,22 +170,29 @@ static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
 			return ENOMEM;
 		}
 
-		principals[i]->smb_krb5_context = talloc_reference(principals[i], smb_krb5_context);
-		principals[i]->string_form = talloc_asprintf(parent_ctx, "%s@%s", samAccountName, upper_realm);
+		principals[i]->smb_krb5_context =
+			talloc_reference(principals[i], smb_krb5_context);
+		principals[i]->string_form =
+			talloc_asprintf(parent_ctx, "%s@%s",
+					samAccountName, upper_realm);
 		if (!principals[i]->string_form) {
 			talloc_free(tmp_ctx);
 			*error_string = "Cannot allocate full samAccountName";
 			return ENOMEM;
 		}
-		
-		ret = krb5_make_principal(smb_krb5_context->krb5_context, &principals[i]->principal, upper_realm, samAccountName,
+
+		ret = krb5_make_principal(smb_krb5_context->krb5_context,
+					  &principals[i]->principal,
+					  upper_realm, samAccountName,
 					  NULL);
 		if (ret) {
 			talloc_free(tmp_ctx);
-			(*error_string) = smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, parent_ctx);
+			(*error_string) = smb_get_krb5_error_message(
+						smb_krb5_context->krb5_context,
+						ret, parent_ctx);
 			return ret;
 		}
-		
+
 		/* This song-and-dance effectively puts the principal
 		 * into talloc, so we can't loose it. */
 		talloc_set_destructor(principals[i], free_principal);
@@ -186,96 +206,111 @@ static krb5_error_code principals_from_msg(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-static krb5_error_code salt_principal_from_msg(TALLOC_CTX *parent_ctx, 
-					       struct ldb_message *msg, 
-					       struct smb_krb5_context *smb_krb5_context,
-					       krb5_principal *salt_princ,
-					       const char **error_string)
+static krb5_error_code salt_principal_from_msg(TALLOC_CTX *parent_ctx,
+				struct ldb_message *msg,
+				struct smb_krb5_context *smb_krb5_context,
+				krb5_principal *salt_princ,
+				const char **error_string)
 {
-	const char *salt_principal = ldb_msg_find_attr_as_string(msg, "saltPrincipal", NULL);
-	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+	const char *salt_principal = ldb_msg_find_attr_as_string(msg,
+						"saltPrincipal", NULL);
+	const char *samAccountName = ldb_msg_find_attr_as_string(msg,
+						"samAccountName", NULL);
 	const char *realm = ldb_msg_find_attr_as_string(msg, "realm", NULL);
+
+	struct principal_container *mem_ctx;
+	krb5_error_code ret;
+	char *machine_username;
+	char *salt_body;
+	char *lower_realm;
+	char *upper_realm;
+
+	TALLOC_CTX *tmp_ctx;
+
 	if (salt_principal) {
-		return parse_principal(parent_ctx, salt_principal, smb_krb5_context, salt_princ, error_string);
-	} else if (samAccountName) {
-		krb5_error_code ret;
-		char *machine_username;
-		char *salt_body;
-		char *lower_realm;
-		char *upper_realm;
+		return parse_principal(parent_ctx, salt_principal,
+					smb_krb5_context, salt_princ,
+					error_string);
+	}
 
-		TALLOC_CTX *tmp_ctx;
-		struct principal_container *mem_ctx = talloc(parent_ctx, struct principal_container);
-		if (!mem_ctx) {
-			*error_string = "Cannot allocate mem_ctx";
-			return ENOMEM;
-		}
-
-		tmp_ctx = talloc_new(mem_ctx);
-		if (!tmp_ctx) {
-			talloc_free(mem_ctx);
-			*error_string = "Cannot allocate tmp_ctx";
-			return ENOMEM;
-		}
-
-		if (!realm) {
-			*error_string = "Cannot have a kerberos secret in secrets.ldb without a realm";
-			return EINVAL;
-		}
-		
-		machine_username = talloc_strdup(tmp_ctx, samAccountName);
-		if (!machine_username) {
-			talloc_free(mem_ctx);
-			*error_string = "Cannot duplicate samAccountName";
-			return ENOMEM;
-		}
-		
-		if (machine_username[strlen(machine_username)-1] == '$') {
-			machine_username[strlen(machine_username)-1] = '\0';
-		}
-
-		lower_realm = strlower_talloc(tmp_ctx, realm);
-		if (!lower_realm) {
-			talloc_free(mem_ctx);
-			*error_string = "Cannot allocate to lower case realm";
-			return ENOMEM;
-		}
-		
-		upper_realm = strupper_talloc(tmp_ctx, realm);
-		if (!upper_realm) {
-			talloc_free(mem_ctx);
-			*error_string = "Cannot allocate to upper case realm";
-			return ENOMEM;
-		}
-		
-		salt_body = talloc_asprintf(tmp_ctx, "%s.%s", machine_username, 
-					    lower_realm);
-		talloc_free(lower_realm);
-		talloc_free(machine_username);
-		if (!salt_body) {
-			talloc_free(mem_ctx);
-			*error_string = "Cannot form salt principal body";
-			return ENOMEM;
-		}
-		
-		ret = krb5_make_principal(smb_krb5_context->krb5_context, salt_princ, 
-					  upper_realm,
-					  "host", salt_body, NULL);
-		if (ret == 0) {
-			/* This song-and-dance effectively puts the principal
-			 * into talloc, so we can't loose it. */
-			mem_ctx->smb_krb5_context = talloc_reference(mem_ctx, smb_krb5_context);
-			mem_ctx->principal = *salt_princ;
-			talloc_set_destructor(mem_ctx, free_principal);
-		} else {
-			(*error_string) = smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, parent_ctx);
-		}
-		talloc_free(tmp_ctx);
-		return ret;
-	} else {
-		(*error_string) = "Cannot determine salt principal, no saltPrincipal or samAccountName specified";
+	if (!samAccountName) {
+		(*error_string) = "Cannot determine salt principal, no "
+				"saltPrincipal or samAccountName specified";
 		return EINVAL;
 	}
+
+
+	mem_ctx = talloc(parent_ctx, struct principal_container);
+	if (!mem_ctx) {
+		*error_string = "Cannot allocate mem_ctx";
+		return ENOMEM;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		talloc_free(mem_ctx);
+		*error_string = "Cannot allocate tmp_ctx";
+		return ENOMEM;
+	}
+
+	if (!realm) {
+		*error_string = "Cannot have a kerberos secret in "
+				"secrets.ldb without a realm";
+		return EINVAL;
+	}
+
+	machine_username = talloc_strdup(tmp_ctx, samAccountName);
+	if (!machine_username) {
+		talloc_free(mem_ctx);
+		*error_string = "Cannot duplicate samAccountName";
+		return ENOMEM;
+	}
+
+	if (machine_username[strlen(machine_username)-1] == '$') {
+		machine_username[strlen(machine_username)-1] = '\0';
+	}
+
+	lower_realm = strlower_talloc(tmp_ctx, realm);
+	if (!lower_realm) {
+		talloc_free(mem_ctx);
+		*error_string = "Cannot allocate to lower case realm";
+		return ENOMEM;
+	}
+
+	upper_realm = strupper_talloc(tmp_ctx, realm);
+	if (!upper_realm) {
+		talloc_free(mem_ctx);
+		*error_string = "Cannot allocate to upper case realm";
+		return ENOMEM;
+	}
+
+	salt_body = talloc_asprintf(tmp_ctx, "%s.%s", machine_username,
+				    lower_realm);
+	talloc_free(lower_realm);
+	talloc_free(machine_username);
+	if (!salt_body) {
+		talloc_free(mem_ctx);
+		*error_string = "Cannot form salt principal body";
+		return ENOMEM;
+	}
+
+	ret = krb5_make_principal(smb_krb5_context->krb5_context, salt_princ,
+				  upper_realm,
+				  "host", salt_body, NULL);
+	if (ret == 0) {
+		/* This song-and-dance effectively puts the principal
+		 * into talloc, so we can't loose it. */
+		mem_ctx->smb_krb5_context = talloc_reference(mem_ctx,
+							smb_krb5_context);
+		mem_ctx->principal = *salt_princ;
+		talloc_set_destructor(mem_ctx, free_principal);
+	} else {
+		(*error_string) = smb_get_krb5_error_message(
+					smb_krb5_context->krb5_context,
+					ret, parent_ctx);
+	}
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 /* Obtain the principal set on this context.  Requires a
@@ -283,12 +318,12 @@ static krb5_error_code salt_principal_from_msg(TALLOC_CTX *parent_ctx,
  * the library routines.  The returned princ is placed in the talloc
  * system by means of a destructor (do *not* free). */
 
-krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx, 
-					    struct cli_credentials *credentials, 
-					    struct smb_krb5_context *smb_krb5_context,
-					    krb5_principal *princ,
-					    enum credentials_obtained *obtained,
-					    const char **error_string)
+krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
+				struct cli_credentials *credentials,
+				struct smb_krb5_context *smb_krb5_context,
+				krb5_principal *princ,
+				enum credentials_obtained *obtained,
+				const char **error_string)
 {
 	krb5_error_code ret;
 	const char *princ_string;
@@ -299,7 +334,9 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		(*error_string) = error_message(ENOMEM);
 		return ENOMEM;
 	}
-	princ_string = cli_credentials_get_principal_and_obtained(credentials, mem_ctx, obtained);
+	princ_string = cli_credentials_get_principal_and_obtained(credentials,
+								  mem_ctx,
+								  obtained);
 	if (!princ_string) {
 		*princ = NULL;
 		return 0;
@@ -316,15 +353,16 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
  * the library routines.  The returned princ is placed in the talloc
  * system by means of a destructor (do *not* free). */
 
-static
- krb5_error_code impersonate_principal_from_credentials(TALLOC_CTX *parent_ctx,
-							struct cli_credentials *credentials,
-							struct smb_krb5_context *smb_krb5_context,
-							krb5_principal *princ,
-							const char **error_string)
+static krb5_error_code impersonate_principal_from_credentials(
+				TALLOC_CTX *parent_ctx,
+				struct cli_credentials *credentials,
+				struct smb_krb5_context *smb_krb5_context,
+				krb5_principal *princ,
+				const char **error_string)
 {
-	return parse_principal(parent_ctx, cli_credentials_get_impersonate_principal(credentials),
-			       smb_krb5_context, princ, error_string);
+	return parse_principal(parent_ctx,
+			cli_credentials_get_impersonate_principal(credentials),
+			smb_krb5_context, princ, error_string);
 }
 
 /**
@@ -549,7 +587,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 				       krb5_principal salt_princ,
 				       int kvno,
 				       const char *password_s,
-				       struct smb_krb5_context *smb_krb5_context,
+				       krb5_context krb5_context,
 				       krb5_enctype *enctypes,
 				       krb5_keytab keytab,
 				       const char **error_string)
@@ -561,32 +599,38 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 	password.data = discard_const_p(char *, password_s);
 	password.length = strlen(password_s);
 
-	for (i=0; enctypes[i]; i++) {
+	for (i = 0; enctypes[i]; i++) {
 		krb5_keytab_entry entry;
 
 		ZERO_STRUCT(entry);
 
-		ret = create_kerberos_key_from_string_direct(smb_krb5_context->krb5_context,
-							     salt_princ, &password, &entry.keyblock, enctypes[i]);
+		ret = create_kerberos_key_from_string_direct(krb5_context,
+						salt_princ, &password,
+						&entry.keyblock, enctypes[i]);
 		if (ret != 0) {
 			return ret;
 		}
 
                 entry.vno = kvno;
 
-		for (p=0; principals[p]; p++) {
+		for (p = 0; principals[p]; p++) {
 			entry.principal = principals[p]->principal;
-			ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, keytab, &entry);
+			ret = krb5_kt_add_entry(krb5_context,
+						keytab, &entry);
 			if (ret != 0) {
-				char *k5_error_string = smb_get_krb5_error_message(smb_krb5_context->krb5_context,
-										   ret, NULL);
-				*error_string = talloc_asprintf(parent_ctx, "Failed to add enctype %d entry for %s(kvno %d) to keytab: %s\n",
-								(int)enctypes[i],
-								principals[p]->string_form,
-								kvno,
-								k5_error_string);
+				char *k5_error_string =
+					smb_get_krb5_error_message(
+						krb5_context, ret, NULL);
+				*error_string = talloc_asprintf(parent_ctx,
+					"Failed to add enctype %d entry for "
+					"%s(kvno %d) to keytab: %s\n",
+					(int)enctypes[i],
+					principals[p]->string_form,
+					kvno, k5_error_string);
+
 				talloc_free(k5_error_string);
-				krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
+				krb5_free_keyblock_contents(krb5_context,
+							    &entry.keyblock);
 				return ret;
 			}
 
@@ -594,7 +638,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 				  principals[p]->string_form, kvno,
 				  (int)enctypes[i]));
 		}
-		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
+		krb5_free_keyblock_contents(krb5_context, &entry.keyblock);
 	}
 	return 0;
 }
@@ -624,9 +668,10 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	/* The salt used to generate these entries may be different however, fetch that */
+	/* The salt used to generate these entries may be different however,
+	 * fetch that */
 	ret = salt_principal_from_msg(mem_ctx, msg,
-				      smb_krb5_context, 
+				      smb_krb5_context,
 				      &salt_princ, error_string);
 	if (ret) {
 		talloc_free(mem_ctx);
@@ -645,35 +690,41 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 	}
 
 	if (add_old && kvno != 0) {
-		old_secret = ldb_msg_find_attr_as_string(msg, "priorSecret", NULL);
+		old_secret = ldb_msg_find_attr_as_string(msg,
+							"priorSecret", NULL);
 	} else {
 		old_secret = NULL;
 	}
 
-	enctype_bitmap = (uint32_t)ldb_msg_find_attr_as_int(msg, "msDS-SupportedEncryptionTypes", ENC_ALL_TYPES);
-	
+	enctype_bitmap = (uint32_t)ldb_msg_find_attr_as_int(msg,
+					"msDS-SupportedEncryptionTypes",
+					ENC_ALL_TYPES);
+
 	ret = ms_suptypes_to_ietf_enctypes(mem_ctx, enctype_bitmap, &enctypes);
 	if (ret) {
-		*error_string = talloc_asprintf(parent_ctx, "create_keytab: generating list of encryption types failed (%s)\n",
-						smb_get_krb5_error_message(smb_krb5_context->krb5_context,
-									   ret, mem_ctx));
+		*error_string = talloc_asprintf(parent_ctx,
+					"create_keytab: generating list of "
+					"encryption types failed (%s)\n",
+					smb_get_krb5_error_message(
+						smb_krb5_context->krb5_context,
+						ret, mem_ctx));
 		talloc_free(mem_ctx);
 		return ret;
 	}
 
 	ret = keytab_add_keys(mem_ctx, principals,
-			      salt_princ,
-			      kvno, password_s, smb_krb5_context,
+			      salt_princ, kvno, password_s,
+			      smb_krb5_context->krb5_context,
 			      enctypes, keytab, error_string);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
 	}
-	
+
 	if (old_secret) {
 		ret = keytab_add_keys(mem_ctx, principals,
-				      salt_princ,
-				      kvno - 1, old_secret, smb_krb5_context,
+				      salt_princ, kvno - 1, old_secret,
+				      smb_krb5_context->krb5_context,
 				      enctypes, keytab, error_string);
 		if (ret) {
 			talloc_free(mem_ctx);
@@ -686,20 +737,22 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 }
 
 /*
- * Walk the keytab, looking for entries of this principal name, with KVNO other than current kvno -1.
+ * Walk the keytab, looking for entries of this principal name,
+ * with KVNO other than current kvno -1.
  *
- * These entries are now stale, we only keep the current, and previous entries around.
+ * These entries are now stale,
+ * we only keep the current and previous entries around.
  *
  * Inspired by the code in Samba3 for 'use kerberos keytab'.
- *
  */
 
 static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 					  struct ldb_message *msg,
 					  struct principal_container **principals,
 					  bool delete_all_kvno,
-					  struct smb_krb5_context *smb_krb5_context,
-					  krb5_keytab keytab, bool *found_previous,
+					  krb5_context krb5_context,
+					  krb5_keytab keytab,
+					  bool *found_previous,
 					  const char **error_string)
 {
 	krb5_error_code ret, ret2;
@@ -716,7 +769,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 	kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
 
 	/* for each entry in the keytab */
-	ret = krb5_kt_start_seq_get(smb_krb5_context->krb5_context, keytab, &cursor);
+	ret = krb5_kt_start_seq_get(krb5_context, keytab, &cursor);
 	switch (ret) {
 	case 0:
 		break;
@@ -727,9 +780,10 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 		talloc_free(mem_ctx);
 		return 0;
 	default:
-		*error_string = talloc_asprintf(parent_ctx, "failed to open keytab for read of old entries: %s\n",
-						smb_get_krb5_error_message(smb_krb5_context->krb5_context,
-									   ret, mem_ctx));
+		*error_string = talloc_asprintf(parent_ctx,
+			"failed to open keytab for read of old entries: %s\n",
+			smb_get_krb5_error_message(krb5_context,
+						   ret, mem_ctx));
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -738,21 +792,24 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 		unsigned int i;
 		bool matched = false;
 		krb5_keytab_entry entry;
-		ret = krb5_kt_next_entry(smb_krb5_context->krb5_context, keytab, &entry, &cursor);
+		ret = krb5_kt_next_entry(krb5_context, keytab,
+					 &entry, &cursor);
 		if (ret) {
 			break;
 		}
 		for (i = 0; principals[i]; i++) {
 			/* if it matches our principal */
-			if (krb5_kt_compare(smb_krb5_context->krb5_context, &entry, principals[i]->principal, 0, 0)) {
+			if (krb5_kt_compare(krb5_context, &entry,
+					    principals[i]->principal, 0, 0)) {
 				matched = true;
 				break;
 			}
 		}
 
 		if (!matched) {
-			/* Free the entry, it wasn't the one we were looking for anyway */
-			krb5_kt_free_entry(smb_krb5_context->krb5_context, &entry);
+			/* Free the entry,
+			 * it wasn't the one we were looking for anyway */
+			krb5_kt_free_entry(krb5_context, &entry);
 			continue;
 		}
 
@@ -765,20 +822,21 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 			 *
 			 * Also, the enumeration locks a FILE: keytab
 			 */
-		
-			krb5_kt_end_seq_get(smb_krb5_context->krb5_context, keytab, &cursor);
 
-			ret = krb5_kt_remove_entry(smb_krb5_context->krb5_context, keytab, &entry);
-			krb5_kt_free_entry(smb_krb5_context->krb5_context, &entry);
+			krb5_kt_end_seq_get(krb5_context, keytab, &cursor);
+
+			ret = krb5_kt_remove_entry(krb5_context, keytab, &entry);
+			krb5_kt_free_entry(krb5_context, &entry);
 
 			/* Deleted: Restart from the top */
-			ret2 = krb5_kt_start_seq_get(smb_krb5_context->krb5_context, keytab, &cursor);
+			ret2 = krb5_kt_start_seq_get(krb5_context,
+						     keytab, &cursor);
 			if (ret2) {
-				krb5_kt_free_entry(smb_krb5_context->krb5_context, &entry);
-				DEBUG(1,("failed to restart enumeration of keytab: %s\n",
-					 smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
+				krb5_kt_free_entry(krb5_context, &entry);
+				DEBUG(1, ("failed to restart enumeration of keytab: %s\n",
+					  smb_get_krb5_error_message(krb5_context,
 								    ret, mem_ctx)));
-				
+
 				talloc_free(mem_ctx);
 				return ret2;
 			}
@@ -786,17 +844,15 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 			if (ret) {
 				break;
 			}
-			
+
 		} else {
 			*found_previous = true;
 		}
-		
+
 		/* Free the entry, we don't need it any more */
-		krb5_kt_free_entry(smb_krb5_context->krb5_context, &entry);
-		
-		
+		krb5_kt_free_entry(krb5_context, &entry);
 	}
-	krb5_kt_end_seq_get(smb_krb5_context->krb5_context, keytab, &cursor);
+	krb5_kt_end_seq_get(krb5_context, keytab, &cursor);
 
 	switch (ret) {
 	case 0:
@@ -806,9 +862,10 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 		ret = 0;
 		break;
 	default:
-		*error_string = talloc_asprintf(parent_ctx, "failed in deleting old entries for principal: %s\n",
-						smb_get_krb5_error_message(smb_krb5_context->krb5_context,
-									   ret, mem_ctx));
+		*error_string = talloc_asprintf(parent_ctx,
+			"failed in deleting old entries for principal: %s\n",
+			smb_get_krb5_error_message(krb5_context,
+						   ret, mem_ctx));
 	}
 	talloc_free(mem_ctx);
 	return ret;
@@ -816,7 +873,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 
 krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 				       struct smb_krb5_context *smb_krb5_context,
-				       struct ldb_context *ldb, 
+				       struct ldb_context *ldb,
 				       struct ldb_message *msg,
 				       bool delete_all_kvno,
 				       const char **error_string)
@@ -837,7 +894,8 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 		return ENOENT;
 	}
 
-	ret = smb_krb5_get_keytab_container(mem_ctx, smb_krb5_context, keytab_name, &keytab_container);
+	ret = smb_krb5_get_keytab_container(mem_ctx, smb_krb5_context,
+					keytab_name, &keytab_container);
 
 	if (ret != 0) {
 		talloc_free(mem_ctx);
@@ -847,31 +905,39 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	DEBUG(5, ("Opened keytab %s\n", keytab_name));
 
 	/* Get the principal we will store the new keytab entries under */
-	ret = principals_from_msg(mem_ctx, msg, smb_krb5_context, &principals, error_string);
+	ret = principals_from_msg(mem_ctx, msg, smb_krb5_context,
+					&principals, error_string);
 
 	if (ret != 0) {
-		*error_string = talloc_asprintf(parent_ctx, "Failed to load principals from ldb message: %s\n", *error_string);
+		*error_string = talloc_asprintf(parent_ctx,
+			"Failed to load principals from ldb message: %s\n",
+			*error_string);
 		talloc_free(mem_ctx);
 		return ret;
 	}
 
 	ret = remove_old_entries(mem_ctx, msg, principals, delete_all_kvno,
-				 smb_krb5_context, keytab_container->keytab, &found_previous, error_string);
+				 smb_krb5_context->krb5_context,
+				 keytab_container->keytab,
+				 &found_previous, error_string);
 	if (ret != 0) {
-		*error_string = talloc_asprintf(parent_ctx, "Failed to remove old principals from keytab: %s\n", *error_string);
+		*error_string = talloc_asprintf(parent_ctx,
+			"Failed to remove old principals from keytab: %s\n",
+			*error_string);
 		talloc_free(mem_ctx);
 		return ret;
 	}
-	
+
 	if (!delete_all_kvno) {
 		/* Create a new keytab.  If during the cleanout we found
 		 * entires for kvno -1, then don't try and duplicate them.
 		 * Otherwise, add kvno, and kvno -1 */
-		
+
 		ret = create_keytab(mem_ctx, msg, principals,
 				    smb_krb5_context,
-				    keytab_container->keytab, 
-				    found_previous ? false : true, error_string);
+				    keytab_container->keytab,
+				    found_previous ? false : true,
+				    error_string);
 	}
 	talloc_free(mem_ctx);
 	return ret;
