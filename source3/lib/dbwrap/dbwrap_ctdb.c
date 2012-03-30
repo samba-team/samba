@@ -1104,7 +1104,8 @@ again:
 			   ctdb_data.dptr, ctdb_data.dptr ?
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster : -1,
 			   get_my_vnn(),
-			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags));
+			   ctdb_data.dptr ?
+			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
 
 		status = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
 				       key);
