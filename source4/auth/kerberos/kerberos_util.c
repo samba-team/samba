@@ -953,7 +953,7 @@ uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum)
 }
 
 /* Translate between the Microsoft msDS-SupportedEncryptionTypes values and the IETF encryption type values */
-krb5_enctype kerberos_enctype_bitmap_to_enctype(uint32_t enctype_bitmap)
+static krb5_enctype kerberos_enctype_bitmap_to_enctype(uint32_t enctype_bitmap)
 {
 	switch (enctype_bitmap) {
 	case ENC_CRC32:
