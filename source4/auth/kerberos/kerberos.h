@@ -40,6 +40,12 @@ struct keytab_container {
 	krb5_keytab keytab;
 };
 
+struct principal_container {
+	struct smb_krb5_context *smb_krb5_context;
+	krb5_principal principal;
+	const char *string_form; /* Optional */
+};
+
 /* not really ASN.1, but RFC 1964 */
 #define TOK_ID_KRB_AP_REQ	((const uint8_t *)"\x01\x00")
 #define TOK_ID_KRB_AP_REP	((const uint8_t *)"\x02\x00")

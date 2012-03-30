@@ -34,6 +34,7 @@
 #include "auth/credentials/credentials_krb5.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "auth/kerberos/kerberos_srv_keytab.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
 struct dn_list {

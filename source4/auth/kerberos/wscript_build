@@ -11,6 +11,11 @@ bld.SAMBA_LIBRARY('authkrb5',
 bld.SAMBA_SUBSYSTEM('KERBEROS_UTIL',
 	autoproto='kerberos_util.h',
 	source='kerberos_util.c',
-	deps='authkrb5 com_err ldb CREDENTIALS_KRB5 SECRETS',
+	deps='authkrb5 com_err CREDENTIALS_KRB5',
 	)
 
+bld.SAMBA_SUBSYSTEM('KERBEROS_SRV_KEYTAB',
+	autoproto='kerberos_srv_keytab.h',
+	source='srv_keytab.c',
+	deps='authkrb5 ldb samba-credentials SECRETS KERBEROS_UTIL',
+	)
