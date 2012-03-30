@@ -599,7 +599,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 	return 0;
 }
 
-static krb5_error_code kerberos_enctype_bitmap_to_enctypes(TALLOC_CTX *mem_ctx,
+static krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
 						uint32_t enctype_bitmap,
 						krb5_enctype **enctypes);
 
@@ -652,7 +652,7 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 
 	enctype_bitmap = (uint32_t)ldb_msg_find_attr_as_int(msg, "msDS-SupportedEncryptionTypes", ENC_ALL_TYPES);
 	
-	ret = kerberos_enctype_bitmap_to_enctypes(mem_ctx, enctype_bitmap, &enctypes);
+	ret = ms_suptypes_to_ietf_enctypes(mem_ctx, enctype_bitmap, &enctypes);
 	if (ret) {
 		*error_string = talloc_asprintf(parent_ctx, "create_keytab: generating list of encryption types failed (%s)\n",
 						smb_get_krb5_error_message(smb_krb5_context->krb5_context,
@@ -952,8 +952,9 @@ uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum)
 	}
 }
 
-/* Translate between the Microsoft msDS-SupportedEncryptionTypes values and the IETF encryption type values */
-static krb5_enctype kerberos_enctype_bitmap_to_enctype(uint32_t enctype_bitmap)
+/* Translate between the Microsoft msDS-SupportedEncryptionTypes values
+ * and the IETF encryption type values */
+static krb5_enctype ms_suptype_to_ietf_enctype(uint32_t enctype_bitmap)
 {
 	switch (enctype_bitmap) {
 	case ENC_CRC32:
@@ -970,21 +971,21 @@ static krb5_enctype kerberos_enctype_bitmap_to_enctype(uint32_t enctype_bitmap)
 		return 0;
 	}
 }
-
 /* Return an array of krb5_enctype values */
-static krb5_error_code kerberos_enctype_bitmap_to_enctypes(TALLOC_CTX *mem_ctx,
-							   uint32_t enctype_bitmap,
-							   krb5_enctype **enctypes)
+static krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
+						uint32_t enctype_bitmap,
+						krb5_enctype **enctypes)
 {
 	unsigned int i, j = 0;
-	*enctypes = talloc_zero_array(mem_ctx, krb5_enctype, (8*sizeof(enctype_bitmap))+1);
+	*enctypes = talloc_zero_array(mem_ctx, krb5_enctype,
+					(8 * sizeof(enctype_bitmap)) + 1);
 	if (!*enctypes) {
 		return ENOMEM;
 	}
-	for (i=0; i<(8*sizeof(enctype_bitmap)); i++) {
+	for (i = 0; i < (8 * sizeof(enctype_bitmap)); i++) {
 		uint32_t bit_value = (1 << i) & enctype_bitmap;
 		if (bit_value & enctype_bitmap) {
-			(*enctypes)[j] = kerberos_enctype_bitmap_to_enctype(bit_value);
+			(*enctypes)[j] = ms_suptype_to_ietf_enctype(bit_value);
 			if (!(*enctypes)[j]) {
 				continue;
 			}
