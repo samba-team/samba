@@ -7338,8 +7338,14 @@ static bool run_shortname_test(int dummy)
 		goto out;
 	}
 
-	strlcpy(fname, "\\shortname\\", sizeof(fname));
-	strlcat(fname, "test .txt", sizeof(fname));
+	if (strlcpy(fname, "\\shortname\\", sizeof(fname)) >= sizeof(fname)) {
+		correct = false;
+		goto out;
+	}
+	if (strlcat(fname, "test .txt", sizeof(fname)) >= sizeof(fname)) {
+		correct = false;
+		goto out;
+	}
 
 	s.val = false;
 

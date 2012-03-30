@@ -52,10 +52,17 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 		return NULL;
 	}
 
-	strlcpy(ret,field, len);
+	if (strlcpy(ret,field, len) >= len) {
+		/* Truncate ! */
+		free(r);
+		return NULL;
+	}
 	p=strtok_r(r, sep, &saveptr);
 	if (p) {
-		strlcat(ret, p, len);
+		if (strlcat(ret, p, len) >= len) {
+			free(r);
+			return NULL;
+		}
 
 		while ((p=strtok_r(NULL, sep, &saveptr)) != NULL) {
 			int retval;

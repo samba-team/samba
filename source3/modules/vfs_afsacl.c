@@ -316,16 +316,22 @@ static bool unparse_afs_acl(struct afs_acl *acl, char *acl_str)
 	}
 
 	fstr_sprintf(line, "%d\n", positives);
-	strlcat(acl_str, line, MAXSIZE);
+	if (strlcat(acl_str, line, MAXSIZE) >= MAXSIZE) {
+		return false;
+	}
 
 	fstr_sprintf(line, "%d\n", negatives);
-	strlcat(acl_str, line, MAXSIZE);
+	if (strlcat(acl_str, line, MAXSIZE) >= MAXSIZE) {
+		return false;
+	}
 
 	ace = acl->acelist;
 
 	while (ace != NULL) {
 		fstr_sprintf(line, "%s\t%d\n", ace->name, ace->rights);
-		strlcat(acl_str, line, MAXSIZE);
+		if (strlcat(acl_str, line, MAXSIZE) >= MAXSIZE) {
+			return false;
+		}
 		ace = ace->next;
 	}
 	return true;

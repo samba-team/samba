@@ -176,7 +176,8 @@ void get_xsrf_token(const char *username, const char *pass,
 		char tmp[3];
 
 		snprintf(tmp, sizeof(tmp), "%02x", token[i]);
-		strlcat(token_str, tmp, sizeof(tmp));
+		/* FIXME ! Truncate check. JRA. */
+		(void)strlcat(token_str, tmp, sizeof(tmp));
 	}
 }
 

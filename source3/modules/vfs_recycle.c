@@ -280,13 +280,17 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 	*new_dir = '\0';
 	if (dname[0] == '/') {
 		/* Absolute path. */
-		strlcat(new_dir,"/",len+1);
+		if (strlcat(new_dir,"/",len+1) >= len+1) {
+			goto done;
+		}
 	}
 
 	/* Create directory tree if neccessary */
 	for(token = strtok_r(tok_str, "/", &saveptr); token;
 	    token = strtok_r(NULL, "/", &saveptr)) {
-		strlcat(new_dir, token, len+1);
+		if (strlcat(new_dir, token, len+1) >= len+1) {
+			goto done;
+		}
 		if (recycle_directory_exist(handle, new_dir))
 			DEBUG(10, ("recycle: dir %s already exists\n", new_dir));
 		else {
@@ -297,7 +301,9 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 				goto done;
 			}
 		}
-		strlcat(new_dir, "/", len+1);
+		if (strlcat(new_dir, "/", len+1) >= len+1) {
+			goto done;
+		}
 		mode = recycle_subdir_mode(handle);
 	}
 

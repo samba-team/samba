@@ -327,8 +327,9 @@ static void notify_scanner(vfs_handle_struct * handle, const char *scanfile)
 	if (gsendlen + tmplen >= SENDBUFFERSIZE) {
 		flush_sendbuffer(handle);
 	}
-	strlcat(so->gsendbuffer, tmp, SENDBUFFERSIZE + 1);
-	strlcat(so->gsendbuffer, "\n", SENDBUFFERSIZE + 1);
+	/* FIXME ! Truncate checks... JRA. */
+	(void)strlcat(so->gsendbuffer, tmp, SENDBUFFERSIZE + 1);
+	(void)strlcat(so->gsendbuffer, "\n", SENDBUFFERSIZE + 1);
 }
 
 static bool is_scannedonly_file(struct Tscannedonly *so, const char *shortname)
