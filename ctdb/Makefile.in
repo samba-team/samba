@@ -211,11 +211,11 @@ tests/bin/ctdb_fetch_one: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_one.o
 
 tests/bin/ctdb_fetch_lock_once: libctdb/libctdb.a tests/src/ctdb_fetch_lock_once.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o $(TDB_OBJ) @POPT_OBJ@ libctdb/libctdb.a $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o $(TDB_OBJ) $(POPT_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_readonly_once: libctdb/libctdb.a tests/src/ctdb_fetch_readonly_once.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(TDB_OBJ) @POPT_OBJ@ libctdb/libctdb.a $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(TDB_OBJ) $(POPT_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_readonly_loop: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_readonly_loop.o
 	@echo Linking $@
@@ -271,13 +271,13 @@ tests/src/ctdb_tool_libctdb.o: tests/src/ctdb_tool_libctdb.c tests/src/libctdb_t
 
 tests/bin/ctdb_tool_libctdb: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_libctdb.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_libctdb.o $(CTDB_TEST_OBJ) @POPT_OBJ@ $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_libctdb.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
 
 tests/src/ctdb_tool_stubby.o: tests/src/ctdb_tool_stubby.c tests/src/libctdb_test.c $(CTDB_TEST_C)
 
 tests/bin/ctdb_tool_stubby: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_stubby.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_stubby.o $(CTDB_TEST_OBJ) @POPT_OBJ@ $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_stubby.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
