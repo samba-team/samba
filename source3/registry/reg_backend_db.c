@@ -1707,7 +1707,8 @@ static int regdb_unpack_values(struct regval_ctr *values, uint8 *buf, int buflen
 				(uint8_t *)data_p, size);
 		SAFE_FREE(data_p); /* 'B' option to tdb_unpack does a malloc() */
 
-		DEBUG(8,("specific: [%s], len: %d\n", valuename, size));
+		DEBUG(10, ("regdb_unpack_values: value[%d]: name[%s] len[%d]\n",
+			   i, valuename, size));
 	}
 
 	return len;
