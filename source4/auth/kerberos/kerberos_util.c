@@ -599,6 +599,10 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 	return 0;
 }
 
+static krb5_error_code kerberos_enctype_bitmap_to_enctypes(TALLOC_CTX *mem_ctx,
+						uint32_t enctype_bitmap,
+						krb5_enctype **enctypes);
+
 static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 				     struct ldb_message *msg,
 				     struct principal_container **principals,
@@ -968,7 +972,9 @@ krb5_enctype kerberos_enctype_bitmap_to_enctype(uint32_t enctype_bitmap)
 }
 
 /* Return an array of krb5_enctype values */
-krb5_error_code kerberos_enctype_bitmap_to_enctypes(TALLOC_CTX *mem_ctx, uint32_t enctype_bitmap, krb5_enctype **enctypes)
+static krb5_error_code kerberos_enctype_bitmap_to_enctypes(TALLOC_CTX *mem_ctx,
+							   uint32_t enctype_bitmap,
+							   krb5_enctype **enctypes)
 {
 	unsigned int i, j = 0;
 	*enctypes = talloc_zero_array(mem_ctx, krb5_enctype, (8*sizeof(enctype_bitmap))+1);
