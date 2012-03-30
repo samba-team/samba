@@ -1903,7 +1903,7 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 	int len;
 	NTSTATUS status;
 
-	DEBUG(10,("regdb_store_values: Looking for value of key [%s] \n", key));
+	DEBUG(10,("regdb_store_values: Looking for values of key [%s]\n", key));
 
 	if (!regdb_key_exists(db, key)) {
 		status = NT_STATUS_NOT_FOUND;
