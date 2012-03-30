@@ -395,7 +395,7 @@ struct regval_blob *regval_ctr_specific_value(struct regval_ctr *ctr,
  Check for the existance of a value
  **********************************************************************/
 
-bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value)
+bool regval_ctr_value_exists(struct regval_ctr *ctr, const char *value)
 {
 	int 	i;
 

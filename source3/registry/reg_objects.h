@@ -53,7 +53,7 @@ char* regval_name(struct regval_blob *val);
 uint32_t regval_type(struct regval_blob *val);
 struct regval_blob* regval_ctr_specific_value(struct regval_ctr *ctr,
 					      uint32_t idx);
-bool regval_ctr_key_exists(struct regval_ctr *ctr, const char *value);
+bool regval_ctr_value_exists(struct regval_ctr *ctr, const char *value);
 struct regval_blob *regval_compose(TALLOC_CTX *ctx, const char *name,
 				   uint32_t type,
 				   const uint8_t *data_p, size_t size);

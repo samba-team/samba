@@ -337,7 +337,7 @@ static NTSTATUS init_registry_data_action(struct db_context *db,
 
 		/* preserve existing values across restarts. Only add new ones */
 
-		if (!regval_ctr_key_exists(values,
+		if (!regval_ctr_value_exists(values,
 					builtin_registry_values[i].valuename))
 		{
 			regdb_ctr_add_value(values,
@@ -384,7 +384,7 @@ WERROR init_registry_data(void)
 		regdb_fetch_values_internal(regdb,
 					    builtin_registry_values[i].path,
 					    values);
-		if (!regval_ctr_key_exists(values,
+		if (!regval_ctr_value_exists(values,
 					builtin_registry_values[i].valuename))
 		{
 			TALLOC_FREE(values);
