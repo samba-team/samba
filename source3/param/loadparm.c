@@ -230,6 +230,7 @@ static struct loadparm_service sDefault =
 	.bPosixLocking = true,
 	.bShareModes = true,
 	.bOpLocks = true,
+	.bKernelOplocks = true,
 	.bLevel2OpLocks = true,
 	.bOnlyUser = false,
 	.bMangledNames = true,
@@ -3109,11 +3110,11 @@ static struct parm_struct parm_table[] = {
 	{
 		.label		= "kernel oplocks",
 		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bKernelOplocks),
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bKernelOplocks),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
 	{
 		.label		= "locking",
@@ -4892,9 +4893,6 @@ static void init_globals(bool reinit_globals)
 
 	Globals.bDNSproxy = true;
 
-	/* this just means to use them if they exist */
-	Globals.bKernelOplocks = true;
-
 	Globals.bAllowTrustedDomains = true;
 	string_set(&Globals.szIdmapBackend, "tdb");
 
@@ -5260,7 +5258,6 @@ FN_GLOBAL_BOOL(lp_client_plaintext_auth, bClientPlaintextAuth)
 FN_GLOBAL_BOOL(lp_client_lanman_auth, bClientLanManAuth)
 FN_GLOBAL_BOOL(lp_client_ntlmv2_auth, bClientNTLMv2Auth)
 FN_GLOBAL_BOOL(lp_host_msdfs, bHostMSDfs)
-FN_GLOBAL_BOOL(lp_kernel_oplocks, bKernelOplocks)
 FN_GLOBAL_BOOL(lp_enhanced_browsing, enhanced_browsing)
 FN_GLOBAL_BOOL(lp_use_mmap, bUseMmap)
 FN_GLOBAL_BOOL(lp_unix_extensions, bUnixExtensions)
