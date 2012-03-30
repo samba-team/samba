@@ -331,6 +331,10 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 				rrec->rdata.srv_record.target);
 		W_ERROR_HAVE_NO_MEMORY(r->data.srv.nameTarget);
 		break;
+	case DNS_QTYPE_PTR:
+		r->data.ptr = talloc_strdup(mem_ctx, rrec->rdata.ptr_record);
+		W_ERROR_HAVE_NO_MEMORY(r->data.ptr);
+		break;
 	case DNS_QTYPE_MX:
 		r->data.mx.wPriority = rrec->rdata.mx_record.preference;
 		r->data.mx.nameTarget = talloc_strdup(mem_ctx,
