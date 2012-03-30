@@ -743,29 +743,34 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 			      uint32 dst_vnn, uint64 dst_srvid,
 			      struct messaging_rec *msg)
 {
-	struct ctdb_req_message r;
-	TALLOC_CTX *mem_ctx;
 	DATA_BLOB blob;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 
-	if (!(mem_ctx = talloc_init("ctdbd_messaging_send"))) {
-		DEBUG(0, ("talloc failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	ndr_err = ndr_push_struct_blob(
-		&blob, mem_ctx, msg,
+		&blob, talloc_tos(), msg,
 		(ndr_push_flags_fn_t)ndr_push_messaging_rec);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("ndr_push_struct_blob failed: %s\n",
 			  ndr_errstr(ndr_err)));
-		status = ndr_map_error2ntstatus(ndr_err);
-		goto fail;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	r.hdr.length = offsetof(struct ctdb_req_message, data) + blob.length;
+	status = ctdbd_messaging_send_blob(conn, dst_vnn, dst_srvid,
+					   blob.data, blob.length);
+	TALLOC_FREE(blob.data);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
+				   uint32 dst_vnn, uint64 dst_srvid,
+				   const uint8_t *buf, size_t buflen)
+{
+	struct ctdb_req_message r;
+	NTSTATUS status;
+
+	r.hdr.length = offsetof(struct ctdb_req_message, data) + buflen;
 	r.hdr.ctdb_magic = CTDB_MAGIC;
 	r.hdr.ctdb_version = CTDB_VERSION;
 	r.hdr.generation = 1;
@@ -774,7 +779,7 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 	r.hdr.srcnode    = conn->our_vnn;
 	r.hdr.reqid      = 0;
 	r.srvid          = dst_srvid;
-	r.datalen        = blob.length;
+	r.datalen        = buflen;
 
 	DEBUG(10, ("ctdbd_messaging_send: Sending ctdb packet\n"));
 	ctdb_packet_dump(&r.hdr);
@@ -782,24 +787,19 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 	status = ctdb_packet_send(
 		conn->pkt, 2,
 		data_blob_const(&r, offsetof(struct ctdb_req_message, data)),
-		blob);
+		data_blob_const(buf, buflen));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ctdb_packet_send failed: %s\n", nt_errstr(status)));
-		goto fail;
+		return status;
 	}
 
 	status = ctdb_packet_flush(conn->pkt);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("write to ctdbd failed: %s\n", nt_errstr(status)));
 		cluster_fatal("cluster dispatch daemon msg write error\n");
 	}
-
-	status = NT_STATUS_OK;
- fail:
-	TALLOC_FREE(mem_ctx);
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*

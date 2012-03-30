@@ -40,6 +40,9 @@ int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
 NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 			      uint32 dst_vnn, uint64 dst_srvid,
 			      struct messaging_rec *msg);
+NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
+				   uint32 dst_vnn, uint64 dst_srvid,
+				   const uint8_t *buf, size_t buflen);
 
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn,
 			  pid_t pid);
