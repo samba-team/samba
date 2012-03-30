@@ -62,8 +62,11 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 
 bool set_file_oplock(files_struct *fsp, int oplock_type)
 {
+
+	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
+
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
-		if (koplocks &&
+		if (use_kernel &&
 		    !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) {
 			DEBUG(10, ("Refusing level2 oplock, kernel oplocks "
 				   "don't support them\n"));
@@ -73,7 +76,7 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
-	    koplocks &&
+	    use_kernel &&
 	    !koplocks->ops->set_oplock(koplocks, fsp, oplock_type)) {
 		return False;
 	}
@@ -484,6 +487,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	struct share_mode_entry msg;
 	files_struct *fsp;
 	bool break_to_level2 = False;
+	bool use_kernel;
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
@@ -543,9 +547,11 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) && 
+	use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
+
+	if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
 	    !(msg.op_type & FORCE_OPLOCK_BREAK_TO_NONE) &&
-	    !(koplocks && !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) &&
+	    !(use_kernel && !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) &&
 	    lp_level2_oplocks(SNUM(fsp->conn))) {
 		break_to_level2 = True;
 	}
