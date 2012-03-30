@@ -7315,7 +7315,7 @@ static bool run_shortname_test(int dummy)
 	bool correct = True;
 	int i;
 	struct sn_state s;
-	char fname[20];
+	char fname[40];
 	NTSTATUS status;
 
 	printf("starting shortname test\n");
