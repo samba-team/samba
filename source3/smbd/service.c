@@ -709,6 +709,10 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		}
 	}
 
+	if (lp_kernel_oplocks(snum)) {
+		init_kernel_oplocks(conn->sconn);
+	}
+
 	/*
 	 * Fix compatibility issue pointed out by Volker.
 	 * We pass the conn->connectpath to the preexec
