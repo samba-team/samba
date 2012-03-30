@@ -84,7 +84,8 @@ def configure(conf):
 
     conf.RECURSE('dynconfig')
     conf.RECURSE('lib/ldb')
-    conf.RECURSE('source4/heimdal_build')
+    if not os.getenv('USING_SYSTEM_KRB5'):
+        conf.RECURSE('source4/heimdal_build')
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
