@@ -978,7 +978,13 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_OPEN_RETRY,
 			   process_open_retry_message);
 
-	if (lp_kernel_oplocks(-1)) {
+	return true;
+}
+
+void init_kernel_oplocks(struct smbd_server_connection *sconn)
+{
+	/* only initialize once */
+	if (koplocks == NULL) {
 #if HAVE_KERNEL_OPLOCKS_IRIX
 		koplocks = irix_init_kernel_oplocks(sconn);
 #elif HAVE_KERNEL_OPLOCKS_LINUX
@@ -988,6 +994,4 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 		koplocks = onefs_init_kernel_oplocks(sconn);
 #endif
 	}
-
-	return True;
 }
