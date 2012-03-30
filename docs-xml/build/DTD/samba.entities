@@ -440,7 +440,7 @@ Try to use the credentials cached by winbind.
 
 <!ENTITY stdarg.help '
 <varlistentry>
-<term>-h|--help</term>
+<term>-?|--help</term>
 <listitem><para>Print a summary of command line options.
 </para></listitem>
 </varlistentry>'>
