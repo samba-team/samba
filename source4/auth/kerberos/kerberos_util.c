@@ -316,6 +316,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
  * the library routines.  The returned princ is placed in the talloc
  * system by means of a destructor (do *not* free). */
 
+static
  krb5_error_code impersonate_principal_from_credentials(TALLOC_CTX *parent_ctx,
 							struct cli_credentials *credentials,
 							struct smb_krb5_context *smb_krb5_context,

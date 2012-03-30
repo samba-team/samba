@@ -45,12 +45,6 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 					   krb5_principal *princ,
 					   enum credentials_obtained *obtained,
 					   const char **error_string);
-krb5_error_code impersonate_principal_from_credentials(TALLOC_CTX *parent_ctx,
-						       struct cli_credentials *credentials,
-						       struct smb_krb5_context *smb_krb5_context,
-						       krb5_principal *princ,
-						       const char **error_string);
-	
 void cli_credentials_invalidate_client_gss_creds(struct cli_credentials *cred, 
 						 enum credentials_obtained obtained);
 
