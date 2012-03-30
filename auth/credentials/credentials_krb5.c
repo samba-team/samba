@@ -31,6 +31,10 @@
 #include "auth/kerberos/kerberos_util.h"
 #include "param/param.h"
 
+static void cli_credentials_invalidate_client_gss_creds(
+					struct cli_credentials *cred,
+					enum credentials_obtained obtained);
+
 _PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
 				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context) 
