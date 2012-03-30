@@ -1806,7 +1806,7 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 	NTSTATUS status;
 	bool result = false;
 
-	DEBUG(10,("regdb_store_values: Looking for value of key [%s] \n", key));
+	DEBUG(10,("regdb_store_values: Looking for values of key [%s]\n", key));
 
 	if (!regdb_key_exists(db, key)) {
 		goto done;
