@@ -760,8 +760,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	io->g.aes_256 = data_blob_talloc(io->ac,
-					 key.keyvalue.data,
-					 key.keyvalue.length);
+					 KRB5_KEY_DATA(&key),
+					 KRB5_KEY_LENGTH(&key));
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
 	if (!io->g.aes_256.data) {
 		return ldb_oom(ldb);
@@ -785,8 +785,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	io->g.aes_128 = data_blob_talloc(io->ac,
-					 key.keyvalue.data,
-					 key.keyvalue.length);
+					 KRB5_KEY_DATA(&key),
+					 KRB5_KEY_LENGTH(&key));
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
 	if (!io->g.aes_128.data) {
 		return ldb_oom(ldb);
@@ -810,8 +810,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	io->g.des_md5 = data_blob_talloc(io->ac,
-					 key.keyvalue.data,
-					 key.keyvalue.length);
+					 KRB5_KEY_DATA(&key),
+					 KRB5_KEY_LENGTH(&key));
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
 	if (!io->g.des_md5.data) {
 		return ldb_oom(ldb);
@@ -835,8 +835,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	io->g.des_crc = data_blob_talloc(io->ac,
-					 key.keyvalue.data,
-					 key.keyvalue.length);
+					 KRB5_KEY_DATA(&key),
+					 KRB5_KEY_LENGTH(&key));
 	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
 	if (!io->g.des_crc.data) {
 		return ldb_oom(ldb);
