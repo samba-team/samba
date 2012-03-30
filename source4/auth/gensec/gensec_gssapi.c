@@ -40,7 +40,7 @@
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_krb5.h>
 #include <gssapi/gssapi_spnego.h>
-#include "auth/gensec/gensec_gssapi.h"
+#include "gensec_gssapi.h"
 #include "lib/util/util_net.h"
 
 _PUBLIC_ NTSTATUS gensec_gssapi_init(void);
