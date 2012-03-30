@@ -67,7 +67,7 @@ static int ldb_do_autotransaction(struct ldb_context *ldb,
 */
 int ldb_add_ctrl(struct ldb_context *ldb,
 		const struct ldb_message *message,
-		struct ldb_control **controls)
+		struct ldb_control **controls, bool do_transaction)
 {
 	struct ldb_request *req;
 	int ret;
@@ -87,7 +87,8 @@ int ldb_add_ctrl(struct ldb_context *ldb,
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* do request and autostart a transaction */
-	ret = ldb_do_autotransaction(ldb, req);
+	if (do_transaction)
+		ret = ldb_do_autotransaction(ldb, req);
 
 	talloc_free(req);
 	return ret;
@@ -97,7 +98,7 @@ int ldb_add_ctrl(struct ldb_context *ldb,
   same as ldb_delete but accept control
 */
 int ldb_delete_ctrl(struct ldb_context *ldb, struct ldb_dn *dn,
-		struct ldb_control **controls)
+		struct ldb_control **controls, bool do_transaction)
 {
 	struct ldb_request *req;
 	int ret;
@@ -112,7 +113,8 @@ int ldb_delete_ctrl(struct ldb_context *ldb, struct ldb_dn *dn,
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* do request and autostart a transaction */
-	ret = ldb_do_autotransaction(ldb, req);
+	if (do_transaction)
+		ret = ldb_do_autotransaction(ldb, req);
 
 	talloc_free(req);
 	return ret;
@@ -124,7 +126,7 @@ int ldb_delete_ctrl(struct ldb_context *ldb, struct ldb_dn *dn,
 */
 int ldb_modify_ctrl(struct ldb_context *ldb,
                     const struct ldb_message *message,
-                    struct ldb_control **controls)
+                    struct ldb_control **controls, bool do_transaction)
 {
         struct ldb_request *req;
         int ret;
@@ -144,7 +146,8 @@ int ldb_modify_ctrl(struct ldb_context *ldb,
         if (ret != LDB_SUCCESS) return ret;
 
         /* do request and autostart a transaction */
-        ret = ldb_do_autotransaction(ldb, req);
+        if (do_transaction)
+		ret = ldb_do_autotransaction(ldb, req);
 
         talloc_free(req);
         return ret;

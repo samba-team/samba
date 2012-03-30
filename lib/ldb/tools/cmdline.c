@@ -59,6 +59,7 @@ static struct poptOption builtin_popt_options[] = {
 	{ "relax", 0, POPT_ARG_NONE, NULL, CMDLINE_RELAX, "pass relax control", NULL },
 	{ "cross-ncs", 0, POPT_ARG_NONE, NULL, 'N', "search across NC boundaries", NULL },
 	{ "extended-dn", 0, POPT_ARG_NONE, NULL, 'E', "show extended DNs", NULL },
+	{ "noautocommit", 0, POPT_ARG_NONE, &options.noautocommit, 1, "do not commit after each ldif message", NULL },
 	{ NULL }
 };
 

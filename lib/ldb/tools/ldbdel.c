@@ -41,7 +41,7 @@ static int dn_cmp(struct ldb_message **msg1, struct ldb_message **msg2)
 	return ldb_dn_compare((*msg1)->dn, (*msg2)->dn);
 }
 
-static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struct ldb_control **req_ctrls)
+static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struct ldb_control **req_ctrls, bool doautocommit)
 {
 	int ret;
 	unsigned int i, total=0;
@@ -55,7 +55,7 @@ static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struc
 	TYPESAFE_QSORT(res->msgs, res->count, dn_cmp);
 
 	for (i = 0; i < res->count; i++) {
-		if (ldb_delete_ctrl(ldb, res->msgs[i]->dn,req_ctrls) == LDB_SUCCESS) {
+		if (ldb_delete_ctrl(ldb, res->msgs[i]->dn,req_ctrls, doautocommit) == LDB_SUCCESS) {
 			total++;
 		} else {
 			printf("Failed to delete '%s' - %s\n",
@@ -114,9 +114,9 @@ int main(int argc, const char **argv)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (options->recursive) {
-			ret = ldb_delete_recursive(ldb, dn,req_ctrls);
+			ret = ldb_delete_recursive(ldb, dn,req_ctrls, !options->noautocommit);
 		} else {
-			ret = ldb_delete_ctrl(ldb, dn,req_ctrls);
+			ret = ldb_delete_ctrl(ldb, dn,req_ctrls, !options->noautocommit);
 			if (ret == LDB_SUCCESS) {
 				printf("Deleted 1 record\n");
 			}

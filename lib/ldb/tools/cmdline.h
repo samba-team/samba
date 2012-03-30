@@ -44,6 +44,7 @@ struct ldb_cmdline {
 	const char **controls;
 	int show_binary;
 	int tracing;
+	bool noautocommit;
 };
 
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc,

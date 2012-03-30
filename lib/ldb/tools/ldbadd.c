@@ -79,7 +79,7 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 			continue;
 		}
 
-		ret = ldb_add_ctrl(ldb, ldif->msg,req_ctrls);
+		ret = ldb_add_ctrl(ldb, ldif->msg,req_ctrls, true);
 		if (ret != LDB_SUCCESS) {
 			fprintf(stderr, "ERR: %s : \"%s\" on DN %s\n",
 				ldb_strerror(ret), ldb_errstring(ldb),

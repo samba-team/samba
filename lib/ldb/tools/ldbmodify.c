@@ -49,7 +49,7 @@ static void usage(struct ldb_context *ldb)
 /*
   process modifies for one file
 */
-static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
+static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count, bool doautocomit)
 {
 	struct ldb_ldif *ldif;
 	int fun_ret = LDB_SUCCESS, ret;
@@ -69,13 +69,13 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 		switch (ldif->changetype) {
 		case LDB_CHANGETYPE_NONE:
 		case LDB_CHANGETYPE_ADD:
-			ret = ldb_add_ctrl(ldb, ldif->msg,req_ctrls);
+			ret = ldb_add_ctrl(ldb, ldif->msg, req_ctrls, doautocomit);
 			break;
 		case LDB_CHANGETYPE_DELETE:
-			ret = ldb_delete_ctrl(ldb, ldif->msg->dn,req_ctrls);
+			ret = ldb_delete_ctrl(ldb, ldif->msg->dn, req_ctrls, doautocomit);
 			break;
 		case LDB_CHANGETYPE_MODIFY:
-			ret = ldb_modify_ctrl(ldb, ldif->msg,req_ctrls);
+			ret = ldb_modify_ctrl(ldb, ldif->msg, req_ctrls, doautocomit);
 			break;
 		case LDB_CHANGETYPE_MODRDN:
 			ret = ldb_ldif_parse_modrdn(ldb, ldif, ldif, &olddn,
@@ -133,7 +133,7 @@ int main(int argc, const char **argv)
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc == 0) {
-		ret = process_file(ldb, stdin, &count);
+		ret = process_file(ldb, stdin, &count, !options->noautocommit);
 	} else {
 		for (i=0;i<options->argc;i++) {
 			const char *fname = options->argv[i];
@@ -143,7 +143,7 @@ int main(int argc, const char **argv)
 				perror(fname);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
-			ret = process_file(ldb, f, &count);
+			ret = process_file(ldb, f, &count, !options->noautocommit);
 			fclose(f);
 		}
 	}
