@@ -534,6 +534,10 @@ bool sd_has_inheritable_components(const struct security_descriptor *parent_ctr,
 	unsigned int i;
 	const struct security_acl *the_acl = parent_ctr->dacl;
 
+	if (the_acl == NULL) {
+		return false;
+	}
+
 	for (i = 0; i < the_acl->num_aces; i++) {
 		const struct security_ace *ace = &the_acl->aces[i];
 
