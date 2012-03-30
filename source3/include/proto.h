@@ -1293,6 +1293,7 @@ int lp_cups_encrypt(void);
 char *lp_iprint_server(void);
 int lp_cups_connection_timeout(void);
 const char *lp_ctdbd_socket(void);
+const char *_lp_ctdbd_socket(void);
 const char **lp_cluster_addresses(void);
 bool lp_clustering(void);
 int lp_ctdb_timeout(void);

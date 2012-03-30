@@ -78,6 +78,10 @@
 #include <cups/http.h>
 #endif
 
+#ifdef CLUSTER_SUPPORT
+#include "ctdb_private.h"
+#endif
+
 bool bLoaded = false;
 
 extern userdom_struct current_user_info;
@@ -5335,7 +5339,7 @@ int lp_cups_encrypt(void)
 }
 FN_GLOBAL_STRING(iprint_server, szIPrintServer)
 FN_GLOBAL_INTEGER(cups_connection_timeout, cups_connection_timeout)
-FN_GLOBAL_CONST_STRING(ctdbd_socket, ctdbdSocket)
+static FN_GLOBAL_CONST_STRING(_ctdbd_socket, ctdbdSocket)
 FN_GLOBAL_LIST(cluster_addresses, szClusterAddresses)
 FN_GLOBAL_BOOL(clustering, clustering)
 FN_GLOBAL_INTEGER(ctdb_timeout, ctdb_timeout)
@@ -9647,4 +9651,16 @@ int lp_server_role(void)
 				   lp_security(),
 				   lp_domain_logons(),
 				   lp_domain_master_true_or_auto());
+}
+
+const char *lp_ctdbd_socket(void)
+{
+	const char *result = lp__ctdbd_socket();
+
+#ifdef CLUSTER_SUPPORT
+	if ((result == NULL) || (*result == '\0')) {
+		return CTDB_PATH;
+	}
+#endif
+	return result;
 }

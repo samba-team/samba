@@ -34,10 +34,6 @@ bool db_is_local(const char *name)
 #ifdef CLUSTER_SUPPORT
 	const char *sockname = lp_ctdbd_socket();
 
-	if(!sockname || !*sockname) {
-		sockname = CTDB_PATH;
-	}
-
 	if (lp_clustering() && socket_exist(sockname)) {
 		const char *partname;
 		/* ctdb only wants the file part of the name */
@@ -82,10 +78,6 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 
 #ifdef CLUSTER_SUPPORT
 	sockname = lp_ctdbd_socket();
-
-	if(!sockname || !*sockname) {
-		sockname = CTDB_PATH;
-	}
 
 	if (lp_clustering()) {
 		const char *partname;

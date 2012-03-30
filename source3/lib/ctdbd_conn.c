@@ -205,10 +205,6 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 	int fd;
 	socklen_t salen;
 
-	if (!sockname || !*sockname) {
-		sockname = CTDB_PATH;
-	}
-
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd == -1) {
 		DEBUG(3, ("Could not create socket: %s\n", strerror(errno)));
