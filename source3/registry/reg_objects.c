@@ -458,6 +458,24 @@ bool regval_ctr_value_exists(struct regval_ctr *ctr, const char *value)
 	return False;
 }
 
+/**
+ * Get a value by its name
+ */
+struct regval_blob *regval_ctr_value_byname(struct regval_ctr *ctr,
+					    const char *value)
+{
+	int i;
+
+	for (i=0; i<ctr->num_values; i++) {
+		if (strequal(ctr->values[i]->valuename,value)) {
+			return ctr->values[i];
+		}
+	}
+
+	return NULL;
+}
+
+
 /***********************************************************************
  * compose a struct regval_blob from input data
  **********************************************************************/
