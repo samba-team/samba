@@ -165,7 +165,7 @@ static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 			errno = EINVAL;
 			return -1;
 		}
-		*recvfd = *((int *) CMSG_DATA(cmptr));
+		memcpy(recvfd, CMSG_DATA(cmptr), sizeof(*recvfd));
 	} else {
 		*recvfd = -1;		/* descriptor was not passed */
 	}
@@ -203,7 +203,7 @@ static ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
 	cmptr->cmsg_len = CMSG_LEN(sizeof(int));
 	cmptr->cmsg_level = SOL_SOCKET;
 	cmptr->cmsg_type = SCM_RIGHTS;
-	*((int *) CMSG_DATA(cmptr)) = sendfd;
+	memcpy(CMSG_DATA(cmptr), &sendfd, sizeof(sendfd));
 #else
 	ZERO_STRUCT(msg);
 	msg.msg_accrights = (caddr_t) &sendfd;
