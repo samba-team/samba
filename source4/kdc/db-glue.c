@@ -67,6 +67,27 @@ static const char *trust_attrs[] = {
 	NULL
 };
 
+
+/* Translate between the IETF encryption type values and the Microsoft
+ * msDS-SupportedEncryptionTypes values */
+static uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum)
+{
+	switch (enc_type_enum) {
+	case ENCTYPE_DES_CBC_CRC:
+		return ENC_CRC32;
+	case ENCTYPE_DES_CBC_MD5:
+		return ENC_RSA_MD5;
+	case ENCTYPE_ARCFOUR_HMAC_MD5:
+		return ENC_RC4_HMAC_MD5;
+	case ENCTYPE_AES128_CTS_HMAC_SHA1_96:
+		return ENC_HMAC_SHA1_96_AES128;
+	case ENCTYPE_AES256_CTS_HMAC_SHA1_96:
+		return ENC_HMAC_SHA1_96_AES256;
+	default:
+		return 0;
+	}
+}
+
 static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, KerberosTime default_val)
 {
     const char *tmp;

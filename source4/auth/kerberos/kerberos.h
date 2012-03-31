@@ -116,7 +116,6 @@ NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 struct loadparm_context;
 struct ldb_message;
 struct ldb_context;
-uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum);
 krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 				       struct smb_krb5_context *smb_krb5_context,
 				       struct ldb_context *ldb, 
