@@ -690,9 +690,12 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_create_memory_keytab(mem_ctx, cred,
-					    smb_krb5_context,
-					    &keytab, &keytab_name);
+	ret = smb_krb5_create_memory_keytab(mem_ctx, smb_krb5_context,
+					cli_credentials_get_password(cred),
+					cli_credentials_get_username(cred),
+					cli_credentials_get_realm(cred),
+					cli_credentials_get_kvno(cred),
+					&keytab, &keytab_name);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;

@@ -22,7 +22,6 @@
 
 
 #include "includes.h"
-#include "auth/credentials/credentials.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/kerberos/kerberos_srv_keytab.h"
@@ -592,18 +591,17 @@ done:
 }
 
 krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
-				struct cli_credentials *machine_account,
 				struct smb_krb5_context *smb_krb5_context,
+				const char *new_secret,
+				const char *samAccountName,
+				const char *realm,
+				int kvno,
 				krb5_keytab *keytab,
 				const char **keytab_name)
 {
 	krb5_error_code ret;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	const char *rand_string;
-	const char *new_secret;
-	const char *samAccountName;
-	const char *realm;
-	int kvno;
 	const char *error_string;
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -621,10 +619,6 @@ krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	new_secret = cli_credentials_get_password(machine_account);
-	samAccountName = cli_credentials_get_username(machine_account);
-	realm = cli_credentials_get_realm(machine_account);
-	kvno = cli_credentials_get_kvno(machine_account);
 
 	ret = smb_krb5_update_keytab(mem_ctx, smb_krb5_context,
 				     *keytab_name, samAccountName, realm,
