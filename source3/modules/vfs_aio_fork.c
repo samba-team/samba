@@ -827,6 +827,8 @@ static int aio_fork_suspend(struct vfs_handle_struct *handle,
 		 */
 
 		for (child = children->children; child != NULL; child = child->next) {
+			struct tevent_fd *event;
+
 			if (child->aiocb == NULL) {
 				continue;
 			}
@@ -841,16 +843,12 @@ static int aio_fork_suspend(struct vfs_handle_struct *handle,
 				continue;
 			}
 
-			/* We're never using this event on the
-			 * main event context again... */
-			TALLOC_FREE(child->sock_event);
-
-			child->sock_event = event_add_fd(ev,
-						child,
-						child->sockfd,
-						EVENT_FD_READ,
-						handle_aio_completion,
-						child);
+			event = event_add_fd(ev,
+					     frame,
+					     child->sockfd,
+					     EVENT_FD_READ,
+					     handle_aio_completion,
+					     child);
 
 			while (1) {
 				if (tevent_loop_once(ev) == -1) {
