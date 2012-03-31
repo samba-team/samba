@@ -171,10 +171,6 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 					    const char *name, 
 					    krb5_principal *principal)
 {
-#ifdef HAVE_KRB5_PARSE_NAME_NOREALM
-	return smb_krb5_parse_name_norealm_conv(context, name, principal);
-#endif
-
 	/* we are cheating here because parse_name will in fact set the realm.
 	 * We don't care as the only caller of smb_krb5_parse_name_norealm
 	 * ignores the realm anyway when calling
