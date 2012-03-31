@@ -327,19 +327,25 @@ static krb5_error_code free_keytab_container(struct keytab_container *ktc)
 
 krb5_error_code smb_krb5_get_keytab_container(TALLOC_CTX *mem_ctx,
 				struct smb_krb5_context *smb_krb5_context,
+				krb5_keytab opt_keytab,
 				const char *keytab_name,
 				struct keytab_container **ktc)
 {
 	krb5_keytab keytab;
 	krb5_error_code ret;
-	ret = krb5_kt_resolve(smb_krb5_context->krb5_context,
-					keytab_name, &keytab);
-	if (ret) {
-		DEBUG(1,("failed to open krb5 keytab: %s\n",
-			 smb_get_krb5_error_message(
+
+	if (opt_keytab) {
+		keytab = opt_keytab;
+	} else {
+		ret = krb5_kt_resolve(smb_krb5_context->krb5_context,
+						keytab_name, &keytab);
+		if (ret) {
+			DEBUG(1,("failed to open krb5 keytab: %s\n",
+				 smb_get_krb5_error_message(
 					smb_krb5_context->krb5_context,
 					ret, mem_ctx)));
-		return ret;
+			return ret;
+		}
 	}
 
 	*ktc = talloc(mem_ctx, struct keytab_container);

@@ -665,6 +665,8 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 	krb5_error_code ret;
 	struct keytab_container *ktc;
 	struct smb_krb5_context *smb_krb5_context;
+	const char *keytab_name;
+	krb5_keytab keytab;
 	TALLOC_CTX *mem_ctx;
 
 	if (cred->keytab_obtained >= (MAX(cred->principal_obtained, 
@@ -688,8 +690,16 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_create_memory_keytab(mem_ctx, cred, 
-					    smb_krb5_context, &ktc);
+	ret = smb_krb5_create_memory_keytab(mem_ctx, cred,
+					    smb_krb5_context,
+					    &keytab, &keytab_name);
+	if (ret) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	ret = smb_krb5_get_keytab_container(mem_ctx, smb_krb5_context,
+					    keytab, keytab_name, &ktc);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -733,7 +743,7 @@ _PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 	}
 
 	ret = smb_krb5_get_keytab_container(mem_ctx, smb_krb5_context,
-					    keytab_name, &ktc);
+					    NULL, keytab_name, &ktc);
 	if (ret) {
 		return ret;
 	}

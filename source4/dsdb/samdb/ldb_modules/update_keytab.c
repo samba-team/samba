@@ -440,7 +440,7 @@ static int update_kt_prepare_commit(struct ldb_module *module)
 						  ldb_msg_find_attr_as_string(p->msg, "priorSecret", NULL),
 						  ldb_msg_find_attr_as_int(p->msg, "msDS-KeyVersionNumber", 0),
 						  (uint32_t)ldb_msg_find_attr_as_int(p->msg, "msDS-SupportedEncryptionTypes", ENC_ALL_TYPES),
-						  p->do_delete, &error_string);
+						  p->do_delete, NULL, &error_string);
 		if (krb5_ret != 0) {
 			ldb_asprintf_errstring(ldb, "Failed to update keytab from entry %s in %s: %s",
 					       ldb_dn_get_linearized(p->msg->dn),
