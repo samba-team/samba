@@ -29,7 +29,13 @@
 #include "auth/kerberos/kerberos_credentials.h"
 #include "auth/kerberos/kerberos_util.h"
 
-krb5_error_code free_principal(struct principal_container *pc)
+struct principal_container {
+	struct smb_krb5_context *smb_krb5_context;
+	krb5_principal principal;
+	const char *string_form; /* Optional */
+};
+
+static krb5_error_code free_principal(struct principal_container *pc)
 {
 	/* current heimdal - 0.6.3, which we need anyway, fixes segfaults here */
 	krb5_free_principal(pc->smb_krb5_context->krb5_context, pc->principal);
@@ -38,7 +44,7 @@ krb5_error_code free_principal(struct principal_container *pc)
 }
 
 
-krb5_error_code parse_principal(TALLOC_CTX *parent_ctx,
+static krb5_error_code parse_principal(TALLOC_CTX *parent_ctx,
 				       const char *princ_string,
 				       struct smb_krb5_context *smb_krb5_context,
 				       krb5_principal *princ,

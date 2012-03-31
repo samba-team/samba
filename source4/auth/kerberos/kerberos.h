@@ -40,12 +40,6 @@ struct keytab_container {
 	krb5_keytab keytab;
 };
 
-struct principal_container {
-	struct smb_krb5_context *smb_krb5_context;
-	krb5_principal principal;
-	const char *string_form; /* Optional */
-};
-
 /* not really ASN.1, but RFC 1964 */
 #define TOK_ID_KRB_AP_REQ	((const uint8_t *)"\x01\x00")
 #define TOK_ID_KRB_AP_REP	((const uint8_t *)"\x02\x00")
@@ -113,15 +107,6 @@ NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 				     krb5_principal client_principal,
 				     time_t tgs_authtime,
 				     DATA_BLOB *pac);
-struct loadparm_context;
-struct ldb_message;
-struct ldb_context;
-krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
-				       struct smb_krb5_context *smb_krb5_context,
-				       struct ldb_context *ldb, 
-				       struct ldb_message *msg,
-				       bool delete_all_kvno,
-				       const char **error_string);
 
 #include "auth/kerberos/proto.h"
 

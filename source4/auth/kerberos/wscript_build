@@ -17,5 +17,5 @@ bld.SAMBA_SUBSYSTEM('KERBEROS_UTIL',
 bld.SAMBA_SUBSYSTEM('KERBEROS_SRV_KEYTAB',
 	autoproto='kerberos_srv_keytab.h',
 	source='srv_keytab.c',
-	deps='authkrb5 ldb samba-credentials SECRETS KERBEROS_UTIL',
+	deps='authkrb5 samba-credentials KERBEROS_UTIL',
 	)

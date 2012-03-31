@@ -214,7 +214,7 @@ bld.SAMBA_MODULE('ldb_update_keytab',
 	init_function='ldb_update_keytab_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc samba-credentials ldb com_err KERBEROS_SRV_KEYTAB DSDB_MODULE_HELPERS'
+	deps='talloc samba-credentials ldb com_err KERBEROS_SRV_KEYTAB SECRETS DSDB_MODULE_HELPERS'
 	)
 
 

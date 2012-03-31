@@ -36,6 +36,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "auth/kerberos/kerberos_srv_keytab.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "param/secrets.h"
 
 struct dn_list {
 	struct ldb_message *msg;
@@ -380,33 +381,86 @@ static int update_kt_prepare_commit(struct ldb_module *module)
 	struct smb_krb5_context *smb_krb5_context;
 	int krb5_ret = smb_krb5_init_context(data, ldb_get_event_context(ldb), ldb_get_opaque(ldb, "loadparm"),
 					     &smb_krb5_context);
+	TALLOC_CTX *tmp_ctx;
+
 	if (krb5_ret != 0) {
-		talloc_free(data->changed_dns);
-		data->changed_dns = NULL;
 		ldb_asprintf_errstring(ldb, "Failed to setup krb5_context: %s", error_message(krb5_ret));
-		return LDB_ERR_OPERATIONS_ERROR;
+		goto fail;
 	}
 
-	ldb = ldb_module_get_ctx(module);
+	tmp_ctx = talloc_new(data);
+	if (!tmp_ctx) {
+		ldb_oom(ldb);
+		goto fail;
+	}
 
 	for (p=data->changed_dns; p; p = p->next) {
 		const char *error_string;
-		krb5_ret = smb_krb5_update_keytab(data, smb_krb5_context, ldb, p->msg, p->do_delete, &error_string);
+		const char *realm;
+		char *upper_realm;
+		struct ldb_message_element *spn_el = ldb_msg_find_element(p->msg, "servicePrincipalName");
+		char **SPNs = NULL;
+		int num_SPNs = 0;
+		int i;
+
+		realm = ldb_msg_find_attr_as_string(p->msg, "realm", NULL);
+
+		if (spn_el) {
+			upper_realm = strupper_talloc(tmp_ctx, realm);
+			if (!upper_realm) {
+				ldb_oom(ldb);
+				goto fail;
+			}
+
+			num_SPNs = spn_el->num_values;
+			SPNs = talloc_array(tmp_ctx, char *, num_SPNs);
+			if (!SPNs) {
+				ldb_oom(ldb);
+				goto fail;
+			}
+			for (i = 0; i < num_SPNs; i++) {
+				SPNs[i] = talloc_asprintf(tmp_ctx, "%*.*s@%s",
+							  (int)spn_el->values[i].length,
+							  (int)spn_el->values[i].length,
+							  (const char *)spn_el->values[i].data,
+							  upper_realm);
+				if (!SPNs[i]) {
+					ldb_oom(ldb);
+					goto fail;
+				}
+			}
+		}
+
+		krb5_ret = smb_krb5_update_keytab(tmp_ctx, smb_krb5_context,
+						  keytab_name_from_msg(tmp_ctx, ldb, p->msg),
+						  ldb_msg_find_attr_as_string(p->msg, "samAccountName", NULL),
+						  realm, (const char **)SPNs, num_SPNs,
+						  ldb_msg_find_attr_as_string(p->msg, "saltPrincipal", NULL),
+						  ldb_msg_find_attr_as_string(p->msg, "secret", NULL),
+						  ldb_msg_find_attr_as_string(p->msg, "priorSecret", NULL),
+						  ldb_msg_find_attr_as_int(p->msg, "msDS-KeyVersionNumber", 0),
+						  (uint32_t)ldb_msg_find_attr_as_int(p->msg, "msDS-SupportedEncryptionTypes", ENC_ALL_TYPES),
+						  p->do_delete, &error_string);
 		if (krb5_ret != 0) {
-			talloc_free(data->changed_dns);
-			data->changed_dns = NULL;
 			ldb_asprintf_errstring(ldb, "Failed to update keytab from entry %s in %s: %s",
 					       ldb_dn_get_linearized(p->msg->dn),
 					       (const char *)ldb_get_opaque(ldb, "ldb_url"),
 					       error_string);
-			return LDB_ERR_OPERATIONS_ERROR;
+			goto fail;
 		}
 	}
 
 	talloc_free(data->changed_dns);
 	data->changed_dns = NULL;
+	talloc_free(tmp_ctx);
 
 	return ldb_next_prepare_commit(module);
+
+fail:
+	talloc_free(data->changed_dns);
+	data->changed_dns = NULL;
+	talloc_free(tmp_ctx);
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 /* end a transaction */
