@@ -107,11 +107,18 @@ static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
 		 */
 
 		if (p && (p > str) && ((scope_id = if_nametoindex(p+1)) != 0)) {
-			size_t len = MIN(PTR_DIFF(p,str)+1, sizeof(addr));
-			if (strlcpy(addr, str, len) >= len) {
-				/* Truncate. */
+			/* Length of string we want to copy.
+			   This is IP:v6:addr (removing the %ifname).
+			 */
+			size_t len = PTR_DIFF(p,str);
+
+			if (len+1 > sizeof(addr)) {
+				/* string+nul too long for array. */
 				return false;
 			}
+			memcpy(addr, str, len);
+			addr[len] = '\0';
+
 			str = addr;
 		}
 	}
