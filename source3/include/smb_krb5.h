@@ -35,6 +35,7 @@
 #endif
 
 #include "libcli/auth/krb5_wrap.h"
+#include "auth/kerberos/pac_utils.h"
 
 #ifndef KRB5_ADDR_NETBIOS
 #define KRB5_ADDR_NETBIOS 0x14

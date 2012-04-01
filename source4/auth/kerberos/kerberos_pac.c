@@ -31,6 +31,7 @@
 #include <ldb.h>
 #include "auth/auth_sam_reply.h"
 #include "auth/kerberos/kerberos_util.h"
+#include "auth/kerberos/pac_utils.h"
 
 _PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 					   DATA_BLOB blob,

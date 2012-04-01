@@ -21,8 +21,6 @@
 */
 
 #include "system/kerberos.h"
-struct PAC_SIGNATURE_DATA;
-struct PAC_DATA;
 
 #ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
 #define KRB5_KEY_TYPE(k)	((k)->keytype)
@@ -57,38 +55,8 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
  bool smb_krb5_principal_compare_any_realm(krb5_context context, 
 					  krb5_const_principal princ1, 
 					   krb5_const_principal princ2);
- void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum,
-				     struct PAC_SIGNATURE_DATA *sig);
- krb5_error_code smb_krb5_verify_checksum(krb5_context context,
-					  const krb5_keyblock *keyblock,
-					 krb5_keyusage usage,
-					 krb5_checksum *cksum,
-					 uint8_t *data,
-					  size_t length);
 char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
 			  OM_uint32 maj_stat, OM_uint32 min_stat, 
 			  const gss_OID mech);
 char *smb_get_krb5_error_message(krb5_context context, krb5_error_code code, TALLOC_CTX *mem_ctx);
 
-krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
-				   struct PAC_SIGNATURE_DATA *sig,
-				   krb5_context context,
-				   const krb5_keyblock *keyblock);
-
-NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
-			     DATA_BLOB pac_data_blob,
-			     krb5_context context,
-			     const krb5_keyblock *krbtgt_keyblock,
-			     const krb5_keyblock *service_keyblock,
-			     krb5_const_principal client_principal,
-			     time_t tgs_authtime,
-			     struct PAC_DATA **pac_data_out);
-
-NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
-				gss_ctx_id_t gssapi_context,
-				gss_name_t gss_client_name,
-				DATA_BLOB *pac_data);
-NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
-				gss_ctx_id_t gssapi_context,
-				DATA_BLOB *session_key, 
-				uint32_t *keytype);

@@ -31,6 +31,7 @@
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "torture/auth/proto.h"
+#include "auth/kerberos/pac_utils.h"
 
 static bool torture_pac_self_check(struct torture_context *tctx)
 {

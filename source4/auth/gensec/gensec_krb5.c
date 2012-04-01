@@ -40,6 +40,7 @@
 #include "auth/auth_sam_reply.h"
 #include "lib/util/util_net.h"
 #include "../lib/util/asn1.h"
+#include "auth/kerberos/pac_utils.h"
 
 _PUBLIC_ NTSTATUS gensec_krb5_init(void);
 

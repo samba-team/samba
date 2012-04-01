@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "libcli/security/security.h"
 #include "dsdb/samdb/samdb.h"
+#include "auth/kerberos/pac_utils.h"
 
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,

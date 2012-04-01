@@ -22,6 +22,7 @@
 #ifdef HAVE_KRB5
 
 #include "libcli/auth/krb5_wrap.h"
+#include "auth/kerberos/pac_utils.h"
 
 #if 0
 /* FIXME - need proper configure/waf test

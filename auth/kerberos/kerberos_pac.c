@@ -26,7 +26,7 @@
 #ifdef HAVE_KRB5
 
 #include "librpc/gen_ndr/ndr_krb5pac.h"
-#include "libcli/auth/krb5_wrap.h"
+#include "auth/kerberos/pac_utils.h"
 
 krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 					  struct PAC_SIGNATURE_DATA *sig,
@@ -36,8 +36,18 @@ krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 	krb5_error_code ret;
 	krb5_checksum cksum;
 	krb5_keyusage usage = 0;
+	krb5_boolean checksum_valid = false;
+	krb5_data input;
 
-	smb_krb5_checksum_from_pac_sig(&cksum, sig);
+#ifdef HAVE_CHECKSUM_IN_KRB5_CHECKSUM /* Heimdal */
+	cksum.cksumtype	= (krb5_cksumtype)sig->type;
+	cksum.checksum.length	= sig->signature.length;
+	cksum.checksum.data	= sig->signature.data;
+#else /* MIT */
+	cksum.checksum_type	= (krb5_cksumtype)sig->type;
+	cksum.length		= sig->signature.length;
+	cksum.contents		= sig->signature.data;
+#endif
 
 #ifdef HAVE_KRB5_KU_OTHER_CKSUM /* Heimdal */
 	usage = KRB5_KU_OTHER_CKSUM;
@@ -47,14 +57,19 @@ krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 #error UNKNOWN_KRB5_KEYUSAGE
 #endif
 
-	ret = smb_krb5_verify_checksum(context,
-				       keyblock,
-				       usage,
-				       &cksum,
-				       pac_data.data,
-				       pac_data.length);
+	input.data = (char *)pac_data.data;
+	input.length = pac_data.length;
 
-	if (ret) {
+	ret = krb5_c_verify_checksum(context,
+				     keyblock,
+				     usage,
+				     &input,
+				     &cksum,
+				     &checksum_valid);
+	if (!checksum_valid) {
+		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	}
+	if (ret){
 		DEBUG(2,("check_pac_checksum: PAC Verification failed: %s (%d)\n",
 			error_message(ret), ret));
 		return ret;

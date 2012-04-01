@@ -27,7 +27,7 @@
 #include "auth/gensec/gensec.h"
 #include "lib/param/param.h"
 #ifdef HAVE_KRB5
-#include "libcli/auth/krb5_wrap.h"
+#include "auth/kerberos/pac_utils.h"
 #endif
 #include "librpc/crypto/gse.h"
 #include "auth/credentials/credentials.h"

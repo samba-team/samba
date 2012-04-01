@@ -186,55 +186,6 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 	return krb5_principal_compare_any_realm(context, princ1, princ2);
 }
 
- void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum,
-				     struct PAC_SIGNATURE_DATA *sig)
-{
-#ifdef HAVE_CHECKSUM_IN_KRB5_CHECKSUM
-	cksum->cksumtype	= (krb5_cksumtype)sig->type;
-	cksum->checksum.length	= sig->signature.length;
-	cksum->checksum.data	= sig->signature.data;
-#else
-	cksum->checksum_type	= (krb5_cksumtype)sig->type;
-	cksum->length		= sig->signature.length;
-	cksum->contents		= sig->signature.data;
-#endif
-}
-
- krb5_error_code smb_krb5_verify_checksum(krb5_context context,
-					  const krb5_keyblock *keyblock,
-					 krb5_keyusage usage,
-					 krb5_checksum *cksum,
-					 uint8_t *data,
-					 size_t length)
-{
-	krb5_error_code ret;
-
-	/* verify the checksum, heimdal 0.7 and MIT krb 1.4.2 and above */
-
-	krb5_boolean checksum_valid = false;
-	krb5_data input;
-	
-	input.data = (char *)data;
-	input.length = length;
-	
-	ret = krb5_c_verify_checksum(context, 
-				     keyblock, 
-				     usage,
-				     &input, 
-				     cksum,
-				     &checksum_valid);
-	if (ret) {
-		DEBUG(3,("smb_krb5_verify_checksum: krb5_c_verify_checksum() failed: %s\n", 
-			 error_message(ret)));
-		return ret;
-	}
-	
-	if (!checksum_valid)
-		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-
-	return ret;
-}
-
 char *gssapi_error_string(TALLOC_CTX *mem_ctx, 
 			  OM_uint32 maj_stat, OM_uint32 min_stat, 
 			  const gss_OID mech)

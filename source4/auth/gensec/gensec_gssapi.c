@@ -42,6 +42,7 @@
 #include <gssapi/gssapi_spnego.h>
 #include "gensec_gssapi.h"
 #include "lib/util/util_net.h"
+#include "auth/kerberos/pac_utils.h"
 
 _PUBLIC_ NTSTATUS gensec_gssapi_init(void);
 
