@@ -400,6 +400,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	uint16 smb_flag2 = req->flags2;
+	uint16_t action = 0;
 
 	NTSTATUS nt_status;
 	struct smbd_server_connection *sconn = req->sconn;
@@ -745,7 +746,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	}
 
 	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
-		SSVAL(req->outbuf,smb_vwv2,1);
+		action = 1;
 	}
 
 	/* register the name and uid as being validated, so further connections
@@ -780,6 +781,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	data_blob_free(&nt_resp);
 	data_blob_free(&lm_resp);
 
+	SSVAL(req->outbuf,smb_vwv2,action);
 	SSVAL(req->outbuf,smb_uid,sess_vuid);
 	SSVAL(discard_const_p(char, req->inbuf),smb_uid,sess_vuid);
 	req->vuid = sess_vuid;
