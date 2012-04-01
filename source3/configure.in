@@ -3584,8 +3584,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_set_default_tgs_enctypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_tgs_ktypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal2salt, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_use_enctype, $KRB5_LIBS)
-  AC_CHECK_FUNC_EXT(krb5_string_to_key, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_c_string_to_key, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_pw_salt, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_string_to_key_salt, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_auth_con_setkey, $KRB5_LIBS)
@@ -3721,18 +3720,6 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_KRB5_CRYPTO" = x"yes"; then
     AC_DEFINE(HAVE_KRB5_CRYPTO,1,
                [Whether the type krb5_crypto exists])
-  fi
-
-  AC_CACHE_CHECK([for krb5_encrypt_block type],
-                samba_cv_HAVE_KRB5_ENCRYPT_BLOCK,[
-    AC_TRY_COMPILE([#include <krb5.h>],
-      [krb5_encrypt_block block;],
-      samba_cv_HAVE_KRB5_ENCRYPT_BLOCK=yes,
-      samba_cv_HAVE_KRB5_ENCRYPT_BLOCK=no)])
-
-  if test x"$samba_cv_HAVE_KRB5_ENCRYPT_BLOCK" = x"yes"; then
-    AC_DEFINE(HAVE_KRB5_ENCRYPT_BLOCK,1,
-               [Whether the type krb5_encrypt_block exists])
   fi
 
   AC_CACHE_CHECK([for addrtype in krb5_address],
@@ -4111,9 +4098,9 @@ if test x"$with_ads_support" != x"no"; then
     use_ads=no
   fi
 
-  if test x"$ac_cv_func_ext_krb5_string_to_key" != x"yes"
+  if test x"$ac_cv_func_ext_krb5_c_string_to_key" != x"yes"
   then
-    AC_MSG_WARN(krb5_string_to_key not found in -lkrb5)
+    AC_MSG_WARN(krb5_c_string_to_key not found in -lkrb5)
     use_ads=no
   fi
 

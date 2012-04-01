@@ -27,7 +27,8 @@
 #include "libcli/auth/krb5_wrap.h"
 #include "librpc/gen_ndr/krb5pac.h"
 
-#if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_USE_ENCTYPE) && defined(HAVE_KRB5_ENCRYPT_BLOCK)
+#if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_C_STRING_TO_KEY)
+/* MIT */
 int create_kerberos_key_from_string_direct(krb5_context context,
 						  krb5_principal host_princ,
 						  krb5_data *password,
@@ -36,20 +37,19 @@ int create_kerberos_key_from_string_direct(krb5_context context,
 {
 	int ret = 0;
 	krb5_data salt;
-	krb5_encrypt_block eblock;
 
 	ret = krb5_principal2salt(context, host_princ, &salt);
 	if (ret) {
 		DEBUG(1,("krb5_principal2salt failed (%s)\n", error_message(ret)));
 		return ret;
 	}
-	krb5_use_enctype(context, &eblock, enctype);
-	ret = krb5_string_to_key(context, &eblock, key, password, &salt);
+	ret = krb5_c_string_to_key(context, enctype, password, &salt, key);
 	SAFE_FREE(salt.data);
 
 	return ret;
 }
 #elif defined(HAVE_KRB5_GET_PW_SALT) && defined(HAVE_KRB5_STRING_TO_KEY_SALT)
+/* Heimdal */
 int create_kerberos_key_from_string_direct(krb5_context context,
 						  krb5_principal host_princ,
 						  krb5_data *password,
