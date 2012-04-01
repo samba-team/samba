@@ -494,7 +494,7 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 }
 
 krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
-				struct smb_krb5_context *smb_krb5_context,
+				krb5_context context,
 				const char *keytab_name,
 				const char *samAccountName,
 				const char *realm,
@@ -519,12 +519,10 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 		return ENOENT;
 	}
 
-	ret = krb5_kt_resolve(smb_krb5_context->krb5_context,
-					keytab_name, &keytab);
+	ret = krb5_kt_resolve(context, keytab_name, &keytab);
 	if (ret) {
-		*error_string = smb_get_krb5_error_message(
-					smb_krb5_context->krb5_context,
-					ret, parent_ctx);
+		*error_string = smb_get_krb5_error_message(context,
+							   ret, parent_ctx);
 		return ret;
 	}
 
@@ -538,8 +536,7 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	/* Get the principal we will store the new keytab entries under */
 	ret = principals_from_list(tmp_ctx,
 				  samAccountName, realm, SPNs, num_SPNs,
-				  smb_krb5_context->krb5_context,
-				  &principals, error_string);
+				  context, &principals, error_string);
 
 	if (ret != 0) {
 		*error_string = talloc_asprintf(parent_ctx,
@@ -549,8 +546,7 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	}
 
 	ret = remove_old_entries(tmp_ctx, kvno, principals, delete_all_kvno,
-				 smb_krb5_context->krb5_context,
-				 keytab, &found_previous, error_string);
+				 context, keytab, &found_previous, error_string);
 	if (ret != 0) {
 		*error_string = talloc_asprintf(parent_ctx,
 			"Failed to remove old principals from keytab: %s\n",
@@ -567,8 +563,7 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 				    samAccountName, realm, saltPrincipal,
 				    kvno, new_secret, old_secret,
 				    supp_enctypes, principals,
-				    smb_krb5_context->krb5_context,
-				    keytab,
+				    context, keytab,
 				    found_previous ? false : true,
 				    error_string);
 		if (ret) {
@@ -582,16 +577,16 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 	}
 
 done:
-	keytab_principals_free(smb_krb5_context->krb5_context, principals);
+	keytab_principals_free(context, principals);
 	if (ret != 0 || _keytab == NULL) {
-		krb5_kt_close(smb_krb5_context->krb5_context, keytab);
+		krb5_kt_close(context, keytab);
 	}
 	talloc_free(tmp_ctx);
 	return ret;
 }
 
 krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
-				struct smb_krb5_context *smb_krb5_context,
+				krb5_context context,
 				const char *new_secret,
 				const char *samAccountName,
 				const char *realm,
@@ -620,7 +615,7 @@ krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 	}
 
 
-	ret = smb_krb5_update_keytab(mem_ctx, smb_krb5_context,
+	ret = smb_krb5_update_keytab(mem_ctx, context,
 				     *keytab_name, samAccountName, realm,
 				     NULL, 0, NULL, new_secret, NULL,
 				     kvno, ENC_ALL_TYPES,

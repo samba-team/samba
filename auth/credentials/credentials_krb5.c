@@ -690,7 +690,8 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_create_memory_keytab(mem_ctx, smb_krb5_context,
+	ret = smb_krb5_create_memory_keytab(mem_ctx,
+					smb_krb5_context->krb5_context,
 					cli_credentials_get_password(cred),
 					cli_credentials_get_username(cred),
 					cli_credentials_get_realm(cred),
