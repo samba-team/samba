@@ -3185,6 +3185,11 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 			return status;
 		}
 	} else {
+		status = smb1srv_session_table_init(conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
 		status = smb1srv_tcon_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -3528,8 +3533,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->smb1.sessions.done_sesssetup = false;
 	sconn->smb1.sessions.max_send = BUFFER_SIZE;
 	sconn->smb1.sessions.last_session_tag = UID_FIELD_INVALID;
-	/* this holds info on user ids that are already validated for this VC */
-	sconn->smb1.sessions.next_vuid = VUID_OFFSET;
 
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");

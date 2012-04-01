@@ -693,17 +693,9 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 
 struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
 					  uint64_t vuid);
-bool is_partial_auth_vuid(struct smbd_server_connection *sconn, uint64_t vuid);
-struct user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
-						 uint64_t vuid);
 void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid);
 void invalidate_all_vuids(struct smbd_server_connection *sconn);
-uint64_t register_initial_vuid(struct smbd_server_connection *sconn);
 int register_homes_share(const char *username);
-uint64_t register_existing_vuid(struct smbd_server_connection *sconn,
-				uint64_t vuid,
-				struct auth_session_info *session_info,
-				DATA_BLOB response_blob);
 
 /* The following definitions come from smbd/pipes.c  */
 

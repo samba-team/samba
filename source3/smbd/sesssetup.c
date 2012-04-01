@@ -127,10 +127,11 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	uint16 data_blob_len = SVAL(req->vwv+7, 0);
 	enum remote_arch_types ra_type = get_remote_arch();
 	uint64_t vuid = req->vuid;
-	struct user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint16_t action = 0;
+	NTTIME now = timeval_to_nttime(&req->request_time);
+	struct smbXsrv_session *session = NULL;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -195,82 +196,80 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 	}
 
-	vuser = get_valid_user_struct(sconn, vuid);
-	if (vuser != NULL) {
-		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
-		return;
-	}
-
-	/* Do we have a valid vuid now ? */
-	if (!is_partial_auth_vuid(sconn, vuid)) {
-		if (vuid != 0) {
+	if (vuid != 0) {
+		status = smb1srv_session_lookup(sconn->conn,
+						vuid, now,
+						&session);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 			reply_force_doserror(req, ERRSRV, ERRbaduid);
 			return;
 		}
-
-		/* No, start a new authentication setup. */
-		vuid = register_initial_vuid(sconn);
-		if (vuid == UID_FIELD_INVALID) {
-			reply_nterror(req, nt_status_squash(
-					      NT_STATUS_INVALID_PARAMETER));
+		if (NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
+			return;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
 	}
 
-	vuser = get_partial_auth_user_struct(sconn, vuid);
-	/* This MUST be valid. */
-	if (!vuser) {
-		smb_panic("reply_sesssetup_and_X_spnego: invalid vuid.");
+	if (session == NULL) {
+		/* create a new session */
+		status = smbXsrv_session_create(sconn->conn,
+					        now, &session);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, nt_status_squash(status));
+			return;
+		}
 	}
 
-	if (!vuser->gensec_security) {
-		status = auth_generic_prepare(vuser, sconn->remote_address,
-					      &vuser->gensec_security);
+	if (!session->gensec) {
+		status = auth_generic_prepare(session, sconn->remote_address,
+					      &session->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
-			/* Kill the intermediate vuid */
-			invalidate_vuid(sconn, vuid);
+			TALLOC_FREE(session);
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
 
-		gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_SESSION_KEY);
-		gensec_want_feature(vuser->gensec_security, GENSEC_FEATURE_UNIX_TOKEN);
+		gensec_want_feature(session->gensec, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(session->gensec, GENSEC_FEATURE_UNIX_TOKEN);
 
-		status = gensec_start_mech_by_oid(vuser->gensec_security, GENSEC_OID_SPNEGO);
+		status = gensec_start_mech_by_oid(session->gensec,
+						  GENSEC_OID_SPNEGO);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to start SPNEGO handler!\n"));
-			/* Kill the intermediate vuid */
-			invalidate_vuid(sconn, vuid);
+			TALLOC_FREE(session);;
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
 	}
 
-	status = gensec_update(vuser->gensec_security,
+	become_root();
+	status = gensec_update(session->gensec,
 			       talloc_tos(), NULL,
 			       in_blob, &out_blob);
+	unbecome_root();
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		/* Kill the intermediate vuid */
-		invalidate_vuid(sconn, vuid);
+		TALLOC_FREE(session);
 		reply_nterror(req, nt_status_squash(status));
 		return;
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct auth_session_info *session_info = NULL;
-		uint64_t tmp_vuid;
 
-		status = gensec_session_info(vuser->gensec_security,
-					     talloc_tos(),
+		status = gensec_session_info(session->gensec,
+					     session,
 					     &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1,("Failed to generate session_info "
 				 "(user and group token) for session setup: %s\n",
 				 nt_errstr(status)));
-			/* Kill the intermediate vuid */
 			data_blob_free(&out_blob);
-			invalidate_vuid(sconn, vuid);
+			TALLOC_FREE(session);
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -279,13 +278,63 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			action = 1;
 		}
 
-		/* register_existing_vuid keeps the server info */
-		tmp_vuid = register_existing_vuid(sconn, vuid,
-						  session_info,
-						  data_blob_null);
-		if (tmp_vuid != vuid) {
+		session->compat = talloc_zero(session, struct user_struct);
+		if (session->compat == NULL) {
 			data_blob_free(&out_blob);
-			invalidate_vuid(sconn, vuid);
+			TALLOC_FREE(session);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+		session->compat->session = session;
+		session->compat->homes_snum = -1;
+		session->compat->session_info = session_info;
+		session->compat->session_keystr = NULL;
+		session->compat->vuid = session->global->session_wire_id;
+		DLIST_ADD(sconn->users, session->compat);
+		sconn->num_users++;
+
+		if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
+			session->compat->homes_snum =
+				register_homes_share(session_info->unix_info->unix_name);
+		}
+
+		if (!session_claim(sconn, session->compat)) {
+			DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
+				  (unsigned long long)session->compat->vuid));
+			data_blob_free(&out_blob);
+			TALLOC_FREE(session);
+			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
+			return;
+		}
+
+		if (srv_is_signing_negotiated(sconn) && action == 0) {
+			/*
+			 * Try and turn on server signing on the first non-guest
+			 * sessionsetup.
+			 */
+			srv_set_signing(sconn,
+				session_info->session_key,
+				data_blob_null);
+		}
+
+		set_current_user_info(session_info->unix_info->sanitized_username,
+				      session_info->unix_info->unix_name,
+				      session_info->info->domain_name);
+
+		session->status = NT_STATUS_OK;
+		session->global->auth_session_info = talloc_move(session->global,
+								 &session_info);
+		session->global->auth_session_info_seqnum += 1;
+		session->global->channels[0].auth_session_info_seqnum =
+			session->global->auth_session_info_seqnum;
+
+		status = smbXsrv_session_update(session);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("smb1: Failed to update session for vuid=%llu - %s\n",
+				  (unsigned long long)session->compat->vuid,
+				  nt_errstr(status)));
+			data_blob_free(&out_blob);
+			TALLOC_FREE(session);
 			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
 			return;
 		}
@@ -293,6 +342,8 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		/* current_user_info is changed on new vuid */
 		reload_services(sconn, conn_snum_used, true);
 	}
+
+	vuid = session->global->session_wire_id;
 
 	reply_outbuf(req, 4, 0);
 
@@ -304,14 +355,14 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	if (message_push_blob(&req->outbuf, out_blob) == -1) {
 		data_blob_free(&out_blob);
-		invalidate_vuid(sconn, vuid);
+		TALLOC_FREE(session);
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 	data_blob_free(&out_blob);
 
 	if (push_signature(&req->outbuf) == -1) {
-		invalidate_vuid(sconn, vuid);
+		TALLOC_FREE(session);
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -408,6 +459,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	struct auth_session_info *session_info = NULL;
 	uint16 smb_flag2 = req->flags2;
 	uint16_t action = 0;
+	NTTIME now = timeval_to_nttime(&req->request_time);
+	struct smbXsrv_session *session = NULL;
 
 	NTSTATUS nt_status;
 	struct smbd_server_connection *sconn = req->sconn;
@@ -759,31 +812,87 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	/* register the name and uid as being validated, so further connections
 	   to a uid can get through without a password, on the same VC */
 
-	/* Ignore the initial vuid. */
-	sess_vuid = register_initial_vuid(sconn);
-	if (sess_vuid == UID_FIELD_INVALID) {
+	nt_status = smbXsrv_session_create(sconn->conn,
+					   now, &session);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		data_blob_free(&nt_resp);
 		data_blob_free(&lm_resp);
-		reply_nterror(req, nt_status_squash(
-				      NT_STATUS_LOGON_FAILURE));
+		reply_nterror(req, nt_status_squash(nt_status));
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
-	/* register_existing_vuid keeps the session_info */
-	sess_vuid = register_existing_vuid(sconn, sess_vuid,
-					   session_info,
-					   nt_resp.data ? nt_resp : lm_resp);
-	if (sess_vuid == UID_FIELD_INVALID) {
+
+	session->compat = talloc_zero(session, struct user_struct);
+	if (session->compat == NULL) {
 		data_blob_free(&nt_resp);
 		data_blob_free(&lm_resp);
-		reply_nterror(req, nt_status_squash(
-				      NT_STATUS_LOGON_FAILURE));
+		TALLOC_FREE(session);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBsesssetupX);
+		return;
+	}
+	session->compat->session = session;
+	session->compat->homes_snum = -1;
+	session->compat->session_info = session_info;
+	session->compat->session_keystr = NULL;
+	session->compat->vuid = session->global->session_wire_id;
+	DLIST_ADD(sconn->users, session->compat);
+	sconn->num_users++;
+
+	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
+		session->compat->homes_snum =
+			register_homes_share(session_info->unix_info->unix_name);
+	}
+
+	if (!session_claim(sconn, session->compat)) {
+		DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
+			  (unsigned long long)session->compat->vuid));
+		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		TALLOC_FREE(session);
+		reply_nterror(req, NT_STATUS_LOGON_FAILURE);
+		END_PROFILE(SMBsesssetupX);
+		return;
+	}
+
+	if (srv_is_signing_negotiated(sconn) && action == 0) {
+		/*
+		 * Try and turn on server signing on the first non-guest
+		 * sessionsetup.
+		 */
+		srv_set_signing(sconn,
+			session_info->session_key,
+			nt_resp.data ? nt_resp : lm_resp);
+	}
+
+	set_current_user_info(session_info->unix_info->sanitized_username,
+			      session_info->unix_info->unix_name,
+			      session_info->info->domain_name);
+
+	session->status = NT_STATUS_OK;
+	session->global->auth_session_info = talloc_move(session->global,
+							 &session_info);
+	session->global->auth_session_info_seqnum += 1;
+	session->global->channels[0].auth_session_info_seqnum =
+		session->global->auth_session_info_seqnum;
+
+	nt_status = smbXsrv_session_update(session);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("smb1: Failed to update session for vuid=%llu - %s\n",
+			  (unsigned long long)session->compat->vuid,
+			  nt_errstr(nt_status)));
+		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		TALLOC_FREE(session);
+		reply_nterror(req, nt_status_squash(nt_status));
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
 
 	/* current_user_info is changed on new vuid */
 	reload_services(sconn, conn_snum_used, true);
+
+	sess_vuid = session->global->session_wire_id;
 
 	data_blob_free(&nt_resp);
 	data_blob_free(&lm_resp);

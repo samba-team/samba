@@ -2096,6 +2096,8 @@ void reply_ulogoffX(struct smb_request *req)
 {
 	struct smbd_server_connection *sconn = req->sconn;
 	struct user_struct *vuser;
+	struct smbXsrv_session *session = NULL;
+	NTSTATUS status;
 
 	START_PROFILE(SMBulogoffX);
 
@@ -2111,13 +2113,27 @@ void reply_ulogoffX(struct smb_request *req)
 		return;
 	}
 
-	/* in user level security we are supposed to close any files
-		open by this user */
-	if (vuser != NULL) {
-		file_close_user(sconn, req->vuid);
+	session = vuser->session;
+	vuser = NULL;
+
+	/*
+	 * TODO: cancel all outstanding requests on the session
+	 */
+	status = smbXsrv_session_logoff(session);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("reply_ulogoff: "
+			  "smbXsrv_session_logoff() failed: %s\n",
+			  nt_errstr(status)));
+		/*
+		 * If we hit this case, there is something completely
+		 * wrong, so we better disconnect the transport connection.
+		 */
+		END_PROFILE(SMBulogoffX);
+		exit_server(__location__ ": smbXsrv_session_logoff failed");
+		return;
 	}
 
-	invalidate_vuid(sconn, req->vuid);
+	TALLOC_FREE(session);
 
 	reply_outbuf(req, 2, 0);
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */

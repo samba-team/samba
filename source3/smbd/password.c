@@ -91,22 +91,6 @@ struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
 			SERVER_ALLOCATED_REQUIRED_YES);
 }
 
-bool is_partial_auth_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
-{
-	return (get_partial_auth_user_struct(sconn, vuid) != NULL);
-}
-
-/****************************************************************************
- Get the user struct of a partial NTLMSSP login
-****************************************************************************/
-
-struct user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
-						 uint64_t vuid)
-{
-	return get_valid_user_struct_internal(sconn, vuid,
-			SERVER_ALLOCATED_REQUIRED_NO);
-}
-
 /****************************************************************************
  Invalidate a uid.
 ****************************************************************************/
@@ -122,10 +106,6 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 	}
 
 	session_yield(vuser);
-
-	if (vuser->gensec_security) {
-		TALLOC_FREE(vuser->gensec_security);
-	}
 
 	DLIST_REMOVE(sconn->users, vuser);
 	SMB_ASSERT(sconn->num_users > 0);
@@ -144,68 +124,7 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 
 void invalidate_all_vuids(struct smbd_server_connection *sconn)
 {
-	if (sconn->using_smb2) {
-		smbXsrv_session_logoff_all(sconn->conn);
-		return;
-	}
-
-	while (sconn->users != NULL) {
-		invalidate_vuid(sconn, sconn->users->vuid);
-	}
-}
-
-static void increment_next_vuid(uint16_t *vuid)
-{
-	*vuid += 1;
-
-	/* Check for vuid wrap. */
-	if (*vuid == UID_FIELD_INVALID) {
-		*vuid = VUID_OFFSET;
-	}
-}
-
-/****************************************************
- Create a new partial auth user struct.
-*****************************************************/
-
-uint64_t register_initial_vuid(struct smbd_server_connection *sconn)
-{
-	struct user_struct *vuser;
-
-	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
-	if (sconn->num_users >= 0xFFFF-VUID_OFFSET) {
-		return UID_FIELD_INVALID;
-	}
-
-	if((vuser = talloc_zero(NULL, struct user_struct)) == NULL) {
-		DEBUG(0,("register_initial_vuid: "
-				"Failed to talloc users struct!\n"));
-		return UID_FIELD_INVALID;
-	}
-
-	/* Allocate a free vuid. Yes this is a linear search... */
-	while( get_valid_user_struct_internal(sconn,
-			sconn->smb1.sessions.next_vuid,
-			SERVER_ALLOCATED_REQUIRED_ANY) != NULL ) {
-		increment_next_vuid(&sconn->smb1.sessions.next_vuid);
-	}
-
-	DEBUG(10,("register_initial_vuid: allocated vuid = %u\n",
-		(unsigned int)sconn->smb1.sessions.next_vuid ));
-
-	vuser->vuid = sconn->smb1.sessions.next_vuid;
-
-	/*
-	 * This happens in an unfinished NTLMSSP session setup. We
-	 * need to allocate a vuid between the first and second calls
-	 * to NTLMSSP.
-	 */
-	increment_next_vuid(&sconn->smb1.sessions.next_vuid);
-
-	sconn->num_users++;
-	DLIST_ADD(sconn->users, vuser);
-
-	return vuser->vuid;
+	smbXsrv_session_logoff_all(sconn->conn);
 }
 
 int register_homes_share(const char *username)
@@ -237,115 +156,4 @@ int register_homes_share(const char *username)
 
 	TALLOC_FREE(pwd);
 	return result;
-}
-
-/**
- *  register that a valid login has been performed, establish 'session'.
- *  @param session_info The token returned from the authentication process.
- *   (now 'owned' by register_existing_vuid)
- *
- *  @param session_key The User session key for the login session (now also
- *  'owned' by register_existing_vuid)
- *
- *  @param respose_blob The NT challenge-response, if available.  (May be
- *  freed after this call)
- *
- *  @param smb_name The untranslated name of the user
- *
- *  @return Newly allocated vuid, biased by an offset. (This allows us to
- *   tell random client vuid's (normally zero) from valid vuids.)
- *
- */
-
-uint64_t register_existing_vuid(struct smbd_server_connection *sconn,
-				uint64_t vuid,
-				struct auth_session_info *session_info,
-				DATA_BLOB response_blob)
-{
-	struct user_struct *vuser;
-	bool guest = security_session_user_level(session_info, NULL) < SECURITY_USER;
-
-	vuser = get_partial_auth_user_struct(sconn, vuid);
-	if (!vuser) {
-		goto fail;
-	}
-
-	/* Use this to keep tabs on all our info from the authentication */
-	vuser->session_info = talloc_move(vuser, &session_info);
-
-	/* Make clear that we require the optional unix_token and unix_info in the source3 code */
-	SMB_ASSERT(vuser->session_info->unix_token);
-	SMB_ASSERT(vuser->session_info->unix_info);
-
-	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
-		  (unsigned int)vuser->session_info->unix_token->uid,
-		  (unsigned int)vuser->session_info->unix_token->gid,
-		  vuser->session_info->unix_info->unix_name,
-		  vuser->session_info->unix_info->sanitized_username,
-		  vuser->session_info->info->domain_name,
-		  guest));
-
-	DEBUG(3, ("register_existing_vuid: User name: %s\t"
-		  "Real name: %s\n", vuser->session_info->unix_info->unix_name,
-		  vuser->session_info->info->full_name ?
-		  vuser->session_info->info->full_name : ""));
-
-	if (!vuser->session_info->security_token) {
-		DEBUG(1, ("register_existing_vuid: session_info does not "
-			"contain a user_token - cannot continue\n"));
-		goto fail;
-	}
-
-	/* Make clear that we require the optional unix_token in the source3 code */
-	SMB_ASSERT(vuser->session_info->unix_token);
-
-	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
-		"and will be vuid %llu\n", (int)vuser->session_info->unix_token->uid,
-		 vuser->session_info->unix_info->unix_name,
-		 (unsigned long long)vuser->vuid));
-
-	if (!session_claim(sconn, vuser)) {
-		DEBUG(1, ("register_existing_vuid: Failed to claim session "
-			"for vuid=%llu\n",
-			(unsigned long long)vuser->vuid));
-		goto fail;
-	}
-
-	/* Register a home dir service for this user if
-	(a) This is not a guest connection,
-	(b) we have a home directory defined
-	(c) there s not an existing static share by that name
-	If a share exists by this name (autoloaded or not) reuse it . */
-
-	vuser->homes_snum = -1;
-
-
-	if (!guest) {
-		vuser->homes_snum = register_homes_share(
-			vuser->session_info->unix_info->unix_name);
-	}
-
-	if (srv_is_signing_negotiated(sconn) &&
-	    !guest) {
-		/* Try and turn on server signing on the first non-guest
-		 * sessionsetup. */
-		srv_set_signing(sconn,
-				vuser->session_info->session_key,
-				response_blob);
-	}
-
-	/* fill in the current_user_info struct */
-	set_current_user_info(
-		vuser->session_info->unix_info->sanitized_username,
-		vuser->session_info->unix_info->unix_name,
-		vuser->session_info->info->domain_name);
-
-	return vuser->vuid;
-
-  fail:
-
-	if (vuser) {
-		invalidate_vuid(sconn, vuid);
-	}
-	return UID_FIELD_INVALID;
 }

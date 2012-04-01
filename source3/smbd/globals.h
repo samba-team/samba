@@ -498,8 +498,6 @@ struct user_struct {
 
 	struct auth_session_info *session_info;
 
-	struct gensec_security *gensec_security;
-
 	struct smbXsrv_session0 *session;
 };
 
@@ -607,12 +605,6 @@ struct smbd_server_connection {
 			 */
 			int max_send;
 			uint64_t last_session_tag;
-
-			/*
-			 * this holds info on user ids that are already
-			 * validated for this VC
-			 */
-			uint16_t next_vuid;
 		} sessions;
 		struct smb_signing_state *signing_state;
 
