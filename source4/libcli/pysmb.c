@@ -437,13 +437,15 @@ static PyObject *py_open_file(pytalloc_Object *self, PyObject *args, PyObject *k
 	union smb_open io;
 	struct smb_private_data *spdata;
 	const char *filename;
-	uint32_t access_mask = 0;
-	uint32_t share_access = 0;
-        uint32_t open_disposition = 0;
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	uint32_t share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE;
+        uint32_t open_disposition = NTCREATEX_DISP_OPEN;
         uint32_t create_options = 0;
+	TALLOC_CTX *mem_ctx;
 	int fnum;
 
-	if (!PyArg_ParseTuple(args, "si|iii:open_file", 
+	if (!PyArg_ParseTuple(args, "s|iiii:open_file", 
 				&filename, 
 				&access_mask,
 				&share_access,
@@ -452,19 +454,11 @@ static PyObject *py_open_file(pytalloc_Object *self, PyObject *args, PyObject *k
 		return NULL;
 	}
 
-	if (!access_mask)
-		access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-
-	if (!share_access)
-		share_access = NTCREATEX_SHARE_ACCESS_READ |
-				NTCREATEX_SHARE_ACCESS_WRITE;
-
-	if (!open_disposition)
-		open_disposition = NTCREATEX_DISP_OPEN;
-
 	ZERO_STRUCT(io);
 
 	spdata = self->ptr;	
+
+	mem_ctx = talloc_new(NULL);
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -479,7 +473,9 @@ static PyObject *py_open_file(pytalloc_Object *self, PyObject *args, PyObject *k
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = filename;
 	
-	status = smb_raw_open(spdata->tree, self->talloc_ctx, &io);
+	status = smb_raw_open(spdata->tree, mem_ctx, &io);
+	talloc_free(mem_ctx);
+
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	fnum = io.ntcreatex.out.file.fnum;
@@ -541,7 +537,7 @@ static PyMethodDef py_smb_methods[] = {
 		Set security descriptor for file." },
 	{ "open_file", (PyCFunction)py_open_file, METH_VARARGS,
 		"open_file(path, access_mask[, share_access[, open_disposition[, create_options]]] -> fnum\n\n \
-		Open a file. Throws exceptions on errors." },
+		Open a file. Throws NTSTATUS exceptions on errors." },
 	{ "close_file", (PyCFunction)py_close_file, METH_VARARGS,
 		"close_file(fnum) -> None\n\n \
 		Close the file based on fnum."},
