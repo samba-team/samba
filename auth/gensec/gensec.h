@@ -350,5 +350,7 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 					  const struct tsocket_address *remote_address,
 					  struct auth_session_info **session_info);
 
+NTSTATUS gensec_magic_check_krb5_oid(struct gensec_security *unused,
+					const DATA_BLOB *blob);
 
 #endif /* __GENSEC_H__ */

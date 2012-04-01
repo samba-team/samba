@@ -95,23 +95,3 @@ bool gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, D
 }
 
 
-/*
-  check a GSS-API wrapper packet givin an expected OID
-*/
-bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
-{
-	bool ret;
-	struct asn1_data *data = asn1_init(NULL);
-
-	if (!data) return false;
-
-	asn1_load(data, *blob);
-	asn1_start_tag(data, ASN1_APPLICATION(0));
-	asn1_check_OID(data, oid);
-
-	ret = !data->has_error;
-
-	asn1_free(data);
-
-	return ret;
-}

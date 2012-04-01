@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "auth/gensec/gensec.h"
 #include "auth/common_auth.h"
+#include "../lib/util/asn1.h"
 
 NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 					  struct gensec_security *gensec_security,
@@ -179,4 +180,47 @@ NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
 		return STATUS_MORE_ENTRIES;
 	}
 	return NT_STATUS_OK;
+}
+
+/*
+  magic check a GSS-API wrapper packet for an Kerberos OID
+*/
+static bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
+{
+	bool ret;
+	struct asn1_data *data = asn1_init(NULL);
+
+	if (!data) return false;
+
+	asn1_load(data, *blob);
+	asn1_start_tag(data, ASN1_APPLICATION(0));
+	asn1_check_OID(data, oid);
+
+	ret = !data->has_error;
+
+	asn1_free(data);
+
+	return ret;
+}
+
+/**
+ * Check if the packet is one for the KRB5 mechansim
+ *
+ * NOTE: This is a helper that can be employed by multiple mechanisms, do
+ * not make assumptions about the private_data
+ *
+ * @param gensec_security GENSEC state, unused
+ * @param in The request, as a DATA_BLOB
+ * @return Error, INVALID_PARAMETER if it's not a packet for us
+ *                or NT_STATUS_OK if the packet is ok.
+ */
+
+NTSTATUS gensec_magic_check_krb5_oid(struct gensec_security *unused,
+					const DATA_BLOB *blob)
+{
+	if (gensec_gssapi_check_oid(blob, GENSEC_OID_KERBEROS5)) {
+		return NT_STATUS_OK;
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 }

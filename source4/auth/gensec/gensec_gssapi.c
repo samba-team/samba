@@ -394,26 +394,6 @@ static NTSTATUS gensec_gssapi_sasl_client_start(struct gensec_security *gensec_s
 
 
 /**
- * Check if the packet is one for this mechansim
- * 
- * @param gensec_security GENSEC state
- * @param in The request, as a DATA_BLOB
- * @return Error, INVALID_PARAMETER if it's not a packet for us
- *                or NT_STATUS_OK if the packet is ok. 
- */
-
-static NTSTATUS gensec_gssapi_magic(struct gensec_security *gensec_security, 
-				    const DATA_BLOB *in) 
-{
-	if (gensec_gssapi_check_oid(in, GENSEC_OID_KERBEROS5)) {
-		return NT_STATUS_OK;
-	} else {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-}
-
-
-/**
  * Next state function for the GSSAPI GENSEC mechanism
  * 
  * @param gensec_gssapi_state GSSAPI State
@@ -1470,7 +1450,7 @@ static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
 	.oid            = gensec_gssapi_spnego_oids,
 	.client_start   = gensec_gssapi_client_start,
 	.server_start   = gensec_gssapi_server_start,
-	.magic  	= gensec_gssapi_magic,
+	.magic  	= gensec_magic_check_krb5_oid,
 	.update 	= gensec_gssapi_update,
 	.session_key	= gensec_gssapi_session_key,
 	.session_info	= gensec_gssapi_session_info,
@@ -1493,7 +1473,7 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.oid            = gensec_gssapi_krb5_oids,
 	.client_start   = gensec_gssapi_client_start,
 	.server_start   = gensec_gssapi_server_start,
-	.magic  	= gensec_gssapi_magic,
+	.magic  	= gensec_magic_check_krb5_oid,
 	.update 	= gensec_gssapi_update,
 	.session_key	= gensec_gssapi_session_key,
 	.session_info	= gensec_gssapi_session_info,

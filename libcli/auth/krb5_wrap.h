@@ -96,4 +96,3 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8_t tok_id[2]);
 
 bool gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8_t tok_id[2]);
-bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid);
