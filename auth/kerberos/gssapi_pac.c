@@ -220,9 +220,9 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 	}
 
 	if (keytype) {
-		char *oid;
-		char *p, *q = NULL;
-		
+		int diflen, i;
+		const char *p;
+
 		if (set->count < 2) {
 
 #ifdef HAVE_GSSKRB5_GET_SUBKEY
@@ -251,29 +251,22 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 			gss_maj = gss_release_buffer_set(&gss_min, &set);
 			return NT_STATUS_OK;
 		}
-		if (!ber_read_OID_String(mem_ctx,
-					 data_blob_const(set->elements[1].value,
-							 set->elements[1].length), &oid)) {
-			TALLOC_FREE(oid);
+		p = set->elements[1].value + gse_sesskeytype_oid.length;
+		diflen = set->elements[1].length - gse_sesskeytype_oid.length;
+		if (diflen <= 0) {
 			gss_maj = gss_release_buffer_set(&gss_min, &set);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		p = strrchr(oid, '.');
-		if (!p) {
-			TALLOC_FREE(oid);
-			gss_maj = gss_release_buffer_set(&gss_min, &set);
-			return NT_STATUS_INVALID_PARAMETER;
-		} else {
-			p++;
-			*keytype = strtoul(p, &q, 10);
-			if (q == NULL || *q != '\0') {
-				TALLOC_FREE(oid);
+		*keytype = 0;
+		for (i = 0; i < diflen; i++) {
+			*keytype = (*keytype << 7) | (p[i] & 0x7f);
+			if (i + 1 != diflen && (p[i] & 0x80) == 0) {
+				gss_maj = gss_release_buffer_set(&gss_min, &set);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 		}
-		TALLOC_FREE(oid);
 	}
-	
+
 	gss_maj = gss_release_buffer_set(&gss_min, &set);
 	return NT_STATUS_OK;
 }
