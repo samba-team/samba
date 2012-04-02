@@ -2,6 +2,10 @@
 ## Description:    Samba process options
 ## Type:           string
 ## Default:        ""
+## ServiceRestart: samba
+SAMBAOPTIONS=""
+## Type:           string
+## Default:        ""
 ## ServiceRestart: smb
 SMBDOPTIONS=""
 ## Type:           string
