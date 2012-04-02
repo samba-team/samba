@@ -345,7 +345,7 @@ if __name__ == '__main__':
     # Create DNS partitions if missing and fill DNS information
     try:
         expression = '(|(dnsRoot=DomainDnsZones.%s)(dnsRoot=ForestDnsZones.%s))' % \
-                     (dnsdomain, dnsdomain)
+                     (dnsdomain, dnsforest)
         msg = ldbs.sam.search(base=names.configdn, scope=ldb.SCOPE_DEFAULT,
                               expression=expression, attrs=['nCName'])
         ncname = msg[0]['nCName'][0]
