@@ -2150,14 +2150,6 @@ ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
 	return handle->fns->getxattr_fn(handle, path, name, value, size);
 }
 
-ssize_t smb_vfs_call_lgetxattr(struct vfs_handle_struct *handle,
-			       const char *path, const char *name, void *value,
-			       size_t size)
-{
-	VFS_FIND(lgetxattr);
-	return handle->fns->lgetxattr_fn(handle, path, name, value, size);
-}
-
 ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size)

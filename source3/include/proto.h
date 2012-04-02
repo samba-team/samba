@@ -351,7 +351,6 @@ int sys_setgroups(gid_t UNUSED(primary_gid), int setlen, gid_t *gidset);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size);
-ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t size);
 ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size);
 ssize_t sys_listxattr (const char *path, char *list, size_t size);
 ssize_t sys_llistxattr (const char *path, char *list, size_t size);

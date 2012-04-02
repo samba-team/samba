@@ -191,7 +191,6 @@ typedef enum _vfs_op_type {
 
 	/* EA operations. */
 	SMB_VFS_OP_GETXATTR,
-	SMB_VFS_OP_LGETXATTR,
 	SMB_VFS_OP_FGETXATTR,
 	SMB_VFS_OP_LISTXATTR,
 	SMB_VFS_OP_LLISTXATTR,
@@ -322,7 +321,6 @@ static struct {
 	{ SMB_VFS_OP_SYS_ACL_FREE_ACL,	"sys_acl_free_acl" },
 	{ SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,	"sys_acl_free_qualifier" },
 	{ SMB_VFS_OP_GETXATTR,	"getxattr" },
-	{ SMB_VFS_OP_LGETXATTR,	"lgetxattr" },
 	{ SMB_VFS_OP_FGETXATTR,	"fgetxattr" },
 	{ SMB_VFS_OP_LISTXATTR,	"listxattr" },
 	{ SMB_VFS_OP_LLISTXATTR,	"llistxattr" },
@@ -1974,20 +1972,6 @@ static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static ssize_t smb_full_audit_lgetxattr(struct vfs_handle_struct *handle,
-			       const char *path, const char *name,
-			       void *value, size_t size)
-{
-	ssize_t result;
-
-	result = SMB_VFS_NEXT_LGETXATTR(handle, path, name, value, size);
-
-	do_log(SMB_VFS_OP_LGETXATTR, (result >= 0), handle,
-	       "%s|%s", path, name);
-
-	return result;
-}
-
 static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       const char *name, void *value, size_t size)
@@ -2338,7 +2322,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.sys_acl_free_acl_fn = smb_full_audit_sys_acl_free_acl,
 	.sys_acl_free_qualifier_fn = smb_full_audit_sys_acl_free_qualifier,
 	.getxattr_fn = smb_full_audit_getxattr,
-	.lgetxattr_fn = smb_full_audit_lgetxattr,
 	.fgetxattr_fn = smb_full_audit_fgetxattr,
 	.listxattr_fn = smb_full_audit_listxattr,
 	.llistxattr_fn = smb_full_audit_llistxattr,

@@ -831,28 +831,6 @@ catia_getxattr(vfs_handle_struct *handle, const char *path,
 }
 
 static ssize_t
-catia_lgetxattr(vfs_handle_struct *handle, const char *path,
-		const char *name, void *value, size_t size)
-{
-	char *mapped_name = NULL;
-	NTSTATUS status;
-	ssize_t ret;
-
-	status = catia_string_replace_allocate(handle->conn,
-				name, &mapped_name, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-
-	ret = SMB_VFS_NEXT_LGETXATTR(handle, path, mapped_name, value, size);
-	TALLOC_FREE(mapped_name);
-
-	return ret;
-}
-
-static ssize_t
 catia_listxattr(vfs_handle_struct *handle, const char *path,
 		char *list, size_t size)
 {
@@ -1009,7 +987,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.sys_acl_set_file_fn = catia_sys_acl_set_file,
 	.sys_acl_delete_def_file_fn = catia_sys_acl_delete_def_file,
 	.getxattr_fn = catia_getxattr,
-	.lgetxattr_fn = catia_lgetxattr,
 	.listxattr_fn = catia_listxattr,
 	.llistxattr_fn = catia_llistxattr,
 	.removexattr_fn = catia_removexattr,

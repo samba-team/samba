@@ -1301,7 +1301,7 @@ case "$host_os" in
   *)
 	AC_SEARCH_LIBS(getxattr, [attr])
 	AC_CHECK_FUNCS(getxattr,[
-		AC_CHECK_FUNCS(lgetxattr fgetxattr listxattr llistxattr flistxattr removexattr lremovexattr fremovexattr setxattr lsetxattr fsetxattr)
+		AC_CHECK_FUNCS(fgetxattr listxattr llistxattr flistxattr removexattr lremovexattr fremovexattr setxattr lsetxattr fsetxattr)
 		])
 	AC_CHECK_FUNCS(getea,[
 		AC_CHECK_FUNCS(fgetea lgetea listea flistea llistea removeea fremoveea lremoveea setea fsetea lsetea)

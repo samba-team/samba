@@ -1365,57 +1365,6 @@ ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t si
 #endif
 }
 
-ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t size)
-{
-#if defined(HAVE_LGETXATTR)
-	return lgetxattr(path, name, value, size);
-#elif defined(HAVE_GETXATTR) && defined(XATTR_ADD_OPT)
-	int options = XATTR_NOFOLLOW;
-	return getxattr(path, name, value, size, 0, options);
-#elif defined(HAVE_LGETEA)
-	return lgetea(path, name, value, size);
-#elif defined(HAVE_EXTATTR_GET_LINK)
-	char *s;
-	ssize_t retval;
-	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
-		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
-	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
-
-	if((retval=extattr_get_link(path, attrnamespace, attrname, NULL, 0)) >= 0) {
-		if(retval > size) {
-			errno = ERANGE;
-			return -1;
-		}
-		if((retval=extattr_get_link(path, attrnamespace, attrname, value, size)) >= 0)
-			return retval;
-	}
-
-	DEBUG(10,("sys_lgetxattr: extattr_get_link() failed with: %s\n", strerror(errno)));
-	return -1;
-#elif defined(HAVE_ATTR_GET)
-	int retval, flags = ATTR_DONTFOLLOW;
-	int valuelength = (int)size;
-	char *attrname = strchr(name,'.') + 1;
-
-	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
-
-	retval = attr_get(path, attrname, (char *)value, &valuelength, flags);
-
-	return retval ? retval : valuelength;
-#elif defined(HAVE_ATTROPEN)
-	ssize_t ret = -1;
-	int attrfd = solaris_attropen(path, name, O_RDONLY|AT_SYMLINK_NOFOLLOW, 0);
-	if (attrfd >= 0) {
-		ret = solaris_read_xattr(attrfd, value, size);
-		close(attrfd);
-	}
-	return ret;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
 ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_FGETXATTR)

@@ -398,7 +398,6 @@ struct vfs_fn_pointers {
 
 	/* EA operations. */
 	ssize_t (*getxattr_fn)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
-	ssize_t (*lgetxattr_fn)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
 	ssize_t (*fgetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size);
 	ssize_t (*listxattr_fn)(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
 	ssize_t (*llistxattr_fn)(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
@@ -805,9 +804,6 @@ int smb_vfs_call_sys_acl_free_qualifier(struct vfs_handle_struct *handle,
 ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
 			      const char *path, const char *name, void *value,
 			      size_t size);
-ssize_t smb_vfs_call_lgetxattr(struct vfs_handle_struct *handle,
-			       const char *path, const char *name, void *value,
-			       size_t size);
 ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size);

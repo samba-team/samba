@@ -2008,11 +2008,6 @@ static ssize_t vfswrap_getxattr(struct vfs_handle_struct *handle,const char *pat
 	return sys_getxattr(path, name, value, size);
 }
 
-static ssize_t vfswrap_lgetxattr(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size)
-{
-	return sys_lgetxattr(path, name, value, size);
-}
-
 static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
 {
 	return sys_fgetxattr(fsp->fh->fd, name, value, size);
@@ -2279,7 +2274,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	/* EA operations. */
 	.getxattr_fn = vfswrap_getxattr,
-	.lgetxattr_fn = vfswrap_lgetxattr,
 	.fgetxattr_fn = vfswrap_fgetxattr,
 	.listxattr_fn = vfswrap_listxattr,
 	.llistxattr_fn = vfswrap_llistxattr,

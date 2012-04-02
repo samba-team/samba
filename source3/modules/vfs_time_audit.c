@@ -1952,26 +1952,6 @@ static ssize_t smb_time_audit_getxattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static ssize_t smb_time_audit_lgetxattr(struct vfs_handle_struct *handle,
-					const char *path, const char *name,
-					void *value, size_t size)
-{
-	ssize_t result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_LGETXATTR(handle, path, name, value, size);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log("lgetxattr", timediff);
-	}
-
-	return result;
-}
-
 static ssize_t smb_time_audit_fgetxattr(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *name, void *value,
@@ -2434,7 +2414,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.sys_acl_free_acl_fn = smb_time_audit_sys_acl_free_acl,
 	.sys_acl_free_qualifier_fn = smb_time_audit_sys_acl_free_qualifier,
 	.getxattr_fn = smb_time_audit_getxattr,
-	.lgetxattr_fn = smb_time_audit_lgetxattr,
 	.fgetxattr_fn = smb_time_audit_fgetxattr,
 	.listxattr_fn = smb_time_audit_listxattr,
 	.llistxattr_fn = smb_time_audit_llistxattr,

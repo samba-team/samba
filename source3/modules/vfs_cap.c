@@ -454,19 +454,6 @@ static ssize_t cap_getxattr(vfs_handle_struct *handle, const char *path, const c
         return SMB_VFS_NEXT_GETXATTR(handle, cappath, capname, value, size);
 }
 
-static ssize_t cap_lgetxattr(vfs_handle_struct *handle, const char *path, const char *name, void *value, size_t
-size)
-{
-	char *cappath = capencode(talloc_tos(), path);
-	char *capname = capencode(talloc_tos(), name);
-
-	if (!cappath || !capname) {
-		errno = ENOMEM;
-		return -1;
-	}
-        return SMB_VFS_NEXT_LGETXATTR(handle, cappath, capname, value, size);
-}
-
 static ssize_t cap_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path, void *value, size_t size)
 {
 	char *cappath = capencode(talloc_tos(), path);
@@ -596,7 +583,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.sys_acl_set_file_fn = cap_sys_acl_set_file,
 	.sys_acl_delete_def_file_fn = cap_sys_acl_delete_def_file,
 	.getxattr_fn = cap_getxattr,
-	.lgetxattr_fn = cap_lgetxattr,
 	.fgetxattr_fn = cap_fgetxattr,
 	.listxattr_fn = cap_listxattr,
 	.llistxattr_fn = cap_llistxattr,

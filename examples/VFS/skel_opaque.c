@@ -668,13 +668,6 @@ static ssize_t skel_getxattr(vfs_handle_struct *handle, const char *path, const 
 	return -1;
 }
 
-static ssize_t skel_lgetxattr(vfs_handle_struct *handle, const char *path, const char *name, void *value, size_t
-size)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static ssize_t skel_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
 {
 	errno = ENOSYS;
@@ -913,7 +906,6 @@ struct vfs_fn_pointers skel_opaque_fns = {
 
 	/* EA operations. */
 	.getxattr_fn = skel_getxattr,
-	.lgetxattr_fn = skel_lgetxattr,
 	.fgetxattr_fn = skel_fgetxattr,
 	.listxattr_fn = skel_listxattr,
 	.llistxattr_fn = skel_llistxattr,

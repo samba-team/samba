@@ -74,7 +74,6 @@
         <member>getwd</member>
         <member>getxattr</member>
         <member>kernel_flock</member>
-        <member>lgetxattr</member>
         <member>link</member>
         <member>linux_setlease</member>
         <member>listxattr</member>
