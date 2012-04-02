@@ -1682,7 +1682,7 @@ main() {
     default_shared_modules=TO_LIST('''vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk
                                       vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap
                                       vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 
-                                      auth_script vfs_readahead vfs_xattr_tdb
+                                      auth_script vfs_readahead vfs_xattr_tdb vfs_posix_eadb
                                       vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
                                       vfs_smb_traffic_analyzer vfs_preopen vfs_catia vfs_scannedonly
                                       vfs_crossrename vfs_linux_xfs_sgid

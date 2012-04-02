@@ -186,6 +186,14 @@ bld.SAMBA3_MODULE('vfs_xattr_tdb',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_xattr_tdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_xattr_tdb'))
 
+bld.SAMBA3_MODULE('vfs_posix_eadb',
+                 subsystem='vfs',
+                 source='vfs_posix_eadb.c',
+                 deps='tdb-wrap posix_eadb',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_posix_eadb'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_posix_eadb'))
+
 bld.SAMBA3_MODULE('vfs_posixacl',
                  subsystem='vfs',
                  source=VFS_POSIXACL_SRC,
