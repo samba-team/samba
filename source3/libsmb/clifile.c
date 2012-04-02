@@ -4945,6 +4945,7 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_notify_state *state;
+	unsigned old_timeout;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_notify_state);
 	if (req == NULL) {
@@ -4954,6 +4955,11 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 	SIVAL(state->setup, 0, completion_filter);
 	SSVAL(state->setup, 4, fnum);
 	SSVAL(state->setup, 6, recursive);
+
+	/*
+	 * Notifies should not time out
+	 */
+	old_timeout = cli_set_timeout(cli, 0);
 
 	subreq = cli_trans_send(
 		state,			/* mem ctx. */
@@ -4973,6 +4979,8 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 		NULL,			/* data. */
 		0,			/* num data. */
 		0);			/* max returned data. */
+
+	cli_set_timeout(cli, old_timeout);
 
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
