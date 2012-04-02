@@ -28,7 +28,6 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "../librpc/gen_ndr/dcerpc.h"
-#include "lib/util/asn1.h"
 
 #if defined(HAVE_KRB5)
 
