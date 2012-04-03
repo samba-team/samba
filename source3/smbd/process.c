@@ -3296,7 +3296,9 @@ void smbd_process(struct tevent_context *ev_ctx,
 		   tsocket_address_string(remote_address, talloc_tos()),
 		   tsocket_address_string(local_address, talloc_tos())));
 
-	init_modules();
+	if (lp_preload_modules()) {
+		smb_load_modules(lp_preload_modules());
+	}
 
 	smb_perfcount_init();
 

@@ -2446,12 +2446,3 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 	return True;
 
 }
-
-
-void init_modules(void)
-{
-	/* FIXME: This can cause undefined symbol errors :
-	 *  smb_register_vfs() isn't available in nmbd, for example */
-	if(lp_preload_modules())
-		smb_load_modules(lp_preload_modules());
-}
