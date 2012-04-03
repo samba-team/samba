@@ -1120,7 +1120,11 @@ again:
 	}
 
 	if (migrate_attempts > 10) {
-		DEBUG(0, ("db_ctdb_fetch_locked needed %d attempts\n",
+		DEBUG(0, ("db_ctdb_fetch_locked for %s key %s needed %d "
+			  "attempts\n", tdb_name(ctx->wtdb->tdb),
+			  hex_encode_talloc(talloc_tos(),
+					    (unsigned char *)key.dptr,
+					    key.dsize),
 			  migrate_attempts));
 	}
 
