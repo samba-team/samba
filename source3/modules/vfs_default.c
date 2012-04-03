@@ -2043,11 +2043,6 @@ static int vfswrap_setxattr(struct vfs_handle_struct *handle, const char *path, 
 	return sys_setxattr(path, name, value, size, flags);
 }
 
-static int vfswrap_lsetxattr(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
-{
-	return sys_lsetxattr(path, name, value, size, flags);
-}
-
 static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
 	return sys_fsetxattr(fsp->fh->fd, name, value, size, flags);
@@ -2276,7 +2271,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.lremovexattr_fn = vfswrap_lremovexattr,
 	.fremovexattr_fn = vfswrap_fremovexattr,
 	.setxattr_fn = vfswrap_setxattr,
-	.lsetxattr_fn = vfswrap_lsetxattr,
 	.fsetxattr_fn = vfswrap_fsetxattr,
 
 	/* aio operations */

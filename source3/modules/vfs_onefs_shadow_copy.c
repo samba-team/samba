@@ -605,16 +605,6 @@ onefs_shadow_copy_setxattr(vfs_handle_struct *handle, const char *path,
 		    int);
 }
 
-static int
-onefs_shadow_copy_lsetxattr(vfs_handle_struct *handle, const char *path,
-			    const char *name, const void *value, size_t size,
-			    int flags)
-{
-	SHADOW_NEXT(LSETXATTR,
-		    (handle, cpath ?: path, name, value, size, flags),
-		    int);
-}
-
 static bool
 onefs_shadow_copy_is_offline(struct vfs_handle_struct *handle,
 			     const struct smb_fname *fname,

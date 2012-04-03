@@ -2093,28 +2093,6 @@ static int smb_time_audit_setxattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_time_audit_lsetxattr(struct vfs_handle_struct *handle,
-				    const char *path, const char *name,
-				    const void *value, size_t size,
-				    int flags)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_LSETXATTR(handle, path, name, value, size,
-					flags);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log("lsetxattr", timediff);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_fsetxattr(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp, const char *name,
 				    const void *value, size_t size, int flags)
@@ -2401,7 +2379,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.lremovexattr_fn = smb_time_audit_lremovexattr,
 	.fremovexattr_fn = smb_time_audit_fremovexattr,
 	.setxattr_fn = smb_time_audit_setxattr,
-	.lsetxattr_fn = smb_time_audit_lsetxattr,
 	.fsetxattr_fn = smb_time_audit_fsetxattr,
 	.aio_read_fn = smb_time_audit_aio_read,
 	.aio_write_fn = smb_time_audit_aio_write,

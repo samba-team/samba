@@ -554,11 +554,6 @@
 #define SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags) \
 	smb_vfs_call_setxattr((handle)->next,(path),(name),(value),(size),(flags))
 
-#define SMB_VFS_LSETXATTR(conn,path,name,value,size,flags) \
-	smb_vfs_call_lsetxattr((conn)->vfs_handles,(path),(name),(value),(size),(flags))
-#define SMB_VFS_NEXT_LSETXATTR(handle,path,name,value,size,flags) \
-	smb_vfs_call_lsetxattr((handle)->next,(path),(name),(value),(size),(flags))
-
 #define SMB_VFS_FSETXATTR(fsp,name,value,size,flags) \
 	smb_vfs_call_fsetxattr((fsp)->conn->vfs_handles, (fsp), (name),(value),(size),(flags))
 #define SMB_VFS_NEXT_FSETXATTR(handle,fsp,name,value,size,flags) \

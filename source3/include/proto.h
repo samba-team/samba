@@ -358,7 +358,6 @@ int sys_removexattr (const char *path, const char *name);
 int sys_lremovexattr (const char *path, const char *name);
 int sys_fremovexattr (int filedes, const char *name);
 int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags);
-int sys_lsetxattr (const char *path, const char *name, const void *value, size_t size, int flags);
 int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags);
 uint32 unix_dev_major(SMB_DEV_T dev);
 uint32 unix_dev_minor(SMB_DEV_T dev);

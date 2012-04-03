@@ -80,7 +80,6 @@
         <member>lock</member>
         <member>lremovexattr</member>
         <member>lseek</member>
-        <member>lsetxattr</member>
         <member>lstat</member>
         <member>mkdir</member>
         <member>mknod</member>

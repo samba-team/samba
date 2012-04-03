@@ -138,7 +138,7 @@
 /* Bump to version 29 - Samba 3.6.0 will ship with interface version 28. */
 /* Leave at 29 - not yet releases. Add fsctl. Richard Sharpe */
 /* Leave at 29 - not yet released. add SMB_VFS_GET_DFS_REFERRAL() - metze */
-/* Leave at 29 - not yet released. Remove llistxattr and lgetxattr - abartlet */
+/* Leave at 29 - not yet released. Remove l{list,get,set,remove}xattr - abartlet */
 #define SMB_VFS_INTERFACE_VERSION 29
 
 /*
@@ -406,7 +406,6 @@ struct vfs_fn_pointers {
 	int (*lremovexattr_fn)(struct vfs_handle_struct *handle, const char *path, const char *name);
 	int (*fremovexattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
 	int (*setxattr_fn)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
-	int (*lsetxattr_fn)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
 	int (*fsetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags);
 
 	/* aio operations */

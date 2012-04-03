@@ -2202,15 +2202,6 @@ int smb_vfs_call_setxattr(struct vfs_handle_struct *handle, const char *path,
 	return handle->fns->setxattr_fn(handle, path, name, value, size, flags);
 }
 
-int smb_vfs_call_lsetxattr(struct vfs_handle_struct *handle, const char *path,
-			   const char *name, const void *value, size_t size,
-			   int flags)
-{
-	VFS_FIND(lsetxattr);
-	return handle->fns->lsetxattr_fn(handle, path, name, value, size, 
-					 flags);
-}
-
 int smb_vfs_call_fsetxattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size, int flags)
