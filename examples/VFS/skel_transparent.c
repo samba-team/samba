@@ -666,11 +666,6 @@ static int skel_removexattr(vfs_handle_struct *handle, const char *path, const c
         return SMB_VFS_NEXT_REMOVEXATTR(handle, path, name);
 }
 
-static int skel_lremovexattr(vfs_handle_struct *handle, const char *path, const char *name)
-{
-        return SMB_VFS_NEXT_LREMOVEXATTR(handle, path, name);
-}
-
 static int skel_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
         return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
@@ -857,7 +852,6 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.listxattr_fn = skel_listxattr,
 	.flistxattr_fn = skel_flistxattr,
 	.removexattr_fn = skel_removexattr,
-	.lremovexattr_fn = skel_lremovexattr,
 	.fremovexattr_fn = skel_fremovexattr,
 	.setxattr_fn = skel_setxattr,
 	.fsetxattr_fn = skel_fsetxattr,

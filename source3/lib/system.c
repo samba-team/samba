@@ -1680,43 +1680,6 @@ int sys_removexattr (const char *path, const char *name)
 #endif
 }
 
-int sys_lremovexattr (const char *path, const char *name)
-{
-#if defined(HAVE_LREMOVEXATTR)
-	return lremovexattr(path, name);
-#elif defined(HAVE_REMOVEXATTR) && defined(XATTR_ADD_OPT)
-	int options = XATTR_NOFOLLOW;
-	return removexattr(path, name, options);
-#elif defined(HAVE_LREMOVEEA)
-	return lremoveea(path, name);
-#elif defined(HAVE_EXTATTR_DELETE_LINK)
-	char *s;
-	int attrnamespace = (strncmp(name, "system", 6) == 0) ? 
-		EXTATTR_NAMESPACE_SYSTEM : EXTATTR_NAMESPACE_USER;
-	const char *attrname = ((s=strchr_m(name, '.')) == NULL) ? name : s + 1;
-
-	return extattr_delete_link(path, attrnamespace, attrname);
-#elif defined(HAVE_ATTR_REMOVE)
-	int flags = ATTR_DONTFOLLOW;
-	char *attrname = strchr(name,'.') + 1;
-
-	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
-
-	return attr_remove(path, attrname, flags);
-#elif defined(HAVE_ATTROPEN)
-	int ret = -1;
-	int attrdirfd = solaris_attropen(path, ".", O_RDONLY|AT_SYMLINK_NOFOLLOW, 0);
-	if (attrdirfd >= 0) {
-		ret = solaris_unlinkat(attrdirfd, name);
-		close(attrdirfd);
-	}
-	return ret;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
 int sys_fremovexattr (int filedes, const char *name)
 {
 #if defined(HAVE_FREMOVEXATTR)

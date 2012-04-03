@@ -539,11 +539,6 @@
 #define SMB_VFS_NEXT_REMOVEXATTR(handle,path,name) \
 	smb_vfs_call_removexattr((handle)->next,(path),(name))
 
-#define SMB_VFS_LREMOVEXATTR(conn,path,name) \
-	smb_vfs_call_lremovexattr((conn)->vfs_handles,(path),(name))
-#define SMB_VFS_NEXT_LREMOVEXATTR(handle,path,name) \
-	smb_vfs_call_lremovexattr((handle)->next,(path),(name))
-
 #define SMB_VFS_FREMOVEXATTR(fsp,name) \
 	smb_vfs_call_fremovexattr((fsp)->conn->vfs_handles, (fsp), (name))
 #define SMB_VFS_NEXT_FREMOVEXATTR(handle,fsp,name) \

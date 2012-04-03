@@ -2028,11 +2028,6 @@ static int vfswrap_removexattr(struct vfs_handle_struct *handle, const char *pat
 	return sys_removexattr(path, name);
 }
 
-static int vfswrap_lremovexattr(struct vfs_handle_struct *handle, const char *path, const char *name)
-{
-	return sys_lremovexattr(path, name);
-}
-
 static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
 	return sys_fremovexattr(fsp->fh->fd, name);
@@ -2268,7 +2263,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.listxattr_fn = vfswrap_listxattr,
 	.flistxattr_fn = vfswrap_flistxattr,
 	.removexattr_fn = vfswrap_removexattr,
-	.lremovexattr_fn = vfswrap_lremovexattr,
 	.fremovexattr_fn = vfswrap_fremovexattr,
 	.setxattr_fn = vfswrap_setxattr,
 	.fsetxattr_fn = vfswrap_fsetxattr,

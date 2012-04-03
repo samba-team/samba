@@ -2180,13 +2180,6 @@ int smb_vfs_call_removexattr(struct vfs_handle_struct *handle,
 	return handle->fns->removexattr_fn(handle, path, name);
 }
 
-int smb_vfs_call_lremovexattr(struct vfs_handle_struct *handle,
-			      const char *path, const char *name)
-{
-	VFS_FIND(lremovexattr);
-	return handle->fns->lremovexattr_fn(handle, path, name);
-}
-
 int smb_vfs_call_fremovexattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name)
 {

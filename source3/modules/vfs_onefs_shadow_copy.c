@@ -587,15 +587,6 @@ onefs_shadow_copy_removexattr(vfs_handle_struct *handle, const char *path,
 }
 
 static int
-onefs_shadow_copy_lremovexattr(vfs_handle_struct *handle, const char *path,
-			       const char *name)
-{
-	SHADOW_NEXT(LREMOVEXATTR,
-		    (handle, cpath ?: path, name),
-		    int);
-}
-
-static int
 onefs_shadow_copy_setxattr(vfs_handle_struct *handle, const char *path,
 			   const char *name, const void *value, size_t size,
 			   int flags)
@@ -663,7 +654,6 @@ static struct vfs_fn_pointers onefs_shadow_copy_fns = {
 	.getxattr_fn = onefs_shadow_copy_getxattr,
 	.listxattr_fn = onefs_shadow_copy_listxattr,
 	.removexattr_fn = onefs_shadow_copy_removexattr,
-	.lremovexattr_fn = onefs_shadow_copy_lremovexattr,
 	.setxattr_fn = onefs_shadow_copy_setxattr,
 	.lsetxattr_fn = onefs_shadow_copy_lsetxattr,
 	.is_offline_fn = onefs_shadow_copy_is_offline,

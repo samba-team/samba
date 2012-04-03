@@ -403,7 +403,6 @@ struct vfs_fn_pointers {
 	ssize_t (*listxattr_fn)(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
 	ssize_t (*flistxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
 	int (*removexattr_fn)(struct vfs_handle_struct *handle, const char *path, const char *name);
-	int (*lremovexattr_fn)(struct vfs_handle_struct *handle, const char *path, const char *name);
 	int (*fremovexattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
 	int (*setxattr_fn)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
 	int (*fsetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags);
@@ -815,8 +814,6 @@ ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,
 				size_t size);
 int smb_vfs_call_removexattr(struct vfs_handle_struct *handle,
 			     const char *path, const char *name);
-int smb_vfs_call_lremovexattr(struct vfs_handle_struct *handle,
-			      const char *path, const char *name);
 int smb_vfs_call_fremovexattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name);
 int smb_vfs_call_setxattr(struct vfs_handle_struct *handle, const char *path,

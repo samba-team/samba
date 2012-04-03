@@ -230,7 +230,7 @@ attropen attr_remove attr_removef attr_set attr_setf
 bindtextdomain _chdir __chdir chflags chmod _close __close _closedir
 __closedir crypt16 delproplist devnm dgettext dirfd
 DNSServiceRegister _dup __dup _dup2 __dup2 endmntent execl
-extattr_delete_fd extattr_delete_link extattr_get_fd extattr_get_file
+extattr_delete_fd extattr_get_fd extattr_get_file
 extattr_get_link extattr_list_fd extattr_list_file
 extattr_set_fd extattr_set_file _facl __facl _fchdir
 __fchdir fchmod fchown _fcntl __fcntl fcvt fcvtl fdatasync
@@ -243,7 +243,7 @@ getgrent getgrnam getgrouplist getgrset getmntent getpagesize
 getproplist get_proplist_entry getpwanam getpwent_r getrlimit gettext
 glob grantpt hstrerror initgroups innetgr
 inotify_init listea listxattr
-llseek _llseek __llseek lremoveea lremovexattr _lseek __lseek
+llseek _llseek __llseek _lseek __lseek
 _lstat __lstat lutimes
 __lxstat memalign mknod mlock mlockall munlock munlockall
 _open __open _opendir __opendir

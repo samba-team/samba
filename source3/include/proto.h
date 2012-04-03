@@ -355,7 +355,6 @@ ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size);
 ssize_t sys_listxattr (const char *path, char *list, size_t size);
 ssize_t sys_flistxattr (int filedes, char *list, size_t size);
 int sys_removexattr (const char *path, const char *name);
-int sys_lremovexattr (const char *path, const char *name);
 int sys_fremovexattr (int filedes, const char *name);
 int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags);
 int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags);

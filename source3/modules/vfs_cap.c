@@ -488,18 +488,6 @@ static int cap_removexattr(vfs_handle_struct *handle, const char *path, const ch
         return SMB_VFS_NEXT_REMOVEXATTR(handle, cappath, capname);
 }
 
-static int cap_lremovexattr(vfs_handle_struct *handle, const char *path, const char *name)
-{
-	char *cappath = capencode(talloc_tos(), path);
-	char *capname = capencode(talloc_tos(), name);
-
-	if (!cappath || !capname) {
-		errno = ENOMEM;
-		return -1;
-	}
-        return SMB_VFS_NEXT_LREMOVEXATTR(handle, cappath, capname);
-}
-
 static int cap_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path)
 {
 	char *cappath = capencode(talloc_tos(), path);
@@ -563,7 +551,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.fgetxattr_fn = cap_fgetxattr,
 	.listxattr_fn = cap_listxattr,
 	.removexattr_fn = cap_removexattr,
-	.lremovexattr_fn = cap_lremovexattr,
 	.fremovexattr_fn = cap_fremovexattr,
 	.setxattr_fn = cap_setxattr,
 	.fsetxattr_fn = cap_fsetxattr

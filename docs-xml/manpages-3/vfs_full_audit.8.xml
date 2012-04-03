@@ -78,7 +78,6 @@
         <member>linux_setlease</member>
         <member>listxattr</member>
         <member>lock</member>
-        <member>lremovexattr</member>
         <member>lseek</member>
         <member>lstat</member>
         <member>mkdir</member>

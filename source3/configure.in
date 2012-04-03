@@ -1301,16 +1301,16 @@ case "$host_os" in
   *)
 	AC_SEARCH_LIBS(getxattr, [attr])
 	AC_CHECK_FUNCS(getxattr,[
-		AC_CHECK_FUNCS(fgetxattr listxattr flistxattr removexattr lremovexattr fremovexattr setxattr fsetxattr)
+		AC_CHECK_FUNCS(fgetxattr listxattr flistxattr removexattr fremovexattr setxattr fsetxattr)
 		])
 	AC_CHECK_FUNCS(getea,[
-		AC_CHECK_FUNCS(fgetea lgetea listea flistea removeea fremoveea lremoveea setea fsetea)
+		AC_CHECK_FUNCS(fgetea lgetea listea flistea removeea fremoveea setea fsetea)
 		])
 	AC_CHECK_FUNCS(attr_get,[
 		AC_CHECK_FUNCS(attr_list attr_set attr_remove attr_getf attr_listf attr_setf attr_removef)
 		])
 	AC_CHECK_FUNCS(extattr_delete_file,[
-		AC_CHECK_FUNCS(extattr_delete_fd extattr_delete_link extattr_get_fd extattr_get_file extattr_get_link extattr_list_fd extattr_list_file extattr_list_link extattr_set_fd extattr_set_file)
+		AC_CHECK_FUNCS(extattr_delete_fd extattr_get_fd extattr_get_file extattr_get_link extattr_list_fd extattr_list_file extattr_list_link extattr_set_fd extattr_set_file)
 		])
   ;;
 esac
