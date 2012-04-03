@@ -84,11 +84,12 @@ def LIB_MUST_BE_BUNDLED(conf, libname):
 
 @conf
 def CHECK_PREREQUISITES(conf, prereqs):
+    missing = []
     for syslib in TO_LIST(prereqs):
         f = 'FOUND_SYSTEMLIB_%s' % syslib
         if not f in conf.env:
-            return False
-    return True
+            missing.append(syslib)
+    return syslib
 
 
 @runonce
@@ -109,9 +110,10 @@ def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
     # system version is found. That prevents possible use of mixed library
     # versions
     if onlyif:
-        if not conf.CHECK_PREREQUISITES(onlyif):
+        missing = conf.CHECK_PREREQUISITES(onlyif)
+        if missing:
             if not conf.LIB_MAY_BE_BUNDLED(libname):
-                Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, onlyif))
+                Logs.error('ERROR: Use of system library %s depends on missing system library/libraries %r' % (libname, missing))
                 sys.exit(1)
             conf.env[found] = False
             return False
@@ -169,9 +171,10 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     # system version is found. That prevents possible use of mixed library
     # versions
     if onlyif:
-        if not conf.CHECK_PREREQUISITES(onlyif):
+        missing = conf.CHECK_PREREQUISITES(onlyif)
+        if missing:
             if not conf.LIB_MAY_BE_BUNDLED(libname):
-                Logs.error('ERROR: Use of system library %s depends on missing system library %s' % (libname, syslib))
+                Logs.error('ERROR: Use of system library %s depends on missing system library/libraries %r' % (libname, missing))
                 sys.exit(1)
             conf.env[found] = False
             return False
