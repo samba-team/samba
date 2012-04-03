@@ -1269,9 +1269,6 @@ sub provision_plugin_s4_dc($$)
 server services = -smb +s3fs
 dcerpc endpoint servers = -unixinfo -spoolss -winreg -wkssvc -srvsvc
 
-[IPC\$]
-	vfs objects = dfs_samba4
-
 ";
 
 	print "PROVISIONING PLUGIN S4 DC...";
