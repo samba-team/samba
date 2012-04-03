@@ -231,7 +231,7 @@ bindtextdomain _chdir __chdir chflags chmod _close __close _closedir
 __closedir crypt16 delproplist devnm dgettext dirfd
 DNSServiceRegister _dup __dup _dup2 __dup2 endmntent execl
 extattr_delete_fd extattr_get_fd extattr_get_file
-extattr_get_link extattr_list_fd extattr_list_file
+extattr_list_fd extattr_list_file
 extattr_set_fd extattr_set_file _facl __facl _fchdir
 __fchdir fchmod fchown _fcntl __fcntl fcvt fcvtl fdatasync
 fdelproplist fgetea fgetproplist fgetxattr flistea flistxattr
