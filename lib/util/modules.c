@@ -171,10 +171,6 @@ static NTSTATUS do_smb_load_module(const char *subsystem,
 
 	/* Check for absolute path */
 
-	/* if we make any 'samba multibyte string'
-	   calls here, we break
-	   for loading string modules */
-
 	DEBUG(5, ("%s module '%s'\n", is_probe ? "Probing" : "Loading", module_name));
 
 	if (subsystem && module_name[0] != '/') {
