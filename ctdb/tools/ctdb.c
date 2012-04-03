@@ -1619,6 +1619,80 @@ static int control_rebalancenode(struct ctdb_context *ctdb, int argc, const char
 }
 
 
+static int rebalance_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
+{
+	struct ctdb_public_ip ip;
+	int ret;
+	uint32_t *nodes;
+	uint32_t disable_time;
+	TDB_DATA data;
+	struct ctdb_node_map *nodemap=NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	disable_time = 30;
+	data.dptr  = (uint8_t*)&disable_time;
+	data.dsize = sizeof(disable_time);
+	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_DISABLE_IP_CHECK, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send message to disable ipcheck\n"));
+		return -1;
+	}
+
+	ip.pnn  = -1;
+	ip.addr = *addr;
+
+	data.dptr  = (uint8_t *)&ip;
+	data.dsize = sizeof(ip);
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+       	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_RELEASE_IP,
+					nodes, 0,
+					LONGTIMELIMIT(),
+					false, data,
+					NULL, NULL,
+					NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to release IP on nodes\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  release an ip form all nodes and have it re-assigned by recd
+ */
+static int control_rebalanceip(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	ctdb_sock_addr addr;
+
+	if (argc < 1) {
+		usage();
+		return -1;
+	}
+
+	if (parse_ip(argv[0], NULL, 0, &addr) == 0) {
+		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
+		return -1;
+	}
+
+	if (rebalance_ip(ctdb, &addr) != 0) {
+		DEBUG(DEBUG_ERR,("Error when trying to reassign ip\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
 static int getips_store_callback(void *param, void *data)
 {
 	struct ctdb_public_ip *node_ip = (struct ctdb_public_ip *)data;
@@ -5582,6 +5656,7 @@ static const struct {
 	{ "listnodes",       control_listnodes,		false,	true, "list all nodes in the cluster"},
 	{ "reloadnodes",     control_reload_nodes_file,	false,	false, "reload the nodes file and restart the transport on all nodes"},
 	{ "moveip",          control_moveip,		false,	false, "move/failover an ip address to another node", "<ip> <node>"},
+	{ "rebalanceip",     control_rebalanceip,	false,	false, "release an ip from the node and let recd rebalance it", "<ip>"},
 	{ "addip",           control_addip,		true,	false, "add a ip address to a node", "<ip/mask> <iface>"},
 	{ "delip",           control_delip,		false,	false, "delete an ip address from a node", "<ip>"},
 	{ "eventscript",     control_eventscript,	true,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
