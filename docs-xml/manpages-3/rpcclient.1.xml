@@ -427,6 +427,51 @@ Comma Separated list of Files
 	</refsect2>
 
 	<refsect2>
+	<title>FSRVP</title>
+	<variablelist>
+
+	<varlistentry><term>fss_is_path_sup</term>
+		<listitem>
+			<para>Check whether a share supports shadow-copy
+			requests</para>
+		</listitem>
+	</varlistentry>
+	<varlistentry><term>fss_get_sup_version</term>
+		<listitem>
+			<para>Get supported FSRVP version from server</para>
+		</listitem>
+	</varlistentry>
+	<varlistentry><term>fss_create_expose</term>
+		<listitem>
+			<para>Request shadow-copy creation and exposure</para>
+		</listitem>
+	</varlistentry>
+	<varlistentry><term>fss_delete</term>
+		<listitem>
+			<para>Request shadow-copy share deletion</para>
+	</listitem>
+	</varlistentry>
+	<varlistentry><term>fss_has_shadow_copy</term>
+		<listitem>
+			<para>Check for an associated share shadow-copy</para>
+		</listitem>
+	</varlistentry>
+	<varlistentry><term>fss_get_mapping</term>
+		<listitem>
+			<para>Get shadow-copy share mapping information</para>
+		</listitem>
+	</varlistentry>
+	<varlistentry><term>fss_recovery_complete</term>
+		<listitem>
+			<para>Flag read-write snapshot as recovery complete,
+			allowing further shadow-copy requests</para>
+		</listitem>
+	</varlistentry>
+
+	</variablelist>
+	</refsect2>
+
+	<refsect2>
 	<title>GENERAL COMMANDS</title>
 
 	<variablelist>
