@@ -24,6 +24,7 @@
 #include "../lib/util/unix_privs.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "param/param.h"
+#include "ntvfs/posix/posix_eadb_proto.h"
 
 /*
   pull a xattr as a blob
@@ -81,7 +82,7 @@ static NTSTATUS delete_xattr(struct pvfs_state *pvfs, const char *attr_name,
 			     const char *fname, int fd)
 {
 	if (pvfs->ea_db) {
-		return delete_xattr_tdb(pvfs, attr_name, fname, fd);
+		return delete_posix_eadb(pvfs, attr_name, fname, fd);
 	}
 	return delete_xattr_system(pvfs, attr_name, fname, fd);
 }
@@ -92,7 +93,7 @@ static NTSTATUS delete_xattr(struct pvfs_state *pvfs, const char *attr_name,
 NTSTATUS pvfs_xattr_unlink_hook(struct pvfs_state *pvfs, const char *fname)
 {
 	if (pvfs->ea_db) {
-		return unlink_xattr_tdb(pvfs, fname);
+		return unlink_posix_eadb(pvfs, fname);
 	}
 	return unlink_xattr_system(pvfs, fname);
 }

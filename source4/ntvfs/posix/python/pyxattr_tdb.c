@@ -20,11 +20,12 @@
 
 #include <Python.h>
 #include "includes.h"
+#include "system/filesys.h"
 #include "tdb_compat.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "librpc/ndr/libndr.h"
 #include "lib/util/wrap_xattr.h"
-#include "ntvfs/posix/vfs_posix.h"
+#include "ntvfs/posix/posix_eadb.h"
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
 
@@ -59,8 +60,8 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	status = push_xattr_blob_tdb_raw(eadb, mem_ctx, attribute, filename, -1,
-									 &blob);
+	status = push_xattr_blob_tdb_raw(eadb, attribute, filename, -1,
+					 &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		talloc_free(mem_ctx);

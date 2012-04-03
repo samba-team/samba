@@ -31,11 +31,11 @@ bld.SAMBA_SUBSYSTEM('pvfs_aio',
 
 
 bld.SAMBA_MODULE('ntvfs_posix',
-	source='vfs_posix.c pvfs_util.c pvfs_search.c pvfs_dirlist.c pvfs_fileinfo.c pvfs_unlink.c pvfs_mkdir.c pvfs_open.c pvfs_read.c pvfs_flush.c pvfs_write.c pvfs_fsinfo.c pvfs_qfileinfo.c pvfs_setfileinfo.c pvfs_rename.c pvfs_resolve.c pvfs_shortname.c pvfs_lock.c pvfs_oplock.c pvfs_wait.c pvfs_seek.c pvfs_ioctl.c pvfs_xattr.c pvfs_streams.c pvfs_notify.c pvfs_sys.c xattr_system.c xattr_tdb.c',
+	source='vfs_posix.c pvfs_util.c pvfs_search.c pvfs_dirlist.c pvfs_fileinfo.c pvfs_unlink.c pvfs_mkdir.c pvfs_open.c pvfs_read.c pvfs_flush.c pvfs_write.c pvfs_fsinfo.c pvfs_qfileinfo.c pvfs_setfileinfo.c pvfs_rename.c pvfs_resolve.c pvfs_shortname.c pvfs_lock.c pvfs_oplock.c pvfs_wait.c pvfs_seek.c pvfs_ioctl.c pvfs_xattr.c pvfs_streams.c pvfs_notify.c pvfs_sys.c xattr_system.c',
 	autoproto='vfs_posix_proto.h',
 	subsystem='ntvfs',
 	init_function='ntvfs_posix_init',
-	deps='NDR_XATTR wrap_xattr ntvfs_common MESSAGING LIBWBCLIENT_OLD pvfs_acl pvfs_aio',
+	deps='NDR_XATTR wrap_xattr ntvfs_common MESSAGING LIBWBCLIENT_OLD pvfs_acl pvfs_aio posix_eadb',
 	internal_module=True
 	)
 
@@ -46,10 +46,15 @@ bld.SAMBA_PYTHON('python_xattr_native',
 	realname='samba/xattr_native.so'
 	)
 
+bld.SAMBA_LIBRARY('posix_eadb',
+                  source='posix_eadb.c',
+                  deps='tdb tdb-wrap',
+                  autoproto='posix_eadb_proto.h',
+                private_library=True)
 
 bld.SAMBA_PYTHON('python_xattr_tdb',
-	source='python/pyxattr_tdb.c xattr_tdb.c',
-	deps='ndr ldb pyparam_util share attr',
+	source='python/pyxattr_tdb.c',
+	deps='pyparam_util posix_eadb',
 	realname='samba/xattr_tdb.so'
 	)
 
