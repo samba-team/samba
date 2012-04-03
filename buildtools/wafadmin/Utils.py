@@ -111,6 +111,9 @@ class WscriptError(WafError):
 				return (frame[0], frame[1])
 		return (None, None)
 
+class WscriptCheckSkipped(WscriptError):
+    pass
+
 indicator = is_win32 and '\x1b[A\x1b[K%s%s%s\r' or '\x1b[K%s%s%s\r'
 
 try:
@@ -645,6 +648,8 @@ class Context(object):
 				try:
 					try:
 						exec(compile(txt, file_path, 'exec'), dc)
+					except WscriptCheckSkipped:
+						pass
 					except Exception:
 						exc_type, exc_value, tb = sys.exc_info()
 						raise WscriptError("".join(traceback.format_exception(exc_type, exc_value, tb)), base)
