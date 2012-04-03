@@ -167,7 +167,7 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 		DEBUG(5, ("vfs module [%s] not loaded - trying to load...\n",
 			  vfs_object));
 
-		status = smb_probe_module("vfs", module_path);
+		status = smb_load_module("vfs", module_path);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("error probing vfs module '%s': %s\n",
 				  module_path, nt_errstr(status)));
