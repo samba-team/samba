@@ -938,7 +938,7 @@ static void ldapsrv_task_init(struct task_server *task)
 					   lpcfg_tls_dhpfile(ldap_service, task->lp_ctx),
 					   &ldap_service->tls_params);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("ldapsrv failed tstream_tls_patams_server - %s\n",
+		DEBUG(0,("ldapsrv failed tstream_tls_params_server - %s\n",
 			 nt_errstr(status)));
 		goto failed;
 	}
