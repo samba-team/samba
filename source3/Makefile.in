@@ -419,6 +419,7 @@ UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
 		   ../lib/util/become_daemon.o ../lib/util/system.o \
 		   ../lib/util/tevent_unix.o ../lib/util/tevent_ntstatus.o \
 		   ../lib/util/tevent_werror.o \
+		   lib/tevent_barrier.o \
 		   ../lib/util/smb_threads.o ../lib/util/util_id.o \
 		   ../lib/util/blocking.o ../lib/util/rfc1738.o \
 		   ../lib/util/select.o ../lib/util/util_pw.o ../lib/util/server_id.o
