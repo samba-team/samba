@@ -674,7 +674,7 @@ static NTSTATUS ncacn_pull(struct dcecli_connection *c, DATA_BLOB *blob, TALLOC_
 	struct ndr_pull *ndr;
 	enum ndr_err_code ndr_err;
 
-	ndr = ndr_pull_init_flags(c, blob, mem_ctx);
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
