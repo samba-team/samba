@@ -159,13 +159,42 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 /* Load a dynamic module.  Only log a level 0 error if we are not checking
    for the existence of a module (probling). */
 
-static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
+static NTSTATUS do_smb_load_module(const char *subsystem,
+				   const char *module_name, bool is_probe)
 {
 	void *handle;
 	init_module_fn init;
 	NTSTATUS status;
 
-	init = load_module(module_name, is_probe, &handle);
+	char *full_path = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+
+	/* Check for absolute path */
+
+	/* if we make any 'samba multibyte string'
+	   calls here, we break
+	   for loading string modules */
+
+	DEBUG(5, ("%s module '%s'\n", is_probe ? "Probing" : "Loading", module_name));
+
+	if (subsystem && module_name[0] != '/') {
+		full_path = talloc_asprintf(ctx,
+					    "%s/%s.%s",
+					    modules_path(ctx, subsystem),
+					    module_name,
+					    shlib_ext());
+		if (!full_path) {
+			TALLOC_FREE(ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		DEBUG(5, ("%s module '%s': Trying to load from %s\n",
+			  is_probe ? "Probing": "Loading", module_name, full_path));
+		init = load_module(full_path, is_probe, &handle);
+	} else {
+		init = load_module(module_name, is_probe, &handle);
+	}
+
 	if (!init) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -175,7 +204,7 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 	status = init();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Module '%s' initialization failed: %s\n",
-			    module_name, get_friendly_nt_error_msg(status)));
+			  module_name, get_friendly_nt_error_msg(status)));
 		dlclose(handle);
 	}
 
@@ -190,7 +219,7 @@ int smb_load_modules(const char **modules)
 	int success = 0;
 
 	for(i = 0; modules[i]; i++){
-		if(NT_STATUS_IS_OK(do_smb_load_module(modules[i], false))) {
+		if(NT_STATUS_IS_OK(do_smb_load_module(NULL, modules[i], false))) {
 			success++;
 		}
 	}
@@ -202,39 +231,10 @@ int smb_load_modules(const char **modules)
 
 NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 {
-	char *full_path = NULL;
-	TALLOC_CTX *ctx = talloc_stackframe();
-	NTSTATUS status;
+	return do_smb_load_module(subsystem, module, true);
+}
 
-	/* Check for absolute path */
-
-	/* if we make any 'samba multibyte string'
-	   calls here, we break
-	   for loading string modules */
-
-	DEBUG(5, ("Probing module '%s'\n", module));
-
-	if (module[0] == '/') {
-		status = do_smb_load_module(module, true);
-		TALLOC_FREE(ctx);
-		return status;
-	}
-
-	full_path = talloc_asprintf(ctx,
-				    "%s/%s.%s",
-				    modules_path(ctx, subsystem),
-				    module,
-				    shlib_ext());
-	if (!full_path) {
-		TALLOC_FREE(ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	DEBUG(5, ("Probing module '%s': Trying to load from %s\n",
-		module, full_path));
-
-	status = do_smb_load_module(full_path, true);
-
-	TALLOC_FREE(ctx);
-	return status;
+NTSTATUS smb_load_module(const char *subsystem, const char *module)
+{
+	return do_smb_load_module(subsystem, module, false);
 }
