@@ -52,9 +52,6 @@ bool kerberos_secrets_store_des_salt( const char* salt );
 char* kerberos_secrets_fetch_des_salt( void );
 char *kerberos_get_default_realm_from_ccache(TALLOC_CTX *mem_ctx);
 char *kerberos_get_realm_from_hostname(TALLOC_CTX *mem_ctx, const char *hostname);
-char *kerberos_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
-						   const char *service,
-						   const char *remote_name);
 
 bool kerberos_secrets_store_salting_principal(const char *service,
 					      int enctype,
