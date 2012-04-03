@@ -529,11 +529,6 @@
 #define SMB_VFS_NEXT_LISTXATTR(handle,path,list,size) \
 	smb_vfs_call_listxattr((handle)->next,(path),(list),(size))
 
-#define SMB_VFS_LLISTXATTR(conn,path,list,size) \
-	smb_vfs_call_llistxattr((conn)->vfs_handles,(path),(list),(size))
-#define SMB_VFS_NEXT_LLISTXATTR(handle,path,list,size) \
-	smb_vfs_call_llistxattr((handle)->next,(path),(list),(size))
-
 #define SMB_VFS_FLISTXATTR(fsp,list,size) \
 	smb_vfs_call_flistxattr((fsp)->conn->vfs_handles, (fsp), (list),(size))
 #define SMB_VFS_NEXT_FLISTXATTR(handle,fsp,list,size) \

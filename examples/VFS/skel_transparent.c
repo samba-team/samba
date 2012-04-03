@@ -656,11 +656,6 @@ static ssize_t skel_listxattr(vfs_handle_struct *handle, const char *path, char 
         return SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
 }
 
-static ssize_t skel_llistxattr(vfs_handle_struct *handle, const char *path, char *list, size_t size)
-{
-        return SMB_VFS_NEXT_LLISTXATTR(handle, path, list, size);
-}
-
 static ssize_t skel_flistxattr(vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
         return SMB_VFS_NEXT_FLISTXATTR(handle, fsp, list, size);
@@ -865,7 +860,6 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.getxattr_fn = skel_getxattr,
 	.fgetxattr_fn = skel_fgetxattr,
 	.listxattr_fn = skel_listxattr,
-	.llistxattr_fn = skel_llistxattr,
 	.flistxattr_fn = skel_flistxattr,
 	.removexattr_fn = skel_removexattr,
 	.lremovexattr_fn = skel_lremovexattr,

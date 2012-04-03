@@ -2018,11 +2018,6 @@ static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle, const char *p
 	return sys_listxattr(path, list, size);
 }
 
-static ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
-{
-	return sys_llistxattr(path, list, size);
-}
-
 static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
 	return sys_flistxattr(fsp->fh->fd, list, size);
@@ -2276,7 +2271,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.getxattr_fn = vfswrap_getxattr,
 	.fgetxattr_fn = vfswrap_fgetxattr,
 	.listxattr_fn = vfswrap_listxattr,
-	.llistxattr_fn = vfswrap_llistxattr,
 	.flistxattr_fn = vfswrap_flistxattr,
 	.removexattr_fn = vfswrap_removexattr,
 	.lremovexattr_fn = vfswrap_lremovexattr,

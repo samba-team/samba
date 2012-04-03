@@ -1610,35 +1610,6 @@ ssize_t sys_listxattr (const char *path, char *list, size_t size)
 #endif
 }
 
-ssize_t sys_llistxattr (const char *path, char *list, size_t size)
-{
-#if defined(HAVE_LLISTXATTR)
-	return llistxattr(path, list, size);
-#elif defined(HAVE_LISTXATTR) && defined(XATTR_ADD_OPT)
-	int options = XATTR_NOFOLLOW;
-	return listxattr(path, list, size, options);
-#elif defined(HAVE_LLISTEA)
-	return llistea(path, list, size);
-#elif defined(HAVE_EXTATTR_LIST_LINK)
-	extattr_arg arg;
-	arg.path = path;
-	return bsd_attr_list(1, arg, list, size);
-#elif defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
-	return irix_attr_list(path, 0, list, size, ATTR_DONTFOLLOW);
-#elif defined(HAVE_ATTROPEN)
-	ssize_t ret = -1;
-	int attrdirfd = solaris_attropen(path, ".", O_RDONLY|AT_SYMLINK_NOFOLLOW, 0);
-	if (attrdirfd >= 0) {
-		ret = solaris_list_xattr(attrdirfd, list, size);
-		close(attrdirfd);
-	}
-	return ret;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
 ssize_t sys_flistxattr (int filedes, char *list, size_t size)
 {
 #if defined(HAVE_FLISTXATTR)

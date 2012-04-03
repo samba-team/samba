@@ -2165,13 +2165,6 @@ ssize_t smb_vfs_call_listxattr(struct vfs_handle_struct *handle,
 	return handle->fns->listxattr_fn(handle, path, list, size);
 }
 
-ssize_t smb_vfs_call_llistxattr(struct vfs_handle_struct *handle,
-				const char *path, char *list, size_t size)
-{
-	VFS_FIND(llistxattr);
-	return handle->fns->llistxattr_fn(handle, path, list, size);
-}
-
 ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, char *list,
 				size_t size)

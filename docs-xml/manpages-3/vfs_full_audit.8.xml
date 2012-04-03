@@ -77,7 +77,6 @@
         <member>link</member>
         <member>linux_setlease</member>
         <member>listxattr</member>
-        <member>llistxattr</member>
         <member>lock</member>
         <member>lremovexattr</member>
         <member>lseek</member>

@@ -577,15 +577,6 @@ onefs_shadow_copy_listxattr(vfs_handle_struct *handle, const char *path,
 		    ssize_t);
 }
 
-static ssize_t
-onefs_shadow_copy_llistxattr(vfs_handle_struct *handle, const char *path,
-			     char *list, size_t size)
-{
-	SHADOW_NEXT(LLISTXATTR,
-		    (handle, cpath ?: path, list, size),
-		    ssize_t);
-}
-
 static int
 onefs_shadow_copy_removexattr(vfs_handle_struct *handle, const char *path,
 			      const char *name)
@@ -681,7 +672,6 @@ static struct vfs_fn_pointers onefs_shadow_copy_fns = {
 	.sys_acl_delete_def_file_fn = onefs_shadow_copy_sys_acl_delete_def_file,
 	.getxattr_fn = onefs_shadow_copy_getxattr,
 	.listxattr_fn = onefs_shadow_copy_listxattr,
-	.llistxattr_fn = onefs_shadow_copy_llistxattr,
 	.removexattr_fn = onefs_shadow_copy_removexattr,
 	.lremovexattr_fn = onefs_shadow_copy_lremovexattr,
 	.setxattr_fn = onefs_shadow_copy_setxattr,

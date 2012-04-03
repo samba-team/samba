@@ -242,7 +242,7 @@ getcwd _getcwd __getcwd getdents __getdents getdirentries
 getgrent getgrnam getgrouplist getgrset getmntent getpagesize
 getproplist get_proplist_entry getpwanam getpwent_r getrlimit gettext
 glob grantpt hstrerror initgroups innetgr
-inotify_init listea listxattr llistea llistxattr
+inotify_init listea listxattr
 llseek _llseek __llseek lremoveea lremovexattr _lseek __lseek
 lsetea lsetxattr _lstat __lstat lutimes
 __lxstat memalign mknod mlock mlockall munlock munlockall

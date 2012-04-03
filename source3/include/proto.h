@@ -353,7 +353,6 @@ int sys_pclose(int fd);
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size);
 ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size);
 ssize_t sys_listxattr (const char *path, char *list, size_t size);
-ssize_t sys_llistxattr (const char *path, char *list, size_t size);
 ssize_t sys_flistxattr (int filedes, char *list, size_t size);
 int sys_removexattr (const char *path, const char *name);
 int sys_lremovexattr (const char *path, const char *name);
