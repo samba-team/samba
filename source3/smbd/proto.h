@@ -540,19 +540,30 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *messaging_ctx,
 				   struct event_context *ev);
-bool notify_internal_parent_init(TALLOC_CTX *mem_ctx);
-NTSTATUS notify_add(struct notify_context *notify, connection_struct *conn,
-		    struct notify_entry *e0,
+NTSTATUS notify_add(struct notify_context *notify,
+		    const char *path, uint32_t filter, uint32_t subdir_filter,
 		    void (*callback)(void *, const struct notify_event *),
 		    void *private_data);
 NTSTATUS notify_remove(struct notify_context *notify, void *private_data);
-NTSTATUS notify_remove_onelevel(struct notify_context *notify,
-				const struct file_id *fid,
-				void *private_data);
-void notify_onelevel(struct notify_context *notify, uint32_t action,
-		     uint32_t filter, struct file_id fid, const char *name);
 void notify_trigger(struct notify_context *notify,
 		    uint32_t action, uint32_t filter, const char *path);
+void notify_walk_idx(struct notify_context *notify,
+		     void (*fn)(const char *path,
+				uint32_t *vnns, size_t num_vnns,
+				void *private_data),
+		     void *private_data);
+void notify_walk(struct notify_context *notify,
+		 void (*fn)(const char *path,
+			    struct notify_db_entry *entries,
+			    size_t num_entries,
+			    time_t deleted_time, void *private_data),
+		 void *private_data);
+void notify_cleanup(struct notify_context *notify);
+
+struct tevent_req *notify_cluster_proxy_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct notify_context *notify);
+int notify_cluster_proxy_recv(struct tevent_req *req);
 
 /* The following definitions come from smbd/ntquotas.c  */
 

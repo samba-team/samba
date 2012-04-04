@@ -449,10 +449,6 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	if (fsp->notify) {
 		struct notify_context *notify_ctx =
 			fsp->conn->sconn->notify_ctx;
-		if (fsp->is_directory) {
-			notify_remove_onelevel(notify_ctx,
-					       &fsp->file_id, fsp);
-		}
 		notify_remove(notify_ctx, fsp);
 		TALLOC_FREE(fsp->notify);
 	}

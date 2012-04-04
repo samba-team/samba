@@ -188,7 +188,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 {
 	char *fullpath;
 	size_t len;
-	struct notify_entry e;
+	uint32_t subdir_filter;
 	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
 
 	if (fsp->notify != NULL) {
@@ -220,22 +220,14 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 		fullpath[len-2] = '\0';
 	}
 
-	ZERO_STRUCT(e);
-	e.path = fullpath;
-	e.dir_fd = fsp->fh->fd;
-	e.dir_id = fsp->file_id;
-	e.filter = filter;
-	e.subdir_filter = 0;
-	if (recursive) {
-		e.subdir_filter = filter;
-	}
+	subdir_filter = recursive ? filter : 0;
 
 	if (fsp->conn->sconn->sys_notify_ctx != NULL) {
 		void *sys_notify_handle = NULL;
 
 		status = SMB_VFS_NOTIFY_WATCH(
 			fsp->conn, fsp->conn->sconn->sys_notify_ctx,
-			e.path, &e.filter, &e.subdir_filter,
+			fullpath, &filter, &subdir_filter,
 			sys_notify_callback, fsp, &sys_notify_handle);
 
 		if (NT_STATUS_IS_OK(status)) {
@@ -243,9 +235,10 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 		}
 	}
 
-	if ((e.filter != 0) || (e.subdir_filter != 0)) {
-		status = notify_add(fsp->conn->sconn->notify_ctx, fsp->conn,
-				    &e, notify_callback, fsp);
+	if ((filter != 0) || (subdir_filter != 0)) {
+		status = notify_add(fsp->conn->sconn->notify_ctx,
+				    fullpath, filter, subdir_filter,
+				    notify_callback, fsp);
 	}
 	TALLOC_FREE(fullpath);
 	return status;
@@ -389,25 +382,10 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 {
 	struct notify_context *notify_ctx = conn->sconn->notify_ctx;
 	char *fullpath;
-	char *parent;
-	const char *name;
 
 	if (path[0] == '.' && path[1] == '/') {
 		path += 2;
 	}
-	if (parent_dirname(talloc_tos(), path, &parent, &name)) {
-		struct smb_filename smb_fname_parent;
-
-		ZERO_STRUCT(smb_fname_parent);
-		smb_fname_parent.base_name = parent;
-
-		if (SMB_VFS_STAT(conn, &smb_fname_parent) != -1) {
-			notify_onelevel(notify_ctx, action, filter,
-			    SMB_VFS_FILE_ID_CREATE(conn, &smb_fname_parent.st),
-			    name);
-		}
-	}
-
 	fullpath = talloc_asprintf(talloc_tos(), "%s/%s", conn->connectpath,
 				   path);
 	if (fullpath == NULL) {

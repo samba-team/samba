@@ -182,7 +182,7 @@ struct notify_change {
 };
 
 struct notify_mid_map;
-struct notify_entry;
+struct notify_db_entry;
 struct notify_event;
 struct notify_change_request;
 struct sys_notify_backend;

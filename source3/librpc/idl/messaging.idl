@@ -85,6 +85,9 @@ interface messaging
 		/*Close a specific file given a share entry. */
 		MSG_SMB_CLOSE_FILE		= 0x0313,
 
+		/* Trigger a notify cleanup run */
+		MSG_SMB_NOTIFY_CLEANUP		= 0x0314,
+
 		/* winbind messages */
 		MSG_WINBIND_FINISHED		= 0x0401,
 		MSG_WINBIND_FORGET_STATE	= 0x0402,

@@ -32,6 +32,13 @@ interface notify
 		notify_entry entries[num_entries];
 	} notify_entry_array;
 
+	typedef [public] struct {
+		server_id server;
+		uint32 filter; /* filter to apply in this directory */
+		uint32 subdir_filter; /* filter to apply in child directories */
+		pointer private_data;
+	} notify_db_entry;
+
 	/*
 	  to allow for efficient search for matching entries, we
 	  divide them by the directory depth, with a separate array
@@ -61,6 +68,12 @@ interface notify
 		utf8string path;
 		pointer private_data;
 	} notify_event;
+
+	typedef [public] struct {
+		uint32 action;
+		uint32 filter;
+		utf8string path;
+	} notify_remote_event;
 
 	typedef [v1_enum] enum {
 		FILE_ACTION_ADDED		= 0x00000001,
