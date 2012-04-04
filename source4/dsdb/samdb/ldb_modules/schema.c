@@ -31,43 +31,29 @@
 
 /*
  * This function determines the (last) structural or 88 object class of a passed
- * "objectClass" attribute.
- * Without schema this does not work and hence NULL is returned. If the
- * "objectClass" attribute has already been sorted then only a check on the
- * last value is necessary (MS-ADTS 3.1.1.1.4)
+ * "objectClass" attribute - per MS-ADTS 3.1.1.1.4 this is the last value.
+ * Without schema this does not work and hence NULL is returned.
  */
 const struct dsdb_class *get_last_structural_class(const struct dsdb_schema *schema,
-						   const struct ldb_message_element *element,
-						   bool sorted)
+						   const struct ldb_message_element *element)
 {
-	const struct dsdb_class *last_class = NULL;
-	unsigned int i = 0;
+	const struct dsdb_class *last_class;
 
 	if (schema == NULL) {
 		return NULL;
 	}
 
-	if (sorted && (element->num_values > 1)) {
-		i = element->num_values - 1;
+	if (element->num_values == 0) {
+		return NULL;
 	}
 
-	for (; i < element->num_values; i++){
-		const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
-
-		if(tmp_class == NULL) {
-			continue;
-		}
-
-		if(tmp_class->objectClassCategory > 1) {
-			continue;
-		}
-
-		if (!last_class) {
-			last_class = tmp_class;
-		} else {
-			if (tmp_class->subClass_order > last_class->subClass_order)
-				last_class = tmp_class;
-		}
+	last_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema,
+							   &element->values[element->num_values-1]);
+	if (last_class == NULL) {
+		return NULL;
+	}
+	if (last_class->objectClassCategory > 1) {
+		return NULL;
 	}
 
 	return last_class;
