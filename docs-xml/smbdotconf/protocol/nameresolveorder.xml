@@ -65,6 +65,6 @@
  
 </description>
 
-<value type="default">lmhosts host wins bcast</value>
+<value type="default">lmhosts wins host bcast</value>
 <value type="example">lmhosts bcast host</value>
 </samba:parameter>
