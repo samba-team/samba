@@ -1,0 +1,13 @@
+dn: cn=Fred Bassett,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST
+objectclass: OpenLDAPperson
+cn: Fred Bassett
+sn: Bassett
+uid: Bassett, Fred
+
+dn: cn=Sentinel,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST
+objectclass: OpenLDAPperson
+cn: Sentinel
+sn: USER
+uid: USER, Sentinel
+
+

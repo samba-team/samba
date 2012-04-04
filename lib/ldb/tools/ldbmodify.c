@@ -34,8 +34,8 @@
 #include "ldb.h"
 #include "tools/cmdline.h"
 #include "ldbutil.h"
+#include "include/ldb_private.h"
 
-static unsigned int failures;
 static struct ldb_cmdline *options;
 
 static void usage(struct ldb_context *ldb)
@@ -54,13 +54,23 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 	struct ldb_ldif *ldif;
 	int fun_ret = LDB_SUCCESS, ret;
 	struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
+	struct ldif_read_file_state state = {
+		.f = f
+	};
 
 	if (options->controls != NULL &&  req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
 		exit(LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	while ((ldif = ldb_ldif_read_file(ldb, f))) {
+	fun_ret = ldb_transaction_start(ldb);
+	if (fun_ret != LDB_SUCCESS) {
+		fprintf(stderr, "ERR: (%s) on transaction start\n",
+			ldb_errstring(ldb));
+		return fun_ret;
+	}
+
+	while ((ldif = ldb_ldif_read_file_state(ldb, &state))) {
 		struct ldb_dn *olddn;
 		bool deleteoldrdn = false;
 		struct ldb_dn *newdn;
@@ -96,10 +106,10 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 			if (errstr == NULL) {
 				errstr = ldb_errstring(ldb);
 			}
-			fprintf(stderr, "ERR: (%s) \"%s\" on DN %s\n",
+			fprintf(stderr, "ERR: (%s) \"%s\" on DN %s at block before line %llu\n",
 				ldb_strerror(ret),
-				errstr, ldb_dn_get_linearized(ldif->msg->dn));
-			failures++;
+				errstr, ldb_dn_get_linearized(ldif->msg->dn), 
+				(unsigned long long)state.line_no);
 			fun_ret = ret;
 		} else {
 			(*count)++;
@@ -108,11 +118,24 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 			}
 		}
 		ldb_ldif_read_free(ldb, ldif);
+		if (ret) {
+			break;
+		}
 	}
-
-	if (!feof(f)) {
+	
+	if (fun_ret == LDB_SUCCESS && !feof(f)) {
 		fprintf(stderr, "Failed to parse ldif\n");
 		fun_ret = LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (fun_ret == LDB_SUCCESS) {
+		fun_ret = ldb_transaction_commit(ldb);
+		if (fun_ret != LDB_SUCCESS) {
+			fprintf(stderr, "ERR: (%s) on transaction commit\n",
+				ldb_errstring(ldb));
+		}
+	} else {
+		ldb_transaction_cancel(ldb);
 	}
 
 	return fun_ret;
@@ -150,7 +173,11 @@ int main(int argc, const char **argv)
 
 	talloc_free(mem_ctx);
 
-	printf("Modified %u records with %u failures\n", count, failures);
-
+	if (ret) {
+		printf("Modify failed after processing %u records\n", count);
+	} else {
+		printf("Modified %u records successfully\n", count);
+	}
+		
 	return ret;
 }

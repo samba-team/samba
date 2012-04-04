@@ -1,0 +1,15 @@
+dn: cn=Sentinel,ou=Alumni Association,ou=People,o=University of Michiga
+ n,c=TEST
+changetype: modify
+add: drink
+drink: water
+
+dn: cn=Sentinel,ou=Alumni Association,ou=People,o=University of Michiga
+ n,c=TEST
+changetype: modify
+add: sn
+sn: TEST
+-
+delete: sn
+sn: USER2
+

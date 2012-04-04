@@ -1,0 +1,6 @@
+dn: cn=Sentinel,ou=Alumni Association,ou=People,o=University of Michigan,c=TEST
+objectclass: OpenLDAPperson
+cn: Sentinel
+sn: USER
+uid: USER, Sentinel
+

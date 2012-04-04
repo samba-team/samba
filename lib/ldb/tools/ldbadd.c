@@ -34,8 +34,8 @@
 #include "ldb.h"
 #include "tools/cmdline.h"
 #include "ldbutil.h"
+#include "include/ldb_private.h"
 
-static unsigned int failures;
 static struct ldb_cmdline *options;
 
 static void usage(struct ldb_context *ldb)
@@ -55,13 +55,23 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 	struct ldb_ldif *ldif;
 	int fun_ret = LDB_SUCCESS, ret;
         struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
+	struct ldif_read_file_state state = {
+		.f = f
+	};
+
 	if (options->controls != NULL &&  req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	fun_ret = ldb_transaction_start(ldb);
+	if (fun_ret != LDB_SUCCESS) {
+		fprintf(stderr, "ERR: (%s) on transaction start\n",
+			ldb_errstring(ldb));
+		return fun_ret;
+	}
 
-	while ((ldif = ldb_ldif_read_file(ldb, f))) {
+	while ((ldif = ldb_ldif_read_file_state(ldb, &state))) {
 		if (ldif->changetype != LDB_CHANGETYPE_ADD &&
 		    ldif->changetype != LDB_CHANGETYPE_NONE) {
 			fprintf(stderr, "Only CHANGETYPE_ADD records allowed\n");
@@ -73,7 +83,6 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 			fprintf(stderr,
 			        "ERR: Message canonicalize failed - %s\n",
 			        ldb_strerror(ret));
-			failures++;
 			fun_ret = ret;
 			ldb_ldif_read_free(ldb, ldif);
 			continue;
@@ -81,10 +90,10 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 
 		ret = ldb_add_ctrl(ldb, ldif->msg,req_ctrls);
 		if (ret != LDB_SUCCESS) {
-			fprintf(stderr, "ERR: %s : \"%s\" on DN %s\n",
+			fprintf(stderr, "ERR: %s : \"%s\" on DN %s at block before line %llu\n",
 				ldb_strerror(ret), ldb_errstring(ldb),
-				ldb_dn_get_linearized(ldif->msg->dn));
-			failures++;
+				ldb_dn_get_linearized(ldif->msg->dn),
+				(unsigned long long)state.line_no);
 			fun_ret = ret;
 		} else {
 			(*count)++;
@@ -93,6 +102,24 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 			}
 		}
 		ldb_ldif_read_free(ldb, ldif);
+		if (ret) {
+			break;
+		}
+	}
+
+	if (fun_ret == LDB_SUCCESS && !feof(f)) {
+		fprintf(stderr, "Failed to parse ldif\n");
+		fun_ret = LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (fun_ret == LDB_SUCCESS) {
+		fun_ret = ldb_transaction_commit(ldb);
+		if (fun_ret != LDB_SUCCESS) {
+			fprintf(stderr, "ERR: (%s) on transaction commit\n",
+				ldb_errstring(ldb));
+		}
+	} else {
+		ldb_transaction_cancel(ldb);
 	}
 
 	return fun_ret;
@@ -148,7 +175,11 @@ int main(int argc, const char **argv)
 
 	talloc_free(mem_ctx);
 
-	printf("Added %u records with %u failures\n", count, failures);
+	if (ret) {
+		printf("Add failed after processing %u records\n", count);
+	} else {
+		printf("Added %u records successfully\n", count);
+	}
 
 	return ret;
 }
