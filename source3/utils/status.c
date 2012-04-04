@@ -40,6 +40,8 @@
 #include "locking/proto.h"
 #include "messages.h"
 #include "librpc/gen_ndr/open_files.h"
+#include "smbd/proto.h"
+#include "librpc/gen_ndr/notify.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
@@ -287,13 +289,36 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 }
 
 
+static void print_notify_recs(const char *path,
+			      struct notify_db_entry *entries,
+			      size_t num_entries,
+			      time_t deleted_time, void *private_data)
+{
+	size_t i;
+	d_printf("%s\n", path);
 
+	if (num_entries == 0) {
+		d_printf("deleted %s\n", time_to_asc(deleted_time));
+	}
+
+	for (i=0; i<num_entries; i++) {
+		struct notify_db_entry *e = &entries[i];
+		char *str;
+
+		str = server_id_str(talloc_tos(), &e->server);
+		printf("%s %x %x\n", str, (unsigned)e->filter,
+		       (unsigned)e->subdir_filter);
+		TALLOC_FREE(str);
+	}
+	printf("\n");
+}
 
  int main(int argc, char *argv[])
 {
 	int c;
 	int profile_only = 0;
 	bool show_processes, show_locks, show_shares;
+	bool show_notify = false;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -301,6 +326,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		{"verbose",	'v', POPT_ARG_NONE, 	NULL, 'v', "Be verbose" },
 		{"locks",	'L', POPT_ARG_NONE,	NULL, 'L', "Show locks only" },
 		{"shares",	'S', POPT_ARG_NONE,	NULL, 'S', "Show shares only" },
+		{"notify",	'N', POPT_ARG_NONE,	NULL, 'N', "Show notifies" },
 		{"user", 	'u', POPT_ARG_STRING,	&username, 'u', "Switch to user" },
 		{"brief",	'b', POPT_ARG_NONE, 	NULL, 'b', "Be brief" },
 		{"profile",     'P', POPT_ARG_NONE, NULL, 'P', "Do profiling" },
@@ -341,6 +367,9 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			break;
 		case 'S':
 			shares_only = true;
+			break;
+		case 'N':
+			show_notify = true;
 			break;
 		case 'b':
 			brief = true;
@@ -485,6 +514,17 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		}
 
 		locking_end();
+	}
+
+	if (show_notify) {
+		struct notify_context *n;
+
+		n = notify_init(talloc_tos(), NULL, NULL);
+		if (n == NULL) {
+			goto done;
+		}
+		notify_walk(n, print_notify_recs, NULL);
+		TALLOC_FREE(n);
 	}
 
 done:

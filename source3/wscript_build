@@ -427,7 +427,7 @@ SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
 
 SWAT_SRC = '''${SWAT_SRC1}'''
 
-STATUS_SRC = '''utils/status.c utils/status_profile.c'''
+STATUS_SRC = '''utils/status.c utils/status_profile.c smbd/notify_internal.c'''
 
 SMBCONTROL_SRC = '''utils/smbcontrol.c'''
 

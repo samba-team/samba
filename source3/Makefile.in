@@ -1038,6 +1038,7 @@ SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(PRINTBASE_OBJ) $(LIBSMB_O
 
 STATUS_OBJ = utils/status.o utils/status_profile.o \
 	     $(LOCKING_OBJ) $(PARAM_OBJ) \
+	     smbd/notify_internal.o librpc/gen_ndr/ndr_notify.o \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	     $(LIBSMB_ERR_OBJ) $(FNAME_UTIL_OBJ)
 
