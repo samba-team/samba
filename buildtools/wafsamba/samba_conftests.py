@@ -18,11 +18,29 @@ def CHECK_ICONV(conf, define='HAVE_NATIVE_ICONV'):
 @conf
 def CHECK_LARGEFILE(conf, define='HAVE_LARGEFILE'):
     '''see what we need for largefile support'''
+    getconf_cflags = conf.CHECK_COMMAND(['getconf', 'LFS_CFLAGS']);
+    if getconf_cflags is not False:
+        if (conf.CHECK_CODE('return !(sizeof(off_t) >= 8)',
+                            define='WORKING_GETCONF_LFS_CFLAGS',
+                            execute=True,
+                            cflags=getconf_cflags,
+                            msg='Checking getconf large file support flags work')):
+            conf.ADD_CFLAGS(getconf_cflags)
+            getconf_cflags_list=TO_LIST(getconf_cflags)
+            for flag in getconf_cflags_list:
+                if flag[:2] == "-D":
+                    flag_split = flag[2:].split('=')
+                    if len(flag_split) == 1:
+                        conf.DEFINE(flag_split[0], '1')
+                    else:
+                        conf.DEFINE(flag_split[0], flag_split[1])
+
     if conf.CHECK_CODE('return !(sizeof(off_t) >= 8)',
                        define,
                        execute=True,
-                       msg='Checking for large file support'):
+                       msg='Checking for large file support without additional flags'):
         return True
+
     if conf.CHECK_CODE('return !(sizeof(off_t) >= 8)',
                        define,
                        execute=True,
