@@ -47,7 +47,7 @@ extern int optind;
 fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
 static const char *sockops="TCP_NODELAY";
-static int nprocs=1;
+int torture_nprocs=1;
 static int port_to_use=0;
 int torture_numops=100;
 int torture_blocksize=1024*1024;
@@ -1211,7 +1211,7 @@ static bool run_nbench(int dummy)
 	double t;
 	bool correct = True;
 
-	nbio_shmem(nprocs);
+	nbio_shmem(torture_nprocs);
 
 	nbio_id = -1;
 
@@ -8434,7 +8434,7 @@ static bool run_local_wbclient(int dummy)
 		goto fail;
 	}
 
-	wb_ctx = talloc_array(ev, struct wb_context *, nprocs);
+	wb_ctx = talloc_array(ev, struct wb_context *, torture_nprocs);
 	if (wb_ctx == NULL) {
 		goto fail;
 	}
@@ -8442,9 +8442,9 @@ static bool run_local_wbclient(int dummy)
 	ZERO_STRUCT(wb_req);
 	wb_req.cmd = WINBINDD_PING;
 
-	d_printf("nprocs=%d, numops=%d\n", (int)nprocs, (int)torture_numops);
+	d_printf("torture_nprocs=%d, numops=%d\n", (int)torture_nprocs, (int)torture_numops);
 
-	for (i=0; i<nprocs; i++) {
+	for (i=0; i<torture_nprocs; i++) {
 		wb_ctx[i] = wb_context_init(ev, NULL);
 		if (wb_ctx[i] == NULL) {
 			goto fail;
@@ -8462,7 +8462,7 @@ static bool run_local_wbclient(int dummy)
 
 	i = 0;
 
-	while (i < nprocs * torture_numops) {
+	while (i < torture_nprocs * torture_numops) {
 		tevent_loop_once(ev);
 	}
 
@@ -8737,26 +8737,26 @@ static double create_procs(bool (*fn)(int), bool *result)
 
 	synccount = 0;
 
-	child_status = (volatile pid_t *)shm_setup(sizeof(pid_t)*nprocs);
+	child_status = (volatile pid_t *)shm_setup(sizeof(pid_t)*torture_nprocs);
 	if (!child_status) {
 		printf("Failed to setup shared memory\n");
 		return -1;
 	}
 
-	child_status_out = (volatile bool *)shm_setup(sizeof(bool)*nprocs);
+	child_status_out = (volatile bool *)shm_setup(sizeof(bool)*torture_nprocs);
 	if (!child_status_out) {
 		printf("Failed to setup result status shared memory\n");
 		return -1;
 	}
 
-	for (i = 0; i < nprocs; i++) {
+	for (i = 0; i < torture_nprocs; i++) {
 		child_status[i] = 0;
 		child_status_out[i] = True;
 	}
 
 	start = timeval_current();
 
-	for (i=0;i<nprocs;i++) {
+	for (i=0;i<torture_nprocs;i++) {
 		procnum = i;
 		if (fork() == 0) {
 			pid_t mypid = getpid();
@@ -8784,15 +8784,15 @@ static double create_procs(bool (*fn)(int), bool *result)
 
 	do {
 		synccount = 0;
-		for (i=0;i<nprocs;i++) {
+		for (i=0;i<torture_nprocs;i++) {
 			if (child_status[i]) synccount++;
 		}
-		if (synccount == nprocs) break;
+		if (synccount == torture_nprocs) break;
 		smb_msleep(10);
 	} while (timeval_elapsed(&start) < 30);
 
-	if (synccount != nprocs) {
-		printf("FAILED TO START %d CLIENTS (started %d)\n", nprocs, synccount);
+	if (synccount != torture_nprocs) {
+		printf("FAILED TO START %d CLIENTS (started %d)\n", torture_nprocs, synccount);
 		*result = False;
 		return timeval_elapsed(&start);
 	}
@@ -8800,19 +8800,19 @@ static double create_procs(bool (*fn)(int), bool *result)
 	/* start the client load */
 	start = timeval_current();
 
-	for (i=0;i<nprocs;i++) {
+	for (i=0;i<torture_nprocs;i++) {
 		child_status[i] = 0;
 	}
 
-	printf("%d clients started\n", nprocs);
+	printf("%d clients started\n", torture_nprocs);
 
-	for (i=0;i<nprocs;i++) {
+	for (i=0;i<torture_nprocs;i++) {
 		while (waitpid(0, &status, 0) == -1 && errno == EINTR) /* noop */ ;
 	}
 
 	printf("\n");
 
-	for (i=0;i<nprocs;i++) {
+	for (i=0;i<torture_nprocs;i++) {
 		if (!child_status_out[i]) {
 			*result = False;
 		}
@@ -9106,7 +9106,7 @@ static void usage(void)
 			max_protocol = interpret_protocol(optarg, max_protocol);
 			break;
 		case 'N':
-			nprocs = atoi(optarg);
+			torture_nprocs = atoi(optarg);
 			break;
 		case 'o':
 			torture_numops = atoi(optarg);
