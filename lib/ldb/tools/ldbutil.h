@@ -33,12 +33,12 @@
 
 int ldb_add_ctrl(struct ldb_context *ldb,
 		const struct ldb_message *message,
-		struct ldb_control **controls, bool do_transaction);
+		struct ldb_control **controls);
 int ldb_delete_ctrl(struct ldb_context *ldb, struct ldb_dn *dn,
-		struct ldb_control **controls, bool do_transaction);
+		struct ldb_control **controls);
 int ldb_modify_ctrl(struct ldb_context *ldb,
                 const struct ldb_message *message,
-                struct ldb_control **controls, bool do_transaction);
+                struct ldb_control **controls);
 int ldb_search_ctrl(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		    struct ldb_result **result, struct ldb_dn *base,
 		    enum ldb_scope scope, const char * const *attrs,
