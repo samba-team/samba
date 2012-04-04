@@ -230,7 +230,7 @@ bld.SAMBA_MODULE('ldb_objectclass',
 	init_function='ldb_objectclass_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc security NDR_SECURITY samdb DSDB_MODULE_HELPERS samba-util DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc samdb DSDB_MODULE_HELPERS samba-util DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
