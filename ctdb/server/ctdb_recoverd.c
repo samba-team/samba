@@ -2775,13 +2775,13 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 						ctdb_addr_to_str(&ips->ips[j].addr)));
 				need_takeover_run = true;
 			} else if (ips->ips[j].pnn == pnn) {
-				if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
+				if (ctdb->do_checkpublicip && !ctdb_sys_have_ip(&ips->ips[j].addr)) {
 					DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
 						ctdb_addr_to_str(&ips->ips[j].addr)));
 					need_takeover_run = true;
 				}
 			} else {
-				if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
+				if (ctdb->do_checkpublicip && ctdb_sys_have_ip(&ips->ips[j].addr)) {
 					DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", 
 						ctdb_addr_to_str(&ips->ips[j].addr)));
 					need_takeover_run = true;
