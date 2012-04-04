@@ -96,7 +96,7 @@ static PyObject *py_samdb_server_site_name(PyObject *self, PyObject *args)
 }
 
 static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self,
-													PyObject *args)
+						    PyObject *args)
 {
 	char *target_str, *mapping;
 	PyObject *py_ldb;
