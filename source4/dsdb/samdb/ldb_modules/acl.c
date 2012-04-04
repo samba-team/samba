@@ -449,7 +449,6 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	char *instanceName;
 	char *serviceType;
 	char *serviceName;
-	const char *realm;
 	const char *forest_name = samdb_forest_name(ldb, mem_ctx);
 	const char *base_domain = samdb_default_domain_name(ldb, mem_ctx);
 	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
@@ -483,7 +482,6 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 
 	instanceName = principal->name.name_string.val[1];
 	serviceType = principal->name.name_string.val[0];
-	realm = krb5_principal_get_realm(krb_ctx, principal);
 	if (principal->name.name_string.len == 3) {
 		serviceName = principal->name.name_string.val[2];
 	} else {
@@ -1314,7 +1312,6 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 
 static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct ldb_context *ldb;
 	struct acl_context *ac;
 	struct acl_private *data;
 	struct ldb_result *acl_res;
@@ -1329,8 +1326,6 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	ac = talloc_get_type(req->context, struct acl_context);
 	data = talloc_get_type(ldb_module_get_private(ac->module), struct acl_private);
-	ldb = ldb_module_get_ctx(ac->module);
-
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
 				       LDB_ERR_OPERATIONS_ERROR);
