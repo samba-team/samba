@@ -21,10 +21,10 @@
 #include "includes.h"
 #include "util_tdb.h"
 #include "serverid.h"
+#include "ctdbd_conn.h"
 
 #ifdef CLUSTER_SUPPORT
 
-#include "ctdbd_conn.h"
 #include "ctdb_packet.h"
 #include "messages.h"
 
@@ -1795,6 +1795,15 @@ NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
 			  nt_errstr(status)));
 	}
 	return status;
+}
+
+#else
+
+NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
+				   uint32 dst_vnn, uint64 dst_srvid,
+				   const uint8_t *buf, size_t buflen)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 #endif
