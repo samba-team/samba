@@ -153,7 +153,7 @@ olcAttributeTypes: {49}( 1.3.6.1.4.1.7165.2.1.72 NAME 'sambaTrustDirection' DE
  21.1.27 SINGLE-VALUE )
 olcAttributeTypes: {50}( 1.3.6.1.4.1.7165.2.1.73 NAME 'sambaTrustPartner' DESC
   'Fully qualified name of the domain with which a trust exists' EQUALITY case
-  IgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{128} )
+ IgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{128} )
 olcAttributeTypes: {51}( 1.3.6.1.4.1.7165.2.1.74 NAME 'sambaFlatName' DESC 'Ne
  tBIOS name of a domain' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
  121.1.15{128} )
