@@ -953,7 +953,7 @@ void server_encryption_shutdown(void);
 
 bool unix_token_equal(const struct security_unix_token *t1, const struct security_unix_token *t2);
 bool push_sec_ctx(void);
-void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, struct security_token *token);
+void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, const struct security_token *token);
 void set_root_sec_ctx(void);
 bool pop_sec_ctx(void);
 void init_sec_ctx(void);
