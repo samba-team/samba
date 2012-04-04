@@ -1,5 +1,7 @@
 #!/bin/sh
 
+BINDIR=$1
+
 if [ -n "$TEST_DATA_PREFIX" ]; then
 	LDB_URL="$TEST_DATA_PREFIX/tdbtest.ldb"
 else
@@ -7,15 +9,17 @@ else
 fi
 export LDB_URL
 
-PATH=bin:$PATH
+PATH=$BINDIR:$PATH
 export PATH
-
-rm -f $LDB_URL*
 
 if [ -z "$LDBDIR" ]; then
     LDBDIR=`dirname $0`/..
     export LDBDIR
 fi
+
+cd $LDBDIR
+
+rm -f $LDB_URL*
 
 cat <<EOF | $VALGRIND ldbadd || exit 1
 dn: @MODULES

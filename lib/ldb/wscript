@@ -271,7 +271,7 @@ def test(ctx):
     shutil.rmtree(test_prefix, ignore_errors=True)
     os.makedirs(test_prefix)
     os.environ['TEST_DATA_PREFIX'] = test_prefix
-    cmd = 'tests/test-tdb.sh'
+    cmd = 'tests/test-tdb.sh %s' % Utils.g_module.blddir
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
     # FIXME: Run python testsuite
