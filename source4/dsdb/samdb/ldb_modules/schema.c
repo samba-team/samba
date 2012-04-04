@@ -73,52 +73,6 @@ const struct dsdb_class *get_last_structural_class(const struct dsdb_schema *sch
 	return last_class;
 }
 
-int acl_check_access_on_class(struct ldb_module *module,
-			      const struct dsdb_schema *schema,
-			      TALLOC_CTX *mem_ctx,
-			      struct security_descriptor *sd,
-			      struct dom_sid *rp_sid,
-			      uint32_t access_mask,
-			      const char *class_name)
-{
-	int ret;
-	NTSTATUS status;
-	uint32_t access_granted;
-	struct object_tree *root = NULL;
-	struct object_tree *new_node = NULL;
-	const struct GUID *guid;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	struct security_token *token = acl_user_token(module);
-	if (class_name) {
-		guid = class_schemaid_guid_by_lDAPDisplayName(schema, class_name);
-		if (!guid) {
-			DEBUG(10, ("acl_search: cannot find class %s\n",
-				   class_name));
-			goto fail;
-		}
-		if (!insert_in_object_tree(tmp_ctx,
-					   guid, access_mask,
-					   &root, &new_node)) {
-			DEBUG(10, ("acl_search: cannot add to object tree guid\n"));
-			goto fail;
-		}
-	}
-	status = sec_access_check_ds(sd, token,
-				     access_mask,
-				     &access_granted,
-				     root,
-				     rp_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
-	}
-	else {
-		ret = LDB_SUCCESS;
-	}
-	return ret;
-fail:
-	return ldb_operr(ldb_module_get_ctx(module));
-}
-
 const struct GUID *get_oc_guid_from_message(struct ldb_module *module,
 						   const struct dsdb_schema *schema,
 						   struct ldb_message *msg)
