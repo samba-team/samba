@@ -59,19 +59,4 @@ const struct dsdb_class *get_last_structural_class(const struct dsdb_schema *sch
 	return last_class;
 }
 
-const struct GUID *get_oc_guid_from_message(struct ldb_module *module,
-						   const struct dsdb_schema *schema,
-						   struct ldb_message *msg)
-{
-	struct ldb_message_element *oc_el;
-
-	oc_el = ldb_msg_find_element(msg, "objectClass");
-	if (!oc_el) {
-		return NULL;
-	}
-
-	return class_schemaid_guid_by_lDAPDisplayName(schema,
-						      (char *)oc_el->values[oc_el->num_values-1].data);
-}
-
 

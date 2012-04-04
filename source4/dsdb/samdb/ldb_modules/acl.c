@@ -908,6 +908,26 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static const struct GUID *get_oc_guid_from_message(const struct dsdb_schema *schema,
+						   struct ldb_message *msg)
+{
+	struct ldb_message_element *oc_el;
+	const struct dsdb_class *object_class;
+
+	oc_el = ldb_msg_find_element(msg, "objectClass");
+	if (!oc_el) {
+		return NULL;
+	}
+
+	object_class = get_last_structural_class(schema, oc_el);
+	if (object_class == NULL) {
+		return NULL;
+	}
+
+	return &object_class->schemaIDGUID;
+}
+
+
 static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
@@ -973,7 +993,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		goto success;
 	}
 
-	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
+	guid = get_oc_guid_from_message(schema, acl_res->msgs[0]);
 	if (!guid) {
 		talloc_free(tmp_ctx);
 		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
@@ -1247,7 +1267,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
+	guid = get_oc_guid_from_message(schema, acl_res->msgs[0]);
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &root, &new_node)) {
 		talloc_free(tmp_ctx);
@@ -1315,7 +1335,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	/* new parent should have create child */
 	root = NULL;
 	new_node = NULL;
-	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
+	guid = get_oc_guid_from_message(schema, acl_res->msgs[0]);
 	if (!guid) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "acl:renamed object has no object class\n");
