@@ -652,6 +652,7 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 		el->name = talloc_strdup(msg2->elements, el->name);
 		if (el->name == NULL) goto failed;
 		el->values = talloc_array(msg2->elements, struct ldb_val, el->num_values);
+		if (el->values == NULL) goto failed;
 		for (j=0;j<el->num_values;j++) {
 			el->values[j] = ldb_val_dup(el->values, &values[j]);
 			if (el->values[j].data == NULL && values[j].length != 0) {
