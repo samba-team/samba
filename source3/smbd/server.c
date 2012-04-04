@@ -1209,9 +1209,6 @@ extern void build_options(bool screen);
 	if (!W_ERROR_IS_OK(registry_init_full()))
 		exit(1);
 
-	if (!print_backend_init(smbd_messaging_context()))
-		exit(1);
-
 	/* Open the share_info.tdb here, so we don't have to open
 	   after the fork on every single connection.  This is a small
 	   performance improvment and reduces the total number of system
@@ -1227,6 +1224,9 @@ extern void build_options(bool screen);
 			  nt_errstr(status)));
 		return -1;
 	}
+
+	if (!print_backend_init(smbd_messaging_context()))
+		exit(1);
 
 	if (!init_guest_info()) {
 		DEBUG(0,("ERROR: failed to setup guest info.\n"));
