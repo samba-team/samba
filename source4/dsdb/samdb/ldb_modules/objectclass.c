@@ -37,7 +37,6 @@
 
 #include "includes.h"
 #include "ldb_module.h"
-#include "util/dlinklist.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_security.h"
@@ -58,11 +57,6 @@ struct oc_context {
 	struct ldb_reply *search_res2;
 
 	int (*step_fn)(struct oc_context *);
-};
-
-struct class_list {
-	struct class_list *prev, *next;
-	const struct dsdb_class *objectclass;
 };
 
 static struct oc_context *oc_init_context(struct ldb_module *module,
@@ -87,140 +81,6 @@ static struct oc_context *oc_init_context(struct ldb_module *module,
 }
 
 static int objectclass_do_add(struct oc_context *ac);
-
-/* Sort objectClasses into correct order, and validate that all
- * objectClasses specified actually exist in the schema
- */
-
-static int objectclass_sort(struct ldb_module *module,
-			    const struct dsdb_schema *schema,
-			    TALLOC_CTX *mem_ctx,
-			    struct ldb_message_element *objectclass_element,
-			    struct class_list **sorted_out) 
-{
-	struct ldb_context *ldb;
-	unsigned int i, lowest;
-	struct class_list *unsorted = NULL, *sorted = NULL, *current = NULL,
-			  *poss_parent = NULL, *new_parent = NULL,
-			  *current_lowest = NULL, *current_lowest_struct = NULL;
-
-	ldb = ldb_module_get_ctx(module);
-
-	/* DESIGN:
-	 *
-	 * We work on 4 different 'bins' (implemented here as linked lists):
-	 *
-	 * * sorted:       the eventual list, in the order we wish to push
-	 *                 into the database.  This is the only ordered list.
-	 *
-	 * * parent_class: The current parent class 'bin' we are
-	 *                 trying to find subclasses for
-	 *
-	 * * subclass:     The subclasses we have found so far
-	 *
-	 * * unsorted:     The remaining objectClasses
-	 *
-	 * The process is a matter of filtering objectClasses up from
-	 * unsorted into sorted.  Order is irrelevent in the later 3 'bins'.
-	 * 
-	 * We start with 'top' (found and promoted to parent_class
-	 * initially).  Then we find (in unsorted) all the direct
-	 * subclasses of 'top'.  parent_classes is concatenated onto
-	 * the end of 'sorted', and subclass becomes the list in
-	 * parent_class.
-	 *
-	 * We then repeat, until we find no more subclasses.  Any left
-	 * over classes are added to the end.
-	 *
-	 */
-
-	/* Firstly, dump all the objectClass elements into the
-	 * unsorted bin, except for 'top', which is special */
-	for (i=0; i < objectclass_element->num_values; i++) {
-		current = talloc(mem_ctx, struct class_list);
-		if (!current) {
-			return ldb_oom(ldb);
-		}
-		current->objectclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &objectclass_element->values[i]);
-		if (!current->objectclass) {
-			ldb_asprintf_errstring(ldb, "objectclass %.*s is not a valid objectClass in schema", 
-					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
-			/* This looks weird, but windows apparently returns this for invalid objectClass values */
-			return LDB_ERR_NO_SUCH_ATTRIBUTE;
-		} else if (current->objectclass->isDefunct) {
-			ldb_asprintf_errstring(ldb, "objectclass %.*s marked as isDefunct objectClass in schema - not valid for new objects", 
-					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
-			/* This looks weird, but windows apparently returns this for invalid objectClass values */
-			return LDB_ERR_NO_SUCH_ATTRIBUTE;
-		}
-
-		/* Don't add top to list, we will do that later */
-		if (ldb_attr_cmp("top", current->objectclass->lDAPDisplayName) != 0) {
-			DLIST_ADD_END(unsorted, current, struct class_list *);
-		}
-	}
-
-	/* Add top here, to prevent duplicates */
-	current = talloc(mem_ctx, struct class_list);
-	current->objectclass = dsdb_class_by_lDAPDisplayName(schema, "top");
-	DLIST_ADD_END(sorted, current, struct class_list *);
-
-	/* If we don't have a schema yet, then just merge the lists again */
-	if (!schema) {
-		DLIST_CONCATENATE(sorted, unsorted, struct class_list *);
-		*sorted_out = sorted;
-		return LDB_SUCCESS;
-	}
-
-	/* For each object:  find parent chain */
-	for (current = unsorted; current != NULL; current = current->next) {
-		for (poss_parent = unsorted; poss_parent; poss_parent = poss_parent->next) {
-			if (ldb_attr_cmp(poss_parent->objectclass->lDAPDisplayName, current->objectclass->subClassOf) == 0) {
-				break;
-			}
-		}
-		/* If we didn't get to the end of the list, we need to add this parent */
-		if (poss_parent || (ldb_attr_cmp("top", current->objectclass->subClassOf) == 0)) {
-			continue;
-		}
-
-		new_parent = talloc(mem_ctx, struct class_list);
-		new_parent->objectclass = dsdb_class_by_lDAPDisplayName(schema, current->objectclass->subClassOf);
-		DLIST_ADD_END(unsorted, new_parent, struct class_list *);
-	}
-
-	/* For each object: order by hierarchy */
-	while (unsorted != NULL) {
-		lowest = UINT_MAX;
-		current_lowest = current_lowest_struct = NULL;
-		for (current = unsorted; current != NULL; current = current->next) {
-			if (current->objectclass->subClass_order <= lowest) {
-				/*
-				 * According to MS-ADTS 3.1.1.1.4 structural
-				 * and 88 object classes are always listed after
-				 * the other class types in a subclass hierarchy
-				 */
-				if (current->objectclass->objectClassCategory > 1) {
-					current_lowest = current;
-				} else {
-					current_lowest_struct = current;
-				}
-				lowest = current->objectclass->subClass_order;
-			}
-		}
-		if (current_lowest == NULL) {
-			current_lowest = current_lowest_struct;
-		}
-
-		if (current_lowest != NULL) {
-			DLIST_REMOVE(unsorted,current_lowest);
-			DLIST_ADD_END(sorted,current_lowest, struct class_list *);
-		}
-	}
-
-	*sorted_out = sorted;
-	return LDB_SUCCESS;
-}
 
 /*
  * This checks if we have unrelated object classes in our entry's "objectClass"
@@ -525,7 +385,6 @@ static int objectclass_do_add(struct oc_context *ac)
 	struct ldb_message_element *objectclass_element, *el;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
-	struct class_list *sorted, *current;
 	const char *rdn_name = NULL;
 	char *value;
 	const struct dsdb_class *objectclass;
@@ -572,6 +431,12 @@ static int objectclass_do_add(struct oc_context *ac)
 	}
 
 	if (ac->schema != NULL) {
+		/*
+		 * Notice: by the normalization function call in "ldb_request()"
+		 * case "LDB_ADD" we have always only *one* "objectClass"
+		 * attribute at this stage!
+		 */
+
 		objectclass_element = ldb_msg_find_element(msg, "objectClass");
 		if (!objectclass_element) {
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, no objectclass specified!",
@@ -589,57 +454,25 @@ static int objectclass_do_add(struct oc_context *ac)
 			return ldb_module_oom(ac->module);
 		}
 
-		/* Here we do now get the "objectClass" list from the
-		 * database. */
-		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
-				       objectclass_element, &sorted);
+		/* Now do the sorting */
+		ret = dsdb_sort_objectClass_attr(ldb, ac->schema, mem_ctx,
+						 objectclass_element, msg,
+						 objectclass_element);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
-		}
-		
-		ldb_msg_remove_element(msg, objectclass_element);
-
-		/* Well, now we shouldn't find any additional "objectClass"
-		 * message element (required by the AD specification). */
-		objectclass_element = ldb_msg_find_element(msg, "objectClass");
-		if (objectclass_element != NULL) {
-			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, only one 'objectclass' attribute specification is allowed!",
-					       ldb_dn_get_linearized(msg->dn));
-			talloc_free(mem_ctx);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;
-		}
-
-		/* We must completely replace the existing objectClass entry,
-		 * because we need it sorted. */
-		ret = ldb_msg_add_empty(msg, "objectClass", 0,
-					&objectclass_element);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		/* Move from the linked list back into an ldb msg */
-		for (current = sorted; current; current = current->next) {
-			const char *objectclass_name = current->objectclass->lDAPDisplayName;
-
-			ret = ldb_msg_add_string(msg, "objectClass", objectclass_name);
-			if (ret != LDB_SUCCESS) {
-				ldb_set_errstring(ldb,
-						  "objectclass: could not re-add sorted "
-						  "objectclass to modify msg");
-				talloc_free(mem_ctx);
-				return ret;
-			}
 		}
 
 		talloc_free(mem_ctx);
 
-		/* Make sure its valid to add an object of this type */
+		/*
+		 * Get the new top-most structural object class and check for
+		 * unrelated structural classes
+		 */
 		objectclass = get_last_structural_class(ac->schema,
 							objectclass_element,
 							true);
-		if(objectclass == NULL) {
+		if (objectclass == NULL) {
 			ldb_asprintf_errstring(ldb,
 					       "Failed to find a structural class for %s",
 					       ldb_dn_get_linearized(msg->dn));
@@ -993,7 +826,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 	struct ldb_val *vals;
 	struct ldb_message *msg;
 	TALLOC_CTX *mem_ctx;
-	struct class_list *sorted, *current;
 	const struct dsdb_class *objectclass;
 	unsigned int i, j, k;
 	bool found;
@@ -1111,9 +943,20 @@ static int objectclass_do_mod(struct oc_context *ac)
 			break;
 		}
 
-		/* Get the new top-most structural object class */
+		/* Now do the sorting */
+		ret = dsdb_sort_objectClass_attr(ldb, ac->schema, mem_ctx,
+						 oc_el_entry, msg, oc_el_entry);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+
+		/*
+		 * Get the new top-most structural object class and check for
+		 * unrelated structural classes
+		 */
 		objectclass = get_last_structural_class(ac->schema, oc_el_entry,
-							false);
+							true);
 		if (objectclass == NULL) {
 			ldb_set_errstring(ldb,
 					  "objectclass: cannot delete all structural objectclasses!");
@@ -1121,6 +964,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 
+		/* Check for unrelated objectclasses */
 		ret = check_unrelated_objectclasses(ac->module, ac->schema,
 						    objectclass,
 						    oc_el_entry);
@@ -1128,41 +972,16 @@ static int objectclass_do_mod(struct oc_context *ac)
 			talloc_free(mem_ctx);
 			return ret;
 		}
-
-		/* Now do the sorting */
-		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
-				       oc_el_entry, &sorted);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		/* (Re)-add an empty "objectClass" attribute on the object
-		 * classes change message "msg". */
-		ldb_msg_remove_attr(msg, "objectClass");
-		ret = ldb_msg_add_empty(msg, "objectClass",
-					LDB_FLAG_MOD_REPLACE, &oc_el_entry);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		/* Move from the linked list back into an ldb msg */
-		for (current = sorted; current; current = current->next) {
-			const char *objectclass_name = current->objectclass->lDAPDisplayName;
-
-			ret = ldb_msg_add_string(msg, "objectClass",
-						 objectclass_name);
-			if (ret != LDB_SUCCESS) {
-				ldb_set_errstring(ldb,
-						  "objectclass: could not re-add sorted objectclasses!");
-				talloc_free(mem_ctx);
-				return ret;
-			}
-		}
 	}
 
 	talloc_free(mem_ctx);
+
+	/* Now add the new object class attribute to the change message */
+	ret = ldb_msg_add(msg, oc_el_entry, LDB_FLAG_MOD_REPLACE);
+	if (ret != LDB_SUCCESS) {
+		ldb_module_oom(ac->module);
+		return ret;
+	}
 
 	/* Now we have the real and definitive change left to do */
 

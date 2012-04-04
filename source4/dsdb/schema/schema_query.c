@@ -22,8 +22,10 @@
 
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
+#include <ldb_module.h>
 #include "lib/util/binsearch.h"
 #include "lib/util/tsort.h"
+#include "util/dlinklist.h"
 
 static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
 						      const struct dsdb_schema *schema, 
@@ -442,4 +444,166 @@ const struct GUID *attribute_schemaid_guid_by_lDAPDisplayName(const struct dsdb_
                 return NULL;
 
         return &attr->schemaIDGUID;
+}
+
+/*
+ * Sort a "objectClass" attribute (LDB message element "objectclass_element")
+ * into correct order and validate that all object classes specified actually
+ * exist in the schema.
+ * The output is written in an existing LDB message element
+ * "out_objectclass_element" where the values will be allocated on
+ * "out_mem_ctx".
+ */
+int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
+			       const struct dsdb_schema *schema,
+			       TALLOC_CTX *mem_ctx,
+			       const struct ldb_message_element *objectclass_element,
+			       TALLOC_CTX *out_mem_ctx,
+			       struct ldb_message_element *out_objectclass_element)
+{
+	unsigned int i, lowest;
+	struct class_list {
+		struct class_list *prev, *next;
+		const struct dsdb_class *objectclass;
+	} *unsorted = NULL, *sorted = NULL, *current = NULL,
+	  *poss_parent = NULL, *new_parent = NULL,
+	  *current_lowest = NULL, *current_lowest_struct = NULL;
+	struct ldb_message_element *el;
+
+	/*
+	 * DESIGN:
+	 *
+	 * We work on 4 different 'bins' (implemented here as linked lists):
+	 *
+	 * * sorted:       the eventual list, in the order we wish to push
+	 *                 into the database.  This is the only ordered list.
+	 *
+	 * * parent_class: The current parent class 'bin' we are
+	 *                 trying to find subclasses for
+	 *
+	 * * subclass:     The subclasses we have found so far
+	 *
+	 * * unsorted:     The remaining objectClasses
+	 *
+	 * The process is a matter of filtering objectClasses up from
+	 * unsorted into sorted.  Order is irrelevent in the later 3 'bins'.
+	 *
+	 * We start with 'top' (found and promoted to parent_class
+	 * initially).  Then we find (in unsorted) all the direct
+	 * subclasses of 'top'.  parent_classes is concatenated onto
+	 * the end of 'sorted', and subclass becomes the list in
+	 * parent_class.
+	 *
+	 * We then repeat, until we find no more subclasses.  Any left
+	 * over classes are added to the end.
+	 *
+	 */
+
+	/*
+	 * Firstly, dump all the "objectClass" values into the unsorted bin,
+	 * except for 'top', which is special
+	 */
+	for (i=0; i < objectclass_element->num_values; i++) {
+		current = talloc(mem_ctx, struct class_list);
+		if (!current) {
+			return ldb_oom(ldb);
+		}
+		current->objectclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &objectclass_element->values[i]);
+		if (!current->objectclass) {
+			ldb_asprintf_errstring(ldb, "objectclass %.*s is not a valid objectClass in schema",
+					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
+			/* This looks weird, but windows apparently returns this for invalid objectClass values */
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		} else if (current->objectclass->isDefunct) {
+			ldb_asprintf_errstring(ldb, "objectclass %.*s marked as isDefunct objectClass in schema - not valid for new objects",
+					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
+			/* This looks weird, but windows apparently returns this for invalid objectClass values */
+			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+		}
+
+		/* Don't add top to list, we will do that later */
+		if (ldb_attr_cmp("top", current->objectclass->lDAPDisplayName) != 0) {
+			DLIST_ADD_END(unsorted, current, struct class_list *);
+		}
+	}
+
+
+	/* Add top here, to prevent duplicates */
+	current = talloc(mem_ctx, struct class_list);
+	current->objectclass = dsdb_class_by_lDAPDisplayName(schema, "top");
+	DLIST_ADD_END(sorted, current, struct class_list *);
+
+	/* For each object: find parent chain */
+	for (current = unsorted; current != NULL; current = current->next) {
+		for (poss_parent = unsorted; poss_parent; poss_parent = poss_parent->next) {
+			if (ldb_attr_cmp(poss_parent->objectclass->lDAPDisplayName, current->objectclass->subClassOf) == 0) {
+				break;
+			}
+		}
+		/* If we didn't get to the end of the list, we need to add this parent */
+		if (poss_parent || (ldb_attr_cmp("top", current->objectclass->subClassOf) == 0)) {
+			continue;
+		}
+
+		new_parent = talloc(mem_ctx, struct class_list);
+		new_parent->objectclass = dsdb_class_by_lDAPDisplayName(schema, current->objectclass->subClassOf);
+		DLIST_ADD_END(unsorted, new_parent, struct class_list *);
+	}
+
+	/* For each object: order by hierarchy */
+	while (unsorted != NULL) {
+		lowest = UINT_MAX;
+		current_lowest = current_lowest_struct = NULL;
+		for (current = unsorted; current != NULL; current = current->next) {
+			if (current->objectclass->subClass_order <= lowest) {
+				/*
+				 * According to MS-ADTS 3.1.1.1.4 structural
+				 * and 88 object classes are always listed after
+				 * the other class types in a subclass hierarchy
+				 */
+				if (current->objectclass->objectClassCategory > 1) {
+					current_lowest = current;
+				} else {
+					current_lowest_struct = current;
+				}
+				lowest = current->objectclass->subClass_order;
+			}
+		}
+		if (current_lowest == NULL) {
+			current_lowest = current_lowest_struct;
+		}
+
+		if (current_lowest != NULL) {
+			DLIST_REMOVE(unsorted,current_lowest);
+			DLIST_ADD_END(sorted,current_lowest, struct class_list *);
+		}
+	}
+
+	/* Now rebuild the sorted "objectClass" message element */
+	el = out_objectclass_element;
+
+	el->flags = objectclass_element->flags;
+	el->name = talloc_strdup(out_mem_ctx, objectclass_element->name);
+	if (el->name == NULL) {
+		return ldb_oom(ldb);
+	}
+	el->num_values = 0;
+	el->values = NULL;
+	for (current = sorted; current != NULL; current = current->next) {
+		el->values = talloc_realloc(out_mem_ctx, el->values,
+					    struct ldb_val, el->num_values + 1);
+		if (el->values == NULL) {
+			return ldb_oom(ldb);
+		}
+		el->values[el->num_values].data = (uint8_t *)talloc_strdup(out_mem_ctx,
+									   current->objectclass->lDAPDisplayName);
+		if (el->values[el->num_values].data == NULL) {
+			return ldb_oom(ldb);
+		}
+		el->values[el->num_values].length = strlen(current->objectclass->lDAPDisplayName);
+
+		++(el->num_values);
+	}
+
+	return LDB_SUCCESS;
 }
