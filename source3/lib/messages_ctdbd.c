@@ -59,6 +59,10 @@ static int global_ctdb_connection_pid;
 
 struct ctdbd_connection *messaging_ctdbd_connection(void)
 {
+	if (!lp_clustering()) {
+		return NULL;
+	}
+
 	if (global_ctdb_connection_pid == 0 &&
 	    global_ctdbd_connection == NULL) {
 		struct event_context *ev;
@@ -172,6 +176,11 @@ NTSTATUS messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			      struct messaging_backend **presult)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+struct ctdbd_connection *messaging_ctdbd_connection(void)
+{
+	return NULL;
 }
 
 #endif
