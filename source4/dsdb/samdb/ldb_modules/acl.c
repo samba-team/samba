@@ -39,7 +39,6 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
-#include "dsdb/samdb/ldb_modules/schema.h"
 #include "lib/util/tsort.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
@@ -919,7 +918,7 @@ static const struct GUID *get_oc_guid_from_message(const struct dsdb_schema *sch
 		return NULL;
 	}
 
-	object_class = get_last_structural_class(schema, oc_el);
+	object_class = dsdb_get_last_structural_class(schema, oc_el);
 	if (object_class == NULL) {
 		return NULL;
 	}

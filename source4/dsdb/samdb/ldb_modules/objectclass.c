@@ -44,7 +44,6 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "../libds/common/flags.h"
-#include "dsdb/samdb/ldb_modules/schema.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
 struct oc_context {
@@ -469,8 +468,8 @@ static int objectclass_do_add(struct oc_context *ac)
 		 * Get the new top-most structural object class and check for
 		 * unrelated structural classes
 		 */
-		objectclass = get_last_structural_class(ac->schema,
-							objectclass_element);
+		objectclass = dsdb_get_last_structural_class(ac->schema,
+							     objectclass_element);
 		if (objectclass == NULL) {
 			ldb_asprintf_errstring(ldb,
 					       "Failed to find a structural class for %s",
@@ -954,7 +953,8 @@ static int objectclass_do_mod(struct oc_context *ac)
 		 * Get the new top-most structural object class and check for
 		 * unrelated structural classes
 		 */
-		objectclass = get_last_structural_class(ac->schema, oc_el_entry);
+		objectclass = dsdb_get_last_structural_class(ac->schema,
+							     oc_el_entry);
 		if (objectclass == NULL) {
 			ldb_set_errstring(ldb,
 					  "objectclass: cannot delete all structural objectclasses!");
@@ -1130,7 +1130,8 @@ static int objectclass_do_rename2(struct oc_context *ac)
 			/* existing entry without a valid object class? */
 			return ldb_operr(ldb);
 		}
-		objectclass = get_last_structural_class(ac->schema, oc_el_entry);
+		objectclass = dsdb_get_last_structural_class(ac->schema,
+							     oc_el_entry);
 		if (objectclass == NULL) {
 			/* existing entry without a valid object class? */
 			return ldb_operr(ldb);

@@ -39,7 +39,6 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
-#include "dsdb/samdb/ldb_modules/schema.h"
 #include "auth/auth.h"
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
@@ -542,7 +541,8 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	objectclass = get_last_structural_class(schema, objectclass_element);
+	objectclass = dsdb_get_last_structural_class(schema,
+						     objectclass_element);
 	if (objectclass == NULL) {
 		return ldb_operr(ldb);
 	}
@@ -660,7 +660,8 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	objectclass = get_last_structural_class(schema, objectclass_element);
+	objectclass = dsdb_get_last_structural_class(schema,
+						     objectclass_element);
 	if (objectclass == NULL) {
 		return ldb_operr(ldb);
 	}

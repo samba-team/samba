@@ -1362,3 +1362,33 @@ struct ldb_message_element *dsdb_get_single_valued_attr(const struct ldb_message
 
 	return el;
 }
+
+/*
+ * This function determines the (last) structural or 88 object class of a passed
+ * "objectClass" attribute - per MS-ADTS 3.1.1.1.4 this is the last value.
+ * Without schema this does not work and hence NULL is returned.
+ */
+const struct dsdb_class *dsdb_get_last_structural_class(const struct dsdb_schema *schema,
+							const struct ldb_message_element *element)
+{
+	const struct dsdb_class *last_class;
+
+	if (schema == NULL) {
+		return NULL;
+	}
+
+	if (element->num_values == 0) {
+		return NULL;
+	}
+
+	last_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema,
+							   &element->values[element->num_values-1]);
+	if (last_class == NULL) {
+		return NULL;
+	}
+	if (last_class->objectClassCategory > 1) {
+		return NULL;
+	}
+
+	return last_class;
+}
