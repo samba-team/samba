@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
 		lock.l_type = F_WRLCK;
 		lock.l_whence = SEEK_SET;
-		lock.l_start = 0;
+		lock.l_start = 0x100000000LL;
 		lock.l_len = 4;
 		lock.l_pid = getpid();
 		
@@ -92,15 +92,26 @@ int main(int argc, char *argv[])
 	lock.l_type = F_WRLCK;
 	lock.l_whence = SEEK_SET;
 	lock.l_start = 0;
-	lock.l_len = 4;
+	lock.l_len = 0x100000004LL;
 	lock.l_pid = getpid();
 
-	/* set a 4 byte write lock */
-	fcntl(fd,F_SETLK,&lock);
+	/* set a 100000004 byte write lock, should conflict with the above */
+	ret = fcntl(fd,F_SETLK,&lock);
 
 	sys_waitpid(pid, &status, 0);
 
 	unlink(DATA);
+
+	if (ret != 0) {
+		fprintf(stderr,"ERROR: failed to lock %s (errno=%d)\n", 
+			DATA, (int)errno);
+		exit(1);
+	}
+
+	if (lock.l_len < 0x100000004LL) {
+		fprintf(stderr,"ERROR: settign lock overflowed\n");
+		exit(1);
+	}
 
 #if defined(WIFEXITED) && defined(WEXITSTATUS)
     if(WIFEXITED(status)) {
