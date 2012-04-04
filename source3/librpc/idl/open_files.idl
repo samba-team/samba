@@ -27,6 +27,7 @@ interface open_files
 
 	typedef [public] struct {
 		uint32		name_hash;
+		security_token *delete_nt_token;
 		security_unix_token *delete_token;
 	} delete_token;
 

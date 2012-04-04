@@ -2546,7 +2546,9 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	}
 
 	/* The set is across all open files on this dev/inode pair. */
-	if (!set_delete_on_close(fsp, True, conn->session_info->unix_token)) {
+	if (!set_delete_on_close(fsp, True,
+				conn->session_info->security_token,
+				conn->session_info->unix_token)) {
 		close_file(req, fsp, NORMAL_CLOSE);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -5664,7 +5666,9 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	if (!set_delete_on_close(fsp, true, conn->session_info->unix_token)) {
+	if (!set_delete_on_close(fsp, true,
+			conn->session_info->security_token,
+			conn->session_info->unix_token)) {
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;

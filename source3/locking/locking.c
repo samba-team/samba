@@ -867,6 +867,7 @@ static struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct
 
 static bool add_delete_on_close_token(struct share_mode_data *d,
 			uint32_t name_hash,
+			const struct security_token *nt_tok,
 			const struct security_unix_token *tok)
 {
 	struct delete_token *tmp, *dtl;
@@ -880,6 +881,10 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 	dtl = &d->delete_tokens[d->num_delete_tokens];
 
 	dtl->name_hash = name_hash;
+	dtl->delete_nt_token = dup_nt_token(d->delete_tokens, nt_tok);
+	if (dtl->delete_nt_token == NULL) {
+		return false;
+	}
 	dtl->delete_token = copy_unix_token(d->delete_tokens, tok);
 	if (dtl->delete_token == NULL) {
 		return false;
@@ -903,6 +908,7 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 void set_delete_on_close_lck(files_struct *fsp,
 			struct share_mode_lock *lck,
 			bool delete_on_close,
+			const struct security_token *nt_tok,
 			const struct security_unix_token *tok)
 {
 	struct share_mode_data *d = lck->data;
@@ -910,8 +916,10 @@ void set_delete_on_close_lck(files_struct *fsp,
 	bool ret;
 
 	if (delete_on_close) {
+		SMB_ASSERT(nt_tok != NULL);
 		SMB_ASSERT(tok != NULL);
 	} else {
+		SMB_ASSERT(nt_tok == NULL);
 		SMB_ASSERT(tok == NULL);
 	}
 
@@ -921,6 +929,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 			d->modified = true;
 			if (delete_on_close == false) {
 				/* Delete this entry. */
+				TALLOC_FREE(dt->delete_nt_token);
 				TALLOC_FREE(dt->delete_token);
 				*dt = d->delete_tokens[
 					d->num_delete_tokens-1];
@@ -929,6 +938,9 @@ void set_delete_on_close_lck(files_struct *fsp,
 			}
 			/* Replace this token with the
 			   given tok. */
+			TALLOC_FREE(dt->delete_nt_token);
+			dt->delete_nt_token = dup_nt_token(dt, nt_tok);
+			SMB_ASSERT(dt->delete_nt_token != NULL);
 			TALLOC_FREE(dt->delete_token);
 			dt->delete_token = copy_unix_token(dt, tok);
 			SMB_ASSERT(dt->delete_token != NULL);
@@ -940,11 +952,13 @@ void set_delete_on_close_lck(files_struct *fsp,
 		return;
 	}
 
-	ret = add_delete_on_close_token(lck->data, fsp->name_hash, tok);
+	ret = add_delete_on_close_token(lck->data, fsp->name_hash, nt_tok, tok);
 	SMB_ASSERT(ret);
 }
 
-bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct security_unix_token *tok)
+bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
+			const struct security_token *nt_tok,
+			const struct security_unix_token *tok)
 {
 	struct share_mode_lock *lck;
 
@@ -958,8 +972,15 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct s
 		return False;
 	}
 
-	set_delete_on_close_lck(fsp, lck, delete_on_close,
-			delete_on_close ? tok : NULL);
+	if (delete_on_close) {
+		set_delete_on_close_lck(fsp, lck, true,
+			nt_tok,
+			tok);
+	} else {
+		set_delete_on_close_lck(fsp, lck, false,
+			NULL,
+			NULL);
+	}
 
 	if (fsp->is_directory) {
 		SMB_ASSERT(!is_ntfs_stream_smb_fname(fsp->fsp_name));
@@ -974,7 +995,15 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct s
 	return True;
 }
 
-const struct security_unix_token *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash)
+/****************************************************************************
+ Return the NT token and UNIX token if there's a match. Return true if
+ found, false if not.
+****************************************************************************/
+
+bool get_delete_on_close_token(struct share_mode_lock *lck,
+					uint32_t name_hash,
+					const struct security_token **pp_nt_tok,
+					const struct security_unix_token **pp_tok)
 {
 	int i;
 
@@ -986,15 +1015,21 @@ const struct security_unix_token *get_delete_on_close_token(struct share_mode_lo
 		DEBUG(10,("get_delete_on_close_token: dtl->name_hash = 0x%x\n",
 				(unsigned int)dt->name_hash ));
 		if (dt->name_hash == name_hash) {
-			return dt->delete_token;
+			if (pp_nt_tok) {
+				*pp_nt_tok = dt->delete_nt_token;
+			}
+			if (pp_tok) {
+				*pp_tok =  dt->delete_token;
+			}
+			return true;
 		}
 	}
-	return NULL;
+	return false;
 }
 
 bool is_delete_on_close_set(struct share_mode_lock *lck, uint32_t name_hash)
 {
-	return (get_delete_on_close_token(lck, name_hash) != NULL);
+	return get_delete_on_close_token(lck, name_hash, NULL, NULL);
 }
 
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
