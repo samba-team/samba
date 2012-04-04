@@ -1278,6 +1278,7 @@ SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/uta
 		torture/test_cleanup.o \
 		torture/test_ctdbconn.o \
 		torture/test_msg.o \
+		torture/test_notify.o \
 		torture/t_strappend.o
 
 SMBTORTURE_OBJ = $(SMBTORTURE_OBJ1) $(PARAM_OBJ) $(TLDAP_OBJ) \

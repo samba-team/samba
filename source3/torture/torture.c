@@ -8903,6 +8903,8 @@ static struct {
 	{ "TLDAP", run_tldap },
 	{ "STREAMERROR", run_streamerror },
 	{ "NOTIFY-BENCH", run_notify_bench },
+	{ "NOTIFY-BENCH2", run_notify_bench2 },
+	{ "NOTIFY-BENCH3", run_notify_bench3 },
 	{ "BAD-NBT-SESSION", run_bad_nbt_session },
 	{ "SMB-ANY-CONNECT", run_smb_any_connect },
 	{ "NOTIFY-ONLINE", run_notify_online },
