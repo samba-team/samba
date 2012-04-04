@@ -1254,6 +1254,18 @@ static bool do_nodestatus(struct tevent_context *ev_ctx,
 	return send_message(msg_ctx, pid, MSG_SEND_PACKET, &p, sizeof(p));
 }
 
+static bool do_notify_cleanup(struct tevent_context *ev_ctx,
+			      struct messaging_context *msg_ctx,
+			      const struct server_id pid,
+			      const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol smbd notify-cleanup\n");
+		return false;
+	}
+	return send_message(msg_ctx, pid, MSG_SMB_NOTIFY_CLEANUP, NULL, 0);
+}
+
 /* A list of message type supported */
 
 static const struct {
@@ -1296,6 +1308,7 @@ static const struct {
 	{ "validate-cache" , do_winbind_validate_cache,
 	  "Validate winbind's credential cache" },
 	{ "dump-domain-list", do_winbind_dump_domain_list, "Dump winbind domain list"},
+	{ "notify-cleanup", do_notify_cleanup },
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };
