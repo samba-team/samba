@@ -328,7 +328,7 @@ static const char **attribute_list_from_class(TALLOC_CTX *mem_ctx,
 	return attr_list;
 }
 
-/* Return a full attribute list for a given class list (as a ldb_message_element)
+/* Return a full attribute list for a given class list
 
    Via attribute_list_from_class() this calls itself when recursing on auxiliary classes
  */
