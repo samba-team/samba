@@ -23,10 +23,18 @@
   tree.
  */
 typedef unsigned int isc_result_t;
+#ifdef BIND_VERSION_9_8
+typedef bool isc_boolean_t;
+#else
 typedef int isc_boolean_t;
+#endif
 typedef uint32_t dns_ttl_t;
 
+#ifdef BIND_VERSION_9_8
+#define DLZ_DLOPEN_VERSION 1
+#else
 #define DLZ_DLOPEN_VERSION 2
+#endif
 
 /* return this in flags to dlz_version() if thread safe */
 #define DNS_SDLZFLAG_THREADSAFE		0x00000001U
@@ -108,10 +116,15 @@ isc_result_t dlz_findzonedb(void *dbdata, const char *name);
 /*
   dlz_lookup is required for all DLZ external drivers
  */
+#ifdef BIND_VERSION_9_8
+isc_result_t dlz_lookup(const char *zone, const char *name,
+			void *dbdata, dns_sdlzlookup_t *lookup);
+#else
 isc_result_t dlz_lookup(const char *zone, const char *name,
 			void *dbdata, dns_sdlzlookup_t *lookup,
 			dns_clientinfomethods_t *methods,
 			dns_clientinfo_t *clientinfo);
+#endif
 
 /*
   dlz_allowzonexfr() is optional, and should be supplied if you want

@@ -846,10 +846,15 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 /*
   lookup one record
  */
+#ifdef BIND_VERSION_9_8
+_PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name,
+				 void *dbdata, dns_sdlzlookup_t *lookup)
+#else
 _PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name,
 				 void *dbdata, dns_sdlzlookup_t *lookup,
 				 dns_clientinfomethods_t *methods,
 				 dns_clientinfo_t *clientinfo)
+#endif
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	return dlz_lookup_types(state, zone, name, lookup, NULL);
