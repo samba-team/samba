@@ -814,11 +814,9 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend):
         setup_file(setup_path("named.conf.update"), paths.namedconf_update)
 
     elif dns_backend == "BIND9_DLZ":
-        dlz_module_path = os.path.join(samba.param.modules_dir(),
-                                        "bind9/dlz_bind9.so")
         setup_file(setup_path("named.conf.dlz"), paths.namedconf, {
                     "NAMED_CONF": paths.namedconf,
-                    "BIND9_DLZ_MODULE": dlz_module_path,
+                    "MODULESDIR" : samba.param.modules_dir(),
                     })
 
 

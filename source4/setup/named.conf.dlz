@@ -7,8 +7,13 @@
 
 #
 # This configures dynamically loadable zones (DLZ) from AD schema
+# Uncomment only single database line, depending on your BIND version
 #
 dlz "AD DNS Zone" {
-    database "dlopen ${BIND9_DLZ_MODULE}";
+    # For BIND 9.8.0
+    database "dlopen ${MODULESDIR}/bind9/dlz_bind9.so";
+
+    # For BIND 9.9.0
+    # database "dlopen ${MODULESDIR}/bind9/dlz_bind9_9.so";
 };
 
