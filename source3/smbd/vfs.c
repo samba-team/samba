@@ -360,7 +360,7 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 }
 
 ssize_t vfs_pread_data(files_struct *fsp, char *buf,
-                size_t byte_count, SMB_OFF_T offset)
+                size_t byte_count, off_t offset)
 {
 	size_t total=0;
 
@@ -400,7 +400,7 @@ ssize_t vfs_write_data(struct smb_request *req,
 		req->unread_bytes = 0;
 		return SMB_VFS_RECVFILE(req->sconn->sock,
 					fsp,
-					(SMB_OFF_T)-1,
+					(off_t)-1,
 					N);
 	}
 
@@ -421,7 +421,7 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 			files_struct *fsp,
 			const char *buffer,
 			size_t N,
-			SMB_OFF_T offset)
+			off_t offset)
 {
 	size_t total=0;
 	ssize_t ret;
@@ -471,7 +471,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	DEBUG(10,("vfs_allocate_file_space: file %s, len %.0f\n",
 		  fsp_str_dbg(fsp), (double)len));
 
-	if (((SMB_OFF_T)len) < 0) {
+	if (((off_t)len) < 0) {
 		DEBUG(0,("vfs_allocate_file_space: %s negative len "
 			 "requested.\n", fsp_str_dbg(fsp)));
 		errno = EINVAL;
@@ -496,7 +496,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
 
 		flush_write_cache(fsp, SIZECHANGE_FLUSH);
-		if ((ret = SMB_VFS_FTRUNCATE(fsp, (SMB_OFF_T)len)) != -1) {
+		if ((ret = SMB_VFS_FTRUNCATE(fsp, (off_t)len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
 
@@ -551,7 +551,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
  Returns 0 on success, -1 on failure.
 ****************************************************************************/
 
-int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
+int vfs_set_filelen(files_struct *fsp, off_t len)
 {
 	int ret;
 
@@ -583,7 +583,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 
 #define SPARSE_BUF_WRITE_SIZE (32*1024)
 
-int vfs_slow_fallocate(files_struct *fsp, SMB_OFF_T offset, SMB_OFF_T len)
+int vfs_slow_fallocate(files_struct *fsp, off_t offset, off_t len)
 {
 	ssize_t pwrite_ret;
 	size_t total = 0;
@@ -619,11 +619,11 @@ int vfs_slow_fallocate(files_struct *fsp, SMB_OFF_T offset, SMB_OFF_T len)
  Returns 0 on success, -1 on failure.
 ****************************************************************************/
 
-int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
+int vfs_fill_sparse(files_struct *fsp, off_t len)
 {
 	int ret;
 	NTSTATUS status;
-	SMB_OFF_T offset;
+	off_t offset;
 	size_t num_to_write;
 
 	status = vfs_stat_fsp(fsp);
@@ -708,7 +708,7 @@ static ssize_t vfs_write_fn(void *file, const void *buf, size_t len)
 	return SMB_VFS_WRITE(fsp, buf, len);
 }
 
-SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
+off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n)
 {
 	return transfer_file_internal((void *)in, (void *)out, n,
 				      vfs_read_fn, vfs_write_fn);
@@ -1511,7 +1511,7 @@ ssize_t smb_vfs_call_read(struct vfs_handle_struct *handle,
 
 ssize_t smb_vfs_call_pread(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, void *data, size_t n,
-			   SMB_OFF_T offset)
+			   off_t offset)
 {
 	VFS_FIND(pread);
 	return handle->fns->pread_fn(handle, fsp, data, n, offset);
@@ -1527,14 +1527,14 @@ ssize_t smb_vfs_call_write(struct vfs_handle_struct *handle,
 
 ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, const void *data,
-			    size_t n, SMB_OFF_T offset)
+			    size_t n, off_t offset)
 {
 	VFS_FIND(pwrite);
 	return handle->fns->pwrite_fn(handle, fsp, data, n, offset);
 }
 
-SMB_OFF_T smb_vfs_call_lseek(struct vfs_handle_struct *handle,
-			     struct files_struct *fsp, SMB_OFF_T offset,
+off_t smb_vfs_call_lseek(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp, off_t offset,
 			     int whence)
 {
 	VFS_FIND(lseek);
@@ -1543,7 +1543,7 @@ SMB_OFF_T smb_vfs_call_lseek(struct vfs_handle_struct *handle,
 
 ssize_t smb_vfs_call_sendfile(struct vfs_handle_struct *handle, int tofd,
 			      files_struct *fromfsp, const DATA_BLOB *header,
-			      SMB_OFF_T offset, size_t count)
+			      off_t offset, size_t count)
 {
 	VFS_FIND(sendfile);
 	return handle->fns->sendfile_fn(handle, tofd, fromfsp, header, offset,
@@ -1551,7 +1551,7 @@ ssize_t smb_vfs_call_sendfile(struct vfs_handle_struct *handle, int tofd,
 }
 
 ssize_t smb_vfs_call_recvfile(struct vfs_handle_struct *handle, int fromfd,
-			      files_struct *tofsp, SMB_OFF_T offset,
+			      files_struct *tofsp, off_t offset,
 			      size_t count)
 {
 	VFS_FIND(recvfile);
@@ -1765,7 +1765,7 @@ int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, SMB_OFF_T offset)
+			   struct files_struct *fsp, off_t offset)
 {
 	VFS_FIND(ftruncate);
 	return handle->fns->ftruncate_fn(handle, fsp, offset);
@@ -1774,8 +1774,8 @@ int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				enum vfs_fallocate_mode mode,
-				SMB_OFF_T offset,
-				SMB_OFF_T len)
+				off_t offset,
+				off_t len)
 {
 	VFS_FIND(fallocate);
 	return handle->fns->fallocate_fn(handle, fsp, mode, offset, len);

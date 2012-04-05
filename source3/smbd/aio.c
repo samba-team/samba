@@ -147,7 +147,7 @@ static struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *smbreq,
-			     files_struct *fsp, SMB_OFF_T startpos,
+			     files_struct *fsp, off_t startpos,
 			     size_t smb_maxcnt)
 {
 	struct aio_extra *aio_ex;
@@ -254,7 +254,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *smbreq,
 			      files_struct *fsp, const char *data,
-			      SMB_OFF_T startpos,
+			      off_t startpos,
 			      size_t numtowrite)
 {
 	struct aio_extra *aio_ex;
@@ -418,7 +418,7 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 				files_struct *fsp,
 				TALLOC_CTX *ctx,
 				DATA_BLOB *preadbuf,
-				SMB_OFF_T startpos,
+				off_t startpos,
 				size_t smb_maxcnt)
 {
 	struct aio_extra *aio_ex;
@@ -1060,7 +1060,7 @@ void cancel_aio_by_fsp(files_struct *fsp)
 #else
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *smbreq,
-			     files_struct *fsp, SMB_OFF_T startpos,
+			     files_struct *fsp, off_t startpos,
 			     size_t smb_maxcnt)
 {
 	return NT_STATUS_RETRY;
@@ -1069,7 +1069,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *smbreq,
 			      files_struct *fsp, const char *data,
-			      SMB_OFF_T startpos,
+			      off_t startpos,
 			      size_t numtowrite)
 {
 	return NT_STATUS_RETRY;
@@ -1085,7 +1085,7 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
                                 files_struct *fsp,
 				TALLOC_CTX *ctx,
 				DATA_BLOB *preadbuf,
-                                SMB_OFF_T startpos,
+                                off_t startpos,
                                 size_t smb_maxcnt)
 {
 	return NT_STATUS_RETRY;

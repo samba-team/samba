@@ -118,7 +118,7 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 		goto out;
 	}
 
-	if (transfer_file(tmp_fd,outfd,(SMB_OFF_T)st.st_ex_size) == (SMB_OFF_T)-1) {
+	if (transfer_file(tmp_fd,outfd,(off_t)st.st_ex_size) == (off_t)-1) {
 		int err = errno;
 		close(tmp_fd);
 		close(outfd);

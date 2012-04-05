@@ -128,8 +128,8 @@ typedef union unid_t {
 #include "librpc/gen_ndr/security.h"
 
 typedef struct write_cache {
-	SMB_OFF_T file_size;
-	SMB_OFF_T offset;
+	off_t file_size;
+	off_t offset;
 	size_t alloc_size;
 	size_t data_size;
 	char *data;
@@ -139,7 +139,7 @@ struct fd_handle {
 	size_t ref_count;
 	int fd;
 	uint64_t position_information;
-	SMB_OFF_T pos;
+	off_t pos;
 	uint32 private_options;	/* NT Create options, but we only look at
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
 				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB and
@@ -340,8 +340,8 @@ struct trans_state {
  */
 
 struct stream_struct {
-	SMB_OFF_T size;
-	SMB_OFF_T alloc_size;
+	off_t size;
+	off_t alloc_size;
 	char *name;
 };
 

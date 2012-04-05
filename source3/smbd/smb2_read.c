@@ -475,7 +475,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 				fsp,
 				state,
 				&state->out_data,
-				(SMB_OFF_T)in_offset,
+				(off_t)in_offset,
 				(size_t)in_length);
 
 	if (NT_STATUS_IS_OK(status)) {

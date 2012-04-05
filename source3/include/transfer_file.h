@@ -27,6 +27,6 @@ ssize_t transfer_file_internal(void *in_file,
 			       ssize_t (*read_fn)(void *, void *, size_t),
 			       ssize_t (*write_fn)(void *, const void *, size_t));
 
-SMB_OFF_T transfer_file(int infd, int outfd, SMB_OFF_T n);
+off_t transfer_file(int infd, int outfd, off_t n);
 
 #endif /* __TRANSFER_FILE_H__ */

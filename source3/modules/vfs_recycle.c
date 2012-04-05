@@ -126,9 +126,9 @@ static const char **recycle_noversions(vfs_handle_struct *handle)
 	return tmp_lp;
 }
 
-static SMB_OFF_T recycle_maxsize(vfs_handle_struct *handle)
+static off_t recycle_maxsize(vfs_handle_struct *handle)
 {
-	SMB_OFF_T maxsize;
+	off_t maxsize;
 
 	maxsize = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
 					    "recycle", "maxsize", NULL));
@@ -138,9 +138,9 @@ static SMB_OFF_T recycle_maxsize(vfs_handle_struct *handle)
 	return maxsize;
 }
 
-static SMB_OFF_T recycle_minsize(vfs_handle_struct *handle)
+static off_t recycle_minsize(vfs_handle_struct *handle)
 {
-	SMB_OFF_T minsize;
+	off_t minsize;
 
 	minsize = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
 					    "recycle", "minsize", NULL));
@@ -225,23 +225,23 @@ static bool recycle_file_exist(vfs_handle_struct *handle,
  * @param fname file name
  * @return size in bytes
  **/
-static SMB_OFF_T recycle_get_file_size(vfs_handle_struct *handle,
+static off_t recycle_get_file_size(vfs_handle_struct *handle,
 				       const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_tmp = NULL;
 	NTSTATUS status;
-	SMB_OFF_T size;
+	off_t size;
 
 	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
 	if (!NT_STATUS_IS_OK(status)) {
-		size = (SMB_OFF_T)0;
+		size = (off_t)0;
 		goto out;
 	}
 
 	if (SMB_VFS_STAT(handle->conn, smb_fname_tmp) != 0) {
 		DEBUG(0,("recycle: stat for %s returned %s\n",
 			 smb_fname_str_dbg(smb_fname_tmp), strerror(errno)));
-		size = (SMB_OFF_T)0;
+		size = (off_t)0;
 		goto out;
 	}
 
@@ -442,8 +442,8 @@ static int recycle_unlink(vfs_handle_struct *handle,
 	const char *base;
 	char *repository = NULL;
 	int i = 1;
-	SMB_OFF_T maxsize, minsize;
-	SMB_OFF_T file_size; /* space_avail;	*/
+	off_t maxsize, minsize;
+	off_t file_size; /* space_avail;	*/
 	bool exist;
 	NTSTATUS status;
 	int rc = -1;

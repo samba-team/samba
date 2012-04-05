@@ -984,7 +984,7 @@ static bool run_readwritelarge_internal(void)
 	static struct cli_state *cli1;
 	uint16_t fnum1;
 	const char *lockfname = "\\large.dat";
-	SMB_OFF_T fsize;
+	off_t fsize;
 	char buf[126*1024];
 	bool correct = True;
 	NTSTATUS status;
@@ -3281,7 +3281,7 @@ static bool run_trans2test(int dummy)
 {
 	struct cli_state *cli;
 	uint16_t fnum;
-	SMB_OFF_T size;
+	off_t size;
 	time_t c_time, a_time, m_time;
 	struct timespec c_time_ts, a_time_ts, m_time_ts, w_time_ts, m_time2_ts;
 	const char *fname = "\\trans2.tst";
@@ -4851,7 +4851,7 @@ static bool run_opentest(int dummy)
 	const char *fname = "\\readonly.file";
 	uint16_t fnum1, fnum2;
 	char buf[20];
-	SMB_OFF_T fsize;
+	off_t fsize;
 	bool correct = True;
 	char *tmp_path;
 	NTSTATUS status;
@@ -7016,7 +7016,7 @@ static bool run_mangle1(int dummy)
 	fstring alt_name;
 	NTSTATUS status;
 	time_t change_time, access_time, write_time;
-	SMB_OFF_T size;
+	off_t size;
 	uint16_t mode;
 
 	printf("starting mangle1 test\n");
@@ -7586,7 +7586,7 @@ static bool run_streamerror(int dummy)
 		"testdir:{4c8cc155-6c1e-11d1-8e41-00c04fb9386d}:$DATA";
 	NTSTATUS status;
 	time_t change_time, access_time, write_time;
-	SMB_OFF_T size;
+	off_t size;
 	uint16_t mode, fnum;
 	bool ret = true;
 

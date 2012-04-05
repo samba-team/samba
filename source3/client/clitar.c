@@ -45,7 +45,7 @@ static int clipfind(char **aret, int ret, char *tok);
 typedef struct file_info_struct file_info2;
 
 struct file_info_struct {
-	SMB_OFF_T size;
+	off_t size;
 	uint16 mode;
 	uid_t uid;
 	gid_t gid;

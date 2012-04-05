@@ -68,11 +68,11 @@ enum eof_mode
 struct commit_info
 {
         /* For chunk-based commits */
-        SMB_OFF_T dbytes;	/* Dirty (uncommitted) bytes */
-        SMB_OFF_T dthresh;	/* Dirty data threshold */
+        off_t dbytes;	/* Dirty (uncommitted) bytes */
+        off_t dthresh;	/* Dirty data threshold */
         /* For commits on EOF */
         enum eof_mode on_eof;
-        SMB_OFF_T eof;		/* Expected file size */
+        off_t eof;		/* Expected file size */
 };
 
 static int commit_do(
@@ -121,7 +121,7 @@ static int commit_all(
 static int commit(
         struct vfs_handle_struct *	handle,
         files_struct *		        fsp,
-	SMB_OFF_T			offset,
+	off_t			offset,
         ssize_t			        last_write)
 {
         struct commit_info *c;
@@ -183,7 +183,7 @@ static int commit_open(
 	int		    flags,
 	mode_t		    mode)
 {
-        SMB_OFF_T dthresh;
+        off_t dthresh;
 	const char *eof_mode;
         struct commit_info *c = NULL;
         int fd;
@@ -261,7 +261,7 @@ static ssize_t commit_pwrite(
         files_struct *      fsp,
         const void *        data,
         size_t              count,
-	SMB_OFF_T	    offset)
+	off_t	    offset)
 {
         ssize_t ret;
 
@@ -287,7 +287,7 @@ static int commit_close(
 static int commit_ftruncate(
         vfs_handle_struct * handle,
         files_struct *      fsp,
-        SMB_OFF_T           len)
+        off_t           len)
 {
         int result;
 

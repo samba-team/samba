@@ -64,7 +64,7 @@ static int onefs_open(vfs_handle_struct *handle,
 
 static ssize_t onefs_sendfile(vfs_handle_struct *handle, int tofd,
 			      files_struct *fromfsp, const DATA_BLOB *header,
-			      SMB_OFF_T offset, size_t count)
+			      off_t offset, size_t count)
 {
 	ssize_t result;
 
@@ -76,7 +76,7 @@ static ssize_t onefs_sendfile(vfs_handle_struct *handle, int tofd,
 }
 
 static ssize_t onefs_recvfile(vfs_handle_struct *handle, int fromfd,
-			      files_struct *tofsp, SMB_OFF_T offset,
+			      files_struct *tofsp, off_t offset,
 			      size_t count)
 {
 	ssize_t result;

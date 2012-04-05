@@ -66,19 +66,19 @@ void srv_set_signing(struct smbd_server_connection *conn,
 
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
-			     files_struct *fsp, SMB_OFF_T startpos,
+			     files_struct *fsp, off_t startpos,
 			     size_t smb_maxcnt);
 NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      struct smb_request *req,
 			      files_struct *fsp, const char *data,
-			      SMB_OFF_T startpos,
+			      off_t startpos,
 			      size_t numtowrite);
 NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 				struct smb_request *smbreq,
 				files_struct *fsp,
 				TALLOC_CTX *ctx,
 				DATA_BLOB *preadbuf,
-				SMB_OFF_T startpos,
+				off_t startpos,
 				size_t smb_maxcnt);
 NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 				struct smb_request *smbreq,
@@ -185,7 +185,7 @@ bool make_dir_struct(TALLOC_CTX *ctx,
 			char *buf,
 			const char *mask,
 			const char *fname,
-			SMB_OFF_T size,
+			off_t size,
 			uint32 mode,
 			time_t date,
 			bool uc);
@@ -229,7 +229,7 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		const char *mask,
 		uint32 dirtype,
 		char **pp_fname_out,
-		SMB_OFF_T *size,
+		off_t *size,
 		uint32 *mode,
 		struct timespec *date,
 		bool check_descend,
@@ -317,7 +317,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
 
 /* The following definitions come from smbd/fileio.c  */
 
-ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
+ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n);
 void update_write_time_handler(struct event_context *ctx,
                                       struct timed_event *te,
                                       struct timeval now,
@@ -327,10 +327,10 @@ void trigger_write_time_update_immediate(struct files_struct *fsp);
 ssize_t write_file(struct smb_request *req,
 			files_struct *fsp,
 			const char *data,
-			SMB_OFF_T pos,
+			off_t pos,
 			size_t n);
 void delete_write_cache(files_struct *fsp);
-void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size);
+void set_filelen_write_cache(files_struct *fsp, off_t file_size);
 ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
 NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_through);
 int fsp_stat(files_struct *fsp);
@@ -867,7 +867,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, struct smb_filename *smb_fname,
 			  bool has_wild);
 void reply_unlink(struct smb_request *req);
-ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread);
+ssize_t fake_sendfile(files_struct *fsp, off_t startpos, size_t nread);
 void sendfile_short_send(files_struct *fsp,
 				ssize_t nread,
 				size_t headersize,
@@ -1147,7 +1147,7 @@ bool smbd_vfs_init(connection_struct *conn);
 NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_pread_data(files_struct *fsp, char *buf,
-                size_t byte_count, SMB_OFF_T offset);
+                size_t byte_count, off_t offset);
 ssize_t vfs_write_data(struct smb_request *req,
 			files_struct *fsp,
 			const char *buffer,
@@ -1156,12 +1156,12 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 			files_struct *fsp,
 			const char *buffer,
 			size_t N,
-			SMB_OFF_T offset);
+			off_t offset);
 int vfs_allocate_file_space(files_struct *fsp, uint64_t len);
-int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
-int vfs_slow_fallocate(files_struct *fsp, SMB_OFF_T offset, SMB_OFF_T len);
-int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len);
-SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n);
+int vfs_set_filelen(files_struct *fsp, off_t len);
+int vfs_slow_fallocate(files_struct *fsp, off_t offset, off_t len);
+int vfs_fill_sparse(files_struct *fsp, off_t len);
+off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n);
 const char *vfs_readdirname(connection_struct *conn, void *p,
 			    SMB_STRUCT_STAT *sbuf, char **talloced);
 int vfs_ChDir(connection_struct *conn, const char *path);

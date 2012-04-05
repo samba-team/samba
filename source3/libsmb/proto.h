@@ -465,14 +465,14 @@ struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
                                 uint16_t fnum);
 NTSTATUS cli_getattrE_recv(struct tevent_req *req,
                         uint16_t *attr,
-                        SMB_OFF_T *size,
+                        off_t *size,
                         time_t *change_time,
                         time_t *access_time,
                         time_t *write_time);
 NTSTATUS cli_getattrE(struct cli_state *cli,
 			uint16_t fnum,
 			uint16_t *attr,
-			SMB_OFF_T *size,
+			off_t *size,
 			time_t *change_time,
 			time_t *access_time,
 			time_t *write_time);
@@ -495,12 +495,12 @@ struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
 				const char *fname);
 NTSTATUS cli_getatr_recv(struct tevent_req *req,
 				uint16_t *attr,
-				SMB_OFF_T *size,
+				off_t *size,
 				time_t *write_time);
 NTSTATUS cli_getatr(struct cli_state *cli,
 			const char *fname,
 			uint16_t *attr,
-			SMB_OFF_T *size,
+			off_t *size,
 			time_t *write_time);
 struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 				struct event_context *ev,
@@ -765,15 +765,15 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 				 struct event_context *ev,
 				 struct cli_state *cli,
 				 uint16_t fnum, off_t start_offset,
-				 SMB_OFF_T size, size_t window_size,
+				 off_t size, size_t window_size,
 				 NTSTATUS (*sink)(char *buf, size_t n,
 						  void *priv),
 				 void *priv);
-NTSTATUS cli_pull_recv(struct tevent_req *req, SMB_OFF_T *received);
+NTSTATUS cli_pull_recv(struct tevent_req *req, off_t *received);
 NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
-		  off_t start_offset, SMB_OFF_T size, size_t window_size,
+		  off_t start_offset, off_t size, size_t window_size,
 		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),
-		  void *priv, SMB_OFF_T *received);
+		  void *priv, off_t *received);
 NTSTATUS cli_read(struct cli_state *cli, uint16_t fnum,
 		  char *buf, off_t offset, size_t size,
 		  size_t *nread);

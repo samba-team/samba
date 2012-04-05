@@ -78,7 +78,7 @@ fail:
 
 struct rw_cmd {
 	size_t n;
-	SMB_OFF_T offset;
+	off_t offset;
 	bool read_cmd;
 };
 

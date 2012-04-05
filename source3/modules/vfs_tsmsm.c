@@ -298,7 +298,7 @@ static ssize_t tsmsm_aio_return(struct vfs_handle_struct *handle, struct files_s
 }
 
 static ssize_t tsmsm_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, const DATA_BLOB *hdr,
-			      SMB_OFF_T offset, size_t n)
+			      off_t offset, size_t n)
 {
 	bool file_offline = tsmsm_aio_force(handle, fsp);
 
@@ -314,7 +314,7 @@ static ssize_t tsmsm_sendfile(vfs_handle_struct *handle, int tofd, files_struct 
 /* We do overload pread to allow notification when file becomes online after offline status */
 /* We don't intercept SMB_VFS_READ here because all file I/O now goes through SMB_VFS_PREAD instead */
 static ssize_t tsmsm_pread(struct vfs_handle_struct *handle, struct files_struct *fsp, 
-			   void *data, size_t n, SMB_OFF_T offset) {
+			   void *data, size_t n, off_t offset) {
 	ssize_t result;
 	bool notify_online = tsmsm_aio_force(handle, fsp);
 
@@ -332,7 +332,7 @@ static ssize_t tsmsm_pread(struct vfs_handle_struct *handle, struct files_struct
 }
 
 static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struct *fsp, 
-			    const void *data, size_t n, SMB_OFF_T offset) {
+			    const void *data, size_t n, off_t offset) {
 	ssize_t result;
 	bool notify_online = tsmsm_aio_force(handle, fsp);
 

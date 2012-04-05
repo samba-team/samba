@@ -298,10 +298,6 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #define INO_T_VAL(p, ofs) ((SMB_INO_T)(IVAL((p),(ofs))))
 #endif
 
-#ifndef SMB_OFF_T
-#    define SMB_OFF_T off_t
-#endif
-
 /* TODO: remove this macros */
 #define SBIG_UINT(p, ofs, v) SBVAL(p, ofs, v)
 #define BIG_UINT(p, ofs) BVAL(p, ofs)
@@ -310,7 +306,7 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 /* this should really be a 64 bit type if possible */
 typedef uint64_t br_off;
 
-#define SMB_OFF_T_BITS (sizeof(SMB_OFF_T)*8)
+#define SMB_OFF_T_BITS (sizeof(off_t)*8)
 
 /*
  * Set the define that tells us if we can do 64 bit
@@ -319,7 +315,7 @@ typedef uint64_t br_off;
 
 #define SOFF_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
 #define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,(v)&0xFFFFFFFF), SIVAL(p,ofs,(v)>>32))
-#define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF) )))
+#define IVAL_TO_SMB_OFF_T(buf,off) ((off_t)(( ((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF) )))
 
 #ifndef HAVE_BLKSIZE_T
 /* This is mainly for HP/UX which defines st_blksize as long */

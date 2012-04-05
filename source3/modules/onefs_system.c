@@ -230,7 +230,7 @@ int onefs_sys_create_file(connection_struct *conn,
  * FreeBSD based sendfile implementation that allows for atomic semantics.
  */
 static ssize_t onefs_sys_do_sendfile(int tofd, int fromfd,
-    const DATA_BLOB *header, SMB_OFF_T offset, size_t count, bool atomic)
+    const DATA_BLOB *header, off_t offset, size_t count, bool atomic)
 {
 	size_t total=0;
 	struct sf_hdtr hdr;
@@ -258,7 +258,7 @@ static ssize_t onefs_sys_do_sendfile(int tofd, int fromfd,
 
 	total = count;
 	while (total + hdtrl.iov_len) {
-		SMB_OFF_T nwritten;
+		off_t nwritten;
 		int ret;
 
 		/*
@@ -330,7 +330,7 @@ static ssize_t onefs_sys_do_sendfile(int tofd, int fromfd,
  * Handles the subtleties of using sendfile with CIFS.
  */
 ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
-			   const DATA_BLOB *header, SMB_OFF_T offset,
+			   const DATA_BLOB *header, off_t offset,
 			   size_t count)
 {
 	bool atomic = false;
@@ -536,7 +536,7 @@ static char *get_spill_buffer(size_t new_count)
  * from the socket into the buffer, the spill buffer is then written with a
  * standard pwrite.
  */
-ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
+ssize_t onefs_sys_recvfile(int fromfd, int tofd, off_t offset,
 			   size_t count)
 {
 	char *spill_buffer = NULL;

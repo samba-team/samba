@@ -1818,7 +1818,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 		if (errno == EACCES) { /* Check if the file is a directory */
 
 			int saverr = errno;
-			SMB_OFF_T size = 0;
+			off_t size = 0;
 			uint16 mode = 0;
 			struct timespec write_time_ts;
                         struct timespec access_time_ts;

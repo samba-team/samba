@@ -179,7 +179,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 			  uint16_t current_vuid);
 
 int print_spool_write(files_struct *fsp, const char *data, uint32_t size,
-		      SMB_OFF_T offset, uint32_t *written);
+		      off_t offset, uint32_t *written);
 
 void print_spool_end(files_struct *fsp, enum file_close_type close_type);
 

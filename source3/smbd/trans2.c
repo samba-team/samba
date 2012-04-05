@@ -1028,7 +1028,7 @@ static void call_trans2open(connection_struct *conn,
 	uint32 open_size;
 	char *pname;
 	char *fname = NULL;
-	SMB_OFF_T size=0;
+	off_t size=0;
 	int fattr=0,mtime=0;
 	SMB_INO_T inode = 0;
 	int smb_action = 0;
@@ -5670,7 +5670,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 				  files_struct *fsp,
 				  const struct smb_filename *smb_fname,
 				  const SMB_STRUCT_STAT *psbuf,
-				  SMB_OFF_T size,
+				  off_t size,
 				  bool fail_after_createfile)
 {
 	NTSTATUS status = NT_STATUS_OK;
@@ -6755,14 +6755,14 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 					const struct smb_filename *smb_fname,
 					bool fail_after_createfile)
 {
-	SMB_OFF_T size;
+	off_t size;
 
 	if (total_data < 8) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	size = IVAL(pdata,0);
-	size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+	size |= (((off_t)IVAL(pdata,4)) << 32);
 	DEBUG(10,("smb_set_file_end_of_file_info: Set end of file info for "
 		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)size));
@@ -6874,7 +6874,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	struct smb_file_time ft;
 	uint32 raw_unixmode;
 	mode_t unixmode;
-	SMB_OFF_T size = 0;
+	off_t size = 0;
 	uid_t set_owner = (uid_t)SMB_UID_NO_CHANGE;
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
 	NTSTATUS status = NT_STATUS_OK;
@@ -6895,7 +6895,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	if(IVAL(pdata, 0) != SMB_SIZE_NO_CHANGE_LO &&
 	   IVAL(pdata, 4) != SMB_SIZE_NO_CHANGE_HI) {
 		size=IVAL(pdata,0); /* first 8 Bytes are size */
-		size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+		size |= (((off_t)IVAL(pdata,4)) << 32);
 	}
 
 	ft.atime = interpret_long_date(pdata+24); /* access_time */

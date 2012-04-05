@@ -49,13 +49,13 @@ static void * g_readbuf = NULL;
 static bool prime_cache(
             struct vfs_handle_struct *  handle,
 			files_struct *		        fsp,
-			SMB_OFF_T		            offset,
+			off_t		            offset,
 			size_t			            count)
 {
-        SMB_OFF_T * last;
+        off_t * last;
         ssize_t nread;
 
-        last = (SMB_OFF_T *)VFS_ADD_FSP_EXTENSION(handle, fsp, SMB_OFF_T, NULL);
+        last = (off_t *)VFS_ADD_FSP_EXTENSION(handle, fsp, off_t, NULL);
         if (!last) {
                 return False;
         }
@@ -134,7 +134,7 @@ static ssize_t cprime_sendfile(
                 int                         tofd,
                 files_struct *              fromfsp,
                 const DATA_BLOB *           header,
-                SMB_OFF_T                   offset,
+                off_t                   offset,
                 size_t                      count)
 {
         if (g_readbuf && offset == 0) {
@@ -151,7 +151,7 @@ static ssize_t cprime_read(
                 void *              data,
                 size_t              count)
 {
-        SMB_OFF_T offset;
+        off_t offset;
 
         offset = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
         if (offset >= 0 && g_readbuf)  {
@@ -167,7 +167,7 @@ static ssize_t cprime_pread(
                 files_struct *      fsp,
                 void *              data,
 		        size_t              count,
-                SMB_OFF_T           offset)
+                off_t           offset)
 {
         if (g_readbuf) {
                 prime_cache(handle, fsp, offset, count);

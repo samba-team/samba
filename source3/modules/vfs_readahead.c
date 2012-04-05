@@ -24,8 +24,8 @@ ssize_t readahead(int fd, off_t offset, size_t count);
 #endif
 
 struct readahead_data {
-	SMB_OFF_T off_bound;
-	SMB_OFF_T len;
+	off_t off_bound;
+	off_t len;
 	bool didmsg;
 };
 
@@ -43,7 +43,7 @@ static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 					int tofd,
 					files_struct *fromfsp,
 					const DATA_BLOB *header,
-					SMB_OFF_T offset,
+					off_t offset,
 					size_t count)
 {
 	struct readahead_data *rhd = (struct readahead_data *)handle->data;
@@ -86,7 +86,7 @@ static ssize_t readahead_pread(vfs_handle_struct *handle,
 				files_struct *fsp,
 				void *data,
 				size_t count,
-				SMB_OFF_T offset)
+				off_t offset)
 {
 	struct readahead_data *rhd = (struct readahead_data *)handle->data;
 

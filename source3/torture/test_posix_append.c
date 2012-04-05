@@ -33,7 +33,7 @@ bool run_posix_append(int dummy)
 	const char *fname = "append";
 	NTSTATUS status;
 	uint16_t fnum;
-	SMB_OFF_T size;
+	off_t size;
 	uint8_t c = '\0';
 	bool ret = false;
 

@@ -620,7 +620,7 @@ NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
 			     time_t *change_time,
 			     time_t *access_time,
 			     time_t *write_time,
-			     SMB_OFF_T *size,
+			     off_t *size,
 			     uint16 *mode)
 {
 	struct cli_qpathinfo1_state *state = tevent_req_data(
@@ -662,7 +662,7 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			time_t *change_time,
 			time_t *access_time,
 			time_t *write_time,
-			SMB_OFF_T *size,
+			off_t *size,
 			uint16 *mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -797,7 +797,7 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
 			     struct timespec *access_time,
 			     struct timespec *write_time,
 			     struct timespec *change_time,
-			     SMB_OFF_T *size, uint16 *mode,
+			     off_t *size, uint16 *mode,
 			     SMB_INO_T *ino)
 {
 	struct cli_qpathinfo2_state *state = tevent_req_data(
@@ -837,7 +837,7 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 			struct timespec *access_time,
 			struct timespec *write_time,
 			struct timespec *change_time,
-			SMB_OFF_T *size, uint16 *mode,
+			off_t *size, uint16 *mode,
 			SMB_INO_T *ino)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1114,7 +1114,7 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum,
 ****************************************************************************/
 
 NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
-			     uint16 *mode, SMB_OFF_T *size,
+			     uint16 *mode, off_t *size,
 			     struct timespec *create_time,
 			     struct timespec *access_time,
 			     struct timespec *write_time,

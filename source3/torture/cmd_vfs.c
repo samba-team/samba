@@ -490,7 +490,7 @@ static NTSTATUS cmd_write(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd, offset, whence;
-	SMB_OFF_T pos;
+	off_t pos;
 
 	if (argc != 4) {
 		printf("Usage: lseek <fd> <offset> <whence>\n...where whence is 1 => SEEK_SET, 2 => SEEK_CUR, 3 => SEEK_END\n");
@@ -507,7 +507,7 @@ static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	}
 
 	pos = SMB_VFS_LSEEK(vfs->files[fd], offset, whence);
-	if (pos == (SMB_OFF_T)-1) {
+	if (pos == (off_t)-1) {
 		printf("lseek: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -936,7 +936,7 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int fd;
-	SMB_OFF_T off;
+	off_t off;
 	if (argc != 3) {
 		printf("Usage: ftruncate <fd> <length>\n");
 		return NT_STATUS_OK;

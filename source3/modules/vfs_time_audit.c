@@ -501,7 +501,7 @@ static ssize_t smb_time_audit_read(vfs_handle_struct *handle,
 
 static ssize_t smb_time_audit_pread(vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    void *data, size_t n, SMB_OFF_T offset)
+				    void *data, size_t n, off_t offset)
 {
 	ssize_t result;
 	struct timespec ts1,ts2;
@@ -542,7 +542,7 @@ static ssize_t smb_time_audit_write(vfs_handle_struct *handle,
 static ssize_t smb_time_audit_pwrite(vfs_handle_struct *handle,
 				     files_struct *fsp,
 				     const void *data, size_t n,
-				     SMB_OFF_T offset)
+				     off_t offset)
 {
 	ssize_t result;
 	struct timespec ts1,ts2;
@@ -560,11 +560,11 @@ static ssize_t smb_time_audit_pwrite(vfs_handle_struct *handle,
 	return result;
 }
 
-static SMB_OFF_T smb_time_audit_lseek(vfs_handle_struct *handle,
+static off_t smb_time_audit_lseek(vfs_handle_struct *handle,
 				      files_struct *fsp,
-				      SMB_OFF_T offset, int whence)
+				      off_t offset, int whence)
 {
-	SMB_OFF_T result;
+	off_t result;
 	struct timespec ts1,ts2;
 	double timediff;
 
@@ -582,7 +582,7 @@ static SMB_OFF_T smb_time_audit_lseek(vfs_handle_struct *handle,
 
 static ssize_t smb_time_audit_sendfile(vfs_handle_struct *handle, int tofd,
 				       files_struct *fromfsp,
-				       const DATA_BLOB *hdr, SMB_OFF_T offset,
+				       const DATA_BLOB *hdr, off_t offset,
 				       size_t n)
 {
 	ssize_t result;
@@ -603,7 +603,7 @@ static ssize_t smb_time_audit_sendfile(vfs_handle_struct *handle, int tofd,
 
 static ssize_t smb_time_audit_recvfile(vfs_handle_struct *handle, int fromfd,
 				       files_struct *tofsp,
-				       SMB_OFF_T offset,
+				       off_t offset,
 				       size_t n)
 {
 	ssize_t result;
@@ -909,7 +909,7 @@ static int smb_time_audit_ntimes(vfs_handle_struct *handle,
 
 static int smb_time_audit_ftruncate(vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    SMB_OFF_T len)
+				    off_t len)
 {
 	int result;
 	struct timespec ts1,ts2;
@@ -930,8 +930,8 @@ static int smb_time_audit_ftruncate(vfs_handle_struct *handle,
 static int smb_time_audit_fallocate(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    enum vfs_fallocate_mode mode,
-				    SMB_OFF_T offset,
-				    SMB_OFF_T len)
+				    off_t offset,
+				    off_t len)
 {
 	int result;
 	struct timespec ts1,ts2;
@@ -950,7 +950,7 @@ static int smb_time_audit_fallocate(vfs_handle_struct *handle,
 }
 
 static bool smb_time_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
-				int op, SMB_OFF_T offset, SMB_OFF_T count,
+				int op, off_t offset, off_t count,
 				int type)
 {
 	bool result;
@@ -1012,7 +1012,7 @@ static int smb_time_audit_linux_setlease(vfs_handle_struct *handle,
 
 static bool smb_time_audit_getlock(vfs_handle_struct *handle,
 				   files_struct *fsp,
-				   SMB_OFF_T *poffset, SMB_OFF_T *pcount,
+				   off_t *poffset, off_t *pcount,
 				   int *ptype, pid_t *ppid)
 {
 	bool result;

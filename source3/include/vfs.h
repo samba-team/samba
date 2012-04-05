@@ -139,6 +139,7 @@
 /* Leave at 29 - not yet releases. Add fsctl. Richard Sharpe */
 /* Leave at 29 - not yet released. add SMB_VFS_GET_DFS_REFERRAL() - metze */
 /* Leave at 29 - not yet released. Remove l{list,get,set,remove}xattr - abartlet */
+/* Leave at 29 - not yet released. move to plain off_t - abartlet */
 #define SMB_VFS_INTERFACE_VERSION 29
 
 /*
@@ -241,12 +242,12 @@ struct vfs_fn_pointers {
 				   int *pinfo);
 	int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 	ssize_t (*read_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
-	ssize_t (*pread_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);
+	ssize_t (*pread_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, off_t offset);
 	ssize_t (*write_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n);
-	ssize_t (*pwrite_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset);
-	SMB_OFF_T (*lseek_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset, int whence);
-	ssize_t (*sendfile_fn)(struct vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-	ssize_t (*recvfile_fn)(struct vfs_handle_struct *handle, int fromfd, files_struct *tofsp, SMB_OFF_T offset, size_t count);
+	ssize_t (*pwrite_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, off_t offset);
+	off_t (*lseek_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t offset, int whence);
+	ssize_t (*sendfile_fn)(struct vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *header, off_t offset, size_t count);
+	ssize_t (*recvfile_fn)(struct vfs_handle_struct *handle, int fromfd, files_struct *tofsp, off_t offset, size_t count);
 	int (*rename_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname_src,
 			 const struct smb_filename *smb_fname_dst);
@@ -267,17 +268,17 @@ struct vfs_fn_pointers {
 	int (*ntimes_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname,
 			 struct smb_file_time *ft);
-	int (*ftruncate_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset);
+	int (*ftruncate_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t offset);
 	int (*fallocate_fn)(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp,
 			    enum vfs_fallocate_mode mode,
-			    SMB_OFF_T offset,
-			    SMB_OFF_T len);
-	bool (*lock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+			    off_t offset,
+			    off_t len);
+	bool (*lock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, off_t offset, off_t count, int type);
 	int (*kernel_flock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
 			       uint32 share_mode, uint32_t access_mask);
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
-	bool (*getlock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
+	bool (*getlock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 	int (*symlink_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 	int (*readlink_fn)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
 	int (*link_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
@@ -598,21 +599,21 @@ ssize_t smb_vfs_call_read(struct vfs_handle_struct *handle,
 			  struct files_struct *fsp, void *data, size_t n);
 ssize_t smb_vfs_call_pread(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, void *data, size_t n,
-			   SMB_OFF_T offset);
+			   off_t offset);
 ssize_t smb_vfs_call_write(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const void *data,
 			   size_t n);
 ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, const void *data,
-			    size_t n, SMB_OFF_T offset);
-SMB_OFF_T smb_vfs_call_lseek(struct vfs_handle_struct *handle,
-			     struct files_struct *fsp, SMB_OFF_T offset,
+			    size_t n, off_t offset);
+off_t smb_vfs_call_lseek(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp, off_t offset,
 			     int whence);
 ssize_t smb_vfs_call_sendfile(struct vfs_handle_struct *handle, int tofd,
 			      files_struct *fromfsp, const DATA_BLOB *header,
-			      SMB_OFF_T offset, size_t count);
+			      off_t offset, size_t count);
 ssize_t smb_vfs_call_recvfile(struct vfs_handle_struct *handle, int fromfd,
-			      files_struct *tofsp, SMB_OFF_T offset,
+			      files_struct *tofsp, off_t offset,
 			      size_t count);
 int smb_vfs_call_rename(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname_src,
@@ -646,23 +647,23 @@ int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			struct smb_file_time *ft);
 int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, SMB_OFF_T offset);
+			   struct files_struct *fsp, off_t offset);
 int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
 			struct files_struct *fsp,
 			enum vfs_fallocate_mode mode,
-			SMB_OFF_T offset,
-			SMB_OFF_T len);
+			off_t offset,
+			off_t len);
 bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
-		       struct files_struct *fsp, int op, SMB_OFF_T offset,
-		       SMB_OFF_T count, int type);
+		       struct files_struct *fsp, int op, off_t offset,
+		       off_t count, int type);
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, uint32 share_mode,
 			      uint32_t access_mask);
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, int leasetype);
 bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
-			  struct files_struct *fsp, SMB_OFF_T *poffset,
-			  SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
+			  struct files_struct *fsp, off_t *poffset,
+			  off_t *pcount, int *ptype, pid_t *ppid);
 int smb_vfs_call_symlink(struct vfs_handle_struct *handle, const char *oldpath,
 			 const char *newpath);
 int smb_vfs_call_readlink(struct vfs_handle_struct *handle,

@@ -642,7 +642,7 @@ static NTSTATUS add_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state,
 	int fd;
 	size_t new_entry_length;
 	char *new_entry;
-	SMB_OFF_T offpos;
+	off_t offpos;
  
 	/* Open the smbpassword file - for update. */
 	fp = startsmbfilepwent(pfile, PWF_UPDATE, &smbpasswd_state->pw_file_lock_depth);
@@ -750,7 +750,7 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 	bool found_entry = False;
 	bool got_pass_last_set_time = False;
 
-	SMB_OFF_T pwd_seekpos = 0;
+	off_t pwd_seekpos = 0;
 
 	int i;
 	int wr_len;

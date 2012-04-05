@@ -192,17 +192,17 @@ void pidfile_unlink(void);
 
 ssize_t sys_recvfile(int fromfd,
 			int tofd,
-			SMB_OFF_T offset,
+			off_t offset,
 			size_t count);
 ssize_t sys_recvfile(int fromfd,
 			int tofd,
-			SMB_OFF_T offset,
+			off_t offset,
 			size_t count);
 ssize_t drain_socket(int sockfd, size_t count);
 
 /* The following definitions come from lib/sendfile.c  */
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count);
 
 /* The following definitions come from lib/server_mutex.c  */
 
@@ -321,8 +321,8 @@ int sys_set_nfs_quota(const char *path, const char *bdev,
 ssize_t sys_read(int fd, void *buf, size_t count);
 ssize_t sys_write(int fd, const void *buf, size_t count);
 ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt);
-ssize_t sys_pread(int fd, void *buf, size_t count, SMB_OFF_T off);
-ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off);
+ssize_t sys_pread(int fd, void *buf, size_t count, off_t off);
+ssize_t sys_pwrite(int fd, const void *buf, size_t count, off_t off);
 ssize_t sys_send(int s, const void *msg, size_t len, int flags);
 ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
 int sys_fcntl_ptr(int fd, int cmd, void *arg);
@@ -334,8 +334,8 @@ int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf,
 	      bool fake_dir_create_times);
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 	      bool fake_dir_create_times);
-int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len);
-int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OFF_T len);
+int sys_posix_fallocate(int fd, off_t offset, off_t len);
+int sys_fallocate(int fd, enum vfs_fallocate_mode mode, off_t offset, off_t len);
 void kernel_flock(int fd, uint32 share_mode, uint32 access_mask);
 DIR *sys_fdopendir(int fd);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
@@ -458,7 +458,7 @@ int set_message_bcc(char *buf,int num_bytes);
 ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob);
 char *unix_clean_name(TALLOC_CTX *ctx, const char *s);
 char *clean_name(TALLOC_CTX *ctx, const char *s);
-ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos);
+ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, off_t pos);
 int set_blocking(int fd, bool set);
 NTSTATUS init_before_fork(void);
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
@@ -487,8 +487,8 @@ const char *readdirname(DIR *p);
 bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive);
 void set_namearray(name_compare_entry **ppname_array, const char *namelist);
 void free_namearray(name_compare_entry *name_array);
-bool fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-bool fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
+bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type);
+bool fcntl_getlock(int fd, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 bool is_myname(const char *s);
 void ra_lanman_string( const char *native_lanman );
 const char *get_remote_arch_str(void);

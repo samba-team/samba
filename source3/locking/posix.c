@@ -83,29 +83,29 @@ static const char *posix_lock_type_name(int lock_type)
  False if not.
 ****************************************************************************/
 
-static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
+static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 				uint64_t u_offset, uint64_t u_count)
 {
-	SMB_OFF_T offset = (SMB_OFF_T)u_offset;
-	SMB_OFF_T count = (SMB_OFF_T)u_count;
+	off_t offset = (off_t)u_offset;
+	off_t count = (off_t)u_count;
 
 	/*
 	 * For the type of system we are, attempt to
-	 * find the maximum positive lock offset as an SMB_OFF_T.
+	 * find the maximum positive lock offset as an off_t.
 	 */
 
 #if defined(MAX_POSITIVE_LOCK_OFFSET) /* Some systems have arbitrary limits. */
 
-	SMB_OFF_T max_positive_lock_offset = (MAX_POSITIVE_LOCK_OFFSET);
+	off_t max_positive_lock_offset = (MAX_POSITIVE_LOCK_OFFSET);
 #else
 	/*
-	 * In this case SMB_OFF_T is 64 bits,
+	 * In this case off_t is 64 bits,
 	 * and the underlying system can handle 64 bit signed locks.
 	 */
 
-	SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
-	SMB_OFF_T mask = (mask2<<1);
-	SMB_OFF_T max_positive_lock_offset = ~mask;
+	off_t mask2 = ((off_t)0x4) << (SMB_OFF_T_BITS-4);
+	off_t mask = (mask2<<1);
+	off_t max_positive_lock_offset = ~mask;
 
 #endif
 	/*
@@ -114,7 +114,7 @@ static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * any Win32 locks of length zero. JRA.
 	 */
 
-	if (count == (SMB_OFF_T)0) {
+	if (count == (off_t)0) {
 		DEBUG(10,("posix_lock_in_range: count = 0, ignoring.\n"));
 		return False;
 	}
@@ -170,8 +170,8 @@ static bool posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 }
 
 bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
-		       struct files_struct *fsp, int op, SMB_OFF_T offset,
-		       SMB_OFF_T count, int type)
+		       struct files_struct *fsp, int op, off_t offset,
+		       off_t count, int type)
 {
 	VFS_FIND(lock);
 	return handle->fns->lock_fn(handle, fsp, op, offset, count, type);
@@ -182,7 +182,7 @@ bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
  broken NFS implementations.
 ****************************************************************************/
 
-static bool posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool posix_fcntl_lock(files_struct *fsp, int op, off_t offset, off_t count, int type)
 {
 	bool ret;
 
@@ -202,12 +202,12 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 		 * 32 bit NFS mounted filesystems. Just ignore it.
 		 */
 
-		if (offset & ~((SMB_OFF_T)0x7fffffff)) {
+		if (offset & ~((off_t)0x7fffffff)) {
 			DEBUG(0,("Offset greater than 31 bits. Returning success.\n"));
 			return True;
 		}
 
-		if (count & ~((SMB_OFF_T)0x7fffffff)) {
+		if (count & ~((off_t)0x7fffffff)) {
 			/* 32 bit NFS file system, retry with smaller offset */
 			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
 			errno = 0;
@@ -221,8 +221,8 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 }
 
 bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
-			  struct files_struct *fsp, SMB_OFF_T *poffset,
-			  SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+			  struct files_struct *fsp, off_t *poffset,
+			  off_t *pcount, int *ptype, pid_t *ppid)
 {
 	VFS_FIND(getlock);
 	return handle->fns->getlock_fn(handle, fsp, poffset, pcount, ptype, 
@@ -234,7 +234,7 @@ bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
  broken NFS implementations.
 ****************************************************************************/
 
-static bool posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype)
+static bool posix_fcntl_getlock(files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype)
 {
 	pid_t pid;
 	bool ret;
@@ -256,12 +256,12 @@ static bool posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 		 * 32 bit NFS mounted filesystems. Just ignore it.
 		 */
 
-		if (*poffset & ~((SMB_OFF_T)0x7fffffff)) {
+		if (*poffset & ~((off_t)0x7fffffff)) {
 			DEBUG(0,("Offset greater than 31 bits. Returning success.\n"));
 			return True;
 		}
 
-		if (*pcount & ~((SMB_OFF_T)0x7fffffff)) {
+		if (*pcount & ~((off_t)0x7fffffff)) {
 			/* 32 bit NFS file system, retry with smaller offset */
 			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
 			errno = 0;
@@ -285,8 +285,8 @@ bool is_posix_locked(files_struct *fsp,
 			enum brl_type *plock_type,
 			enum brl_flavour lock_flav)
 {
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
+	off_t offset;
+	off_t count;
 	int posix_lock_type = map_posix_lock_type(fsp,*plock_type);
 
 	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, "
@@ -735,8 +735,8 @@ int fd_close_posix(struct files_struct *fsp)
 struct lock_list {
 	struct lock_list *next;
 	struct lock_list *prev;
-	SMB_OFF_T start;
-	SMB_OFF_T size;
+	off_t start;
+	off_t size;
 };
 
 /****************************************************************************
@@ -973,8 +973,8 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 			int num_locks,
 			int *errno_ret)
 {
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
+	off_t offset;
+	off_t count;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
 	bool ret = True;
 	size_t lock_count;
@@ -1111,8 +1111,8 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 				const struct lock_struct *plocks,
 				int num_locks)
 {
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
+	off_t offset;
+	off_t count;
 	bool ret = True;
 	TALLOC_CTX *ul_ctx = NULL;
 	struct lock_list *ulist = NULL;
@@ -1233,8 +1233,8 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 			enum brl_type lock_type,
 			int *errno_ret)
 {
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
+	off_t offset;
+	off_t count;
 	int posix_lock_type = map_posix_lock_type(fsp,lock_type);
 
 	DEBUG(5,("set_posix_lock_posix_flavour: File %s, offset = %.0f, count "
@@ -1277,8 +1277,8 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 				int num_locks)
 {
 	bool ret = True;
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
+	off_t offset;
+	off_t count;
 	TALLOC_CTX *ul_ctx = NULL;
 	struct lock_list *ulist = NULL;
 	struct lock_list *ul = NULL;

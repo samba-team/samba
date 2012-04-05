@@ -251,7 +251,7 @@ static int readfile(uint8_t *b, int n, XFILE *f)
 
 struct push_state {
 	XFILE *f;
-	SMB_OFF_T nread;
+	off_t nread;
 };
 
 static size_t push_source(uint8_t *buf, size_t n, void *priv)
@@ -1070,9 +1070,9 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	bool newhandle = false;
 	struct timespec tp_start;
 	uint16 attr;
-	SMB_OFF_T size;
+	off_t size;
 	off_t start = 0;
-	SMB_OFF_T nread = 0;
+	off_t nread = 0;
 	int rc = 0;
 	struct cli_state *targetcli = NULL;
 	char *targetname = NULL;
@@ -1678,7 +1678,7 @@ static int do_allinfo(const char *name)
 {
 	fstring altname;
 	struct timespec b_time, a_time, m_time, c_time;
-	SMB_OFF_T size;
+	off_t size;
 	uint16_t mode;
 	SMB_INO_T ino;
 	NTTIME tmp;
@@ -1838,7 +1838,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	TALLOC_CTX *ctx = talloc_tos();
 	uint16_t fnum;
 	XFILE *f;
-	SMB_OFF_T start = 0;
+	off_t start = 0;
 	int rc = 0;
 	struct timespec tp_start;
 	struct cli_state *targetcli;

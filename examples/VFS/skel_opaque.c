@@ -183,7 +183,7 @@ static ssize_t skel_vfs_read(vfs_handle_struct *handle, files_struct *fsp, void 
 	return -1;
 }
 
-static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)
+static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n, off_t offset)
 {
 	errno = ENOSYS;
 	return -1;
@@ -195,25 +195,25 @@ static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp, const vo
 	return -1;
 }
 
-static ssize_t skel_pwrite(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset)
+static ssize_t skel_pwrite(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n, off_t offset)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset, int whence)
+static off_t skel_lseek(vfs_handle_struct *handle, files_struct *fsp, off_t offset, int whence)
 {
 	errno = ENOSYS;
-	return (SMB_OFF_T)-1;
+	return (off_t)-1;
 }
 
-static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *hdr, SMB_OFF_T offset, size_t n)
+static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *hdr, off_t offset, size_t n)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *tofsp, SMB_OFF_T offset, size_t n)
+static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *tofsp, off_t offset, size_t n)
 {
 	errno = ENOSYS;
 	return -1;
@@ -314,7 +314,7 @@ static int skel_ntimes(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
+static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, off_t offset)
 {
 	errno = ENOSYS;
 	return -1;
@@ -322,13 +322,13 @@ static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_
 
 static int skel_fallocate(vfs_handle_struct *handle, files_struct *fsp,
 			enum vfs_fallocate_mode mode,
-			SMB_OFF_T offset, SMB_OFF_T len)
+			off_t offset, off_t len)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, off_t offset, off_t count, int type)
 {
 	errno = ENOSYS;
 	return false;
@@ -346,7 +346,7 @@ static int skel_linux_setlease(struct vfs_handle_struct *handle, struct files_st
 	return -1;
 }
 
-static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
 {
 	errno = ENOSYS;
 	return false;

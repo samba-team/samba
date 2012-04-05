@@ -44,7 +44,7 @@
 
 static ssize_t default_sys_recvfile(int fromfd,
 			int tofd,
-			SMB_OFF_T offset,
+			off_t offset,
 			size_t count)
 {
 	int saved_errno = 0;
@@ -62,7 +62,7 @@ static ssize_t default_sys_recvfile(int fromfd,
 		return 0;
 	}
 
-	if (tofd != -1 && offset != (SMB_OFF_T)-1) {
+	if (tofd != -1 && offset != (off_t)-1) {
 		if (lseek(tofd, offset, SEEK_SET) == -1) {
 			if (errno != ESPIPE) {
 				return -1;
@@ -140,7 +140,7 @@ static ssize_t default_sys_recvfile(int fromfd,
 
 ssize_t sys_recvfile(int fromfd,
 			int tofd,
-			SMB_OFF_T offset,
+			off_t offset,
 			size_t count)
 {
 	static int pipefd[2] = { -1, -1 };
@@ -230,7 +230,7 @@ ssize_t sys_recvfile(int fromfd,
 
 ssize_t sys_recvfile(int fromfd,
 			int tofd,
-			SMB_OFF_T offset,
+			off_t offset,
 			size_t count)
 {
 	return default_sys_recvfile(fromfd, tofd, offset, count);

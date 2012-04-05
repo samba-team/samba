@@ -547,8 +547,8 @@ struct streaminfo_state {
 
 static bool add_one_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 			   struct stream_struct **streams,
-			   const char *name, SMB_OFF_T size,
-			   SMB_OFF_T alloc_size)
+			   const char *name, off_t size,
+			   off_t alloc_size)
 {
 	struct stream_struct *tmp;
 

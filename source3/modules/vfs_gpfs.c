@@ -1261,7 +1261,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 
 static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, enum vfs_fallocate_mode mode,
-		       SMB_OFF_T offset, SMB_OFF_T len)
+		       off_t offset, off_t len)
 {
 	int ret;
 	struct gpfs_config_data *config;
@@ -1296,7 +1296,7 @@ static int vfs_gpfs_fallocate(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
-				SMB_OFF_T len)
+				off_t len)
 {
 	int result;
 	struct gpfs_config_data *config;
@@ -1368,7 +1368,7 @@ static bool vfs_gpfs_aio_force(struct vfs_handle_struct *handle,
 
 static ssize_t vfs_gpfs_sendfile(vfs_handle_struct *handle, int tofd,
 				 files_struct *fsp, const DATA_BLOB *hdr,
-				 SMB_OFF_T offset, size_t n)
+				 off_t offset, size_t n)
 {
 	if ((fsp->fsp_name->st.vfs_private & GPFS_WINATTR_OFFLINE) != 0) {
 		errno = ENOSYS;

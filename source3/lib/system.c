@@ -121,7 +121,7 @@ A pread wrapper that will deal with EINTR
 ********************************************************************/
 
 #if defined(HAVE_PREAD)
-ssize_t sys_pread(int fd, void *buf, size_t count, SMB_OFF_T off)
+ssize_t sys_pread(int fd, void *buf, size_t count, off_t off)
 {
 	ssize_t ret;
 
@@ -137,7 +137,7 @@ A write wrapper that will deal with EINTR
 ********************************************************************/
 
 #if defined(HAVE_PWRITE)
-ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off)
+ssize_t sys_pwrite(int fd, const void *buf, size_t count, off_t off)
 {
 	ssize_t ret;
 
@@ -517,14 +517,14 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 /*******************************************************************
  An posix_fallocate() wrapper.
 ********************************************************************/
-int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len)
+int sys_posix_fallocate(int fd, off_t offset, off_t len)
 {
 #if defined(HAVE_POSIX_FALLOCATE) && !defined(HAVE_BROKEN_POSIX_FALLOCATE)
 	return posix_fallocate(fd, offset, len);
 #elif defined(F_RESVSP64)
 	/* this handles XFS on IRIX */
 	struct flock64 fl;
-	SMB_OFF_T new_len = offset + len;
+	off_t new_len = offset + len;
 	int ret;
 	struct stat64 sbuf;
 
@@ -559,7 +559,7 @@ int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len)
 #include <linux/falloc.h>
 #endif
 
-int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OFF_T len)
+int sys_fallocate(int fd, enum vfs_fallocate_mode mode, off_t offset, off_t len)
 {
 #if defined(HAVE_LINUX_FALLOCATE64) || defined(HAVE_LINUX_FALLOCATE)
 	int lmode;

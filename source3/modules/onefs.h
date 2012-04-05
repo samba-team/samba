@@ -163,10 +163,10 @@ int onefs_sys_create_file(connection_struct *conn,
 			  int *granted_oplock);
 
 ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
-			   const DATA_BLOB *header, SMB_OFF_T offset,
+			   const DATA_BLOB *header, off_t offset,
 			   size_t count);
 
-ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
+ssize_t onefs_sys_recvfile(int fromfd, int tofd, off_t offset,
 			   size_t count);
 
 void init_stat_ex_from_onefs_stat(struct stat_ex *dst, const struct stat *src);

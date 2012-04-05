@@ -22,7 +22,7 @@
 #include "smbprofile.h"
 
 #define MODULE "crossrename"
-static SMB_OFF_T module_sizelimit;
+static off_t module_sizelimit;
 
 static int crossrename_connect(
                 struct vfs_handle_struct *  handle,
@@ -35,7 +35,7 @@ static int crossrename_connect(
 		return ret;
 	}
 
-	module_sizelimit = (SMB_OFF_T) lp_parm_int(SNUM(handle->conn),
+	module_sizelimit = (off_t) lp_parm_int(SNUM(handle->conn),
 					MODULE, "sizelimit", 20);
 	/* convert from MiB to byte: */
 	module_sizelimit *= 1048576;

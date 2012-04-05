@@ -34,7 +34,7 @@
 #include "vfs_gpfs.h"
 
 static ssize_t vfs_gpfs_hsm_notify_pread(vfs_handle_struct *handle, files_struct *fsp,
-			      void *data, size_t n, SMB_OFF_T offset)
+			      void *data, size_t n, off_t offset)
 {
 	ssize_t ret;
 
@@ -56,7 +56,7 @@ static ssize_t vfs_gpfs_hsm_notify_pread(vfs_handle_struct *handle, files_struct
 
 static ssize_t vfs_gpfs_hsm_notify_pwrite(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
-			       const void *data, size_t n, SMB_OFF_T offset)
+			       const void *data, size_t n, off_t offset)
 {
 	ssize_t ret;
 

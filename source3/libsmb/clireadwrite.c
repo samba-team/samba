@@ -415,7 +415,7 @@ struct cli_pull_state {
 	struct cli_state *cli;
 	uint16_t fnum;
 	off_t start_offset;
-	SMB_OFF_T size;
+	off_t size;
 
 	NTSTATUS (*sink)(char *buf, size_t n, void *priv);
 	void *priv;
@@ -432,7 +432,7 @@ struct cli_pull_state {
 	/*
 	 * For how many bytes did we send requests already?
 	 */
-	SMB_OFF_T requested;
+	off_t requested;
 
 	/*
 	 * Next request index to push into "sink". This walks around the "req"
@@ -446,7 +446,7 @@ struct cli_pull_state {
 	 * How many bytes did we push into "sink"?
 	 */
 
-	SMB_OFF_T pushed;
+	off_t pushed;
 };
 
 static char *cli_pull_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
@@ -475,7 +475,7 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 				 struct event_context *ev,
 				 struct cli_state *cli,
 				 uint16_t fnum, off_t start_offset,
-				 SMB_OFF_T size, size_t window_size,
+				 off_t size, size_t window_size,
 				 NTSTATUS (*sink)(char *buf, size_t n,
 						  void *priv),
 				 void *priv)
@@ -528,7 +528,7 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<state->num_reqs; i++) {
 		struct cli_pull_subreq *subreq = &state->reqs[i];
-		SMB_OFF_T size_left;
+		off_t size_left;
 		size_t request_thistime;
 
 		if (state->requested >= size) {
@@ -629,7 +629,7 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 
 		if (state->requested < state->size) {
 			struct tevent_req *new_req;
-			SMB_OFF_T size_left;
+			off_t size_left;
 			size_t request_thistime;
 
 			size_left = state->size - state->requested;
@@ -664,7 +664,7 @@ static void cli_pull_read_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_pull_recv(struct tevent_req *req, SMB_OFF_T *received)
+NTSTATUS cli_pull_recv(struct tevent_req *req, off_t *received)
 {
 	struct cli_pull_state *state = tevent_req_data(
 		req, struct cli_pull_state);
@@ -678,9 +678,9 @@ NTSTATUS cli_pull_recv(struct tevent_req *req, SMB_OFF_T *received)
 }
 
 NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
-		  off_t start_offset, SMB_OFF_T size, size_t window_size,
+		  off_t start_offset, off_t size, size_t window_size,
 		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),
-		  void *priv, SMB_OFF_T *received)
+		  void *priv, off_t *received)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct event_context *ev;
@@ -732,7 +732,7 @@ NTSTATUS cli_read(struct cli_state *cli, uint16_t fnum,
 		 size_t *nread)
 {
 	NTSTATUS status;
-	SMB_OFF_T ret;
+	off_t ret;
 
 	status = cli_pull(cli, fnum, offset, size, size,
 			  cli_read_sink, &buf, &ret);

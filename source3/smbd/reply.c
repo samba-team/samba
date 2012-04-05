@@ -1081,7 +1081,7 @@ void reply_getatr(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
 	int mode=0;
-	SMB_OFF_T size=0;
+	off_t size=0;
 	time_t mtime=0;
 	const char *p;
 	NTSTATUS status;
@@ -1374,7 +1374,7 @@ void reply_search(struct smb_request *req)
 	char *directory = NULL;
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
-	SMB_OFF_T size;
+	off_t size;
 	uint32 mode;
 	struct timespec date;
 	uint32 dirtype;
@@ -1716,7 +1716,7 @@ void reply_open(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	char *fname = NULL;
 	uint32 fattr=0;
-	SMB_OFF_T size = 0;
+	off_t size = 0;
 	time_t mtime=0;
 	int info;
 	files_struct *fsp;
@@ -1989,7 +1989,7 @@ void reply_open_and_X(struct smb_request *req)
 			reply_nterror(req, NT_STATUS_DISK_FULL);
 			goto out;
 		}
-		retval = vfs_set_filelen(fsp, (SMB_OFF_T)allocation_size);
+		retval = vfs_set_filelen(fsp, (off_t)allocation_size);
 		if (retval < 0) {
 			close_file(req, fsp, ERROR_CLOSE);
 			reply_nterror(req, NT_STATUS_DISK_FULL);
@@ -2840,7 +2840,7 @@ static void fail_readraw(void)
  Fake (read/write) sendfile. Returns -1 on read or write fail.
 ****************************************************************************/
 
-ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread)
+ssize_t fake_sendfile(files_struct *fsp, off_t startpos, size_t nread)
 {
 	size_t bufsize;
 	size_t tosend = nread;
@@ -3003,7 +3003,7 @@ static void reply_readbraw_error(struct smbd_server_connection *sconn)
 static void send_file_readbraw(connection_struct *conn,
 			       struct smb_request *req,
 			       files_struct *fsp,
-			       SMB_OFF_T startpos,
+			       off_t startpos,
 			       size_t nread,
 			       ssize_t mincount)
 {
@@ -3134,10 +3134,10 @@ void reply_readbraw(struct smb_request *req)
 	struct smbd_server_connection *sconn = req->sconn;
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	files_struct *fsp;
 	struct lock_struct lock;
-	SMB_OFF_T size = 0;
+	off_t size = 0;
 
 	START_PROFILE(SMBreadbraw);
 
@@ -3208,7 +3208,7 @@ void reply_readbraw(struct smb_request *req)
 		 * This is a large offset (64 bit) read.
 		 */
 
-		startpos |= (((SMB_OFF_T)IVAL(req->vwv+8, 0)) << 32);
+		startpos |= (((off_t)IVAL(req->vwv+8, 0)) << 32);
 
 		if(startpos < 0) {
 			DEBUG(0,("reply_readbraw: negative 64 bit "
@@ -3280,7 +3280,7 @@ void reply_lockread(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	ssize_t nread = -1;
 	char *data;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	size_t numtoread;
 	NTSTATUS status;
 	files_struct *fsp;
@@ -3392,7 +3392,7 @@ void reply_read(struct smb_request *req)
 	size_t numtoread;
 	ssize_t nread = 0;
 	char *data;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	int outsize = 0;
 	files_struct *fsp;
 	struct lock_struct lock;
@@ -3507,7 +3507,7 @@ static int setup_readX_header(struct smb_request *req, char *outbuf,
 ****************************************************************************/
 
 static void send_file_readX(connection_struct *conn, struct smb_request *req,
-			    files_struct *fsp, SMB_OFF_T startpos,
+			    files_struct *fsp, off_t startpos,
 			    size_t smb_maxcnt)
 {
 	ssize_t nread = -1;
@@ -3704,7 +3704,7 @@ void reply_read_and_X(struct smb_request *req)
 	struct smbd_server_connection *sconn = req->sconn;
 	connection_struct *conn = req->conn;
 	files_struct *fsp;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	size_t smb_maxcnt;
 	bool big_readX = False;
 #if 0
@@ -3780,7 +3780,7 @@ void reply_read_and_X(struct smb_request *req)
 		/*
 		 * This is a large offset (64 bit) read.
 		 */
-		startpos |= (((SMB_OFF_T)IVAL(req->vwv+10, 0)) << 32);
+		startpos |= (((off_t)IVAL(req->vwv+10, 0)) << 32);
 
 	}
 
@@ -3875,7 +3875,7 @@ void reply_writebraw(struct smb_request *req)
 	ssize_t total_written=0;
 	size_t numtowrite=0;
 	size_t tcount;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	const char *data=NULL;
 	bool write_through;
 	files_struct *fsp;
@@ -4125,7 +4125,7 @@ void reply_writeunlock(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	ssize_t nwritten = -1;
 	size_t numtowrite;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	const char *data;
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp;
@@ -4239,7 +4239,7 @@ void reply_write(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	size_t numtowrite;
 	ssize_t nwritten = -1;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	const char *data;
 	files_struct *fsp;
 	struct lock_struct lock;
@@ -4300,12 +4300,12 @@ void reply_write(struct smb_request *req)
 		/*
 		 * This is actually an allocate call, and set EOF. JRA.
 		 */
-		nwritten = vfs_allocate_file_space(fsp, (SMB_OFF_T)startpos);
+		nwritten = vfs_allocate_file_space(fsp, (off_t)startpos);
 		if (nwritten < 0) {
 			reply_nterror(req, NT_STATUS_DISK_FULL);
 			goto strict_unlock;
 		}
-		nwritten = vfs_set_filelen(fsp, (SMB_OFF_T)startpos);
+		nwritten = vfs_set_filelen(fsp, (off_t)startpos);
 		if (nwritten < 0) {
 			reply_nterror(req, NT_STATUS_DISK_FULL);
 			goto strict_unlock;
@@ -4448,7 +4448,7 @@ void reply_write_and_X(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	struct lock_struct lock;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	size_t numtowrite;
 	bool write_through;
 	ssize_t nwritten;
@@ -4522,7 +4522,7 @@ void reply_write_and_X(struct smb_request *req)
 		/*
 		 * This is a large offset (64 bit) write.
 		 */
-		startpos |= (((SMB_OFF_T)IVAL(req->vwv+12, 0)) << 32);
+		startpos |= (((off_t)IVAL(req->vwv+12, 0)) << 32);
 
 	}
 
@@ -4620,8 +4620,8 @@ out:
 void reply_lseek(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	SMB_OFF_T startpos;
-	SMB_OFF_T res= -1;
+	off_t startpos;
+	off_t res= -1;
 	int mode,umode;
 	files_struct *fsp;
 
@@ -4643,7 +4643,7 @@ void reply_lseek(struct smb_request *req)
 
 	mode = SVAL(req->vwv+1, 0) & 3;
 	/* NB. This doesn't use IVAL_TO_SMB_OFF_T as startpos can be signed in this case. */
-	startpos = (SMB_OFF_T)IVALS(req->vwv+2, 0);
+	startpos = (off_t)IVALS(req->vwv+2, 0);
 
 	switch (mode) {
 		case 0:
@@ -4666,7 +4666,7 @@ void reply_lseek(struct smb_request *req)
 	if (umode == SEEK_END) {
 		if((res = SMB_VFS_LSEEK(fsp,startpos,umode)) == -1) {
 			if(errno == EINVAL) {
-				SMB_OFF_T current_pos = startpos;
+				off_t current_pos = startpos;
 
 				if(fsp_stat(fsp) == -1) {
 					reply_nterror(req,
@@ -4845,7 +4845,7 @@ void reply_writeclose(struct smb_request *req)
 	size_t numtowrite;
 	ssize_t nwritten = -1;
 	NTSTATUS close_status = NT_STATUS_OK;
-	SMB_OFF_T startpos;
+	off_t startpos;
 	const char *data;
 	struct timespec mtime;
 	files_struct *fsp;
@@ -5454,7 +5454,7 @@ void reply_printwrite(struct smb_request *req)
 
 	data = (const char *)req->buf + 3;
 
-	if (write_file(req,fsp,data,(SMB_OFF_T)-1,numtowrite) != numtowrite) {
+	if (write_file(req,fsp,data,(off_t)-1,numtowrite) != numtowrite) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBsplwr);
 		return;
@@ -6695,7 +6695,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			bool target_is_directory)
 {
 	struct smb_filename *smb_fname_dst_tmp = NULL;
-	SMB_OFF_T ret=-1;
+	off_t ret=-1;
 	files_struct *fsp1,*fsp2;
  	uint32 dosattrs;
 	uint32 new_create_disposition;
@@ -6840,7 +6840,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	if (ret != (SMB_OFF_T)smb_fname_src->st.st_ex_size) {
+	if (ret != (off_t)smb_fname_src->st.st_ex_size) {
 		status = NT_STATUS_DISK_FULL;
 		goto out;
 	}

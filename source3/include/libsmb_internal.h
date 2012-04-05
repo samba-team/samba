@@ -40,7 +40,7 @@
  */
 typedef struct DOS_ATTR_DESC {
 	int mode;
-	SMB_OFF_T size;
+	off_t size;
 	time_t create_time;
 	time_t access_time;
 	time_t write_time;
@@ -96,7 +96,7 @@ struct smbc_dir_list {
 struct _SMBCFILE {
 	int cli_fd; 
 	char *fname;
-	SMB_OFF_T offset;
+	off_t offset;
 	struct _SMBCSRV *srv;
 	bool file;
 	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
@@ -368,7 +368,7 @@ SMBC_getatr(SMBCCTX * context,
             SMBCSRV *srv,
             const char *path,
             uint16 *mode,
-            SMB_OFF_T *size,
+            off_t *size,
             struct timespec *create_time_ts,
             struct timespec *access_time_ts,
             struct timespec *write_time_ts,

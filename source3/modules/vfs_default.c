@@ -534,7 +534,7 @@ static ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, void *
 }
 
 static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void *data,
-			size_t n, SMB_OFF_T offset)
+			size_t n, off_t offset)
 {
 	ssize_t result;
 
@@ -550,7 +550,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	}
 
 #else /* HAVE_PREAD */
-	SMB_OFF_T   curr;
+	off_t   curr;
 	int lerrno;
 
 	curr = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
@@ -588,7 +588,7 @@ static ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, const
 }
 
 static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, const void *data,
-			size_t n, SMB_OFF_T offset)
+			size_t n, off_t offset)
 {
 	ssize_t result;
 
@@ -603,7 +603,7 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 	}
 
 #else /* HAVE_PWRITE */
-	SMB_OFF_T   curr;
+	off_t   curr;
 	int         lerrno;
 
 	curr = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
@@ -626,9 +626,9 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 	return result;
 }
 
-static SMB_OFF_T vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset, int whence)
+static off_t vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, off_t offset, int whence)
 {
-	SMB_OFF_T result = 0;
+	off_t result = 0;
 
 	START_PROFILE(syscall_lseek);
 
@@ -653,7 +653,7 @@ static SMB_OFF_T vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB
 }
 
 static ssize_t vfswrap_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *hdr,
-			SMB_OFF_T offset, size_t n)
+			off_t offset, size_t n)
 {
 	ssize_t result;
 
@@ -666,7 +666,7 @@ static ssize_t vfswrap_sendfile(vfs_handle_struct *handle, int tofd, files_struc
 static ssize_t vfswrap_recvfile(vfs_handle_struct *handle,
 			int fromfd,
 			files_struct *tofsp,
-			SMB_OFF_T offset,
+			off_t offset,
 			size_t n)
 {
 	ssize_t result;
@@ -1361,9 +1361,9 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
  allocate is set.
 **********************************************************************/
 
-static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T len)
+static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fsp, off_t len)
 {
-	SMB_OFF_T space_to_write;
+	off_t space_to_write;
 	uint64_t space_avail;
 	uint64_t bsize,dfree,dsize;
 	int ret;
@@ -1428,7 +1428,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	return 0;
 }
 
-static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T len)
+static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, off_t len)
 {
 	int result = -1;
 	SMB_STRUCT_STAT *pst;
@@ -1499,8 +1499,8 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 static int vfswrap_fallocate(vfs_handle_struct *handle,
 			files_struct *fsp,
 			enum vfs_fallocate_mode mode,
-			SMB_OFF_T offset,
-			SMB_OFF_T len)
+			off_t offset,
+			off_t len)
 {
 	int result;
 
@@ -1517,7 +1517,7 @@ static int vfswrap_fallocate(vfs_handle_struct *handle,
 	return result;
 }
 
-static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, off_t offset, off_t count, int type)
 {
 	bool result;
 
@@ -1536,7 +1536,7 @@ static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
-static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
 {
 	bool result;
 

@@ -25,13 +25,13 @@
 #include "smbd/globals.h"
 #include "smbprofile.h"
 
-static bool setup_write_cache(files_struct *, SMB_OFF_T);
+static bool setup_write_cache(files_struct *, off_t);
 
 /****************************************************************************
  Read from write cache if we can.
 ****************************************************************************/
 
-static bool read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
+static bool read_from_write_cache(files_struct *fsp,char *data,off_t pos,size_t n)
 {
 	write_cache *wcp = fsp->wcp;
 
@@ -54,7 +54,7 @@ static bool read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,siz
  Read from a file.
 ****************************************************************************/
 
-ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
+ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 {
 	ssize_t ret=0,readret;
 
@@ -121,7 +121,7 @@ tryagain:
 static ssize_t real_write_file(struct smb_request *req,
 				files_struct *fsp,
 				const char *data,
-				SMB_OFF_T pos,
+				off_t pos,
 				size_t n)
 {
 	ssize_t ret;
@@ -287,7 +287,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 ssize_t write_file(struct smb_request *req,
 			files_struct *fsp,
 			const char *data,
-			SMB_OFF_T pos,
+			off_t pos,
 			size_t n)
 {
 	write_cache *wcp = fsp->wcp;
@@ -905,7 +905,7 @@ void delete_write_cache(files_struct *fsp)
  Setup the write cache structure.
 ****************************************************************************/
 
-static bool setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
+static bool setup_write_cache(files_struct *fsp, off_t file_size)
 {
 	ssize_t alloc_size = lp_write_cache_size(SNUM(fsp->conn));
 	write_cache *wcp;
@@ -950,7 +950,7 @@ static bool setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
  Cope with a size change.
 ****************************************************************************/
 
-void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size)
+void set_filelen_write_cache(files_struct *fsp, off_t file_size)
 {
 	if(fsp->wcp) {
 		/* The cache *must* have been flushed before we do this. */

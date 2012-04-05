@@ -104,8 +104,8 @@ static ssize_t sys_write_fn(void *file, const void *buf, size_t len)
 	return sys_write(*fd, buf, len);
 }
 
-SMB_OFF_T transfer_file(int infd, int outfd, SMB_OFF_T n)
+off_t transfer_file(int infd, int outfd, off_t n)
 {
-	return (SMB_OFF_T)transfer_file_internal(&infd, &outfd, (size_t)n,
+	return (off_t)transfer_file_internal(&infd, &outfd, (size_t)n,
 						 sys_read_fn, sys_write_fn);
 }

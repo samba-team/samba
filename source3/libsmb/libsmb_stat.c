@@ -54,7 +54,7 @@ static int
 setup_stat(SMBCCTX *context,
            struct stat *st,
            const char *fname,
-           SMB_OFF_T size,
+           off_t size,
            int mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -118,7 +118,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 	struct timespec write_time_ts;
         struct timespec access_time_ts;
         struct timespec change_time_ts;
-	SMB_OFF_T size = 0;
+	off_t size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -204,7 +204,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	struct timespec change_time_ts;
         struct timespec access_time_ts;
         struct timespec write_time_ts;
-	SMB_OFF_T size;
+	off_t size;
 	uint16 mode;
 	char *server = NULL;
 	char *share = NULL;

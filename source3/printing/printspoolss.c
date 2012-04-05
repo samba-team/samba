@@ -223,7 +223,7 @@ done:
 
 int print_spool_write(files_struct *fsp,
 		      const char *data, uint32_t size,
-		      SMB_OFF_T offset, uint32_t *written)
+		      off_t offset, uint32_t *written)
 {
 	SMB_STRUCT_STAT st;
 	ssize_t n;

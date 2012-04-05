@@ -33,7 +33,7 @@
 #define MSG_MORE 0x8000
 #endif
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
 	size_t total=0;
 	ssize_t ret;
@@ -103,7 +103,7 @@ extern int32 sendfile (int out_fd, int in_fd, int32 *offset, uint32 count);
 #define MSG_MORE 0x8000
 #endif
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
 	size_t total=0;
 	ssize_t ret;
@@ -118,7 +118,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 	 * and uses a normal read. JRA.
 	 */
 
-	if ((sizeof(SMB_OFF_T) >= 8) && (offset + count > (SMB_OFF_T)0x7FFFFFFF)) {
+	if ((sizeof(off_t) >= 8) && (offset + count > (off_t)0x7FFFFFFF)) {
 		errno = ENOSYS;
 		return -1;
 	}
@@ -184,7 +184,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 #include <sys/sendfile.h>
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
 	int sfvcnt;
 	size_t total, xferred;
@@ -270,7 +270,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
 	size_t total=0;
 	struct iovec hdtrl[2];
@@ -341,7 +341,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
 	size_t total=0;
 	struct sf_hdtr hdr;
@@ -364,7 +364,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 	total = count;
 	while (total + hdtrl.iov_len) {
-		SMB_OFF_T nwritten;
+		off_t nwritten;
 		int ret;
 
 		/*
@@ -418,7 +418,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 /* Contributed by William Jojo <jojowil@hvcc.edu> */
 #include <sys/socket.h>
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
 	struct sf_parms hdtrl;
 
@@ -472,7 +472,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 #else /* No sendfile implementation. Return error. */
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
 	/* No sendfile syscall. */
 	errno = ENOSYS;

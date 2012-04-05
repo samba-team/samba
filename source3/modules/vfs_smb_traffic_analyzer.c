@@ -769,7 +769,7 @@ static ssize_t smb_traffic_analyzer_sendfile(vfs_handle_struct *handle,
 				int tofd,
 				files_struct *fromfsp,
 				const DATA_BLOB *hdr,
-				SMB_OFF_T offset,
+				off_t offset,
 				size_t n)
 {
 	struct rw_data s_data;
@@ -787,7 +787,7 @@ static ssize_t smb_traffic_analyzer_sendfile(vfs_handle_struct *handle,
 static ssize_t smb_traffic_analyzer_recvfile(vfs_handle_struct *handle,
 				int fromfd,
 				files_struct *tofsp,
-				SMB_OFF_T offset,
+				off_t offset,
 				size_t n)
 {
 	struct rw_data s_data;
@@ -820,7 +820,7 @@ static ssize_t smb_traffic_analyzer_read(vfs_handle_struct *handle, \
 
 
 static ssize_t smb_traffic_analyzer_pread(vfs_handle_struct *handle, \
-		files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)
+		files_struct *fsp, void *data, size_t n, off_t offset)
 {
 	struct rw_data s_data;
 
@@ -853,7 +853,7 @@ static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle, \
 }
 
 static ssize_t smb_traffic_analyzer_pwrite(vfs_handle_struct *handle, \
-	     files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset)
+	     files_struct *fsp, const void *data, size_t n, off_t offset)
 {
 	struct rw_data s_data;
 

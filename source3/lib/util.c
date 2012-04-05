@@ -320,12 +320,12 @@ char *clean_name(TALLOC_CTX *ctx, const char *s)
  Write data into an fd at a given offset. Ignore seek errors.
 ********************************************************************/
 
-ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos)
+ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, off_t pos)
 {
 	size_t total=0;
 	ssize_t ret;
 
-	if (pos == (SMB_OFF_T)-1) {
+	if (pos == (off_t)-1) {
 		return write_data(fd, buffer, N);
 	}
 #if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
@@ -1213,7 +1213,7 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
  F_UNLCK in *ptype if the region is unlocked). False if the call failed.
 ****************************************************************************/
 
-bool fcntl_getlock(int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+bool fcntl_getlock(int fd, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
 {
 	struct flock lock;
 	int ret;

@@ -451,7 +451,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	uint32 fattr=0;
-	SMB_OFF_T file_len = 0;
+	off_t file_len = 0;
 	int info = 0;
 	files_struct *fsp = NULL;
 	char *p = NULL;
@@ -972,7 +972,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	char *data = *ppdata;
 	/* Breakout the oplock request bits so we can set the reply bits separately. */
 	uint32 fattr=0;
-	SMB_OFF_T file_len = 0;
+	off_t file_len = 0;
 	int info = 0;
 	files_struct *fsp = NULL;
 	char *p = NULL;
@@ -1355,7 +1355,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	files_struct *fsp1,*fsp2;
 	uint32 fattr;
 	int info;
-	SMB_OFF_T ret=-1;
+	off_t ret=-1;
 	NTSTATUS status = NT_STATUS_OK;
 	char *parent;
 
@@ -1470,7 +1470,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	file_set_dosmode(conn, smb_fname_dst, fattr, parent, false);
 	TALLOC_FREE(parent);
 
-	if (ret < (SMB_OFF_T)smb_fname_src->st.st_ex_size) {
+	if (ret < (off_t)smb_fname_src->st.st_ex_size) {
 		status = NT_STATUS_DISK_FULL;
 		goto out;
 	}

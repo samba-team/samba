@@ -3238,7 +3238,7 @@ struct cli_getattrE_state {
 	uint16_t vwv[1];
 	int zone_offset;
 	uint16_t attr;
-	SMB_OFF_T size;
+	off_t size;
 	time_t change_time;
 	time_t access_time;
 	time_t write_time;
@@ -3288,7 +3288,7 @@ static void cli_getattrE_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->size = (SMB_OFF_T)IVAL(vwv+6,0);
+	state->size = (off_t)IVAL(vwv+6,0);
 	state->attr = SVAL(vwv+10,0);
 	state->change_time = make_unix_date2(vwv+0, state->zone_offset);
 	state->access_time = make_unix_date2(vwv+2, state->zone_offset);
@@ -3299,7 +3299,7 @@ static void cli_getattrE_done(struct tevent_req *subreq)
 
 NTSTATUS cli_getattrE_recv(struct tevent_req *req,
 			uint16_t *attr,
-			SMB_OFF_T *size,
+			off_t *size,
 			time_t *change_time,
 			time_t *access_time,
 			time_t *write_time)
@@ -3332,7 +3332,7 @@ NTSTATUS cli_getattrE_recv(struct tevent_req *req,
 NTSTATUS cli_getattrE(struct cli_state *cli,
 			uint16_t fnum,
 			uint16_t *attr,
-			SMB_OFF_T *size,
+			off_t *size,
 			time_t *change_time,
 			time_t *access_time,
 			time_t *write_time)
@@ -3388,7 +3388,7 @@ static void cli_getatr_done(struct tevent_req *subreq);
 struct cli_getatr_state {
 	int zone_offset;
 	uint16_t attr;
-	SMB_OFF_T size;
+	off_t size;
 	time_t write_time;
 };
 
@@ -3449,7 +3449,7 @@ static void cli_getatr_done(struct tevent_req *subreq)
 	}
 
 	state->attr = SVAL(vwv+0,0);
-	state->size = (SMB_OFF_T)IVAL(vwv+3,0);
+	state->size = (off_t)IVAL(vwv+3,0);
 	state->write_time = make_unix_date3(vwv+1, state->zone_offset);
 
 	tevent_req_done(req);
@@ -3457,7 +3457,7 @@ static void cli_getatr_done(struct tevent_req *subreq)
 
 NTSTATUS cli_getatr_recv(struct tevent_req *req,
 			uint16_t *attr,
-			SMB_OFF_T *size,
+			off_t *size,
 			time_t *write_time)
 {
 	struct cli_getatr_state *state = tevent_req_data(
@@ -3482,7 +3482,7 @@ NTSTATUS cli_getatr_recv(struct tevent_req *req,
 NTSTATUS cli_getatr(struct cli_state *cli,
 			const char *fname,
 			uint16_t *attr,
-			SMB_OFF_T *size,
+			off_t *size,
 			time_t *write_time)
 {
 	TALLOC_CTX *frame = talloc_stackframe();

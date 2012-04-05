@@ -556,7 +556,7 @@ dos_attr_query(SMBCCTX *context,
         struct timespec write_time_ts;
         struct timespec access_time_ts;
         struct timespec change_time_ts;
-        SMB_OFF_T size = 0;
+        off_t size = 0;
         uint16 mode = 0;
 	SMB_INO_T inode = 0;
         DOS_ATTR_DESC *ret;
@@ -651,7 +651,7 @@ dos_attr_parse(SMBCCTX *context,
 		}
 
 		if (strncasecmp_m(tok, "SIZE:", 5) == 0) {
-                        dad->size = (SMB_OFF_T)atof(tok+5);
+                        dad->size = (off_t)atof(tok+5);
 			continue;
 		}
 
@@ -743,7 +743,7 @@ cacl_get(SMBCCTX *context,
 	time_t write_time = (time_t)0;
         time_t access_time = (time_t)0;
         time_t change_time = (time_t)0;
-	SMB_OFF_T size = 0;
+	off_t size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
 	struct cli_state *cli = srv->cli;
