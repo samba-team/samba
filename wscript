@@ -123,6 +123,13 @@ def configure(conf):
     del(conf.env.defines['PYTHONDIR'])
     del(conf.env.defines['PYTHONARCHDIR'])
 
+    if not conf.CHECK_CODE('#include "tests/summary.c"',
+                           define='SUMMARY_PASSES',
+                           addmain=False,
+                           execute=True,
+                           msg='Checking configure summary'):
+        raise Utils.WafError('configure summary failed')
+    
     conf.SAMBA_CONFIG_H('include/config.h')
 
 
