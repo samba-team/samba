@@ -1209,6 +1209,36 @@ static int rootdse_schemaupdatenow(struct ldb_module *module, struct ldb_request
 	return ldb_module_done(req, NULL, NULL, ret);
 }
 
+static int rootdse_schemaupgradeinprogress(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_result *ext_res;
+	int ret = LDB_SUCCESS;
+	struct ldb_dn *schema_dn;
+
+	schema_dn = ldb_get_schema_basedn(ldb);
+	if (!schema_dn) {
+		ldb_reset_err_string(ldb);
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
+			  "rootdse_modify: no schema dn present: (skip ldb_extended call)\n");
+		return ldb_next_request(module, req);
+	}
+
+	/* FIXME we have to do something in order to relax constraints for DRS
+	 * setting schemaUpgradeInProgress cause the fschemaUpgradeInProgress
+	 * in all LDAP connection (2K3/2K3R2) or in the current connection (2K8 and +)
+	 * to be set to true.
+	 */
+
+	/* from 5.113 LDAPConnections in DRSR.pdf
+	 * fschemaUpgradeInProgress: A Boolean that specifies certain constraint
+	 * validations are skipped when adding, updating, or removing directory
+	 * objects on the opened connection. The skipped constraint validations
+	 * are documented in the applicable constraint sections in [MS-ADTS].
+	 */
+	return ldb_module_done(req, NULL, NULL, ret);
+}
+
 static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -1377,6 +1407,9 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 	if (ldb_msg_find_element(req->op.mod.message, "enableOptionalFeature")) {
 		return rootdse_enableoptionalfeature(module, req);
+	}
+	if (ldb_msg_find_element(req->op.mod.message, "schemaUpgradeInProgress")) {
+		return rootdse_schemaupgradeinprogress(module, req);
 	}
 
 	ldb_set_errstring(ldb, "rootdse_modify: unknown attribute to change!");

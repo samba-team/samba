@@ -167,6 +167,8 @@ struct dsdb_create_partition_exop {
  */
 #define DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID "1.3.6.1.4.1.7165.4.4.2"
 
+#define DSDB_EXTENDED_SCHEMA_UPGRADE_IN_PROGRESS_OID "1.3.6.1.4.1.7165.4.4.6"
+
 #define DSDB_OPENLDAP_DEREFERENCE_CONTROL "1.3.6.1.4.1.4203.666.5.16"
 
 struct dsdb_openldap_dereference {
