@@ -934,16 +934,17 @@ void set_delete_on_close_lck(files_struct *fsp,
 				*dt = d->delete_tokens[
 					d->num_delete_tokens-1];
 				d->num_delete_tokens -= 1;
-				return;
+			} else {
+				/* Replace this token with the
+				   given tok. */
+				TALLOC_FREE(dt->delete_nt_token);
+				dt->delete_nt_token = dup_nt_token(dt, nt_tok);
+				SMB_ASSERT(dt->delete_nt_token != NULL);
+				TALLOC_FREE(dt->delete_token);
+				dt->delete_token = copy_unix_token(dt, tok);
+				SMB_ASSERT(dt->delete_token != NULL);
 			}
-			/* Replace this token with the
-			   given tok. */
-			TALLOC_FREE(dt->delete_nt_token);
-			dt->delete_nt_token = dup_nt_token(dt, nt_tok);
-			SMB_ASSERT(dt->delete_nt_token != NULL);
-			TALLOC_FREE(dt->delete_token);
-			dt->delete_token = copy_unix_token(dt, tok);
-			SMB_ASSERT(dt->delete_token != NULL);
+			return;
 		}
 	}
 
