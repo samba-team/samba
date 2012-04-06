@@ -298,7 +298,7 @@ def check_duplicate_sources(bld, tgt_list):
     return ret
 
 
-def check_orpaned_targets(bld, tgt_list):
+def check_orphaned_targets(bld, tgt_list):
     '''check if any build targets are orphaned'''
 
     target_dict = LOCAL_CACHE(bld, 'TARGET_TYPE')
@@ -1145,7 +1145,7 @@ def check_project_rules(bld):
 
     debug('deps: project rules stage1 completed')
 
-    #check_orpaned_targets(bld, tgt_list)
+    #check_orphaned_targets(bld, tgt_list)
 
     if not check_duplicate_sources(bld, tgt_list):
         Logs.error("Duplicate sources present - aborting")
