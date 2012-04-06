@@ -2936,6 +2936,32 @@ fi
 
 AC_CHECK_TYPES([blksize_t, blkcnt_t], [], [], [[#include <sys/stat.h>]])
 
+AC_CACHE_CHECK([for 32 bit blkcnt_t],samba_cv_SIZEOF_BLKCNT_T_4,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdio.h>
+#include <sys/stat.h>
+main() { exit((sizeof(blkcnt_t) == 4) ? 0 : 1); }],
+samba_cv_SIZEOF_BLKCNT_T_4=yes,samba_cv_SIZEOF_BLKCNT_T_4=no,samba_cv_SIZEOF_BLKCNT_T_4=cross)])
+if test x"$samba_cv_SIZEOF_BLKCNT_T_4" = x"yes"; then
+    AC_DEFINE(SIZEOF_BLKCNT_T_4,1,[The size of the 'blkcnt_t' type])
+fi
+
+AC_CACHE_CHECK([for 64 bit blkcnt_t],samba_cv_SIZEOF_BLKCNT_T_8,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdio.h>
+#include <sys/stat.h>
+main() { exit((sizeof(blkcnt_t) == 8) ? 0 : 1); }],
+samba_cv_SIZEOF_BLKCNT_T_8=yes,samba_cv_SIZEOF_BLKCNT_T_8=no,samba_cv_SIZEOF_BLKCNT_T_8=cross)])
+if test x"$samba_cv_SIZEOF_BLKCNT_T_8" = x"yes"; then
+    AC_DEFINE(SIZEOF_BLKCNT_T_8,1,[The size of the 'blkcnt_t' type])
+fi
+
 AC_CACHE_CHECK([for st_blksize in struct stat],samba_cv_HAVE_STAT_ST_BLKSIZE,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <sys/stat.h>
