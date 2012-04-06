@@ -1518,7 +1518,7 @@ static bool add_delete_on_close_token(struct share_mode_lock *lck,
 	}
 
 	dtl->name_hash = name_hash;
-	dtl->delete_token = copy_unix_token(lck, tok);
+	dtl->delete_token = copy_unix_token(dtl, tok);
 	if (dtl->delete_token == NULL) {
 		TALLOC_FREE(dtl);
 		return false;
