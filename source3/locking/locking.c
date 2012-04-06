@@ -1560,13 +1560,14 @@ void set_delete_on_close_lck(files_struct *fsp,
 				/* Delete this entry. */
 				DLIST_REMOVE(lck->delete_tokens, dtl);
 				TALLOC_FREE(dtl);
-				return;
+			} else {
+				/* Replace this token with the
+				   given tok. */
+				TALLOC_FREE(dtl->delete_token);
+				dtl->delete_token = copy_unix_token(dtl, tok);
+				SMB_ASSERT(dtl->delete_token != NULL);
 			}
-			/* Replace this token with the
-			   given tok. */
-			TALLOC_FREE(dtl->delete_token);
-			dtl->delete_token = copy_unix_token(dtl, tok);
-			SMB_ASSERT(dtl->delete_token != NULL);
+			return;
 		}
 	}
 
