@@ -612,7 +612,7 @@ NTSTATUS file_name_hash(connection_struct *conn,
 	if (!fullpath) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	*p_name_hash = hash(fullpath, strlen(fullpath) + 1, 0);
+	*p_name_hash = hash(fullpath, talloc_get_size(fullpath), 0);
 
 	DEBUG(10,("file_name_hash: %s hash 0x%x\n",
 		fullpath,
