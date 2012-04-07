@@ -21,7 +21,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_file.h"
 #include "dbwrap/dbwrap_private.h"
-#include "lib/util/tdb_wrap.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
 
 struct db_file_ctx {
 	const char *dirname;
