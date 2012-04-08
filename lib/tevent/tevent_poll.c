@@ -177,7 +177,7 @@ static void poll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 }
 
 /*
-  event loop handling using select()
+  event loop handling using poll()
 */
 static int poll_event_loop_poll(struct tevent_context *ev,
 				struct timeval *tvalp)
