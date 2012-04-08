@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "system/shmem.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 
 #ifndef MAP_FILE
 #define MAP_FILE 0
@@ -879,7 +880,25 @@ static int aio_fork_suspend(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int aio_fork_connect(vfs_handle_struct *handle, const char *service,
+			    const char *user)
+{
+	/*********************************************************************
+	 * How many threads to initialize ?
+	 * 100 per process seems insane as a default until you realize that
+	 * (a) Threads terminate after 1 second when idle.
+	 * (b) Throttling is done in SMB2 via the crediting algorithm.
+	 * (c) SMB1 clients are limited to max_mux (50) outstanding
+	 *     requests and Windows clients don't use this anyway.
+	 * Essentially we want this to be unlimited unless smb.conf
+	 * says different.
+	 *********************************************************************/
+	aio_pending_size = 100;
+	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+}
+
 static struct vfs_fn_pointers vfs_aio_fork_fns = {
+	.connect_fn = aio_fork_connect,
 	.aio_read_fn = aio_fork_read,
 	.aio_write_fn = aio_fork_write,
 	.aio_return_fn = aio_fork_return_fn,
