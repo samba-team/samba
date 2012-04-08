@@ -2059,6 +2059,10 @@ static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_stru
 static int vfswrap_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	int ret;
+	if (!initialize_async_io_handler()) {
+		errno = ENOSYS;
+		return -1;
+	}
 	/*
 	 * aio_read must be done as root, because in the glibc aio
 	 * implementation the helper thread needs to be able to send a signal
@@ -2074,6 +2078,10 @@ static int vfswrap_aio_read(struct vfs_handle_struct *handle, struct files_struc
 static int vfswrap_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	int ret;
+	if (!initialize_async_io_handler()) {
+		errno = ENOSYS;
+		return -1;
+	}
 	/*
 	 * aio_write must be done as root, because in the glibc aio
 	 * implementation the helper thread needs to be able to send a signal

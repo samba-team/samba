@@ -64,6 +64,7 @@ void srv_set_signing(struct smbd_server_connection *conn,
 
 /* The following definitions come from smbd/aio.c  */
 
+bool initialize_async_io_handler(void);
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, off_t startpos,

@@ -71,7 +71,7 @@ static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
 }
 
 
-static bool initialize_async_io_handler(void)
+bool initialize_async_io_handler(void)
 {
 	static bool tried_signal_setup = false;
 
@@ -155,11 +155,6 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 	int ret;
-
-	/* Ensure aio is initialized. */
-	if (!initialize_async_io_handler()) {
-		return NT_STATUS_RETRY;
-	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -262,11 +257,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	size_t bufsize;
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	int ret;
-
-	/* Ensure aio is initialized. */
-	if (!initialize_async_io_handler()) {
-		return NT_STATUS_RETRY;
-	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -426,11 +416,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 	int ret;
 
-	/* Ensure aio is initialized. */
-	if (!initialize_async_io_handler()) {
-		return NT_STATUS_RETRY;
-	}
-
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
 		DEBUG(10, ("AIO on streams not yet supported\n"));
@@ -531,11 +516,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	SMB_STRUCT_AIOCB *a = NULL;
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	int ret;
-
-	/* Ensure aio is initialized. */
-	if (!initialize_async_io_handler()) {
-		return NT_STATUS_RETRY;
-	}
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -1058,6 +1038,12 @@ void cancel_aio_by_fsp(files_struct *fsp)
 }
 
 #else
+
+bool initialize_async_io_handler(void)
+{
+	return false;
+}
+
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *smbreq,
 			     files_struct *fsp, off_t startpos,
