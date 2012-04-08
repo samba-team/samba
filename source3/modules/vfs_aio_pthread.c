@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "system/shmem.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "lib/pthreadpool/pthreadpool.h"
 
 struct aio_extra;
@@ -49,21 +50,6 @@ static void aio_pthread_handle_completion(struct event_context *event_ctx,
 				uint16 flags,
 				void *p);
 
-/************************************************************************
- How many threads to initialize ?
- 100 per process seems insane as a default until you realize that
- (a) Threads terminate after 1 second when idle.
- (b) Throttling is done in SMB2 via the crediting algorithm.
- (c) SMB1 clients are limited to max_mux (50) outstanding requests and
-     Windows clients don't use this anyway.
- Essentially we want this to be unlimited unless smb.conf says different.
-***********************************************************************/
-
-static int aio_get_num_threads(struct vfs_handle_struct *handle)
-{
-	return lp_parm_int(SNUM(handle->conn),
-			   "aio_pthread", "aio num threads", 100);
-}
 
 /************************************************************************
  Ensure thread pool is initialized.
@@ -73,14 +59,12 @@ static bool init_aio_threadpool(struct vfs_handle_struct *handle)
 {
 	struct fd_event *sock_event = NULL;
 	int ret = 0;
-	int num_threads;
 
 	if (pool) {
 		return true;
 	}
 
-	num_threads = aio_get_num_threads(handle);
-	ret = pthreadpool_init(num_threads, &pool);
+	ret = pthreadpool_init(aio_pending_size, &pool);
 	if (ret) {
 		errno = ret;
 		return false;
@@ -98,7 +82,7 @@ static bool init_aio_threadpool(struct vfs_handle_struct *handle)
 	}
 
 	DEBUG(10,("init_aio_threadpool: initialized with up to %d threads\n",
-			num_threads));
+		  aio_pending_size));
 
 	return true;
 }
@@ -608,7 +592,26 @@ static int aio_pthread_suspend(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int aio_pthread_connect(vfs_handle_struct *handle, const char *service,
+			       const char *user)
+{
+	/*********************************************************************
+	 * How many threads to initialize ?
+	 * 100 per process seems insane as a default until you realize that
+	 * (a) Threads terminate after 1 second when idle.
+	 * (b) Throttling is done in SMB2 via the crediting algorithm.
+	 * (c) SMB1 clients are limited to max_mux (50) outstanding
+	 *     requests and Windows clients don't use this anyway.
+	 * Essentially we want this to be unlimited unless smb.conf
+	 * says different.
+	 *********************************************************************/
+	aio_pending_size = lp_parm_int(
+		SNUM(handle->conn), "aio_pthread", "aio num threads", 100);
+	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+}
+
 static struct vfs_fn_pointers vfs_aio_pthread_fns = {
+	.connect_fn = aio_pthread_connect,
 	.aio_read_fn = aio_pthread_read,
 	.aio_write_fn = aio_pthread_write,
 	.aio_return_fn = aio_pthread_return_fn,
