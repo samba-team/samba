@@ -89,7 +89,7 @@ def CHECK_PREREQUISITES(conf, prereqs):
         f = 'FOUND_SYSTEMLIB_%s' % syslib
         if not f in conf.env:
             missing.append(syslib)
-    return syslib
+    return missing
 
 
 @runonce
