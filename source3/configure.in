@@ -2934,8 +2934,6 @@ if test x"$samba_cv_HAVE_STAT_ST_BLOCKS" = x"yes"; then
     AC_DEFINE(HAVE_STAT_ST_BLOCKS,1,[Whether the stat struct has a st_block property])
 fi
 
-AC_CHECK_TYPES([blksize_t, blkcnt_t], [], [], [[#include <sys/stat.h>]])
-
 AC_CACHE_CHECK([for 32 bit blkcnt_t],samba_cv_SIZEOF_BLKCNT_T_4,[
 AC_TRY_RUN([
 #if defined(HAVE_UNISTD_H)

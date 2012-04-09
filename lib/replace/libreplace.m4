@@ -60,6 +60,18 @@ AC_STRUCT_ST_RDEV
 AC_CHECK_TYPE(ino_t,unsigned)
 AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
+AC_CHECK_TYPE([blksize_t],,
+                [AC_DEFINE_UNQUOTED([blksize_t], [long],
+                                    [Define to `long' if
+                                     <sys/stat.h> does not define it.])],
+		[],
+		[[#include <sys/stat.h>]])
+AC_CHECK_TYPE([blkcnt_t],,
+                [AC_DEFINE_UNQUOTED([blkcnt_t], [long],
+                                    [Define to `long' if
+                                     <sys/stat.h> does not define it.])],
+		[],
+		[[#include <sys/stat.h>]])
 
 AC_FUNC_MEMCMP
 

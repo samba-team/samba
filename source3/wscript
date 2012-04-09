@@ -166,7 +166,6 @@ main() {
         msg="Checking for krenel share modes")
 
     # Check for various members of the stat structure
-    conf.CHECK_TYPES('blksize_t blkcnt_t')
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blocks', define='HAVE_STAT_ST_BLOCKS',
                                 headers='sys/stat.h')
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blksize', define='HAVE_STAT_ST_BLKSIZE',

@@ -91,6 +91,8 @@ def configure(conf):
     conf.CHECK_TYPE('offset_t', 'loff_t')
     conf.CHECK_TYPE('volatile int', define='HAVE_VOLATILE')
     conf.CHECK_TYPE('uint_t', 'unsigned int')
+    conf.CHECK_TYPE('blksize_t', 'long', headers='sys/types.h sys/stat.h unistd.h')
+    conf.CHECK_TYPE('blkcnt_t', 'long', headers='sys/types.h sys/stat.h unistd.h')
 
     conf.CHECK_SIZEOF('bool char int "long long" long short size_t ssize_t')
     conf.CHECK_SIZEOF('int8_t uint8_t int16_t uint16_t int32_t uint32_t int64_t uint64_t')
