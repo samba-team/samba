@@ -122,6 +122,7 @@ parser.add_option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
 parser.add_option("--slapd-path", type="string", metavar="SLAPD-PATH",
         help="Path to slapd for LDAP backend [e.g.:'/usr/local/libexec/slapd']. Required for Setup with LDAP-Backend. OpenLDAP Version >= 2.4.17 should be used.")
 parser.add_option("--use-xattrs", type="choice", choices=["yes", "no", "auto"], help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto")
+parser.add_option("--use-s3fs", help="Use s3fs for the fileserver (default = no)")
 
 opts = parser.parse_args()[0]
 
@@ -265,7 +266,7 @@ try:
           backend_type=opts.ldap_backend_type,
           ldapadminpass=opts.ldapadminpass, ol_mmr_urls=opts.ol_mmr_urls,
           slapd_path=opts.slapd_path, 
-          useeadb=eadb, next_rid=opts.next_rid, lp=lp)
+          useeadb=eadb, next_rid=opts.next_rid, lp=lp, use_ntvfs=(not opts.use_s3fs))
 except ProvisioningError, e:
     print str(e)
     sys.exit(1)

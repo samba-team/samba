@@ -588,7 +588,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
 def make_smbconf(smbconf, hostname, domain, realm, targetdir,
                  serverrole=None, sid_generator=None, eadb=False, lp=None,
-                 server_services=None):
+                 global_param=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -630,8 +630,10 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
             privdir = lp.get("private dir")
         lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
 
-    if server_services is not None:
-        global_settings["server services"] = " ".join(server_services)
+    if global_param is not None:
+        for ent in global_param:
+            if global_param[ent] is not None:
+                global_settings[ent] = " ".join(global_param[ent])
 
     if targetdir is not None:
         global_settings["private dir"] = os.path.abspath(os.path.join(targetdir, "private"))
@@ -1591,7 +1593,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         backend_type=None, sitename=None,
         ol_mmr_urls=None, ol_olc=None, slapd_path=None,
         useeadb=False, am_rodc=False,
-        lp=None):
+        lp=None, use_ntvfs=True):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -1637,9 +1639,18 @@ def provision(logger, session_info, credentials, smbconf=None,
     if not os.path.exists(os.path.dirname(smbconf)):
         os.makedirs(os.path.dirname(smbconf))
 
-    server_services = None
+    server_services = []
+    global_param = {}
     if dns_backend == "SAMBA_INTERNAL":
-        server_services = ["+dns"]
+        server_services.append("+dns")
+
+    if not use_ntvfs:
+        server_services.append("-smb")
+        server_services.append("+s3fs")
+        global_param["vfs objects"] = ["acl_xattr"]
+
+    if len(server_services) > 0:
+        global_param["server services"] = server_services
 
     # only install a new smb.conf if there isn't one there already
     if os.path.exists(smbconf):
@@ -1655,11 +1666,11 @@ def provision(logger, session_info, credentials, smbconf=None,
             make_smbconf(smbconf, hostname, domain, realm,
                          targetdir, serverrole=serverrole,
                          sid_generator=sid_generator, eadb=useeadb,
-                         lp=lp, server_services=server_services)
+                         lp=lp, global_param=global_param)
     else:
         make_smbconf(smbconf, hostname, domain, realm, targetdir,
                      serverrole=serverrole, sid_generator=sid_generator,
-                     eadb=useeadb, lp=lp, server_services=server_services)
+                     eadb=useeadb, lp=lp, global_param=global_param)
 
     if lp is None:
         lp = samba.param.LoadParm()
