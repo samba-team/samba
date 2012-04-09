@@ -209,7 +209,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     return False
 
 
-def tuplize_version(version_string):
+def tuplize_version(version):
     return tuple([int(x) for x in version.split(".")])
 
 @runonce

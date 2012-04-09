@@ -14,22 +14,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-"""Tests for wafsamba."""
+from wafsamba.tests import TestCase
 
-from unittest import (
-    TestCase,
-    TestLoader,
+from wafsamba.samba_bundled import (
+    tuplize_version,
     )
 
-def test_suite():
-    names = [
-        'abi',
-        'bundled',
-        'utils',
-        ]
-    module_names = ['wafsamba.tests.test_' + name for name in names]
-    loader = TestLoader()
-    result = loader.suiteClass()
-    suite = loader.loadTestsFromNames(module_names)
-    result.addTests(suite)
-    return result
+
+class TuplizeVersionTests(TestCase):
+
+    def test_simple(self):
+        self.assertEquals((1, 2, 10), tuplize_version("1.2.10"))
