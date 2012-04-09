@@ -21,7 +21,7 @@ def SAMBA_PYTHON(bld, name,
                  realname=None,
                  cflags='',
                  includes='',
-                 init_function_sentinal=None,
+                 init_function_sentinel=None,
                  local_include=True,
                  vars=None,
                  enabled=True):
@@ -29,8 +29,8 @@ def SAMBA_PYTHON(bld, name,
 
     # when we support static python modules we'll need to gather
     # the list from all the SAMBA_PYTHON() targets
-    if init_function_sentinal is not None:
-        cflags += '-DSTATIC_LIBPYTHON_MODULES=%s' % init_function_sentinal
+    if init_function_sentinel is not None:
+        cflags += '-DSTATIC_LIBPYTHON_MODULES=%s' % init_function_sentinel
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
 

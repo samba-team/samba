@@ -10,7 +10,7 @@ bld.SAMBA_LIBRARY('samba_python',
 bld.SAMBA_SUBSYSTEM('LIBPYTHON',
 	source='modules.c',
 	public_deps='',
-	init_function_sentinal='{NULL,NULL}',
+	init_function_sentinel='{NULL,NULL}',
 	deps='talloc',
 	pyext=True,
 	)

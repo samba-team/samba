@@ -214,7 +214,7 @@ def add_init_functions(self):
     if m is not None:
         modules.append(m)
 
-    sentinal = getattr(self, 'init_function_sentinal', 'NULL')
+    sentinel = getattr(self, 'init_function_sentinel', 'NULL')
 
     targets    = LOCAL_CACHE(bld, 'TARGET_TYPE')
     cflags = getattr(self, 'samba_cflags', [])[:]
@@ -222,8 +222,8 @@ def add_init_functions(self):
     if modules == []:
         sname = sname.replace('-','_')
         sname = sname.replace('/','_')
-        cflags.append('-DSTATIC_%s_MODULES=%s' % (sname, sentinal))
-        if sentinal == 'NULL':
+        cflags.append('-DSTATIC_%s_MODULES=%s' % (sname, sentinel))
+        if sentinel == 'NULL':
             cflags.append('-DSTATIC_%s_MODULES_PROTO' % sname)
         self.ccflags = cflags
         return
@@ -236,11 +236,11 @@ def add_init_functions(self):
             if targets[d['TARGET']] != 'DISABLED':
                 init_fn_list.append(d['INIT_FUNCTION'])
         if init_fn_list == []:
-            cflags.append('-DSTATIC_%s_MODULES=%s' % (m, sentinal))
-            if sentinal == 'NULL':
+            cflags.append('-DSTATIC_%s_MODULES=%s' % (m, sentinel))
+            if sentinel == 'NULL':
                 cflags.append('-DSTATIC_%s_MODULES_PROTO' % m)
         else:
-            cflags.append('-DSTATIC_%s_MODULES=%s' % (m, ','.join(init_fn_list) + ',' + sentinal))
+            cflags.append('-DSTATIC_%s_MODULES=%s' % (m, ','.join(init_fn_list) + ',' + sentinel))
             proto=''
             for f in init_fn_list:
                 proto = proto + '_MODULE_PROTO(%s)' % f
