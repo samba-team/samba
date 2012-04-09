@@ -8,6 +8,7 @@ import os, tarfile, sys, time
 from optparse import OptionParser
 import smtplib
 from email.mime.text import MIMEText
+from distutils.sysconfig import get_python_lib
 
 samba_master = os.getenv('SAMBA_MASTER', 'git://git.samba.org/samba.git')
 samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/git/samba.git')
@@ -17,6 +18,7 @@ cleanup_list = []
 builddirs = {
     "samba3"  : "source3",
     "samba4"  : ".",
+    "samba4-libs"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
     "tdb2"    : "lib/tdb2",
@@ -29,7 +31,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "samba3", "samba4", "ldb", "tdb", "tdb2", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "samba3", "samba4", "samba4-libs", "ldb", "tdb", "tdb2", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
     "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
@@ -52,6 +54,26 @@ tasks = {
                  ("install", "make install", "text/plain"),
                  ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
+
+    "samba4-libs" : [ ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("talloc-make", "cd lib/talloc && make -j", "text/plain"),
+                      ("talloc-install", "cd lib/talloc && make install", "text/plain"),
+
+                      ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("tdb-make", "cd lib/tdb && make -j", "text/plain"),
+                      ("tdb-install", "cd lib/tdb && make install", "text/plain"),
+
+                      ("tevent-configure", "cd lib/tevent && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("tevent-make", "cd lib/tevent && make -j", "text/plain"),
+                      ("tevent-install", "cd lib/tevent && make install", "text/plain"),
+
+                      ("ldb-configure", "cd lib/ldb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --disable-tdb2 --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("ldb-make", "cd lib/ldb && make -j", "text/plain"),
+                      ("ldb-install", "cd lib/ldb && make install", "text/plain"),
+
+                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --disable-tdb2 --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("make", "make -j", "text/plain"),
+                      ("install", "make install", "text/plain")],
 
     "ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make -j", "text/plain"),
@@ -176,6 +198,7 @@ class builder(object):
             self.done = True
             return
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
+        self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(standard_lib=1, prefix=self.prefix))
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
 #        if self.output_mime_type == "text/x-subunit":
