@@ -2943,6 +2943,9 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
+#ifndef HAVE_BLKCNT_T
+typedef long blkcnt_t;
+#endif
 main() { exit((sizeof(blkcnt_t) == 4) ? 0 : 1); }],
 samba_cv_SIZEOF_BLKCNT_T_4=yes,samba_cv_SIZEOF_BLKCNT_T_4=no,samba_cv_SIZEOF_BLKCNT_T_4=cross)])
 if test x"$samba_cv_SIZEOF_BLKCNT_T_4" = x"yes"; then
@@ -2956,6 +2959,9 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
+#ifndef HAVE_BLKCNT_T
+typedef long blkcnt_t;
+#endif
 main() { exit((sizeof(blkcnt_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_BLKCNT_T_8=yes,samba_cv_SIZEOF_BLKCNT_T_8=no,samba_cv_SIZEOF_BLKCNT_T_8=cross)])
 if test x"$samba_cv_SIZEOF_BLKCNT_T_8" = x"yes"; then

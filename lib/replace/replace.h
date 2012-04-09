@@ -841,4 +841,12 @@ typedef long useconds_t;
 int usleep(useconds_t);
 #endif
 
+#ifndef HAVE_BLKSIZE_T
+typedef long blksize_t;
+#endif
+
+#ifndef HAVE_BLKCNT_T
+typedef long blkcnt_t;
+#endif
+
 #endif /* _LIBREPLACE_REPLACE_H */

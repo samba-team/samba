@@ -178,14 +178,14 @@ main() {
 	conf.CHECK_CODE('''
 	return sizeof(blkcnt_t) == 4 ? 0 : 1''',
 		'SIZEOF_BLKCNT_T_4', execute=True,
-		headers='sys/types.h sys/stat.h unistd.h',
+		headers='replace.h sys/types.h sys/stat.h unistd.h',
 		msg="Checking whether blkcnt_t is 32 bit")
 
     if "HAVE_BLKCNT_T" in conf.env:
 	conf.CHECK_CODE('''
 	return sizeof(blkcnt_t) == 8 ? 0 : 1''',
 		'SIZEOF_BLKCNT_T_8', execute=True,
-		headers='sys/types.h sys/stat.h unistd.h',
+		headers='replace.h sys/types.h sys/stat.h unistd.h',
 		msg="Checking whether blkcnt_t is 64 bit")
 
     # Check for POSIX capability support
