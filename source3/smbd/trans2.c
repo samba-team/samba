@@ -5827,6 +5827,7 @@ static NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 
 	/* The set is across all open files on this dev/inode pair. */
 	if (!set_delete_on_close(fsp, delete_on_close,
+				 conn->session_info->security_token,
 				 &conn->session_info->utok)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
