@@ -27,45 +27,9 @@
 
 #ifdef HAVE_INOTIFY
 
-#if HAVE_SYS_INOTIFY_H
-#include <sys/inotify.h>
-#else
-
-#ifdef HAVE_ASM_TYPES_H
-#include <asm/types.h>
-#endif
-
-#ifndef HAVE_INOTIFY_INIT
-
-#include <linux/inotify.h>
-#include <asm/unistd.h>
-
-
-/*
-  glibc doesn't define these functions yet (as of March 2006)
-*/
-static int inotify_init(void)
-{
-	return syscall(__NR_inotify_init);
-}
-
-static int inotify_add_watch(int fd, const char *path, __u32 mask)
-{
-	return syscall(__NR_inotify_add_watch, fd, path, mask);
-}
-
-static int inotify_rm_watch(int fd, int wd)
-{
-	return syscall(__NR_inotify_rm_watch, fd, wd);
-}
-#else
-
 #include <sys/inotify.h>
 
-#endif
-#endif
-
-/* older glibc headers don't have these defines either */
+/* glibc < 2.5 headers don't have these defines */
 #ifndef IN_ONLYDIR
 #define IN_ONLYDIR 0x01000000
 #endif

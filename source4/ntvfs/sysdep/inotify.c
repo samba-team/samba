@@ -29,36 +29,9 @@
 #include "libcli/raw/smb.h"
 #include "param/param.h"
 
-#if HAVE_SYS_INOTIFY_H
 #include <sys/inotify.h>
-#else
-/* for older glibc varients - we can remove this eventually */
-#include <linux/inotify.h>
-#include <asm/unistd.h>
 
-#ifndef HAVE_INOTIFY_INIT
-/*
-  glibc doesn't define these functions yet (as of March 2006)
-*/
-static int inotify_init(void)
-{
-	return syscall(__NR_inotify_init);
-}
-
-static int inotify_add_watch(int fd, const char *path, __u32 mask)
-{
-	return syscall(__NR_inotify_add_watch, fd, path, mask);
-}
-
-static int inotify_rm_watch(int fd, int wd)
-{
-	return syscall(__NR_inotify_rm_watch, fd, wd);
-}
-#endif
-#endif
-
-
-/* older glibc headers don't have these defines either */
+/* glibc < 2.5 headers don't have these defines */
 #ifndef IN_ONLYDIR
 #define IN_ONLYDIR 0x01000000
 #endif

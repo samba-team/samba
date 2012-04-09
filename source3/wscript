@@ -115,11 +115,9 @@ long ret = splice(0,0,1,0,400,0);
         conf.CHECK_DECLS('splice', reverse=True, headers='fcntl.h')
 
     # Check for inotify support
-    conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h')
-    conf.CHECK_FUNCS('inotify_init')
-    if "HAVE_INOTIFY_INIT" in conf.env:
-        if "HAVE_LINUX_INOTIFY_H" in conf.env or "HAVE_SYS_INOTIFY_H" in conf.env:
-            conf.DEFINE('HAVE_INOTIFY', 1)
+    conf.CHECK_HEADERS('sys/inotify.h')
+    if "HAVE_SYS_INOTIFY_H" in conf.env:
+        conf.DEFINE('HAVE_INOTIFY', 1)
 
     # Check for kernel change notify support
     conf.CHECK_CODE('''
@@ -255,7 +253,7 @@ getcwd _getcwd __getcwd getdents __getdents getdirentries
 getgrent getgrnam getgrouplist getgrset getmntent getpagesize
 getproplist get_proplist_entry getpwanam getpwent_r getrlimit gettext
 glob grantpt hstrerror initgroups innetgr
-inotify_init listea listxattr
+listea listxattr
 llseek _llseek __llseek _lseek __lseek
 _lstat __lstat lutimes
 __lxstat memalign mknod mlock mlockall munlock munlockall
@@ -1043,8 +1041,6 @@ ssize_t err = posix_fadvise(0,0,0x80000,POSIX_FADV_WILLNEED);
                         ''' % v,
                         'SYSCONF%s' % v,
                         msg='Checking whether sysconf(%s) is available' % v)
-
-    conf.CHECK_DECLS('__NR_inotify_init', reverse=True, headers='asm/unistd.h')
 
     conf.CHECK_CODE('''
 #include <sys/syscall.h>
