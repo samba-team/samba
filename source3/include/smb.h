@@ -637,6 +637,7 @@ struct delete_token_list {
 	struct delete_token_list *next, *prev;
 	uint32_t name_hash;
 	struct security_unix_token *delete_token;
+	struct security_token *delete_nt_token;
 };
 
 struct share_mode_lock {

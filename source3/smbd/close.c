@@ -280,6 +280,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	NTSTATUS tmp_status;
 	struct file_id id;
 	const struct security_unix_token *del_token = NULL;
+	const struct security_token *del_nt_token = NULL;
+	bool got_tokens = false;
 
 	/* Ensure any pending write time updates are done. */
 	if (fsp->update_write_time_event) {
@@ -345,7 +347,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			became_user = True;
 		}
 		fsp->delete_on_close = true;
-		set_delete_on_close_lck(fsp, lck, True, get_current_utok(conn));
+		set_delete_on_close_lck(fsp, lck, True,
+				get_current_nttok(conn),
+				get_current_utok(conn));
 		if (became_user) {
 			unbecome_user();
 		}
@@ -398,8 +402,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 */
 	fsp->update_write_time_on_close = false;
 
-	del_token = get_delete_on_close_token(lck, fsp->name_hash);
-	SMB_ASSERT(del_token != NULL);
+	got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
+					&del_nt_token, &del_token);
+	SMB_ASSERT(got_tokens);
 
 	if (!unix_token_equal(del_token, get_current_utok(conn))) {
 		/* Become the user who requested the delete. */
@@ -418,7 +423,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			    del_token->gid,
 			    del_token->ngroups,
 			    del_token->groups,
-			    NULL);
+			    del_nt_token);
 
 		changed_user = true;
 	}
@@ -491,7 +496,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
  	 */
 
 	fsp->delete_on_close = false;
-	set_delete_on_close_lck(fsp, lck, false, NULL);
+	set_delete_on_close_lck(fsp, lck, false, NULL, NULL);
 
  done:
 
@@ -962,6 +967,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	bool delete_dir = False;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS status1 = NT_STATUS_OK;
+	const struct security_token *del_nt_token = NULL;
 	const struct security_unix_token *del_token = NULL;
 
 	/*
@@ -998,6 +1004,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
 					       fsp->fsp_name->base_name);
 		set_delete_on_close_lck(fsp, lck, true,
+				get_current_nttok(fsp->conn),
 				get_current_utok(fsp->conn));
 		fsp->delete_on_close = true;
 		if (became_user) {
@@ -1005,8 +1012,8 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		}
 	}
 
-	del_token = get_delete_on_close_token(lck, fsp->name_hash);
-	delete_dir = (del_token != NULL);
+	delete_dir = get_delete_on_close_token(lck, fsp->name_hash,
+					&del_nt_token, &del_token);
 
 	if (delete_dir) {
 		int i;
@@ -1038,7 +1045,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				del_token->gid,
 				del_token->ngroups,
 				del_token->groups,
-				NULL);
+				del_nt_token);
 
 		TALLOC_FREE(lck);
 

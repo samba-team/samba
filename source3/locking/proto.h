@@ -173,12 +173,18 @@ void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
-const struct security_unix_token *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash);
+bool get_delete_on_close_token(struct share_mode_lock *lck,
+			uint32_t name_hash,
+			const struct security_token **pp_nt_tok,
+			const struct security_unix_token **pp_tok);
 void set_delete_on_close_lck(files_struct *fsp,
 			struct share_mode_lock *lck,
 			bool delete_on_close,
+			const struct security_token *nt_tok,
 			const struct security_unix_token *tok);
-bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct security_unix_token *tok);
+bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
+			const struct security_token *nt_tok,
+			const struct security_unix_token *tok);
 bool is_delete_on_close_set(struct share_mode_lock *lck, uint32_t name_hash);
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time);
 bool set_write_time(struct file_id fileid, struct timespec write_time);
