@@ -578,7 +578,7 @@ interface security
 	} security_token;
 
 	/* This is not yet sent over the network, but is simply defined in IDL */
-	typedef [public] struct {
+	typedef [public,gensize] struct {
 		uid_t uid;
 		uid_t gid;
 		uint32 ngroups;
