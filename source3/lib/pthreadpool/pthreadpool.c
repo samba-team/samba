@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include "system/time.h"
 #include "system/filesys.h"
+#include "replace.h"
 
 #include "pthreadpool.h"
 #include "lib/util/dlinklist.h"
