@@ -41,7 +41,7 @@ Release notes for older versions follow:
 
                    ==============================
                    Release Notes for Samba 3.4.16
-			   April 10, 2011
+			   April 10, 2012
                    ==============================
 
 
