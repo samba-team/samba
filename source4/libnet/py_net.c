@@ -32,15 +32,9 @@
 #include "libcli/resolve/resolve.h"
 #include "libcli/finddc.h"
 #include "dsdb/samdb/samdb.h"
+#include "py_net.h"
 
 void initnet(void);
-
-typedef struct {
-	PyObject_HEAD
-	TALLOC_CTX *mem_ctx;
-	struct libnet_context *libnet_ctx;
-	struct tevent_context *ev;
-} py_net_Object;
 
 static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
@@ -186,42 +180,6 @@ static const char py_net_set_password_doc[] = "set_password(account_name, domain
 "                domain_name=domain_name,\n" \
 "                newpassword=new_pass)\n";
 
-
-static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObject *kwargs)
-{
-	struct libnet_export_keytab r;
-	TALLOC_CTX *mem_ctx;
-	const char *kwnames[] = { "keytab", "principal", NULL };
-	NTSTATUS status;
-	r.in.principal = NULL;
-
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|z:export_keytab", discard_const_p(char *, kwnames),
-					 &r.in.keytab_name,
-					 &r.in.principal)) {
-		return NULL;
-	}
-
-	mem_ctx = talloc_new(self->mem_ctx);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	status = libnet_export_keytab(self->libnet_ctx, mem_ctx, &r);
-	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError,
-				r.out.error_string?r.out.error_string:nt_errstr(status));
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	talloc_free(mem_ctx);
-
-	Py_RETURN_NONE;
-}
-
-static const char py_net_export_keytab_doc[] = "export_keytab(keytab, name)\n\n"
-"Export the DC keytab to a keytab file.";
 
 static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
@@ -644,7 +602,6 @@ static PyMethodDef net_obj_methods[] = {
 	{"join_member", (PyCFunction)py_net_join_member, METH_VARARGS|METH_KEYWORDS, py_net_join_member_doc},
 	{"change_password", (PyCFunction)py_net_change_password, METH_VARARGS|METH_KEYWORDS, py_net_change_password_doc},
 	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
-	{"export_keytab", (PyCFunction)py_net_export_keytab, METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
 	{"time", (PyCFunction)py_net_time, METH_VARARGS|METH_KEYWORDS, py_net_time_doc},
 	{"create_user", (PyCFunction)py_net_user_create, METH_VARARGS|METH_KEYWORDS, py_net_create_user_doc},
 	{"delete_user", (PyCFunction)py_net_user_delete, METH_VARARGS|METH_KEYWORDS, py_net_delete_user_doc},

@@ -29,6 +29,7 @@ import os
 import tempfile
 import logging
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
+import samba.dckeytab
 import samba.ntacls
 from samba.join import join_RODC, join_DC, join_subdomain
 from samba.auth import system_session
