@@ -55,23 +55,23 @@ tasks = {
                  ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
 
-    "samba4-libs" : [ ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-developer -C ${PREFIX}", "text/plain"),
+    "samba4-libs" : [ ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-debug -C ${PREFIX}", "text/plain"),
                       ("talloc-make", "cd lib/talloc && make -j", "text/plain"),
                       ("talloc-install", "cd lib/talloc && make install", "text/plain"),
 
-                      ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-debug -C ${PREFIX}", "text/plain"),
                       ("tdb-make", "cd lib/tdb && make -j", "text/plain"),
                       ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
-                      ("tevent-configure", "cd lib/tevent && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("tevent-configure", "cd lib/tevent && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --enable-debug -C ${PREFIX}", "text/plain"),
                       ("tevent-make", "cd lib/tevent && make -j", "text/plain"),
                       ("tevent-install", "cd lib/tevent && make install", "text/plain"),
 
-                      ("ldb-configure", "cd lib/ldb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --disable-tdb2 --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("ldb-configure", "cd lib/ldb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --disable-tdb2 --enable-debug -C ${PREFIX}", "text/plain"),
                       ("ldb-make", "cd lib/ldb && make -j", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --disable-tdb2 --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --disable-tdb2 --enable-debug -C ${PREFIX}", "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("install", "make install", "text/plain")],
 
