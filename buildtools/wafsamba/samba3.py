@@ -4,6 +4,7 @@
 import Options, Build, os
 from optparse import SUPPRESS_HELP
 from samba_utils import os_path_relpath, TO_LIST
+from samba_autoconf import library_flags
 
 def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
                       with_name="with", without_name="without"):
@@ -58,19 +59,34 @@ def s3_fix_kwargs(bld, kwargs):
                             '../source4/heimdal_build' ]
 
     if bld.CONFIG_SET('BUILD_TDB2'):
-        if not bld.CONFIG_SET('USING_SYSTEM_TDB2'):
+        if bld.CONFIG_SET('USING_SYSTEM_TDB2'):
+            (tdb2_includes, tdb2_ldflags) = library_flags(bld, 'tdb')
+            extra_includes += tdb2_includes
+        else:
             extra_includes += [ '../lib/tdb2' ]
     else:
-        if not bld.CONFIG_SET('USING_SYSTEM_TDB'):
+        if bld.CONFIG_SET('USING_SYSTEM_TDB'):
+            (tdb_includes, tdb_ldflags) = library_flags(bld, 'tdb')
+            extra_includes += tdb_includes
+        else:
             extra_includes += [ '../lib/tdb/include' ]
 
-    if not bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
+    if bld.CONFIG_SET('USING_SYSTEM_TEVNT'):
+        (tevent_includes, tevent_ldflags) = library_flags(bld, 'tevent')
+        extra_includes += tevent_includes
+    else:
         extra_includes += [ '../lib/tevent' ]
 
-    if not bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
+    if bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
+        (talloc_includes, talloc_ldflags) = library_flags(bld, 'talloc')
+        extra_includes += talloc_includes
+    else:
         extra_includes += [ '../lib/talloc' ]
 
-    if not bld.CONFIG_SET('USING_SYSTEM_POPT'):
+    if bld.CONFIG_SET('USING_SYSTEM_POPT'):
+        (popt_includes, popt_ldflags) = library_flags(bld, 'popt')
+        extra_includes += popt_includes
+    else:
         extra_includes += [ '../lib/popt' ]
 
     # s3 builds assume that they will have a bunch of extra include paths
