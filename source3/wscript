@@ -380,6 +380,29 @@ return acl_get_perm_np(permset_d, perm);
             conf.CHECK_CODE('struct aiocb a; return aio_error(&a);', 'HAVE_AIO_ERROR', msg='Checking for aio_error', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_cancel(1, &a);', 'HAVE_AIO_CANCEL', msg='Checking for aio_cancel', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_suspend(&a, 1, NULL);', 'HAVE_AIO_SUSPEND', msg='Checking for aio_suspend', headers='aio.h', lib='aio rt')
+	    if host_os.rfind('linux') > -1:
+        	conf.CHECK_FUNCS_IN('io_submit', 'aio')
+		conf.CHECK_CODE('''
+struct io_event ioev;
+struct iocb *ioc;
+io_context_t ctx;
+struct timespec ts;
+int fd;
+char *buf;
+fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+io_queue_init(128,&ctx);
+io_prep_pwrite(ioc, 1, buf, 1, 0);
+io_prep_pread(ioc, 1, buf, 1, 0);
+io_set_eventfd(ioc, fd);
+io_set_callback(ioc, (io_callback_t)(0));
+io_submit(ctx, 1, &ioc);
+io_getevents(ctx, 1, 1, &ioev, &ts);
+''',
+			'HAVE_LINUX_KERNEL_AIO',
+			msg='Checking for linux kernel asynchronous io support',
+			headers='unistd.h stdlib.h sys/types.h fcntl.h sys/eventfd.h libaio.h',
+			lib='aio')
+
         if not conf.CONFIG_SET('HAVE_AIO'):
             conf.DEFINE('HAVE_NO_AIO', '1')
     else:
@@ -1575,6 +1598,9 @@ main() {
 
     if conf.CONFIG_SET('HAVE_AIO') and Options.options.with_pthreadpool:
         default_shared_modules.extend(TO_LIST('vfs_aio_pthread'))
+
+    if conf.CONFIG_SET('HAVE_AIO') and conf.CONFIG_SET('HAVE_LINUX_KERNEL_AIO'):
+        default_shared_modules.extend(TO_LIST('vfs_aio_linux'))
 
     if conf.CONFIG_SET('HAVE_LDAP'):
         default_static_modules.extend(TO_LIST('pdb_ldap idmap_ldap'))

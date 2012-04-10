@@ -5567,6 +5567,20 @@ if test x"$samba_cv_HAVE_AIO" = x"yes"; then
 		x"$samba_cv_msghdr_msg_acctright" = x"yes"; then
 		default_shared_modules="$default_shared_modules vfs_aio_fork"
 	fi
+
+# Check for Linux kernel aio support.
+	case "$host_os" in
+	*linux*)
+	    AC_MSG_CHECKING(for Linux kernel asynchronous io support)
+	    AC_CHECK_LIB(aio,io_submit,
+		[AIO_LIBS="$LIBS -laio";
+		AC_DEFINE(HAVE_LINUX_KERNEL_AIO, 1, Define to 1 if there is support for Linux kernel asynchronous io)],
+		[])
+	    if test x"$ac_cv_lib_aio_io_submit" = x"yes"; then
+		default_shared_modules="$default_shared_modules vfs_aio_linux"
+	    fi
+            ;;
+        esac
 fi
 
 #################################################
@@ -6519,6 +6533,7 @@ SMB_MODULE(vfs_tsmsm, \$(VFS_TSMSM_OBJ), "bin/tsmsm.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fileid, \$(VFS_FILEID_OBJ), "bin/fileid.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aio_fork, \$(VFS_AIO_FORK_OBJ), "bin/aio_fork.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aio_pthread, \$(VFS_AIO_PTHREAD_OBJ), "bin/aio_pthread.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_aio_linux, \$(VFS_AIO_LINUX_OBJ), "bin/aio_linux.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_preopen, \$(VFS_PREOPEN_OBJ), "bin/preopen.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_syncops, \$(VFS_SYNCOPS_OBJ), "bin/syncops.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_zfsacl, \$(VFS_ZFSACL_OBJ), "bin/zfsacl.$SHLIBEXT", VFS)

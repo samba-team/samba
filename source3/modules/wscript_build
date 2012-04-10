@@ -37,6 +37,7 @@ VFS_TSMSM_SRC = 'vfs_tsmsm.c'
 VFS_FILEID_SRC = 'vfs_fileid.c'
 VFS_AIO_FORK_SRC = 'vfs_aio_fork.c'
 VFS_AIO_PTHREAD_SRC = 'vfs_aio_pthread.c'
+VFS_AIO_LINUX_SRC = 'vfs_aio_linux.c'
 VFS_PREOPEN_SRC = 'vfs_preopen.c'
 VFS_SYNCOPS_SRC = 'vfs_syncops.c'
 VFS_ACL_XATTR_SRC = 'vfs_acl_xattr.c'
@@ -364,6 +365,15 @@ bld.SAMBA3_MODULE('vfs_aio_pthread',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_aio_pthread'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_aio_pthread'),
+                  allow_undefined_symbols=True)
+
+bld.SAMBA3_MODULE('vfs_aio_linux',
+                 subsystem='vfs',
+                 source=VFS_AIO_LINUX_SRC,
+                 deps='samba-util aio',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_aio_linux'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_aio_linux'),
                   allow_undefined_symbols=True)
 
 bld.SAMBA3_MODULE('vfs_preopen',
