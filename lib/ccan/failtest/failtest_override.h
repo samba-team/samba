@@ -10,6 +10,10 @@
 /* Replacement of allocators. */
 #include <stdlib.h>
 
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 #undef calloc
 #define calloc(nmemb, size)	\
 	failtest_calloc((nmemb), (size), __FILE__, __LINE__)
