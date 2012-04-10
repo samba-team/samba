@@ -893,24 +893,31 @@ failed:
 /*
   a wrapper around ldif_read() for reading from FILE*
 */
-struct ldif_read_file_state {
-	FILE *f;
-};
 
 static int fgetc_file(void *private_data)
 {
+	int c;
 	struct ldif_read_file_state *state =
 		(struct ldif_read_file_state *)private_data;
-	return fgetc(state->f);
+	c = fgetc(state->f);
+	if (c == '\n') {
+		state->line_no++;
+	}
+	return c;
+}
+
+struct ldb_ldif *ldb_ldif_read_file_state(struct ldb_context *ldb, 
+					  struct ldif_read_file_state *state)
+{
+	return ldb_ldif_read(ldb, fgetc_file, state);
 }
 
 struct ldb_ldif *ldb_ldif_read_file(struct ldb_context *ldb, FILE *f)
 {
 	struct ldif_read_file_state state;
 	state.f = f;
-	return ldb_ldif_read(ldb, fgetc_file, &state);
+	return ldb_ldif_read_file_state(ldb, &state);
 }
-
 
 /*
   a wrapper around ldif_read() for reading from const char*

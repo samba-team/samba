@@ -181,4 +181,12 @@ struct ldb_val ldb_binary_decode(TALLOC_CTX *mem_ctx, const char *str);
 const char *ldb_options_find(struct ldb_context *ldb, const char *options[],
 			     const char *option_name);
 
+struct ldif_read_file_state {
+	FILE *f;
+	size_t line_no;
+};
+
+struct ldb_ldif *ldb_ldif_read_file_state(struct ldb_context *ldb, 
+					  struct ldif_read_file_state *state);
+
 #endif
