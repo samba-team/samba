@@ -81,6 +81,9 @@ def set_options(opt):
     gr.add_option('--enable-auto-reconfigure',
                    help='enable automatic reconfigure on build',
                    action='store_true', dest='enable_auto_reconfigure')
+    gr.add_option('--enable-debug',
+                   help=("Turn on debugging symbols"),
+                   action="store_true", dest='debug', default=False)
     gr.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)

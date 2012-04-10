@@ -599,6 +599,10 @@ def SAMBA_CONFIG_H(conf, path=None):
     if not IN_LAUNCH_DIR(conf):
         return
 
+    if Options.options.debug:
+        conf.ADD_CFLAGS('-g',
+                        testflags=True)
+
     if Options.options.developer:
         # we add these here to ensure that -Wstrict-prototypes is not set during configure
         conf.ADD_CFLAGS('-Wall -g -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k -Wmissing-prototypes -fno-common',
