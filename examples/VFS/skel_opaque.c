@@ -102,6 +102,33 @@ static DIR *skel_opendir(vfs_handle_struct *handle, const char *fname,
 	return NULL;
 }
 
+static NTSTATUS skel_snap_check_path(struct vfs_handle_struct *handle,
+				     TALLOC_CTX *mem_ctx,
+				     const char *service_path,
+				     char **base_volume)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS skel_snap_create(struct vfs_handle_struct *handle,
+				 TALLOC_CTX *mem_ctx,
+				 const char *base_volume,
+				 time_t *tstamp,
+				 bool rw,
+				 char **base_path,
+				 char **snap_path)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS skel_snap_delete(struct vfs_handle_struct *handle,
+				 TALLOC_CTX *mem_ctx,
+				 char *base_path,
+				 char *snap_path)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 			   const char *mask, uint32 attr)
 {
@@ -830,6 +857,9 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.statvfs_fn = skel_statvfs,
 	.fs_capabilities_fn = skel_fs_capabilities,
 	.get_dfs_referrals_fn = skel_get_dfs_referrals,
+	.snap_check_path_fn = skel_snap_check_path,
+	.snap_create_fn = skel_snap_create,
+	.snap_delete_fn = skel_snap_delete,
 
 	/* Directory operations */
 

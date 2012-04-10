@@ -277,9 +277,78 @@ static uint32_t smb_time_audit_fs_capabilities(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_time_audit_snap_check_path(struct vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       const char *service_path,
+					       char **base_volume)
+{
+	NTSTATUS status;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	status = SMB_VFS_NEXT_SNAP_CHECK_PATH(handle, mem_ctx, service_path,
+					      base_volume);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2, &ts1) * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("snap_check_path", timediff);
+	}
+
+	return status;
+}
+
+static NTSTATUS smb_time_audit_snap_create(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   const char *base_volume,
+					   time_t *tstamp,
+					   bool rw,
+					   char **base_path,
+					   char **snap_path)
+{
+	NTSTATUS status;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	status = SMB_VFS_NEXT_SNAP_CREATE(handle, mem_ctx, base_volume, tstamp,
+					  rw, base_path, snap_path);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2 ,&ts1) * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("snap_create", timediff);
+	}
+
+	return status;
+}
+
+static NTSTATUS smb_time_audit_snap_delete(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   char *base_path,
+					   char *snap_path)
+{
+	NTSTATUS status;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	status = SMB_VFS_NEXT_SNAP_DELETE(handle, mem_ctx, base_path,
+					  snap_path);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2, &ts1) * 1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("snap_delete", timediff);
+	}
+
+	return status;
+}
+
 static DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
-					      const char *fname,
-					      const char *mask, uint32 attr)
+				   const char *fname,
+				   const char *mask, uint32 attr)
 {
 	DIR *result;
 	struct timespec ts1,ts2;
@@ -2383,6 +2452,9 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.get_shadow_copy_data_fn = smb_time_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_time_audit_statvfs,
 	.fs_capabilities_fn = smb_time_audit_fs_capabilities,
+	.snap_check_path_fn = smb_time_audit_snap_check_path,
+	.snap_create_fn = smb_time_audit_snap_create,
+	.snap_delete_fn = smb_time_audit_snap_delete,
 	.opendir_fn = smb_time_audit_opendir,
 	.fdopendir_fn = smb_time_audit_fdopendir,
 	.readdir_fn = smb_time_audit_readdir,

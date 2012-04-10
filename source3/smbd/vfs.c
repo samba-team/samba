@@ -2227,6 +2227,39 @@ NTSTATUS smb_vfs_call_set_compression(vfs_handle_struct *handle,
 					       compression_fmt);
 }
 
+NTSTATUS smb_vfs_call_snap_check_path(vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      const char *service_path,
+				      char **base_volume)
+{
+	VFS_FIND(snap_check_path);
+	return handle->fns->snap_check_path_fn(handle, mem_ctx, service_path,
+					       base_volume);
+}
+
+NTSTATUS smb_vfs_call_snap_create(struct vfs_handle_struct *handle,
+				  TALLOC_CTX *mem_ctx,
+				  const char *base_volume,
+				  time_t *tstamp,
+				  bool rw,
+				  char **base_path,
+				  char **snap_path)
+{
+	VFS_FIND(snap_create);
+	return handle->fns->snap_create_fn(handle, mem_ctx, base_volume, tstamp,
+					   rw, base_path, snap_path);
+}
+
+NTSTATUS smb_vfs_call_snap_delete(struct vfs_handle_struct *handle,
+				  TALLOC_CTX *mem_ctx,
+				  char *base_path,
+				  char *snap_path)
+{
+	VFS_FIND(snap_delete);
+	return handle->fns->snap_delete_fn(handle, mem_ctx, base_path,
+					   snap_path);
+}
+
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,

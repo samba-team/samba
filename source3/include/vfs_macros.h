@@ -422,6 +422,21 @@
 #define SMB_VFS_NEXT_SET_COMPRESSION(handle, mem_ctx, fsp, compression_fmt)		\
 	smb_vfs_call_set_compression((handle)->next, (mem_ctx), (fsp), (compression_fmt))
 
+#define SMB_VFS_SNAP_CHECK_PATH(conn, mem_ctx, service_path, base_volume) \
+	smb_vfs_call_snap_check_path((conn)->vfs_handles, (mem_ctx), (service_path), (base_volume))
+#define SMB_VFS_NEXT_SNAP_CHECK_PATH(handle, mem_ctx, service_path, base_volume) \
+	smb_vfs_call_snap_check_path((handle)->next, (mem_ctx), (service_path), (base_volume))
+
+#define SMB_VFS_SNAP_CREATE(conn, mem_ctx, base_volume, tstamp, rw, base_path, snap_path) \
+	smb_vfs_call_snap_create((conn)->vfs_handles, (mem_ctx), (base_volume), (tstamp), (rw), (base_path), (snap_path))
+#define SMB_VFS_NEXT_SNAP_CREATE(handle, mem_ctx, base_volume, tstamp, rw, base_path, snap_path) \
+	smb_vfs_call_snap_create((handle)->next, (mem_ctx), (base_volume), (tstamp), (rw), (base_path), (snap_path))
+
+#define SMB_VFS_SNAP_DELETE(conn, mem_ctx, base_path, snap_path) \
+	smb_vfs_call_snap_delete((conn)->vfs_handles, (mem_ctx), (base_path), (snap_path))
+#define SMB_VFS_NEXT_SNAP_DELETE(handle, mem_ctx, base_path, snap_path) \
+	smb_vfs_call_snap_delete((handle)->next, (mem_ctx), (base_path), (snap_path))
+
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, mem_ctx, ppdesc)		\
 	smb_vfs_call_fget_nt_acl((fsp)->conn->vfs_handles, (fsp), (security_info), (mem_ctx), (ppdesc))
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, mem_ctx, ppdesc) \

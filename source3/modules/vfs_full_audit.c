@@ -97,6 +97,9 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	SMB_VFS_OP_STATVFS,
 	SMB_VFS_OP_FS_CAPABILITIES,
+	SMB_VFS_OP_SNAP_CHECK_PATH,
+	SMB_VFS_OP_SNAP_CREATE,
+	SMB_VFS_OP_SNAP_DELETE,
 
 	/* Directory operations */
 
@@ -228,6 +231,9 @@ static struct {
 	{ SMB_VFS_OP_GET_SHADOW_COPY_DATA,	"get_shadow_copy_data" },
 	{ SMB_VFS_OP_STATVFS,	"statvfs" },
 	{ SMB_VFS_OP_FS_CAPABILITIES,	"fs_capabilities" },
+	{ SMB_VFS_OP_SNAP_CHECK_PATH, "snap_check_path" },
+	{ SMB_VFS_OP_SNAP_CREATE, "snap_create" },
+	{ SMB_VFS_OP_SNAP_DELETE, "snap_delete" },
 	{ SMB_VFS_OP_OPENDIR,	"opendir" },
 	{ SMB_VFS_OP_FDOPENDIR,	"fdopendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
@@ -674,7 +680,6 @@ static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
 	return result;
 }
 
-	
 static int smb_full_audit_set_quota(struct vfs_handle_struct *handle,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt)
@@ -724,6 +729,52 @@ static uint32_t smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_FS_CAPABILITIES, true, handle, "");
 
 	return result;
+}
+
+static NTSTATUS smb_full_audit_snap_check_path(struct vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       const char *service_path,
+					       char **base_volume)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_SNAP_CHECK_PATH(handle, mem_ctx, service_path,
+					      base_volume);
+	do_log(SMB_VFS_OP_SNAP_CHECK_PATH, NT_STATUS_IS_OK(status),
+	       handle, "");
+
+	return status;
+}
+
+static NTSTATUS smb_full_audit_snap_create(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   const char *base_volume,
+					   time_t *tstamp,
+					   bool rw,
+					   char **base_path,
+					   char **snap_path)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_SNAP_CREATE(handle, mem_ctx, base_volume, tstamp,
+					  rw, base_path, snap_path);
+	do_log(SMB_VFS_OP_SNAP_CREATE, NT_STATUS_IS_OK(status), handle, "");
+
+	return status;
+}
+
+static NTSTATUS smb_full_audit_snap_delete(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   char *base_path,
+					   char *snap_path)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_SNAP_DELETE(handle, mem_ctx, base_path,
+					  snap_path);
+	do_log(SMB_VFS_OP_SNAP_DELETE, NT_STATUS_IS_OK(status), handle, "");
+
+	return status;
 }
 
 static DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
@@ -2199,6 +2250,9 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.get_shadow_copy_data_fn = smb_full_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_full_audit_statvfs,
 	.fs_capabilities_fn = smb_full_audit_fs_capabilities,
+	.snap_check_path_fn =  smb_full_audit_snap_check_path,
+	.snap_create_fn = smb_full_audit_snap_create,
+	.snap_delete_fn = smb_full_audit_snap_delete,
 	.opendir_fn = smb_full_audit_opendir,
 	.fdopendir_fn = smb_full_audit_fdopendir,
 	.readdir_fn = smb_full_audit_readdir,

@@ -342,6 +342,33 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS vfswrap_snap_check_path(struct vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx,
+					const char *service_path,
+					char **base_volume)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS vfswrap_snap_create(struct vfs_handle_struct *handle,
+				    TALLOC_CTX *mem_ctx,
+				    const char *base_volume,
+				    time_t *tstamp,
+				    bool rw,
+				    char **base_path,
+				    char **snap_path)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS vfswrap_snap_delete(struct vfs_handle_struct *handle,
+				    TALLOC_CTX *mem_ctx,
+				    char *base_path,
+				    char *snap_path)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 /* Directory operations */
 
 static DIR *vfswrap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
@@ -2544,6 +2571,9 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.statvfs_fn = vfswrap_statvfs,
 	.fs_capabilities_fn = vfswrap_fs_capabilities,
 	.get_dfs_referrals_fn = vfswrap_get_dfs_referrals,
+	.snap_check_path_fn = vfswrap_snap_check_path,
+	.snap_create_fn = vfswrap_snap_create,
+	.snap_delete_fn = vfswrap_snap_delete,
 
 	/* Directory operations */
 

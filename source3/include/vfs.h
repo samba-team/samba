@@ -164,6 +164,7 @@
 /* Version 32 - Remove unnecessary SMB_VFS_DISK_FREE() small_query parameter */
 /* Bump to version 33 - Samba 4.3 will ship with that. */
 /* Version 33 - change fallocate mode flags param from enum->uint32_t */
+/* Version 33 - Add snapshot create/delete calls */
 
 #define SMB_VFS_INTERFACE_VERSION 33
 
@@ -656,6 +657,21 @@ struct vfs_fn_pointers {
 				       TALLOC_CTX *mem_ctx,
 				       struct files_struct *fsp,
 				       uint16_t compression_fmt);
+	NTSTATUS (*snap_check_path_fn)(struct vfs_handle_struct *handle,
+				       TALLOC_CTX *mem_ctx,
+				       const char *service_path,
+				       char **base_volume);
+	NTSTATUS (*snap_create_fn)(struct vfs_handle_struct *handle,
+				   TALLOC_CTX *mem_ctx,
+				   const char *base_volume,
+				   time_t *tstamp,
+				   bool rw,
+				   char **base_path,
+				   char **snap_path);
+	NTSTATUS (*snap_delete_fn)(struct vfs_handle_struct *handle,
+				   TALLOC_CTX *mem_ctx,
+				   char *base_path,
+				   char *snap_path);
 
 	NTSTATUS (*streaminfo_fn)(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
@@ -1151,6 +1167,21 @@ NTSTATUS smb_vfs_call_set_compression(struct vfs_handle_struct *handle,
 				      TALLOC_CTX *mem_ctx,
 				      struct files_struct *fsp,
 				      uint16_t compression_fmt);
+NTSTATUS smb_vfs_call_snap_check_path(vfs_handle_struct *handle,
+				      TALLOC_CTX *mem_ctx,
+				      const char *service_path,
+				      char **base_volume);
+NTSTATUS smb_vfs_call_snap_create(struct vfs_handle_struct *handle,
+				  TALLOC_CTX *mem_ctx,
+				  const char *base_volume,
+				  time_t *tstamp,
+				  bool rw,
+				  char **base_path,
+				  char **snap_path);
+NTSTATUS smb_vfs_call_snap_delete(struct vfs_handle_struct *handle,
+				  TALLOC_CTX *mem_ctx,
+				  char *base_path,
+				  char *snap_path);
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,

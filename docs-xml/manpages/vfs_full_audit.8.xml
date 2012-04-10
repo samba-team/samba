@@ -96,6 +96,9 @@
         <member>set_nt_acl</member>
         <member>set_quota</member>
         <member>setxattr</member>
+        <member>snap_check_path</member>
+        <member>snap_create</member>
+        <member>snap_delete</member>
         <member>stat</member>
         <member>statvfs</member>
         <member>symlink</member>
