@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha18
+What's new in Samba 4 alpha19
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -10,7 +10,7 @@ and above.
 WARNINGS
 ========
 
-Samba4 alpha18 is not a final Samba release, however we are now making
+Samba4 alpha19 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains both the technology of Samba 3.6
 (that you can reasonably expect to upgrade existing Samba 3.x releases
@@ -55,52 +55,59 @@ programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE alpha17
+CHANGES SINCE alpha18
 =====================
 
-For a list of changes since alpha 17, please see the git log.
+For a list of changes since alpha 18, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0alpha17..samba-4.0.0alpha18
+$ git log samba-4.0.0alpha18..samba-4.0.0alpha19
 
 Some major user-visible changes include:
 
-Improvements to DNS servers.  Samba4 now has 3 options for the
-handling of DNS:  The default option is to use the BIND 9.8 DLZ plugin,
-which stores the information about the DNS zone in the directory.
-There is also an internal DNS server (but which does not support
-secure DNS updates at this time) and the flat file BIND 9.8 backend
-(storing the data in traditional zone files).
+CVE-2012-1182:
+   Samba 3.0.x to 3.6.3 are affected by a
+   vulnerability that allows remote code
+   execution as the "root" user.
 
-To migrate from zone files to directory based DNS servers, a migration
-tool (upgradedns) has been added.
+Portability to MacOS X.  By using the CC_MD5*() routines we no longer
+segfault on MacOS X.
 
-samba-tool dns commands to manage DNS records stored in directory.
+The source4/librpc layer has been reworked to be much more robust to
+connection failures.
 
-smbwrapper (a user-space file system based on LD_PRELOAD) has been
-removed.  
+security=share in smbd has now been removed.
 
-Improvement to the upgrade process between Samba 3.x domains and Samba
-4.0 AD domains (samba-tool domain samba3upgrade).
+A segfault in vfs_aio_fork for the smbd file server has been fixed
+
+ldbadd and ldbmodify now handle each ldif file in a single
+transaction, when modifying a local ldb.
+
+Further improvements to the dlz_bind9 and internal DNS servers.
+
 
 Some major but less visible changes include:
 
-Major work to bridge the code gap between the major parts of the code
-base, including a common loadparm wrapper, smb client library, as well
-as NTLMSSP, GSSAPI and SPNEGO code as part of the GENSEC
-authentication and authorization stack.
+Initial support for s3fs, using the smbd file server in the AD Domain
+controller has been added (but not yet finished, so not exposed)
 
-Preparation work for moving to TDB2, a new version of Samba's core TDB
+Samba now only uses the _FILE_OFFSET_BITS=64 API for accessing large
+files, not the _LARGEFILE64_SOURCE API.
+
+All Samba daemons now monitor stdin when launched in the foreground,
+and shutdown when stdin is closed.  We also ensure that all child
+processes are clened up by a similar mechanism.  This ensures that
+stray processes do not hang around, particularly in make test.
+
+Further preparation work for moving to TDB2, a new version of Samba's core TDB
 database.
 
-smbtorture tests for SMB 2 and SMB 2.2 as the team improves and
-develops support these new protocols.
+Early implementation work on the SMB 2.2 protocol client and server as
+the team improves and develops support these new protocols.
 
-Major cleanup and removal of global variables in the smbd SMB and SMB2 server.
+The last of the old-style krb5 ticket handling has been removed.
 
-Heimdal security issue 2012-01-11 - libkrb5 checksum - denial of serice
-http://www.h5l.org//advisories.html?show=2012-01-11
 
 KNOWN ISSUES
 ============
@@ -113,9 +120,7 @@ KNOWN ISSUES
 
 - Systems with tdb or ldb installed as a system library may have
   difficulty building this release of Samba4.  The --disable-tdb2
-  configure switch may be of assistance.  (Distributors who (rightly)
-  have difficulty with this may wish to wait until a future release,
-  which will soon fix this issue).
+  configure switch may be of assistance.
 
 - Installation on systems without a system iconv (and developer
   headers at compile time) is known to cause errors when dealing with
