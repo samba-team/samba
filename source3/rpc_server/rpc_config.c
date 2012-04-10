@@ -1,6 +1,6 @@
 /*
    Unix SMB/Netbios implementation.
-   Generic infrstructure for RPC Daemons
+   Generic infrastructure for RPC Daemons
    Copyright (C) Simo Sorce 2011
    Copyright (C) Andreas Schneider 2011
 
@@ -35,6 +35,7 @@ struct rpc_service_defaults {
 	/* { "lsarpc", "embedded" }, */
 	/* { "samr", "embedded" }, */
 	/* { "netlogon", "embedded" }, */
+	{ "fssagentrpc", "external" },
 
 	{ NULL, NULL }
 };
@@ -96,6 +97,7 @@ struct rpc_daemon_defaults {
 	{ "epmd", "disabled" },
 	/* { "spoolssd", "embedded" }, */
 	/* { "lsasd", "embedded" }, */
+	{ "fssd", "disabled" },
 
 	{ NULL, NULL }
 };

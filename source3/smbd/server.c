@@ -86,6 +86,9 @@ extern void start_epmd(struct tevent_context *ev_ctx,
 extern void start_lsasd(struct tevent_context *ev_ctx,
 			struct messaging_context *msg_ctx);
 
+extern void start_fssd(struct tevent_context *ev_ctx,
+		       struct messaging_context *msg_ctx);
+
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
@@ -1549,6 +1552,10 @@ extern void build_options(bool screen);
 
 		if (rpc_lsasd_daemon() == RPC_DAEMON_FORK) {
 			start_lsasd(ev_ctx, msg_ctx);
+		}
+
+		if (rpc_fss_daemon() == RPC_DAEMON_FORK) {
+			start_fssd(ev_ctx, msg_ctx);
 		}
 
 		if (!lp__disable_spoolss() &&

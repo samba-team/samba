@@ -54,6 +54,11 @@ bld.SAMBA3_SUBSYSTEM('RPC_FSS_STATE',
                     source='''fss/srv_fss_state.c''',
                     deps='samba-util NDR_FSRVP_STATE')
 
+bld.SAMBA3_SUBSYSTEM('RPC_FSS_AGENT',
+                    source='''fss/srv_fss_agent.c
+                    ../../librpc/gen_ndr/srv_fsrvp.c''',
+                    deps='samba-util RPC_FSS_STATE')
+
 bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',
                     source='''eventlog/srv_eventlog_nt.c
                     eventlog/srv_eventlog_reg.c
@@ -149,6 +154,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     RPC_RPCECHO
                     RPC_SERVER
                     RPC_EPMAPPER
+		    RPC_FSS_AGENT
                     ''')
 
 # RPC_DAEMONS
@@ -163,3 +169,7 @@ bld.SAMBA3_SUBSYSTEM('EPMD',
 bld.SAMBA3_SUBSYSTEM('LSASD',
                     source='lsasd.c',
                     deps='RPC_SOCK_HELPER samba-util')
+
+bld.SAMBA3_SUBSYSTEM('FSSD',
+                    source='fssd.c',
+                    deps='samba-util')

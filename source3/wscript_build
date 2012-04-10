@@ -855,7 +855,7 @@ bld.SAMBA3_SUBSYSTEM('LIBLSA',
 
 bld.SAMBA3_BINARY('smbd/smbd',
                  source='smbd/server.c',
-                 deps='smbd_base EPMD LSASD',
+                 deps='smbd_base EPMD LSASD FSSD',
                  install_path='${SBINDIR}')
 
 bld.SAMBA3_BINARY('nmbd/nmbd',
