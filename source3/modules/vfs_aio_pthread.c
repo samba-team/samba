@@ -407,17 +407,8 @@ static void aio_pthread_handle_immediate(struct tevent_context *ctx,
 				void *private_data)
 {
 	struct aio_extra *aio_ex = NULL;
-	int *pjobid = (int *)private_data;
-	struct aio_private_data *pd = find_private_data_by_jobid(*pjobid);
+	struct aio_private_data *pd = (struct aio_private_data *)private_data;
 
-	if (pd == NULL) {
-		DEBUG(1, ("aio_pthread_handle_immediate cannot find jobid %d\n",
-			  *pjobid));
-		TALLOC_FREE(pjobid);
-		return;
-	}
-
-	TALLOC_FREE(pjobid);
 	aio_ex = (struct aio_extra *)pd->aiocb->aio_sigevent.sigev_value.sival_ptr;
 	smbd_aio_complete_aio_ex(aio_ex);
 	TALLOC_FREE(aio_ex);
@@ -445,7 +436,7 @@ static void aio_pthread_handle_suspend_completion(struct event_context *event_ct
 	struct suspend_private *sp = (struct suspend_private *)p;
 	struct aio_private_data *pd = NULL;
 	struct tevent_immediate *im = NULL;
-	int *pjobid = NULL;
+	int jobid;
 	int i;
 
 	DEBUG(10, ("aio_pthread_handle_suspend_completion called with flags=%d\n",
@@ -455,21 +446,15 @@ static void aio_pthread_handle_suspend_completion(struct event_context *event_ct
 		return;
 	}
 
-	pjobid = talloc_array(NULL, int, 1);
-	if (pjobid == NULL) {
-		smb_panic("aio_pthread_handle_suspend_completion: no memory.");
-	}
-
-	if (pthreadpool_finished_job(pool, pjobid)) {
+	if (pthreadpool_finished_job(pool, &jobid)) {
 		smb_panic("aio_pthread_handle_suspend_completion: can't find job.");
 		return;
 	}
 
-	pd = find_private_data_by_jobid(*pjobid);
+	pd = find_private_data_by_jobid(jobid);
 	if (pd == NULL) {
 		DEBUG(1, ("aio_pthread_handle_completion cannot find jobid %d\n",
-			  *pjobid));
-		TALLOC_FREE(pjobid);
+			  jobid));
 		return;
 	}
 
@@ -477,7 +462,6 @@ static void aio_pthread_handle_suspend_completion(struct event_context *event_ct
 	for (i = 0; i < sp->num_entries; i++) {
 		if (sp->aiocb_array[i] == pd->aiocb) {
 			sp->num_finished++;
-			TALLOC_FREE(pjobid);
 			return;
 		}
 	}
@@ -492,12 +476,12 @@ static void aio_pthread_handle_suspend_completion(struct event_context *event_ct
 
 	DEBUG(10,("aio_pthread_handle_suspend_completion: "
 			"re-scheduling job id %d\n",
-			*pjobid));
+			jobid));
 
 	tevent_schedule_immediate(im,
 			server_event_context(),
 			aio_pthread_handle_immediate,
-			(void *)pjobid);
+			(void *)pd);
 }
 
 
