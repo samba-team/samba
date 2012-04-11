@@ -1902,6 +1902,7 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int len;
 	NTSTATUS status;
+	WERROR werr;
 
 	DEBUG(10,("regdb_store_values: Looking for values of key [%s]\n", key));
 
@@ -1911,7 +1912,16 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 	}
 
 	if (regval_ctr_numvals(values) == 0) {
-		WERROR werr = regdb_delete_values(db, key);
+		werr = regdb_delete_values(db, key);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werror_to_ntstatus(werr);
+		}
+
+		/*
+		 * update the seqnum in the cache to prevent the next read
+		 * from going to disk
+		 */
+		werr = regval_ctr_set_seqnum(values, dbwrap_get_seqnum(db));
 		return werror_to_ntstatus(werr);
 	}
 
@@ -1954,6 +1964,17 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 	}
 
 	status = dbwrap_trans_store_bystring(db, keystr, data, TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("regdb_store_values_internal: error storing: %s\n", nt_errstr(status)));
+		goto done;
+	}
+
+	/*
+	 * update the seqnum in the cache to prevent the next read
+	 * from going to disk
+	 */
+	werr = regval_ctr_set_seqnum(values, dbwrap_get_seqnum(db));
+	status = werror_to_ntstatus(werr);
 
 done:
 	TALLOC_FREE(ctx);
