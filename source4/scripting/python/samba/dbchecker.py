@@ -163,6 +163,26 @@ class dbcheck(object):
                           validate=False):
             self.report("Normalised attribute %s" % attrname)
 
+    def err_normalise_mismatch_replace(self, dn, attrname, values):
+        '''fix attribute normalisation errors'''
+        normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, values)
+        self.report("ERROR: Normalisation error for attribute '%s' in '%s'" % (attrname, dn))
+        self.report("Values/Order of values do/does not match: %s/%s!" % (values, list(normalised)))
+        if list(normalised) == values:
+            return
+        if not self.confirm_all("Fix normalisation for '%s' from '%s'?" % (attrname, dn), 'fix_all_normalisation'):
+            self.report("Not fixing attribute '%s'" % attrname)
+            return
+
+        m = ldb.Message()
+        m.dn = dn
+        m[attrname] = ldb.MessageElement(normalised, ldb.FLAG_MOD_REPLACE, attrname)
+
+        if self.do_modify(m, ["relax:0", "show_recycled:1"],
+                          "Failed to normalise attribute %s" % attrname,
+                          validate=False):
+            self.report("Normalised attribute %s" % attrname)
+
     def is_deleted_objects_dn(self, dsdb_dn):
         '''see if a dsdb_Dn is the special Deleted Objects DN'''
         return dsdb_dn.prefix == "B:32:18E2EA80684F11D2B9AA00C04F79F805:"
@@ -420,6 +440,13 @@ class dbcheck(object):
             if str(attrname).lower() == 'replpropertymetadata':
                 list_attrs_from_md = self.process_metadata(obj[attrname])
                 got_repl_property_meta_data = True
+                continue
+
+            if str(attrname).lower() == 'objectclass':
+                normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, list(obj[attrname]))
+                if list(normalised) != list(obj[attrname]):
+                    self.err_normalise_mismatch_replace(dn, attrname, list(obj[attrname]))
+                    error_count += 1
                 continue
 
             # check for empty attributes
