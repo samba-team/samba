@@ -1805,6 +1805,7 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 	int len;
 	NTSTATUS status;
 	bool result = false;
+	WERROR werr;
 
 	DEBUG(10,("regdb_store_values: Looking for values of key [%s]\n", key));
 
@@ -1847,8 +1848,17 @@ static bool regdb_store_values_internal(struct db_context *db, const char *key,
 	}
 
 	status = dbwrap_trans_store_bystring(db, keystr, data, TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("regdb_store_values_internal: error storing: %s\n", nt_errstr(status)));
+		goto done;
+	}
 
-	result = NT_STATUS_IS_OK(status);
+	/*
+	 * update the seqnum in the cache to prevent the next read
+	 * from going to disk
+	 */
+	werr = regval_ctr_set_seqnum(values, db->get_seqnum(db));
+	result = W_ERROR_IS_OK(status);
 
 done:
 	TALLOC_FREE(ctx);
