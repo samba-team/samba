@@ -1712,6 +1712,7 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 	fstring subkeyname;
 	TALLOC_CTX *frame = talloc_stackframe();
 	TDB_DATA value;
+	int seqnum[2], count;
 
 	DEBUG(11,("regdb_fetch_keys: Enter key => [%s]\n", key ? key : "NULL"));
 
@@ -1724,10 +1725,28 @@ static WERROR regdb_fetch_keys_internal(struct db_context *db, const char *key,
 	werr = regsubkey_ctr_reinit(ctr);
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
-	werr = regsubkey_ctr_set_seqnum(ctr, dbwrap_get_seqnum(db));
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
+	count = 0;
+	ZERO_STRUCT(value);
+	seqnum[0] = dbwrap_get_seqnum(db);
 
-	value = regdb_fetch_key_internal(db, frame, key);
+	do {
+		count++;
+		TALLOC_FREE(value.dptr);
+		value = regdb_fetch_key_internal(db, frame, key);
+		seqnum[count % 2] = dbwrap_get_seqnum(db);
+
+	} while (seqnum[0] != seqnum[1]);
+
+	if (count > 1) {
+		DEBUG(5, ("regdb_fetch_keys_internal: it took %d attempts to "
+			  "fetch key '%s' with constant seqnum\n",
+			  count, key));
+	}
+
+	werr = regsubkey_ctr_set_seqnum(ctr, seqnum[0]);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	if (value.dsize == 0 || value.dptr == NULL) {
 		DEBUG(10, ("regdb_fetch_keys: no subkeys found for key [%s]\n",
