@@ -571,6 +571,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	int count;
 	int idx;
 
+	req->request_time = timeval_current();
+
 	count = req->in.vector_count;
 	vector = talloc_zero_array(req, struct iovec, count);
 	if (vector == NULL) {

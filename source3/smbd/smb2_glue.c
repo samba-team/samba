@@ -36,6 +36,7 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 		return NULL;
 	}
 
+	smbreq->request_time = req->request_time;
 	smbreq->vuid = req->session->compat_vuser->vuid;
 	smbreq->tid = req->tcon->compat_conn->cnum;
 	smbreq->conn = req->tcon->compat_conn;

@@ -379,6 +379,8 @@ struct smbd_smb2_request {
 	bool cancelled;
 	bool compound_related;
 
+	struct timeval request_time;
+
 	/* fake smb1 request. */
 	struct smb_request *smb1req;
 	struct files_struct *compat_chain_fsp;
