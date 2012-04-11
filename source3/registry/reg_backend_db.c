@@ -1862,6 +1862,7 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 	int ret = 0;
 	TDB_DATA value;
 	WERROR werr;
+	int seqnum[2], count;
 
 	DEBUG(10,("regdb_fetch_values: Looking for values of key [%s]\n", key));
 
@@ -1874,10 +1875,27 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 		goto done;
 	}
 
-	werr = regval_ctr_set_seqnum(values, dbwrap_get_seqnum(db));
-	W_ERROR_NOT_OK_GOTO_DONE(werr);
+	ZERO_STRUCT(value);
+	count = 0;
+	seqnum[0] = dbwrap_get_seqnum(db);
 
-	value = regdb_fetch_key_internal(db, ctx, keystr);
+	do {
+		count++;
+		TALLOC_FREE(value.dptr);
+		value = regdb_fetch_key_internal(db, ctx, keystr);
+		seqnum[count % 2] = dbwrap_get_seqnum(db);
+	} while (seqnum[0] != seqnum[1]);
+
+	if (count > 1) {
+		DEBUG(5, ("regdb_fetch_values_internal: it took %d attempts "
+			  "to fetch key '%s' with constant seqnum\n",
+			  count, key));
+	}
+
+	werr = regval_ctr_set_seqnum(values, seqnum[0]);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	if (!value.dptr) {
 		/* all keys have zero values by default */
