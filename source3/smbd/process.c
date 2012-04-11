@@ -517,12 +517,16 @@ static bool init_smb_request(struct smb_request *req,
 			     uint32_t seqnum)
 {
 	size_t req_size = smb_len(inbuf) + 4;
+
 	/* Ensure we have at least smb_size bytes. */
 	if (req_size < smb_size) {
 		DEBUG(0,("init_smb_request: invalid request size %u\n",
 			(unsigned int)req_size ));
 		return false;
 	}
+
+	req->request_time = timeval_current();
+
 	req->cmd    = CVAL(inbuf, smb_com);
 	req->flags2 = SVAL(inbuf, smb_flg2);
 	req->smbpid = SVAL(inbuf, smb_pid);

@@ -399,6 +399,8 @@ struct smb_request {
 	 * Request list for chained requests, we're part of it.
 	 */
 	struct smb_request **chain;
+
+	struct timeval request_time;
 };
 
 /*
