@@ -92,7 +92,7 @@ def CHECK_HEADER(conf, h, add_headers=False, lib=None):
                 conf.env.hlist.append(h)
         return True
 
-    (ccflags, ldflags) = library_flags(conf, lib)
+    (ccflags, ldflags, cpppath) = library_flags(conf, lib)
 
     hdrs = hlist_to_string(conf, headers=h)
     if lib is None:
@@ -101,6 +101,7 @@ def CHECK_HEADER(conf, h, add_headers=False, lib=None):
                      type='nolink',
                      execute=0,
                      ccflags=ccflags,
+                     includes=cpppath,
                      uselib=lib.upper(),
                      msg="Checking for header %s" % h)
     if not ret:
@@ -371,7 +372,10 @@ def CHECK_CODE(conf, code, define,
 
     uselib = TO_LIST(lib)
 
-    (ccflags, ldflags) = library_flags(conf, uselib)
+    (ccflags, ldflags, cpppath) = library_flags(conf, uselib)
+
+    includes = TO_LIST(includes)
+    includes.extend(cpppath)
 
     uselib = [l.upper() for l in uselib]
 
@@ -472,20 +476,24 @@ def library_flags(self, libs):
     '''work out flags from pkg_config'''
     ccflags = []
     ldflags = []
+    cpppath = []
     for lib in TO_LIST(libs):
         # note that we do not add the -I and -L in here, as that is added by the waf
         # core. Adding it here would just change the order that it is put on the link line
         # which can cause system paths to be added before internal libraries
         extra_ccflags = TO_LIST(getattr(self.env, 'CCFLAGS_%s' % lib.upper(), []))
         extra_ldflags = TO_LIST(getattr(self.env, 'LDFLAGS_%s' % lib.upper(), []))
+        extra_cpppath = TO_LIST(getattr(self.env, 'CPPPATH_%s' % lib.upper(), []))
         ccflags.extend(extra_ccflags)
         ldflags.extend(extra_ldflags)
+        cpppath.extend(extra_cpppath)
     if 'EXTRA_LDFLAGS' in self.env:
         ldflags.extend(self.env['EXTRA_LDFLAGS'])
 
     ccflags = unique_list(ccflags)
     ldflags = unique_list(ldflags)
-    return (ccflags, ldflags)
+    cpppath = unique_list(cpppath)
+    return (ccflags, ldflags, cpppath)
 
 
 @conf
@@ -509,7 +517,7 @@ int foo()
             ret.append(lib)
             continue
 
-        (ccflags, ldflags) = library_flags(conf, lib)
+        (ccflags, ldflags, cpppath) = library_flags(conf, lib)
         if shlib:
             res = conf.check(features='cc cshlib', fragment=fragment, lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper())
         else:

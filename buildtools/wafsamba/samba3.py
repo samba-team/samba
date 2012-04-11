@@ -60,32 +60,32 @@ def s3_fix_kwargs(bld, kwargs):
 
     if bld.CONFIG_SET('BUILD_TDB2'):
         if bld.CONFIG_SET('USING_SYSTEM_TDB2'):
-            (tdb2_includes, tdb2_ldflags) = library_flags(bld, 'tdb')
-            extra_includes += tdb2_includes
+            (tdb2_includes, tdb2_ldflags, tdb2_cpppath) = library_flags(bld, 'tdb')
+            extra_includes += tdb2_cpppath
         else:
             extra_includes += [ '../lib/tdb2' ]
     else:
         if bld.CONFIG_SET('USING_SYSTEM_TDB'):
-            (tdb_includes, tdb_ldflags) = library_flags(bld, 'tdb')
-            extra_includes += tdb_includes
+            (tdb_includes, tdb_ldflags, tdb_cpppath) = library_flags(bld, 'tdb')
+            extra_includes += tdb_cpppath
         else:
             extra_includes += [ '../lib/tdb/include' ]
 
     if bld.CONFIG_SET('USING_SYSTEM_TEVNT'):
-        (tevent_includes, tevent_ldflags) = library_flags(bld, 'tevent')
-        extra_includes += tevent_includes
+        (tevent_includes, tevent_ldflags, tevent_cpppath) = library_flags(bld, 'tevent')
+        extra_includes += tevent_cpppath
     else:
         extra_includes += [ '../lib/tevent' ]
 
     if bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
-        (talloc_includes, talloc_ldflags) = library_flags(bld, 'talloc')
-        extra_includes += talloc_includes
+        (talloc_includes, talloc_ldflags, talloc_cpppath) = library_flags(bld, 'talloc')
+        extra_includes += talloc_cpppath
     else:
         extra_includes += [ '../lib/talloc' ]
 
     if bld.CONFIG_SET('USING_SYSTEM_POPT'):
-        (popt_includes, popt_ldflags) = library_flags(bld, 'popt')
-        extra_includes += popt_includes
+        (popt_includes, popt_ldflags, popt_cpppath) = library_flags(bld, 'popt')
+        extra_includes += popt_cpppath
     else:
         extra_includes += [ '../lib/popt' ]
 
