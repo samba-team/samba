@@ -845,11 +845,18 @@ int ltdb_modify_internal(struct ldb_module *module,
 			if (idx != -1) {
 				j = (unsigned int) idx;
 				el2 = &(msg2->elements[j]);
-				if (ldb_msg_element_compare(el, el2) == 0) {
-					/* we are replacing with the same values */
+
+				/* we consider two elements to be
+				 * equal only if the order
+				 * matches. This allows dbcheck to
+				 * fix the ordering on attributes
+				 * where order matters, such as
+				 * objectClass
+				 */
+				if (ldb_msg_element_equal_ordered(el, el2)) {
 					continue;
 				}
-			
+
 				/* Delete the attribute if it exists in the DB */
 				if (msg_delete_attribute(module, ldb, msg2,
 							 el->name) != 0) {
