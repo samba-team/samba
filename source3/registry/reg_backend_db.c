@@ -984,7 +984,11 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 		TALLOC_FREE(path);
 	}
 
-	werr = WERR_OK;
+	/*
+	 * Update the seqnum in the container to possibly
+	 * prevent next read from going to disk
+	 */
+	werr = regsubkey_ctr_set_seqnum(store_ctx->ctr, db->get_seqnum(db));
 
 done:
 	talloc_free(mem_ctx);
