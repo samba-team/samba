@@ -7,9 +7,7 @@ def set_options(opt):
     opt.RECURSE('lib/tdb')
 
 def configure(conf):
-    conf.env.BUILD_TDB2 = getattr(Options.options, 'BUILD_TDB2', False)
-
-    if conf.env.BUILD_TDB2:
+    if getattr(Options.options, 'BUILD_TDB2', False):
         conf.RECURSE('lib/tdb2')
     else:
         conf.RECURSE('lib/tdb')
