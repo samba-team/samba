@@ -569,6 +569,7 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 		PyObject *item = PyList_GetItem(el_list, i);
 		if (!PyString_Check(item)) {
 			PyErr_Format(PyExc_TypeError, "ldif_elements should be strings");
+			talloc_free(tmp_ctx);
 			return NULL;
 		}
 		el->values[i].data = (uint8_t *)PyString_AsString(item);
@@ -663,10 +664,23 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 		PyObject *item = PyList_GetItem(el_list, i);
 		if (!PyString_Check(item)) {
 			PyErr_Format(PyExc_TypeError, "ldif_elements should be strings");
+			talloc_free(tmp_ctx);
 			return NULL;
 		}
 		el->values[i].data = (uint8_t *)PyString_AsString(item);
 		el->values[i].length = PyString_Size(item);
+	}
+
+	/* Normalise "objectClass" attribute if needed */
+	if (ldb_attr_cmp(a->lDAPDisplayName, "objectClass") == 0) {
+		int iret;
+		iret = dsdb_sort_objectClass_attr(ldb, schema, tmp_ctx, el,
+						 tmp_ctx, el);
+		if (iret != LDB_SUCCESS) {
+			PyErr_SetString(PyExc_RuntimeError, ldb_errstring(ldb));
+			talloc_free(tmp_ctx);
+			return NULL;
+		}
 	}
 
 	/* first run ldb_to_drsuapi, then convert back again. This has
