@@ -164,8 +164,6 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 	uint32_t flags;
 	uint32_t last_hdr_offset;
 
-	talloc_steal(req, p_req);
-
 	last_hdr_offset = p_req->in.hdr - p_req->in.buffer;
 
 	chain_offset = p_req->chain_offset;
@@ -191,6 +189,8 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 		smbsrv_terminate_connection(smb_conn, "SMB2 chained packet - no memory");
 		return;
 	}
+
+	talloc_steal(req, p_req);
 
 	req->in.buffer		= talloc_steal(req, p_req->in.buffer);
 	req->in.size		= p_req->in.size;
