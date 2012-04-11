@@ -71,7 +71,7 @@ def s3_fix_kwargs(bld, kwargs):
         else:
             extra_includes += [ '../lib/tdb/include' ]
 
-    if bld.CONFIG_SET('USING_SYSTEM_TEVNT'):
+    if bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
         (tevent_includes, tevent_ldflags, tevent_cpppath) = library_flags(bld, 'tevent')
         extra_includes += tevent_cpppath
     else:
