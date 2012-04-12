@@ -528,7 +528,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "realm",
-		.type		= P_USTRING,
+		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szRealm),
 		.special	= handle_realm,
