@@ -802,7 +802,8 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 		return WERR_ACCESS_DENIED;
 	}
 
-	if (!W_ERROR_IS_OK(err = fill_value_cache(key))) {
+	err = fill_value_cache(key);
+	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
 
