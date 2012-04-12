@@ -1403,7 +1403,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "log file",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szLogFile),
+		.offset		= GLOBAL_VAR(logfile),
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -4656,9 +4656,9 @@ static void init_globals(bool reinit_globals)
 
 	if (!done_init) {
 		/* The logfile can be set before this is invoked. Free it if so. */
-		if (Globals.szLogFile != NULL) {
-			string_free(&Globals.szLogFile);
-			Globals.szLogFile = NULL;
+		if (Globals.logfile != NULL) {
+			string_free(&Globals.logfile);
+			Globals.logfile = NULL;
 		}
 		done_init = true;
 	} else {
@@ -5054,7 +5054,7 @@ static char *lp_string(const char *s)
 FN_GLOBAL_CONST_STRING(lp_smb_ports, smb_ports)
 FN_GLOBAL_CONST_STRING(lp_dos_charset, dos_charset)
 FN_GLOBAL_CONST_STRING(lp_unix_charset, unix_charset)
-FN_GLOBAL_STRING(lp_logfile, szLogFile)
+FN_GLOBAL_STRING(lp_logfile, logfile)
 FN_GLOBAL_STRING(lp_configfile, szConfigFile)
 FN_GLOBAL_CONST_STRING(lp_smb_passwd_file, szSMBPasswdFile)
 FN_GLOBAL_CONST_STRING(lp_private_dir, szPrivateDir)
@@ -9407,7 +9407,7 @@ const char *lp_printername(int snum)
 
 void lp_set_logfile(const char *name)
 {
-	string_set(&Globals.szLogFile, name);
+	string_set(&Globals.logfile, name);
 	debug_set_logfile(name);
 }
 
