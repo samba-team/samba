@@ -978,6 +978,14 @@ static struct parm_struct parm_table[] = {
 	},
 
 	{
+		.label		= "dns proxy",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bWINSdnsProxy),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
 		.label		= "wins server",
 		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
@@ -990,14 +998,6 @@ static struct parm_struct parm_table[] = {
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bWINSsupport),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "dns proxy",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bWINSdnsProxy),
 		.special	= NULL,
 		.enum_list	= NULL
 	},

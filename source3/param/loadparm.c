@@ -3036,7 +3036,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "dns proxy",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bDNSproxy),
+		.offset		= GLOBAL_VAR(bWINSdnsProxy),
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -4891,7 +4891,7 @@ static void init_globals(bool reinit_globals)
 	TALLOC_FREE(Globals.szInitLogonDelayedHosts);
 	Globals.InitLogonDelay = 100; /* 100 ms default delay */
 
-	Globals.bDNSproxy = true;
+	Globals.bWINSdnsProxy = true;
 
 	Globals.bAllowTrustedDomains = true;
 	string_set(&Globals.szIdmapBackend, "tdb");
@@ -5213,7 +5213,7 @@ FN_GLOBAL_BOOL(disable_netbios, bDisableNetbios)
 FN_GLOBAL_BOOL(reset_on_zero_vc, bResetOnZeroVC)
 FN_GLOBAL_BOOL(log_writeable_files_on_exit, bLogWriteableFilesOnExit)
 FN_GLOBAL_BOOL(ms_add_printer_wizard, bMsAddPrinterWizard)
-FN_GLOBAL_BOOL(dns_proxy, bDNSproxy)
+FN_GLOBAL_BOOL(dns_proxy, bWINSdnsProxy)
 FN_GLOBAL_BOOL(we_are_a_wins_server, bWINSsupport)
 FN_GLOBAL_BOOL(wins_proxy, bWINSproxy)
 FN_GLOBAL_BOOL(local_master, bLocalMaster)
