@@ -48,7 +48,7 @@ static WERROR spoolss_start( const char *service )
 {
 	/* see if the smb.conf will support this anyways */
 
-	if ( _lp_disable_spoolss() )
+	if ( lp__disable_spoolss() )
 		return WERR_ACCESS_DENIED;
 
 	if (lp_get_spoolss_state() == SVCCTL_RUNNING) {

@@ -1259,7 +1259,7 @@ bool lp_paranoid_server_security(void);
 int lp_maxdisksize(void);
 int lp_lpqcachetime(void);
 int lp_max_smbd_processes(void);
-bool _lp_disable_spoolss(void);
+bool lp__disable_spoolss(void);
 int lp_syslog(void);
 int lp_lm_announce(void);
 int lp_lm_interval(void);

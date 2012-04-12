@@ -5221,9 +5221,9 @@ static FN_GLOBAL_BOOL(lp_domain_logons, bDomainLogons)
 FN_GLOBAL_LIST(lp_init_logon_delayed_hosts, szInitLogonDelayedHosts)
 FN_GLOBAL_INTEGER(lp_init_logon_delay, InitLogonDelay)
 FN_GLOBAL_BOOL(lp_load_printers, bLoadPrinters)
-static FN_GLOBAL_BOOL(_lp_readraw, bReadRaw)
+static FN_GLOBAL_BOOL(lp__readraw, bReadRaw)
 FN_GLOBAL_BOOL(lp_large_readwrite, bLargeReadwrite)
-static FN_GLOBAL_BOOL(_lp_writeraw, bWriteRaw)
+static FN_GLOBAL_BOOL(lp__writeraw, bWriteRaw)
 FN_GLOBAL_BOOL(lp_null_passwords, bNullPasswords)
 FN_GLOBAL_BOOL(lp_obey_pam_restrictions, bObeyPamRestrictions)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, bEncryptPasswords)
@@ -5291,7 +5291,7 @@ FN_GLOBAL_BOOL(lp_paranoid_server_security, paranoid_server_security)
 FN_GLOBAL_INTEGER(lp_maxdisksize, maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime, lpqcachetime)
 FN_GLOBAL_INTEGER(lp_max_smbd_processes, iMaxSmbdProcesses)
-FN_GLOBAL_BOOL(_lp_disable_spoolss, bDisableSpoolss)
+FN_GLOBAL_BOOL(lp__disable_spoolss, bDisableSpoolss)
 FN_GLOBAL_INTEGER(lp_syslog, syslog)
 FN_GLOBAL_INTEGER(lp_lm_announce, lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval, lm_interval)
@@ -9449,7 +9449,7 @@ static uint32 spoolss_state;
 bool lp_disable_spoolss( void )
 {
 	if ( spoolss_state == SVCCTL_STATE_UNKNOWN )
-		spoolss_state = _lp_disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
+		spoolss_state = lp__disable_spoolss() ? SVCCTL_STOPPED : SVCCTL_RUNNING;
 
 	return spoolss_state == SVCCTL_STOPPED ? true : false;
 }
@@ -9630,7 +9630,7 @@ bool lp_writeraw(void)
 	if (lp_async_smb_echo_handler()) {
 		return false;
 	}
-	return _lp_writeraw();
+	return lp__writeraw();
 }
 
 bool lp_readraw(void)
@@ -9638,7 +9638,7 @@ bool lp_readraw(void)
 	if (lp_async_smb_echo_handler()) {
 		return false;
 	}
-	return _lp_readraw();
+	return lp__readraw();
 }
 
 int lp_server_role(void)

@@ -1392,7 +1392,7 @@ extern void build_options(bool screen);
 			start_lsasd(ev_ctx, msg_ctx);
 		}
 
-		if (!_lp_disable_spoolss() &&
+		if (!lp__disable_spoolss() &&
 		    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
 			bool bgq = lp_parm_bool(-1, "smbd", "backgroundqueue", true);
 
@@ -1400,7 +1400,7 @@ extern void build_options(bool screen);
 				exit(1);
 			}
 		}
-	} else if (!_lp_disable_spoolss() &&
+	} else if (!lp__disable_spoolss() &&
 		   (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
 		if (!printing_subsystem_init(ev_ctx, msg_ctx, false, false)) {
 			exit(1);

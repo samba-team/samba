@@ -302,7 +302,7 @@ static bool rpc_setup_spoolss(struct tevent_context *ev_ctx,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
 
-	if (_lp_disable_spoolss()) {
+	if (lp__disable_spoolss()) {
 		return true;
 	}
 
