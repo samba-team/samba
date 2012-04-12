@@ -165,7 +165,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(comment),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT
 	},
 	{
 		.label		= "path",
@@ -173,7 +174,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(szPath),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT,
 	},
 	{
 		.label		= "directory",
@@ -181,7 +183,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(szPath),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_HIDE,
 	},
 	{
 		.label		= "workgroup",
@@ -189,7 +192,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szWorkgroup),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
 		.label		= "realm",
@@ -197,7 +201,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szRealm),
 		.special	= handle_realm,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
 		.label		= "netbios name",
@@ -205,7 +210,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szNetbiosName),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
 		.label		= "netbios aliases",
@@ -221,7 +227,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szNetbiosScope),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "server string",
@@ -229,7 +236,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szServerString),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED,
 	},
 	{
 		.label		= "interfaces",
@@ -237,7 +245,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szInterfaces),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
 		.label		= "bind interfaces only",
@@ -245,7 +254,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bBindInterfacesOnly),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
 		.label		= "ntvfs handler",
@@ -310,7 +320,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bNullPasswords),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "obey pam restrictions",
@@ -318,7 +329,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bObeyPamRestrictions),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "password server",
@@ -358,7 +370,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bLanmanAuth),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "ntlm auth",
@@ -366,7 +379,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bNTLMAuth),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "client NTLMv2 auth",
@@ -374,7 +388,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bClientNTLMv2Auth),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "client lanman auth",
@@ -382,7 +397,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bClientLanManAuth),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "client plaintext auth",
@@ -390,7 +406,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bClientPlaintextAuth),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "client use spnego principal",
