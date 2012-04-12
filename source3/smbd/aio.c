@@ -106,6 +106,7 @@ static int handle_aio_smb2_write_complete(struct aio_extra *aio_ex, int errcode)
 static int aio_extra_destructor(struct aio_extra *aio_ex)
 {
 	DLIST_REMOVE(aio_list_head, aio_ex);
+	outstanding_aio_calls--;
 	return 0;
 }
 
@@ -138,6 +139,7 @@ static struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 	DLIST_ADD(aio_list_head, aio_ex);
 	talloc_set_destructor(aio_ex, aio_extra_destructor);
 	aio_ex->fsp = fsp;
+	outstanding_aio_calls++;
 	return aio_ex;
 }
 
@@ -231,7 +233,6 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	outstanding_aio_calls++;
 	aio_ex->smbreq = talloc_move(aio_ex, &smbreq);
 
 	DEBUG(10,("schedule_aio_read_and_X: scheduled aio_read for file %s, "
@@ -337,7 +338,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	outstanding_aio_calls++;
 	aio_ex->smbreq = talloc_move(aio_ex, &smbreq);
 
 	/* This should actually be improved to span the write. */
@@ -487,7 +487,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	outstanding_aio_calls++;
 	/* We don't need talloc_move here as both aio_ex and
 	 * smbreq are children of smbreq->smb2req. */
 	aio_ex->smbreq = smbreq;
@@ -584,7 +583,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	outstanding_aio_calls++;
 	/* We don't need talloc_move here as both aio_ex and
 	* smbreq are children of smbreq->smb2req. */
 	aio_ex->smbreq = smbreq;
@@ -893,8 +891,6 @@ void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex)
 {
 	files_struct *fsp = NULL;
 	int ret = 0;
-
-	outstanding_aio_calls--;
 
 	DEBUG(10,("smbd_aio_complete_mid: mid[%llu]\n",
 		(unsigned long long)aio_ex->smbreq->mid));
