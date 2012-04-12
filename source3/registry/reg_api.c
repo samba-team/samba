@@ -790,24 +790,50 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 		return WERR_ACCESS_DENIED;
 	}
 
+	err = regdb_transaction_start();
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(0, ("reg_deletevalue: Failed to start transaction: %s\n",
+			  win_errstr(err)));
+		return err;
+	}
+
 	err = fill_value_cache(key);
 	if (!W_ERROR_IS_OK(err)) {
-		return err;
+		DEBUG(0, ("reg_deletevalue; Error filling value cache: %s\n",
+			  win_errstr(err)));
+		goto done;
 	}
 
 	err = reg_value_exists(key, name);
 	if (!W_ERROR_IS_OK(err)) {
-		return err;
+		goto done;
 	}
 
 	regval_ctr_delvalue(key->values, name);
 
 	if (!store_reg_values(key->key, key->values)) {
 		TALLOC_FREE(key->values);
-		return WERR_REG_IO_FAILURE;
+		err = WERR_REG_IO_FAILURE;
+		DEBUG(0, ("reg_deletevalue: store_reg_values failed\n"));
+		goto done;
 	}
 
-	return WERR_OK;
+	err = WERR_OK;
+
+done:
+	if (W_ERROR_IS_OK(err)) {
+		err = regdb_transaction_commit();
+		if (!W_ERROR_IS_OK(err)) {
+			DEBUG(0, ("reg_deletevalue: Error committing transaction: %s\n", win_errstr(err)));
+		}
+	} else {
+		WERROR err1 = regdb_transaction_cancel();
+		if (!W_ERROR_IS_OK(err1)) {
+			DEBUG(0, ("reg_deletevalue: Error cancelling transaction: %s\n", win_errstr(err1)));
+		}
+	}
+
+	return err;
 }
 
 WERROR reg_getkeysecurity(TALLOC_CTX *mem_ctx, struct registry_key *key,
