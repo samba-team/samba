@@ -911,12 +911,12 @@ void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex)
 }
 
 /****************************************************************************
- We're doing write behind and the client closed the file. Wait up to 30
+ We're doing write behind and the client closed the file. Wait up to 45
  seconds (my arbitrary choice) for the aio to complete. Return 0 if all writes
  completed, errno to return if not.
 *****************************************************************************/
 
-#define SMB_TIME_FOR_AIO_COMPLETE_WAIT 29
+#define SMB_TIME_FOR_AIO_COMPLETE_WAIT 45
 
 int wait_for_aio_completion(files_struct *fsp)
 {
@@ -980,8 +980,14 @@ int wait_for_aio_completion(files_struct *fsp)
 				 "%d seconds\n", aio_completion_count,
 				 seconds_left));
 			/* Timeout. */
-			cancel_aio_by_fsp(fsp);
 			SAFE_FREE(aiocb_list);
+			/* We're hosed here - IO may complete
+			   and trample over memory if we free
+			   the aio_ex struct, but if we don't
+			   we leak IO requests. I think smb_panic()
+			   if the right thing to do here. JRA.
+			*/
+			smb_panic("AIO suspend timed out - cannot continue.");
 			return EIO;
 		}
 
@@ -1008,29 +1014,6 @@ int wait_for_aio_completion(files_struct *fsp)
 		  aio_completion_count));
 
 	return EIO;
-}
-
-/****************************************************************************
- Cancel any outstanding aio requests. The client doesn't care about the reply.
-*****************************************************************************/
-
-void cancel_aio_by_fsp(files_struct *fsp)
-{
-	struct aio_extra *aio_ex;
-
-	for( aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
-		if (aio_ex->fsp == fsp) {
-			/* Unlock now we're done. */
-			SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
-
-			/* Don't delete the aio_extra record as we may have
-			   completed and don't yet know it. Just do the
-			   aio_cancel call and return. */
-			SMB_VFS_AIO_CANCEL(fsp, &aio_ex->acb);
-			aio_ex->fsp = NULL; /* fsp will be closed when we
-					     * return. */
-		}
-	}
 }
 
 #else
@@ -1081,10 +1064,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 				bool write_through)
 {
 	return NT_STATUS_RETRY;
-}
-
-void cancel_aio_by_fsp(files_struct *fsp)
-{
 }
 
 int wait_for_aio_completion(files_struct *fsp)

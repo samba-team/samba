@@ -667,19 +667,16 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS tmp;
 	connection_struct *conn = fsp->conn;
+	int ret;
 
-	if (close_type == ERROR_CLOSE) {
-		cancel_aio_by_fsp(fsp);
-	} else {
-		/*
-	 	 * If we're finishing async io on a close we can get a write
-		 * error here, we must remember this.
-		 */
-		int ret = wait_for_aio_completion(fsp);
-		if (ret) {
-			status = ntstatus_keeperror(
-				status, map_nt_error_from_unix(ret));
-		}
+	/*
+	 * If we're finishing async io on a close we can get a write
+	 * error here, we must remember this.
+	 */
+	ret = wait_for_aio_completion(fsp);
+	if (ret) {
+		status = ntstatus_keeperror(
+			status, map_nt_error_from_unix(ret));
 	}
 
 	/*

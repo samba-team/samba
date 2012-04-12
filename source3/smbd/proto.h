@@ -89,7 +89,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 				bool write_through);
 bool cancel_smb2_aio(struct smb_request *smbreq);
 int wait_for_aio_completion(files_struct *fsp);
-void cancel_aio_by_fsp(files_struct *fsp);
 void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex);
 
 /* The following definitions come from smbd/blocking.c  */
