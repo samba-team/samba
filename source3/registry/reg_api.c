@@ -569,9 +569,13 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	char *path, *end;
 	WERROR err;
 
-	if (!(mem_ctx = talloc_new(ctx))) return WERR_NOMEM;
+	mem_ctx = talloc_new(ctx);
+	if (mem_ctx == NULL) {
+		return WERR_NOMEM;
+	}
 
-	if (!(path = talloc_strdup(mem_ctx, subkeypath))) {
+	path = talloc_strdup(mem_ctx, subkeypath);
+	if (path == NULL) {
 		err = WERR_NOMEM;
 		goto done;
 	}
