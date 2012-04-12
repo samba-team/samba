@@ -98,7 +98,7 @@ static bool init_aio_linux(struct vfs_handle_struct *handle)
 		return true;
 	}
 
-	/* Shedule a shutdown event for 30 seconds from now. */
+	/* Schedule a shutdown event for 30 seconds from now. */
 	te = tevent_add_timer(server_event_context(),
 				NULL,
 				timeval_current_ofs(30, 0),
