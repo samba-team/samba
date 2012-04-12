@@ -711,10 +711,17 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 		return WERR_ACCESS_DENIED;
 	}
 
+	err = regdb_transaction_start();
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(0, ("reg_setvalue: Failed to start transaction: %s\n",
+			  win_errstr(err)));
+		return err;
+	}
+
 	err = fill_value_cache(key);
 	if (!W_ERROR_IS_OK(err)) {
 		DEBUG(0, ("reg_setvalue: Error filling value cache: %s\n", win_errstr(err)));
-		return err;
+		goto done;
 	}
 
 	existing = regval_ctr_getvalue(key->values, name);
@@ -722,8 +729,10 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 	if ((existing != NULL) &&
 	    (regval_size(existing) == val->data.length) &&
 	    (memcmp(regval_data_p(existing), val->data.data,
-		    val->data.length) == 0)) {
-		return WERR_OK;
+		    val->data.length) == 0))
+	{
+		err = WERR_OK;
+		goto done;
 	}
 
 	res = regval_ctr_addvalue(key->values, name, val->type,
@@ -731,15 +740,33 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 
 	if (res == 0) {
 		TALLOC_FREE(key->values);
-		return WERR_NOMEM;
+		err = WERR_NOMEM;
+		goto done;
 	}
 
 	if (!store_reg_values(key->key, key->values)) {
 		TALLOC_FREE(key->values);
-		return WERR_REG_IO_FAILURE;
+		DEBUG(0, ("reg_setvalue: store_reg_values failed\n"));
+		err = WERR_REG_IO_FAILURE;
+		goto done;
 	}
 
-	return WERR_OK;
+	err = WERR_OK;
+
+done:
+	if (W_ERROR_IS_OK(err)) {
+		err = regdb_transaction_commit();
+		if (!W_ERROR_IS_OK(err)) {
+			DEBUG(0, ("reg_setvalue: Error committing transaction: %s\n", win_errstr(err)));
+		}
+	} else {
+		WERROR err1 = regdb_transaction_cancel();
+		if (!W_ERROR_IS_OK(err1)) {
+			DEBUG(0, ("reg_setvalue: Error cancelling transaction: %s\n", win_errstr(err1)));
+		}
+	}
+
+	return err;
 }
 
 static WERROR reg_value_exists(struct registry_key *key, const char *name)
