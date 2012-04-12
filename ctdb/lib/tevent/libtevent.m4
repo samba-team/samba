@@ -55,8 +55,3 @@ if test x"$INCLUDED_TEVENT" != x"no" ; then
         AC_DEFINE(HAVE_EPOLL, 1, [Whether epoll available])
     fi
 fi
-
-if test x"$VERSIONSCRIPT" != "x"; then
-    EXPORTSFILE=tevent.exports
-    AC_SUBST(EXPORTSFILE)
-fi
