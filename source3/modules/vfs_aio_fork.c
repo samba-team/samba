@@ -710,6 +710,11 @@ static ssize_t aio_fork_return_fn(struct vfs_handle_struct *handle,
 
 	child->aiocb = NULL;
 
+	if (child->cancelled) {
+		errno = ECANCELED;
+		return -1;
+	}
+
 	if (child->retval.size == -1) {
 		errno = child->retval.ret_errno;
 	}

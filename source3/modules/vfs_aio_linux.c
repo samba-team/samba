@@ -418,6 +418,11 @@ static ssize_t aio_linux_return_fn(struct vfs_handle_struct *handle,
 
 	pd->aiocb = NULL;
 
+	if (pd->cancelled) {
+		errno = ECANCELED;
+		return -1;
+	}
+
 	if (pd->ret_size == -1) {
 		errno = pd->ret_errno;
 	}
