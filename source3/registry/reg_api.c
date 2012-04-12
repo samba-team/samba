@@ -695,12 +695,19 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 	err = reg_openkey(mem_ctx, parent, name, REG_KEY_READ, &key);
 	W_ERROR_NOT_OK_GOTO_DONE(err);
 
+	err = regdb_transaction_start();
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(0, ("reg_deletekey: Error starting transaction: %s\n",
+			  win_errstr(err)));
+		goto done;
+	}
+
 	err = fill_subkey_cache(key);
-	W_ERROR_NOT_OK_GOTO_DONE(err);
+	W_ERROR_NOT_OK_GOTO(err, trans_done);
 
 	if (regsubkey_ctr_numkeys(key->subkeys) > 0) {
 		err = WERR_ACCESS_DENIED;
-		goto done;
+		goto trans_done;
 	}
 
 	/* no subkeys - proceed with delete */
@@ -710,7 +717,7 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 
 		err = reg_openkey(mem_ctx, parent, name,
 				  KEY_CREATE_SUB_KEY, &tmp_key);
-		W_ERROR_NOT_OK_GOTO_DONE(err);
+		W_ERROR_NOT_OK_GOTO(err, trans_done);
 
 		parent = tmp_key;
 		name = end+1;
@@ -718,10 +725,23 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 
 	if (name[0] == '\0') {
 		err = WERR_INVALID_PARAM;
-		goto done;
+		goto trans_done;
 	}
 
 	err = delete_reg_subkey(parent->key, name);
+
+trans_done:
+	if (W_ERROR_IS_OK(err)) {
+		err = regdb_transaction_commit();
+		if (!W_ERROR_IS_OK(err)) {
+			DEBUG(0, ("reg_deletekey: Error committing transaction: %s\n", win_errstr(err)));
+		}
+	} else {
+		WERROR err1 = regdb_transaction_cancel();
+		if (!W_ERROR_IS_OK(err1)) {
+			DEBUG(0, ("reg_deletekey: Error cancelling transaction: %s\n", win_errstr(err1)));
+		}
+	}
 
 done:
 	TALLOC_FREE(mem_ctx);
