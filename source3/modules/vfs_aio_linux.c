@@ -280,12 +280,12 @@ static int aio_linux_write(struct vfs_handle_struct *handle,
 }
 
 /************************************************************************
- Handle a single finished io.
+ Save off the error / success conditions from the io_event.
+ Is idempotent (can be called multiple times given the same ioev).
 ***********************************************************************/
 
-static void aio_linux_handle_io_finished(struct io_event *ioev)
+static void aio_linux_setup_returns(struct io_event *ioev)
 {
-	struct aio_extra *aio_ex = NULL;
 	struct aio_private_data *pd = (struct aio_private_data *)ioev->data;
 
 	/* ioev->res2 contains the -errno if error. */
@@ -297,6 +297,18 @@ static void aio_linux_handle_io_finished(struct io_event *ioev)
 		pd->ret_size = ioev->res;
 		pd->ret_errno = 0;
 	}
+}
+
+/************************************************************************
+ Handle a single finished io.
+***********************************************************************/
+
+static void aio_linux_handle_io_finished(struct io_event *ioev)
+{
+	struct aio_extra *aio_ex = NULL;
+	struct aio_private_data *pd = (struct aio_private_data *)ioev->data;
+
+	aio_linux_setup_returns(ioev);
 
 	aio_ex = (struct aio_extra *)pd->aiocb->aio_sigevent.sigev_value.sival_ptr;
 	smbd_aio_complete_aio_ex(aio_ex);
@@ -512,7 +524,15 @@ static void aio_linux_handle_suspend_io_finished(struct suspend_private *sp,
 	for (i = 0; i < sp->num_entries; i++) {
 		if (sp->aiocb_array[i] == pd->aiocb) {
 			sp->num_finished++;
-			aio_linux_handle_io_finished(ioev);
+			/*
+			 * We don't call aio_linux_handle_io_finished()
+			 * here, but only the function that sets up the
+			 * return values. This allows
+			 * aio_linux_handle_io_finished() to be successfully
+			 * called from smbd/aio.c:wait_for_aio_completion()
+			 * once we return from here with all io's done.
+			 */
+			aio_linux_setup_returns(ioev);
 			return;
 		}
 	}
