@@ -294,7 +294,8 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 
 	DEBUG(3, ("register_existing_vuid: User name: %s\t"
 		  "Real name: %s\n", vuser->session_info->unix_name,
-		  vuser->session_info->info3->base.full_name.string));
+		  vuser->session_info->info3->base.full_name.string ?
+		  vuser->session_info->info3->base.full_name.string : ""));
 
 	if (!vuser->session_info->security_token) {
 		DEBUG(1, ("register_existing_vuid: session_info does not "
