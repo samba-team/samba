@@ -1065,7 +1065,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "lock dir",
+		.label		= "lock directory",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szLockDir),
@@ -1074,7 +1074,7 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "lock directory",
+		.label		= "lock dir",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szLockDir),
