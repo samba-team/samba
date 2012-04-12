@@ -2940,6 +2940,7 @@ AC_TRY_RUN([
 #include <unistd.h>
 #endif
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #ifndef HAVE_BLKCNT_T
 typedef long blkcnt_t;
@@ -2956,6 +2957,7 @@ AC_TRY_RUN([
 #include <unistd.h>
 #endif
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #ifndef HAVE_BLKCNT_T
 typedef long blkcnt_t;
