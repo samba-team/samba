@@ -793,12 +793,12 @@ handle_iconv_errno(int err, const char* obuf, size_t linenum,
 	DEBUG(0, ("Illegal multibyte sequence at line %lu: %s",
 		  (long unsigned)(linenum+1), pos));
 
-	assert(ilen > 0);
+	assert((*ilen) > 0);
 	do {
 		size_t il = 1;
 		DEBUGADD(0, ("<%02x>", (unsigned char)**iptr));
 
-		if (olen > 0) {
+		if ((*olen) > 0) {
 			*(*optr)++ = '\?';
 			(*iptr)++;
 			/* Todo: parametrize, e.g. skip: *optr++ = *iptr++; */
