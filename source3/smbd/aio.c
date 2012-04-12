@@ -49,7 +49,6 @@ struct aio_extra {
 	DATA_BLOB outbuf;
 	struct lock_struct lock;
 	bool write_through;
-	bool pass_cancel;
 	int (*handle_completion)(struct aio_extra *ex, int errcode);
 };
 
@@ -454,7 +453,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 	aio_ex->handle_completion = handle_aio_smb2_read_complete;
-	aio_ex->pass_cancel = true;
 
 	init_strict_lock_struct(fsp, (uint64_t)smbreq->smbpid,
 		(uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
@@ -550,7 +548,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 
 	aio_ex->handle_completion = handle_aio_smb2_write_complete;
 	aio_ex->write_through = write_through;
-	aio_ex->pass_cancel = true;
 
 	init_strict_lock_struct(fsp, (uint64_t)smbreq->smbpid,
 		in_offset, (uint64_t)in_data.length, WRITE_LOCK,
@@ -863,17 +860,15 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
 		return False;
 	}
 
+	if (err == ECANCELED) {
+		DEBUG(10,( "handle_aio_completed: operation mid %llu canceled "
+			"for file %s\n",
+			(unsigned long long)aio_ex->smbreq->mid,
+			fsp_str_dbg(aio_ex->fsp)));
+	}
+
 	/* Unlock now we're done. */
 	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
-
-	if (!aio_ex->pass_cancel && err == ECANCELED) {
-		/* If error is ECANCELED then don't return anything to the
-		 * client. */
-	        DEBUG(10,( "handle_aio_completed: operation mid %llu"
-			" canceled\n",
-			(unsigned long long)aio_ex->smbreq->mid));
-		return True;
-        }
 
 	err = aio_ex->handle_completion(aio_ex, err);
 	if (err) {
