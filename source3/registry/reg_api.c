@@ -579,6 +579,13 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 		goto done;
 	}
 
+	err = regdb_transaction_start();
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(0, ("reg_createkey: failed to start transaction: %s\n",
+			  win_errstr(err)));
+		goto done;
+	}
+
 	while ((end = strchr(path, '\\')) != NULL) {
 		struct registry_key *tmp;
 		enum winreg_CreateAction action;
@@ -588,7 +595,7 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 		err = reg_createkey(mem_ctx, key, path,
 				    KEY_ENUMERATE_SUB_KEYS, &tmp, &action);
 		if (!W_ERROR_IS_OK(err)) {
-			goto done;
+			goto trans_done;
 		}
 
 		if (key != parent) {
@@ -609,14 +616,14 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 		if (paction != NULL) {
 			*paction = REG_OPENED_EXISTING_KEY;
 		}
-		goto done;
+		goto trans_done;
 	}
 
 	if (!W_ERROR_EQUAL(err, WERR_BADFILE)) {
 		/*
 		 * Something but "notfound" has happened, so bail out
 		 */
-		goto done;
+		goto trans_done;
 	}
 
 	/*
@@ -627,7 +634,7 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	err = reg_openkey(mem_ctx, key, "", KEY_CREATE_SUB_KEY,
 			  &create_parent);
 	if (!W_ERROR_IS_OK(err)) {
-		goto done;
+		goto trans_done;
 	}
 
 	/*
@@ -635,10 +642,14 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	 */
 
 	err = fill_subkey_cache(create_parent);
-	if (!W_ERROR_IS_OK(err)) goto done;
+	if (!W_ERROR_IS_OK(err)) {
+		goto trans_done;
+	}
 
 	err = create_reg_subkey(key->key, path);
-	W_ERROR_NOT_OK_GOTO_DONE(err);
+	if (!W_ERROR_IS_OK(err)) {
+		goto trans_done;
+	}
 
 	/*
 	 * Now open the newly created key
@@ -647,6 +658,19 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	err = reg_openkey(ctx, create_parent, path, desired_access, pkey);
 	if (W_ERROR_IS_OK(err) && (paction != NULL)) {
 		*paction = REG_CREATED_NEW_KEY;
+	}
+
+trans_done:
+	if (W_ERROR_IS_OK(err)) {
+		err = regdb_transaction_commit();
+		if (!W_ERROR_IS_OK(err)) {
+			DEBUG(0, ("reg_createkey: Error committing transaction: %s\n", win_errstr(err)));
+		}
+	} else {
+		WERROR err1 = regdb_transaction_cancel();
+		if (!W_ERROR_IS_OK(err1)) {
+			DEBUG(0, ("reg_createkey: Error cancelling transaction: %s\n", win_errstr(err1)));
+		}
 	}
 
  done:
