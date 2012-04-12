@@ -89,6 +89,7 @@ static WERROR fill_value_cache(struct registry_key *key)
 		}
 	}
 
+	TALLOC_FREE(key->values);
 	werr = regval_ctr_init(key, &(key->values));
 	W_ERROR_NOT_OK_RETURN(werr);
 
