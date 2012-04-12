@@ -613,7 +613,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bLargeReadwrite),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "server max protocol",
@@ -637,7 +638,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(srv_maxprotocol),
 		.special	= NULL,
-		.enum_list	= enum_protocol
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "server min protocol",
@@ -719,7 +721,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(max_mux),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "max xmit",
@@ -727,7 +730,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(max_xmit),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 
 	{
@@ -744,7 +748,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(max_wins_ttl),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "min wins ttl",
@@ -752,7 +757,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(min_wins_ttl),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "time server",
@@ -760,7 +766,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bTimeServer),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "unix extensions",
@@ -768,7 +775,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bUnixExtensions),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "use spnego",
@@ -784,7 +792,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(server_signing),
 		.special	= NULL,
-		.enum_list	= enum_smb_signing_vals
+		.enum_list	= enum_smb_signing_vals,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "client signing",
@@ -809,7 +818,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(iMaxConnections),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
 		.label		= "paranoid server security",
@@ -885,7 +895,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(szPrintername),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_PRINT,
 	},
 	{
 		.label		= "printer",
@@ -893,7 +904,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(szPrintername),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_HIDE,
 	},
 
 	{
@@ -927,7 +939,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bPreferredMaster),
 		.special	= NULL,
-		.enum_list	= enum_bool_auto
+		.enum_list	= enum_bool_auto,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED,
 	},
 	{
 		.label		= "prefered master",
@@ -935,7 +948,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bPreferredMaster),
 		.special	= NULL,
-		.enum_list	= enum_bool_auto
+		.enum_list	= enum_bool_auto,
+		.flags		= FLAG_HIDE,
 	},
 	{
 		.label		= "local master",
@@ -951,7 +965,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(bBrowseable),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT,
 	},
 	{
 		.label		= "browsable",
@@ -992,7 +1007,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szWINSHook),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 
 	{
@@ -1001,7 +1017,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(iCSCPolicy),
 		.special	= NULL,
-		.enum_list	= enum_csc_policy
+		.enum_list	= enum_csc_policy,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
 
 	{
@@ -1035,7 +1052,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szAutoServices),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "auto services",
@@ -1043,7 +1061,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szAutoServices),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "lock dir",
@@ -1051,7 +1070,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szLockDir),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "lock directory",
@@ -1059,7 +1079,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szLockDir),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_HIDE,
 	},
 	{
 		.label		= "state directory",
@@ -1067,7 +1088,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szStateDir),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "cache directory",
@@ -1075,7 +1097,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szCacheDir),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "pid directory",
@@ -1100,7 +1123,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(szCopy),
 		.special	= handle_copy,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_HIDE,
 	},
 	{
 		.label		= "include",
@@ -1125,7 +1149,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(volume),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
 		.label		= "fstype",
@@ -1159,7 +1184,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bHostMSDfs),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "winbind separator",
@@ -1175,7 +1201,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szWinbinddSocketDirectory),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "winbindd privileged socket directory",
@@ -1183,7 +1210,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szWinbinddPrivilegedSocketDirectory),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "winbind sealed pipes",
@@ -1191,7 +1219,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bWinbindSealedPipes),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "template shell",
@@ -1199,7 +1228,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szTemplateShell),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "template homedir",
@@ -1207,7 +1237,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szTemplateHomedir),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "idmap trusted only",
@@ -1215,7 +1246,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bIdmapTrustedOnly),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 
 	{
@@ -1224,7 +1256,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szNTPSignDSocketDirectory),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "rndc command",
@@ -1232,7 +1265,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szRNDCCommand),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "dns update command",
@@ -1240,7 +1274,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szDNSUpdateCommand),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "spn update command",
@@ -1248,7 +1283,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szSPNUpdateCommand),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "samba kcc command",
@@ -1256,7 +1292,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szSambaKCCCommand),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "nsupdate command",
@@ -1264,7 +1301,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szNSUpdateCommand),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "allow dns updates",
@@ -1272,7 +1310,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(allow_dns_updates),
 		.special	= NULL,
-		.enum_list	= enum_dns_update_settings
+		.enum_list	= enum_dns_update_settings,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "dns forwarder",
@@ -1280,7 +1319,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(dns_forwarder),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "dns recursive queries",
