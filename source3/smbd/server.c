@@ -366,7 +366,7 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	}
 
 	/* not all forked child processes are added to the children list */
-	DEBUG(1, ("Could not find child %d -- ignoring\n", (int)pid));
+	DEBUG(2, ("Could not find child %d -- ignoring\n", (int)pid));
 }
 
 /****************************************************************************
