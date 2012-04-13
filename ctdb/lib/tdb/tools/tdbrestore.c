@@ -5,7 +5,7 @@
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
+   the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
 
    This program is distributed in the hope that it will be useful,
@@ -14,8 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <assert.h>
@@ -39,7 +38,7 @@ static int read_linehead(FILE *f)
 		if (c == EOF) {
 			return -1;
 		}
-		if (c == '\(') {
+		if (c == '(') {
 			break;
 		}
 	}
@@ -171,7 +170,7 @@ static int read_rec(FILE *f, TDB_CONTEXT *tdb, int *eof)
 	    || (swallow(f, "}\n", NULL) == -1)) {
 		goto fail;
 	}
-	if (tdb_store(tdb, key, data, TDB_INSERT) == -1) {
+	if (tdb_store(tdb, key, data, TDB_INSERT) != 0) {
 		fprintf(stderr, "TDB error: %s\n", tdb_errorstr(tdb));
 		goto fail;
 	}
@@ -207,7 +206,6 @@ static int restore_tdb(const char *fname)
 		fprintf(stderr, "Error closing tdb\n");
 		return 1;
 	}
-	fprintf(stderr, "EOF\n");
 	return 0;
 }
 

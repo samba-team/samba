@@ -9,7 +9,7 @@
      ** NOTE! The following LGPL license applies to the tdb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -41,7 +41,7 @@ typedef struct {
 	bool closed;
 } PyTdbObject;
 
-PyAPI_DATA(PyTypeObject) PyTdb;
+staticforward PyTypeObject PyTdb;
 
 static void PyErr_SetTDBError(TDB_CONTEXT *tdb)
 {
@@ -479,7 +479,7 @@ static void tdb_object_dealloc(PyTdbObject *self)
 {
 	if (!self->closed)
 		tdb_close(self->ctx);
-	PyObject_Del(self);
+	self->ob_type->tp_free(self);
 }
 
 static PyObject *obj_getitem(PyTdbObject *self, PyObject *key)
@@ -538,8 +538,8 @@ static PyMappingMethods tdb_object_mapping = {
 	.mp_subscript = (binaryfunc)obj_getitem,
 	.mp_ass_subscript = (objobjargproc)obj_setitem,
 };
-PyTypeObject PyTdb = {
-	.tp_name = "Tdb",
+static PyTypeObject PyTdb = {
+	.tp_name = "tdb.Tdb",
 	.tp_basicsize = sizeof(PyTdbObject),
 	.tp_methods = tdb_object_methods,
 	.tp_getset = tdb_object_getsetters,
@@ -558,6 +558,7 @@ static PyMethodDef tdb_methods[] = {
 	{ NULL }
 };
 
+void inittdb(void);
 void inittdb(void)
 {
 	PyObject *m;
@@ -568,7 +569,8 @@ void inittdb(void)
 	if (PyType_Ready(&PyTdbIterator) < 0)
 		return;
 
-	m = Py_InitModule3("tdb", tdb_methods, "TDB is a simple key-value database similar to GDBM that supports multiple writers.");
+	m = Py_InitModule3("tdb", tdb_methods,
+		"simple key-value database that supports multiple writers.");
 	if (m == NULL)
 		return;
 
