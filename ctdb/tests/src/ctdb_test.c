@@ -27,10 +27,6 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
-#define tevent_context_init(x) tevent_context_init_foobar(x)
-struct tevent_context *tevent_context_init_foobar(TALLOC_CTX *mem_ctx);
-#define tevent_loop_allow_nesting(x) tevent_loop_allow_nesting_foobar(x)
-void tevent_loop_allow_nesting_foobar(struct tevent_context *ev);
 #define ctdb_cmdline_client(x, y) ctdb_cmdline_client_foobar(x, y)
 #define ctdb_get_socketname(x) ctdb_get_socketname_foobar(x)
 
@@ -45,8 +41,6 @@ void tevent_loop_allow_nesting_foobar(struct tevent_context *ev);
 #include "tools/ctdb.c"
 
 #ifdef CTDB_TEST_USE_MAIN
-#undef tevent_context_init
-#undef tevent_loop_allow_nesting
 #undef ctdb_cmdline_client
 #undef ctdb_get_socketname
 #else
