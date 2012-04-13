@@ -223,7 +223,7 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 	struct imessaging_context *imessaging_context = NULL;
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *ev;
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = NULL;
 	NTSTATUS nt_status;
 	const char **methods;
 
