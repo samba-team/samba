@@ -4,8 +4,11 @@
 
 define_test "-n all, 3 nodes, 1 disconnected"
 
+# -n all asks each node for the node status and 
+#        thus reports THIS NODE for each node
+
 required_result 0 <<EOF
-pnn:0 192.168.20.41    OK
+pnn:0 192.168.20.41    OK (THIS NODE)
 pnn:2 192.168.20.43    OK (THIS NODE)
 EOF
 
