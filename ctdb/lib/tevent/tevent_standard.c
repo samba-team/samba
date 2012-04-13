@@ -100,6 +100,17 @@ static int epoll_ctx_destructor(struct std_event_context *std_ev)
 static void epoll_init_ctx(struct std_event_context *std_ev)
 {
 	std_ev->epoll_fd = epoll_create(64);
+	if (std_ev->epoll_fd == -1) {
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_FATAL,
+			     "Failed to create epoll handle.\n");
+		return;
+	}
+
+	if (!ev_set_close_on_exec(std_ev->epoll_fd)) {
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_WARNING,
+			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
+	}
+
 	std_ev->pid = getpid();
 	talloc_set_destructor(std_ev, epoll_ctx_destructor);
 }
@@ -126,6 +137,12 @@ static void epoll_check_reopen(struct std_event_context *std_ev)
 			     "Failed to recreate epoll handle after fork\n");
 		return;
 	}
+
+	if (!ev_set_close_on_exec(std_ev->epoll_fd)) {
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_WARNING,
+			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
+	}
+
 	std_ev->pid = getpid();
 	for (fde=std_ev->ev->fd_events;fde;fde=fde->next) {
 		epoll_add_event(std_ev, fde);
@@ -262,6 +279,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 	}
 
 	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
+
 	if (ret == -1 && errno == EINTR && std_ev->ev->signal_events) {
 		if (tevent_common_check_signal(std_ev->ev)) {
 			return 0;
@@ -456,6 +474,10 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 
 	/* setup any fd events */
 	for (fde = std_ev->ev->fd_events; fde; fde = fde->next) {
+		if (fde->fd < 0 || fde->fd >= FD_SETSIZE) {
+			std_ev->exit_code = EBADF;
+			return -1;
+		}
 		if (fde->flags & TEVENT_FD_READ) {
 			FD_SET(fde->fd, &r_fds);
 		}
@@ -504,7 +526,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 
 			if (FD_ISSET(fde->fd, &r_fds)) flags |= TEVENT_FD_READ;
 			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
-			if (flags) {
+			if (flags & fde->flags) {
 				fde->handler(std_ev->ev, fde, flags, fde->private_data);
 				break;
 			}

@@ -8,7 +8,7 @@
  * signals, and the classic file descriptor events.
  *
  * Tevent also provide helpers to deal with asynchronous code providing the
- * tevent_req (tevent tequest) functions.
+ * tevent_req (tevent request) functions.
  *
  * @section tevent_download Download
  *

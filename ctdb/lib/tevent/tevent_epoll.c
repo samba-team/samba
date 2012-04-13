@@ -42,8 +42,7 @@ struct epoll_event_context {
 };
 
 /*
-  called when a epoll call fails, and we should fallback
-  to using select
+  called when a epoll call fails
 */
 static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
 {
@@ -79,11 +78,20 @@ static int epoll_ctx_destructor(struct epoll_event_context *epoll_ev)
 static int epoll_init_ctx(struct epoll_event_context *epoll_ev)
 {
 	epoll_ev->epoll_fd = epoll_create(64);
-	epoll_ev->pid = getpid();
-	talloc_set_destructor(epoll_ev, epoll_ctx_destructor);
 	if (epoll_ev->epoll_fd == -1) {
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
+			     "Failed to create epoll handle.\n");
 		return -1;
 	}
+
+	if (!ev_set_close_on_exec(epoll_ev->epoll_fd)) {
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_WARNING,
+			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
+	}
+
+	epoll_ev->pid = getpid();
+	talloc_set_destructor(epoll_ev, epoll_ctx_destructor);
+
 	return 0;
 }
 
@@ -109,6 +117,12 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 			     "Failed to recreate epoll handle after fork\n");
 		return;
 	}
+
+	if (!ev_set_close_on_exec(epoll_ev->epoll_fd)) {
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_WARNING,
+			     "Failed to set close-on-exec, file descriptor may be leaked to children.\n");
+	}
+
 	epoll_ev->pid = getpid();
 	for (fde=epoll_ev->ev->fd_events;fde;fde=fde->next) {
 		epoll_add_event(epoll_ev, fde);
@@ -251,6 +265,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	}
 
 	ret = epoll_wait(epoll_ev->epoll_fd, events, MAXEVENTS, timeout);
+
 	if (ret == -1 && errno == EINTR && epoll_ev->ev->signal_events) {
 		if (tevent_common_check_signal(epoll_ev->ev)) {
 			return 0;
