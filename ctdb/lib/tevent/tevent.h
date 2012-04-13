@@ -28,10 +28,6 @@
 #ifndef __TEVENT_H__
 #define __TEVENT_H__
 
-#ifndef TEVENT_DEPRECATED
-#define TEVENT_DEPRECATED
-#endif
-
 #include <stdint.h>
 #include <talloc.h>
 #include <sys/time.h>
@@ -1264,17 +1260,12 @@ typedef int (*tevent_nesting_hook)(struct tevent_context *ev,
 				   void *stack_ptr,
 				   const char *location);
 #ifdef TEVENT_DEPRECATED
-#if (TEVENT_DEPRECATED_QUIET != 1)
 #ifndef _DEPRECATED_
 #if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
 #define _DEPRECATED_ __attribute__ ((deprecated))
 #else
 #define _DEPRECATED_
 #endif
-#endif
-#else
-#undef _DEPRECATED_
-#define _DEPRECATED_
 #endif
 void tevent_loop_allow_nesting(struct tevent_context *ev) _DEPRECATED_;
 void tevent_loop_set_nesting_hook(struct tevent_context *ev,
@@ -1367,8 +1358,6 @@ bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
  * @{
  */
 
-/* Saves ctdb from massive churn. */
-#define TEVENT_COMPAT_DEFINES 1
 #ifdef TEVENT_COMPAT_DEFINES
 
 #define event_context	tevent_context
