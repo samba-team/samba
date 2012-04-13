@@ -111,8 +111,19 @@ bld.RECURSE('libcli/samsync')
 bld.RECURSE('libcli/registry')
 bld.RECURSE('source4/lib/policy')
 bld.RECURSE('libcli/named_pipe_auth')
-if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
-    bld.RECURSE('source4/heimdal_build')
+
+if bld.CONFIG_SET("USING_SYSTEM_KRB5"):
+    if bld.CONFIG_SET("HEIMDAL_KRB5_CONFIG") and bld.CONFIG_SET("KRB5_CONFIG"):
+        if bld.CONFIG_GET("HEIMDAL_KRB5_CONFIG") != bld.CONFIG_GET("KRB5_CONFIG"):
+            # When both HEIMDAL_KRB5_CONFIG and KRB5_CONFIG are set and not equal,
+            # it means one is Heimdal-specific (krb5-config.heimdal, for example)
+            # and there is system heimdal
+            bld.process_separate_rule('system_heimdal')
+    else:
+        bld.process_separate_rule('system_krb5')
+else:
+    bld.process_separate_rule('embedded_heimdal')
+
 bld.RECURSE('libcli/smbreadline')
 bld.RECURSE('codepages')
 bld.RECURSE('source4/setup')

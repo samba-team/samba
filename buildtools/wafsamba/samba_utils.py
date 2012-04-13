@@ -3,7 +3,7 @@
 
 import Build, os, sys, Options, Utils, Task, re, fnmatch, Logs
 from TaskGen import feature, before
-from Configure import conf
+from Configure import conf, ConfigurationContext
 from Logs import debug
 import shlex
 
@@ -624,3 +624,26 @@ def get_tgt_list(bld):
             sys.exit(1)
         tgt_list.append(t)
     return tgt_list
+
+from Constants import WSCRIPT_FILE
+def process_separate_rule(self, rule):
+    ''' cause waf to process additional script based on `rule'.
+        You should have file named wscript_<stage>_rule in the current directory
+        where stage is either 'configure' or 'build'
+    '''
+    ctxclass = self.__class__.__name__
+    stage = ''
+    if ctxclass == 'ConfigurationContext':
+        stage = 'configure'
+    elif ctxclass == 'BuildContext':
+        stage = 'build'
+    file_path = os.path.join(self.curdir, WSCRIPT_FILE+'_'+stage+'_'+rule)
+    txt = load_file(file_path)
+    if txt:
+        dc = {'ctx': self}
+        if getattr(self.__class__, 'pre_recurse', None):
+            dc = self.pre_recurse(txt, file_path, [])
+        exec(compile(txt, file_path, 'exec'), dc)
+
+Build.BuildContext.process_separate_rule = process_separate_rule
+ConfigurationContext.process_separate_rule = process_separate_rule

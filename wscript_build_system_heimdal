@@ -1,0 +1,2 @@
+print "\tSelected system Heimdal build"
+bld.RECURSE('source4/heimdal_build')
