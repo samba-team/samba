@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "system/syslog.h"

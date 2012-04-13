@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "../include/ctdb_private.h"

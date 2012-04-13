@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
@@ -28,7 +27,6 @@
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
 #include "lib/util/dlinklist.h"
-#include "lib/tevent/tevent.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 

@@ -24,7 +24,6 @@
 #include "system/dir.h"
 #include "system/locale.h"
 #include "../include/ctdb_private.h"
-#include "lib/tevent/tevent.h"
 #include "../common/rb_tree.h"
 #include "lib/util/dlinklist.h"
 

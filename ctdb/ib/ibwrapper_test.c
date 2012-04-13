@@ -37,7 +37,6 @@
 #include <time.h>
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "ib/ibwrapper.h"
 
 struct ibwtest_ctx {

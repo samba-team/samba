@@ -26,7 +26,6 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <sys/socket.h>
-#include "lib/tevent/tevent.h"
 
 #define tevent_context_init(x) tevent_context_init_foobar(x)
 struct tevent_context *tevent_context_init_foobar(TALLOC_CTX *mem_ctx);

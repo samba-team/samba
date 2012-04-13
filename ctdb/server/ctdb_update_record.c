@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "db_wrap.h"
 #include "lib/tdb/include/tdb.h"
 #include "ctdb_private.h"
