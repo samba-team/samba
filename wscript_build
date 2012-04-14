@@ -118,11 +118,11 @@ if bld.CONFIG_SET("USING_SYSTEM_KRB5"):
             # When both HEIMDAL_KRB5_CONFIG and KRB5_CONFIG are set and not equal,
             # it means one is Heimdal-specific (krb5-config.heimdal, for example)
             # and there is system heimdal
-            bld.process_separate_rule('system_heimdal')
+            bld.PROCESS_SEPARATE_RULE('system_heimdal')
     else:
-        bld.process_separate_rule('system_krb5')
+        bld.PROCESS_SEPARATE_RULE('system_krb5')
 else:
-    bld.process_separate_rule('embedded_heimdal')
+    bld.PROCESS_SEPARATE_RULE('embedded_heimdal')
 
 bld.RECURSE('libcli/smbreadline')
 bld.RECURSE('codepages')

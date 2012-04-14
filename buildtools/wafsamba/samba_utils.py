@@ -626,7 +626,7 @@ def get_tgt_list(bld):
     return tgt_list
 
 from Constants import WSCRIPT_FILE
-def process_separate_rule(self, rule):
+def PROCESS_SEPARATE_RULE(self, rule):
     ''' cause waf to process additional script based on `rule'.
         You should have file named wscript_<stage>_rule in the current directory
         where stage is either 'configure' or 'build'
@@ -645,5 +645,5 @@ def process_separate_rule(self, rule):
             dc = self.pre_recurse(txt, file_path, [])
         exec(compile(txt, file_path, 'exec'), dc)
 
-Build.BuildContext.process_separate_rule = process_separate_rule
-ConfigurationContext.process_separate_rule = process_separate_rule
+Build.BuildContext.PROCESS_SEPARATE_RULE = PROCESS_SEPARATE_RULE
+ConfigurationContext.PROCESS_SEPARATE_RULE = PROCESS_SEPARATE_RULE
