@@ -111,7 +111,8 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
         help="The server role (domain controller | dc | member server | member | standalone). Default is dc.")
 parser.add_option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
           choices=["2000", "2003", "2008", "2008_R2"],
-        help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2003 Native.")
+        help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2003 Native.",
+        default="2003")
 parser.add_option("--next-rid", type="int", metavar="NEXTRID", default=1000,
         help="The initial nextRid value (only needed for upgrades).  Default is 1000.")
 parser.add_option("--partitions-only",
@@ -200,9 +201,7 @@ server_role = opts.server_role
 if server_role is None:
     server_role = "domain controller"
 
-if opts.function_level is None:
-    dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
-elif opts.function_level == "2000":
+if opts.function_level == "2000":
     dom_for_fun_level = DS_DOMAIN_FUNCTION_2000
 elif opts.function_level == "2003":
     dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
