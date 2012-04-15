@@ -8,7 +8,7 @@
 
 # The idea is that this script outputs all of the tests of Samba 3, not 
 # just those that are known to pass, and list those that should be skipped 
-# or are known to fail in selftest/skip or selftest/samba4-knownfail. This makes it 
+# or are known to fail in selftest/skip or selftest/samba3-knownfail. This makes it 
 # very easy to see what functionality is still missing in Samba 3 and makes 
 # it possible to run the testsuite against other servers, such as Samba 4 or 
 # Windows that have a different set of features.
