@@ -614,14 +614,17 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	}\
 } while (0)
 
-WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
-			       struct dsdb_schema *schema,
-			       struct ldb_message *msg)
+/** Create an dsdb_attribute out of ldb message, attr must be already talloced
+ */
+
+WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
+			       struct ldb_message *msg,
+			       struct dsdb_attribute *attr)
 {
 	WERROR status;
-	struct dsdb_attribute *attr = talloc_zero(schema, struct dsdb_attribute);
-	if (!attr) {
-		return WERR_NOMEM;
+	if (attr == NULL) {
+		DEBUG(0, ("%s: attr is null, it's expected not to be so\n", __location__));
+		return WERR_INVALID_PARAM;
 	}
 
 	GET_STRING_LDB(msg, "cn", attr, attr, cn, false);
@@ -690,6 +693,24 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 	GET_BOOL_LDB(msg, "isDefunct", attr, isDefunct, false);
 	GET_BOOL_LDB(msg, "systemOnly", attr, systemOnly, false);
 
+	return WERR_OK;
+}
+
+WERROR dsdb_set_attribute_from_ldb(struct ldb_context *ldb,
+			       struct dsdb_schema *schema,
+			       struct ldb_message *msg)
+{
+	WERROR status;
+	struct dsdb_attribute *attr = talloc_zero(schema, struct dsdb_attribute);
+	if (!attr) {
+		return WERR_NOMEM;
+	}
+
+	status = dsdb_attribute_from_ldb(schema, msg, attr);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
 	attr->syntax = dsdb_syntax_for_attribute(attr);
 	if (!attr->syntax) {
 		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
@@ -709,7 +730,7 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
+WERROR dsdb_set_class_from_ldb(struct dsdb_schema *schema,
 			   struct ldb_message *msg)
 {
 	WERROR status;

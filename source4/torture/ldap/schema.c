@@ -213,7 +213,7 @@ static int test_add_attribute(void *ptr, struct ldb_context *ldb, struct ldb_mes
 	struct dsdb_schema *schema = talloc_get_type(ptr, struct dsdb_schema);
 	WERROR status;
 
-	status = dsdb_attribute_from_ldb(ldb, schema, msg);
+	status = dsdb_set_attribute_from_ldb(ldb, schema, msg);
 	if (!W_ERROR_IS_OK(status)) {
 		goto failed;
 	}
@@ -228,7 +228,7 @@ static int test_add_class(void *ptr, struct ldb_context *ldb, struct ldb_message
 	struct dsdb_schema *schema = talloc_get_type(ptr, struct dsdb_schema);
 	WERROR status;
 
-	status = dsdb_class_from_ldb(schema, msg);
+	status = dsdb_set_class_from_ldb(schema, msg);
 	if (!W_ERROR_IS_OK(status)) {
 		goto failed;
 	}

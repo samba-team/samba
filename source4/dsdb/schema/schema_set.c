@@ -667,10 +667,10 @@ WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_sche
 {
 	if (samdb_find_attribute(ldb, msg,
 				 "objectclass", "attributeSchema") != NULL) {
-		return dsdb_attribute_from_ldb(ldb, schema, msg);
+		return dsdb_set_attribute_from_ldb(ldb, schema, msg);
 	} else if (samdb_find_attribute(ldb, msg,
 				 "objectclass", "classSchema") != NULL) {
-		return dsdb_class_from_ldb(schema, msg);
+		return dsdb_set_class_from_ldb(schema, msg);
 	}
 
 	/* Don't fail on things not classes or attributes */
