@@ -82,7 +82,12 @@ static int check_braces(const char *string)
 		c = strpbrk(c, "()");
 		if (c == NULL) return 1;
 		if (*c == '(') b++;
-		if (*c == ')') b--;
+		if (*c == ')') {
+			b--;
+			if (*(c - 1) != ' ' && c && (*(c + 1) == '\0')) {
+				return 2;
+			}
+		}
 		c++;
 	}
 	return 0;
@@ -538,8 +543,10 @@ static struct schema_conv process_file(FILE *in, FILE *out)
 
 		do { 
 			if (c == '\n') {
-				entry[t] = '\0';	
-				if (check_braces(entry) == 0) {
+				int ret2 = 0;
+				entry[t] = '\0';
+				ret2 = check_braces(entry);
+				if (ret2 == 0) {
 					ret.count++;
 					ldif.msg = process_entry(ctx, entry);
 					if (ldif.msg == NULL) {
@@ -548,6 +555,11 @@ static struct schema_conv process_file(FILE *in, FILE *out)
 						break;
 					}
 					ldb_ldif_write_file(ldb_ctx, out, &ldif);
+					break;
+				}
+				if (ret2 == 2) {
+					fprintf(stderr, "Invalid entry %s, closing braces needs to be preceeded by a space\n", entry);
+					ret.failures++;
 					break;
 				}
 				line++;
