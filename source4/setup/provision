@@ -108,7 +108,8 @@ parser.add_option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TY
         choices=["fedora-ds", "openldap"])
 parser.add_option("--server-role", type="choice", metavar="ROLE",
           choices=["domain controller", "dc", "member server", "member", "standalone"],
-        help="The server role (domain controller | dc | member server | member | standalone). Default is dc.")
+        help="The server role (domain controller | dc | member server | member | standalone). Default is dc.",
+        default="domain controller")
 parser.add_option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
           choices=["2000", "2003", "2008", "2008_R2"],
         help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2003 Native.",
@@ -196,11 +197,6 @@ if not opts.adminpass:
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile
 
-server_role = opts.server_role
-
-if server_role is None:
-    server_role = "domain controller"
-
 if opts.function_level == "2000":
     dom_for_fun_level = DS_DOMAIN_FUNCTION_2000
 elif opts.function_level == "2003":
@@ -254,10 +250,10 @@ try:
           ntdsguid=opts.ntds_guid,
           invocationid=opts.invocationid, adminpass=opts.adminpass,
           krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
-          dns_backend=dns_backend,
+          dns_backend=opts.dns_backend,
           dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
           wheel=opts.wheel, users=opts.users,
-          serverrole=server_role, dom_for_fun_level=dom_for_fun_level,
+          serverrole=opts.server_role, dom_for_fun_level=dom_for_fun_level,
           backend_type=opts.ldap_backend_type,
           ldapadminpass=opts.ldapadminpass, ol_mmr_urls=opts.ol_mmr_urls,
           slapd_path=opts.slapd_path, 
