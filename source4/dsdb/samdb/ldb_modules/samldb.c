@@ -42,6 +42,12 @@
 #include "libds/common/flag_mapping.h"
 
 struct samldb_ctx;
+enum samldb_add_type {
+	SAMLDB_TYPE_USER,
+	SAMLDB_TYPE_GROUP,
+	SAMLDB_TYPE_CLASS,
+	SAMLDB_TYPE_ATTRIBUTE
+};
 
 typedef int (*samldb_step_fn_t)(struct samldb_ctx *);
 
@@ -55,7 +61,7 @@ struct samldb_ctx {
 	struct ldb_request *req;
 
 	/* used for add operations */
-	const char *type;
+	enum samldb_add_type type;
 
 	/* the resulting message */
 	struct ldb_message *msg;
@@ -581,7 +587,8 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 	int ret;
 
 	/* Add information for the different account types */
-	if (strcmp(ac->type, "user") == 0) {
+	switch(ac->type) {
+	case SAMLDB_TYPE_USER: {
 		struct ldb_control *rodc_control = ldb_request_get_control(ac->req,
 									   LDB_CONTROL_RODC_DCPROMO_OID);
 		if (rodc_control != NULL) {
@@ -597,16 +604,20 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 
 		ret = samldb_add_step(ac, samldb_add_entry);
 		if (ret != LDB_SUCCESS) return ret;
+		break;
+	}
 
-	} else if (strcmp(ac->type, "group") == 0) {
+	case SAMLDB_TYPE_GROUP: {
 		/* check if we have a valid sAMAccountName */
 		ret = samldb_add_step(ac, samldb_check_sAMAccountName);
 		if (ret != LDB_SUCCESS) return ret;
 
 		ret = samldb_add_step(ac, samldb_add_entry);
 		if (ret != LDB_SUCCESS) return ret;
+		break;
+	}
 
-	} else if (strcmp(ac->type, "classSchema") == 0) {
+	case SAMLDB_TYPE_CLASS: {
 		const struct ldb_val *rdn_value, *def_obj_cat_val;
 
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
@@ -684,8 +695,10 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 		 * lookup DN was already saved in "ac->dn" */
 		ret = samldb_add_step(ac, samldb_find_for_defaultObjectCategory);
 		if (ret != LDB_SUCCESS) return ret;
+		break;
+	}
 
-	} else if (strcmp(ac->type, "attributeSchema") == 0) {
+	case SAMLDB_TYPE_ATTRIBUTE: {
 		const struct ldb_val *rdn_value;
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
 		if (rdn_value == NULL) {
@@ -732,11 +745,13 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 
 		ret = samldb_add_step(ac, samldb_add_entry);
 		if (ret != LDB_SUCCESS) return ret;
+		break;
+	}
 
-	} else {
-		ldb_asprintf_errstring(ldb,
-			"Invalid entry type!");
+	default:
+		ldb_asprintf_errstring(ldb, "Invalid entry type!");
 		return LDB_ERR_OPERATIONS_ERROR;
+		break;
 	}
 
 	return samldb_first_step(ac);
@@ -862,7 +877,8 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		if (ret != LDB_SUCCESS) return ret;
 	}
 
-	if (strcmp(ac->type, "user") == 0) {
+	switch(ac->type) {
+	case SAMLDB_TYPE_USER: {
 		bool uac_generated = false;
 
 		/* Step 1.2: Default values */
@@ -1008,8 +1024,10 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 				}
 			}
 		}
+		break;
+	}
 
-	} else if (strcmp(ac->type, "group") == 0) {
+	case SAMLDB_TYPE_GROUP: {
 		const char *tempstr;
 
 		/* Step 2.2: Default values */
@@ -1051,6 +1069,14 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
 			el2->flags = LDB_FLAG_MOD_REPLACE;
 		}
+		break;
+	}
+
+	default:
+		ldb_asprintf_errstring(ldb,
+				"Invalid entry type!");
+		return LDB_ERR_OPERATIONS_ERROR;
+		break;
 	}
 
 	return LDB_SUCCESS;
@@ -1967,7 +1993,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "user") != NULL) {
-		ac->type = "user";
+		ac->type = SAMLDB_TYPE_USER;
 
 		ret = samldb_prim_group_trigger(ac);
 		if (ret != LDB_SUCCESS) {
@@ -1984,7 +2010,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "group") != NULL) {
-		ac->type = "group";
+		ac->type = SAMLDB_TYPE_GROUP;
 
 		ret = samldb_objectclass_trigger(ac);
 		if (ret != LDB_SUCCESS) {
@@ -2009,7 +2035,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 
-		ac->type = "classSchema";
+		ac->type = SAMLDB_TYPE_CLASS;
 		return samldb_fill_object(ac);
 	}
 
@@ -2021,7 +2047,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 
-		ac->type = "attributeSchema";
+		ac->type = SAMLDB_TYPE_ATTRIBUTE;
 		return samldb_fill_object(ac);
 	}
 
