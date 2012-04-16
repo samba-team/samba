@@ -177,15 +177,21 @@ ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
 	uint32_t i;
 	ssize_t result = -1;
 	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (!frame) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	DEBUG(10, ("xattr_tdb_getattr called for file %s, name %s\n",
-		   file_id_string_tos(id), name));
+		   file_id_string(frame, id), name));
 
-	status = xattr_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
+	status = xattr_tdb_load_attrs(frame, db_ctx, id, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
+		TALLOC_FREE(frame);
 		errno = EINVAL;
 		return -1;
 	}
@@ -206,7 +212,7 @@ ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
 	result = attribs->eas[i].value.length;
 
  fail:
-	TALLOC_FREE(attribs);
+	TALLOC_FREE(frame);
 	return result;
 }
 
@@ -223,11 +229,16 @@ int xattr_tdb_setattr(struct db_context *db_ctx,
 	struct tdb_xattrs *attribs;
 	uint32_t i;
 	TDB_DATA data;
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (!frame) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	DEBUG(10, ("xattr_tdb_setattr called for file %s, name %s\n",
-		   file_id_string_tos(id), name));
+		   file_id_string(frame, id), name));
 
-	rec = xattr_tdb_lock_attrs(talloc_tos(), db_ctx, id);
+	rec = xattr_tdb_lock_attrs(frame, db_ctx, id);
 
 	if (rec == NULL) {
 		DEBUG(0, ("xattr_tdb_lock_attrs failed\n"));
@@ -242,14 +253,14 @@ int xattr_tdb_setattr(struct db_context *db_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
-		TALLOC_FREE(rec);
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
 	for (i=0; i<attribs->num_eas; i++) {
 		if (strcmp(attribs->eas[i].name, name) == 0) {
 			if (flags & XATTR_CREATE) {
-				TALLOC_FREE(rec);
+				TALLOC_FREE(frame);
 				errno = EEXIST;
 				return -1;
 			}
@@ -261,7 +272,7 @@ int xattr_tdb_setattr(struct db_context *db_ctx,
 		struct xattr_EA *tmp;
 
 		if (flags & XATTR_REPLACE) {
-			TALLOC_FREE(rec);
+			TALLOC_FREE(frame);
 			errno = ENOATTR;
 			return -1;
 		}
@@ -272,7 +283,7 @@ int xattr_tdb_setattr(struct db_context *db_ctx,
 
 		if (tmp == NULL) {
 			DEBUG(0, ("talloc_realloc failed\n"));
-			TALLOC_FREE(rec);
+			TALLOC_FREE(frame);
 			errno = ENOMEM;
 			return -1;
 		}
@@ -287,7 +298,7 @@ int xattr_tdb_setattr(struct db_context *db_ctx,
 
 	status = xattr_tdb_save_attrs(rec, attribs);
 
-	TALLOC_FREE(rec);
+	TALLOC_FREE(frame);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("save failed: %s\n", nt_errstr(status)));
@@ -309,13 +320,19 @@ ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 	struct tdb_xattrs *attribs;
 	uint32_t i;
 	size_t len = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (!frame) {
+		errno = ENOMEM;
+		return -1;
+	}
 
-	status = xattr_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
+	status = xattr_tdb_load_attrs(frame, db_ctx, id, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
 		errno = EINVAL;
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
@@ -335,7 +352,7 @@ ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 		 */
 
 		if (len + (tmp+1) < len) {
-			TALLOC_FREE(attribs);
+			TALLOC_FREE(frame);
 			errno = EINVAL;
 			return -1;
 		}
@@ -347,7 +364,7 @@ ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 	}
 
 	if (len > size) {
-		TALLOC_FREE(attribs);
+		TALLOC_FREE(frame);
 		errno = ERANGE;
 		return len;
 	}
@@ -360,7 +377,7 @@ ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 		len += (strlen(attribs->eas[i].name) + 1);
 	}
 
-	TALLOC_FREE(attribs);
+	TALLOC_FREE(frame);
 	return len;
 }
 
