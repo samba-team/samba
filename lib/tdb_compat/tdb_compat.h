@@ -87,6 +87,8 @@ int tdb_reopen_all(int parent_longlived);
 
 /* tdb2 does nonblocking functions via attibutes. */
 enum TDB_ERROR tdb_transaction_start_nonblock(struct tdb_context *tdb);
+enum TDB_ERROR tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key);
+
 
 /* Convenient (typesafe) wrapper for tdb open with logging */
 #define tdb_open_compat(name, hsize, tdb_fl, open_fl, mode, log_fn, log_data) \

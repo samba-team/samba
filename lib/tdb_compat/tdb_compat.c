@@ -38,6 +38,30 @@ enum TDB_ERROR tdb_transaction_start_nonblock(struct tdb_context *tdb)
 	return ecode;
 }
 
+enum TDB_ERROR tdb_chainlock_nonblock(struct tdb_context *tdb, TDB_DATA key)
+{
+	union tdb_attribute locking, orig;
+	enum TDB_ERROR ecode;
+
+	orig.base.attr = TDB_ATTRIBUTE_FLOCK;
+	ecode = tdb_get_attribute(tdb, &orig);
+	if (ecode != TDB_SUCCESS)
+		return ecode;
+
+	/* Replace locking function with our own. */
+	locking = orig;
+	locking.flock.data = &orig;
+	locking.flock.lock = lock_nonblock;
+
+	ecode = tdb_set_attribute(tdb, &locking);
+	if (ecode != TDB_SUCCESS)
+		return ecode;
+
+	ecode = tdb_chainlock(tdb, key);
+	tdb_unset_attribute(tdb, TDB_ATTRIBUTE_FLOCK);
+	return ecode;
+}
+
 /* For TDB1 tdbs, read traverse vs normal matters: write traverse
    locks the entire thing! */
 int64_t tdb_traverse_read_(struct tdb_context *tdb,
