@@ -132,5 +132,11 @@ bool tdb_change_uint32_atomic(struct tdb_context *tdb, const char *keystr, uint3
 int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA dbuf,
                      void *state);
 
+/****************************************************************************
+ Return an NTSTATUS from a TDB_ERROR
+****************************************************************************/
+
+NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err);
+
 #endif /* _____LIB_UTIL_UTIL_TDB_H__ */
 

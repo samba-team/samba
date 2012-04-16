@@ -4,7 +4,8 @@
    tdb utility functions
 
    Copyright (C) Andrew Tridgell 1992-2006
-   
+   Copyright (C) Volker Lendecke 2007-2011
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -350,4 +351,66 @@ int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA d
                      void *state)
 {
     return tdb_delete(the_tdb, key);
+}
+
+/****************************************************************************
+ Return an NTSTATUS from a TDB_ERROR
+****************************************************************************/
+
+NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
+{
+	NTSTATUS result = NT_STATUS_INTERNAL_ERROR;
+
+	switch (err) {
+	case TDB_SUCCESS:
+		result = NT_STATUS_OK;
+		break;
+	case TDB_ERR_CORRUPT:
+		result = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		break;
+	case TDB_ERR_IO:
+		result = NT_STATUS_UNEXPECTED_IO_ERROR;
+		break;
+	case TDB_ERR_OOM:
+		result = NT_STATUS_NO_MEMORY;
+		break;
+	case TDB_ERR_EXISTS:
+		result = NT_STATUS_OBJECT_NAME_COLLISION;
+		break;
+
+	case TDB_ERR_LOCK:
+		/*
+		 * TDB_ERR_LOCK is very broad, we could for example
+		 * distinguish between fcntl locks and invalid lock
+		 * sequences. So NT_STATUS_FILE_LOCK_CONFLICT is a
+		 * compromise.
+		 */
+		result = NT_STATUS_FILE_LOCK_CONFLICT;
+		break;
+
+#ifndef BUILD_TDB2
+	case TDB_ERR_NOLOCK:
+	case TDB_ERR_LOCK_TIMEOUT:
+		/*
+		 * These two ones in the enum are not actually used
+		 */
+		result = NT_STATUS_FILE_LOCK_CONFLICT;
+		break;
+#endif
+	case TDB_ERR_NOEXIST:
+		result = NT_STATUS_NOT_FOUND;
+		break;
+	case TDB_ERR_EINVAL:
+		result = NT_STATUS_INVALID_PARAMETER;
+		break;
+	case TDB_ERR_RDONLY:
+		result = NT_STATUS_ACCESS_DENIED;
+		break;
+#ifndef BUILD_TDB2
+	case TDB_ERR_NESTING:
+		result = NT_STATUS_INTERNAL_ERROR;
+		break;
+#endif
+	};
+	return result;
 }
