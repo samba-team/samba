@@ -3923,7 +3923,7 @@ static int cmd_notify(void)
 		goto fail;
 	}
 	status = cli_ntcreate(
-		cli, name, 0, READ_CONTROL_ACCESS, 0,
+		cli, name, 0, FILE_READ_DATA, 0,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_OPEN, 0, 0, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
