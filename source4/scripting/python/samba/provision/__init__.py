@@ -587,7 +587,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
 
 def make_smbconf(smbconf, hostname, domain, realm, targetdir,
-                 serverrole=None, sid_generator=None, eadb=False, lp=None,
+                 serverrole=None, sid_generator=None, eadb=False, use_ntvfs=False, lp=None,
                  global_param=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
@@ -623,12 +623,19 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     #Load non-existant file
     if os.path.exists(smbconf):
         lp.load(smbconf)
-    if eadb and not lp.get("posix:eadb"):
-        if targetdir is not None:
-            privdir = os.path.join(targetdir, "private")
-        else:
-            privdir = lp.get("private dir")
-        lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
+    if eadb:
+        if use_ntvfs and not lp.get("posix:eadb"):
+            if targetdir is not None:
+                privdir = os.path.join(targetdir, "private")
+            else:
+                privdir = lp.get("private dir")
+            lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
+        elif not use_ntvfs and not lp.get("xattr_tdb:file"):
+            if targetdir is not None:
+                statedir = os.path.join(targetdir, "state")
+            else:
+                statedir = lp.get("state dir")
+            lp.set("xattr_tdb:file", os.path.abspath(os.path.join(statedir, "xattr.tdb")))
 
     if global_param is not None:
         for ent in global_param:
@@ -1665,12 +1672,12 @@ def provision(logger, session_info, credentials, smbconf=None,
         if data is None or data == "":
             make_smbconf(smbconf, hostname, domain, realm,
                          targetdir, serverrole=serverrole,
-                         sid_generator=sid_generator, eadb=useeadb,
+                         sid_generator=sid_generator, eadb=useeadb, use_ntvfs=use_ntvfs,
                          lp=lp, global_param=global_param)
     else:
         make_smbconf(smbconf, hostname, domain, realm, targetdir,
                      serverrole=serverrole, sid_generator=sid_generator,
-                     eadb=useeadb, lp=lp, global_param=global_param)
+                     eadb=useeadb, use_ntvfs=use_ntvfs, lp=lp, global_param=global_param)
 
     if lp is None:
         lp = samba.param.LoadParm()

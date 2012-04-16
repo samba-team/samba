@@ -1268,7 +1268,7 @@ sub provision_plugin_s4_dc($$)
 	my $extra_smbconf_options = "
 server services = -smb +s3fs
 dcerpc endpoint servers = -unixinfo -spoolss -winreg -wkssvc -srvsvc
-
+xattr_tdb:file = $prefix/statedir/xattr.tdb
 ";
 
 	print "PROVISIONING PLUGIN S4 DC...";
