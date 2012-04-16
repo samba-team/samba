@@ -194,6 +194,11 @@ void *talloc_init(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
  * talloc_set_log_stderr() for more information on talloc logging
  * functions.
  *
+ * If <code>TALLOC_FREE_FILL</code> environment variable is set,
+ * the memory occupied by the context is filled with the value of this variable.
+ * The value should be a numeric representation of the character you want to
+ * use.
+ *
  * talloc_free() operates recursively on its children.
  *
  * @param[in]  ptr      The chunk to be freed.
