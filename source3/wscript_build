@@ -501,10 +501,10 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
 
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}'''
 
-CLIENT_SRC1 = '''client/client.c client/clitar.c
-                 client/dnsbrowse.c'''
-
-CLIENT_SRC = '''${CLIENT_SRC1}'''
+CLIENT_SRC = '''
+             client/client.c
+             client/clitar.c
+             client/dnsbrowse.c'''
 
 LIB_SMBCONF_SRC = 'lib/smbconf/smbconf_init.c lib/smbconf/smbconf_reg.c'
 
@@ -1263,10 +1263,10 @@ bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
                  param
                  ndr-standard
                  SMBREADLINE
-                 smbclient
+                 libsmb
+                 msrpc3
                  RPC_NDR_SRVSVC
-                 cli_smb_common''',
-                 vars=locals())
+                 cli_smb_common''')
 
 bld.SAMBA3_BINARY('net',
                  source=NET_SRC,
