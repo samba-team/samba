@@ -619,6 +619,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 
 	case SAMLDB_TYPE_CLASS: {
 		const struct ldb_val *rdn_value, *def_obj_cat_val;
+		unsigned int v = ldb_msg_find_attr_as_uint(ac->msg, "objectClassCategory", -2);
 
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 						  "rdnAttId", "cn");
@@ -695,11 +696,21 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 		 * lookup DN was already saved in "ac->dn" */
 		ret = samldb_add_step(ac, samldb_find_for_defaultObjectCategory);
 		if (ret != LDB_SUCCESS) return ret;
+
+		/* -2 is not a valid objectClassCategory so it means the attribute wasn't present */
+		if (v == -2) {
+			/* Windows 2003 does this*/
+			ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg, "objectClassCategory", 0);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
 		break;
 	}
 
 	case SAMLDB_TYPE_ATTRIBUTE: {
 		const struct ldb_val *rdn_value;
+		struct ldb_message_element *el;
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
 		if (rdn_value == NULL) {
 			return ldb_operr(ldb);
@@ -736,6 +747,38 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 			if (ret != LDB_SUCCESS) {
 				ldb_oom(ldb);
 				return ret;
+			}
+		}
+
+		el = ldb_msg_find_element(ac->msg, "attributeSyntax");
+		if (el) {
+			/*
+			 * No need to scream if there isn't as we have code later on
+			 * that will take care of it.
+			 */
+			const struct dsdb_syntax *syntax = find_syntax_map_by_ad_oid((const char *)el->values[0].data);
+			if (!syntax) {
+				DEBUG(9, ("Can't find dsdb_syntax object for attributeSyntax %s\n",
+						(const char *)el->values[0].data));
+			} else {
+				unsigned int v = ldb_msg_find_attr_as_uint(ac->msg, "oMSyntax", 0);
+				const struct ldb_val *val = ldb_msg_find_ldb_val(ac->msg, "oMObjectClass");
+
+				if (v == 0) {
+					ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg, "oMSyntax", syntax->oMSyntax);
+					if (ret != LDB_SUCCESS) {
+						return ret;
+					}
+				}
+				if (!val) {
+					struct ldb_val val2 = ldb_val_dup(ldb, &syntax->oMObjectClass);
+					if (val2.length > 0) {
+						ret = ldb_msg_add_value(ac->msg, "oMObjectClass", &val2, NULL);
+						if (ret != LDB_SUCCESS) {
+							return ret;
+						}
+					}
+				}
 			}
 		}
 
