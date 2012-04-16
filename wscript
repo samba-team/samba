@@ -105,6 +105,7 @@ def configure(conf):
     conf.RECURSE('selftest')
     conf.RECURSE('source3')
     conf.RECURSE('lib/addns')
+    conf.RECURSE('source3/libsmb')
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
 

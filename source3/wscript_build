@@ -462,23 +462,6 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}'''
 LIBSMBCLIENT_THREAD_SRC = '''libsmb/libsmb_thread_impl.c
                         libsmb/libsmb_thread_posix.c'''
 
-LIBSMBCLIENT_SRC0 = '''libsmb/libsmb_cache.c
-                    libsmb/libsmb_compat.c
-                    libsmb/libsmb_context.c
-                    libsmb/libsmb_dir.c
-                    libsmb/libsmb_file.c
-                    libsmb/libsmb_misc.c
-                    libsmb/libsmb_path.c
-                    libsmb/libsmb_printjob.c
-                    libsmb/libsmb_server.c
-                    libsmb/libsmb_stat.c
-                    libsmb/libsmb_xattr.c
-                    libsmb/libsmb_setget.c'''
-
-LIBSMBCLIENT_SRC1 = '''${LIBSMBCLIENT_SRC0}'''
-
-LIBSMBCLIENT_SRC = '${LIBSMBCLIENT_SRC1}'
-
 LIBSMBSHAREMODES_SRC0 = 'libsmb/smb_share_modes.c'
 
 LIBSMBSHAREMODES_SRC = '${LIBSMBSHAREMODES_SRC0}'
@@ -664,23 +647,6 @@ bld.SAMBA3_LIBRARY('netapi',
                     public_headers='../source3/lib/netapi/netapi.h',
                     pc_files=[],
                     vnum='0',
-                    vars=locals())
-
-bld.SAMBA3_LIBRARY('smbclient',
-                    source=LIBSMBCLIENT_SRC,
-                    public_deps='''
-                    talloc
-                    param
-                    libsmb
-                    KRBCLIENT
-                    msrpc3
-                    libcli_lsa3
-                    ''',
-                    public_headers='include/libsmbclient.h',
-                    abi_directory='libsmb/ABI',
-                    abi_match='smbc_*',
-                    vnum='0.1.0',
-                    pc_files='libsmb/smbclient.pc',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('smbsharemodes',
@@ -1614,6 +1580,7 @@ bld.RECURSE('libgpo/gpext')
 bld.RECURSE('lib/pthreadpool')
 bld.RECURSE('librpc')
 bld.RECURSE('librpc/idl')
+bld.RECURSE('libsmb')
 bld.RECURSE('modules')
 bld.RECURSE('pam_smbpass')
 bld.RECURSE('passdb')
