@@ -21,7 +21,9 @@ with_summary=false
 with_desc=false
 quiet=false
 
-temp=$(getopt -n "$prog" -o "xdhqs" -l help -- "$@")
+export TEST_VERBOSE=false
+
+temp=$(getopt -n "$prog" -o "xdhqsv" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -33,6 +35,7 @@ while true ; do
 	-d) with_desc=true ; shift ;;  # 4th line of output is description
 	-q) quiet=true ; shift ;;
 	-s) with_summary=true ; shift ;;
+	-v) TEST_VERBOSE=true ; shift ;;
 	--) shift ; break ;;
 	*) usage ;;
     esac
