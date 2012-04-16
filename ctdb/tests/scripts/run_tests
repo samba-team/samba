@@ -148,7 +148,7 @@ run_one_test ()
 
 for f ; do
     if [ -d "$f" ] ; then
-	for i in $(ls "$f/"*".sh" 2>/dev/null) ; do
+	for i in $(ls "${f%/}/"*".sh" 2>/dev/null) ; do
 	    run_one_test "$i"
 	done
     elif [ -f "$f" ] ; then
