@@ -8,51 +8,6 @@ fail ()
 
 ######################################################################
 
-ctdb_test_begin ()
-{
-    local name="$1"
-
-    teststarttime=$(date '+%s')
-    testduration=0
-
-    echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
-    echo "Running test $name ($(date '+%T'))"
-    echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
-}
-
-ctdb_test_end ()
-{
-    local name="$1" ; shift
-    local status="$1" ; shift
-    # "$@" is command-line
-
-    local interp="SKIPPED"
-    local statstr=" (reason $*)"
-    if [ -n "$status" ] ; then
-	if [ $status -eq 0 ] ; then
-	    interp="PASSED"
-	    statstr=""
-	    echo "ALL OK: $*"
-	else
-	    interp="FAILED"
-	    statstr=" (status $status)"
-	    testfailures=$(($testfailures+1))
-	fi
-    fi
-
-    testduration=$(($(date +%s)-$teststarttime))
-
-    echo "=========================================================================="
-    echo "TEST ${interp}: ${name}${statstr} (duration: ${testduration}s)"
-    echo "=========================================================================="
-
-}
-
-test_exit ()
-{
-    exit $(($testfailures+0))
-}
-
 ctdb_check_time_logs ()
 {
     local threshold=20
@@ -142,22 +97,6 @@ ctdb_test_exit ()
 ctdb_test_exit_hook_add ()
 {
     ctdb_test_exit_hook="${ctdb_test_exit_hook}${ctdb_test_exit_hook:+ ; }$*"
-}
-
-ctdb_test_run ()
-{
-    local name="$1" ; shift
-    
-    [ -n "$1" ] || set -- "$name"
-
-    ctdb_test_begin "$name"
-
-    local status=0
-    "$@" || status=$?
-
-    ctdb_test_end "$name" "$status" "$*"
-    
-    return $status
 }
 
 ctdb_test_usage()
