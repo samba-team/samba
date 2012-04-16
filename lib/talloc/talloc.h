@@ -827,6 +827,10 @@ void *talloc_find_parent_bytype(const void *ptr, #type);
  * recursively. If you use the child of the talloc pool as a parent for
  * grand-children, their memory is also taken from the talloc pool.
  *
+ * If there is not enough memory in the pool to allocate the new child,
+ * it will create a new talloc chunk as if the parent was a normal talloc
+ * context.
+ *
  * If you talloc_free() children of a talloc pool, the memory is not given
  * back to the system. Instead, free(3) is only called if the talloc_pool()
  * itself is released with talloc_free().
