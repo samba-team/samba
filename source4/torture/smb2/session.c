@@ -146,7 +146,7 @@ bool test_session_reauth1(struct torture_context *tctx, struct smb2_tree *tree)
 	union smb_fileinfo qfinfo;
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reconnect_%s.dat",
+	snprintf(fname, 256, "session_reauth1_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
