@@ -4121,15 +4121,15 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	if (session->smb2.signing_key.length != 0) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
 	no_sign_flags = SMB2_SESSION_FLAG_IS_GUEST | SMB2_SESSION_FLAG_IS_NULL;
 
 	if (session->smb2.session_flags & no_sign_flags) {
 		session->smb2.should_sign = false;
 		return NT_STATUS_OK;
+	}
+
+	if (session->smb2.signing_key.length != 0) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	ZERO_STRUCT(session_key);
