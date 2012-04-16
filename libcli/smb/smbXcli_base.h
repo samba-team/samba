@@ -265,4 +265,19 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 					 const DATA_BLOB channel_key,
 					 const struct iovec *recv_iov);
 
+struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_conn *conn,
+				uint32_t timeout_msec,
+				struct smbXcli_session *session,
+				uint8_t in_flags,
+				uint32_t in_capabilities,
+				uint32_t in_channel,
+				uint64_t in_previous_session_id,
+				const DATA_BLOB *in_security_buffer);
+NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    struct iovec **recv_iov,
+				    DATA_BLOB *out_security_buffer);
+
 #endif /* _SMBXCLI_BASE_H_ */
