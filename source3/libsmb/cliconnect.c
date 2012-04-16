@@ -1710,6 +1710,22 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 
 		if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
 			struct smbXcli_session *session = state->cli->smb2.session;
+
+			if (state->ntlmssp_state->nt_hash == NULL) {
+				/*
+				 * Windows server does not set the
+				 * SMB2_SESSION_FLAG_IS_GUEST nor
+				 * SMB2_SESSION_FLAG_IS_NULL flag.
+				 *
+				 * This fix makes sure we do not try
+				 * to verify a signature on the final
+				 * session setup response.
+				 */
+				TALLOC_FREE(state->ntlmssp_state);
+				tevent_req_done(req);
+				return;
+			}
+
 			status = smb2cli_session_set_session_key(session,
 						state->ntlmssp_state->session_key,
 						recv_iov);
