@@ -3,14 +3,11 @@
 # Print a message and exit.
 die () { echo "$@" >&2 ; exit 1 ; }
 
-test_bin="$(dirname ${TESTS_SUBDIR})/bin"
+test_bin="$(dirname ${TEST_SUBDIR})/bin"
 
 define_test ()
 {
-    _f="$0"
-    _f="${_f#./}"  # strip leading ./
-    _f="${_f#testcases/}"  # strip leading testcases/
-    _f="${_f%.sh}" # strip off .sh suffix if any
+    _f=$(basename "$0" ".sh")
 
     case "$_f" in
 	func.*)
@@ -28,12 +25,6 @@ define_test ()
     esac
 
     printf "%-28s - %s\n" "$_f" "$1"
-}
-
-required_result ()
-{
-    required_rc="${1:-0}"
-    required_output=$(cat)
 }
 
 simple_test ()
@@ -54,7 +45,7 @@ simple_test ()
     fi
 
     if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
-	if [ "$TESTS_VERBOSE" = "yes" ] ; then
+	if [ "$TEST_VERBOSE" = "yes" ] ; then
 	    cat <<EOF
 ##################################################
 Output (Exit status: ${_rc}):

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "${TESTS_SUBDIR}/common.sh"
+. "${TEST_SCRIPTS_DIR}/unit.sh"
 
 define_test "-n all all, 3 nodes, 1 disconnected"
 
