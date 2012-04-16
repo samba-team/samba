@@ -1317,7 +1317,26 @@ char *talloc_strdup(const void *t, const char *p);
 char *talloc_strdup_append(char *s, const char *a);
 
 /**
- * @brief Append a string to a given buffer and duplicate the result.
+ * @brief Append a string to a given buffer.
+ *
+ * This is a more efficient version of talloc_strdup_append(). It determines the
+ * length of the destination string by the size of the talloc context.
+ *
+ * Use this very carefully as it produces a different result than
+ * talloc_strdup_append() when a zero character is in the middle of the
+ * destination string.
+ *
+ * @code
+ *      char *str_a = talloc_strdup(NULL, "hello world");
+ *      char *str_b = talloc_strdup(NULL, "hello world");
+ *      str_a[5] = str_b[5] = '\0'
+ *
+ *      char *app = talloc_strdup_append(str_a, ", hello");
+ *      char *buf = talloc_strdup_append_buffer(str_b, ", hello");
+ *
+ *      printf("%s\n", app); // hello, hello (app = "hello, hello")
+ *      printf("%s\n", buf); // hello (buf = "hello\0world, hello")
+ * @endcode
  *
  * @param[in]  s        The destination buffer to append to.
  *
@@ -1326,6 +1345,8 @@ char *talloc_strdup_append(char *s, const char *a);
  * @return              The duplicated string, NULL on error.
  *
  * @see talloc_strdup()
+ * @see talloc_strdup_append()
+ * @see talloc_array_length()
  */
 char *talloc_strdup_append_buffer(char *s, const char *a);
 
