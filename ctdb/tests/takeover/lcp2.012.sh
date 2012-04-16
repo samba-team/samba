@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "${TAKEOVER_TESTS_DIR}/common.sh"
+. "${TEST_SCRIPTS_DIR}/unit.sh"
 
 define_test "Node with NODE_FLAGS_NOIPTAKEOVER doesn't gain IPs"
 

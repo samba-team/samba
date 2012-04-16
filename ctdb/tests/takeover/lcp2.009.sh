@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "${TAKEOVER_TESTS_DIR}/common.sh"
+. "${TEST_SCRIPTS_DIR}/unit.sh"
 
 define_test "3 nodes, 3 healthy -> all disconnected"
 

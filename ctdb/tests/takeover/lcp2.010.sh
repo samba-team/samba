@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "${TAKEOVER_TESTS_DIR}/common.sh"
+. "${TEST_SCRIPTS_DIR}/unit.sh"
 
 define_test "2 disjoint groups of nodes/addresses, a node becomes healthy"
 

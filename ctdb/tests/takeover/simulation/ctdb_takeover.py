@@ -786,7 +786,7 @@ class Cluster(object):
         else:
             os.environ["CTDB_TEST_LOGLEVEL"] = "0"
 
-        p = subprocess.Popen("../bin/ctdb_takeover_tests ctdb_takeover_run_core %s 2>&1" % nodestates,
+        p = subprocess.Popen("../../bin/ctdb_takeover_tests ctdb_takeover_run_core %s 2>&1" % nodestates,
                              shell=True,
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         p.stdin.write("\n".join(in_lines))

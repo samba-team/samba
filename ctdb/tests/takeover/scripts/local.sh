@@ -1,16 +1,10 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-# Print a message and exit.
-die () { echo "$@" >&2 ; exit 1 ; }
-
-test_prog="$(dirname ${TAKEOVER_TESTS_DIR})/bin/ctdb_takeover_tests ctdb_takeover_run_core"
+test_prog="$(dirname ${TEST_SUBDIR})/bin/ctdb_takeover_tests ctdb_takeover_run_core"
 
 define_test ()
 {
-    _f="$0"
-    _f="${_f#./}"  # strip leading ./
-    _f="${_f#testcases/}"  # strip leading testcases/
-    _f="${_f%.sh}" # strip off .sh suffix if any
+    _f=$(basename "$0" ".sh")
 
     case "$_f" in
 	nondet.*)
@@ -26,12 +20,6 @@ define_test ()
     esac
 
     printf "%-12s - %s\n" "$_f" "$1"
-}
-
-required_result ()
-{
-    required_rc="${1:-0}"
-    required_output=$(cat)
 }
 
 simple_test ()
