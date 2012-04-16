@@ -1373,8 +1373,17 @@ char *talloc_strdup_append_buffer(char *s, const char *a);
 char *talloc_strndup(const void *t, const char *p, size_t n);
 
 /**
- * @brief Append at most n characters of a string to given string and duplicate
- *        the result.
+ * @brief Append at most n characters of a string to given string.
+ *
+ * The destination string is reallocated to take
+ * <code>strlen(s) + strnlen(a, n) + 1</code> characters.
+ *
+ * This functions sets the name of the new pointer to the new
+ * string. This is equivalent to:
+ *
+ * @code
+ *      talloc_set_name_const(ptr, ptr)
+ * @endcode
  *
  * @param[in]  s        The destination string to append to.
  *
@@ -1386,6 +1395,7 @@ char *talloc_strndup(const void *t, const char *p, size_t n);
  * @return              The duplicated string, NULL on error.
  *
  * @see talloc_strndup()
+ * @see talloc_strndup_append_buffer()
  */
 char *talloc_strndup_append(char *s, const char *a, size_t n);
 
