@@ -4145,10 +4145,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
-#define _STRING_BLOB(x) data_blob_const((const uint8_t *)(x), sizeof(x))
-		const DATA_BLOB label = _STRING_BLOB("SMB2AESCMAC");
-		const DATA_BLOB context = _STRING_BLOB("SmbSign");
-#undef _STRING_BLOB
+		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCMAC");
+		const DATA_BLOB context = data_blob_string_const_null("SmbSign");
 
 		smb2_key_derivation(session_key, sizeof(session_key),
 				    label.data, label.length,
@@ -4164,10 +4162,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
-#define _STRING_BLOB(x) data_blob_const((const uint8_t *)(x), sizeof(x))
-		const DATA_BLOB label = _STRING_BLOB("SMB2APP");
-		const DATA_BLOB context = _STRING_BLOB("SmbRpc");
-#undef _STRING_BLOB
+		const DATA_BLOB label = data_blob_string_const_null("SMB2APP");
+		const DATA_BLOB context = data_blob_string_const_null("SmbRpc");
 
 		smb2_key_derivation(session_key, sizeof(session_key),
 				    label.data, label.length,
@@ -4269,10 +4265,8 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	}
 
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
-#define _STRING_BLOB(x) data_blob_const((const uint8_t *)(x), sizeof(x))
-		const DATA_BLOB label = _STRING_BLOB("SMB2AESCMAC");
-		const DATA_BLOB context = _STRING_BLOB("SmbSign");
-#undef _STRING_BLOB
+		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCMAC");
+		const DATA_BLOB context = data_blob_string_const_null("SmbSign");
 
 		smb2_key_derivation(channel_key, sizeof(channel_key),
 				    label.data, label.length,
