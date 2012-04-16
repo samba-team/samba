@@ -1804,6 +1804,15 @@ void talloc_enable_leak_report_full(void);
  * @see talloc_get_type()
  */
 void talloc_set_abort_fn(void (*abort_fn)(const char *reason));
+
+/**
+ * @brief Set a logging function.
+ *
+ * @param[in]  log_fn      The logging function.
+ *
+ * @see talloc_set_log_stderr()
+ * @see talloc_set_abort_fn()
+ */
 void talloc_set_log_fn(void (*log_fn)(const char *message));
 void talloc_set_log_stderr(void);
 
