@@ -5,7 +5,6 @@ import samba_version, samba3
 
 TDB_LIB_SRC = '''
 	  lib/dbwrap/dbwrap_open.c
-	  lib/dbwrap/dbwrap_tdb.c
           lib/dbwrap/dbwrap_ctdb.c
           lib/g_lock.c'''
 
@@ -1065,8 +1064,8 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('dbwrap',
-                   source='lib/dbwrap/dbwrap.c lib/dbwrap/dbwrap_util.c lib/dbwrap/dbwrap_rbt.c lib/dbwrap/dbwrap_cache.c',
-                   deps='samba-util UTIL_TDB errors',
+                   source='lib/dbwrap/dbwrap.c lib/dbwrap/dbwrap_util.c lib/dbwrap/dbwrap_rbt.c lib/dbwrap/dbwrap_cache.c lib/dbwrap/dbwrap_tdb.c',
+                   deps='samba-util UTIL_TDB errors tdb tdb-wrap',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('samba3-util',
