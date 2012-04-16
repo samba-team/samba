@@ -169,8 +169,9 @@ static NTSTATUS xattr_tdb_save_attrs(struct db_record *rec,
  */
 
 ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
+			  TALLOC_CTX *mem_ctx,
 			  const struct file_id *id,
-			  const char *name, void *value, size_t size)
+			  const char *name, DATA_BLOB *blob)
 {
 	struct tdb_xattrs *attribs;
 	uint32_t i;
@@ -200,13 +201,8 @@ ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
 		goto fail;
 	}
 
-	if (attribs->eas[i].value.length > size) {
-		errno = ERANGE;
-		goto fail;
-	}
-
-	memcpy(value, attribs->eas[i].value.data,
-	       attribs->eas[i].value.length);
+	*blob = attribs->eas[i].value;
+	talloc_steal(mem_ctx, blob->data);
 	result = attribs->eas[i].value.length;
 
  fail:

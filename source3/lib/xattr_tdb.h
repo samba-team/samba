@@ -26,8 +26,9 @@
 /* The following definitions come from lib/util/xattr_tdb.c  */
 
 ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
+			  TALLOC_CTX *mem_ctx,
 			  const struct file_id *id,
-			  const char *name, void *value, size_t size);
+			  const char *name, DATA_BLOB *blob);
 int xattr_tdb_setattr(struct db_context *db_ctx,
 		      const struct file_id *id, const char *name,
 		      const void *value, size_t size, int flags);

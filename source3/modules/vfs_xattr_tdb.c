@@ -34,16 +34,35 @@ static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	ssize_t xattr_size;
+	DATA_BLOB blob;
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (!frame) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (vfs_stat_smb_fname(handle->conn, path, &sbuf) == -1) {
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
-	return xattr_tdb_getattr(db, &id, name, value, size);
+	xattr_size = xattr_tdb_getattr(db, frame, &id, name, &blob);
+	if (xattr_size < 0) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+	if (blob.length > size) {
+		TALLOC_FREE(frame);
+		errno = ERANGE;
+		return -1;
+	}
+	memcpy(value, blob.data, size);
+	return xattr_size;
 }
 
 static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
@@ -53,16 +72,36 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	ssize_t xattr_size;
+	DATA_BLOB blob;
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (!frame) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
 	if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
-	return xattr_tdb_getattr(db, &id, name, value, size);
+	xattr_size = xattr_tdb_getattr(db, frame, &id, name, &blob);
+	if (xattr_size < 0) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+	if (blob.length > size) {
+		TALLOC_FREE(frame);
+		errno = ERANGE;
+		return -1;
+	}
+	memcpy(value, blob.data, size);
+	TALLOC_FREE(frame);
+	return xattr_size;
 }
 
 static int xattr_tdb_setxattr(struct vfs_handle_struct *handle,
