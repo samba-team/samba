@@ -5,7 +5,7 @@
 # the arguments that it sees.
 . $(dirname $0)/ctdb_test_env :
 
-. ctdb_test_functions.bash
+. "${TEST_SCRIPTS_DIR}/common.sh"
 
 usage() {
     cat <<EOF
@@ -123,7 +123,7 @@ run_one_test ()
 {
     _f="$1"
 
-    [ -x "$_f" ] || fail "test \"$_f\" is not executable"
+    [ -x "$_f" ] || die "test \"$_f\" is not executable"
     tests_total=$(($tests_total + 1))
 
     export TEST_SUBDIR=$(dirname "$_f")
@@ -154,7 +154,7 @@ for f ; do
     elif [ -f "$f" ] ; then
 	run_one_test "$f"
     else
-	fail "test \"$f\" is not recognised"
+	die "test \"$f\" is not recognised"
     fi
 done
 
