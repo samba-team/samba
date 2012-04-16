@@ -1,6 +1,6 @@
 #!/bin/sh
 
-. "${ONNODE_TESTS_DIR}/common.sh"
+. "${TEST_SCRIPTS_DIR}/unit.sh"
 
 cmd="$ONNODE -q all hostname"
 

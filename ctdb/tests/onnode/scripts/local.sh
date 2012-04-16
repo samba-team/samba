@@ -8,26 +8,14 @@ unset CTDB_NODES_SOCKETS
 
 # Augment PATH with relevant stubs/ directories.
 
-if [ -d "${ONNODE_TESTS_DIR}/stubs" ] ; then
-    PATH="${ONNODE_TESTS_DIR}/stubs:$PATH"
-fi
-
-export ONNODE_TESTCASE_DIR=$(dirname "$0")
-if [ $(basename "$ONNODE_TESTCASE_DIR") = "onnode" ] ; then
-    # Just a test script, no testcase subdirectory.
-    ONNODE_TESTCASE_DIR="$ONNODE_TESTS_DIR"
-else
-    if [ -d "${ONNODE_TESTCASE_DIR}/stubs" ] ; then
-	PATH="${ONNODE_TESTCASE_DIR}/stubs:$PATH"
-    fi
+if [ -d "${TEST_SUBDIR}/stubs" ] ; then
+    PATH="${TEST_SUBDIR}/stubs:$PATH"
 fi
 
 # Find CTDB nodes file.
 if [ -z "$CTDB_NODES_FILE" ] ; then
-    if [ -r "${ONNODE_TESTCASE_DIR}/nodes" ] ; then
-	CTDB_NODES_FILE="${ONNODE_TESTCASE_DIR}/nodes"
-    elif [ -r "${ONNODE_TESTS_DIR}/nodes" ] ; then
-	CTDB_NODES_FILE="${ONNODE_TESTS_DIR}/nodes"
+    if [ -r "${TEST_SUBDIR}/nodes" ] ; then
+	CTDB_NODES_FILE="${TEST_SUBDIR}/nodes"
     else
 	CTDB_NODES_FILE="${CTDB_BASE:-/etc/ctdb}/nodes"
     fi
@@ -35,7 +23,7 @@ fi
 
 export CTDB_NODES_FILE
 
-export ONNODE_TESTS_VAR_DIR="${ONNODE_TESTS_DIR}/var"
+export ONNODE_TESTS_VAR_DIR="${TEST_SUBDIR}/var"
 mkdir -p "$ONNODE_TESTS_VAR_DIR"
 
 if [ -z "$CTDB_BASE" ] ; then
@@ -44,10 +32,7 @@ fi
 
 define_test ()
 {
-    _f="$0"
-    _f="${_f#./}"  # strip leading ./
-    _f="${_f%%/*}" # if subdir, strip off file
-    _f="${_f%.sh}" # strip off .sh suffix if any
+    _f=$(basename "$0")
 
     echo "$_f $1 - $2"
 }
