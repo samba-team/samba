@@ -324,10 +324,6 @@ static int schema_load_del_transaction(struct ldb_module *module)
 
 static int schema_load_extended(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_context *ldb;
-
-	ldb = ldb_module_get_ctx(module);
-
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) != 0) {
 		return ldb_next_request(module, req);
 	}
