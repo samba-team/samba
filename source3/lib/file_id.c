@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/file_id.h"
 
 /*
   return True if two file_id structures are equal

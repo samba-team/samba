@@ -45,7 +45,7 @@ struct lock_context {
 
 struct files_struct;
 
-#include "../librpc/gen_ndr/file_id.h"
+#include "lib/file_id.h"
 
 struct byte_range_lock {
 	struct files_struct *fsp;
