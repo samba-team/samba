@@ -148,17 +148,23 @@ static struct db_record *dbwrap_fetch_locked_internal(
 {
 	struct db_record *rec;
 	struct dbwrap_lock_order_state *lock_order;
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (!frame) {
+		return NULL;
+	}
 
-	lock_order = dbwrap_check_lock_order(db, talloc_tos());
+	lock_order = dbwrap_check_lock_order(db, frame);
 	if (lock_order == NULL) {
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 	rec = db_fn(db, mem_ctx, key);
 	if (rec == NULL) {
-		TALLOC_FREE(lock_order);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 	(void)talloc_steal(rec, lock_order);
+	TALLOC_FREE(frame);
 	return rec;
 }
 
@@ -235,14 +241,19 @@ NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 {
 	struct db_record *rec;
 	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (!frame) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(), key);
+	rec = dbwrap_fetch_locked(db, frame, key);
 	if (rec == NULL) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = dbwrap_record_store(rec, data, flags);
-	TALLOC_FREE(rec);
+	TALLOC_FREE(frame);
 	return status;
 }
 
@@ -250,13 +261,18 @@ NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key)
 {
 	struct db_record *rec;
 	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	if (!frame) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	rec = dbwrap_fetch_locked(db, talloc_tos(), key);
 	if (rec == NULL) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 	status = dbwrap_record_delete(rec);
-	TALLOC_FREE(rec);
+	TALLOC_FREE(frame);
 	return status;
 }
 
