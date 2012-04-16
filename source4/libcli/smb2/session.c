@@ -27,6 +27,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "../source3/libsmb/smb2cli.h"
 
@@ -227,6 +228,20 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 		DATA_BLOB session_key;
 
 		if (state->reauth) {
+			tevent_req_done(req);
+			return;
+		}
+
+		if (cli_credentials_is_anonymous(state->credentials)) {
+			/*
+			 * Windows server does not set the
+			 * SMB2_SESSION_FLAG_IS_GUEST nor
+			 * SMB2_SESSION_FLAG_IS_NULL flag.
+			 *
+			 * This fix makes sure we do not try
+			 * to verify a signature on the final
+			 * session setup response.
+			 */
 			tevent_req_done(req);
 			return;
 		}
