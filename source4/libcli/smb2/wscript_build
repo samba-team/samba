@@ -4,7 +4,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SMB2',
 	source='transport.c request.c session.c tcon.c create.c close.c connect.c getinfo.c write.c read.c setinfo.c find.c ioctl.c logoff.c tdis.c flush.c lock.c notify.c cancel.c keepalive.c break.c util.c signing.c lease_break.c',
 	autoproto='smb2_proto.h',
 	deps='tevent-util cli_smb_common',
-	public_deps='smbclient-raw LIBPACKET gensec tevent',
+	public_deps='smbclient-raw gensec tevent',
 	public_headers='smb2.h',
 	)
 

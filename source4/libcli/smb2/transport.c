@@ -27,7 +27,6 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
-#include "lib/stream/packet.h"
 #include "../lib/util/dlinklist.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "librpc/ndr/libndr.h"
