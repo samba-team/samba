@@ -1814,6 +1814,13 @@ void talloc_set_abort_fn(void (*abort_fn)(const char *reason));
  * @see talloc_set_abort_fn()
  */
 void talloc_set_log_fn(void (*log_fn)(const char *message));
+
+/**
+ * @brief Set stderr as the output for logs.
+ *
+ * @see talloc_set_log_fn()
+ * @see talloc_set_abort_fn()
+ */
 void talloc_set_log_stderr(void);
 
 /* @} ******************************************************************/
