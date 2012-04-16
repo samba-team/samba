@@ -1073,6 +1073,11 @@ bld.SAMBA3_LIBRARY('samba3-util',
                    deps='samba-util charset',
                    private_library=True)
 
+bld.SAMBA_LIBRARY('xattr_tdb',
+                  source='lib/xattr_tdb.c',
+                  deps='NDR_XATTR dbwrap samba3-util',
+                  private_library=True)
+
 bld.SAMBA3_LIBRARY('CHARSET3',
                     source='''lib/charcnv.c lib/fstring.c''',
                     public_deps='ICONV_WRAPPER charset',

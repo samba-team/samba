@@ -20,195 +20,12 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
-#include "librpc/gen_ndr/xattr.h"
-#include "librpc/gen_ndr/ndr_xattr.h"
-#include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
-#include "util_tdb.h"
+#include "source3/lib/xattr_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
-
-/*
- * unmarshall tdb_xattrs
- */
-
-static NTSTATUS xattr_tdb_pull_attrs(TALLOC_CTX *mem_ctx,
-				     const TDB_DATA *data,
-				     struct tdb_xattrs **presult)
-{
-	DATA_BLOB blob;
-	enum ndr_err_code ndr_err;
-	struct tdb_xattrs *result;
-
-	if (!(result = talloc_zero(mem_ctx, struct tdb_xattrs))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (data->dsize == 0) {
-		*presult = result;
-		return NT_STATUS_OK;
-	}
-
-	blob = data_blob_const(data->dptr, data->dsize);
-
-	ndr_err = ndr_pull_struct_blob(&blob, result, result,
-		(ndr_pull_flags_fn_t)ndr_pull_tdb_xattrs);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_pull_tdb_xattrs failed: %s\n",
-			  ndr_errstr(ndr_err)));
-		TALLOC_FREE(result);
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	*presult = result;
-	return NT_STATUS_OK;
-}
-
-/*
- * marshall tdb_xattrs
- */
-
-static NTSTATUS xattr_tdb_push_attrs(TALLOC_CTX *mem_ctx,
-				     const struct tdb_xattrs *attribs,
-				     TDB_DATA *data)
-{
-	DATA_BLOB blob;
-	enum ndr_err_code ndr_err;
-
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, attribs,
-		(ndr_push_flags_fn_t)ndr_push_tdb_xattrs);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_push_tdb_xattrs failed: %s\n",
-			  ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	*data = make_tdb_data(blob.data, blob.length);
-	return NT_STATUS_OK;
-}
-
-/*
- * Load tdb_xattrs for a file from the tdb
- */
-
-static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
-				     struct db_context *db_ctx,
-				     const struct file_id *id,
-				     struct tdb_xattrs **presult)
-{
-	uint8 id_buf[16];
-	NTSTATUS status;
-	TDB_DATA data;
-
-	/* For backwards compatibility only store the dev/inode. */
-	push_file_id_16((char *)id_buf, id);
-
-	status = dbwrap_fetch(db_ctx, mem_ctx,
-			      make_tdb_data(id_buf, sizeof(id_buf)),
-			      &data);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	status = xattr_tdb_pull_attrs(mem_ctx, &data, presult);
-	TALLOC_FREE(data.dptr);
-	return status;
-}
-
-/*
- * fetch_lock the tdb_ea record for a file
- */
-
-static struct db_record *xattr_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
-					      struct db_context *db_ctx,
-					      const struct file_id *id)
-{
-	uint8 id_buf[16];
-
-	/* For backwards compatibility only store the dev/inode. */
-	push_file_id_16((char *)id_buf, id);
-	return dbwrap_fetch_locked(db_ctx, mem_ctx,
-				   make_tdb_data(id_buf, sizeof(id_buf)));
-}
-
-/*
- * Save tdb_xattrs to a previously fetch_locked record
- */
-
-static NTSTATUS xattr_tdb_save_attrs(struct db_record *rec,
-				     const struct tdb_xattrs *attribs)
-{
-	TDB_DATA data = tdb_null;
-	NTSTATUS status;
-
-	status = xattr_tdb_push_attrs(talloc_tos(), attribs, &data);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("xattr_tdb_push_attrs failed: %s\n",
-			  nt_errstr(status)));
-		return status;
-	}
-
-	status = dbwrap_record_store(rec, data, 0);
-
-	TALLOC_FREE(data.dptr);
-
-	return status;
-}
-
-/*
- * Worker routine for getxattr and fgetxattr
- */
-
-static ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
-				 const struct file_id *id,
-				 const char *name, void *value, size_t size)
-{
-	struct tdb_xattrs *attribs;
-	uint32_t i;
-	ssize_t result = -1;
-	NTSTATUS status;
-
-	DEBUG(10, ("xattr_tdb_getattr called for file %s, name %s\n",
-		   file_id_string_tos(id), name));
-
-	status = xattr_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
-			   nt_errstr(status)));
-		errno = EINVAL;
-		return -1;
-	}
-
-	for (i=0; i<attribs->num_eas; i++) {
-		if (strcmp(attribs->eas[i].name, name) == 0) {
-			break;
-		}
-	}
-
-	if (i == attribs->num_eas) {
-		errno = ENOATTR;
-		goto fail;
-	}
-
-	if (attribs->eas[i].value.length > size) {
-		errno = ERANGE;
-		goto fail;
-	}
-
-	memcpy(value, attribs->eas[i].value.data,
-	       attribs->eas[i].value.length);
-	result = attribs->eas[i].value.length;
-
- fail:
-	TALLOC_FREE(attribs);
-	return result;
-}
 
 static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 				  const char *path, const char *name,
@@ -246,93 +63,6 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_getattr(db, &id, name, value, size);
-}
-
-/*
- * Worker routine for setxattr and fsetxattr
- */
-
-static int xattr_tdb_setattr(struct db_context *db_ctx,
-			     const struct file_id *id, const char *name,
-			     const void *value, size_t size, int flags)
-{
-	NTSTATUS status;
-	struct db_record *rec;
-	struct tdb_xattrs *attribs;
-	uint32_t i;
-	TDB_DATA data;
-
-	DEBUG(10, ("xattr_tdb_setattr called for file %s, name %s\n",
-		   file_id_string_tos(id), name));
-
-	rec = xattr_tdb_lock_attrs(talloc_tos(), db_ctx, id);
-
-	if (rec == NULL) {
-		DEBUG(0, ("xattr_tdb_lock_attrs failed\n"));
-		errno = EINVAL;
-		return -1;
-	}
-
-	data = dbwrap_record_get_value(rec);
-
-	status = xattr_tdb_pull_attrs(rec, &data, &attribs);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
-			   nt_errstr(status)));
-		TALLOC_FREE(rec);
-		return -1;
-	}
-
-	for (i=0; i<attribs->num_eas; i++) {
-		if (strcmp(attribs->eas[i].name, name) == 0) {
-			if (flags & XATTR_CREATE) {
-				TALLOC_FREE(rec);
-				errno = EEXIST;
-				return -1;
-			}
-			break;
-		}
-	}
-
-	if (i == attribs->num_eas) {
-		struct xattr_EA *tmp;
-
-		if (flags & XATTR_REPLACE) {
-			TALLOC_FREE(rec);
-			errno = ENOATTR;
-			return -1;
-		}
-
-		tmp = talloc_realloc(
-			attribs, attribs->eas, struct xattr_EA,
-			attribs->num_eas+ 1);
-
-		if (tmp == NULL) {
-			DEBUG(0, ("talloc_realloc failed\n"));
-			TALLOC_FREE(rec);
-			errno = ENOMEM;
-			return -1;
-		}
-
-		attribs->eas = tmp;
-		attribs->num_eas += 1;
-	}
-
-	attribs->eas[i].name = name;
-	attribs->eas[i].value.data = discard_const_p(uint8, value);
-	attribs->eas[i].value.length = size;
-
-	status = xattr_tdb_save_attrs(rec, attribs);
-
-	TALLOC_FREE(rec);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("save failed: %s\n", nt_errstr(status)));
-		return -1;
-	}
-
-	return 0;
 }
 
 static int xattr_tdb_setxattr(struct vfs_handle_struct *handle,
@@ -374,73 +104,6 @@ static int xattr_tdb_fsetxattr(struct vfs_handle_struct *handle,
 	return xattr_tdb_setattr(db, &id, name, value, size, flags);
 }
 
-/*
- * Worker routine for listxattr and flistxattr
- */
-
-static ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
-				  const struct file_id *id, char *list,
-				  size_t size)
-{
-	NTSTATUS status;
-	struct tdb_xattrs *attribs;
-	uint32_t i;
-	size_t len = 0;
-
-	status = xattr_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
-			   nt_errstr(status)));
-		errno = EINVAL;
-		return -1;
-	}
-
-	DEBUG(10, ("xattr_tdb_listattr: Found %d xattrs\n",
-		   attribs->num_eas));
-
-	for (i=0; i<attribs->num_eas; i++) {
-		size_t tmp;
-
-		DEBUG(10, ("xattr_tdb_listattr: xattrs[i].name: %s\n",
-			   attribs->eas[i].name));
-
-		tmp = strlen(attribs->eas[i].name);
-
-		/*
-		 * Try to protect against overflow
-		 */
-
-		if (len + (tmp+1) < len) {
-			TALLOC_FREE(attribs);
-			errno = EINVAL;
-			return -1;
-		}
-
-		/*
-		 * Take care of the terminating NULL
-		 */
-		len += (tmp + 1);
-	}
-
-	if (len > size) {
-		TALLOC_FREE(attribs);
-		errno = ERANGE;
-		return len;
-	}
-
-	len = 0;
-
-	for (i=0; i<attribs->num_eas; i++) {
-		strlcpy(list+len, attribs->eas[i].name,
-			size-len);
-		len += (strlen(attribs->eas[i].name) + 1);
-	}
-
-	TALLOC_FREE(attribs);
-	return len;
-}
-
 static ssize_t xattr_tdb_listxattr(struct vfs_handle_struct *handle,
 				   const char *path, char *list, size_t size)
 {
@@ -476,72 +139,6 @@ static ssize_t xattr_tdb_flistxattr(struct vfs_handle_struct *handle,
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_listattr(db, &id, list, size);
-}
-
-/*
- * Worker routine for removexattr and fremovexattr
- */
-
-static int xattr_tdb_removeattr(struct db_context *db_ctx,
-				const struct file_id *id, const char *name)
-{
-	NTSTATUS status;
-	struct db_record *rec;
-	struct tdb_xattrs *attribs;
-	uint32_t i;
-	TDB_DATA value;
-
-	rec = xattr_tdb_lock_attrs(talloc_tos(), db_ctx, id);
-
-	if (rec == NULL) {
-		DEBUG(0, ("xattr_tdb_lock_attrs failed\n"));
-		errno = EINVAL;
-		return -1;
-	}
-
-	value = dbwrap_record_get_value(rec);
-
-	status = xattr_tdb_pull_attrs(rec, &value, &attribs);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
-			   nt_errstr(status)));
-		TALLOC_FREE(rec);
-		return -1;
-	}
-
-	for (i=0; i<attribs->num_eas; i++) {
-		if (strcmp(attribs->eas[i].name, name) == 0) {
-			break;
-		}
-	}
-
-	if (i == attribs->num_eas) {
-		TALLOC_FREE(rec);
-		errno = ENOATTR;
-		return -1;
-	}
-
-	attribs->eas[i] =
-		attribs->eas[attribs->num_eas-1];
-	attribs->num_eas -= 1;
-
-	if (attribs->num_eas == 0) {
-		dbwrap_record_delete(rec);
-		TALLOC_FREE(rec);
-		return 0;
-	}
-
-	status = xattr_tdb_save_attrs(rec, attribs);
-
-	TALLOC_FREE(rec);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("save failed: %s\n", nt_errstr(status)));
-		return -1;
-	}
-
-	return 0;
 }
 
 static int xattr_tdb_removexattr(struct vfs_handle_struct *handle,
@@ -629,7 +226,6 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 	struct smb_filename *smb_fname_tmp = NULL;
 	struct file_id id;
 	struct db_context *db;
-	struct db_record *rec;
 	NTSTATUS status;
 	int ret = -1;
 	bool remove_record = false;
@@ -668,16 +264,7 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &smb_fname_tmp->st);
 
-	rec = xattr_tdb_lock_attrs(talloc_tos(), db, &id);
-
-	/*
-	 * If rec == NULL there's not much we can do about it
-	 */
-
-	if (rec != NULL) {
-		dbwrap_record_delete(rec);
-		TALLOC_FREE(rec);
-	}
+	xattr_tdb_remove_all_attrs(db, &id);
 
  out:
 	TALLOC_FREE(smb_fname_tmp);
@@ -692,7 +279,6 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
-	struct db_record *rec;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
@@ -709,16 +295,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
-	rec = xattr_tdb_lock_attrs(talloc_tos(), db, &id);
-
-	/*
-	 * If rec == NULL there's not much we can do about it
-	 */
-
-	if (rec != NULL) {
-		dbwrap_record_delete(rec);
-		TALLOC_FREE(rec);
-	}
+	xattr_tdb_remove_all_attrs(db, &id);
 
 	return 0;
 }

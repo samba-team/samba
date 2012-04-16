@@ -182,7 +182,7 @@ bld.SAMBA3_MODULE('vfs_afsacl',
 bld.SAMBA3_MODULE('vfs_xattr_tdb',
                  subsystem='vfs',
                  source=VFS_XATTR_TDB_SRC,
-                 deps='NDR_XATTR tdb',
+                 deps='dbwrap xattr_tdb',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_xattr_tdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_xattr_tdb'))
