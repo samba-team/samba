@@ -1,16 +1,16 @@
 #ifndef _TALLOC_H_
 #define _TALLOC_H_
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba temporary memory allocation functions
 
    Copyright (C) Andrew Tridgell 2004-2005
    Copyright (C) Stefan Metzmacher 2006
-   
+
      ** NOTE! The following LGPL license applies to the talloc
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -1290,7 +1290,20 @@ void *talloc_realloc_fn(const void *context, void *ptr, size_t size);
 char *talloc_strdup(const void *t, const char *p);
 
 /**
- * @brief Append a string to given string and duplicate the result.
+ * @brief Append a string to given string.
+ *
+ * The destination string is reallocated to take strlen(s) + strlen(a) + 1
+ * characters.
+ *
+ * The destination string is reallocated to take
+ * <code>strlen(s) + strlen(a, n) + 1</code> characters.
+ *
+ * This functions sets the name of the new pointer to the new
+ * string. This is equivalent to:
+ *
+ * @code
+ *      talloc_set_name_const(ptr, ptr)
+ * @endcode
  *
  * @param[in]  s        The destination to append to.
  *
@@ -1299,6 +1312,7 @@ char *talloc_strdup(const void *t, const char *p);
  * @return              The duplicated string, NULL on error.
  *
  * @see talloc_strdup()
+ * @see talloc_strdup_append_buffer()
  */
 char *talloc_strdup_append(char *s, const char *a);
 
