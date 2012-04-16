@@ -1061,7 +1061,7 @@ bld.SAMBA3_LIBRARY('trusts_util',
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
-                    deps='talloc',
+                    deps='talloc samba3-util',
                     vars=locals())
 
 bld.SAMBA3_LIBRARY('dbwrap',
