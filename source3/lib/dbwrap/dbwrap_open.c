@@ -24,6 +24,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "dbwrap/dbwrap_tdb.h"
 #include "dbwrap/dbwrap_ctdb.h"
+#include "lib/param/param.h"
 #include "util_tdb.h"
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_private.h"
@@ -117,9 +118,11 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 #endif
 
 	if (result == NULL) {
-		result = db_open_tdb(mem_ctx, name, hash_size,
+		struct loadparm_context *lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
+		result = db_open_tdb(mem_ctx, lp_ctx, name, hash_size,
 				     tdb_flags, open_flags, mode,
 				     lock_order);
+		talloc_unlink(mem_ctx, lp_ctx);
 	}
 	return result;
 }

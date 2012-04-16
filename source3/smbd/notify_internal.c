@@ -123,6 +123,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg,
 				   struct event_context *ev)
 {
+	struct loadparm_context *lp_ctx;
 	struct notify_context *notify;
 
 	notify = talloc(mem_ctx, struct notify_context);
@@ -132,10 +133,12 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 	notify->msg = msg;
 	notify->list = NULL;
 
+	lp_ctx = loadparm_init_s3(notify, loadparm_s3_context());
 	notify->db_notify = db_open_tdb(
-		notify, lock_path("notify.tdb"),
+		notify, lp_ctx, lock_path("notify.tdb"),
 		0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 		O_RDWR|O_CREAT, 0644, DBWRAP_LOCK_ORDER_2);
+		talloc_unlink(notify, lp_ctx);
 	if (notify->db_notify == NULL) {
 		goto fail;
 	}
