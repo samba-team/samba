@@ -329,12 +329,11 @@ static int attr_handler2(struct oc_context *ac)
 	 * 3.1.1.5. Unlike other objects in the DS, TDOs may not be created or
 	 *  manipulated by client machines over the LDAPv3 transport."
 	 */
-	if (ldb_req_is_untrusted(ac->req)) {
-		for (i = 0; i < oc_element->num_values; i++) {
-			if ((strcmp((char *)oc_element->values[i].data,
-				    "secret") == 0) ||
-			    (strcmp((char *)oc_element->values[i].data,
-				    "trustedDomain") == 0)) {
+	for (i = 0; i < oc_element->num_values; i++) {
+		char * attname = (char *)oc_element->values[i].data;
+		if (ldb_req_is_untrusted(ac->req)) {
+			if (strcmp(attname, "secret") == 0 ||
+			    strcmp(attname, "trustedDomain") == 0) {
 				ldb_asprintf_errstring(ldb, "objectclass_attrs: LSA objectclasses (entry '%s') cannot be created or changed over LDAP!",
 						       ldb_dn_get_linearized(ac->search_res->message->dn));
 				return LDB_ERR_UNWILLING_TO_PERFORM;
