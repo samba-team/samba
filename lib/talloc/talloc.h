@@ -1540,6 +1540,25 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3
 /**
  * @brief Append a formatted string to another string.
  *
+ * This is a more efficient version of talloc_asprintf_append(). It determines
+ * the length of the destination string by the size of the talloc context.
+ *
+ * Use this very carefully as it produces a different result than
+ * talloc_asprintf_append() when a zero character is in the middle of the
+ * destination string.
+ *
+ * @code
+ *      char *str_a = talloc_strdup(NULL, "hello world");
+ *      char *str_b = talloc_strdup(NULL, "hello world");
+ *      str_a[5] = str_b[5] = '\0'
+ *
+ *      char *app = talloc_asprintf_append(str_a, "%s", ", hello");
+ *      char *buf = talloc_strdup_append_buffer(str_b, "%s", ", hello");
+ *
+ *      printf("%s\n", app); // hello, hello (app = "hello, hello")
+ *      printf("%s\n", buf); // hello (buf = "hello\0world, hello")
+ * @endcode
+ *
  * @param[in]  s        The string to append to
  *
  * @param[in]  fmt      The format string.
@@ -1547,6 +1566,9 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3
  * @param[in]  ...      The parameters used to fill fmt.
  *
  * @return              The formatted string, NULL on error.
+ *
+ * @see talloc_asprintf()
+ * @see talloc_asprintf_append()
  */
 char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
