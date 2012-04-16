@@ -247,6 +247,7 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 					       struct smbXcli_conn *conn);
 uint8_t smb2cli_session_security_mode(struct smbXcli_session *session);
 uint64_t smb2cli_session_current_id(struct smbXcli_session *session);
+uint16_t smb2cli_session_get_flags(struct smbXcli_session *session);
 NTSTATUS smb2cli_session_application_key(struct smbXcli_session *session,
 					 TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *key);

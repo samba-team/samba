@@ -4082,6 +4082,11 @@ uint64_t smb2cli_session_current_id(struct smbXcli_session *session)
 	return session->smb2.session_id;
 }
 
+uint16_t smb2cli_session_get_flags(struct smbXcli_session *session)
+{
+	return session->smb2.session_flags;
+}
+
 NTSTATUS smb2cli_session_application_key(struct smbXcli_session *session,
 					 TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *key)
