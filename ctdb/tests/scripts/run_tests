@@ -119,10 +119,16 @@ sf=$(mktemp)
 
 set -o pipefail
 
-for f; do
-    [ -x $f ] || fail "test \"$f\" is not executable"
+run_one_test ()
+{
+    _f="$1"
+
+    [ -x "$_f" ] || fail "test \"$_f\" is not executable"
     tests_total=$(($tests_total + 1))
-    ctdb_test_run "$f" | tee "$tf" | show_progress
+
+    export TEST_SUBDIR=$(dirname "$_f")
+
+    ctdb_test_run "$_f" | tee "$tf" | show_progress
     status=$?
     if $with_summary ; then
 	if [ $status -eq 0 ] ; then
@@ -134,9 +140,21 @@ for f; do
 	fi
 	if $with_desc ; then
 	    desc=$(tail -n +4 $tf | head -n 1)
-	    f="$desc"
+	    _f="$desc"
 	fi
-	echo "$t $f" >>"$sf"
+	echo "$t $_f" >>"$sf"
+    fi
+}
+
+for f ; do
+    if [ -d "$f" ] ; then
+	for i in $(ls "$f/"*".sh" 2>/dev/null) ; do
+	    run_one_test "$i"
+	done
+    elif [ -f "$f" ] ; then
+	run_one_test "$f"
+    else
+	fail "test \"$f\" is not recognised"
     fi
 done
 
