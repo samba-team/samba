@@ -26,27 +26,23 @@ libdir		= @libdir@
 
 VFS_LIBDIR	= $(libdir)/vfs
 
-all: skel_opaque.@SHLIBEXT@ shadow_copy_test.@SHLIBEXT@ \
-	skel_transparent.@SHLIBEXT@
+# Change these targets to the names of your modules if building out of tree
+MODULES		= skel_opaque.@SHLIBEXT@ shadow_copy_test.@SHLIBEXT@ \
+		skel_transparent.@SHLIBEXT@
 
-skel_opaque.@SHLIBEXT@: skel_opaque.@OBJEXT@
-	@echo "Linking $@"
-	@$(CC) $(LDSHFLAGS) $(LDFLAGS) skel_opaque.@OBJEXT@ -o $@
-
-shadow_copy_test.@SHLIBEXT@: shadow_copy_test.@OBJEXT@
-	@echo "Linking $@"
-	@$(CC) $(LDSHFLAGS) $(LDFLAGS) shadow_copy_test.@OBJEXT@ -o $@
-
-skel_transparent.@SHLIBEXT@: skel_transparent.@OBJEXT@
-	@echo "Linking $@"
-	@$(CC) $(LDSHFLAGS) $(LDFLAGS) skel_transparent.@OBJEXT@ -o $@
+all: $(MODULES)
 
 # Pattern rules
+
+.SUFFIXES: .@SHLIBEXT@
+
+.@OBJEXT@.@SHLIBEXT@:
+	@echo "Linking $<"
+	@$(CC) $(LDSHFLAGS) $(LDFLAGS) $*.@OBJEXT@ -o $*.@SHLIBEXT@
 
 .c.@OBJEXT@:
 	@echo "Compiling $<"
 	@$(CC) $(FLAGS) -c $< -D$*_init=samba_init_module
-
 
 install: default
 	$(INSTALLCMD) -d $(VFS_LIBDIR)
