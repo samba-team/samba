@@ -134,7 +134,7 @@ done:
 	return ret;
 }
 
-bool test_session_reauth(struct torture_context *tctx, struct smb2_tree *tree)
+bool test_session_reauth1(struct torture_context *tctx, struct smb2_tree *tree)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
@@ -195,7 +195,7 @@ struct torture_suite *torture_smb2_session_init(void)
 	    torture_suite_create(talloc_autofree_context(), "session");
 
 	torture_suite_add_1smb2_test(suite, "reconnect", test_session_reconnect);
-	torture_suite_add_1smb2_test(suite, "reauth", test_session_reauth);
+	torture_suite_add_1smb2_test(suite, "reauth1", test_session_reauth1);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
 
