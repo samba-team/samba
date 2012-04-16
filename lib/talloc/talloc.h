@@ -1772,11 +1772,42 @@ void talloc_enable_leak_report(void);
  */
 void talloc_enable_leak_report_full(void);
 
-/* @} ******************************************************************/
-
+/**
+ * @brief Set a custom "abort" function that is called on serious error.
+ *
+ * The default "abort" function is <code>abort()</code>.
+ *
+ * The "abort" function is called when:
+ *
+ * <ul>
+ *  <li>talloc_get_type_abort() fails</li>
+ *  <li>the provided pointer is not a valid talloc context</li>
+ *  <li>when the context meta data are invalid</li>
+ *  <li>when access after free is detected</li>
+ * </ul>
+ *
+ * Example:
+ *
+ * @code
+ * void my_abort(const char *reason)
+ * {
+ *      fprintf(stderr, "talloc abort: %s\n", reason);
+ *      abort();
+ * }
+ *
+ *      talloc_set_abort_fn(my_abort);
+ * @endcode
+ *
+ * @param[in]  abort_fn      The new "abort" function.
+ *
+ * @see talloc_set_log_fn()
+ * @see talloc_get_type()
+ */
 void talloc_set_abort_fn(void (*abort_fn)(const char *reason));
 void talloc_set_log_fn(void (*log_fn)(const char *message));
 void talloc_set_log_stderr(void);
+
+/* @} ******************************************************************/
 
 #if TALLOC_DEPRECATED
 #define talloc_zero_p(ctx, type) talloc_zero(ctx, type)
