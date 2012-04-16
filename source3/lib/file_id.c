@@ -32,12 +32,25 @@ bool file_id_equal(const struct file_id *id1, const struct file_id *id2)
 }
 
 /*
-  a static string for a file_id structure
+  a static-like (on talloc_tos()) string for a file_id structure
  */
 const char *file_id_string_tos(const struct file_id *id)
 {
 	char *result = talloc_asprintf(talloc_tos(), "%llx:%llx:%llx",
 				       (unsigned long long)id->devid, 
+				       (unsigned long long)id->inode,
+				       (unsigned long long)id->extid);
+	SMB_ASSERT(result != NULL);
+	return result;
+}
+
+/*
+  an allocated string for a file_id structure
+ */
+const char *file_id_string(TALLOC_CTX *mem_ctx, const struct file_id *id)
+{
+	char *result = talloc_asprintf(mem_ctx, "%llx:%llx:%llx",
+				       (unsigned long long)id->devid,
 				       (unsigned long long)id->inode,
 				       (unsigned long long)id->extid);
 	SMB_ASSERT(result != NULL);

@@ -19,12 +19,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* The following definitions come from lib/file_id.c  */
-
 #include "librpc/gen_ndr/file_id.h"
 
+/* The following definitions come from lib/file_id.c  */
+
 bool file_id_equal(const struct file_id *id1, const struct file_id *id2);
+/*
+  a static-like (on talloc_tos()) string for a file_id structure
+ */
 const char *file_id_string_tos(const struct file_id *id);
+/*
+  an allocated string for a file_id structure
+ */
+const char *file_id_string(TALLOC_CTX *mem_ctx, const struct file_id *id);
 void push_file_id_16(char *buf, const struct file_id *id);
 void push_file_id_24(char *buf, const struct file_id *id);
 void pull_file_id_24(char *buf, struct file_id *id);
