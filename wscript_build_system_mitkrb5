@@ -1,2 +1,4 @@
-print "\tSelected system MIT krb5 libraries, Heimdal use is disabled"
+import Logs
+
+Logs.info("\tSelected system MIT krb5 libraries, Heimdal use is disabled")
 #bld.RECURSE('source4/heimdal_build')
