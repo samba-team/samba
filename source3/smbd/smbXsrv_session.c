@@ -20,11 +20,13 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include <tevent.h>
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "dbwrap/dbwrap_open.h"
+#include "dbwrap/dbwrap_watch.h"
 #include "session.h"
 #include "auth.h"
 #include "auth/gensec/gensec.h"
@@ -34,6 +36,7 @@
 #include "lib/util/util_tdb.h"
 #include "librpc/gen_ndr/ndr_smbXsrv.h"
 #include "serverid.h"
+#include "lib/util/tevent_ntstatus.h"
 
 struct smbXsrv_session_table {
 	struct {
@@ -685,6 +688,204 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 
 	TALLOC_FREE(global->db_rec);
 
+	return NT_STATUS_OK;
+}
+
+struct smb2srv_session_close_previous_state {
+	struct tevent_context *ev;
+	struct smbXsrv_connection *connection;
+	struct dom_sid *current_sid;
+	uint64_t current_session_id;
+	struct db_record *db_rec;
+};
+
+static void smb2srv_session_close_previous_check(struct tevent_req *req);
+static void smb2srv_session_close_previous_modified(struct tevent_req *subreq);
+
+struct tevent_req *smb2srv_session_close_previous_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbXsrv_connection *conn,
+					struct auth_session_info *session_info,
+					uint64_t previous_session_id,
+					uint64_t current_session_id)
+{
+	struct tevent_req *req;
+	struct smb2srv_session_close_previous_state *state;
+	uint32_t global_id = previous_session_id & UINT32_MAX;
+	uint64_t global_zeros = previous_session_id & 0xFFFFFFFF00000000LLU;
+	struct smbXsrv_session_table *table = conn->session_table;
+	struct security_token *current_token = NULL;
+	uint8_t key_buf[SMBXSRV_SESSION_GLOBAL_TDB_KEY_SIZE];
+	TDB_DATA key;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb2srv_session_close_previous_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->connection = conn;
+	state->current_session_id = current_session_id;
+
+	if (global_zeros != 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	if (session_info == NULL) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	current_token = session_info->security_token;
+
+	if (current_token->num_sids > PRIMARY_USER_SID_INDEX) {
+		state->current_sid = &current_token->sids[PRIMARY_USER_SID_INDEX];
+	}
+
+	if (state->current_sid == NULL) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	if (!security_token_has_nt_authenticated_users(current_token)) {
+		/* TODO */
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	key = smbXsrv_session_global_id_to_key(global_id, key_buf);
+
+	state->db_rec = dbwrap_fetch_locked(table->global.db_ctx,
+					    state, key);
+	if (state->db_rec == NULL) {
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return tevent_req_post(req, ev);
+	}
+
+	smb2srv_session_close_previous_check(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void smb2srv_session_close_previous_check(struct tevent_req *req)
+{
+	struct smb2srv_session_close_previous_state *state =
+		tevent_req_data(req,
+		struct smb2srv_session_close_previous_state);
+	struct smbXsrv_connection *conn = state->connection;
+	DATA_BLOB blob;
+	struct security_token *previous_token = NULL;
+	struct smbXsrv_session_global0 *global = NULL;
+	enum ndr_err_code ndr_err;
+	struct smbXsrv_session_close0 close_info0;
+	struct smbXsrv_session_closeB close_blob;
+	struct tevent_req *subreq = NULL;
+	NTSTATUS status;
+	bool is_free = false;
+
+	smbXsrv_session_global_verify_record(state->db_rec,
+					     &is_free,
+					     NULL,
+					     state,
+					     &global);
+
+	if (is_free) {
+		TALLOC_FREE(state->db_rec);
+		tevent_req_done(req);
+		return;
+	}
+
+	if (global->auth_session_info == NULL) {
+		TALLOC_FREE(state->db_rec);
+		tevent_req_done(req);
+		return;
+	}
+
+	previous_token = global->auth_session_info->security_token;
+
+	if (!security_token_is_sid(previous_token, state->current_sid)) {
+		TALLOC_FREE(state->db_rec);
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = dbwrap_record_watch_send(state, state->ev,
+					  state->db_rec, conn->msg_ctx);
+	if (tevent_req_nomem(subreq, req)) {
+		TALLOC_FREE(state->db_rec);
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				smb2srv_session_close_previous_modified,
+				req);
+
+	close_info0.old_session_global_id = global->session_global_id;
+	close_info0.old_session_wire_id = global->session_wire_id;
+	close_info0.old_creation_time = global->creation_time;
+	close_info0.new_session_wire_id = state->current_session_id;
+
+	ZERO_STRUCT(close_blob);
+	close_blob.version = smbXsrv_version_global_current();
+	close_blob.info.info0 = &close_info0;
+
+	ndr_err = ndr_push_struct_blob(&blob, state, &close_blob,
+			(ndr_push_flags_fn_t)ndr_push_smbXsrv_session_closeB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(state->db_rec);
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1,("smb2srv_session_close_previous_check: "
+			 "old_session[%llu] new_session[%llu] ndr_push - %s\n",
+			 (unsigned long long)close_info0.old_session_wire_id,
+			 (unsigned long long)close_info0.new_session_wire_id,
+			 nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	status = messaging_send(conn->msg_ctx,
+				global->channels[0].server_id,
+				MSG_SMBXSRV_SESSION_CLOSE, &blob);
+	TALLOC_FREE(state->db_rec);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	TALLOC_FREE(global);
+	return;
+}
+
+static void smb2srv_session_close_previous_modified(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smb2srv_session_close_previous_state *state =
+		tevent_req_data(req,
+		struct smb2srv_session_close_previous_state);
+	NTSTATUS status;
+
+	status = dbwrap_record_watch_recv(subreq, state, &state->db_rec);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	smb2srv_session_close_previous_check(req);
+}
+
+NTSTATUS smb2srv_session_close_previous_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
