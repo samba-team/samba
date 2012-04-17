@@ -813,13 +813,44 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 static SMB_STRUCT_DIR *opendir_acl_common(vfs_handle_struct *handle,
 			const char *fname, const char *mask, uint32 attr)
 {
-	NTSTATUS status = check_parent_acl_common(handle, fname,
-					SEC_DIR_LIST, NULL);
+	NTSTATUS status;
+	uint32_t access_granted = 0;
+	struct security_descriptor *sd = NULL;
 
+	status = get_nt_acl_internal(handle,
+				NULL,
+				fname,
+				(SECINFO_OWNER |
+				 SECINFO_GROUP |
+				 SECINFO_DACL  |
+				 SECINFO_SACL),
+				&sd);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("opendir_acl_common: "
+			"get_nt_acl_internal for dir %s "
+			"failed with error %s\n",
+			fname,
+			nt_errstr(status) ));
 		errno = map_errno_from_nt_status(status);
 		return NULL;
 	}
+
+	/* See if we can access it. */
+	status = smb1_file_se_access_check(handle->conn,
+				sd,
+				get_current_nttok(handle->conn),
+				SEC_DIR_LIST,
+				&access_granted);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10,("opendir_acl_common: %s open "
+			"for access SEC_DIR_LIST "
+			"refused with error %s\n",
+			fname,
+			nt_errstr(status) ));
+		errno = map_errno_from_nt_status(status);
+		return NULL;
+	}
+
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }
 
