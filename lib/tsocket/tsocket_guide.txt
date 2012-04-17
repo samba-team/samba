@@ -2,15 +2,15 @@
 Basic design of the tsocket abstraction
 =======================================
 
-The tsocket abstraction is splitted into two
+The tsocket abstraction is split into two
 different kinds of communitation interfaces.
 
-There's the "tstream_context" interface with abstracts
+There is the "tstream_context" interface which abstracts
 the communication through a bidirectional
 byte stream between two endpoints.
 
-And there's the "tdgram_context" interface
-with abstracts datagram based communication between any
+And there is the "tdgram_context" interface
+which abstracts datagram based communication between any
 number of endpoints.
 
 Both interfaces share the "tsocket_address" abstraction
@@ -27,9 +27,9 @@ A tsocket_address represents a generic socket endpoint.
 It behaves like an abstract class, therefore it has no direct constructor.
 Constructors are described in later sections of this document.
 
-A function get the string representation of an endpoint for debugging is
+A function to get the string representation of an endpoint for debugging is
 available but callers SHOULD NOT try to parse this string. To get more
-details callers should use getter methods of the specific tsocket_address
+details, callers should use getter methods of the specific tsocket_address
 implemention.
 
   char *tsocket_address_string(const struct tsocket_address *addr,
@@ -78,7 +78,7 @@ at a time otherwise the caller will get '*perrno = EBUSY'.
 
 The tdgram_sendto_send() method can be called to send a
 datagram (specified by a buf/len) to a destination endpoint
-(specified by dst). It's not allowed for len to be 0.
+(specified by dst). It is not allowed for len to be 0.
 It returns a 'tevent_req' handle, where the caller can register a
 callback with tevent_req_set_callback(). The callback is triggered
 when the specific implementation (thinks it)
@@ -105,7 +105,7 @@ at a time otherwise the caller will get '*perrno = EBUSY'.
 The tdgram_disconnect_send() method should be used to normally
 shutdown/close the abstracted socket.
 
-The caller should make sure there're no outstanding tdgram_recvfrom_send()
+The caller should make sure there are no outstanding tdgram_recvfrom_send()
 and tdgram_sendto_send() calls otherwise the caller will get '*perrno = EBUSY'.
 
 Note: you can always use talloc_free(tdgram) to cleanup the resources
@@ -136,7 +136,7 @@ The tstream_readv_send() method can be called to read a
 specific amount of bytes from the stream into the buffers
 of the given iovec vector. The caller has to preallocate the buffers
 in the iovec vector. The caller might need to use
-tstream_pending_bytes() if the protocol doesn't have a fixed pdu header
+tstream_pending_bytes() if the protocol does not have a fixed pdu header
 containing the pdu size. tstream_readv_send() returns a 'tevent_req' handle,
 where the caller can register a callback with tevent_req_set_callback().
 The callback is triggered when all iovec buffers are completely
@@ -145,7 +145,8 @@ filled with bytes from the socket or an error occurs.
 The callback is then supposed to get the result by calling
 tstream_readv_recv() on the 'tevent_req'. It returns -1
 and sets '*perrno' to the actual 'errno' on failure.
-Otherwise it returns the length of the datagram (0 is never returned!).
+Otherwise it returns the total number of bytes received
+(0 is never returned!).
 
 The caller can only have one outstanding tstream_readv_send()
 at a time otherwise the caller will get *perrno = EBUSY.
@@ -170,7 +171,7 @@ has delivered the all buffers to the "wire".
 The callback is then supposed to get the result by calling
 tstream_writev_recv() on the 'tevent_req'. It returns -1
 and sets '*perrno' to the actual 'errno' on failure.
-Otherwise it returns the total amount of bytes sent.
+Otherwise it returns the total amount of bytes sent
 (0 is never returned!).
 
 The caller can only have one outstanding tstream_writev_send()
@@ -188,7 +189,7 @@ at a time otherwise the caller will get '*perrno = EBUSY'.
 The tstream_disconnect_send() method should normally be used to
 shutdown/close the abstracted socket.
 
-The caller should make sure there're no outstanding tstream_readv_send()
+The caller should make sure there are no outstanding tstream_readv_send()
 and tstream_writev_send() calls otherwise the caller will get '*perrno = EBUSY'.
 
 Note: you can always use talloc_free(tstream) to cleanup the resources
@@ -213,7 +214,7 @@ to ask for the next available PDU on the abstracted tstream_context.
 The caller needs to provide a "next_vector" function and a private
 state for this function. The tstream_readv_pdu engine will ask
 the next_vector function for the next iovec vector to be used.
-There's a tstream_readv_send/recv pair for each vector returned
+There is a tstream_readv_send/recv pair for each vector returned
 by the next_vector function. If the next_vector function detects
 it received a full pdu, it returns an empty vector. The the callback
 of the tevent_req (returned by tstream_readv_pdu_send()) is triggered.
@@ -240,9 +241,9 @@ example.
 Async 'tevent_queue' based helper functions
 ===========================================
 
-In some cases the caller doesn't care about the IO ordering on the
+In some cases, the caller does not care about the IO ordering on the
 abstracted socket.
-(Remember at the low level there's always only one IO in a specific
+(Remember at the low level there is always only one IO in a specific
  direction allowed, only one tdgram_sendto_send() at a time).
 
 Some helpers that use 'tevent_queue' are avilable to simplify handling
@@ -280,16 +281,16 @@ internally serialize all operations.
 BSD sockets: ipv4, ipv6 and unix
 ================================
 
-The main tsocket library comes with implentations
+The main tsocket library comes with implementations
 for BSD style ipv4, ipv6 and unix sockets.
 
 You can use the tsocket_address_inet_from_strings()
 function to create a tsocket_address for ipv4 and ipv6
 endpoint addresses. "family" can be "ipv4", "ipv6" or "ip".
-With "ip" is autodetects "ipv4" or "ipv6" based on the
+With "ip" it autodetects "ipv4" or "ipv6" based on the
 "addr_string" string. "addr_string" must be a valid
 ip address string based on the selected family
-(dns names are not allowed!). But it's valid to pass NULL,
+(dns names are not allowed!). But it is valid to pass NULL,
 which gets mapped to "0.0.0.0" or "::".
 It returns -1 and sets errno on error. Otherwise it returns 0.
 
@@ -302,7 +303,7 @@ It returns -1 and sets errno on error. Otherwise it returns 0.
 To get the ip address string of an existing 'inet' tsocket_address
 you can use the tsocket_address_inet_addr_string() function.
 It will return NULL and set errno to EINVAL if the tsocket_address
-doesn't represent an ipv4 or ipv6 endpoint address.
+does not represent an ipv4 or ipv6 endpoint address.
 
   char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
       TALLOC_CTX *mem_ctx);
@@ -310,14 +311,14 @@ doesn't represent an ipv4 or ipv6 endpoint address.
 To get the port number of an existing 'inet' tsocket_address
 you can use the tsocket_address_inet_port() function.
 It will return 0 and set errno to EINVAL if the tsocket_address
-doesn't represent an ipv4 or ipv6 endpoint address.
+does not represent an ipv4 or ipv6 endpoint address.
 
   uint16_t tsocket_address_inet_port(const struct tsocket_address *addr);
 
 To set the port number of an existing 'inet' tsocket_address
 you can use the tsocket_address_inet_set_port() function.
 It will return -1 and set errno to EINVAL if the tsocket_address
-doesn't represent an ipv4 or ipv6 endpoint address.
+does not represent an ipv4 or ipv6 endpoint address.
 It returns 0 on success.
 
   int tsocket_address_inet_set_port(struct tsocket_address *addr,
@@ -335,10 +336,10 @@ On success it returns 0.
       const char *path,
       struct tsocket_address **addr);
 
-To get the path of an 'unix' tsocket_address
+To get the path of a 'unix' tsocket_address
 you can use the tsocket_address_unix_path() function.
 It will return NULL and set errno to EINVAL if the tsocket_address
-doesn't represent a unix domain endpoint path.
+does not represent a unix domain endpoint path.
 
   char *tsocket_address_unix_path(const struct tsocket_address *addr,
       TALLOC_CTX *mem_ctx);
@@ -430,7 +431,7 @@ success.
       TALLOC_CTX *mem_ctx2,
       struct tstream_context **stream2);
 
-In some situations it's needed to create a tsocket_address from
+In some situations, it is needed to create a tsocket_address from
 a given 'struct sockaddr'. You can use tsocket_address_bsd_from_sockaddr()
 for that. This should only be used if really needed, because of
 already existing fixed APIs. Only AF_INET, AF_INET6 and AF_UNIX
@@ -442,7 +443,7 @@ Otherwise it returns 0.
       socklen_t sa_socklen,
       struct tsocket_address **addr);
 
-In some situations it's needed to get a 'struct sockaddr' from a
+In some situations, it is needed to get a 'struct sockaddr' from a
 given tsocket_address . You can use tsocket_address_bsd_sockaddr()
 for that. This should only be used if really needed. Only AF_INET,
 AF_INET6 and AF_UNIX are supported. It returns the size of '*sa' on
@@ -452,7 +453,7 @@ success, otherwise it returns -1 and sets 'errno'.
       struct sockaddr *sa,
       socklen_t sa_socklen);
 
-In some situations it's needed to wrap existing file descriptors
+In some situations, it is needed to wrap existing file descriptors
 into the tstream abstraction. You can use tstream_bsd_existing_socket()
 for that. But you should read the tsocket_bsd.c code and unterstand it
 in order use this function. E.g. the fd has to be non blocking already.
