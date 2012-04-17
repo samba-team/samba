@@ -309,6 +309,21 @@ static NTSTATUS ntlmssp3_client_initial(struct ntlmssp_state *ntlmssp_state,
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
+bool ntlmssp_is_anonymous(struct ntlmssp_state *ntlmssp_state)
+{
+	const char *user = ntlmssp_state->user;
+
+	if (ntlmssp_state->user == NULL) {
+		return true;
+	}
+
+	if (strlen(ntlmssp_state->user) == 0) {
+		return true;
+	}
+
+	return false;
+}
+
 /**
  * Next state function for the Challenge Packet.  Generate an auth packet.
  *

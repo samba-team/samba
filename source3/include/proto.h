@@ -998,6 +998,7 @@ void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *featur
 void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32_t feature);
 NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
 			const DATA_BLOB in, DATA_BLOB *out) ;
+bool ntlmssp_is_anonymous(struct ntlmssp_state *ntlmssp_state);
 NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
 			      bool is_standalone,
 			      const char *netbios_name,
