@@ -48,6 +48,7 @@ static const char *generate_smb_conf(struct task_server *task)
 		return NULL;
 	}
 
+	fdprintf(fd, "[globals]\n");
 	fdprintf(fd, "# auto-generated config for fileserver\n");
 	fdprintf(fd, "passdb backend = samba4\n");
         fdprintf(fd, "rpc_server:default = external\n");
