@@ -100,12 +100,6 @@ def s3_fix_kwargs(bld, kwargs):
         includes += TO_LIST(kwargs['includes'])
     kwargs['includes'] = includes
 
-    # some S3 code assumes that CONFIGFILE is set
-    cflags = ['-DCONFIGFILE="%s"' % bld.env['CONFIGFILE']]
-    if 'cflags' in kwargs:
-        cflags += TO_LIST(kwargs['cflags'])
-    kwargs['cflags'] = cflags
-
 # these wrappers allow for mixing of S3 and S4 build rules in the one build
 
 def SAMBA3_LIBRARY(bld, name, *args, **kwargs):

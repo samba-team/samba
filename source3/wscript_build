@@ -50,7 +50,7 @@ LIB_SRC = '''
           ${TDB_LIB_SRC}
           ../lib/util/debug_s3.c
           lib/dumpcore.c
-          lib/interface.c lib/pidfile.c
+          lib/interface.c
           lib/username.c
           lib/access.c lib/smbrun.c
           lib/wins_srv.c
@@ -789,9 +789,15 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    deps='ndr security NDR_SECURITY samba-util UTIL_TDB ccan',
                    vars=locals())
 
+bld.SAMBA3_SUBSYSTEM('pidfile',
+                     source='lib/pidfile.c',
+                     # only pidfile.c assumes that CONFIGFILE is set
+                     cflags = ['-DCONFIGFILE="%s"' % bld.env['CONFIGFILE']])
+
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
                    deps='''
+                        pidfile
                         samba3util
                         LIBTSOCKET
                         NDR_MESSAGING
