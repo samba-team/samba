@@ -621,6 +621,12 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 		const struct ldb_val *rdn_value, *def_obj_cat_val;
 		unsigned int v = ldb_msg_find_attr_as_uint(ac->msg, "objectClassCategory", -2);
 
+		/* As discussed with Microsoft through dochelp in April 2012 this is the behavior of windows*/
+		if (!ldb_msg_find_element(ac->msg, "subClassOf")) {
+			ret = ldb_msg_add_string(ac->msg, "subClassOf", "top");
+			if (ret != LDB_SUCCESS) return ret;
+		}
+
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 						  "rdnAttId", "cn");
 		if (ret != LDB_SUCCESS) return ret;
