@@ -35,7 +35,10 @@
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,smb2,bigendian\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2,bigendian\]
-^samba3.raw.composite.appendacl\(s3dc\)# This needs ACL and IDMAP behaviour that smbd cannot provide, including mapping of arbitary sids.
+^samba3.raw.samba3hide.samba3hide\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
+^samba3.raw.samba3checkfsp.samba3checkfsp\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
+^samba3.raw.samba3closeerr.samba3closeerr\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
+^samba3.raw.acls.generic\(s3dc\) # This fails against smbd
 # these show that we still have some differences between our system
 # with our internal iconv because it passes except when we bypass our
 # internal iconv modules
@@ -143,9 +146,6 @@
 ^samba3.smb2.create.blob
 ^samba3.smb2.create.open
 ^samba3.smb2.create.leading-slash
-^samba3.smb2.create.aclfile
-^samba3.smb2.create.acldir
-^samba3.smb2.create.nulldacl
 ^samba3.smb2.notify.valid-req
 ^samba3.smb2.notify.dir
 ^samba3.smb2.notify.rec
@@ -179,12 +179,8 @@
 ^samba3.smb2.lease.multibreak
 ^samba3.smb2.oplock.batch12
 ^samba3.smb2.oplock.batch20
-^samba3.smb2.acls.CREATOR
 ^samba3.smb2.acls.GENERIC
-^samba3.smb2.acls.OWNER
-^samba3.smb2.acls.INHERITANCE
 ^samba3.smb2.acls.INHERITFLAGS
-^samba3.smb2.acls.DYNAMIC
 ^samba3.smb2.streams.rename
 ^samba3.smb2.streams.rename2
 ^samba3.smb2.streams.attributes

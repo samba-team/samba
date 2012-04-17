@@ -34,7 +34,6 @@
 ^samba3.smbtorture_s3.*.pipe_number
 ^samba3.smbtorture_s3.LOCAL-DBTRANS #hangs for some reason
 ^samba3.*base.charset
-^samba3.*raw.acls
 ^samba3.*raw.context
 ^samba3.*raw.ioctl
 ^samba3.*raw.qfileinfo
