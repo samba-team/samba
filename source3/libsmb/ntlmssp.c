@@ -349,8 +349,9 @@ static NTSTATUS ntlmssp3_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB session_key = data_blob_null;
 	DATA_BLOB encrypted_session_key = data_blob_null;
 	NTSTATUS nt_status = NT_STATUS_OK;
+	bool anon = ntlmssp_is_anonymous(ntlmssp_state);
 
-	if (ntlmssp_state->use_ccache) {
+	if (!anon && ntlmssp_state->use_ccache) {
 		struct wbcCredentialCacheParams params;
 		struct wbcCredentialCacheInfo *info = NULL;
 		struct wbcAuthErrorInfo *error = NULL;
@@ -483,7 +484,7 @@ noccache:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!ntlmssp_state->nt_hash) {
+	if (anon || !ntlmssp_state->nt_hash) {
 		static const uint8_t zeros[16] = {0, };
 		/* do nothing - blobs are zero length */
 
