@@ -1711,7 +1711,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 		if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
 			struct smbXcli_session *session = state->cli->smb2.session;
 
-			if (state->ntlmssp_state->nt_hash == NULL) {
+			if (ntlmssp_is_anonymous(state->ntlmssp_state)) {
 				/*
 				 * Windows server does not set the
 				 * SMB2_SESSION_FLAG_IS_GUEST nor
