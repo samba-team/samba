@@ -1579,6 +1579,15 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 {
 	struct lsa_info *handle;
 	struct lsa_info *info;
+	uint32 des_access = r->in.access_mask;
+	uint32 acc_granted;
+	uint32 owner_access = (LSA_ACCOUNT_ALL_ACCESS &
+			~(LSA_ACCOUNT_ADJUST_PRIVILEGES|
+			LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
+			DELETE_ACCESS));
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	NTSTATUS status;
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
@@ -1600,6 +1609,27 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	if ( is_privileged_sid( r->in.sid ) )
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 
+	/* Work out max allowed. */
+	map_max_allowed_access(p->server_info->ptok, &des_access);
+
+	/* map the generic bits to the lsa policy ones */
+	se_map_generic(&des_access, &lsa_policy_mapping);
+
+	/* get the generic lsa policy SD until we store it */
+	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size, &lsa_policy_mapping,
+			r->in.sid, owner_access);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = access_check_object(psd, p->server_info->ptok,
+		NULL, 0, des_access,
+		&acc_granted, "_lsa_CreateAccont" );
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* associate the user/group SID with the (unique) handle. */
 
 	info = TALLOC_ZERO_P(p->mem_ctx, struct lsa_info);
@@ -1608,7 +1638,7 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	}
 
 	info->sid = *r->in.sid;
-	info->access = r->in.access_mask;
+	info->access = acc_granted;
 	info->type = LSA_HANDLE_ACCOUNT_TYPE;
 
 	/* get a (unique) handle.  open a policy on it. */
@@ -1631,6 +1661,10 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 	size_t sd_size;
 	uint32_t des_access = r->in.access_mask;
 	uint32_t acc_granted;
+	uint32_t owner_access = (LSA_ACCOUNT_ALL_ACCESS &
+			~(LSA_ACCOUNT_ADJUST_PRIVILEGES|
+			LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
+			STD_RIGHT_DELETE_ACCESS));
 	NTSTATUS status;
 
 	/* find the connection policy handle. */
@@ -1653,7 +1687,7 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 	/* get the generic lsa account SD until we store it */
 	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
 				&lsa_account_mapping,
-				r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+				r->in.sid, owner_access);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2070,7 +2104,7 @@ NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
         /* get the generic lsa account SD for this SID until we store it */
         status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
                                 &lsa_account_mapping,
-                                r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+                                NULL, 0);
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }
@@ -2141,7 +2175,7 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
         /* get the generic lsa account SD for this SID until we store it */
         status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
                                 &lsa_account_mapping,
-                                r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+                                NULL, 0);
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }
