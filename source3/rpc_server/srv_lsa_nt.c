@@ -1691,6 +1691,10 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	struct lsa_info *handle;
 	struct lsa_info *info;
 	uint32_t acc_granted;
+	uint32_t owner_access = (LSA_ACCOUNT_ALL_ACCESS &
+			~(LSA_ACCOUNT_ADJUST_PRIVILEGES|
+			LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
+			STD_RIGHT_DELETE_ACCESS));
 	struct security_descriptor *psd;
 	size_t sd_size;
 
@@ -1718,7 +1722,7 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 
 	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
 				    &lsa_account_mapping,
-				    r->in.sid, LSA_POLICY_ALL_ACCESS);
+				    r->in.sid, owner_access);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1764,6 +1768,10 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 	size_t sd_size;
 	uint32_t des_access = r->in.access_mask;
 	uint32_t acc_granted;
+	uint32_t owner_access = (LSA_ACCOUNT_ALL_ACCESS &
+			~(LSA_ACCOUNT_ADJUST_PRIVILEGES|
+			LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
+			STD_RIGHT_DELETE_ACCESS));
 	NTSTATUS status;
 
 	/* find the connection policy handle. */
@@ -1788,7 +1796,7 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 	/* get the generic lsa account SD until we store it */
 	status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
 				&lsa_account_mapping,
-				r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+				r->in.sid, owner_access);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2174,10 +2182,10 @@ NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-        /* get the generic lsa account SD for this SID until we store it */
+        /* get the generic lsa account SD until we store it */
         status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
                                 &lsa_account_mapping,
-                                r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+                                NULL, 0);
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }
@@ -2245,10 +2253,10 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-        /* get the generic lsa account SD for this SID until we store it */
+        /* get the generic lsa account SD until we store it */
         status = make_lsa_object_sd(p->mem_ctx, &psd, &sd_size,
                                 &lsa_account_mapping,
-                                r->in.sid, LSA_ACCOUNT_ALL_ACCESS);
+                                NULL, 0);
         if (!NT_STATUS_IS_OK(status)) {
                 return status;
         }
