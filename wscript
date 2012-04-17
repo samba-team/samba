@@ -95,6 +95,7 @@ def configure(conf):
     conf.RECURSE('source4/auth')
     conf.RECURSE('lib/nss_wrapper')
     conf.RECURSE('nsswitch')
+    conf.RECURSE('nsswitch/libwbclient')
     conf.RECURSE('lib/socket_wrapper')
     conf.RECURSE('lib/uid_wrapper')
     conf.RECURSE('lib/popt')
