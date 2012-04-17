@@ -559,7 +559,6 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 				uint32_t access_mask,
 				struct security_descriptor **pp_parent_desc)
 {
-	char *parent_name = NULL;
 	struct security_descriptor *parent_desc = NULL;
 	uint32_t access_granted = 0;
 	NTSTATUS status;
@@ -578,9 +577,8 @@ static NTSTATUS check_parent_acl_common(vfs_handle_struct *handle,
 					&access_granted);
 	if(!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("check_parent_acl_common: access check "
-			"on directory %s for "
+			"on parent directory of "
 			"path %s for mask 0x%x returned %s\n",
-			parent_name,
 			path,
 			access_mask,
 			nt_errstr(status) ));
