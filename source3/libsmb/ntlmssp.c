@@ -78,7 +78,7 @@ NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *p
 {
 	TALLOC_FREE(ntlmssp_state->lm_hash);
 	TALLOC_FREE(ntlmssp_state->nt_hash);
-	if (!password || strlen(password) == 0) {
+	if (!password) {
 		return NT_STATUS_OK;
 	} else {
 		uint8_t lm_hash[16];
