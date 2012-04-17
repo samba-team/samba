@@ -76,31 +76,33 @@ NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *u
  */
 NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password)
 {
+	uint8_t lm_hash[16];
+	uint8_t nt_hash[16];
+
 	TALLOC_FREE(ntlmssp_state->lm_hash);
 	TALLOC_FREE(ntlmssp_state->nt_hash);
-	if (!password) {
+
+	if (password == NULL) {
 		return NT_STATUS_OK;
-	} else {
-		uint8_t lm_hash[16];
-		uint8_t nt_hash[16];
+	}
 
-		if (E_deshash(password, lm_hash)) {
-			ntlmssp_state->lm_hash = (uint8_t *)
-				talloc_memdup(ntlmssp_state, lm_hash, 16);
-			if (!ntlmssp_state->lm_hash) {
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-
-		E_md4hash(password, nt_hash);
-
-		ntlmssp_state->nt_hash = (uint8_t *)
-			talloc_memdup(ntlmssp_state, nt_hash, 16);
-		if (!ntlmssp_state->nt_hash) {
-			TALLOC_FREE(ntlmssp_state->lm_hash);
+	if (E_deshash(password, lm_hash)) {
+		ntlmssp_state->lm_hash = (uint8_t *)
+			talloc_memdup(ntlmssp_state, lm_hash, 16);
+		if (!ntlmssp_state->lm_hash) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+
+	E_md4hash(password, nt_hash);
+
+	ntlmssp_state->nt_hash = (uint8_t *)
+		talloc_memdup(ntlmssp_state, nt_hash, 16);
+	if (!ntlmssp_state->nt_hash) {
+		TALLOC_FREE(ntlmssp_state->lm_hash);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	return NT_STATUS_OK;
 }
 
