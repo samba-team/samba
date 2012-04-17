@@ -359,4 +359,9 @@ int ldb_parse_tree_walk(struct ldb_parse_tree *tree,
 			int (*callback)(struct ldb_parse_tree *tree, void *),
 			void *private_context);
 
+/* compare two message elements with ordering - used by modify */
+bool ldb_msg_element_equal_ordered(const struct ldb_message_element *el1,
+				   const struct ldb_message_element *el2);
+
+
 #endif

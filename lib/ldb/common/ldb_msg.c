@@ -360,6 +360,26 @@ int ldb_msg_element_compare(struct ldb_message_element *el1,
 }
 
 /*
+  compare two ldb_message_element structures.
+  Different ordering is considered a mismatch
+*/
+bool ldb_msg_element_equal_ordered(const struct ldb_message_element *el1,
+				   const struct ldb_message_element *el2)
+{
+	unsigned i;
+	if (el1->num_values != el2->num_values) {
+		return false;
+	}
+	for (i=0;i<el1->num_values;i++) {
+		if (ldb_val_equal_exact(&el1->values[i],
+					&el2->values[i]) != 1) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/*
   compare two ldb_message_element structures
   comparing by element name
 */
