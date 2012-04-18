@@ -1086,7 +1086,8 @@ static void tcp_dis_handler(struct smbcli_transport *t, void *p)
 /*
   basic testing of change notifies followed by tcp disconnect
 */
-static bool test_notify_tcp_dis(struct torture_context *tctx)
+static bool test_notify_tcp_dis(struct torture_context *tctx,
+				struct smbcli_state *cli1)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -1097,6 +1098,10 @@ static bool test_notify_tcp_dis(struct torture_context *tctx)
 	struct smbcli_state *cli = NULL;
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY TCP DISCONNECT\n");
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
 
 	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
@@ -1139,6 +1144,7 @@ static bool test_notify_tcp_dis(struct torture_context *tctx)
 
 done:
 	torture_close_connection(cli);
+	smbcli_deltree(cli1->tree, BASEDIR);
 	return ret;
 }
 
@@ -1758,7 +1764,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 		return false;
 	}
 
-	ret &= test_notify_tcp_dis(torture);
 	ret &= test_notify_double(cli, torture);
 	ret &= test_notify_tree(cli, torture);
 	ret &= test_notify_overflow(cli, torture);
@@ -1784,6 +1789,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "tdis", test_notify_tdis);
 	torture_suite_add_1smb_test(suite, "exit", test_notify_exit);
 	torture_suite_add_1smb_test(suite, "ulogoff", test_notify_ulogoff);
+	torture_suite_add_1smb_test(suite, "tcp_dis", test_notify_tcp_dis);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
