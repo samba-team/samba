@@ -1301,11 +1301,8 @@ char *talloc_strdup(const void *t, const char *p);
 /**
  * @brief Append a string to given string.
  *
- * The destination string is reallocated to take strlen(s) + strlen(a) + 1
- * characters.
- *
  * The destination string is reallocated to take
- * <code>strlen(s) + strlen(a, n) + 1</code> characters.
+ * <code>strlen(s) + strlen(a) + 1</code> characters.
  *
  * This functions sets the name of the new pointer to the new
  * string. This is equivalent to:
