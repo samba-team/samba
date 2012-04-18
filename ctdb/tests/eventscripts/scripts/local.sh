@@ -67,6 +67,11 @@ setup_generic ()
     for i in $(seq 1 3) ; do
 	_s="${EVENTSCRIPTS_TESTS_VAR_DIR}/shares/${i}_existing"
 	mkdir -p "$_s"
+	# Shares must begin with /
+	case "$_s" in
+	    /*) : ;;
+	    *) _s="${PWD}/$_s"
+	esac
 	FAKE_SHARES="${FAKE_SHARES}${FAKE_SHARES:+ }${_s}"
     done
 
