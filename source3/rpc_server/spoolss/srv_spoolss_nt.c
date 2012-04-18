@@ -38,7 +38,6 @@
 #include "../libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "registry.h"
-#include "registry/reg_objects.h"
 #include "include/printing.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/netlogon.h"
