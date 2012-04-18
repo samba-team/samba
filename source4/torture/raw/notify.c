@@ -1221,7 +1221,8 @@ done:
 /* 
    test multiple change notifies at different depths and with/without recursion
 */
-static bool test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_tree(struct torture_context *mem_ctx,
+			     struct smbcli_state *cli)
 {
 	bool ret = true;
 	union smb_notify notify;
@@ -1262,6 +1263,10 @@ static bool test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	bool all_done = false;
 
 	printf("TESTING CHANGE NOTIFY FOR DIFFERENT DEPTHS\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -1347,6 +1352,7 @@ static bool test_notify_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -1769,7 +1775,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 		return false;
 	}
 
-	ret &= test_notify_tree(cli, torture);
 	ret &= test_notify_overflow(cli, torture);
 	ret &= test_notify_basedir(cli, torture);
 	ret &= test_notify_alignment(cli, torture);
@@ -1795,6 +1800,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "ulogoff", test_notify_ulogoff);
 	torture_suite_add_1smb_test(suite, "tcp_dis", test_notify_tcp_dis);
 	torture_suite_add_1smb_test(suite, "double", test_notify_double);
+	torture_suite_add_1smb_test(suite, "tree", test_notify_tree);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
