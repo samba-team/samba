@@ -1688,8 +1688,8 @@ done:
 /*
    testing alignment of multiple change notify infos
 */
-static bool test_notify_alignment(struct smbcli_state *cli,
-    struct torture_context *tctx)
+static bool test_notify_alignment(struct torture_context *tctx,
+				  struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	union smb_notify notify;
@@ -1705,6 +1705,10 @@ static bool test_notify_alignment(struct smbcli_state *cli,
 	char *fpath = NULL;
 
 	torture_comment(tctx, "TESTING CHANGE NOTIFY REPLY ALIGNMENT\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	/* get a handle on the directory */
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1771,6 +1775,8 @@ static bool test_notify_alignment(struct smbcli_state *cli,
 		    STR_UNICODE);
 	}
 
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return true;
 }
 
@@ -1786,8 +1792,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
-
-	ret &= test_notify_alignment(cli, torture);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
@@ -1813,6 +1817,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "tree", test_notify_tree);
 	torture_suite_add_1smb_test(suite, "overflow", test_notify_overflow);
 	torture_suite_add_1smb_test(suite, "basedir", test_notify_basedir);
+	torture_suite_add_1smb_test(suite, "alignment", test_notify_alignment);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
