@@ -310,7 +310,8 @@ static bool check_rename_reply(struct smbcli_state *cli,
    testing of recursive change notify
 */
 static bool test_notify_recursive(struct torture_context *mem_ctx,
-				  struct smbcli_state *cli)
+				  struct smbcli_state *cli,
+				  struct smbcli_state *cli2)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -367,13 +368,19 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 	status = smb_raw_changenotify_recv(req2, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_CANCELLED);
 
+	/*
+	 * Make notifies a bit more interesting in a cluster by doing
+	 * the changes against different nodes with --unclist
+	 */
 	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
-	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name\\subname1");
+	smbcli_mkdir(cli2->tree, BASEDIR "\\subdir-name\\subname1");
 	smbcli_close(cli->tree, 
 		     smbcli_open(cli->tree, BASEDIR "\\subdir-name\\subname2", O_CREAT, 0));
-	smbcli_rename(cli->tree, BASEDIR "\\subdir-name\\subname1", BASEDIR "\\subdir-name\\subname1-r");
+	smbcli_rename(cli2->tree, BASEDIR "\\subdir-name\\subname1",
+		      BASEDIR "\\subdir-name\\subname1-r");
 	smbcli_rename(cli->tree, BASEDIR "\\subdir-name\\subname2", BASEDIR "\\subname2-r");
-	smbcli_rename(cli->tree, BASEDIR "\\subname2-r", BASEDIR "\\subname3-r");
+	smbcli_rename(cli2->tree, BASEDIR "\\subname2-r",
+		      BASEDIR "\\subname3-r");
 
 	notify.nttrans.in.completion_filter = 0;
 	notify.nttrans.in.recursive = true;
@@ -381,7 +388,7 @@ static bool test_notify_recursive(struct torture_context *mem_ctx,
 	req1 = smb_raw_changenotify_send(cli->tree, &notify);
 
 	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name\\subname1-r");
-	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_rmdir(cli2->tree, BASEDIR "\\subdir-name");
 	smbcli_unlink(cli->tree, BASEDIR "\\subname3-r");
 
 	notify.nttrans.in.recursive = false;
@@ -1787,7 +1794,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "tcon", test_notify_tcon);
 	torture_suite_add_2smb_test(suite, "dir", test_notify_dir);
 	torture_suite_add_1smb_test(suite, "mask", test_notify_mask);
-	torture_suite_add_1smb_test(suite, "recursive", test_notify_recursive);
+	torture_suite_add_2smb_test(suite, "recursive", test_notify_recursive);
 	torture_suite_add_1smb_test(suite, "mask_change",
 				    test_notify_mask_change);
 	torture_suite_add_1smb_test(suite, "file", test_notify_file);
