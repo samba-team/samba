@@ -2,6 +2,8 @@
 
 # Common variables and functions for all CTDB tests.
 
+export TEST_SUBDIR=$(dirname $0)
+
 # Print a message and exit.
 die ()
 {
