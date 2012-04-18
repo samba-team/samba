@@ -1780,24 +1780,6 @@ static bool test_notify_alignment(struct torture_context *tctx,
 	return true;
 }
 
-/*
-   basic testing of change notify
-*/
-static bool test_raw_notify_all(struct torture_context *torture,
-				struct smbcli_state *cli,
-				struct smbcli_state *cli2)
-{
-	bool ret = true;
-
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
-
-	smb_raw_exit(cli->session);
-	smbcli_deltree(cli->tree, BASEDIR);
-	return ret;
-}
-
 struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "notify");
@@ -1818,7 +1800,6 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "overflow", test_notify_overflow);
 	torture_suite_add_1smb_test(suite, "basedir", test_notify_basedir);
 	torture_suite_add_1smb_test(suite, "alignment", test_notify_alignment);
-	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
 }
