@@ -1004,7 +1004,9 @@ static int db_ctdb_record_destr(struct db_record* data)
 /* Do I own this record? */
 static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
 {
+#ifdef HAVE_CTDB_WANT_READONLY_DECL
 	struct ctdb_ltdb_header *hdr;
+#endif
 
 	if (ctdb_data.dptr == NULL)
 		return false;
