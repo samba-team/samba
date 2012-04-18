@@ -1683,7 +1683,7 @@ static int samldb_member_check(struct samldb_ctx *ac)
 	/* Fetch information from the existing object */
 
 	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
-				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
+				 DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED, ac->req, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
