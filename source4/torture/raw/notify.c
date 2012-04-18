@@ -1229,7 +1229,8 @@ done:
    test multiple change notifies at different depths and with/without recursion
 */
 static bool test_notify_tree(struct torture_context *mem_ctx,
-			     struct smbcli_state *cli)
+			     struct smbcli_state *cli,
+			     struct smbcli_state *cli2)
 {
 	bool ret = true;
 	union smb_notify notify;
@@ -1311,8 +1312,13 @@ static bool test_notify_tree(struct torture_context *mem_ctx,
 	/* trigger 2 events in each dir */
 	for (i=0;i<ARRAY_SIZE(dirs);i++) {
 		char *path = talloc_asprintf(mem_ctx, "%s\\test.dir", dirs[i].path);
+		/*
+		 * Make notifies a bit more interesting in a cluster
+		 * by doing the changes against different nodes with
+		 * --unclist
+		 */
 		smbcli_mkdir(cli->tree, path);
-		smbcli_rmdir(cli->tree, path);
+		smbcli_rmdir(cli2->tree, path);
 		talloc_free(path);
 	}
 
@@ -1803,7 +1809,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "ulogoff", test_notify_ulogoff);
 	torture_suite_add_1smb_test(suite, "tcp_dis", test_notify_tcp_dis);
 	torture_suite_add_1smb_test(suite, "double", test_notify_double);
-	torture_suite_add_1smb_test(suite, "tree", test_notify_tree);
+	torture_suite_add_2smb_test(suite, "tree", test_notify_tree);
 	torture_suite_add_1smb_test(suite, "overflow", test_notify_overflow);
 	torture_suite_add_1smb_test(suite, "basedir", test_notify_basedir);
 	torture_suite_add_1smb_test(suite, "alignment", test_notify_alignment);
