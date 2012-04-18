@@ -347,12 +347,14 @@ sub setup_admember($$$$)
 sub setup_secshare($$)
 {
 	my ($self, $path) = @_;
+	my $vfs_modulesdir_abs = $ENV{VFSLIBDIR};
 
 	print "PROVISIONING server with security=share...";
 
 	my $secshare_options = "
 	security = share
 	lanman auth = yes
+	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
 ";
 
 	my $vars = $self->provision($path,
