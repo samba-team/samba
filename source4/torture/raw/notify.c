@@ -1694,9 +1694,9 @@ static bool test_notify_alignment(struct smbcli_state *cli,
 /*
    basic testing of change notify
 */
-bool torture_raw_notify(struct torture_context *torture, 
-			struct smbcli_state *cli, 
-			struct smbcli_state *cli2)
+static bool test_raw_notify_all(struct torture_context *torture,
+				struct smbcli_state *cli,
+				struct smbcli_state *cli2)
 {
 	bool ret = true;
 
@@ -1723,4 +1723,13 @@ bool torture_raw_notify(struct torture_context *torture,
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
+}
+
+struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "notify");
+
+	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
+
+	return suite;
 }
