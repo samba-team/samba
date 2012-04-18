@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Execute the given command.  The intention is that it is a function
-# from ctdb_test_functions.bash.
+# from "${TEST_SCRIPTS_DIR}/integration.bash".
 
 PATH="$(dirname $0):${PATH}"
 
@@ -11,6 +11,6 @@ if [ ! $(which $f >/dev/null 2>&1) ] ; then
     [ -x "$d/$f" ] && PATH="$d:$PATH"
 fi
 
-. ctdb_test_functions.bash
+. "${TEST_SCRIPTS_DIR}/integration.bash"
 
 "$@"

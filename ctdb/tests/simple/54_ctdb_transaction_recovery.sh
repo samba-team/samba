@@ -41,7 +41,7 @@ recovery_loop_start()
 	ctdb_test_exit_hook_add "kill $RECLOOP_PID >/dev/null 2>&1"
 }
 
-. ctdb_test_functions.bash
+. "${TEST_SCRIPTS_DIR}/integration.bash"
 
 ctdb_test_init "$@"
 
