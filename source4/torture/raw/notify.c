@@ -558,7 +558,8 @@ done:
 /* 
    testing of mask bits for change notify
 */
-static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_notify_mask(struct torture_context *tctx,
+			     struct smbcli_state *cli)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -572,6 +573,10 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 	NTTIME t;
 
 	printf("TESTING CHANGE NOTIFY COMPLETION FILTERS\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	tv = timeval_current_ofs(1000, 0);
 	t = timeval_to_nttime(&tv);
@@ -787,6 +792,7 @@ static bool test_notify_mask(struct smbcli_state *cli, struct torture_context *t
 
 done:
 	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -1716,7 +1722,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 		return false;
 	}
 
-	ret &= test_notify_mask(cli, torture);
 	ret &= test_notify_recursive(cli, torture);
 	ret &= test_notify_mask_change(cli, torture);
 	ret &= test_notify_file(cli, torture);
@@ -1741,6 +1746,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_1smb_test(suite, "tcon", test_notify_tcon);
 	torture_suite_add_2smb_test(suite, "dir", test_notify_dir);
+	torture_suite_add_1smb_test(suite, "mask", test_notify_mask);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
