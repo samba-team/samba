@@ -811,7 +811,8 @@ done:
 /*
   basic testing of change notify on files
 */
-static bool test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_file(struct torture_context *mem_ctx,
+			     struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -823,6 +824,10 @@ static bool test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\file.txt";
 
 	printf("TESTING CHANGE NOTIFY ON FILES\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -865,6 +870,7 @@ static bool test_notify_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -1734,7 +1740,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 		return false;
 	}
 
-	ret &= test_notify_file(cli, torture);
 	ret &= test_notify_tdis(torture);
 	ret &= test_notify_exit(torture);
 	ret &= test_notify_ulogoff(torture);
@@ -1760,6 +1765,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "recursive", test_notify_recursive);
 	torture_suite_add_1smb_test(suite, "mask_change",
 				    test_notify_mask_change);
+	torture_suite_add_1smb_test(suite, "file", test_notify_file);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
