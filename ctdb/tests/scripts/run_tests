@@ -5,12 +5,21 @@
 # the arguments that it sees.
 . $(dirname $0)/ctdb_test_env :
 
-. ctdb_test_functions.bash
+. "${TEST_SCRIPTS_DIR}/common.sh"
 
 usage() {
     cat <<EOF
 Usage: run_tests [OPTIONS] [TESTS]
 
+Options:
+	-s	Print a summary of tests results after running all tests
+	-v	Verbose - print test output for non-failures (only some tests)
+	-A	Use "cat -A" to print test output (only some tests)
+	-D	Show diff between failed/expected test output (some tests only)
+	-X	Trace certain scripts run by tests using -x (only some tests)
+	-d	Print descriptions of tests instead of filenames (dodgy!)
+	-q	Quiet - don't show tests being run (hint: use with -s)
+	-x	Trace this script with the -x option
 EOF
     exit 1
 }
@@ -21,7 +30,12 @@ with_summary=false
 with_desc=false
 quiet=false
 
-temp=$(getopt -n "$prog" -o "xdhqs" -l help -- "$@")
+export TEST_VERBOSE=false
+export TEST_COMMAND_TRACE=""
+export TEST_CAT_RESULTS_OPTS=""
+export TEST_DIFF_RESULTS=false
+
+temp=$(getopt -n "$prog" -o "xdhqsvXAD" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -33,6 +47,10 @@ while true ; do
 	-d) with_desc=true ; shift ;;  # 4th line of output is description
 	-q) quiet=true ; shift ;;
 	-s) with_summary=true ; shift ;;
+	-v) TEST_VERBOSE=true ; shift ;;
+	-X) TEST_COMMAND_TRACE="sh -x" ; shift ;;
+	-A) TEST_CAT_RESULTS_OPTS="-A" ; shift ;;
+	-D) TEST_DIFF_RESULTS=true ; shift ;;
 	--) shift ; break ;;
 	*) usage ;;
     esac
@@ -46,8 +64,66 @@ fi
 
 ######################################################################
 
+ctdb_test_begin ()
+{
+    local name="$1"
+
+    teststarttime=$(date '+%s')
+    testduration=0
+
+    echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
+    echo "Running test $name ($(date '+%T'))"
+    echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
+}
+
+ctdb_test_end ()
+{
+    local name="$1" ; shift
+    local status="$1" ; shift
+    # "$@" is command-line
+
+    local interp="SKIPPED"
+    local statstr=" (reason $*)"
+    if [ -n "$status" ] ; then
+	if [ $status -eq 0 ] ; then
+	    interp="PASSED"
+	    statstr=""
+	    echo "ALL OK: $*"
+	else
+	    interp="FAILED"
+	    statstr=" (status $status)"
+	fi
+    fi
+
+    testduration=$(($(date +%s)-$teststarttime))
+
+    echo "=========================================================================="
+    echo "TEST ${interp}: ${name}${statstr} (duration: ${testduration}s)"
+    echo "=========================================================================="
+
+}
+
+ctdb_test_run ()
+{
+    local name="$1" ; shift
+
+    [ -n "$1" ] || set -- "$name"
+
+    ctdb_test_begin "$name"
+
+    local status=0
+    "$@" || status=$?
+
+    ctdb_test_end "$name" "$status" "$*"
+
+    return $status
+}
+
+######################################################################
+
 tests_total=0
 tests_passed=0
+tests_failed=0
 summary=""
 
 rows=$(if tty -s ; then stty size ; else echo x 80 ; fi | sed -e 's@.* @@' -e 's@^0$@80@')
@@ -58,10 +134,16 @@ sf=$(mktemp)
 
 set -o pipefail
 
-for f; do
-    [ -x $f ] || fail "test \"$f\" is not executable"
+run_one_test ()
+{
+    _f="$1"
+
+    [ -x "$_f" ] || die "test \"$_f\" is not executable"
     tests_total=$(($tests_total + 1))
-    ctdb_test_run "$f" | tee "$tf" | show_progress
+
+    export TEST_SUBDIR=$(dirname "$_f")
+
+    ctdb_test_run "$_f" | tee "$tf" | show_progress
     status=$?
     if $with_summary ; then
 	if [ $status -eq 0 ] ; then
@@ -69,12 +151,29 @@ for f; do
 	    t=" PASSED "
 	else
 	    t="*FAILED*"
+	    tests_failed=$(($tests_failed + 1))
 	fi
 	if $with_desc ; then
 	    desc=$(tail -n +4 $tf | head -n 1)
-	    f="$desc"
+	    _f="$desc"
 	fi
-	echo "$t $f" >>"$sf"
+	echo "$t $_f" >>"$sf"
+    fi
+}
+
+for f ; do
+    if [ -d "$f" ] ; then
+	# This expands the most probable problem cases like "." and "..".
+	if [ $(dirname "$f") = "." ] ; then
+	    f=$(cd "$f" ; pwd)
+	fi
+	for i in $(ls "${f%/}/"*".sh" 2>/dev/null) ; do
+	    run_one_test "$i"
+	done
+    elif [ -f "$f" ] ; then
+	run_one_test "$f"
+    else
+	die "test \"$f\" is not recognised"
     fi
 done
 
@@ -89,4 +188,6 @@ fi
 
 rm -f "$sf"
 
-test_exit
+if [ $tests_failed -gt 0 ] ; then
+    exit 1
+fi
