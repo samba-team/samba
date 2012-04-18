@@ -332,3 +332,76 @@ _PUBLIC_ NTSTATUS smb_raw_fsinfo(struct smbcli_tree *tree,
 	struct smbcli_request *req = smb_raw_fsinfo_send(tree, mem_ctx, fsinfo);
 	return smb_raw_fsinfo_recv(req, mem_ctx, fsinfo);
 }
+
+/****************************************************************************
+ Set FSInfo raw interface (async recv)
+****************************************************************************/
+static NTSTATUS smb_raw_setfsinfo_recv(struct smbcli_request *req,
+			     TALLOC_CTX *mem_ctx,
+			     union smb_setfsinfo *set_fsinfo)
+{
+	DATA_BLOB blob = data_blob_null;
+	NTSTATUS status;
+
+	if (set_fsinfo->generic.level != RAW_SETFS_UNIX_INFO) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = smb_raw_qfsinfo_blob_recv(req, mem_ctx, &blob);
+	data_blob_free(&blob);
+	return status;
+}
+
+/****************************************************************************
+ Set FSInfo raw interface (async send)
+****************************************************************************/
+static struct smbcli_request *smb_raw_setfsinfo_send(struct smbcli_tree *tree,
+						TALLOC_CTX *mem_ctx,
+						union smb_setfsinfo *set_fsinfo)
+{
+	struct smb_trans2 tp;
+	uint16_t info_level;
+	uint16_t setup = TRANSACT2_SETFSINFO;
+
+	if (set_fsinfo->generic.level != RAW_SETFS_UNIX_INFO) {
+		return NULL;
+	}
+	tp.in.max_setup = 0;
+	tp.in.flags = 0;
+	tp.in.timeout = 0;
+	tp.in.setup_count = 1;
+	tp.in.max_param = 0;
+	tp.in.max_data = 0xFFFF;
+	tp.in.setup = &setup;
+	tp.in.timeout = 0;
+
+	tp.in.params = data_blob_talloc(mem_ctx, NULL, 4);
+	if (!tp.in.params.data) {
+		return NULL;
+	}
+	info_level = (uint16_t)set_fsinfo->generic.level;
+	SSVAL(tp.in.params.data, 0, 0);
+	SSVAL(tp.in.params.data, 2, info_level);
+
+	tp.in.data = data_blob_talloc(mem_ctx, NULL, 12);
+	if (!tp.in.data.data) {
+		return NULL;
+	}
+
+	SSVAL(tp.in.data.data, 0, set_fsinfo->unix_info.in.major_version);
+	SSVAL(tp.in.data.data, 2, set_fsinfo->unix_info.in.minor_version);
+	SBVAL(tp.in.data.data, 4, set_fsinfo->unix_info.in.capability);
+
+	return smb_raw_trans2_send(tree, &tp);
+}
+
+/****************************************************************************
+ Set FSInfo raw interface (sync interface)
+****************************************************************************/
+_PUBLIC_ NTSTATUS smb_raw_setfsinfo(struct smbcli_tree *tree,
+			TALLOC_CTX *mem_ctx,
+			union smb_setfsinfo *set_fsinfo)
+{
+	struct smbcli_request *req = smb_raw_setfsinfo_send(tree, mem_ctx, set_fsinfo);
+	return smb_raw_setfsinfo_recv(req, mem_ctx, set_fsinfo);
+}

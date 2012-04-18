@@ -1344,6 +1344,26 @@ union smb_fsinfo {
 };
 
 
+enum smb_setfsinfo_level {
+		RAW_SETFS_UNIX_INFO                      = SMB_SET_CIFS_UNIX_INFO};
+
+union smb_setfsinfo {
+	/* generic interface */
+	struct {
+		enum smb_fsinfo_level level;
+	} generic;
+
+	/* TRANS2 RAW_QFS_UNIX_INFO interface */
+	struct {
+		enum smb_fsinfo_level level;
+
+		struct {
+			uint16_t major_version;
+			uint16_t minor_version;
+			uint64_t capability;
+		} in;
+	} unix_info;
+};
 
 enum smb_open_level {
 	RAW_OPEN_OPEN,
