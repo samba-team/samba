@@ -309,7 +309,8 @@ static bool check_rename_reply(struct smbcli_state *cli,
 /* 
    testing of recursive change notify
 */
-static bool test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_recursive(struct torture_context *mem_ctx,
+				  struct smbcli_state *cli)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -320,6 +321,10 @@ static bool test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING CHANGE NOTIFY WITH RECURSION\n");
 		
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
 	/*
 	  get a handle on the directory
 	*/
@@ -434,6 +439,7 @@ static bool test_notify_recursive(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -1722,7 +1728,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 		return false;
 	}
 
-	ret &= test_notify_recursive(cli, torture);
 	ret &= test_notify_mask_change(cli, torture);
 	ret &= test_notify_file(cli, torture);
 	ret &= test_notify_tdis(torture);
@@ -1747,6 +1752,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "tcon", test_notify_tcon);
 	torture_suite_add_2smb_test(suite, "dir", test_notify_dir);
 	torture_suite_add_1smb_test(suite, "mask", test_notify_mask);
+	torture_suite_add_1smb_test(suite, "recursive", test_notify_recursive);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
