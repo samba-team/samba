@@ -3648,13 +3648,16 @@ static void call_trans2setfsinfo(connection_struct *conn,
 	switch(info_level) {
 		case SMB_SET_CIFS_UNIX_INFO:
 			if (!lp_unix_extensions()) {
+				DEBUG(2,("call_trans2setfsinfo: "
+					"SMB_SET_CIFS_UNIX_INFO is invalid with "
+					"unix extensions off\n"));
 				reply_nterror(req,
 					      NT_STATUS_INVALID_LEVEL);
 				return;
 			}
 
 			/* There should be 12 bytes of capabilities set. */
-			if (total_data < 8) {
+			if (total_data < 12) {
 				reply_nterror(
 					req,
 					NT_STATUS_INVALID_PARAMETER);
