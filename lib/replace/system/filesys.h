@@ -200,4 +200,12 @@
 # define uwrap_enabled() 0
 #endif /* UID_WRAPPER */
 
+/*
+   this allows us to use a uniform error handling for our xattr
+   wrappers
+*/
+#ifndef ENOATTR
+#define ENOATTR ENODATA
+#endif
+
 #endif
