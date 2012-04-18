@@ -1476,7 +1476,8 @@ static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli,
 /* 
    very simple change notify test
 */
-static bool test_notify_tcon(struct smbcli_state *cli, struct torture_context *torture)
+static bool test_notify_tcon(struct torture_context *torture,
+			     struct smbcli_state *cli)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -1489,6 +1490,10 @@ static bool test_notify_tcon(struct smbcli_state *cli, struct torture_context *t
 		
 	printf("TESTING SIMPLE CHANGE NOTIFY\n");
 		
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
 	/*
 	  get a handle on the directory
 	*/
@@ -1598,6 +1603,7 @@ static bool test_notify_tcon(struct smbcli_state *cli, struct torture_context *t
 	printf("CHANGE NOTIFY WITH TDIS OK\n");
 done:
 	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -1704,7 +1710,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 		return false;
 	}
 
-	ret &= test_notify_tcon(cli, torture);
 	ret &= test_notify_dir(cli, cli2, torture);
 	ret &= test_notify_mask(cli, torture);
 	ret &= test_notify_recursive(cli, torture);
@@ -1729,6 +1734,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "notify");
 
+	torture_suite_add_1smb_test(suite, "tcon", test_notify_tcon);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
