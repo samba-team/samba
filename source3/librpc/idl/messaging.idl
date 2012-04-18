@@ -103,6 +103,9 @@ interface messaging
 		/* event messages */
 		MSG_DUMP_EVENT_LIST		= 0x0500,
 
+		/* smbXsrv messages */
+		MSG_SMBXSRV_SESSION_CLOSE	= 0x0600,
+
 		/* dbwrap messages 4001-4999 (0x0FA0 - 0x1387) */
 		/* MSG_DBWRAP_TDB2_CHANGES		= 4001, */
 		MSG_DBWRAP_G_LOCK_RETRY		= 4002,
