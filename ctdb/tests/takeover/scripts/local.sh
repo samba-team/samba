@@ -24,35 +24,13 @@ define_test ()
 
 simple_test ()
 {
+    # Do some filtering of the output to replace date/time.
+    if [ "$algorithm" = "lcp2" -a -n "$CTDB_TEST_LOGLEVEL" ] ; then
+	OUT_FILTER='s@^.*:@DATE\ TIME\ \[PID\]:@'
+    fi
+
     _states="$1"
     _out=$($test_prog $_states 2>&1)
-    _rc=$?
 
-    if [ "$algorithm" = "lcp2" -a -n "$CTDB_TEST_LOGLEVEL" ] ; then
-	OUT_FILTER='s@^.*:@DATE TIME \[PID\]:@'
-    fi
-
-    if [ -n "$OUT_FILTER" ] ; then
-	_fout=$(echo "$_out" | sed -r "$OUT_FILTER")
-    else
-	_fout="$_out"
-    fi
-
-    if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
-	echo "PASSED"
-    else
-	cat <<EOF
-Algorithm: $algorithm
-
-##################################################
-Required output (Exit status: ${required_rc}):
-##################################################
-$required_output
-##################################################
-Actual output (Exit status: ${_rc}):
-##################################################
-$_out
-EOF
-	return 1
-    fi
+    result_check "Algorithm: $algorithm"
 }

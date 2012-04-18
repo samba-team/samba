@@ -49,10 +49,14 @@ ctdb_set_output ()
     trap "rm -f $_out $_rc" 0
 }
 
-required_result ()
+_extra_header ()
 {
-    required_rc="${1:-0}"
-    required_output=$(cat)
+    cat <<EOF
+CTDB_NODES_FILE="${CTDB_NODES_FILE}"
+CTDB_BASE="$CTDB_BASE"
+$(which ctdb)
+
+EOF
 }
 
 simple_test ()
@@ -62,27 +66,16 @@ simple_test ()
 	shift
 	_sort="sort"
     fi
+
     _out=$("$@" 2>&1)
     _rc=$?
     _out=$(echo "$_out" | $_sort )
 
-    if [ "$_out" = "$required_output" -a $_rc = $required_rc ] ; then
-	echo "PASSED"
-    else
-	cat <<EOF
-CTDB_NODES_FILE="${CTDB_NODES_FILE}"
-CTDB_BASE="$CTDB_BASE"
-$(which ctdb)
+    # Can't do this inline or it affects return code
+    _extra_header="$(_extra_header)"
 
-##################################################
-Required output (Exit status: ${required_rc}):
-##################################################
-$required_output
-##################################################
-Actual output (Exit status: ${_rc}):
-##################################################
-$_out
-EOF
-	return 1
-    fi
+    # Get the return code back into $?
+    (exit $_rc)
+
+    result_check "$_extra_header"
 }

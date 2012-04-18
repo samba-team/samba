@@ -38,7 +38,7 @@ export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb"
 
 ######################################################################
 
-if [ "$TEST_VERBOSE" = "yes" ] ; then
+if "$TEST_VERBOSE" ; then
     debug () { echo "$@" ; }
 else
     debug () { : ; }
@@ -672,133 +672,13 @@ define_test ()
     printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 }
 
-# Set the required result for a test.
-# - Argument 1 is exit code.
-# - Argument 2, if present is the required test output but "--"
-#   indicates empty output.
-# If argument 2 is not present or null then read required test output
-# from stdin.
-required_result ()
+_extra_header ()
 {
-    required_rc="${1:-0}"
-    if [ -n "$2" ] ; then
-	if [ "$2" = "--" ] ; then
-	    required_output=""
-	else
-	    required_output="$2"
-	fi
-    else
-	if ! tty -s ; then
-	    required_output=$(cat)
-	else
-	    required_output=""
-	fi
-    fi
-}
-
-ok ()
-{
-    required_result 0 "$@"
-}
-
-ok_null ()
-{
-    ok --
-}
-
-result_print ()
-{
-    _passed="$1"
-    _out="$2"
-    _rc="$3"
-    _iteration="$4"
-
-    if [ "$EVENTSCRIPT_TESTS_VERBOSE" = "yes" ] || ! $_passed ; then
-	if [ -n "$_iteration" ] ; then
-	    cat <<EOF
-
-==================================================
-Iteration $_iteration
-EOF
-	fi
-
-cat <<EOF
---------------------------------------------------
-Output (Exit status: ${_rc}):
---------------------------------------------------
-EOF
-	echo "$_out" | cat $EVENTSCRIPT_TESTS_CAT_RESULTS_OPTS
-    fi
-
-    if ! $_passed ; then
-	cat <<EOF
---------------------------------------------------
-Required output (Exit status: ${required_rc}):
---------------------------------------------------
-EOF
-	echo "$required_output" | cat $EVENTSCRIPT_TESTS_CAT_RESULTS_OPTS
-
-	if $EVENTSCRIPT_TESTS_DIFF_RESULTS ; then
-	    _outr=$(mktemp)
-	    echo "$required_output" >"$_outr"
-
-	    _outf=$(mktemp)
-	    echo "$_out" >"$_outf"
-
-	    cat <<EOF
---------------------------------------------------
-Diff:
---------------------------------------------------
-EOF
-	    diff -u "$_outr" "$_outf" | cat -A
-	    rm "$_outr" "$_outf"
-	fi
-    fi
-}
-
-result_footer ()
-{
-    _passed="$1"
-
-    if [ "$TEST_VERBOSE" = "yes" ] || ! $_passed ; then
-
-	cat <<EOF
---------------------------------------------------
+    cat <<EOF
 CTDB_BASE="$CTDB_BASE"
 CTDB_ETCDIR="$CTDB_ETCDIR"
 ctdb client is "$(which ctdb)"
---------------------------------------------------
 EOF
-    fi
-
-    if $_passed ; then
-	echo "PASSED"
-	return 0
-    else
-	echo
-	echo "FAILED"
-	return 1
-    fi
-}
-
-result_check ()
-{
-    _rc=$?
-
-    if [ -n "$OUT_FILTER" ] ; then
-	_fout=$(echo "$_out" | eval sed -r $OUT_FILTER)
-    else
-	_fout="$_out"
-    fi
-
-    if [ "$_fout" = "$required_output" -a $_rc = $required_rc ] ; then
-	_passed=true
-    else
-	_passed=false
-    fi
-
-    result_print "$_passed" "$_out" "$_rc"
-    result_footer "$_passed"
 }
 
 # Run an eventscript once.  The test passes if the return code and
@@ -815,10 +695,12 @@ simple_test ()
 {
     [ -n "$event" ] || die 'simple_test: $event not set'
 
-    echo "Running eventscript \"$script $event${1:+ }$*\""
-    _out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
+    _extra_header=$(_extra_header)
 
-    result_check
+    echo "Running eventscript \"$script $event${1:+ }$*\""
+    _out=$($TEST_COMMAND_TRACE "${CTDB_BASE}/events.d/$script" "$event" "$@" 2>&1)
+
+    result_check "$_extra_header"
 }
 
 simple_test_event ()
@@ -912,8 +794,8 @@ iterate_test ()
 	    _result=false
 	fi
 
-	result_print "$_passed" "$_out" "$_rc" "$iteration"
+	result_print "$_passed" "$_out" "$_rc" "Iteration $iteration"
     done
 
-    result_footer "$_result"
+    result_footer "$_result" "$(_extra_header)"
 }
