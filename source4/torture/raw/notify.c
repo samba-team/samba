@@ -1444,7 +1444,8 @@ done:
    Test if notifications are returned for changes to the base directory.
    They shouldn't be.
 */
-static bool test_notify_basedir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_notify_basedir(struct torture_context *mem_ctx,
+				struct smbcli_state *cli)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -1454,6 +1455,10 @@ static bool test_notify_basedir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	struct smbcli_request *req1;
 
 	printf("TESTING CHANGE NOTIFY BASEDIR EVENTS\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	/* get a handle on the directory */
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1503,6 +1508,7 @@ static bool test_notify_basedir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -1781,7 +1787,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 		return false;
 	}
 
-	ret &= test_notify_basedir(cli, torture);
 	ret &= test_notify_alignment(cli, torture);
 
 	smb_raw_exit(cli->session);
@@ -1807,6 +1812,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "double", test_notify_double);
 	torture_suite_add_1smb_test(suite, "tree", test_notify_tree);
 	torture_suite_add_1smb_test(suite, "overflow", test_notify_overflow);
+	torture_suite_add_1smb_test(suite, "basedir", test_notify_basedir);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
