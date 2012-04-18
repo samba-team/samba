@@ -48,6 +48,7 @@ class dbcheck(object):
         self.fix_time_metadata = False
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
+        self.fix_rmd_flags = False
         self.in_transaction = in_transaction
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
@@ -282,6 +283,20 @@ class dbcheck(object):
                           "Failed to fix missing backlink %s" % backlink_name):
             self.report("Fixed missing backlink %s" % (backlink_name))
 
+    def err_incorrect_rmd_flags(self, obj, attrname, revealed_dn):
+        '''handle a incorrect RMD_FLAGS value'''
+        rmd_flags = int(revealed_dn.dn.get_extended_component("RMD_FLAGS"))
+        self.report("ERROR: incorrect RMD_FLAGS value %u for attribute '%s' in %s for link %s" % (rmd_flags, attrname, obj.dn, revealed_dn.dn.extended_str()))
+        if not self.confirm_all('Fix incorrect RMD_FLAGS %u' % rmd_flags, 'fix_rmd_flags'):
+            self.report("Not fixing incorrect RMD_FLAGS %u" % rmd_flags)
+            return
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['old_value'] = ldb.MessageElement(str(revealed_dn), ldb.FLAG_MOD_DELETE, attrname)
+        if self.do_modify(m, ["show_recycled:1", "reveal_internals:0", "show_deleted:0"],
+                          "Failed to fix incorrect RMD_FLAGS %u" % rmd_flags):
+            self.report("Fixed incorrect RMD_FLAGS %u" % (rmd_flags))
+
     def err_orphaned_backlink(self, obj, attrname, val, link_name, target_dn):
         '''handle a orphaned backlink value'''
         self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (attrname, obj.dn, link_name, target_dn))
@@ -294,6 +309,18 @@ class dbcheck(object):
         if self.do_modify(m, ["show_recycled:1", "relax:0"],
                           "Failed to fix orphaned backlink %s" % link_name):
             self.report("Fixed orphaned backlink %s" % (link_name))
+
+    def find_revealed_link(self, dn, attrname, guid):
+        '''return a revealed link in an object'''
+        res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[attrname],
+                                controls=["show_deleted:0", "extended_dn:0", "reveal_internals:0"])
+        syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(attrname)
+        for val in res[0][attrname]:
+            dsdb_dn = dsdb_Dn(self.samdb, val, syntax_oid)
+            guid2 = dsdb_dn.dn.get_extended_component("GUID")
+            if guid == guid2:
+                return dsdb_dn
+        return None
 
     def check_dn(self, obj, attrname, syntax_oid):
         '''check a DN attribute for correctness'''
@@ -343,6 +370,14 @@ class dbcheck(object):
                 self.err_dn_target_mismatch(obj.dn, attrname, val, dsdb_dn,
                                             res[0].dn, "incorrect string version of DN")
                 continue
+
+            if is_deleted and not target_is_deleted and reverse_link_name is not None:
+                revealed_dn = self.find_revealed_link(obj.dn, attrname, guid)
+                rmd_flags = revealed_dn.dn.get_extended_component("RMD_FLAGS")
+                if rmd_flags != None and (int(rmd_flags) & 1) == 0:
+                    # the RMD_FLAGS for this link should be 1, as the target is deleted
+                    self.err_incorrect_rmd_flags(obj, attrname, revealed_dn)
+                    continue
 
             # check the reverse_link is correct if there should be one
             if reverse_link_name is not None:
