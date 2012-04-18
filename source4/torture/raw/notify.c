@@ -585,6 +585,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
+	union smb_chkpath chkpath;
 	int fnum, fnum2;
 	uint32_t mask;
 	int i;
@@ -621,6 +622,8 @@ static bool test_notify_mask(struct torture_context *tctx,
 	notify.nttrans.in.buffer_size = 1000;
 	notify.nttrans.in.recursive = true;
 
+	chkpath.chkpath.in.path = "\\";
+
 #define NOTIFY_MASK_TEST(test_name, setup, op, cleanup, Action, expected, nchanges) \
 	do { \
 	smbcli_getatr(cli->tree, test_name, NULL, NULL, NULL); \
@@ -633,6 +636,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		notify.nttrans.in.file.fnum = fnum;	\
 		notify.nttrans.in.completion_filter = (1<<i); \
 		req = smb_raw_changenotify_send(cli->tree, &notify); \
+		smb_raw_chkpath(cli->tree, &chkpath); \
 		op \
 		smb_msleep(200); smb_raw_ntcancel(req); \
 		status = smb_raw_changenotify_recv(req, tctx, &notify); \
