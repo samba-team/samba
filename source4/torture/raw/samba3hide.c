@@ -114,6 +114,36 @@ static bool smbcli_file_exists(struct smbcli_tree *tree, const char *fname)
 	return NT_STATUS_IS_OK(smbcli_getatr(tree, fname, NULL, NULL, NULL));
 }
 
+static NTSTATUS smbcli_setup_unix(struct smbcli_tree *tree)
+{
+	union smb_fsinfo fsinfo;
+	union smb_setfsinfo set_fsinfo;
+	NTSTATUS status;
+
+	ZERO_STRUCT(fsinfo);
+	ZERO_STRUCT(set_fsinfo);
+
+	fsinfo.generic.level = RAW_QFS_UNIX_INFO;
+	status = smb_raw_fsinfo(tree, NULL, &fsinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb_raw_fsinfo failed %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	set_fsinfo.generic.level = RAW_SETFS_UNIX_INFO;
+	set_fsinfo.unix_info.in.major_version = fsinfo.unix_info.out.major_version;
+	set_fsinfo.unix_info.in.minor_version = fsinfo.unix_info.out.minor_version;
+	set_fsinfo.unix_info.in.capability = fsinfo.unix_info.out.capability;
+
+	status = smb_raw_setfsinfo(tree, NULL, &set_fsinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb_raw_setfsinfo failed %s\n",
+			nt_errstr(status));
+	}
+	return status;
+}
+
 static NTSTATUS smbcli_chmod(struct smbcli_tree *tree, const char *fname,
 			     uint64_t permissions)
 {
@@ -137,6 +167,13 @@ bool torture_samba3_hide(struct torture_context *torture)
 		    torture, &cli, torture, torture_setting_string(torture, "host", NULL),
 		    torture_setting_string(torture, "share", NULL), torture->ev)) {
 		torture_fail(torture, "torture_open_connection_share failed\n");
+	}
+
+	status = smbcli_setup_unix(cli->tree);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_fail(torture,
+			talloc_asprintf(torture, "smbcli_setup_unix failed %s\n",
+				nt_errstr(status)));
 	}
 
 	status = torture_second_tcon(torture, cli->session, "hideunread",
