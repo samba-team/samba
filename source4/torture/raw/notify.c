@@ -945,7 +945,8 @@ done:
 /*
   basic testing of change notifies followed by a exit
 */
-static bool test_notify_exit(struct torture_context *tctx)
+static bool test_notify_exit(struct torture_context *tctx,
+			     struct smbcli_state *cli1)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -956,6 +957,10 @@ static bool test_notify_exit(struct torture_context *tctx)
 	struct smbcli_state *cli = NULL;
 
 	printf("TESTING CHANGE NOTIFY FOLLOWED BY EXIT\n");
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
 
 	if (!torture_open_connection(&cli, tctx, 0)) {
 		return false;
@@ -1000,6 +1005,7 @@ static bool test_notify_exit(struct torture_context *tctx)
 
 done:
 	torture_close_connection(cli);
+	smbcli_deltree(cli1->tree, BASEDIR);
 	return ret;
 }
 
@@ -1746,7 +1752,6 @@ static bool test_raw_notify_all(struct torture_context *torture,
 		return false;
 	}
 
-	ret &= test_notify_exit(torture);
 	ret &= test_notify_ulogoff(torture);
 	ret &= test_notify_tcp_dis(torture);
 	ret &= test_notify_double(cli, torture);
@@ -1772,6 +1777,7 @@ struct torture_suite *torture_raw_notify(TALLOC_CTX *mem_ctx)
 				    test_notify_mask_change);
 	torture_suite_add_1smb_test(suite, "file", test_notify_file);
 	torture_suite_add_1smb_test(suite, "tdis", test_notify_tdis);
+	torture_suite_add_1smb_test(suite, "exit", test_notify_exit);
 	torture_suite_add_2smb_test(suite, "all", test_raw_notify_all);
 
 	return suite;
