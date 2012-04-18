@@ -529,7 +529,9 @@ bool run_smb2_session_reconnect(int dummy)
 	 */
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
 			       cli2->smb2.tid, fid_persistent, fid_volatile);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
+	{
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
@@ -537,7 +539,9 @@ bool run_smb2_session_reconnect(int dummy)
 	status = smb2cli_write(cli2->conn, cli2->timeout, cli2->smb2.session,
 			       cli2->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
+	{
 		printf("smb2cli_write returned %s\n", nt_errstr(status));
 		return false;
 	}
@@ -546,7 +550,9 @@ bool run_smb2_session_reconnect(int dummy)
 			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
+	{
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
 	}
@@ -585,7 +591,9 @@ bool run_smb2_session_reconnect(int dummy)
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
 			       cli2->smb2.tid, fid_persistent, fid_volatile);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
+	{
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
@@ -593,7 +601,9 @@ bool run_smb2_session_reconnect(int dummy)
 	status = smb2cli_write(cli2->conn, cli2->timeout, cli2->smb2.session,
 			       cli2->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
+	{
 		printf("smb2cli_write returned %s\n", nt_errstr(status));
 		return false;
 	}
@@ -602,7 +612,9 @@ bool run_smb2_session_reconnect(int dummy)
 			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
+	{
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
 	}
@@ -619,7 +631,9 @@ bool run_smb2_session_reconnect(int dummy)
 			NULL, /* smb2_create_blobs *blobs */
 			&fid_persistent,
 			&fid_volatile);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
+	{
 		printf("smb2cli_create on cli2 %s\n", nt_errstr(status));
 		return false;
 	}
