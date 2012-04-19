@@ -49,18 +49,10 @@ bld.SAMBA_LIBRARY('pac',
 
 bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb samba-hostconfig com_err kdc-policy',
+	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb samba-hostconfig com_err',
 	private_library=True,
 	includes='../heimdal/kdc',
 	)
-
-bld.SAMBA_LIBRARY('kdc-policy',
-	source='policy.c',
-	deps='samba-hostconfig authkrb5',
-	private_library=True,
-        autoproto = 'kdc-policy-proto.h'
-        )
-
 
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
 	source='mit_samba.c',
