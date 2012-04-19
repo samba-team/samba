@@ -30,15 +30,17 @@ struct db_cache_ctx {
 	struct db_context *negative;
 };
 
-static void dbwrap_cache_validate(struct db_cache_ctx *ctx)
+static bool dbwrap_cache_validate(struct db_cache_ctx *ctx)
 {
 	if (ctx->seqnum == dbwrap_get_seqnum(ctx->backing)) {
-		return;
+		return true;
 	}
 	TALLOC_FREE(ctx->positive);
 	ctx->positive = db_open_rbt(ctx);
 	TALLOC_FREE(ctx->negative);
 	ctx->negative = db_open_rbt(ctx);
+
+	return ((ctx->positive != NULL) && (ctx->negative != NULL));
 }
 
 static NTSTATUS dbwrap_cache_parse_record(
@@ -51,16 +53,15 @@ static NTSTATUS dbwrap_cache_parse_record(
 	TDB_DATA value;
 	NTSTATUS status;
 
-	dbwrap_cache_validate(ctx);
-
-	if (ctx->positive != NULL) {
-		status = dbwrap_parse_record(
-			ctx->positive, key, parser, private_data);
-		if (NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	if (!dbwrap_cache_validate(ctx)) {
+		return NT_STATUS_NO_MEMORY;
 	}
-	if ((ctx->negative != NULL) && dbwrap_exists(ctx->negative, key)) {
+
+	status = dbwrap_parse_record(ctx->positive, key, parser, private_data);
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (dbwrap_exists(ctx->negative, key)) {
 		return NT_STATUS_NOT_FOUND;
 	}
 
@@ -191,7 +192,10 @@ struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 	ctx->seqnum = -1;
 	ctx->backing = talloc_move(ctx, &backing);
 	db->private_data = ctx;
-	dbwrap_cache_validate(ctx);
+	if (!dbwrap_cache_validate(ctx)) {
+		TALLOC_FREE(db);
+		return NULL;
+	}
 
 	db->fetch_locked = dbwrap_cache_fetch_locked;
 	db->try_fetch_locked = NULL;
