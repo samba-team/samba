@@ -131,11 +131,11 @@ ctdb_test_exit_hook_add ()
 ctdb_test_usage()
 {
     local status=${1:-2}
-    
+
     cat <<EOF
 Usage: $0 [option]
 
-Options:	
+Options:
     -h, --help          show this screen.
     -v, --version       show test case version.
     --category          show the test category (ACL, CTDB, Samba ...).
@@ -161,7 +161,7 @@ ctdb_test_cmd_options()
     case "$1" in
         -h|--help)        ctdb_test_usage 0   ;;
         -v|--version)     ctdb_test_version   ;;
-        --category)       echo "CTDB"         ;; 
+        --category)       echo "CTDB"         ;;
         -d|--description) test_info           ;;
 	-x)               set -x ; return 0   ;;
 	*)
@@ -174,7 +174,7 @@ ctdb_test_cmd_options()
     exit 0
 }
 
-ctdb_test_init () 
+ctdb_test_init ()
 {
     scriptname=$(basename "$0")
     testfailures=0
@@ -329,9 +329,9 @@ wait_until ()
 	t=$(($t - 1))
 	sleep 1
     done
-    
+
     echo "*TIMEOUT*"
-    
+
     return 1
 }
 
@@ -698,7 +698,7 @@ ctdb_start_1 ()
     shift # "$@" is passed to ctdbd start.
 
     echo -n "Starting CTDB on node ${pnn}..."
-    
+
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
 	daemons_start_1 $pnn "$@"
     else
@@ -904,7 +904,7 @@ case "$1" in
             echo "${0}: Healthy again, \"$trigger\" no longer detected"
             rm "$detected"
         fi
-	
+
 	;;
     *)
         if [ -e "$timeout_trigger" ] ; then
@@ -913,7 +913,7 @@ case "$1" in
         fi
 	;;
 	*)
-	
+
 esac
 
 exit 0
