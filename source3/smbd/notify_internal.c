@@ -388,7 +388,7 @@ static NTSTATUS notify_add_idx(struct db_record *rec, uint32_t vnn)
 
 NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 {
-	struct server_id pid = messaging_server_id(notify->msg);
+	struct server_id pid;
 	struct notify_list *listel;
 	struct db_record *notify_rec;
 	NTSTATUS status;
@@ -398,6 +398,8 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 	}
 
 	DEBUG(10, ("notify_remove: private_data=%p\n", private_data));
+
+	pid = messaging_server_id(notify->msg);
 
 	for (listel=notify->list;listel;listel=listel->next) {
 		if (listel->private_data == private_data) {
