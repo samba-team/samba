@@ -49,7 +49,12 @@ class dbcheck(object):
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
         self.fix_rmd_flags = False
+        self.seize_fsmo_role = False
         self.in_transaction = in_transaction
+        self.infrastructure_dn = ldb.Dn(samdb, "CN=Infrastructure," + samdb.domain_dn())
+        self.naming_dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
+        self.schema_dn = samdb.get_schema_basedn()
+        self.rid_dn = ldb.Dn(samdb, "CN=RID Manager$,CN=System," + samdb.domain_dn())
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -310,6 +315,23 @@ class dbcheck(object):
                           "Failed to fix orphaned backlink %s" % link_name):
             self.report("Fixed orphaned backlink %s" % (link_name))
 
+    def err_no_fsmoRoleOwner(self, obj):
+        '''handle a missing fSMORoleOwner'''
+        self.report("ERROR: fSMORoleOwner not found for role %s" % (obj.dn))
+        res = self.samdb.search("",
+                                scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
+        assert len(res) == 1
+        serviceName = res[0]["dsServiceName"][0]
+        if not self.confirm_all('Sieze role %s onto current DC by adding fSMORoleOwner=%s' % (obj.dn, serviceName), 'seize_fsmo_role'):
+            self.report("Not Siezing role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
+            return
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(serviceName, ldb.FLAG_MOD_ADD, 'fSMORoleOwner')
+        if self.do_modify(m, [],
+                          "Failed to sieze role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName)):
+            self.report("Siezed role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
+
     def find_revealed_link(self, dn, attrname, guid):
         '''return a revealed link in an object'''
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[attrname],
@@ -441,6 +463,20 @@ class dbcheck(object):
                           "Failed to fix metadata for attribute %s" % attr):
             self.report("Fixed metadata for attribute %s" % attr)
 
+    def is_fsmo_role(self, dn):
+        if dn == self.samdb.domain_dn:
+            return True
+        if dn == self.infrastructure_dn:
+            return True
+        if dn == self.naming_dn:
+            return True
+        if dn == self.schema_dn:
+            return True
+        if dn == self.rid_dn:
+            return True
+        
+        return False
+
     def check_object(self, dn, attrs=['*']):
         '''check one object'''
         if self.verbose:
@@ -549,6 +585,11 @@ class dbcheck(object):
                         self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
                         continue
                     self.fix_metadata(dn, att)
+
+        if self.is_fsmo_role(dn):
+            if "fSMORoleOwner" not in obj:
+                self.err_no_fsmoRoleOwner(obj)
+                error_count += 1
 
         return error_count
 
