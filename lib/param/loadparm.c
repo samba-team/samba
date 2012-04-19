@@ -1713,6 +1713,20 @@ static unsigned long lp_ulong(const char *s)
 /**
  * convenience routine to return unsigned long parameters.
  */
+static long lp_long(const char *s)
+{
+
+	if (!s) {
+		DEBUG(0,("lp_long(%s): is called with NULL!\n",s));
+		return -1;
+	}
+
+	return strtol(s, NULL, 0);
+}
+
+/**
+ * convenience routine to return unsigned long parameters.
+ */
 static double lp_double(const char *s)
 {
 
@@ -1840,6 +1854,17 @@ unsigned long lpcfg_parm_ulong(struct loadparm_context *lp_ctx,
 	return default_v;
 }
 
+long lpcfg_parm_long(struct loadparm_context *lp_ctx,
+		     struct loadparm_service *service, const char *type,
+		     const char *option, long default_v)
+{
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
+
+	if (value)
+		return lp_long(value);
+
+	return default_v;
+}
 
 double lpcfg_parm_double(struct loadparm_context *lp_ctx,
 		      struct loadparm_service *service, const char *type,
