@@ -37,6 +37,7 @@ def checkset_backend(lp, backend, eadbfile):
         posix_eadb = lp.get("posix:eadb")
         if posix_eadb is not None:
             return (samba.posix_eadb, lp.get("posix:eadb"))
+        return (None, None)
     elif backend == "native":
         return (None, None)
     elif backend == "eadb":
