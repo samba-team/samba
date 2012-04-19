@@ -318,6 +318,9 @@ static void dbwrap_watch_record_stored(struct db_context *db,
 
 	status = dbwrap_record_get_watchers(db, rec, talloc_tos(),
 					    &ids, &num_ids);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("dbwrap_record_get_watchers failed: %s\n",
 			  nt_errstr(status)));
