@@ -297,6 +297,11 @@ struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,
 
 const char *lpcfg_sam_name(struct loadparm_context *lp_ctx);
 
+void lpcfg_default_kdc_policy(struct loadparm_context *lp_ctx,
+				time_t *svc_tkt_lifetime,
+				time_t *usr_tkt_lifetime,
+				time_t *renewal_lifetime);
+
 /* The following definitions come from lib/version.c  */
 
 const char *samba_version_string(void);
