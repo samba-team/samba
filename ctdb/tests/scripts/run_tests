@@ -13,6 +13,7 @@ Options:
 	-D	Show diff between failed/expected test output (some tests only)
 	-X	Trace certain scripts run by tests using -x (only some tests)
 	-d	Print descriptions of tests instead of filenames (dodgy!)
+	-H	No headers - for running single test with other wrapper
 	-q	Quiet - don't show tests being run (hint: use with -s)
 	-x	Trace this script with the -x option
 EOF
@@ -31,6 +32,7 @@ with_summary=false
 with_desc=false
 quiet=false
 exit_on_fail=false
+no_header=false
 
 export TEST_VERBOSE=false
 export TEST_COMMAND_TRACE=""
@@ -38,7 +40,7 @@ export TEST_CAT_RESULTS_OPTS=""
 export TEST_DIFF_RESULTS=false
 export TEST_LOCAL_DAEMONS  # No default, developer can "override"!
 
-temp=$(getopt -n "$prog" -o "xdehlqsvXAD" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "xdehlqsvXADH" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -56,6 +58,7 @@ while true ; do
 	-X) TEST_COMMAND_TRACE="sh -x" ; shift ;;
 	-A) TEST_CAT_RESULTS_OPTS="-A" ; shift ;;
 	-D) TEST_DIFF_RESULTS=true ; shift ;;
+	-H) no_header=true ; shift ;;
 	--) shift ; break ;;
 	*) usage ;;
     esac
@@ -114,12 +117,12 @@ ctdb_test_run ()
 
     [ -n "$1" ] || set -- "$name"
 
-    ctdb_test_begin "$name"
+    $no_header || ctdb_test_begin "$name"
 
     local status=0
     "$@" || status=$?
 
-    ctdb_test_end "$name" "$status" "$*"
+    $no_header || ctdb_test_end "$name" "$status" "$*"
 
     return $status
 }
