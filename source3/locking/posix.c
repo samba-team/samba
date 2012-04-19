@@ -457,11 +457,18 @@ void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 		posix_pending_close_db, talloc_tos(),
 		locking_ref_count_key_fsp(fsp, &tmp));
 
+	if (rec == NULL) {
+		DEBUG(0, ("reduce_windows_lock_ref_count: rec not found\n"));
+		return;
+	}
+
 	value = dbwrap_record_get_value(rec);
 
-	SMB_ASSERT((rec != NULL)
-		   && (value.dptr != NULL)
-		   && (value.dsize == sizeof(lock_ref_count)));
+	if ((value.dptr == NULL) ||  (value.dsize != sizeof(lock_ref_count))) {
+		DEBUG(0, ("reduce_windows_lock_ref_count: wrong value\n"));
+		TALLOC_FREE(rec);
+		return;
+	}
 
 	memcpy(&lock_ref_count, value.dptr, sizeof(lock_ref_count));
 
