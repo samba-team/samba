@@ -25,8 +25,9 @@
 #include "includes.h"
 #include "lib/eventlog/eventlog.h"
 #include "registry.h"
-#include "registry/reg_backend_db.h"
-#include "registry/reg_objects.h"
+#include "registry/reg_api.h"
+#include "registry/reg_init_basic.h"
+#include "registry/reg_util_token.h"
 #include "../libcli/registry/util_reg.h"
 
 extern int optind;
@@ -78,19 +79,23 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	const char **elogs = lp_eventlog_list(  );
 	const char **wrklist, **wp;
 	char *evtlogpath = NULL;
-	struct regsubkey_ctr *subkeys;
-	struct regval_ctr *values;
-	struct regval_blob *rval;
 	int ii = 0;
 	bool already_in;
 	int i;
 	int numsources = 0;
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *ctx = talloc_stackframe();
 	WERROR werr;
-	DATA_BLOB blob;
+	struct registry_key *key_hive, *key_eventlog, *key_source;
+	struct security_token *token = NULL;
+	const char *hive_name, *relpath;
+	enum winreg_CreateAction action;
+	struct registry_value *value;
+	static const uint32 ACCESS = REG_KEY_READ | REG_KEY_WRITE;
+	bool ret = false;
 
 	if (!elogs) {
-		return False;
+		d_printf("No Eventlogs configured\n");
+		goto done;
 	}
 
 	for ( i = 0; elogs[i]; i++ ) {
@@ -101,7 +106,7 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	if ( !elogs[i] ) {
 		d_printf("Eventlog [%s] not found in list of valid event logs\n",
 			 eventlog);
-		return false;	/* invalid named passed in */
+		goto done;
 	}
 
 	/* have to assume that the evenlog key itself exists at this point */
@@ -109,41 +114,59 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	/* todo add to Sources */
 
-	werr = regval_ctr_init(ctx, &values);
-	if(!W_ERROR_IS_OK(werr)) {
-		d_printf("talloc() failure!\n");
-		return false;
-	}
-
 	evtlogpath = talloc_asprintf(ctx, "%s\\%s", KEY_EVENTLOG, eventlog);
 	if (!evtlogpath) {
-		TALLOC_FREE(values);
-		return false;
+		d_printf("Out of memory\n");
+		goto done;
 	}
 
-	regdb_fetch_values( evtlogpath, values );
+	relpath = strchr(evtlogpath, '\\');
+	hive_name = talloc_strndup(ctx, evtlogpath, relpath - evtlogpath);
+	if (!hive_name) {
+		d_printf("Out of memory\n");
+		goto done;
+	}
+	relpath++;
 
+	werr = ntstatus_to_werror(registry_create_admin_token(ctx, &token));
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to create admin token: %s\n", win_errstr(werr));
+		goto done;
+	}
 
-	if ( !( rval = regval_ctr_getvalue( values, "Sources" ) ) ) {
-		d_printf("No Sources value for [%s]!\n", eventlog);
-		return False;
+	werr = reg_openhive(ctx, hive_name, ACCESS, token, &key_hive);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to open hive [%s]: %s\n", hive_name, win_errstr(werr));
+		goto done;
+	}
+
+	werr = reg_openkey(ctx, key_hive, relpath, ACCESS, &key_eventlog);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to open key [%s]: %s\n", evtlogpath, win_errstr(werr));
+		goto done;
+	}
+
+	werr = reg_queryvalue(ctx, key_eventlog, "Sources", &value);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to get value \"Sources\" for [%s]: %s\n", evtlogpath, win_errstr(werr));
+		goto done;
 	}
 	/* perhaps this adding a new string to a multi_sz should be a fn? */
 	/* check to see if it's there already */
 
-	if ( regval_type(rval) != REG_MULTI_SZ ) {
-		d_printf("Wrong type for Sources, should be REG_MULTI_SZ\n");
-		return False;
+	if ( value->type != REG_MULTI_SZ ) {
+		d_printf("Wrong type for \"Sources\", should be REG_MULTI_SZ\n");
+		goto done;
 	}
 	/* convert to a 'regulah' chars to do some comparisons */
 
-	already_in = False;
+	already_in = false;
 	wrklist = NULL;
-	dump_data(1, regval_data_p(rval), regval_size(rval));
+	dump_data(1, value->data.data, value->data.length);
 
-	blob = data_blob_const(regval_data_p(rval), regval_size(rval));
-	if (!pull_reg_multi_sz(talloc_tos(), &blob, &wrklist)) {
-		return false;
+	if (!pull_reg_multi_sz(ctx, &value->data, &wrklist)) {
+		d_printf("Failed to pull REG_MULTI_SZ from \"Sources\"\n");
+		goto done;
 	}
 
 	for (ii=0; wrklist[ii]; ii++) {
@@ -158,7 +181,7 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 			if ( strequal( *wp, sourcename ) ) {
 				d_printf("Source name [%s] already in list for [%s] \n",
 					 sourcename, eventlog);
-				already_in = True;
+				already_in = true;
 				break;
 			}
 			wp++;
@@ -167,106 +190,79 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		d_printf("Nothing in the sources list, this might be a problem\n");
 	}
 
-	wp = wrklist;
-
 	if ( !already_in ) {
 		/* make a new list with an additional entry; copy values, add another */
-		wp = talloc_array(ctx, const char *, numsources + 2 );
-
+		wp = talloc_realloc(ctx, wrklist, const char *, numsources + 2 );
 		if ( !wp ) {
-			d_printf("talloc() failed \n");
-			return False;
+			d_printf("Out of memory\n");
+			goto done;
 		}
-		memcpy( wp, wrklist, sizeof( char * ) * numsources );
-		*( wp + numsources ) = (const char * ) sourcename;
-		*( wp + numsources + 1 ) = NULL;
-		if (!push_reg_multi_sz(ctx, &blob, wp)) {
-			return false;
+
+		wp[numsources] = sourcename;
+		wp[numsources+1] = NULL;
+		if (!push_reg_multi_sz(ctx, &value->data, wp)) {
+			d_printf("Failed to push Sources\n");
+			goto done;
 		}
-		dump_data( 1, blob.data, blob.length);
-		regval_ctr_addvalue( values, "Sources", REG_MULTI_SZ,
-				     blob.data, blob.length);
-		regdb_store_values( evtlogpath, values );
-		data_blob_free(&blob);
+		dump_data( 1, value->data.data, value->data.length);
+		werr = reg_setvalue(key_eventlog,  "Sources", value);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_printf("Failed to set value Sources:  %s\n", win_errstr(werr));
+			goto done;
+		}
 	} else {
 		d_printf("Source name [%s] found in existing list of sources\n",
 			 sourcename);
 	}
-	TALLOC_FREE(values);
-	TALLOC_FREE(wrklist);	/*  */
 
-	werr = regsubkey_ctr_init(ctx, &subkeys);
+	werr = reg_createkey(ctx, key_eventlog, sourcename, ACCESS, &key_source, &action);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_printf("talloc() failure!\n");
-		return False;
-	}
-	TALLOC_FREE(evtlogpath);
-	evtlogpath = talloc_asprintf(ctx, "%s\\%s", KEY_EVENTLOG, eventlog );
-	if (!evtlogpath) {
-		TALLOC_FREE(subkeys);
-		return false;
+		d_printf("Failed to create subkey \"%s\" of \"%s\": %s\n", sourcename, evtlogpath, win_errstr(werr));
+		goto done;
 	}
 
-	regdb_fetch_keys( evtlogpath, subkeys );
-
-	if ( !regsubkey_ctr_key_exists( subkeys, sourcename ) ) {
+	if (action == REG_CREATED_NEW_KEY) {
 		d_printf(" Source name [%s] for eventlog [%s] didn't exist, adding \n",
 			 sourcename, eventlog);
-		regsubkey_ctr_addkey( subkeys, sourcename );
-		if ( !regdb_store_keys( evtlogpath, subkeys ) )
-			return False;
 	}
-	TALLOC_FREE(subkeys);
 
 	/* at this point KEY_EVENTLOG/<eventlog>/<sourcename> key is in there. Now need to add EventMessageFile */
 
-	/* now allocate room for the source's subkeys */
-
-	werr = regsubkey_ctr_init(ctx, &subkeys);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_printf("talloc() failure!\n");
-		return False;
-	}
-	TALLOC_FREE(evtlogpath);
-	evtlogpath = talloc_asprintf(ctx, "%s\\%s\\%s",
-		  KEY_EVENTLOG, eventlog, sourcename);
-	if (!evtlogpath) {
-		TALLOC_FREE(subkeys);
-		return false;
-	}
-
-	regdb_fetch_keys( evtlogpath, subkeys );
-
 	/* now add the values to the KEY_EVENTLOG/Application form key */
-	werr = regval_ctr_init(ctx, &values);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_printf("talloc() failure!\n");
-		return False;
-	}
 	d_printf("Storing EventMessageFile [%s] to eventlog path of [%s]\n",
 		 messagefile, evtlogpath);
 
-	regdb_fetch_values( evtlogpath, values );
+	if (!push_reg_sz(ctx, &value->data, messagefile)) {
+		d_printf("Failed to push \"EventMessageFile\"\n");
+		goto done;
+	}
+	value->type = REG_SZ;
 
-	regval_ctr_addvalue_sz(values, "EventMessageFile", messagefile);
-	regdb_store_values( evtlogpath, values );
-
-	TALLOC_FREE(values);
-
-	return True;
+	werr = reg_setvalue(key_source, "EventMessageFile", value);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to set value \"EventMessageFile\":  %s\n", win_errstr(werr));
+		return false;
+	}
+	ret = true;
+done:
+	talloc_free(ctx);
+	return ret;
 }
 
 static int DoAddSourceCommand( int argc, char **argv, bool debugflag, char *exename )
 {
+	WERROR werr;
 
 	if ( argc < 3 ) {
 		printf( "need more arguments:\n" );
 		printf( "-o addsource EventlogName SourceName /path/to/EventMessageFile.dll\n" );
 		return -1;
 	}
+
 	/* must open the registry before we access it */
-	if (!W_ERROR_IS_OK(regdb_init())) {
-		printf( "Can't open the registry.\n" );
+	werr = registry_init_common();
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("Can't open the registry: %s.\n", win_errstr(werr));
 		return -1;
 	}
 
