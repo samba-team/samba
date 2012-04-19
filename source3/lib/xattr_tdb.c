@@ -178,10 +178,6 @@ ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
 	ssize_t result = -1;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
-	if (!frame) {
-		errno = ENOMEM;
-		return -1;
-	}
 
 	DEBUG(10, ("xattr_tdb_getattr called for file %s, name %s\n",
 		   file_id_string(frame, id), name));
@@ -230,10 +226,6 @@ int xattr_tdb_setattr(struct db_context *db_ctx,
 	uint32_t i;
 	TDB_DATA data;
 	TALLOC_CTX *frame = talloc_stackframe();
-	if (!frame) {
-		errno = ENOMEM;
-		return -1;
-	}
 
 	DEBUG(10, ("xattr_tdb_setattr called for file %s, name %s\n",
 		   file_id_string(frame, id), name));
@@ -321,10 +313,6 @@ ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
 	uint32_t i;
 	size_t len = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
-	if (!frame) {
-		errno = ENOMEM;
-		return -1;
-	}
 
 	status = xattr_tdb_load_attrs(frame, db_ctx, id, &attribs);
 

@@ -37,10 +37,6 @@ static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 	ssize_t xattr_size;
 	DATA_BLOB blob;
 	TALLOC_CTX *frame = talloc_stackframe();
-	if (!frame) {
-		errno = ENOMEM;
-		return -1;
-	}
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
@@ -75,10 +71,6 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 	ssize_t xattr_size;
 	DATA_BLOB blob;
 	TALLOC_CTX *frame = talloc_stackframe();
-	if (!frame) {
-		errno = ENOMEM;
-		return -1;
-	}
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
