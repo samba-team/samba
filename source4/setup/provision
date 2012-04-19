@@ -221,6 +221,7 @@ if opts.targetdir is not None:
         os.mkdir(opts.targetdir)
 
 eadb = True
+
 if opts.use_xattrs == "yes":
     eadb = False
 elif opts.use_xattrs == "auto" and not lp.get("posix:eadb"):
@@ -231,13 +232,15 @@ elif opts.use_xattrs == "auto" and not lp.get("posix:eadb"):
     try:
         try:
             samba.ntacls.setntacl(lp, file.name,
-                "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+                                  "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
             eadb = False
         except Exception:
-            logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
-                    "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
+            logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. ")
     finally:
         file.close()
+
+if eadb:
+    logger.info("not using extended attributes to store ACLs and other metadata. If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
 
 session = system_session()
 try:
