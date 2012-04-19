@@ -65,7 +65,7 @@ def import_sam_policy(samdb, policy, logger):
         'minPwdAge')
 
     max_pw_age_unix = policy['maximum password age']
-    if max_pw_age_unix == -1 || max_pw_age_unix == 0:
+    if max_pw_age_unix == -1 or max_pw_age_unix == 0:
         max_pw_age_nt = -0x8000000000000000
     else:
         max_pw_age_nt = int(-max_pw_age_unix * (1e7 * 60 * 60 * 24))

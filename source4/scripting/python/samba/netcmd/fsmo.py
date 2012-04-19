@@ -30,6 +30,43 @@ from samba.netcmd import (
     )
 from samba.samdb import SamDB
 
+def transfer_role(outf, role, samdb):
+    m = ldb.Message()
+    m.dn = ldb.Dn(samdb, "")
+    if role == "rid":
+        m["becomeRidMaster"]= ldb.MessageElement(
+            "1", ldb.FLAG_MOD_REPLACE,
+            "becomeRidMaster")
+    elif role == "pdc":
+        domain_dn = samdb.domain_dn()
+        res = samdb.search(domain_dn,
+                           scope=ldb.SCOPE_BASE, attrs=["objectSid"])
+        assert len(res) == 1
+        sid = res[0]["objectSid"][0]
+        m["becomePdc"]= ldb.MessageElement(
+            sid, ldb.FLAG_MOD_REPLACE,
+            "becomePdc")
+    elif role == "naming":
+        m["becomeDomainMaster"]= ldb.MessageElement(
+            "1", ldb.FLAG_MOD_REPLACE,
+            "becomeDomainMaster")
+        samdb.modify(m)
+    elif role == "infrastructure":
+        m["becomeInfrastructureMaster"]= ldb.MessageElement(
+            "1", ldb.FLAG_MOD_REPLACE,
+            "becomeInfrastructureMaster")
+    elif role == "schema":
+        m["becomeSchemaMaster"]= ldb.MessageElement(
+            "1", ldb.FLAG_MOD_REPLACE,
+            "becomeSchemaMaster")
+    else:
+        raise CommandError("Invalid FSMO role.")
+    try:
+        samdb.modify(m)
+    except LdbError, (num, msg):
+        raise CommandError("Failed to initiate transfer of '%s' role: %s" % (role, msg))
+    outf.write("FSMO transfer of '%s' role successful\n" % role)
+
 
 class cmd_fsmo_seize(Command):
     """Seize the role"""
@@ -64,6 +101,11 @@ all=all of the above"""),
         assert len(res) == 1
         serviceName = res[0]["dsServiceName"][0]
         domain_dn = samdb.domain_dn()
+        self.infrastructure_dn = "CN=Infrastructure," + domain_dn
+        self.naming_dn = "CN=Partitions,%s" % samdb.get_config_basedn()
+        self.schema_dn = samdb.get_schema_basedn()
+        self.rid_dn = "CN=RID Manager$,CN=System," + domain_dn
+
         m = ldb.Message()
         if role == "rid":
             m.dn = ldb.Dn(samdb, self.rid_dn)
@@ -81,8 +123,8 @@ all=all of the above"""),
         if force is None:
             self.message("Attempting transfer...")
             try:
-                self.transfer_role(role, samdb)
-            except LdbError, (num, _):
+                transfer_role(self.outf, role, samdb)
+            except CommandError:
             #transfer failed, use the big axe...
                 self.message("Transfer unsuccessful, seizing...")
                 m["fSMORoleOwner"]= ldb.MessageElement(
@@ -207,43 +249,6 @@ all=all of the above"""),
 
     takes_args = []
 
-    def transfer_role(self, role, samdb):
-        m = ldb.Message()
-        m.dn = ldb.Dn(samdb, "")
-        if role == "rid":
-            m["becomeRidMaster"]= ldb.MessageElement(
-                "1", ldb.FLAG_MOD_REPLACE,
-                "becomeRidMaster")
-        elif role == "pdc":
-            domain_dn = samdb.domain_dn()
-            res = samdb.search(domain_dn,
-                               scope=ldb.SCOPE_BASE, attrs=["objectSid"])
-            assert len(res) == 1
-            sid = res[0]["objectSid"][0]
-            m["becomePdc"]= ldb.MessageElement(
-                sid, ldb.FLAG_MOD_REPLACE,
-                "becomePdc")
-        elif role == "naming":
-            m["becomeDomainMaster"]= ldb.MessageElement(
-                "1", ldb.FLAG_MOD_REPLACE,
-                "becomeDomainMaster")
-            samdb.modify(m)
-        elif role == "infrastructure":
-            m["becomeInfrastructureMaster"]= ldb.MessageElement(
-                "1", ldb.FLAG_MOD_REPLACE,
-                "becomeInfrastructureMaster")
-        elif role == "schema":
-            m["becomeSchemaMaster"]= ldb.MessageElement(
-                "1", ldb.FLAG_MOD_REPLACE,
-                "becomeSchemaMaster")
-        else:
-            raise CommandError("Invalid FSMO role.")
-        try:
-            samdb.modify(m)
-        except LdbError, (num, msg):
-            raise CommandError("Failed to initiate transfer of '%s' role: %s" % (role, msg))
-        self.outf.write("FSMO transfer of '%s' role successful\n" % role)
-
     def run(self, force=None, H=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
 
@@ -254,13 +259,13 @@ all=all of the above"""),
                       credentials=creds, lp=lp)   
 
         if role == "all":
-            self.transfer_role("rid", samdb)
-            self.transfer_role("pdc", samdb)
-            self.transfer_role("naming", samdb)
-            self.transfer_role("infrastructure", samdb)
-            self.transfer_role("schema", samdb)
+            transfer_role(self.outf, "rid", samdb)
+            transfer_role(self.outf, "pdc", samdb)
+            transfer_role(self.outf, "naming", samdb)
+            transfer_role(self.outf, "infrastructure", samdb)
+            transfer_role(self.outf, "schema", samdb)
         else:
-            self.transfer_role(role, samdb)
+            transfer_role(self.outf, role, samdb)
 
 
 class cmd_fsmo(SuperCommand):
