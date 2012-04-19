@@ -27,6 +27,10 @@ def set_options(opt):
                    help=("comma separated list of bundled libraries. May include !LIBNAME to disable bundling a library. Can be 'NONE' or 'ALL' [auto]"),
                    action="store", dest='BUNDLED_LIBS', default='')
 
+    gr.add_option('--private-libraries',
+                   help=("comma separated list of normally public libraries to build instead as private libraries. May include !LIBNAME to disable making a library private. Can be 'NONE' or 'ALL' [auto]"),
+                   action="store", dest='PRIVATE_LIBS', default='')
+
     extension_default = Options.options['PRIVATE_EXTENSION_DEFAULT']
     gr.add_option('--private-library-extension',
                    help=("name extension for private libraries [%s]" % extension_default),
@@ -233,6 +237,7 @@ def configure(conf):
     conf.env.MODULESDIR = Options.options.MODULESDIR
     conf.env.PRIVATELIBDIR = Options.options.PRIVATELIBDIR
     conf.env.BUNDLED_LIBS = Options.options.BUNDLED_LIBS.split(',')
+    conf.env.PRIVATE_LIBS = Options.options.PRIVATE_LIBS.split(',')
     conf.env.BUILTIN_LIBRARIES = Options.options.BUILTIN_LIBRARIES.split(',')
     conf.env.DISABLE_SHARED = Options.options.disable_shared
     conf.env.NONSHARED_BINARIES = Options.options.NONSHARED_BINARIES.split(',')

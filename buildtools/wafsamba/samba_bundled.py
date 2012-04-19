@@ -81,6 +81,10 @@ def LIB_MUST_BE_BUNDLED(conf, libname):
     return ('ALL' in conf.env.BUNDLED_LIBS or 
             libname in conf.env.BUNDLED_LIBS)
 
+@conf
+def LIB_MUST_BE_PRIVATE(conf, libname):
+    return ('ALL' in conf.env.PRIVATE_LIBS or
+            libname in conf.env.PRIVATE_LIBS)
 
 @conf
 def CHECK_PREREQUISITES(conf, prereqs):

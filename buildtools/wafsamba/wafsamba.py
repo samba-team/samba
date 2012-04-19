@@ -132,6 +132,9 @@ def SAMBA_LIBRARY(bld, libname, source,
                   enabled=True):
     '''define a Samba library'''
 
+    if LIB_MUST_BE_PRIVATE(bld, libname):
+        private_library=True
+
     if not enabled:
         SET_TARGET_TYPE(bld, libname, 'DISABLED')
         return
