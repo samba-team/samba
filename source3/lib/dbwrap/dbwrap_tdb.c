@@ -110,7 +110,12 @@ static struct db_record *db_tdb_fetch_locked_internal(
 	state.mem_ctx = mem_ctx;
 	state.result = NULL;
 
-	tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetchlock_parse, &state);
+	if ((tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetchlock_parse,
+			      &state) < 0) &&
+	    (tdb_error(ctx->wtdb->tdb) != TDB_ERR_NOEXIST)) {
+		tdb_chainunlock(ctx->wtdb->tdb, key);
+		return NULL;
+	}
 
 	if (state.result == NULL) {
 		db_tdb_fetchlock_parse(key, tdb_null, &state);
