@@ -28,6 +28,7 @@
 #include "registry/reg_api.h"
 #include "registry/reg_init_basic.h"
 #include "registry/reg_util_token.h"
+#include "registry/reg_backend_db.h"
 #include "../libcli/registry/util_reg.h"
 
 extern int optind;
@@ -265,9 +266,21 @@ static int DoAddSourceCommand( int argc, char **argv, bool debugflag, char *exen
 		printf("Can't open the registry: %s.\n", win_errstr(werr));
 		return -1;
 	}
+	werr = regdb_transaction_start();
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("Can't start transaction on registry: %s.\n", win_errstr(werr));
+		return -1;
+	}
 
-	if ( !eventlog_add_source( argv[0], argv[1], argv[2] ) )
+	if ( !eventlog_add_source( argv[0], argv[1], argv[2] ) ) {
+		regdb_transaction_cancel();
 		return -2;
+	}
+	werr = regdb_transaction_commit();
+	if (!W_ERROR_IS_OK(werr)) {
+		printf("Failed to commit transaction on registry: %s.\n", win_errstr(werr));
+		return -1;
+	}
 	return 0;
 }
 
