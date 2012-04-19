@@ -24,7 +24,7 @@
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
 #include "nt_printing.h"
-#include "registry/reg_objects.h"
+#include "registry.h"
 #include "../libcli/security/security.h"
 #include "../libcli/registry/util_reg.h"
 #include "libsmb/libsmb.h"
@@ -80,44 +80,45 @@ static void display_print_driver3(struct spoolss_DriverInfo3 *r)
 	printf(_("\tDefaultdatatype: [%s]\n\n"), r->default_datatype);
 }
 
-static void display_reg_value(const char *subkey, struct regval_blob *value)
+static void display_reg_value(const char *subkey, const char *name, struct registry_value *value)
 {
 	const char *text;
-	DATA_BLOB blob;
 
-	switch(regval_type(value)) {
+	switch(value->type) {
 	case REG_DWORD:
-		d_printf(_("\t[%s:%s]: REG_DWORD: 0x%08x\n"), subkey,
-			regval_name(value), *((uint32_t *) regval_data_p(value)));
+		if (value->data.length == sizeof(uint32)) {
+			d_printf(_("\t[%s:%s]: REG_DWORD: 0x%08x\n"), subkey,
+				 name, IVAL(value->data.data,0));
+		} else {
+			d_printf(_("\t[%s:%s]: REG_DWORD: <invalid>\n"), subkey,
+				 name);
+		}
 		break;
 
 	case REG_SZ:
-		blob = data_blob_const(regval_data_p(value), regval_size(value));
-		pull_reg_sz(talloc_tos(), &blob, &text);
+		pull_reg_sz(talloc_tos(), &value->data, &text);
 		if (!text) {
 			break;
 		}
-		d_printf(_("\t[%s:%s]: REG_SZ: %s\n"), subkey, regval_name(value),
-			 text);
+		d_printf(_("\t[%s:%s]: REG_SZ: %s\n"), subkey, name, text);
 		break;
 
 	case REG_BINARY:
 		d_printf(_("\t[%s:%s]: REG_BINARY: unknown length value not "
 			   "displayed\n"),
-			 subkey, regval_name(value));
+			 subkey, name);
 		break;
 
 	case REG_MULTI_SZ: {
 		uint32_t i;
 		const char **values;
-		blob = data_blob_const(regval_data_p(value), regval_size(value));
 
-		if (!pull_reg_multi_sz(NULL, &blob, &values)) {
+		if (!pull_reg_multi_sz(NULL, &value->data, &values)) {
 			d_printf("pull_reg_multi_sz failed\n");
 			break;
 		}
 
-		printf("%s: REG_MULTI_SZ: \n", regval_name(value));
+		printf("%s: REG_MULTI_SZ: \n", name);
 		for (i=0; values[i] != NULL; i++) {
 			d_printf("%s\n", values[i]);
 		}
@@ -126,8 +127,7 @@ static void display_reg_value(const char *subkey, struct regval_blob *value)
 	}
 
 	default:
-		d_printf(_("\t%s: unknown type %d\n"), regval_name(value),
-			 regval_type(value));
+		d_printf(_("\t%s: unknown type %d\n"), name, value->type);
 	}
 
 }
@@ -933,10 +933,11 @@ static bool net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
 
 
 static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					struct policy_handle *hnd,
-					const char *keyname,
-					struct regval_blob *value)
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *hnd,
+					 const char *keyname,
+					 const char *name,
+					 struct registry_value *value)
 {
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	WERROR result;
@@ -946,10 +947,10 @@ static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 	status = dcerpc_spoolss_SetPrinterDataEx(b, mem_ctx,
 						 hnd,
 						 keyname,
-						 regval_name(value),
-						 regval_type(value),
-						 regval_data_p(value),
-						 regval_size(value),
+						 name,
+						 value->type,
+						 value->data.data,
+						 value->data.length,
 						 &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf(_("could not set printerdataex: %s\n"),
@@ -2289,7 +2290,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	union spoolss_PrinterInfo info_dst_publish;
 	union spoolss_PrinterInfo info_dst;
 	struct cli_state *cli_dst = NULL;
-	char *devicename = NULL, *unc_name = NULL, *url = NULL;
 	const char *longname;
 	const char **keylist = NULL;
 
@@ -2454,20 +2454,13 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 				/* display_value */
 				if (c->opt_verbose) {
-					struct regval_blob *v;
+					struct registry_value v;
+					v.type = *r.out.type;
+					v.data = data_blob_const(
+						r.out.data, r.in.data_offered);
 
-					v = regval_compose(talloc_tos(),
-							   r.out.value_name,
-							   *r.out.type,
-							   r.out.data,
-							   r.in.data_offered);
-					if (v == NULL) {
-						nt_status = NT_STATUS_NO_MEMORY;
-						goto done;
-					}
-
-					display_reg_value(SPOOL_PRINTERDATA_KEY, v);
-					talloc_free(v);
+					display_reg_value(SPOOL_PRINTERDATA_KEY,
+							  r.out.value_name, &v);
 				}
 
 				/* set_value */
@@ -2516,107 +2509,58 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 			for (j=0; j < count; j++) {
 
-				struct regval_blob *value;
-				DATA_BLOB blob;
-
-				ZERO_STRUCT(blob);
+				struct registry_value value;
+				const char *value_name = info[j].value_name;
+				value.type = REG_SZ;
 
 				/* although samba replies with sane data in most cases we
 				   should try to avoid writing wrong registry data */
 
-				if (strequal(info[j].value_name, SPOOL_REG_PORTNAME) ||
-				    strequal(info[j].value_name, SPOOL_REG_UNCNAME) ||
-				    strequal(info[j].value_name, SPOOL_REG_URL) ||
-				    strequal(info[j].value_name, SPOOL_REG_SHORTSERVERNAME) ||
-				    strequal(info[j].value_name, SPOOL_REG_SERVERNAME)) {
-
-					if (strequal(info[j].value_name, SPOOL_REG_PORTNAME)) {
-
-						/* although windows uses a multi-sz, we use a sz */
-						push_reg_sz(mem_ctx, &blob, SAMBA_PRINTER_PORT_NAME);
+				if (strequal(value_name, SPOOL_REG_PORTNAME)) {
+					/* although windows uses a multi-sz, we use a sz */
+					push_reg_sz(mem_ctx, &value.data, SAMBA_PRINTER_PORT_NAME);
+				}
+				else if (strequal(value_name, SPOOL_REG_UNCNAME)) {
+					char *unc_name;
+					if (asprintf(&unc_name, "\\\\%s\\%s", longname, sharename) < 0) {
+						nt_status = NT_STATUS_NO_MEMORY;
+						goto done;
 					}
-
-					if (strequal(info[j].value_name, SPOOL_REG_UNCNAME)) {
-
-						if (asprintf(&unc_name, "\\\\%s\\%s", longname, sharename) < 0) {
-							nt_status = NT_STATUS_NO_MEMORY;
-							goto done;
-						}
-						push_reg_sz(mem_ctx, &blob, unc_name);
-					}
-
-					if (strequal(info[j].value_name, SPOOL_REG_URL)) {
-
-						continue;
-
+					push_reg_sz(mem_ctx, &value.data, unc_name);
+					free(unc_name);
+				}
+				else if (strequal(value_name, SPOOL_REG_URL)) {
+					continue;
 #if 0
-						/* FIXME: should we really do that ??? */
-						if (asprintf(&url, "http://%s:631/printers/%s", longname, sharename) < 0) {
-							nt_status = NT_STATUS_NO_MEMORY;
-							goto done;
-						}
-						push_reg_sz(mem_ctx, NULL, &blob, url);
-						fstrcpy(value.valuename, SPOOL_REG_URL);
+					/* FIXME: should we really do that ??? */
+					if (asprintf(&url, "http://%s:631/printers/%s", longname, sharename) < 0) {
+						nt_status = NT_STATUS_NO_MEMORY;
+						goto done;
+					}
+					push_reg_sz(mem_ctx, NULL, &value.data, url);
+					free(url);
 #endif
-					}
+				}
+				else if (strequal(value_name, SPOOL_REG_SERVERNAME)) {
+					push_reg_sz(mem_ctx, &value.data, longname);
+				}
+				else if (strequal(value_name, SPOOL_REG_SHORTSERVERNAME)) {
+					push_reg_sz(mem_ctx, &value.data, lp_netbios_name());
+				}
+				else {
+					value.type = info[j].type;
+					value.data = *info[j].data;
+				}
 
-					if (strequal(info[j].value_name, SPOOL_REG_SERVERNAME)) {
+				if (c->opt_verbose) {
+					display_reg_value(subkey, value_name, &value);
+				}
 
-						push_reg_sz(mem_ctx, &blob, longname);
-					}
-
-					if (strequal(info[j].value_name, SPOOL_REG_SHORTSERVERNAME)) {
-
-						push_reg_sz(mem_ctx, &blob, lp_netbios_name());
-					}
-
-					value = regval_compose(talloc_tos(),
-							       info[j].value_name,
-							       REG_SZ,
-							       blob.length == 0 ? NULL : blob.data,
-							       blob.length);
-					if (value == NULL) {
-						nt_status = NT_STATUS_NO_MEMORY;
-						goto done;
-					}
-
-					if (c->opt_verbose)
-						display_reg_value(subkey, value);
-
-					/* here we have to set all subkeys on the dst server */
-					if (!net_spoolss_setprinterdataex(pipe_hnd_dst, mem_ctx, &hnd_dst,
-							subkey, value))
-					{
-						talloc_free(value);
-						goto done;
-					}
-
-					talloc_free(value);
-				} else {
-
-					struct regval_blob *v;
-
-					v = regval_compose(talloc_tos(),
-							   info[j].value_name,
-							   info[j].type,
-							   info[j].data->data,
-							   info[j].data->length);
-					if (v == NULL) {
-						nt_status = NT_STATUS_NO_MEMORY;
-						goto done;
-					}
-
-					if (c->opt_verbose) {
-						display_reg_value(subkey, v);
-					}
-
-					/* here we have to set all subkeys on the dst server */
-					if (!net_spoolss_setprinterdataex(pipe_hnd_dst, mem_ctx, &hnd_dst,
-							subkey, v)) {
-						goto done;
-					}
-
-					talloc_free(v);
+				/* here we have to set all subkeys on the dst server */
+				if (!net_spoolss_setprinterdataex(pipe_hnd_dst, mem_ctx, &hnd_dst,
+								  subkey, value_name, &value))
+				{
+					goto done;
 				}
 
 				DEBUGADD(1,("\tSetPrinterDataEx of key [%s\\%s] succeeded\n",
@@ -2640,10 +2584,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	nt_status = NT_STATUS_OK;
 
 done:
-	SAFE_FREE(devicename);
-	SAFE_FREE(url);
-	SAFE_FREE(unc_name);
-
 	if (is_valid_policy_hnd(&hnd_src)) {
 		dcerpc_spoolss_ClosePrinter(b_src, mem_ctx, &hnd_src, &result);
 	}
