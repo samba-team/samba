@@ -7,6 +7,7 @@ Usage: run_tests [OPTIONS] [TESTS]
 Options:
 	-s	Print a summary of tests results after running all tests
 	-l	Use local daemons for integration tests
+	-e	Exit on the first test failure
 	-v	Verbose - print test output for non-failures (only some tests)
 	-A	Use "cat -A" to print test output (only some tests)
 	-D	Show diff between failed/expected test output (some tests only)
@@ -29,6 +30,7 @@ die ()
 with_summary=false
 with_desc=false
 quiet=false
+exit_on_fail=false
 
 export TEST_VERBOSE=false
 export TEST_COMMAND_TRACE=""
@@ -36,7 +38,7 @@ export TEST_CAT_RESULTS_OPTS=""
 export TEST_DIFF_RESULTS=false
 export TEST_LOCAL_DAEMONS  # No default, developer can "override"!
 
-temp=$(getopt -n "$prog" -o "xdhlqsvXAD" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "xdehlqsvXAD" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -46,6 +48,7 @@ while true ; do
     case "$1" in
 	-x) set -x; shift ;;
 	-d) with_desc=true ; shift ;;  # 4th line of output is description
+	-e) exit_on_fail=true ; shift ;;
 	-l) TEST_LOCAL_DAEMONS="3" ; shift ;;
 	-q) quiet=true ; shift ;;
 	-s) with_summary=true ; shift ;;
@@ -167,9 +170,15 @@ for f ; do
     if [ -d "$f" ] ; then
 	for i in $(ls "${f%/}/"*".sh" 2>/dev/null) ; do
 	    run_one_test "$i"
+	    if $exit_on_fail && [ $status -ne 0 ] ; then
+		break
+	    fi
 	done
     elif [ -f "$f" ] ; then
 	run_one_test "$f"
+	if $exit_on_fail && [ $status -ne 0 ] ; then
+	    break
+	fi
     else
 	die "test \"$f\" is not recognised"
     fi
