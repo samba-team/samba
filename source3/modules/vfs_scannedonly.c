@@ -945,6 +945,10 @@ static int scannedonly_connect(struct vfs_handle_struct *handle,
 	struct Tscannedonly *so;
 
 	so = SMB_MALLOC_P(struct Tscannedonly);
+	if (so == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 	handle->data = (void *)so;
 	handle->free_data = free_scannedonly_data;
 	so->gsendbuffer[0]='\0';
