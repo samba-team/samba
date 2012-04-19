@@ -28,15 +28,7 @@ fi
 ## Find newer files rather than rebuild all of them. Also handle the case
 ## where the pidl compiler itself is newer.
 ##
-PIDL_NEWEST=`find $PIDL_DIR -type f -printf "%p\0%T@\n" \
-	| perl -e '$ts_newest = 0;
-		   while (<STDIN>) {
-		           ($f, $ts) = split(/\0/);
-		           next if ($ts <= $ts_newest);
-		           $ts_newest = $ts;
-		           $f_newest = $f;
-		   }
-		   print $f_newest'` || exit 1
+PIDL_NEWEST=$(ls -rt $(find $PIDL_DIR -type f) | tail -n -1)
 
 list=""
 for f in ${IDL_FILES}; do
