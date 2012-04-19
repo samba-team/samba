@@ -2,6 +2,21 @@
 
 . "${TEST_SCRIPTS_DIR}/common.sh"
 
+# If we're not running on a real cluster then we need a local copy of
+# ctdb (and other stuff) in $PATH and we will use local daemons.
+if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
+    var_dir="${CTDB_DIR}/tests/var"
+
+    export CTDB_NODES_SOCKETS=""
+    for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
+	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
+    done
+
+    PATH="${CTDB_DIR}/bin:${PATH}"
+
+    export CTDB_NODES="$var_dir/nodes.txt"
+fi
+
 ######################################################################
 
 ctdb_check_time_logs ()
@@ -67,7 +82,7 @@ ctdb_test_exit ()
 
     echo "*** TEST COMPLETED (RC=$status) AT $(date '+%F %T'), CLEANING UP..."
 
-    if [ -n "$CTDB_TEST_REAL_CLUSTER"  -a -n "$CTDB_TEST_TIME_LOGGING" -a \
+    if [ -z "$TEST_LOCAL_DAEMONS" -a -n "$CTDB_TEST_TIME_LOGGING" -a \
 	$status -ne 0 ] ; then
 	ctdb_check_time_logs
     fi
@@ -150,14 +165,6 @@ ctdb_test_init ()
     ctdb_test_cmd_options $@
 
     trap "ctdb_test_exit" 0
-}
-
-ctdb_test_check_real_cluster ()
-{
-    [ -n "$CTDB_TEST_REAL_CLUSTER" ] && return 0
-
-    echo "ERROR: This test must be run on a real/virtual cluster, not local daemons."
-    return 1
 }
 
 ########################################
@@ -523,8 +530,6 @@ daemons_stop ()
 
 daemons_setup ()
 {
-    local num_nodes="${CTDB_TEST_NUM_DAEMONS:-2}" # default is 2 nodes
-
     local var_dir=$CTDB_DIR/tests/var
 
     mkdir -p $var_dir/test.db/persistent
@@ -536,11 +541,11 @@ daemons_setup ()
     # If there are (strictly) greater than 2 nodes then we'll randomly
     # choose a node to have no public addresses.
     local no_public_ips=-1
-    [ $num_nodes -gt 2 ] && no_public_ips=$(($RANDOM % $num_nodes))
+    [ $TEST_LOCAL_DAEMONS -gt 2 ] && no_public_ips=$(($RANDOM % $TEST_LOCAL_DAEMONS))
     echo "$no_public_ips" >$no_public_addresses
 
     local i
-    for i in $(seq 1 $num_nodes) ; do
+    for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
 	if [ "${CTDB_USE_IPV6}x" != "x" ]; then
 	    echo ::$i >> $nodes
 	    ip addr add ::$i/128 dev lo
@@ -549,7 +554,7 @@ daemons_setup ()
 	    # 2 public addresses on most nodes, just to make things interesting.
 	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
 		echo "192.0.2.$i/24 lo" >> $public_addresses
-		echo "192.0.2.$(($i + $num_nodes))/24 lo" >> $public_addresses
+		echo "192.0.2.$(($i + $TEST_LOCAL_DAEMONS))/24 lo" >> $public_addresses
 	    fi
 	fi
     done
@@ -592,11 +597,9 @@ daemons_start ()
 {
     # "$@" gets passed to ctdbd
 
-    local num_nodes="${CTDB_TEST_NUM_DAEMONS:-2}" # default is 2 nodes
+    echo "Starting $TEST_LOCAL_DAEMONS ctdb daemons..."
 
-    echo "Starting $num_nodes ctdb daemons..."
-
-    for i in $(seq 0 $(($num_nodes - 1))) ; do
+    for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
 	daemons_start_1 $i "$@"
     done
 
@@ -762,7 +765,7 @@ install_eventscript ()
     local script_name="$1"
     local script_contents="$2"
 
-    if [ -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
+    if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 	# The quoting here is *very* fragile.  However, we do
 	# experience the joy of installing a short script using
 	# onnode, and without needing to know the IP addresses of the
@@ -779,7 +782,7 @@ uninstall_eventscript ()
 {
     local script_name="$1"
 
-    if [ -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
+    if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 	onnode all "rm -vf \"\${CTDB_BASE:-/etc/ctdb}/events.d/${script_name}\""
     else
 	rm -vf "${CTDB_DIR}/tests/events.d/${script_name}"

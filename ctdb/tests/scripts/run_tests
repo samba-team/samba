@@ -11,6 +11,7 @@ Usage: run_tests [OPTIONS] [TESTS]
 
 Options:
 	-s	Print a summary of tests results after running all tests
+	-l	Use local daemons for integration tests
 	-v	Verbose - print test output for non-failures (only some tests)
 	-A	Use "cat -A" to print test output (only some tests)
 	-D	Show diff between failed/expected test output (some tests only)
@@ -38,8 +39,9 @@ export TEST_VERBOSE=false
 export TEST_COMMAND_TRACE=""
 export TEST_CAT_RESULTS_OPTS=""
 export TEST_DIFF_RESULTS=false
+export TEST_LOCAL_DAEMONS  # No default, developer can "override"!
 
-temp=$(getopt -n "$prog" -o "xdhqsvXAD" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "xdhlqsvXAD" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -49,6 +51,7 @@ while true ; do
     case "$1" in
 	-x) set -x; shift ;;
 	-d) with_desc=true ; shift ;;  # 4th line of output is description
+	-l) TEST_LOCAL_DAEMONS="3" ; shift ;;
 	-q) quiet=true ; shift ;;
 	-s) with_summary=true ; shift ;;
 	-v) TEST_VERBOSE=true ; shift ;;

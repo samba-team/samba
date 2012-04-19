@@ -21,21 +21,6 @@ else
 fi
 export CTDB_TEST_WRAPPER
 
-# If we're not running on a real cluster then we need a local copy of
-# ctdb (and other stuff) in $PATH and we will use local daemons.
-if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
-    export CTDB_TEST_NUM_DAEMONS=3
-
-    export CTDB_NODES_SOCKETS=""
-    for i in $(seq 0 $(($CTDB_TEST_NUM_DAEMONS -1))) ; do
-	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
-    done
-
-    PATH="${CTDB_DIR}/bin:${CTDB_DIR}/tests/bin:${PATH}"
-
-    export CTDB_NODES="$var_dir/nodes.txt"
-fi
-
 # If $VALGRIND is set then use it whenever ctdb is called, but only if
 # $CTDB is not already set.
 [ -n "$CTDB" ] || export CTDB="${VALGRIND}${VALGRIND:+ }ctdb"

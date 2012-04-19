@@ -4,6 +4,8 @@
 
 export TEST_SUBDIR=$(dirname $0)
 
+CTDB_DIR=$(dirname $(dirname "$TEST_SUBDIR"))
+
 # Print a message and exit.
 die ()
 {
