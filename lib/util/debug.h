@@ -201,7 +201,7 @@ enum debug_logtype {DEBUG_DEFAULT_STDERR = 0, DEBUG_DEFAULT_STDOUT = 1, DEBUG_FI
 
 struct debug_settings {
 	size_t max_log_size;
-	bool syslog;
+	int syslog;
 	bool syslog_only;
 	bool timestamp_logs;
 	bool debug_prefix_timestamp;
