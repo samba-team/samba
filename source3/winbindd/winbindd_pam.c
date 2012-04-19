@@ -2213,8 +2213,8 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 			state->request->data.chng_pswd_auth_crap.old_lm_hash_enc,
 			state->request->data.chng_pswd_auth_crap.old_lm_hash_enc_len);
 	} else {
-		new_lm_password.length = 0;
-		old_lm_hash_enc.length = 0;
+		new_lm_password = data_blob_null;
+		old_lm_hash_enc = data_blob_null;
 	}
 
 	/* Get sam handle */

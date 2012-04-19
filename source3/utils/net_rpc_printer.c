@@ -1309,7 +1309,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
-	struct policy_handle hnd;
+	struct policy_handle hnd = { 0, };
 	WERROR result;
 	const char *action_str;
 
@@ -1465,7 +1465,7 @@ NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
 	const char *printername, *sharename;
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info;
-	struct policy_handle hnd;
+	struct policy_handle hnd = { 0, };
 	int state;
 	WERROR werr;
 
@@ -1564,7 +1564,8 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	struct dcerpc_binding_handle *b_dst = NULL;
-	struct policy_handle hnd_src, hnd_dst;
+	struct policy_handle hnd_src = { 0, };
+	struct policy_handle hnd_dst = { 0, };
 	union spoolss_PrinterInfo *info_enum;
 	struct cli_state *cli_dst = NULL;
 	union spoolss_PrinterInfo info_src, info_dst;
@@ -1714,7 +1715,8 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	struct dcerpc_binding_handle *b_dst = NULL;
-	struct policy_handle hnd_src, hnd_dst;
+	struct policy_handle hnd_src = { 0, };
+	struct policy_handle hnd_dst = { 0, };
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info_dst;
 	uint32_t num_forms;
@@ -1889,7 +1891,8 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	bool got_dst_driver_share = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	struct dcerpc_binding_handle *b_dst = NULL;
-	struct policy_handle hnd_src, hnd_dst;
+	struct policy_handle hnd_src = { 0, };
+	struct policy_handle hnd_dst = { 0, };
 	union spoolss_DriverInfo drv_info_src;
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info_dst;
@@ -2110,7 +2113,8 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 	union spoolss_PrinterInfo info_dst, info_src;
 	union spoolss_PrinterInfo *info_enum;
 	struct cli_state *cli_dst = NULL;
-	struct policy_handle hnd_dst, hnd_src;
+	struct policy_handle hnd_src = { 0, };
+	struct policy_handle hnd_dst = { 0, };
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	struct dcerpc_binding_handle *b_dst = NULL;
@@ -2279,7 +2283,8 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	const char *printername, *sharename;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	struct dcerpc_binding_handle *b_dst = NULL;
-	struct policy_handle hnd_src, hnd_dst;
+	struct policy_handle hnd_src = { 0, };
+	struct policy_handle hnd_dst = { 0, };
 	union spoolss_PrinterInfo *info_enum;
 	union spoolss_PrinterInfo info_dst_publish;
 	union spoolss_PrinterInfo info_dst;
