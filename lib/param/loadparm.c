@@ -1699,11 +1699,11 @@ static int lp_int(const char *s)
 /**
  * convenience routine to return unsigned long parameters.
  */
-static int lp_ulong(const char *s)
+static unsigned long lp_ulong(const char *s)
 {
 
 	if (!s) {
-		DEBUG(0,("lp_int(%s): is called with NULL!\n",s));
+		DEBUG(0,("lp_ulong(%s): is called with NULL!\n",s));
 		return -1;
 	}
 
