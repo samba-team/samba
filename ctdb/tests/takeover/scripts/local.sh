@@ -1,6 +1,6 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-test_prog="$(dirname ${TEST_SUBDIR})/bin/ctdb_takeover_tests ctdb_takeover_run_core"
+test_prog="ctdb_takeover_tests ctdb_takeover_run_core"
 
 define_test ()
 {

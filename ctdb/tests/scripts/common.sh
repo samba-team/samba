@@ -10,6 +10,11 @@ fi
 
 CTDB_DIR=$(dirname $(dirname "$TEST_SUBDIR"))
 
+_tests_dir=$(dirname "$TEST_SUBDIR")
+[ -n "$TEST_BIN_DIR" ] || TEST_BIN_DIR="${_tests_dir}/bin"
+[ -n "$CTDB_TOOLS_DIR" ] || CTDB_TOOLS_DIR="${CTDB_DIR}/tools"
+PATH="${TEST_BIN_DIR}:${CTDB_TOOLS_DIR}:${PATH}"
+
 # Print a message and exit.
 die ()
 {

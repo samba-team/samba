@@ -6,9 +6,7 @@ var_dir=$CTDB_DIR/tests/var
 
 ######################################################################
 
-ctdb_tools_dir=$CTDB_DIR/tools
-
-PATH="${TEST_SCRIPTS_DIR}:${ctdb_tools_dir}:${PATH}"
+PATH="${TEST_SCRIPTS_DIR}:${PATH}"
 
 export CTDB_TIMEOUT=60
 
