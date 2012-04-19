@@ -300,7 +300,7 @@ static void msg_channel_trigger(struct tevent_context *ev,
 	state->rec = talloc_move(state, &channel->msgs[0]);
 
 	memmove(channel->msgs, channel->msgs+1,
-		sizeof(struct messaging_rec) * (num_msgs-1));
+		sizeof(struct messaging_rec *) * (num_msgs-1));
 	channel->msgs = talloc_realloc(
 		channel, channel->msgs, struct messaging_rec *, num_msgs - 1);
 
