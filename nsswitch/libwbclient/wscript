@@ -2,8 +2,11 @@
 
 import Options, Logs
 
+# Remember to also update wbclient.h
+VERSION="0.9"
+
 def configure(conf):
-    if conf.CHECK_BUNDLED_SYSTEM_PKG('wbclient', minversion='0'):
+    if conf.CHECK_BUNDLED_SYSTEM_PKG('wbclient', minversion=VERSION):
         conf.define('USING_SYSTEM_LIBWBCLIENT', 1)
 
 def build(bld):
@@ -25,4 +28,4 @@ def build(bld):
                       deps='winbind-client',
                       pc_files='wbclient.pc',
                       public_headers='wbclient.h',
-                      vnum='0')
+                      vnum=VERSION)

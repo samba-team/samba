@@ -68,9 +68,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.6: Made struct wbcInterfaceDetails char* members non-const
  *  0.7: Added wbcSidToStringBuf()
  *  0.8: Added wbcSidsToUnixIds() and wbcLookupSids()
+ *  0.9: Added support for WBC_ID_TYPE_BOTH
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 8
+#define WBCLIENT_MINOR_VERSION 9
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
