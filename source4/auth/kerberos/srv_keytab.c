@@ -54,8 +54,7 @@ static krb5_error_code principals_from_list(TALLOC_CTX *parent_ctx,
 	}
 
 	if (!realm) {
-		*error_string = "Cannot have a kerberos secret in "
-				"secrets.ldb without a realm";
+		*error_string = "Cannot make principal without a realm";
 		ret = EINVAL;
 		goto done;
 	}
@@ -134,8 +133,7 @@ static krb5_error_code salt_principal(TALLOC_CTX *parent_ctx,
 	}
 
 	if (!realm) {
-		*error_string = "Cannot have a kerberos secret in "
-				"secrets.ldb without a realm";
+		*error_string = "Cannot make principal without a realm";
 		return EINVAL;
 	}
 
