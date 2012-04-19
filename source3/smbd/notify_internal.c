@@ -393,7 +393,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 	struct db_record *notify_rec;
 	NTSTATUS status;
 
-	if (notify == NULL) {
+	if ((notify == NULL) || (notify->msg == NULL)) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
