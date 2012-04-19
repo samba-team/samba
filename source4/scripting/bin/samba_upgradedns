@@ -390,24 +390,34 @@ if __name__ == '__main__':
             for nc in ncs:
                 partial_nclist.append(nc)
 
-        modified = False
+        modified_master = False
+        modified_partial = False
         for nc in dns_nclist:
             if nc not in master_nclist:
                 master_nclist.append(nc)
-                modified = True
+                modified_master = True
             if nc in partial_nclist:
                 partial_nclist.remove(nc)
-                modified = True
+                modified_partial = True
 
-        if modified:
+        if modified_master or modified_partial:
             logger.debug("Updating msDS-hasMasterNCs and hasPartialReplicaNCs attributes")
-            msg["msDS-hasMasterNCs"] = ldb.MessageElement(master_nclist,
-                                                          ldb.FLAG_MOD_REPLACE,
-                                                          "msDS-hasMasterNCs")
-            msg["hasPartialReplicaNCs"] = ldb.MessageElement(partial_nclist,
-                                                             ldb.FLAG_MOD_REPLACE,
-                                                             "hasPartialReplicaNCs")
-            ldbs.sam.modify(msg)
+            m = ldb.Message()
+            m.dn = msg.dn
+            if modified_master:
+                m["msDS-hasMasterNCs"] = ldb.MessageElement(master_nclist,
+                                                            ldb.FLAG_MOD_REPLACE,
+                                                            "msDS-hasMasterNCs")
+            if modified_partial:
+                if partial_nclist:
+                    m["hasPartialReplicaNCs"] = ldb.MessageElement(partial_nclist,
+                                                                   ldb.FLAG_MOD_REPLACE,
+                                                                   "hasPartialReplicaNCs")
+                else:
+                    m["hasPartialReplicaNCs"] = ldb.MessageElement(ncs,
+                                                                   ldb.FLAG_MOD_DELETE,
+                                                                   "hasPartialReplicaNCs")
+            ldbs.sam.modify(m)
     except Exception:
         raise
 
