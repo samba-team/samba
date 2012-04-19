@@ -5,6 +5,8 @@
 
 PATH="$(dirname $0):${PATH}"
 
+TEST_SCRIPTS_DIR=$(dirname $0)
+
 f="ctdb_bench"
 if [ ! $(which $f >/dev/null 2>&1) ] ; then
     d=$(dirname $(dirname $0))/bin
