@@ -3,6 +3,7 @@
 # update our servicePrincipalName names from spn_update_list
 #
 # Copyright (C) Andrew Tridgell 2010
+# Copyright (C) Matthieu Patou <mat@matws.net> 2012
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os, sys
+import os, sys, re
 
 # ensure we get messages out immediately, so they get in the samba logs,
 # and don't get swallowed by a timeout
@@ -120,10 +121,30 @@ file = open(spn_update_list, "r")
 
 spn_list = []
 
+has_forest_dns = False
+has_domain_dns = False
+# check if we "are DNS server"
+res = samdb.search(base=samdb.get_config_basedn(),
+                   expression='(objectguid=%s)' % sub_vars['NTDSGUID'],
+                   attrs=["msDS-hasMasterNCs"])
+
+basedn = str(samdb.get_default_basedn())
+if len(res) == 1:
+    for e in res[0]["msDS-hasMasterNCs"]:
+        if str(e) == "DC=DomainDnsZones,%s" % basedn:
+            has_domain_dns = True
+        if str(e) == "DC=ForestDnsZones,%s" % basedn:
+            has_forest_dns = True
+
+
 # build the spn list
 for line in file:
     line = line.strip()
     if line == '' or line[0] == "#":
+        continue
+    if re.match(r".*/DomainDnsZones\..*", line) and not has_domain_dns:
+        continue
+    if re.match(r".*/ForestDnsZones\..*", line) and not has_forest_dns:
         continue
     line = samba.substitute_var(line, sub_vars)
     spn_list.append(line)
@@ -221,6 +242,8 @@ def call_rodc_update(d):
         return
     req1.spn_names = spn_names
     (level, res) = drs.DsWriteAccountSpn(drs_handle, 1, req1)
+    if (res.status != (0, 'WERR_OK')):
+        print "WriteAccountSpn has failed with error %s" % str(res.status)
 
 if samdb.am_rodc():
     call_rodc_update(add_list)
