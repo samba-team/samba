@@ -121,9 +121,12 @@ static void background_job_trigger(
 	struct background_job_state *state = talloc_get_type_abort(
 		private_data, struct background_job_state);
 
-	if (state->wakeup_req != NULL) {
-		tevent_req_set_endtime(state->wakeup_req, state->ev,
-				       timeval_zero());
+	if (state->wakeup_req == NULL) {
+		return;
+	}
+	if (!tevent_req_set_endtime(state->wakeup_req, state->ev,
+				    timeval_zero())) {
+		DEBUG(10, ("tevent_req_set_endtime failed\n"));
 	}
 }
 
