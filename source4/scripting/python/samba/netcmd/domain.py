@@ -249,7 +249,7 @@ class cmd_domain_demote(Command):
                             controls=["search_options:1:2"])
 
         if len(res) != 0:
-            raise CommandError("Current DC is still the owner of %d role(s), use the role command to transfer roles to another DC")
+            raise CommandError("Current DC is still the owner of %d role(s), use the role command to transfer roles to another DC" % len(res))
 
         print "Using %s as partner server for the demotion" % server
         (drsuapiBind, drsuapi_handle, supportedExtensions) = drsuapi_connect(server, lp, creds)
