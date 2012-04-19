@@ -409,12 +409,6 @@ int main(int argc, char **argv)
 	pdb_get_account_policy(PDB_POLICY_MIN_PASSWORD_AGE, &min_age);
 	pdb_set_pass_last_set_time(out, time(NULL), PDB_SET);
 
-	if (expire == 0 || expire == (uint32)-1) {
-		pdb_set_pass_must_change_time(out, get_time_t_max(), PDB_SET);
-	} else {
-		pdb_set_pass_must_change_time(out, time(NULL)+expire, PDB_SET);
-	}
-
 	if (min_age == (uint32)-1) {
 		pdb_set_pass_can_change_time(out, 0, PDB_SET);
 	} else {

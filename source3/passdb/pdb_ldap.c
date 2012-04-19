@@ -662,18 +662,6 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				pass_can_change_time, PDB_SET);
 	}
 
-	temp = smbldap_talloc_single_attribute(
-			ldap_state->smbldap_state->ldap_struct,
-			entry,
-			get_userattr_key2string(ldap_state->schema_ver,
-				LDAP_ATTR_PWD_MUST_CHANGE),
-			ctx);
-	if (temp) {
-		pass_must_change_time = (time_t) atol(temp);
-		pdb_set_pass_must_change_time(sampass,
-				pass_must_change_time, PDB_SET);
-	}
-
 	/* recommend that 'gecos' and 'displayName' should refer to the same
 	 * attribute OID.  userFullName depreciated, only used by Samba
 	 * primary rules of LDAP: don't make a new attribute when one is already defined
@@ -1336,14 +1324,6 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	if (need_update(sampass, PDB_CANCHANGETIME))
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_CAN_CHANGE), temp);
-	SAFE_FREE(temp);
-
-	if (asprintf(&temp, "%li", (long int)pdb_get_pass_must_change_time(sampass)) < 0) {
-		return false;
-	}
-	if (need_update(sampass, PDB_MUSTCHANGETIME))
-		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
-			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_MUST_CHANGE), temp);
 	SAFE_FREE(temp);
 
 	if ((pdb_get_acct_ctrl(sampass)&(ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST))

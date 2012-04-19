@@ -183,7 +183,6 @@ enum pdb_elements {
 	PDB_KICKOFFTIME,
 	PDB_BAD_PASSWORD_TIME,
 	PDB_CANCHANGETIME,
-	PDB_MUSTCHANGETIME,
 	PDB_PLAINTEXT_PW,
 	PDB_USERNAME,
 	PDB_FULLNAME,
@@ -267,7 +266,6 @@ struct samu {
 	time_t bad_password_time;     /* last bad password entered */
 	time_t pass_last_set_time;    /* password last set time */
 	time_t pass_can_change_time;  /* password can change time */
-	time_t pass_must_change_time; /* password must change time */
 
 	const char *username;     /* UNIX username string */
 	const char *domain;       /* Windows Domain name */
@@ -752,7 +750,6 @@ bool pdb_set_logoff_time(struct samu *sampass, time_t mytime, enum pdb_value_sta
 bool pdb_set_kickoff_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
 bool pdb_set_bad_password_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
 bool pdb_set_pass_can_change_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
-bool pdb_set_pass_must_change_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
 bool pdb_set_pass_last_set_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag);
 bool pdb_set_hours_len(struct samu *sampass, uint32_t len, enum pdb_value_state flag);
 bool pdb_set_logon_divs(struct samu *sampass, uint16_t hours, enum pdb_value_state flag);

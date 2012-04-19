@@ -198,10 +198,9 @@ static int py_samu_set_pass_must_change_time(PyObject *obj, PyObject *value, voi
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
-	if (!pdb_set_pass_must_change_time(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
-		return -1;
-	}
-	return 0;
+
+	/* TODO: make this not a get/set or give a better exception */
+	return -1;
 }
 
 static PyObject *py_samu_get_username(PyObject *obj, void *closure)

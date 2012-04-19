@@ -400,12 +400,6 @@ bool pdb_set_pass_can_change_time(struct samu *sampass, time_t mytime, enum pdb_
 	return pdb_set_init_flags(sampass, PDB_CANCHANGETIME, flag);
 }
 
-bool pdb_set_pass_must_change_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag)
-{
-	sampass->pass_must_change_time = mytime;
-	return pdb_set_init_flags(sampass, PDB_MUSTCHANGETIME, flag);
-}
-
 bool pdb_set_pass_last_set_time(struct samu *sampass, time_t mytime, enum pdb_value_state flag)
 {
 	sampass->pass_last_set_time = mytime;

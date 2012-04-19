@@ -564,7 +564,6 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	PDB_LOGOFFTIME,
 	PDB_BAD_PASSWORD_TIME,
 	PDB_CANCHANGETIME, - these are calculated per policy, not stored
-	PDB_MUSTCHANGETIME, - these are calculated per policy, not stored
 	PDB_DOMAIN,
 	PDB_NTUSERNAME, - this makes no sense, and never really did
 	PDB_LOGONDIVS,
