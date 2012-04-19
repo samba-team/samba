@@ -24,7 +24,8 @@ export CTDB_TIMEOUT=60
 if [ -n "$CTDB_TEST_REMOTE_DIR" ] ; then
     CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_DIR}/test_wrap"
 else
-    CTDB_TEST_WRAPPER="${TEST_SCRIPTS_DIR}/test_wrap"
+    _d=$(cd ${TEST_SCRIPTS_DIR}; echo $PWD)
+    CTDB_TEST_WRAPPER="$_d/test_wrap"
 fi
 export CTDB_TEST_WRAPPER
 
