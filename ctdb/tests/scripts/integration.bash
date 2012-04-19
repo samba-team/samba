@@ -19,6 +19,24 @@ fi
 
 ######################################################################
 
+export CTDB_TIMEOUT=60
+
+if [ -n "$CTDB_TEST_REMOTE_DIR" ] ; then
+    CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_DIR}/test_wrap"
+else
+    CTDB_TEST_WRAPPER="${TEST_SCRIPTS_DIR}/test_wrap"
+fi
+export CTDB_TEST_WRAPPER
+
+# If $VALGRIND is set then use it whenever ctdb is called, but only if
+# $CTDB is not already set.
+[ -n "$CTDB" ] || export CTDB="${VALGRIND}${VALGRIND:+ }ctdb"
+
+# why???
+PATH="${TEST_SCRIPTS_DIR}:${PATH}"
+
+######################################################################
+
 ctdb_check_time_logs ()
 {
     local threshold=20

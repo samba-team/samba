@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# The ability of ctdb_test_env to take tests on the command-line is
-# nice, but here we need to hack around it with that colon to reset
-# the arguments that it sees.
-. $(dirname $0)/ctdb_test_env :
-
 usage() {
     cat <<EOF
 Usage: run_tests [OPTIONS] [TESTS]
@@ -147,6 +142,8 @@ run_one_test ()
 
     [ -x "$_f" ] || die "test \"$_f\" is not executable"
     tests_total=$(($tests_total + 1))
+
+    export TEST_SCRIPTS_DIR=$(dirname "$0")
 
     ctdb_test_run "$_f" | tee "$tf" | show_progress
     status=$?
