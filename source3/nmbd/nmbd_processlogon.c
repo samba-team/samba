@@ -505,6 +505,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 		status = push_nbt_netlogon_response(&blob_out, talloc_tos(), &response);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("process_logon_packet: failed to push packet\n"));
+			SAFE_FREE(source_addr);
 			return;
 		}
 
