@@ -2,7 +2,11 @@
 
 # Common variables and functions for all CTDB tests.
 
-export TEST_SUBDIR=$(dirname $0)
+# This expands the most probable problem cases like "." and "..".
+TEST_SUBDIR=$(dirname "$0")
+if [ $(dirname "$TEST_SUBDIR") = "." ] ; then
+    TEST_SUBDIR=$(cd "$TEST_SUBDIR" ; pwd)
+fi
 
 CTDB_DIR=$(dirname $(dirname "$TEST_SUBDIR"))
 

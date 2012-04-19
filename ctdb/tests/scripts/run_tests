@@ -168,10 +168,6 @@ run_one_test ()
 
 for f ; do
     if [ -d "$f" ] ; then
-	# This expands the most probable problem cases like "." and "..".
-	if [ $(dirname "$f") = "." ] ; then
-	    f=$(cd "$f" ; pwd)
-	fi
 	for i in $(ls "${f%/}/"*".sh" 2>/dev/null) ; do
 	    run_one_test "$i"
 	done
