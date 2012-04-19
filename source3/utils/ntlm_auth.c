@@ -1068,14 +1068,18 @@ static NTSTATUS ntlm_auth_start_ntlmssp_server(TALLOC_CTX *mem_ctx,
 	struct gensec_security *gensec_security;
 	NTSTATUS nt_status;
 
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+	TALLOC_CTX *tmp_ctx;
 
 	struct gensec_settings *gensec_settings;
 	size_t idx = 0;
 	struct cli_credentials *server_credentials;
 	
-	struct auth4_context *auth4_context = make_auth4_context_ntlm_auth(tmp_ctx, opt_password);
+	struct auth4_context *auth4_context;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+
+	auth4_context = make_auth4_context_ntlm_auth(tmp_ctx, opt_password);
 	if (auth4_context == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
