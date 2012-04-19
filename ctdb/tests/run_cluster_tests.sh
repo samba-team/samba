@@ -1,8 +1,5 @@
 #!/bin/sh
 
-CTDB_TEST_REAL_CLUSTER=1
-export CTDB_TEST_REAL_CLUSTER
-
 if [ -n "$*" ]; then
     tests/scripts/run_tests -s $* || exit 1
 else
