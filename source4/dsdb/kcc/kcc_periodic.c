@@ -436,6 +436,13 @@ static int kccsrv_gc_update(struct kccsrv_service *s, struct ldb_result *res)
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
+
+	if (s->am_rodc) {
+		DEBUG(5, ("%d partial replica should be added but we are RODC so we skip\n", msg->num_elements));
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
 	ret = dsdb_modify(s->samdb, msg, 0);
