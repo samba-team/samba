@@ -1757,7 +1757,7 @@ done:
 	return werr;
 }
 
-int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
+static int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
 {
 	WERROR werr;
 
