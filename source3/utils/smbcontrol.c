@@ -1061,10 +1061,6 @@ static bool do_dump_event_list(struct tevent_context *ev_ctx,
 			       const struct server_id pid,
 			       const int argc, const char **argv)
 {
-	struct server_id myid;
-
-	myid = messaging_server_id(msg_ctx);
-
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> dump-event-list\n");
 		return False;
