@@ -501,7 +501,6 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			kickoff_time,
 			pass_last_set_time,
 			pass_can_change_time,
-			pass_must_change_time,
 			ldap_entry_time,
 			bad_password_time;
 	char *username = NULL,
