@@ -1,0 +1,2 @@
+Simple integration tests.  These can be run against a pool of CTDB
+daemons running on the local machine - aka "local daemons".

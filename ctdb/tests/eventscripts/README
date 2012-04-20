@@ -3,41 +3,45 @@ eventscript unit tests
 
 This directory contains some eventscript unit tests for CTDB.  These
 tests can be run as a non-privileged user.  There are a lot of stub
-implementations of commands (located in bin/) used to make the
+implementations of commands (located in stubs/) used to make the
 eventscripts think they're running against a real system.
+
+Test case filenames look like:
+
+  <eventscript>.<event>.NNN.sh
+
+The test helper functions will run <eventscript> with specified
+options.  If using the simple_test() or iterate_test() helper
+functions then the 1st <event> argument is automatically passed.  When
+simple_test_event() is used the event name must be explicitly passed
+as the 1st argument - this is more flexible and supports multiple
+events per test.
 
 Examples:
 
-* ./run_tests.sh
+* ../run_tests.sh .
 
   Run all tests, displaying minimal output.
 
-* ./run_tests.sh -s
+* ../run_tests.sh -s .
 
   Run all tests, displaying minimal output and a summary.
 
-* ./run_tests.sh  -s simple/*.sh
+* ../run_tests.sh -s ./10.interface.*.sh
 
-  Run all the tests in the simple/ subdirectory.
+  Run all the tests against the 10.interface eventscript.
 
-* ./run_tests.sh -v -s
+* ../run_tests.sh -v -s .
 
   Run all tests, displaying extra output and a summary.
 
-* ./run_tests.sh -sq
+* ../run_tests.sh -sq .
 
   Run all tests, displaying only a summary.
 
-* EVENTSCRIPTS_TESTS_TRACE="sh -x" \
-    ./run_tests.sh simple/10.interface.startup.002.sh
+* ../run_tests.sh -X ./10.interface.startup.002.sh
 
   Run a test and have the eventscript itself run with "sh -x".  This
   will usually make a test fail because the (undesirable) trace output
   will be included with the output of the eventscript.  However, this
-  is useful for finding out why a test might be failing.  You can just
-  drop the "-x" (minimal command-line editing) to see if changes have
-  made a test pass.
-
-The simple/ subdirectory contains tests that exercise only a single
-eventscript.  Another directory containing tests that exercise
-interactions between eventscripts is coming soon...  :-)
+  is useful for finding out why a test might be failing.

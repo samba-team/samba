@@ -1,0 +1,2 @@
+Complex integration tests.  These need a real or virtual cluster.
+That is, they can not be run against local daemons.
