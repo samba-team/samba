@@ -1317,7 +1317,7 @@ char *talloc_strdup(const void *t, const char *p);
  *
  * @param[in]  a        The string you want to append.
  *
- * @return              The duplicated string, NULL on error.
+ * @return              The concatenated strings, NULL on error.
  *
  * @see talloc_strdup()
  * @see talloc_strdup_append_buffer()
@@ -1352,7 +1352,7 @@ char *talloc_strdup_append(char *s, const char *a);
  *
  * @param[in]  a        The string you want to append.
  *
- * @return              The duplicated string, NULL on error.
+ * @return              The concatenated strings, NULL on error.
  *
  * @see talloc_strdup()
  * @see talloc_strdup_append()
@@ -1404,7 +1404,7 @@ char *talloc_strndup(const void *t, const char *p, size_t n);
  * @param[in]  n        The number of characters you want to append from the
  *                      string.
  *
- * @return              The duplicated string, NULL on error.
+ * @return              The concatenated strings, NULL on error.
  *
  * @see talloc_strndup()
  * @see talloc_strndup_append_buffer()
@@ -1442,7 +1442,7 @@ char *talloc_strndup_append(char *s, const char *a, size_t n);
  * @param[in]  n        The number of characters you want to append from the
  *                      string.
  *
- * @return              The duplicated string, NULL on error.
+ * @return              The concatenated strings, NULL on error.
  *
  * @see talloc_strndup()
  * @see talloc_strndup_append()
