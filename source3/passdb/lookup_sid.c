@@ -1012,115 +1012,6 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
  modified to use linked lists by jra.
 *****************************************************************/  
 
-/*****************************************************************
-  Find a SID given a uid.
-*****************************************************************/
-
-static bool fetch_sid_from_uid_cache(struct dom_sid *psid, uid_t uid)
-{
-	DATA_BLOB cache_value;
-
-	if (!memcache_lookup(NULL, UID_SID_CACHE,
-			     data_blob_const(&uid, sizeof(uid)),
-			     &cache_value)) {
-		return false;
-	}
-
-	memcpy(psid, cache_value.data, MIN(sizeof(*psid), cache_value.length));
-	SMB_ASSERT(cache_value.length >= offsetof(struct dom_sid, id_auth));
-	SMB_ASSERT(cache_value.length == ndr_size_dom_sid(psid, 0));
-
-	return true;
-}
-
-/*****************************************************************
-  Find a uid given a SID.
-*****************************************************************/
-
-static bool fetch_uid_from_cache( uid_t *puid, const struct dom_sid *psid )
-{
-	DATA_BLOB cache_value;
-
-	if (!memcache_lookup(NULL, SID_UID_CACHE,
-			     data_blob_const(psid, ndr_size_dom_sid(psid, 0)),
-			     &cache_value)) {
-		return false;
-	}
-
-	SMB_ASSERT(cache_value.length == sizeof(*puid));
-	memcpy(puid, cache_value.data, sizeof(*puid));
-
-	return true;
-}
-
-/*****************************************************************
- Store uid to SID mapping in cache.
-*****************************************************************/
-
-void store_uid_sid_cache(const struct dom_sid *psid, uid_t uid)
-{
-	memcache_add(NULL, SID_UID_CACHE,
-		     data_blob_const(psid, ndr_size_dom_sid(psid, 0)),
-		     data_blob_const(&uid, sizeof(uid)));
-	memcache_add(NULL, UID_SID_CACHE,
-		     data_blob_const(&uid, sizeof(uid)),
-		     data_blob_const(psid, ndr_size_dom_sid(psid, 0)));
-}
-
-/*****************************************************************
-  Find a SID given a gid.
-*****************************************************************/
-
-static bool fetch_sid_from_gid_cache(struct dom_sid *psid, gid_t gid)
-{
-	DATA_BLOB cache_value;
-
-	if (!memcache_lookup(NULL, GID_SID_CACHE,
-			     data_blob_const(&gid, sizeof(gid)),
-			     &cache_value)) {
-		return false;
-	}
-
-	memcpy(psid, cache_value.data, MIN(sizeof(*psid), cache_value.length));
-	SMB_ASSERT(cache_value.length >= offsetof(struct dom_sid, id_auth));
-	SMB_ASSERT(cache_value.length == ndr_size_dom_sid(psid, 0));
-
-	return true;
-}
-
-/*****************************************************************
-  Find a gid given a SID.
-*****************************************************************/
-
-static bool fetch_gid_from_cache(gid_t *pgid, const struct dom_sid *psid)
-{
-	DATA_BLOB cache_value;
-
-	if (!memcache_lookup(NULL, SID_GID_CACHE,
-			     data_blob_const(psid, ndr_size_dom_sid(psid, 0)),
-			     &cache_value)) {
-		return false;
-	}
-
-	SMB_ASSERT(cache_value.length == sizeof(*pgid));
-	memcpy(pgid, cache_value.data, sizeof(*pgid));
-
-	return true;
-}
-
-/*****************************************************************
- Store gid to SID mapping in cache.
-*****************************************************************/
-
-void store_gid_sid_cache(const struct dom_sid *psid, gid_t gid)
-{
-	memcache_add(NULL, SID_GID_CACHE,
-		     data_blob_const(psid, ndr_size_dom_sid(psid, 0)),
-		     data_blob_const(&gid, sizeof(gid)));
-	memcache_add(NULL, GID_SID_CACHE,
-		     data_blob_const(&gid, sizeof(gid)),
-		     data_blob_const(psid, ndr_size_dom_sid(psid, 0)));
-}
 
 /*****************************************************************
  *THE LEGACY* convert uid_t to SID function.
@@ -1149,7 +1040,6 @@ static void legacy_uid_to_sid(struct dom_sid *psid, uid_t uid)
 	DEBUG(10,("LEGACY: uid %u -> sid %s\n", (unsigned int)uid,
 		  sid_string_dbg(psid)));
 
-	store_uid_sid_cache(psid, uid);
 	return;
 }
 
@@ -1180,7 +1070,6 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 	DEBUG(10,("LEGACY: gid %u -> sid %s\n", (unsigned int)gid,
 		  sid_string_dbg(psid)));
 
-	store_gid_sid_cache(psid, gid);
 	return;
 }
 
@@ -1223,7 +1112,6 @@ done:
 	DEBUG(10,("LEGACY: sid %s -> uid %u\n", sid_string_dbg(psid),
 		  (unsigned int)*puid ));
 
-	store_uid_sid_cache(psid, *puid);
 	return true;
 }
 
@@ -1291,8 +1179,6 @@ static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_dbg(psid),
 		  (unsigned int)*pgid ));
 
-	store_gid_sid_cache(psid, *pgid);
-
 	TALLOC_FREE(map);
 	return true;
 }
@@ -1306,9 +1192,6 @@ void uid_to_sid(struct dom_sid *psid, uid_t uid)
 	bool expired = true;
 	bool ret;
 	ZERO_STRUCTP(psid);
-
-	if (fetch_sid_from_uid_cache(psid, uid))
-		return;
 
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_uid2sid(uid, psid, &expired);
@@ -1346,7 +1229,6 @@ void uid_to_sid(struct dom_sid *psid, uid_t uid)
 	DEBUG(10,("uid %u -> sid %s\n", (unsigned int)uid,
 		  sid_string_dbg(psid)));
 
-	store_uid_sid_cache(psid, uid);
 	return;
 }
 
@@ -1359,9 +1241,6 @@ void gid_to_sid(struct dom_sid *psid, gid_t gid)
 	bool expired = true;
 	bool ret;
 	ZERO_STRUCTP(psid);
-
-	if (fetch_sid_from_gid_cache(psid, gid))
-		return;
 
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_gid2sid(gid, psid, &expired);
@@ -1399,7 +1278,6 @@ void gid_to_sid(struct dom_sid *psid, gid_t gid)
 	DEBUG(10,("gid %u -> sid %s\n", (unsigned int)gid,
 		  sid_string_dbg(psid)));
 
-	store_gid_sid_cache(psid, gid);
 	return;
 }
 
@@ -1423,14 +1301,6 @@ bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
 		bool expired;
 		uint32_t rid;
 
-		if (fetch_uid_from_cache(&ids[i].id.uid, &sids[i])) {
-			ids[i].type = WBC_ID_TYPE_UID;
-			continue;
-		}
-		if (fetch_gid_from_cache(&ids[i].id.gid, &sids[i])) {
-			ids[i].type = WBC_ID_TYPE_GID;
-			continue;
-		}
 		if (sid_peek_check_rid(&global_sid_Unix_Users,
 				       &sids[i], &rid)) {
 			ids[i].type = WBC_ID_TYPE_UID;
@@ -1517,13 +1387,6 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 	uint32 rid;
 	gid_t gid;
 
-	if (fetch_uid_from_cache(puid, psid))
-		return true;
-
-	if (fetch_gid_from_cache(&gid, psid)) {
-		return false;
-	}
-
 	/* Optimize for the Unix Users Domain
 	 * as the conversion is straightforward */
 	if (sid_peek_check_rid(&global_sid_Unix_Users, psid, &rid)) {
@@ -1563,7 +1426,6 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 	DEBUG(10,("sid %s -> uid %u\n", sid_string_dbg(psid),
 		(unsigned int)*puid ));
 
-	store_uid_sid_cache(psid, *puid);
 	return true;
 }
 
@@ -1578,12 +1440,6 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 	bool ret;
 	uint32 rid;
 	uid_t uid;
-
-	if (fetch_gid_from_cache(pgid, psid))
-		return true;
-
-	if (fetch_uid_from_cache(&uid, psid))
-		return false;
 
 	/* Optimize for the Unix Groups Domain
 	 * as the conversion is straightforward */
@@ -1625,7 +1481,6 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 	DEBUG(10,("sid %s -> gid %u\n", sid_string_dbg(psid),
 		  (unsigned int)*pgid ));
 
-	store_gid_sid_cache(psid, *pgid);
 	return true;
 }
 

@@ -80,8 +80,6 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 bool lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 		const char **ret_domain, const char **ret_name,
 		enum lsa_SidType *ret_type);
-void store_uid_sid_cache(const struct dom_sid *psid, uid_t uid);
-void store_gid_sid_cache(const struct dom_sid *psid, gid_t gid);
 void uid_to_sid(struct dom_sid *psid, uid_t uid);
 void gid_to_sid(struct dom_sid *psid, gid_t gid);
 bool sid_to_uid(const struct dom_sid *psid, uid_t *puid);

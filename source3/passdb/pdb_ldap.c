@@ -1070,16 +1070,12 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 			goto fn_exit;
 		}
 
-		store_uid_sid_cache(pdb_get_user_sid(sampass),
-				    sampass->unix_pw->pw_uid);
 		idmap_cache_set_sid2uid(pdb_get_user_sid(sampass),
 					sampass->unix_pw->pw_uid);
 
 		gid_to_sid(&mapped_gsid, sampass->unix_pw->pw_gid);
 		primary_gsid = pdb_get_group_sid(sampass);
 		if (primary_gsid && dom_sid_equal(primary_gsid, &mapped_gsid)) {
-			store_gid_sid_cache(primary_gsid,
-					    sampass->unix_pw->pw_gid);
 			idmap_cache_set_sid2gid(primary_gsid,
 						sampass->unix_pw->pw_gid);
 		}
@@ -2479,7 +2475,6 @@ for gidNumber(%lu)\n",(unsigned long)map->gid));
 	}
 
 	if (lp_parm_bool(-1, "ldapsam", "trusted", false)) {
-		store_gid_sid_cache(&map->sid, map->gid);
 		idmap_cache_set_sid2gid(&map->sid, map->gid);
 	}
 
@@ -5040,7 +5035,6 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 		*gid = strtoul(gid_str, NULL, 10);
 		*type = (enum lsa_SidType)strtoul(value, NULL, 10);
-		store_gid_sid_cache(sid, *gid);
 		idmap_cache_set_sid2gid(sid, *gid);
 		ret = True;
 		goto done;
@@ -5058,7 +5052,6 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 	*uid = strtoul(value, NULL, 10);
 	*type = SID_NAME_USER;
-	store_uid_sid_cache(sid, *uid);
 	idmap_cache_set_sid2uid(sid, *uid);
 
 	ret = True;
@@ -5129,7 +5122,6 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 
 	sid_copy(sid, &user_sid);
 
-	store_uid_sid_cache(sid, uid);
 	idmap_cache_set_sid2uid(sid, uid);
 
 	ret = true;
@@ -5199,7 +5191,6 @@ static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 
 	sid_copy(sid, &group_sid);
 
-	store_gid_sid_cache(sid, gid);
 	idmap_cache_set_sid2gid(sid, gid);
 
 	ret = true;
