@@ -1887,7 +1887,7 @@ done:
 	return ret;
 }
 
-int regdb_fetch_values(const char* key, struct regval_ctr *values)
+static int regdb_fetch_values(const char* key, struct regval_ctr *values)
 {
 	return regdb_fetch_values_internal(regdb, key, values);
 }
