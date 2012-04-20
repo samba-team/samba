@@ -416,8 +416,13 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	OM_uint32 min_stat2;
 	gss_buffer_desc input_token, output_token;
 	gss_OID gss_oid_p = NULL;
+	OM_uint32 time_req = 0;
 	OM_uint32 time_rec = 0;
 	struct timeval tv;
+
+	time_req = gensec_setting_int(gensec_security->settings,
+				      "gensec_gssapi", "requested_life_time",
+				      time_req);
 
 	input_token.length = in.length;
 	input_token.value = in.data;
@@ -453,7 +458,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							gensec_gssapi_state->server_name, 
 							gensec_gssapi_state->gss_oid,
 							gensec_gssapi_state->gss_want_flags, 
-							0, 
+							time_req,
 							gensec_gssapi_state->input_chan_bindings,
 							&input_token, 
 							&gss_oid_p,
