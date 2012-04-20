@@ -1311,6 +1311,8 @@ char *talloc_strdup(const void *t, const char *p);
  *      talloc_set_name_const(ptr, ptr)
  * @endcode
  *
+ * If <code>s == NULL</code> then new context is created.
+ *
  * @param[in]  s        The destination to append to.
  *
  * @param[in]  a        The string you want to append.
@@ -1343,6 +1345,8 @@ char *talloc_strdup_append(char *s, const char *a);
  *      printf("%s\n", app); // hello, hello (app = "hello, hello")
  *      printf("%s\n", buf); // hello (buf = "hello\0world, hello")
  * @endcode
+ *
+ * If <code>s == NULL</code> then new context is created.
  *
  * @param[in]  s        The destination buffer to append to.
  *
@@ -1391,6 +1395,8 @@ char *talloc_strndup(const void *t, const char *p, size_t n);
  *      talloc_set_name_const(ptr, ptr)
  * @endcode
  *
+ * If <code>s == NULL</code> then new context is created.
+ *
  * @param[in]  s        The destination string to append to.
  *
  * @param[in]  a        The source string you want to append.
@@ -1426,6 +1432,8 @@ char *talloc_strndup_append(char *s, const char *a, size_t n);
  *      printf("%s\n", app); // hello, hello (app = "hello, hello")
  *      printf("%s\n", buf); // hello (buf = "hello\0world, hello")
  * @endcode
+ *
+ * If <code>s == NULL</code> then new context is created.
  *
  * @param[in]  s        The destination buffer to append to.
  *
@@ -1533,6 +1541,8 @@ char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3)
  *      talloc_set_name_const(ptr, ptr)
  * @endcode
  *
+ * If <code>s == NULL</code> then new context is created.
+ *
  * @param[in]  s        The string to append to.
  *
  * @param[in]  fmt      The format string.
@@ -1564,6 +1574,8 @@ char *talloc_asprintf_append(char *s, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3
  *      printf("%s\n", app); // hello, hello (app = "hello, hello")
  *      printf("%s\n", buf); // hello (buf = "hello\0world, hello")
  * @endcode
+ *
+ * If <code>s == NULL</code> then new context is created.
  *
  * @param[in]  s        The string to append to
  *
