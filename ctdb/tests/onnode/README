@@ -26,13 +26,11 @@ Examples:
 
   Run only the specified tests.
 
-* ONNODE="bash -x stubs/onnode-buggy-001" ../run_tests.sh ./0090.sh
-  ONNODE="bash -x ../../tools/onnode" ../run_tests.sh ./0090.sh
+* ONNODE="stubs/onnode-buggy-001" ../run_tests.sh -X ./0090.sh
+  ../run_tests.sh -X ./0090.sh
 
-  Debug the specified test or test failure.  The test will fail
-  because the bash trace output will be included in the test output.
-  However, this at least makes it easy to trace onnode while running
-  the test...
+  Debug the specified test or test failure by tracing onnode with
+  "bash -x".  The test will fail because the bash trace output will be
+  included in the test output.
 
-  To see if the test pases, the -x can be dropped... so command-line
-  editing can be kept to a minimum.
+  To see if the test pases, the -X can be dropped...

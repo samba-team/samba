@@ -35,7 +35,7 @@ exit_on_fail=false
 no_header=false
 
 export TEST_VERBOSE=false
-export TEST_COMMAND_TRACE=""
+export TEST_COMMAND_TRACE=false
 export TEST_CAT_RESULTS_OPTS=""
 export TEST_DIFF_RESULTS=false
 export TEST_LOCAL_DAEMONS  # No default, developer can "override"!
@@ -55,7 +55,7 @@ while true ; do
 	-q) quiet=true ; shift ;;
 	-s) with_summary=true ; shift ;;
 	-v) TEST_VERBOSE=true ; shift ;;
-	-X) TEST_COMMAND_TRACE="sh -x" ; shift ;;
+	-X) TEST_COMMAND_TRACE=true ; shift ;;
 	-A) TEST_CAT_RESULTS_OPTS="-A" ; shift ;;
 	-D) TEST_DIFF_RESULTS=true ; shift ;;
 	-H) no_header=true ; shift ;;

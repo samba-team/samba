@@ -67,7 +67,12 @@ simple_test ()
 	_sort="sort"
     fi
 
-    _out=$("$@" 2>&1)
+    if $TEST_COMMAND_TRACE ; then
+	_onnode=$(which "$1") ; shift
+	_out=$(bash -x "$_onnode" "$@" 2>&1)
+    else
+	_out=$("$@" 2>&1)
+    fi
     _rc=$?
     _out=$(echo "$_out" | $_sort )
 
