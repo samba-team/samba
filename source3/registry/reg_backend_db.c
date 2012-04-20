@@ -2103,7 +2103,7 @@ done:
 	return err;
 }
 
-bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys)
+static bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys)
 {
 	return (regdb_get_seqnum() != regsubkey_ctr_get_seqnum(subkeys));
 }
