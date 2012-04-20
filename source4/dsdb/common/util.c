@@ -1792,7 +1792,11 @@ bool samdb_is_pdc(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	pdc = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, dom_res->msgs[0], "fSMORoleOwner");
+	pdc = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, dom_res->msgs[0],
+				      "fSMORoleOwner");
+	if (pdc == NULL) {
+		goto failed;
+	}
 
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), pdc) == 0) {
 		is_pdc = true;
