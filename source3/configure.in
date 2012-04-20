@@ -5545,12 +5545,34 @@ if test x"$samba_cv_HAVE_AIO" = x"yes"; then
 # Check for Linux kernel aio support.
 	case "$host_os" in
 	*linux*)
-	    AC_MSG_CHECKING(for Linux kernel asynchronous io support)
-	    AC_CHECK_LIB(aio,io_submit,
-		[AIO_LIBS="$LIBS -laio";
-		AC_DEFINE(HAVE_LINUX_KERNEL_AIO, 1, Define to 1 if there is support for Linux kernel asynchronous io)],
-		[])
-	    if test x"$ac_cv_lib_aio_io_submit" = x"yes"; then
+	    AC_CHECK_LIB(aio,io_submit,[AIO_LIBS="$LIBS -laio"])
+	    AC_CACHE_CHECK([for Linux kernel asynchronous io support],samba_cv_HAVE_LINUX_KERNEL_AIO,[
+	    aio_LIBS=$LIBS
+	    LIBS=$AIO_LIBS
+	    AC_TRY_LINK([#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <sys/eventfd.h>
+#include <libaio.h>],
+[ struct io_event ioev;
+struct iocb *ioc;
+io_context_t ctx;
+struct timespec ts;
+int fd;
+char *buf;
+fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+io_queue_init(128,&ctx);
+io_prep_pwrite(ioc, 1, buf, 1, 0);
+io_prep_pread(ioc, 1, buf, 1, 0);
+io_set_eventfd(ioc, fd);
+io_set_callback(ioc, (io_callback_t)(0));
+io_submit(ctx, 1, &ioc);
+io_getevents(ctx, 1, 1, &ioev, &ts);],
+samba_cv_HAVE_LINUX_KERNEL_AIO=yes,samba_cv_HAVE_LINUX_KERNEL_AIO=no)
+		LIBS=$aio_LIBS])
+	    if test x"$samba_cv_HAVE_LINUX_KERNEL_AIO" = x"yes"; then
+		AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
 		default_shared_modules="$default_shared_modules vfs_aio_linux"
 	    fi
             ;;
