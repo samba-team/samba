@@ -32,6 +32,5 @@ WERROR regdb_transaction_start(void);
 WERROR regdb_transaction_commit(void);
 WERROR regdb_transaction_cancel(void);
 int regdb_get_seqnum(void);
-bool regdb_values_need_update(struct regval_ctr *values);
 
 #endif /* _REG_BACKEND_DB_H */

@@ -2108,7 +2108,7 @@ static bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys)
 	return (regdb_get_seqnum() != regsubkey_ctr_get_seqnum(subkeys));
 }
 
-bool regdb_values_need_update(struct regval_ctr *values)
+static bool regdb_values_need_update(struct regval_ctr *values)
 {
 	return (regdb_get_seqnum() != regval_ctr_get_seqnum(values));
 }
