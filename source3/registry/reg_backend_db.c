@@ -1340,7 +1340,7 @@ done:
 	return ret;
 }
 
-bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
+static bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 {
 	return regdb_store_keys_internal(regdb, key, ctr);
 }
