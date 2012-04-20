@@ -806,7 +806,7 @@ interface drsuapi
         /* Function 0x06 */
 	typedef struct {
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
-		[charset(UTF16),string] uint16 *source_dsa_address;
+		[charset(UTF8), string] uint8 *source_dsa_address;
 		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaDelRequest1;
 
