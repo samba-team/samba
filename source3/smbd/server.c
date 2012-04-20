@@ -248,17 +248,6 @@ static void smbd_parent_id_cache_kill(struct messaging_context *msg_ctx,
 	messaging_send_to_children(msg_ctx, msg_type, data);
 }
 
-static void smbd_parent_id_cache_flush(struct messaging_context *ctx,
-				       void* data,
-				       uint32_t msg_type,
-				       struct server_id srv_id,
-				       DATA_BLOB* msg_data)
-{
-	id_cache_flush_message(ctx, data, msg_type, srv_id, msg_data);
-
-	messaging_send_to_children(ctx, msg_type, msg_data);
-}
-
 static void smbd_parent_id_cache_delete(struct messaging_context *ctx,
 					void* data,
 					uint32_t msg_type,
@@ -911,8 +900,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SMB_FORCE_TDIS,
 			   smb_parent_force_tdis);
 
-	messaging_register(msg_ctx, NULL,
-			   ID_CACHE_FLUSH, smbd_parent_id_cache_flush);
 	messaging_register(msg_ctx, NULL,
 			   ID_CACHE_DELETE, smbd_parent_id_cache_delete);
 	messaging_register(msg_ctx, NULL,

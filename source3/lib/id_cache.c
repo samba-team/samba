@@ -64,58 +64,6 @@ bool id_cache_ref_parse(const char* str, struct id_cache_ref* id)
 	return false;
 }
 
-static bool delete_uid_cache(uid_t puid)
-{
-	DATA_BLOB uid = data_blob_const(&puid, sizeof(puid));
-	DATA_BLOB sid;
-
-	if (!memcache_lookup(NULL, UID_SID_CACHE, uid, &sid)) {
-		DEBUG(3, ("UID %d is not memcached!\n", (int)puid));
-		return false;
-	}
-	DEBUG(3, ("Delete mapping UID %d <-> %s from memcache\n", (int)puid,
-		  sid_string_dbg((struct dom_sid*)sid.data)));
-	memcache_delete(NULL, SID_UID_CACHE, sid);
-	memcache_delete(NULL, UID_SID_CACHE, uid);
-	return true;
-}
-
-static bool delete_gid_cache(gid_t pgid)
-{
-	DATA_BLOB gid = data_blob_const(&pgid, sizeof(pgid));
-	DATA_BLOB sid;
-	if (!memcache_lookup(NULL, GID_SID_CACHE, gid, &sid)) {
-		DEBUG(3, ("GID %d is not memcached!\n", (int)pgid));
-		return false;
-	}
-	DEBUG(3, ("Delete mapping GID %d <-> %s from memcache\n", (int)pgid,
-		  sid_string_dbg((struct dom_sid*)sid.data)));
-	memcache_delete(NULL, SID_GID_CACHE, sid);
-	memcache_delete(NULL, GID_SID_CACHE, gid);
-	return true;
-}
-
-static bool delete_sid_cache(const struct dom_sid* psid)
-{
-	DATA_BLOB sid = data_blob_const(psid, ndr_size_dom_sid(psid, 0));
-	DATA_BLOB id;
-	if (memcache_lookup(NULL, SID_GID_CACHE, sid, &id)) {
-		DEBUG(3, ("Delete mapping %s <-> GID %d from memcache\n",
-			  sid_string_dbg(psid), *(int*)id.data));
-		memcache_delete(NULL, SID_GID_CACHE, sid);
-		memcache_delete(NULL, GID_SID_CACHE, id);
-	} else if (memcache_lookup(NULL, SID_UID_CACHE, sid, &id)) {
-		DEBUG(3, ("Delete mapping %s <-> UID %d from memcache\n",
-			  sid_string_dbg(psid), *(int*)id.data));
-		memcache_delete(NULL, SID_UID_CACHE, sid);
-		memcache_delete(NULL, UID_SID_CACHE, id);
-	} else {
-		DEBUG(3, ("SID %s is not memcached!\n", sid_string_dbg(psid)));
-		return false;
-	}
-	return true;
-}
-
 static bool delete_getpwnam_cache(const char *username)
 {
 	DATA_BLOB name = data_blob_string_const_null(username);
@@ -125,59 +73,22 @@ static bool delete_getpwnam_cache(const char *username)
 	return true;
 }
 
-static void flush_gid_cache(void)
-{
-	DEBUG(3, ("Flush GID <-> SID memcache\n"));
-	memcache_flush(NULL, SID_GID_CACHE);
-	memcache_flush(NULL, GID_SID_CACHE);
-}
-
-static void flush_uid_cache(void)
-{
-	DEBUG(3, ("Flush UID <-> SID memcache\n"));
-	memcache_flush(NULL, SID_UID_CACHE);
-	memcache_flush(NULL, UID_SID_CACHE);
-}
 void id_cache_delete_from_cache(const struct id_cache_ref* id)
 {
 	switch(id->type) {
 	case UID:
-		delete_uid_cache(id->id.uid);
 		idmap_cache_del_uid(id->id.uid);
 		break;
 	case GID:
-		delete_gid_cache(id->id.gid);
 		idmap_cache_del_gid(id->id.gid);
 		break;
 	case SID:
-		delete_sid_cache(&id->id.sid);
 		idmap_cache_del_sid(&id->id.sid);
 		break;
 	case USERNAME:
 		delete_getpwnam_cache(id->id.name);
 	default:
 		break;
-	}
-}
-
-
-void id_cache_flush_message(struct messaging_context *msg_ctx,
-			    void* private_data,
-			    uint32_t msg_type,
-			    struct server_id server_id,
-			    DATA_BLOB* data)
-{
-	const char *msg = data ? (const char *)data->data : NULL;
-
-	if ((msg == NULL) || (msg[0] == '\0')) {
-		flush_gid_cache();
-		flush_uid_cache();
-	} else if (strncmp(msg, "GID", 3)) {
-		flush_gid_cache();
-	} else if (strncmp(msg, "UID", 3)) {
-		flush_uid_cache();
-	} else {
-		DEBUG(0, ("Invalid argument: %s\n", msg));
 	}
 }
 
@@ -200,6 +111,5 @@ void id_cache_delete_message(struct messaging_context *msg_ctx,
 
 void id_cache_register_msgs(struct messaging_context *ctx)
 {
-	messaging_register(ctx, NULL, ID_CACHE_FLUSH,  id_cache_flush_message);
 	messaging_register(ctx, NULL, ID_CACHE_DELETE, id_cache_delete_message);
 }

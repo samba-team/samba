@@ -35,7 +35,7 @@ interface messaging
 		MSG_REQ_DMALLOC_LOG_CHANGED	= 0x000C,
 		MSG_SHUTDOWN			= 0x000D,
 
-		ID_CACHE_FLUSH			= 0x000E,
+		/* ID_CACHE_FLUSH		= 0x000E, obsoleted */
 		ID_CACHE_DELETE			= 0x000F,
 		ID_CACHE_KILL			= 0x0010,
 

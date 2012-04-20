@@ -181,8 +181,8 @@ static bool do_idmap(struct tevent_context *ev,
 {
 	static const char* usage = "Usage: "
 		"smbcontrol <dest> idmap <cmd> [arg]\n"
-		"\tcmd:\tflush [gid|uid]\n"
-		"\t\tdelete \"UID <uid>\"|\"GID <gid>\"|<sid>\n"
+		"\tcmd:"
+		"\tdelete \"UID <uid>\"|\"GID <gid>\"|<sid>\n"
 		"\t\tkill \"UID <uid>\"|\"GID <gid>\"|<sid>\n";
 	const char* arg = NULL;
 	int arglen = 0;
@@ -200,10 +200,7 @@ static bool do_idmap(struct tevent_context *ev,
 		return false;
 	}
 
-	if (strcmp(argv[1], "flush") == 0) {
-		msg_type = ID_CACHE_FLUSH;
-	}
-	else if (strcmp(argv[1], "delete") == 0) {
+	if (strcmp(argv[1], "delete") == 0) {
 		msg_type = ID_CACHE_DELETE;
 	}
 	else if (strcmp(argv[1], "kill") == 0) {
