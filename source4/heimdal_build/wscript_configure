@@ -67,7 +67,7 @@ conf.CHECK_FUNCS('dirfd', headers='dirent.h')
 conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')
 conf.CHECK_STRUCTURE_MEMBER('DIR', 'dd_fd', define='HAVE_DIR_DD_FD',  headers='dirent.h')
 
-conf.DEFINE('SAMBA4_INTERNAL_HEIMDAL', 1)
+conf.DEFINE('SAMBA4_USES_HEIMDAL', 1)
 
 # setup the right defines for a in-tree heimdal build
 Logs.info("Using in-tree heimdal kerberos defines")
