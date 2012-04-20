@@ -932,7 +932,7 @@ static void kdc_task_init(struct task_server *task)
 		return;
 	}
 
-	kdc->config->logf = kdc->smb_krb5_context->logf;
+	kdc->config->logf = (krb5_log_facility *)kdc->smb_krb5_context->pvt_log_data;
 	kdc->config->db = talloc(kdc, struct HDB *);
 	if (!kdc->config->db) {
 		task_server_terminate(task, "kdc: out of memory", true);

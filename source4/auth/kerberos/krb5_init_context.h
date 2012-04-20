@@ -22,10 +22,10 @@
 
 struct smb_krb5_context {
 	krb5_context krb5_context;
-	krb5_log_facility *logf;
+	void *pvt_log_data;
 	struct tevent_context *current_ev;
 };
-	
+
 struct tevent_context;
 struct loadparm_context;
 
