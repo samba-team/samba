@@ -1976,7 +1976,7 @@ static NTSTATUS regdb_store_values_action(struct db_context *db,
 	return status;
 }
 
-bool regdb_store_values(const char *key, struct regval_ctr *values)
+static bool regdb_store_values(const char *key, struct regval_ctr *values)
 {
 	WERROR werr;
 	struct regdb_store_values_ctx ctx;
