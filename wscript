@@ -84,7 +84,14 @@ def configure(conf):
 
     conf.RECURSE('dynconfig')
     conf.RECURSE('lib/ldb')
-    if not os.getenv('USING_SYSTEM_KRB5'):
+    if Options.options.with_mit_krb5_checks:
+        conf.PROCESS_SEPARATE_RULE('krb5')
+    # Only process heimdal_build for non-MIT KRB5 builds
+    # When MIT KRB5 checks are done as above, conf.env.KRB5_VENDOR will be set
+    # to the lowcased output of 'krb5-config --vendor'.
+    # If it is not set or the output is 'heimdal', we are dealing with
+    # system-provided or embedded Heimdal build
+    if conf.CONFIG_GET('KRB5_VENDOR') in (None, 'heimdal'):
         conf.RECURSE('source4/heimdal_build')
     conf.RECURSE('source4/lib/tls')
     conf.RECURSE('source4/ntvfs/sysdep')
