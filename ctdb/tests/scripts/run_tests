@@ -199,5 +199,9 @@ fi
 rm -f "$sf"
 
 if [ $tests_failed -gt 0 ] ; then
-    exit 1
+    if $no_header ; then
+	exit $status
+    else
+	exit 1
+    fi
 fi
