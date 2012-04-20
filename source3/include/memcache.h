@@ -35,10 +35,6 @@ struct memcache;
 
 enum memcache_number {
 	STAT_CACHE,
-	UID_SID_CACHE,
-	SID_UID_CACHE,
-	GID_SID_CACHE,
-	SID_GID_CACHE,
 	GETWD_CACHE,
 	GETPWNAM_CACHE,		/* talloc */
 	MANGLE_HASH2_CACHE,
