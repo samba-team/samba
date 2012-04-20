@@ -329,15 +329,18 @@ static void msg_read_got_ctdb(struct tevent_req *subreq)
 		return;
 	}
 
-	ndr_err = ndr_push_struct_blob(
+	ndr_err = ndr_pull_struct_blob(
 		&blob, state->rec, state->rec,
-		(ndr_push_flags_fn_t)ndr_push_messaging_rec);
+		(ndr_pull_flags_fn_t)ndr_pull_messaging_rec);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_push_struct_blob failed: %s\n",
+		DEBUG(1, ("ndr_pull_struct_blob failed: %s\n",
 			  ndr_errstr(ndr_err)));
 		tevent_req_error(req, ndr_map_error2errno(ndr_err));
 		return;
+	}
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(messaging_rec, state->rec);
 	}
 	if (state->rec->msg_type == state->channel->msg_type) {
 		tevent_req_done(req);
