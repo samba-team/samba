@@ -1473,7 +1473,14 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 				id->type = ID_TYPE_UID;
 				id->id = uid;
 				break;
+			default:
+				DEBUG(5, ("SID %s is our domain, but is not mapped to a user or group (got %d)\n",
+					  sid_string_dbg(sid), type));
+				ret = false;
 			}
+		} else {
+			DEBUG(5, ("SID %s is or domain, but is unmapped\n",
+				  sid_string_dbg(sid)));
 		}
 		goto done;
 	}
