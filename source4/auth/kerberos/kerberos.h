@@ -23,9 +23,10 @@
 
 #if defined(HAVE_KRB5)
 
+#include "system/kerberos.h"
 #include "auth/kerberos/krb5_init_context.h"
 #include "librpc/gen_ndr/krb5pac.h"
-#include "libcli/auth/krb5_wrap.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 
 struct auth_user_info_dc;
 struct cli_credentials;

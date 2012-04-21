@@ -30,6 +30,7 @@
 #include "auth/kerberos/kerberos_credentials.h"
 #include "auth/kerberos/kerberos_srv_keytab.h"
 #include "auth/kerberos/kerberos_util.h"
+#include "auth/kerberos/pac_utils.h"
 #include "param/param.h"
 
 static void cli_credentials_invalidate_client_gss_creds(

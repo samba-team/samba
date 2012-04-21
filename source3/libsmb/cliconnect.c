@@ -1962,7 +1962,8 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 			} else {
 				principal = kerberos_get_principal_from_service_hostname(talloc_tos(),
 											 "cifs",
-											 remote_name);
+											 remote_name,
+											 lp_realm());
 			}
 
 			if (!principal) {

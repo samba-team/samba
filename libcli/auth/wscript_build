@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('cliauth',
                   source='',
-                  deps='MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE KRB5_WRAP errors NTLM_CHECK UTIL_LSARPC',
+                  deps='MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE krb5samba errors NTLM_CHECK UTIL_LSARPC',
                   private_library=True,
                   grouping_library=True)
 
@@ -37,7 +37,3 @@ bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
 bld.SAMBA_SUBSYSTEM('SPNEGO_PARSE',
                     source='spnego_parse.c',
                     deps='asn1util')
-
-bld.SAMBA_SUBSYSTEM('KRB5_WRAP',
-                    source='krb5_wrap.c',
-                    deps='gssapi_krb5 krb5 ndr-krb5pac com_err KRB5_PAC')

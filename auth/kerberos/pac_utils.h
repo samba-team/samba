@@ -21,7 +21,7 @@
 #ifndef _PAC_UTILS_H
 #define _PAC_UTILS_H
 
-#include "libcli/auth/krb5_wrap.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 struct PAC_SIGNATURE_DATA;
 struct PAC_DATA;
 
@@ -47,4 +47,10 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 				gss_ctx_id_t gssapi_context,
 				DATA_BLOB *session_key,
 				uint32_t *keytype);
+
+/* not the best place here, need to move to a more generic gssapi
+ * wrapper later */
+char *gssapi_error_string(TALLOC_CTX *mem_ctx,
+			  OM_uint32 maj_stat, OM_uint32 min_stat,
+			  const gss_OID mech);
 #endif /* _PAC_UTILS_H */

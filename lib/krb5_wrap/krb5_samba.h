@@ -20,19 +20,78 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _INCLUDE_KRB5_PROTOS_H_
-#define _INCLUDE_KRB5_PROTOS_H_
+#ifndef _KRB5_SAMBA_H
+#define _KRB5_SAMBA_H
 
-struct PAC_DATA;
-struct PAC_SIGNATURE_DATA;
+#ifdef HAVE_KRB5
+
+#define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
+/* this file uses DEPRECATED interfaces! */
+
+#if defined(HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER)
+#define KRB5_DEPRECATED 1
+#else
+#define KRB5_DEPRECATED
+#endif
+
+#include "system/kerberos.h"
+#include "system/network.h"
+
+#ifndef KRB5_ADDR_NETBIOS
+#define KRB5_ADDR_NETBIOS 0x14
+#endif
+
+#ifndef KRB5KRB_ERR_RESPONSE_TOO_BIG
+#define KRB5KRB_ERR_RESPONSE_TOO_BIG (-1765328332L)
+#endif
+
+/* Heimdal uses a slightly different name */
+#if defined(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5) && !defined(HAVE_ENCTYPE_ARCFOUR_HMAC)
+#define ENCTYPE_ARCFOUR_HMAC ENCTYPE_ARCFOUR_HMAC_MD5
+#endif
+
+/* The older versions of heimdal that don't have this
+   define don't seem to use it anyway.  I'm told they
+   always use a subkey */
+#ifndef HAVE_AP_OPTS_USE_SUBKEY
+#define AP_OPTS_USE_SUBKEY 0
+#endif
+
+typedef struct {
+#if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
+	krb5_address **addrs;
+#elif defined(HAVE_KRB5_ADDRESSES) /* Heimdal */
+	krb5_addresses *addrs;
+#else
+#error UNKNOWN_KRB5_ADDRESS_TYPE
+#endif /* defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) */
+} smb_krb5_addresses;
+
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEY               /* MIT */
+#define KRB5_KT_KEY(k)		(&(k)->key)
+#elif HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK          /* Heimdal */
+#define KRB5_KT_KEY(k)		(&(k)->keyblock)
+#else
+#error krb5_keytab_entry has no key or keyblock member
+#endif /* HAVE_KRB5_KEYTAB_ENTRY_KEY */
 
 /* work around broken krb5.h on sles9 */
 #ifdef SIZEOF_LONG
 #undef SIZEOF_LONG
 #endif
 
+#ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE /* Heimdal */
+#define KRB5_KEY_TYPE(k)	((k)->keytype)
+#define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
+#define KRB5_KEY_DATA(k)	((k)->keyvalue.data)
+#define KRB5_KEY_DATA_CAST	void
+#else /* MIT */
+#define KRB5_KEY_TYPE(k)	((k)->enctype)
+#define KRB5_KEY_LENGTH(k)	((k)->length)
+#define KRB5_KEY_DATA(k)	((k)->contents)
+#define KRB5_KEY_DATA_CAST	krb5_octet
+#endif /* HAVE_KRB5_KEYBLOCK_KEYVALUE */
 
-#if defined(HAVE_KRB5)
 krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
                                 krb5_principal *principal);
@@ -60,18 +119,26 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 #define initialize_krb5_error_table()
 #endif
 
-/* The following definitions come from libsmb/clikrb5.c  */
-
-/* Samba wrapper function for krb5 functionality. */
+/* Samba wrapper functions for krb5 functionality. */
 bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr);
-int create_kerberos_key_from_string(krb5_context context, krb5_principal host_princ, krb5_data *password, krb5_keyblock *key, krb5_enctype enctype, bool no_salt);
+int create_kerberos_key_from_string(krb5_context context,
+				    krb5_principal host_princ,
+				    krb5_data *password,
+				    krb5_keyblock *key,
+				    krb5_enctype enctype,
+				    bool no_salt);
+int create_kerberos_key_from_string_direct(krb5_context context,
+					   krb5_principal host_princ,
+					   krb5_data *password,
+					   krb5_keyblock *key,
+					   krb5_enctype enctype);
+
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
 			      krb5_context context,
 			      krb5_auth_context auth_context,
 			      DATA_BLOB *session_key, bool remote);
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
-krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context, krb5_principal host_princ, int enctype);
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
 bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
@@ -83,7 +150,8 @@ bool smb_krb5_principal_compare_any_realm(krb5_context context,
 					  krb5_const_principal princ2);
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *expire_time);
 krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
-krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr);
+krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr,
+						  const char *netbios_name);
 krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr);
 NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
 krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
@@ -123,9 +191,12 @@ char *smb_krb5_principal_get_realm(krb5_context context,
 
 char *kerberos_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
 						   const char *service,
-						   const char *remote_name);
+						   const char *remote_name,
+						   const char *default_realm);
 
-#endif /* HAVE_KRB5 */
+char *smb_get_krb5_error_message(krb5_context context,
+				 krb5_error_code code,
+				 TALLOC_CTX *mem_ctx);
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
 			const char *principal, time_t time_offset,
@@ -138,4 +209,7 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *edata,
 			   DATA_BLOB *edata_out);
 
-#endif /* _INCLUDE_KRB5_PROTOS_H_ */
+#endif /* HAVE_KRB5 */
+
+
+#endif /* _KRB5_SAMBA_H */

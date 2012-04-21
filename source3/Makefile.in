@@ -559,11 +559,10 @@ LIBSMB_OBJ0 = \
 	       ../lib/util/asn1.o \
 	       ../libcli/auth/spnego_parse.o \
 	       ../libcli/auth/ntlm_check.o \
-	       ../libcli/auth/krb5_wrap.o \
 	       libsmb/ntlmssp.o \
 	       libsmb/ntlmssp_wrap.o \
 	       libsmb/auth_generic.o \
-	       libsmb/clikrb5.o \
+	       ../lib/krb5_wrap/krb5_samba.o \
 	       libsmb/clispnego.o \
 	       ../auth/gensec/gensec.o \
 	       ../auth/gensec/gensec_start.o \

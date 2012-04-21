@@ -45,6 +45,7 @@
 #include "source3/include/auth.h"
 #include "source3/auth/proto.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "auth/kerberos/pac_utils.h"
 
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"
@@ -1915,7 +1916,8 @@ static bool manage_client_krb5_init(struct spnego_data spnego)
 
 		principal = kerberos_get_principal_from_service_hostname(talloc_tos(),
 									 opt_target_service,
-									 opt_target_hostname);
+									 opt_target_hostname,
+									 lp_realm());
 
 		if (!principal) {
 			return false;

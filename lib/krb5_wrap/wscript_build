@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+bld.SAMBA_LIBRARY('krb5samba',
+                  source='krb5_samba.c',
+                  deps='samba-util asn1util talloc krb5 com_err',
+		  private_library=True
+		  )

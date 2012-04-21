@@ -1,4 +1,4 @@
 #!/usr/bin/env python
 bld.SAMBA_SUBSYSTEM('KRB5_PAC',
                     source='gssapi_pac.c kerberos_pac.c',
-                    deps='gssapi_krb5 krb5 ndr-krb5pac com_err')
+                    deps='gssapi_krb5 ndr-krb5pac krb5samba')

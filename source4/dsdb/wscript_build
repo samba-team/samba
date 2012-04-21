@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('samdb',
 	public_deps='krb5',
 	public_headers='',
 	vnum='0.0.1',
-	deps='ndr NDR_DRSUAPI NDR_DRSBLOBS auth_system_session LIBCLI_AUTH ndr SAMDB_SCHEMA ldbsamba samdb-common LIBCLI_DRSUAPI cli-ldap-common samba-util com_err authkrb5 samba-credentials ldbwrap errors',
+	deps='ndr NDR_DRSUAPI NDR_DRSBLOBS auth_system_session LIBCLI_AUTH ndr SAMDB_SCHEMA ldbsamba samdb-common LIBCLI_DRSUAPI cli-ldap-common samba-util com_err authkrb5 samba-credentials ldbwrap errors krb5samba',
 	)
 
 

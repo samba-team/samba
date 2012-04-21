@@ -219,7 +219,8 @@ int kerberos_kinit_password_ext(const char *principal,
 	}
 #endif
 	if (add_netbios_addr) {
-		if ((code = smb_krb5_gen_netbios_krb5_address(&addr))) {
+		if ((code = smb_krb5_gen_netbios_krb5_address(&addr,
+							lp_netbios_name()))) {
 			goto out;
 		}
 		krb5_get_init_creds_opt_set_address_list(opt, addr->addrs);
@@ -407,6 +408,7 @@ bool kerberos_secrets_store_des_salt( const char* salt )
 /************************************************************************
 ************************************************************************/
 
+static
 char* kerberos_secrets_fetch_des_salt( void )
 {
 	char *salt, *key;
@@ -430,6 +432,7 @@ char* kerberos_secrets_fetch_des_salt( void )
  to look for the older tdb keys.  Caller must free if return is not null.
  ************************************************************************/
 
+static
 krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 							krb5_principal host_princ,
 							int enctype)
@@ -460,6 +463,38 @@ krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 	SAFE_FREE(salt_princ_s);
 
 	return ret_princ;
+}
+
+int create_kerberos_key_from_string(krb5_context context,
+					krb5_principal host_princ,
+					krb5_data *password,
+					krb5_keyblock *key,
+					krb5_enctype enctype,
+					bool no_salt)
+{
+	krb5_principal salt_princ = NULL;
+	int ret;
+	/*
+	 * Check if we've determined that the KDC is salting keys for this
+	 * principal/enctype in a non-obvious way.  If it is, try to match
+	 * its behavior.
+	 */
+	if (no_salt) {
+		KRB5_KEY_DATA(key) = (KRB5_KEY_DATA_CAST *)SMB_MALLOC(password->length);
+		if (!KRB5_KEY_DATA(key)) {
+			return ENOMEM;
+		}
+		memcpy(KRB5_KEY_DATA(key), password->data, password->length);
+		KRB5_KEY_LENGTH(key) = password->length;
+		KRB5_KEY_TYPE(key) = enctype;
+		return 0;
+	}
+	salt_princ = kerberos_fetch_salt_princ_for_host_princ(context, host_princ, enctype);
+	ret = create_kerberos_key_from_string_direct(context, salt_princ ? salt_princ : host_princ, password, key, enctype);
+	if (salt_princ) {
+		krb5_free_principal(context, salt_princ);
+	}
+	return ret;
 }
 
 /************************************************************************

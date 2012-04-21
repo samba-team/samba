@@ -28,10 +28,10 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "../librpc/gen_ndr/dcerpc.h"
+#include "auth/kerberos/pac_utils.h"
 
 #if defined(HAVE_KRB5)
 
-#include "smb_krb5.h"
 #include "gse_krb5.h"
 
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
@@ -231,8 +231,8 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	   realm in particular), possibly falling back to
 	   GSS_C_NT_HOSTBASED_SERVICE
 	*/
-	name_buffer.value = kerberos_get_principal_from_service_hostname(gse_ctx,
-									 service, server);
+	name_buffer.value = kerberos_get_principal_from_service_hostname(
+					gse_ctx, service, server, lp_realm());
 	if (!name_buffer.value) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err_out;

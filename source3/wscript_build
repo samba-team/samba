@@ -88,7 +88,7 @@ PARAM_UTIL_SRC = '''param/util.c'''
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c
                            lib/sharesec.c lib/ldap_debug_handler.c lib/util_names.c'''
 
-KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c libsmb/clikrb5.c'''
+KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
 
 LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
               ../libgpo/gpo_fetch.c libgpo/gpo_filesync.c ../libgpo/gpo_sec.c
@@ -667,7 +667,7 @@ bld.SAMBA3_LIBRARY('nss_wins',
 
 bld.SAMBA3_LIBRARY('gse',
                    source='librpc/crypto/gse_krb5.c librpc/crypto/gse.c',
-                   deps='KRB5_WRAP gensec param KRBCLIENT secrets3',
+                   deps='krb5samba gensec param KRBCLIENT secrets3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('msrpc3',
@@ -782,7 +782,7 @@ bld.SAMBA3_LIBRARY('util_cmdline',
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     source=KRBCLIENT_SRC,
-                    public_deps='KRB5_WRAP k5crypto LIBTSOCKET CLDAP LIBNMB',
+                    public_deps='krb5samba k5crypto LIBTSOCKET CLDAP LIBNMB',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
@@ -869,13 +869,13 @@ bld.SAMBA3_LIBRARY('smbldap',
 
 bld.SAMBA3_LIBRARY('ads',
                    source=LIBADS_SRC,
-                   deps='cli-ldap-common KRB5_WRAP ldap lber KRBCLIENT param LIBNMB libsmb DCUTIL smbldap',
+                   deps='cli-ldap-common krb5samba ldap lber KRBCLIENT param LIBNMB libsmb DCUTIL smbldap',
                    private_library=True,
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,
-                    deps='SERVER_MUTEX ndr-krb5pac KRB5_WRAP',
+                    deps='SERVER_MUTEX ndr-krb5pac krb5samba',
 		    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
@@ -997,7 +997,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNET',
 
 bld.SAMBA3_LIBRARY('net_keytab',
                    source='libnet/libnet_keytab.c',
-                   deps='KRB5_WRAP ads',
+                   deps='krb5samba ads',
                    vars=locals(),
                    private_library=True)
 
@@ -1527,7 +1527,7 @@ bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,
                  source=NTLM_AUTH_SRC,
                  deps='''
                  talloc
-                 KRB5_WRAP
+                 krb5samba
                  LIBINIPARSER
                  libsmb
                  popt_samba3

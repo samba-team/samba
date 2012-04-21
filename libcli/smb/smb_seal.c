@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "smb_common.h"
 #if HAVE_KRB5
-#include "libcli/auth/krb5_wrap.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 #endif
 #include "auth/gensec/gensec.h"
 #include "libcli/smb/smb_seal.h"
