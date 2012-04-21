@@ -1385,7 +1385,6 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 	bool expired = true;
 	bool ret;
 	uint32 rid;
-	gid_t gid;
 
 	/* Optimize for the Unix Users Domain
 	 * as the conversion is straightforward */
@@ -1439,7 +1438,6 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 	bool expired = true;
 	bool ret;
 	uint32 rid;
-	uid_t uid;
 
 	/* Optimize for the Unix Groups Domain
 	 * as the conversion is straightforward */
