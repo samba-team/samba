@@ -2010,12 +2010,72 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+/* This checks the "fSMORoleOwner" attributes */
+static int samldb_fsmo_role_owner_check(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	const char * const no_attrs[] = { NULL };
+	struct ldb_message_element *el;
+	struct ldb_message *tmp_msg;
+	struct ldb_dn *res_dn;
+	struct ldb_result *res;
+	int ret;
+
+	el = dsdb_get_single_valued_attr(ac->msg, "fSMORoleOwner",
+					 ac->req->operation);
+	if (el == NULL) {
+		/* we are not affected */
+		return LDB_SUCCESS;
+	}
+
+	/* Create a temporary message for fetching the "fSMORoleOwner" */
+	tmp_msg = ldb_msg_new(ac->msg);
+	if (tmp_msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	ret = ldb_msg_add(tmp_msg, el, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	res_dn = ldb_msg_find_attr_as_dn(ldb, ac, tmp_msg, "fSMORoleOwner");
+	talloc_free(tmp_msg);
+
+	if (res_dn == NULL) {
+		ldb_set_errstring(ldb,
+				  "samldb: 'fSMORoleOwner' attributes have to reference 'nTDSDSA' entries!");
+		if (ac->req->operation == LDB_ADD) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		} else {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+
+	/* Fetched DN has to reference a "nTDSDSA" entry */
+	ret = dsdb_module_search(ac->module, ac, &res, res_dn, LDB_SCOPE_BASE,
+				 no_attrs,
+				 DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
+				 ac->req, "(objectClass=nTDSDSA)");
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count != 1) {
+		ldb_set_errstring(ldb,
+				  "samldb: 'fSMORoleOwner' attributes have to reference 'nTDSDSA' entries!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	talloc_free(res);
+
+	return LDB_SUCCESS;
+}
+
 
 /* add */
 static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct samldb_ctx *ac;
+	struct ldb_message_element *el;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -2038,6 +2098,14 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "samldb_add: ldb_msg_copy_shallow failed!\n");
 		return ldb_operr(ldb);
+	}
+
+	el = ldb_msg_find_element(ac->msg, "fSMORoleOwner");
+	if (el != NULL) {
+		ret = samldb_fsmo_role_owner_check(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
@@ -2226,6 +2294,14 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	if ((el != NULL) || (el2 != NULL)) {
 		modified = true;
 		ret = samldb_service_principal_names_change(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "fSMORoleOwner");
+	if (el != NULL) {
+		ret = samldb_fsmo_role_owner_check(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

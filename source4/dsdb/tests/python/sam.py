@@ -2607,6 +2607,83 @@ class SamTests(samba.tests.TestCase):
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
 
+    def test_fSMORoleOwner_attribute(self):
+        """Test fSMORoleOwner attribute"""
+        print "Test fSMORoleOwner attribute"""
+
+        ds_service_name = self.ldb.get_dsServiceName()
+
+        # The "fSMORoleOwner" attribute can only be set to "nTDSDSA" entries,
+        # invalid DNs return ERR_UNWILLING_TO_PERFORM
+
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group",
+                "fSMORoleOwner": self.base_dn})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group",
+                "fSMORoleOwner": [] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        # We are able to set it to a valid "nTDSDSA" entry if the server is
+        # capable of handling the role
+
+        self.ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "fSMORoleOwner": ds_service_name })
+
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group" })
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m.add(MessageElement(self.base_dn, FLAG_MOD_REPLACE, "fSMORoleOwner"))
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m.add(MessageElement([], FLAG_MOD_REPLACE, "fSMORoleOwner"))
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # We are able to set it to a valid "nTDSDSA" entry if the server is
+        # capable of handling the role
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m.add(MessageElement(ds_service_name, FLAG_MOD_REPLACE, "fSMORoleOwner"))
+        ldb.modify(m)
+
+        # A clean-out works on plain entries, not master (schema, PDC...) DNs
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m.add(MessageElement([], FLAG_MOD_DELETE, "fSMORoleOwner"))
+        ldb.modify(m)
+
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+
 if not "://" in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
