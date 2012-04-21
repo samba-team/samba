@@ -175,7 +175,7 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 	const char *name;
 	int ret;
 	struct ldb_result *res;
-	const char *noattrs[] = { NULL };
+	const char * const noattrs[] = { NULL };
 
 	if (ldb_msg_find_element(ac->msg, "sAMAccountName") == NULL) {
 		ret = samldb_generate_sAMAccountName(ldb, ac->msg);
@@ -263,7 +263,7 @@ static bool samldb_krbtgtnumber_available(struct samldb_ctx *ac,
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ac);
 	struct ldb_result *res;
-	const char *no_attrs[] = { NULL };
+	const char * const no_attrs[] = { NULL };
 	int ret;
 
 	ret = dsdb_module_search(ac->module, tmp_ctx, &res,
@@ -360,7 +360,7 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_result *res;
-	const char *no_attrs[] = { NULL };
+	const char * const no_attrs[] = { NULL };
 	int ret;
 
 	ac->res_dn = NULL;
@@ -1145,7 +1145,7 @@ static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid)
 	struct dom_sid *sid;
 	struct ldb_result *res;
 	int ret;
-	const char *noattrs[] = { NULL };
+	const char * const noattrs[] = { NULL };
 
 	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
 	if (sid == NULL) {
@@ -1196,7 +1196,7 @@ static int samldb_prim_group_set(struct samldb_ctx *ac)
 static int samldb_prim_group_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	const char * attrs[] = { "primaryGroupID", "memberOf", NULL };
+	const char * const attrs[] = { "primaryGroupID", "memberOf", NULL };
 	struct ldb_result *res, *group_res;
 	struct ldb_message_element *el;
 	struct ldb_message *msg;
@@ -1204,7 +1204,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	struct dom_sid *prev_sid, *new_sid;
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
 	int ret;
-	const char *noattrs[] = { NULL };
+	const char * const noattrs[] = { NULL };
 
 	el = dsdb_get_single_valued_attr(ac->msg, "primaryGroupID",
 					 ac->req->operation);
@@ -1372,7 +1372,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "userAccountControl", "objectClass", NULL };
+	const char * const attrs[] = { "userAccountControl", "objectClass", NULL };
 	unsigned int i;
 	bool is_computer = false;
 
@@ -1512,7 +1512,7 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "groupType", NULL };
+	const char * const attrs[] = { "groupType", NULL };
 
 	el = dsdb_get_single_valued_attr(ac->msg, "groupType",
 					 ac->req->operation);
@@ -1604,7 +1604,7 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	const char *no_attrs[] = { NULL };
+	const char * const no_attrs[] = { NULL };
 	struct ldb_result *res;
 	const char *sam_accountname, *enc_str;
 	struct ldb_message_element *el;
@@ -1670,7 +1670,7 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 
 static int samldb_member_check(struct samldb_ctx *ac)
 {
-	static const char * const attrs[] = { "objectSid", "member", NULL };
+	const char * const attrs[] = { "objectSid", "member", NULL };
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_message_element *el;
 	struct ldb_dn *member_dn;
@@ -1812,7 +1812,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_message_element *el = NULL, *el2 = NULL;
 	struct ldb_message *msg;
-	const char *attrs[] = { "servicePrincipalName", NULL };
+	const char * const attrs[] = { "servicePrincipalName", NULL };
 	struct ldb_result *res;
 	const char *dns_hostname = NULL, *old_dns_hostname = NULL,
 		   *sam_accountname = NULL, *old_sam_accountname = NULL;
@@ -2340,8 +2340,8 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	NTSTATUS status;
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "objectSid", "isDeleted", NULL };
-	const char *noattrs[] = { NULL };
+	const char * const attrs[] = { "objectSid", "isDeleted", NULL };
+	const char * const noattrs[] = { NULL };
 
 	ldb = ldb_module_get_ctx(ac->module);
 
