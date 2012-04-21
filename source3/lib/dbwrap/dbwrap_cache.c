@@ -173,6 +173,14 @@ static int dbwrap_cache_exists(struct db_context *db, TDB_DATA key)
 	return dbwrap_exists(ctx->backing, key);
 }
 
+static void dbwrap_cache_id(struct db_context *db, const uint8_t **id,
+			    size_t *idlen)
+{
+	struct db_cache_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_cache_ctx);
+	return dbwrap_db_id(ctx->backing, id, idlen);
+}
+
 struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 				 struct db_context *backing)
 {
@@ -208,6 +216,7 @@ struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 	db->transaction_cancel = dbwrap_cache_transaction_cancel;
 	db->parse_record = dbwrap_cache_parse_record;
 	db->exists = dbwrap_cache_exists;
+	db->id = dbwrap_cache_id;
 	db->stored_callback = NULL;
 	db->wipe = NULL;
 	db->lock_order = 0;
