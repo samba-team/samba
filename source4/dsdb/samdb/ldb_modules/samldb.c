@@ -990,7 +990,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 	switch(ac->type) {
 	case SAMLDB_TYPE_USER: {
-		bool uac_generated = false;
+		bool uac_generated = false, uac_add_flags = false;
 
 		/* Step 1.2: Default values */
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
@@ -1032,6 +1032,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 				return ret;
 			}
 			uac_generated = true;
+			uac_add_flags = true;
 		}
 
 		el = ldb_msg_find_element(ac->msg, "userAccountControl");
@@ -1042,6 +1043,11 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
 									 "userAccountControl",
 									 0);
+			/* "userAccountControl" = 0 means "UF_NORMAL_ACCOUNT" */
+			if (user_account_control == 0) {
+				user_account_control = UF_NORMAL_ACCOUNT;
+				uac_generated = true;
+			}
 
 			/* Temporary duplicate accounts aren't allowed */
 			if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
@@ -1124,8 +1130,10 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			 * has been generated here (tested against Windows
 			 * Server) */
 			if (uac_generated) {
-				user_account_control |= UF_ACCOUNTDISABLE;
-				user_account_control |= UF_PASSWD_NOTREQD;
+				if (uac_add_flags) {
+					user_account_control |= UF_ACCOUNTDISABLE;
+					user_account_control |= UF_PASSWD_NOTREQD;
+				}
 
 				ret = samdb_msg_set_uint(ldb, ac->msg, ac->msg,
 							 "userAccountControl",

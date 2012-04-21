@@ -1425,15 +1425,19 @@ class SamTests(samba.tests.TestCase):
         # password yet.
         # With SYSTEM rights you can set a interdomain trust account.
 
-        # Invalid attribute
-        try:
-            ldb.add({
-                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectclass": "user",
-                "userAccountControl": "0"})
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": "user",
+            "userAccountControl": "0"})
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_PASSWD_NOTREQD == 0)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
 # This has to wait until s4 supports it (needs a password module change)
@@ -1647,15 +1651,19 @@ class SamTests(samba.tests.TestCase):
         # password yet.
         # With SYSTEM rights you can set a interdomain trust account.
 
-        # Invalid attribute
-        try:
-            ldb.add({
-                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                "objectclass": "computer",
-                "userAccountControl": "0"})
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "userAccountControl": "0"})
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_PASSWD_NOTREQD == 0)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
 # This has to wait until s4 supports it (needs a password module change)
