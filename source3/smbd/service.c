@@ -439,6 +439,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		 */
 
 		char *fuser;
+		char *sanitized_username;
 		struct auth_session_info *forced_serverinfo;
 		bool guest;
 
@@ -457,6 +458,16 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+
+		/* We don't want to replace the original sanitized_username
+		   as it is the original user given in the connect attempt.
+		   This is used in '%U' substitutions. */
+		sanitized_username = discard_const_p(char,
+			forced_serverinfo->unix_info->sanitized_username);
+		TALLOC_FREE(sanitized_username);
+		forced_serverinfo->unix_info->sanitized_username =
+			talloc_move(forced_serverinfo->unix_info,
+				&conn->session_info->unix_info->sanitized_username);
 
 		TALLOC_FREE(conn->session_info);
 		conn->session_info = forced_serverinfo;
