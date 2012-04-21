@@ -208,6 +208,7 @@ struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 	db->transaction_cancel = dbwrap_cache_transaction_cancel;
 	db->parse_record = dbwrap_cache_parse_record;
 	db->exists = dbwrap_cache_exists;
+	db->stored_callback = NULL;
 	db->wipe = NULL;
 	db->lock_order = 0;
 	db->persistent = false;
