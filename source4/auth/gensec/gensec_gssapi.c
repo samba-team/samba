@@ -434,8 +434,10 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				return nt_status;
 			}
 
+#ifdef SAMBA4_USES_HEIMDAL
 			send_to_kdc.func = smb_krb5_send_and_recv_func;
 			send_to_kdc.ptr = ev;
+#endif
 
 			min_stat = gsskrb5_set_send_to_kdc(&send_to_kdc);
 			if (min_stat) {
@@ -460,8 +462,10 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				gensec_gssapi_state->gss_oid = gss_oid_p;
 			}
 
+#ifdef SAMBA4_USES_HEIMDAL
 			send_to_kdc.func = smb_krb5_send_and_recv_func;
 			send_to_kdc.ptr = NULL;
+#endif
 
 			ret = gsskrb5_set_send_to_kdc(&send_to_kdc);
 			if (ret) {

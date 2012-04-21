@@ -86,6 +86,7 @@ static void smb_krb5_debug_wrapper(krb5_context context,
 }
 #endif
 
+#ifdef SAMBA4_USES_HEIMDAL
 /*
   handle recv events on a smb_krb5 socket
 */
@@ -213,7 +214,6 @@ static void smb_krb5_socket_handler(struct tevent_context *ev, struct tevent_fd 
 		break;
 	}
 }
-
 
 krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 					    void *data,
@@ -412,6 +412,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 	}
 	return KRB5_KDC_UNREACH;
 }
+#endif
 
 krb5_error_code
 smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
@@ -558,6 +559,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	return 0;
 }
 
+#ifdef SAMBA4_USES_HEIMDAL
 krb5_error_code smb_krb5_context_set_event_ctx(struct smb_krb5_context *smb_krb5_context,
 					       struct tevent_context *ev,
 					       struct tevent_context **previous_ev)
@@ -611,3 +613,4 @@ krb5_error_code smb_krb5_context_remove_event_ctx(struct smb_krb5_context *smb_k
 	}
 	return 0;
 }
+#endif

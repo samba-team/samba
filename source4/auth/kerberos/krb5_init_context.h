@@ -38,11 +38,19 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx, struct tevent_context *e
 				      struct loadparm_context *lp_ctx,
 				      struct smb_krb5_context **smb_krb5_context); 
 
+#ifdef SAMBA4_USES_HEIMDAL
 krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 					    void *data,
 					    krb5_krbhst_info *hi,
 					    time_t timeout,
 					    const krb5_data *send_buf,
 					    krb5_data *recv_buf);
+krb5_error_code smb_krb5_context_set_event_ctx(struct smb_krb5_context *smb_krb5_context,
+					       struct tevent_context *ev,
+					       struct tevent_context **previous_ev);
+krb5_error_code smb_krb5_context_remove_event_ctx(struct smb_krb5_context *smb_krb5_context,
+						  struct tevent_context *previous_ev,
+						  struct tevent_context *ev);
+#endif
 
 #endif /* _KRB5_INIT_CONTEXT_H_ */

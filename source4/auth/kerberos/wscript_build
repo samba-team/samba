@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 
+bld.SAMBA_SUBSYSTEM('KRB_INIT_CTX',
+		    source='krb5_init_context.c',
+		    deps='krb5 com_err'
+		   )
+
 bld.SAMBA_LIBRARY('authkrb5',
-                  source='kerberos.c kerberos_heimdal.c kerberos_pac.c krb5_init_context.c keytab_copy.c',
+                  source='kerberos.c kerberos_heimdal.c kerberos_pac.c keytab_copy.c',
                   autoproto='proto.h',
                   public_deps='krb5 ndr-krb5pac samba_socket LIBCLI_RESOLVE com_err asn1',
-                  deps='auth_sam_reply tevent LIBPACKET ndr ldb KRB5_WRAP errors',
+                  deps='auth_sam_reply tevent LIBPACKET ndr ldb KRB5_WRAP KRB_INIT_CTX errors',
                   private_library=True
                   )
 

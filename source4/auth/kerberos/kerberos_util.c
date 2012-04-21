@@ -224,11 +224,13 @@ static krb5_error_code impersonate_principal_from_credentials(
 	while (tries--) {
 		struct tevent_context *previous_ev;
 		/* Do this every time, in case we have weird recursive issues here */
+#ifdef SAMBA4_USES_HEIMDAL
 		ret = smb_krb5_context_set_event_ctx(smb_krb5_context, event_ctx, &previous_ev);
 		if (ret) {
 			talloc_free(mem_ctx);
 			return ret;
 		}
+#endif
 		if (password) {
 			ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
 							 princ, password,
@@ -251,7 +253,9 @@ static krb5_error_code impersonate_principal_from_credentials(
 				talloc_free(mem_ctx);
 				(*error_string) = "kinit_to_ccache: No password available for kinit\n";
 				krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
+#ifdef SAMBA4_USES_HEIMDAL
 				smb_krb5_context_remove_event_ctx(smb_krb5_context, previous_ev, event_ctx);
+#endif
 				return EINVAL;
 			}
 			ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
@@ -268,7 +272,9 @@ static krb5_error_code impersonate_principal_from_credentials(
 			}
 		}
 
+#ifdef SAMBA4_USES_HEIMDAL
 		smb_krb5_context_remove_event_ctx(smb_krb5_context, previous_ev, event_ctx);
+#endif
 
 		if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
 			/* Perhaps we have been given an invalid skew, so try again without it */
