@@ -28,6 +28,10 @@
 #define KRB5_PRIVATE    1       /* this file uses PRIVATE interfaces! */
 /* this file uses DEPRECATED interfaces! */
 
+#ifdef KRB5_DEPRECATED
+#undef KRB5_DEPRECATED
+#endif
+
 #if defined(HAVE_KRB5_DEPRECATED_WITH_IDENTIFIER)
 #define KRB5_DEPRECATED 1
 #else
