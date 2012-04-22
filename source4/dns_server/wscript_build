@@ -24,6 +24,6 @@ bld.SAMBA_LIBRARY('dlz_bind9_9',
                   cflags='-DBIND_VERSION_9_9',
                   private_library=True,
                   link_name='modules/bind9/dlz_bind9_9.so',
-                  realname='dlz_bind9.so',
+                  realname='dlz_bind9_9.so',
                   install_path='${MODULESDIR}/bind9',
                   deps='samba-hostconfig samdb gensec popt')
