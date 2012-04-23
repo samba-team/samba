@@ -185,6 +185,8 @@ else
 	failed=`expr $failed + 1`
 fi
 
+testfail "wbinfo --group-info against $TARGET with $USERNAME" $wbinfo --group-info $USERNAME && failed=`expr $failed + 1`
+
 gid=`echo $rawgid | sed 's/.*:\([0-9][0-9]*\):/\1/'`
 testit "wbinfo --gid-info against $TARGET" $wbinfo --gid-info $gid || failed=`expr $failed + 1`
 
