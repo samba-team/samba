@@ -622,7 +622,7 @@ daemons_start ()
 	daemons_start_1 $i "$@"
     done
 
-    local var_dir=$CTDB_DIR/tests/var
+    local var_dir=$(cd $CTDB_DIR/tests/var; echo $PWD)
 
     if [ -L /tmp/ctdb.socket -o ! -S /tmp/ctdb.socket ] ; then 
 	ln -sf $var_dir/sock.0 /tmp/ctdb.socket || return 1
