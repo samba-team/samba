@@ -283,8 +283,8 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 	sock->packet = packet_init(sock);
 	if (sock->packet == NULL) {
-		composite_error(c, NT_STATUS_NO_MEMORY);
 		talloc_free(sock);
+		composite_error(c, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
