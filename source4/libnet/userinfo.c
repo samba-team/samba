@@ -92,6 +92,7 @@ static void continue_userinfo_lookup(struct tevent_req *subreq)
 	   - we're looking for only one at the moment */
 	if (s->lookup.out.rids->count == 0) {
 		composite_error(c, NT_STATUS_NO_SUCH_USER);
+		return;
 	}
 
 	/* TODO: find proper status code for more than one rid found */

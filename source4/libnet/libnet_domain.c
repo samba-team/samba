@@ -1137,6 +1137,7 @@ static void continue_samr_close_handle(struct tevent_req *subreq)
 	/* did everything go fine ? */
 	if (!NT_STATUS_IS_OK(s->samrclose.out.result)) {
 		composite_error(c, s->samrclose.out.result);
+		return;
 	}
 
 	composite_done(c);
