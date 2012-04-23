@@ -196,7 +196,8 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 
 	/* Look up the table of registry I/O operations */
 
-	if ( !(key->ops = reghook_cache_find( key->name )) ) {
+	key->ops = reghook_cache_find( key->name );
+	if (key->ops == NULL) {
 		DEBUG(0,("reg_open_onelevel: Failed to assign "
 			 "registry_ops to [%s]\n", key->name ));
 		result = WERR_BADFILE;
