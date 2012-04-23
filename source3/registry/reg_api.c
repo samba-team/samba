@@ -152,7 +152,8 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if ( !(W_ERROR_IS_OK(result = regdb_open())) ) {
+	result = regdb_open();
+	if (!(W_ERROR_IS_OK(result))) {
 		goto done;
 	}
 
