@@ -746,6 +746,14 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 			return NULL;
 		}
 
+		/* We don't want to replace the original sanitized_username
+		   as it is the original user given in the connect attempt.
+		   This is used in '%U' substitutions. */
+		TALLOC_FREE(forced_serverinfo->sanitized_username);
+		forced_serverinfo->sanitized_username =
+			talloc_move(forced_serverinfo,
+					&conn->server_info->sanitized_username);
+
 		TALLOC_FREE(conn->server_info);
 		conn->server_info = forced_serverinfo;
 
