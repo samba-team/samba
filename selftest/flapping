@@ -15,7 +15,7 @@
 ^samba3.rpc.spoolss.*printserver.openprinter_badnamelist # # fails sometimes on sn-devel, but should be fixed
 ^samba3.rpc.spoolss.*printserver.enum_printers_servername # fails sometimes on sn-devel, but should be fixed
 ^samba3.rpc.spoolss.printer.*addprinterex.print_test # another intermittent failure
-.*printer.*print_test # fails on some hosts due to timing issues ?
 ^samba3.rap.printing # fails sometimes on sn-devel
+^samba3.rpc.spoolss.printer.*addprinter.print_test # fails on some hosts due to timing issues ?
 ^samba3.smb2.lock.*.rw-exclusive # another intermittent failure
 ^samba4.blackbox.gentest # is flakey due to timing
