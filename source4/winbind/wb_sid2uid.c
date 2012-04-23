@@ -84,8 +84,10 @@ static void sid2uid_recv_uid(struct composite_context *ctx)
 	    ids->xid.type == ID_TYPE_UID) {
 		state->uid = ids->xid.id;
 		composite_done(state->ctx);
+		return;
 	} else {
 		composite_error(state->ctx, NT_STATUS_INVALID_SID);
+		return;
 	}
 }
 

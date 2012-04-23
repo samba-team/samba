@@ -680,10 +680,11 @@ static void continue_groups_enumerated(struct tevent_req *subreq)
 
 		/* that's it */
 		composite_done(c);
-
+		return;
 	} else {
 		/* something went wrong */
 		composite_error(c, c->status);
+		return;
 	}
 }
 
