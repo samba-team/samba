@@ -259,13 +259,15 @@ WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 {
 	struct registry_key *direct_parent = parent;
 	WERROR err;
-	char *p, *path, *to_free;
+	char *p, *path;
 	size_t len;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!(path = SMB_STRDUP(name))) {
-		return WERR_NOMEM;
+	path = talloc_strdup(frame, name);
+	if (path == NULL) {
+		err = WERR_NOMEM;
+		goto error;
 	}
-	to_free = path;
 
 	len = strlen(path);
 
@@ -277,21 +279,18 @@ WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 		char *name_component;
 		struct registry_key *tmp;
 
-		if (!(name_component = SMB_STRNDUP(path, (p - path)))) {
+		name_component = talloc_strndup(frame, path, (p - path));
+		if (name_component == NULL) {
 			err = WERR_NOMEM;
 			goto error;
 		}
 
-		err = regkey_open_onelevel(mem_ctx, direct_parent,
+		err = regkey_open_onelevel(frame, direct_parent,
 					   name_component, parent->token,
 					   KEY_ENUMERATE_SUB_KEYS, &tmp);
-		SAFE_FREE(name_component);
 
 		if (!W_ERROR_IS_OK(err)) {
 			goto error;
-		}
-		if (direct_parent != parent) {
-			TALLOC_FREE(direct_parent);
 		}
 
 		direct_parent = tmp;
@@ -300,11 +299,9 @@ WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 
 	err = regkey_open_onelevel(mem_ctx, direct_parent, path, parent->token,
 				   desired_access, pkey);
- error:
-	if (direct_parent != parent) {
-		TALLOC_FREE(direct_parent);
-	}
-	SAFE_FREE(to_free);
+
+error:
+	talloc_free(frame);
 	return err;
 }
 
