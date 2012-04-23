@@ -131,8 +131,8 @@ static void continue_groupinfo_opengroup(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
-	if (!NT_STATUS_IS_OK(s->querygroupinfo.out.result)) {
-		composite_error(c, s->querygroupinfo.out.result);
+	if (!NT_STATUS_IS_OK(s->opengroup.out.result)) {
+		composite_error(c, s->opengroup.out.result);
 		return;
 	}
 
