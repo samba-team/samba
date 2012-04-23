@@ -558,6 +558,7 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	TALLOC_CTX *mem_ctx;
 	char *path, *end;
 	WERROR err;
+	uint32_t access_granted;
 
 	mem_ctx = talloc_new(ctx);
 	if (mem_ctx == NULL) {
@@ -618,14 +619,15 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	}
 
 	/*
-	 * We have to make a copy of the current key, as we opened it only
-	 * with ENUM_SUBKEY access.
+	 * We may (e.g. in the iteration) have opened the key with ENUM_SUBKEY.
+	 * Instead of re-opening the key with CREATE_SUB_KEY, we simply
+	 * duplicate the access check here and skip the expensive full open.
 	 */
-
-	err = reg_openkey(mem_ctx, key, "", KEY_CREATE_SUB_KEY,
-			  &create_parent);
-	if (!W_ERROR_IS_OK(err)) {
-		goto trans_done;
+	if (!regkey_access_check(key->key, KEY_CREATE_SUB_KEY, &access_granted,
+				 key->token))
+	{
+		err = WERR_ACCESS_DENIED;
+		goto done;
 	}
 
 	/*
@@ -641,7 +643,7 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	 * Now open the newly created key
 	 */
 
-	err = reg_openkey(ctx, create_parent, path, desired_access, pkey);
+	err = reg_openkey(ctx, key, path, desired_access, pkey);
 	if (W_ERROR_IS_OK(err) && (paction != NULL)) {
 		*paction = REG_CREATED_NEW_KEY;
 	}
