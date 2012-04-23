@@ -631,11 +631,6 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	 * Actually create the subkey
 	 */
 
-	err = fill_subkey_cache(create_parent);
-	if (!W_ERROR_IS_OK(err)) {
-		goto trans_done;
-	}
-
 	err = create_reg_subkey(key->key, path);
 	if (!W_ERROR_IS_OK(err)) {
 		goto trans_done;
