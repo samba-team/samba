@@ -337,6 +337,7 @@ static void continue_name_found(struct composite_context *ctx)
 	if (s->lookup.out.sid_type != SID_NAME_DOM_GRP &&
 	    s->lookup.out.sid_type != SID_NAME_ALIAS) {
 		composite_error(c, NT_STATUS_NO_SUCH_GROUP);
+		return;
 	}
 
 	/* prepare arguments for groupinfo call */
