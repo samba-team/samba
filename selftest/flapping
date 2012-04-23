@@ -12,7 +12,6 @@
 ^samba3.smbtorture_s3.*OPLOCK4 # fails sometimes on sn-devel
 ^samba4.nbt.winsreplication.owned # fails sometimes, timing related
 ^samba3.rpc.spoolss.*printserver.enum_printers_old # fails on some hosts due to timing issues ?
-^samba3.rpc.spoolss.*printserver.enum_printers_servername # fails sometimes on sn-devel, but should be fixed
 ^samba3.rpc.spoolss.printer.*addprinterex.print_test # another intermittent failure
 ^samba3.rap.printing # fails sometimes on sn-devel
 ^samba3.rpc.spoolss.printer.*addprinter.print_test # fails on some hosts due to timing issues ?
