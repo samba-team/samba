@@ -592,6 +592,8 @@ def symbols_dupcheck_binary(bld, binname, fail_on_error):
     symmap = {}
     for libpath in symlist:
         for sym in symlist[libpath]['PUBLIC']:
+            if sym == '_GLOBAL_OFFSET_TABLE_':
+                continue
             if not sym in symmap:
                 symmap[sym] = set()
             symmap[sym].add(libpath)
