@@ -178,7 +178,7 @@ static void dbwrap_cache_id(struct db_context *db, const uint8_t **id,
 {
 	struct db_cache_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_cache_ctx);
-	return dbwrap_db_id(ctx->backing, id, idlen);
+	dbwrap_db_id(ctx->backing, id, idlen);
 }
 
 struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
