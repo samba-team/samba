@@ -71,7 +71,7 @@ try_command_on_node -q 0,1,2 $CTDB_TEST_WRAPPER "ctdb_fetch_readonly_once </dev/
 # no delegations should have been created
 numreadonly=`try_command_on_node -v all $CTDB_TEST_WRAPPER ctdb cattdb test.tdb | grep READONLY | wc -l`
 [ "$numreadonly" != "0" ] && {
-    echo "BAD: readonly delegations were created byt the feature is not activated on the database"
+    echo "BAD: readonly delegations were created, but the feature is not activated on the database"
     exit 1
 }
 
