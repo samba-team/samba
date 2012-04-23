@@ -2395,6 +2395,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 				 "method succeeded but objects returned are %d (expected 1).\n",
 				 r->out.ctr->ctr3.count));
 			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
 		}
 
 		s->dest_dsa.ntds_guid	= r->out.ctr->ctr3.objects[0].guid;
@@ -2416,6 +2417,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 				 r->out.ctr->ctr2.dir_err,
 				 win_errstr(r->out.ctr->ctr2.extended_err)));
 			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
 		}
 
 		s->dest_dsa.ntds_guid	= r->out.ctr->ctr2.objects[0].guid;
