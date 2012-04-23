@@ -117,7 +117,7 @@ static WERROR fill_subkey_cache(struct registry_key *key)
 
 	if (fetch_reg_keys(key->key, key->subkeys) == -1) {
 		TALLOC_FREE(key->subkeys);
-		return WERR_NO_MORE_ITEMS;
+		return WERR_BADFILE;
 	}
 
 	return WERR_OK;
