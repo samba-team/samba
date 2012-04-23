@@ -130,8 +130,8 @@ static void continue_userinfo_openuser(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
-	if (!NT_STATUS_IS_OK(s->queryuserinfo.out.result)) {
-		composite_error(c, s->queryuserinfo.out.result);
+	if (!NT_STATUS_IS_OK(s->openuser.out.result)) {
+		composite_error(c, s->openuser.out.result);
 		return;
 	}
 
