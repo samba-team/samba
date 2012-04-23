@@ -138,7 +138,6 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	WERROR     	result = WERR_OK;
 	struct registry_key *regkey;
 	struct registry_key_handle *key;
-	struct regsubkey_ctr	*subkeys = NULL;
 
 	DEBUG(7,("regkey_open_onelevel: name = [%s]\n", name));
 
@@ -204,20 +203,12 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	/* check if the path really exists; failed is indicated by -1 */
-	/* if the subkey count failed, bail out */
+	/* FIXME: Existence is currently checked by fetching the subkeys */
 
-	result = regsubkey_ctr_init(key, &subkeys);
+	result = fill_subkey_cache(regkey);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
-
-	if ( fetch_reg_keys( key, subkeys ) == -1 )  {
-		result = WERR_BADFILE;
-		goto done;
-	}
-
-	TALLOC_FREE( subkeys );
 
 	if ( !regkey_access_check( key, access_desired, &key->access_granted,
 				   token ) ) {
