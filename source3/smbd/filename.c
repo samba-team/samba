@@ -1276,7 +1276,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
  * @param ctx		talloc_ctx to allocate memory with.
  * @param conn		connection struct for vfs calls.
  * @param dfs_path	Whether this path requires dfs resolution.
- * @param smbreq	SMB request if we're using privilages.
+ * @param smbreq	SMB request if we're using privileges.
  * @param name_in	The unconverted name.
  * @param ucf_flags	flags to pass through to unix_convert().
  *			UCF_ALWAYS_ALLOW_WCARD_LCOMP will be OR'd in if
