@@ -1,7 +1,5 @@
 #!/bin/sh
 
-: ${FAKE_IP_STATE:=${PWD}/var/fake-ip-state}
-
 not_implemented ()
 {
     echo "ip stub command: \"$1\" not implemented"
