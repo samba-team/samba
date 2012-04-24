@@ -100,6 +100,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq);
 NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 {
 	const uint8_t *inbody;
+	const struct iovec *indyniov;
 	int i = smb2req->current_idx;
 	uint8_t in_oplock_level;
 	uint32_t in_impersonation_level;
@@ -163,18 +164,19 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 		name_offset = in_name_offset - dyn_offset;
 	}
 
-	if (name_offset > smb2req->in.vector[i+2].iov_len) {
+	indyniov = &smb2req->in.vector[i+2];
+
+	if (name_offset > indyniov->iov_len) {
 		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	name_available_length = smb2req->in.vector[i+2].iov_len - name_offset;
+	name_available_length = indyniov->iov_len - name_offset;
 
 	if (in_name_length > name_available_length) {
 		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	in_name_buffer.data = (uint8_t *)smb2req->in.vector[i+2].iov_base +
-			      name_offset;
+	in_name_buffer.data = (uint8_t *)indyniov->iov_base + name_offset;
 	in_name_buffer.length = in_name_length;
 
 	if (in_context_offset == 0 && in_context_length == 0) {
@@ -186,18 +188,18 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 		context_offset = in_context_offset - dyn_offset;
 	}
 
-	if (context_offset > smb2req->in.vector[i+2].iov_len) {
+	if (context_offset > indyniov->iov_len) {
 		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	context_available_length = smb2req->in.vector[i+2].iov_len - context_offset;
+	context_available_length = indyniov->iov_len - context_offset;
 
 	if (in_context_length > context_available_length) {
 		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	in_context_buffer.data = (uint8_t *)smb2req->in.vector[i+2].iov_base +
-				  context_offset;
+	in_context_buffer.data = (uint8_t *)indyniov->iov_base +
+		context_offset;
 	in_context_buffer.length = in_context_length;
 
 	/*
