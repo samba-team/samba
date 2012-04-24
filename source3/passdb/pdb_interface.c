@@ -196,27 +196,13 @@ static struct pdb_methods *pdb_get_methods_reload( bool reload )
 	if ( pdb && reload ) {
 		pdb->free_private_data( &(pdb->private_data) );
 		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
-			char *msg = NULL;
-			if (asprintf(&msg, "pdb_get_methods_reload: "
-					"failed to get pdb methods for backend %s\n",
-					lp_passdb_backend()) > 0) {
-				smb_panic(msg);
-			} else {
-				smb_panic("pdb_get_methods_reload");
-			}
+			return NULL;
 		}
 	}
 
 	if ( !pdb ) {
 		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
-			char *msg = NULL;
-			if (asprintf(&msg, "pdb_get_methods_reload: "
-					"failed to get pdb methods for backend %s\n",
-					lp_passdb_backend()) > 0) {
-				smb_panic(msg);
-			} else {
-				smb_panic("pdb_get_methods_reload");
-			}
+			return NULL;
 		}
 	}
 
@@ -225,7 +211,21 @@ static struct pdb_methods *pdb_get_methods_reload( bool reload )
 
 static struct pdb_methods *pdb_get_methods(void)
 {
-	return pdb_get_methods_reload(False);
+	struct pdb_methods *pdb;
+
+	pdb = pdb_get_methods_reload(false);
+	if (!pdb) {
+		char *msg = NULL;
+		if (asprintf(&msg, "pdb_get_methods: "
+			     "failed to get pdb methods for backend %s\n",
+			     lp_passdb_backend()) > 0) {
+			smb_panic(msg);
+		} else {
+			smb_panic("pdb_get_methods");
+		}
+	}
+
+	return pdb;
 }
 
 struct pdb_domain_info *pdb_get_domain_info(TALLOC_CTX *mem_ctx)
