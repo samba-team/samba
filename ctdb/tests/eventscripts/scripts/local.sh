@@ -55,7 +55,8 @@ EOF
 fi
 
 export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_eventscripts"
-if [ "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/unit_eventscripts" ] ; then
+if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" -a \
+    "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/unit_eventscripts" ] ; then
     rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
 fi
 mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
