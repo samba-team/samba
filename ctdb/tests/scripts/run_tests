@@ -5,17 +5,18 @@ usage() {
 Usage: run_tests [OPTIONS] [TESTS]
 
 Options:
-	-s	Print a summary of tests results after running all tests
-	-l	Use local daemons for integration tests
-	-e	Exit on the first test failure
-	-v	Verbose - print test output for non-failures (only some tests)
-	-A	Use "cat -A" to print test output (only some tests)
-	-D	Show diff between failed/expected test output (some tests only)
-	-X	Trace certain scripts run by tests using -x (only some tests)
-	-d	Print descriptions of tests instead of filenames (dodgy!)
-	-H	No headers - for running single test with other wrapper
-	-q	Quiet - don't show tests being run (hint: use with -s)
-	-x	Trace this script with the -x option
+  -s		Print a summary of tests results after running all tests
+  -l		Use local daemons for integration tests
+  -e		Exit on the first test failure
+  -V <dir>	Use <dir> as $TEST_VAR_DIR
+  -v		Verbose - print test output for non-failures (only some tests)
+  -A		Use "cat -A" to print test output (only some tests)
+  -D		Show diff between failed/expected test output (some tests only)
+  -X		Trace certain scripts run by tests using -x (only some tests)
+  -d		Print descriptions of tests instead of filenames (dodgy!)
+  -H		No headers - for running single test with other wrapper
+  -q		Quiet - don't show tests being run (hint: use with -s)
+  -x		Trace this script with the -x option
 EOF
     exit 1
 }
@@ -39,8 +40,9 @@ export TEST_COMMAND_TRACE=false
 export TEST_CAT_RESULTS_OPTS=""
 export TEST_DIFF_RESULTS=false
 export TEST_LOCAL_DAEMONS  # No default, developer can "override"!
+export TEST_VAR_DIR=""
 
-temp=$(getopt -n "$prog" -o "xdehlqsvXADH" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "xdehlqsvV:XADH" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -55,6 +57,7 @@ while true ; do
 	-q) quiet=true ; shift ;;
 	-s) with_summary=true ; shift ;;
 	-v) TEST_VERBOSE=true ; shift ;;
+	-V) TEST_VAR_DIR="$2" ; shift 2 ;;
 	-X) TEST_COMMAND_TRACE=true ; shift ;;
 	-A) TEST_CAT_RESULTS_OPTS="-A" ; shift ;;
 	-D) TEST_DIFF_RESULTS=true ; shift ;;
@@ -168,6 +171,12 @@ run_one_test ()
 	echo "$t $_f" >>"$sf"
     fi
 }
+
+[ -n "$TEST_VAR_DIR" ] || TEST_VAR_DIR=$(mktemp -d)
+mkdir -p "$TEST_VAR_DIR"
+# Must be absolute
+TEST_VAR_DIR=$(cd "$TEST_VAR_DIR"; echo "$PWD")
+echo "TEST_VAR_DIR=$TEST_VAR_DIR"
 
 for f ; do
     if [ -d "$f" ] ; then
