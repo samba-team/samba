@@ -23,7 +23,7 @@ fi
 
 export CTDB_NODES_FILE
 
-export ONNODE_TESTS_VAR_DIR="${TEST_SUBDIR}/var"
+export ONNODE_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_onnode"
 mkdir -p "$ONNODE_TESTS_VAR_DIR"
 
 if [ -z "$CTDB_BASE" ] ; then

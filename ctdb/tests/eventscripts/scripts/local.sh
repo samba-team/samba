@@ -29,8 +29,8 @@ else
 fi
 export CTDB_BASE
 
-export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_SUBDIR}/var"
-if [ "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/var" ] ; then
+export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_eventscripts"
+if [ "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/unit_eventscripts" ] ; then
     rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
 fi
 mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
@@ -67,11 +67,6 @@ setup_generic ()
     for i in $(seq 1 3) ; do
 	_s="${EVENTSCRIPTS_TESTS_VAR_DIR}/shares/${i}_existing"
 	mkdir -p "$_s"
-	# Shares must begin with /
-	case "$_s" in
-	    /*) : ;;
-	    *) _s="${PWD}/$_s"
-	esac
 	FAKE_SHARES="${FAKE_SHARES}${FAKE_SHARES:+ }${_s}"
     done
 
