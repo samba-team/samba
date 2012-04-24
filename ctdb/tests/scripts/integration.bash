@@ -5,16 +5,14 @@
 # If we're not running on a real cluster then we need a local copy of
 # ctdb (and other stuff) in $PATH and we will use local daemons.
 if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
-    var_dir="${CTDB_DIR}/tests/var"
-
     export CTDB_NODES_SOCKETS=""
     for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
+	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${TEST_VAR_DIR}/sock.${i}"
     done
 
     PATH="${CTDB_DIR}/bin:${PATH}"
 
-    export CTDB_NODES="$var_dir/nodes.txt"
+    export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
 fi
 
 ######################################################################
@@ -485,28 +483,26 @@ daemons_stop ()
     echo "Sleeping for a while..."
     sleep_for 1
 
-    if pgrep -f $CTDB_DIR/bin/ctdbd >/dev/null ; then
+    local pat="ctdbd --socket=.* --nlist .* --nopublicipcheck"
+    if pgrep -f "$pat" >/dev/null ; then
 	echo "Killing remaining daemons..."
-	pkill -f $CTDB_DIR/bin/ctdbd
+	pkill -f "$pat"
 
-	if pgrep -f $CTDB_DIR/bin/ctdbd >/dev/null ; then
+	if pgrep -f "$pat" >/dev/null ; then
 	    echo "Once more with feeling.."
-	    pkill -9 $CTDB_DIR/bin/ctdbd
+	    pkill -9 -f "$pat"
 	fi
     fi
 
-    local var_dir=$CTDB_DIR/tests/var
-    rm -rf $var_dir/test.db
+    rm -rf "${TEST_VAR_DIR}/test.db"
 }
 
 daemons_setup ()
 {
-    local var_dir=$CTDB_DIR/tests/var
+    mkdir -p "${TEST_VAR_DIR}/test.db/persistent"
 
-    mkdir -p $var_dir/test.db/persistent
-
-    local public_addresses=$var_dir/public_addresses.txt
-    local no_public_addresses=$var_dir/no_public_addresses.txt
+    local public_addresses="${TEST_VAR_DIR}/public_addresses.txt"
+    local no_public_addresses="${TEST_VAR_DIR}/no_public_addresses.txt"
     rm -f $CTDB_NODES $public_addresses $no_public_addresses
 
     # If there are (strictly) greater than 2 nodes then we'll randomly
@@ -514,6 +510,16 @@ daemons_setup ()
     local no_public_ips=-1
     [ $TEST_LOCAL_DAEMONS -gt 2 ] && no_public_ips=$(($RANDOM % $TEST_LOCAL_DAEMONS))
     echo "$no_public_ips" >$no_public_addresses
+
+    # When running certain tests we add and remove eventscripts, so we
+    # need to be able to modify the events.d/ directory.  Therefore,
+    # we use a temporary events.d/ directory under $TEST_VAR_DIR.  We
+    # copy the actual test eventscript(s) in there from the original
+    # events.d/ directory that sits alongside $TEST_SCRIPT_DIR.
+    local top=$(dirname "$TEST_SCRIPTS_DIR")
+    local events_d="${top}/events.d"
+    mkdir -p "${TEST_VAR_DIR}/events.d"
+    cp -p "${events_d}/"* "${TEST_VAR_DIR}/events.d/"
 
     local i
     for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
@@ -536,10 +542,8 @@ daemons_start_1 ()
     local pnn="$1"
     shift # "$@" gets passed to ctdbd
 
-    local var_dir=$CTDB_DIR/tests/var
-
-    local public_addresses=$var_dir/public_addresses.txt
-    local no_public_addresses=$var_dir/no_public_addresses.txt
+    local public_addresses="${TEST_VAR_DIR}/public_addresses.txt"
+    local no_public_addresses="${TEST_VAR_DIR}/no_public_addresses.txt"
 
     local no_public_ips=-1
     [ -r $no_public_addresses ] && read no_public_ips <$no_public_addresses
@@ -548,7 +552,7 @@ daemons_start_1 ()
 	echo "Node $no_public_ips will have no public IPs."
     fi
 
-    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $CTDB_NODES --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 3 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent --dbdir-state=$var_dir/test.db/state"
+    local ctdb_options="--reclock=${TEST_VAR_DIR}/rec.lock --nlist $CTDB_NODES --nopublicipcheck --event-script-dir=${TEST_VAR_DIR}/events.d --logfile=${TEST_VAR_DIR}/daemons.log -d 3 --dbdir=${TEST_VAR_DIR}/test.db --dbdir-persistent=${TEST_VAR_DIR}/test.db/persistent --dbdir-state=${TEST_VAR_DIR}/test.db/state"
 
     if [ -z "$CTDB_TEST_REAL_CLUSTER" ]; then
         ctdb_options="$ctdb_options --public-interface=lo"
@@ -560,8 +564,9 @@ daemons_start_1 ()
 	ctdb_options="$ctdb_options --public-addresses=$public_addresses"
     fi
 
-    # Need full path so we can use "pkill -f" to kill the daemons.
-    $VALGRIND $CTDB_DIR/bin/ctdbd --socket=$var_dir/sock.$pnn $ctdb_options "$@" ||return 1
+    # We'll use "pkill -f" to kill the daemons with
+    # "--socket=.* --nlist .* --nopublicipcheck" as context.
+    $VALGRIND ctdbd --socket="${TEST_VAR_DIR}/sock.$pnn" $ctdb_options "$@" ||return 1
 }
 
 daemons_start ()
@@ -574,10 +579,8 @@ daemons_start ()
 	daemons_start_1 $i "$@"
     done
 
-    local var_dir=$(cd $CTDB_DIR/tests/var; echo $PWD)
-
     if [ -L /tmp/ctdb.socket -o ! -S /tmp/ctdb.socket ] ; then 
-	ln -sf $var_dir/sock.0 /tmp/ctdb.socket || return 1
+	ln -sf "${TEST_VAR_DIR}/sock.0" /tmp/ctdb.socket || return 1
     fi
 }
 
@@ -743,7 +746,7 @@ install_eventscript ()
 	# nodes.
 	onnode all "f=\"\${CTDB_BASE:-/etc/ctdb}/events.d/${script_name}\" ; echo \"Installing \$f\" ; echo '${script_contents}' > \"\$f\" ; chmod 755 \"\$f\""
     else
-	f="${CTDB_DIR}/tests/events.d/${script_name}"
+	f="${TEST_VAR_DIR}/events.d/${script_name}"
 	echo "$script_contents" >"$f"
 	chmod 755 "$f"
     fi
@@ -756,7 +759,7 @@ uninstall_eventscript ()
     if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 	onnode all "rm -vf \"\${CTDB_BASE:-/etc/ctdb}/events.d/${script_name}\""
     else
-	rm -vf "${CTDB_DIR}/tests/events.d/${script_name}"
+	rm -vf "${TEST_VAR_DIR}/events.d/${script_name}"
     fi
 }
 
