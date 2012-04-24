@@ -29,6 +29,31 @@ else
 fi
 export CTDB_BASE
 
+if [ ! -d "${CTDB_BASE}/events.d" ] ; then
+    cat <<EOF
+ERROR: Directory ${CTDB_BASE}/events.d does not exist.
+
+That means that no eventscripts can be tested.
+
+One possible explanation:
+
+  You have CTDB installed via RPMs (or similar), so the regular
+  CTDB_BASE directory is in /etc/ctdb/
+
+  BUT
+
+  You have done a regular "configure" and "make install" so the tests
+  are installed under /usr/local/.
+
+If so, one possible hack to fix this is to create a symlink:
+
+  ln -s /etc/ctdb /usr/local/etc/ctdb
+
+This is nasty but it works...  :-)
+EOF
+    exit 1
+fi
+
 export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_eventscripts"
 if [ "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/unit_eventscripts" ] ; then
     rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
