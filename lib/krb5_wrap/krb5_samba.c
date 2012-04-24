@@ -39,6 +39,7 @@
 #define GSSAPI_BNDLENGTH     16                 /* Bind Length (rfc-1964 pg.3) */
 #define GSSAPI_CHECKSUM_SIZE (4+GSSAPI_BNDLENGTH+4) /* Length of bind length,
 							bind field, flags field. */
+#define GSS_C_DELEG_FLAG 1
 
 /* MIT krb5 1.7beta3 (in Ubuntu Karmic) is missing the prototype,
    but still has the symbol */

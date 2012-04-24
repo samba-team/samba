@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "smb_krb5.h"
+#include "system/gssapi.h"
 #include "smb_ldap.h"
 #include "libads/ads_status.h"
 

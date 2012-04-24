@@ -1,10 +1,10 @@
-#ifndef _system_kerberos_h
-#define _system_kerberos_h
+#ifndef _system_gssapi_h
+#define _system_gssapi_h
 
-/* 
+/*
    Unix SMB/CIFS implementation.
 
-   kerberos system include wrappers
+   GSSAPI system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
 
@@ -27,14 +27,26 @@
 
 */
 
-#ifdef HAVE_KRB5
+#ifdef HAVE_LIBGSSAPI
 
-#if HAVE_KRB5_H
-#include <krb5.h>
+#ifdef HAVE_GSSAPI_GSSAPI_EXT_H
+#include <gssapi/gssapi_ext.h>
+#elif HAVE_GSSAPI_GSSAPI_H
+#include <gssapi/gssapi.h>
+#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
+#include <gssapi/gssapi_generic.h>
+#elif HAVE_GSSAPI_H
+#include <gssapi.h>
 #endif
 
-#if HAVE_COM_ERR_H
-#include <com_err.h>
+#if HAVE_GSSAPI_GSSAPI_KRB5_H
+#include <gssapi/gssapi_krb5.h>
+#endif
+
+#if HAVE_GSSAPI_GSSAPI_SPNEGO_H
+#include <gssapi/gssapi_spnego.h>
+#elif HAVE_GSSAPI_SPNEGO_H
+#include <gssapi_spnego.h>
 #endif
 
 #endif

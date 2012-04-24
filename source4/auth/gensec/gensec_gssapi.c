@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "system/kerberos.h"
+#include "system/gssapi.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
@@ -37,9 +38,6 @@
 #include "auth/gensec/gensec_toplevel_proto.h"
 #include "param/param.h"
 #include "auth/session_proto.h"
-#include <gssapi/gssapi.h>
-#include <gssapi/gssapi_krb5.h>
-#include <gssapi/gssapi_spnego.h>
 #include "gensec_gssapi.h"
 #include "lib/util/util_net.h"
 #include "auth/kerberos/pac_utils.h"

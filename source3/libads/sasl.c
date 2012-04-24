@@ -23,6 +23,7 @@
 #include "auth_generic.h"
 #include "ads.h"
 #include "smb_krb5.h"
+#include "system/gssapi.h"
 
 #ifdef HAVE_LDAP
 

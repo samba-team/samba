@@ -56,8 +56,10 @@ def s3_fix_kwargs(bld, kwargs):
     # local heimdal paths only included when USING_SYSTEM_KRB5 is not set
     if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
         extra_includes += [ '../source4/heimdal/lib/com_err',
+                            '../source4/heimdal/lib/krb5',
                             '../source4/heimdal/lib/gssapi',
-                            '../source4/heimdal_build' ]
+                            '../source4/heimdal_build',
+                            '../bin/default/source4/heimdal/lib/asn1' ]
 
     if bld.CONFIG_SET('BUILD_TDB2'):
         if bld.CONFIG_SET('USING_SYSTEM_TDB2'):

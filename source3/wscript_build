@@ -782,7 +782,7 @@ bld.SAMBA3_LIBRARY('util_cmdline',
 
 bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                     source=KRBCLIENT_SRC,
-                    public_deps='krb5samba k5crypto LIBTSOCKET CLDAP LIBNMB',
+                    public_deps='krb5samba k5crypto gssapi LIBTSOCKET CLDAP LIBNMB',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
@@ -875,7 +875,7 @@ bld.SAMBA3_LIBRARY('ads',
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,
-                    deps='SERVER_MUTEX ndr-krb5pac krb5samba',
+                    deps='SERVER_MUTEX ndr-krb5pac krb5samba gssapi',
 		    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',

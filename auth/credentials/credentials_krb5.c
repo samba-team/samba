@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "system/gssapi.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_proto.h"

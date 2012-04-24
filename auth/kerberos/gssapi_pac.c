@@ -21,7 +21,6 @@
 #include "includes.h"
 #ifdef HAVE_KRB5
 
-#include "lib/krb5_wrap/krb5_samba.h"
 #include "auth/kerberos/pac_utils.h"
 
 #if 0
