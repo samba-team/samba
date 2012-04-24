@@ -10,7 +10,11 @@ if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
 	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${TEST_VAR_DIR}/sock.${i}"
     done
 
-    PATH="${CTDB_DIR}/bin:${PATH}"
+    # Use in-tree binaries if running against local daemons.
+    # Otherwise CTDB need to be installed on all nodes.
+    if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
+	PATH="${ctdb_dir}/bin:${PATH}"
+    fi
 
     export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
 fi
