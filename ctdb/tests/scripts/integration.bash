@@ -129,59 +129,11 @@ ctdb_test_exit_hook_add ()
     ctdb_test_exit_hook="${ctdb_test_exit_hook}${ctdb_test_exit_hook:+ ; }$*"
 }
 
-ctdb_test_usage()
-{
-    local status=${1:-2}
-
-    cat <<EOF
-Usage: $0 [option]
-
-Options:
-    -h, --help          show this screen.
-    -v, --version       show test case version.
-    --category          show the test category (ACL, CTDB, Samba ...).
-    -d, --description   show test case description.
-    --summary           show short test case summary.
-    -x                  trace test using set -x
-EOF
-
-    exit $status
-}
-
-ctdb_test_version ()
-{
-    [ -n "$CTDB_DIR" ] || die "Can not determine version."
-
-    (cd "$CTDB_DIR" && git describe)
-}
-
-ctdb_test_cmd_options()
-{
-    [ -n "$1" ] || return 0
-
-    case "$1" in
-        -h|--help)        ctdb_test_usage 0   ;;
-        -v|--version)     ctdb_test_version   ;;
-        --category)       echo "CTDB"         ;;
-        -d|--description) test_info           ;;
-	-x)               set -x ; return 0   ;;
-	*)
-	    echo "Error: Unknown parameter = $1"
-	    echo
-	    ctdb_test_usage 2
-	    ;;
-    esac
-
-    exit 0
-}
-
 ctdb_test_init ()
 {
     scriptname=$(basename "$0")
     testfailures=0
     ctdb_test_restart_scheduled=false
-
-    ctdb_test_cmd_options $@
 
     trap "ctdb_test_exit" 0
 }
