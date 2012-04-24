@@ -49,8 +49,7 @@ static NTSTATUS fill_normal_dfs_referraltype(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(ref);
 	switch (version) {
 	case 4:
-		version = 3;
-# if 0
+		ref->version = version;
 		/* For the moment there is a bug with XP that don't seems to appriciate much
 		 * level4 so we return just level 3 for everyone
 		 */
@@ -75,7 +74,6 @@ static NTSTATUS fill_normal_dfs_referraltype(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		return NT_STATUS_OK;
-#endif
 	case 3:
 		ref->version = version;
 		ref->referral.v3.server_type = DFS_SERVER_NON_ROOT;
@@ -117,6 +115,13 @@ static NTSTATUS fill_domain_dfs_referraltype(TALLOC_CTX *mem_ctx,
 		DEBUG(8, ("Called fill_domain_dfs_referraltype\n"));
 		ref->version = version;
 		ref->referral.v3.server_type = DFS_SERVER_NON_ROOT;
+#if 0
+		/* We use to have variable size, on Windows 2008R2 it's the same
+		 * and it seems that it gives better results so ... let's use the same
+		 * size.
+		 *
+		 * Additional note: XP SP2 will ask for version 3 and SP3 for version 4.
+		 */
 		/*
 		 * It's hard coded ... don't think it's a good way but the
 		 * sizeof return not the correct values
@@ -130,8 +135,11 @@ static NTSTATUS fill_domain_dfs_referraltype(TALLOC_CTX *mem_ctx,
 		} else {
 			ref->referral.v3.size = 34;
 		}
+#endif
+		/* As seen in w2k8r2 it always return the null GUID */
+		ref->referral.v3.size = 34;
 		ref->referral.v3.entry_flags = DFS_FLAG_REFERRAL_DOMAIN_RESP;
-		ref->referral.v3.ttl = 600; /* As w2k3 */
+		ref->referral.v3.ttl = 600; /* As w2k3 and w2k8r2*/
 		ref->referral.v3.referrals.r2.special_name = talloc_strdup(mem_ctx,
 									domain);
 		if (ref->referral.v3.referrals.r2.special_name == NULL) {
