@@ -136,7 +136,7 @@ clean_up_table_ids ()
     # Even if this didn't exist on the system, adding a route will
     # have created it.  What if we startup and immediately shutdown?
     if [ ! -f "$_f" ] ; then
-	mkdir -p $(basename "$_f")
+	mkdir -p $(dirname "$_f")
 	touch "$_f"
     fi
 
