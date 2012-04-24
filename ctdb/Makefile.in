@@ -364,6 +364,10 @@ install_pmda:
 	$(INSTALLCMD) -m 644 pmda/pmns pmda/domain.h pmda/help pmda/README $(PMDA_DEST_DIR)
 	$(INSTALLCMD) -m 755 bin/pmdactdb $(PMDA_DEST_DIR)
 
+# Should use $(datarootdir) but older autoconfs don't do this.  :-(
+install_tests: all
+	tests/INSTALL --destdir=$(DESTDIR) --datarootdir=$(prefix)/share --libdir=$(libdir) --bindir=$(bindir) --etcdir=$(etcdir)
+
 test: all
 	tests/run_tests.sh
 
