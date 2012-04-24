@@ -210,18 +210,17 @@ char *smb_get_krb5_error_message(krb5_context context,
 				 krb5_error_code code,
 				 TALLOC_CTX *mem_ctx);
 
-int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
-			const char *principal, time_t time_offset,
-			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5,
-			uint32_t extra_ap_opts, const char *ccname,
-			time_t *tgs_expire,
-			const char *impersonate_princ_s);
-
 bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *edata,
 			   DATA_BLOB *edata_out);
 
 #endif /* HAVE_KRB5 */
 
+int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
+			const char *principal, time_t time_offset,
+			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5,
+			uint32_t extra_ap_opts, const char *ccname,
+			time_t *tgs_expire,
+			const char *impersonate_princ_s);
 
 #endif /* _KRB5_SAMBA_H */

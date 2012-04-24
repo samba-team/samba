@@ -31,9 +31,10 @@
 #include "librpc/crypto/gse.h"
 #include "auth/gensec/gensec.h"
 #include "../libcli/auth/spnego.h"
-#include "auth/kerberos/pac_utils.h"
 
 #ifdef HAVE_KRB5
+
+#include "auth/kerberos/pac_utils.h"
 
 struct smb_krb5_context;
 

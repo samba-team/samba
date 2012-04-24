@@ -45,7 +45,10 @@
 #include "source3/include/auth.h"
 #include "source3/auth/proto.h"
 #include "nsswitch/libwbclient/wbclient.h"
+
+#if HAVE_KRB5
 #include "auth/kerberos/pac_utils.h"
+#endif
 
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"

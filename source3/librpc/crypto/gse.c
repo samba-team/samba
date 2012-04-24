@@ -28,10 +28,10 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "../librpc/gen_ndr/dcerpc.h"
-#include "auth/kerberos/pac_utils.h"
 
 #if defined(HAVE_KRB5)
 
+#include "auth/kerberos/pac_utils.h"
 #include "gse_krb5.h"
 
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
