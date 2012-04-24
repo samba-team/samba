@@ -260,6 +260,7 @@ static void continue_userinfo_closeuser(struct tevent_req *subreq)
  * @param io arguments and results of the call
  */
 struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
+						   TALLOC_CTX *mem_ctx,
 						   struct libnet_rpc_userinfo *io,
 						   void (*monitor)(struct monitor_msg*))
 {
@@ -270,7 +271,7 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 
 	if (!p || !io) return NULL;
 	
-	c = composite_create(p, dcerpc_event_context(p));
+	c = composite_create(mem_ctx, dcerpc_event_context(p));
 	if (c == NULL) return c;
 	
 	s = talloc_zero(c, struct userinfo_state);
@@ -370,6 +371,6 @@ NTSTATUS libnet_rpc_userinfo(struct dcerpc_pipe *p,
 			     TALLOC_CTX *mem_ctx,
 			     struct libnet_rpc_userinfo *io)
 {
-	struct composite_context *c = libnet_rpc_userinfo_send(p, io, NULL);
+	struct composite_context *c = libnet_rpc_userinfo_send(p, mem_ctx, io, NULL);
 	return libnet_rpc_userinfo_recv(c, mem_ctx, io);
 }

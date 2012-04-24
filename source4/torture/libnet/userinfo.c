@@ -85,7 +85,7 @@ static bool test_userinfo_async(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing async libnet_rpc_userinfo (SID argument)\n");
 
-	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
+	c = libnet_rpc_userinfo_send(p, mem_ctx, &user, msg_handler);
 	torture_assert(tctx, c != NULL, "Failed to call async libnet_rpc_userinfo_send");
 
 	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
@@ -100,7 +100,7 @@ static bool test_userinfo_async(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing async libnet_rpc_userinfo (username argument)\n");
 
-	c = libnet_rpc_userinfo_send(p, &user, msg_handler);
+	c = libnet_rpc_userinfo_send(p, mem_ctx, &user, msg_handler);
 	torture_assert(tctx, c != NULL, "Failed to call async libnet_rpc_userinfo_send");
 
 	status = libnet_rpc_userinfo_recv(c, mem_ctx, &user);
