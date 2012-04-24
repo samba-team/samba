@@ -247,8 +247,8 @@ static int net_getlocalsid(struct net_context *c, int argc, const char **argv)
 	}
 
 	if(!initialize_password_db(false, NULL)) {
-		DEBUG(0, ("WARNING: Could not open passdb - local sid may not reflect passdb\n"
-			  "backend knowledge (such as the sid stored in LDAP)\n"));
+		d_fprintf(stderr, _("WARNING: Could not open passdb\n"));
+		return 1;
 	}
 
 	/* first check to see if we can even access secrets, so we don't
@@ -327,10 +327,8 @@ static int net_getdomainsid(struct net_context *c, int argc, const char **argv)
 	}
 
 	if(!initialize_password_db(false, NULL)) {
-		DEBUG(0, ("WARNING: Could not open passdb - domain SID may "
-			  "not reflect passdb\n"
-			  "backend knowledge (such as the SID stored in "
-			  "LDAP)\n"));
+		d_fprintf(stderr, _("WARNING: Could not open passdb\n"));
+		return 1;
 	}
 
 	/* first check to see if we can even access secrets, so we don't
