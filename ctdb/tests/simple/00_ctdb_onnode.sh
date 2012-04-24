@@ -33,6 +33,6 @@ onnode all onnode all true
 # each node that we can examine later if tests fail weirdly.
 if [ -z "$TEST_LOCAL_DAEMONS" -a -n "$CTDB_TEST_TIME_LOGGING" ] ; then
     echo "Starting time logging on each node..."
-    f="/var/log/ctdb.test.time.log"
+    f="${TEST_VAR_DIR}/ctdb.test.time.log"
     onnode -p all "[ -f $f ] || while : ; do date '+%s %N' ; sleep 1 ; done >$f 2>&1 </dev/null &"  &
 fi

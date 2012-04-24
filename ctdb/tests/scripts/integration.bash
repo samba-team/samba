@@ -49,7 +49,7 @@ ctdb_check_time_logs ()
     local ds_prev=""
     local node=""
 
-    out=$(onnode all tail -n 20 /var/log/ctdb.test.time.log 2>&1)
+    out=$(onnode all tail -n 20 "${TEST_VAR_DIR}/ctdb.test.time.log" 2>&1)
 
     if [ $? -eq 0 ] ; then
 	local line
