@@ -2019,7 +2019,7 @@ _PUBLIC_ char *talloc_strdup_append_buffer(char *s, const char *a)
 _PUBLIC_ char *talloc_strndup_append(char *s, const char *a, size_t n)
 {
 	if (unlikely(!s)) {
-		return talloc_strdup(NULL, a);
+		return talloc_strndup(NULL, a, n);
 	}
 
 	if (unlikely(!a)) {
@@ -2038,7 +2038,7 @@ _PUBLIC_ char *talloc_strndup_append_buffer(char *s, const char *a, size_t n)
 	size_t slen;
 
 	if (unlikely(!s)) {
-		return talloc_strdup(NULL, a);
+		return talloc_strndup(NULL, a, n);
 	}
 
 	if (unlikely(!a)) {
