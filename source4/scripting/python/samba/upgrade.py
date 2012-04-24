@@ -536,16 +536,16 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
         if group.sid_name_use == lsa.SID_NAME_ALIAS:
             try:
                 members = s3db.enum_aliasmem(group.sid)
-            except passdb.error:
+            except passdb.error, e:
                 logger.warn("Ignoring group '%s' %s listed but then not found: %s",
-                            group.nt_name, group.sid, passdb.error)
+                            group.nt_name, group.sid, e)
                 continue
         elif group.sid_name_use == lsa.SID_NAME_DOM_GRP:
             try:
                 members = s3db.enum_group_members(group.sid)
-            except passdb.error:
+            except passdb.error, e:
                 logger.warn("Ignoring group '%s' %s listed but then not found: %s",
-                            group.nt_name, group.sid, passdb.error)
+                            group.nt_name, group.sid, e)
                 continue
             groupmembers[group.nt_name] = members
         elif group.sid_name_use == lsa.SID_NAME_WKN_GRP:
@@ -557,9 +557,9 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
             # A number of buggy databases mix up well known groups and aliases.
             try:
                 members = s3db.enum_aliasmem(group.sid)
-            except passdb.error:
+            except passdb.error, e:
                 logger.warn("Ignoring group '%s' %s listed but then not found: %s",
-                            group.nt_name, group.sid, passdb.error)
+                            group.nt_name, group.sid, e)
                 continue
         else:
             logger.warn("Ignoring group '%s' with sid_name_use=%d",
