@@ -1089,6 +1089,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				char *dir_name = NULL;
 				const char *last_component = NULL;
 				char *new_name = NULL;
+				int ret;
 
 				/* Last component didn't exist.
 				   Remove it and try and canonicalise
@@ -1114,18 +1115,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 						nt_errstr(status)));
 					return status;
 				}
-				new_name = talloc_asprintf(ctx,
-						"%s/%s",
-						resolved_name,
-						last_component);
-				if (!new_name) {
-					return NT_STATUS_NO_MEMORY;
-				}
+				ret = asprintf(&new_name, "%s/%s",
+					       resolved_name, last_component);
 				SAFE_FREE(resolved_name);
-				resolved_name = SMB_STRDUP(new_name);
-				if (!resolved_name) {
+				if (ret == -1) {
 					return NT_STATUS_NO_MEMORY;
 				}
+				resolved_name = new_name;
 				break;
 			}
 			default:
