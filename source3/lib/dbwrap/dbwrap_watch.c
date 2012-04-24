@@ -400,7 +400,7 @@ NTSTATUS dbwrap_record_watch_recv(struct tevent_req *req,
 		return status;
 	}
 	rec = dbwrap_fetch_locked(state->db, mem_ctx, state->key);
-	if (req == NULL) {
+	if (rec == NULL) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 	*prec = rec;
