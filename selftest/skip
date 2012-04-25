@@ -35,7 +35,6 @@
 ^samba3.smbtorture_s3.LOCAL-DBTRANS #hangs for some reason
 ^samba3.*base.charset
 ^samba3.*raw.acls
-^samba3.*raw.composite
 ^samba3.*raw.context
 ^samba3.*raw.ioctl
 ^samba3.*raw.qfileinfo
@@ -43,7 +42,6 @@
 ^samba3.*raw.sfileinfo.base
 ^samba3.smb2.hold-oplock                # Not a test, but a way to block other clients for a test
 ^samba3.smb2.scan                       # No tests
-^samba4.raw.composite
 ^samba4.base.iometer
 ^samba4.base.casetable
 ^samba4.base.nttrans

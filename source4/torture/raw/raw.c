@@ -61,7 +61,7 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_1smb_test(suite, "eas", torture_raw_eas);
 	torture_suite_add_suite(suite, torture_raw_streams(suite));
 	torture_suite_add_suite(suite, torture_raw_acls(suite));
-	torture_suite_add_1smb_test(suite, "composite", torture_raw_composite);
+	torture_suite_add_suite(suite, torture_raw_composite(suite));
 	torture_suite_add_simple_test(suite, "samba3hide", torture_samba3_hide);
 	torture_suite_add_simple_test(suite, "samba3closeerr", torture_samba3_closeerr);
 	torture_suite_add_simple_test(suite, "samba3rootdirfid",

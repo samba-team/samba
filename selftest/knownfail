@@ -35,6 +35,7 @@
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,smb2,bigendian\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2,bigendian\]
+^samba3.raw.composite .appendacl # This needs ACL and IDMAP behaviour that s3 cannot provide, including mapping of arbitary sids.
 # these show that we still have some differences between our system
 # with our internal iconv because it passes except when we bypass our
 # internal iconv modules

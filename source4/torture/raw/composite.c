@@ -45,18 +45,22 @@ static void loadfile_complete(struct composite_context *c)
 /*
   test a simple savefile/loadfile combination
 */
-static bool test_loadfile(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_loadfile(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	const char *fname = BASEDIR "\\test.txt";
 	NTSTATUS status;
 	struct smb_composite_savefile io1;
-	struct smb_composite_loadfile io2;
+	struct smb_composite_loadfile *io2;
 	struct composite_context **c;
 	uint8_t *data;
 	size_t len = random() % 100000;
 	const int num_ops = 50;
 	int i;
 	int *count = talloc_zero(tctx, int);
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
 
 	data = talloc_array(tctx, uint8_t, len);
 
@@ -66,53 +70,39 @@ static bool test_loadfile(struct smbcli_state *cli, struct torture_context *tctx
 	io1.in.data  = data;
 	io1.in.size  = len;
 
-	printf("Testing savefile\n");
+	torture_comment(tctx, "Testing savefile\n");
 
 	status = smb_composite_savefile(cli->tree, &io1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("(%s) savefile failed: %s\n", __location__,nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "savefile failed");
 
-	io2.in.fname = fname;
-
-	printf("Testing parallel loadfile with %d ops\n", num_ops);
+	torture_comment(tctx, "Testing parallel loadfile with %d ops\n", num_ops);
 
 	c = talloc_array(tctx, struct composite_context *, num_ops);
+	io2 = talloc_zero_array(tctx, struct smb_composite_loadfile, num_ops);
 
 	for (i=0;i<num_ops;i++) {
-		c[i] = smb_composite_loadfile_send(cli->tree, &io2);
+		io2[i].in.fname = fname;
+		c[i] = smb_composite_loadfile_send(cli->tree, &io2[i]);
 		c[i]->async.fn = loadfile_complete;
 		c[i]->async.private_data = count;
 	}
 
-	printf("waiting for completion\n");
+	torture_comment(tctx, "waiting for completion\n");
 	while (*count != num_ops) {
 		tevent_loop_once(tctx->ev);
 		if (torture_setting_bool(tctx, "progress", true)) {
-			printf("(%s) count=%d\r", __location__, *count);
+			torture_comment(tctx, "(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
 	}
-	printf("count=%d\n", *count);
+	torture_comment(tctx, "count=%d\n", *count);
 	
 	for (i=0;i<num_ops;i++) {
 		status = smb_composite_loadfile_recv(c[i], tctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) loadfile[%d] failed - %s\n", __location__, i, nt_errstr(status));
-			return false;
-		}
+		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "loadfile failed");
 
-		if (io2.out.size != len) {
-			printf("(%s) wrong length in returned data - %d should be %d\n",__location__,
-			       io2.out.size, (int)len);
-			return false;
-		}
-		
-		if (memcmp(io2.out.data, data, len) != 0) {
-			printf("(%s) wrong data in loadfile!\n",__location__);
-			return false;
-		}
+		torture_assert_int_equal(tctx, io2[i].out.size, len, "wrong length in returned data");
+		torture_assert_mem_equal(tctx, io2[i].out.data, data, len, "wrong data in loadfile");
 	}
 
 	talloc_free(data);
@@ -120,10 +110,24 @@ static bool test_loadfile(struct smbcli_state *cli, struct torture_context *tctx
 	return true;
 }
 
+static bool test_loadfile_t(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	int ret;
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	ret = test_loadfile(tctx, cli);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
 /*
   test a simple savefile/loadfile combination
 */
-static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_fetchfile(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	const char *fname = BASEDIR "\\test.txt";
 	NTSTATUS status;
@@ -138,37 +142,42 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 	int *count = talloc_zero(tctx, int);
 	bool ret = true;
 
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
 	data = talloc_array(tctx, uint8_t, len);
 
 	generate_random_buffer(data, len);
 
+	ZERO_STRUCT(io1);
 	io1.in.fname = fname;
 	io1.in.data  = data;
 	io1.in.size  = len;
 
-	printf("Testing savefile\n");
+	torture_comment(tctx, "Testing savefile\n");
 
 	status = smb_composite_savefile(cli->tree, &io1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("(%s) savefile failed: %s\n",__location__, nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "savefile failed");
+
+	ZERO_STRUCT(io2);
 
 	io2.in.dest_host = torture_setting_string(tctx, "host", NULL);
 	io2.in.ports = lpcfg_smb_ports(tctx->lp_ctx);
 	io2.in.called_name = torture_setting_string(tctx, "host", NULL);
 	io2.in.service = torture_setting_string(tctx, "share", NULL);
 	io2.in.service_type = "A:";
+	io2.in.socket_options = lpcfg_socket_options(tctx->lp_ctx);
 
 	io2.in.credentials = cmdline_credentials;
 	io2.in.workgroup  = lpcfg_workgroup(tctx->lp_ctx);
 	io2.in.filename = fname;
-	io2.in.resolve_ctx = lpcfg_resolve_context(tctx->lp_ctx);
-	io2.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 	lpcfg_smbcli_options(tctx->lp_ctx, &io2.in.options);
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &io2.in.session_options);
+	io2.in.resolve_ctx = lpcfg_resolve_context(tctx->lp_ctx);
+	io2.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 
-	printf("Testing parallel fetchfile with %d ops\n", torture_numops);
+	torture_comment(tctx, "Testing parallel fetchfile with %d ops\n", torture_numops);
 
 	event_ctx = tctx->ev;
 	c = talloc_array(tctx, struct composite_context *, torture_numops);
@@ -179,40 +188,38 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 		c[i]->async.private_data = count;
 	}
 
-	printf("waiting for completion\n");
+	torture_comment(tctx, "waiting for completion\n");
 
 	while (*count != torture_numops) {
 		tevent_loop_once(event_ctx);
 		if (torture_setting_bool(tctx, "progress", true)) {
-			printf("(%s) count=%d\r", __location__, *count);
+			torture_comment(tctx, "(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
 	}
-	printf("count=%d\n", *count);
+	torture_comment(tctx, "count=%d\n", *count);
 
 	for (i=0;i<torture_numops;i++) {
 		status = smb_composite_fetchfile_recv(c[i], tctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) loadfile[%d] failed - %s\n", __location__, i,
-			       nt_errstr(status));
-			ret = false;
-			continue;
-		}
+		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "loadfile failed");
 
-		if (io2.out.size != len) {
-			printf("(%s) wrong length in returned data - %d "
-			       "should be %d\n", __location__,
-			       io2.out.size, (int)len);
-			ret = false;
-			continue;
-		}
-		
-		if (memcmp(io2.out.data, data, len) != 0) {
-			printf("(%s) wrong data in loadfile!\n", __location__);
-			ret = false;
-			continue;
-		}
+		torture_assert_int_equal(tctx, io2.out.size, len, "wrong length in returned data");
+		torture_assert_mem_equal(tctx, io2.out.data, data, len, "wrong data in loadfile");
 	}
+
+	return ret;
+}
+
+static bool test_fetchfile_t(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	int ret;
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	ret = test_fetchfile(tctx, cli);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -220,7 +227,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 /*
   test setfileacl
 */
-static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_appendacl(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	struct smb_composite_appendacl **io;
 	struct smb_composite_appendacl **io_orig;
@@ -238,6 +245,10 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 	NTSTATUS status;
 	int i;
 
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
 	io_orig = talloc_array(tctx, struct smb_composite_appendacl *, num_ops);
 
 	printf ("creating %d empty files and getting their acls with appendacl\n", num_ops);
@@ -249,7 +260,7 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 	  
 		status = smb_composite_savefile(cli->tree, &io1);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) savefile failed: %s\n", __location__, nt_errstr(status));
+			torture_comment(tctx, "(%s) savefile failed: %s\n", __location__, nt_errstr(status));
 			return false;
 		}
 
@@ -258,7 +269,7 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 		io_orig[i]->in.sd = security_descriptor_initialise(io_orig[i]);
 		status = smb_composite_appendacl(cli->tree, io_orig[i], io_orig[i]);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
+			torture_comment(tctx, "(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
 			return false;
 		}
 	}
@@ -278,13 +289,13 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 
 	status = security_descriptor_dacl_add(test_sd, ace);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
+		torture_comment(tctx, "(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
 		return false;
 	}
 
 	/* set parameters for appendacl async call */
 
-	printf("Testing parallel appendacl with %d ops\n", num_ops);
+	torture_comment(tctx, "Testing parallel appendacl with %d ops\n", num_ops);
 
 	c = talloc_array(tctx, struct composite_context *, num_ops);
 	io = talloc_array(tctx, struct  smb_composite_appendacl *, num_ops);
@@ -300,28 +311,28 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 	}
 
 	event_ctx = tctx->ev;
-	printf("waiting for completion\n");
+	torture_comment(tctx, "waiting for completion\n");
 	while (*count != num_ops) {
 		tevent_loop_once(event_ctx);
 		if (torture_setting_bool(tctx, "progress", true)) {
-			printf("(%s) count=%d\r", __location__, *count);
+			torture_comment(tctx, "(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
 	}
-	printf("count=%d\n", *count);
+	torture_comment(tctx, "count=%d\n", *count);
 
 	for (i=0; i < num_ops; i++) {
 		status = smb_composite_appendacl_recv(c[i], io[i]);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) appendacl[%d] failed - %s\n", __location__, i, nt_errstr(status));
+			torture_comment(tctx, "(%s) appendacl[%d] failed - %s\n", __location__, i, nt_errstr(status));
 			return false;
 		}
 		
 		security_descriptor_dacl_add(io_orig[i]->out.sd, ace);
-		if (!security_acl_equal(io_orig[i]->out.sd->dacl, io[i]->out.sd->dacl)) {
-			printf("(%s) appendacl[%d] failed - needed acl isn't set\n", __location__, i);
-			return false;
-		}
+		torture_assert(tctx,
+			       security_acl_equal(io_orig[i]->out.sd->dacl,
+						  io[i]->out.sd->dacl),
+			       "appendacl failed - needed acl isn't set");
 	}
 	
 
@@ -332,8 +343,22 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 	return true;
 }
 
+static bool test_appendacl_t(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	int ret;
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	ret = test_appendacl(tctx, cli);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
 /* test a query FS info by asking for share's GUID */
-static bool test_fsinfo(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_fsinfo(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	char *guid = NULL;
 	NTSTATUS status;
@@ -357,74 +382,68 @@ static bool test_fsinfo(struct smbcli_state *cli, struct torture_context *tctx)
 	io1.in.level = RAW_QFS_OBJECTID_INFORMATION;
 	io1.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 
-	printf("Testing parallel queryfsinfo [Object ID] with %d ops\n",
-		   torture_numops);
+	torture_comment(tctx, "Testing parallel queryfsinfo [Object ID] with %d ops\n",
+			torture_numops);
 
 	event_ctx = tctx->ev;
 	c = talloc_array(tctx, struct composite_context *, torture_numops);
 
 	for (i=0; i<torture_numops; i++) {
-		c[i] = smb_composite_fsinfo_send(cli->tree, &io1, lpcfg_resolve_context(tctx->lp_ctx));
+		c[i] = smb_composite_fsinfo_send(cli->tree, &io1, lpcfg_resolve_context(tctx->lp_ctx), event_ctx);
+		torture_assert(tctx, c[i], "smb_composite_fsinfo_send failed!");
 		c[i]->async.fn = loadfile_complete;
 		c[i]->async.private_data = count;
 	}
 
-	printf("waiting for completion\n");
+	torture_comment(tctx, "waiting for completion\n");
 
 	while (*count < torture_numops) {
 		tevent_loop_once(event_ctx);
 		if (torture_setting_bool(tctx, "progress", true)) {
-			printf("(%s) count=%d\r", __location__, *count);
+			torture_comment(tctx, "(%s) count=%d\r", __location__, *count);
 			fflush(stdout);
 		}
 	}
-	printf("count=%d\n", *count);
+	torture_comment(tctx, "count=%d\n", *count);
 
 	for (i=0;i<torture_numops;i++) {
 		status = smb_composite_fsinfo_recv(c[i], tctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("(%s) fsinfo[%d] failed - %s\n", __location__, i, nt_errstr(status));
-			ret = false;
-			continue;
-		}
+		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "smb_composite_fsinfo_recv failed");
 
-		if (io1.out.fsinfo->generic.level != RAW_QFS_OBJECTID_INFORMATION) {
-			printf("(%s) wrong level in returned info - %d "
-			       "should be %d\n", __location__,
-			       io1.out.fsinfo->generic.level, RAW_QFS_OBJECTID_INFORMATION);
-			ret = false;
-			continue;
-		}
+		torture_assert_int_equal(tctx, io1.out.fsinfo->generic.level, RAW_QFS_OBJECTID_INFORMATION, "wrong level in returned info");
 
 		guid=GUID_string(tctx, &io1.out.fsinfo->objectid_information.out.guid);
-		printf("[%d] GUID: %s\n", i, guid);
-
-		
+		torture_comment(tctx, "[%d] GUID: %s\n", i, guid);
 	}
 
 	return ret;
 }
 
-
-/* 
-   basic testing of libcli composite calls
-*/
-bool torture_raw_composite(struct torture_context *tctx, 
-			   struct smbcli_state *cli)
+static bool test_fsinfo_t(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	bool ret = true;
-
+	int ret;
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
 
-	ret &= test_fetchfile(cli, tctx);
-	ret &= test_loadfile(cli, tctx);
- 	ret &= test_appendacl(cli, tctx);
-	ret &= test_fsinfo(cli, tctx);
-
+	ret = test_fsinfo(tctx, cli);
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
+}
+
+/*
+   basic testing of all RAW_SEARCH_* calls using a single file
+*/
+struct torture_suite *torture_raw_composite(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "composite");
+
+	torture_suite_add_1smb_test(suite, "fetchfile", test_fetchfile_t);
+	torture_suite_add_1smb_test(suite, "loadfile", test_loadfile_t);
+	torture_suite_add_1smb_test(suite, "appendacl", test_appendacl_t);
+	torture_suite_add_1smb_test(suite, "fsinfo", test_fsinfo_t);
+
+	return suite;
 }
