@@ -180,7 +180,7 @@ NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, struct smb2_create_blobs *b,
 							       data.length);
 		NT_STATUS_HAVE_NO_MEMORY(b->blobs[b->num_blobs].data.data);
 	} else {
-		b->blobs[b->num_blobs].data = data_blob(NULL, 0);
+		b->blobs[b->num_blobs].data = data_blob_null;
 	}
 
 	b->num_blobs += 1;
