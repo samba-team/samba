@@ -47,8 +47,9 @@ struct smb_krb5_socket {
 	struct packet_context *packet;
 
 	size_t partial_read;
-
+#ifdef SAMBA4_USES_HEIMDAL
 	krb5_krbhst_info *hi;
+#endif
 };
 
 static krb5_error_code smb_krb5_context_destroy(struct smb_krb5_context *ctx)
@@ -68,10 +69,12 @@ static krb5_error_code smb_krb5_context_destroy(struct smb_krb5_context *ctx)
 	return 0;
 }
 
+#ifdef SAMBA4_USES_HEIMDAL
 /* We never close down the DEBUG system, and no need to unreference the use */
 static void smb_krb5_debug_close(void *private_data) {
 	return;
 }
+#endif
 
 #ifdef SAMBA4_USES_HEIMDAL
 static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *private_data)
@@ -421,8 +424,10 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 			    krb5_context *_krb5_context)
 {
 	krb5_error_code ret;
+#ifdef SAMBA4_USES_HEIMDAL
 	char **config_files;
 	const char *config_file, *realm;
+#endif
 	krb5_context krb5_ctx;
 
 	initialize_krb5_error_table();
@@ -434,6 +439,10 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 		return ret;
 	}
 
+	/* The MIT Kerberos build relies on using the system krb5.conf file.
+	 * If you really want to use another file please set KRB5_CONFIG
+	 * accordingly. */
+#ifdef SAMBA4_USES_HEIMDAL
 	config_file = lpcfg_config_path(tmp_ctx, lp_ctx, "krb5.conf");
 	if (!config_file) {
 		krb5_free_context(krb5_ctx);
@@ -468,7 +477,7 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 			return ret;
 		}
 	}
-
+#endif
 	*_krb5_context = krb5_ctx;
 	return 0;
 }
@@ -548,7 +557,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 #else
 	ret = krb5_set_trace_callback(kctx, smb_krb5_debug_wrapper, NULL);
 	if (ret && ret != KRB5_TRACE_NOSUPP) {
-		DEBUG(1, ("krb5_set_trace_callback failed (%s)\n"
+		DEBUG(1, ("krb5_set_trace_callback failed (%s)\n",
 			  smb_get_krb5_error_message(kctx, ret, tmp_ctx)));
 		talloc_free(tmp_ctx);
 		return ret;
