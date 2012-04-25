@@ -38,45 +38,12 @@
 #endif
 #endif /* NO_CONFIG_H */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
 #include <time.h>
-#include <string.h>
-#include <errno.h>
 #include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdarg.h>
 
 #ifdef HAVE_UUID_UUID_H
 #include <uuid/uuid.h>
-#endif
-
-#ifdef HAVE_KRB5_H
-#include <krb5.h>
-#endif
-
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-
-#ifndef int16
-#define int16 int16_t
-#endif
-
-#ifndef uint16
-#define uint16 uint16_t
-#endif
-
-#ifndef int32
-#define int32 int32_t
-#endif
-
-#ifndef uint32
-#define uint32 uint32_t
-#endif
 #endif
 
 #include <talloc.h>
