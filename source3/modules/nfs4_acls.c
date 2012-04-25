@@ -317,6 +317,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 			default:
 				DEBUG(8, ("invalid special who id %d "
 					"ignored\n", ace->who.special_id));
+				continue;
 			}
 		} else {
 			if (ace->aceFlags & SMB_ACE4_IDENTIFIER_GROUP) {
