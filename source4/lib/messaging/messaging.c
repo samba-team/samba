@@ -663,7 +663,8 @@ struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 {
 	struct server_id id;
 	ZERO_STRUCT(id);
-	id.pid = random() % 0x10000000;
+	id.pid = generate_random() % 0x10000000;
+
 	return imessaging_init(mem_ctx, lp_ctx, id, ev, true);
 }
 /*
