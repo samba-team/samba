@@ -28,7 +28,7 @@ configuration = "--configfile=$SMB_CONF_PATH"
 scriptdir=os.path.join(samba3srcdir, "../script/tests")
 
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
-                   "--target=samba3", "--basedir=$SELFTEST_TMPDIR",
+                   "--basedir=$SELFTEST_TMPDIR",
                    '--option="torture:winbindd_netbios_name=$SERVER"',
                    '--option="torture:winbindd_netbios_domain=$DOMAIN"', 
                    '--option=torture:sharedelay=100000',
@@ -53,8 +53,9 @@ def smb4torture_testsuites(prefix):
     return filter(lambda x: x.startswith(prefix), smb4torture_testsuite_list)
 
 def plansmbtorturetestsuite(name, env, options, description=''):
-    modname = "samba3.%s %s" % (name, description)
-    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
+    target = "samba3"
+    modname = "%s.%s %s" % (target, name, description)
+    cmdline = "%s $LISTOPT %s --target=%s %s" % (valgrindify(smb4torture), options, target, name)
     if smb4torture_possible:
         plantestsuite_loadlist(modname, env, cmdline)
 
