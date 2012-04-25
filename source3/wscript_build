@@ -156,17 +156,12 @@ LIBMSRPC_SRC = '''
 # registry-related objects
 #
 
-REG_INIT_BASIC_SRC = '''registry/reg_init_basic.c'''
 REG_INIT_SMBCONF_SRC = '''registry/reg_init_smbconf.c'''
 REG_INIT_FULL_SRC = '''registry/reg_init_full.c'''
 
 REGFIO_SRC = '''registry/regfio.c ${REG_PARSE_PRS_SRC}'''
 
 REG_API_REGF_SRC = '''registry/reg_api_regf.c'''
-
-REGSRCS_SRC = '''registry/reg_objects.c'''
-
-REG_BACKENDS_BASE_SRC = '''registry/reg_backend_db.c'''
 
 REG_BACKENDS_SMBCONF_SRC = '''registry/reg_backend_smbconf.c'''
 
@@ -182,14 +177,14 @@ REG_BACKENDS_EXTRA_SRC = '''registry/reg_backend_printing.c
 REG_BASE_SRC = '''registry/reg_api.c
                registry/reg_dispatcher.c
                registry/reg_cachehook.c
-               ${REGSRCS_SRC}
+               registry/reg_objects.c
                registry/reg_util_internal.c
                lib/util_nttoken.c
-               ${REG_BACKENDS_BASE_SRC}
+               registry/reg_backend_db.c
                registry/reg_parse_internal.c
-	       lib/cbuf.c
+               lib/cbuf.c
                lib/srprs.c
-               ${REG_INIT_BASIC_SRC}'''
+               registry/reg_init_basic.c'''
 
 REG_SMBCONF_SRC = '''
                   ${REG_BACKENDS_SMBCONF_SRC}
@@ -755,7 +750,6 @@ bld.SAMBA3_LIBRARY('smbregistry',
                    deps='''smbd_shim tdb-wrap3 NDR_SECURITY UTIL_TDB talloc
                    replace util_reg samba-util security
                    errors3 dbwrap samba3-util''',
-                   vars=locals(),
                    allow_undefined_symbols=True,
                    private_library=True)
 
