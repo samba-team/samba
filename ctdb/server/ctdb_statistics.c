@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include <string.h>
-#include "lib/tevent/tevent.h"
 #include "../include/ctdb_private.h"
 
 static void ctdb_statistics_update(struct event_context *ev, struct timed_event *te, 

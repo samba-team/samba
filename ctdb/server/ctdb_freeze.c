@@ -17,7 +17,6 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"

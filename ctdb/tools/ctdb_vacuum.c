@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "system/network.h"
 #include "../include/ctdb_client.h"

@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "lib/tdb/include/tdb.h"
 #include "system/time.h"
 #include "../include/ctdb_private.h"

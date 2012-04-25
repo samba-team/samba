@@ -89,53 +89,19 @@ int ev_set_blocking(int fd, bool set)
 #undef FLAG_TO_SET
 }
 
-static struct timeval tevent_before_wait_ts;
-static struct timeval tevent_after_wait_ts;
+bool ev_set_close_on_exec(int fd)
+{
+#ifdef FD_CLOEXEC
+	int val;
 
-/*
- * measure the time difference between multiple arrivals
- * to the point where we wait for new events to come in
- *
- * allows to measure how long it takes to work on a 
- * event
- */
-void tevent_before_wait(struct event_context *ev) {
-
-	struct timeval diff;
-	struct timeval now = tevent_timeval_current();
-
-	if (!tevent_timeval_is_zero(&tevent_after_wait_ts)) {
-		diff = tevent_timeval_until(&tevent_after_wait_ts, &now);
-		if (diff.tv_sec > 3) {
-			tevent_debug(ev, TEVENT_DEBUG_ERROR,  __location__ 
-				     " Handling event took %d seconds!",
-				     (int) diff.tv_sec);
+	val = fcntl(fd, F_GETFD, 0);
+	if (val >= 0) {
+		val |= FD_CLOEXEC;
+		val = fcntl(fd, F_SETFD, val);
+		if (val != -1) {
+			return true;
 		}
 	}
-
-	tevent_before_wait_ts = tevent_timeval_current();
-
-}
-
-/*
- * measure how long the select()/epoll() call took
- *
- * allows to measure how long we are waiting for new events
- */
-void tevent_after_wait(struct event_context *ev) {
-
-	struct timeval diff;
-	struct timeval now = tevent_timeval_current();
-
-	if (!tevent_timeval_is_zero(&tevent_before_wait_ts)) {
-		diff = tevent_timeval_until(&tevent_before_wait_ts, &now);
-		if (diff.tv_sec > 3) {
-			tevent_debug(ev, TEVENT_DEBUG_FATAL,  __location__
-				     " No event for %d seconds!",
-				     (int) diff.tv_sec);
-		}
-	}
-
-	tevent_after_wait_ts = tevent_timeval_current();
-
+#endif
+	return false;
 }

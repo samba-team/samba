@@ -11,6 +11,13 @@
 #include "idtree.h"
 #include "ctdb_client.h"
 
+/* Allow use of deprecated function tevent_loop_allow_nesting() */
+#define TEVENT_DEPRECATED
+/* Saves ctdb from massive churn. */
+#define TEVENT_COMPAT_DEFINES 1
+
+#include "tevent.h"
+
 typedef bool BOOL;
 
 #define True 1

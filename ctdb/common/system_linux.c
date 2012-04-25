@@ -23,7 +23,6 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
-#include "lib/tevent/tevent.h"
 #include <netinet/if_ether.h>
 #include <netinet/ip6.h>
 #include <netinet/icmp6.h>

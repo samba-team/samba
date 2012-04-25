@@ -23,7 +23,6 @@
 #include <pcp/impl.h>
 #include <pcp/pmda.h>
 #include "../../include/includes.h"
-#include "../../lib/tevent/tevent.h"
 #include "../../include/ctdb.h"
 #include "../../include/ctdb_private.h"
 #include "../../include/ctdb_protocol.h"

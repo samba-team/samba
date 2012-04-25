@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"

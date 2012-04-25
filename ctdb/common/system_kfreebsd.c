@@ -28,7 +28,6 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
-#include "lib/tevent/tevent.h"
 #include <net/ethernet.h>
 #include <netinet/ip6.h>
 #include <net/if_arp.h>

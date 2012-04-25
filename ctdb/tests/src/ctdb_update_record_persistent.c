@@ -19,7 +19,6 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
 #include "lib/util/db_wrap.h"
 #include "system/filesys.h"
 #include "popt.h"

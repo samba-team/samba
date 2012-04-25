@@ -64,9 +64,6 @@
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
-/* needed for the special ctdbd "track if time jumps unexpectedly */
-#include <time.h>
-
 struct tevent_ops_list {
 	struct tevent_ops_list *next, *prev;
 	const char *name;
@@ -91,7 +88,7 @@ bool tevent_register_backend(const char *name, const struct tevent_ops *ops)
 		}
 	}
 
-	e = talloc(talloc_autofree_context(), struct tevent_ops_list);
+	e = talloc(NULL, struct tevent_ops_list);
 	if (e == NULL) return false;
 
 	e->name = name;
@@ -107,8 +104,7 @@ bool tevent_register_backend(const char *name, const struct tevent_ops *ops)
 void tevent_set_default_backend(const char *backend)
 {
 	talloc_free(tevent_default_backend);
-	tevent_default_backend = talloc_strdup(talloc_autofree_context(),
-					       backend);
+	tevent_default_backend = talloc_strdup(NULL, backend);
 }
 
 /*
@@ -117,6 +113,7 @@ void tevent_set_default_backend(const char *backend)
 static void tevent_backend_init(void)
 {
 	tevent_select_init();
+	tevent_poll_init();
 	tevent_standard_init();
 #ifdef HAVE_EPOLL
 	tevent_epoll_init();
@@ -187,6 +184,17 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		 */
 		tevent_cleanup_pending_signal_handlers(se);
 	}
+
+	/* removing nesting hook or we get an abort when nesting is
+	 * not allowed. -- SSS
+	 * Note that we need to leave the allowed flag at its current
+	 * value, otherwise the use in tevent_re_initialise() will
+	 * leave the event context with allowed forced to false, which
+	 * will break users that expect nesting to be allowed
+	 */
+	ev->nesting.level = 0;
+	ev->nesting.hook_fn = NULL;
+	ev->nesting.hook_private = NULL;
 
 	return 0;
 }
@@ -394,7 +402,6 @@ struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
 
 /*
   schedule an immediate event
-  return NULL on failure
 */
 void _tevent_schedule_immediate(struct tevent_immediate *im,
 				struct tevent_context *ev,
@@ -581,14 +588,12 @@ done:
 	return ret;
 }
 
-
 /*
   return on failure or (with 0) if all fd events are removed
 */
 int tevent_common_loop_wait(struct tevent_context *ev,
 			    const char *location)
 {
-
 	/*
 	 * loop as long as we have events pending
 	 */

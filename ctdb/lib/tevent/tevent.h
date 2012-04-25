@@ -28,10 +28,6 @@
 #ifndef __TEVENT_H__
 #define __TEVENT_H__
 
-#ifndef TEVENT_DEPRECATED
-#define TEVENT_DEPRECATED
-#endif
-
 #include <stdint.h>
 #include <talloc.h>
 #include <sys/time.h>
@@ -115,7 +111,7 @@ typedef void (*tevent_signal_handler_t)(struct tevent_context *ev,
 struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 
 /**
- * @brief Create a event_context structure and name it.
+ * @brief Create a event_context structure and select a specific backend.
  *
  * This must be the first events call, and all subsequent calls pass this
  * event_context as the first element. Event handlers also receive this as
@@ -123,7 +119,7 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
- * @param[in]  name     The name for the tevent context.
+ * @param[in]  name     The name of the backend to use.
  *
  * @return              An allocated tevent context, NULL on error.
  */
@@ -140,7 +136,7 @@ struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx, const cha
 const char **tevent_backend_list(TALLOC_CTX *mem_ctx);
 
 /**
- * @brief Set the default tevent backent.
+ * @brief Set the default tevent backend.
  *
  * @param[in]  backend  The name of the backend to set.
  */
@@ -513,50 +509,121 @@ int tevent_set_debug_stderr(struct tevent_context *ev);
  * @defgroup tevent_request The tevent request functions.
  * @ingroup tevent
  *
- * This represents an async request being processed by callbacks via an event
- * context. A user can issue for example a write request to a socket, giving
- * an implementation function the fd, the buffer and the number of bytes to
- * transfer. The function issuing the request will immediately return without
- * blocking most likely without having sent anything. The API user then fills
- * in req->async.fn and req->async.private_data, functions that are called
- * when the request is finished.
+ * A tevent_req represents an asynchronous computation.
  *
- * It is up to the user of the async request to talloc_free it after it has
- * finished. This can happen while the completion function is called.
+ * The tevent_req group of API calls is the recommended way of
+ * programming async computations within tevent. In particular the
+ * file descriptor (tevent_add_fd) and timer (tevent_add_timed) events
+ * are considered too low-level to be used in larger computations. To
+ * read and write from and to sockets, Samba provides two calls on top
+ * of tevent_add_fd: read_packet_send/recv and writev_send/recv. These
+ * requests are much easier to compose than the low-level event
+ * handlers called from tevent_add_fd.
+ *
+ * A lot of the simplicity tevent_req has brought to the notoriously
+ * hairy async programming came via a set of conventions that every
+ * async computation programmed should follow. One central piece of
+ * these conventions is the naming of routines and variables.
+ *
+ * Every async computation needs a name (sensibly called "computation"
+ * down from here). From this name quite a few naming conventions are
+ * derived.
+ *
+ * Every computation that requires local state needs a
+ * @code
+ * struct computation_state {
+ *     int local_var;
+ * };
+ * @endcode
+ * Even if no local variables are required, such a state struct should
+ * be created containing a dummy variable. Quite a few helper
+ * functions and macros (for example tevent_req_create()) assume such
+ * a state struct.
+ *
+ * An async computation is started by a computation_send
+ * function. When it is finished, its result can be received by a
+ * computation_recv function. For an example how to set up an async
+ * computation, see the code example in the documentation for
+ * tevent_req_create() and tevent_req_post(). The prototypes for _send
+ * and _recv functions should follow some conventions:
+ *
+ * @code
+ * struct tevent_req *computation_send(TALLOC_CTX *mem_ctx,
+ *                                     struct tevent_req *ev,
+ *                                     ... further args);
+ * int computation_recv(struct tevent_req *req, ... further output args);
+ * @endcode
+ *
+ * The "int" result of computation_recv() depends on the result the
+ * sync version of the function would have, "int" is just an example
+ * here.
+ *
+ * Another important piece of the conventions is that the program flow
+ * is interrupted as little as possible. Because a blocking
+ * sub-computation requires that the flow needs to continue in a
+ * separate function that is the logical sequel of some computation,
+ * it should lexically follow sending off the blocking
+ * sub-computation. Setting the callback function via
+ * tevent_req_set_callback() requires referencing a function lexically
+ * below the call to tevent_req_set_callback(), forward declarations
+ * are required. A lot of the async computations thus begin with a
+ * sequence of declarations such as
+ *
+ * @code
+ * static void computation_step1_done(struct tevent_req *subreq);
+ * static void computation_step2_done(struct tevent_req *subreq);
+ * static void computation_step3_done(struct tevent_req *subreq);
+ * @endcode
+ *
+ * It really helps readability a lot to do these forward declarations,
+ * because the lexically sequential program flow makes the async
+ * computations almost as clear to read as a normal, sync program
+ * flow.
+ *
+ * It is up to the user of the async computation to talloc_free it
+ * after it has finished. If an async computation should be aborted,
+ * the tevent_req structure can be talloc_free'ed. After it has
+ * finished, it should talloc_free'ed by the API user.
  *
  * @{
  */
 
 /**
- * An async request moves between the following 4 states:
+ * An async request moves from TEVENT_REQ_INIT to
+ * TEVENT_REQ_IN_PROGRESS. All other states are valid after a request
+ * has finished.
  */
 enum tevent_req_state {
 	/**
-	 * we are creating the request
+	 * We are creating the request
 	 */
 	TEVENT_REQ_INIT,
 	/**
-	 * we are waiting the request to complete
+	 * We are waiting the request to complete
 	 */
 	TEVENT_REQ_IN_PROGRESS,
 	/**
-	 * the request is finished
+	 * The request is finished successfully
 	 */
 	TEVENT_REQ_DONE,
 	/**
-	 * A user error has occurred
+	 * A user error has occurred. The user error has been
+	 * indicated by tevent_req_error(), it can be retrieved via
+	 * tevent_req_is_error().
 	 */
 	TEVENT_REQ_USER_ERROR,
 	/**
-	 * Request timed out
+	 * Request timed out after the timeout set by tevent_req_set_endtime.
 	 */
 	TEVENT_REQ_TIMED_OUT,
 	/**
-	 * No memory in between
+	 * An internal allocation has failed, or tevent_req_nomem has
+	 * been given a NULL pointer as the first argument.
 	 */
 	TEVENT_REQ_NO_MEMORY,
 	/**
-	 * the request is already received by the caller
+	 * The request has been received by the caller. No further
+	 * action is valid.
 	 */
 	TEVENT_REQ_RECEIVED
 };
@@ -576,6 +643,9 @@ typedef void (*tevent_req_fn)(struct tevent_req *req);
 /**
  * @brief Set an async request callback.
  *
+ * See the documentation of tevent_req_post() for an example how this
+ * is supposed to be used.
+ *
  * @param[in]  req      The async request to set the callback.
  *
  * @param[in]  fn       The callback function to set.
@@ -587,8 +657,16 @@ void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt
 
 #ifdef DOXYGEN
 /**
- * @brief Get the private data casted to the given type for a callback from
+ * @brief Get the private data cast to the given type for a callback from
  *        a tevent request structure.
+ *
+ * @code
+ * static void computation_done(struct tevent_req *subreq) {
+ *     struct tevent_req *req = tevent_req_callback_data(subreq, struct tevent_req);
+ *     struct computation_state *state = tevent_req_data(req, struct computation_state);
+ *     .... more things, eventually maybe call tevent_req_done(req);
+ * }
+ * @endcode
  *
  * @param[in]  req      The structure to get the callback data from.
  *
@@ -623,11 +701,17 @@ void *tevent_req_callback_data_void(struct tevent_req *req);
 /**
  * @brief Get the private data from a tevent request structure.
  *
+ * When the tevent_req has been created by tevent_req_create, the
+ * result of tevent_req_data() is the state variable created by
+ * tevent_req_create() as a child of the req.
+ *
  * @param[in]  req      The structure to get the private data from.
+ *
+ * @param[in]  type	The type of the private data
  *
  * @return              The private data or NULL if not set.
  */
-void *tevent_req_data(struct tevent_req *req);
+void *tevent_req_data(struct tevent_req *req, #type);
 #else
 void *_tevent_req_data(struct tevent_req *req);
 #define tevent_req_data(_req, _type) \
@@ -759,22 +843,29 @@ bool _tevent_req_cancel(struct tevent_req *req, const char *location);
 /**
  * @brief Create an async tevent request.
  *
- * The new async request will be initialized in state ASYNC_REQ_IN_PROGRESS.
+ * The new async request will be initialized in state TEVENT_REQ_IN_PROGRESS.
+ *
+ * @code
+ * struct tevent_req *req;
+ * struct computation_state *state;
+ * req = tevent_req_create(mem_ctx, &state, struct computation_state);
+ * @endcode
+ *
+ * Tevent_req_create() creates the state variable as a talloc child of
+ * its result. The state variable should be used as the talloc parent
+ * for all temporary variables that are allocated during the async
+ * computation. This way, when the user of the async computation frees
+ * the request, the state as a talloc child will be free'd along with
+ * all the temporary variables hanging off the state.
  *
  * @param[in] mem_ctx   The memory context for the result.
- *
- * @param[in] pstate    The private state of the request.
- *
- * @param[in] state_size  The size of the private state of the request.
- *
+ * @param[in] pstate    Pointer to the private request state.
  * @param[in] type      The name of the request.
  *
  * @return              A new async request. NULL on error.
  */
 struct tevent_req *tevent_req_create(TALLOC_CTX *mem_ctx,
-				      void *pstate,
-				      size_t state_size,
-				      const char *type);
+				     void **pstate, #type);
 #else
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 				      void *pstate,
@@ -904,19 +995,52 @@ bool _tevent_req_nomem(const void *p,
 	_tevent_req_nomem(p, req, __location__)
 #endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Indicate out of memory to a request
+ *
+ * @param[in]  req      The request being processed.
+ */
+void tevent_req_oom(struct tevent_req *req);
+#else
+void _tevent_req_oom(struct tevent_req *req,
+		     const char *location);
+#define tevent_req_oom(req) \
+	_tevent_req_oom(req, __location__)
+#endif
+
 /**
  * @brief Finish a request before the caller had the change to set the callback.
  *
  * An implementation of an async request might find that it can either finish
- * the request without waiting for an external event, or it can't even start
+ * the request without waiting for an external event, or it can not even start
  * the engine. To present the illusion of a callback to the user of the API,
  * the implementation can call this helper function which triggers an
- * immediate timed event. This way the caller can use the same calling
+ * immediate event. This way the caller can use the same calling
  * conventions, independent of whether the request was actually deferred.
+ *
+ * @code
+ * struct tevent_req *computation_send(TALLOC_CTX *mem_ctx,
+ *                                     struct tevent_context *ev)
+ * {
+ *     struct tevent_req *req, *subreq;
+ *     struct computation_state *state;
+ *     req = tevent_req_create(mem_ctx, &state, struct computation_state);
+ *     if (req == NULL) {
+ *         return NULL;
+ *     }
+ *     subreq = subcomputation_send(state, ev);
+ *     if (tevent_req_nomem(subreq, req)) {
+ *         return tevent_req_post(req, ev);
+ *     }
+ *     tevent_req_set_callback(subreq, computation_done, req);
+ *     return req;
+ * }
+ * @endcode
  *
  * @param[in]  req      The finished request.
  *
- * @param[in]  ev       The tevent_context for the timed event.
+ * @param[in]  ev       The tevent_context for the immediate event.
  *
  * @return              The given request will be returned.
  */
@@ -924,11 +1048,51 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
 				   struct tevent_context *ev);
 
 /**
+ * @brief Finish multiple requests within one function
+ *
+ * Normally tevent_req_notify_callback() and all wrappers
+ * (e.g. tevent_req_done() and tevent_req_error())
+ * need to be the last thing an event handler should call.
+ * This is because the callback is likely to destroy the
+ * context of the current function.
+ *
+ * If a function wants to notify more than one caller,
+ * it is dangerous if it just triggers multiple callbacks
+ * in a row. With tevent_req_defer_callback() it is possible
+ * to set an event context that will be used to defer the callback
+ * via an immediate event (similar to tevent_req_post()).
+ *
+ * @code
+ * struct complete_state {
+ *       struct tevent_context *ev;
+ *
+ *       struct tevent_req **reqs;
+ * };
+ *
+ * void complete(struct complete_state *state)
+ * {
+ *       size_t i, c = talloc_array_length(state->reqs);
+ *
+ *       for (i=0; i < c; i++) {
+ *            tevent_req_defer_callback(state->reqs[i], state->ev);
+ *            tevent_req_done(state->reqs[i]);
+ *       }
+ * }
+ * @endcode
+ *
+ * @param[in]  req      The finished request.
+ *
+ * @param[in]  ev       The tevent_context for the immediate event.
+ *
+ * @return              The given request will be returned.
+ */
+void tevent_req_defer_callback(struct tevent_req *req,
+			       struct tevent_context *ev);
+
+/**
  * @brief Check if the given request is still in progress.
  *
  * It is typically used by sync wrapper functions.
- *
- * This function destroys the attached private data.
  *
  * @param[in]  req      The request to poll.
  *
@@ -967,7 +1131,21 @@ bool tevent_req_poll(struct tevent_req *req,
 		     struct tevent_context *ev);
 
 /**
- * @brief Get the tevent request and the actual error code you've set.
+ * @brief Get the tevent request state and the actual error set by
+ * tevent_req_error.
+ *
+ * @code
+ * int computation_recv(struct tevent_req *req, uint64_t *perr)
+ * {
+ *     enum tevent_req_state state;
+ *     uint64_t err;
+ *     if (tevent_req_is_error(req, &state, &err)) {
+ *         *perr = err;
+ *         return -1;
+ *     }
+ *     return 0;
+ * }
+ * @endcode
  *
  * @param[in]  req      The tevent request to get the error from.
  *
@@ -1008,7 +1186,7 @@ void tevent_req_received(struct tevent_req *req);
  *
  * Example:
  * @code
- *   static my_callback_wakeup_done(tevent_req *req)
+ *   static void my_callback_wakeup_done(tevent_req *subreq)
  *   {
  *     struct tevent_req *req = tevent_req_callback_data(subreq,
  *                              struct tevent_req);
@@ -1096,7 +1274,7 @@ struct timeval tevent_timeval_current(void);
  *
  * @param[in]  secs     The seconds to set.
  *
- * @param[in]  usecs    The milliseconds to set.
+ * @param[in]  usecs    The microseconds to set.
  *
  * @return              A timeval structure with the given values.
  */
@@ -1131,7 +1309,7 @@ bool tevent_timeval_is_zero(const struct timeval *tv);
  *
  * @param[in]  secs      The seconds to add to the timeval.
  *
- * @param[in]  usecs     The milliseconds to add to the timeval.
+ * @param[in]  usecs     The microseconds to add to the timeval.
  *
  * @return               The timeval structure with the new time.
  */
@@ -1143,7 +1321,7 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
  *
  * @param[in]  secs     The seconds of the offset from now.
  *
- * @param[in]  usecs    The milliseconds of the offset from now.
+ * @param[in]  usecs    The microseconds of the offset from now.
  *
  * @return              A timval with the given offset in the future.
  */
@@ -1169,6 +1347,7 @@ struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
  */
 
 struct tevent_queue;
+struct tevent_queue_entry;
 
 #ifdef DOXYGEN
 /**
@@ -1180,8 +1359,8 @@ struct tevent_queue;
  *
  * @return              An allocated tevent queue on success, NULL on error.
  *
- * @see tevent_start()
- * @see tevent_stop()
+ * @see tevent_queue_start()
+ * @see tevent_queue_stop()
  */
 struct tevent_queue *tevent_queue_create(TALLOC_CTX *mem_ctx,
 					 const char *name);
@@ -1203,6 +1382,8 @@ struct tevent_queue *_tevent_queue_create(TALLOC_CTX *mem_ctx,
  *                          tevent_queue_add().
  *
  * @see tevent_queue_add()
+ * @see tevent_queue_add_entry()
+ * @see tevent_queue_add_optimize_empty()
  */
 typedef void (*tevent_queue_trigger_fn_t)(struct tevent_req *req,
 					  void *private_data);
@@ -1217,7 +1398,9 @@ typedef void (*tevent_queue_trigger_fn_t)(struct tevent_req *req,
  * @param[in]  req      The tevent request to add to the queue.
  *
  * @param[in]  trigger  The function triggered by the queue when the request
- *                      is called.
+ *                      is called. Since tevent 0.9.14 it's possible to
+ *                      pass NULL, in order to just add a "blocker" to the
+ *                      queue.
  *
  * @param[in]  private_data The private data passed to the trigger function.
  *
@@ -1229,6 +1412,79 @@ bool tevent_queue_add(struct tevent_queue *queue,
 		      struct tevent_req *req,
 		      tevent_queue_trigger_fn_t trigger,
 		      void *private_data);
+
+/**
+ * @brief Add a tevent request to the queue.
+ *
+ * The request can be removed from the queue by calling talloc_free()
+ * (or a similar function) on the returned queue entry. This
+ * is the only difference to tevent_queue_add().
+ *
+ * @param[in]  queue    The queue to add the request.
+ *
+ * @param[in]  ev       The event handle to use for the request.
+ *
+ * @param[in]  req      The tevent request to add to the queue.
+ *
+ * @param[in]  trigger  The function triggered by the queue when the request
+ *                      is called. Since tevent 0.9.14 it's possible to
+ *                      pass NULL, in order to just add a "blocker" to the
+ *                      queue.
+ *
+ * @param[in]  private_data The private data passed to the trigger function.
+ *
+ * @return              a pointer to the tevent_queue_entry if the request
+ *                      has been successfully added, NULL otherwise.
+ *
+ * @see tevent_queue_add()
+ * @see tevent_queue_add_optimize_empty()
+ */
+struct tevent_queue_entry *tevent_queue_add_entry(
+					struct tevent_queue *queue,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					tevent_queue_trigger_fn_t trigger,
+					void *private_data);
+
+/**
+ * @brief Add a tevent request to the queue using a possible optimization.
+ *
+ * This tries to optimize for the empty queue case and may calls
+ * the trigger function directly. This is the only difference compared
+ * to tevent_queue_add_entry().
+ *
+ * The caller needs to be prepared that the trigger function has
+ * already called tevent_req_notify_callback(), tevent_req_error(),
+ * tevent_req_done() or a similar function.
+ *
+ * The request can be removed from the queue by calling talloc_free()
+ * (or a similar function) on the returned queue entry.
+ *
+ * @param[in]  queue    The queue to add the request.
+ *
+ * @param[in]  ev       The event handle to use for the request.
+ *
+ * @param[in]  req      The tevent request to add to the queue.
+ *
+ * @param[in]  trigger  The function triggered by the queue when the request
+ *                      is called. Since tevent 0.9.14 it's possible to
+ *                      pass NULL, in order to just add a "blocker" to the
+ *                      queue.
+ *
+ * @param[in]  private_data The private data passed to the trigger function.
+ *
+ * @return              a pointer to the tevent_queue_entry if the request
+ *                      has been successfully added, NULL otherwise.
+ *
+ * @see tevent_queue_add()
+ * @see tevent_queue_add_entry()
+ */
+struct tevent_queue_entry *tevent_queue_add_optimize_empty(
+					struct tevent_queue *queue,
+					struct tevent_context *ev,
+					struct tevent_req *req,
+					tevent_queue_trigger_fn_t trigger,
+					void *private_data);
 
 /**
  * @brief Start a tevent queue.
@@ -1257,6 +1513,17 @@ void tevent_queue_stop(struct tevent_queue *queue);
  */
 size_t tevent_queue_length(struct tevent_queue *queue);
 
+/**
+ * @brief Is the tevent queue running.
+ *
+ * The queue is started by default.
+ *
+ * @param[in]  queue    The queue.
+ *
+ * @return              Wether the queue is running or not..
+ */
+bool tevent_queue_running(struct tevent_queue *queue);
+
 typedef int (*tevent_nesting_hook)(struct tevent_context *ev,
 				   void *private_data,
 				   uint32_t level,
@@ -1264,17 +1531,12 @@ typedef int (*tevent_nesting_hook)(struct tevent_context *ev,
 				   void *stack_ptr,
 				   const char *location);
 #ifdef TEVENT_DEPRECATED
-#if (TEVENT_DEPRECATED_QUIET != 1)
 #ifndef _DEPRECATED_
 #if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
 #define _DEPRECATED_ __attribute__ ((deprecated))
 #else
 #define _DEPRECATED_
 #endif
-#endif
-#else
-#undef _DEPRECATED_
-#define _DEPRECATED_
 #endif
 void tevent_loop_allow_nesting(struct tevent_context *ev) _DEPRECATED_;
 void tevent_loop_set_nesting_hook(struct tevent_context *ev,
@@ -1367,8 +1629,6 @@ bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
  * @{
  */
 
-/* Saves ctdb from massive churn. */
-#define TEVENT_COMPAT_DEFINES 1
 #ifdef TEVENT_COMPAT_DEFINES
 
 #define event_context	tevent_context

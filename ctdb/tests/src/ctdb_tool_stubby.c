@@ -22,11 +22,6 @@
 
 #include "libctdb_test.c"
 
-void tevent_loop_allow_nesting_foobar(struct tevent_context *ev)
-{
-	return;
-}
-
 struct ctdb_context *ctdb_cmdline_client_foobar(struct tevent_context *ev,
 						struct timeval req_timeout)
 {
@@ -35,12 +30,6 @@ struct ctdb_context *ctdb_cmdline_client_foobar(struct tevent_context *ev,
 	ret = talloc(NULL, struct ctdb_context);
 
 	return ret;
-}
-
-struct tevent_context *tevent_context_init_foobar(TALLOC_CTX *mem_ctx)
-{
-	/* This should obviously never be used... */
-	return (struct tevent_context *) 1;
 }
 
 const char *ctdb_get_socketname_foobar(struct ctdb_context *ctdb)
