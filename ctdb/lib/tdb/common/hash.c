@@ -22,8 +22,6 @@
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
-#define VALGRIND
-
 #include "tdb_private.h"
 
 /* This is based on the hash algorithm from gdbm */
@@ -216,9 +214,7 @@ static uint32_t hashlittle( const void *key, size_t length )
   u.ptr = key;
   if (HASH_LITTLE_ENDIAN && ((u.i & 0x3) == 0)) {
     const uint32_t *k = (const uint32_t *)key;         /* read 32-bit chunks */
-#ifdef VALGRIND
     const uint8_t  *k8;
-#endif
 
     /*------ all but last block: aligned reads and affect 32 bits of (a,b,c) */
     while (length > 12)
@@ -232,36 +228,6 @@ static uint32_t hashlittle( const void *key, size_t length )
     }
 
     /*----------------------------- handle the last (probably partial) block */
-    /*
-     * "k[2]&0xffffff" actually reads beyond the end of the string, but
-     * then masks off the part it's not allowed to read.  Because the
-     * string is aligned, the masked-off tail is in the same word as the
-     * rest of the string.  Every machine with memory protection I've seen
-     * does it on word boundaries, so is OK with this.  But VALGRIND will
-     * still catch it and complain.  The masking trick does make the hash
-     * noticably faster for short strings (like English words).
-     */
-#ifndef VALGRIND
-
-    switch(length)
-    {
-    case 12: c+=k[2]; b+=k[1]; a+=k[0]; break;
-    case 11: c+=k[2]&0xffffff; b+=k[1]; a+=k[0]; break;
-    case 10: c+=k[2]&0xffff; b+=k[1]; a+=k[0]; break;
-    case 9 : c+=k[2]&0xff; b+=k[1]; a+=k[0]; break;
-    case 8 : b+=k[1]; a+=k[0]; break;
-    case 7 : b+=k[1]&0xffffff; a+=k[0]; break;
-    case 6 : b+=k[1]&0xffff; a+=k[0]; break;
-    case 5 : b+=k[1]&0xff; a+=k[0]; break;
-    case 4 : a+=k[0]; break;
-    case 3 : a+=k[0]&0xffffff; break;
-    case 2 : a+=k[0]&0xffff; break;
-    case 1 : a+=k[0]&0xff; break;
-    case 0 : return c;              /* zero length strings require no mixing */
-    }
-
-#else /* make valgrind happy */
-
     k8 = (const uint8_t *)k;
     switch(length)
     {
@@ -279,9 +245,6 @@ static uint32_t hashlittle( const void *key, size_t length )
     case 1 : a+=k8[0]; break;
     case 0 : return c;
     }
-
-#endif /* !valgrind */
-
   } else if (HASH_LITTLE_ENDIAN && ((u.i & 0x1) == 0)) {
     const uint16_t *k = (const uint16_t *)key;         /* read 16-bit chunks */
     const uint8_t  *k8;
@@ -376,7 +339,7 @@ static uint32_t hashlittle( const void *key, size_t length )
   return c;
 }
 
-unsigned int tdb_jenkins_hash(TDB_DATA *key)
+_PUBLIC_ unsigned int tdb_jenkins_hash(TDB_DATA *key)
 {
 	return hashlittle(key->dptr, key->dsize);
 }

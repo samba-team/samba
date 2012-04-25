@@ -215,16 +215,38 @@ static void merge_test(void)
 	tdb_delete(db, key);
 }
 
+static char *test_path(const char *filename)
+{
+	const char *prefix = getenv("TEST_DATA_PREFIX");
+
+	if (prefix) {
+		char *path = NULL;
+		int ret;
+
+		ret = asprintf(&path, "%s/%s", prefix, filename);
+		if (ret == -1) {
+			return NULL;
+		}
+		return path;
+	}
+
+	return strdup(filename);
+}
+
  int main(int argc, const char *argv[])
 {
 	int i, seed=0;
 	int loops = 10000;
 	int num_entries;
-	char test_gdbm[] = "test.gdbm";
+	char test_gdbm[1] = "test.gdbm";
+	char *test_tdb;
 
-	unlink("test.gdbm");
+	test_gdbm[0] = test_path("test.gdbm");
+	test_tdb = test_path("test.tdb");
 
-	db = tdb_open("test.tdb", 0, TDB_CLEAR_IF_FIRST, 
+	unlink(test_gdbm[0]);
+
+	db = tdb_open(test_tdb, 0, TDB_CLEAR_IF_FIRST,
 		      O_RDWR | O_CREAT | O_TRUNC, 0600);
 	gdbm = gdbm_open(test_gdbm, 512, GDBM_WRITER|GDBM_NEWDB|GDBM_FAST, 
 			 0600, NULL);
@@ -260,6 +282,9 @@ static void merge_test(void)
 
 	tdb_close(db);
 	gdbm_close(gdbm);
+
+	free(test_gdbm[0]);
+	free(test_tdb);
 
 	return 0;
 }

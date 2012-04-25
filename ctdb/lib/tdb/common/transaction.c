@@ -138,8 +138,8 @@ struct tdb_transaction {
 	/* old file size before transaction */
 	tdb_len_t old_map_size;
 
-	/* we should re-pack on commit */
-	bool need_repack;
+	/* did we expand in this transaction */
+	bool expanded;
 };
 
 
@@ -382,9 +382,10 @@ static void transaction_next_hash_chain(struct tdb_context *tdb, uint32_t *chain
 /*
   out of bounds check during a transaction
 */
-static int transaction_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
+static int transaction_oob(struct tdb_context *tdb, tdb_off_t off,
+			   tdb_len_t len, int probe)
 {
-	if (len <= tdb->map_size) {
+	if (off + len >= off && off + len <= tdb->map_size) {
 		return 0;
 	}
 	tdb->ecode = TDB_ERR_IO;
@@ -403,7 +404,7 @@ static int transaction_expand_file(struct tdb_context *tdb, tdb_off_t size,
 		return -1;
 	}
 
-	tdb->transaction->need_repack = true;
+	tdb->transaction->expanded = true;
 
 	return 0;
 }
@@ -507,7 +508,7 @@ static int _tdb_transaction_start(struct tdb_context *tdb,
 
 	/* make sure we know about any file expansions already done by
 	   anyone else */
-	tdb->methods->tdb_oob(tdb, tdb->map_size + 1, 1);
+	tdb->methods->tdb_oob(tdb, tdb->map_size, 1, 1);
 	tdb->transaction->old_map_size = tdb->map_size;
 
 	/* finally hook the io methods, replacing them with
@@ -529,12 +530,12 @@ fail_allrecord_lock:
 	return -1;
 }
 
-int tdb_transaction_start(struct tdb_context *tdb)
+_PUBLIC_ int tdb_transaction_start(struct tdb_context *tdb)
 {
 	return _tdb_transaction_start(tdb, TDB_LOCK_WAIT);
 }
 
-int tdb_transaction_start_nonblock(struct tdb_context *tdb)
+_PUBLIC_ int tdb_transaction_start_nonblock(struct tdb_context *tdb)
 {
 	return _tdb_transaction_start(tdb, TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
 }
@@ -548,7 +549,11 @@ static int transaction_sync(struct tdb_context *tdb, tdb_off_t offset, tdb_len_t
 		return 0;
 	}
 
+#ifdef HAVE_FDATASYNC
 	if (fdatasync(tdb->fd) != 0) {
+#else
+	if (fsync(tdb->fd) != 0) {
+#endif
 		tdb->ecode = TDB_ERR_IO;
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction: fsync failed\n"));
 		return -1;
@@ -621,7 +626,7 @@ static int _tdb_transaction_cancel(struct tdb_context *tdb)
 /*
   cancel the current transaction
 */
-int tdb_transaction_cancel(struct tdb_context *tdb)
+_PUBLIC_ int tdb_transaction_cancel(struct tdb_context *tdb)
 {
 	tdb_trace(tdb, "tdb_transaction_cancel");
 	return _tdb_transaction_cancel(tdb);
@@ -654,6 +659,34 @@ static tdb_len_t tdb_recovery_size(struct tdb_context *tdb)
 	return recovery_size;
 }
 
+int tdb_recovery_area(struct tdb_context *tdb,
+		      const struct tdb_methods *methods,
+		      tdb_off_t *recovery_offset,
+		      struct tdb_record *rec)
+{
+	if (tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, recovery_offset) == -1) {
+		return -1;
+	}
+
+	if (*recovery_offset == 0) {
+		rec->rec_len = 0;
+		return 0;
+	}
+
+	if (methods->tdb_read(tdb, *recovery_offset, rec, sizeof(*rec),
+			      DOCONV()) == -1) {
+		return -1;
+	}
+
+	/* ignore invalid recovery regions: can happen in crash */
+	if (rec->magic != TDB_RECOVERY_MAGIC &&
+	    rec->magic != TDB_RECOVERY_INVALID_MAGIC) {
+		*recovery_offset = 0;
+		rec->rec_len = 0;
+	}
+	return 0;
+}
+
 /*
   allocate the recovery area, or use an existing recovery area if it is
   large enough
@@ -665,29 +698,16 @@ static int tdb_recovery_allocate(struct tdb_context *tdb,
 {
 	struct tdb_record rec;
 	const struct tdb_methods *methods = tdb->transaction->io_methods;
-	tdb_off_t recovery_head;
+	tdb_off_t recovery_head, new_end;
 
-	if (tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, &recovery_head) == -1) {
+	if (tdb_recovery_area(tdb, methods, &recovery_head, &rec) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to read recovery head\n"));
 		return -1;
 	}
 
-	rec.rec_len = 0;
-
-	if (recovery_head != 0) {
-		if (methods->tdb_read(tdb, recovery_head, &rec, sizeof(rec), DOCONV()) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to read recovery record\n"));
-			return -1;
-		}
-		/* ignore invalid recovery regions: can happen in crash */
-		if (rec.magic != TDB_RECOVERY_MAGIC &&
-		    rec.magic != TDB_RECOVERY_INVALID_MAGIC) {
-			recovery_head = 0;
-		}
-	}
-
 	*recovery_size = tdb_recovery_size(tdb);
 
+	/* Existing recovery area? */
 	if (recovery_head != 0 && *recovery_size <= rec.rec_len) {
 		/* it fits in the existing area */
 		*recovery_max_size = rec.rec_len;
@@ -695,35 +715,51 @@ static int tdb_recovery_allocate(struct tdb_context *tdb,
 		return 0;
 	}
 
-	/* we need to free up the old recovery area, then allocate a
-	   new one at the end of the file. Note that we cannot use
-	   tdb_allocate() to allocate the new one as that might return
-	   us an area that is being currently used (as of the start of
-	   the transaction) */
-	if (recovery_head != 0) {
-		if (tdb_free(tdb, recovery_head, &rec) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to free previous recovery area\n"));
-			return -1;
+	/* If recovery area in middle of file, we need a new one. */
+	if (recovery_head == 0
+	    || recovery_head + sizeof(rec) + rec.rec_len != tdb->map_size) {
+		/* we need to free up the old recovery area, then allocate a
+		   new one at the end of the file. Note that we cannot use
+		   tdb_allocate() to allocate the new one as that might return
+		   us an area that is being currently used (as of the start of
+		   the transaction) */
+		if (recovery_head) {
+			if (tdb_free(tdb, recovery_head, &rec) == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL,
+					 "tdb_recovery_allocate: failed to"
+					 " free previous recovery area\n"));
+				return -1;
+			}
+
+			/* the tdb_free() call might have increased
+			 * the recovery size */
+			*recovery_size = tdb_recovery_size(tdb);
 		}
+
+		/* New head will be at end of file. */
+		recovery_head = tdb->map_size;
 	}
 
-	/* the tdb_free() call might have increased the recovery size */
-	*recovery_size = tdb_recovery_size(tdb);
+	/* Now we know where it will be. */
+	*recovery_offset = recovery_head;
 
-	/* round up to a multiple of page size */
-	*recovery_max_size = TDB_ALIGN(sizeof(rec) + *recovery_size, tdb->page_size) - sizeof(rec);
-	*recovery_offset = tdb->map_size;
-	recovery_head = *recovery_offset;
+	/* Expand by more than we need, so we don't do it often. */
+	*recovery_max_size = tdb_expand_adjust(tdb->map_size,
+					       *recovery_size,
+					       tdb->page_size)
+		- sizeof(rec);
+
+	new_end = recovery_head + sizeof(rec) + *recovery_max_size;
 
 	if (methods->tdb_expand_file(tdb, tdb->transaction->old_map_size, 
-				     (tdb->map_size - tdb->transaction->old_map_size) +
-				     sizeof(rec) + *recovery_max_size) == -1) {
+				     new_end - tdb->transaction->old_map_size)
+	    == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to create recovery area\n"));
 		return -1;
 	}
 
 	/* remap the file (if using mmap) */
-	methods->tdb_oob(tdb, tdb->map_size + 1, 1);
+	methods->tdb_oob(tdb, tdb->map_size, 1, 1);
 
 	/* we have to reset the old map size so that we don't try to expand the file
 	   again in the transaction commit, which would destroy the recovery area */
@@ -782,7 +818,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	rec->data_len = recovery_size;
 	rec->rec_len  = recovery_max_size;
 	rec->key_len  = old_map_size;
-	CONVERT(rec);
+	CONVERT(*rec);
 
 	/* build the recovery data into a single blob to allow us to do a single
 	   large write, which should be more efficient */
@@ -829,7 +865,9 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	/* and the tailer */
 	tailer = sizeof(*rec) + recovery_max_size;
 	memcpy(p, &tailer, 4);
-	CONVERT(p);
+	if (DOCONV()) {
+		tdb_convert(p, 4);
+	}
 
 	/* write the recovery data to the recovery area */
 	if (methods->tdb_write(tdb, recovery_offset, data, sizeof(*rec) + recovery_size) == -1) {
@@ -960,7 +998,7 @@ static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 			return -1;
 		}
 		tdb->map_size = tdb->transaction->old_map_size;
-		methods->tdb_oob(tdb, tdb->map_size + 1, 1);
+		methods->tdb_oob(tdb, tdb->map_size, 1, 1);
 	}
 
 	/* Keep the open lock until the actual commit */
@@ -971,20 +1009,42 @@ static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 /*
    prepare to commit the current transaction
 */
-int tdb_transaction_prepare_commit(struct tdb_context *tdb)
-{	
+_PUBLIC_ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
+{
 	tdb_trace(tdb, "tdb_transaction_prepare_commit");
 	return _tdb_transaction_prepare_commit(tdb);
+}
+
+/* A repack is worthwhile if the largest is less than half total free. */
+static bool repack_worthwhile(struct tdb_context *tdb)
+{
+	tdb_off_t ptr;
+	struct tdb_record rec;
+	tdb_len_t total = 0, largest = 0;
+
+	if (tdb_ofs_read(tdb, FREELIST_TOP, &ptr) == -1) {
+		return false;
+	}
+
+	while (ptr != 0 && tdb_rec_free_read(tdb, ptr, &rec) == 0) {
+		total += rec.rec_len;
+		if (rec.rec_len > largest) {
+			largest = rec.rec_len;
+		}
+		ptr = rec.next;
+	}
+
+	return total > largest * 2;
 }
 
 /*
   commit the current transaction
 */
-int tdb_transaction_commit(struct tdb_context *tdb)
-{	
+_PUBLIC_ int tdb_transaction_commit(struct tdb_context *tdb)
+{
 	const struct tdb_methods *methods;
 	int i;
-	bool need_repack;
+	bool need_repack = false;
 
 	if (tdb->transaction == NULL) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_commit: no transaction\n"));
@@ -1052,6 +1112,11 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 		SAFE_FREE(tdb->transaction->blocks[i]);
 	} 
 
+	/* Do this before we drop lock or blocks. */
+	if (tdb->transaction->expanded) {
+		need_repack = repack_worthwhile(tdb);
+	}
+
 	SAFE_FREE(tdb->transaction->blocks);
 	tdb->transaction->num_blocks = 0;
 
@@ -1074,8 +1139,6 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 #ifdef HAVE_UTIME
 	utime(tdb->name, NULL);
 #endif
-
-	need_repack = tdb->transaction->need_repack;
 
 	/* use a transaction cancel to free memory and remove the
 	   transaction locks */

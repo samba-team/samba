@@ -31,19 +31,29 @@
 /* check for an out of bounds access - if it is out of bounds then
    see if the database has been expanded by someone else and expand
    if necessary 
-   note that "len" is the minimum length needed for the db
 */
-static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
+static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
+		   int probe)
 {
 	struct stat st;
-	if (len <= tdb->map_size)
+	if (len + off < len) {
+		if (!probe) {
+			/* Ensure ecode is set for log fn. */
+			tdb->ecode = TDB_ERR_IO;
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob off %d len %d wrap\n",
+				 (int)off, (int)len));
+		}
+		return -1;
+	}
+
+	if (off + len <= tdb->map_size)
 		return 0;
 	if (tdb->flags & TDB_INTERNAL) {
 		if (!probe) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %d beyond internal malloc size %d\n",
-				 (int)len, (int)tdb->map_size));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %u beyond internal malloc size %u\n",
+				 (int)(off + len), (int)tdb->map_size));
 		}
 		return -1;
 	}
@@ -53,13 +63,22 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 		return -1;
 	}
 
-	if (st.st_size < (size_t)len) {
+	if (st.st_size < (size_t)off + len) {
 		if (!probe) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %d beyond eof at %d\n",
-				 (int)len, (int)st.st_size));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %u beyond eof at %u\n",
+				 (int)(off + len), (int)st.st_size));
 		}
+		return -1;
+	}
+
+	/* Beware >4G files! */
+	if ((tdb_off_t)st.st_size != st.st_size) {
+		/* Ensure ecode is set for log fn. */
+		tdb->ecode = TDB_ERR_IO;
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_oob len %llu too large!\n",
+			 (long long)st.st_size));
 		return -1;
 	}
 
@@ -69,8 +88,7 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 		return -1;
 	}
 	tdb->map_size = st.st_size;
-	tdb_mmap(tdb);
-	return 0;
+	return tdb_mmap(tdb);
 }
 
 /* write a lump of data at a specified offset */
@@ -86,12 +104,16 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 		return -1;
 	}
 
-	if (tdb->methods->tdb_oob(tdb, off + len, 0) != 0)
+	if (tdb->methods->tdb_oob(tdb, off, len, 0) != 0)
 		return -1;
 
 	if (tdb->map_ptr) {
 		memcpy(off + (char *)tdb->map_ptr, buf, len);
 	} else {
+#ifdef HAVE_INCOHERENT_MMAP
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+#else
 		ssize_t written = pwrite(tdb->fd, buf, len, off);
 		if ((written != (ssize_t)len) && (written != -1)) {
 			/* try once more */
@@ -116,6 +138,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 				 len, off));
 			return -1;
 		}
+#endif
 	}
 	return 0;
 }
@@ -134,13 +157,17 @@ void *tdb_convert(void *buf, uint32_t size)
 static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf, 
 		    tdb_len_t len, int cv)
 {
-	if (tdb->methods->tdb_oob(tdb, off + len, 0) != 0) {
+	if (tdb->methods->tdb_oob(tdb, off, len, 0) != 0) {
 		return -1;
 	}
 
 	if (tdb->map_ptr) {
 		memcpy(buf, off + (char *)tdb->map_ptr, len);
 	} else {
+#ifdef HAVE_INCOHERENT_MMAP
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+#else
 		ssize_t ret = pread(tdb->fd, buf, len, off);
 		if (ret != (ssize_t)len) {
 			/* Ensure ecode is set for log fn. */
@@ -151,6 +178,7 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 				 (int)tdb->map_size));
 			return -1;
 		}
+#endif
 	}
 	if (cv) {
 		tdb_convert(buf, len);
@@ -203,13 +231,23 @@ int tdb_munmap(struct tdb_context *tdb)
 	return 0;
 }
 
-void tdb_mmap(struct tdb_context *tdb)
+/* If mmap isn't coherent, *everyone* must always mmap. */
+static bool should_mmap(const struct tdb_context *tdb)
+{
+#ifdef HAVE_INCOHERENT_MMAP
+	return true;
+#else
+	return !(tdb->flags & TDB_NOMMAP);
+#endif
+}
+
+int tdb_mmap(struct tdb_context *tdb)
 {
 	if (tdb->flags & TDB_INTERNAL)
-		return;
+		return 0;
 
 #ifdef HAVE_MMAP
-	if (!(tdb->flags & TDB_NOMMAP)) {
+	if (should_mmap(tdb)) {
 		tdb->map_ptr = mmap(NULL, tdb->map_size, 
 				    PROT_READ|(tdb->read_only? 0:PROT_WRITE), 
 				    MAP_SHARED|MAP_FILE, tdb->fd, 0);
@@ -222,6 +260,10 @@ void tdb_mmap(struct tdb_context *tdb)
 			tdb->map_ptr = NULL;
 			TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_mmap failed for size %d (%s)\n", 
 				 tdb->map_size, strerror(errno)));
+#ifdef HAVE_INCOHERENT_MMAP
+			tdb->ecode = TDB_ERR_IO;
+			return -1;
+#endif
 		}
 	} else {
 		tdb->map_ptr = NULL;
@@ -229,6 +271,7 @@ void tdb_mmap(struct tdb_context *tdb)
 #else
 	tdb->map_ptr = NULL;
 #endif
+	return 0;
 }
 
 /* expand a file.  we prefer to use ftruncate, as that is what posix
@@ -294,12 +337,39 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 }
 
 
+/* You need 'size', this tells you how much you should expand by. */
+tdb_off_t tdb_expand_adjust(tdb_off_t map_size, tdb_off_t size, int page_size)
+{
+	tdb_off_t new_size, top_size;
+
+	/* limit size in order to avoid using up huge amounts of memory for
+	 * in memory tdbs if an oddball huge record creeps in */
+	if (size > 100 * 1024) {
+		top_size = map_size + size * 2;
+	} else {
+		top_size = map_size + size * 100;
+	}
+
+	/* always make room for at least top_size more records, and at
+	   least 25% more space. if the DB is smaller than 100MiB,
+	   otherwise grow it by 10% only. */
+	if (map_size > 100 * 1024 * 1024) {
+		new_size = map_size * 1.10;
+	} else {
+		new_size = map_size * 1.25;
+	}
+
+	/* Round the database up to a multiple of the page size */
+	new_size = MAX(top_size, new_size);
+	return TDB_ALIGN(new_size, page_size) - map_size;
+}
+
 /* expand the database at least size bytes by expanding the underlying
    file and doing the mmap again if necessary */
 int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 {
 	struct tdb_record rec;
-	tdb_off_t offset, new_size;	
+	tdb_off_t offset;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "lock failed in tdb_expand\n"));
@@ -307,22 +377,9 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	}
 
 	/* must know about any previous expansions by another process */
-	tdb->methods->tdb_oob(tdb, tdb->map_size + 1, 1);
+	tdb->methods->tdb_oob(tdb, tdb->map_size, 1, 1);
 
-	/* always make room for at least 100 more records, and at
-           least 25% more space. Round the database up to a multiple
-           of the page size */
-	new_size = MAX(tdb->map_size + size*100, tdb->map_size * 1.25);
-	size = TDB_ALIGN(new_size, tdb->page_size) - tdb->map_size;
-
-	if (!(tdb->flags & TDB_INTERNAL))
-		tdb_munmap(tdb);
-
-	/*
-	 * We must ensure the file is unmapped before doing this
-	 * to ensure consistency with systems like OpenBSD where
-	 * writes and mmaps are not consistent.
-	 */
+	size = tdb_expand_adjust(tdb->map_size, size, tdb->page_size);
 
 	/* expand the file itself */
 	if (!(tdb->flags & TDB_INTERNAL)) {
@@ -330,33 +387,30 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 			goto fail;
 	}
 
-	tdb->map_size += size;
-
-	if (tdb->flags & TDB_INTERNAL) {
-		char *new_map_ptr = (char *)realloc(tdb->map_ptr,
-						    tdb->map_size);
-		if (!new_map_ptr) {
-			tdb->map_size -= size;
-			goto fail;
-		}
-		tdb->map_ptr = new_map_ptr;
-	} else {
-		/*
-		 * We must ensure the file is remapped before adding the space
-		 * to ensure consistency with systems like OpenBSD where
-		 * writes and mmaps are not consistent.
-		 */
-
-		/* We're ok if the mmap fails as we'll fallback to read/write */
-		tdb_mmap(tdb);
-	}
-
 	/* form a new freelist record */
+	offset = tdb->map_size;
 	memset(&rec,'\0',sizeof(rec));
 	rec.rec_len = size - sizeof(rec);
 
+	if (tdb->flags & TDB_INTERNAL) {
+		char *new_map_ptr = (char *)realloc(tdb->map_ptr,
+						    tdb->map_size + size);
+		if (!new_map_ptr) {
+			goto fail;
+		}
+		tdb->map_ptr = new_map_ptr;
+		tdb->map_size += size;
+	} else {
+		/* Explicitly remap: if we're in a transaction, this won't
+		 * happen automatically! */
+		tdb_munmap(tdb);
+		tdb->map_size += size;
+		if (tdb_mmap(tdb) != 0) {
+			goto fail;
+		}
+	}
+
 	/* link it into the free list */
-	offset = tdb->map_size - size;
 	if (tdb_free(tdb, offset, &rec) == -1)
 		goto fail;
 
@@ -419,7 +473,7 @@ int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 		 * Optimize by avoiding the malloc/memcpy/free, point the
 		 * parser directly at the mmap area.
 		 */
-		if (tdb->methods->tdb_oob(tdb, offset+len, 0) != 0) {
+		if (tdb->methods->tdb_oob(tdb, offset, len, 0) != 0) {
 			return -1;
 		}
 		data.dptr = offset + (unsigned char *)tdb->map_ptr;
@@ -446,7 +500,7 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *r
 		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_rec_read bad magic 0x%x at offset=%d\n", rec->magic, offset));
 		return -1;
 	}
-	return tdb->methods->tdb_oob(tdb, rec->next+sizeof(*rec), 0);
+	return tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 0);
 }
 
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)

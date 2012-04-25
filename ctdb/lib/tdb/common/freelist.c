@@ -56,7 +56,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 			   rec->magic, off));
 		return -1;
 	}
-	if (tdb->methods->tdb_oob(tdb, rec->next+sizeof(*rec), 0) != 0)
+	if (tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 0) != 0)
 		return -1;
 	return 0;
 }
@@ -367,7 +367,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 /* 
    return the size of the freelist - used to decide if we should repack 
 */
-int tdb_freelist_size(struct tdb_context *tdb)
+_PUBLIC_ int tdb_freelist_size(struct tdb_context *tdb)
 {
 	tdb_off_t ptr;
 	int count=0;
