@@ -132,11 +132,12 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	uint16_t action = 0;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	struct smbXsrv_session *session = NULL;
+	uint32_t client_caps = IVAL(req->vwv+10, 0);
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
 	if (global_client_caps == 0) {
-		global_client_caps = IVAL(req->vwv+10, 0);
+		global_client_caps = client_caps;
 
 		if (!(global_client_caps & CAP_STATUS32)) {
 			remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
@@ -204,9 +205,13 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			reply_force_doserror(req, ERRSRV, ERRbaduid);
 			return;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+			status = NT_STATUS_OK;
+		}
 		if (NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
-			return;
+			session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+			TALLOC_FREE(session->gensec);
 		}
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			reply_nterror(req, nt_status_squash(status));
@@ -258,7 +263,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		return;
 	}
 
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && session->global->auth_session_info == NULL) {
 		struct auth_session_info *session_info = NULL;
 
 		status = gensec_session_info(session->gensec,
@@ -327,6 +332,13 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		session->global->auth_session_info_seqnum += 1;
 		session->global->channels[0].auth_session_info_seqnum =
 			session->global->auth_session_info_seqnum;
+		if (client_caps & CAP_DYNAMIC_REAUTH) {
+			session->global->expiration_time =
+				gensec_expire_time(session->gensec);
+		} else {
+			session->global->expiration_time =
+				GENSEC_EXPIRE_TIME_INFINITY;
+		}
 
 		status = smbXsrv_session_update(session);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -338,6 +350,67 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
 			return;
 		}
+
+		/* current_user_info is changed on new vuid */
+		reload_services(sconn, conn_snum_used, true);
+	} else if (NT_STATUS_IS_OK(status)) {
+		struct auth_session_info *session_info = NULL;
+
+		status = gensec_session_info(session->gensec,
+					     session,
+					     &session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1,("Failed to generate session_info "
+				 "(user and group token) for session setup: %s\n",
+				 nt_errstr(status)));
+			data_blob_free(&out_blob);
+			TALLOC_FREE(session);
+			reply_nterror(req, nt_status_squash(status));
+			return;
+		}
+
+		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
+			action = 1;
+		}
+
+		session->compat->session_info = session_info;
+		session->compat->vuid = session->global->session_wire_id;
+
+		if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
+			session->compat->homes_snum =
+				register_homes_share(session_info->unix_info->unix_name);
+		}
+
+		set_current_user_info(session_info->unix_info->sanitized_username,
+				      session_info->unix_info->unix_name,
+				      session_info->info->domain_name);
+
+		session->status = NT_STATUS_OK;
+		TALLOC_FREE(session->global->auth_session_info);
+		session->global->auth_session_info = session_info;
+		session->global->auth_session_info_seqnum += 1;
+		session->global->channels[0].auth_session_info_seqnum =
+			session->global->auth_session_info_seqnum;
+		if (client_caps & CAP_DYNAMIC_REAUTH) {
+			session->global->expiration_time =
+				gensec_expire_time(session->gensec);
+		} else {
+			session->global->expiration_time =
+				GENSEC_EXPIRE_TIME_INFINITY;
+		}
+
+		status = smbXsrv_session_update(session);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("smb1: Failed to update session for vuid=%llu - %s\n",
+				  (unsigned long long)session->compat->vuid,
+				  nt_errstr(status)));
+			data_blob_free(&out_blob);
+			TALLOC_FREE(session);
+			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
+			return;
+		}
+
+		conn_clear_vuid_caches(sconn, session->compat->vuid);
 
 		/* current_user_info is changed on new vuid */
 		reload_services(sconn, conn_snum_used, true);
@@ -875,6 +948,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	session->global->auth_session_info_seqnum += 1;
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
+	session->global->expiration_time = GENSEC_EXPIRE_TIME_INFINITY;
 
 	nt_status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(nt_status)) {

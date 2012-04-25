@@ -1370,6 +1370,9 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 	uint64_t session_tag;
 	connection_struct *conn = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
+	NTTIME now = timeval_to_nttime(&req->request_time);
+	struct smbXsrv_session *session = NULL;
+	NTSTATUS status;
 
 	errno = 0;
 
@@ -1403,18 +1406,42 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 	 * JRA.
 	 */
 
+	/*
+	 * lookup an existing session
+	 *
+	 * Note: for now we only check for NT_STATUS_NETWORK_SESSION_EXPIRED
+	 * here, the main check is still in change_to_user()
+	 */
+	status = smb1srv_session_lookup(sconn->conn,
+					session_tag,
+					now,
+					&session);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+		switch (type) {
+		case SMBsesssetupX:
+			status = NT_STATUS_OK;
+			break;
+		default:
+			DEBUG(1,("Error: session %llu is expired, mid=%llu.\n",
+				 (unsigned long long)session_tag,
+				 (unsigned long long)req->mid));
+			reply_nterror(req, NT_STATUS_NETWORK_SESSION_EXPIRED);
+			return conn;
+		}
+	}
+
 	if (session_tag != sconn->smb1.sessions.last_session_tag) {
 		struct user_struct *vuser = NULL;
 
 		sconn->smb1.sessions.last_session_tag = session_tag;
-		if(session_tag != UID_FIELD_INVALID) {
-			vuser = get_valid_user_struct(sconn, session_tag);
-			if (vuser) {
-				set_current_user_info(
-					vuser->session_info->unix_info->sanitized_username,
-					vuser->session_info->unix_info->unix_name,
-					vuser->session_info->info->domain_name);
-			}
+		if (session) {
+			vuser = session->compat;
+		}
+		if (vuser) {
+			set_current_user_info(
+				vuser->session_info->unix_info->sanitized_username,
+				vuser->session_info->unix_info->unix_name,
+				vuser->session_info->info->domain_name);
 		}
 	}
 
