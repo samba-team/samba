@@ -74,13 +74,6 @@ const krb5_data *krb5_princ_component(krb5_context context, krb5_principal princ
 #endif
 
 /* Samba wrapper function for krb5 functionality. */
-krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc,
-					   krb5_principal principal, const char *password,
-					   krb5_principal impersonate_principal,
-					   const char *self_service,
-					   const char *target_service,
-					   krb5_get_init_creds_opt *krb_options,
-					   time_t *expire_time, time_t *kdc_time);
 krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
 					   krb5_principal principal, krb5_keyblock *keyblock,
 					   const char *target_service,

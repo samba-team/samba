@@ -30,54 +30,6 @@
 /*
   simulate a kinit, putting the tgt in the given credentials cache. 
   Orignally by remus@snapserver.com
- 
-  This version is built to use a keyblock, rather than needing the
-  original password.
-
-  The impersonate_principal is the principal if NULL, or the principal to impersonate
-
-  The target_service defaults to the krbtgt if NULL, but could be kpasswd/realm or the local service (if we are doing s4u2self)
-*/
- krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
-					    krb5_principal principal, krb5_keyblock *keyblock,
-					    const char *target_service,
-					    krb5_get_init_creds_opt *krb_options,
-					    time_t *expire_time, time_t *kdc_time)
-{
-	krb5_error_code code = 0;
-	krb5_creds my_creds;
-
-	if ((code = krb5_get_init_creds_keyblock(ctx, &my_creds, principal, keyblock,
-						 0, target_service, krb_options))) {
-		return code;
-	}
-	
-	if ((code = krb5_cc_initialize(ctx, cc, principal))) {
-		krb5_free_cred_contents(ctx, &my_creds);
-		return code;
-	}
-	
-	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
-		krb5_free_cred_contents(ctx, &my_creds);
-		return code;
-	}
-	
-	if (expire_time) {
-		*expire_time = (time_t) my_creds.times.endtime;
-	}
-
-	if (kdc_time) {
-		*kdc_time = (time_t) my_creds.times.starttime;
-	}
-
-	krb5_free_cred_contents(ctx, &my_creds);
-	
-	return 0;
-}
-
-/*
-  simulate a kinit, putting the tgt in the given credentials cache. 
-  Orignally by remus@snapserver.com
 
   The impersonate_principal is the principal if NULL, or the principal to impersonate
 

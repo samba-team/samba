@@ -1556,6 +1556,97 @@ krb5_error_code smb_krb5_get_creds(const char *server_s,
 }
 
 /*
+  simulate a kinit, putting the tgt in the given credentials cache.
+  Orignally by remus@snapserver.com
+
+  This version is built to use a keyblock, rather than needing the
+  original password.
+
+  The impersonate_principal is the principal if NULL, or the principal
+  to impersonate
+
+  The target_service defaults to the krbtgt if NULL, but could be
+   kpasswd/realm or the local service (if we are doing s4u2self)
+*/
+krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
+					   krb5_principal principal,
+					   krb5_keyblock *keyblock,
+					   const char *target_service,
+					   krb5_get_init_creds_opt *krb_options,
+					   time_t *expire_time,
+					   time_t *kdc_time)
+{
+	krb5_error_code code = 0;
+	krb5_creds my_creds;
+
+#if defined(HAVE_KRB5_GET_INIT_CREDS_KEYBLOCK)
+	code = krb5_get_init_creds_keyblock(ctx, &my_creds, principal,
+					    keyblock, 0, target_service,
+					    krb_options);
+#elif defined(HAVE_KRB5_GET_INIT_CREDS_KEYTAB)
+{
+#define SMB_CREDS_KEYTAB "MEMORY:tmp_smb_creds_XXXXXX"
+	char tmp_name[sizeof(SMB_CREDS_KEYTAB)];
+	krb5_keytab_entry entry;
+	krb5_keytab keytab;
+
+	memset(&entry, 0, sizeof(entry));
+	entry.principal = principal;
+	*(KRB5_KT_KEY(&entry)) = *keyblock;
+
+	memcpy(tmp_name, SMB_CREDS_KEYTAB, sizeof(SMB_CREDS_KEYTAB));
+	mktemp(tmp_name);
+	if (tmp_name[0] == 0) {
+		return KRB5_KT_BADNAME;
+	}
+	code = krb5_kt_resolve(ctx, tmp_name, &keytab);
+	if (code) {
+		return code;
+	}
+
+	code = krb5_kt_add_entry(ctx, keytab, &entry);
+	if (code) {
+		(void)krb5_kt_close(ctx, keytab);
+		goto done;
+	}
+
+	code = krb5_get_init_creds_keytab(ctx, &my_creds, principal,
+					  keytab, 0, target_service,
+					  krb_options);
+	(void)krb5_kt_close(ctx, keytab);
+}
+#else
+#error krb5_get_init_creds_keyblock not available!
+#endif
+	if (code) {
+		return code;
+	}
+
+	code = krb5_cc_initialize(ctx, cc, principal);
+	if (code) {
+		goto done;
+	}
+
+	code = krb5_cc_store_cred(ctx, cc, &my_creds);
+	if (code) {
+		goto done;
+	}
+
+	if (expire_time) {
+		*expire_time = (time_t) my_creds.times.endtime;
+	}
+
+	if (kdc_time) {
+		*kdc_time = (time_t) my_creds.times.starttime;
+	}
+
+	code = 0;
+done:
+	krb5_free_cred_contents(ctx, &my_creds);
+	return code;
+}
+
+/*
  * smb_krb5_principal_get_realm
  *
  * @brief Get realm of a principal
