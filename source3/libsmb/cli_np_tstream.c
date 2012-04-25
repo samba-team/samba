@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/network.h"
 #include "libsmb/libsmb.h"
+#include "libsmb/smb2cli.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/tsocket/tsocket_internal.h"
@@ -50,7 +51,10 @@ static const struct tstream_context_ops tstream_cli_np_ops;
 struct tstream_cli_np {
 	struct cli_state *cli;
 	const char *npipe;
+	bool is_smb1;
 	uint16_t fnum;
+	uint64_t fid_persistent;
+	uint64_t fid_volatile;
 	unsigned int default_timeout;
 
 	struct {
@@ -88,7 +92,13 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 	 * tstream_disconnect_send()/_recv(), this will
 	 * never be called.
 	 */
-	status = cli_close(cli_nps->cli, cli_nps->fnum);
+	if (cli_nps->is_smb1) {
+		status = cli_close(cli_nps->cli, cli_nps->fnum);
+	} else {
+		status = smb2cli_close(cli_nps->cli, 0,
+				       cli_nps->fid_persistent,
+				       cli_nps->fid_volatile);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("tstream_cli_np_destructor: cli_close "
 			  "failed on pipe %s. Error was %s\n",
@@ -102,7 +112,10 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 
 struct tstream_cli_np_open_state {
 	struct cli_state *cli;
+	bool is_smb1;
 	uint16_t fnum;
+	uint64_t fid_persistent;
+	uint64_t fid_volatile;
 	const char *npipe;
 };
 
@@ -129,15 +142,32 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_ntcreate_send(state, ev, cli,
-				   npipe,
-				   0,
-				   DESIRED_ACCESS_PIPE,
-				   0,
-				   FILE_SHARE_READ|FILE_SHARE_WRITE,
-				   FILE_OPEN,
-				   0,
-				   0);
+	if (cli_state_protocol(cli) < PROTOCOL_SMB2_02) {
+		state->is_smb1 = true;
+	}
+
+	if (state->is_smb1) {
+		subreq = cli_ntcreate_send(state, ev, cli,
+					   npipe,
+					   0,
+					   DESIRED_ACCESS_PIPE,
+					   0,
+					   FILE_SHARE_READ|FILE_SHARE_WRITE,
+					   FILE_OPEN,
+					   0,
+					   0);
+	} else {
+		subreq = smb2cli_create_send(state, ev, cli,
+					     npipe,
+					     SMB2_OPLOCK_LEVEL_NONE,
+					     SMB2_IMPERSONATION_IMPERSONATION,
+					     DESIRED_ACCESS_PIPE,
+					     0, /* file_attributes */
+					     FILE_SHARE_READ|FILE_SHARE_WRITE,
+					     FILE_OPEN,
+					     0, /* create_options */
+					     NULL); /* blobs */
+	}
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -154,7 +184,13 @@ static void tstream_cli_np_open_done(struct tevent_req *subreq)
 		tevent_req_data(req, struct tstream_cli_np_open_state);
 	NTSTATUS status;
 
-	status = cli_ntcreate_recv(subreq, &state->fnum);
+	if (state->is_smb1) {
+		status = cli_ntcreate_recv(subreq, &state->fnum);
+	} else {
+		status = smb2cli_create_recv(subreq,
+					     &state->fid_persistent,
+					     &state->fid_volatile);
+	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
@@ -193,7 +229,10 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 
 	cli_nps->cli = state->cli;
 	cli_nps->npipe = talloc_move(cli_nps, &state->npipe);
+	cli_nps->is_smb1 = state->is_smb1;
 	cli_nps->fnum = state->fnum;
+	cli_nps->fid_persistent = state->fid_persistent;
+	cli_nps->fid_volatile = state->fid_volatile;
 	cli_nps->default_timeout = cli_set_timeout(state->cli, 0);
 	cli_set_timeout(state->cli, cli_nps->default_timeout);
 
@@ -421,11 +460,23 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 		return;
 	}
 
-	subreq = cli_write_andx_send(state, state->ev, cli_nps->cli,
-				     cli_nps->fnum,
-				     8, /* 8 means message mode. */
-				     cli_nps->write.buf, 0,
-				     cli_nps->write.ofs);
+	if (cli_nps->is_smb1) {
+		subreq = cli_write_andx_send(state, state->ev, cli_nps->cli,
+					     cli_nps->fnum,
+					     8, /* 8 means message mode. */
+					     cli_nps->write.buf,
+					     0, /* offset */
+					     cli_nps->write.ofs); /* size */
+	} else {
+		subreq = smb2cli_write_send(state, state->ev, cli_nps->cli,
+					     cli_nps->write.ofs, /* length */
+					     0, /* offset */
+					     cli_nps->fid_persistent,
+					     cli_nps->fid_volatile,
+					     0, /* remaining_bytes */
+					     0, /* flags */
+					     cli_nps->write.buf);
+	}
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -450,7 +501,12 @@ static void tstream_cli_np_writev_write_done(struct tevent_req *subreq)
 	size_t written;
 	NTSTATUS status;
 
-	status = cli_write_andx_recv(subreq, &written);
+	if (cli_nps->is_smb1) {
+		status = cli_write_andx_recv(subreq, &written);
+	} else {
+		status = smb2cli_write_recv(subreq);
+		written = cli_nps->write.ofs; // TODO: get the value from the server
+	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tstream_cli_np_writev_disconnect_now(req, EIO, __location__);
@@ -488,7 +544,15 @@ static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
 		return;
 	}
 
-	subreq = cli_close_send(state, state->ev, cli_nps->cli, cli_nps->fnum);
+	if (cli_nps->is_smb1) {
+		subreq = cli_close_send(state, state->ev, cli_nps->cli,
+					cli_nps->fnum);
+	} else {
+		subreq = smb2cli_close_send(state, state->ev, cli_nps->cli,
+					    0, /* flags */
+					    cli_nps->fid_persistent,
+					    cli_nps->fid_volatile);
+	}
 	if (subreq == NULL) {
 		/* return the original error */
 		_tevent_req_error(req, state->error.val, state->error.location);
@@ -508,7 +572,11 @@ static void tstream_cli_np_writev_disconnect_done(struct tevent_req *subreq)
 	struct tstream_cli_np *cli_nps =
 		tstream_context_data(state->stream, struct tstream_cli_np);
 
-	cli_close_recv(subreq);
+	if (cli_nps->is_smb1) {
+		cli_close_recv(subreq);
+	} else {
+		smb2cli_close_recv(subreq);
+	}
 	TALLOC_FREE(subreq);
 
 	cli_nps->cli = NULL;
@@ -668,8 +736,20 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 		return;
 	}
 
-	subreq = cli_read_andx_send(state, state->ev, cli_nps->cli,
-				    cli_nps->fnum, 0, TSTREAM_CLI_NP_MAX_BUF_SIZE);
+	if (cli_nps->is_smb1) {
+		subreq = cli_read_andx_send(state, state->ev, cli_nps->cli,
+					    cli_nps->fnum,
+					    0, /* offset */
+					    TSTREAM_CLI_NP_MAX_BUF_SIZE);
+	} else {
+		subreq = smb2cli_read_send(state, state->ev, cli_nps->cli,
+					   TSTREAM_CLI_NP_MAX_BUF_SIZE, /* length */
+					   0, /* offset */
+					   cli_nps->fid_persistent,
+					   cli_nps->fid_volatile,
+					   0, /* minimum_count */
+					   0); /* remaining_bytes */
+	}
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -695,17 +775,37 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 		return;
 	}
 
-	subreq = cli_trans_send(state, state->ev,
-				cli_nps->cli,
-				SMBtrans,
-				"\\PIPE\\",
-				0, 0, 0,
-				cli_nps->trans.setup, 2,
-				0,
-				NULL, 0, 0,
-				cli_nps->write.buf,
-				cli_nps->write.ofs,
-				TSTREAM_CLI_NP_MAX_BUF_SIZE);
+	if (cli_nps->is_smb1) {
+		subreq = cli_trans_send(state, state->ev,
+					cli_nps->cli,
+					SMBtrans,
+					"\\PIPE\\",
+					0, 0, 0,
+					cli_nps->trans.setup, 2,
+					0,
+					NULL, 0, 0,
+					cli_nps->write.buf,
+					cli_nps->write.ofs,
+					TSTREAM_CLI_NP_MAX_BUF_SIZE);
+	} else {
+		DATA_BLOB in_input_buffer = data_blob_null;
+		DATA_BLOB in_output_buffer = data_blob_null;
+
+		in_input_buffer = data_blob_const(cli_nps->write.buf,
+						  cli_nps->write.ofs);
+
+		subreq = smb2cli_ioctl_send(state, state->ev,
+					    cli_nps->cli,
+					    cli_nps->fid_persistent,
+					    cli_nps->fid_volatile,
+					    FSCTL_NAMED_PIPE_READ_WRITE,
+					    0, /* in_max_input_length */
+					    &in_input_buffer,
+					    /* in_max_output_length */
+					    TSTREAM_CLI_NP_MAX_BUF_SIZE,
+					    &in_output_buffer,
+					    SMB2_IOCTL_FLAG_IS_FSCTL);
+	}
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -733,9 +833,22 @@ static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
 	uint32_t received;
 	NTSTATUS status;
 
-	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
-				NULL, 0, NULL,
-				&rcvbuf, 0, &received);
+	if (cli_nps->is_smb1) {
+		status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+					NULL, 0, NULL,
+					&rcvbuf, 0, &received);
+	} else {
+		DATA_BLOB out_input_buffer = data_blob_null;
+		DATA_BLOB out_output_buffer = data_blob_null;
+
+		status = smb2cli_ioctl_recv(subreq, state,
+					    &out_input_buffer,
+					    &out_output_buffer);
+
+		/* Note that rcvbuf is not a talloc pointer here */
+		rcvbuf = out_output_buffer.data;
+		received = out_output_buffer.length;
+	}
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
 		status = NT_STATUS_OK;
@@ -757,7 +870,13 @@ static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq)
 
 	cli_nps->read.ofs = 0;
 	cli_nps->read.left = received;
-	cli_nps->read.buf = talloc_move(cli_nps, &rcvbuf);
+	cli_nps->read.buf = talloc_array(cli_nps, uint8_t, received);
+	if (cli_nps->read.buf == NULL) {
+		TALLOC_FREE(subreq);
+		tevent_req_nomem(cli_nps->read.buf, req);
+		return;
+	}
+	memcpy(cli_nps->read.buf, rcvbuf, received);
 
 	if (cli_nps->trans.write_req == NULL) {
 		tstream_cli_np_readv_read_next(req);
@@ -798,7 +917,13 @@ static void tstream_cli_np_readv_read_done(struct tevent_req *subreq)
 	 * a timer event attached to it.
 	 */
 
-	status = cli_read_andx_recv(subreq, &received, &rcvbuf);
+	if (cli_nps->is_smb1) {
+		status = cli_read_andx_recv(subreq, &received, &rcvbuf);
+	} else {
+		uint32_t data_length = 0;
+		status = smb2cli_read_recv(subreq, state, &rcvbuf, &data_length);
+		received = data_length;
+	}
 	/*
 	 * We can't TALLOC_FREE(subreq) as usual here, as rcvbuf still is a
 	 * child of that.
@@ -870,7 +995,15 @@ static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
 		return;
 	}
 
-	subreq = cli_close_send(state, state->ev, cli_nps->cli, cli_nps->fnum);
+	if (cli_nps->is_smb1) {
+		subreq = cli_close_send(state, state->ev, cli_nps->cli,
+					cli_nps->fnum);
+	} else {
+		subreq = smb2cli_close_send(state, state->ev, cli_nps->cli,
+					    0, /* flags */
+					    cli_nps->fid_persistent,
+					    cli_nps->fid_volatile);
+	}
 	if (subreq == NULL) {
 		/* return the original error */
 		tstream_cli_np_readv_error(req);
@@ -890,7 +1023,11 @@ static void tstream_cli_np_readv_disconnect_done(struct tevent_req *subreq)
 	struct tstream_cli_np *cli_nps =
 		tstream_context_data(state->stream, struct tstream_cli_np);
 
-	cli_close_recv(subreq);
+	if (cli_nps->is_smb1) {
+		cli_close_recv(subreq);
+	} else {
+		smb2cli_close_recv(subreq);
+	}
 	TALLOC_FREE(subreq);
 
 	cli_nps->cli = NULL;
@@ -991,7 +1128,15 @@ static struct tevent_req *tstream_cli_np_disconnect_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_close_send(state, ev, cli_nps->cli, cli_nps->fnum);
+	if (cli_nps->is_smb1) {
+		subreq = cli_close_send(state, ev, cli_nps->cli,
+					cli_nps->fnum);
+	} else {
+		subreq = smb2cli_close_send(state, ev, cli_nps->cli,
+					    0, /* flags */
+					    cli_nps->fid_persistent,
+					    cli_nps->fid_volatile);
+	}
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1010,7 +1155,11 @@ static void tstream_cli_np_disconnect_done(struct tevent_req *subreq)
 		tstream_context_data(state->stream, struct tstream_cli_np);
 	NTSTATUS status;
 
-	status = cli_close_recv(subreq);
+	if (cli_nps->is_smb1) {
+		status = cli_close_recv(subreq);
+	} else {
+		status = smb2cli_close_recv(subreq);
+	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_error(req, EIO);
