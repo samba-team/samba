@@ -182,7 +182,8 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 						    void *cbdata)
 {
 	struct addrinfo *out = NULL;
-	int ret;
+	int ret = 0;
+	struct addrinfo *res = NULL;
 	int count = 3;
 
 	while (count) {
@@ -206,16 +207,25 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 		return KRB5_PLUGIN_NO_HANDLE;
 	}
 
-	ret = cbfunc(cbdata, out->ai_socktype, out->ai_addr);
-#ifdef DEBUG_KRB5
-	if (ret) {
-		fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
-			"failed to call callback: %s (%d)\n",
-			(unsigned int)getpid(), error_message(ret), ret);
-	}
-#endif
+	for (res = out; res; res = res->ai_next) {
+		if (!res->ai_addr || res->ai_addrlen == 0) {
+			continue;
+		}
 
-	freeaddrinfo(out);
+		ret = cbfunc(cbdata, res->ai_socktype, res->ai_addr);
+		if (ret) {
+#ifdef DEBUG_KRB5
+			fprintf(stderr, "[%5u]: smb_krb5_locator_lookup: "
+				"failed to call callback: %s (%d)\n",
+				(unsigned int)getpid(), error_message(ret), ret);
+#endif
+			break;
+		}
+	}
+
+	if (out) {
+		freeaddrinfo(out);
+	}
 	return ret;
 }
 
@@ -257,8 +267,7 @@ static bool ask_winbind(const char *realm, char **dcname)
 
 	flags = WBC_LOOKUP_DC_KDC_REQUIRED |
 		WBC_LOOKUP_DC_IS_DNS_NAME |
-		WBC_LOOKUP_DC_RETURN_DNS_NAME |
-		WBC_LOOKUP_DC_IP_REQUIRED;
+		WBC_LOOKUP_DC_RETURN_DNS_NAME;
 
 	wbc_status = wbcLookupDomainControllerEx(realm, NULL, NULL, flags, &dc_info);
 
@@ -268,12 +277,6 @@ static bool ask_winbind(const char *realm, char **dcname)
 			(unsigned int)getpid(), wbcErrorString(wbc_status));
 #endif
 		return false;
-	}
-
-	if (dc_info->dc_address) {
-		dc = dc_info->dc_address;
-		if (dc[0] == '\\') dc++;
-		if (dc[0] == '\\') dc++;
 	}
 
 	if (!dc && dc_info->dc_unc) {
