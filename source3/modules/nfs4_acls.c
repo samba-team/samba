@@ -326,10 +326,11 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 
 	aclint = get_validated_aclint(theacl);
 	/* We do not check for naces being 0 or theacl being NULL here
-	 * because it is done upstream */
-	/* in smb_get_nt_acl_nfs4(). */
+	   because it is done upstream in smb_get_nt_acl_nfs4().
+	   We reserve twice the number of input aces because one nfs4
+	   ace might result in 2 nt aces.*/
 	nt_ace_list = (struct security_ace *)TALLOC_ZERO_SIZE(
-		mem_ctx, aclint->naces * sizeof(struct security_ace));
+		mem_ctx, 2 * aclint->naces * sizeof(struct security_ace));
 	if (nt_ace_list==NULL)
 	{
 		DEBUG(10, ("talloc error"));
@@ -407,9 +408,62 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		if(ace->aceType == SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE) {
 			mask = ace->aceMask | SMB_ACE4_SYNCHRONIZE;
 		}
-		init_sec_ace(&nt_ace_list[good_aces++], &sid,
-			ace->aceType, mask,
-			win_ace_flags);
+
+		/* Mapping of owner@ and group@ to creator owner and
+		   creator group. Keep old behavior in mode special. */
+		if (params->mode != e_special &&
+		    ace->flags & SMB_ACE4_ID_SPECIAL &&
+		    (ace->who.special_id == SMB_ACE4_WHO_OWNER ||
+		     ace->who.special_id == SMB_ACE4_WHO_GROUP)) {
+			DEBUG(10, ("Map special entry\n"));
+			if (!(win_ace_flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
+				DEBUG(10, ("Map current sid\n"));
+				uint32_t win_ace_flags_current;
+				win_ace_flags_current = win_ace_flags &
+					~(SEC_ACE_FLAG_OBJECT_INHERIT |
+					  SEC_ACE_FLAG_CONTAINER_INHERIT);
+				init_sec_ace(&nt_ace_list[good_aces++], &sid,
+					     ace->aceType, mask,
+					     win_ace_flags_current);
+			}
+			if (ace->who.special_id == SMB_ACE4_WHO_OWNER &&
+			    win_ace_flags & (SEC_ACE_FLAG_OBJECT_INHERIT |
+					     SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+				uint32_t win_ace_flags_creator;
+				DEBUG(10, ("Map creator owner\n"));
+				win_ace_flags_creator = win_ace_flags |
+					SMB_ACE4_INHERIT_ONLY_ACE;
+				init_sec_ace(&nt_ace_list[good_aces++],
+					     &global_sid_Creator_Owner,
+					     ace->aceType, mask,
+					     win_ace_flags_creator);
+			}
+			if (ace->who.special_id == SMB_ACE4_WHO_GROUP &&
+			    win_ace_flags & (SEC_ACE_FLAG_OBJECT_INHERIT |
+					     SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+				uint32_t win_ace_flags_creator;
+				DEBUG(10, ("Map creator owner group\n"));
+				win_ace_flags_creator = win_ace_flags |
+					SMB_ACE4_INHERIT_ONLY_ACE;
+				init_sec_ace(&nt_ace_list[good_aces++],
+					     &global_sid_Creator_Group,
+					     ace->aceType, mask,
+					     win_ace_flags_creator);
+			}
+		} else {
+			DEBUG(10, ("Map normal sid\n"));
+			init_sec_ace(&nt_ace_list[good_aces++], &sid,
+				     ace->aceType, mask,
+				     win_ace_flags);
+		}
+	}
+
+	nt_ace_list = (struct security_ace *)TALLOC_REALLOC(mem_ctx,
+					nt_ace_list,
+					good_aces * sizeof(struct security_ace));
+	if (nt_ace_list == NULL) {
+		errno = ENOMEM;
+		return false;
 	}
 
 	*ppnt_ace_list = nt_ace_list;
