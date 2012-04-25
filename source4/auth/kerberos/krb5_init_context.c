@@ -441,7 +441,7 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 	}
 
 	/* Use our local krb5.conf file by default */
-	ret = krb5_prepend_config_files_default(config_file == NULL?"":config_file, &config_files);
+	ret = krb5_prepend_config_files_default(config_file, &config_files);
 	if (ret) {
 		DEBUG(1,("krb5_prepend_config_files_default failed (%s)\n",
 			 smb_get_krb5_error_message(krb5_ctx, ret, tmp_ctx)));
