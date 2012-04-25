@@ -412,8 +412,8 @@ int rep_mkstemp(char *template)
 {
 	/* have a reasonable go at emulating it. Hope that
 	   the system mktemp() isn't completely hopeless */
-	char *p = mktemp(template);
-	if (!p)
+	mktemp(template);
+	if (template[0] == 0)
 		return -1;
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 }
