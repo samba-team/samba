@@ -25,8 +25,7 @@
 
 #include "replace.h"
 
-struct torture_context;
-bool torture_local_talloc(struct torture_context *tctx);
+#include "talloc_testsuite.h"
 
 int main(void)
 {

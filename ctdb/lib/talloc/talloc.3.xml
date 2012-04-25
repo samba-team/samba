@@ -10,7 +10,7 @@
 <refpurpose>hierarchical reference counted memory pool system with destructors</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-<synopsis>#include &lt;talloc/talloc.h&gt;</synopsis>
+<synopsis>#include &lt;talloc.h&gt;</synopsis>
   </refsynopsisdiv>
   <refsect1><title>DESCRIPTION</title>
     <para>
@@ -645,17 +645,6 @@ if (ptr) memcpy(ptr, p, strlen(p)+1);</programlisting>
         </para>
         <programlisting>talloc_set_name_const(ptr, ptr)</programlisting>
     </refsect2>
-    <refsect2><title>char *talloc_append_string(const void *<emphasis role="italic">t</emphasis>, char *<emphasis role="italic">orig</emphasis>, const char *<emphasis role="italic">append</emphasis>);</title>
-        <para>
-	  The talloc_append_string() function appends the given formatted
-	  string to the given string.
-        </para>
-        <para>
-	  This function sets the name of the new pointer to the new
-	  string. This is equivalent to:
-        </para>
-        <programlisting>talloc_set_name_const(ptr, ptr)</programlisting>
-    </refsect2>
     <refsect2><title>char *talloc_vasprintf(const void *<emphasis role="italic">t</emphasis>, const char *<emphasis role="italic">fmt</emphasis>, va_list <emphasis role="italic">ap</emphasis>);</title>
         <para>
 	  The talloc_vasprintf() function is the talloc equivalent of the C
@@ -794,9 +783,9 @@ if (ptr) memcpy(ptr, p, strlen(p)+1);</programlisting>
     </para>
     <para>
       This program is free software; you can redistribute it and/or modify
-      it under the terms of the GNU General Public License as published by
-      the Free Software Foundation; either version 3 of the License, or (at
-      your option) any later version.
+      it under the terms of the GNU Lesser General Public License as
+      published by the Free Software Foundation; either version 3 of the
+      License, or (at your option) any later version.
     </para>
     <para>
       This program is distributed in the hope that it will be useful, but
