@@ -275,7 +275,7 @@ static krb5_error_code impersonate_principal_from_credentials(
 #endif
 				return EINVAL;
 			}
-			ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
+			ret = smb_krb5_keyblock_init_contents(smb_krb5_context->krb5_context,
 						 ENCTYPE_ARCFOUR_HMAC,
 						 mach_pwd->hash, sizeof(mach_pwd->hash), 
 						 &keyblock);
