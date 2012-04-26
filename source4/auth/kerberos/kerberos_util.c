@@ -225,9 +225,9 @@ static krb5_error_code impersonate_principal_from_credentials(
 
 	tries = 2;
 	while (tries--) {
+#ifdef SAMBA4_USES_HEIMDAL
 		struct tevent_context *previous_ev;
 		/* Do this every time, in case we have weird recursive issues here */
-#ifdef SAMBA4_USES_HEIMDAL
 		ret = smb_krb5_context_set_event_ctx(smb_krb5_context, event_ctx, &previous_ev);
 		if (ret) {
 			talloc_free(mem_ctx);
