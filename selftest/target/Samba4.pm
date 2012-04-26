@@ -706,7 +706,7 @@ sub provision($$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
-	    $password, $kdc_ipv4, $extra_smbconf_options) = @_;
+	    $password, $kdc_ipv4, $extra_smbconf_options, $extra_smbconf_shares) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $hostname,
@@ -784,6 +784,8 @@ sub provision($$$$$$$$)
 [cifsposix]
 	copy = simple
 	ntvfs handler = cifsposix
+
+$extra_smbconf_shares
 ";
 
 	if (defined($self->{ldap})) {
@@ -838,7 +840,7 @@ sub provision_member($$$)
 				   "2008",
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
-				   "");
+				   "", "");
 	unless ($ret) {
 		return undef;
 	}
@@ -903,7 +905,7 @@ sub provision_rpc_proxy($$$)
 				   "2008",
 				   "locRPCproxypass4",
 				   $dcvars->{SERVER_IP},
-				   $extra_smbconf_options);
+				   $extra_smbconf_options, "");
 
 	unless ($ret) {
 		return undef;
@@ -1099,7 +1101,7 @@ allow dns updates = True";
 				   "samba.example.com",
 				   "2008",
 				   "locDCpass1",
-				   undef, $extra_conf_options);
+				   undef, $extra_conf_options, "");
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
@@ -1150,7 +1152,7 @@ sub provision_fl2003dc($$)
 				   "samba2003.example.com",
 				   "2003",
 				   "locDCpass6",
-				   undef, "");
+				   undef, "", "");
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1172,7 +1174,7 @@ sub provision_fl2008r2dc($$)
 				   "samba2008R2.example.com",
 				   "2008_R2",
 				   "locDCpass7",
-				   undef, "");
+				   undef, "", "");
 
 	unless ($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1265,10 +1267,44 @@ sub provision_plugin_s4_dc($$)
 {
 	my ($self, $prefix) = @_;
 
+	my $prefix_abs = abs_path($prefix);
+
 	my $extra_smbconf_options = "
-server services = -smb +s3fs
-dcerpc endpoint servers = -unixinfo -spoolss -winreg -wkssvc -srvsvc
-xattr_tdb:file = $prefix/statedir/xattr.tdb
+        server services = -smb +s3fs
+        xattr_tdb:file = $prefix_abs/statedir/xattr.tdb
+
+	kernel oplocks = no
+	kernel change notify = no
+
+	syslog = no
+	printing = bsd
+	printcap name = /dev/null
+
+	max protocol = SMB2
+	read only = no
+	server signing = auto
+
+	smbd:sharedelay = 100000
+	smbd:writetimeupdatedelay = 500000
+	map hidden = no
+	map system = no
+	map readonly = no
+	store dos attributes = yes
+	create mask = 755
+	dos filemode = yes
+
+";
+
+	my $extra_smbconf_shares = "
+
+[tmpcase]
+	copy = tmp
+	case sensitive = yes
+
+[tmpguest]
+	copy = tmp
+        guest ok = yes
+
 ";
 
 	print "PROVISIONING PLUGIN S4 DC...";
@@ -1279,7 +1315,8 @@ xattr_tdb:file = $prefix/statedir/xattr.tdb
 				   "plugin.samba.example.com",
 				   "2008",
 				   "locDCpass1",
-				   undef, $extra_smbconf_options);
+				   undef, $extra_smbconf_options,
+                                   $extra_smbconf_shares);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
