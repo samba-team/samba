@@ -554,7 +554,6 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 		     enum winreg_CreateAction *paction)
 {
 	struct registry_key *key = parent;
-	struct registry_key *create_parent;
 	TALLOC_CTX *mem_ctx;
 	char *path, *end;
 	WERROR err;
