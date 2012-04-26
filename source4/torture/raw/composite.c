@@ -58,10 +58,6 @@ static bool test_loadfile(struct torture_context *tctx, struct smbcli_state *cli
 	int i;
 	int *count = talloc_zero(tctx, int);
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
-
 	data = talloc_array(tctx, uint8_t, len);
 
 	generate_random_buffer(data, len);
@@ -113,9 +109,7 @@ static bool test_loadfile(struct torture_context *tctx, struct smbcli_state *cli
 static bool test_loadfile_t(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	int ret;
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "failed to setup " BASEDIR);
 
 	ret = test_loadfile(tctx, cli);
 	smb_raw_exit(cli->session);
@@ -141,10 +135,6 @@ static bool test_fetchfile(struct torture_context *tctx, struct smbcli_state *cl
 	struct tevent_context *event_ctx;
 	int *count = talloc_zero(tctx, int);
 	bool ret = true;
-
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
 
 	data = talloc_array(tctx, uint8_t, len);
 
@@ -213,10 +203,7 @@ static bool test_fetchfile(struct torture_context *tctx, struct smbcli_state *cl
 static bool test_fetchfile_t(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	int ret;
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
-
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "failed to setup " BASEDIR);
 	ret = test_fetchfile(tctx, cli);
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
@@ -245,10 +232,6 @@ static bool test_appendacl(struct torture_context *tctx, struct smbcli_state *cl
 	NTSTATUS status;
 	int i;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
-
 	io_orig = talloc_array(tctx, struct smb_composite_appendacl *, num_ops);
 
 	printf ("creating %d empty files and getting their acls with appendacl\n", num_ops);
@@ -259,19 +242,13 @@ static bool test_appendacl(struct torture_context *tctx, struct smbcli_state *cl
 		io1.in.size  = 0;
 	  
 		status = smb_composite_savefile(cli->tree, &io1);
-		if (!NT_STATUS_IS_OK(status)) {
-			torture_comment(tctx, "(%s) savefile failed: %s\n", __location__, nt_errstr(status));
-			return false;
-		}
+		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "savefile failed");
 
 		io_orig[i] = talloc (io_orig, struct smb_composite_appendacl);
 		io_orig[i]->in.fname = talloc_steal(io_orig[i], io1.in.fname);
 		io_orig[i]->in.sd = security_descriptor_initialise(io_orig[i]);
 		status = smb_composite_appendacl(cli->tree, io_orig[i], io_orig[i]);
-		if (!NT_STATUS_IS_OK(status)) {
-			torture_comment(tctx, "(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
-			return false;
-		}
+		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "appendacl failed");
 	}
 	
 
@@ -288,10 +265,7 @@ static bool test_appendacl(struct torture_context *tctx, struct smbcli_state *cl
 	ace->trustee = *test_sid;
 
 	status = security_descriptor_dacl_add(test_sd, ace);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "(%s) appendacl failed: %s\n", __location__, nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "appendacl failed");
 
 	/* set parameters for appendacl async call */
 
@@ -346,10 +320,7 @@ static bool test_appendacl(struct torture_context *tctx, struct smbcli_state *cl
 static bool test_appendacl_t(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	int ret;
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
-
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "failed to setup " BASEDIR);
 	ret = test_appendacl(tctx, cli);
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
@@ -422,10 +393,7 @@ static bool test_fsinfo(struct torture_context *tctx, struct smbcli_state *cli)
 static bool test_fsinfo_t(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	int ret;
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
-
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "failed to setup " BASEDIR);
 	ret = test_fsinfo(tctx, cli);
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
