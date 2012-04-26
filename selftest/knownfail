@@ -188,8 +188,8 @@
 ^samba3.smb2.setinfo.setinfo
 ^samba3.smb2.session.reconnect
 ^samba3.smb2.session.reauth
-^samba3.rpc.spoolss.printer.*addprinter.driver_info_winreg # knownfail or flapping?
-^samba3.rpc.spoolss.printer.*addprinterex.driver_info_winreg # knownfail or flapping?
+^samba3.rpc.spoolss.printer.addprinter.driver_info_winreg # knownfail or flapping?
+^samba3.rpc.spoolss.printer.addprinterex.driver_info_winreg # knownfail or flapping?
 #
 # The following tests fail against plugin_s4_dc (aka s3fs) currently.
 # These need to be examined and either fixed or correctly categorised.
