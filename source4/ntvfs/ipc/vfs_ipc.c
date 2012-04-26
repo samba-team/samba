@@ -1173,7 +1173,7 @@ static NTSTATUS ipc_ioctl_smb2(struct ntvfs_module_context *ntvfs,
 	io->smb2.out.function	= io->smb2.in.function;
 	io->smb2.out.unknown2	= 0;
 	io->smb2.out.unknown3	= 0;
-	io->smb2.out.in		= io->smb2.in.out;
+	io->smb2.out.in		= data_blob_null;
 	io->smb2.out.out = data_blob_talloc(req, NULL, io->smb2.in.max_response_size);
 	NT_STATUS_HAVE_NO_MEMORY(io->smb2.out.out.data);
 
