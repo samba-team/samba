@@ -668,11 +668,7 @@ void reply_to_oplock_break_requests(files_struct *fsp)
 
 	SAFE_FREE(fsp->pending_break_messages);
 	fsp->num_pending_break_messages = 0;
-	if (fsp->oplock_timeout != NULL) {
-		/* Remove the timed event handler. */
-		TALLOC_FREE(fsp->oplock_timeout);
-		fsp->oplock_timeout = NULL;
-	}
+	TALLOC_FREE(fsp->oplock_timeout);
 	return;
 }
 
