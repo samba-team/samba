@@ -2225,9 +2225,6 @@ enum smb_ioctl_level {
 	RAW_IOCTL_SMB2_NO_HANDLE
 };
 
-/* 2.2.31 SMB2 IOCTL Request */
-#define SMB2_IOCTL_FLAG_IS_FSCTL		0x00000001
-
 /*
   union for ioctl() backend
 */

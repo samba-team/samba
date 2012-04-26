@@ -216,6 +216,9 @@
 
 #define SMB2_WRITEFLAG_WRITE_THROUGH	0x00000001
 
+/* 2.2.31 SMB2 IOCTL Request */
+#define SMB2_IOCTL_FLAG_IS_FSCTL		0x00000001
+
 /*
  * Flags for durable handle v2 requests
  */
