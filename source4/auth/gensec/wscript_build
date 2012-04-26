@@ -6,7 +6,7 @@ bld.SAMBA_SUBSYSTEM('gensec_util',
                     autoproto='gensec_proto.h')
 
 bld.SAMBA_MODULE('gensec_krb5',
-	source='gensec_krb5.c',
+	source='gensec_krb5.c gensec_krb5_util.c',
 	subsystem='gensec',
 	init_function='gensec_krb5_init',
 	deps='samba-credentials authkrb5 com_err gensec_util',

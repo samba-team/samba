@@ -41,6 +41,7 @@
 #include "lib/util/util_net.h"
 #include "../lib/util/asn1.h"
 #include "auth/kerberos/pac_utils.h"
+#include "gensec_krb5_util.h"
 
 _PUBLIC_ NTSTATUS gensec_krb5_init(void);
 
