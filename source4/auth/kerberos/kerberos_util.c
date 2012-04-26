@@ -195,9 +195,10 @@ static krb5_error_code impersonate_principal_from_credentials(
 		return ret;
 	}
 
+#ifdef SAMBA4_USES_HEIMDAL /* Disable for now MIT reads defaults when needed */
 	/* get the defaults */
 	krb5_get_init_creds_opt_set_default_flags(smb_krb5_context->krb5_context, NULL, NULL, krb_options);
-
+#endif
 	/* set if we want a forwardable ticket */
 	switch (cli_credentials_get_krb_forwardable(credentials)) {
 	case CRED_AUTO_KRB_FORWARDABLE:
@@ -210,6 +211,7 @@ static krb5_error_code impersonate_principal_from_credentials(
 		break;
 	}
 
+#ifdef SAMBA4_USES_HEIMDAL /* FIXME: MIT does not have this yet */
 	/*
 	 * In order to work against windows KDCs even if we use
 	 * the netbios domain name as realm, we need to add the following
@@ -219,6 +221,7 @@ static krb5_error_code impersonate_principal_from_credentials(
 	 */
 	krb5_get_init_creds_opt_set_win2k(smb_krb5_context->krb5_context,
 					  krb_options, true);
+#endif
 
 	tries = 2;
 	while (tries--) {
