@@ -3615,6 +3615,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_get_host_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_host_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_keytab, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_build_principal_alloc_va, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_krb5_import_cred, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_get_name_attribute, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gsskrb5_extract_authz_data_from_sec_context, $KRB5_LIBS)

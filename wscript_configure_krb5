@@ -58,7 +58,8 @@ conf.CHECK_FUNCS('''
        krb5_enctype_to_string krb5_fwd_tgt_creds krb5_auth_con_set_req_cksumtype
        krb5_get_creds_opt_alloc krb5_get_creds_opt_set_impersonate krb5_get_creds
        krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm
-       krb5_get_init_creds_keyblock krb5_get_init_creds_keytab''',
+       krb5_get_init_creds_keyblock krb5_get_init_creds_keytab
+       krb5_make_principal krb5_build_principal_alloc_va''',
      lib='krb5 k5crypto')
 conf.CHECK_DECLS('''krb5_get_credentials_for_user
                     krb5_auth_con_set_req_cksumtype''',

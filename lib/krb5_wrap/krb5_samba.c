@@ -2093,6 +2093,41 @@ krb5_error_code kerberos_kinit_s4u2_cc(krb5_context ctx,
 }
 #endif
 
+#if !defined(HAVE_KRB5_MAKE_PRINCIPAL) && defined(HAVE_KRB5_BUILD_PRINCIPAL_ALLOC_VA)
+krb5_error_code smb_krb5_make_principal(krb5_context context,
+					krb5_principal *principal,
+					const char *_realm, ...)
+{
+	krb5_error_code code;
+	bool free_realm;
+	char *realm;
+	va_list ap;
+
+	if (_realm) {
+		realm = _realm;
+		free_realm = false;
+	} else {
+		code = krb5_get_default_realm(context, &realm);
+		if (code) {
+			return code;
+		}
+		free_realm = true;
+	}
+
+	va_start(ap, _realm);
+	code = krb5_build_principal_alloc_va(context, principal,
+					     strlen(realm), realm,
+					     ap);
+	va_end(ap);
+
+	if (free_realm) {
+		krb5_free_default_realm(context, &realm);
+	}
+
+	return code;
+}
+#endif
+
 /*
  * smb_krb5_principal_get_realm
  *

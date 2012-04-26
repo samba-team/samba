@@ -230,6 +230,16 @@ krb5_error_code kerberos_kinit_s4u2_cc(krb5_context ctx,
 					time_t *expire_time,
 					time_t *kdc_time);
 #endif
+
+#if defined(HAVE_KRB5_MAKE_PRINCIPAL)
+#define smb_krb5_make_principal krb5_make_principal
+#elif defined(HAVE_KRB5_BUILD_PRINCIPAL_ALLOC_VA)
+krb5_error_code smb_krb5_make_principal(krb5_context context,
+					krb5_principal *principal,
+					const char *realm, ...);
+#else
+#error krb5_make_principal not available
+#endif
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_principal principal);
 
