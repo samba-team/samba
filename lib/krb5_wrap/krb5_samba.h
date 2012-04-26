@@ -267,6 +267,16 @@ krb5_error_code kt_copy_one_principal(krb5_context context,
 				      krb5_kvno kvno,
 				      krb5_enctype *enctypes);
 
+#if defined(HAVE_KRB5_KT_COMPARE)
+#define smb_krb5_kt_compare krb5_kt_compare
+#else
+krb5_boolean smb_krb5_kt_compare(krb5_context context,
+				 krb5_keytab_entry *entry,
+				 krb5_const_principal principal,
+				 krb5_kvno vno,
+				 krb5_enctype enctype);
+#endif
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,

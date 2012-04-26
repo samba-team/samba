@@ -227,3 +227,32 @@ krb5_error_code kt_copy_one_principal(krb5_context context,
     krb5_kt_close (context, dst_keytab);
     return ret;
 }
+
+#if !defined(HAVE_KRB5_KT_COMPARE)
+krb5_boolean smb_krb5_kt_compare(krb5_context context,
+				 krb5_keytab_entry *entry,
+				 krb5_const_principal principal,
+				 krb5_kvno kvno,
+				 krb5_enctype enctype)
+{
+	if (principal) {
+		if (!krb5_principal_compare(context,
+					    entry->principal, principal)) {
+			return false;
+		}
+	}
+	if (kvno) {
+		if (entry->vno != kvno) {
+			return false;
+		}
+	}
+	if (enctype) {
+		if (KRB5_KEY_TYPE(KRB5_KT_KEY(entry)) != enctype) {
+			return false;
+		}
+	}
+
+	return true;
+}
+#endif
+
