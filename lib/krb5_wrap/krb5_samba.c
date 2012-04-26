@@ -1646,12 +1646,54 @@ done:
 	return code;
 }
 
+krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc,
+					   krb5_principal principal,
+					   const char *password,
+					   const char *target_service,
+					   krb5_get_init_creds_opt *krb_options,
+					   time_t *expire_time,
+					   time_t *kdc_time)
+{
+	krb5_error_code code = 0;
+	krb5_creds my_creds;
+
+	code = krb5_get_init_creds_password(ctx, &my_creds, principal,
+					    password, NULL, NULL, 0,
+					    target_service, krb_options);
+	if (code) {
+		return code;
+	}
+
+	code = krb5_cc_initialize(ctx, cc, principal);
+	if (code) {
+		goto done;
+	}
+
+	code = krb5_cc_store_cred(ctx, cc, &my_creds);
+	if (code) {
+		goto done;
+	}
+
+	if (expire_time) {
+		*expire_time = (time_t) my_creds.times.endtime;
+	}
+
+	if (kdc_time) {
+		*kdc_time = (time_t) my_creds.times.starttime;
+	}
+
+	code = 0;
+done:
+	krb5_free_cred_contents(ctx, &my_creds);
+	return code;
+}
+
+#ifdef SAMBA4_USES_HEIMDAL
 /*
   simulate a kinit, putting the tgt in the given credentials cache.
   Orignally by remus@snapserver.com
 
-  The impersonate_principal is the principal if NULL, or the principal to
-  impersonate
+  The impersonate_principal is the principal
 
   The self_service, should be the local service (for S4U2Self if
   impersonate_principal is given).
@@ -1660,16 +1702,16 @@ done:
   kpasswd/realm or a remote service (for S4U2Proxy)
 
 */
-krb5_error_code kerberos_kinit_password_cc(krb5_context ctx,
-					   krb5_ccache store_cc,
-					   krb5_principal init_principal,
-					   const char *init_password,
-					   krb5_principal impersonate_principal,
-					   const char *self_service,
-					   const char *target_service,
-					   krb5_get_init_creds_opt *krb_options,
-					   time_t *expire_time,
-					   time_t *kdc_time)
+krb5_error_code kerberos_kinit_s4u2_cc(krb5_context ctx,
+					krb5_ccache store_cc,
+					krb5_principal init_principal,
+					const char *init_password,
+					krb5_principal impersonate_principal,
+					const char *self_service,
+					const char *target_service,
+					krb5_get_init_creds_opt *krb_options,
+					time_t *expire_time,
+					time_t *kdc_time)
 {
 	krb5_error_code code = 0;
 	krb5_get_creds_opt options;
@@ -1687,31 +1729,18 @@ krb5_error_code kerberos_kinit_password_cc(krb5_context ctx,
 	krb5_principal blacklist_principal = NULL;
 	krb5_principal whitelist_principal = NULL;
 
-	if (impersonate_principal && self_service == NULL) {
-		return EINVAL;
-	}
-
-	/*
-	 * If we are not impersonating, then get this ticket for the
-	 * target service, otherwise a krbtgt, and get the next ticket
-	 * for the target
-	 */
 	code = krb5_get_init_creds_password(ctx, &store_creds,
 					    init_principal,
 					    init_password,
 					    NULL, NULL,
 					    0,
-					    impersonate_principal ? NULL : target_service,
+					    NULL,
 					    krb_options);
 	if (code != 0) {
 		return code;
 	}
 
 	store_principal = init_principal;
-
-	if (impersonate_principal == NULL) {
-		goto store;
-	}
 
 	/*
 	 * We are trying S4U2Self now:
@@ -2040,6 +2069,7 @@ krb5_error_code kerberos_kinit_password_cc(krb5_context ctx,
 
 	return 0;
 }
+#endif
 
 /*
  * smb_krb5_principal_get_realm

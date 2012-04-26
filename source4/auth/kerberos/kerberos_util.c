@@ -232,13 +232,27 @@ static krb5_error_code impersonate_principal_from_credentials(
 		}
 #endif
 		if (password) {
-			ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
-							 princ, password,
-							 impersonate_principal,
-							 self_service,
-							 target_service,
-							 krb_options,
-							 NULL, &kdc_time);
+			if (impersonate_principal) {
+#ifdef SAMBA4_USES_HEIMDAL
+				ret = kerberos_kinit_s4u2_cc(
+						smb_krb5_context->krb5_context,
+						ccache, princ, password,
+						impersonate_principal,
+						self_service, target_service,
+						krb_options, NULL, &kdc_time);
+#else
+				talloc_free(mem_ctx);
+				(*error_string) = "INTERNAL error: s4u2 ops "
+					"are not supported with MIT build yet";
+				return EINVAL;
+#endif
+			} else {
+				ret = kerberos_kinit_password_cc(
+						smb_krb5_context->krb5_context,
+						ccache, princ, password,
+						target_service,
+						krb_options, NULL, &kdc_time);
+			}
 		} else if (impersonate_principal) {
 			talloc_free(mem_ctx);
 			(*error_string) = "INTERNAL error: Cannot impersonate principal with just a keyblock.  A password must be specified in the credentials";
