@@ -1047,29 +1047,3 @@ static const struct tstream_context_ops tstream_cli_np_ops = {
 	.disconnect_send	= tstream_cli_np_disconnect_send,
 	.disconnect_recv	= tstream_cli_np_disconnect_recv,
 };
-
-NTSTATUS _tstream_cli_np_existing(TALLOC_CTX *mem_ctx,
-				  struct cli_state *cli,
-				  uint16_t fnum,
-				  struct tstream_context **_stream,
-				  const char *location)
-{
-	struct tstream_context *stream;
-	struct tstream_cli_np *cli_nps;
-
-	stream = tstream_context_create(mem_ctx,
-					&tstream_cli_np_ops,
-					&cli_nps,
-					struct tstream_cli_np,
-					location);
-	if (!stream) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	ZERO_STRUCTP(cli_nps);
-
-	cli_nps->cli = cli;
-	cli_nps->fnum = fnum;
-
-	*_stream = stream;
-	return NT_STATUS_OK;
-}

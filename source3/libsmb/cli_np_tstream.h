@@ -36,14 +36,6 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 #define tstream_cli_np_open_recv(req, mem_ctx, stream) \
 		_tstream_cli_np_open_recv(req, mem_ctx, stream, __location__)
 
-NTSTATUS _tstream_cli_np_existing(TALLOC_CTX *mem_ctx,
-				  struct cli_state *cli,
-				  uint16_t fnum,
-				  struct tstream_context **_stream,
-				  const char *location);
-#define tstream_cli_np_existing(mem_ctx, cli, npipe, stream) \
-	_tstream_cli_np_existing(mem_ctx, cli, npipe, stream, __location__)
-
 bool tstream_is_cli_np(struct tstream_context *stream);
 
 NTSTATUS tstream_cli_np_use_trans(struct tstream_context *stream);
