@@ -380,7 +380,6 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 						"Wrong DFS_path %s unable to find substring %s in it",
 						resp3.referral_entries[0].referral.v3.referrals.r1.netw_address,
 						str+1));
-#if 0
 	/*
 	 * Due to strange behavior with XP and level 4
 	 * we are obliged to degrade to level 3 ...
@@ -398,7 +397,8 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, memcmp(resp3.referral_entries[0].referral.v3.service_site_guid.value, zeros, 16), 0,
 				 talloc_asprintf(tctx,
 					"Service_site_guid is not NULL as expected"));
-#endif
+#if 0
+	/* Shouldn't be needed anymore*/
 	r3.in.req.max_referral_level = 4;
 
 	torture_assert_ntstatus_ok(tctx,
@@ -409,7 +409,6 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 3 in degraded mode",
 					resp3.referral_entries[0].version));
-#if 0
 	/*
 	 * We do not support fallback indication for the moment
 	 */
