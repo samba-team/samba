@@ -47,8 +47,10 @@ compare_keyblock(const krb5_keyblock *a, const krb5_keyblock *b)
     return TRUE;
 }
 
-static krb5_error_code copy_one_entry(krb5_context context, 
-				      krb5_keytab src_keytab, krb5_keytab dst_keytab, krb5_keytab_entry entry) 
+static krb5_error_code copy_one_entry(krb5_context context,
+				      krb5_keytab src_keytab,
+				      krb5_keytab dst_keytab,
+				      krb5_keytab_entry entry)
 {
     krb5_error_code ret;
     krb5_keytab_entry dummy;
@@ -93,7 +95,7 @@ static krb5_error_code copy_one_entry(krb5_context context,
 	free(name_str);
 	free(etype_str);
 	return ret;
-    } 
+    }
     ret = krb5_kt_add_entry (context, dst_keytab, &entry);
     krb5_kt_free_entry (context, &entry);
     if (ret) {
@@ -108,7 +110,7 @@ static krb5_error_code copy_one_entry(krb5_context context,
     return ret;
 }
 
-krb5_error_code kt_copy (krb5_context context, const char *from, const char *to)
+krb5_error_code kt_copy(krb5_context context, const char *from, const char *to)
 {
     krb5_error_code ret;
     krb5_keytab src_keytab, dst_keytab;
@@ -154,8 +156,12 @@ krb5_error_code kt_copy (krb5_context context, const char *from, const char *to)
     return ret;
 }
 
-krb5_error_code kt_copy_one_principal (krb5_context context, const char *from, const char *to, 
-				       const char *principal, krb5_kvno kvno, krb5_enctype *enctypes)
+krb5_error_code kt_copy_one_principal(krb5_context context,
+				      const char *from,
+				      const char *to,
+				      const char *principal,
+				      krb5_kvno kvno,
+				      krb5_enctype *enctypes)
 {
     krb5_error_code ret;
     krb5_keytab src_keytab, dst_keytab;
@@ -205,10 +211,13 @@ krb5_error_code kt_copy_one_principal (krb5_context context, const char *from, c
 	    char *princ_string;
 	    int ret2 = krb5_unparse_name (context, princ, &princ_string);
 	    if (ret2) {
-		krb5_set_error_message(context, ret, "failed to fetch principal %s", princ_string);
+		krb5_set_error_message(context, ret,
+					"failed to fetch principal %s",
+					princ_string);
 	    }
 	} else {
-	    /* Not finding an enc type is not an error, as long as we copied one for the principal */
+	    /* Not finding an enc type is not an error,
+	     * as long as we copied one for the principal */
 	    ret = 0;
 	}
     }
