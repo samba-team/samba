@@ -80,7 +80,7 @@ static krb5_error_code principals_from_list(TALLOC_CTX *parent_ctx,
 	}
 
 	if (samAccountName) {
-		ret = krb5_make_principal(context, &principals[i],
+		ret = smb_krb5_make_principal(context, &principals[i],
 					  upper_realm, samAccountName,
 					  NULL);
 		if (ret) {
@@ -176,7 +176,7 @@ static krb5_error_code salt_principal(TALLOC_CTX *parent_ctx,
 		return ENOMEM;
 	}
 
-	ret = krb5_make_principal(context, salt_princ, upper_realm,
+	ret = smb_krb5_make_principal(context, salt_princ, upper_realm,
 						"host", salt_body, NULL);
 	if (ret) {
 		*error_string = smb_get_krb5_error_message(context,
@@ -197,7 +197,7 @@ static krb5_enctype ms_suptype_to_ietf_enctype(uint32_t enctype_bitmap)
 	case ENC_RSA_MD5:
 		return ENCTYPE_DES_CBC_MD5;
 	case ENC_RC4_HMAC_MD5:
-		return ENCTYPE_ARCFOUR_HMAC_MD5;
+		return ENCTYPE_ARCFOUR_HMAC;
 	case ENC_HMAC_SHA1_96_AES128:
 		return ENCTYPE_AES128_CTS_HMAC_SHA1_96;
 	case ENC_HMAC_SHA1_96_AES256:
@@ -257,7 +257,8 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 
 		ret = create_kerberos_key_from_string_direct(context,
 						salt_princ, &password,
-						&entry.keyblock, enctypes[i]);
+						KRB5_KT_KEY(&entry),
+						enctypes[i]);
 		if (ret != 0) {
 			return ret;
 		}
@@ -283,14 +284,14 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 				free(unparsed);
 				talloc_free(k5_error_string);
 				krb5_free_keyblock_contents(context,
-							    &entry.keyblock);
+							    KRB5_KT_KEY(&entry));
 				return ret;
 			}
 
 			DEBUG(5, ("Added key (kvno %d) to keytab (enctype %d)\n",
 				  kvno, (int)enctypes[i]));
 		}
-		krb5_free_keyblock_contents(context, &entry.keyblock);
+		krb5_free_keyblock_contents(context, KRB5_KT_KEY(&entry));
 	}
 	return 0;
 }
@@ -397,7 +398,9 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 	switch (ret) {
 	case 0:
 		break;
+#ifdef HEIM_ERR_OPNOTSUPP
 	case HEIM_ERR_OPNOTSUPP:
+#endif
 	case ENOENT:
 	case KRB5_KT_END:
 		/* no point enumerating if there isn't anything here */
@@ -421,8 +424,8 @@ static krb5_error_code remove_old_entries(TALLOC_CTX *parent_ctx,
 		}
 		for (i = 0; principals[i]; i++) {
 			/* if it matches our principal */
-			if (krb5_kt_compare(context, &entry,
-					    principals[i], 0, 0)) {
+			if (smb_krb5_kt_compare(context, &entry,
+						principals[i], 0, 0)) {
 				matched = true;
 				break;
 			}
