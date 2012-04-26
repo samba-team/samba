@@ -454,9 +454,6 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	}
 
 	/* Ensure this event will never fire. */
-	TALLOC_FREE(fsp->oplock_timeout);
-
-	/* Ensure this event will never fire. */
 	TALLOC_FREE(fsp->update_write_time_event);
 
 	bitmap_clear(sconn->file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
