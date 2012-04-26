@@ -34,8 +34,7 @@
  */
 
 #include "includes.h"
-#include "system/kerberos.h"
-#include "auth/kerberos/kerberos.h"
+#include "krb5_samba.h"
 
 static krb5_boolean
 compare_keyblock(const krb5_keyblock *a, const krb5_keyblock *b)

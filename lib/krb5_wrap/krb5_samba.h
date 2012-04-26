@@ -241,6 +241,17 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *edata,
 			   DATA_BLOB *edata_out);
 
+
+krb5_error_code kt_copy(krb5_context context,
+			const char *from,
+			const char *to);
+krb5_error_code kt_copy_one_principal(krb5_context context,
+				      const char *from,
+				      const char *to,
+				      const char *principal,
+				      krb5_kvno kvno,
+				      krb5_enctype *enctypes);
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
