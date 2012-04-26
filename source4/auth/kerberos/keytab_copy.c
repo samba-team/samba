@@ -40,11 +40,11 @@
 static krb5_boolean
 compare_keyblock(const krb5_keyblock *a, const krb5_keyblock *b)
 {
-    if(a->keytype != b->keytype ||
-       a->keyvalue.length != b->keyvalue.length ||
-       memcmp(a->keyvalue.data, b->keyvalue.data, a->keyvalue.length) != 0)
-	return FALSE;
-    return TRUE;
+    if (KRB5_KEY_TYPE(a) != KRB5_KEY_TYPE(b) ||
+        KRB5_KEY_LENGTH(a) != KRB5_KEY_LENGTH(b) ||
+        memcmp(KRB5_KEY_DATA(a), KRB5_KEY_DATA(b), KRB5_KEY_LENGTH(a)) != 0)
+	return false;
+    return true;
 }
 
 static krb5_error_code copy_one_entry(krb5_context context,
@@ -63,7 +63,9 @@ static krb5_error_code copy_one_entry(krb5_context context,
 	name_str = NULL; /* XXX */
 	return ret;
     }
-    ret = krb5_enctype_to_string(context, entry.keyblock.keytype, &etype_str);
+    ret = smb_krb5_enctype_to_string(context,
+					KRB5_KEY_TYPE(KRB5_KT_KEY(&entry)),
+					&etype_str);
     if(ret) {
 	krb5_set_error_message(context, ret, "krb5_enctype_to_string");
 	etype_str = NULL; /* XXX */
@@ -72,16 +74,16 @@ static krb5_error_code copy_one_entry(krb5_context context,
     ret = krb5_kt_get_entry(context, dst_keytab,
 			    entry.principal,
 			    entry.vno,
-			    entry.keyblock.keytype,
+			    KRB5_KEY_TYPE(KRB5_KT_KEY(&entry)),
 			    &dummy);
     if(ret == 0) {
 	/* this entry is already in the new keytab, so no need to
 	   copy it; if the keyblocks are not the same, something
 	   is weird, so complain about that */
-	if(!compare_keyblock(&entry.keyblock, &dummy.keyblock)) {
-		krb5_warn(context, 0, "entry with different keyvalue "
+	if (!compare_keyblock(KRB5_KT_KEY(&entry), KRB5_KT_KEY(&dummy))) {
+		DEBUG(2, ("copy_one_entry: entry with different keyvalue "
 			  "already exists for %s, keytype %s, kvno %d",
-			  name_str, etype_str, entry.vno);
+			  name_str, etype_str, entry.vno));
 	}
 	krb5_kt_free_entry(context, &dummy);
 	krb5_kt_free_entry (context, &entry);
