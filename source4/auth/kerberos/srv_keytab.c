@@ -247,7 +247,7 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 	krb5_data password;
 	char *unparsed;
 
-	password.data = discard_const_p(char *, password_s);
+	password.data = discard_const_p(char, password_s);
 	password.length = strlen(password_s);
 
 	for (i = 0; enctypes[i]; i++) {
