@@ -1555,6 +1555,28 @@ krb5_error_code smb_krb5_get_creds(const char *server_s,
 	return ret;
 }
 
+
+krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
+						krb5_enctype enctype,
+						const void *data,
+						size_t length,
+						krb5_keyblock *key)
+{
+#if defined(HAVE_KRB5_KEYBLOCK_INIT)
+	return krb5_keyblock_init(context, enctype, data, length, key);
+#else
+	memset(key, 0, sizeof(krb5_keyblock));
+	KRB5_KEY_DATA(key) = SMB_MALLOC(length);
+	if (NULL == KRB5_KEY_DATA(key)) {
+		return ENOMEM;
+	}
+	memcpy(KRB5_KEY_DATA(key), data, length);
+	KRB5_KEY_LENGTH(key) = length;
+	KRB5_KEY_TYPE(key) = enctype;
+	return 0;
+#endif
+}
+
 /*
   simulate a kinit, putting the tgt in the given credentials cache.
   Orignally by remus@snapserver.com

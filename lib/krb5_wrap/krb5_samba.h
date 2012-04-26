@@ -198,6 +198,11 @@ krb5_error_code smb_krb5_get_creds(const char *server_s,
 				   const char *cc,
 				   const char *impersonate_princ_s,
 				   krb5_creds **creds_p);
+krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
+						krb5_enctype enctype,
+						const void *data,
+						size_t length,
+						krb5_keyblock *key);
 krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
 					   krb5_principal principal,
 					   krb5_keyblock *keyblock,
