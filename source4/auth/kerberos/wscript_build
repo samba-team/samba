@@ -6,7 +6,7 @@ bld.SAMBA_SUBSYSTEM('KRB_INIT_CTX',
 		   )
 
 bld.SAMBA_LIBRARY('authkrb5',
-                  source='kerberos.c kerberos_heimdal.c kerberos_pac.c keytab_copy.c',
+                  source='kerberos_heimdal.c kerberos_pac.c keytab_copy.c',
                   autoproto='proto.h',
                   public_deps='ndr-krb5pac krb5samba samba_socket LIBCLI_RESOLVE asn1',
                   deps='auth_sam_reply tevent LIBPACKET ndr ldb krb5samba KRB_INIT_CTX KRB5_PAC errors',
