@@ -782,6 +782,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 				      struct cli_state **cli,
 				      bool *retry)
 {
+	bool try_spnego = false;
+	bool try_ipc_auth = false;
 	char *machine_password = NULL;
 	char *machine_krb5_principal = NULL;
 	char *machine_account = NULL;
@@ -824,17 +826,21 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	cli_set_timeout(*cli, 10000); /* 10 seconds */
 
-	result = cli_negprot(*cli, PROTOCOL_NT1);
+	result = cli_negprot(*cli, PROTOCOL_SMB2_02);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("cli_negprot failed: %s\n", nt_errstr(result)));
 		goto done;
 	}
 
-	if (!is_dc_trusted_domain_situation(domain->name) &&
-	    cli_state_protocol(*cli) >= PROTOCOL_NT1 &&
-	    cli_state_capabilities(*cli) & CAP_EXTENDED_SECURITY)
-	{
+	if (cli_state_protocol(*cli) >= PROTOCOL_NT1 &&
+	    cli_state_capabilities(*cli) & CAP_EXTENDED_SECURITY) {
+		try_spnego = true;
+	} else if (cli_state_protocol(*cli) >= PROTOCOL_SMB2_02) {
+		try_spnego = true;
+	}
+
+	if (!is_dc_trusted_domain_situation(domain->name) && try_spnego) {
 		result = get_trust_creds(domain, &machine_password,
 					 &machine_account,
 					 &machine_krb5_principal);
@@ -912,8 +918,15 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
 	sec_mode = cli_state_security_mode(*cli);
-	if (((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) != 0) &&
-	    (strlen(ipc_username) > 0)) {
+
+	try_ipc_auth = false;
+	if (try_spnego) {
+		try_ipc_auth = true;
+	} else if (sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
+		try_ipc_auth = true;
+	}
+
+	if (try_ipc_auth && (strlen(ipc_username) > 0)) {
 
 		/* Only try authenticated if we have a username */
 
