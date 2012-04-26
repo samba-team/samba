@@ -1796,12 +1796,10 @@ def provision(logger, session_info, credentials, smbconf=None,
 
         if serverrole == "domain controller":
             if paths.netlogon is None:
-                raise MissingShareError("netlogon", paths.smbconf,
-                    setup_path("provision.smb.conf.dc"))
+                raise MissingShareError("netlogon", paths.smbconf)
 
             if paths.sysvol is None:
-                raise MissingShareError("sysvol", paths.smbconf,
-                    setup_path("provision.smb.conf.dc"))
+                raise MissingShareError("sysvol", paths.smbconf)
 
             if not os.path.isdir(paths.netlogon):
                 os.makedirs(paths.netlogon, 0755)
@@ -1947,8 +1945,8 @@ class InvalidNetbiosName(Exception):
 
 class MissingShareError(ProvisioningError):
 
-    def __init__(self, name, smbconf, smbconf_template):
+    def __init__(self, name, smbconf):
         super(MissingShareError, self).__init__(
             "Existing smb.conf does not have a [%s] share, but you are "
-            "configuring a DC. Please either remove %s or see the template "
-            "at %s" % (name, smbconf, smbconf_template))
+            "configuring a DC. Please remove %s or add the share manually." %
+            (name, smbconf))
