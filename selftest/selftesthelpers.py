@@ -101,20 +101,20 @@ def plantestsuite(name, env, cmdline, allow_empty_output=False):
         filter_subunit_args.append("--fail-on-empty")
     if "$LISTOPT" in cmdline:
         filter_subunit_args.append("$LISTOPT")
-    print "%s 2>&1 | %s/selftest/filter-subunit %s --prefix=\"%s.\"" % (cmdline,
+    print "%s 2>&1 | %s/selftest/filter-subunit %s --prefix=\"%s.\" --suffix=\"(%s)\"" % (cmdline,
                                                                         srcdir(),
                                                                         " ".join(filter_subunit_args),
-                                                                        name)
+                                                                        name, env)
     if allow_empty_output:
         print >>sys.stderr, "WARNING: allowing empty subunit output from %s" % name
 
 
-def add_prefix(prefix, support_list=False):
+def add_prefix(prefix, env, support_list=False):
     if support_list:
         listopt = "$LISTOPT "
     else:
         listopt = ""
-    return "%s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\"" % (srcdir(), listopt, prefix)
+    return "%s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\" --suffix=\"(%s)\"" % (srcdir(), listopt, prefix, env)
 
 
 def plantestsuite_loadlist(name, env, cmdline):
@@ -128,7 +128,7 @@ def plantestsuite_loadlist(name, env, cmdline):
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
     support_list = ("$LISTOPT" in cmdline)
-    print "%s $LOADLIST 2>&1 | %s" % (cmdline, add_prefix(name, support_list))
+    print "%s $LOADLIST 2>&1 | %s" % (cmdline, add_prefix(name, env, support_list))
 
 
 def plantestsuite_idlist(name, env, cmdline):

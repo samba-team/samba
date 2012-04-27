@@ -270,10 +270,14 @@ class FilterOps(testtools.testresult.TestResult):
         self._ops.startTest(test)
 
     def _add_prefix(self, test):
+        prefix = ""
+        suffix = ""
         if self.prefix is not None:
-            return subunit.RemotedTestCase(self.prefix + test.id())
-        else:
-            return test
+            prefix = self.prefix
+        if self.suffix is not None:
+            suffix = self.suffix
+
+        return subunit.RemotedTestCase(prefix + test.id() + suffix)
 
     def addError(self, test, details=None):
         test = self._add_prefix(test)
@@ -378,13 +382,14 @@ class FilterOps(testtools.testresult.TestResult):
 
         self._ops.end_testsuite(name, result, reason)
 
-    def __init__(self, out, prefix=None, expected_failures=None,
+    def __init__(self, out, prefix=None, suffix=None, expected_failures=None,
                  strip_ok_output=False, fail_immediately=False,
                  flapping=None):
         self._ops = out
         self.seen_output = False
         self.output = None
         self.prefix = prefix
+        self.suffix = suffix
         if expected_failures is not None:
             self.expected_failures = expected_failures
         else:

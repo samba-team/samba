@@ -40,6 +40,8 @@ parser.add_option("--fail-immediately", action="store_true",
     help="Whether to stop on the first error", default=False)
 parser.add_option("--prefix", type="string",
 	help="Add prefix to all test names")
+parser.add_option("--suffix", type="string",
+	help="Add suffix to all test names")
 parser.add_option("--fail-on-empty", default=False,
 	action="store_true", help="Fail if there was no subunit output")
 parser.add_option("--list", default=False,
@@ -48,10 +50,13 @@ opts, args = parser.parse_args()
 
 if opts.list:
 	prefix = opts.prefix
+	suffix = opts.suffix
 	if not prefix:
 		prefix = ""
+	if not suffix:
+		suffix = ""
 	for l in sys.stdin:
-		sys.stdout.write("%s%s\n" % (prefix, l.rstrip()))
+		sys.stdout.write("%s%s%s\n" % (prefix, l.rstrip(), suffix))
 	sys.exit(0)
 
 if opts.expected_failures:
@@ -79,7 +84,7 @@ def handle_sigint(sig, stack):
 signal.signal(signal.SIGINT, handle_sigint)
 
 out = subunithelper.SubunitOps(sys.stdout)
-msg_ops = subunithelper.FilterOps(out, opts.prefix, expected_failures,
+msg_ops = subunithelper.FilterOps(out, opts.prefix, opts.suffix, expected_failures,
 				  opts.strip_passed_output,
 				  fail_immediately=opts.fail_immediately,
 				  flapping=flapping)

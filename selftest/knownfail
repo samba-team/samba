@@ -35,7 +35,7 @@
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,smb2,bigendian\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2,bigendian\]
-^samba3.raw.composite.appendacl # This needs ACL and IDMAP behaviour that smbd cannot provide, including mapping of arbitary sids.
+^samba3.raw.composite.appendacl\(s3dc\)# This needs ACL and IDMAP behaviour that smbd cannot provide, including mapping of arbitary sids.
 # these show that we still have some differences between our system
 # with our internal iconv because it passes except when we bypass our
 # internal iconv modules
@@ -58,8 +58,8 @@
 ^samba4.rpc.netlogon.*.LogonUasLogoff
 ^samba4.rpc.netlogon.*.DatabaseSync
 ^samba4.rpc.netlogon.*.DatabaseSync2
-^samba4.rpc.netlogon.*.LogonControl$
-^samba4.rpc.netlogon.*.LogonControl2$
+^samba4.rpc.netlogon.*.LogonControl\(.*\)$
+^samba4.rpc.netlogon.*.LogonControl2\(.*\)$
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomains
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
 ^samba4.rpc.netlogon.*.GetPassword
@@ -75,26 +75,26 @@
 ^samba4.rap.*netsessiongetinfo
 ^samba4.rap.*netremotetod
 # SMB2 in s4 does not seem to support rename correctly
-^samba4.smb2.rename.simple$
-^samba4.smb2.rename.no_sharing$
-^samba4.smb2.rename.share_delete_and_delete_access$
-^samba4.smb2.rename.no_share_delete_but_delete_access$
-^samba4.smb2.rename.share_delete_no_delete_access$
-^samba4.smb2.rename.no_share_delete_no_delete_access$
+^samba4.smb2.rename.simple\(.*\)$
+^samba4.smb2.rename.no_sharing\(.*\)$
+^samba4.smb2.rename.share_delete_and_delete_access\(.*\)$
+^samba4.smb2.rename.no_share_delete_but_delete_access\(.*\)$
+^samba4.smb2.rename.share_delete_no_delete_access\(.*\)$
+^samba4.smb2.rename.no_share_delete_no_delete_access\(.*\)$
 ^samba4.smb2.rename.msword
 ^samba4.winbind.struct.*.show_sequence     # Not yet working in winbind
-^samba4.*base.delaywrite.*update of write time and SMBwrite truncate$
-^samba4.*base.delaywrite.*update of write time and SMBwrite truncate expand$
-^samba4.*base.delaywrite.*delayed update of write time 3a$
-^samba4.*base.delaywrite.*delayed update of write time 3c$
-^samba4.*base.delaywrite.*update of write time using SET_END_OF_FILE$
-^samba4.*base.delaywrite.*update of write time using SET_ALLOCATION_SIZE$
-^samba4.ldap.python \(dc\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID$
+^samba4.*base.delaywrite.*update of write time and SMBwrite truncate\(.*\)$
+^samba4.*base.delaywrite.*update of write time and SMBwrite truncate expand\(.*\)$
+^samba4.*base.delaywrite.*delayed update of write time 3a\(.*\)$
+^samba4.*base.delaywrite.*delayed update of write time 3c\(.*\)$
+^samba4.*base.delaywrite.*update of write time using SET_END_OF_FILE\(.*\)$
+^samba4.*base.delaywrite.*update of write time using SET_ALLOCATION_SIZE\(.*\)$
+^samba4.ldap.python \(dc\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID\(.*\)$
 # some operations don't work over the CIFS NTVFS backend yet (eg. root_fid)
 ^samba4.ntvfs.cifs.*.base.createx_sharemodes_dir
 ^samba4.raw.lock.*.async # bug 6960
 ^samba4.smb2.lock.*.multiple-unlock # bug 6959
-^samba4.raw.sfileinfo.*.end-of-file$ # bug 6962
+^samba4.raw.sfileinfo.*.end-of-file\(.*\)$ # bug 6962
 ^samba4.raw.oplock.*.batch22 # bug 6963
 ^samba4.raw.lock.*.zerobyteread # bug 6974
 ^samba4.smb2.lock.*.zerobyteread # bug 6974
@@ -112,32 +112,32 @@
 #^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.*
 ^samba4.drs.fsmo.python
 ^samba4.libsmbclient.opendir.opendir # This requires netbios browsing
-^samba4.rpc.drsuapi.*.drsuapi.DsGetDomainControllerInfo$
-^samba4.rpc.drsuapi.*.drsuapi.DsCrackNames$
-^samba4.smb2.oplock.exclusive2$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.exclusive5$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.exclusive6$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.brl3$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.levelii500$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.brl1$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch22$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch19$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch12$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch11$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch1$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch6$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch9$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch10$ # samba 4 oplocks are a mess
-^samba4.smb2.oplock.batch20$ # samba 4 oplocks are a mess
+^samba4.rpc.drsuapi.*.drsuapi.DsGetDomainControllerInfo\(.*\)$
+^samba4.rpc.drsuapi.*.drsuapi.DsCrackNames\(.*\)$
+^samba4.smb2.oplock.exclusive2\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.exclusive5\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.exclusive6\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.brl3\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.levelii500\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.brl1\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch22\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch19\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch12\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch11\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch1\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch6\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch9\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch10\(.*\)$ # samba 4 oplocks are a mess
+^samba4.smb2.oplock.batch20\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.getinfo.getinfo # streams on directories does not work
-^samba4.ntvfs.cifs.krb5.base.createx_access.createx_access$
-^samba4.ldap.acl.*.AclSearchTests.test_search_anonymous3$  # ACL search behaviour not enabled by default
-^samba4.ldap.acl.*.AclSearchTests.test_search1$  # ACL search behaviour not enabled by default
-^samba4.ldap.acl.*.AclSearchTests.test_search2$  # ACL search behaviour not enabled by default
-^samba4.ldap.acl.*.AclSearchTests.test_search3$  # ACL search behaviour not enabled by default
-^samba4.ldap.acl.*.AclSearchTests.test_search4$  # ACL search behaviour not enabled by default
-^samba4.ldap.acl.*.AclSearchTests.test_search5$  # ACL search behaviour not enabled by default
-^samba4.ldap.acl.*.AclSearchTests.test_search6$  # ACL search behaviour not enabled by default
+^samba4.ntvfs.cifs.krb5.base.createx_access.createx_access\(.*\)$
+^samba4.ldap.acl.*.AclSearchTests.test_search_anonymous3\(.*\)$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search1\(.*\)$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search2\(.*\)$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search3\(.*\)$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search4\(.*\)$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search5\(.*\)$  # ACL search behaviour not enabled by default
+^samba4.ldap.acl.*.AclSearchTests.test_search6\(.*\)$  # ACL search behaviour not enabled by default
 ^samba4.rpc.lsa.forest.trust #Not fully provided by Samba4
 ^samba3.smb2.create.gentest
 ^samba3.smb2.create.blob
