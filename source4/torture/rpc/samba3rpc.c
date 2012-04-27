@@ -1014,6 +1014,7 @@ static bool auth2(struct torture_context *tctx,
 						 r.in.credentials,
 						 r.out.return_credentials, &mach_pw,
 						 &netr_cred, negotiate_flags);
+	torture_assert(tctx, (creds_state != NULL), "memory allocation failed");
 
 	status = dcerpc_netr_ServerAuthenticate2_r(net_handle, mem_ctx, &a);
 	if (!NT_STATUS_IS_OK(status)) {
