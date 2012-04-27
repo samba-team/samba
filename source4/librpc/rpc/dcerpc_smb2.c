@@ -415,6 +415,21 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_pipe *p,
 	struct smb2_request *req;
 	struct dcecli_connection *c = p->conn;
 
+	/* if we don't have a binding on this pipe yet, then create one */
+	if (p->binding == NULL) {
+		NTSTATUS status;
+		const char *r = smbXcli_conn_remote_name(tree->session->transport->conn);
+		char *s;
+		SMB_ASSERT(r != NULL);
+		s = talloc_asprintf(p, "ncacn_np:%s", r);
+		if (s == NULL) return NULL;
+		status = dcerpc_parse_binding(p, s, &p->binding);
+		talloc_free(s);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+	}
+
 	ctx = composite_create(c, c->event_ctx);
 	if (ctx == NULL) return NULL;
 
