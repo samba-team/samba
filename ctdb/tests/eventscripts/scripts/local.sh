@@ -15,12 +15,20 @@ export EVENTSCRIPTS_PATH
 
 PATH="${EVENTSCRIPTS_PATH}:${PATH}"
 
-if [ -d "${TEST_SUBDIR}/etc" ] ; then
-    CTDB_ETCDIR="${TEST_SUBDIR}/etc"
-else
-    die "Unable to set \$CTDB_ETCDIR"
+export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_eventscripts"
+if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" -a \
+    "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/unit_eventscripts" ] ; then
+    rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
 fi
-export CTDB_ETCDIR
+mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
+export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb"
+
+if [ -d "${TEST_SUBDIR}/etc" ] ; then    
+    cp -a "${TEST_SUBDIR}/etc" "$EVENTSCRIPTS_TESTS_VAR_DIR"
+    export CTDB_ETCDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc"
+else
+    die "Unable to setup \$CTDB_ETCDIR"
+fi
 
 if [ -d "${TEST_SUBDIR}/etc-ctdb" ] ; then
     CTDB_BASE="${TEST_SUBDIR}/etc-ctdb"
@@ -53,14 +61,6 @@ This is nasty but it works...  :-)
 EOF
     exit 1
 fi
-
-export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_eventscripts"
-if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" -a \
-    "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/unit_eventscripts" ] ; then
-    rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
-fi
-mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
-export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb"
 
 ######################################################################
 
