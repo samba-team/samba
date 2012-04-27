@@ -14,7 +14,10 @@ When running tests against a real or virtual cluster the script
 tests/run_cluster_tests.sh can be used.  This runs all integration
 tests (simple, complex).
 
-Both of these scripts can also take a list of tests to run.
+Both of these scripts can also take a list of tests to run.  You can
+also pass options, which are then passed to run_tests.  However, if
+you just try to pass options to run_tests then you lose the default
+list of tests that are run.  You can't have everything...
 
 scripts/run_tests
 -----------------
@@ -40,6 +43,20 @@ include:
       The -l option just sets TEST_LOCAL_DAEMONS to 3...  :-)
 
   -e  Exit on the first test failure
+
+  -C  Clean up - kill daemons and remove $TEST_VAR_DIR when done
+
+      Tests uses a temporary/var directory for test state.  By default,
+      this directory is not removed when tests are complete, so you
+      can do forensics or, for integration tests, re-run tests that
+      have failed against the same directory (with the same local
+      daemons setup).  So this option cleans things up.
+
+      Also kills local daemons associated with directory.
+
+  -V  Use <dir> as $TEST_VAR_DIR
+
+      Use the specified temporary temporary/var directory.
 
   -H  No headers - for running single test with other wrapper
 
