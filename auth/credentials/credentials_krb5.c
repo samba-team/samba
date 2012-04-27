@@ -303,8 +303,8 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 	    cred->ccache_obtained > CRED_UNINITIALISED) {
 		time_t lifetime;
 		bool expired = false;
-		ret = krb5_cc_get_lifetime(cred->ccache->smb_krb5_context->krb5_context, 
-					   cred->ccache->ccache, &lifetime);
+		ret = smb_krb5_cc_get_lifetime(cred->ccache->smb_krb5_context->krb5_context,
+					       cred->ccache->ccache, &lifetime);
 		if (ret == KRB5_CC_END) {
 			/* If we have a particular ccache set, without
 			 * an initial ticket, then assume there is a
