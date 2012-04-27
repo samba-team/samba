@@ -1109,7 +1109,7 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 	DEBUG(10,("remove_duplicate_addrs2: "
 			"looking for duplicate address/port pairs\n"));
 
-	/* one loop to remove duplicates */
+	/* One loop to set duplicates to a zero addr. */
 	for ( i=0; i<count; i++ ) {
 		if ( is_zero_addr(&iplist[i].ss)) {
 			continue;
@@ -1124,18 +1124,17 @@ static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 		}
 	}
 
-	/* one loop to clean up any holes we left */
-	/* first ip should never be a zero_ip() */
-	for (i = 0; i<count; ) {
-		if (is_zero_addr(&iplist[i].ss) ) {
-			if (i != count-1) {
-				memmove(&iplist[i], &iplist[i+1],
-					(count - i - 1)*sizeof(iplist[i]));
+	/* Now remove any addresses set to zero above. */
+	for (i = 0; i < count; i++) {
+		while (i < count &&
+				is_zero_addr(&iplist[i].ss)) {
+			if (count-i-1>0) {
+				memmove(&iplist[i],
+					&iplist[i+1],
+					(count-i-1)*sizeof(struct ip_service));
 			}
 			count--;
-			continue;
 		}
-		i++;
 	}
 
 	return count;
