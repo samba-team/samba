@@ -3739,6 +3739,141 @@ done:
 	return ret;
 }
 
+/**
+ * Test smb2reauthentication while rpc pipe is in use.
+ * Open a second lsa bind after reauth to anon.
+ * Do lsa getusername on that second bind.
+ */
+static bool torture_rpc_smb2_reauth2(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	bool ret = false;
+	struct smbcli_options options;
+
+	struct dcerpc_pipe *lsa_pipe;
+	struct dcerpc_binding_handle *lsa_handle;
+	struct lsa_GetUserName r;
+	struct lsa_String *authority_name_p = NULL;
+	char *authority_name_saved = NULL;
+	struct lsa_String *account_name_p = NULL;
+	char *account_name_saved = NULL;
+	struct cli_credentials *anon_creds = NULL;
+	const char *host = torture_setting_string(torture, "host", NULL);
+	struct smb2_tree *tree;
+
+	mem_ctx = talloc_init("torture_samba3_reauth");
+	torture_assert(torture, (mem_ctx != NULL), "talloc_init failed");
+
+	lpcfg_smbcli_options(torture->lp_ctx, &options);
+
+	status = smb2_connect(mem_ctx,
+			      host,
+			      lpcfg_smb_ports(torture->lp_ctx),
+			      "IPC$",
+			      lpcfg_resolve_context(torture->lp_ctx),
+			      cmdline_credentials,
+			      &tree,
+			      torture->ev,
+			      &options,
+			      lpcfg_socket_options(torture->lp_ctx),
+			      lpcfg_gensec_settings(torture, torture->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_connect failed");
+
+	/* smb re-authenticate as anonymous */
+
+	anon_creds = cli_credentials_init_anon(mem_ctx);
+
+	status = smb2_session_setup_spnego(tree->session,
+					   anon_creds,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"session reauth to anon failed");
+
+	/* open the lsa pipe */
+
+	lsa_pipe = dcerpc_pipe_init(mem_ctx, torture->ev);
+	torture_assert_goto(torture, (lsa_pipe != NULL), ret, done,
+			    "dcerpc_pipe_init failed");
+	lsa_handle = lsa_pipe->binding_handle;
+
+	status = dcerpc_pipe_open_smb2(lsa_pipe, tree, "lsarpc");
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"dcerpc_pipe_open_smb2 failed");
+
+	status = dcerpc_bind_auth_none(lsa_pipe, &ndr_table_lsarpc);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"dcerpc_bind_auth_none failed");
+
+	/* lsa getusername */
+
+	ZERO_STRUCT(r);
+	r.in.system_name = "\\";
+	r.in.account_name = &account_name_p;
+	r.in.authority_name = &authority_name_p;
+	r.out.account_name = &account_name_p;
+
+	status = dcerpc_lsa_GetUserName_r(lsa_handle, mem_ctx, &r);
+
+	authority_name_p = *r.out.authority_name;
+
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"GetUserName failed");
+	torture_assert_ntstatus_ok_goto(torture, r.out.result, ret, done,
+					"GetUserName failed");
+
+	torture_comment(torture, "lsa_GetUserName gave '%s\\%s'\n",
+			authority_name_p->string,
+			account_name_p->string);
+
+	account_name_saved = talloc_strdup(mem_ctx, account_name_p->string);
+	torture_assert_goto(torture, (account_name_saved != NULL), ret, done,
+			    "talloc failed");
+	authority_name_saved = talloc_strdup(mem_ctx, authority_name_p->string);
+	torture_assert_goto(torture, (authority_name_saved != NULL), ret, done,
+			    "talloc failed");
+
+	/* smb re-auth again to the original user */
+
+	status = smb2_session_setup_spnego(tree->session,
+					   cmdline_credentials,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"session reauth to anon failed");
+
+	/* re-do lsa getusername */
+
+	TALLOC_FREE(authority_name_p);
+	TALLOC_FREE(account_name_p);
+	ZERO_STRUCT(r);
+	r.in.system_name = "\\";
+	r.in.account_name = &account_name_p;
+	r.in.authority_name = &authority_name_p;
+	r.out.account_name = &account_name_p;
+
+	status = dcerpc_lsa_GetUserName_r(lsa_handle, mem_ctx, &r);
+
+	authority_name_p = *r.out.authority_name;
+
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"GetUserName failed");
+	torture_assert_ntstatus_ok_goto(torture, r.out.result, ret, done,
+					"GetUserName failed");
+
+	torture_assert_goto(torture, (strcmp(authority_name_p->string, authority_name_saved) == 0),
+			    ret, done, "authority_name not equal after reauth to anon");
+	torture_assert_goto(torture, (strcmp(account_name_p->string, account_name_saved) == 0),
+			    ret, done, "account_name not equal after reauth to anon");
+
+	ret = true;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "samba3");
@@ -3759,6 +3894,7 @@ struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "smb-reauth1", torture_rpc_smb_reauth1);
 	torture_suite_add_simple_test(suite, "smb-reauth2", torture_rpc_smb_reauth2);
 	torture_suite_add_simple_test(suite, "smb2-reauth1", torture_rpc_smb2_reauth1);
+	torture_suite_add_simple_test(suite, "smb2-reauth2", torture_rpc_smb2_reauth2);
 
 	suite->description = talloc_strdup(suite, "samba3 DCERPC interface tests");
 
