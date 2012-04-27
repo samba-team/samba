@@ -240,6 +240,18 @@ krb5_error_code smb_krb5_make_principal(krb5_context context,
 #else
 #error krb5_make_principal not available
 #endif
+
+#if defined(HAVE_KRB5_CC_GET_LIFETIME)
+#define smb_krb5_cc_get_lifetime krb5_cc_get_lifetime
+#elif defined(HAVE_KRB5_CC_RETRIEVE_CRED)
+krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
+					 krb5_ccache id,
+					 time_t *t);
+#else
+#error krb5_cc_get_lifetime not available
+#endif
+
+
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_principal principal);
 

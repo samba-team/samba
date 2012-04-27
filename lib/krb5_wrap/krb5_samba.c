@@ -2128,6 +2128,53 @@ krb5_error_code smb_krb5_make_principal(krb5_context context,
 }
 #endif
 
+#if !defined(HAVE_KRB5_CC_GET_LIFETIME) && defined(HAVE_KRB5_CC_RETRIEVE_CRED)
+/**
+ * @brief Get the lifetime of the initial ticket in the cache.
+ *
+ * @param[in]  context  The kerberos context.
+ *
+ * @param[in]  id       The credential cache to get the ticket lifetime.
+ *
+ * @param[out] t        A pointer to a time value to store the lifetime.
+ *
+ * @return              0 on success, a krb5_error_code on error.
+ */
+krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
+					 krb5_ccache id,
+					 time_t *t)
+{
+	krb5_error_code rc;
+	krb5_creds mcreds;
+	krb5_creds creds;
+	krb5_timestamp now;
+
+	ZERO_STRUCT(mcreds);
+
+	mcreds.ticket_flags = TKT_FLG_INITIAL;
+
+	rc = krb5_cc_retrieve_cred(context,
+				   id,
+				   KRB5_TC_MATCH_FLAGS,
+				   &mcreds,
+				   &creds);
+	if (rc != 0) {
+		return rc;
+	}
+
+	rc = krb5_timeofday(context, &now);
+	if (rc != 0) {
+		return rc;
+	}
+
+	*t = (time_t) (creds.times.endtime - now);
+
+	krb5_free_creds(context, &creds);
+
+	return 0;
+}
+#endif /* HAVE_KRB5_CC_GET_LIFETIME */
+
 /*
  * smb_krb5_principal_get_realm
  *
