@@ -54,7 +54,11 @@ def smb4torture_testsuites(prefix):
 
 def plansmbtorturetestsuite(name, env, options, description=''):
     target = "samba3"
-    modname = "%s.%s %s" % (target, name, description)
+    if description == '':
+        modname = "%s.%s" % (target, name)
+    else:
+        modname = "%s.%s %s" % (target, name, description)
+
     cmdline = "%s $LISTOPT %s --target=%s %s" % (valgrindify(smb4torture), options, target, name)
     if smb4torture_possible:
         plantestsuite_loadlist(modname, env, cmdline)
