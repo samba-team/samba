@@ -6,6 +6,7 @@ define_test "auto-stop, simple"
 
 setup_samba
 
+export CTDB_SERVICE_AUTOSTARTSTOP="yes"
 export CTDB_MANAGED_SERVICES="foo"
 unset CTDB_MANAGES_SAMBA
 unset CTDB_MANAGES_WINBIND

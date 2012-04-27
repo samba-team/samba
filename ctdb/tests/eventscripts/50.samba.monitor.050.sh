@@ -6,6 +6,7 @@ define_test "auto-start, simple"
 
 setup_samba "down"
 
+export CTDB_SERVICE_AUTOSTARTSTOP="yes"
 export CTDB_MANAGED_SERVICES="foo samba winbind bar"
 
 ok <<EOF
