@@ -1513,32 +1513,53 @@ NTSTATUS name_query(const char *name, int name_type,
 }
 
 /********************************************************
- convert an array if struct sockaddr_storage to struct ip_service
+ Convert an array if struct sockaddr_storage to struct ip_service
  return false on failure.  Port is set to PORT_NONE;
+ pcount is [in/out] - it is the length of ss_list on input,
+ and the length of return_iplist on output as we remove any
+ zero addresses from ss_list.
 *********************************************************/
 
 static bool convert_ss2service(struct ip_service **return_iplist,
 		const struct sockaddr_storage *ss_list,
-		int count)
+		int *pcount)
 {
 	int i;
+	int orig_count = *pcount;
+	int real_count = 0;
 
-	if ( count==0 || !ss_list )
+	if (orig_count==0 || !ss_list )
 		return False;
+
+	/* Filter out zero addrs. */
+	for ( i=0; i<orig_count; i++ ) {
+		if (is_zero_addr(&ss_list[i])) {
+			continue;
+		}
+		real_count++;
+	}
+	if (real_count==0) {
+		return false;
+	}
 
 	/* copy the ip address; port will be PORT_NONE */
-	if ((*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, count)) ==
+	if ((*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, real_count)) ==
 			NULL) {
 		DEBUG(0,("convert_ip2service: malloc failed "
-			"for %d enetries!\n", count ));
+			"for %d enetries!\n", real_count ));
 		return False;
 	}
 
-	for ( i=0; i<count; i++ ) {
-		(*return_iplist)[i].ss   = ss_list[i];
-		(*return_iplist)[i].port = PORT_NONE;
+	for ( i=0, real_count = 0; i<orig_count; i++ ) {
+		if (is_zero_addr(&ss_list[i])) {
+			continue;
+		}
+		(*return_iplist)[real_count].ss   = ss_list[i];
+		(*return_iplist)[real_count].port = PORT_NONE;
+		real_count++;
 	}
 
+	*pcount = real_count;
 	return true;
 }
 
@@ -2253,7 +2274,7 @@ static NTSTATUS resolve_lmhosts(const char *name, int name_type,
 	if (NT_STATUS_IS_OK(status)) {
 		if (convert_ss2service(return_iplist, 
 				       ss_list,
-				       *return_count)) {
+				       return_count)) {
 			talloc_free(ctx);
 			return NT_STATUS_OK;
 		} else {
@@ -2321,7 +2342,7 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 		if (NT_STATUS_IS_OK(status)) {
 			if (convert_ss2service(return_iplist,
 					       ss_list,
-					       *return_count)) {
+					       return_count)) {
 				talloc_free(ctx);
 				return NT_STATUS_OK;
 			} else {
@@ -2618,7 +2639,7 @@ NTSTATUS internal_resolve_name(const char *name,
 				if (NT_STATUS_IS_OK(status)) {
 					if (!convert_ss2service(return_iplist,
 								ss_list,
-								*return_count)) {
+								return_count)) {
 						status = NT_STATUS_NO_MEMORY;
 					}
 					goto done;
@@ -2632,7 +2653,7 @@ NTSTATUS internal_resolve_name(const char *name,
 			if (NT_STATUS_IS_OK(status)) {
 				if (!convert_ss2service(return_iplist,
 							ss_list,
-							*return_count)) {
+							return_count)) {
 					status = NT_STATUS_NO_MEMORY;
 				}
 				goto done;
