@@ -119,7 +119,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	if (in_packet == NULL) return NT_STATUS_NO_MEMORY;
 	if (out_packet == NULL) return NT_STATUS_NO_MEMORY;
 
-	dump_data(2, in->data, in->length);
+	dump_data(8, in->data, in->length);
 
 	ndr_err = ndr_pull_struct_blob(in, in_packet, in_packet,
 			(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
@@ -133,7 +133,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 
 		return NT_STATUS_OK;
 	}
-	if (DEBUGLVL(2)) {
+	if (DEBUGLVL(8)) {
 		NDR_PRINT_DEBUG(dns_name_packet, in_packet);
 	}
 	*out_packet = *in_packet;
@@ -180,7 +180,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 
 	out_packet->operation |= state->flags;
 
-	if (DEBUGLVL(2)) {
+	if (DEBUGLVL(8)) {
 		NDR_PRINT_DEBUG(dns_name_packet, out_packet);
 	}
 	ndr_err = ndr_push_struct_blob(out, out_packet, out_packet,
@@ -197,7 +197,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		return NT_STATUS_OK;
 	}
 
-	dump_data(2, out->data, out->length);
+	dump_data(8, out->data, out->length);
 	return NT_STATUS_OK;
 }
 
