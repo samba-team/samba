@@ -192,7 +192,7 @@ static int attr_handler(struct oc_context *ac)
 		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 							 msg->elements[i].name);
 		if (attr == NULL) {
-			if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
+			if (ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK) &&
 			    ac->req->operation != LDB_ADD) {
 				/* we allow this for dbcheck to fix
 				   broken attributes */
