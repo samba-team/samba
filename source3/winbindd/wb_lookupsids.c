@@ -123,11 +123,6 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	state->sids = sids;
 	state->num_sids = num_sids;
 
-	if (num_sids == 0) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-
 	state->single_sids = TALLOC_ARRAY(state, uint32_t, num_sids);
 	if (tevent_req_nomem(state->single_sids, req)) {
 		return tevent_req_post(req, ev);
@@ -150,6 +145,11 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	state->res_names->names = TALLOC_ARRAY(
 		state->res_names, struct lsa_TranslatedName, num_sids);
 	if (tevent_req_nomem(state->res_names->names, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (num_sids == 0) {
+		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
