@@ -370,6 +370,12 @@ struct vfs_fn_pointers {
 				   uint32 security_info_sent,
 				   const struct security_descriptor *psd);
 
+	NTSTATUS (*audit_file_fn)(struct vfs_handle_struct *handle,
+				  struct smb_filename *file,
+				  struct security_acl *sacl,
+				  uint32_t access_requested,
+				  uint32_t access_denied);
+
 	/* POSIX ACL operations. */
 
 	int (*chmod_acl_fn)(struct vfs_handle_struct *handle, const char *name, mode_t mode);
