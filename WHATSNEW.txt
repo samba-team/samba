@@ -1,19 +1,26 @@
                    ==============================
                    Release Notes for Samba 3.4.17
-			   , 2012
+			   April 30, 2012
                    ==============================
 
 
 This is a security release in order to address
-CVE- ().
+CVE-2012-2111 (Incorrect permission checks when granting/removing
+privileges can compromise file server security).
 
-o  
+o  CVE-2012-2111:
+   Samba 3.4.x to 3.6.4 are affected by a
+   vulnerability that allows arbitrary users
+   to modify privileges on a file server.
+
 
 Changes since 3.4.16
 --------------------
 
 
-o   Stefan Metzmacher <metze@samba.org>
+o   Jeremy Allison <jra@samba.org>
+    * Fix  incorrect permission checks when granting/removing
+      privileges (CVE-2012-2111).
 
 
 ######################################################################
