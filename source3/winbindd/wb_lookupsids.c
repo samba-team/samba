@@ -645,7 +645,11 @@ NTSTATUS wb_lookupsids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	 * if not we have a bug in the code!
 	 *
 	 */
-	SMB_ASSERT(state->res_names->count == state->num_sids);
+	if (state->res_names->count != state->num_sids) {
+		DEBUG(0, ("res_names->count = %d, expected %d\n",
+			  state->res_names->count, state->num_sids));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	/*
 	 * Not strictly needed, but it might make debugging in the callers
