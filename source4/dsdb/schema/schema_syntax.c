@@ -1054,10 +1054,12 @@ static WERROR _dsdb_syntax_OID_attr_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 		const char *str;
 
 		if (in->value_ctr.values[i].blob == NULL) {
+			DEBUG(0, ("Attribute has no value\n"));
 			return WERR_FOOBAR;
 		}
 
 		if (in->value_ctr.values[i].blob->length != 4) {
+			DEBUG(0, ("Attribute has a value with 0 length\n"));
 			return WERR_FOOBAR;
 		}
 
@@ -1264,6 +1266,7 @@ static WERROR _dsdb_syntax_OID_attr_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
 
 		obj_attr = dsdb_attribute_by_lDAPDisplayName(ctx->schema, (const char *)in->values[i].data);
 		if (!obj_attr) {
+			DEBUG(0, ("Unable to find attribute %s in the schema\n", (const char *)in->values[i].data));
 			return WERR_FOOBAR;
 		}
 		SIVAL(blobs[i].data, 0, obj_attr->attributeID_id);
