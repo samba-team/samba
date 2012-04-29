@@ -219,7 +219,7 @@ static int attr_handler(struct oc_context *ac)
 			werr = attr->syntax->validate_ldb(&syntax_ctx, attr,
 							  &msg->elements[i]);
 			if (!W_ERROR_IS_OK(werr) &&
-			    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+			    !ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK)) {
 				ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' contains at least one invalid value!",
 						       msg->elements[i].name,
 						       ldb_dn_get_linearized(msg->dn));
@@ -384,7 +384,7 @@ static int attr_handler2(struct oc_context *ac)
 		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 							 msg->elements[i].name);
 		if (attr == NULL) {
-			if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+			if (ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK)) {
 				/* allow this to make it possible for dbcheck
 				   to remove bad attributes */
 				continue;
