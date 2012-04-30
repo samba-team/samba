@@ -2418,7 +2418,7 @@ static NTSTATUS resolve_ads(const char *name,
 			    struct ip_service **return_iplist,
 			    int *return_count)
 {
-	int 			i, j;
+	int 			i;
 	NTSTATUS  		status;
 	TALLOC_CTX		*ctx;
 	struct dns_rr_srv	*dcs = NULL;
@@ -2467,8 +2467,12 @@ static NTSTATUS resolve_ads(const char *name,
 	}
 
 	for (i=0;i<numdcs;i++) {
-		numaddrs += MAX(dcs[i].num_ips,1);
-	}
+		if (!dcs[i].ss_s) {
+			numaddrs += 1;
+		} else {
+			numaddrs += dcs[i].num_ips;
+		}
+        }
 
 	if ((*return_iplist = SMB_MALLOC_ARRAY(struct ip_service, numaddrs)) ==
 			NULL ) {
@@ -2481,42 +2485,77 @@ static NTSTATUS resolve_ads(const char *name,
 	/* now unroll the list of IP addresses */
 
 	*return_count = 0;
-	i = 0;
-	j = 0;
+
 	while ( i < numdcs && (*return_count<numaddrs) ) {
-		struct ip_service *r = &(*return_iplist)[*return_count];
-
-		r->port = dcs[i].port;
-
 		/* If we don't have an IP list for a name, lookup it up */
-
 		if (!dcs[i].ss_s) {
-			interpret_string_addr(&r->ss, dcs[i].hostname, 0);
-			i++;
-			j = 0;
-		} else {
-			/* use the IP addresses from the SRV sresponse */
+			/* We need to get all IP addresses here. */
+			struct addrinfo *res = NULL;
+			struct addrinfo *p;
+			int extra_addrs = 0;
 
-			if ( j >= dcs[i].num_ips ) {
-				i++;
-				j = 0;
+			if (!interpret_string_addr_internal(&res,
+						dcs[i].hostname,
+						0)) {
 				continue;
 			}
-
-			r->ss = dcs[i].ss_s[j];
-			j++;
-		}
-
-		/* make sure it is a valid IP.  I considered checking the
-		 * negative connection cache, but this is the wrong place
-		 * for it. Maybe only as a hack. After think about it, if
-		 * all of the IP addresses returned from DNS are dead, what
-		 * hope does a netbios name lookup have ? The standard reason
-		 * for falling back to netbios lookups is that our DNS server
-		 * doesn't know anything about the DC's   -- jerry */
-
-		if (!is_zero_addr(&r->ss)) {
-			(*return_count)++;
+			/* Add in every IP from the lookup. How
+			   many is that ? */
+			for (p = res; p; p = p->ai_next) {
+				struct sockaddr_storage ss;
+				memcpy(&ss, p->ai_addr, p->ai_addrlen);
+				if (is_zero_addr(&ss)) {
+					continue;
+				}
+				extra_addrs++;
+			}
+			if (extra_addrs > 1) {
+				/* We need to expand the return_iplist array
+				   as we only budgeted for one address. */
+				numaddrs += (extra_addrs-1);
+				*return_iplist = SMB_REALLOC_ARRAY(*return_iplist,
+						struct ip_service,
+						numaddrs);
+				if (*return_iplist == NULL) {
+					if (res) {
+						freeaddrinfo(res);
+					}
+					talloc_destroy(ctx);
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
+			for (p = res; p; p = p->ai_next) {
+				(*return_iplist)[*return_count].port = dcs[i].port;
+				memcpy(&(*return_iplist)[*return_count].ss,
+						p->ai_addr,
+						p->ai_addrlen);
+				if (is_zero_addr(&(*return_iplist)[*return_count].ss)) {
+					continue;
+				}
+				(*return_count)++;
+				/* Should never happen, but still... */
+				if (*return_count>=numaddrs) {
+					break;
+				}
+			}
+			if (res) {
+				freeaddrinfo(res);
+			}
+		} else {
+			/* use all the IP addresses from the SRV sresponse */
+			int j;
+			for (j = 0; j < dcs[i].num_ips; j++) {
+				(*return_iplist)[*return_count].port = dcs[i].port;
+				(*return_iplist)[*return_count].ss = dcs[i].ss_s[j];
+				if (is_zero_addr(&(*return_iplist)[*return_count].ss)) {
+					continue;
+				}
+                                (*return_count)++;
+				/* Should never happen, but still... */
+				if (*return_count>=numaddrs) {
+					break;
+				}
+			}
 		}
 	}
 
