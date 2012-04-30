@@ -29,9 +29,9 @@
 #include "param/param.h"
 #include "torture/raw/proto.h"
 
-#define CHECK_STATUS(status, correct) do { \
+#define CHECK_STATUS(torture, status, correct) do {	\
 	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
+		torture_result(torture, TORTURE_FAIL, "%s: Incorrect status %s - should be %s\n", \
 		       __location__, nt_errstr(status), nt_errstr(correct)); \
 		ret = false; \
 	} \
@@ -49,22 +49,18 @@ bool torture_samba3_checkfsp(struct torture_context *torture, struct smbcli_stat
 	char buf[16];
 	struct smbcli_tree *tree2;
 
-	if ((mem_ctx = talloc_init("torture_samba3_checkfsp")) == NULL) {
-		d_printf("talloc_init failed\n");
-		return false;
-	}
+	torture_assert(torture, mem_ctx = talloc_init("torture_samba3_checkfsp"), "talloc_init failed\n");
 
-	status = torture_second_tcon(torture, cli->session,
-				     torture_setting_string(torture, "share", NULL),
-				     &tree2);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	if (!NT_STATUS_IS_OK(status))
-		goto done;
+	torture_assert_ntstatus_equal(torture, torture_second_tcon(torture, cli->session,
+								   torture_setting_string(torture, "share", NULL),
+								   &tree2), 
+				      NT_STATUS_OK,
+				      "creating second tcon");
 
 	/* Try a read on an invalid FID */
 
 	nread = smbcli_read(cli->tree, 4711, buf, 0, sizeof(buf));
-	CHECK_STATUS(smbcli_nt_error(cli->tree), NT_STATUS_INVALID_HANDLE);
+	CHECK_STATUS(torture, smbcli_nt_error(cli->tree), NT_STATUS_INVALID_HANDLE);
 
 	/* Try a read on a directory handle */
 
@@ -88,7 +84,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture, struct smbcli_stat
 		io.ntcreatex.in.fname = dirname;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("smb_open on the directory failed: %s\n",
+			torture_result(torture, TORTURE_FAIL, "smb_open on the directory failed: %s\n",
 				 nt_errstr(status));
 			ret = false;
 			goto done;
@@ -100,24 +96,24 @@ bool torture_samba3_checkfsp(struct torture_context *torture, struct smbcli_stat
 
 	nread = smbcli_read(cli->tree, fnum, buf, 0, sizeof(buf));
 	if (nread >= 0) {
-		d_printf("smbcli_read on a directory succeeded, expected "
+		torture_result(torture, TORTURE_FAIL, "smbcli_read on a directory succeeded, expected "
 			 "failure\n");
 		ret = false;
 	}
 
-	CHECK_STATUS(smbcli_nt_error(cli->tree),
+	CHECK_STATUS(torture, smbcli_nt_error(cli->tree),
 		     NT_STATUS_INVALID_DEVICE_REQUEST);
 
 	/* Same test on the second tcon */
 
 	nread = smbcli_read(tree2, fnum, buf, 0, sizeof(buf));
 	if (nread >= 0) {
-		d_printf("smbcli_read on a directory succeeded, expected "
+		torture_result(torture, TORTURE_FAIL, "smbcli_read on a directory succeeded, expected "
 			 "failure\n");
 		ret = false;
 	}
 
-	CHECK_STATUS(smbcli_nt_error(tree2), NT_STATUS_INVALID_HANDLE);
+	CHECK_STATUS(torture, smbcli_nt_error(tree2), NT_STATUS_INVALID_HANDLE);
 
 	smbcli_close(cli->tree, fnum);
 
@@ -125,14 +121,14 @@ bool torture_samba3_checkfsp(struct torture_context *torture, struct smbcli_stat
 
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		d_printf("Failed to create %s - %s\n", fname,
+		torture_result(torture, TORTURE_FAIL, "Failed to create %s - %s\n", fname,
 			 smbcli_errstr(cli->tree));
 		ret = false;
 		goto done;
 	}
 
 	nread = smbcli_read(tree2, fnum, buf, 0, sizeof(buf));
-	CHECK_STATUS(smbcli_nt_error(tree2), NT_STATUS_INVALID_HANDLE);
+	CHECK_STATUS(torture, smbcli_nt_error(tree2), NT_STATUS_INVALID_HANDLE);
 
 	smbcli_close(cli->tree, fnum);
 
@@ -325,65 +321,50 @@ bool torture_samba3_badpath(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	bool nt_status_support;
 
-	if (!(mem_ctx = talloc_init("torture_samba3_badpath"))) {
-		d_printf("talloc_init failed\n");
-		return false;
-	}
+	torture_assert(torture, mem_ctx = talloc_init("torture_samba3_badpath"), "talloc_init failed");
 
 	nt_status_support = lpcfg_nt_status_support(torture->lp_ctx);
 
-	if (!lpcfg_set_cmdline(torture->lp_ctx, "nt status support", "yes")) {
-		printf("Could not set 'nt status support = yes'\n");
-		goto fail;
-	}
+	torture_assert_goto(torture, lpcfg_set_cmdline(torture->lp_ctx, "nt status support", "yes"), ret, fail, "Could not set 'nt status support = yes'\n");
 
-	if (!torture_open_connection(&cli_nt, torture, 0)) {
-		goto fail;
-	}
+	torture_assert_goto(torture, torture_open_connection(&cli_nt, torture, 0), ret, fail, "Could not open NTSTATUS connection\n");
 
-	if (!lpcfg_set_cmdline(torture->lp_ctx, "nt status support", "no")) {
-		printf("Could not set 'nt status support = yes'\n");
-		goto fail;
-	}
+	torture_assert_goto(torture, lpcfg_set_cmdline(torture->lp_ctx, "nt status support", "no"), ret, fail, "Could not set 'nt status support = no'\n");
 
-	if (!torture_open_connection(&cli_dos, torture, 1)) {
-		goto fail;
-	}
+	torture_assert_goto(torture, torture_open_connection(&cli_dos, torture, 1), ret, fail, "Could not open DOS connection\n");
 
-	if (!lpcfg_set_cmdline(torture->lp_ctx, "nt status support",
-			    nt_status_support ? "yes":"no")) {
-		printf("Could not reset 'nt status support = yes'");
-		goto fail;
-	}
+	torture_assert_goto(torture, lpcfg_set_cmdline(torture->lp_ctx, "nt status support",
+						       nt_status_support ? "yes":"no"), 
+			    ret, fail, "Could not set 'nt status support' back to where it was\n");
 
 	torture_assert(torture, torture_setup_dir(cli_nt, dirname), "creating test directory");
 
 	status = smbcli_chkpath(cli_nt->tree, dirname);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STATUS(torture, status, NT_STATUS_OK);
 
 	status = smbcli_chkpath(cli_nt->tree,
 				talloc_asprintf(mem_ctx, "%s\\bla", dirname));
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	status = smbcli_chkpath(cli_dos->tree,
 				talloc_asprintf(mem_ctx, "%s\\bla", dirname));
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	status = smbcli_chkpath(cli_nt->tree,
 				talloc_asprintf(mem_ctx, "%s\\bla\\blub",
 						dirname));
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
 	status = smbcli_chkpath(cli_dos->tree,
 				talloc_asprintf(mem_ctx, "%s\\bla\\blub",
 						dirname));
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
-	if (!(fpath = talloc_asprintf(mem_ctx, "%s\\%s", dirname, fname))) {
-		goto fail;
-	}
+	torture_assert_goto(torture, fpath = talloc_asprintf(mem_ctx, "%s\\%s", dirname, fname), 
+			    ret, fail, "Could not allocate fpath\n");
+
 	fnum = smbcli_open(cli_nt->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		d_printf("Could not create file %s: %s\n", fpath,
+		torture_result(torture, TORTURE_FAIL, "Could not create file %s: %s\n", fpath,
 			 smbcli_errstr(cli_nt->tree));
 		goto fail;
 	}
@@ -394,7 +375,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 	}
 	fnum = smbcli_open(cli_nt->tree, fpath1, O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		d_printf("Could not create file %s: %s\n", fpath1,
+		torture_result(torture, TORTURE_FAIL, "Could not create file %s: %s\n", fpath1,
 			 smbcli_errstr(cli_nt->tree));
 		goto fail;
 	}
@@ -405,39 +386,39 @@ bool torture_samba3_badpath(struct torture_context *torture)
 	 */
 
 	status = smbcli_chkpath(cli_nt->tree, fpath);
-	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
+	CHECK_STATUS(torture, status, NT_STATUS_NOT_A_DIRECTORY);
 	status = smbcli_chkpath(cli_dos->tree, fpath);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	status = smbcli_chkpath(cli_nt->tree, "..");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 	status = smbcli_chkpath(cli_dos->tree, "..");
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
 
 	status = smbcli_chkpath(cli_nt->tree, ".");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_chkpath(cli_dos->tree, ".");
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	status = smbcli_chkpath(cli_nt->tree, "\t");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_chkpath(cli_dos->tree, "\t");
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	status = smbcli_chkpath(cli_nt->tree, "\t\\bla");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_chkpath(cli_dos->tree, "\t\\bla");
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	status = smbcli_chkpath(cli_nt->tree, "<");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_chkpath(cli_dos->tree, "<");
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	status = smbcli_chkpath(cli_nt->tree, "<\\bla");
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_chkpath(cli_dos->tree, "<\\bla");
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
 	/*
 	 * .... And the same gang against getatr. Note that the DOS error codes
@@ -445,95 +426,95 @@ bool torture_samba3_badpath(struct torture_context *torture)
 	 */
 
 	status = smbcli_getatr(cli_nt->tree, fpath, NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STATUS(torture, status, NT_STATUS_OK);
 	status = smbcli_getatr(cli_dos->tree, fpath, NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STATUS(torture, status, NT_STATUS_OK);
 
 	status = smbcli_getatr(cli_nt->tree, "..", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 	status = smbcli_getatr(cli_dos->tree, "..", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
 
 	status = smbcli_getatr(cli_nt->tree, ".", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_getatr(cli_dos->tree, ".", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	status = smbcli_getatr(cli_nt->tree, "\t", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_getatr(cli_dos->tree, "\t", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	status = smbcli_getatr(cli_nt->tree, "\t\\bla", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_getatr(cli_dos->tree, "\t\\bla", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	status = smbcli_getatr(cli_nt->tree, "<", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_getatr(cli_dos->tree, "<", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	status = smbcli_getatr(cli_nt->tree, "<\\bla", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = smbcli_getatr(cli_dos->tree, "<\\bla", NULL, NULL, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	/* Try the same set with openX. */
 
 	status = raw_smbcli_open(cli_nt->tree, "..", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 	status = raw_smbcli_open(cli_dos->tree, "..", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidpath));
 
 	status = raw_smbcli_open(cli_nt->tree, ".", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = raw_smbcli_open(cli_dos->tree, ".", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	status = raw_smbcli_open(cli_nt->tree, "\t", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = raw_smbcli_open(cli_dos->tree, "\t", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	status = raw_smbcli_open(cli_nt->tree, "\t\\bla", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = raw_smbcli_open(cli_dos->tree, "\t\\bla", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	status = raw_smbcli_open(cli_nt->tree, "<", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = raw_smbcli_open(cli_dos->tree, "<", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	status = raw_smbcli_open(cli_nt->tree, "<\\bla", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_INVALID);
 	status = raw_smbcli_open(cli_dos->tree, "<\\bla", O_RDONLY, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRinvalidname));
 
 	/* Let's test EEXIST error code mapping. */
 	status = raw_smbcli_open(cli_nt->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_COLLISION);
 	status = raw_smbcli_open(cli_dos->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
 
 	status = raw_smbcli_t2open(cli_nt->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_EAS_NOT_SUPPORTED)
 	    || !torture_setting_bool(torture, "samba3", false)) {
 		/* Against samba3, treat EAS_NOT_SUPPORTED as acceptable */
-		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+		CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_COLLISION);
 	}
 	status = raw_smbcli_t2open(cli_dos->tree, fpath, O_RDONLY | O_CREAT| O_EXCL, DENY_NONE, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS,ERReasnotsupported))
 	    || !torture_setting_bool(torture, "samba3", false)) {
 		/* Against samba3, treat EAS_NOT_SUPPORTED as acceptable */
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
+		CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
 	}
 
 	status = raw_smbcli_ntcreate(cli_nt->tree, fpath, NULL);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+	CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_COLLISION);
 	status = raw_smbcli_ntcreate(cli_dos->tree, fpath, NULL);
-	CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
+	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS,ERRfilexists));
 
 	/* Try the rename test. */
 	{
@@ -544,9 +525,9 @@ bool torture_samba3_badpath(struct torture_context *torture)
 
 		/* Try with SMBmv rename. */
 		status = smb_raw_rename(cli_nt->tree, &io);
-		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+		CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_COLLISION);
 		status = smb_raw_rename(cli_dos->tree, &io);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRrename));
+		CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS,ERRrename));
 
 		/* Try with NT rename. */
 		io.generic.level = RAW_RENAME_NTRENAME;
@@ -557,9 +538,9 @@ bool torture_samba3_badpath(struct torture_context *torture)
 		io.ntrename.in.flags = RENAME_FLAG_RENAME;
 
 		status = smb_raw_rename(cli_nt->tree, &io);
-		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+		CHECK_STATUS(torture, status, NT_STATUS_OBJECT_NAME_COLLISION);
 		status = smb_raw_rename(cli_dos->tree, &io);
-		CHECK_STATUS(status, NT_STATUS_DOS(ERRDOS,ERRrename));
+		CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS,ERRrename));
 	}
 
 	goto done;
@@ -599,7 +580,7 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture, struct smbc
 	bool ret = false;
 
 	if (!(mem_ctx = talloc_init("torture_samba3_caseinsensitive"))) {
-		d_printf("talloc_init failed\n");
+		torture_result(torture, TORTURE_FAIL, "talloc_init failed\n");
 		return false;
 	}
 
@@ -765,7 +746,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx, struct smbcli_s
 	status = smb_raw_lock(cli->tree, &io);
 
 	ret = true;
-	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	CHECK_STATUS(tctx, status, NT_STATUS_FILE_LOCK_CONFLICT);
 
 	if (!ret) {
 		goto done;
@@ -807,7 +788,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx, struct smbcli_s
 		}
 	}
 
-	CHECK_STATUS(lock_result.status, NT_STATUS_OK);
+	CHECK_STATUS(tctx, lock_result.status, NT_STATUS_OK);
 
  done:
 	if (fnum != -1) {
@@ -822,7 +803,6 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx, struct smbcli_s
 
 bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	NTSTATUS status;
 	uint16_t dnum;
 	union smb_open io;
 	const char *fname = "testfile";
@@ -846,13 +826,10 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.fname = "\\";
-	status = smb_raw_open(cli->tree, tctx, &io);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("smb_open on the directory failed: %s\n",
-			 nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io), 
+					   NT_STATUS_OK,
+					   ret, done, "smb_open on the directory failed: %s\n");
+
 	dnum = io.ntcreatex.out.file.fnum;
 
 	io.ntcreatex.in.flags =
@@ -869,13 +846,9 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.fname = fname;
 
-	status = smb_raw_open(cli->tree, tctx, &io);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("smb_open on the file %s failed: %s\n",
-			 fname, nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io),
+					   NT_STATUS_OK,
+					   ret, done, "smb_open on the file failed");
 
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 	smbcli_close(cli->tree, dnum);
@@ -888,7 +861,6 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state
 
 bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	NTSTATUS status;
 	uint16_t fnum1;
 	union smb_open io;
 	const char *fname = "testfile";
@@ -912,24 +884,17 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_st
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.fname = "testfile";
-	status = smb_raw_open(cli->tree, tctx, &io);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("first smb_open failed: %s\n", nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io),
+					   NT_STATUS_OK,
+					   ret, done, "first smb_open on the file failed");
 	fnum1 = io.ntcreatex.out.file.fnum;
 
 	/*
 	 * Create a conflicting open, causing the one-second delay
 	 */
 
-	req = smb_raw_open_send(cli->tree, &io);
-	if (req == NULL) {
-		d_printf("smb_raw_open_send failed\n");
-		ret = false;
-		goto done;
-	}
+	torture_assert_goto(tctx, req = smb_raw_open_send(cli->tree, &io),
+			    ret, done, "smb_raw_open_send on the file failed");
 
 	/*
 	 * Pull the VUID from under that request. As of Nov 3, 2008 all Samba3
@@ -937,25 +902,17 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_st
 	 * as long as the client is still connected.
 	 */
 
-	status = smb_raw_ulogoff(cli->session);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("ulogoff failed: %s\n", nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert_ntstatus_equal_goto(tctx, smb_raw_ulogoff(cli->session),
+					   NT_STATUS_OK,
+					   ret, done, "ulogoff failed failed");
 
 	echo_req.in.repeat_count = 1;
 	echo_req.in.size = 1;
 	echo_req.in.data = discard_const_p(uint8_t, "");
 
-	status = smb_raw_echo(cli->session->transport, &echo_req);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("smb_raw_echo returned %s\n",
-			 nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert_ntstatus_equal_goto(tctx, smb_raw_echo(cli->session->transport, &echo_req),
+					   NT_STATUS_OK,
+					   ret, done, "smb_raw_echo failed");
 
 	ret = true;
  done:
