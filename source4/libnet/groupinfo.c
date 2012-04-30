@@ -262,6 +262,7 @@ static void continue_groupinfo_closegroup(struct tevent_req *subreq)
  * @param io arguments and results of the call
  */
 struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
+						    TALLOC_CTX *mem_ctx,
 						    struct libnet_rpc_groupinfo *io,
 						    void (*monitor)(struct monitor_msg*))
 {
@@ -272,7 +273,7 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 
 	if (!p || !io) return NULL;
 	
-	c = composite_create(p, dcerpc_event_context(p));
+	c = composite_create(mem_ctx, dcerpc_event_context(p));
 	if (c == NULL) return c;
 	
 	s = talloc_zero(c, struct groupinfo_state);
@@ -372,6 +373,6 @@ NTSTATUS libnet_rpc_groupinfo(struct dcerpc_pipe *p,
 			      TALLOC_CTX *mem_ctx,
 			      struct libnet_rpc_groupinfo *io)
 {
-	struct composite_context *c = libnet_rpc_groupinfo_send(p, io, NULL);
+	struct composite_context *c = libnet_rpc_groupinfo_send(p, mem_ctx, io, NULL);
 	return libnet_rpc_groupinfo_recv(c, mem_ctx, io);
 }
