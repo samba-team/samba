@@ -283,7 +283,7 @@ struct composite_context* libnet_LookupName_send(struct libnet_context *ctx,
 	s->monitor_fn = monitor;
 	s->ctx = ctx;
 
-	prereq_met = lsa_domain_opened(ctx, io->in.domain_name, &c, &s->domopen,
+	prereq_met = lsa_domain_opened(ctx, c, io->in.domain_name, &c, &s->domopen,
 				       continue_lookup_name, monitor);
 	if (!prereq_met) return c;
 

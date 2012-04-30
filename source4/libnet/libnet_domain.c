@@ -268,6 +268,7 @@ static void continue_domain_open_open(struct tevent_req *subreq)
  */
 
 struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
+						     TALLOC_CTX *mem_ctx,
 						     struct libnet_DomainOpen *io,
 						     void (*monitor)(struct monitor_msg*))
 {
@@ -276,7 +277,7 @@ struct composite_context *libnet_DomainOpenSamr_send(struct libnet_context *ctx,
 	struct composite_context *rpcconn_req;
 	struct tevent_req *subreq;
 
-	c = composite_create(ctx, ctx->event_ctx);
+	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
 
 	s = talloc_zero(c, struct domain_open_samr_state);
@@ -414,6 +415,7 @@ static void continue_lsa_policy_open(struct tevent_req *subreq);
  */
 
 struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
+						    TALLOC_CTX *mem_ctx,
 						    struct libnet_DomainOpen *io,
 						    void (*monitor)(struct monitor_msg*))
 {
@@ -424,7 +426,7 @@ struct composite_context* libnet_DomainOpenLsa_send(struct libnet_context *ctx,
 	struct lsa_QosInfo *qos;
 
 	/* create composite context and state */
-	c = composite_create(ctx, ctx->event_ctx);
+	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return c;
 
 	s = talloc_zero(c, struct domain_open_lsa_state);
@@ -606,6 +608,7 @@ NTSTATUS libnet_DomainOpenLsa_recv(struct composite_context *c, struct libnet_co
  */
 
 struct composite_context* libnet_DomainOpen_send(struct libnet_context *ctx,
+						 TALLOC_CTX *mem_ctx,
 						 struct libnet_DomainOpen *io,
 						 void (*monitor)(struct monitor_msg*))
 {
@@ -614,13 +617,13 @@ struct composite_context* libnet_DomainOpen_send(struct libnet_context *ctx,
 	switch (io->in.type) {
 	case DOMAIN_LSA:
 		/* reques to open a policy handle on \pipe\lsarpc */
-		c = libnet_DomainOpenLsa_send(ctx, io, monitor);
+		c = libnet_DomainOpenLsa_send(ctx, mem_ctx, io, monitor);
 		break;
 
 	case DOMAIN_SAMR:
 	default:
 		/* request to open a domain policy handle on \pipe\samr */
-		c = libnet_DomainOpenSamr_send(ctx, io, monitor);
+		c = libnet_DomainOpenSamr_send(ctx, mem_ctx, io, monitor);
 		break;
 	}
 
@@ -670,7 +673,7 @@ NTSTATUS libnet_DomainOpen(struct libnet_context *ctx,
 			   TALLOC_CTX *mem_ctx,
 			   struct libnet_DomainOpen *io)
 {
-	struct composite_context *c = libnet_DomainOpen_send(ctx, io, NULL);
+	struct composite_context *c = libnet_DomainOpen_send(ctx, mem_ctx, io, NULL);
 	return libnet_DomainOpen_recv(c, ctx, mem_ctx, io);
 }
 

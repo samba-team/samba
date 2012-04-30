@@ -67,7 +67,7 @@ struct composite_context* libnet_CreateGroup_send(struct libnet_context *ctx,
 	ZERO_STRUCT(s->r.out);
 
 	/* prerequisite: make sure we have a valid samr domain handle */
-	prereq_met = samr_domain_opened(ctx, s->r.in.domain_name, &c, &s->domain_open,
+	prereq_met = samr_domain_opened(ctx, c, s->r.in.domain_name, &c, &s->domain_open,
 					continue_domain_opened, monitor);
 	if (!prereq_met) return c;
 
@@ -232,7 +232,7 @@ struct composite_context* libnet_GroupInfo_send(struct libnet_context *ctx,
 	}
 
 	/* prerequisite: make sure the domain is opened */
-	prereq_met = samr_domain_opened(ctx, s->domain_name, &c, &s->domopen,
+	prereq_met = samr_domain_opened(ctx, c, s->domain_name, &c, &s->domopen,
 					continue_domain_open_info, monitor);
 	if (!prereq_met) return c;
 
@@ -487,7 +487,7 @@ struct composite_context *libnet_GroupList_send(struct libnet_context *ctx,
 	s->monitor_fn   = monitor;
 
 	/* make sure we have lsa domain handle before doing anything */
-	prereq_met = lsa_domain_opened(ctx, s->domain_name, &c, &s->domain_open,
+	prereq_met = lsa_domain_opened(ctx, c, s->domain_name, &c, &s->domain_open,
 				       continue_lsa_domain_opened, monitor);
 	if (!prereq_met) return c;
 
@@ -563,7 +563,7 @@ static void continue_domain_queried(struct tevent_req *subreq)
 	s->dominfo = (*s->query_domain.out.info)->domain;
 
 	/* make sure we have samr domain handle before continuing */
-	prereq_met = samr_domain_opened(s->ctx, s->domain_name, &c, &s->domain_open,
+	prereq_met = samr_domain_opened(s->ctx, c, s->domain_name, &c, &s->domain_open,
 					continue_samr_domain_opened, s->monitor_fn);
 	if (!prereq_met) return;
 
