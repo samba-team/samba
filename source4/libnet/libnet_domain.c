@@ -691,6 +691,7 @@ static void continue_lsa_close(struct tevent_req *subreq);
 
 
 struct composite_context* libnet_DomainCloseLsa_send(struct libnet_context *ctx,
+						     TALLOC_CTX *mem_ctx,
 						     struct libnet_DomainClose *io,
 						     void (*monitor)(struct monitor_msg*))
 {
@@ -699,7 +700,7 @@ struct composite_context* libnet_DomainCloseLsa_send(struct libnet_context *ctx,
 	struct tevent_req *subreq;
 
 	/* composite context and state structure allocation */
-	c = composite_create(ctx, ctx->event_ctx);
+	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return c;
 
 	s = talloc_zero(c, struct domain_close_lsa_state);
@@ -798,6 +799,7 @@ static void continue_samr_close(struct tevent_req *subreq);
 
 
 struct composite_context* libnet_DomainCloseSamr_send(struct libnet_context *ctx,
+						      TALLOC_CTX *mem_ctx,
 						      struct libnet_DomainClose *io,
 						      void (*monitor)(struct monitor_msg*))
 {
@@ -806,7 +808,7 @@ struct composite_context* libnet_DomainCloseSamr_send(struct libnet_context *ctx
 	struct tevent_req *subreq;
 
 	/* composite context and state structure allocation */
-	c = composite_create(ctx, ctx->event_ctx);
+	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return c;
 
 	s = talloc_zero(c, struct domain_close_samr_state);
@@ -895,6 +897,7 @@ NTSTATUS libnet_DomainCloseSamr_recv(struct composite_context *c, struct libnet_
 
 
 struct composite_context* libnet_DomainClose_send(struct libnet_context *ctx,
+						  TALLOC_CTX *mem_ctx,
 						  struct libnet_DomainClose *io,
 						  void (*monitor)(struct monitor_msg*))
 {
@@ -903,13 +906,13 @@ struct composite_context* libnet_DomainClose_send(struct libnet_context *ctx,
 	switch (io->in.type) {
 	case DOMAIN_LSA:
 		/* request to close policy handle on \pipe\lsarpc */
-		c = libnet_DomainCloseLsa_send(ctx, io, monitor);
+		c = libnet_DomainCloseLsa_send(ctx, mem_ctx, io, monitor);
 		break;
 
 	case DOMAIN_SAMR:
 	default:
 		/* request to close domain policy handle on \pipe\samr */
-		c = libnet_DomainCloseSamr_send(ctx, io, monitor);
+		c = libnet_DomainCloseSamr_send(ctx, mem_ctx, io, monitor);
 		break;
 	}
 	
@@ -944,7 +947,7 @@ NTSTATUS libnet_DomainClose(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *c;
 	
-	c = libnet_DomainClose_send(ctx, io, NULL);
+	c = libnet_DomainClose_send(ctx, mem_ctx, io, NULL);
 	return libnet_DomainClose_recv(c, ctx, mem_ctx, io);
 }
 
