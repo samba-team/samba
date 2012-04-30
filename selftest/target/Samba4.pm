@@ -680,7 +680,7 @@ nogroup:x:65534:nobody
 		SAMBA_TEST_LOG => "$ctx->{prefix}/samba_test.log",
 		SAMBA_TEST_LOG_POS => 0,
 	        NSS_WRAPPER_WINBIND_SO_PATH => Samba::bindir_path($self, "default/nsswitch/libnss-winbind.so"),
-                LOCAL_PATH => $ctx->{tmpdir}
+                LOCAL_PATH => $ctx->{share}
 	};
 
 	return $ret;
@@ -713,10 +713,10 @@ sub provision($$$$$$$$)
 					       $domain, $realm, $functional_level,
 					       $password, $kdc_ipv4);
 
-	$ctx->{tmpdir} = "$ctx->{prefix_abs}/tmp";
-	push(@{$ctx->{directories}}, "$ctx->{tmpdir}");
-	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test1");
-	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test2");
+	$ctx->{share} = "$ctx->{prefix_abs}/share";
+	push(@{$ctx->{directories}}, "$ctx->{share}");
+	push(@{$ctx->{directories}}, "$ctx->{share}/test1");
+	push(@{$ctx->{directories}}, "$ctx->{share}/test2");
 	my $msdfs = "no";
 	$msdfs = "yes" if ($server_role eq "domain controller");
 	$ctx->{smb_conf_extra_options} = "
@@ -729,14 +729,14 @@ sub provision($$$$$$$$)
 	$extra_smbconf_options
 
 [tmp]
-	path = $ctx->{tmpdir}
+	path = $ctx->{share}
 	read only = no
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 50000
 
 [xcopy_share]
-	path = $ctx->{tmpdir}
+	path = $ctx->{share}
 	read only = no
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
@@ -745,14 +745,14 @@ sub provision($$$$$$$$)
 	force create mode = 777
 
 [test1]
-	path = $ctx->{tmpdir}/test1
+	path = $ctx->{share}/test1
 	read only = no
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 50000
 
 [test2]
-	path = $ctx->{tmpdir}/test2
+	path = $ctx->{share}/test2
 	read only = no
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
@@ -769,7 +769,7 @@ sub provision($$$$$$$$)
 	# Or the server tries s4u2self/s4u2proxy to impersonate the client
 
 [simple]
-	path = $ctx->{tmpdir}
+	path = $ctx->{share}
 	read only = no
 	ntvfs handler = simple
 
@@ -1202,8 +1202,8 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
-	$ctx->{tmpdir} = "$ctx->{prefix_abs}/tmp";
-	push(@{$ctx->{directories}}, "$ctx->{tmpdir}");
+	$ctx->{share} = "$ctx->{prefix_abs}/share";
+	push(@{$ctx->{directories}}, "$ctx->{share}");
 
 	$ctx->{smb_conf_extra_options} = "
 	max xmit = 32K
@@ -1218,7 +1218,7 @@ sub provision_rodc($$$)
 	read only = yes
 
 [tmp]
-	path = $ctx->{tmpdir}
+	path = $ctx->{share}
 	read only = no
 	posix:sharedelay = 10000
 	posix:oplocktimeout = 3
@@ -1294,6 +1294,8 @@ sub provision_plugin_s4_dc($$)
 	dos filemode = yes
 
         vfs objects = acl_xattr xattr_tdb streams_depot
+
+        dcerpc endpoint servers = -winreg
 ";
 
 	my $extra_smbconf_shares = "
