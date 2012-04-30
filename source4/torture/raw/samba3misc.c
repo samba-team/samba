@@ -37,9 +37,8 @@
 	} \
 } while (0)
 
-bool torture_samba3_checkfsp(struct torture_context *torture)
+bool torture_samba3_checkfsp(struct torture_context *torture, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	const char *fname = "test.txt";
 	const char *dirname = "testdir";
 	int fnum;
@@ -53,14 +52,6 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 	if ((mem_ctx = talloc_init("torture_samba3_checkfsp")) == NULL) {
 		d_printf("talloc_init failed\n");
 		return false;
-	}
-
-	if (!torture_open_connection_share(
-		    torture, &cli, torture, torture_setting_string(torture, "host", NULL),
-		    torture_setting_string(torture, "share", NULL), torture->ev)) {
-		d_printf("torture_open_connection_share failed\n");
-		ret = false;
-		goto done;
 	}
 
 	smbcli_deltree(cli->tree, dirname);
@@ -154,7 +145,6 @@ bool torture_samba3_checkfsp(struct torture_context *torture)
 
  done:
 	smbcli_deltree(cli->tree, dirname);
-	torture_close_connection(cli);
 	talloc_free(mem_ctx);
 
 	return ret;
@@ -611,9 +601,8 @@ static void count_fn(struct clilist_file_info *info, const char *name,
 	*counter += 1;
 }
 
-bool torture_samba3_caseinsensitive(struct torture_context *torture)
+bool torture_samba3_caseinsensitive(struct torture_context *torture, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	const char *dirname = "insensitive";
@@ -627,10 +616,6 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture)
 	if (!(mem_ctx = talloc_init("torture_samba3_caseinsensitive"))) {
 		d_printf("talloc_init failed\n");
 		return false;
-	}
-
-	if (!torture_open_connection(&cli, torture, 0)) {
-		goto done;
 	}
 
 	smbcli_deltree(cli->tree, dirname);
@@ -710,9 +695,8 @@ static void receive_lock_result(struct smbcli_request *req)
  * Note: To run this test, use "--option=torture:localdir=<LOCALDIR>"
  */
 
-bool torture_samba3_posixtimedlock(struct torture_context *tctx)
+bool torture_samba3_posixtimedlock(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	NTSTATUS status;
 	bool ret = true;
 	const char *dirname = "posixlock";
@@ -731,11 +715,6 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	struct lock_result_state lock_result;
 
 	struct tevent_timer *te;
-
-	if (!torture_open_connection(&cli, tctx, 0)) {
-		ret = false;
-		goto done;
-	}
 
 	smbcli_deltree(cli->tree, dirname);
 
@@ -870,19 +849,13 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx)
 	return ret;
 }
 
-bool torture_samba3_rootdirfid(struct torture_context *tctx)
+bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	NTSTATUS status;
 	uint16_t dnum;
 	union smb_open io;
 	const char *fname = "testfile";
 	bool ret = false;
-
-	if (!torture_open_connection(&cli, tctx, 0)) {
-		ret = false;
-		goto done;
-	}
 
 	smbcli_unlink(cli->tree, fname);
 
@@ -942,9 +915,8 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx)
 	return ret;
 }
 
-bool torture_samba3_oplock_logoff(struct torture_context *tctx)
+bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	NTSTATUS status;
 	uint16_t fnum1;
 	union smb_open io;
@@ -952,11 +924,6 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx)
 	bool ret = false;
 	struct smbcli_request *req;
 	struct smb_echo echo_req;
-
-	if (!torture_open_connection(&cli, tctx, 0)) {
-		ret = false;
-		goto done;
-	}
 
 	smbcli_unlink(cli->tree, fname);
 

@@ -154,20 +154,13 @@ static NTSTATUS smbcli_chmod(struct smbcli_tree *tree, const char *fname,
 	return smb_raw_setpathinfo(tree, &sfinfo);
 }
 
-bool torture_samba3_hide(struct torture_context *torture)
+bool torture_samba3_hide(struct torture_context *torture, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
 	const char *fname = "test.txt";
 	int fnum;
 	NTSTATUS status;
 	struct smbcli_tree *hideunread;
 	struct smbcli_tree *hideunwrite;
-
-	if (!torture_open_connection_share(
-		    torture, &cli, torture, torture_setting_string(torture, "host", NULL),
-		    torture_setting_string(torture, "share", NULL), torture->ev)) {
-		torture_fail(torture, "torture_open_connection_share failed\n");
-	}
 
 	status = smbcli_setup_unix(cli->tree);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -277,18 +270,13 @@ bool torture_samba3_hide(struct torture_context *torture)
  * close. smb_close should return NT_STATUS_ACCESS_DENIED.
  */
 
-bool torture_samba3_closeerr(struct torture_context *tctx)
+bool torture_samba3_closeerr(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli = NULL;
 	bool result = false;
 	NTSTATUS status;
 	const char *dname = "closeerr.dir";
 	const char *fname = "closeerr.dir\\closerr.txt";
 	int fnum;
-
-	if (!torture_open_connection(&cli, tctx, 0)) {
-		goto fail;
-	}
 
 	smbcli_deltree(cli->tree, dname);
 
@@ -334,9 +322,5 @@ bool torture_samba3_closeerr(struct torture_context *tctx)
 
 	result = true;
 	
- fail:
-	if (cli) {
-		torture_close_connection(cli);
-	}
 	return result;
 }

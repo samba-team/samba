@@ -63,16 +63,16 @@ NTSTATUS torture_raw_init(void)
 	torture_suite_add_suite(suite, torture_raw_streams(suite));
 	torture_suite_add_suite(suite, torture_raw_acls(suite));
 	torture_suite_add_suite(suite, torture_raw_composite(suite));
-	torture_suite_add_simple_test(suite, "samba3hide", torture_samba3_hide);
-	torture_suite_add_simple_test(suite, "samba3closeerr", torture_samba3_closeerr);
-	torture_suite_add_simple_test(suite, "samba3rootdirfid",
+	torture_suite_add_1smb_test(suite, "samba3hide", torture_samba3_hide);
+	torture_suite_add_1smb_test(suite, "samba3closeerr", torture_samba3_closeerr);
+	torture_suite_add_1smb_test(suite, "samba3rootdirfid",
 				      torture_samba3_rootdirfid);
-	torture_suite_add_simple_test(suite, "samba3checkfsp", torture_samba3_checkfsp);
-	torture_suite_add_simple_test(suite, "samba3oplocklogoff", torture_samba3_oplock_logoff);
+	torture_suite_add_1smb_test(suite, "samba3checkfsp", torture_samba3_checkfsp);
+	torture_suite_add_1smb_test(suite, "samba3oplocklogoff", torture_samba3_oplock_logoff);
 	torture_suite_add_simple_test(suite, "samba3badpath", torture_samba3_badpath);
-	torture_suite_add_simple_test(suite, "samba3caseinsensitive",
+	torture_suite_add_1smb_test(suite, "samba3caseinsensitive",
 				      torture_samba3_caseinsensitive);
-	torture_suite_add_simple_test(suite, "samba3posixtimedlock",
+	torture_suite_add_1smb_test(suite, "samba3posixtimedlock",
 				      torture_samba3_posixtimedlock);
 	torture_suite_add_simple_test(suite, "scan-eamax", torture_max_eas);
 
