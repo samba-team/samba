@@ -40,4 +40,8 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 WERROR reg_delete_path(const struct security_token *token,
 		       const char *orig_path);
 
+struct registry_value *registry_value_dw(TALLOC_CTX *mem_ctx, uint32_t dw);
+struct registry_value *registry_value_sz(TALLOC_CTX *mem_ctx, const char *str);
+struct registry_value *registry_value_multi_sz(TALLOC_CTX *mem_ctx, const char **str);
+
 #endif /* _REG_API_UTIL_H */

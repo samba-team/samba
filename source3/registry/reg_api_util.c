@@ -26,6 +26,7 @@
 #include "registry.h"
 #include "reg_api.h"
 #include "reg_api_util.h"
+#include "libcli/registry/util_reg.h"
 
 /**
  * Utility function to open a complete registry path including the hive prefix.
@@ -175,4 +176,64 @@ WERROR reg_delete_path(const struct security_token *token,
 	SAFE_FREE(path);
 	TALLOC_FREE(hive);
 	return err;
+}
+
+struct registry_value *registry_value_dw(TALLOC_CTX *mem_ctx, uint32_t dw)
+{
+	struct registry_value *ret;
+
+	ret = talloc_zero(mem_ctx, struct registry_value);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	ret->data = data_blob_talloc(ret, NULL, sizeof(uint32_t));
+	if (ret->data.data == NULL) {
+		talloc_free(ret);
+		return NULL;
+	}
+
+	ret->type = REG_DWORD;
+
+	SIVAL(ret->data.data, 0, dw);
+
+	return ret;
+}
+
+struct registry_value *registry_value_sz(TALLOC_CTX *mem_ctx, const char *str)
+{
+	struct registry_value *ret;
+
+	ret = talloc_zero(mem_ctx, struct registry_value);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	if (!push_reg_sz(ret, &ret->data, str)) {
+		talloc_free(ret);
+		return NULL;
+	}
+
+	ret->type = REG_SZ;
+
+	return ret;
+}
+
+struct registry_value *registry_value_multi_sz(TALLOC_CTX *mem_ctx, const char **str)
+{
+	struct registry_value *ret;
+
+	ret = talloc_zero(mem_ctx, struct registry_value);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	if (!push_reg_multi_sz(ret, &ret->data, str)) {
+		talloc_free(ret);
+		return NULL;
+	}
+
+	ret->type = REG_MULTI_SZ;
+
+	return ret;
 }
