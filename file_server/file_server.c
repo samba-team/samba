@@ -54,6 +54,7 @@ static const char *generate_smb_conf(struct task_server *task)
         fdprintf(fd, "rpc_server:default = external\n");
 	fdprintf(fd, "rpc_server:svcctl = embedded\n");
 	fdprintf(fd, "rpc_server:eventlog = embedded\n");
+	fdprintf(fd, "rpc_server:ntsvcs = embedded\n");
 	fdprintf(fd, "rpc_server:spoolss = embedded\n");
 	fdprintf(fd, "rpc_daemon:spoolssd = disabled\n");
 	fdprintf(fd, "rpc_server:tcpip = no\n");
