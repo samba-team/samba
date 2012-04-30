@@ -65,7 +65,7 @@ static bool test_useradd_async(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing async libnet_rpc_useradd\n");
 
-	c = libnet_rpc_useradd_send(p, &user, msg_handler);
+	c = libnet_rpc_useradd_send(p, mem_ctx, &user, msg_handler);
 	if (!c) {
 		torture_comment(tctx, "Failed to call async libnet_rpc_useradd\n");
 		return false;
