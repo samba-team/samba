@@ -644,6 +644,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_control_get_db_statistics(ctdb, *(uint32_t *)indata.dptr, outdata);
 
+	case CTDB_CONTROL_RELOAD_PUBLIC_IPS:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_reload_public_ips(ctdb, c, async_reply);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

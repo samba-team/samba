@@ -135,6 +135,11 @@ struct ctdb_call_info {
 */
 #define CTDB_SRVID_REBALANCE_NODE 0xFB01000000000000LL
 
+/*
+   a message handler ID meaning to ask recovery master to reload all ips
+ */
+#define CTDB_SRVID_RELOAD_ALL_IPS 0xFB02000000000000LL
+
 /* A message id to ask the recovery daemon to temporarily disable the
    public ip checks
 */
@@ -384,6 +389,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRAVERSE_START_EXT	 = 131,
 		    CTDB_CONTROL_GET_DB_STATISTICS	 = 132,
 		    CTDB_CONTROL_SET_DB_STICKY		 = 133,
+		    CTDB_CONTROL_RELOAD_PUBLIC_IPS	 = 134,
 };
 
 /*

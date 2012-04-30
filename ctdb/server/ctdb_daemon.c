@@ -1161,10 +1161,14 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
 	if (public_address_list) {
-		ret = ctdb_set_public_addresses(ctdb, public_address_list);
+		ctdb->public_addresses_file = public_address_list;
+		ret = ctdb_set_public_addresses(ctdb);
 		if (ret == -1) {
 			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));
 			exit(1);
+		}
+		if (ctdb->do_checkpublicip) {
+			ctdb_start_monitoring_interfaces(ctdb);
 		}
 	}
 

@@ -497,6 +497,10 @@ struct ctdb_context {
 
 	/* list of event script callback functions that are active */
 	struct event_script_callback *script_callbacks;
+
+	struct ctdb_reloadips_handle *reload_ips;
+
+	const char *public_addresses_file;
 };
 
 struct ctdb_db_context {
@@ -1135,7 +1139,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst);
 
-int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist);
+int ctdb_set_public_addresses(struct ctdb_context *ctdb);
 int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *iface,
 			      const char *ip);
@@ -1469,5 +1473,17 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 				TDB_DATA *outdata);
 
 int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db);
+
+/*
+  description for a message to reload all ips via recovery master/daemon
+ */
+struct reloadips_all_reply {
+	uint32_t pnn;
+	uint64_t srvid;
+};
+
+int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
+
+int ctdb_start_monitoring_interfaces(struct ctdb_context *ctdb);
 
 #endif

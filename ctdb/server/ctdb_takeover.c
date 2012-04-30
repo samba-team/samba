@@ -994,7 +994,7 @@ static void ctdb_check_interfaces_event(struct event_context *ev, struct timed_e
 }
 
 
-static int ctdb_start_monitoring_interfaces(struct ctdb_context *ctdb)
+int ctdb_start_monitoring_interfaces(struct ctdb_context *ctdb)
 {
 	if (ctdb->check_public_ifaces_ctx != NULL) {
 		talloc_free(ctdb->check_public_ifaces_ctx);
@@ -1017,15 +1017,15 @@ static int ctdb_start_monitoring_interfaces(struct ctdb_context *ctdb)
 /*
   setup the public address lists from a file
 */
-int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
+int ctdb_set_public_addresses(struct ctdb_context *ctdb)
 {
 	char **lines;
 	int nlines;
 	int i;
 
-	lines = file_lines_load(alist, &nlines, ctdb);
+	lines = file_lines_load(ctdb->public_addresses_file, &nlines, ctdb);
 	if (lines == NULL) {
-		ctdb_set_error(ctdb, "Failed to load public address list '%s'\n", alist);
+		ctdb_set_error(ctdb, "Failed to load public address list '%s'\n", ctdb->public_addresses_file);
 		return -1;
 	}
 	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
@@ -1076,10 +1076,6 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 		}
 	}
 
-
-	if (ctdb->do_checkpublicip) {
-		ctdb_start_monitoring_interfaces(ctdb);
-	}
 
 	talloc_free(lines);
 	return 0;
@@ -3656,3 +3652,237 @@ int update_ip_assignment_tree(struct ctdb_context *ctdb, struct ctdb_public_ip *
 
 	return 0;
 }
+
+
+
+
+
+
+struct ctdb_reloadips_handle {
+	struct ctdb_context *ctdb;
+	struct ctdb_req_control *c;
+	int status;
+	int fd[2];
+	pid_t child;
+};
+
+static int ctdb_reloadips_destructor(struct ctdb_reloadips_handle *h)
+{
+	h->ctdb->reload_ips = NULL;
+	ctdb_request_control_reply(h->ctdb, h->c, NULL, h->status, NULL);
+
+	if (h->fd[0] != -1) {
+		close(h->fd[0]);
+		h->fd[0] = -1;
+	}
+	if (h->fd[1] != -1) {
+		close(h->fd[1]);
+		h->fd[1] = -1;
+	}
+
+	kill(h->child, SIGKILL);
+
+	return 0;
+}
+
+static void ctdb_reloadips_timeout_event(struct event_context *ev,
+				struct timed_event *te,
+				struct timeval t, void *private_data)
+{
+	struct ctdb_reloadips_handle *h = talloc_get_type(private_data, struct ctdb_reloadips_handle);
+
+	talloc_free(h);
+}	
+
+static void ctdb_reloadips_child_handler(struct event_context *ev, struct fd_event *fde, 
+			     uint16_t flags, void *private_data)
+{
+	struct ctdb_reloadips_handle *h = talloc_get_type(private_data, struct ctdb_reloadips_handle);
+	char res;
+	int ret;
+
+	ret = read(h->fd[0], &res, 1);
+	if (ret < 1 || res != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Realoadips child process returned error\n"));
+		res = 1;
+	}
+
+	h->status = res;
+	talloc_free(h);
+}
+
+
+static int ctdb_reloadips_child(struct ctdb_context *ctdb)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct ctdb_all_public_ips *ips;
+	struct ctdb_vnn *vnn;
+	int i, ret;
+
+	/* read the ip allocation from the local node */
+	ret = ctdb_ctrl_get_public_ips(ctdb, TAKEOVER_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get public ips from local node\n"));
+		talloc_free(mem_ctx);
+		return -1;
+	}
+
+	/* re-read the public ips file */
+	ctdb->vnn = NULL;
+	if (ctdb_set_public_addresses(ctdb) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to re-read public addresses file\n"));
+		talloc_free(mem_ctx);
+		return -1;
+	}		
+
+
+	/* check the previous list of ips and scan for ips that have been
+	   dropped.
+	 */
+	for (i = 0; i < ips->num; i++) {
+		for (vnn = ctdb->vnn; vnn; vnn = vnn->next) {
+			if (ctdb_same_ip(&vnn->public_address, &ips->ips[i].addr)) {
+				break;
+			}
+		}
+
+		/* we need to delete this ip, no longer available on this node */
+		if (vnn == NULL) {
+			struct ctdb_control_ip_iface pub;
+
+			DEBUG(DEBUG_NOTICE,("RELOADIPS: IP%s is no longer available on this node. Deleting it.\n", ctdb_addr_to_str(&ips->ips[i].addr)));
+			pub.addr  = ips->ips[i].addr;
+			pub.mask  = 0;
+			pub.len   = 0;
+
+			ret = ctdb_ctrl_del_public_ip(ctdb, TAKEOVER_TIMEOUT(), CTDB_CURRENT_NODE, &pub);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR, ("RELOADIPS: Unable to del public ip:%s from local node\n", ctdb_addr_to_str(&ips->ips[i].addr)));
+				return -1;
+			}
+		}
+	}
+
+
+	/* loop over all new ones and check the ones we need to add */
+	for (vnn = ctdb->vnn; vnn; vnn = vnn->next) {
+		for (i = 0; i < ips->num; i++) {
+			if (ctdb_same_ip(&vnn->public_address, &ips->ips[i].addr)) {
+				break;
+			}
+		}
+		if (i == ips->num) {
+			struct ctdb_control_ip_iface pub;
+			char *ifaces = NULL;
+			int iface = 0;
+
+			DEBUG(DEBUG_NOTICE,("RELOADIPS: New ip:%s found, adding it.\n", ctdb_addr_to_str(&vnn->public_address)));
+
+			pub.addr  = vnn->public_address;
+			pub.mask  = vnn->public_netmask_bits;
+
+
+			ifaces = vnn->ifaces[0];
+			iface = 1;
+			while (vnn->ifaces[iface] != NULL) {
+				ifaces = talloc_asprintf(vnn, "%s,%s", ifaces, vnn->ifaces[iface]);
+				iface++;
+			}
+			pub.len   = strlen(ifaces)+1;
+			memcpy(&pub.iface[0], ifaces, strlen(ifaces)+1);
+
+			ret = ctdb_ctrl_add_public_ip(ctdb, TAKEOVER_TIMEOUT(), CTDB_CURRENT_NODE, &pub);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR, ("RELOADIPS: Unable to add public ip:%s to local node\n", ctdb_addr_to_str(&vnn->public_address)));
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+/* This control is sent to force the node to re-read the public addresses file
+   and drop any addresses we should nnot longer host, and add new addresses
+   that we are now able to host
+*/
+int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply)
+{
+	struct ctdb_reloadips_handle *h;
+	pid_t parent = getpid();
+
+	if (ctdb->reload_ips != NULL) {
+		talloc_free(ctdb->reload_ips);
+	}
+
+	h = talloc(ctdb, struct ctdb_reloadips_handle);
+	CTDB_NO_MEMORY(ctdb, h);
+	h->ctdb     = ctdb;
+	h->c        = talloc_steal(h, c);
+	h->status   = -1;
+	h->fd[0]    = -1;
+	h->fd[1]    = -1;
+
+	if (pipe(h->fd) == -1) {
+		DEBUG(DEBUG_ERR,("Failed to create pipe for ctdb_freeze_lock\n"));
+		talloc_free(h);
+		return -1;
+	}
+
+	h->child = ctdb_fork(ctdb);
+	if (h->child == (pid_t)-1) {
+		DEBUG(DEBUG_ERR, ("Failed to fork a child for reloadips\n"));
+		close(h->fd[0]);
+		close(h->fd[1]);
+		talloc_free(h);
+		return -1;
+	}
+
+	/* child process */
+	if (h->child == 0) {
+		signed char res = 0;
+		close(h->fd[0]);
+		h->fd[0] = -1;
+		debug_extra = talloc_asprintf(NULL, "reloadips:");
+
+		if (switch_from_server_to_client(ctdb, "reloadips-child") != 0) {
+			DEBUG(DEBUG_CRIT,("ERROR: Failed to switch reloadips child into client mode\n"));
+			res = -1;
+		} else {
+			res = ctdb_reloadips_child(ctdb);
+			if (res != 0) {
+				DEBUG(DEBUG_ERR,("Failed to reload ips on local node\n"));
+			}
+		}
+
+		write(h->fd[1], &res, 1);
+		/* make sure we die when our parent dies */
+		while (kill(parent, 0) == 0 || errno != ESRCH) {
+			sleep(5);
+		}
+		_exit(0);
+	}
+
+	ctdb->reload_ips = h;
+
+
+	close(h->fd[1]);
+	h->fd[1] = -1;
+	set_close_on_exec(h->fd[0]);
+
+	event_add_fd(ctdb->ev, h, h->fd[0],
+			EVENT_FD_READ, ctdb_reloadips_child_handler,
+			(void *)h);
+
+	talloc_set_destructor(h, ctdb_reloadips_destructor);
+
+	event_add_timed(ctdb->ev, h,
+			timeval_current_ofs(10, 0), 
+			ctdb_reloadips_timeout_event, h);
+
+	/* we reply later */
+	*async_reply = True;
+
+	return 0;
+}
+

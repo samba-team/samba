@@ -3994,6 +3994,96 @@ static int control_clearlog(struct ctdb_context *ctdb, int argc, const char **ar
 }
 
 
+static uint32_t reloadips_finished;
+
+static void reloadips_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	reloadips_finished = 1;
+}
+
+static int reloadips_all(struct ctdb_context *ctdb)
+{
+	struct reloadips_all_reply rips;
+	struct ctdb_node_map *nodemap=NULL;
+	TDB_DATA data;
+	uint32_t recmaster;
+	int ret, i;
+
+	/* check that there are valid nodes available */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return 1;
+	}
+	for (i=0; i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags != 0) {
+			DEBUG(DEBUG_ERR,("reloadips -n all  can only be used when all nodes are up and healthy. Aborting due to problem with node %d\n", i));
+			return 1;
+		}
+	}
+
+
+	rips.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (rips.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
+		return 1;
+	}
+	rips.srvid = getpid();
+
+
+	/* register a message port for receiveing the reply so that we
+	   can receive the reply
+	*/
+	ctdb_client_set_message_handler(ctdb, rips.srvid, reloadips_handler, NULL);
+
+	if (!ctdb_getrecmaster(ctdb_connection, CTDB_CURRENT_NODE, &recmaster)) {
+		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node\n"));
+		return -1;
+	}
+
+
+	data.dptr = (uint8_t *)&rips;
+	data.dsize = sizeof(rips);
+
+	ret = ctdb_client_send_message(ctdb, recmaster, CTDB_SRVID_RELOAD_ALL_IPS, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send reload all ips request message to %u\n", options.pnn));
+		return 1;
+	}
+
+	reloadips_finished = 0;
+	while (reloadips_finished == 0) {
+		event_loop_once(ctdb->ev);
+	}
+
+	return 0;
+}
+
+/*
+  reload public ips on a specific node
+ */
+static int control_reloadips(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	int32_t res;
+	char *errmsg;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	if (options.pnn == CTDB_BROADCAST_ALL) {
+		return reloadips_all(ctdb);
+	}
+
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_RELOAD_PUBLIC_IPS,
+			   0, tdb_null, tmp_ctx, NULL, &res, NULL, &errmsg);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("Failed to reload ips\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
 
 /*
   display a list of the databases on a remote ctdb
@@ -5692,6 +5782,7 @@ static const struct {
 	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbid>" },
 	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status" },
 	{ "dbstatistics",    control_dbstatistics,      false,	false, "show db statistics", "<db>" },
+	{ "reloadips",       control_reloadips,         false,	false, "reload the public addresses file on a node" },
 };
 
 /*
