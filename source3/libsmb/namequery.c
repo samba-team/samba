@@ -1250,6 +1250,10 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 		ZERO_STRUCT(ss);
 		memcpy(&ss, res->ai_addr, res->ai_addrlen);
 
+		if (is_zero_addr((struct sockaddr *)&ss)) {
+			continue;
+		}
+
 		*return_count += 1;
 
 		*return_iplist = SMB_REALLOC_ARRAY(*return_iplist,
@@ -1438,6 +1442,10 @@ NTSTATUS internal_resolve_name(const char *name,
 			SAFE_FREE(*return_iplist);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		if (is_zero_addr((struct sockaddr *)&(*return_iplist)->ss)) {
+			SAFE_FREE(*return_iplist);
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 		*return_count = 1;
 		return NT_STATUS_OK;
 	}
@@ -1445,6 +1453,8 @@ NTSTATUS internal_resolve_name(const char *name,
 	/* Check name cache */
 
 	if (namecache_fetch(name, name_type, return_iplist, return_count)) {
+		*return_count = remove_duplicate_addrs2(*return_iplist,
+					*return_count );
 		/* This could be a negative response */
 		if (*return_count > 0) {
 			return NT_STATUS_OK;
@@ -1539,10 +1549,7 @@ NTSTATUS internal_resolve_name(const char *name,
 	controllers including the PDC in iplist[1..n].  Iterating over
 	the iplist when the PDC is down will cause two sets of timeouts. */
 
-	if ( *return_count ) {
-		*return_count = remove_duplicate_addrs2(*return_iplist,
-					*return_count );
-	}
+	*return_count = remove_duplicate_addrs2(*return_iplist, *return_count );
 
 	/* Save in name cache */
 	if ( DEBUGLEVEL >= 100 ) {
@@ -1558,7 +1565,9 @@ NTSTATUS internal_resolve_name(const char *name,
 		}
 	}
 
-	namecache_store(name, name_type, *return_count, *return_iplist);
+	if (*return_count) {
+		namecache_store(name, name_type, *return_count, *return_iplist);
+	}
 
 	/* Display some debugging info */
 
@@ -2021,10 +2030,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	/* need to remove duplicates in the list if we have any
 	   explicit password servers */
 
-	if (local_count) {
-		local_count = remove_duplicate_addrs2(return_iplist,
-				local_count );
-	}
+	local_count = remove_duplicate_addrs2(return_iplist, local_count );
 
 	/* For DC's we always prioritize IPv4 due to W2K3 not
 	 * supporting LDAP, KRB5 or CLDAP over IPv6. */
