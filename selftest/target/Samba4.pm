@@ -1306,6 +1306,9 @@ sub provision_plugin_s4_dc($$)
 	copy = tmp
         guest ok = yes
 
+[hideunread]
+	copy = tmp
+	hide unreadable = yes
 ";
 
 	print "PROVISIONING PLUGIN S4 DC...";
