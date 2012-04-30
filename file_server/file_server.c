@@ -52,7 +52,7 @@ static const char *generate_smb_conf(struct task_server *task)
 	fdprintf(fd, "auth methods = guest samba4\n");
 	fdprintf(fd, "passdb backend = samba4\n");
         fdprintf(fd, "rpc_server:default = external\n");
-        fdprintf(fd, "rpc_server:dssetup = disabled\n");
+	fdprintf(fd, "rpc_server:svcctl = embedded\n");
 	fdprintf(fd, "rpc_server:spoolss = embedded\n");
 	fdprintf(fd, "rpc_daemon:spoolssd = disabled\n");
 	fdprintf(fd, "rpc_server:tcpip = no\n");
