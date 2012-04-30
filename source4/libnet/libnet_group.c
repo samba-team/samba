@@ -76,7 +76,7 @@ struct composite_context* libnet_CreateGroup_send(struct libnet_context *ctx,
 	s->group_add.in.domain_handle = ctx->samr.handle;
 
 	/* send the request */
-	create_req = libnet_rpc_groupadd_send(ctx->samr.pipe, &s->group_add, monitor);
+	create_req = libnet_rpc_groupadd_send(ctx->samr.pipe, s, &s->group_add, monitor);
 	if (composite_nomem(create_req, c)) return c;
 
 	composite_continue(c, create_req, continue_rpc_group_added, c);
@@ -101,7 +101,7 @@ static void continue_domain_opened(struct composite_context *ctx)
 	s->group_add.in.domain_handle = s->ctx->samr.handle;
 
 	/* send the request */
-	create_req = libnet_rpc_groupadd_send(s->ctx->samr.pipe, &s->group_add,
+	create_req = libnet_rpc_groupadd_send(s->ctx->samr.pipe, s, &s->group_add,
 					      s->monitor_fn);
 	if (composite_nomem(create_req, c)) return;
 
