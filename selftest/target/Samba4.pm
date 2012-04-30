@@ -1269,6 +1269,9 @@ sub provision_plugin_s4_dc($$)
 
 	my $prefix_abs = abs_path($prefix);
 
+	my $bindir_abs = abs_path($self->{bindir});
+	my $lockdir="$prefix_abs/lockdir";
+
 	my $extra_smbconf_options = "
         server services = -smb +s3fs
         xattr_tdb:file = $prefix_abs/statedir/xattr.tdb
@@ -1296,6 +1299,19 @@ sub provision_plugin_s4_dc($$)
         vfs objects = acl_xattr xattr_tdb streams_depot
 
         dcerpc endpoint servers = -winreg
+
+	printcap name = /dev/null
+
+	printing = vlp
+	print command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb print %p %s
+	lpq command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lpq %p
+	lp rm command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lprm %p %j
+	lp pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lppause %p %j
+	lp resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb lpresume %p %j
+	queue pause command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queuepause %p
+	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
+	lpq cache time = 0
+
 ";
 
 	my $extra_smbconf_shares = "
