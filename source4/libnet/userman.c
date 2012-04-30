@@ -837,6 +837,7 @@ static void continue_usermod_user_changed(struct tevent_req *subreq)
  */
 
 struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
+						  TALLOC_CTX *mem_ctx,
 						  struct libnet_rpc_usermod *io,
 						  void (*monitor)(struct monitor_msg*))
 {
@@ -845,7 +846,7 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 	struct tevent_req *subreq;
 
 	/* composite context allocation and setup */
-	c = composite_create(p, dcerpc_event_context(p));
+	c = composite_create(mem_ctx, dcerpc_event_context(p));
 	if (c == NULL) return NULL;
 	s = talloc_zero(c, struct usermod_state);
 	if (composite_nomem(s, c)) return c;
@@ -914,6 +915,6 @@ NTSTATUS libnet_rpc_usermod(struct dcerpc_pipe *p,
 			    TALLOC_CTX *mem_ctx,
 			    struct libnet_rpc_usermod *io)
 {
-	struct composite_context *c = libnet_rpc_usermod_send(p, io, NULL);
+	struct composite_context *c = libnet_rpc_usermod_send(p, mem_ctx, io, NULL);
 	return libnet_rpc_usermod_recv(c, mem_ctx, io);
 }
