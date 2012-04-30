@@ -54,8 +54,6 @@ bool torture_samba3_checkfsp(struct torture_context *torture, struct smbcli_stat
 		return false;
 	}
 
-	smbcli_deltree(cli->tree, dirname);
-
 	status = torture_second_tcon(torture, cli->session,
 				     torture_setting_string(torture, "share", NULL),
 				     &tree2);
@@ -70,12 +68,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture, struct smbcli_stat
 
 	/* Try a read on a directory handle */
 
-	status = smbcli_mkdir(cli->tree, dirname);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("smbcli_mkdir failed: %s\n", nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert(torture, torture_setup_dir(cli, dirname), "creating test directory");
 
 	/* Open the directory */
 	{
@@ -363,14 +356,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 		goto fail;
 	}
 
-	smbcli_deltree(cli_nt->tree, dirname);
-
-	status = smbcli_mkdir(cli_nt->tree, dirname);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("smbcli_mkdir failed: %s\n", nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert(torture, torture_setup_dir(cli_nt, dirname), "creating test directory");
 
 	status = smbcli_chkpath(cli_nt->tree, dirname);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -604,7 +590,6 @@ static void count_fn(struct clilist_file_info *info, const char *name,
 bool torture_samba3_caseinsensitive(struct torture_context *torture, struct smbcli_state *cli)
 {
 	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
 	const char *dirname = "insensitive";
 	const char *ucase_dirname = "InSeNsItIvE";
 	const char *fname = "foo";
@@ -618,13 +603,7 @@ bool torture_samba3_caseinsensitive(struct torture_context *torture, struct smbc
 		return false;
 	}
 
-	smbcli_deltree(cli->tree, dirname);
-
-	status = smbcli_mkdir(cli->tree, dirname);
-	torture_assert_ntstatus_ok(torture, status, "smbcli_mkdir failed");
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
+	torture_assert(torture, torture_setup_dir(cli, dirname), "creating test directory");
 
 	if (!(fpath = talloc_asprintf(mem_ctx, "%s\\%s", dirname, fname))) {
 		goto done;
@@ -716,15 +695,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx, struct smbcli_s
 
 	struct tevent_timer *te;
 
-	smbcli_deltree(cli->tree, dirname);
-
-	status = smbcli_mkdir(cli->tree, dirname);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_warning(tctx, "smbcli_mkdir failed: %s\n",
-				nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, dirname), "creating test directory");
 
 	if (!(fpath = talloc_asprintf(tctx, "%s\\%s", dirname, fname))) {
 		torture_warning(tctx, "talloc failed\n");
