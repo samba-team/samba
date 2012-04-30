@@ -82,9 +82,6 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 	return WERR_OK;
 }
 
-#if 0
-/* these two functions are unused. */
-
 /**
  * Utility function to create a registry key without opening the hive
  * before. Assumes the hive already exists.
@@ -179,4 +176,3 @@ WERROR reg_delete_path(const struct security_token *token,
 	TALLOC_FREE(hive);
 	return err;
 }
-#endif /* #if 0 */

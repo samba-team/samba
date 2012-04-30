@@ -32,8 +32,6 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 		     uint32 desired_access, const struct security_token *token,
 		     struct registry_key **pkey);
 
-#if 0
-/* currently unused */
 WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 		       uint32 desired_access,
 		       const struct security_token *token,
@@ -41,6 +39,5 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 		       struct registry_key **pkey);
 WERROR reg_delete_path(const struct security_token *token,
 		       const char *orig_path);
-#endif
 
 #endif /* _REG_API_UTIL_H */
