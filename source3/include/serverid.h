@@ -22,9 +22,6 @@
 
 #include "includes.h"
 
-/** Don't verify this unique id */
-#define SERVERID_UNIQUE_ID_NOT_TO_VERIFY 0xFFFFFFFFFFFFFFFFULL
-
 /*
  * Register a server with its unique id
  */

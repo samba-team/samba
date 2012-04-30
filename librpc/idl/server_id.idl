@@ -11,6 +11,9 @@ interface server_id
 
 	const int NONCLUSTER_VNN = 0xFFFFFFFF;
 
+	/** Don't verify this unique id */
+	const int SERVERID_UNIQUE_ID_NOT_TO_VERIFY = 0xFFFFFFFFFFFFFFFFULL;
+
 	/* used to look like the following, note that unique_id was not
 	 * marshalled at all...
 
