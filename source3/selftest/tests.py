@@ -286,7 +286,7 @@ for t in tests:
     elif t == "raw.chkpath":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
-    elif t == "raw.samba3hide":
+    elif t == "raw.samba3hide" or t == "raw.samba3checkfsp" or t ==  "raw.samba3closeerr":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "secshare", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
