@@ -1298,7 +1298,7 @@ sub provision_plugin_s4_dc($$)
 
         vfs objects = acl_xattr xattr_tdb streams_depot
 
-        dcerpc endpoint servers = -winreg
+        dcerpc endpoint servers = -winreg -srvsvc
 
 	printcap name = /dev/null
 
