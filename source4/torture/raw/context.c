@@ -132,7 +132,13 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		setup.in.credentials = cmdline_credentials;
 
 		status = smb_composite_sesssetup(session3, &setup);
-		CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOGON_FAILURE)) {
+			/*
+			 * Windows 2008 R2 returns INVALID_PARAMETER
+			 * while Windows 2000 sp4 returns LOGON_FAILURE...
+			 */
+			CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+		}
 
 		torture_comment(tctx, "create a fouth anonymous security context on the same transport, without extended security\n");
 		session4 = smbcli_session_init(cli->transport, tctx, false, options);
