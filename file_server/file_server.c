@@ -70,6 +70,11 @@ static const char *generate_smb_conf(struct task_server *task)
 		fdprintf(fd, "vfs objects = acl_xattr\n");
 	}
 
+	fdprintf(fd, "map hidden = no\n");
+	fdprintf(fd, "map system = no\n");
+	fdprintf(fd, "map readonly = no\n");
+	fdprintf(fd, "store dos attributes = yes\n");
+
 	fdprintf(fd, "include = %s\n", lpcfg_configfile(lp_ctx));
 
 	fdprintf(fd, "[IPC$]\n");
