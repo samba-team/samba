@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha19
+What's new in Samba 4 alpha20
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -7,10 +7,26 @@ stable 3.x series. The primary additional features over Samba 3.6 are
 support for the Active Directory logon protocols used by Windows 2000
 and above.
 
+SECURITY RELEASE
+================
+
+This is a security release in order to address CVE-2012-2111
+(Incorrect permission checks when granting/removing privileges can
+compromise file server security).
+
+o  CVE-2012-2111:
+   Samba 3.4.x to 3.6.4 are affected by a
+   vulnerability that allows arbitrary users
+   to modify privileges on a file server.
+
+This is in regards to the smbd file server, which is shipped in Samba
+4.0 alpha.  The AD DC is not directly impacted, as the LSA
+implementation differs.
+
 WARNINGS
 ========
 
-Samba4 alpha19 is not a final Samba release, however we are now making
+Samba4 alpha20 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains both the technology of Samba 3.6
 (that you can reasonably expect to upgrade existing Samba 3.x releases
@@ -55,58 +71,42 @@ programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE alpha18
+CHANGES SINCE alpha19
 =====================
 
-For a list of changes since alpha 18, please see the git log.
+For a list of changes since alpha 19, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0alpha18..samba-4.0.0alpha19
+$ git log samba-4.0.0alpha19..samba-4.0.0alpha20
 
 Some major user-visible changes include:
 
-CVE-2012-1182:
-   Samba 3.0.x to 3.6.3 are affected by a
-   vulnerability that allows remote code
-   execution as the "root" user.
+Improvements to the 'samba-tool domain samba3upgrade' and
+samba_upgradedns tools
 
-Portability to MacOS X.  By using the CC_MD5*() routines we no longer
-segfault on MacOS X.
+Stability improvements in the Samba4 winbind implementation (that
+used in the AD DC mode).
 
-The source4/librpc layer has been reworked to be much more robust to
-connection failures.
+The BIND 9 DLZ plugin is now compatible with both BIND 9.8, and BIND 9.9.
 
-security=share in smbd has now been removed.
+dbcheck and runtime protection for the fSMORoleOwner attribute.  This
+allows us to recover from a situation where the fSMORoleOwner is
+deleted.
 
-A segfault in vfs_aio_fork for the smbd file server has been fixed
-
-ldbadd and ldbmodify now handle each ldif file in a single
-transaction, when modifying a local ldb.
-
-Further improvements to the dlz_bind9 and internal DNS servers.
+Support for storing the posixAccount and other auxiliary objectClass
+values (the values are not used by Samba as an AD DC at this stage,
+but may be used by clients).
 
 
 Some major but less visible changes include:
 
-Initial support for s3fs, using the smbd file server in the AD Domain
-controller has been added (but not yet finished, so not exposed)
-
-Samba now only uses the _FILE_OFFSET_BITS=64 API for accessing large
-files, not the _LARGEFILE64_SOURCE API.
-
-All Samba daemons now monitor stdin when launched in the foreground,
-and shutdown when stdin is closed.  We also ensure that all child
-processes are clened up by a similar mechanism.  This ensures that
-stray processes do not hang around, particularly in make test.
-
-Further preparation work for moving to TDB2, a new version of Samba's core TDB
-database.
-
-Early implementation work on the SMB 2.2 protocol client and server as
+Continued early implementation work on the SMB 2.2 protocol client and server as
 the team improves and develops support these new protocols.
 
-The last of the old-style krb5 ticket handling has been removed.
+Initial work to build Samba using MIT kerberos in the top level waf
+build system.  This is not complete at this time, but good progress is
+being made.
 
 
 KNOWN ISSUES
@@ -115,12 +115,6 @@ KNOWN ISSUES
 - upgradeprovision should not be run when upgrading to this release
   from a recent release.  No important database format changes have
   been made since alpha16.  
-
-- The BIND 9 DLZ plugin is compatible only with BIND 9.8, not BIND 9.9. 
-
-- Systems with tdb or ldb installed as a system library may have
-  difficulty building this release of Samba4.  The --disable-tdb2
-  configure switch may be of assistance.
 
 - Installation on systems without a system iconv (and developer
   headers at compile time) is known to cause errors when dealing with
