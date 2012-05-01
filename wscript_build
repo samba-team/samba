@@ -136,7 +136,6 @@ bld.RECURSE('utils')
 bld.RECURSE('lib/krb5_wrap')
 
 bld.RECURSE('testsuite/headers')
-bld.RECURSE('testsuite/libsmbclient/src')
 
 bld.SYMBOL_CHECK()
 bld.DUP_SYMBOL_CHECK()
