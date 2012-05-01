@@ -36,8 +36,6 @@
 #define LOW_ID 100
 #define HIGH_ID 199
 
-#define TESTDB "/tmp/idmap_test.tdb"
-
 #define DOM_SID1 "S-1-5-21-1234-5678-9012"
 #define DOM_SID2 "S-1-5-21-0123-5678-9012"
 #define DOM_SID3 "S-1-5-21-0012-5678-9012"
@@ -77,17 +75,28 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 static bool open_db(struct idmap_tdb_common_context *ctx)
 {
 	NTSTATUS status;
+	char *db_path;
 
 	if(ctx->db) {
 		/* already open */
 		return true;
 	}
 
-	unlink(TESTDB);
+	db_path = talloc_asprintf(talloc_tos(), "%s/idmap_test.tdb",
+				  lp_private_dir());
+	if(!db_path) {
+		DEBUG(0, ("Out of memory!\n"));
+		return false;
+	}
 
-	ctx->db = db_open(ctx, TESTDB, 0, TDB_DEFAULT,
-			  O_RDWR | O_CREAT | O_EXCL, 0600,
+	ctx->db = db_open(ctx, db_path, 0, TDB_DEFAULT | TDB_CLEAR_IF_FIRST,
+			  O_RDWR | O_CREAT, 0600,
 			  DBWRAP_LOCK_ORDER_1);
+
+	if(!ctx->db) {
+		DEBUG(0, ("Failed to open database: %s\n", strerror(errno)));
+		return false;
+	}
 
 	if(dbwrap_transaction_start(ctx->db) != 0) {
 		DEBUG(0, ("Failed to start transaction!\n"));
@@ -128,7 +137,9 @@ static struct idmap_tdb_common_context *createcontext(TALLOC_CTX *memctx)
 	ret->rw_ops->get_new_id = idmap_tdb_common_get_new_id;
 	ret->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
 
-	open_db(ret);
+	if (!open_db(ret)) {
+		return NULL;
+	};
 
 	return ret;
 }
@@ -974,6 +985,9 @@ bool run_idmap_tdb_common_test(int dummy)
 	TALLOC_CTX *stack = talloc_stackframe();
 
 	ctx = createcontext(memctx);
+	if(!ctx) {
+		return false;
+	}
 
 	dom = createdomain(memctx);
 
