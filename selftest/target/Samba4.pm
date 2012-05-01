@@ -1289,10 +1289,6 @@ sub provision_plugin_s4_dc($$)
 
 	smbd:sharedelay = 100000
 	smbd:writetimeupdatedelay = 500000
-	map hidden = no
-	map system = no
-	map readonly = no
-	store dos attributes = yes
 	create mask = 755
 	dos filemode = yes
 
