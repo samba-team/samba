@@ -523,9 +523,11 @@ done:
   this test demonstrates that exit() only sees the PID
   used for the open() calls
 */
-static bool test_pid_exit_only_sees_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_pid_exit_only_sees_open(struct smbcli_state *cli,
+					 struct torture_context *tctx)
 {
 	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = tctx;
 	bool ret = true;
 	union smb_open io;
 	union smb_write wr;
