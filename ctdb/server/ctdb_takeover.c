@@ -889,7 +889,8 @@ int32_t ctdb_control_release_ipv4(struct ctdb_context *ctdb,
 
 static int ctdb_add_public_address(struct ctdb_context *ctdb,
 				   ctdb_sock_addr *addr,
-				   unsigned mask, const char *ifaces)
+				   unsigned mask, const char *ifaces,
+				   bool check_address)
 {
 	struct ctdb_vnn      *vnn;
 	uint32_t num = 0;
@@ -935,9 +936,11 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	vnn->public_address      = *addr;
 	vnn->public_netmask_bits = mask;
 	vnn->pnn                 = -1;
-	if (ctdb_sys_have_ip(addr)) {
-		DEBUG(DEBUG_ERR,("We are already hosting public address '%s'. setting PNN to ourself:%d\n", ctdb_addr_to_str(addr), ctdb->pnn));
-		vnn->pnn = ctdb->pnn;
+	if (check_address) {
+		if (ctdb_sys_have_ip(addr)) {
+			DEBUG(DEBUG_ERR,("We are already hosting public address '%s'. setting PNN to ourself:%d\n", ctdb_addr_to_str(addr), ctdb->pnn));
+			vnn->pnn = ctdb->pnn;
+		}
 	}
 
 	for (i=0; vnn->ifaces[i]; i++) {
@@ -1017,7 +1020,7 @@ int ctdb_start_monitoring_interfaces(struct ctdb_context *ctdb)
 /*
   setup the public address lists from a file
 */
-int ctdb_set_public_addresses(struct ctdb_context *ctdb)
+int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 {
 	char **lines;
 	int nlines;
@@ -1069,7 +1072,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb)
 			talloc_free(lines);
 			return -1;
 		}
-		if (ctdb_add_public_address(ctdb, &addr, mask, ifaces)) {
+		if (ctdb_add_public_address(ctdb, &addr, mask, ifaces, check_addresses)) {
 			DEBUG(DEBUG_CRIT,("Failed to add line %u to the public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
@@ -3514,7 +3517,7 @@ int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 		return -1;
 	}
 
-	ret = ctdb_add_public_address(ctdb, &pub->addr, pub->mask, &pub->iface[0]);
+	ret = ctdb_add_public_address(ctdb, &pub->addr, pub->mask, &pub->iface[0], true);
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to add public address\n"));
@@ -3654,34 +3657,25 @@ int update_ip_assignment_tree(struct ctdb_context *ctdb, struct ctdb_public_ip *
 }
 
 
-
-
-
-
 struct ctdb_reloadips_handle {
 	struct ctdb_context *ctdb;
 	struct ctdb_req_control *c;
 	int status;
 	int fd[2];
 	pid_t child;
+	struct fd_event *fde;
 };
 
 static int ctdb_reloadips_destructor(struct ctdb_reloadips_handle *h)
 {
-	h->ctdb->reload_ips = NULL;
-	ctdb_request_control_reply(h->ctdb, h->c, NULL, h->status, NULL);
-
-	if (h->fd[0] != -1) {
-		close(h->fd[0]);
-		h->fd[0] = -1;
+	if (h == h->ctdb->reload_ips) {
+		h->ctdb->reload_ips = NULL;
 	}
-	if (h->fd[1] != -1) {
-		close(h->fd[1]);
-		h->fd[1] = -1;
+	if (h->c != NULL) {
+		ctdb_request_control_reply(h->ctdb, h->c, NULL, h->status, NULL);
+		h->c = NULL;
 	}
-
 	kill(h->child, SIGKILL);
-
 	return 0;
 }
 
@@ -3698,19 +3692,19 @@ static void ctdb_reloadips_child_handler(struct event_context *ev, struct fd_eve
 			     uint16_t flags, void *private_data)
 {
 	struct ctdb_reloadips_handle *h = talloc_get_type(private_data, struct ctdb_reloadips_handle);
+
 	char res;
 	int ret;
 
 	ret = read(h->fd[0], &res, 1);
 	if (ret < 1 || res != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Realoadips child process returned error\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Reloadips child process returned error\n"));
 		res = 1;
 	}
-
 	h->status = res;
+
 	talloc_free(h);
 }
-
 
 static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 {
@@ -3729,7 +3723,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 
 	/* re-read the public ips file */
 	ctdb->vnn = NULL;
-	if (ctdb_set_public_addresses(ctdb) != 0) {
+	if (ctdb_set_public_addresses(ctdb, false) != 0) {
 		DEBUG(DEBUG_ERR,("Failed to re-read public addresses file\n"));
 		talloc_free(mem_ctx);
 		return -1;
@@ -3813,16 +3807,15 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 
 	if (ctdb->reload_ips != NULL) {
 		talloc_free(ctdb->reload_ips);
+		ctdb->reload_ips = NULL;
 	}
 
 	h = talloc(ctdb, struct ctdb_reloadips_handle);
 	CTDB_NO_MEMORY(ctdb, h);
 	h->ctdb     = ctdb;
-	h->c        = talloc_steal(h, c);
+	h->c        = NULL;
 	h->status   = -1;
-	h->fd[0]    = -1;
-	h->fd[1]    = -1;
-
+	
 	if (pipe(h->fd) == -1) {
 		DEBUG(DEBUG_ERR,("Failed to create pipe for ctdb_freeze_lock\n"));
 		talloc_free(h);
@@ -3841,8 +3834,8 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 	/* child process */
 	if (h->child == 0) {
 		signed char res = 0;
+
 		close(h->fd[0]);
-		h->fd[0] = -1;
 		debug_extra = talloc_asprintf(NULL, "reloadips:");
 
 		if (switch_from_server_to_client(ctdb, "reloadips-child") != 0) {
@@ -3863,26 +3856,24 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 		_exit(0);
 	}
 
-	ctdb->reload_ips = h;
-
+	h->c             = talloc_steal(h, c);
 
 	close(h->fd[1]);
-	h->fd[1] = -1;
 	set_close_on_exec(h->fd[0]);
-
-	event_add_fd(ctdb->ev, h, h->fd[0],
-			EVENT_FD_READ, ctdb_reloadips_child_handler,
-			(void *)h);
 
 	talloc_set_destructor(h, ctdb_reloadips_destructor);
 
+
+	h->fde = event_add_fd(ctdb->ev, h, h->fd[0],
+			EVENT_FD_READ, ctdb_reloadips_child_handler,
+			(void *)h);
+	tevent_fd_set_auto_close(h->fde);
+
 	event_add_timed(ctdb->ev, h,
-			timeval_current_ofs(10, 0), 
+			timeval_current_ofs(120, 0),
 			ctdb_reloadips_timeout_event, h);
 
 	/* we reply later */
 	*async_reply = True;
-
 	return 0;
 }
-

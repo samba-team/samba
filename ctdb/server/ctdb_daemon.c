@@ -1162,7 +1162,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	}
 	if (public_address_list) {
 		ctdb->public_addresses_file = public_address_list;
-		ret = ctdb_set_public_addresses(ctdb);
+		ret = ctdb_set_public_addresses(ctdb, true);
 		if (ret == -1) {
 			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));
 			exit(1);

@@ -1139,7 +1139,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst);
 
-int ctdb_set_public_addresses(struct ctdb_context *ctdb);
+int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
 int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *iface,
 			      const char *ip);
