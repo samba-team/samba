@@ -118,6 +118,25 @@ class GroupCmdTestCase(SambaToolCmdTest):
             found = self.assertMatch(out, name,
                                      "group '%s' not found" % name)
 
+    def test_listmembers(self):
+        (result, out, err) = self.runsubcmd("group", "listmembers", "Domain Users",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, "Error running listmembers")
+
+        search_filter = "(|(primaryGroupID=513)(memberOf=CN=Domain Users,CN=Users,%s))" % self.samdb.domain_dn()
+
+        grouplist = self.samdb.search(base=self.samdb.domain_dn(),
+                                      scope=ldb.SCOPE_SUBTREE,
+                                      expression=search_filter,
+                                      attrs=["cn"])
+
+        self.assertTrue(len(grouplist) > 0, "no groups found in samdb")
+
+        for groupobj in grouplist:
+            name = groupobj.get("cn", idx=0)
+            found = self.assertMatch(out, name, "group '%s' not found" % name)
 
     def _randomGroup(self, base={}):
         """create a group with random attribute values, you can specify base attributes"""

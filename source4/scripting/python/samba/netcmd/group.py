@@ -20,6 +20,8 @@
 import samba.getopt as options
 from samba.netcmd import Command, SuperCommand, CommandError, Option
 import ldb
+from samba.ndr import ndr_unpack
+from samba.dcerpc import security
 
 from getpass import getpass
 from samba.auth import system_session
@@ -260,6 +262,7 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
             raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
         self.outf.write("Removed members from group %s\n" % groupname)
 
+
 class cmd_group_list(Command):
     """List all groups"""
 
@@ -293,6 +296,68 @@ class cmd_group_list(Command):
         for msg in res:
             self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
 
+
+class cmd_group_list_members(Command):
+    """List all members of an AD group
+
+This command lists members from an existing Active Directory group. The command accepts one group name.
+
+Example1:
+samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com -Uadministrator%passw0rd
+"""
+
+    synopsis = "%prog <groupname> [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        ]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    takes_args = ["groupname"]
+
+    def run(self, groupname, credopts=None, sambaopts=None, versionopts=None, H=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+
+        try:
+            samdb = SamDB(url=H, session_info=system_session(),
+                          credentials=creds, lp=lp)
+
+            search_filter = "(&(objectClass=group)(samaccountname=%s))" % groupname
+            res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                               expression=(search_filter),
+                               attrs=["objectSid"])
+
+            if (len(res) != 1):
+                return
+
+            group_dn = res[0].get('dn', idx=0)
+            object_sid = res[0].get('objectSid', idx=0)
+
+            object_sid = ndr_unpack(security.dom_sid, object_sid)
+            (group_dom_sid, rid) = object_sid.split()
+
+            search_filter = "(|(primaryGroupID=%s)(memberOf=%s))" % (rid, group_dn)
+            res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
+                               expression=(search_filter),
+                               attrs=["cn"])
+
+            if (len(res) == 0):
+                return
+
+            for msg in res:
+                self.outf.write("%s\n" % msg.get("cn", idx=0))
+
+        except Exception, e:
+            raise CommandError('Failed to list members of "%s" group ' % groupname, e)
+
+
 class cmd_group(SuperCommand):
     """Group management"""
 
@@ -302,3 +367,4 @@ class cmd_group(SuperCommand):
     subcommands["addmembers"] = cmd_group_add_members()
     subcommands["removemembers"] = cmd_group_remove_members()
     subcommands["list"] = cmd_group_list()
+    subcommands["listmembers"] = cmd_group_list_members()

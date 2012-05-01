@@ -71,4 +71,10 @@ testit "group delete" $samba_tool group delete $CONFIG ddg
 testit "group delete" $samba_tool group delete $CONFIG gdg
 testit "group delete" $samba_tool group delete $CONFIG udg
 
+#test listing of all groups
+testit "group list" $samba_tool group list $CONFIG
+
+#test listing of members of a particular group
+testit "group listmembers" $samba_tool group listmembers $CONFIG Users
+
 exit $failed
