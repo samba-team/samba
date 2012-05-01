@@ -1654,7 +1654,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     if not use_ntvfs:
         server_services.append("-smb")
         server_services.append("+s3fs")
-        global_param["vfs objects"] = ["acl_xattr"]
+        global_param["dcerpc endpoint servers"] = ["-winreg", "-srvsvc"]
 
     if len(server_services) > 0:
         global_param["server services"] = server_services
