@@ -30,29 +30,16 @@
 
 #define BASEDIR "\\rawcontext"
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_STATUS(status, correct) \
+	torture_assert_ntstatus_equal_goto(tctx, status, correct, ret, done, __location__)
 
-#define CHECK_VALUE(v, correct) do { \
-	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%d - should be %d\n", \
-		       __location__, #v, v, correct); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_VALUE(v, correct) \
+	torture_assert_int_equal_goto(tctx, v, correct, ret, done, __location__)
 
-#define CHECK_NOT_VALUE(v, correct) do { \
-	if ((v) == (correct)) { \
-		printf("(%s) Incorrect value %s=%d - should not be %d\n", \
-		       __location__, #v, v, correct); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_NOT_VALUE(v, correct) \
+	torture_assert_goto(tctx, ((v) != (correct)), ret, done, \
+		talloc_asprintf(tctx, "(%s) Incorrect value %s=%d - should not be %d\n", \
+		       __location__, #v, v, correct));
 
 
 /*
@@ -82,13 +69,13 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	int i;
 	struct smbcli_session_options options;
 
-	printf("TESTING SESSION HANDLING\n");
+	torture_comment(tctx, "TESTING SESSION HANDLING\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
 	}
 
-	printf("create a second security context on the same transport\n");
+	torture_comment(tctx, "create a second security context on the same transport\n");
 
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
 	gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
@@ -107,7 +94,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	
 	session->vuid = setup.out.vuid;
 
-	printf("create a third security context on the same transport, with vuid set\n");
+	torture_comment(tctx, "create a third security context on the same transport, with vuid set\n");
 	session2 = smbcli_session_init(cli->transport, tctx, false, options);
 
 	session2->vuid = session->vuid;
@@ -121,12 +108,12 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	session2->vuid = setup.out.vuid;
-	printf("vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, session2->vuid);
+	torture_comment(tctx, "vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, session2->vuid);
 	
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
 		/* Samba4 currently fails this - we need to determine if this insane behaviour is important */
 		if (session2->vuid == session->vuid) {
-			printf("server allows the user to re-use an existing vuid in session setup \n");
+			torture_comment(tctx, "server allows the user to re-use an existing vuid in session setup \n");
 		}
 	} else {
 		CHECK_NOT_VALUE(session2->vuid, session->vuid);
@@ -134,7 +121,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	talloc_free(session2);
 
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
-		printf("create a fourth security context on the same transport, without extended security\n");
+		torture_comment(tctx, "create a fourth security context on the same transport, without extended security\n");
 		session3 = smbcli_session_init(cli->transport, tctx, false, options);
 
 		session3->vuid = session->vuid;
@@ -147,7 +134,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		status = smb_composite_sesssetup(session3, &setup);
 		CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
 
-		printf("create a fouth anonymous security context on the same transport, without extended security\n");
+		torture_comment(tctx, "create a fouth anonymous security context on the same transport, without extended security\n");
 		session4 = smbcli_session_init(cli->transport, tctx, false, options);
 
 		session4->vuid = session->vuid;
@@ -167,11 +154,11 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		talloc_free(session4);
 	}
 		
-	printf("use the same tree as the existing connection\n");
+	torture_comment(tctx, "use the same tree as the existing connection\n");
 	tree = smbcli_tree_init(session, tctx, false);
 	tree->tid = cli->tree->tid;
 
-	printf("create a file using the new vuid\n");
+	torture_comment(tctx, "create a file using the new vuid\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
@@ -188,7 +175,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
-	printf("write using the old vuid\n");
+	torture_comment(tctx, "write using the old vuid\n");
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum;
 	wr.writex.in.offset = 0;
@@ -200,32 +187,32 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("write with the new vuid\n");
+	torture_comment(tctx, "write with the new vuid\n");
 	status = smb_raw_write(tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("logoff the new vuid\n");
+	torture_comment(tctx, "logoff the new vuid\n");
 	status = smb_raw_ulogoff(session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the new vuid should not now be accessible\n");
+	torture_comment(tctx, "the new vuid should not now be accessible\n");
 	status = smb_raw_write(tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("second logoff for the new vuid should fail\n");
+	torture_comment(tctx, "second logoff for the new vuid should fail\n");
 	status = smb_raw_ulogoff(session);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 	talloc_free(session);
 
-	printf("the fnum should have been auto-closed\n");
+	torture_comment(tctx, "the fnum should have been auto-closed\n");
 	cl.close.level = RAW_CLOSE_CLOSE;
 	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
 	status = smb_raw_close(cli->tree, &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("create %d secondary security contexts on the same transport\n", 
+	torture_comment(tctx, "create %d secondary security contexts on the same transport\n",
 	       (int)ARRAY_SIZE(sessions));
 	for (i=0; i <ARRAY_SIZE(sessions); i++) {
 		setups[i].in.sesskey = cli->transport->negotiate.sesskey;
@@ -241,13 +228,13 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	}
 
 
-	printf("finishing %d secondary security contexts on the same transport\n", 
+	torture_comment(tctx, "finishing %d secondary security contexts on the same transport\n",
 	       (int)ARRAY_SIZE(sessions));
 	for (i=0; i< ARRAY_SIZE(sessions); i++) {
 		status = smb_composite_sesssetup_recv(composite_contexts[i]);
 		CHECK_STATUS(status, NT_STATUS_OK);
 		sessions[i]->vuid = setups[i].out.vuid;
-		printf("VUID: %d\n", sessions[i]->vuid);
+		torture_comment(tctx, "VUID: %d\n", sessions[i]->vuid);
 		status = smb_raw_ulogoff(sessions[i]);
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
@@ -277,7 +264,7 @@ static bool test_tree(struct smbcli_state *cli, struct torture_context *tctx)
 	const char *fname = BASEDIR "\\test.txt";
 	uint8_t c = 1;
 
-	printf("TESTING TREE HANDLING\n");
+	torture_comment(tctx, "TESTING TREE HANDLING\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -286,7 +273,7 @@ static bool test_tree(struct smbcli_state *cli, struct torture_context *tctx)
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
 	
-	printf("create a second tree context on the same session\n");
+	torture_comment(tctx, "create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, tctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
@@ -299,15 +286,15 @@ static bool test_tree(struct smbcli_state *cli, struct torture_context *tctx)
 	
 
 	tree->tid = tcon.tconx.out.tid;
-	printf("tid1=%d tid2=%d\n", cli->tree->tid, tree->tid);
+	torture_comment(tctx, "tid1=%d tid2=%d\n", cli->tree->tid, tree->tid);
 
-	printf("try a tconx with a bad device type\n");
+	torture_comment(tctx, "try a tconx with a bad device type\n");
 	tcon.tconx.in.device = "FOO";	
 	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_BAD_DEVICE_TYPE);
 
 
-	printf("create a file using the new tid\n");
+	torture_comment(tctx, "create a file using the new tid\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
@@ -324,7 +311,7 @@ static bool test_tree(struct smbcli_state *cli, struct torture_context *tctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
-	printf("write using the old tid\n");
+	torture_comment(tctx, "write using the old tid\n");
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum;
 	wr.writex.in.offset = 0;
@@ -336,20 +323,20 @@ static bool test_tree(struct smbcli_state *cli, struct torture_context *tctx)
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("write with the new tid\n");
+	torture_comment(tctx, "write with the new tid\n");
 	status = smb_raw_write(tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("disconnect the new tid\n");
+	torture_comment(tctx, "disconnect the new tid\n");
 	status = smb_tree_disconnect(tree);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the new tid should not now be accessible\n");
+	torture_comment(tctx, "the new tid should not now be accessible\n");
 	status = smb_raw_write(tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("the fnum should have been auto-closed\n");
+	torture_comment(tctx, "the fnum should have been auto-closed\n");
 	cl.close.level = RAW_CLOSE_CLOSE;
 	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
@@ -386,7 +373,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	uint8_t c = 1;
 	struct smbcli_session_options options;
 
-	printf("TESTING TREE with ulogoff\n");
+	torture_comment(tctx, "TESTING TREE with ulogoff\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -397,7 +384,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
 
-	printf("create the first new sessions\n");
+	torture_comment(tctx, "create the first new sessions\n");
 	session1 = smbcli_session_init(cli->transport, tctx, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
@@ -407,9 +394,9 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	status = smb_composite_sesssetup(session1, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session1->vuid = setup.out.vuid;
-	printf("vuid1=%d\n", session1->vuid);
+	torture_comment(tctx, "vuid1=%d\n", session1->vuid);
 
-	printf("create a tree context on the with vuid1\n");
+	torture_comment(tctx, "create a tree context on the with vuid1\n");
 	tree = smbcli_tree_init(session1, tctx, false);
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
@@ -419,9 +406,9 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	tree->tid = tcon.tconx.out.tid;
-	printf("tid=%d\n", tree->tid);
+	torture_comment(tctx, "tid=%d\n", tree->tid);
 
-	printf("create a file using vuid1\n");
+	torture_comment(tctx, "create a file using vuid1\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
@@ -438,7 +425,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum1 = io.ntcreatex.out.file.fnum;
 
-	printf("write using vuid1\n");
+	torture_comment(tctx, "write using vuid1\n");
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum1;
 	wr.writex.in.offset = 0;
@@ -450,11 +437,11 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("ulogoff the vuid1\n");
+	torture_comment(tctx, "ulogoff the vuid1\n");
 	status = smb_raw_ulogoff(session1);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("create the second new sessions\n");
+	torture_comment(tctx, "create the second new sessions\n");
 	session2 = smbcli_session_init(cli->transport, tctx, false, options);
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
@@ -464,12 +451,12 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session2->vuid = setup.out.vuid;
-	printf("vuid2=%d\n", session2->vuid);
+	torture_comment(tctx, "vuid2=%d\n", session2->vuid);
 
-	printf("use the existing tree with vuid2\n");
+	torture_comment(tctx, "use the existing tree with vuid2\n");
 	tree->session = session2;
 
-	printf("create a file using vuid2\n");
+	torture_comment(tctx, "create a file using vuid2\n");
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
@@ -486,7 +473,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.ntcreatex.out.file.fnum;
 
-	printf("write using vuid2\n");
+	torture_comment(tctx, "write using vuid2\n");
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum2;
 	wr.writex.in.offset = 0;
@@ -498,16 +485,16 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("ulogoff the vuid2\n");
+	torture_comment(tctx, "ulogoff the vuid2\n");
 	status = smb_raw_ulogoff(session2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/* this also demonstrates that SMBtdis doesn't need a valid vuid */
-	printf("disconnect the existing tree connection\n");
+	torture_comment(tctx, "disconnect the existing tree connection\n");
 	status = smb_tree_disconnect(tree);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("disconnect the existing tree connection\n");
+	torture_comment(tctx, "disconnect the existing tree connection\n");
 	status = smb_tree_disconnect(tree);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV,ERRinvnid));
 
@@ -537,7 +524,7 @@ static bool test_pid_exit_only_sees_open(struct smbcli_state *cli,
 	uint8_t c = 1;
 	uint16_t pid1, pid2;
 
-	printf("TESTING PID HANDLING exit() only cares about open() PID\n");
+	torture_comment(tctx, "TESTING PID HANDLING exit() only cares about open() PID\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -546,9 +533,9 @@ static bool test_pid_exit_only_sees_open(struct smbcli_state *cli,
 	pid1 = cli->session->pid;
 	pid2 = pid1 + 1;
 
-	printf("pid1=%d pid2=%d\n", pid1, pid2);
+	torture_comment(tctx, "pid1=%d pid2=%d\n", pid1, pid2);
 
-	printf("create a file using pid1\n");
+	torture_comment(tctx, "create a file using pid1\n");
 	cli->session->pid = pid1;
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -566,7 +553,7 @@ static bool test_pid_exit_only_sees_open(struct smbcli_state *cli,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
-	printf("write using pid2\n");
+	torture_comment(tctx, "write using pid2\n");
 	cli->session->pid = pid2;
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum;
@@ -579,23 +566,23 @@ static bool test_pid_exit_only_sees_open(struct smbcli_state *cli,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("exit pid2\n");
+	torture_comment(tctx, "exit pid2\n");
 	cli->session->pid = pid2;
 	status = smb_raw_exit(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the fnum should still be accessible via pid2\n");
+	torture_comment(tctx, "the fnum should still be accessible via pid2\n");
 	cli->session->pid = pid2;
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("exit pid2\n");
+	torture_comment(tctx, "exit pid2\n");
 	cli->session->pid = pid2;
 	status = smb_raw_exit(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the fnum should still be accessible via pid1 and pid2\n");
+	torture_comment(tctx, "the fnum should still be accessible via pid1 and pid2\n");
 	cli->session->pid = pid1;
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -605,12 +592,12 @@ static bool test_pid_exit_only_sees_open(struct smbcli_state *cli,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("exit pid1\n");
+	torture_comment(tctx, "exit pid1\n");
 	cli->session->pid = pid1;
 	status = smb_raw_exit(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the fnum should not now be accessible via pid1 or pid2\n");
+	torture_comment(tctx, "the fnum should not now be accessible via pid1 or pid2\n");
 	cli->session->pid = pid1;
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
@@ -618,7 +605,7 @@ static bool test_pid_exit_only_sees_open(struct smbcli_state *cli,
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("the fnum should have been auto-closed\n");
+	torture_comment(tctx, "the fnum should have been auto-closed\n");
 	cli->session->pid = pid1;
 	cl.close.level = RAW_CLOSE_CLOSE;
 	cl.close.in.file.fnum = fnum;
@@ -648,7 +635,7 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 	uint16_t vuid1, vuid2;
 	struct smbcli_session_options options;
 
-	printf("TESTING PID HANDLING WITH 2 SESSIONS\n");
+	torture_comment(tctx, "TESTING PID HANDLING WITH 2 SESSIONS\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -656,7 +643,7 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
 
-	printf("create a second security context on the same transport\n");
+	torture_comment(tctx, "create a second security context on the same transport\n");
 	session = smbcli_session_init(cli->transport, tctx, false, options);
 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
@@ -672,9 +659,9 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 	vuid1 = cli->session->vuid;
 	vuid2 = session->vuid;
 
-	printf("vuid1=%d vuid2=%d\n", vuid1, vuid2);
+	torture_comment(tctx, "vuid1=%d vuid2=%d\n", vuid1, vuid2);
 
-	printf("create a file using the vuid1\n");
+	torture_comment(tctx, "create a file using the vuid1\n");
 	cli->session->vuid = vuid1;
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -692,7 +679,7 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
 
-	printf("write using the vuid1 (fnum=%d)\n", fnum);
+	torture_comment(tctx, "write using the vuid1 (fnum=%d)\n", fnum);
 	cli->session->vuid = vuid1;
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum;
@@ -706,27 +693,27 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("exit the pid with vuid2\n");
+	torture_comment(tctx, "exit the pid with vuid2\n");
 	cli->session->vuid = vuid2;
 	status = smb_raw_exit(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the fnum should still be accessible\n");
+	torture_comment(tctx, "the fnum should still be accessible\n");
 	cli->session->vuid = vuid1;
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("exit the pid with vuid1\n");
+	torture_comment(tctx, "exit the pid with vuid1\n");
 	cli->session->vuid = vuid1;
 	status = smb_raw_exit(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the fnum should not now be accessible\n");
+	torture_comment(tctx, "the fnum should not now be accessible\n");
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("the fnum should have been auto-closed\n");
+	torture_comment(tctx, "the fnum should have been auto-closed\n");
 	cl.close.level = RAW_CLOSE_CLOSE;
 	cl.close.in.file.fnum = fnum;
 	cl.close.in.write_time = 0;
@@ -756,7 +743,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 	uint8_t c = 1;
 	uint16_t tid1, tid2;
 
-	printf("TESTING PID HANDLING WITH 2 TCONS\n");
+	torture_comment(tctx, "TESTING PID HANDLING WITH 2 TCONS\n");
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -765,7 +752,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
 	
-	printf("create a second tree context on the same session\n");
+	torture_comment(tctx, "create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, tctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
@@ -780,9 +767,9 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 
 	tid1 = cli->tree->tid;
 	tid2 = tree->tid;
-	printf("tid1=%d tid2=%d\n", tid1, tid2);
+	torture_comment(tctx, "tid1=%d tid2=%d\n", tid1, tid2);
 
-	printf("create a file using the tid1\n");
+	torture_comment(tctx, "create a file using the tid1\n");
 	cli->tree->tid = tid1;
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -800,7 +787,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum1 = io.ntcreatex.out.file.fnum;
 
-	printf("write using the tid1\n");
+	torture_comment(tctx, "write using the tid1\n");
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum1;
 	wr.writex.in.offset = 0;
@@ -813,7 +800,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("create a file using the tid2\n");
+	torture_comment(tctx, "create a file using the tid2\n");
 	cli->tree->tid = tid2;
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -831,7 +818,7 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum2 = io.ntcreatex.out.file.fnum;
 
-	printf("write using the tid2\n");
+	torture_comment(tctx, "write using the tid2\n");
 	wr.generic.level = RAW_WRITE_WRITEX;
 	wr.writex.in.file.fnum = fnum2;
 	wr.writex.in.offset = 0;
@@ -844,30 +831,30 @@ static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tct
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(wr.writex.out.nwritten, 1);
 
-	printf("exit the pid\n");
+	torture_comment(tctx, "exit the pid\n");
 	status = smb_raw_exit(cli->session);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	printf("the fnum1 on tid1 should not be accessible\n");
+	torture_comment(tctx, "the fnum1 on tid1 should not be accessible\n");
 	cli->tree->tid = tid1;
 	wr.writex.in.file.fnum = fnum1;
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("the fnum1 on tid1 should have been auto-closed\n");
+	torture_comment(tctx, "the fnum1 on tid1 should have been auto-closed\n");
 	cl.close.level = RAW_CLOSE_CLOSE;
 	cl.close.in.file.fnum = fnum1;
 	cl.close.in.write_time = 0;
 	status = smb_raw_close(cli->tree, &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("the fnum2 on tid2 should not be accessible\n");
+	torture_comment(tctx, "the fnum2 on tid2 should not be accessible\n");
 	cli->tree->tid = tid2;
 	wr.writex.in.file.fnum = fnum2;
 	status = smb_raw_write(cli->tree, &wr);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	printf("the fnum2 on tid2 should have been auto-closed\n");
+	torture_comment(tctx, "the fnum2 on tid2 should have been auto-closed\n");
 	cl.close.level = RAW_CLOSE_CLOSE;
 	cl.close.in.file.fnum = fnum2;
 	cl.close.in.write_time = 0;
