@@ -3426,20 +3426,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				return NT_STATUS_BUFFER_TOO_SMALL;
 			}
 
-			/* We ARE guest if global_sid_Builtin_Guests is
-			 * in our list of SIDs.
-			 */
-			if (nt_token_check_sid(&global_sid_Builtin_Guests,
-					       conn->session_info->security_token)) {
+			if (security_session_user_level(conn->session_info, NULL) < SECURITY_USER) {
 				flags |= SMB_WHOAMI_GUEST;
-			}
-
-			/* We are NOT guest if global_sid_Authenticated_Users
-			 * is in our list of SIDs.
-			 */
-			if (nt_token_check_sid(&global_sid_Authenticated_Users,
-					       conn->session_info->security_token)) {
-				flags &= ~SMB_WHOAMI_GUEST;
 			}
 
 			/* NOTE: 8 bytes for UID/GID, irrespective of native
