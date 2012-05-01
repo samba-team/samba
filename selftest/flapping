@@ -21,3 +21,5 @@
 ^samba3.smb2.acls.DYNAMIC\(plugin_s4_dc\)  # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba3.raw.acls.dynamic\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba3.raw.acls.inheritance\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.raw.samba3checkfsp.samba3checkfsp\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
+^samba3.raw.samba3closeerr.samba3closeerr\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
