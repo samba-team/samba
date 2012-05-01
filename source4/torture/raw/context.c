@@ -52,6 +52,7 @@ static bool test_session(struct torture_context *tctx,
 	bool ret = true;
 	struct smbcli_session *session;
 	struct smbcli_session *session2;
+	uint16_t vuid3;
 	struct smbcli_session *session3;
 	struct smbcli_session *session4;
 	struct cli_credentials *anon_creds;
@@ -95,37 +96,50 @@ static bool test_session(struct torture_context *tctx,
 	
 	session->vuid = setup.out.vuid;
 
-	torture_comment(tctx, "create a third security context on the same transport, with vuid set\n");
+	torture_comment(tctx, "create a third security context on the same transport, with given vuid\n");
 	session2 = smbcli_session_init(cli->transport, tctx, false, options);
 
-	session2->vuid = session->vuid;
+	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
+		vuid3 = session->vuid+1;
+		if (vuid3 == cli->session->vuid) {
+			vuid3 += 1;
+		}
+		if (vuid3 == UINT16_MAX) {
+			vuid3 += 2;
+		}
+	} else {
+		vuid3 = session->vuid;
+	}
+	session2->vuid = vuid3;
+
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
 	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 
 	setup.in.credentials = cmdline_credentials;
 
-	status = smb_composite_sesssetup(session2, &setup);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_comment(tctx, "vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, vuid3);
 
-	session2->vuid = setup.out.vuid;
-	torture_comment(tctx, "vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, session2->vuid);
-	
+	status = smb_composite_sesssetup(session2, &setup);
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
-		/* Samba4 currently fails this - we need to determine if this insane behaviour is important */
-		if (session2->vuid == session->vuid) {
-			torture_comment(tctx, "server allows the user to re-use an existing vuid in session setup \n");
-		}
+		CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRbaduid));
 	} else {
-		CHECK_NOT_VALUE(session2->vuid, session->vuid);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		session2->vuid = setup.out.vuid;
+		CHECK_NOT_VALUE(session2->vuid, vuid3);
 	}
+
+	torture_comment(tctx, "vuid1=%d vuid2=%d vuid3=%d=>%d (%s)\n",
+			cli->session->vuid, session->vuid,
+			vuid3, session2->vuid, nt_errstr(status));
+
 	talloc_free(session2);
 
 	if (cli->transport->negotiate.capabilities & CAP_EXTENDED_SECURITY) {
 		torture_comment(tctx, "create a fourth security context on the same transport, without extended security\n");
 		session3 = smbcli_session_init(cli->transport, tctx, false, options);
 
-		session3->vuid = session->vuid;
+		session3->vuid = vuid3;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
 		setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
@@ -144,7 +158,7 @@ static bool test_session(struct torture_context *tctx,
 		torture_comment(tctx, "create a fouth anonymous security context on the same transport, without extended security\n");
 		session4 = smbcli_session_init(cli->transport, tctx, false, options);
 
-		session4->vuid = session->vuid;
+		session4->vuid = vuid3;
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
 		setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
@@ -210,6 +224,7 @@ static bool test_session(struct torture_context *tctx,
 	torture_comment(tctx, "second logoff for the new vuid should fail\n");
 	status = smb_raw_ulogoff(session);
 	CHECK_STATUS(status, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+	talloc_free(tree);
 	talloc_free(session);
 
 	torture_comment(tctx, "the fnum should have been auto-closed\n");
@@ -246,9 +261,6 @@ static bool test_session(struct torture_context *tctx,
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
 
-
-	talloc_free(tree);
-	
 done:
 	return ret;
 }
