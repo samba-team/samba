@@ -536,6 +536,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
         if group.sid_name_use == lsa.SID_NAME_ALIAS:
             try:
                 members = s3db.enum_aliasmem(group.sid)
+                groupmembers[str(group.sid)] = members
             except passdb.error, e:
                 logger.warn("Ignoring group '%s' %s listed but then not found: %s",
                             group.nt_name, group.sid, e)
@@ -543,11 +544,11 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
         elif group.sid_name_use == lsa.SID_NAME_DOM_GRP:
             try:
                 members = s3db.enum_group_members(group.sid)
+                groupmembers[str(group.sid)] = members
             except passdb.error, e:
                 logger.warn("Ignoring group '%s' %s listed but then not found: %s",
                             group.nt_name, group.sid, e)
                 continue
-            groupmembers[group.nt_name] = members
         elif group.sid_name_use == lsa.SID_NAME_WKN_GRP:
             (group_dom_sid, rid) = group.sid.split()
             if (group_dom_sid != security.dom_sid(security.SID_BUILTIN)):
@@ -557,13 +558,14 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
             # A number of buggy databases mix up well known groups and aliases.
             try:
                 members = s3db.enum_aliasmem(group.sid)
+                groupmembers[str(group.sid)] = members
             except passdb.error, e:
                 logger.warn("Ignoring group '%s' %s listed but then not found: %s",
                             group.nt_name, group.sid, e)
                 continue
         else:
-            logger.warn("Ignoring group '%s' with sid_name_use=%d",
-                        group.nt_name, group.sid_name_use)
+            logger.warn("Ignoring group '%s' %s with sid_name_use=%d",
+                        group.nt_name, group.sid, group.sid_name_use)
             continue
 
     # Export users from old passdb backend
@@ -614,6 +616,19 @@ Please fix this account before attempting to upgrade again
             admin_user = username
         if username.lower() == 'administrator':
             admin_user = username
+
+        try:
+            group_memberships = s3db.enum_group_memberships(user);
+            for group in group_memberships:
+                if str(group) in groupmembers:
+                    if user.user_sid not in groupmembers[str(group)]:
+                        groupmembers[str(group)].append(user.user_sid)
+                else:
+                    groupmembers[str(group)] = [user.user_sid];
+        except passdb.error, e:
+            logger.warn("Ignoring group memberships of '%s' %s: %s",
+                        username, user.user_sid, e)
+
 
     logger.info("Next rid = %d", next_rid)
 
@@ -706,8 +721,8 @@ Please fix this account before attempting to upgrade again
 
     logger.info("Adding users to groups")
     for g in grouplist:
-        if g.nt_name in groupmembers:
-            add_users_to_group(result.samdb, g, groupmembers[g.nt_name], logger)
+        if str(g.sid) in groupmembers:
+            add_users_to_group(result.samdb, g, groupmembers[str(g.sid)], logger)
 
     # Set password for administrator
     if admin_user:
