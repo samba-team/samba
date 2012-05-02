@@ -1,4 +1,4 @@
-/*f
+/*
    Unix SMB/CIFS implementation.
 
    dcerpc torture tests, designed to walk Samba3 code paths
