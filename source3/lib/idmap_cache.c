@@ -369,30 +369,6 @@ void idmap_cache_set_sid2gid(const struct dom_sid *sid, gid_t gid)
 	return;
 }
 
-
-/**
- * Store a mapping in the idmap cache
- * @param[in] sid		the sid to map
- * @param[in] gid		the gid to map
- *
- * If both parameters are valid values, then a positive mapping in both
- * directions is stored. If "is_null_sid(sid)" is true, then this will be a
- * negative mapping of gid, we want to cache that for this gid we could not
- * find anything. Likewise if "gid==-1", then we want to cache that we did not
- * find a mapping for the sid passed here.
- */
-
-void idmap_cache_set_sid2both(const struct dom_sid *sid, gid_t gid)
-{
-	struct unixid id;
-	id.type = ID_TYPE_BOTH;
-	id.id = gid;
-
-	idmap_cache_set_sid2unixid(sid, &id);
-	return;
-}
-
-
 static char* key_xid2sid_str(TALLOC_CTX* mem_ctx, char t, const char* id) {
 	return talloc_asprintf(mem_ctx, "IDMAP/%cID2SID/%s", t, id);
 }
