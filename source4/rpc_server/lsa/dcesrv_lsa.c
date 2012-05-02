@@ -3709,10 +3709,16 @@ static void kdc_get_policy(struct loadparm_context *lp_ctx,
 	unix_to_nt_time(&k->service_tkt_lifetime, svc_tkt_lifetime);
 	unix_to_nt_time(&k->user_tkt_lifetime, usr_tkt_lifetime);
 	unix_to_nt_time(&k->user_tkt_renewaltime, renewal_lifetime);
+#ifdef SAMBA4_USES_HEIMDAL /* MIT lacks krb5_get_max_time_skew.
+	However in the parent function we basically just did a full
+	krb5_context init with the only purpose of getting a global
+	config option (the max skew), it would probably make more sense
+	to have a lp_ or ldb global option as the samba default */
 	if (smb_krb5_context) {
 		unix_to_nt_time(&k->clock_skew, 
 				krb5_get_max_time_skew(smb_krb5_context->krb5_context));
 	}
+#endif
 	k->reserved = 0;
 }
 /*

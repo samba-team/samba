@@ -533,6 +533,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		return ret;
 	}
 
+#ifdef SAMBA4_USES_HEIMDAL /* MIT lacks krb5_get_default_in_tkt_etypes */
 	/*
 	 * transfer the enctypes from the smb_krb5_context to the gssapi layer
 	 *
@@ -567,6 +568,8 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 			return ret;
 		}
 	}
+#endif
+#ifdef SAMBA4_USES_HEIMDAL /* MIT lacks GSS_KRB5_CRED_NO_CI_FLAGS_X */
 
 	/* don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG */
 	maj_stat = gss_set_cred_option(&min_stat, &gcc->creds,
@@ -582,7 +585,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		(*error_string) = talloc_asprintf(cred, "gss_set_cred_option failed: %s", error_message(ret));
 		return ret;
 	}
-
+#endif
 	cred->client_gss_creds_obtained = cred->ccache_obtained;
 	talloc_set_destructor(gcc, free_gssapi_creds);
 	cred->client_gss_creds = gcc;
