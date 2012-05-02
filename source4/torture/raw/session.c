@@ -40,6 +40,7 @@ static bool test_session_reauth(struct torture_context *tctx,
 	bool ok = true;
 
 	data = generate_random_str(tctx, dlen);
+	torture_assert(tctx, (data != NULL), "memory allocation failed");
 	snprintf(fname, sizeof(fname), "raw_session_reconnect_%.8s.dat", data);
 
 	fnum = smbcli_nt_create_full(cli->tree, fname, 0,
