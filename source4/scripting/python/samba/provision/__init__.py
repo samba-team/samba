@@ -119,6 +119,7 @@ class ProvisionPaths(object):
         self.dns = None
         self.winsdb = None
         self.private_dir = None
+        self.state_dir = None
         self.phpldapadminconfig = None
 
 
@@ -447,6 +448,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     """
     paths = ProvisionPaths()
     paths.private_dir = lp.get("private dir")
+    paths.state_dir = lp.get("state directory")
 
     # This is stored without path prefix for the "privateKeytab" attribute in
     # "secrets_dns.ldif".
@@ -645,12 +647,12 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     if targetdir is not None:
         global_settings["private dir"] = os.path.abspath(os.path.join(targetdir, "private"))
         global_settings["lock dir"] = os.path.abspath(targetdir)
-        global_settings["state directory"] = os.path.abspath(targetdir)
-        global_settings["cache directory"] = os.path.abspath(targetdir)
+        global_settings["state directory"] = os.path.abspath(os.path.join(targetdir, "state"))
+        global_settings["cache directory"] = os.path.abspath(os.path.join(targetdir, "cache"))
 
         lp.set("lock dir", os.path.abspath(targetdir))
-        lp.set("state directory", os.path.abspath(targetdir))
-        lp.set("cache directory", os.path.abspath(targetdir))
+        lp.set("state directory",  global_settings["state directory"])
+        lp.set("cache directory", global_settings["cache directory"])
 
     shares = {}
     if serverrole == "domain controller":
@@ -1724,6 +1726,8 @@ def provision(logger, session_info, credentials, smbconf=None,
         os.mkdir(paths.private_dir)
     if not os.path.exists(os.path.join(paths.private_dir, "tls")):
         os.mkdir(os.path.join(paths.private_dir, "tls"))
+    if not os.path.exists(paths.state_dir):
+        os.mkdir(paths.state_dir)
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
 
