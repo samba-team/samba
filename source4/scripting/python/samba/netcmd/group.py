@@ -346,13 +346,13 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
             search_filter = "(|(primaryGroupID=%s)(memberOf=%s))" % (rid, group_dn)
             res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                                expression=(search_filter),
-                               attrs=["cn"])
+                               attrs=["samAccountName"])
 
             if (len(res) == 0):
                 return
 
             for msg in res:
-                self.outf.write("%s\n" % msg.get("cn", idx=0))
+                self.outf.write("%s\n" % msg.get("samAccountName", idx=0))
 
         except Exception, e:
             raise CommandError('Failed to list members of "%s" group ' % groupname, e)

@@ -130,12 +130,12 @@ class GroupCmdTestCase(SambaToolCmdTest):
         grouplist = self.samdb.search(base=self.samdb.domain_dn(),
                                       scope=ldb.SCOPE_SUBTREE,
                                       expression=search_filter,
-                                      attrs=["cn"])
+                                      attrs=["samAccountName"])
 
         self.assertTrue(len(grouplist) > 0, "no groups found in samdb")
 
         for groupobj in grouplist:
-            name = groupobj.get("cn", idx=0)
+            name = groupobj.get("samAccountName", idx=0)
             found = self.assertMatch(out, name, "group '%s' not found" % name)
 
     def _randomGroup(self, base={}):
