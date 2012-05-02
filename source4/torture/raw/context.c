@@ -889,8 +889,8 @@ static bool torture_raw_context_int(struct torture_context *tctx,
 /* 
    basic testing of session/tree context calls
 */
-bool torture_raw_context(struct torture_context *torture, 
-			 struct smbcli_state *cli)
+static bool torture_raw_context_all(struct torture_context *torture,
+				    struct smbcli_state *cli)
 {
 	bool ret = true;
 	if (lpcfg_use_spnego(torture->lp_ctx)) {
@@ -901,4 +901,13 @@ bool torture_raw_context(struct torture_context *torture,
 	ret &= torture_raw_context_int(torture, cli);
 
 	return ret;
+}
+
+struct torture_suite *torture_raw_context(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "context");
+
+	torture_suite_add_1smb_test(suite, "all", torture_raw_context_all);
+
+	return suite;
 }
