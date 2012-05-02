@@ -1010,10 +1010,10 @@ static WERROR reg_deletekey_recursive_trans(struct registry_key *parent,
 
 	if (!W_ERROR_IS_OK(werr)) {
 		WERROR werr2;
-
-		DEBUG(1, (__location__ " failed to delete key '%s' from key "
-			  "'%s': %s\n", path, parent->key->name,
-			  win_errstr(werr)));
+		DEBUG(W_ERROR_EQUAL(werr, WERR_BADFILE) ? 5 : 1,
+		      (__location__ ": failed to delete key '%s' from key "
+		       "'%s': %s\n", path, parent->key->name,
+		       win_errstr(werr)));
 
 		werr2 = regdb_transaction_cancel();
 		if (!W_ERROR_IS_OK(werr2)) {
