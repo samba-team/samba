@@ -600,7 +600,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!sids_to_unix_ids(t->sids, t->num_sids, ids)) {
+	if (!sids_to_unixids(t->sids, t->num_sids, ids)) {
 		TALLOC_FREE(ids);
 		return NT_STATUS_NO_MEMORY;
 	}

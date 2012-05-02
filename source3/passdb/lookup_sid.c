@@ -1252,8 +1252,8 @@ void gid_to_sid(struct dom_sid *psid, gid_t gid)
 	return;
 }
 
-bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
-		      struct unixid *ids)
+bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
+		     struct unixid *ids)
 {
 	struct wbcDomainSid *wbc_sids = NULL;
 	struct wbcUnixId *wbc_ids = NULL;
