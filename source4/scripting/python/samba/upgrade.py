@@ -469,6 +469,9 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
     realm = samba3.lp.get("realm")
     netbiosname = samba3.lp.get("netbios name")
 
+    if samba3.lp.get("ldapsam:trusted") is None:
+        samba3.lp.set("ldapsam:trusted", "yes")
+
     # secrets db
     try:
         secrets_db = samba3.get_secrets_db()
