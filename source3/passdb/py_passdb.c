@@ -1922,6 +1922,60 @@ static PyObject *py_pdb_enum_group_members(pytalloc_Object *self, PyObject *args
 }
 
 
+static PyObject *py_pdb_enum_group_memberships(pytalloc_Object *self, PyObject *args)
+{
+	NTSTATUS status;
+	struct pdb_methods *methods;
+	TALLOC_CTX *tframe;
+	int i;
+
+	struct samu *sam_acct;
+	PyObject *py_sam_acct;
+	PyObject *py_sid_list;
+	struct dom_sid *user_group_sids = NULL;
+	gid_t *user_group_ids = NULL;
+	uint32_t num_groups = 0;
+
+	if (!PyArg_ParseTuple(args, "O!:enum_group_memberships", &PySamu, &py_sam_acct)) {
+		return NULL;
+	}
+
+	methods = pytalloc_get_ptr(self);
+
+	if ((tframe = talloc_stackframe()) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	sam_acct = pytalloc_get_ptr(py_sam_acct);
+
+	status = methods->enum_group_memberships(methods, tframe, sam_acct,
+						 &user_group_sids, &user_group_ids, &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Format(py_pdb_error, "Unable to enumerate group memberships, (%d,%s)",
+				NT_STATUS_V(status),
+				get_friendly_nt_error_msg(status));
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	py_sid_list = PyList_New(0);
+	if (py_sid_list == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tframe);
+		return NULL;
+	}
+
+	for(i=0; i<num_groups; i++) {
+		PyList_Append(py_sid_list, pytalloc_steal(dom_sid_Type, dom_sid_dup(NULL, &user_group_sids[i])));
+	}
+
+	talloc_free(tframe);
+
+	return py_sid_list;
+}
+
+
 static PyObject *py_pdb_add_groupmem(pytalloc_Object *self, PyObject *args)
 {
 	NTSTATUS status;
@@ -3410,7 +3464,9 @@ static PyMethodDef py_pdb_methods[] = {
 	{ "enum_group_members", (PyCFunction)py_pdb_enum_group_members, METH_VARARGS,
 		"enum_group_members(group_sid) -> List\n\n \
 		Return list of users (dom_sid object) in group." },
-	/* enum_group_memberships */
+	{ "enum_group_memberships", (PyCFunction)py_pdb_enum_group_memberships, METH_VARARGS,
+		"enum_group_memberships(samu object) -> List\n\n \
+		Return list of groups (dom_sid object) this user is part of." },
 	/* set_unix_primary_group */
 	{ "add_groupmem", (PyCFunction)py_pdb_add_groupmem, METH_VARARGS,
 		"add_groupmem(group_rid, member_rid) -> None\n\n \
