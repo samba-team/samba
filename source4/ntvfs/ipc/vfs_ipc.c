@@ -38,8 +38,10 @@
 #include "lib/socket/socket.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "system/kerberos.h"
 #include "system/gssapi.h"
 #include "system/locale.h"
+#include "system/filesys.h"
 
 /* this is the private structure used to keep the state of an open
    ipc$ connection. It needs to keep information about all open
