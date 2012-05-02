@@ -156,6 +156,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+
 /* Fill out the auth_session_info with a cli_credentials based on the
  * auth_session_info we were forwarded over named pipe forwarding.
  *
@@ -169,7 +170,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 {
 	struct auth_session_info *session_info;
 	session_info = talloc_steal(mem_ctx, session_info_transport->session_info);
-
+#ifdef HAVE_GSS_IMPORT_CRED
 	if (session_info_transport->exported_gssapi_credentials.length) {
 		struct cli_credentials *creds;
 		OM_uint32 minor_status;
@@ -220,7 +221,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 						   CRED_MUST_USE_KERBEROS);
 
 	}
-
+#endif
 	return session_info;
 }
 
@@ -246,7 +247,7 @@ NTSTATUS auth_session_info_transport_from_session(TALLOC_CTX *mem_ctx,
 	if (!session_info_transport->session_info) {
 		return NT_STATUS_NO_MEMORY;
 	};
-
+#ifdef HAVE_GSS_EXPORT_CRED
 	if (session_info->credentials) {
 		struct gssapi_creds_container *gcc;
 		OM_uint32 gret;
@@ -280,6 +281,7 @@ NTSTATUS auth_session_info_transport_from_session(TALLOC_CTX *mem_ctx,
 			NT_STATUS_HAVE_NO_MEMORY(session_info_transport->exported_gssapi_credentials.data);
 		}
 	}
+#endif
 	*transport_out = session_info_transport;
 	return NT_STATUS_OK;
 }

@@ -38,6 +38,7 @@ conf.CHECK_FUNCS_IN('''
        gss_inquire_sec_context_by_oid
        gsskrb5_extract_authz_data_from_sec_context
        gss_krb5_export_lucid_sec_context
+       gss_import_cred gss_export_cred
        ''', 'gssapi gssapi_krb5 krb5')
 conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
 conf.CHECK_FUNCS('''
