@@ -3741,7 +3741,7 @@ done:
 }
 
 /**
- * Test smb2reauthentication while rpc pipe is in use.
+ * Test smb2 reauthentication while rpc pipe is in use.
  * Open a second lsa bind after reauth to anon.
  * Do lsa getusername on that second bind.
  */
