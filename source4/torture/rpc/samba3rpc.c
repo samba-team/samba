@@ -3960,6 +3960,90 @@ done:
 	return ret;
 }
 
+/**
+ * Test behaviour of a waiting read call on a pipe when
+ * the tree is disconnected.
+ * - open a pipe via smb2
+ * - trigger a read which hangs since there is nothing to read
+ * - do a tree disconnect
+ * - wait for the read to return and check the status
+ *   (STATUS_PIPE_BROKEN)
+ */
+static bool torture_rpc_smb2_pipe_read_tdis(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	bool ret = false;
+	struct smbcli_options options;
+	const char *host = torture_setting_string(torture, "host", NULL);
+	struct smb2_tree *tree;
+	struct smb2_handle h;
+	struct smb2_request *smb2req;
+	struct smb2_create io;
+	struct smb2_read rd;
+
+	mem_ctx = talloc_init("torture_samba3_pipe_read_tdis");
+	torture_assert(torture, (mem_ctx != NULL), "talloc_init failed");
+
+	lpcfg_smbcli_options(torture->lp_ctx, &options);
+
+	status = smb2_connect(mem_ctx,
+			      host,
+			      lpcfg_smb_ports(torture->lp_ctx),
+			      "IPC$",
+			      lpcfg_resolve_context(torture->lp_ctx),
+			      cmdline_credentials,
+			      &tree,
+			      torture->ev,
+			      &options,
+			      lpcfg_socket_options(torture->lp_ctx),
+			      lpcfg_gensec_settings(torture, torture->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_connect failed");
+
+	ZERO_STRUCT(io);
+	io.in.oplock_level = 0;
+	io.in.desired_access = DESIRED_ACCESS_PIPE;
+	io.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	io.in.file_attributes = 0;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.in.create_options = 0;
+	io.in.fname = "lsarpc";
+
+	status = smb2_create(tree, tree, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for 'lsarpc'");
+
+	h = io.out.file.handle;
+
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = h;
+	rd.in.length = 1024;
+	rd.in.offset = 0;
+	rd.in.min_count = 0;
+
+	smb2req = smb2_read_send(tree, &rd);
+	torture_assert_goto(torture, (smb2req != NULL), ret, done,
+			    "smb2_read_send failed");
+
+	status = smb2_tdis(tree);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_tdis failed");
+
+	status = smb2_read_recv(smb2req, mem_ctx, &rd);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_PIPE_BROKEN, ret, done,
+					   "smb2_read_recv: unexpected return code");
+
+	ret = true;
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 
 struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 {
@@ -3983,6 +4067,7 @@ struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "smb2-reauth1", torture_rpc_smb2_reauth1);
 	torture_suite_add_simple_test(suite, "smb2-reauth2", torture_rpc_smb2_reauth2);
 	torture_suite_add_simple_test(suite, "smb2-pipe-read-close", torture_rpc_smb2_pipe_read_close);
+	torture_suite_add_simple_test(suite, "smb2-pipe-read-tdis", torture_rpc_smb2_pipe_read_tdis);
 
 	suite->description = talloc_strdup(suite, "samba3 DCERPC interface tests");
 
