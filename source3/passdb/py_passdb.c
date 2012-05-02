@@ -196,8 +196,6 @@ static PyObject *py_samu_get_pass_must_change_time(PyObject *obj, void *closure)
 
 static int py_samu_set_pass_must_change_time(PyObject *obj, PyObject *value, void *closure)
 {
-	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
-
 	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
 
 	/* TODO: make this not a get/set or give a better exception */
