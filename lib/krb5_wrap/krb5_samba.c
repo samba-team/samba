@@ -55,6 +55,10 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
 #define SMB_MALLOC(s) malloc((s))
 #endif
 
+#ifndef SMB_STRDUP
+#define SMB_STRDUP(s) strdup(s)
+#endif
+
 #if !defined(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES)
 
 #if defined(HAVE_KRB5_SET_DEFAULT_TGS_ENCTYPES)
