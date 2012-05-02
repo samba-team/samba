@@ -35,7 +35,8 @@ def provision_s4(t, func_level="2008"):
                '--option=interfaces=${INTERFACE}',
                '--host-ip=${INTERFACE_IP}',
                '--option=bind interfaces only=yes',
-               '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf']
+               '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf', 
+               '--use-s3fs=yes']
     if t.getvar('INTERFACE_IPV6'):
         provision.append('--host-ip6=${INTERFACE_IPV6}')
     t.run_cmd(provision)
