@@ -443,7 +443,8 @@ static bool internal_torture_run_test(struct torture_context *context,
 
 	    if (!success && context->last_result == TORTURE_OK) {
 		    if (context->last_reason == NULL)
-			    context->last_reason = talloc_strdup(context, "Unknown error/failure");
+			    context->last_reason = talloc_strdup(context,
+					"Unknown error/failure. Missing torture_fail() or torture_result() call?");
 		    context->last_result = TORTURE_ERROR;
 	    }
 	}
