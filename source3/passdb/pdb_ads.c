@@ -2258,7 +2258,7 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 	} else {
 		gid_t gid;
 		id->type = ID_TYPE_GID;
-		if (!tldap_pull_uint32(msg[0], "gidNumber", gid)) {
+		if (!tldap_pull_uint32(msg[0], "gidNumber", &gid)) {
 			DEBUG(10, ("Did not find gidNumber\n"));
 			goto fail;
 		}
