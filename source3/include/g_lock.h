@@ -32,6 +32,12 @@ enum g_lock_type {
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg);
 
+struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct g_lock_ctx *ctx,
+				    const char *name,
+				    enum g_lock_type type);
+NTSTATUS g_lock_lock_recv(struct tevent_req *req);
 NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 		     enum g_lock_type lock_type, struct timeval timeout);
 NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name);
