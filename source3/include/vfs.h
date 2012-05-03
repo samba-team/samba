@@ -749,6 +749,11 @@ NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info_sent,
 				  const struct security_descriptor *psd);
+NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
+				 struct smb_filename *file,
+				 struct security_acl *sacl,
+				 uint32_t access_requested,
+				 uint32_t access_denied);
 int smb_vfs_call_chmod_acl(struct vfs_handle_struct *handle, const char *name,
 			   mode_t mode);
 int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
