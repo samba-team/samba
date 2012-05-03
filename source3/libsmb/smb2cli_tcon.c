@@ -215,7 +215,6 @@ static void smb2cli_tdis_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct smb2cli_tdis_state);
 	NTSTATUS status;
-	struct iovec *iov;
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
 		.status = NT_STATUS_OK,
@@ -223,7 +222,7 @@ static void smb2cli_tdis_done(struct tevent_req *subreq)
 	}
 	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+	status = smb2cli_req_recv(subreq, NULL, NULL,
 				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
