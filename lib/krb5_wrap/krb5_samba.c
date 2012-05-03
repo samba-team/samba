@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "krb5_samba.h"
-#include "librpc/gen_ndr/krb5pac.h"
 #include "lib/util/asn1.h"
 
 #ifndef KRB5_AUTHDATA_WIN2K_PAC
