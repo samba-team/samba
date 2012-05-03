@@ -1895,7 +1895,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		dns_hostname = NULL;
 	}
 	if ((old_dns_hostname != NULL) && (dns_hostname != NULL) &&
-	    (strcasecmp(old_dns_hostname, dns_hostname) == 0)) {
+	    (strcasecmp_m(old_dns_hostname, dns_hostname) == 0)) {
 		/* The "dNSHostName" didn't change */
 		dns_hostname = NULL;
 	}
@@ -1905,7 +1905,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		sam_accountname = NULL;
 	}
 	if ((old_sam_accountname != NULL) && (sam_accountname != NULL) &&
-	    (strcasecmp(old_sam_accountname, sam_accountname) == 0)) {
+	    (strcasecmp_m(old_sam_accountname, sam_accountname) == 0)) {
 		/* The "sAMAccountName" didn't change */
 		sam_accountname = NULL;
 	}
@@ -1991,11 +1991,11 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 
 			while ((tok = strtok_r(NULL, "/", &pos)) != NULL) {
 				if ((dns_hostname != NULL) &&
-				    (strcasecmp(tok, old_dns_hostname) == 0)) {
+				    (strcasecmp_m(tok, old_dns_hostname) == 0)) {
 					tok = dns_hostname;
 				}
 				if ((sam_accountname != NULL) &&
-				    (strcasecmp(tok, old_sam_accountname) == 0)) {
+				    (strcasecmp_m(tok, old_sam_accountname) == 0)) {
 					tok = sam_accountname;
 				}
 
@@ -2008,7 +2008,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 
 			/* Uniqueness check */
 			for (j = 0; (!found) && (j < el->num_values); j++) {
-				if (strcasecmp((char *)el->values[j].data,
+				if (strcasecmp_m((char *)el->values[j].data,
 					       new_str) == 0) {
 					found = true;
 				}
