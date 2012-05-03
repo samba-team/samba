@@ -2085,6 +2085,11 @@ void reply_ulogoffX(struct smb_request *req)
 	if(vuser == NULL) {
 		DEBUG(3,("ulogoff, vuser id %d does not map to user.\n",
 			 req->vuid));
+
+		req->vuid = UID_FIELD_INVALID;
+		reply_force_doserror(req, ERRSRV, ERRbaduid);
+		END_PROFILE(SMBulogoffX);
+		return;
 	}
 
 	/* in user level security we are supposed to close any files
