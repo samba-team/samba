@@ -54,7 +54,8 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 		return false;
 	}
 	tmp_id.id = strtol(value, &endptr, 10);
-	DEBUG(0, ("Parsing result of %s, endptr=%s, id=%llu\n", key, endptr, (unsigned long long)tmp_id.id));
+	DEBUG(10, ("Parsing result of %s, endptr=%s, id=%llu\n",
+		   key, endptr, (unsigned long long)tmp_id.id));
 
 	ret = (*endptr == ':');
 	if (ret) {
