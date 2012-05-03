@@ -2182,6 +2182,82 @@ void smb_krb5_free_checksum_contents(krb5_context ctx, krb5_checksum *cksum)
 }
 #endif
 
+krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
+					   DATA_BLOB *pac_data,
+					   krb5_context context,
+					   const krb5_keyblock *keyblock,
+					   uint32_t *sig_type,
+					   DATA_BLOB *sig_blob)
+{
+	krb5_error_code ret;
+	krb5_checksum cksum;
+#if defined(HAVE_KRB5_CRYPTO_INIT) && defined(HAVE_KRB5_CREATE_CHECKSUM)
+	krb5_crypto crypto;
+
+
+	ret = krb5_crypto_init(context,
+			       keyblock,
+			       0,
+			       &crypto);
+	if (ret) {
+		DEBUG(0,("krb5_crypto_init() failed: %s\n",
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		return ret;
+	}
+	ret = krb5_create_checksum(context,
+				   crypto,
+				   KRB5_KU_OTHER_CKSUM,
+				   0,
+				   pac_data->data,
+				   pac_data->length,
+				   &cksum);
+	if (ret) {
+		DEBUG(2, ("PAC Verification failed: %s\n",
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+	}
+
+	krb5_crypto_destroy(context, crypto);
+
+	if (ret) {
+		return ret;
+	}
+
+	*sig_type = cksum.cksumtype;
+	*sig_blob = data_blob_talloc(mem_ctx,
+					cksum.checksum.data,
+					cksum.checksum.length);
+#elif defined(HAVE_KRB5_C_MAKE_CHECKSUM)
+	krb5_data input;
+
+	input.data = (char *)pac_data->data;
+	input.length = pac_data->length;
+
+	ret = krb5_c_make_checksum(context,
+				   0,
+				   keyblock,
+				   KRB5_KEYUSAGE_APP_DATA_CKSUM,
+				   &input,
+				   &cksum);
+	if (ret) {
+		DEBUG(2, ("PAC Verification failed: %s\n",
+			  smb_get_krb5_error_message(context, ret, mem_ctx)));
+		return ret;
+	}
+
+	*sig_type = cksum.checksum_type;
+	*sig_blob = data_blob_talloc(mem_ctx,
+					cksum.contents,
+					cksum.length);
+
+#else
+#error krb5_create_checksum or krb5_c_make_checksum not available
+#endif /* HAVE_KRB5_C_MAKE_CHECKSUM */
+	smb_krb5_free_checksum_contents(context, &cksum);
+
+	return 0;
+}
+
+
 /*
  * smb_krb5_principal_get_realm
  *

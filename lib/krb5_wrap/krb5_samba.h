@@ -259,6 +259,13 @@ void smb_krb5_free_checksum_contents(krb5_context ctx, krb5_checksum *cksum);
 #error krb5_free_checksum_contents/free_Checksum is not vailable
 #endif
 
+krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
+					   DATA_BLOB *pac_data,
+					   krb5_context context,
+					   const krb5_keyblock *keyblock,
+					   uint32_t *sig_type,
+					   DATA_BLOB *sig_blob);
+
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_principal principal);
 
