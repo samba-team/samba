@@ -27,9 +27,9 @@ Provides: samba = %{version}
 
 Prefix: /usr
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel, e2fsprogs-devel
+BuildRequires: pam-devel, readline-devel, fileutils, libacl-devel, openldap-devel, krb5-devel, cups-devel, e2fsprogs-devel, gettext
 # requirements for building the man pages:
-BuildRequires: libxslt, docbook-utils, docbook-style-xsl
+BuildRequires: libxslt, docbook-utils, docbook-style-xsl, rsync
 BuildRequires: ctdb-devel >= 1.2.25
 
 # Working around perl dependency problem from docs
