@@ -45,7 +45,8 @@
 /*
   test session ops
 */
-static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_session(struct torture_context *tctx,
+			 struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -256,7 +257,7 @@ done:
 /*
   test tree ops
 */
-static bool test_tree(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_tree(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -361,7 +362,7 @@ done:
   this demonstrates that a tcon isn't autoclosed by a ulogoff
   the tcon can be reused using any other valid session later
 */
-static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_tree_ulogoff(struct torture_context *tctx, struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -516,8 +517,8 @@ done:
   this test demonstrates that exit() only sees the PID
   used for the open() calls
 */
-static bool test_pid_exit_only_sees_open(struct smbcli_state *cli,
-					 struct torture_context *tctx)
+static bool test_pid_exit_only_sees_open(struct torture_context *tctx,
+					 struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = tctx;
@@ -626,7 +627,8 @@ done:
 /*
   test pid ops with 2 sessions
 */
-static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_pid_2sess(struct torture_context *tctx,
+			   struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -733,7 +735,8 @@ done:
 /*
   test pid ops with 2 tcons
 */
-static bool test_pid_2tcon(struct smbcli_state *cli, struct torture_context *tctx)
+static bool test_pid_2tcon(struct torture_context *tctx,
+			   struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -871,49 +874,20 @@ done:
 	return ret;
 }
 
-
-/* 
-   basic testing of session/tree context calls
-*/
-static bool torture_raw_context_int(struct torture_context *tctx, 
-									struct smbcli_state *cli)
-{
-	bool ret = true;
-
-	ret &= test_session(cli, tctx);
-	ret &= test_tree(cli, tctx);
-	ret &= test_tree_ulogoff(cli, tctx);
-	ret &= test_pid_exit_only_sees_open(cli, tctx);
-	ret &= test_pid_2sess(cli, tctx);
-	ret &= test_pid_2tcon(cli, tctx);
-
-	smb_raw_exit(cli->session);
-	smbcli_deltree(cli->tree, BASEDIR);
-
-	return ret;
-}
-/* 
-   basic testing of session/tree context calls
-*/
-static bool torture_raw_context_all(struct torture_context *torture,
-				    struct smbcli_state *cli)
-{
-	bool ret = true;
-	if (lpcfg_use_spnego(torture->lp_ctx)) {
-		ret &= torture_raw_context_int(torture, cli);
-		lpcfg_set_cmdline(torture->lp_ctx, "use spnego", "False");
-	}
-
-	ret &= torture_raw_context_int(torture, cli);
-
-	return ret;
-}
-
 struct torture_suite *torture_raw_context(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "context");
 
-	torture_suite_add_1smb_test(suite, "all", torture_raw_context_all);
+	torture_suite_add_1smb_test(suite, "session1", test_session);
+	/*
+	 * TODO: add test_session with 'use spnego = false'
+	 * torture_suite_add_1smb_test(suite, "session1", test_session);
+	 */
+	torture_suite_add_1smb_test(suite, "tree", test_tree);
+	torture_suite_add_1smb_test(suite, "tree_ulogoff", test_tree_ulogoff);
+	torture_suite_add_1smb_test(suite, "pid_only_sess", test_pid_exit_only_sees_open);
+	torture_suite_add_1smb_test(suite, "pid_2sess", test_pid_2sess);
+	torture_suite_add_1smb_test(suite, "pid_2tcon", test_pid_2tcon);
 
 	return suite;
 }
