@@ -176,7 +176,7 @@ static void smb2cli_ioctl_done(struct tevent_req *subreq)
 	}
 	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
 	if (tevent_req_nterror(req, status)) {
 		return;
