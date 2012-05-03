@@ -995,6 +995,50 @@ Reclock file:/gpfs/.ctdb/shared
       
     </refsect2>
 
+    <refsect2><title>reloadips</title>
+      <para>
+      This command is used to reload the public addresses file and update the
+	ip configuration of the running daemon.
+      </para>
+      <para>
+      Procedure to update the public address configuration on a single node:
+      </para>
+      <para>
+      1, Update the /etc/ctdb/public_addresses file on the node
+      </para>
+      <para>
+      2, Run 'ctdb reloadips' on the node.
+      </para>
+      <para>
+	The file will then be reloaded on the node and addresses will be added
+	or removed as required to match the newly loaded file. When updating
+	a single node it may take a little while before any newly added
+	 addresses are failed onto the node.
+      </para>
+
+      <para>
+      </para>
+
+      <para>
+      Procedure to update the public address configuration on whole cluster:
+      </para>
+      <para>
+      1, Update the /etc/ctdb/public_addresses file on all nodes
+      </para>
+      <para>
+      2, Run 'ctdb reloadips -n all'.
+      </para>
+      <para>
+	This command will then force all nodes to reload and update the
+	addresses. This process is controlled and synchronized by the recovery
+	master to ensure that all addresses are added to all nodes as one
+	single operation, after which any required ip node rebalancing may
+	may take place.
+      </para>
+      
+    </refsect2>
+
+
     <refsect2><title>tickle &lt;srcip:port&gt; &lt;dstip:port&gt;</title>
       <para>
         This command will will send a TCP tickle to the source host for the

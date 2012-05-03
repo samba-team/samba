@@ -2,7 +2,7 @@
 .\" It was generated using the DocBook XSL Stylesheets (version 1.69.1).
 .\" Instead of manually editing it, you probably should edit the DocBook XML
 .\" source for it and then use the DocBook XSL Stylesheets to regenerate it.
-.TH "CTDB" "1" "02/13/2012" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDB" "1" "05/03/2012" "ctdb" "CTDB \- clustered TDB database"
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -619,6 +619,26 @@ Procedure to remove a node:
 .PP
 5, Use 'ctdb status' on all nodes and verify that the deleted node no longer shows up in the list..
 .PP
+.SS "reloadips"
+.PP
+This command is used to reload the public addresses file and update the ip configuration of the running daemon.
+.PP
+Procedure to update the public address configuration on a single node:
+.PP
+1, Update the /etc/ctdb/public_addresses file on the node
+.PP
+2, Run 'ctdb reloadips' on the node.
+.PP
+The file will then be reloaded on the node and addresses will be added or removed as required to match the newly loaded file. When updating a single node it may take a little while before any newly added addresses are failed onto the node.
+.PP
+.PP
+Procedure to update the public address configuration on whole cluster:
+.PP
+1, Update the /etc/ctdb/public_addresses file on all nodes
+.PP
+2, Run 'ctdb reloadips \-n all'.
+.PP
+This command will then force all nodes to reload and update the addresses. This process is controlled and synchronized by the recovery master to ensure that all addresses are added to all nodes as one single operation, after which any required ip node rebalancing may may take place.
 .SS "tickle <srcip:port> <dstip:port>"
 .PP
 This command will will send a TCP tickle to the source host for the specified TCP connection. A TCP tickle is a TCP ACK packet with an invalid sequence and acknowledge number and will when received by the source host result in it sending an immediate correct ACK back to the other end.
