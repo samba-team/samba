@@ -62,8 +62,6 @@ static krb5_error_code smb_krb5_context_destroy(struct smb_krb5_context *ctx)
 		krb5_closelog(ctx->krb5_context,
 				(krb5_log_facility *)ctx->pvt_log_data);
 	}
-#else
-	krb5_set_trace_callback(ctx->krb5_context, NULL, NULL);
 #endif
 	krb5_free_context(ctx->krb5_context);
 	return 0;
@@ -80,13 +78,6 @@ static void smb_krb5_debug_close(void *private_data) {
 static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *private_data)
 {
 	DEBUG(3, ("Kerberos: %s\n", msg));
-}
-#else
-static void smb_krb5_debug_wrapper(krb5_context context,
-				   const struct krb5_trace_info *info,
-				   void *cb_data)
-{
-	DEBUG(3, ("Kerberos: %s\n", info->message));
 }
 #endif
 
@@ -554,14 +545,6 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	krb5_set_dns_canonicalize_hostname(kctx,
 			lpcfg_parm_bool(lp_ctx, NULL, "krb5",
 					"set_dns_canonicalize", false));
-#else
-	ret = krb5_set_trace_callback(kctx, smb_krb5_debug_wrapper, NULL);
-	if (ret && ret != KRB5_TRACE_NOSUPP) {
-		DEBUG(1, ("krb5_set_trace_callback failed (%s)\n",
-			  smb_get_krb5_error_message(kctx, ret, tmp_ctx)));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
 #endif
 	talloc_steal(parent_ctx, *smb_krb5_context);
 	talloc_free(tmp_ctx);
