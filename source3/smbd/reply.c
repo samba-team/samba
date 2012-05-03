@@ -5058,7 +5058,7 @@ void reply_tdis(struct smb_request *req)
 
 	if (!conn) {
 		DEBUG(4,("Invalid connection in tdis\n"));
-		reply_nterror(req, NT_STATUS_NETWORK_NAME_DELETED);
+		reply_force_doserror(req, ERRSRV, ERRinvnid);
 		END_PROFILE(SMBtdis);
 		return;
 	}
