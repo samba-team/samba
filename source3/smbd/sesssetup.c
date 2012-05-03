@@ -202,6 +202,11 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	/* Do we have a valid vuid now ? */
 	if (!is_partial_auth_vuid(sconn, vuid)) {
+		if (vuid != 0) {
+			reply_force_doserror(req, ERRSRV, ERRbaduid);
+			return;
+		}
+
 		/* No, start a new authentication setup. */
 		vuid = register_initial_vuid(sconn);
 		if (vuid == UID_FIELD_INVALID) {
