@@ -64,7 +64,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
 
-make DESTDIR=$RPM_BUILD_ROOT docdir=%{_docdir} install
+make DESTDIR=$RPM_BUILD_ROOT docdir=%{_docdir} install install_tests
 
 install -m644 config/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
@@ -143,6 +143,25 @@ development libraries for ctdb
 %{_includedir}/ctdb_private.h
 %{_includedir}/ctdb_typesafe_cb.h
 %{_libdir}/libctdb.a
+
+%package tests
+Summary: CTDB test suite
+Group: Development/Tools
+Requires: ctdb = %{version}
+
+%description tests
+test suite for ctdb
+
+%files tests
+%defattr(-,root,root)
+%dir %{_datadir}/%{name}-tests
+%{_datadir}/%{name}-tests/*
+%dir %{_libdir}/%{name}-tests
+%{_libdir}/%{name}-tests/*
+%{_bindir}/ctdb_run_tests
+%{_bindir}/ctdb_run_cluster_tests
+%doc tests/README
+
 
 %changelog
 * Thu Mar 1 2012 : Version 1.13
