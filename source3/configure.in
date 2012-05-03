@@ -466,6 +466,7 @@ default_shared_modules="$default_shared_modules vfs_scannedonly"
 default_shared_modules="$default_shared_modules vfs_crossrename"
 default_shared_modules="$default_shared_modules vfs_linux_xfs_sgid"
 default_shared_modules="$default_shared_modules vfs_time_audit"
+default_shared_modules="$default_shared_modules vfs_media_harmony"
 default_shared_modules="$default_shared_modules idmap_autorid"
 default_shared_modules="$default_shared_modules idmap_tdb2"
 default_shared_modules="$default_shared_modules idmap_rid"
@@ -6575,6 +6576,7 @@ SMB_MODULE(vfs_scannedonly, \$(VFS_SCANNEDONLY_OBJ), "bin/scannedonly.$SHLIBEXT"
 SMB_MODULE(vfs_crossrename, \$(VFS_CROSSRENAME_OBJ), "bin/crossrename.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_linux_xfs_sgid, \$(VFS_LINUX_XFS_SGID_OBJ), "bin/linux_xfs_sgid.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_time_audit, \$(VFS_TIME_AUDIT_OBJ), "bin/time_audit.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_media_harmony, \$(VFS_MEDIA_HARMONY_OBJ), "bin/media_harmony.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
