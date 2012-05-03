@@ -2018,8 +2018,11 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 			}
 
 			/*
-			 * append the new "servicePrincipalName" - code derived
-			 * from ldb_msg_add_value()
+			 * append the new "servicePrincipalName" -
+			 * code derived from ldb_msg_add_value().
+			 *
+			 * Open coded to make it clear that we must
+			 * append to the MOD_REPLACE el created above.
 			 */
 			vals = talloc_realloc(ac->msg, el->values,
 					      struct ldb_val,
@@ -2028,8 +2031,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 				return ldb_module_oom(ac->module);
 			}
 			el->values = vals;
-			el->values[el->num_values].data = (uint8_t *) new_str;
-			el->values[el->num_values].length = strlen(new_str);
+			el->values[el->num_values] = data_blob_string_const(new_str);
 			++(el->num_values);
 		}
 	}
