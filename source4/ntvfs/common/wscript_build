@@ -3,7 +3,7 @@
 bld.SAMBA_SUBSYSTEM('ntvfs_common',
 	source='init.c brlock.c brlock_tdb.c opendb.c opendb_tdb.c notify.c',
 	autoproto='proto.h',
-	deps='UTIL_TDB tdb-wrap',
+	deps='util_tdb tdb-wrap',
 	public_deps='NDR_OPENDB NDR_NOTIFY sys_notify sys_lease share'
 	)
 

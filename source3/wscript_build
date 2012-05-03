@@ -749,7 +749,7 @@ bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
 
 bld.SAMBA3_LIBRARY('smbregistry',
                    source=REG_BASE_SRC,
-                   deps='''smbd_shim tdb-wrap3 NDR_SECURITY UTIL_TDB talloc
+                   deps='''smbd_shim tdb-wrap3 NDR_SECURITY util_tdb talloc
                    replace util_reg samba-util security
                    errors3 dbwrap samba3-util''',
                    allow_undefined_symbols=True,
@@ -783,7 +783,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source=LIB_UTIL_SRC,
-                   deps='ndr security NDR_SECURITY samba-util UTIL_TDB ccan',
+                   deps='ndr security NDR_SECURITY samba-util util_tdb ccan',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('pidfile',
@@ -1063,7 +1063,7 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
 
 bld.SAMBA3_LIBRARY('dbwrap',
                    source='lib/dbwrap/dbwrap.c lib/dbwrap/dbwrap_util.c lib/dbwrap/dbwrap_rbt.c lib/dbwrap/dbwrap_cache.c lib/dbwrap/dbwrap_tdb.c',
-                   deps='samba-util UTIL_TDB errors tdb tdb-wrap',
+                   deps='samba-util util_tdb errors tdb tdb-wrap',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('samba3-util',

@@ -3,7 +3,7 @@
 
 bld.SAMBA_SUBSYSTEM('MESSAGING',
 	source='messaging.c',
-	public_deps='samba-util tdb-wrap NDR_IRPC UNIX_PRIVS UTIL_TDB cluster ndr samba_socket dcerpc'
+	public_deps='samba-util tdb-wrap NDR_IRPC UNIX_PRIVS util_tdb cluster ndr samba_socket dcerpc'
 	)
 
 
