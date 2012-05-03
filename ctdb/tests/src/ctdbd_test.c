@@ -54,6 +54,7 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb) {}
 #include "common/rb_tree.c"
 #include "common/system_common.c"
 #include "common/ctdb_logging.c"
+#include "common/ctdb_fork.c"
 
 /* CTDB_SERVER_OBJ */
 #include "server/ctdb_daemon.c"

@@ -332,24 +332,6 @@ void ctdb_restore_scheduler(struct ctdb_context *ctdb)
 #endif
 }
 
-/*
- * This function forks a child process and drops the realtime 
- * scheduler for the child process.
- */
-pid_t ctdb_fork(struct ctdb_context *ctdb)
-{
-	pid_t pid;
-
-	pid = fork();
-	if (pid == 0) {
-		if (ctdb->do_setsched) {
-			ctdb_restore_scheduler(ctdb);
-		}
-		ctdb->can_send_controls = false;
-	}
-	return pid;
-}
-
 void set_nonblocking(int fd)
 {
 	unsigned v;

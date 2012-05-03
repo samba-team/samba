@@ -501,6 +501,7 @@ struct ctdb_context {
 	struct ctdb_reloadips_handle *reload_ips;
 
 	const char *public_addresses_file;
+	struct trbt_tree *child_processes; 
 };
 
 struct ctdb_db_context {
@@ -1031,7 +1032,11 @@ void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
 void ctdb_set_scheduler(struct ctdb_context *ctdb);
 void ctdb_restore_scheduler(struct ctdb_context *ctdb);
+
+struct tevent_signal *ctdb_init_sigchld(struct ctdb_context *ctdb);
 pid_t ctdb_fork(struct ctdb_context *ctdb);
+int ctdb_kill(struct ctdb_context *ctdb, pid_t pid, int signum);
+
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 

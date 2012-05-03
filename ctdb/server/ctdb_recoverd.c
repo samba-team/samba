@@ -2949,7 +2949,7 @@ static int check_reclock_destructor(struct ctdb_check_reclock_state *state)
 		close(state->fd[1]);
 		state->fd[1] = -1;
 	}
-	kill(state->child, SIGKILL);
+	ctdb_kill(ctdb, state->child, SIGKILL);
 	return 0;
 }
 
@@ -3047,7 +3047,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 
 		write(state->fd[1], &cc, 1);
 		/* make sure we die when our parent dies */
-		while (kill(parent, 0) == 0 || errno != ESRCH) {
+		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
 			write(state->fd[1], &cc, 1);
 		}
@@ -3166,7 +3166,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 
 	/* verify that the main daemon is still running */
-	if (kill(ctdb->ctdbd_pid, 0) != 0) {
+	if (ctdb_kill(ctdb, ctdb->ctdbd_pid, 0) != 0) {
 		DEBUG(DEBUG_CRIT,("CTDB daemon is no longer available. Shutting down recovery daemon\n"));
 		exit(-1);
 	}
@@ -3809,7 +3809,7 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
 
-	if (kill(ctdb->recoverd_pid, 0) != 0) {
+	if (ctdb_kill(ctdb, ctdb->recoverd_pid, 0) != 0) {
 		DEBUG(DEBUG_ERR,("Recovery daemon (pid:%d) is no longer running. Trying to restart recovery daemon.\n", (int)ctdb->recoverd_pid));
 
 		event_add_timed(ctdb->ev, ctdb, timeval_zero(), 
@@ -3861,7 +3861,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	ctdb->ctdbd_pid = getpid();
 
-	ctdb->recoverd_pid = fork();
+	ctdb->recoverd_pid = ctdb_fork(ctdb);
 	if (ctdb->recoverd_pid == -1) {
 		return -1;
 	}
@@ -3915,7 +3915,7 @@ void ctdb_stop_recoverd(struct ctdb_context *ctdb)
 	}
 
 	DEBUG(DEBUG_NOTICE,("Shutting down recovery daemon\n"));
-	kill(ctdb->recoverd_pid, SIGTERM);
+	ctdb_kill(ctdb, ctdb->recoverd_pid, SIGTERM);
 }
 
 static void ctdb_restart_recd(struct event_context *ev, struct timed_event *te, 

@@ -1,0 +1,124 @@
+/* 
+   functions to track and manage processes
+
+   Copyright (C) Ronnie Sahlberg 2012
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "includes.h"
+#include "system/wait.h"
+#include "../include/ctdb_client.h"
+#include "../include/ctdb_private.h"
+#include "../common/rb_tree.h"
+
+/*
+ * This function forks a child process and drops the realtime 
+ * scheduler for the child process.
+ */
+pid_t ctdb_fork(struct ctdb_context *ctdb)
+{
+	pid_t pid;
+	char *process;
+
+	pid = fork();
+	if (pid == -1) {
+		return -1;
+	}
+	if (pid == 0) {
+		if (ctdb->do_setsched) {
+			ctdb_restore_scheduler(ctdb);
+		}
+		ctdb->can_send_controls = false;
+		return 0;
+	}
+
+	if (getpid() != ctdb->ctdbd_pid) {
+		return pid;
+	}
+
+	process = talloc_asprintf(ctdb->child_processes, "process:%d", (int)pid);
+	trbt_insert32(ctdb->child_processes, pid, process);
+
+	return pid;
+}
+
+
+
+static void ctdb_sigchld_handler(struct tevent_context *ev,
+	struct tevent_signal *te, int signum, int count,
+	void *dont_care, 
+	void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	int status;
+	pid_t pid = -1;
+
+	while (pid != 0) {
+		pid = waitpid(-1, &status, WNOHANG);
+		if (pid == -1) {
+			DEBUG(DEBUG_ERR, (__location__ " waitpid() returned error. errno:%d\n", errno));
+			return;
+		}
+		if (pid > 0) {
+			char *process;
+
+			if (getpid() != ctdb->ctdbd_pid) {
+				continue;
+			}
+
+			process = trbt_lookup32(ctdb->child_processes, pid);
+			if (process == NULL) {
+				DEBUG(DEBUG_ERR,("Got SIGCHLD from pid:%d we didn not spawn with ctdb_fork\n", pid));
+			}
+
+			DEBUG(DEBUG_DEBUG, ("SIGCHLD from %d %s\n", (int)pid, process));
+			talloc_free(process);
+		}
+	}
+}
+
+
+struct tevent_signal *
+ctdb_init_sigchld(struct ctdb_context *ctdb)
+{
+	struct tevent_signal *se;
+
+	ctdb->child_processes = trbt_create(ctdb, 0);
+
+	se = tevent_add_signal(ctdb->ev, ctdb, SIGCHLD, 0, ctdb_sigchld_handler, ctdb);
+	return se;
+}
+
+int
+ctdb_kill(struct ctdb_context *ctdb, pid_t pid, int signum)
+{
+	char *process;
+
+	if (signum == 0) {
+		return kill(pid, signum);
+	}
+
+	if (getpid() != ctdb->ctdbd_pid) {
+		return kill(pid, signum);
+	}
+
+	process = trbt_lookup32(ctdb->child_processes, pid);
+	if (process == NULL) {
+		DEBUG(DEBUG_ERR,("ctdb_kill: trying to kill(%d, %d) a process that does not exist\n", pid, signum));
+		return 0;
+	}
+
+	return kill(pid, signum);
+}

@@ -73,6 +73,7 @@
 #include "common/rb_tree.c"
 #include "common/system_common.c"
 #include "common/ctdb_logging.c"
+#include "common/ctdb_fork.c"
 
 /* CTDB_CLIENT_OBJ */
 #include "client/ctdb_client.c"

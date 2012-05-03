@@ -1029,27 +1029,6 @@ failed:
 	return -1;	
 }
 
-static void sig_child_handler(struct event_context *ev,
-	struct signal_event *se, int signum, int count,
-	void *dont_care, 
-	void *private_data)
-{
-//	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
-	int status;
-	pid_t pid = -1;
-
-	while (pid != 0) {
-		pid = waitpid(-1, &status, WNOHANG);
-		if (pid == -1) {
-			DEBUG(DEBUG_ERR, (__location__ " waitpid() returned error. errno:%d\n", errno));
-			return;
-		}
-		if (pid > 0) {
-			DEBUG(DEBUG_DEBUG, ("SIGCHLD from %d\n", (int)pid));
-		}
-	}
-}
-
 static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 				      void *private_data)
 {
@@ -1074,7 +1053,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	int res, ret = -1;
 	struct fd_event *fde;
 	const char *domain_socket_name;
-	struct signal_event *se;
 
 	/* get rid of any old sockets */
 	unlink(ctdb->daemon.name);
@@ -1105,7 +1083,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	ctdbd_pid = getpid();
 	ctdb->ctdbd_pid = ctdbd_pid;
 
-
 	DEBUG(DEBUG_ERR, ("Starting CTDBD as pid : %u\n", ctdbd_pid));
 
 	if (ctdb->do_setsched) {
@@ -1125,6 +1102,12 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	ret = ctdb_init_tevent_logging(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ALERT,("Failed to initialize TEVENT logging\n"));
+		exit(1);
+	}
+
+	/* set up a handler to pick up sigchld */
+	if (ctdb_init_sigchld(ctdb) == NULL) {
+		DEBUG(DEBUG_CRIT,("Failed to set up signal handler for SIGCHLD\n"));
 		exit(1);
 	}
 
@@ -1202,16 +1185,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 
 	/* start the transport going */
 	ctdb_start_transport(ctdb);
-
-	/* set up a handler to pick up sigchld */
-	se = event_add_signal(ctdb->ev, ctdb,
-				     SIGCHLD, 0,
-				     sig_child_handler,
-				     ctdb);
-	if (se == NULL) {
-		DEBUG(DEBUG_CRIT,("Failed to set up signal handler for SIGCHLD\n"));
-		exit(1);
-	}
 
 	ret = ctdb_event_script_callback(ctdb,
 					 ctdb,

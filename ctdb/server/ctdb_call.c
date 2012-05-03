@@ -1388,7 +1388,7 @@ static int revokechild_destructor(struct revokechild_handle *rc)
 	if (rc->fd[1] != -1) {
 		close(rc->fd[1]);
 	}
-	kill(rc->child, SIGKILL);
+	ctdb_kill(rc->ctdb, rc->child, SIGKILL);
 
 	DLIST_REMOVE(rc->ctdb_db->revokechild_active, rc);
 	return 0;
@@ -1617,7 +1617,7 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 child_finished:
 		write(rc->fd[1], &c, 1);
 		/* make sure we die when our parent dies */
-		while (kill(parent, 0) == 0 || errno != ESRCH) {
+		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
 		}
 		_exit(0);

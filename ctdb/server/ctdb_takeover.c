@@ -741,7 +741,7 @@ static void release_kill_clients(struct ctdb_context *ctdb, ctdb_sock_addr *addr
 					(unsigned)client->pid,
 					ctdb_addr_to_str(addr),
 					ip->client_id));
-				kill(client->pid, SIGKILL);
+				ctdb_kill(ctdb, client->pid, SIGKILL);
 			}
 		}
 	}
@@ -3675,7 +3675,7 @@ static int ctdb_reloadips_destructor(struct ctdb_reloadips_handle *h)
 		ctdb_request_control_reply(h->ctdb, h->c, NULL, h->status, NULL);
 		h->c = NULL;
 	}
-	kill(h->child, SIGKILL);
+	ctdb_kill(h->ctdb, h->child, SIGKILL);
 	return 0;
 }
 
@@ -3850,7 +3850,7 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 
 		write(h->fd[1], &res, 1);
 		/* make sure we die when our parent dies */
-		while (kill(parent, 0) == 0 || errno != ESRCH) {
+		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
 		}
 		_exit(0);

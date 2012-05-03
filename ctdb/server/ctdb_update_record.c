@@ -162,7 +162,7 @@ struct childwrite_handle {
 static int childwrite_destructor(struct childwrite_handle *h)
 {
 	CTDB_DECREMENT_STAT(h->ctdb, pending_childwrite_calls);
-	kill(h->child, SIGKILL);
+	ctdb_kill(h->ctdb, h->child, SIGKILL);
 	return 0;
 }
 
@@ -199,7 +199,7 @@ static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
 
 	callback(c, p);
 
-	kill(child, SIGKILL);
+	ctdb_kill(h->ctdb, child, SIGKILL);
 	talloc_free(tmp_ctx);
 }
 
@@ -260,7 +260,7 @@ static struct childwrite_handle *ctdb_childwrite(
 		write(result->fd[1], &c, 1);
 
 		/* make sure we die when our parent dies */
-		while (kill(parent, 0) == 0 || errno != ESRCH) {
+		while (ctdb_kill(ctdb_db->ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
 		}
 		_exit(0);

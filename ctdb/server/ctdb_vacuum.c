@@ -1199,7 +1199,7 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 	DEBUG(DEBUG_INFO,("Vacuuming took %.3f seconds for database %s\n", l, ctdb_db->db_name));
 
 	if (child_ctx->child_pid != -1) {
-		kill(child_ctx->child_pid, SIGKILL);
+		ctdb_kill(ctdb, child_ctx->child_pid, SIGKILL);
 	} else {
 		/* Bump the number of successful fast-path runs. */
 		child_ctx->vacuum_handle->fast_path_count++;

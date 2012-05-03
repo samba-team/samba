@@ -122,7 +122,7 @@ static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 	ctdb->freeze_mode[h->priority]    = CTDB_FREEZE_NONE;
 	ctdb->freeze_handles[h->priority] = NULL;
 
-	kill(h->child, SIGKILL);
+	ctdb_kill(h->ctdb, h->child, SIGKILL);
 	return 0;
 }
 
@@ -189,7 +189,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 		return NULL;
 	}
 	
-	h->child = fork();
+	h->child = ctdb_fork(ctdb);
 	if (h->child == -1) {
 		DEBUG(DEBUG_ERR,("Failed to fork child for ctdb_freeze_lock\n"));
 		talloc_free(h);
@@ -216,7 +216,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, ui
 
 		while (1) {
 			sleep(1);
-			if (kill(ctdb->ctdbd_pid, 0) != 0) {
+			if (ctdb_kill(ctdb, ctdb->ctdbd_pid, 0) != 0) {
 				DEBUG(DEBUG_ERR,("Parent died. Exiting lock wait child\n"));
 
 				_exit(0);

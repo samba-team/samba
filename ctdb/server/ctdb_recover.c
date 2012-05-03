@@ -626,7 +626,7 @@ static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 	if (state->fd[1] != -1) {
 		state->fd[1] = -1;
 	}
-	kill(state->child, SIGKILL);
+	ctdb_kill(state->ctdb, state->child, SIGKILL);
 	return 0;
 }
 
@@ -778,7 +778,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	state->child = fork();
+	state->child = ctdb_fork(ctdb);
 	if (state->child == (pid_t)-1) {
 		close(state->fd[0]);
 		close(state->fd[1]);
@@ -801,7 +801,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 		write(state->fd[1], &cc, 1);
 		/* make sure we die when our parent dies */
-		while (kill(parent, 0) == 0 || errno != ESRCH) {
+		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
 			write(state->fd[1], &cc, 1);
 		}

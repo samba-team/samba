@@ -473,7 +473,7 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	/* valgrind gets overloaded if we run next script as it's still doing
 	 * post-execution analysis, so kill finished child here. */
 	if (ctdb->valgrinding) {
-		kill(state->child, SIGKILL);
+		ctdb_kill(ctdb, state->child, SIGKILL);
 	}
 
 	state->child = 0;
@@ -529,7 +529,7 @@ static void debug_timeout(struct ctdb_event_script_state *state)
 	if (pid == 0) {
 		system(buf);
 		/* Now we can kill the child */
-		kill(state->child, SIGTERM);
+		ctdb_kill(state->ctdb, state->child, SIGTERM);
 		exit(0);
 	}
 	if (pid == -1) {
@@ -584,7 +584,7 @@ static int event_script_destructor(struct ctdb_event_script_state *state)
 	if (state->child) {
 		DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 
-		if (kill(state->child, SIGTERM) != 0) {
+		if (ctdb_kill(state->ctdb, state->child, SIGTERM) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to kill child process for eventscript, errno %s(%d)\n", strerror(errno), errno));
 		}
 	}

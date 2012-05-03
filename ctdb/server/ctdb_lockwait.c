@@ -72,7 +72,7 @@ static void do_overflow(struct ctdb_db_context *ctdb_db,
 static int lockwait_destructor(struct lockwait_handle *h)
 {
 	CTDB_DECREMENT_STAT(h->ctdb, pending_lockwait_calls);
-	kill(h->child, SIGKILL);
+	ctdb_kill(h->ctdb, h->child, SIGKILL);
 	h->ctdb_db->pending_requests--;
 	DLIST_REMOVE(h->ctdb_db->lockwait_active, h);
 	return 0;
@@ -202,7 +202,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		tdb_chainlock(ctdb_db->ltdb->tdb, key);
 		write(result->fd[1], &c, 1);
 		/* make sure we die when our parent dies */
-		while (kill(parent, 0) == 0 || errno != ESRCH) {
+		while (ctdb_kill(ctdb_db->ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
 		}
 		_exit(0);

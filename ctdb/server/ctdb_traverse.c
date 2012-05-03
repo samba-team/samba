@@ -78,7 +78,7 @@ static void ctdb_traverse_local_handler(uint8_t *rawdata, size_t length, void *p
 static int traverse_local_destructor(struct ctdb_traverse_local_handle *h)
 {
 	DLIST_REMOVE(h->ctdb_db->traverse, h);
-	kill(h->child, SIGKILL);
+	ctdb_kill(h->ctdb_db->ctdb, h->child, SIGKILL);
 	return 0;
 }
 
