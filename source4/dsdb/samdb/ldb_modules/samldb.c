@@ -1816,7 +1816,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	struct ldb_result *res;
 	const char *dns_hostname = NULL, *old_dns_hostname = NULL,
 		   *sam_accountname = NULL, *old_sam_accountname = NULL;
-	unsigned int i;
+	unsigned int i, j;
 	int ret;
 
 	el = dsdb_get_single_valued_attr(ac->msg, "dNSHostName",
@@ -1957,15 +1957,28 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	}
 
 	if (res->msgs[0]->num_elements == 1) {
-		/* Yes, we do have "servicePrincipalName"s. First we update them
+		/*
+		 * Yes, we do have "servicePrincipalName"s. First we update them
 		 * locally, that means we do always substitute the current
 		 * "dNSHostName" with the new one and/or "sAMAccountName"
-		 * without "$" with the new one and then we append this to the
-		 * modification request (Windows behaviour). */
+		 * without "$" with the new one and then we append the
+		 * modified "servicePrincipalName"s as a message element
+		 * replace to the modification request (Windows behaviour). We
+		 * need also to make sure that the values remain case-
+		 * insensitively unique.
+		 */
+
+		ret = ldb_msg_add_empty(ac->msg, "servicePrincipalName",
+					LDB_FLAG_MOD_REPLACE, &el);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 
 		for (i = 0; i < res->msgs[0]->elements[0].num_values; i++) {
 			char *old_str, *new_str, *pos;
 			const char *tok;
+			struct ldb_val *vals;
+			bool found = false;
 
 			old_str = (char *)
 				res->msgs[0]->elements[0].values[i].data;
@@ -1993,16 +2006,32 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 				}
 			}
 
-			ret = ldb_msg_add_string(ac->msg,
-						 "servicePrincipalName",
-						 new_str);
-			if (ret != LDB_SUCCESS) {
-				return ret;
+			/* Uniqueness check */
+			for (j = 0; (!found) && (j < el->num_values); j++) {
+				if (strcasecmp((char *)el->values[j].data,
+					       new_str) == 0) {
+					found = true;
+				}
 			}
-		}
+			if (found) {
+				continue;
+			}
 
-		el = ldb_msg_find_element(ac->msg, "servicePrincipalName");
-		el->flags = LDB_FLAG_MOD_REPLACE;
+			/*
+			 * append the new "servicePrincipalName" - code derived
+			 * from ldb_msg_add_value()
+			 */
+			vals = talloc_realloc(ac->msg, el->values,
+					      struct ldb_val,
+					      el->num_values + 1);
+			if (vals == NULL) {
+				return ldb_module_oom(ac->module);
+			}
+			el->values = vals;
+			el->values[el->num_values].data = (uint8_t *) new_str;
+			el->values[el->num_values].length = strlen(new_str);
+			++(el->num_values);
+		}
 	}
 
 	talloc_free(res);
