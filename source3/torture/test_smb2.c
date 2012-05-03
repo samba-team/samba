@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "client.h"
+#include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "libsmb/smb2cli.h"
 #include "libcli/security/security.h"
@@ -1364,6 +1365,9 @@ bool run_smb2_session_reauth(int dummy)
 	struct tevent_req *subreq;
 	DATA_BLOB in_blob = data_blob_null;
 	DATA_BLOB out_blob;
+	DATA_BLOB in_input_buffer;
+	DATA_BLOB out_output_buffer;
+	uint8_t in_file_info_class;
 	struct auth_generic_state *auth_generic_state;
 	struct iovec *recv_iov;
 	uint32_t saved_tid;
@@ -1539,6 +1543,67 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
+	/*
+	 * query_info seems to be a path based operation on Windows...
+	 */
+	status = smb2cli_query_info(cli->conn,
+				    cli->timeout,
+				    cli->smb2.session,
+				    cli->smb2.tid,
+				    SMB2_GETINFO_SECURITY,
+				    0, /* in_file_info_class */
+				    1024, /* in_max_output_length */
+				    NULL, /* in_input_buffer */
+				    SECINFO_OWNER, /* in_additional_info */
+				    0, /* in_flags */
+				    fid_persistent,
+				    fid_volatile,
+				    talloc_tos(),
+				    &out_output_buffer);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("smb2cli_query_info (security) returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	in_file_info_class = SMB_FILE_POSITION_INFORMATION - 1000;
+	status = smb2cli_query_info(cli->conn,
+				    cli->timeout,
+				    cli->smb2.session,
+				    cli->smb2.tid,
+				    SMB2_GETINFO_FILE,
+				    in_file_info_class,
+				    1024, /* in_max_output_length */
+				    NULL, /* in_input_buffer */
+				    0, /* in_additional_info */
+				    0, /* in_flags */
+				    fid_persistent,
+				    fid_volatile,
+				    talloc_tos(),
+				    &out_output_buffer);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("smb2cli_query_info (position) returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	in_input_buffer = data_blob_talloc(talloc_tos(), NULL, 8);
+	SBVAL(in_input_buffer.data, 0, 512);
+
+	in_file_info_class = SMB_FILE_POSITION_INFORMATION - 1000;
+	status = smb2cli_set_info(cli->conn,
+				  cli->timeout,
+				  cli->smb2.session,
+				  cli->smb2.tid,
+				  SMB2_GETINFO_FILE,
+				  in_file_info_class,
+				  &in_input_buffer,
+				  0, /* in_additional_info */
+				  fid_persistent,
+				  fid_volatile);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		printf("smb2cli_set_info (position) returned %s\n", nt_errstr(status));
+		return false;
+	}
+
 	status = smb2cli_create(cli, "session-reauth-invalid.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
@@ -1612,6 +1677,84 @@ bool run_smb2_session_reauth(int dummy)
 	status = smb2cli_flush(cli, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = smb2cli_query_info(cli->conn,
+				    cli->timeout,
+				    cli->smb2.session,
+				    cli->smb2.tid,
+				    SMB2_GETINFO_SECURITY,
+				    0, /* in_file_info_class */
+				    1024, /* in_max_output_length */
+				    NULL, /* in_input_buffer */
+				    SECINFO_OWNER, /* in_additional_info */
+				    0, /* in_flags */
+				    fid_persistent,
+				    fid_volatile,
+				    talloc_tos(),
+				    &out_output_buffer);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_query_info (security) returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	in_file_info_class = SMB_FILE_POSITION_INFORMATION - 1000;
+	status = smb2cli_query_info(cli->conn,
+				    cli->timeout,
+				    cli->smb2.session,
+				    cli->smb2.tid,
+				    SMB2_GETINFO_FILE,
+				    in_file_info_class,
+				    1024, /* in_max_output_length */
+				    NULL, /* in_input_buffer */
+				    0, /* in_additional_info */
+				    0, /* in_flags */
+				    fid_persistent,
+				    fid_volatile,
+				    talloc_tos(),
+				    &out_output_buffer);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_query_info (position) returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	in_input_buffer = data_blob_talloc(talloc_tos(), NULL, 8);
+	SBVAL(in_input_buffer.data, 0, 512);
+
+	in_file_info_class = SMB_FILE_POSITION_INFORMATION - 1000;
+	status = smb2cli_set_info(cli->conn,
+				  cli->timeout,
+				  cli->smb2.session,
+				  cli->smb2.tid,
+				  SMB2_GETINFO_FILE,
+				  in_file_info_class,
+				  &in_input_buffer,
+				  0, /* in_additional_info */
+				  fid_persistent,
+				  fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_set_info (position) returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	in_file_info_class = SMB_FILE_POSITION_INFORMATION - 1000;
+	status = smb2cli_query_info(cli->conn,
+				    cli->timeout,
+				    cli->smb2.session,
+				    cli->smb2.tid,
+				    SMB2_GETINFO_FILE,
+				    in_file_info_class,
+				    1024, /* in_max_output_length */
+				    NULL, /* in_input_buffer */
+				    0, /* in_additional_info */
+				    0, /* in_flags */
+				    fid_persistent,
+				    fid_volatile,
+				    talloc_tos(),
+				    &out_output_buffer);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_query_info (position) returned %s\n", nt_errstr(status));
 		return false;
 	}
 
