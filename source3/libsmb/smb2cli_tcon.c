@@ -54,7 +54,7 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 
 	print_sockaddr(srv_ip, sizeof(srv_ip), cli_state_remote_sockaddr(cli));
 
-	tcon_share = talloc_asprintf(talloc_tos(), "\\\\%s\\%s",
+	tcon_share = talloc_asprintf(state, "\\\\%s\\%s",
 				     srv_ip, share);
 	if (tevent_req_nomem(tcon_share, req)) {
 		return tevent_req_post(req, ev);
@@ -113,7 +113,7 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 	}
 	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
