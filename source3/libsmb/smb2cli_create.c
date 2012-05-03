@@ -105,7 +105,7 @@ struct tevent_req *smb2cli_create_send(
 	blob = data_blob_null;
 
 	if (blobs != NULL) {
-		status = smb2_create_blob_push(talloc_tos(), &blob, *blobs);
+		status = smb2_create_blob_push(state, &blob, *blobs);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
@@ -170,7 +170,7 @@ static void smb2cli_create_done(struct tevent_req *subreq)
 	}
 	};
 
-	status = smb2cli_req_recv(subreq, talloc_tos(), &iov,
+	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
 	if (tevent_req_nterror(req, status)) {
 		return;
