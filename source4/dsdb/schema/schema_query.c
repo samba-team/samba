@@ -595,12 +595,7 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 		if (el->values == NULL) {
 			return ldb_oom(ldb);
 		}
-		el->values[el->num_values].data = (uint8_t *)talloc_strdup(out_mem_ctx,
-									   current->objectclass->lDAPDisplayName);
-		if (el->values[el->num_values].data == NULL) {
-			return ldb_oom(ldb);
-		}
-		el->values[el->num_values].length = strlen(current->objectclass->lDAPDisplayName);
+		el->values[el->num_values] = data_blob_string_const(current->objectclass->lDAPDisplayName);
 
 		++(el->num_values);
 	}
