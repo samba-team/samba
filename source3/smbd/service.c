@@ -31,8 +31,6 @@
 #include "lib/param/loadparm.h"
 #include "messages.h"
 
-extern userdom_struct current_user_info;
-
 static bool canonicalize_connect_path(connection_struct *conn)
 {
 	bool ret;
