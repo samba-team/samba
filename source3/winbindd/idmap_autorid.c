@@ -684,6 +684,45 @@ static NTSTATUS idmap_autorid_saveconfig(struct autorid_global_config *cfg)
 	return status;
 }
 
+static NTSTATUS idmap_autorid_preallocate_wellknown(struct idmap_domain *dom)
+{
+	const char *groups[] = { "S-1-1-0", "S-1-2-0", "S-1-2-1",
+		"S-1-3-0", "S-1-3-1", "S-1-3-2", "S-1-3-3", "S-1-3-4",
+		"S-1-5-1", "S-1-5-2", "S-1-5-3", "S-1-5-4", "S-1-5-6",
+		"S-1-5-7", "S-1-5-8", "S-1-5-9", "S-1-5-10", "S-1-5-11",
+		"S-1-5-12", "S-1-5-13", "S-1-5-14", "S-1-5-15",
+		"S-1-5-17", "S-1-5-18", "S-1-5-19", "S-1-5-20"
+	};
+
+	struct id_map **maps;
+	int i, num;
+	NTSTATUS status;
+
+	num = sizeof(groups)/sizeof(char*);
+
+	maps = talloc_zero_array(talloc_tos(), struct id_map*, num+1);
+	if (!maps) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num; i++) {
+		maps[i] = talloc(maps, struct id_map);
+		maps[i]->xid.type = ID_TYPE_GID;
+		maps[i]->sid = dom_sid_parse_talloc(maps, groups[i]);
+	}
+
+	maps[num] = NULL;
+
+	status = idmap_autorid_sids_to_unixids(dom, maps);
+
+	DEBUG(10,("Preallocation run finished with status %s\n",
+		  nt_errstr(status)));
+
+	talloc_free(maps);
+
+	return NT_STATUS_IS_OK(status)?NT_STATUS_OK:NT_STATUS_UNSUCCESSFUL;
+}
+
 static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 {
 	struct idmap_tdb_common_context *commonconfig;
@@ -809,6 +848,9 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	commonconfig->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
 
 	dom->private_data = commonconfig;
+
+	/* preallocate well-known SIDs in the pool */
+	status = idmap_autorid_preallocate_wellknown(dom);
 
 	goto done;
 
