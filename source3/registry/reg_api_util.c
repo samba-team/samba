@@ -138,8 +138,8 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 }
 
 /*
- * Utility function to create a registry key without opening the hive
- * before. Will not delete a hive.
+ * Utility function to recursively delete a registry key without opening the
+ * hive before. Will not delete a hive.
  */
 
 WERROR reg_delete_path(const struct security_token *token,
@@ -171,7 +171,7 @@ WERROR reg_delete_path(const struct security_token *token,
 		return err;
 	}
 
-	err = reg_deletekey(hive, p+1);
+	err = reg_deletekey_recursive(hive, p+1);
 	SAFE_FREE(path);
 	TALLOC_FREE(hive);
 	return err;
