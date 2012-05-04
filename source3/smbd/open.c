@@ -2555,7 +2555,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	status = check_parent_access(conn,
 					smb_dname,
 					access_mask,
-					&parent_dir);
+					NULL);
 	if(!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("mkdir_internal: check_parent_access "
 			"on directory %s for path %s returned %s\n",
