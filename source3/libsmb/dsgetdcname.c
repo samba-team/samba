@@ -546,24 +546,31 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	int numaddrs = 0;
 	struct ip_service_name *dclist = NULL;
 	int count = 0;
+	const char *dns_hosts_file;
 
+	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
 	if (flags & DS_PDC_REQUIRED) {
-		status = ads_dns_query_pdc(mem_ctx, domain_name,
-					   &dcs, &numdcs);
+		status = ads_dns_query_pdc(mem_ctx, dns_hosts_file,
+					   domain_name, &dcs, &numdcs);
 	} else if (flags & DS_GC_SERVER_REQUIRED) {
-		status = ads_dns_query_gcs(mem_ctx, domain_name, site_name,
+		status = ads_dns_query_gcs(mem_ctx, dns_hosts_file,
+					   domain_name, site_name,
 					   &dcs, &numdcs);
 	} else if (flags & DS_KDC_REQUIRED) {
-		status = ads_dns_query_kdcs(mem_ctx, domain_name, site_name,
+		status = ads_dns_query_kdcs(mem_ctx, dns_hosts_file,
+					    domain_name, site_name,
 					    &dcs, &numdcs);
 	} else if (flags & DS_DIRECTORY_SERVICE_REQUIRED) {
-		status = ads_dns_query_dcs(mem_ctx, domain_name, site_name,
+		status = ads_dns_query_dcs(mem_ctx, dns_hosts_file,
+					   domain_name, site_name,
 					   &dcs, &numdcs);
 	} else if (domain_guid) {
-		status = ads_dns_query_dcs_guid(mem_ctx, domain_name,
-						domain_guid, &dcs, &numdcs);
+		status = ads_dns_query_dcs_guid(mem_ctx, dns_hosts_file,
+						domain_name, domain_guid,
+						&dcs, &numdcs);
 	} else {
-		status = ads_dns_query_dcs(mem_ctx, domain_name, site_name,
+		status = ads_dns_query_dcs(mem_ctx, dns_hosts_file,
+					   domain_name, site_name,
 					   &dcs, &numdcs);
 	}
 

@@ -389,6 +389,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 *********************************************************************/
 
 static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
+				const char *dns_hosts_file,
 				const char *name,
 				struct dns_rr_srv **dclist,
 				int *numdcs)
@@ -401,13 +402,11 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 	int rrnum;
 	int idx = 0;
 	NTSTATUS status;
-	const char *dns_hosts_file;
 
 	if ( !ctx || !name || !dclist ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
 	if (dns_hosts_file) {
 		return resolve_dns_hosts_file_as_dns_rr(dns_hosts_file,
 							name, true, ctx,
@@ -586,6 +585,7 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 *********************************************************************/
 
 NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
+				const char *dns_hosts_file,
 				const char *dnsdomain,
 				struct dns_rr_ns **nslist,
 				int *numns)
@@ -598,13 +598,11 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 	int rrnum;
 	int idx = 0;
 	NTSTATUS status;
-	const char *dns_hosts_file;
 
 	if ( !ctx || !dnsdomain || !nslist ) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
 	if (dns_hosts_file) {
 		DEBUG(1, ("NO 'NS' lookup available when using resolv:host file"));
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -748,6 +746,7 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 ********************************************************************/
 
 static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
+				       const char *dns_hosts_file,
 				       const char *servicename,
 				       const char *dc_pdc_gc_domains,
 				       const char *realm,
@@ -767,7 +766,7 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 	if (!name) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	return ads_dns_lookup_srv( ctx, name, dclist, numdcs );
+	return ads_dns_lookup_srv(ctx, dns_hosts_file, name, dclist, numdcs);
 }
 
 /********************************************************************
@@ -775,6 +774,7 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 ********************************************************************/
 
 NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
+			   const char *dns_hosts_file,
 			   const char *realm,
 			   const char *sitename,
 			   struct dns_rr_srv **dclist,
@@ -782,8 +782,8 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 {
 	NTSTATUS status;
 
-	status = ads_dns_query_internal(ctx, "_ldap", "dc", realm, sitename,
-					dclist, numdcs);
+	status = ads_dns_query_internal(ctx, dns_hosts_file, "_ldap", "dc",
+					realm, sitename, dclist, numdcs);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
@@ -794,7 +794,8 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 	    ((!NT_STATUS_IS_OK(status)) ||
 	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
 		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_internal(ctx, "_ldap", "dc", realm,
+		status = ads_dns_query_internal(ctx, dns_hosts_file,
+						"_ldap", "dc", realm,
 						NULL, dclist, numdcs);
 	}
 	return status;
@@ -805,6 +806,7 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 ********************************************************************/
 
 NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
+			   const char *dns_hosts_file,
 			   const char *realm,
 			   const char *sitename,
 			   struct dns_rr_srv **dclist,
@@ -812,8 +814,8 @@ NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
 {
 	NTSTATUS status;
 
-	status = ads_dns_query_internal(ctx, "_ldap", "gc", realm, sitename,
-					dclist, numdcs);
+	status = ads_dns_query_internal(ctx, dns_hosts_file, "_ldap", "gc",
+					realm, sitename, dclist, numdcs);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
@@ -824,7 +826,8 @@ NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
 	    ((!NT_STATUS_IS_OK(status)) ||
 	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
 		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_internal(ctx, "_ldap", "gc", realm,
+		status = ads_dns_query_internal(ctx, dns_hosts_file,
+						"_ldap", "gc", realm,
 						NULL, dclist, numdcs);
 	}
 	return status;
@@ -837,6 +840,7 @@ NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
 ********************************************************************/
 
 NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
+			    const char *dns_hosts_file,
 			    const char *dns_forest_name,
 			    const char *sitename,
 			    struct dns_rr_srv **dclist,
@@ -844,7 +848,7 @@ NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 {
 	NTSTATUS status;
 
-	status = ads_dns_query_internal(ctx, "_kerberos", "dc",
+	status = ads_dns_query_internal(ctx, dns_hosts_file, "_kerberos", "dc",
 					dns_forest_name, sitename, dclist,
 					numdcs);
 
@@ -857,7 +861,8 @@ NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 	    ((!NT_STATUS_IS_OK(status)) ||
 	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
 		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_internal(ctx, "_kerberos", "dc",
+		status = ads_dns_query_internal(ctx, dns_hosts_file,
+						"_kerberos", "dc",
 						dns_forest_name, NULL,
 						dclist, numdcs);
 	}
@@ -869,12 +874,13 @@ NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 ********************************************************************/
 
 NTSTATUS ads_dns_query_pdc(TALLOC_CTX *ctx,
+			   const char *dns_hosts_file,
 			   const char *dns_domain_name,
 			   struct dns_rr_srv **dclist,
 			   int *numdcs )
 {
-	return ads_dns_query_internal(ctx, "_ldap", "pdc", dns_domain_name,
-				      NULL, dclist, numdcs);
+	return ads_dns_query_internal(ctx, dns_hosts_file, "_ldap", "pdc",
+				      dns_domain_name, NULL, dclist, numdcs);
 }
 
 /********************************************************************
@@ -882,6 +888,7 @@ NTSTATUS ads_dns_query_pdc(TALLOC_CTX *ctx,
 ********************************************************************/
 
 NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
+				const char *dns_hosts_file,
 				const char *dns_forest_name,
 				const struct GUID *domain_guid,
 				struct dns_rr_srv **dclist,
@@ -904,6 +911,6 @@ NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
 	}
 	TALLOC_FREE(guid_string);
 
-	return ads_dns_query_internal(ctx, "_ldap", domains, dns_forest_name,
-				      NULL, dclist, numdcs);
+	return ads_dns_query_internal(ctx, dns_hosts_file, "_ldap", domains,
+				      dns_forest_name, NULL, dclist, numdcs);
 }

@@ -1137,6 +1137,7 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	DNS_ERROR dns_err;
 	fstring dns_server;
+	const char *dns_hosts_file;
 	const char *dnsdomain = NULL;
 	char *root_domain = NULL;
 
@@ -1148,7 +1149,9 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 	}
 	dnsdomain++;
 
-	status = ads_dns_lookup_ns( ctx, dnsdomain, &nameservers, &ns_count );
+	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
+	status = ads_dns_lookup_ns(ctx, dns_hosts_file,
+				   dnsdomain, &nameservers, &ns_count);
 	if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {
 		/* Child domains often do not have NS records.  Look
 		   for the NS record for the forest root domain
@@ -1186,7 +1189,8 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 
 		/* try again for NS servers */
 
-		status = ads_dns_lookup_ns( ctx, root_domain, &nameservers, &ns_count );
+		status = ads_dns_lookup_ns(ctx, dns_hosts_file, root_domain,
+					   &nameservers, &ns_count);
 
 		if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {
 			DEBUG(3,("net_ads_join: Failed to find name server for the %s "
