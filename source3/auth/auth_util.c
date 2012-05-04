@@ -1177,33 +1177,6 @@ const struct auth_session_info *get_session_info_system(void)
     return system_info;
 }
 
-bool copy_current_user(struct current_user *dst, struct current_user *src)
-{
-	gid_t *groups;
-	struct security_token *nt_token;
-
-	groups = (gid_t *)memdup(src->ut.groups,
-				 sizeof(gid_t) * src->ut.ngroups);
-	if ((src->ut.ngroups != 0) && (groups == NULL)) {
-		return false;
-	}
-
-	nt_token = dup_nt_token(NULL, src->nt_user_token);
-	if (nt_token == NULL) {
-		SAFE_FREE(groups);
-		return false;
-	}
-
-	dst->conn = src->conn;
-	dst->vuid = src->vuid;
-	dst->ut.uid = src->ut.uid;
-	dst->ut.gid = src->ut.gid;
-	dst->ut.ngroups = src->ut.ngroups;
-	dst->ut.groups = groups;
-	dst->nt_user_token = nt_token;
-	return true;
-}
-
 /***************************************************************************
  Purely internal function for make_server_info_info3
 ***************************************************************************/

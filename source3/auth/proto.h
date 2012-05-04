@@ -232,7 +232,6 @@ NTSTATUS make_session_info_guest(TALLOC_CTX *mem_ctx,
 NTSTATUS make_session_info_system(TALLOC_CTX *mem_ctx,
 				 struct auth_session_info **session_info);
 const struct auth_session_info *get_session_info_system(void);
-bool copy_current_user(struct current_user *dst, struct current_user *src);
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 			     char **p_save_username, bool create );
 NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
