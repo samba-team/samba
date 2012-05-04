@@ -383,7 +383,6 @@ static int objectclass_do_add(struct oc_context *ac)
 	struct ldb_request *add_req;
 	struct ldb_message_element *objectclass_element, *el;
 	struct ldb_message *msg;
-	TALLOC_CTX *mem_ctx;
 	const char *rdn_name = NULL;
 	char *value;
 	const struct dsdb_class *objectclass;
@@ -448,21 +447,13 @@ static int objectclass_do_add(struct oc_context *ac)
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		mem_ctx = talloc_new(ac);
-		if (mem_ctx == NULL) {
-			return ldb_module_oom(ac->module);
-		}
-
 		/* Now do the sorting */
-		ret = dsdb_sort_objectClass_attr(ldb, ac->schema, mem_ctx,
+		ret = dsdb_sort_objectClass_attr(ldb, ac->schema,
 						 objectclass_element, msg,
 						 objectclass_element);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
 			return ret;
 		}
-
-		talloc_free(mem_ctx);
 
 		/*
 		 * Get the new top-most structural object class and check for
@@ -823,7 +814,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 	struct ldb_message_element *oc_el_entry, *oc_el_change;
 	struct ldb_val *vals;
 	struct ldb_message *msg;
-	TALLOC_CTX *mem_ctx;
 	const struct dsdb_class *objectclass;
 	unsigned int i, j, k;
 	bool found;
@@ -851,11 +841,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 
 	msg->dn = ac->req->op.mod.message->dn;
 
-	mem_ctx = talloc_new(ac);
-	if (mem_ctx == NULL) {
-		return ldb_module_oom(ac->module);
-	}
-
 	/* We've to walk over all "objectClass" message elements */
 	for (k = 0; k < ac->req->op.mod.message->num_elements; k++) {
 		if (ldb_attr_cmp(ac->req->op.mod.message->elements[k].name,
@@ -876,7 +861,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 								       "objectclass: cannot re-add an existing objectclass: '%.*s'!",
 								       (int)oc_el_change->values[i].length,
 								       (const char *)oc_el_change->values[i].data);
-						talloc_free(mem_ctx);
 						return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					}
 				}
@@ -886,7 +870,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 						      struct ldb_val,
 						      oc_el_entry->num_values + 1);
 				if (vals == NULL) {
-					talloc_free(mem_ctx);
 					return ldb_module_oom(ac->module);
 				}
 				oc_el_entry->values = vals;
@@ -933,7 +916,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 							       "objectclass: cannot delete this objectclass: '%.*s'!",
 							       (int)oc_el_change->values[i].length,
 							       (const char *)oc_el_change->values[i].data);
-					talloc_free(mem_ctx);
 					return LDB_ERR_NO_SUCH_ATTRIBUTE;
 				}
 			}
@@ -942,10 +924,9 @@ static int objectclass_do_mod(struct oc_context *ac)
 		}
 
 		/* Now do the sorting */
-		ret = dsdb_sort_objectClass_attr(ldb, ac->schema, mem_ctx,
-						 oc_el_entry, msg, oc_el_entry);
+		ret = dsdb_sort_objectClass_attr(ldb, ac->schema, oc_el_entry,
+						 msg, oc_el_entry);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
 			return ret;
 		}
 
@@ -958,7 +939,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 		if (objectclass == NULL) {
 			ldb_set_errstring(ldb,
 					  "objectclass: cannot delete all structural objectclasses!");
-			talloc_free(mem_ctx);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 
@@ -967,12 +947,9 @@ static int objectclass_do_mod(struct oc_context *ac)
 						    objectclass,
 						    oc_el_entry);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
 			return ret;
 		}
 	}
-
-	talloc_free(mem_ctx);
 
 	/* Now add the new object class attribute to the change message */
 	ret = ldb_msg_add(msg, oc_el_entry, LDB_FLAG_MOD_REPLACE);

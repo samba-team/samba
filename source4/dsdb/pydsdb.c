@@ -681,8 +681,7 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 	/* Normalise "objectClass" attribute if needed */
 	if (ldb_attr_cmp(a->lDAPDisplayName, "objectClass") == 0) {
 		int iret;
-		iret = dsdb_sort_objectClass_attr(ldb, schema, tmp_ctx, el,
-						 tmp_ctx, el);
+		iret = dsdb_sort_objectClass_attr(ldb, schema, el, tmp_ctx, el);
 		if (iret != LDB_SUCCESS) {
 			PyErr_SetString(PyExc_RuntimeError, ldb_errstring(ldb));
 			talloc_free(tmp_ctx);

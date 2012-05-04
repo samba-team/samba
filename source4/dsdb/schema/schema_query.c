@@ -451,14 +451,12 @@ const struct GUID *attribute_schemaid_guid_by_lDAPDisplayName(const struct dsdb_
  * into correct order and validate that all object classes specified actually
  * exist in the schema.
  * The output is written in an existing LDB message element
- * "out_objectclass_element" where the values will be allocated on
- * "out_mem_ctx".
+ * "out_objectclass_element" where the values will be allocated on "mem_ctx".
  */
 int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 			       const struct dsdb_schema *schema,
-			       TALLOC_CTX *mem_ctx,
 			       const struct ldb_message_element *objectclass_element,
-			       TALLOC_CTX *out_mem_ctx,
+			       TALLOC_CTX *mem_ctx,
 			       struct ldb_message_element *out_objectclass_element)
 {
 	unsigned int i, lowest;
@@ -469,6 +467,12 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 	  *poss_parent = NULL, *new_parent = NULL,
 	  *current_lowest = NULL, *current_lowest_struct = NULL;
 	struct ldb_message_element *el;
+	TALLOC_CTX *tmp_mem_ctx;
+
+	tmp_mem_ctx = talloc_new(mem_ctx);
+	if (tmp_mem_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	/*
 	 * DESIGN:
@@ -504,8 +508,9 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 	 * except for 'top', which is special
 	 */
 	for (i=0; i < objectclass_element->num_values; i++) {
-		current = talloc(mem_ctx, struct class_list);
+		current = talloc(tmp_mem_ctx, struct class_list);
 		if (!current) {
+			talloc_free(tmp_mem_ctx);
 			return ldb_oom(ldb);
 		}
 		current->objectclass = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &objectclass_element->values[i]);
@@ -513,11 +518,13 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 			ldb_asprintf_errstring(ldb, "objectclass %.*s is not a valid objectClass in schema",
 					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
 			/* This looks weird, but windows apparently returns this for invalid objectClass values */
+			talloc_free(tmp_mem_ctx);
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		} else if (current->objectclass->isDefunct) {
 			ldb_asprintf_errstring(ldb, "objectclass %.*s marked as isDefunct objectClass in schema - not valid for new objects",
 					       (int)objectclass_element->values[i].length, (const char *)objectclass_element->values[i].data);
 			/* This looks weird, but windows apparently returns this for invalid objectClass values */
+			talloc_free(tmp_mem_ctx);
 			return LDB_ERR_NO_SUCH_ATTRIBUTE;
 		}
 
@@ -529,7 +536,7 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 
 
 	/* Add top here, to prevent duplicates */
-	current = talloc(mem_ctx, struct class_list);
+	current = talloc(tmp_mem_ctx, struct class_list);
 	current->objectclass = dsdb_class_by_lDAPDisplayName(schema, "top");
 	DLIST_ADD_END(sorted, current, struct class_list *);
 
@@ -545,7 +552,7 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 			continue;
 		}
 
-		new_parent = talloc(mem_ctx, struct class_list);
+		new_parent = talloc(tmp_mem_ctx, struct class_list);
 		new_parent->objectclass = dsdb_class_by_lDAPDisplayName(schema, current->objectclass->subClassOf);
 		DLIST_ADD_END(unsorted, new_parent, struct class_list *);
 	}
@@ -583,16 +590,18 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 	el = out_objectclass_element;
 
 	el->flags = objectclass_element->flags;
-	el->name = talloc_strdup(out_mem_ctx, objectclass_element->name);
+	el->name = talloc_strdup(mem_ctx, objectclass_element->name);
 	if (el->name == NULL) {
+		talloc_free(tmp_mem_ctx);
 		return ldb_oom(ldb);
 	}
 	el->num_values = 0;
 	el->values = NULL;
 	for (current = sorted; current != NULL; current = current->next) {
-		el->values = talloc_realloc(out_mem_ctx, el->values,
+		el->values = talloc_realloc(mem_ctx, el->values,
 					    struct ldb_val, el->num_values + 1);
 		if (el->values == NULL) {
+			talloc_free(tmp_mem_ctx);
 			return ldb_oom(ldb);
 		}
 		el->values[el->num_values] = data_blob_string_const(current->objectclass->lDAPDisplayName);
@@ -600,5 +609,6 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 		++(el->num_values);
 	}
 
+	talloc_free(tmp_mem_ctx);
 	return LDB_SUCCESS;
 }
