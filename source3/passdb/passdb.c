@@ -430,10 +430,7 @@ bool pdb_gethexpwd(const char *p, unsigned char *pwd)
 void pdb_sethexhours(char *p, const unsigned char *hours)
 {
 	if (hours != NULL) {
-		int i;
-		for (i = 0; i < 21; i++) {
-			slprintf(&p[i*2], 3, "%02X", hours[i]);
-		}
+		hex_encode_buf(p, hours, 21);
 	} else {
 		strlcpy(p, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 44);
 	}
