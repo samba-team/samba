@@ -207,8 +207,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 
 static NTSTATUS check_parent_access(struct connection_struct *conn,
 				struct smb_filename *smb_fname,
-				uint32_t access_mask,
-				char **pp_parent_dir)
+				uint32_t access_mask)
 {
 	NTSTATUS status;
 	char *parent_dir = NULL;
@@ -220,10 +219,6 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 				&parent_dir,
 				NULL)) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (pp_parent_dir) {
-		*pp_parent_dir = parent_dir;
 	}
 
 	if (get_current_uid(conn) == (uid_t)0) {
@@ -636,8 +631,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			} else if (local_flags & O_CREAT){
 				status = check_parent_access(conn,
 						smb_fname,
-						SEC_DIR_ADD_FILE,
-						NULL);
+						SEC_DIR_ADD_FILE);
 			} else {
 				/* File didn't exist and no O_CREAT. */
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -2554,8 +2548,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	status = check_parent_access(conn,
 					smb_dname,
-					access_mask,
-					NULL);
+					access_mask);
 	if(!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("mkdir_internal: check_parent_access "
 			"on directory %s for path %s returned %s\n",
