@@ -41,7 +41,7 @@ struct deferred_open_record {
 /****************************************************************************
  If the requester wanted DELETE_ACCESS and was rejected because
  the file ACL didn't include DELETE_ACCESS, see if the parent ACL
- ovverrides this.
+ overrides this.
 ****************************************************************************/
 
 static bool parent_override_delete(connection_struct *conn,
