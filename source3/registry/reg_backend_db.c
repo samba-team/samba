@@ -1789,6 +1789,9 @@ static int regdb_fetch_values_internal(struct db_context *db, const char* key,
 	DEBUG(10,("regdb_fetch_values: Looking for values of key [%s]\n", key));
 
 	if (!regdb_key_exists(db, key)) {
+		DEBUG(10, ("regb_fetch_values: key [%s] does not exist\n",
+			   key));
+		ret = -1;
 		goto done;
 	}
 
