@@ -251,6 +251,13 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 #error krb5_cc_get_lifetime not available
 #endif
 
+#if defined(HAVE_KRB5_FREE_CHECKSUM_CONTENTS)
+#define smb_krb5_free_checksum_contents krb5_free_checksum_contents
+#elif defined (HAVE_FREE_CHECKSUM)
+void smb_krb5_free_checksum_contents(krb5_context ctx, krb5_checksum *cksum);
+#else
+#error krb5_free_checksum_contents/free_Checksum is not vailable
+#endif
 
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_principal principal);

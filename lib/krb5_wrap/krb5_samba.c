@@ -2175,6 +2175,13 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 }
 #endif /* HAVE_KRB5_CC_GET_LIFETIME */
 
+#if !defined(HAVE_KRB5_FREE_CHECKSUM_CONTENTS) && defined(HAVE_FREE_CHECKSUM)
+void smb_krb5_free_checksum_contents(krb5_context ctx, krb5_checksum *cksum)
+{
+	free_Checksum(cksum);
+}
+#endif
+
 /*
  * smb_krb5_principal_get_realm
  *
