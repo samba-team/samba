@@ -83,6 +83,7 @@ struct net_context {
 	int opt_reg_version;
 	const char *opt_output;
 	int opt_wipe;
+	const char *opt_precheck;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;

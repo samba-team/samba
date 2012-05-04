@@ -30,6 +30,7 @@
 #include "registry/reg_backend_db.h"
 #include "registry/reg_import.h"
 #include "registry/reg_format.h"
+#include "registry/reg_api_util.h"
 #include <assert.h>
 #include "../libcli/security/display_sec.h"
 #include "../libcli/security/sddl.h"
@@ -1029,6 +1030,192 @@ static WERROR import_delete_val (struct import_ctx* ctx, struct registry_key* pa
 	return werr;
 }
 
+struct precheck_ctx {
+	TALLOC_CTX *mem_ctx;
+	bool failed;
+};
+
+static WERROR precheck_create_key(struct precheck_ctx *ctx,
+				  struct registry_key *parent,
+				  const char *name, void **pkey, bool *existing)
+{
+	WERROR werr;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct registry_key *key = NULL;
+
+	if (parent == NULL) {
+		char *subkeyname = NULL;
+		werr = open_hive(frame, name, REG_KEY_READ,
+				 &parent, &subkeyname);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_printf("Precheck: open_hive of [%s] failed: %s\n",
+				 name, win_errstr(werr));
+			goto done;
+		}
+		name = subkeyname;
+	}
+
+	werr = reg_openkey(frame, parent, name, 0, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Precheck: openkey [%s] failed: %s\n",
+			 name, win_errstr(werr));
+		goto done;
+	}
+
+	if (existing != NULL) {
+		*existing = true;
+	}
+
+	if (pkey != NULL) {
+		*pkey = talloc_steal(ctx->mem_ctx, key);
+	}
+
+done:
+	talloc_free(frame);
+	ctx->failed = !W_ERROR_IS_OK(werr);
+	return werr;
+}
+
+static WERROR precheck_close_key(struct precheck_ctx *ctx,
+				 struct registry_key *key)
+{
+	talloc_free(key);
+	return WERR_OK;
+}
+
+static WERROR precheck_delete_key(struct precheck_ctx *ctx,
+				  struct registry_key *parent, const char *name)
+{
+	WERROR werr;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct registry_key *key;
+
+	if (parent == NULL) {
+		char *subkeyname = NULL;
+		werr = open_hive(frame, name, REG_KEY_READ,
+				 &parent, &subkeyname);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_printf("Precheck: open_hive of [%s] failed: %s\n",
+				 name, win_errstr(werr));
+			goto done;
+		}
+		name = subkeyname;
+	}
+
+	werr = reg_openkey(ctx->mem_ctx, parent, name, 0, &key);
+	if (W_ERROR_IS_OK(werr)) {
+		d_printf("Precheck: key [%s\\%s] should not exist\n",
+			 parent->key->name, name);
+		werr = WERR_FILE_EXISTS;
+	} else if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+		werr = WERR_OK;
+	} else {
+		d_printf("Precheck: openkey [%s\\%s] failed: %s\n",
+			 parent->key->name, name, win_errstr(werr));
+	}
+
+done:
+	talloc_free(frame);
+	ctx->failed = !W_ERROR_IS_OK(werr);
+	return werr;
+}
+
+static WERROR precheck_create_val(struct precheck_ctx *ctx,
+				  struct registry_key *parent,
+				  const char *name,
+				  const struct registry_value *value)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct registry_value *old;
+	WERROR werr;
+
+	SMB_ASSERT(parent);
+
+	werr = reg_queryvalue(frame, parent, name, &old);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Precheck: queryvalue \"%s\" of [%s] failed: %s\n",
+			 name, parent->key->name, win_errstr(werr));
+		goto done;
+	}
+	if (registry_value_cmp(value, old) != 0) {
+		d_printf("Precheck: unexpected value \"%s\" of key [%s]\n",
+			 name, parent->key->name);
+		ctx->failed = true;
+	}
+done:
+	talloc_free(frame);
+	return werr;
+}
+
+static WERROR precheck_delete_val(struct precheck_ctx *ctx,
+				  struct registry_key *parent,
+				  const char *name)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct registry_value *old;
+	WERROR werr;
+
+	SMB_ASSERT(parent);
+
+	werr = reg_queryvalue(frame, parent, name, &old);
+	if (W_ERROR_IS_OK(werr)) {
+		d_printf("Precheck: value \"%s\" of key [%s] should not exist\n",
+			 name, parent->key->name);
+		werr = WERR_FILE_EXISTS;
+	} else if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+		werr = WERR_OK;
+	} else {
+		printf("Precheck: queryvalue \"%s\" of key [%s] failed: %s\n",
+		       name, parent->key->name, win_errstr(werr));
+	}
+
+	talloc_free(frame);
+	ctx->failed = !W_ERROR_IS_OK(werr);
+	return werr;
+}
+
+static bool import_precheck(const char *fname, const char *parse_options)
+{
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	struct precheck_ctx precheck_ctx = {
+		.mem_ctx = mem_ctx,
+		.failed = false,
+	};
+	struct reg_import_callback precheck_callback = {
+		.openkey     = NULL,
+		.closekey    = (reg_import_callback_closekey_t)&precheck_close_key,
+		.createkey   = (reg_import_callback_createkey_t)&precheck_create_key,
+		.deletekey   = (reg_import_callback_deletekey_t)&precheck_delete_key,
+		.deleteval   = (reg_import_callback_deleteval_t)&precheck_delete_val,
+		.setval      = {
+			.registry_value = (reg_import_callback_setval_registry_value_t)
+		                          &precheck_create_val,
+		},
+		.setval_type = REGISTRY_VALUE,
+		.data        = &precheck_ctx
+	};
+	struct reg_parse_callback *parse_callback;
+	int ret;
+
+	if (!fname) {
+		return true;
+	}
+
+	parse_callback = reg_import_adapter(mem_ctx, precheck_callback);
+	if (parse_callback == NULL) {
+		d_printf("talloc failed\n");
+		return false;
+	}
+
+	ret = reg_parse_file(fname, parse_callback, parse_options);
+
+	if (ret < 0 || precheck_ctx.failed) {
+		d_printf("Precheck failed\n");
+		return false;
+	}
+	return true;
+}
+
 
 static int net_registry_import(struct net_context *c, int argc,
 			       const char **argv)
@@ -1050,7 +1237,7 @@ static int net_registry_import(struct net_context *c, int argc,
 		.setval_type = REGISTRY_VALUE,
 		.data        = &import_ctx
 	};
-
+	const char *parse_options =  (argc > 1) ? argv[1] : NULL;
 	int ret = -1;
 	WERROR werr;
 
@@ -1076,12 +1263,14 @@ static int net_registry_import(struct net_context *c, int argc,
 		goto done;
 	}
 
-	ret = reg_parse_file(argv[0],
-			     reg_import_adapter(frame, import_callback),
-			     (argc > 1) ? argv[1] : NULL);
+	if (import_precheck(c->opt_precheck, parse_options)) {
+		ret = reg_parse_file(argv[0],
+				     reg_import_adapter(frame, import_callback),
+				     parse_options);
+	}
 
 	if (ret < 0) {
-		d_printf("reg_parse_file failed: transaction canceled\n");
+		d_printf("Transaction canceled!\n");
 		regdb_transaction_cancel();
 	} else {
 		werr = regdb_transaction_commit();
