@@ -1139,9 +1139,9 @@ static int samba_syntax_operator_fn(struct ldb_context *ldb, enum ldb_parse_op o
 		ret = a->syntax->comparison_fn(ldb, tmp_ctx, v1, v2);
 		talloc_free(tmp_ctx);
 		if (operation == LDB_OP_GREATER) {
-			*matched = (ret > 0);
+			*matched = (ret >= 0);
 		} else if (operation == LDB_OP_LESS) {
-			*matched = (ret < 0);
+			*matched = (ret <= 0);
 		} else {
 			*matched = (ret == 0);
 		}

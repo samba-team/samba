@@ -343,7 +343,7 @@ static enum ldb_parse_op ldb_parse_filtertype(TALLOC_CTX *mem_ctx, char **type, 
 	}
 	if (!filter) {
 		talloc_free(name);
-		return filter;
+		return 0;
 	}
 	p++;
 
