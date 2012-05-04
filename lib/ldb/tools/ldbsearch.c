@@ -305,7 +305,7 @@ int main(int argc, const char **argv)
 	/* the check for '=' is for compatibility with ldapsearch */
 	if (!options->interactive &&
 	    options->argc > 0 && 
-	    strchr(options->argv[0], '=')) {
+	    strpbrk(options->argv[0], "=<>~:")) {
 		expression = options->argv[0];
 		options->argv++;
 		options->argc--;
