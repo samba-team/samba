@@ -381,9 +381,7 @@ uint32_t pdb_decode_acct_ctrl(const char *p)
 void pdb_sethexpwd(char p[33], const unsigned char *pwd, uint32_t acct_ctrl)
 {
 	if (pwd != NULL) {
-		int i;
-		for (i = 0; i < 16; i++)
-			slprintf(&p[i*2], 3, "%02X", pwd[i]);
+		hex_encode_buf(p, pwd, 16);
 	} else {
 		if (acct_ctrl & ACB_PWNOTREQ)
 			strlcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
