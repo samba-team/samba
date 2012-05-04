@@ -119,8 +119,12 @@ _PUBLIC_ NTSTATUS ildap_search(struct ldap_connection *conn, const char *basedn,
 		      struct ldb_control ***control_res,
 		      struct ldap_message ***results)
 {
-	struct ldb_parse_tree *tree = ldb_parse_tree(conn, expression);
 	NTSTATUS status;
+	struct ldb_parse_tree *tree = ldb_parse_tree(conn, expression);
+
+	if (tree == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	status = ildap_search_bytree(conn, basedn, scope, tree, attrs,
 				     attributesonly, control_req,
 				     control_res, results);

@@ -339,6 +339,9 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 #endif
 
 	newtree = proxy_convert_tree(ac, proxy, req->op.search.tree);
+	if (newtree == NULL) {
+		goto failed;
+	}
 
 	/* convert the basedn of this search */
 	base = ldb_dn_copy(ac, req->op.search.base);
