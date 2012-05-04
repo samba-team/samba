@@ -75,23 +75,23 @@
 /*********************************************************************
 *********************************************************************/
 
-static bool ads_dns_parse_query( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
-                          uint8 **ptr, struct dns_query *q )
+static bool ads_dns_parse_query( TALLOC_CTX *ctx, uint8_t *start, uint8_t *end,
+                          uint8_t **ptr, struct dns_query *q )
 {
-	uint8 *p = *ptr;
+	uint8_t *p = *ptr;
 	char hostname[MAX_DNS_NAME_LENGTH];
 	int namelen;
 
 	ZERO_STRUCTP( q );
 
 	if ( !start || !end || !q || !*ptr)
-		return False;
+		return false;
 
 	/* See RFC 1035 for details. If this fails, then return. */
 
 	namelen = dn_expand( start, end, p, hostname, sizeof(hostname) );
 	if ( namelen < 0 ) {
-		return False;
+		return false;
 	}
 	p += namelen;
 	q->hostname = talloc_strdup( ctx, hostname );
@@ -99,7 +99,7 @@ static bool ads_dns_parse_query( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	/* check that we have space remaining */
 
 	if ( PTR_DIFF(p+4, end) > 0 )
-		return False;
+		return false;
 
 	q->type     = RSVAL( p, 0 );
 	q->in_class = RSVAL( p, 2 );
@@ -107,16 +107,16 @@ static bool ads_dns_parse_query( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 
 	*ptr = p;
 
-	return True;
+	return true;
 }
 
 /*********************************************************************
 *********************************************************************/
 
-static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
-                       uint8 **ptr, struct dns_rr *rr )
+static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8_t *start, uint8_t *end,
+                       uint8_t **ptr, struct dns_rr *rr )
 {
-	uint8 *p = *ptr;
+	uint8_t *p = *ptr;
 	char hostname[MAX_DNS_NAME_LENGTH];
 	int namelen;
 
@@ -136,7 +136,7 @@ static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	/* check that we have space remaining */
 
 	if ( PTR_DIFF(p+10, end) > 0 )
-		return False;
+		return false;
 
 	/* pull some values and then skip onto the string */
 
@@ -150,7 +150,7 @@ static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	/* sanity check the available space */
 
 	if ( PTR_DIFF(p+rr->rdatalen, end ) > 0 ) {
-		return False;
+		return false;
 
 	}
 
@@ -161,17 +161,17 @@ static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 
 	*ptr = p;
 
-	return True;
+	return true;
 }
 
 /*********************************************************************
 *********************************************************************/
 
-static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
-                       uint8 **ptr, struct dns_rr_srv *srv )
+static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8_t *start, uint8_t *end,
+                       uint8_t **ptr, struct dns_rr_srv *srv )
 {
 	struct dns_rr rr;
-	uint8 *p;
+	uint8_t *p;
 	char dcname[MAX_DNS_NAME_LENGTH];
 	int namelen;
 
@@ -183,13 +183,13 @@ static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 
 	if ( !ads_dns_parse_rr( ctx, start, end, ptr, &rr ) ) {
 		DEBUG(1,("ads_dns_parse_rr_srv: Failed to parse RR record\n"));
-		return False;
+		return false;
 	}
 
 	if ( rr.type != T_SRV ) {
 		DEBUG(1,("ads_dns_parse_rr_srv: Bad answer type (%d)\n",
 					rr.type));
-		return False;
+		return false;
 	}
 
 	p = rr.rdata;
@@ -203,7 +203,7 @@ static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	namelen = dn_expand( start, end, p, dcname, sizeof(dcname) );
 	if ( namelen < 0 ) {
 		DEBUG(1,("ads_dns_parse_rr_srv: Failed to uncompress name!\n"));
-		return False;
+		return false;
 	}
 
 	srv->hostname = talloc_strdup( ctx, dcname );
@@ -214,17 +214,17 @@ static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 		  srv->weight,
 		  srv->port));
 
-	return True;
+	return true;
 }
 
 /*********************************************************************
 *********************************************************************/
 
-static bool ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
-                       uint8 **ptr, struct dns_rr_ns *nsrec )
+static bool ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8_t *start, uint8_t *end,
+                       uint8_t **ptr, struct dns_rr_ns *nsrec )
 {
 	struct dns_rr rr;
-	uint8 *p;
+	uint8_t *p;
 	char nsname[MAX_DNS_NAME_LENGTH];
 	int namelen;
 
@@ -236,13 +236,13 @@ static bool ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 
 	if ( !ads_dns_parse_rr( ctx, start, end, ptr, &rr ) ) {
 		DEBUG(1,("ads_dns_parse_rr_ns: Failed to parse RR record\n"));
-		return False;
+		return false;
 	}
 
 	if ( rr.type != T_NS ) {
 		DEBUG(1,("ads_dns_parse_rr_ns: Bad answer type (%d)\n",
 					rr.type));
-		return False;
+		return false;
 	}
 
 	p = rr.rdata;
@@ -252,11 +252,11 @@ static bool ads_dns_parse_rr_ns( TALLOC_CTX *ctx, uint8 *start, uint8 *end,
 	namelen = dn_expand( start, end, p, nsname, sizeof(nsname) );
 	if ( namelen < 0 ) {
 		DEBUG(1,("ads_dns_parse_rr_ns: Failed to uncompress name!\n"));
-		return False;
+		return false;
 	}
 	nsrec->hostname = talloc_strdup( ctx, nsname );
 
-	return True;
+	return true;
 }
 
 /*********************************************************************
@@ -291,9 +291,9 @@ static int dnssrvcmp( struct dns_rr_srv *a, struct dns_rr_srv *b )
 #define DNS_FAILED_WAITTIME          30
 
 static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
-                              uint8 **buf, int *resp_length )
+                              uint8_t **buf, int *resp_length )
 {
-	uint8 *buffer = NULL;
+	uint8_t *buffer = NULL;
 	size_t buf_len = 0;
 	int resp_len = NS_PACKETSZ;
 	static time_t last_dns_check = 0;
@@ -325,10 +325,10 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 		if ( buffer )
 			TALLOC_FREE( buffer );
 
-		buf_len = resp_len * sizeof(uint8);
+		buf_len = resp_len * sizeof(uint8_t);
 
 		if (buf_len) {
-			if ((buffer = talloc_array(ctx, uint8, buf_len))
+			if ((buffer = talloc_array(ctx, uint8_t, buf_len))
 					== NULL ) {
 				DEBUG(0,("ads_dns_lookup_srv: "
 					"talloc() failed!\n"));
@@ -393,11 +393,11 @@ static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
 				struct dns_rr_srv **dclist,
 				int *numdcs)
 {
-	uint8 *buffer = NULL;
+	uint8_t *buffer = NULL;
 	int resp_len = 0;
 	struct dns_rr_srv *dcs = NULL;
 	int query_count, answer_count, auth_count, additional_count;
-	uint8 *p = buffer;
+	uint8_t *p = buffer;
 	int rrnum;
 	int idx = 0;
 	NTSTATUS status;
@@ -590,11 +590,11 @@ NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 				struct dns_rr_ns **nslist,
 				int *numns)
 {
-	uint8 *buffer = NULL;
+	uint8_t *buffer = NULL;
 	int resp_len = 0;
 	struct dns_rr_ns *nsarray = NULL;
 	int query_count, answer_count, auth_count, additional_count;
-	uint8 *p;
+	uint8_t *p;
 	int rrnum;
 	int idx = 0;
 	NTSTATUS status;
