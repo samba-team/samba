@@ -1033,7 +1033,10 @@ static WERROR import_delete_val (struct import_ctx* ctx, struct registry_key* pa
 static int net_registry_import(struct net_context *c, int argc,
 			       const char **argv)
 {
-	struct import_ctx import_ctx;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct import_ctx import_ctx = {
+		.mem_ctx = frame,
+	};
 	struct reg_import_callback import_callback = {
 		.openkey     = NULL,
 		.closekey    = (reg_import_callback_closekey_t)&import_close_key,
@@ -1048,7 +1051,8 @@ static int net_registry_import(struct net_context *c, int argc,
 		.data        = &import_ctx
 	};
 
-	int ret;
+	int ret = -1;
+	WERROR werr;
 
 	if (argc < 1 || argc > 2 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -1057,30 +1061,40 @@ static int net_registry_import(struct net_context *c, int argc,
 		d_printf("%s\n%s",
 			 _("Example:"),
 			 _("net registry import file.reg enc=CP1252\n"));
-		return -1;
+		goto done;
 	}
 
-	ZERO_STRUCT(import_ctx);
-	import_ctx.mem_ctx = talloc_stackframe();
-
-	regdb_open();
-	regdb_transaction_start();
+	werr = regdb_open();
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to open regdb: %s\n", win_errstr(werr));
+		goto done;
+	}
+	werr = regdb_transaction_start();
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to start transaction on regdb: %s\n",
+			 win_errstr(werr));
+		goto done;
+	}
 
 	ret = reg_parse_file(argv[0],
-			     reg_import_adapter(import_ctx.mem_ctx,
-						import_callback),
-			     (argc > 1) ? argv[1] : NULL
-		);
+			     reg_import_adapter(frame, import_callback),
+			     (argc > 1) ? argv[1] : NULL);
+
 	if (ret < 0) {
 		d_printf("reg_parse_file failed: transaction canceled\n");
 		regdb_transaction_cancel();
-	} else{
-		regdb_transaction_commit();
+	} else {
+		werr = regdb_transaction_commit();
+		if (!W_ERROR_IS_OK(werr)) {
+			d_printf("Failed to commit transaction on regdb: %s\n",
+				 win_errstr(werr));
+			goto done;
+		}
 	}
 
 	regdb_close();
-	talloc_free(import_ctx.mem_ctx);
-
+done:
+	talloc_free(frame);
 	return ret;
 }
 /**@}*/
