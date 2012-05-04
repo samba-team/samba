@@ -19,7 +19,9 @@
 */
 
 #include "includes.h"
-#include "libads/dns.h"
+#include "lib/util/util_net.h"
+#include "lib/util/tsort.h"
+#include "dnsquery.h"
 
 /* AIX resolv.h uses 'class' in struct ns_rr */
 
@@ -207,8 +209,8 @@ static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8_t *start, uint8_t *end,
 
 	srv->hostname = talloc_strdup( ctx, dcname );
 
-	DEBUG(10,("ads_dns_parse_rr_srv: Parsed %s [%u, %u, %u]\n", 
-		  srv->hostname, 
+	DEBUG(10,("ads_dns_parse_rr_srv: Parsed %s [%u, %u, %u]\n",
+		  srv->hostname,
 		  srv->priority,
 		  srv->weight,
 		  srv->port));
@@ -758,10 +760,10 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 		name = talloc_asprintf(ctx, "%s._tcp.%s._sites.%s._msdcs.%s",
 				       servicename, sitename,
 				       dc_pdc_gc_domains, realm);
-  	} else {
+	} else {
 		name = talloc_asprintf(ctx, "%s._tcp.%s._msdcs.%s",
 				servicename, dc_pdc_gc_domains, realm);
-  	}
+	}
 	if (!name) {
 		return NT_STATUS_NO_MEMORY;
 	}

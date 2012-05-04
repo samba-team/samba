@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "libads/sitename_cache.h"
-#include "libads/dns.h"
+#include "../lib/addns/dnsquery.h"
 #include "../libcli/netlogon/netlogon.h"
 #include "lib/async_req/async_sock.h"
 #include "libsmb/nmblib.h"

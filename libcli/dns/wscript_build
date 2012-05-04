@@ -3,3 +3,7 @@
 bld.SAMBA_SUBSYSTEM('LIBCLI_DNS',
         source='dns.c',
         deps='LIBTSOCKET tevent-util')
+
+bld.SAMBA_SUBSYSTEM('DNS_HOSTS_FILE',
+        source='dns_hosts_file.c',
+        deps='samba-util errors')

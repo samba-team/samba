@@ -28,7 +28,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "ads.h"
 #include "libads/cldap.h"
-#include "libads/dns.h"
+#include "../lib/addns/dnsquery.h"
 #include "../libds/common/flags.h"
 #include "librpc/gen_ndr/libnet_join.h"
 #include "libnet/libnet_join.h"

@@ -5,3 +5,8 @@ bld.SAMBA_LIBRARY('addns',
                    public_deps='talloc krb5 k5crypto com_err gssapi gssapi_krb5 uuid',
                    private_library=True,
                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('DNSQUERY',
+	source='dnsquery.c',
+	deps='samba-util lmhosts resolv'
+	)

@@ -19,7 +19,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "libads/sitename_cache.h"
-#include "libads/dns.h"
+#include "../lib/addns/dnsquery.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "smb_krb5.h"
 #include "../libcli/security/security.h"
