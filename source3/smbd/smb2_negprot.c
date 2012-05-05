@@ -120,6 +120,21 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	indyn = (const uint8_t *)req->in.vector[i+2].iov_base;
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
+		if (lp_srv_maxprotocol() < PROTOCOL_SMB3_00) {
+			break;
+		}
+		if (lp_srv_minprotocol() > PROTOCOL_SMB3_00) {
+			break;
+		}
+
+		dialect = SVAL(indyn, c*2);
+		if (dialect == SMB3_DIALECT_REVISION_300) {
+			protocol = PROTOCOL_SMB3_00;
+			break;
+		}
+	}
+
+	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
 		if (lp_srv_maxprotocol() < PROTOCOL_SMB2_24) {
 			break;
 		}
