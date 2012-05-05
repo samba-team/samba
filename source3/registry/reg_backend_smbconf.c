@@ -81,6 +81,15 @@ static WERROR smbconf_set_secdesc(const char *key,
 	return regdb_ops.set_secdesc(key, secdesc);
 }
 
+static bool smbconf_subkeys_need_update(struct regsubkey_ctr *subkeys)
+{
+	return regdb_ops.subkeys_need_update(subkeys);
+}
+
+static bool smbconf_values_need_update(struct regval_ctr *values)
+{
+	return regdb_ops.values_need_update(values);
+}
 
 /*
  * Table of function pointers for accessing smb.conf data
@@ -96,4 +105,6 @@ struct registry_ops smbconf_reg_ops = {
 	.reg_access_check = smbconf_reg_access_check,
 	.get_secdesc = smbconf_get_secdesc,
 	.set_secdesc = smbconf_set_secdesc,
+	.subkeys_need_update = smbconf_subkeys_need_update,
+	.values_need_update = smbconf_values_need_update,
 };
