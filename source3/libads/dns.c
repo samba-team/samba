@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "libads/dns.h"
-#include "../librpc/ndr/libndr.h"
 
 /* AIX resolv.h uses 'class' in struct ns_rr */
 
@@ -890,26 +889,19 @@ NTSTATUS ads_dns_query_pdc(TALLOC_CTX *ctx,
 NTSTATUS ads_dns_query_dcs_guid(TALLOC_CTX *ctx,
 				const char *dns_hosts_file,
 				const char *dns_forest_name,
-				const struct GUID *domain_guid,
+				const char *domain_guid,
 				struct dns_rr_srv **dclist,
 				int *numdcs )
 {
 	/*_ldap._tcp.DomainGuid.domains._msdcs.DnsForestName */
 
 	const char *domains;
-	char *guid_string;
-
-	guid_string = GUID_string(ctx, domain_guid);
-	if (!guid_string) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	/* little hack */
-	domains = talloc_asprintf(ctx, "%s.domains", guid_string);
+	domains = talloc_asprintf(ctx, "%s.domains", domain_guid);
 	if (!domains) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	TALLOC_FREE(guid_string);
 
 	return ads_dns_query_internal(ctx, dns_hosts_file, "_ldap", domains,
 				      dns_forest_name, NULL, dclist, numdcs);

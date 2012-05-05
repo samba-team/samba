@@ -547,6 +547,7 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	struct ip_service_name *dclist = NULL;
 	int count = 0;
 	const char *dns_hosts_file;
+	char *guid_string;
 
 	dns_hosts_file = lp_parm_const_string(-1, "resolv", "host file", NULL);
 	if (flags & DS_PDC_REQUIRED) {
@@ -565,9 +566,15 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 					   domain_name, site_name,
 					   &dcs, &numdcs);
 	} else if (domain_guid) {
+		guid_string = GUID_string(mem_ctx, domain_guid);
+		if (!guid_string) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		status = ads_dns_query_dcs_guid(mem_ctx, dns_hosts_file,
-						domain_name, domain_guid,
+						domain_name, guid_string,
 						&dcs, &numdcs);
+		TALLOC_FREE(guid_string);
 	} else {
 		status = ads_dns_query_dcs(mem_ctx, dns_hosts_file,
 					   domain_name, site_name,
