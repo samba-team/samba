@@ -24,6 +24,11 @@
 
 /* The following definitions come from libads/dns.c  */
 
+NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
+				const char *dns_hosts_file,
+				const char *name,
+				struct dns_rr_srv **dclist,
+				int *numdcs);
 NTSTATUS ads_dns_lookup_ns(TALLOC_CTX *ctx,
 				const char *dns_hosts_file,
 				const char *dnsdomain,

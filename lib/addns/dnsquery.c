@@ -389,7 +389,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
  Simple wrapper for a DNS SRV query
 *********************************************************************/
 
-static NTSTATUS ads_dns_lookup_srv( TALLOC_CTX *ctx,
+NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 				const char *dns_hosts_file,
 				const char *name,
 				struct dns_rr_srv **dclist,
