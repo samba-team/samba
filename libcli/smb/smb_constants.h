@@ -88,6 +88,7 @@ enum protocol_types {
 	PROTOCOL_SMB2_24,
 	PROTOCOL_SMB3_00
 };
+#define PROTOCOL_LATEST PROTOCOL_SMB3_00
 
 enum smb_signing_setting {
 	SMB_SIGNING_DEFAULT = -1,
