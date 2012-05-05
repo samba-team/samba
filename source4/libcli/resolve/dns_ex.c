@@ -39,12 +39,10 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/util/util_net.h"
-
-#ifdef class
-#undef class
-#endif
-
-#include "heimdal/lib/roken/resolve.h"
+#include "lib/addns/dnsquery.h"
+#include "lib/addns/dns.h"
+#include <arpa/nameser.h>
+#include <resolv.h>
 
 struct dns_ex_state {
 	bool do_fallback;
@@ -77,261 +75,223 @@ static int dns_ex_destructor(struct dns_ex_state *state)
 	return 0;
 }
 
-static uint32_t count_dns_rr(struct rk_resource_record *head, unsigned record_type)
-{
-	uint32_t count = 0;
-	struct rk_resource_record *rr;
-
-	for (rr=head; rr; rr=rr->next) {
-
-		/* we are only interested in the IN class */
-		if (rr->class != rk_ns_c_in) {
-			continue;
-		}
-
-		if (rr->type == rk_ns_t_ns) {
-			/*
-			 * Record that will follow will be related to the NS
-			 * not what we are really interested with.
-			 * It's a good idea not to count them
-			 */
-			break;
-		}
-		/* we are only interested by requested record */
-		if (rr->type != record_type) {
-			continue;
-		}
-
-		switch(record_type) {
-			case rk_ns_t_srv:
-
-				/* verify we actually have a SRV record here */
-				if (!rr->u.srv) {
-					continue;
-				}
-
-				/* Verify we got a port */
-				if (rr->u.srv->port == 0) {
-					continue;
-				}
-				count++;
-				break;
-			case rk_ns_t_a:
-			case rk_ns_t_aaaa:
-				/* verify we actually have a record here */
-				if (!rr->u.data) {
-					continue;
-				}
-				count++;
-				break;
-			default:
-				count++;
-				break;
-		}
-	}
-
-	return count;
-}
-
 struct dns_records_container {
 	char **list;
 	uint32_t count;
 };
 
-static char* rr_to_string(TALLOC_CTX *mem_ctx,
-					struct rk_resource_record *rr,
-					uint16_t port)
+static int reply_to_addrs(TALLOC_CTX *mem_ctx, uint32_t *a_num,
+			  char ***cur_addrs, uint32_t total,
+			  struct dns_request *reply, int port)
 {
 	char addrstr[INET6_ADDRSTRLEN];
-	char *addr;
+	struct dns_rrec *rr;
+	char **addrs;
+	uint32_t i;
+	const char *addr;
 
-	switch (rr->type) {
-		case rk_ns_t_a:
-			if (inet_ntop(AF_INET, rr->u.a,
-				      addrstr, sizeof(addrstr)) == NULL) {
-				return NULL;
+	/* at most we over-allocate here, but not by much */
+	addrs = talloc_realloc(mem_ctx, *cur_addrs, char *,
+				total + reply->num_answers);
+	if (!addrs) {
+		return 0;
+	}
+	*cur_addrs = addrs;
+
+	for (i = 0; reply->answers[i]; i++) {
+		rr = reply->answers[i];
+
+		/* we are only interested in the IN class */
+		if (rr->r_class != DNS_CLASS_IN) {
+			continue;
+		}
+
+		if (rr->type == QTYPE_NS) {
+			/*
+			 * After the record for NS will come the A or AAAA
+			 * record of the NS.
+			 */
+			break;
+		}
+
+		/* verify we actually have a record here */
+		if (!rr->data) {
+			continue;
+		}
+
+		/* we are only interested in A and AAAA records */
+		switch (rr->type) {
+		case QTYPE_A:
+			addr = inet_ntop(AF_INET,
+					 (struct in_addr *)rr->data,
+					 addrstr, sizeof(addrstr));
+			if (addr == NULL) {
+				continue;
 			}
 			break;
+		case QTYPE_AAAA:
 #ifdef HAVE_IPV6
-		case rk_ns_t_aaaa:
-			if (inet_ntop(AF_INET6, (struct in6_addr *)rr->u.data,
-				      addrstr, sizeof(addrstr)) == NULL) {
-				return NULL;
-			}
-			break;
+			addr = inet_ntop(AF_INET6,
+					 (struct in6_addr *)rr->data,
+					 addrstr, sizeof(addrstr));
+#else
+			addr = NULL;
 #endif
+			if (addr == NULL) {
+				continue;
+			}
 		default:
-			return NULL;
+			continue;
+		}
+
+		addrs[total] = talloc_asprintf(addrs, "%s@%u/%s",
+						addrstr, port,
+						rr->name->pLabelList->label);
+		if (addrs[total]) {
+			total++;
+			if (rr->type == QTYPE_A) {
+				(*a_num)++;
+			}
+		}
 	}
 
-	addr = talloc_asprintf(mem_ctx, "%s@%u/%s", addrstr,
-					 port, rr->domain);
+	return total;
+}
 
-	return addr;
+static DNS_ERROR dns_lookup(TALLOC_CTX *mem_ctx, const char* name,
+			    uint16_t q_type, struct dns_request **reply)
+{
+	int len, rlen;
+	uint8_t *answer;
+	bool loop;
+	struct dns_buffer buf;
+	DNS_ERROR err;
+
+	/* give space for a good sized answer by default */
+	answer = NULL;
+	len = 1500;
+	do {
+		answer = talloc_realloc(mem_ctx, answer, uint8_t, len);
+		if (!answer) {
+			return ERROR_DNS_NO_MEMORY;
+		}
+		rlen = res_search(name, DNS_CLASS_IN, q_type, answer, len);
+		if (rlen == -1) {
+			if (len >= 65535) {
+				return ERROR_DNS_SOCKET_ERROR;
+			}
+			/* retry once with max packet size */
+			len = 65535;
+			loop = true;
+		} else if (rlen > len) {
+			len = rlen;
+			loop = true;
+		} else {
+			loop = false;
+		}
+	} while(loop);
+
+	buf.data = answer;
+	buf.size = rlen;
+	buf.offset = 0;
+	buf.error = ERROR_DNS_SUCCESS;
+
+	err = dns_unmarshall_request(mem_ctx, &buf, reply);
+
+	TALLOC_FREE(answer);
+	return err;
 }
 
 static struct dns_records_container get_a_aaaa_records(TALLOC_CTX *mem_ctx,
 							const char* name,
 							int port)
 {
-	struct rk_dns_reply *reply, *reply2, *rep, *tmp[3];
-	struct rk_resource_record *rr;
+	struct dns_request *reply;
 	struct dns_records_container ret;
 	char **addrs = NULL;
-	uint32_t count, count2, total;
-	uint32_t i;
+	uint32_t a_num, total;
+	uint16_t qtype;
+	TALLOC_CTX *tmp_ctx;
+	DNS_ERROR err;
 
 	memset(&ret, 0, sizeof(struct dns_records_container));
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return ret;
+	}
+
+	qtype = QTYPE_AAAA;
+
 	/* this is the blocking call we are going to lots of trouble
 	   to avoid them in the parent */
-	reply = rk_dns_lookup(name, "AAAA");
-
-	count = count2 = 0;
-
-	if (reply) {
-
-		count = count_dns_rr(reply->head, rk_ns_t_aaaa);
-		count2 = count_dns_rr(reply->head, rk_ns_t_a);
-
-		if (!count2) {
-			/*
-			* DNS server didn't returned A when asked for AAAA records.
-			* Most of the server do it, let's ask for A specificaly.
-			*/
-			reply2 = rk_dns_lookup(name, "A");
-
-			if (!reply2) {
-				return ret;
-			}
-
-			/* Some servers (Microsoft at least return here AAAA records .... */
-			count += count_dns_rr(reply2->head, rk_ns_t_aaaa);
-			count2 = count_dns_rr(reply2->head, rk_ns_t_a);
-		} else {
-			reply2 = NULL;
-		}
-	} else {
-
-		reply = rk_dns_lookup(name, "A");
-		if (!reply) {
-			return ret;
-		}
-
-		reply2 = NULL;
-		count = count_dns_rr(reply->head, rk_ns_t_a);
-	}
-	count += count2;
-
-	if (count == 0) {
-		goto done;
-	}
-
-	addrs = talloc_zero_array(mem_ctx, char*, count);
-	total = 0;
-
-	tmp[0] = reply;
-	tmp[1] = reply2;
-	tmp[2] = NULL;
-
-	/* Loop over all returned records and pick the records */
-	for (i=0; tmp[i] != NULL; i++) {
-		rep = tmp[i];
-		for (rr=rep->head; rr; rr=rr->next) {
-			/* we are only interested in the IN class */
-			if (rr->class != rk_ns_c_in) {
-				continue;
-			}
-
-			if (rr->type == rk_ns_t_ns) {
-				/*
-				 * After the record for NS will come the A or AAAA
-				 * record of the NS.
-				 */
-				break;
-			}
-
-			/* we are only interested in A and AAAA records */
-			if (rr->type != rk_ns_t_a && rr->type != rk_ns_t_aaaa) {
-				continue;
-			}
-
-			/* verify we actually have a record here */
-			if (!rr->u.data) {
-				continue;
-			}
-
-			addrs[total] = rr_to_string(addrs, rr, port);
-			if (addrs[total]) {
-				total++;
-			}
+	err = dns_lookup(tmp_ctx, name, qtype, &reply);
+	if (!ERR_DNS_IS_OK(err)) {
+		qtype = QTYPE_A;
+		err = dns_lookup(tmp_ctx, name, qtype, &reply);
+		if (!ERR_DNS_IS_OK(err)) {
+			goto done;
 		}
 	}
+
+	a_num = total = 0;
+	total = reply_to_addrs(tmp_ctx, &a_num, &addrs, total, reply, port);
+
+	if (qtype == QTYPE_AAAA && a_num == 0) {
+		/*
+		* DNS server didn't returned A when asked for AAAA records.
+		* Most of the server do it, let's ask for A specificaly.
+		*/
+		err = dns_lookup(tmp_ctx, name, QTYPE_A, &reply);
+		if (!ERR_DNS_IS_OK(err)) {
+			goto done;
+		}
+
+		total = reply_to_addrs(tmp_ctx, &a_num, &addrs, total,
+					reply, port);
+
+	}
+
 	if (total) {
+		talloc_steal(mem_ctx, addrs);
 		ret.count = total;
 		ret.list = addrs;
 	}
 
 done:
-	if (reply != NULL)
-		rk_dns_free_data(reply);
-
-	if (reply2 != NULL)
-		rk_dns_free_data(reply2);
-
+	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
 static struct dns_records_container get_srv_records(TALLOC_CTX *mem_ctx,
 							const char* name)
 {
-	struct rk_dns_reply *reply;
-	struct rk_resource_record *rr;
 	struct dns_records_container ret;
 	char **addrs = NULL;
-	uint32_t count, total;
+	struct dns_rr_srv *dclist;
+	NTSTATUS status;
+	uint32_t total;
+	unsigned i;
+	int count;
 
 	memset(&ret, 0, sizeof(struct dns_records_container));
 	/* this is the blocking call we are going to lots of trouble
 	   to avoid them in the parent */
-	reply = rk_dns_lookup(name, "SRV");
-
-	if (!reply) {
+	status = ads_dns_lookup_srv(mem_ctx, NULL, name, &dclist, &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ret;
+	}
+	total = 0;
+	if (count == 0) {
 		return ret;
 	}
 
-	rk_dns_srv_order(reply);
-	count = count_dns_rr(reply->head, rk_ns_t_srv);
-
-	total = 0;
-	if (count == 0) {
-		goto done;
-	}
-
 	/* Loop over all returned records and pick the records */
-	for (rr=reply->head; rr; rr=rr->next) {
+	for (i = 0; i < count; i++) {
 		struct dns_records_container c;
-		char* tmp_str;
-		/* we are only interested in the IN class */
-		if (rr->class != rk_ns_c_in) {
-			continue;
-		}
+		const char* tmp_str;
 
-		/* we are only interested in SRV records */
-		if (rr->type != rk_ns_t_srv) {
-			continue;
-		}
-
-		/* verify we actually have a srv record here */
-		if (!rr->u.srv) {
-			continue;
-		}
-
-		/* Verify we got a port */
-		if (rr->u.srv->port == 0) {
-			continue;
-		}
-
-		tmp_str = rr->u.srv->target;
+		tmp_str = dclist[i].hostname;
 		if (strchr(tmp_str, '.') && tmp_str[strlen(tmp_str)-1] != '.') {
 			/* we are asking for a fully qualified name, but the
 			name doesn't end in a '.'. We need to prevent the
@@ -340,7 +300,7 @@ static struct dns_records_container get_srv_records(TALLOC_CTX *mem_ctx,
 			tmp_str = talloc_asprintf(mem_ctx, "%s.", tmp_str);
 		}
 
-		c = get_a_aaaa_records(mem_ctx, tmp_str, rr->u.srv->port);
+		c = get_a_aaaa_records(mem_ctx, tmp_str, dclist[i].port);
 		total += c.count;
 		if (addrs == NULL) {
 			addrs = c.list;
@@ -358,11 +318,6 @@ static struct dns_records_container get_srv_records(TALLOC_CTX *mem_ctx,
 		ret.count = total;
 		ret.list = addrs;
 	}
-
-
-done:
-	if (reply != NULL)
-		rk_dns_free_data(reply);
 
 	return ret;
 }

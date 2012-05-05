@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('addns',
-                   source='dnsrecord.c dnsutils.c dnssock.c dnsgss.c dnsmarshall.c error.c',
-                   public_deps='talloc krb5 k5crypto com_err gssapi gssapi_krb5 uuid',
+                   source='dnsquery.c dnsrecord.c dnsutils.c dnssock.c dnsgss.c dnsmarshall.c error.c',
+                   public_deps='DNS_HOSTS_FILE samba-util krb5 gssapi_krb5 uuid resolv',
                    private_library=True,
                    vars=locals())
-
-bld.SAMBA_SUBSYSTEM('DNSQUERY',
-	source='dnsquery.c',
-	deps='samba-util lmhosts resolv'
-	)

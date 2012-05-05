@@ -1007,7 +1007,7 @@ bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
 
 bld.SAMBA3_SUBSYSTEM('LIBNMB',
                      source=LIBNMB_SRC,
-                     deps='DNSQUERY lmhosts resolv',
+                     deps='addns lmhosts resolv',
                      vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
