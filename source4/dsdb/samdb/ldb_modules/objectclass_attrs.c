@@ -299,6 +299,7 @@ static int attr_handler2(struct oc_context *ac)
 	const struct dsdb_attribute *attr;
 	unsigned int i;
 	bool found;
+	bool isSchemaAttr = false;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -338,6 +339,9 @@ static int attr_handler2(struct oc_context *ac)
 						       ldb_dn_get_linearized(ac->search_res->message->dn));
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
+		}
+		if (strcmp(attname, "attributeSchema") == 0) {
+			isSchemaAttr = true;
 		}
 	}
 
@@ -419,6 +423,31 @@ static int attr_handler2(struct oc_context *ac)
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
+	if (isSchemaAttr) {
+		/* Before really adding an attribute in the database,
+			* let's check that we can translate it into a dbsd_attribute and
+			* that we can find a valid syntax object.
+			* If not it's better to reject this attribute than not be able
+			* to start samba next time due to schema being unloadable.
+			*/
+		struct dsdb_attribute *att = talloc(ac, struct dsdb_attribute);
+		const struct dsdb_syntax *attrSyntax;
+		WERROR status;
+
+		status= dsdb_attribute_from_ldb(ac->schema, msg, att);
+		if (!W_ERROR_IS_OK(status)) {
+			ldb_set_errstring(ldb,
+						"objectclass: failed to translate the schemaAttribute to a dsdb_attribute");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		attrSyntax = dsdb_syntax_for_attribute(att);
+		if (!attrSyntax) {
+			ldb_set_errstring(ldb,
+						"objectclass: unknown attribute syntax");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
 	return ldb_module_done(ac->req, ac->mod_ares->controls,
 			       ac->mod_ares->response, LDB_SUCCESS);
 }
