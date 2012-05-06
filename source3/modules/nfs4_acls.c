@@ -461,7 +461,6 @@ typedef struct _smbacl4_vfs_params {
 	enum smbacl4_mode_enum mode;
 	bool do_chown;
 	enum smbacl4_acedup_enum acedup;
-	struct db_context *sid_mapping_table;
 } smbacl4_vfs_params;
 
 /*
@@ -572,64 +571,6 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 	return NULL;
 }
 
-static bool nfs4_map_sid(smbacl4_vfs_params *params, const struct dom_sid *src,
-			 struct dom_sid *dst)
-{
-	static struct db_context *mapping_db = NULL;
-	TDB_DATA data;
-	NTSTATUS status;
-
-	if (mapping_db == NULL) {
-		const char *dbname = lp_parm_const_string(
-			-1, SMBACL4_PARAM_TYPE_NAME, "sidmap", NULL);
-
-		if (dbname == NULL) {
-			DEBUG(10, ("%s:sidmap not defined\n",
-				   SMBACL4_PARAM_TYPE_NAME));
-			return False;
-		}
-
-		become_root();
-		mapping_db = db_open(NULL, dbname, 0, TDB_DEFAULT,
-				     O_RDONLY, 0600,
-				     DBWRAP_LOCK_ORDER_1);
-		unbecome_root();
-
-		if (mapping_db == NULL) {
-			DEBUG(1, ("could not open sidmap: %s\n",
-				  strerror(errno)));
-			return False;
-		}
-	}
-
-	status = dbwrap_fetch(mapping_db, NULL,
-			      string_term_tdb_data(sid_string_tos(src)),
-			      &data);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("could not find mapping for SID %s\n",
-			   sid_string_dbg(src)));
-		return False;
-	}
-
-	if ((data.dptr == NULL) || (data.dsize <= 0)
-	    || (data.dptr[data.dsize-1] != '\0')) {
-		DEBUG(5, ("invalid mapping for SID %s\n",
-			  sid_string_dbg(src)));
-		TALLOC_FREE(data.dptr);
-		return False;
-	}
-
-	if (!string_to_sid(dst, (char *)data.dptr)) {
-		DEBUG(1, ("invalid mapping %s for SID %s\n",
-			  (char *)data.dptr, sid_string_dbg(src)));
-		TALLOC_FREE(data.dptr);
-		return False;
-	}
-
-	TALLOC_FREE(data.dptr);
-
-	return True;
-}
 
 static bool smbacl4_fill_ace4(
 	TALLOC_CTX *mem_ctx,
@@ -667,65 +608,10 @@ static bool smbacl4_fill_ace4(
 		ace_v4->who.special_id = SMB_ACE4_WHO_EVERYONE;
 		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
 	} else {
-		const char *dom, *name;
-		enum lsa_SidType type;
 		uid_t uid;
 		gid_t gid;
-		struct dom_sid sid;
 
-		sid_copy(&sid, &ace_nt->trustee);
-
-		if (!lookup_sid(mem_ctx, &sid, &dom, &name, &type)) {
-
-			struct dom_sid mapped;
-
-			if (!nfs4_map_sid(params, &sid, &mapped)) {
-				DEBUG(1, ("nfs4_acls.c: file [%s]: SID %s "
-					  "unknown\n", filename,
-					  sid_string_dbg(&sid)));
-				errno = EINVAL;
-				return False;
-			}
-
-			DEBUG(2, ("nfs4_acls.c: file [%s]: mapped SID %s "
-				  "to %s\n", filename, sid_string_dbg(&sid),
-				  sid_string_dbg(&mapped)));
-
-			if (!lookup_sid(mem_ctx, &mapped, &dom,
-					&name, &type)) {
-				DEBUG(1, ("nfs4_acls.c: file [%s]: SID %s "
-					  "mapped from %s is unknown\n",
-					  filename, sid_string_dbg(&mapped),
-					  sid_string_dbg(&sid)));
-				errno = EINVAL;
-				return False;
-			}
-
-			sid_copy(&sid, &mapped);
-		}
-
-		if (type == SID_NAME_USER) {
-			if (!sid_to_uid(&sid, &uid)) {
-				DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
-					  "convert %s to uid\n", filename,
-					  sid_string_dbg(&sid)));
-				return False;
-			}
-
-			if (params->mode==e_special && uid==ownerUID) {
-				ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
-				ace_v4->who.special_id = SMB_ACE4_WHO_OWNER;
-			} else {
-				ace_v4->who.uid = uid;
-			}
-		} else { /* else group? - TODO check it... */
-			if (!sid_to_gid(&sid, &gid)) {
-				DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
-					  "convert %s to gid\n", filename,
-					  sid_string_dbg(&sid)));
-				return False;
-			}
-
+		if (sid_to_gid(&ace_nt->trustee, &gid)) {
 			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
 
 			if (params->mode==e_special && gid==ownerGID) {
@@ -734,6 +620,18 @@ static bool smbacl4_fill_ace4(
 			} else {
 				ace_v4->who.gid = gid;
 			}
+		} else if (sid_to_uid(&ace_nt->trustee, &uid)) {
+			if (params->mode==e_special && uid==ownerUID) {
+				ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
+				ace_v4->who.special_id = SMB_ACE4_WHO_OWNER;
+			} else {
+				ace_v4->who.uid = uid;
+			}
+		} else {
+			DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
+				  "convert %s to uid or gid\n", filename,
+				  sid_string_dbg(&ace_nt->trustee)));
+			return False;
 		}
 	}
 
