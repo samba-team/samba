@@ -167,6 +167,11 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 	}
 
 	if (!smb_sess) {
+		status = NT_STATUS_USER_SESSION_DELETED;
+		goto failed;
+	}
+
+	if (smb_sess->session_info) {
 		/* see WSPP test suite - test 11 */
 		status = NT_STATUS_REQUEST_NOT_ACCEPTED;
 		goto failed;

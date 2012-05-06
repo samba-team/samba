@@ -435,8 +435,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 	vuid = SVAL(req->in.hdr,HDR_UID);
 
 	/* lookup an existing session */
-	smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);
-	if (!smb_sess) {
+	if (vuid == 0) {
 		struct gensec_security *gensec_ctx;
 
 		status = samba_server_gensec_start(req,
@@ -466,10 +465,17 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 			status = NT_STATUS_INSUFFICIENT_RESOURCES;
 			goto failed;
 		}
+	} else {
+		smb_sess = smbsrv_session_find_sesssetup(req->smb_conn, vuid);
 	}
 
 	if (!smb_sess) {
-		status = NT_STATUS_ACCESS_DENIED;
+		status = NT_STATUS_DOS(ERRSRV, ERRbaduid);
+		goto failed;
+	}
+
+	if (smb_sess->session_info) {
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto failed;
 	}
 
