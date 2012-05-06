@@ -60,7 +60,7 @@ def import_sam_policy(samdb, policy, logger):
         ldb.FLAG_MOD_REPLACE, 'pwdHistoryLength')
 
     min_pw_age_unix = policy['minimum password age']
-    min_pw_age_nt = int(-min_pw_age_unix * (1e7 * 60 * 60 * 24))
+    min_pw_age_nt = int(-min_pw_age_unix * (1e7))
     m['a03'] = ldb.MessageElement(str(min_pw_age_nt), ldb.FLAG_MOD_REPLACE,
         'minPwdAge')
 
@@ -68,7 +68,7 @@ def import_sam_policy(samdb, policy, logger):
     if max_pw_age_unix == -1 or max_pw_age_unix == 0:
         max_pw_age_nt = -0x8000000000000000
     else:
-        max_pw_age_nt = int(-max_pw_age_unix * (1e7 * 60 * 60 * 24))
+        max_pw_age_nt = int(-max_pw_age_unix * (1e7))
 
     m['a04'] = ldb.MessageElement(str(max_pw_age_nt), ldb.FLAG_MOD_REPLACE,
                                   'maxPwdAge')
