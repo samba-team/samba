@@ -38,6 +38,7 @@ static bool test_session_reauth(struct torture_context *tctx,
 	char fname[256];
 	char buf[dlen+1];
 	bool ok = true;
+	uint16_t vuid1 = cli->session->vuid;
 
 	data = generate_random_str(tctx, dlen);
 	torture_assert(tctx, (data != NULL), "memory allocation failed");
@@ -65,6 +66,7 @@ static bool test_session_reauth(struct torture_context *tctx,
 	io.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(cli->session, &io);
 	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "setup2");
+	torture_assert_int_equal_goto(tctx, io.out.vuid, vuid1, ok, done, "setup2");
 
 	num = smbcli_read(cli->tree, fnum, &buf, 0, dlen);
 	torture_assert_int_equal_goto(tctx, num, dlen, ok, done, "read file");
