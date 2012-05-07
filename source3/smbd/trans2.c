@@ -7595,6 +7595,9 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 			if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
 				continue;
 			}
+			if (share_mode_stale_pid(lck->data, i)) {
+				continue;
+			}
 			/* Fail with sharing violation. */
 			close_file(req, fsp, NORMAL_CLOSE);
 			TALLOC_FREE(lck);
