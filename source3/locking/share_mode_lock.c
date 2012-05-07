@@ -124,7 +124,7 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 
-	d = talloc_zero(mem_ctx, struct share_mode_data);
+	d = talloc(mem_ctx, struct share_mode_data);
 	if (d == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		goto fail;
