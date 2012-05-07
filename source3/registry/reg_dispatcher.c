@@ -259,6 +259,6 @@ bool reg_values_need_update(struct registry_key_handle *key,
 		return key->ops->values_need_update(values);
 	}
 
-	return false;
+	return true;
 }
 
