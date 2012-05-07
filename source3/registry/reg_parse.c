@@ -934,7 +934,8 @@ int reg_parse_file(const char* fname, const struct reg_parse_callback* cb,
 
 	fd = open(fname, O_RDONLY);
 	if (fd < 0) {
-		DEBUG(0, ("reg_parse_file: open failed: %s\n", strerror(errno)));
+		DEBUG(0, ("reg_parse_file: open %s failed: %s\n", fname,
+			  strerror(errno)));
 		return -1;
 	}
 
