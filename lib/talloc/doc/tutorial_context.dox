@@ -2,7 +2,7 @@
 @page libtalloc_context Chapter 1: Talloc context
 @section context Talloc context
 
-The talloc context is the most important part of this library for it is
+The talloc context is the most important part of this library and is
 responsible for every single feature of this memory allocator. It is a logical
 unit which represents a memory space managed by talloc.
 
@@ -19,17 +19,17 @@ char *str2 = talloc_strdup(NULL, "I AM a talloc context");
 printf("%d\n", strcmp(str1, str2) == 0);
 
 free(str1);
-talloc_free(str2); /* we can not use free(str2) */
+talloc_free(str2); /* we can not use free() on str2 */
 @endcode
 
 This is possible because the context is internally handled as a special
 fixed-length structure called talloc chunk. Each chunk stores context metadata
 followed by the memory space requested by the programmer. When a talloc
-function returns a context (pointer), it in fact returns a pointer to the user
-space portion of the talloc chunk. And when we want to manipulate with this
-context using talloc functions, the talloc library transforms the user-space
-pointer back to the starting address of the chunk. This is also the reason why
-we were unable to use <code>free(str2)</code> in the previous example - because
+function returns a context (pointer), it will in fact return a pointer to the user
+space portion of the talloc chunk. If we to manipulate this context using
+talloc functions, the talloc library transforms the user-space pointer back to
+the starting address of the chunk. This is also the reason why we were unable
+to use <code>free(str2)</code> in the previous example - because
 <code>str2</code> does not point at the beginning of the allocated block of
 memory. This is illustrated on the next image:
 
@@ -38,9 +38,11 @@ memory. This is illustrated on the next image:
 The type TALLOC_CTX is defined in talloc.h to identify a talloc context in
 function parameters. However, this type is just an alias for <code>void</code>
 and exists only for semantical reasons - thus we can differentiate between
-<code>void*</code> (arbitrary data) and TALLOC_CTX* (talloc context).
+<code>void *</code> (arbitrary data) and <code>TALLOC_CTX *</code> (talloc
+context).
 
 @subsection metadata Context meta data
+
 Every talloc context carries several pieces of internal information along with
 the allocated memory:
 
@@ -123,9 +125,9 @@ talloc_free(user);
 @section keep-hierarchy Always keep the hieararchy steady!
 
 The talloc is a hierarchy memory allocator. The hierarchy nature is what makes
-the programming more error proof. It makes the memory easier to manage and free.
-Therefore, the first thing we should have on our mind is: <strong>always project
-our data structures into the talloc context hierarchy</strong>.
+the programming more error proof. It makes the memory easier to manage and to
+free.  Therefore, the first thing we should have on our mind is: <strong>always
+project our data structures into the talloc context hierarchy</strong>.
 
 That means if we have a structure, we should always use it as a parent context
 for its elements. This way we will not encounter any troubles when freeing this
@@ -133,16 +135,16 @@ structure or when changing its parent. The same rule applies for arrays.
 
 @section creating-context Creating a talloc context
 
-Here are the most important functions that creates a new talloc context.
+Here are the most important functions that create a new talloc context.
 
 @subsection type-safe Type-safe functions
 
-It allocates the size that is necessary for the this type and returns a
-new, properly-cast pointer. This is the preferred way to create a new context
-as we can rely on the compiler to detect type mismatches.
+It allocates the size that is necessary for the given type and returns a new,
+properly-casted pointer. This is the preferred way to create a new context as
+we can rely on the compiler to detect type mismatches.
 
-They automatically set the name of the context to the name of the data type.
-Which is used to simulate the dynamic type system.
+The name of the context is automatically set to the name of the data type which
+is used to simulate a dynamic type system.
 
 @code
 struct user *user = talloc(ctx, struct user);
@@ -157,7 +159,7 @@ user->groups = NULL;
 struct user *user_zero = talloc_zero(ctx, struct user);
 @endcode
 
-@subsection zero-length Zero-lenght contexts
+@subsection zero-length Zero-length contexts
 
 The zero-length context is basically a context without any special semantical
 meaning. We can use it the same way as any other context. The only difference
@@ -169,21 +171,21 @@ is not interesting to the caller. Allocating on a zero-length temporary context
 will make clean-up of the function simpler.
 
 @code
-TALLOC_CTX *ctx = NULL;
+TALLOC_CTX *tmp_ctx = NULL;
 struct foo *foo = NULL;
 struct bar *bar = NULL;
 
 /* new zero-length top level context */
-ctx = talloc_new(NULL);
-if (ctx == NULL) {
+tmp_ctx = talloc_new(NULL);
+if (tmp_ctx == NULL) {
   return ENOMEM;
 }
 
-foo = talloc(ctx, struct foo);
-bar = talloc(ctx, struct bar);
+foo = talloc(tmp_ctx, struct foo);
+bar = talloc(tmp_ctx, struct bar);
 
 /* free everything at once */
-talloc_free(ctx);
+talloc_free(tmp_ctx);
 @endcode
 
 @subsection context-see-also See also
