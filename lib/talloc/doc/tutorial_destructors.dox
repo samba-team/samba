@@ -1,5 +1,6 @@
 /**
 @page libtalloc_destructors Chapter 4: Using destructors
+
 @section destructors Using destructors
 
 Destructors are well known methods in the world of object oriented programming.
@@ -10,7 +11,7 @@ deallocating memory).
 
 With talloc we can take the advantage of destructors even in C. We can easily
 attach our own destructor to a talloc context. When the context is freed, the
-destructor is run automatically.
+destructor will run automatically.
 
 To attach/detach a destructor to a talloc context use: talloc_set_destructor().
 
@@ -34,8 +35,8 @@ int list_remove(void *ctx)
 }
 @endcode
 
-GCC3+ can check for the types during the compilation. So if it is
-our major compiler, we can use a little bit nicer destructor:
+GCC version 3 and newer can check for the types during the compilation. So if
+it is our major compiler, we can use a more advanced destructor:
 
 @code
 int list_remove(struct list_el *el)
