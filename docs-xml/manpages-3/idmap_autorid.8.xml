@@ -70,6 +70,12 @@
 			nor will new mappings be created in the idmap pool. Defaults to no.</para>
 		</listitem>
 		</varlistentry>
+		<varlistentry>
+		<term>ignore builtin = [ yes | no ]</term>
+		<listitem><para>Ignore any mapping requests for the BUILTIN domain.
+			Defaults to no.</para>
+		</listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 
