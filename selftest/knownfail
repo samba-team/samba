@@ -47,6 +47,7 @@
 ^samba4..*base.delete.*.deltest17
 ^samba4..*base.delete.*.deltest20a
 ^samba4..*base.delete.*.deltest20b
+^samba4.raw.session.reauth
 ^samba4.raw.rename.*.osxrename
 ^samba4.raw.rename.*.directory rename
 ^samba4.rpc.winreg.*security
