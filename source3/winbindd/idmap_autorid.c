@@ -46,6 +46,7 @@ struct autorid_global_config {
 	uint32_t minvalue;
 	uint32_t rangesize;
 	uint32_t maxranges;
+	bool ignore_builtin;
 };
 
 struct autorid_domain_config {
@@ -492,6 +493,8 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 
 		ZERO_STRUCT(domaincfg);
 
+		DEBUG(10, ("Trying to map %s\n", sid_string_dbg(ids[i]->sid)));
+
 		sid_copy(&domainsid, ids[i]->sid);
 		if (!sid_split_rid(&domainsid, &rid)) {
 			DEBUG(4, ("Could not determine domain SID from %s, "
@@ -522,6 +525,13 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 				num_mapped++;
 			}
 
+			continue;
+		}
+
+		/* BUILTIN is passdb's job */
+		if (dom_sid_equal(&domainsid, &global_sid_Builtin) &&
+		    global->ignore_builtin) {
+			DEBUG(10, ("Ignoring request for BUILTIN domain\n"));
 			continue;
 		}
 
@@ -868,6 +878,9 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 
 	DEBUG(5, ("%d domain ranges with a size of %d are available\n",
 		  config->maxranges, config->rangesize));
+
+	config->ignore_builtin = lp_parm_bool(-1, "idmap config *",
+					      "ignore builtin", false);
 
 	/* fill the TDB common configuration */
 	commonconfig->private_data = config;
