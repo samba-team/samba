@@ -164,11 +164,11 @@ struct user *user_zero = talloc_zero(ctx, struct user);
 The zero-length context is basically a context without any special semantical
 meaning. We can use it the same way as any other context. The only difference
 is that it consists only of the meta data about the context. Therefore, it is
-strictly of type |TALLOC_CTX*|. It is often used in cases where we want to
-aggregate several data structures under one parent (zero-length) context, such
-as a temporary context to contain memory needed within a single function that
-is not interesting to the caller. Allocating on a zero-length temporary context
-will make clean-up of the function simpler.
+strictly of type <code>TALLOC_CTX*</code>. It is often used in cases where we
+want to aggregate several data structures under one parent (zero-length)
+context, such as a temporary context to contain memory needed within a single
+function that is not interesting to the caller. Allocating on a zero-length
+temporary context will make clean-up of the function simpler.
 
 @code
 TALLOC_CTX *tmp_ctx = NULL;
