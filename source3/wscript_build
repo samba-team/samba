@@ -1580,6 +1580,12 @@ bld.SAMBA3_BINARY('vlp',
                  param''',
                  vars=locals())
 
+bld.SAMBA3_PYTHON('pysmbd',
+                  source='smbd/pysmbd.c',
+                  deps='smbd_base',
+                  realname='samba/samba3/smbd.so'
+                  )
+
 swat_dir = os.path.join(bld.curdir, '../swat')
 swat_files = recursive_dirlist(swat_dir, swat_dir, '*')
 bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
