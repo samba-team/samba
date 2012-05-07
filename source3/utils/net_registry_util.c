@@ -58,7 +58,7 @@ void print_registry_value(const struct registry_value *valvalue, bool raw)
 		if (!raw) {
 			d_printf(_("Value      = "));
 		}
-		d_printf("%d\n", v);
+		d_printf("%u\n", v);
 		break;
 	}
 	case REG_SZ:
