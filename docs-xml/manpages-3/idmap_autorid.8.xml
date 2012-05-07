@@ -64,6 +64,12 @@
 		<para>The default value is 100000.</para>
 		</listitem>
 		</varlistentry>
+		<varlistentry>
+		<term>read only = [ yes | no ]</term>
+		<listitem><para>Turn the module into read-only mode. No new ranges will be allocated
+			nor will new mappings be created in the idmap pool. Defaults to no.</para>
+		</listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 
