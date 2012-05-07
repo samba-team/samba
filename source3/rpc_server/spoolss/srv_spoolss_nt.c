@@ -2305,26 +2305,26 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 
 	if (!strcasecmp_m(value, "W3SvcInstalled")) {
 		*type = REG_DWORD;
-		data->value = 0x00;
+		SIVAL(&data->value, 0, 0x00);
 		return WERR_OK;
 	}
 
 	if (!strcasecmp_m(value, "BeepEnabled")) {
 		*type = REG_DWORD;
-		data->value = 0x00;
+		SIVAL(&data->value, 0, 0x00);
 		return WERR_OK;
 	}
 
 	if (!strcasecmp_m(value, "EventLog")) {
 		*type = REG_DWORD;
 		/* formally was 0x1b */
-		data->value = 0x00;
+		SIVAL(&data->value, 0, 0x00);
 		return WERR_OK;
 	}
 
 	if (!strcasecmp_m(value, "NetPopup")) {
 		*type = REG_DWORD;
-		data->value = 0x00;
+		SIVAL(&data->value, 0, 0x00);
 		return WERR_OK;
 	}
 
@@ -2337,9 +2337,9 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		   -- jerry */
 
 		if (RA_WINNT == get_remote_arch()) {
-			data->value = 0x02;
+			SIVAL(&data->value, 0, 0x02);
 		} else {
-			data->value = 0x03;
+			SIVAL(&data->value, 0, 0x03);
 		}
 
 		return WERR_OK;
@@ -2347,7 +2347,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 
 	if (!strcasecmp_m(value, "MinorVersion")) {
 		*type = REG_DWORD;
-		data->value = 0x00;
+		SIVAL(&data->value, 0, 0x00);
 		return WERR_OK;
 	}
 
@@ -2406,9 +2406,9 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		   member of a AD domain */
 
 		if (lp_security() == SEC_ADS) {
-			data->value = 0x01;
+			SIVAL(&data->value, 0, 0x01);
 		} else {
-			data->value = 0x00;
+			SIVAL(&data->value, 0, 0x00);
 		}
 		return WERR_OK;
 	}
