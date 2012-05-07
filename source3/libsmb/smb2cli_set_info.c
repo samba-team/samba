@@ -105,9 +105,6 @@ static void smb2cli_set_info_done(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct smb2cli_set_info_state *state =
-		tevent_req_data(req,
-		struct smb2cli_set_info_state);
 	NTSTATUS status;
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
