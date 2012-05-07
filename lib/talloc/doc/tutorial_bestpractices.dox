@@ -4,18 +4,18 @@
 The following sections contain several best practices and good manners that were
 found by the <a href="http://www.samba.org">Samba</a> and
 <a href="https://fedorahosted.org/sssd">SSSD</a> developers over the years.
-These will help you to write better code, easier to debug and with as few
-(hopefully none) memory leaks as possible.
+These will help you to write code which is better, easier to debug and with as
+few (hopefully none) memory leaks as possible.
 
 @section bp-hierarchy Keep the context hierarchy steady
 
 The talloc is a hierarchy memory allocator. The hierarchy nature is what makes
-the programming more error proof. It makes the memory easier to manage and free.
-Therefore, the first thing we should have on our mind is: always project our
-data structures into the talloc context hierarchy.
+the programming more error proof. It makes the memory easier to manage and to
+free.  Therefore, the first thing we should have on our mind is: always project
+your data structures into the talloc context hierarchy.
 
 That means if we have a structure, we should always use it as a parent context
-for its elements. This way we will not encounter any troubles when freeing this
+for its elements. This way we will not encounter any troubles when freeing the
 structure or when changing its parent. The same rule applies for arrays.
 
 For example, the structure <code>user</code> from section @ref context-hierarchy
@@ -26,7 +26,7 @@ should be created with the context hierarchy illustrated on the next image.
 @section bp-tmpctx Every function should use its own context
 
 It is a good practice to create a temporary talloc context at the function
-beginning and free this context just before the return statement. All the data
+beginning and free the context just before the return statement. All the data
 must be allocated on this context or on its children. This ensures that no
 memory leaks are created as long as we do not forget to free the temporary
 context.
@@ -99,8 +99,8 @@ using <code>NULL</code> as the parameter for <code>talloc_new()</code> function.
 Take a look at the following example:
 
 @code
-char * create_user_filter(TALLOC_CTX *mem_ctx,
-                          uid_t uid, const char *username)
+char *create_user_filter(TALLOC_CTX *mem_ctx,
+                         uid_t uid, const char *username)
 {
   char *filter = NULL;
   char *sanitized_username = NULL;
