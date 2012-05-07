@@ -425,6 +425,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
 					continue;
 				}
+				if (share_mode_stale_pid(lck->data, i)) {
+					continue;
+				}
 				delete_file = False;
 				break;
 			}
