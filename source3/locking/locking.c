@@ -556,6 +556,10 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			continue;
 		}
 
+		if (share_mode_stale_pid(d, i)) {
+			continue;
+		}
+
 		DEBUG(10,("rename_share_filename: sending rename message to "
 			  "pid %s file_id %s sharepath %s base_name %s "
 			  "stream_name %s\n",
