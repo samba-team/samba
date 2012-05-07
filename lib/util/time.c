@@ -148,7 +148,7 @@ _PUBLIC_ void unix_to_nt_time(NTTIME *nt, time_t t)
 		return;
 	}	
 
-	if (t == TIME_T_MAX) {
+	if (t == TIME_T_MAX || t == INT64_MAX) {
 		*nt = 0x7fffffffffffffffLL;
 		return;
 	}
