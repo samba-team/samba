@@ -237,3 +237,11 @@ struct registry_value *registry_value_multi_sz(TALLOC_CTX *mem_ctx, const char *
 
 	return ret;
 }
+
+int registry_value_cmp(const struct registry_value* v1, const struct registry_value* v2)
+{
+	if (v1->type == v2->type) {
+		return data_blob_cmp(&v1->data, &v2->data);
+	}
+	return v1->type - v2->type;
+}

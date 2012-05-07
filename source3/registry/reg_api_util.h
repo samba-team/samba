@@ -44,4 +44,6 @@ struct registry_value *registry_value_dw(TALLOC_CTX *mem_ctx, uint32_t dw);
 struct registry_value *registry_value_sz(TALLOC_CTX *mem_ctx, const char *str);
 struct registry_value *registry_value_multi_sz(TALLOC_CTX *mem_ctx, const char **str);
 
+int registry_value_cmp(const struct registry_value *v1, const struct registry_value *v2);
+
 #endif /* _REG_API_UTIL_H */
