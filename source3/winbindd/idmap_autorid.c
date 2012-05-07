@@ -135,17 +135,22 @@ error:
 
 }
 
-static NTSTATUS idmap_autorid_get_domainrange(struct autorid_domain_config *dom)
+static NTSTATUS idmap_autorid_get_domainrange(struct autorid_domain_config *dom,
+					      bool read_only)
 {
 	NTSTATUS ret;
 
 	/*
 	 * try to find mapping without locking the database,
-	 * if it is not found create a mapping in a transaction
+	 * if it is not found create a mapping in a transaction unless
+	 * read-only mode has been set
 	 */
 	ret = dbwrap_fetch_uint32(autorid_db, dom->sid, &(dom->domainnum));
 
-	if (!NT_STATUS_IS_OK(ret)) {;
+	if (!NT_STATUS_IS_OK(ret)) {
+		if (read_only) {
+			return NT_STATUS_NOT_FOUND;
+		}
 		ret = dbwrap_trans_do(autorid_db,
 			      idmap_autorid_get_domainrange_action, dom);
 	}
@@ -171,6 +176,12 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 	globalcfg = talloc_get_type(commoncfg->private_data,
 				    struct autorid_global_config);
 
+	if (dom->read_only) {
+		DEBUG(3, ("Backend is read-only, refusing "
+			  "new allocation request\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	/* fetch the range for the allocation pool */
 
 	ZERO_STRUCT(domaincfg);
@@ -178,7 +189,7 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 	domaincfg.globalcfg = globalcfg;
 	fstrcpy(domaincfg.sid, ALLOC_RANGE);
 
-	ret = idmap_autorid_get_domainrange(&domaincfg);
+	ret = idmap_autorid_get_domainrange(&domaincfg, dom->read_only);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(3, ("Could not determine range for allocation pool, "
@@ -413,6 +424,12 @@ static NTSTATUS idmap_autorid_map_sid_to_id(struct idmap_domain *dom,
 		return ret;
 	}
 
+	if (dom->read_only) {
+		DEBUG(3, ("Not allocating new mapping for %s, because backend "
+			  "is read-only\n", sid_string_dbg(map->sid)));
+		return NT_STATUS_NONE_MAPPED;
+	}
+
 	DEBUG(10, ("Creating new mapping in pool for %s\n",
 		   sid_string_dbg(map->sid)));
 
@@ -501,7 +518,9 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 				goto failure;
 			}
 
-			num_mapped++;
+			if (ids[i]->status == ID_MAPPED) {
+				num_mapped++;
+			}
 
 			continue;
 		}
@@ -521,7 +540,16 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 		domaincfg.globalcfg = global;
 		sid_to_fstring(domaincfg.sid, &domainsid);
 
-		ret = idmap_autorid_get_domainrange(&domaincfg);
+		ret = idmap_autorid_get_domainrange(&domaincfg, dom->read_only);
+
+		/* read-only mode and a new domain range would be required? */
+		if (NT_STATUS_EQUAL(ret, NT_STATUS_NOT_FOUND) &&
+		    dom->read_only) {
+			DEBUG(10, ("read-only is enabled, did not allocate "
+				   "new range for domain %s\n",
+				   sid_string_dbg(&domainsid)));
+			continue;
+		}
 
 		if (!NT_STATUS_IS_OK(ret)) {
 			DEBUG(3, ("Could not determine range for domain, "
@@ -697,6 +725,10 @@ static NTSTATUS idmap_autorid_preallocate_wellknown(struct idmap_domain *dom)
 	struct id_map **maps;
 	int i, num;
 	NTSTATUS status;
+
+	if (dom->read_only) {
+		return NT_STATUS_OK;
+	}
 
 	num = sizeof(groups)/sizeof(char*);
 
