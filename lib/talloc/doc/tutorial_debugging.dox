@@ -33,7 +33,8 @@ log function with one of:
 - talloc_set_log_fn()
 - talloc_set_log_stderr()
 
-Below given is an sample output of accessing a context after it has been freed:
+The following code is a sample output of accessing a context after it has been
+freed:
 
 @code
 talloc_set_log_stderr();
@@ -47,7 +48,7 @@ talloc: access after free error - first free may be at ../src/main.c:55
 Bad talloc magic value - access after free
 @endcode
 
-Another example below is an example of the invalid context:
+Another example is an invalid context:
 
 @code
 talloc_set_log_stderr();
@@ -61,16 +62,16 @@ Bad talloc magic value - unknown value
 
 @section reports Memory usage reports
 
-Talloc can print reports of memory usage of specified talloc context to a file
-(or to <code>stdout</code> or <code>stderr</code>). The report can be simple or
-full. The simple report provides information only about the context itself and
-its direct descendants. The full report goes recursively through the entire
-context tree. See:
+Talloc can print reports of memory usage of a specified talloc context to a
+file (to <code>stdout</code> or <code>stderr</code>). The report can be
+simple or full. The simple report provides information only about the context
+itself and its direct descendants. The full report goes recursively through the
+entire context tree. See:
 
 - talloc_report()
 - talloc_report_full()
 
-We will use following code to retrieve the sample report:
+We will use the following code to retrieve the sample report:
 
 @code
 struct foo {
