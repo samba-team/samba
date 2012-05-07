@@ -52,7 +52,11 @@
 			plan accordingly for your expected number of users in a domain
 			with safety margins.
 			</para>
-			<para>One range will be used for local users and groups.
+			<para>One range will be used for local users and groups and for
+			non-domain well-known SIDs like Everyone (S-1-1-0) or Creator Owner (S-1-3-0).
+			A chosen list of well-known SIDs will be preallocated on first start
+			to create deterministic mappings for those.</para>
+			<para>
 			Thus the number of local users and groups that can be created is
 			limited by this option as well. If you plan to create a large amount
 			of local users or groups, you will need set this parameter accordingly.
