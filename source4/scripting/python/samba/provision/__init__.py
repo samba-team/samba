@@ -38,11 +38,13 @@ import uuid
 import socket
 import urllib
 import string
+import tempfile
 
 import ldb
 
 from samba.auth import system_session, admin_session
 import samba
+from samba.samba3 import smbd
 from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from samba import (
     Ldb,
@@ -1657,6 +1659,18 @@ def provision(logger, session_info, credentials, smbconf=None,
         server_services.append("-smb")
         server_services.append("+s3fs")
         global_param["dcerpc endpoint servers"] = ["-winreg", "-srvsvc"]
+
+        if targetdir is not None:
+            file = tempfile.NamedTemporaryFile(dir=os.path.abspath(targetdir))
+        else:
+            file = tempfile.NamedTemporaryFile(dir=os.path.abspath(os.path.dirname(lp.get("private dir"))))
+        try:
+            try:
+                smbd.set_simple_acl(file.name, root_uid, wheel_gid)
+            except Exception:
+                raise ProvisioningError("Your filesystem or build does not support posix ACLs, s3fs is unworkable in this mode")
+        finally:
+            file.close()
 
     if len(server_services) > 0:
         global_param["server services"] = server_services
