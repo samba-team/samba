@@ -75,6 +75,7 @@ int reg_parse_callback_key(struct reg_import* p,
 
 	if (p->open_key != NULL ) {
 		werr = p->call.closekey(p->call.data, p->open_key);
+		p->open_key = NULL;
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0, ("closekey failed: %s\n", win_errstr(werr)));
 		}
