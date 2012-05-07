@@ -340,7 +340,7 @@ DNS_ERROR dns_transaction(TALLOC_CTX *mem_ctx, struct dns_connection *conn,
 	struct dns_buffer *buf = NULL;
 	DNS_ERROR err;
 
-	err = dns_marshall_request(conn, req, &buf);
+	err = dns_marshall_request(mem_ctx, req, &buf);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	err = dns_send(conn, buf);
