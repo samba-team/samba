@@ -118,9 +118,6 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 						 const TDB_DATA dbuf)
 {
 	struct share_mode_data *d;
-	int i;
-	struct server_id *pids;
-	bool *pid_exists;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 
@@ -148,45 +145,6 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
-	/*
-	 * Ensure that each entry has a real process attached.
-	 */
-
-	pids = talloc_array(talloc_tos(), struct server_id,
-			    d->num_share_modes);
-	if (pids == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		goto fail;
-	}
-	pid_exists = talloc_array(talloc_tos(), bool, d->num_share_modes);
-	if (pid_exists == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		goto fail;
-	}
-
-	for (i=0; i<d->num_share_modes; i++) {
-		pids[i] = d->share_modes[i].pid;
-	}
-	if (!serverids_exist(pids, d->num_share_modes, pid_exists)) {
-		DEBUG(0, ("serverid_exists failed\n"));
-		goto fail;
-	}
-
-	i = 0;
-	while (i < d->num_share_modes) {
-		struct share_mode_entry *e = &d->share_modes[i];
-		if (!pid_exists[i]) {
-			DEBUG(10, ("wipe non-existent pid %s\n",
-				   procid_str_static(&e->pid)));
-			*e = d->share_modes[d->num_share_modes-1];
-			d->num_share_modes -= 1;
-			d->modified = True;
-			continue;
-		}
-		i += 1;
-	}
-	TALLOC_FREE(pid_exists);
-	TALLOC_FREE(pids);
 	return d;
 fail:
 	TALLOC_FREE(d);
