@@ -1024,6 +1024,11 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 		 * too */
 		if (share_conflict(&lck->data->share_modes[i],
 				   access_mask, share_access)) {
+
+			if (share_mode_stale_pid(lck->data, i)) {
+				continue;
+			}
+
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
