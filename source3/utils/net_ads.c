@@ -1018,7 +1018,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	/* Based on what we requseted, we shouldn't get here, but if
+	/* Based on what we requested, we shouldn't get here, but if
 	   we did, it means the secrets were removed, and therefore
 	   we have left the domain */
 	d_fprintf(stderr, _("Machine '%s' Left domain '%s'\n"),
