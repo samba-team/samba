@@ -1047,7 +1047,7 @@ static void shadow_copy2_sort_data(vfs_handle_struct *handle,
 	const char *sort;
 
 	sort = lp_parm_const_string(SNUM(handle->conn), "shadow",
-				    "sort", NULL);
+				    "sort", "desc");
 	if (sort == NULL) {
 		return;
 	}
