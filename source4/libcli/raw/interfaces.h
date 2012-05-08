@@ -1140,7 +1140,7 @@ union smb_setfileinfo {
 		} in;
 	} unix_link, unix_hlink;
 
-	/* RAW_FILEINFO_SET_SEC_DESC */
+	/* RAW_SFILEINFO_SEC_DESC */
 	struct {
 		enum smb_setfileinfo_level level;
 		struct {
