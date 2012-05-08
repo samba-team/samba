@@ -25,7 +25,7 @@
 	every returned ACL. This will allow any Windows 2000 or XP workstation
 	user to access the profile.
 	</para>
-	
+
 	<para>
 	Note that if you have multiple users logging
 	on to a workstation then in order to prevent them from being able to access
@@ -35,6 +35,12 @@
 	workstation profile code and has an ACL restricting entry to the directory
 	tree to the owning user.
 	</para>
+
+	<para>
+	Note that this parameter should be set to yes on dedicated profile shares only.
+	On other shares, it might cause incorrect file ownerships.
+	</para>
+
 </description>
 
 <value type="default">no</value>
