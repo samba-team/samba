@@ -435,7 +435,11 @@ static NTSTATUS idmap_autorid_map_sid_to_id(struct idmap_domain *dom,
 		   sid_string_dbg(map->sid)));
 
 	/* create new mapping */
-	dbwrap_transaction_start(ctx->db);
+	res = dbwrap_transaction_start(ctx->db);
+	if (res != 0) {
+		DEBUG(2, ("transaction_start failed\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	ret = idmap_tdb_common_new_mapping(dom, map);
 
