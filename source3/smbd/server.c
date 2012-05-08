@@ -1061,6 +1061,7 @@ extern void build_options(bool screen);
 	NTSTATUS status;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct server_id server_id;
 	struct tevent_signal *se;
 	char *np_dir = NULL;
 
@@ -1374,6 +1375,12 @@ extern void build_options(bool screen);
 
 	if(!get_global_sam_sid()) {
 		DEBUG(0,("ERROR: Samba cannot create a SAM SID.\n"));
+		exit(1);
+	}
+
+	server_id = messaging_server_id(msg_ctx);
+	status = smbXsrv_version_global_init(&server_id);
+	if (!NT_STATUS_IS_OK(status)) {
 		exit(1);
 	}
 

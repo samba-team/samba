@@ -356,6 +356,9 @@ struct smbXsrv_connection {
 	uint64_t smbd_idle_profstamp;
 };
 
+NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id);
+uint32_t smbXsrv_version_global_current(void);
+
 NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 					enum protocol_types protocol);
 
