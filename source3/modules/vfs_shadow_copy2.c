@@ -159,7 +159,7 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("strftime failed\n"));
 		return NULL;
 	}
-	return talloc_asprintf(talloc_tos(), "/%s/%s",
+	return talloc_asprintf(mem_ctx, "/%s/%s",
 			       lp_parm_const_string(
 				       SNUM(handle->conn), "shadow", "snapdir",
 				       ".snapshots"),
@@ -997,8 +997,7 @@ static char *shadow_copy2_find_snapdir(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static bool shadow_copy2_snapshot_to_gmt(TALLOC_CTX *mem_ctx,
-					 vfs_handle_struct *handle,
+static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 					 const char *name,
 					 char *gmt, size_t gmt_len)
 {
@@ -1112,7 +1111,7 @@ static int shadow_copy2_get_shadow_copy_data(
 		 * directory
 		 */
 		if (!shadow_copy2_snapshot_to_gmt(
-			    tmp_ctx, handle, d->d_name,
+			    handle, d->d_name,
 			    snapshot, sizeof(snapshot))) {
 
 			DEBUG(6, ("shadow_copy2_get_shadow_copy_data: "
