@@ -238,8 +238,9 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 			}
 		}
 
-		slprintf(&text[len], nbytes-1, "%s:%s:%s\n", tag, id, perms);
-		len += nbytes - 1;
+
+		slprintf(&text[len], nbytes, "%s:%s:%s\n", tag, id, perms);
+		len += (nbytes - 1);
 	}
 
 	if (len_p)
