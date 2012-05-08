@@ -339,7 +339,7 @@ Printer name lp is valid.</programlisting>
 
 
 <para>A common problem with Samba printer configuration is forgetting to use the full <indexterm id="ch07-idx-956511-0"><primary>pathnames</primary><secondary>printer configuration and</secondary></indexterm>
-<indexterm id="ch07-idx-956511-1"><primary>printing</primary><secondary>pathnames used in comands for</secondary></indexterm>pathnames for commands; simple commands often don't work because the guest account's PATH doesn't include them. Another frequent problem is not having the correct <indexterm id="ch07-idx-956512-0"><primary>permissions</primary><secondary sortas="printing">for printing</secondary></indexterm>
+<indexterm id="ch07-idx-956511-1"><primary>printing</primary><secondary>pathnames used in commands for</secondary></indexterm>pathnames for commands; simple commands often don't work because the guest account's PATH doesn't include them. Another frequent problem is not having the correct <indexterm id="ch07-idx-956512-0"><primary>permissions</primary><secondary sortas="printing">for printing</secondary></indexterm>
 <indexterm id="ch07-idx-956512-1"><primary>printing</primary><secondary>permissions for</secondary></indexterm>permissions on the spooling directory.<indexterm id="ch07-idx-956494-0" class="endofrange" startref="ch07-idx-956450-0"/></para>
 
 

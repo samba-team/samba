@@ -214,7 +214,7 @@
 
 	<para>
 	Note that this message only sends notification that an
-	event has occured.  It doesn't actually cause the
+	event has occurred.  It doesn't actually cause the
 	event to happen.
 	</para>
 

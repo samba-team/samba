@@ -167,7 +167,7 @@
 <programlisting>
         <smbconfsection name="[homes]"/>
 	<smbconfoption name="vfs objects">shadow_copy2</smbconfoption>
-	<smbconfoption name="shadow:snapdir">/data/snaphots</smbconfoption>
+	<smbconfoption name="shadow:snapdir">/data/snapshots</smbconfoption>
 	<smbconfoption name="shadow:basedir">/data/home</smbconfoption>
 	<smbconfoption name="shadow:sort">desc</smbconfoption>
 </programlisting>
