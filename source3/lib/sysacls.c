@@ -148,7 +148,7 @@ int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
 	return *permset_d & perm;
 }
 
-char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
+char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 {
 	int	i;
 	int	len, maxlen;
