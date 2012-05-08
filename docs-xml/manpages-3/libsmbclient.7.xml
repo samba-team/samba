@@ -71,7 +71,7 @@
 			responsibility of the application that calls this library to set this to a sensible value.  This
 			is a compile-time option. This value determines the maximum number of local master browsers to
 			query for the list of workgroups.  In order to ensure that the list is complete for those present
-			on the network, all master browsers must be querried. If there are a large number of workgroups
+			on the network, all master browsers must be queried. If there are a large number of workgroups
 			on the network, the time spent querying will be significant. For small networks (just a few
 			workgroups), it is suggested to set this value to 0, instructing libsmbclient to query all local
 			master browsers. In an environment that has many workgroups a more reasonable setting may be around 3.

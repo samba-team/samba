@@ -2105,7 +2105,7 @@ Joins a computer into a domain. This command supports the following additional p
 
 <listitem><para><replaceable>DOMAIN</replaceable> can be a NetBIOS domain name (also known as short domain name) or a DNS domain name for Active Directory Domains. As in Windows, it is also possible to control which Domain Controller to use. This can be achieved by appending the DC name using the \ separator character. Example: MYDOM\MYDC. The <replaceable>DOMAIN</replaceable> parameter cannot be NULL.</para></listitem>
 
-<listitem><para><replaceable>OU</replaceable> can be set to a RFC 1779 LDAP DN, like <emphasis>ou=mymachines,cn=Users,dc=example,dc=com</emphasis> in order to create the machine account in a non-default LDAP containter. This optional parameter is only supported when joining Active Directory Domains.</para></listitem>
+<listitem><para><replaceable>OU</replaceable> can be set to a RFC 1779 LDAP DN, like <emphasis>ou=mymachines,cn=Users,dc=example,dc=com</emphasis> in order to create the machine account in a non-default LDAP container. This optional parameter is only supported when joining Active Directory Domains.</para></listitem>
 
 <listitem><para><replaceable>ACCOUNT</replaceable> defines a domain account that will be used to join the machine to the domain. This domain account needs to have sufficient privileges to join machines.</para></listitem>
 

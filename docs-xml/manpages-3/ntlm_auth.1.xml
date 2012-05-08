@@ -199,7 +199,7 @@
                 MSCHAPv2) generated in some way by both the server and
                 the client.
                 </para>	
-		      <para><example>LANMAN-Challege: 0102030405060708</example></para>
+		      <para><example>LANMAN-Challenge: 0102030405060708</example></para>
 		    </listitem></varlistentry>
 
 		  <varlistentry>
@@ -239,7 +239,7 @@
 
 		  <varlistentry>
 		  <term>Request-User-Session-Key</term>
-                <listitem><para>Apon sucessful authenticaiton, return
+                <listitem><para>Upon successful authenticaiton, return
                 the user session key associated with the login.
                  </para>	
 		      <para><example>Request-User-Session-Key: Yes</example></para>
@@ -248,14 +248,14 @@
 
 		  <varlistentry>
 		  <term>Request-LanMan-Session-Key</term>
-                <listitem><para>Apon sucessful authenticaiton, return
+                <listitem><para>Upon successful authenticaiton, return
                 the LANMAN session key associated with the login.
                  </para>	
 		      <para><example>Request-LanMan-Session-Key: Yes</example></para>
 
 		    </listitem></varlistentry>
 
-		<para><warning>Implementors should take care to base64 encode
+		<para><warning>Implementers should take care to base64 encode
 		any data (such as usernames/passwords) that may contain malicous user data, such as
 		a newline.  They may also need to decode strings from
 		the helper, which likewise may have been base64 encoded.</warning></para>
@@ -319,7 +319,7 @@
 
 	<varlistentry>
 	<term>--request-lm-key</term>
-	<listitem><para>Retreive LM session key</para></listitem>
+	<listitem><para>Retrieve LM session key</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
@@ -380,7 +380,7 @@ auth_param basic program ntlm_auth --helper-protocol=squid-2.5-basic --require-m
 	<title>TROUBLESHOOTING</title>
 	
 	<para>If you're experiencing problems with authenticating Internet Explorer running
-	under MS Windows 9X or Millenium Edition against ntlm_auth's NTLMSSP authentication
+	under MS Windows 9X or Millennium Edition against ntlm_auth's NTLMSSP authentication
 	helper (--helper-protocol=squid-2.5-ntlmssp), then please read 
 	<ulink url="http://support.microsoft.com/support/kb/articles/Q239/8/69.ASP">
 	the Microsoft Knowledge Base article #239869 and follow instructions described there</ulink>.

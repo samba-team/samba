@@ -3881,7 +3881,7 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 		Note: If MS Outlook has been configured to use an IMAP account configuration there may be problems
 		following these instructions. Feedback from users suggests that where IMAP is used the PST
 		file is used to store rules and filters. When the PST store is relocated it appears to break
-		MS Outlook's Send/Receive button. If anyone has sucessfully relocated PST files where IMAP is 
+		MS Outlook's Send/Receive button. If anyone has successfully relocated PST files where IMAP is
 		used please email <literal>jht@samba.org</literal> with useful tips and suggestions so that
 		this warning can be removed or modified.
 		</para></step>

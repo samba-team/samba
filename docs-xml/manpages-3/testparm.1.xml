@@ -93,7 +93,7 @@
 		Dumps the named parameter.  If no section-name is set the view
 		is limited by default to the global section.
 
-		It is also possible to dump a parametrical option.  Therfore
+		It is also possible to dump a parametrical option.  Therefore
 		the option has to be separated by a colon from the
 		parametername.
 		</para></listitem>

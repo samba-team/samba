@@ -299,7 +299,7 @@ doesn't support them all.
 Samba currently supports up to the "NT LM 0.12" protocol, which is the
 one preferred by Win95 and WinNT3.5. Luckily this protocol level has a
 "capabilities" field which specifies which super-duper new-fangled
-options the server suports. This helps to make the implementation of
+options the server supports. This helps to make the implementation of
 this protocol level much easier.
 </para>
 

@@ -322,7 +322,7 @@
 		server support the UNIX extensions. Request that the connection be
 		encrypted. This is new for Samba 3.2 and will only work with Samba
 		3.2 or above servers. Negotiates SMB encryption using GSSAPI. Uses
-		the given credentials for the encryption negotiaion (either kerberos
+		the given credentials for the encryption negotiation (either kerberos
 		or NTLMv1/v2 if given domain/username/password triple. Fails the
 		connection if encryption cannot be negotiated.
 		</para></listitem>
@@ -428,7 +428,7 @@
 		<para>Restore from tar file <filename>backup.tar</filename> into myshare on mypc 
 		(no password on share). </para>
 		
-		<para><command>smbclient //mypc/yshare "" -N -Tx backup.tar
+		<para><command>smbclient //mypc/myshare "" -N -Tx backup.tar
 		</command></para>
 		
 		<para>Restore everything except <filename>users/docs</filename>
@@ -634,7 +634,7 @@
 
 		<varlistentry>
 		<term>du &lt;filename&gt;</term>
-		<listitem><para>Does a directory listing and then prints out the current disk useage and free space on a share.
+		<listitem><para>Does a directory listing and then prints out the current disk usage and free space on a share.
 		</para></listitem>
 		</varlistentry>
 
