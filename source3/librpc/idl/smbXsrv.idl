@@ -1,5 +1,7 @@
 #include "idl_types.h"
 
+import "server_id.idl";
+
 [
 	uuid("07408340-ae31-11e1-97dc-539f7fddc06f"),
 	version(0.0),
@@ -8,5 +10,67 @@
 ]
 interface smbXsrv
 {
-	void smbXsrv_dummy();
+	/*
+	 * smbXsrv_version* is designed to allow
+	 * rolling code upgrades in future (within a cluster).
+	 *
+	 * This just adds the infrastructure,
+	 * but we does not implement it yet!
+	 *
+	 * Currently it only prevents that
+	 * nodes with a different version numbers
+	 * cannot run at the same time.
+	 *
+	 * Each node checks at startup, if the version
+	 * matches the version of all other nodes.
+	 * And it exits if the version does not match
+	 * to avoid corruption.
+	 *
+	 * While it would be possible to add versioning
+	 * to each of our internal databases it is easier
+	 * use a dedicated database "smbXsrv_version_global.tdb"
+	 * to hold the global version information.
+	 *
+	 * This removes extra complexity from the individual
+	 * databases and allows that we add/remove databases
+	 * or use different indexing keys.
+	 *
+	 */
+	typedef [v1_enum] enum {
+		/*
+		 * NOTE: Version 0 is designed to be unstable and the format
+		 * may change during development.
+		 */
+		SMBXSRV_VERSION_0 = 0x00000000
+	} smbXsrv_version_values;
+
+	const uint32 SMBXSRV_VERSION_CURRENT = SMBXSRV_VERSION_0;
+
+	typedef struct {
+		server_id				server_id;
+		smbXsrv_version_values			min_version;
+		smbXsrv_version_values			max_version;
+		smbXsrv_version_values			current_version;
+	} smbXsrv_version_node0;
+
+	typedef struct {
+		[ignore] db_record 			*db_rec;
+		[range(1, 1024)] uint32			num_nodes;
+		smbXsrv_version_node0			nodes[num_nodes];
+	} smbXsrv_version_global0;
+
+	typedef union {
+		[case(0)] smbXsrv_version_global0	*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_version_globalU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		uint32					seqnum;
+		[switch_is(version)] smbXsrv_version_globalU info;
+	} smbXsrv_version_globalB;
+
+	void smbXsrv_version_global_decode(
+		[in] smbXsrv_version_globalB blob
+		);
 }
