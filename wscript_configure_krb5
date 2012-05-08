@@ -22,9 +22,6 @@ if conf.env.KRB5_CONFIG:
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
 conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h', lib='krb5')
 
-if conf.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
-    conf.env['WINBIND_KRB5_LOCATOR'] = 'bin/winbind_krb5_locator.so'
-
 conf.CHECK_FUNCS_IN('krb5_encrypt_data', 'k5crypto')
 conf.CHECK_FUNCS_IN('des_set_key','crypto')
 conf.CHECK_FUNCS_IN('copy_Authenticator', 'asn1')
