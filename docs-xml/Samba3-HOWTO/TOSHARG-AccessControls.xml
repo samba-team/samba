@@ -1380,7 +1380,7 @@ mystic:/home/hannibal > rm filename
 	Samba has to deal with the complicated matter of handling the challenge of the Windows
 	ACL that implements <emphasis>inheritance</emphasis>, a concept not anticipated by POSIX
 	ACLs as implemented in UNIX file systems. Samba provides support for <emphasis>masks</emphasis>
-	that permit normal ugo and ACLs functionality to be overrided. This further complicates
+	that permit normal ugo and ACLs functionality to be overridden. This further complicates
 	the way in which Windows ACLs must be implemented.
 	</para>
 
