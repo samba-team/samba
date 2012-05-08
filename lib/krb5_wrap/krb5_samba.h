@@ -53,6 +53,9 @@
 #if defined(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5) && !defined(HAVE_ENCTYPE_ARCFOUR_HMAC)
 #define ENCTYPE_ARCFOUR_HMAC ENCTYPE_ARCFOUR_HMAC_MD5
 #endif
+#if defined(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5_56) && !defined(HAVE_ENCTYPE_ARCFOUR_HMAC_EXP)
+#define ENCTYPE_ARCFOUR_HMAC_EXP ENCTYPE_ARCFOUR_HMAC_MD5_56
+#endif
 
 /* The older versions of heimdal that don't have this
    define don't seem to use it anyway.  I'm told they

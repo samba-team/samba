@@ -42,6 +42,12 @@
 #include "lib/util/util_net.h"
 #include "auth/kerberos/pac_utils.h"
 
+#ifndef gss_mech_spnego
+gss_OID_desc spnego_mech_oid_desc =
+		{ 6, discard_const_p(void, "\x2b\x06\x01\x05\x05\x02") };
+#define gss_mech_spnego (&spnego_mech_oid_desc)
+#endif
+
 _PUBLIC_ NTSTATUS gensec_gssapi_init(void);
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
@@ -166,7 +172,8 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		break;
 	case DCERPC_AUTH_TYPE_KRB5:
 	default:
-		gensec_gssapi_state->gss_oid = gss_mech_krb5;
+		gensec_gssapi_state->gss_oid =
+			discard_const_p(void, gss_mech_krb5);
 		break;
 	}
 
@@ -199,6 +206,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destructor);
 
+#ifdef SAMBA4_USES_HEIMDAL
 	realm = lpcfg_realm(gensec_security->settings->lp_ctx);
 	if (realm != NULL) {
 		ret = gsskrb5_set_default_realm(realm);
@@ -216,7 +224,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		talloc_free(gensec_gssapi_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-
+#endif
 	return NT_STATUS_OK;
 }
 
@@ -433,7 +441,9 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		switch (gensec_security->gensec_role) {
 		case GENSEC_CLIENT:
 		{
+#ifdef SAMBA4_USES_HEIMDAL
 			struct gsskrb5_send_to_kdc send_to_kdc;
+#endif
 			krb5_error_code ret;
 
 			nt_status = gensec_gssapi_client_creds(gensec_security, ev);
@@ -444,14 +454,13 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 #ifdef SAMBA4_USES_HEIMDAL
 			send_to_kdc.func = smb_krb5_send_and_recv_func;
 			send_to_kdc.ptr = ev;
-#endif
 
 			min_stat = gsskrb5_set_send_to_kdc(&send_to_kdc);
 			if (min_stat) {
 				DEBUG(1,("gensec_krb5_start: gsskrb5_set_send_to_kdc failed\n"));
 				return NT_STATUS_INTERNAL_ERROR;
 			}
-
+#endif
 			maj_stat = gss_init_sec_context(&min_stat, 
 							gensec_gssapi_state->client_cred->creds,
 							&gensec_gssapi_state->gssapi_context, 
@@ -472,14 +481,13 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 #ifdef SAMBA4_USES_HEIMDAL
 			send_to_kdc.func = smb_krb5_send_and_recv_func;
 			send_to_kdc.ptr = NULL;
-#endif
 
 			ret = gsskrb5_set_send_to_kdc(&send_to_kdc);
 			if (ret) {
 				DEBUG(1,("gensec_krb5_start: gsskrb5_set_send_to_kdc failed\n"));
 				return NT_STATUS_INTERNAL_ERROR;
 			}
-
+#endif
 			break;
 		}
 		case GENSEC_SERVER:
@@ -1435,22 +1443,24 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 		}
 	} else if (gensec_gssapi_state->lucid->protocol == 0) {
 		switch (gensec_gssapi_state->lucid->rfc1964_kd.ctx_key.type) {
-		case KEYTYPE_DES:
-		case KEYTYPE_ARCFOUR:
-		case KEYTYPE_ARCFOUR_56:
+		case ENCTYPE_DES_CBC_CRC:
+		case ENCTYPE_ARCFOUR_HMAC:
+		case ENCTYPE_ARCFOUR_HMAC_EXP:
 			if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
 				gensec_gssapi_state->sig_size = 45;
 			} else {
 				gensec_gssapi_state->sig_size = 37;
 			}
 			break;
-		case KEYTYPE_DES3:
+#ifdef SAMBA4_USES_HEIMDAL
+		case ENCTYPE_OLD_DES3_CBC_SHA1:
 			if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
 				gensec_gssapi_state->sig_size = 57;
 			} else {
 				gensec_gssapi_state->sig_size = 49;
 			}
 			break;
+#endif
 		}
 	}
 
