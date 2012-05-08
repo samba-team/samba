@@ -513,8 +513,8 @@ static void notify_trigger_index_parser(TDB_DATA key, TDB_DATA data,
 
 static int vnn_cmp(const void *p1, const void *p2)
 {
-	uint32_t *vnn1 = (uint32_t *)p1;
-	uint32_t *vnn2 = (uint32_t *)p2;
+	const uint32_t *vnn1 = (const uint32_t *)p1;
+	const uint32_t *vnn2 = (const uint32_t *)p2;
 
 	if (*vnn1 < *vnn2) {
 		return -1;
