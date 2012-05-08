@@ -233,10 +233,10 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 		if ((len + nbytes) > maxlen) {
 			maxlen += nbytes + 20 * (acl_d->count - i);
 			if ((text = (char *)SMB_REALLOC(text, maxlen)) == NULL) {
-			errno = ENOMEM;
+				errno = ENOMEM;
 				return NULL;
+			}
 		}
-	}
 
 		slprintf(&text[len], nbytes-1, "%s:%s:%s\n", tag, id, perms);
 		len += nbytes - 1;
