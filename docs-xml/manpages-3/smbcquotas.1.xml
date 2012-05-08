@@ -118,7 +118,7 @@
 
 
 <refsect1>
-	<title>QUOTA_SET_COMAND</title>
+	<title>QUOTA_SET_COMMAND</title>
 
 	<para>The format of an the QUOTA_SET_COMMAND is an operation
 	name followed by a set of parameters specific to that operation.

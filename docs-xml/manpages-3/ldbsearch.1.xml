@@ -22,7 +22,7 @@
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-s base|one|sub</arg>
 		<arg choice="opt">-b basedn</arg>
-		<arg chioce="opt">-i</arg>
+		<arg choice="opt">-i</arg>
 		<arg choice="opt">-H LDB-URL</arg>
 		<arg choice="opt">expression</arg>
 		<arg choice="opt">attributes</arg>

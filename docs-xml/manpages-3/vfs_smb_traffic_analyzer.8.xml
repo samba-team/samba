@@ -63,7 +63,7 @@
 	</simplelist>
 
 	<para><command>vfs_smb_traffic_analyzer</command> sends the following data
-	in a fixed format seperated by a comma through either an internet or a
+	in a fixed format separated by a comma through either an internet or a
 	unix domain socket:</para>
 	<programlisting>
 	BYTES|USER|DOMAIN|READ/WRITE|SHARE|FILENAME|TIMESTAMP
@@ -76,9 +76,9 @@
 	<listitem><para><command>USER</command> - the user who initiated the operation</para></listitem>
 	<listitem><para><command>DOMAIN</command> - the domain of the user</para></listitem>
 	<listitem><para><command>READ/WRITE</command> - either "W" for a write operation or "R" for read</para></listitem>
-	<listitem><para><command>SHARE</command> - the name of the share on which the VFS operation occured</para></listitem>
+	<listitem><para><command>SHARE</command> - the name of the share on which the VFS operation occurred</para></listitem>
 	<listitem><para><command>FILENAME</command> - the name of the file that was used by the VFS operation</para></listitem>
-	<listitem><para><command>TIMESTAMP</command> - a timestamp, formatted as "yyyy-mm-dd hh-mm-ss.ms" indicating when the VFS operation occured</para></listitem>
+	<listitem><para><command>TIMESTAMP</command> - a timestamp, formatted as "yyyy-mm-dd hh-mm-ss.ms" indicating when the VFS operation occurred</para></listitem>
 	<listitem><para><command>IP</command> - The IP Address (v4 or v6) of the client machine that initiated the VFS operation.</para></listitem>
 	</itemizedlist>
 

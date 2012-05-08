@@ -9,7 +9,7 @@
 	  to speed up case insensitive name mappings. It represents
 	  the number of kilobyte (1024) units the stat cache can use.
 	  A value of zero, meaning unlimited, is not advisable due to
-	  increased memory useage.  You should not need to change this
+	  increased memory usage.  You should not need to change this
 	  parameter.
 	</para>
 </description>

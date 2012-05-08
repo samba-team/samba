@@ -24,7 +24,7 @@
 
 	<para>
 <indexterm><primary>tdb</primary></indexterm>
-<indexterm><primary>currupted</primary></indexterm>
+<indexterm><primary>corrupted</primary></indexterm>
 <indexterm><primary>backup</primary></indexterm>
 <indexterm><primary>restore</primary></indexterm>
 	Those who package Samba for commercial distribution with operating systems and appliances would do well to take

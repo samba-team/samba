@@ -72,7 +72,7 @@
 	without changing the tool).</para>
 
 	<para>There are five main ways to use pdbedit: adding a user account,
-	removing a user account, modifing a user account, listing user
+	removing a user account, modifying a user account, listing user
 	accounts, importing users accounts.</para>
 </refsect1>
 
@@ -162,7 +162,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		<varlistentry>
 		<term>-f|--fullname fullname</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will specify the user's full
+		modifying a user account. It will specify the user's full
 		name. </para>
 
 		<para>Example: <command>-f "Simo Sorce"</command></para>
@@ -172,7 +172,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		<varlistentry>
 		<term>-h|--homedir homedir</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will specify the user's home
+		modifying a user account. It will specify the user's home
 		directory network path.</para>
 
 		<para>Example: <command>-h "\\\\BERSERKER\\sorce"</command>
@@ -183,7 +183,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		<varlistentry>
 		<term>-D|--drive drive</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will specify the windows drive
+		modifying a user account. It will specify the windows drive
 		letter to be used to map the home directory.</para>
 
 		<para>Example: <command>-D "H:"</command>
@@ -195,7 +195,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		<varlistentry>
 		<term>-S|--script script</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will specify the user's logon
+		modifying a user account. It will specify the user's logon
 		script path.</para>
 
 		<para>Example: <command>-S "\\\\BERSERKER\\netlogon\\sorce.bat"</command>
@@ -207,7 +207,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		<varlistentry>
 		<term>-p|--profile profile</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will specify the user's profile
+		modifying a user account. It will specify the user's profile
 		directory.</para>
 
 		<para>Example: <command>-p "\\\\BERSERKER\\netlogon"</command>
@@ -447,7 +447,7 @@ account policy value for bad lockout attempt is now 3
 		<varlistentry>
 		<term>-N|--account-desc description</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will specify the user's description
+		modifying a user account. It will specify the user's description
 		field.</para>
 
 		<para>Example: <command>-N "test description"</command>
@@ -458,7 +458,7 @@ account policy value for bad lockout attempt is now 3
 		<varlistentry>
 		<term>-Z|--logon-hours-reset</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will reset the user's allowed logon
+		modifying a user account. It will reset the user's allowed logon
 		hours. A user may login at any time afterwards.</para>
 
 		<para>Example: <command>-Z</command>
@@ -469,7 +469,7 @@ account policy value for bad lockout attempt is now 3
 		<varlistentry>
 		<term>-z|--bad-password-count-reset</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will reset the stored bad login
+		modifying a user account. It will reset the stored bad login
 		counter from a specified user.</para>
 
 		<para>Example: <command>-z</command>
@@ -490,7 +490,7 @@ account policy value for bad lockout attempt is now 3
 		<varlistentry>
 		<term>-I|--domain</term>
 		<listitem><para>This option can be used while adding or
-		modifing a user account. It will specify the user's domain field.</para>
+		modifying a user account. It will specify the user's domain field.</para>
 
 		<para>Example: <command>-I "MYDOMAIN"</command>
 		</para>

@@ -54,7 +54,7 @@
 		<varlistentry>
 		<term>-s suffix</term>
 		<listitem><para>
-		The <command>-s</command> option allows the adminisistrator to specify a file
+		The <command>-s</command> option allows the administrator to specify a file
 		backup extension. This way it is possible to keep a history of tdb backup
 		files by using a new suffix for each backup.
 		</para> </listitem>
@@ -63,7 +63,7 @@
 		<varlistentry>
 		<term>-v</term>
 		<listitem><para>
-		The <command>-v</command> will check the database for damages (currupt data)
+		The <command>-v</command> will check the database for damages (corrupt data)
 		which if detected causes the backup to be restored.
 		</para></listitem>
 		</varlistentry>

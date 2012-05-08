@@ -32,7 +32,7 @@
 	<para>The <command>vfs_readonly</command> VFS module marks a share
 	as read only for all clients connecting within the configured
 	time period. Clients connecting during this time will be denied
-	write access to all files in the share, irrespective of ther
+	write access to all files in the share, irrespective of their
 	actual access privileges.</para>
 
 	<para>This module is stackable.</para>
