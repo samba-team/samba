@@ -904,7 +904,7 @@ msgstr ""
 msgid "Disabled account for '%s' in realm '%s'\n"
 msgstr ""
 
-#. Based on what we requseted, we shouldn't get here, but if
+#. Based on what we requested, we shouldn't get here, but if
 #. we did, it means the secrets were removed, and therefore
 #. we have left the domain
 #: ../../utils/net_ads.c:1006
