@@ -880,7 +880,8 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					int argc, const char **argv)
 {
-	struct policy_handle connect_pol, domain_pol;
+	struct policy_handle connect_pol;
+	struct policy_handle domain_pol = { 0, };
 	NTSTATUS status, result;
 	uint32 start_idx, num_dom_users, i;
 	struct samr_SamArray *dom_users = NULL;
