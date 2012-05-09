@@ -437,13 +437,13 @@ static int _pam_parse(const pam_handle_t *pamh,
 		ctrl |= WINBIND_SILENT;
 	}
 
-	if (iniparser_getstr(d, CONST_DISCARD(char *, "global:krb5_ccache_type")) != NULL) {
+	if (iniparser_getstring(d, CONST_DISCARD(char *, "global:krb5_ccache_type")) != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 
-	if ((iniparser_getstr(d, CONST_DISCARD(char *, "global:require-membership-of"))
+	if ((iniparser_getstring(d, CONST_DISCARD(char *, "global:require-membership-of"))
 	     != NULL) ||
-	    (iniparser_getstr(d, CONST_DISCARD(char *, "global:require_membership_of"))
+	    (iniparser_getstring(d, CONST_DISCARD(char *, "global:require_membership_of"))
 	     != NULL)) {
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
@@ -2277,7 +2277,7 @@ static const char *get_conf_item_string(struct pwb_context *ctx,
 			goto out;
 		}
 
-		parm_opt = iniparser_getstr(ctx->dict, key);
+		parm_opt = iniparser_getstring,(ctx->dict, key, NULL);
 		TALLOC_FREE(key);
 
 		_pam_log_debug(ctx, LOG_INFO, "CONFIG file: %s '%s'\n",
