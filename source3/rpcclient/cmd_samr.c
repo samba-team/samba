@@ -3230,7 +3230,7 @@ static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status, result;
 	struct policy_handle connect_handle;
-	struct policy_handle domain_handle;
+	struct policy_handle domain_handle = { 0, };
 	uint16_t level = 1;
 	struct lsa_String name;
 	uint32_t idx = 0;
