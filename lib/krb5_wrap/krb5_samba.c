@@ -2144,34 +2144,37 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 					 krb5_ccache id,
 					 time_t *t)
 {
-	krb5_error_code rc;
-	krb5_creds mcreds;
-	krb5_creds creds;
+	krb5_cc_cursor cursor;
+	krb5_error_code kerr;
+	krb5_creds cred;
 	krb5_timestamp now;
 
-	ZERO_STRUCT(mcreds);
+	*t = 0;
 
-	mcreds.ticket_flags = TKT_FLG_INITIAL;
-
-	rc = krb5_cc_retrieve_cred(context,
-				   id,
-				   KRB5_TC_MATCH_FLAGS,
-				   &mcreds,
-				   &creds);
-	if (rc != 0) {
-		return rc;
+	kerr = krb5_timeofday(context, &now);
+	if (kerr) {
+		return kerr;
 	}
 
-	rc = krb5_timeofday(context, &now);
-	if (rc != 0) {
-		return rc;
+	kerr = krb5_cc_start_seq_get(context, id, &cursor);
+	if (kerr) {
+		return kerr;
 	}
 
-	*t = (time_t) (creds.times.endtime - now);
+	while ((kerr = krb5_cc_next_cred(context, id, &cursor, &cred)) == 0) {
+		if (cred.ticket_flags & TKT_FLG_INITIAL) {
+			if (now < cred.times.endtime) {
+				*t = (time_t) (cred.times.endtime - now);
+			}
+			krb5_free_cred_contents(context, &cred);
+			break;
+		}
+		krb5_free_cred_contents(context, &cred);
+	}
 
-	krb5_free_creds(context, &creds);
+	krb5_cc_end_seq_get(context, id, &cursor);
 
-	return 0;
+	return kerr;
 }
 #endif /* HAVE_KRB5_CC_GET_LIFETIME */
 
