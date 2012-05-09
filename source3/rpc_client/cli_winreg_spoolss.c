@@ -2118,6 +2118,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 	uint32_t num_values = 0;
 	char *path;
 	WERROR result = WERR_OK;
+	WERROR ignore;
 	NTSTATUS status;
 	const char **enum_names = NULL;
 	enum winreg_Type *enum_types = NULL;
@@ -2198,15 +2199,11 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_handle != NULL) {
-		WERROR ignore;
-
-		if (is_valid_policy_hnd(&key_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
-		}
-		if (is_valid_policy_hnd(&hive_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
-		}
+	if (is_valid_policy_hnd(&key_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+	}
+	if (is_valid_policy_hnd(&hive_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 	}
 
 	TALLOC_FREE(tmp_ctx);
