@@ -27,96 +27,6 @@
 #include "lib/util/dlinklist.h"
 #include "db_wrap.h"
 
-/*
-  lock all databases - mark only
- */
-static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb, uint32_t priority)
-{
-	struct ctdb_db_context *ctdb_db;
-
-	/* these are internal tdb functions */
-	int tdb_transaction_write_lock_mark(struct tdb_context *tdb);
-	int tdb_transaction_write_lock_unmark(struct tdb_context *tdb);
-
-	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
-		DEBUG(DEBUG_ERR,(__location__ " Illegal priority when trying to mark all databases Prio:%u\n", priority));
-		return -1;
-	}
-
-	if (ctdb->freeze_mode[priority] != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_ERR,("Attempt to mark all databases locked when not frozen\n"));
-		return -1;
-	}
-	/* The dual loop is a woraround for older versions of samba
-	   that does not yet support the set-db-priority/lock order
-	   call. So that we get basic deadlock avoiidance also for
-	   these old versions of samba.
-	   This code will be removed in the future.
-	*/
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		if (strstr(ctdb_db->db_name, "notify") != NULL) {
-			continue;
-		}
-		if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
-			return -1;
-		}
-		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
-			tdb_transaction_write_lock_unmark(ctdb_db->ltdb->tdb);
-			return -1;
-		}
-	}
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		if (strstr(ctdb_db->db_name, "notify") == NULL) {
-			continue;
-		}
-		if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
-			return -1;
-		}
-		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
-			tdb_transaction_write_lock_unmark(ctdb_db->ltdb->tdb);
-			return -1;
-		}
-	}
-	return 0;
-}
-
-/*
-  lock all databases - unmark only
- */
-static int ctdb_lock_all_databases_unmark(struct ctdb_context *ctdb, uint32_t priority)
-{
-	struct ctdb_db_context *ctdb_db;
-
-	/* this is an internal tdb functions */
-	int tdb_transaction_write_lock_unmark(struct tdb_context *tdb);
-
-	if ((priority < 1) || (priority > NUM_DB_PRIORITIES)) {
-		DEBUG(DEBUG_ERR,(__location__ " Illegal priority when trying to mark all databases Prio:%u\n", priority));
-		return -1;
-	}
-
-	if (ctdb->freeze_mode[priority] != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_ERR,("Attempt to unmark all databases locked when not frozen\n"));
-		return -1;
-	}
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		tdb_transaction_write_lock_unmark(ctdb_db->ltdb->tdb);
-		if (tdb_lockall_unmark(ctdb_db->ltdb->tdb) != 0) {
-			return -1;
-		}
-	}
-	return 0;
-}
-
 
 int 
 ctdb_control_getvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
@@ -427,19 +337,19 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
 	}
 
-	if (ctdb_lock_all_databases_mark(ctdb, ctdb_db->priority) != 0) {
+	if (ctdb_lockall_mark_prio(ctdb, ctdb_db->priority) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
 
 	if (tdb_traverse_read(ctdb_db->ltdb->tdb, traverse_pulldb, &params) == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get traverse db '%s'\n", ctdb_db->db_name));
-		ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
+		ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
 		talloc_free(params.pulldata);
 		return -1;
 	}
 
-	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
+	ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
 
 	outdata->dptr = (uint8_t *)params.pulldata;
 	outdata->dsize = params.len;
@@ -481,7 +391,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (ctdb_lock_all_databases_mark(ctdb, ctdb_db->priority) != 0) {
+	if (ctdb_lockall_mark_prio(ctdb, ctdb_db->priority) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
@@ -540,11 +450,11 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		}
 	}
 
-	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
+	ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
 	return 0;
 
 failed:
-	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
+	ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
 	return -1;
 }
 
@@ -589,14 +499,14 @@ int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (ctdb_lock_all_databases_mark(ctdb, 	ctdb_db->priority) != 0) {
+	if (ctdb_lockall_mark_prio(ctdb, ctdb_db->priority) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
 
 	tdb_traverse(ctdb_db->ltdb->tdb, traverse_setdmaster, &p->dmaster);
 
-	ctdb_lock_all_databases_unmark(ctdb, ctdb_db->priority);
+	ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
 	
 	return 0;
 }
