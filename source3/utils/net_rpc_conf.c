@@ -1084,6 +1084,7 @@ static NTSTATUS rpc_conf_drop_internal(struct net_context *c,
 		goto error;
 	}
 
+	ZERO_STRUCT(wkey);
 	wkey.name = keyname;
 	ZERO_STRUCT(wkeyclass);
 	wkeyclass.name = "";
