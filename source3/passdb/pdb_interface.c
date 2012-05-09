@@ -184,7 +184,9 @@ static struct pdb_methods *pdb_get_methods_reload( bool reload )
 	static struct pdb_methods *pdb = NULL;
 
 	if ( pdb && reload ) {
-		pdb->free_private_data( &(pdb->private_data) );
+		if (pdb->free_private_data != NULL) {
+			pdb->free_private_data( &(pdb->private_data) );
+		}
 		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
 			char *msg = NULL;
 			if (asprintf(&msg, "pdb_get_methods_reload: "
