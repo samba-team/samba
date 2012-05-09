@@ -1054,7 +1054,8 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
 {
-	struct policy_handle connect_pol, domain_pol;
+	struct policy_handle connect_pol;
+	struct policy_handle domain_pol = { 0, };
 	NTSTATUS status, result;
 	uint32 start_idx, num_als_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
