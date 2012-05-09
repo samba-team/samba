@@ -26,52 +26,6 @@
 #include "db_wrap.h"
 #include "../common/rb_tree.h"
 
-static bool later_db(const char *name)
-{
-	return (strstr(name, "notify") || strstr(name, "serverid"));
-}
-
-/*
-  lock all databases
- */
-static int ctdb_lock_all_databases(struct ctdb_context *ctdb, uint32_t priority)
-{
-	struct ctdb_db_context *ctdb_db;
-	/* REMOVE later */
-	/* This double loop is for backward compatibility and deadlock
-	   avoidance for old samba versions that not yet support
-	   the set prio call.
-	   This code shall be removed later
-	*/
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		if (later_db(ctdb_db->db_name)) {
-			continue;
-		}
-		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
-		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to lock database %s\n", ctdb_db->db_name));
-			return -1;
-		}
-	}
-	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		if (!later_db(ctdb_db->db_name)) {
-			continue;
-		}
-		DEBUG(DEBUG_INFO,("locking database 0x%08x priority:%u %s\n", ctdb_db->db_id, ctdb_db->priority, ctdb_db->db_name));
-		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to lock database %s\n", ctdb_db->db_name));
-			return -1;
-		}
-	}
-	return 0;
-}
-
 /*
   a list of control requests waiting for a freeze lock child to get
   the database locks
@@ -88,8 +42,7 @@ struct ctdb_freeze_waiter {
 struct ctdb_freeze_handle {
 	struct ctdb_context *ctdb;
 	uint32_t priority;
-	pid_t child;
-	int fd;
+	struct lock_request *lreq;
 	struct ctdb_freeze_waiter *waiters;
 };
 
@@ -122,18 +75,17 @@ static int ctdb_freeze_handle_destructor(struct ctdb_freeze_handle *h)
 	ctdb->freeze_mode[h->priority]    = CTDB_FREEZE_NONE;
 	ctdb->freeze_handles[h->priority] = NULL;
 
-	ctdb_kill(h->ctdb, h->child, SIGKILL);
+	ctdb_lock_free_request_context(h->lreq);
 	return 0;
 }
 
 /*
   called when the child writes its status to us
  */
-static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *fde, 
-				       uint16_t flags, void *private_data)
+static void ctdb_freeze_lock_handler(void *private_data, bool locked)
 {
-	struct ctdb_freeze_handle *h = talloc_get_type(private_data, struct ctdb_freeze_handle);
-	int32_t status;
+	struct ctdb_freeze_handle *h = talloc_get_type_abort(private_data,
+							     struct ctdb_freeze_handle);
 	struct ctdb_freeze_waiter *w;
 
 	if (h->ctdb->freeze_mode[h->priority] == CTDB_FREEZE_FROZEN) {
@@ -142,12 +94,7 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 		return;
 	}
 
-	if (read(h->fd, &status, sizeof(status)) != sizeof(status)) {
-		DEBUG(DEBUG_ERR,("read error from freeze lock child\n"));
-		status = -1;
-	}
-
-	if (status == -1) {
+	if (!locked) {
 		DEBUG(DEBUG_ERR,("Failed to get locks in ctdb_freeze_child\n"));
 		/* we didn't get the locks - destroy the handle */
 		talloc_free(h);
@@ -161,88 +108,10 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 		DEBUG(DEBUG_ERR,("lockwait finished but h is not linked\n"));
 	}
 	while ((w = h->waiters)) {
-		w->status = status;
+		w->status = 0;
 		DLIST_REMOVE(h->waiters, w);
 		talloc_free(w);
 	}
-}
-
-/*
-  create a child which gets locks on all the open databases, then calls the callback telling the parent
-  that it is done
- */
-static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb, uint32_t priority)
-{
-	struct ctdb_freeze_handle *h;
-	int fd[2];
-	struct fd_event *fde;
-
-	h = talloc_zero(ctdb, struct ctdb_freeze_handle);
-	CTDB_NO_MEMORY_NULL(ctdb, h);
-
-	h->ctdb     = ctdb;
-	h->priority = priority;
-
-	if (pipe(fd) == -1) {
-		DEBUG(DEBUG_ERR,("Failed to create pipe for ctdb_freeze_lock\n"));
-		talloc_free(h);
-		return NULL;
-	}
-	
-	h->child = ctdb_fork(ctdb);
-	if (h->child == -1) {
-		DEBUG(DEBUG_ERR,("Failed to fork child for ctdb_freeze_lock\n"));
-		talloc_free(h);
-		return NULL;
-	}
-
-	if (h->child == 0) {
-		int ret;
-
-		/* in the child */
-		close(fd[0]);
-
-		debug_extra = talloc_asprintf(NULL, "freeze_lock-%u:", priority);
-		ret = ctdb_lock_all_databases(ctdb, priority);
-		if (ret != 0) {
-			_exit(0);
-		}
-
-		ret = write(fd[1], &ret, sizeof(ret));
-		if (ret != sizeof(ret)) {
-			DEBUG(DEBUG_ERR, (__location__ " Failed to write to socket from freeze child. ret:%d errno:%u\n", ret, errno));
-			_exit(1);
-		}
-
-		while (1) {
-			sleep(1);
-			if (ctdb_kill(ctdb, ctdb->ctdbd_pid, 0) != 0) {
-				DEBUG(DEBUG_ERR,("Parent died. Exiting lock wait child\n"));
-
-				_exit(0);
-			}
-		}
-	}
-
-	talloc_set_destructor(h, ctdb_freeze_handle_destructor);
-
-	close(fd[1]);
-	set_close_on_exec(fd[0]);
-
-	h->fd = fd[0];
-
-
-	fde = event_add_fd(ctdb->ev, h, h->fd, EVENT_FD_READ,
-			   ctdb_freeze_lock_handler, h);
-	if (fde == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to setup fd event for ctdb_freeze_lock\n"));
-		close(fd[0]);
-		talloc_free(h);
-		return NULL;
-	}
-	tevent_fd_set_auto_close(fde);
-
-	return h;
 }
 
 /*
@@ -259,6 +128,8 @@ static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
  */
 int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 {
+	struct ctdb_freeze_handle *h;
+
 	if (priority == 0) {
 		DEBUG(DEBUG_ERR,("Freeze priority 0 requested, remapping to priority 1\n"));
 		priority = 1;
@@ -279,8 +150,15 @@ int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 
 	/* if there isn't a freeze lock child then create one */
 	if (ctdb->freeze_handles[priority] == NULL) {
-		ctdb->freeze_handles[priority] = ctdb_freeze_lock(ctdb, priority);
-		CTDB_NO_MEMORY(ctdb, ctdb->freeze_handles[priority]);
+		h = talloc_zero(ctdb, struct ctdb_freeze_handle);
+		CTDB_NO_MEMORY(ctdb, h);
+		h->ctdb = ctdb;
+		h->priority = priority;
+		talloc_set_destructor(h, ctdb_freeze_handle_destructor);
+
+		h->lreq = ctdb_lock_alldb_prio(ctdb, priority, false, ctdb_freeze_lock_handler, h);
+		CTDB_NO_MEMORY(ctdb, h->lreq);
+		ctdb->freeze_handles[priority] = h;
 		ctdb->freeze_mode[priority] = CTDB_FREEZE_PENDING;
 	}
 
