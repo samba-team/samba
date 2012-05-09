@@ -317,11 +317,9 @@ static NTSTATUS sam_query_user(struct winbindd_domain *domain,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (user_info) {
-		user_info->homedir = NULL;
-		user_info->shell = NULL;
-		user_info->primary_gid = (gid_t) -1;
-	}
+	user_info->homedir = NULL;
+	user_info->shell = NULL;
+	user_info->primary_gid = (gid_t) -1;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
