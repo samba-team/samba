@@ -334,6 +334,10 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 		STATISTICS_FIELD(timeouts.call),
 		STATISTICS_FIELD(timeouts.control),
 		STATISTICS_FIELD(timeouts.traverse),
+		STATISTICS_FIELD(locks.num_calls),
+		STATISTICS_FIELD(locks.num_current),
+		STATISTICS_FIELD(locks.num_pending),
+		STATISTICS_FIELD(locks.num_failed),
 		STATISTICS_FIELD(total_calls),
 		STATISTICS_FIELD(pending_calls),
 		STATISTICS_FIELD(lockwait_calls),
@@ -446,7 +450,14 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 			printf(" %d", s->hop_count_bucket[i]);
 		}
 		printf("\n");
-		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "reclock_ctdbd       MIN/AVG/MAX", s->reclock.ctdbd.min, s->reclock.ctdbd.num?s->reclock.ctdbd.total/s->reclock.ctdbd.num:0.0, s->reclock.ctdbd.max, s->reclock.ctdbd.num);
+		printf(" lock_buckets:");
+		for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+			printf(" %d", s->locks.buckets[i]);
+		}
+		printf("\n");
+		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "locks_latency      MIN/AVG/MAX", s->locks.latency.min, s->locks.latency.num?s->locks.latency.total/s->locks.latency.num:0.0, s->locks.latency.max, s->locks.latency.num);
+
+		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "reclock_ctdbd      MIN/AVG/MAX", s->reclock.ctdbd.min, s->reclock.ctdbd.num?s->reclock.ctdbd.total/s->reclock.ctdbd.num:0.0, s->reclock.ctdbd.max, s->reclock.ctdbd.num);
 
 		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "reclock_recd       MIN/AVG/MAX", s->reclock.recd.min, s->reclock.recd.num?s->reclock.recd.total/s->reclock.recd.num:0.0, s->reclock.recd.max, s->reclock.recd.num);
 
@@ -576,7 +587,7 @@ static int control_stats(struct ctdb_context *ctdb, int argc, const char **argv)
 static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_db_statistics *dbstatistics;
+	struct ctdb_db_statistics *dbstat;
 	struct ctdb_dbid_map *dbmap=NULL;
 	int i, ret;
 
@@ -605,31 +616,50 @@ static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char 
 		return -1;
 	}
 
-	if (!ctdb_getdbstat(ctdb_connection, options.pnn, dbmap->dbs[i].dbid, &dbstatistics)) {
+	if (!ctdb_getdbstat(ctdb_connection, options.pnn, dbmap->dbs[i].dbid, &dbstat)) {
 		DEBUG(DEBUG_ERR,("Failed to read db statistics from node\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
 	printf("DB Statistics:\n");
-	printf("RO Delegations: %d\n", dbstatistics->db_ro_delegations);
-	printf("RO Revokes:     %d\n", dbstatistics->db_ro_revokes);
-	printf(" hop_count_buckets:");
-	for (i=0;i<MAX_COUNT_BUCKETS;i++) {
-		printf(" %d", dbstatistics->hop_count_bucket[i]);
+	printf(" %*s%-22s%*s%10u\n", 0, "", "ro_delegations", 4, "",
+		dbstat->db_ro_delegations);
+	printf(" %*s%-22s%*s%10u\n", 0, "", "ro_revokes", 4, "",
+		dbstat->db_ro_delegations);
+	printf(" %s\n", "locks");
+	printf(" %*s%-22s%*s%10u\n", 4, "", "total", 0, "",
+		dbstat->locks.num_calls);
+	printf(" %*s%-22s%*s%10u\n", 4, "", "failed", 0, "",
+		dbstat->locks.num_failed);
+	printf(" %*s%-22s%*s%10u\n", 4, "", "current", 0, "",
+		dbstat->locks.num_current);
+	printf(" %*s%-22s%*s%10u\n", 4, "", "pending", 0, "",
+		dbstat->locks.num_pending);
+	printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n",
+		"    latency_ctdbd  MIN/AVG/MAX",
+		dbstat->locks.latency.min,
+		(dbstat->locks.latency.num ?
+		 dbstat->locks.latency.total /dbstat->locks.latency.num :
+		 0.0),
+		dbstat->locks.latency.max,
+		dbstat->locks.latency.num);
+	printf(" %s", "    buckets:");
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		printf(" %d", dbstat->hop_count_bucket[i]);
 	}
 	printf("\n");
-	printf("Num Hot Keys:     %d\n", dbstatistics->num_hot_keys);
-	for (i = 0; i < dbstatistics->num_hot_keys; i++) {
+	printf("Num Hot Keys:     %d\n", dbstat->num_hot_keys);
+	for (i = 0; i < dbstat->num_hot_keys; i++) {
 		int j;
-		printf("Count:%d Key:", dbstatistics->hot_keys[i].count);
-		for (j = 0; j < dbstatistics->hot_keys[i].key.dsize; j++) {
-			printf("%02x", dbstatistics->hot_keys[i].key.dptr[j]&0xff);
+		printf("Count:%d Key:", dbstat->hot_keys[i].count);
+		for (j = 0; j < dbstat->hot_keys[i].key.dsize; j++) {
+			printf("%02x", dbstat->hot_keys[i].key.dptr[j]&0xff);
 		}
 		printf("\n");
 	}
 
-	ctdb_free_dbstat(dbstatistics);
+	ctdb_free_dbstat(dbstat);
 	return 0;
 }
 
