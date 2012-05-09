@@ -442,7 +442,7 @@ static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 	const char **val_names;
 	enum winreg_Type *types;
 	DATA_BLOB *data;
-	struct winreg_String key;
+	struct winreg_String key = { 0, };
 	const char **multi_s = NULL;
 	const char *s = NULL;
 	struct smbconf_service tmp_share;
