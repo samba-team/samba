@@ -221,6 +221,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		"schemaNamingContext",
 		"serverName",
 		"validFSMOs",
+		"namingContexts",
 		NULL
 	};
 	const char *guid_attrs[] = {
