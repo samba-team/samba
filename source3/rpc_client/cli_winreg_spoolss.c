@@ -2907,7 +2907,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 			       struct spoolss_AddFormInfo1 *form)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	struct policy_handle hive_hnd;
+	struct policy_handle hive_hnd = { 0, };
 	struct policy_handle key_hnd = { 0, };
 	struct winreg_String wvalue = { 0, };
 	DATA_BLOB blob;
