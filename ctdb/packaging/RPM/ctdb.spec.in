@@ -20,9 +20,29 @@ Provides: ctdb = %{version}
 Prefix: /usr
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
+# Always use the bundled versions of these libraries.
+%define with_included_talloc 1
+%define with_included_tdb 1
+%define with_included_tevent 1
+
+# If the above options are changed then mandate minimum system
+# versions.
+%define libtalloc_version 2.0.6
+%define libtdb_version 1.2.9
+%define libtevent_version 0.9.13
+
+%if ! %with_included_talloc
+BuildRequires: libtalloc-devel >= %{libtalloc_version}
+%endif
+%if ! %with_included_tdb
+BuildRequires: libtdb-devel >= %{libtdb_version}
+%endif
+%if ! %with_included_tevent
+BuildRequires: libtevent-devel >= %{libtevent_version}
+%endif
+
 %description
 ctdb is the clustered database used by samba
-
 
 #######################################################################
 
@@ -48,6 +68,15 @@ export CC
 ./autogen.sh
 
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -O0 -D_GNU_SOURCE -DCTDB_VERS=\"%{version}-%{release}\"" ./configure \
+%if %with_included_talloc
+	--with-included-talloc \
+%endif
+%if %with_included_tdb
+	--with-included-tdb \
+%endif
+%if %with_included_tevent
+	--with-included-tevent \
+%endif
 	--prefix=%{_prefix} \
 	--sysconfdir=%{_sysconfdir} \
 	--mandir=%{_mandir} \
