@@ -3196,7 +3196,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 {
 	const char *printername;
 	const char *clientname;
-	struct policy_handle hnd;
+	struct policy_handle hnd = { 0, };
 	WERROR result;
 	NTSTATUS status;
 	struct spoolss_NotifyOption option;
