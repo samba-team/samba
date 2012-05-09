@@ -2371,6 +2371,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	char *keyname;
 	char *path;
 	WERROR result;
+	WERROR ignore;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
@@ -2443,15 +2444,11 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	if (winreg_handle != NULL) {
-		WERROR ignore;
-
-		if (is_valid_policy_hnd(&key_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
-		}
-		if (is_valid_policy_hnd(&hive_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
-		}
+	if (is_valid_policy_hnd(&key_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+	}
+	if (is_valid_policy_hnd(&hive_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 	}
 
 	TALLOC_FREE(tmp_ctx);
