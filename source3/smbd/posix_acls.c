@@ -1510,8 +1510,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 					pace->unix_ug.uid == pace_user->unix_ug.uid) {
 				/* Already got one. */
 				got_duplicate_user = true;
-			} else if (pace->type == SMB_ACL_USER &&
-					pace->unix_ug.uid == pace_user->unix_ug.uid) {
+			} else if (pace->type == SMB_ACL_GROUP &&
+					pace->unix_ug.gid == pace_user->unix_ug.gid) {
 				/* Already got one. */
 				got_duplicate_group = true;
 			}
