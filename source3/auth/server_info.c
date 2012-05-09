@@ -263,11 +263,6 @@ static NTSTATUS group_sids_to_info3(struct netr_SamInfo3 *info3,
 	for (i = 0; i < num_sids; i++) {
 		ok = sid_peek_check_rid(domain_sid, &sids[i], &rid);
 		if (ok) {
-
-			/* if it is the primary gid, skip it, we
-			 * obviously already have it */
-			if (info3->base.primary_gid == rid) continue;
-
 			/* store domain group rid */
 			groups->rids[groups->count].rid = rid;
 			groups->rids[groups->count].attributes = attributes;
