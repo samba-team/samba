@@ -2534,7 +2534,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	WERROR result;
 	NTSTATUS status;
 	const char *printername;
-	struct policy_handle pol;
+	struct policy_handle pol = { 0, };
 	union spoolss_PrinterInfo info;
 	enum winreg_Type type;
 	union spoolss_PrinterData data;
