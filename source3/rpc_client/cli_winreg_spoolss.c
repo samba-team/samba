@@ -1995,6 +1995,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	uint32_t data_in_size = 0;
 	uint32_t value_len = 0;
 	WERROR result = WERR_OK;
+	WERROR ignore;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
@@ -2090,15 +2091,11 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 
 	result = WERR_OK;
 done:
-	if (winreg_handle != NULL) {
-		WERROR ignore;
-
-		if (is_valid_policy_hnd(&key_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
-		}
-		if (is_valid_policy_hnd(&hive_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
-		}
+	if (is_valid_policy_hnd(&key_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+	}
+	if (is_valid_policy_hnd(&hive_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 	}
 
 	TALLOC_FREE(tmp_ctx);
