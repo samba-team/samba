@@ -105,6 +105,7 @@ def configure(conf):
     conf.RECURSE('lib/socket_wrapper')
     conf.RECURSE('lib/uid_wrapper')
     conf.RECURSE('lib/popt')
+    conf.RECURSE('lib/iniparser/src')
     conf.RECURSE('lib/subunit/c')
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('lib/crypto')
