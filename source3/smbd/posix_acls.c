@@ -949,15 +949,21 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 
 			/* For file ACLs we can merge if the SIDs and ALLOW/DENY
 			 * types are the same. For directory acls we must also
-			 * ensure the POSIX ACL types are the same. */
+			 * ensure the POSIX ACL types are the same.
+			 *
+			 * For the IDMAP_BOTH case, we must not merge
+			 * the UID and GID ACE values for same SID
+			 */
 
 			if (!dir_acl) {
 				can_merge = (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
-						(curr_ace->attr == curr_ace_outer->attr));
+					     curr_ace->owner_type == curr_ace_outer->owner_type &&
+					     (curr_ace->attr == curr_ace_outer->attr));
 			} else {
 				can_merge = (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
-						(curr_ace->type == curr_ace_outer->type) &&
-						(curr_ace->attr == curr_ace_outer->attr));
+					     curr_ace->owner_type == curr_ace_outer->owner_type &&
+					     (curr_ace->type == curr_ace_outer->type) &&
+					     (curr_ace->attr == curr_ace_outer->attr));
 			}
 
 			if (can_merge) {
@@ -1005,7 +1011,8 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 			 */
 
 			if (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
-				(curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
+			    (curr_ace->owner_type == curr_ace_outer->owner_type) &&
+			    (curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
 
 				if( DEBUGLVL( 10 )) {
 					dbgtext("merge_aces: Masking ACE's\n");
