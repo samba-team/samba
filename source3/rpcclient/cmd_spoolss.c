@@ -2614,6 +2614,8 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		int i, num_strings;
 		const char **strings = NULL;
 
+		num_strings = 0;
+
 		for (i=4; i<argc; i++) {
 			if (strcmp(argv[i], "NULL") == 0) {
 				argv[i] = "";
