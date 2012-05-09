@@ -2696,6 +2696,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 	uint32_t num_builtin = ARRAY_SIZE(builtin_forms1);
 	uint32_t i;
 	WERROR result;
+	WERROR ignore;
 	NTSTATUS status;
 	const char **enum_names = NULL;
 	enum winreg_Type *enum_types = NULL;
@@ -2817,15 +2818,11 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	if (winreg_handle != NULL) {
-		WERROR ignore;
-
-		if (is_valid_policy_hnd(&key_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
-		}
-		if (is_valid_policy_hnd(&hive_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
-		}
+	if (is_valid_policy_hnd(&key_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+	}
+	if (is_valid_policy_hnd(&hive_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 	}
 
 	TALLOC_FREE(enum_values);
