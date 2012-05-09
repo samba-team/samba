@@ -204,6 +204,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    char **found_username,
 				    struct security_token **token);
 bool user_in_group_sid(const char *username, const struct dom_sid *group_sid);
+bool user_sid_in_group_sid(const struct dom_sid *sid, const struct dom_sid *group_sid);
 bool user_in_group(const char *username, const char *groupname);
 struct passwd;
 NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,

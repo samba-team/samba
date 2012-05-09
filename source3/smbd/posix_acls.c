@@ -1310,8 +1310,6 @@ static void apply_default_perms(const struct share_params *params,
 
 static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, canon_ace *group_ace )
 {
-	const char *u_name = NULL;
-
 	/* "Everyone" always matches every uid. */
 
 	if (dom_sid_equal(&group_ace->trustee, &global_sid_World))
@@ -1337,19 +1335,13 @@ static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, cano
 		}
 	}
 
-	/* u_name talloc'ed off tos. */
-	u_name = uidtoname(uid_ace->unix_ug.uid);
-	if (!u_name) {
-		return False;
-	}
-
 	/*
-	 * user_in_group_sid() uses create_token_from_username()
+	 * user_in_group_sid() uses create_token_from_sid()
 	 * which creates an artificial NT token given just a username,
 	 * so this is not reliable for users from foreign domains
 	 * exported by winbindd!
 	 */
-	return user_in_group_sid(u_name, &group_ace->trustee);
+	return user_sid_in_group_sid(&uid_ace->trustee, &group_ace->trustee);
 }
 
 /****************************************************************************

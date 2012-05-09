@@ -536,11 +536,7 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 }
 
 /*
- * Create an artificial NT token given just a username. (Initially intended
- * for force user)
- *
- * We go through lookup_name() to avoid problems we had with 'winbind use
- * default domain'.
+ * Create an artificial NT token given just a domain SID.
  *
  * We have 3 cases:
  *
@@ -554,16 +550,15 @@ void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
  * http://lists.samba.org/archive/samba-technical/2006-January/044803.html.
  */
 
-NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
-				    bool is_guest,
-				    uid_t *uid, gid_t *gid,
-				    char **found_username,
-				    struct security_token **token)
+static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
+				      const struct dom_sid *user_sid,
+				      bool is_guest,
+				      uid_t *uid, gid_t *gid,
+				      char **found_username,
+				      struct security_token **token)
 {
 	NTSTATUS result = NT_STATUS_NO_SUCH_USER;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	struct dom_sid user_sid;
-	enum lsa_SidType type;
 	gid_t *gids;
 	struct dom_sid *group_sids;
 	struct dom_sid unix_group_sid;
@@ -571,19 +566,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	uint32_t num_gids;
 	uint32_t i;
 
-	if (!lookup_name_smbconf(tmp_ctx, username, LOOKUP_NAME_ALL,
-			 NULL, NULL, &user_sid, &type)) {
-		DEBUG(1, ("lookup_name_smbconf for %s failed\n", username));
-		goto done;
-	}
-
-	if (type != SID_NAME_USER) {
-		DEBUG(1, ("%s is a %s, not a user\n", username,
-			  sid_type_lookup(type)));
-		goto done;
-	}
-
-	if (sid_check_is_in_our_sam(&user_sid)) {
+	if (sid_check_is_in_our_sam(user_sid)) {
 		bool ret;
 		uint32_t pdb_num_group_sids;
 		/* This is a passdb user, so ask passdb */
@@ -596,13 +579,13 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		}
 
 		become_root();
-		ret = pdb_getsampwsid(sam_acct, &user_sid);
+		ret = pdb_getsampwsid(sam_acct, user_sid);
 		unbecome_root();
 
 		if (!ret) {
-			DEBUG(1, ("pdb_getsampwsid(%s) for user %s failed\n",
-				  sid_string_dbg(&user_sid), username));
-			DEBUGADD(1, ("Fall back to unix user %s\n", username));
+			DEBUG(1, ("pdb_getsampwsid(%s) failed\n",
+				  sid_string_dbg(user_sid)));
+			DEBUGADD(1, ("Fall back to unix user\n"));
 			goto unix_user;
 		}
 
@@ -610,10 +593,10 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 						    &group_sids, &gids,
 						    &pdb_num_group_sids);
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(1, ("enum_group_memberships failed for %s (%s): "
-				  "%s\n", username, sid_string_dbg(&user_sid),
+			DEBUG(1, ("enum_group_memberships failed for %s: "
+				  "%s\n", sid_string_dbg(user_sid),
 				  nt_errstr(result)));
-			DEBUGADD(1, ("Fall back to unix user %s\n", username));
+			DEBUGADD(1, ("Fall back to unix uid lookup\n"));
 			goto unix_user;
 		}
 		num_group_sids = pdb_num_group_sids;
@@ -654,7 +637,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		}
 		*uid = sam_acct->unix_pw->pw_uid;
 
-	} else 	if (sid_check_is_in_unix_users(&user_sid)) {
+	} else 	if (sid_check_is_in_unix_users(user_sid)) {
+		struct dom_sid tmp_sid;
 		uint32_t getgroups_num_group_sids;
 		/* This is a unix user not in passdb. We need to ask nss
 		 * directly, without consulting passdb */
@@ -669,26 +653,27 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 	unix_user:
 
-		if (!sid_to_uid(&user_sid, uid)) {
-			DEBUG(1, ("unix_user case, sid_to_uid for %s (%s) failed\n",
-				  username, sid_string_dbg(&user_sid)));
+		if (!sid_to_uid(user_sid, uid)) {
+			DEBUG(1, ("unix_user case, sid_to_uid for %s failed\n",
+				  sid_string_dbg(user_sid)));
 			result = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
 
-		uid_to_unix_users_sid(*uid, &user_sid);
+		uid_to_unix_users_sid(*uid, &tmp_sid);
+		user_sid = &tmp_sid;
 
 		pass = getpwuid_alloc(tmp_ctx, *uid);
 		if (pass == NULL) {
-			DEBUG(1, ("getpwuid(%u) for user %s failed\n",
-				  (unsigned int)*uid, username));
+			DEBUG(1, ("getpwuid(%u) failed\n",
+				  (unsigned int)*uid));
 			goto done;
 		}
 
-		if (!getgroups_unix_user(tmp_ctx, username, pass->pw_gid,
+		if (!getgroups_unix_user(tmp_ctx, pass->pw_name, pass->pw_gid,
 					 &gids, &getgroups_num_group_sids)) {
 			DEBUG(1, ("getgroups_unix_user for user %s failed\n",
-				  username));
+				  pass->pw_name));
 			goto done;
 		}
 		num_group_sids = getgroups_num_group_sids;
@@ -725,9 +710,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		 * information. */
 
 		/* We must always assign the *uid. */
-		if (!sid_to_uid(&user_sid, uid)) {
-			DEBUG(1, ("winbindd case, sid_to_uid for %s (%s) failed\n",
-				  username, sid_string_dbg(&user_sid)));
+		if (!sid_to_uid(user_sid, uid)) {
+			DEBUG(1, ("winbindd case, sid_to_uid for %s failed\n",
+				  sid_string_dbg(user_sid)));
 			result = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
@@ -740,7 +725,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 			goto done;
 		}
 
-		sid_copy(&group_sids[0], &user_sid);
+		sid_copy(&group_sids[0], user_sid);
 		sid_split_rid(&group_sids[0], NULL);
 		sid_append_rid(&group_sids[0], DOMAIN_RID_USERS);
 
@@ -753,7 +738,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		gids = gid;
 
 		/* Ensure we're returning the found_username on the right context. */
-		*found_username = talloc_strdup(mem_ctx, username);
+		*found_username = NULL;
 	}
 
 	/* Add the "Unix Group" SID for each gid to catch mapped groups
@@ -782,7 +767,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	}
 
 	/* Ensure we're creating the nt_token on the right context. */
-	*token = create_local_nt_token(mem_ctx, &user_sid,
+	*token = create_local_nt_token(mem_ctx, user_sid,
 				       is_guest, num_group_sids, group_sids);
 
 	if ((*token == NULL) || (*found_username == NULL)) {
@@ -793,6 +778,116 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	result = NT_STATUS_OK;
  done:
 	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+/*
+ * Create an artificial NT token given just a username. (Initially intended
+ * for force user)
+ *
+ * We go through lookup_name() to avoid problems we had with 'winbind use
+ * default domain'.
+ *
+ * We have 3 cases:
+ *
+ * unmapped unix users: Go directly to nss to find the user's group.
+ *
+ * A passdb user: The list of groups is provided by pdb_enum_group_memberships.
+ *
+ * If the user is provided by winbind, the primary gid is set to "domain
+ * users" of the user's domain. For an explanation why this is necessary, see
+ * the thread starting at
+ * http://lists.samba.org/archive/samba-technical/2006-January/044803.html.
+ */
+
+NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
+				    bool is_guest,
+				    uid_t *uid, gid_t *gid,
+				    char **found_username,
+				    struct security_token **token)
+{
+	NTSTATUS result = NT_STATUS_NO_SUCH_USER;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct dom_sid user_sid;
+	enum lsa_SidType type;
+
+	if (!lookup_name_smbconf(tmp_ctx, username, LOOKUP_NAME_ALL,
+			 NULL, NULL, &user_sid, &type)) {
+		DEBUG(1, ("lookup_name_smbconf for %s failed\n", username));
+		goto done;
+	}
+
+	if (type != SID_NAME_USER) {
+		DEBUG(1, ("%s is a %s, not a user\n", username,
+			  sid_type_lookup(type)));
+		goto done;
+	}
+
+	result = create_token_from_sid(mem_ctx, &user_sid, is_guest, uid, gid, found_username, token);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (*found_username == NULL) {
+		*found_username = talloc_strdup(mem_ctx, username);
+	}
+
+	if ((*token == NULL) || (*found_username == NULL)) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	result = NT_STATUS_OK;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
+/***************************************************************************
+ Build upon create_token_from_username:
+
+ Expensive helper function to figure out whether a user given its name is
+ member of a particular group.
+***************************************************************************/
+
+bool user_sid_in_group_sid(const struct dom_sid *sid, const struct dom_sid *group_sid)
+{
+	NTSTATUS status;
+	uid_t uid;
+	gid_t gid;
+	char *found_username;
+	struct security_token *token;
+	bool result;
+	enum lsa_SidType type;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	if (!lookup_sid(mem_ctx, sid,
+			 NULL, NULL, &type)) {
+		DEBUG(1, ("lookup_sid for %s failed\n", dom_sid_string(mem_ctx, sid)));
+		goto done;
+	}
+
+	if (type != SID_NAME_USER) {
+		DEBUG(5, ("%s is a %s, not a user\n", dom_sid_string(mem_ctx, sid),
+			  sid_type_lookup(type)));
+		goto done;
+	}
+
+	status = create_token_from_sid(mem_ctx, sid, False,
+				       &uid, &gid, &found_username,
+				       &token);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("could not create token for %s\n", dom_sid_string(mem_ctx, sid)));
+		TALLOC_FREE(mem_ctx);
+		return False;
+	}
+
+	result = security_token_has_sid(token, group_sid);
+
+done:
+	TALLOC_FREE(mem_ctx);
 	return result;
 }
 
