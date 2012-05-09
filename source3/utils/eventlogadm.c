@@ -121,7 +121,7 @@ static bool eventlog_add_source( const char *eventlog, const char *sourcename,
 		goto done;
 	}
 
-	relpath = strchr(evtlogpath, '\\');
+	relpath = evtlogpath + sizeof(KEY_EVENTLOG);
 	hive_name = talloc_strndup(ctx, evtlogpath, relpath - evtlogpath);
 	if (!hive_name) {
 		d_printf("Out of memory\n");
