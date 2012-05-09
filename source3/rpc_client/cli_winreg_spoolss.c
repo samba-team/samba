@@ -2861,6 +2861,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 	uint32_t num_builtin = ARRAY_SIZE(builtin_forms1);
 	uint32_t i;
 	WERROR result = WERR_OK;
+	WERROR ignore;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
@@ -2914,15 +2915,11 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	if (winreg_handle != NULL) {
-		WERROR ignore;
-
-		if (is_valid_policy_hnd(&key_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
-		}
-		if (is_valid_policy_hnd(&hive_hnd)) {
-			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
-		}
+	if (is_valid_policy_hnd(&key_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+	}
+	if (is_valid_policy_hnd(&hive_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
 	}
 
 	TALLOC_FREE(tmp_ctx);
