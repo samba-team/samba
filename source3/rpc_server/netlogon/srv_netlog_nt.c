@@ -506,7 +506,8 @@ static NTSTATUS samr_find_machine_account(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
-	struct policy_handle connect_handle, domain_handle;
+	struct policy_handle connect_handle;
+	struct policy_handle domain_handle = { 0, };
 	struct lsa_String domain_name;
 	struct dom_sid2 *domain_sid;
 	struct lsa_String names;
