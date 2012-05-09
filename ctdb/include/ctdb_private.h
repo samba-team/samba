@@ -316,11 +316,6 @@ struct ctdb_daemon_data {
 		ctdb->statistics_current.counter++;					\
 	}
 
-#define CTDB_INCREMENT_DB_STAT(ctdb_db, counter) \
-	{										\
-		ctdb_db->statistics.counter++;						\
-	}
-
 #define CTDB_DECREMENT_STAT(ctdb, counter) \
 	{										\
 		if (ctdb->statistics.counter > 0)					\
@@ -329,31 +324,65 @@ struct ctdb_daemon_data {
 			ctdb->statistics_current.counter--;				\
 	}
 
+#define CTDB_INCREMENT_DB_STAT(ctdb_db, counter) \
+	{										\
+		ctdb_db->statistics.counter++;						\
+	}
+
+#define CTDB_DECREMENT_DB_STAT(ctdb_db, counter) \
+	{										\
+		if (ctdb_db->statistics.counter > 0)					\
+			ctdb_db->statistics.counter--;					\
+	}
+
 #define CTDB_UPDATE_RECLOCK_LATENCY(ctdb, name, counter, value) \
 	{										\
-		if (value > ctdb->statistics.counter.max)					\
+		if (value > ctdb->statistics.counter.max)				\
 			ctdb->statistics.counter.max = value;				\
-		if (value > ctdb->statistics_current.counter.max)				\
+		if (value > ctdb->statistics_current.counter.max)			\
 			ctdb->statistics_current.counter.max = value;			\
 											\
-		if (ctdb->statistics.counter.num == 0 || value < ctdb->statistics.counter.min)	\
+		if (ctdb->statistics.counter.num == 0 ||				\
+		    value < ctdb->statistics.counter.min)				\
 			ctdb->statistics.counter.min = value;				\
-		if (ctdb->statistics_current.counter.num == 0 || value < ctdb->statistics_current.counter.min)	\
+		if (ctdb->statistics_current.counter.num == 0 ||			\
+		    value < ctdb->statistics_current.counter.min)			\
 			ctdb->statistics_current.counter.min = value;			\
 											\
-		ctdb->statistics.counter.total += value;					\
-		ctdb->statistics_current.counter.total += value;				\
+		ctdb->statistics.counter.total += value;				\
+		ctdb->statistics_current.counter.total += value;			\
 											\
 		ctdb->statistics.counter.num++;						\
 		ctdb->statistics_current.counter.num++;					\
 											\
 		if (ctdb->tunable.reclock_latency_ms != 0) {				\
 			if (value*1000 > ctdb->tunable.reclock_latency_ms) {		\
-				DEBUG(DEBUG_ERR, ("High RECLOCK latency %fs for operation %s\n", value, name));	\
+				DEBUG(DEBUG_ERR,					\
+				      ("High RECLOCK latency %fs for operation %s\n",	\
+				       value, name));					\
 			}								\
 		}									\
 	}
 
+#define CTDB_UPDATE_DB_RECLOCK_LATENCY(ctdb_db, name, counter, value) \
+	{										\
+		if (value > ctdb_db->statistics.counter.max)				\
+			ctdb_db->statistics.counter.max = value;			\
+		if (ctdb_db->statistics.counter.num == 0 || 				\
+		    value < ctdb_db->statistics.counter.min)				\
+			ctdb_db->statistics.counter.min = value;			\
+											\
+		ctdb_db->statistics.counter.total += value;				\
+		ctdb_db->statistics.counter.num++;					\
+											\
+		if (ctdb_db->ctdb->tunable.reclock_latency_ms != 0) {			\
+			if (value*1000 > ctdb_db->ctdb->tunable.reclock_latency_ms) {	\
+				DEBUG(DEBUG_ERR,					\
+				      ("High RECLOCK latency %fs for operation %s\n",	\
+				       value, name));					\
+			}								\
+		}									\
+	}
 
 #define CTDB_UPDATE_LATENCY(ctdb, db, operation, counter, t) \
 	{										\
@@ -364,9 +393,11 @@ struct ctdb_daemon_data {
 		if (l > ctdb->statistics_current.counter.max)				\
 			ctdb->statistics_current.counter.max = l;			\
 											\
-		if (ctdb->statistics.counter.num == 0 || l < ctdb->statistics.counter.min)	\
+		if (ctdb->statistics.counter.num == 0 ||				\
+		    l < ctdb->statistics.counter.min)					\
 			ctdb->statistics.counter.min = l;				\
-		if (ctdb->statistics_current.counter.num == 0 || l < ctdb->statistics_current.counter.min)	\
+		if (ctdb->statistics_current.counter.num == 0 ||			\
+		    l < ctdb->statistics_current.counter.min)				\
 			ctdb->statistics_current.counter.min = l;			\
 											\
 		ctdb->statistics.counter.total += l;					\
@@ -375,9 +406,11 @@ struct ctdb_daemon_data {
 		ctdb->statistics.counter.num++;						\
 		ctdb->statistics_current.counter.num++;					\
 											\
-		if (ctdb->tunable.log_latency_ms !=0) {					\
+		if (ctdb->tunable.log_latency_ms != 0) {				\
 			if (l*1000 > ctdb->tunable.log_latency_ms) {			\
-				DEBUG(DEBUG_WARNING, ("High latency %.6fs for operation %s on database %s\n", l, operation, db->db_name));\
+				DEBUG(DEBUG_WARNING,					\
+				      ("High latency %.6fs for operation %s on database %s\n",\
+				       l, operation, db->db_name));			\
 			}								\
 		}									\
 	}
