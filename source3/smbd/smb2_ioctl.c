@@ -36,7 +36,8 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					       uint32_t in_flags);
 static NTSTATUS smbd_smb2_ioctl_recv(struct tevent_req *req,
 				     TALLOC_CTX *mem_ctx,
-				     DATA_BLOB *out_output);
+				     DATA_BLOB *out_output,
+				     bool *disconnect);
 
 static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
@@ -129,8 +130,11 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	DATA_BLOB out_output_buffer = data_blob_null;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
+	bool disconnect = false;
 
-	status = smbd_smb2_ioctl_recv(subreq, req, &out_output_buffer);
+	status = smbd_smb2_ioctl_recv(subreq, req,
+				      &out_output_buffer,
+				      &disconnect);
 
 	DEBUG(10,("smbd_smb2_request_ioctl_done: smbd_smb2_ioctl_recv returned "
 		"%u status %s\n",
@@ -138,6 +142,13 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 		nt_errstr(status) ));
 
 	TALLOC_FREE(subreq);
+	if (disconnect) {
+		error = status;
+		smbd_server_connection_terminate(req->sconn,
+						 nt_errstr(error));
+		return;
+	}
+
 	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
 		/* also ok */
 	} else if (!NT_STATUS_IS_OK(status)) {
@@ -211,6 +222,7 @@ struct smbd_smb2_ioctl_state {
 	DATA_BLOB in_input;
 	uint32_t in_max_output;
 	DATA_BLOB out_output;
+	bool disconnect;
 };
 
 static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq);
@@ -502,11 +514,14 @@ static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq)
 
 static NTSTATUS smbd_smb2_ioctl_recv(struct tevent_req *req,
 				     TALLOC_CTX *mem_ctx,
-				     DATA_BLOB *out_output)
+				     DATA_BLOB *out_output,
+				     bool *disconnect)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
 					      struct smbd_smb2_ioctl_state);
+
+	*disconnect = state->disconnect;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		if (!NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
