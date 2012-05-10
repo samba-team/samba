@@ -123,12 +123,14 @@ if [ $count != 2 ]; then
     echo returned $count records - expected 2
     echo "this fails on openLdap ..."
 fi
+$VALGRIND ldbsearch '(cn>t)' cn && exit 1 # strictly greater should not work
 
 count=`$VALGRIND ldbsearch '(cn<=t)' cn | grep '^dn' | wc -l`
 if [ $count != 13 ]; then
     echo returned $count records - expected 13
     echo "this fails on openLdap ..."
 fi
+$VALGRIND ldbsearch '(cn<t)' cn && exit 1 # strictly less should not work
 
 checkcount() {
     count=$1
