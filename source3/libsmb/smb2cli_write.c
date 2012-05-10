@@ -34,7 +34,10 @@ static void smb2cli_write_done(struct tevent_req *subreq);
 
 struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
-				      struct cli_state *cli,
+				      struct smbXcli_conn *conn,
+				      uint32_t timeout_msec,
+				      struct smbXcli_session *session,
+				      uint32_t tcon_id,
 				      uint32_t length,
 				      uint64_t offset,
 				      uint64_t fid_persistent,
@@ -74,12 +77,12 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 		dyn_len = sizeof(state->dyn_pad);
 	}
 
-	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_WRITE,
+	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_WRITE,
 				  0, 0, /* flags */
-				  cli->timeout,
-				  cli->smb2.pid,
-				  cli->smb2.tid,
-				  cli->smb2.session,
+				  timeout_msec,
+				  0xFEFF, /* pid */
+				  tcon_id,
+				  session,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
@@ -115,7 +118,10 @@ NTSTATUS smb2cli_write_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS smb2cli_write(struct cli_state *cli,
+NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
+		       uint32_t timeout_msec,
+		       struct smbXcli_session *session,
+		       uint32_t tcon_id,
 		       uint32_t length,
 		       uint64_t offset,
 		       uint64_t fid_persistent,
@@ -129,7 +135,7 @@ NTSTATUS smb2cli_write(struct cli_state *cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -140,7 +146,8 @@ NTSTATUS smb2cli_write(struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smb2cli_write_send(frame, ev, cli, length, offset,
+	req = smb2cli_write_send(frame, ev, conn, timeout_msec, session,
+				 tcon_id, length, offset,
 				 fid_persistent, fid_volatile,
 				 remaining_bytes, flags, data);
 	if (req == NULL) {

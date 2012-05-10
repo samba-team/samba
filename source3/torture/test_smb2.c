@@ -89,7 +89,8 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_write(cli, strlen(hello), 0, fid_persistent,
+	status = smb2cli_write(cli->conn, cli->timeout, cli->smb2.session,
+			       cli->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_write returned %s\n", nt_errstr(status));
@@ -338,7 +339,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_write(cli1, strlen(hello), 0, fid_persistent,
+	status = smb2cli_write(cli1->conn, cli1->timeout, cli1->smb2.session,
+			       cli1->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_write returned %s\n", nt_errstr(status));
@@ -532,7 +534,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_write(cli2, strlen(hello), 0, fid_persistent,
+	status = smb2cli_write(cli2->conn, cli2->timeout, cli2->smb2.session,
+			       cli2->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_write returned %s\n", nt_errstr(status));
@@ -587,7 +590,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_write(cli2, strlen(hello), 0, fid_persistent,
+	status = smb2cli_write(cli2->conn, cli2->timeout, cli2->smb2.session,
+			       cli2->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_write returned %s\n", nt_errstr(status));
@@ -645,7 +649,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_write(cli2, strlen(hello), 0, fid_persistent,
+	status = smb2cli_write(cli2->conn, cli2->timeout, cli2->smb2.session,
+			       cli2->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_write returned %s\n", nt_errstr(status));
@@ -738,7 +743,8 @@ bool run_smb2_tcon_dependence(int dummy)
 		return false;
 	}
 
-	status = smb2cli_write(cli, strlen(hello), 0, fid_persistent,
+	status = smb2cli_write(cli->conn, cli->timeout, cli->smb2.session,
+			       cli->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_write returned %s\n", nt_errstr(status));
@@ -1142,7 +1148,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = smb2cli_write(cli1, strlen(hello), 0, fid_persistent,
+	status = smb2cli_write(cli1->conn, cli1->timeout, cli1->smb2.session,
+			       cli1->smb2.tid, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_write returned %s\n", nt_errstr(status));

@@ -473,14 +473,18 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 					     0, /* offset */
 					     cli_nps->write.ofs); /* size */
 	} else {
-		subreq = smb2cli_write_send(state, state->ev, cli_nps->cli,
-					     cli_nps->write.ofs, /* length */
-					     0, /* offset */
-					     cli_nps->fid_persistent,
-					     cli_nps->fid_volatile,
-					     0, /* remaining_bytes */
-					     0, /* flags */
-					     cli_nps->write.buf);
+		subreq = smb2cli_write_send(state, state->ev,
+					    cli_nps->cli->conn,
+					    cli_nps->cli->timeout,
+					    cli_nps->cli->smb2.session,
+					    cli_nps->cli->smb2.tid,
+					    cli_nps->write.ofs, /* length */
+					    0, /* offset */
+					    cli_nps->fid_persistent,
+					    cli_nps->fid_volatile,
+					    0, /* remaining_bytes */
+					    0, /* flags */
+					    cli_nps->write.buf);
 	}
 	if (tevent_req_nomem(subreq, req)) {
 		return;
