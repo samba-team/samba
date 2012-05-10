@@ -101,9 +101,10 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_read(cli, 0x10000, 0, fid_persistent,
-			       fid_volatile, 2, 0,
-			       talloc_tos(), &result, &nread);
+	status = smb2cli_read(cli->conn, cli->timeout, cli->smb2.session,
+			      cli->smb2.tid, 0x10000, 0, fid_persistent,
+			      fid_volatile, 2, 0,
+			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
@@ -343,9 +344,10 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_read(cli1, 0x10000, 0, fid_persistent,
-			       fid_volatile, 2, 0,
-			       talloc_tos(), &result, &nread);
+	status = smb2cli_read(cli1->conn, cli1->timeout, cli1->smb2.session,
+			      cli1->smb2.tid, 0x10000, 0, fid_persistent,
+			      fid_volatile, 2, 0,
+			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
@@ -527,9 +529,10 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_read(cli2, 0x10000, 0, fid_persistent,
-			       fid_volatile, 2, 0,
-			       talloc_tos(), &result, &nread);
+	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
+			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
+			      fid_volatile, 2, 0,
+			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
@@ -579,9 +582,10 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_read(cli2, 0x10000, 0, fid_persistent,
-			       fid_volatile, 2, 0,
-			       talloc_tos(), &result, &nread);
+	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
+			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
+			      fid_volatile, 2, 0,
+			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
@@ -640,9 +644,10 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_read(cli2, 0x10000, 0, fid_persistent,
-			       fid_volatile, 2, 0,
-			       talloc_tos(), &result, &nread);
+	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
+			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
+			      fid_volatile, 2, 0,
+			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
@@ -730,9 +735,10 @@ bool run_smb2_tcon_dependence(int dummy)
 		return false;
 	}
 
-	status = smb2cli_read(cli, 0x10000, 0, fid_persistent,
-			       fid_volatile, 2, 0,
-			       talloc_tos(), &result, &nread);
+	status = smb2cli_read(cli->conn, cli->timeout, cli->smb2.session,
+			      cli->smb2.tid, 0x10000, 0, fid_persistent,
+			      fid_volatile, 2, 0,
+			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
@@ -754,9 +760,10 @@ bool run_smb2_tcon_dependence(int dummy)
 
 	cli->smb2.tid++;
 
-	status = smb2cli_read(cli, 0x10000, 0, fid_persistent,
-			       fid_volatile, 2, 0,
-			       talloc_tos(), &result, &nread);
+	status = smb2cli_read(cli->conn, cli->timeout, cli->smb2.session,
+			      cli->smb2.tid, 0x10000, 0, fid_persistent,
+			      fid_volatile, 2, 0,
+			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;
@@ -1142,9 +1149,10 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = smb2cli_read(cli2, 0x10000, 0, fid_persistent,
-			       fid_volatile, 2, 0,
-			       talloc_tos(), &result, &nread);
+	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
+			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
+			      fid_volatile, 2, 0,
+			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_read returned %s\n", nt_errstr(status));
 		return false;

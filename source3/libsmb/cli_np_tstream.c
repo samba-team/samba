@@ -742,7 +742,11 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 					    0, /* offset */
 					    TSTREAM_CLI_NP_MAX_BUF_SIZE);
 	} else {
-		subreq = smb2cli_read_send(state, state->ev, cli_nps->cli,
+		subreq = smb2cli_read_send(state, state->ev,
+					   cli_nps->cli->conn,
+					   cli_nps->cli->timeout,
+					   cli_nps->cli->smb2.session,
+					   cli_nps->cli->smb2.tid,
 					   TSTREAM_CLI_NP_MAX_BUF_SIZE, /* length */
 					   0, /* offset */
 					   cli_nps->fid_persistent,
