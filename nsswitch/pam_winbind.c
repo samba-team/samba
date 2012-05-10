@@ -437,13 +437,13 @@ static int _pam_parse(const pam_handle_t *pamh,
 		ctrl |= WINBIND_SILENT;
 	}
 
-	if (iniparser_getstring(d, CONST_DISCARD(char *, "global:krb5_ccache_type")) != NULL) {
+	if (iniparser_getstring(d, CONST_DISCARD(char *, "global:krb5_ccache_type"), NULL) != NULL) {
 		ctrl |= WINBIND_KRB5_CCACHE_TYPE;
 	}
 
-	if ((iniparser_getstring(d, CONST_DISCARD(char *, "global:require-membership-of"))
+	if ((iniparser_getstring(d, CONST_DISCARD(char *, "global:require-membership-of"), NULL)
 	     != NULL) ||
-	    (iniparser_getstring(d, CONST_DISCARD(char *, "global:require_membership_of"))
+	    (iniparser_getstring(d, CONST_DISCARD(char *, "global:require_membership_of"), NULL)
 	     != NULL)) {
 		ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
 	}
