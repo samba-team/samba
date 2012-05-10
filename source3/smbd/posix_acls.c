@@ -1525,6 +1525,13 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 					pace->unix_ug.gid == pace_user->unix_ug.gid) {
 				/* Already got one. */
 				got_duplicate_group = true;
+			} else if ((pace->type == SMB_ACL_GROUP)
+				   && (dom_sid_equal(&pace->trustee, &pace_user->trustee))) {
+				/* If the SID owning the file appears
+				 * in a group entry, then we have
+				 * enough duplication, they will still
+				 * have access */
+				got_duplicate_user = true;
 			}
 		}
 
