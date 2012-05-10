@@ -808,7 +808,10 @@ static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
 						  cli_nps->write.ofs);
 
 		subreq = smb2cli_ioctl_send(state, state->ev,
-					    cli_nps->cli,
+					    cli_nps->cli->conn,
+					    cli_nps->cli->timeout,
+					    cli_nps->cli->smb2.session,
+					    cli_nps->cli->smb2.tid,
 					    cli_nps->fid_persistent,
 					    cli_nps->fid_volatile,
 					    FSCTL_NAMED_PIPE_READ_WRITE,
