@@ -723,6 +723,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "private directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szPrivateDir),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_HIDE,
+	},
+	{
 		.label		= "passdb backend",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
