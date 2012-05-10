@@ -26,9 +26,13 @@ struct cli_state;
 
 struct tevent_req *smb2cli_logoff_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
-				       struct cli_state *cli);
+				       struct smbXcli_conn *conn,
+				       uint32_t timeout_msec,
+				       struct smbXcli_session *session);
 NTSTATUS smb2cli_logoff_recv(struct tevent_req *req);
-NTSTATUS smb2cli_logoff(struct cli_state *cli);
+NTSTATUS smb2cli_logoff(struct smbXcli_conn *conn,
+			uint32_t timeout_msec,
+			struct smbXcli_session *session);
 
 struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,

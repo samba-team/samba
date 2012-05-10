@@ -183,7 +183,7 @@ bool run_smb2_basic(int dummy)
 	}
 
 	saved_uid = smb2cli_session_current_id(cli->smb2.session);
-	status = smb2cli_logoff(cli);
+	status = smb2cli_logoff(cli->conn, cli->timeout, cli->smb2.session);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_logoff returned %s\n", nt_errstr(status));
 		return false;
@@ -197,7 +197,7 @@ bool run_smb2_basic(int dummy)
 
 	smb2cli_session_set_id_and_flags(cli->smb2.session, saved_uid, 0);
 
-	status = smb2cli_logoff(cli);
+	status = smb2cli_logoff(cli->conn, cli->timeout, cli->smb2.session);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		printf("2nd smb2cli_logoff returned %s\n", nt_errstr(status));
 		return false;
