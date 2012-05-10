@@ -281,26 +281,29 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	int sock_size;
 	struct tevent_fd *fde;
 
-	/* in order to ensure that we don't get two nodes with the
-	   same adddress, we must make the bind() and listen() calls
-	   atomic. The SO_REUSEADDR setsockopt only prevents double
-	   binds if the first socket is in LISTEN state  */
-	lock_fd = open(lock_path, O_RDWR|O_CREAT, 0666);
-	if (lock_fd == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to open %s\n", lock_path));
-		return -1;
-	}
+	/* We only need to serialize this if we dont yet know the node ip */
+	if (!ctdb->node_ip) {
+		/* in order to ensure that we don't get two nodes with the
+		   same adddress, we must make the bind() and listen() calls
+		   atomic. The SO_REUSEADDR setsockopt only prevents double
+		   binds if the first socket is in LISTEN state  */
+		lock_fd = open(lock_path, O_RDWR|O_CREAT, 0666);
+		if (lock_fd == -1) {
+			DEBUG(DEBUG_CRIT,("Unable to open %s\n", lock_path));
+			return -1;
+		}
 
-	lock.l_type = F_WRLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = 0;
-	lock.l_len = 1;
-	lock.l_pid = 0;
+		lock.l_type = F_WRLCK;
+		lock.l_whence = SEEK_SET;
+		lock.l_start = 0;
+		lock.l_len = 1;
+		lock.l_pid = 0;
 
-	if (fcntl(lock_fd, F_SETLKW, &lock) != 0) {
-		DEBUG(DEBUG_CRIT,("Unable to lock %s\n", lock_path));
-		close(lock_fd);
-		return -1;
+		if (fcntl(lock_fd, F_SETLKW, &lock) != 0) {
+			DEBUG(DEBUG_CRIT,("Unable to lock %s\n", lock_path));
+			close(lock_fd);
+			return -1;
+		}
 	}
 
 	for (i=0; i < ctdb->num_nodes; i++) {
@@ -399,11 +402,15 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 			   ctdb_listen_event, ctdb);
 	tevent_fd_set_auto_close(fde);
 
-	close(lock_fd);
+	if (!ctdb->node_ip) {
+		close(lock_fd);
+	}
 	return 0;
 	
 failed:
-	close(lock_fd);
+	if (!ctdb->node_ip) {
+		close(lock_fd);
+	}
 	close(ctcp->listen_fd);
 	ctcp->listen_fd = -1;
 	return -1;
