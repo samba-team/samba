@@ -57,7 +57,7 @@ def parse_sigs(sigs, abi_match):
                     break
             if not matched:
                 continue
-        print "%s -> %s" % (sa[1], normalise_signature(sa[1]))
+        Logs.debug("%s -> %s" % (sa[1], normalise_signature(sa[1])))
         ret[sa[0]] = normalise_signature(sa[1])
     return ret
 
