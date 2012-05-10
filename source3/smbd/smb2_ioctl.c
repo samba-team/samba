@@ -502,13 +502,42 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
         }
 
-	default:
-		if (IS_IPC(smbreq->conn)) {
-			tevent_req_nterror(req, NT_STATUS_FS_DRIVER_REQUIRED);
+	default: {
+		uint8_t *out_data = NULL;
+		uint32_t out_data_len = 0;
+		NTSTATUS status;
+
+		if (fsp == NULL) {
+			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+
+		status = SMB_VFS_FSCTL(fsp,
+				       state,
+				       in_ctl_code,
+				       smbreq->flags2,
+				       in_input.data,
+				       in_input.length,
+				       &out_data,
+				       in_max_output,
+				       &out_data_len);
+		state->out_output = data_blob_const(out_data, out_data_len);
+		if (NT_STATUS_IS_OK(status)) {
+			tevent_req_done(req);
+			return tevent_req_post(req, ev);
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			if (IS_IPC(smbreq->conn)) {
+				status = NT_STATUS_FS_DRIVER_REQUIRED;
+			} else {
+				status = NT_STATUS_INVALID_DEVICE_REQUEST;
+			}
+		}
+
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
+	}
 	}
 
 	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
