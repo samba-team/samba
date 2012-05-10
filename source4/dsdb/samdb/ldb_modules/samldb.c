@@ -4,6 +4,7 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Simo Sorce  2004-2008
    Copyright (C) Matthias Dieter Wallnöfer 2009-2011
+   Copyright (C) Matthieu Patou 2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -428,6 +429,8 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 	struct ldb_context *ldb;
 	struct ldb_result *ldb_res;
 	struct ldb_dn *schema_dn;
+	struct samldb_msds_intid_persistant *msds_intid_struct;
+	struct dsdb_schema *schema;
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema_dn = ldb_get_schema_basedn(ldb);

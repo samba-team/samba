@@ -49,6 +49,10 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	struct dsdb_control_current_partition *ctrl;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *new_schema;
+	int interval;
+	time_t ts, lastts;
+	struct loadparm_context *lp_ctx =
+		(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
 	
 	struct schema_load_private_data *private_data = talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
 	if (!private_data) {
@@ -58,6 +62,14 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 
 	/* We don't allow a schema reload during a transaction - nobody else can modify our schema behind our backs */
 	if (private_data->in_transaction) {
+		return schema;
+	}
+
+	lastts = schema->last_refresh;
+	ts = time(NULL);
+	interval = lpcfg_parm_int(lp_ctx, NULL, "dsdb", "schema_reload_interval", 120);
+	if (lastts > (ts - interval)) {
+		DEBUG(11, ("Less than %d seconds since last reload, returning cached version ts = %d\n", interval, (int)lastts));
 		return schema;
 	}
 
@@ -84,7 +96,16 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 		talloc_free(res);
 		return NULL;
 	}
-	
+
+	/*
+	 * We update right now the last refresh timestamp so that if
+	 * the schema partition hasn't change we don't keep on retrying.
+	 * Otherwise if the timestamp was update only when the schema has
+	 * actually changed (and therefor completely reloaded) we would
+	 * continue to hit the database to get the highest USN.
+	 */
+	schema->last_refresh = ts;
+
 	ctrl = talloc(treq, struct dsdb_control_current_partition);
 	if (!ctrl) {
 		talloc_free(res);
@@ -130,7 +151,7 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	if (ret != LDB_SUCCESS) {
 		return schema;
 	}
-	
+
 	if (is_global_schema) {
 		dsdb_make_schema_global(ldb, new_schema);
 	}
@@ -226,6 +247,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	ret = dsdb_set_schema(ldb, (*schema));
 
 	(*schema)->refresh_in_progress = false;
+	(*schema)->last_refresh = time(NULL);
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
@@ -324,9 +346,22 @@ static int schema_load_del_transaction(struct ldb_module *module)
 
 static int schema_load_extended(struct ldb_module *module, struct ldb_request *req)
 {
+	time_t *lastts;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct dsdb_schema *schema;
+
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) != 0) {
 		return ldb_next_request(module, req);
 	}
+	lastts = (time_t *)ldb_get_opaque(ldb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME);
+	if (!lastts) {
+		lastts = talloc(ldb, time_t);
+	}
+	schema = dsdb_get_schema(ldb, NULL);
+	/* Force a refresh */
+	schema->last_refresh = 0;
+	*lastts = 0;
+	ldb_set_opaque(ldb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME, lastts);
 
 	/* This is a no-op.  We reload as soon as we can */
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);

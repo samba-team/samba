@@ -199,6 +199,7 @@ struct dsdb_extended_dn_store_format {
 	bool store_extended_dn_in_ldb;
 };
 
+#define DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME "DSDB_OPAQUE_LAST_SCHEMA_UPDATE"
 #define DSDB_OPAQUE_PARTITION_MODULE_MSG_OPAQUE_NAME "DSDB_OPAQUE_PARTITION_MODULE_MSG"
 
 /* this takes a struct dsdb_fsmo_extended_op */
