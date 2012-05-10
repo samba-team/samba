@@ -31,7 +31,8 @@ else
 fi
 
 if [ -d "${TEST_SUBDIR}/etc-ctdb" ] ; then
-    CTDB_BASE="${TEST_SUBDIR}/etc-ctdb"
+    cp -prL "${TEST_SUBDIR}/etc-ctdb" "$EVENTSCRIPTS_TESTS_VAR_DIR"
+    export CTDB_BASE="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc-ctdb"
 else
     die "Unable to set \$CTDB_BASE"
 fi
