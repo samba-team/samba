@@ -33,8 +33,11 @@ static bool wrap_simple_1smb2_test(struct torture_context *torture_ctx,
 	struct smb2_tree *tree1;
 	TALLOC_CTX *mem_ctx = talloc_new(torture_ctx);
 
-	if (!torture_smb2_connection(torture_ctx, &tree1))
+	if (!torture_smb2_connection(torture_ctx, &tree1)) {
+		torture_fail(torture_ctx,
+			    "Establishing SMB2 connection failed\n");
 		return false;
+	}
 
 	/*
 	 * This is a trick:
@@ -89,12 +92,16 @@ static bool wrap_simple_2smb2_test(struct torture_context *torture_ctx,
 	TALLOC_CTX *mem_ctx = talloc_new(torture_ctx);
 
 	if (!torture_smb2_connection(torture_ctx, &tree1)) {
+		torture_fail(torture_ctx,
+		    "Establishing SMB2 connection failed\n");
 		goto done;
 	}
 
 	talloc_steal(mem_ctx, tree1);
 
 	if (!torture_smb2_connection(torture_ctx, &tree2)) {
+		torture_fail(torture_ctx,
+		    "Establishing SMB2 connection failed\n");
 		goto done;
 	}
 
