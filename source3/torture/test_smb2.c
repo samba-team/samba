@@ -72,7 +72,8 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "smb2-basic.txt",
+	status = smb2cli_create(cli->conn, cli->timeout, cli->smb2.session,
+			cli->smb2.tid, "smb2-basic.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -129,7 +130,8 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "",
+	status = smb2cli_create(cli->conn, cli->timeout, cli->smb2.session,
+			cli->smb2.tid, "",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_SYNCHRONIZE|
@@ -317,7 +319,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli1, "session-reconnect.txt",
+	status = smb2cli_create(cli1->conn, cli1->timeout, cli1->smb2.session,
+			cli1->smb2.tid, "session-reconnect.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -540,7 +543,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli2, "session-reconnect.txt",
+	status = smb2cli_create(cli2->conn, cli2->timeout, cli2->smb2.session,
+			cli2->smb2.tid, "session-reconnect.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -593,7 +597,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli2, "session-reconnect.txt",
+	status = smb2cli_create(cli2->conn, cli2->timeout, cli2->smb2.session,
+			cli2->smb2.tid, "session-reconnect.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -617,7 +622,8 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli2, "session-reconnect.txt",
+	status = smb2cli_create(cli2->conn, cli2->timeout, cli2->smb2.session,
+			cli2->smb2.tid, "session-reconnect.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -708,7 +714,8 @@ bool run_smb2_tcon_dependence(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "tcon_depedence.txt",
+	status = smb2cli_create(cli->conn, cli->timeout, cli->smb2.session,
+			cli->smb2.tid, "tcon_depedence.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1110,7 +1117,8 @@ bool run_smb2_multi_channel(int dummy)
 
 	cli3->smb2.tid = cli2->smb2.tid;
 
-	status = smb2cli_create(cli2, "multi-channel.txt",
+	status = smb2cli_create(cli2->conn, cli2->timeout, cli2->smb2.session,
+			cli2->smb2.tid, "multi-channel.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1262,7 +1270,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli1, "multi-channel-invalid.txt",
+	status = smb2cli_create(cli1->conn, cli1->timeout, cli1->smb2.session,
+			cli1->smb2.tid, "multi-channel-invalid.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1278,7 +1287,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli2, "multi-channel-invalid.txt",
+	status = smb2cli_create(cli2->conn, cli2->timeout, cli2->smb2.session,
+			cli2->smb2.tid, "multi-channel-invalid.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1294,7 +1304,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli3, "multi-channel-invalid.txt",
+	status = smb2cli_create(cli3->conn, cli3->timeout, cli3->smb2.session,
+			cli3->smb2.tid, "multi-channel-invalid.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1421,7 +1432,8 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "session-reauth.txt",
+	status = smb2cli_create(cli->conn, cli->timeout, cli->smb2.session,
+			cli->smb2.tid, "session-reauth.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1437,7 +1449,8 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "",
+	status = smb2cli_create(cli->conn, cli->timeout, cli->smb2.session,
+			cli->smb2.tid, "",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_SYNCHRONIZE|
@@ -1618,7 +1631,8 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "session-reauth-invalid.txt",
+	status = smb2cli_create(cli->conn, cli->timeout, cli->smb2.session,
+			cli->smb2.tid, "session-reauth-invalid.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1634,7 +1648,8 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "",
+	status = smb2cli_create(cli->conn, cli->timeout, cli->smb2.session,
+			cli->smb2.tid, "",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_SYNCHRONIZE|
@@ -1779,7 +1794,8 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = smb2cli_create(cli, "session-reauth.txt",
+	status = smb2cli_create(cli->conn, cli->timeout, cli->smb2.session,
+			cli->smb2.tid, "session-reauth.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */

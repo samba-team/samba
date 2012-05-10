@@ -48,7 +48,10 @@ static void smb2cli_create_done(struct tevent_req *subreq);
 struct tevent_req *smb2cli_create_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	struct cli_state *cli,
+	struct smbXcli_conn *conn,
+	uint32_t timeout_msec,
+	struct smbXcli_session *session,
+	uint32_t tcon_id,
 	const char *filename,
 	uint8_t  oplock_level,		/* SMB2_OPLOCK_LEVEL_* */
 	uint32_t impersonation_level,	/* SMB2_IMPERSONATION_* */
@@ -136,12 +139,12 @@ struct tevent_req *smb2cli_create_send(
 		data_blob_free(&blob);
 	}
 
-	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_CREATE,
+	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_CREATE,
 				  0, 0, /* flags */
-				  cli->timeout,
-				  cli->smb2.pid,
-				  cli->smb2.tid,
-				  cli->smb2.session,
+				  timeout_msec,
+				  0xFEFF, /* pid */
+				  tcon_id,
+				  session,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
 	if (tevent_req_nomem(subreq, req)) {
@@ -227,7 +230,10 @@ NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smb2cli_create(struct cli_state *cli,
+NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
+			uint32_t timeout_msec,
+			struct smbXcli_session *session,
+			uint32_t tcon_id,
 			const char *filename,
 			uint8_t  oplock_level,	     /* SMB2_OPLOCK_LEVEL_* */
 			uint32_t impersonation_level, /* SMB2_IMPERSONATION_* */
@@ -245,7 +251,7 @@ NTSTATUS smb2cli_create(struct cli_state *cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -256,7 +262,8 @@ NTSTATUS smb2cli_create(struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smb2cli_create_send(frame, ev, cli, filename, oplock_level,
+	req = smb2cli_create_send(frame, ev, conn, timeout_msec, session,
+				  tcon_id, filename, oplock_level,
 				  impersonation_level, desired_access,
 				  file_attributes, share_access,
 				  create_disposition, create_options,
