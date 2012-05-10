@@ -694,6 +694,30 @@ static bool smbacl4_fill_ace4(
 	if (dom_sid_equal(&ace_nt->trustee, &global_sid_World)) {
 		ace_v4->who.special_id = SMB_ACE4_WHO_EVERYONE;
 		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
+	} else if (params->mode!=e_special &&
+		   dom_sid_equal(&ace_nt->trustee,
+				 &global_sid_Creator_Owner)) {
+		DEBUG(10, ("Map creator owner\n"));
+		ace_v4->who.special_id = SMB_ACE4_WHO_OWNER;
+		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
+		/* A non inheriting creator owner entry has no effect. */
+		ace_v4->aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
+		if (!(ace_v4->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
+		    && !(ace_v4->aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
+			return False;
+		}
+	} else if (params->mode!=e_special &&
+		   dom_sid_equal(&ace_nt->trustee,
+				 &global_sid_Creator_Group)) {
+		DEBUG(10, ("Map creator owner group\n"));
+		ace_v4->who.special_id = SMB_ACE4_WHO_GROUP;
+		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
+		/* A non inheriting creator group entry has no effect. */
+		ace_v4->aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
+		if (!(ace_v4->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
+		    && !(ace_v4->aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
+			return False;
+		}
 	} else {
 		uid_t uid;
 		gid_t gid;
