@@ -33,7 +33,10 @@ static void smb2cli_flush_done(struct tevent_req *subreq);
 
 struct tevent_req *smb2cli_flush_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
-				       struct cli_state *cli,
+				       struct smbXcli_conn *conn,
+				       uint32_t timeout_msec,
+				       struct smbXcli_session *session,
+				       uint32_t tcon_id,
 				       uint64_t fid_persistent,
 				       uint64_t fid_volatile)
 {
@@ -51,12 +54,12 @@ struct tevent_req *smb2cli_flush_send(TALLOC_CTX *mem_ctx,
 	SBVAL(fixed, 8, fid_persistent);
 	SBVAL(fixed, 16, fid_volatile);
 
-	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_FLUSH,
+	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_FLUSH,
 				  0, 0, /* flags */
-				  cli->timeout,
-				  cli->smb2.pid,
-				  cli->smb2.tid,
-				  cli->smb2.session,
+				  timeout_msec,
+				  0xFEFF, /* pid */
+				  tcon_id,
+				  session,
 				  state->fixed, sizeof(state->fixed),
 				  NULL, 0);
 	if (tevent_req_nomem(subreq, req)) {
@@ -92,7 +95,10 @@ NTSTATUS smb2cli_flush_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS smb2cli_flush(struct cli_state *cli,
+NTSTATUS smb2cli_flush(struct smbXcli_conn *conn,
+		       uint32_t timeout_msec,
+		       struct smbXcli_session *session,
+		       uint32_t tcon_id,
 		       uint64_t fid_persistent,
 		       uint64_t fid_volatile)
 {
@@ -101,7 +107,7 @@ NTSTATUS smb2cli_flush(struct cli_state *cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -112,8 +118,8 @@ NTSTATUS smb2cli_flush(struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smb2cli_flush_send(frame, ev, cli,
-				 fid_persistent, fid_volatile);
+	req = smb2cli_flush_send(frame, ev, conn, timeout_msec, session,
+				 tcon_id, fid_persistent, fid_volatile);
 	if (req == NULL) {
 		goto fail;
 	}
