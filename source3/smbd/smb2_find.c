@@ -278,6 +278,10 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (in_output_buffer_length > smb2req->sconn->smb2.max_trans) {
+		DEBUG(2,("smbd_smb2_find_send: "
+			 "client ignored max trans:%s: 0x%08X: 0x%08X\n",
+			 __location__, in_output_buffer_length,
+			 smb2req->sconn->smb2.max_trans));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
