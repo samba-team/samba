@@ -70,7 +70,7 @@ struct db_ctdb_transaction_handle {
 struct db_ctdb_ctx {
 	struct db_context *db;
 	struct tdb_wrap *wtdb;
-	uint32 db_id;
+	uint32_t db_id;
 	struct db_ctdb_transaction_handle *transaction;
 	struct g_lock_ctx *lock_ctx;
 };
@@ -524,7 +524,8 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 	result->private_data = ctx->transaction;
 
 	result->key.dsize = key.dsize;
-	result->key.dptr = (uint8 *)talloc_memdup(result, key.dptr, key.dsize);
+	result->key.dptr = (uint8_t *)talloc_memdup(result, key.dptr,
+						    key.dsize);
 	if (result->key.dptr == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
@@ -550,7 +551,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 	result->value.dptr = NULL;
 
 	if ((result->value.dsize != 0)
-	    && !(result->value.dptr = (uint8 *)talloc_memdup(
+	    && !(result->value.dptr = (uint8_t *)talloc_memdup(
 			 result, ctdb_data.dptr + sizeof(struct ctdb_ltdb_header),
 			 result->value.dsize))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -1056,7 +1057,8 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 	crec->ctdb_ctx = ctx;
 
 	result->key.dsize = key.dsize;
-	result->key.dptr = (uint8 *)talloc_memdup(result, key.dptr, key.dsize);
+	result->key.dptr = (uint8_t *)talloc_memdup(result, key.dptr,
+						    key.dsize);
 	if (result->key.dptr == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
@@ -1150,7 +1152,7 @@ again:
 	result->value.dptr = NULL;
 
 	if ((result->value.dsize != 0)
-	    && !(result->value.dptr = (uint8 *)talloc_memdup(
+	    && !(result->value.dptr = (uint8_t *)talloc_memdup(
 			 result, ctdb_data.dptr + sizeof(crec->header),
 			 result->value.dsize))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -1230,7 +1232,7 @@ static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 
 		data->dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header);
 
-		data->dptr = (uint8 *)talloc_memdup(
+		data->dptr = (uint8_t *)talloc_memdup(
 			mem_ctx, ctdb_data.dptr+sizeof(struct ctdb_ltdb_header),
 			data->dsize);
 
