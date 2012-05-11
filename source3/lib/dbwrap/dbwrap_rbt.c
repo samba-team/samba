@@ -84,7 +84,7 @@ static int db_rbt_compare(TDB_DATA a, TDB_DATA b)
 static void db_rbt_parse_node(struct db_rbt_node *node,
 			      TDB_DATA *key, TDB_DATA *value)
 {
-	key->dptr = ((uint8 *)node) + offsetof(struct db_rbt_node, data);
+	key->dptr = ((uint8_t *)node) + offsetof(struct db_rbt_node, data);
 	key->dsize = node->keysize;
 	value->dptr = key->dptr + node->keysize;
 	value->dsize = node->valuesize;
@@ -303,7 +303,7 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 		result->key = res.key;
 	}
 	else {
-		result->key.dptr = (uint8 *)
+		result->key.dptr = (uint8_t *)
 			((char *)rec_priv + sizeof(*rec_priv));
 		result->key.dsize = key.dsize;
 		memcpy(result->key.dptr, key.dptr, key.dsize);
