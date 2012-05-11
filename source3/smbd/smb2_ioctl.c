@@ -25,6 +25,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "rpc_server/srv_pipe_hnd.h"
 #include "include/ntioctl.h"
+#include "../librpc/ndr/libndr.h"
 
 static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -388,6 +389,78 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					smbd_smb2_ioctl_pipe_write_done,
 					req);
 		return req;
+
+	case FSCTL_VALIDATE_NEGOTIATE_INFO_224:
+	{
+		struct smbXsrv_connection *conn = smbreq->sconn->conn;
+		uint32_t in_capabilities;
+		DATA_BLOB in_guid_blob;
+		struct GUID in_guid;
+		uint16_t in_security_mode;
+		uint16_t in_max_dialect;
+		uint16_t max_dialect;
+		DATA_BLOB out_guid_blob;
+		NTSTATUS status;
+
+		if (in_input.length != 0x18) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_max_output < 0x18) {
+			tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
+			return tevent_req_post(req, ev);
+		}
+
+		in_capabilities = IVAL(in_input.data, 0x00);
+		in_guid_blob = data_blob_const(in_input.data + 0x04, 16);
+		in_security_mode = SVAL(in_input.data, 0x14);
+		in_max_dialect = SVAL(in_input.data, 0x16);
+
+		max_dialect = conn->smb2.client.dialects[conn->smb2.client.num_dialects-1];
+		if (in_max_dialect != max_dialect) {
+			state->disconnect = true;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (!GUID_compare(&in_guid, &conn->smb2.client.guid)) {
+			state->disconnect = true;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_security_mode != conn->smb2.client.security_mode) {
+			state->disconnect = true;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_capabilities != conn->smb2.client.capabilities) {
+			state->disconnect = true;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		status = GUID_to_ndr_blob(&conn->smb2.server.guid, state,
+					  &out_guid_blob);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		state->out_output = data_blob_talloc(state, NULL, 0x18);
+		if (tevent_req_nomem(state->out_output.data, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		SIVAL(state->out_output.data, 0x00, conn->smb2.server.capabilities);
+		memcpy(state->out_output.data+0x04, out_guid_blob.data, 16);
+		SIVAL(state->out_output.data, 0x14, conn->smb2.server.security_mode);
+		SIVAL(state->out_output.data, 0x16, conn->smb2.server.dialect);
+
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 
 	default: {
 		uint8_t *out_data = NULL;
