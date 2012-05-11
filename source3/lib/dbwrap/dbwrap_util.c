@@ -55,7 +55,7 @@ NTSTATUS dbwrap_store_int32(struct db_context *db, const char *keystr,
 			    int32_t v)
 {
 	struct db_record *rec;
-	int32 v_store;
+	int32_t v_store;
 	NTSTATUS status;
 
 	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(keystr));
@@ -66,7 +66,7 @@ NTSTATUS dbwrap_store_int32(struct db_context *db, const char *keystr,
 	SIVAL(&v_store, 0, v);
 
 	status = dbwrap_record_store(rec,
-				     make_tdb_data((const uint8 *)&v_store,
+				     make_tdb_data((const uint8_t *)&v_store,
 						   sizeof(v_store)),
 				     TDB_REPLACE);
 	TALLOC_FREE(rec);
@@ -102,7 +102,7 @@ NTSTATUS dbwrap_store_uint32(struct db_context *db, const char *keystr,
 			     uint32_t v)
 {
 	struct db_record *rec;
-	uint32 v_store;
+	uint32_t v_store;
 	NTSTATUS status;
 
 	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(keystr));
@@ -113,7 +113,7 @@ NTSTATUS dbwrap_store_uint32(struct db_context *db, const char *keystr,
 	SIVAL(&v_store, 0, v);
 
 	status = dbwrap_record_store(rec,
-				     make_tdb_data((const uint8 *)&v_store,
+				     make_tdb_data((const uint8_t *)&v_store,
 						   sizeof(v_store)),
 				     TDB_REPLACE);
 	TALLOC_FREE(rec);
@@ -168,7 +168,7 @@ static NTSTATUS dbwrap_change_uint32_atomic_action(struct db_context *db,
 	SIVAL(&v_store, 0, val);
 
 	ret = dbwrap_record_store(rec,
-				  make_tdb_data((const uint8 *)&v_store,
+				  make_tdb_data((const uint8_t *)&v_store,
 						sizeof(v_store)),
 				  TDB_REPLACE);
 
@@ -375,12 +375,12 @@ NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 NTSTATUS dbwrap_trans_store_int32(struct db_context *db, const char *keystr,
 				  int32_t v)
 {
-	int32 v_store;
+	int32_t v_store;
 
 	SIVAL(&v_store, 0, v);
 
 	return dbwrap_trans_store(db, string_term_tdb_data(keystr),
-				  make_tdb_data((const uint8 *)&v_store,
+				  make_tdb_data((const uint8_t *)&v_store,
 						sizeof(v_store)),
 				  TDB_REPLACE);
 }
@@ -388,12 +388,12 @@ NTSTATUS dbwrap_trans_store_int32(struct db_context *db, const char *keystr,
 NTSTATUS dbwrap_trans_store_uint32(struct db_context *db, const char *keystr,
 				   uint32_t v)
 {
-	uint32 v_store;
+	uint32_t v_store;
 
 	SIVAL(&v_store, 0, v);
 
 	return dbwrap_trans_store(db, string_term_tdb_data(keystr),
-				  make_tdb_data((const uint8 *)&v_store,
+				  make_tdb_data((const uint8_t *)&v_store,
 						sizeof(v_store)),
 				  TDB_REPLACE);
 }
