@@ -90,7 +90,7 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 	state->result = result;
 
 	result->key.dsize = key.dsize;
-	result->key.dptr = ((uint8 *)result) + sizeof(struct db_record);
+	result->key.dptr = ((uint8_t *)result) + sizeof(struct db_record);
 	memcpy(result->key.dptr, key.dptr, key.dsize);
 
 	result->value.dsize = data.dsize;
