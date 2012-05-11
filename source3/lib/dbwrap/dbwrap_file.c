@@ -33,7 +33,7 @@ struct db_file_ctx {
 
 struct db_locked_file {
 	int fd;
-	uint8 hash;
+	uint8_t hash;
 	const char *name;
 	const char *path;
 	struct db_file_ctx *parent;
@@ -41,12 +41,12 @@ struct db_locked_file {
 
 /* Copy from statcache.c... */
 
-static uint32 fsh(const uint8 *p, int len)
+static uint32_t fsh(const uint8_t *p, int len)
 {
-        uint32 n = 0;
+        uint32_t n = 0;
 	int i;
         for (i=0; i<len; i++) {
-                n = ((n << 5) + n) ^ (uint32)(p[i]);
+                n = ((n << 5) + n) ^ (uint32_t)(p[i]);
         }
         return n;
 }
@@ -99,7 +99,8 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 	result->delete_rec = db_file_delete;
 
 	result->key.dsize = key.dsize;
-	result->key.dptr = (uint8 *)talloc_memdup(result, key.dptr, key.dsize);
+	result->key.dptr = (uint8_t *)talloc_memdup(result, key.dptr,
+						    key.dsize);
 	if (result->key.dptr == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
@@ -173,7 +174,7 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 		NTSTATUS status;
 
 		result->value.dsize = statbuf.st_ex_size;
-		result->value.dptr = talloc_array(result, uint8,
+		result->value.dptr = talloc_array(result, uint8_t,
 						  statbuf.st_ex_size);
 		if (result->value.dptr == NULL) {
 			DEBUG(1, ("talloc failed\n"));
