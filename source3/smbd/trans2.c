@@ -3959,6 +3959,7 @@ static char *store_file_unix_basic(connection_struct *conn,
 				const SMB_STRUCT_STAT *psbuf)
 {
 	uint64_t file_index = get_FileIndex(conn, psbuf);
+	dev_t devno;
 
 	DEBUG(10,("store_file_unix_basic: SMB_QUERY_FILE_UNIX_BASIC\n"));
 	DEBUG(4,("store_file_unix_basic: st_mode=%o\n",(int)psbuf->st_ex_mode));
@@ -3985,11 +3986,17 @@ static char *store_file_unix_basic(connection_struct *conn,
 	SIVAL(pdata,0,unix_filetype(psbuf->st_ex_mode));
 	pdata += 4;
 
-	SIVAL(pdata,0,unix_dev_major(psbuf->st_ex_rdev));   /* Major device number if type is device */
+	if (S_ISBLK(psbuf->st_ex_mode) || S_ISCHR(psbuf->st_ex_mode)) {
+		devno = psbuf->st_ex_rdev;
+	} else {
+		devno = psbuf->st_ex_dev;
+	}
+
+	SIVAL(pdata,0,unix_dev_major(devno));   /* Major device number if type is device */
 	SIVAL(pdata,4,0);
 	pdata += 8;
 
-	SIVAL(pdata,0,unix_dev_minor(psbuf->st_ex_rdev));   /* Minor device number if type is device */
+	SIVAL(pdata,0,unix_dev_minor(devno));   /* Minor device number if type is device */
 	SIVAL(pdata,4,0);
 	pdata += 8;
 
