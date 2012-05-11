@@ -91,9 +91,17 @@ NTSTATUS smbd_smb2_request_process_getinfo(struct smbd_smb2_request *req)
 	in_input_buffer.length = in_input_buffer_length;
 
 	if (in_input_buffer.length > req->sconn->smb2.max_trans) {
+		DEBUG(2,("smbd_smb2_request_process_getinfo: "
+			 "client ignored max trans: %s: 0x%08X: 0x%08X\n",
+			 __location__, in_input_buffer.length,
+			 req->sconn->smb2.max_trans));
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 	if (in_output_buffer_length > req->sconn->smb2.max_trans) {
+		DEBUG(2,("smbd_smb2_request_process_getinfo: "
+			 "client ignored max trans: %s: 0x%08X: 0x%08X\n",
+			 __location__, in_output_buffer_length,
+			 req->sconn->smb2.max_trans));
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
