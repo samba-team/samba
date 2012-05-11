@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap_watch.h"
 #include "dbwrap_open.h"
 #include "msg_channel.h"

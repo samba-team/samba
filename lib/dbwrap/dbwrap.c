@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
-#include "util_tdb.h"
+#include "lib/util/util_tdb.h"
 
 /*
  * Fall back using fetch if no genuine exists operation is provided

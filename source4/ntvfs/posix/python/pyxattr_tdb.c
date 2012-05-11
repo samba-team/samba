@@ -28,9 +28,9 @@
 #include "ntvfs/posix/posix_eadb.h"
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
-#include "source3/lib/dbwrap/dbwrap.h"
-#include "source3/lib/dbwrap/dbwrap_open.h"
-#include "source3/lib/dbwrap/dbwrap_tdb.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "lib/dbwrap/dbwrap_open.h"
+#include "lib/dbwrap/dbwrap_tdb.h"
 #include "source3/lib/xattr_tdb.h"
 
 void initxattr_tdb(void);

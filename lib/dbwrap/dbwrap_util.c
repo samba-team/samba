@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "dbwrap.h"
-#include "util_tdb.h"
+#include "lib/util/util_tdb.h"
 
 NTSTATUS dbwrap_fetch_int32(struct db_context *db, const char *keystr,
 			    int32_t *result)

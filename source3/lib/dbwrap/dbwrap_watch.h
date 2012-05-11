@@ -21,7 +21,7 @@
 #define __DBWRAP_WATCH_H__
 
 #include <tevent.h>
-#include "dbwrap.h"
+#include "dbwrap/dbwrap.h"
 #include "messages.h"
 
 void dbwrap_watch_db(struct db_context *db, struct messaging_context *msg);

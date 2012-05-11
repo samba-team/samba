@@ -22,7 +22,7 @@
 #include "dbwrap/dbwrap_private.h"
 #include "dbwrap/dbwrap_tdb.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
-#include "util_tdb.h"
+#include "lib/util/util_tdb.h"
 #include "system/filesys.h"
 
 struct db_tdb_ctx {
