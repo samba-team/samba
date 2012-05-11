@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.6.6
-                          , 2012
+                           May 24, 2012
                    =============================
 
 
@@ -13,8 +13,110 @@ o
 Changes since 3.6.5:
 --------------------
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 8738: SMB2 server will not release unused shares.
+    * BUG 8749: Sign non guest sessions in SessionSetup.
+    * BUG 8921: Fix race writing registry values.
+
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 8723: Add pthread-based aio VFS module.
+    * BUG 8784: When calculating the share security mask, take priviliges into
+      account for the connecting user.
+    * BUG 8837: Fix crash in smbd when deleting directory and veto files are
+      enabled.
+    * BUG 8857: Setting traverse rights fails to enable directory traversal when
+      acl_xattr in use.
+    * BUG 8897: Make winbind_krb5_locator not only returning one IP address.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 8406: Fix a return code check in Winbind.
+    * BUG 8807: Fix crash in dcerpc_lsa_lookup_sids_noalloc() crashes when
+      groups has more than 1000 groups.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8599: Only use SamLogonEx when we can get unencrypted session keys.
+    * BUG 8727: Fix smbclients with posix large reads.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 7564: Fix default name resolve order in the manpage.
+    * BUG 8554, 8612, 8748: Add new printers to registry.
+    * BUG 8789: Remove whitespace in example samba.ldif.
+
+
+o   Alejandro Escanero Blanco <aescanero@gmail.com>
+    * BUG 8798: The primary rid should be in the groups rid array.
+
+
+o   Ira Cooper <samba@ira.wakeful.net>
+    * BUG 8729: Fix getpass regressions on Solaris/Illumos.
+    * BUG 8743: Fix configure.developer builds on Solaris.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 8762: Fix crash in printer_list_set_printer().
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>
+    * BUG 8859: Fix assertion in reg_parse.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8869: Remove outdated netscape ds 5 schema file.
+
+
+o   Steve Langasek <steve.langasek@ubuntu.com>
+    * BUG 8920: Fix null dereference in pdb_interface.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 8567: Fix segfault in dom_sid_compare.
+    * BUG 8733: Delete streams on directories (streams_depot).
+    * BUG 8760: Add SERVERID_UNIQUE_ID_NOT_TO_VERIFY.
+    * BUG 8836: Fix segfaults on "smbcontrol close-share" in aio_fork.
+    * BUG 8861: Fix a segfault with debug level 3 on Solaris.
+    * BUG 8904: Fix Winbind crash triggered by 'wbinfo --lookup-sids ""'.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8139: Ignore SMBecho errors (the server may not support it).
+    * BUG 8527: db_ctdb_traverse fails to traverse records created within the
+      current transaction.
+    * BUG 8739: Fill the sids array of the info in
+      wbcAuthUserInfo_to_netr_SamInfo3().
+    * BUG 8749: Sign non guest sessions in SessionSetup.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 8599: Set the can_do_validation6 also for trusted domain.
+    * BUG 8734: Don't try to do clever thing if the username is not found while
+      authenticating through Winbind.
+    * BUG 8771: Winbind takes up to 20 minutes to change from DC 1 to DC 2.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 8826: Prepend '/' to filename argument (docs).
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 8768: Honor SeTakeOwnershipPrivilege when file opened with SEC_STD_WRITE_OWNER.
+    * BUG 8797: Correctly handle DENY ACEs when privileges apply.
+    * BUG 8822: Fix building out-of-tree modules.
+
+
+o   Simo Sorce <idra@samba.org>
+    * BUG 8915: Fix pam_winbind build against newer iniparser library.
+
+
+o   Joseph Tam <jtam.home@gmail.com>
+    * BUG 8877: Syslog broken owing to mistyping of debug_settings.syslog.
+
+
+o   Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+    * BUG 8845: Move print_backend_init() behind init_system_info().
 
 
 ######################################################################
