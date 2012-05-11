@@ -129,8 +129,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/ctdb/tests/bin/ctdb_transaction
 
 %package devel
-Summary: CTDB developmnet libraries
-Group: Development
+Summary: CTDB development libraries
+Group: Development/Libraries
 
 %description devel
 development libraries for ctdb
