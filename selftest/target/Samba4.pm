@@ -587,17 +587,17 @@ sub provision_raw_step1($$)
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 	rndc command = true
-        dns update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$ctx->{dns_host_file}
-        spn update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate
-        resolv:host file = $ctx->{dns_host_file}
+	dns update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$ctx->{dns_host_file} -s $ctx->{smb_conf}
+	spn update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}
+	resolv:host file = $ctx->{dns_host_file}
 	dreplsrv:periodic_startup_interval = 0
 	dsdb:schema update allowed = yes
 
-        passdb backend = samba4
+	passdb backend = samba4
 
-        # remove this again, when our smb2 client library
-        # supports signin on compound related requests
-        server signing = on
+	# remove this again, when our smb2 client library
+	# supports signin on compound related requests
+	server signing = on
 ";
 
 	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
