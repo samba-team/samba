@@ -907,7 +907,7 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 			return NT_STATUS_NO_MEMORY;
 		}
 		DEBUG(5, ("Doing list with mtar_mask: %s\n", mtar_mask));
-		status = do_list(mtar_mask, attribute, do_tar, False, True);
+		do_list(mtar_mask, attribute, do_tar, False, True);
 		client_set_cur_dir(saved_curdir);
 		TALLOC_FREE(saved_curdir);
 		TALLOC_FREE(new_cd);
