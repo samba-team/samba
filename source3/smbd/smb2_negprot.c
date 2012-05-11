@@ -213,10 +213,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_NOT_SUPPORTED);
 	}
 
-	if (dialect != SMB2_DIALECT_REVISION_2FF) {
-		set_Protocol(protocol);
-	}
-
 	if (get_remote_arch() != RA_SAMBA) {
 		set_remote_arch(RA_VISTA);
 	}
@@ -312,9 +308,14 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	outdyn = security_buffer;
 
 	req->sconn->using_smb2 = true;
-	req->sconn->smb2.max_trans = max_trans;
-	req->sconn->smb2.max_read  = max_read;
-	req->sconn->smb2.max_write = max_write;
+
+	if (dialect != SMB2_DIALECT_REVISION_2FF) {
+		set_Protocol(protocol);
+
+		req->sconn->smb2.max_trans = max_trans;
+		req->sconn->smb2.max_read  = max_read;
+		req->sconn->smb2.max_write = max_write;
+	}
 
 	return smbd_smb2_request_done(req, outbody, &outdyn);
 }
