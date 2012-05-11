@@ -462,6 +462,92 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	case FSCTL_VALIDATE_NEGOTIATE_INFO:
+	{
+		struct smbXsrv_connection *conn = smbreq->sconn->conn;
+		uint32_t in_capabilities;
+		DATA_BLOB in_guid_blob;
+		struct GUID in_guid;
+		uint16_t in_security_mode;
+		uint16_t in_num_dialects;
+		uint16_t i;
+		DATA_BLOB out_guid_blob;
+		NTSTATUS status;
+
+		if (in_input.length < 0x18) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		in_capabilities = IVAL(in_input.data, 0x00);
+		in_guid_blob = data_blob_const(in_input.data + 0x04, 16);
+		in_security_mode = SVAL(in_input.data, 0x14);
+		in_num_dialects = SVAL(in_input.data, 0x16);
+
+		if (in_input.length != (0x18 + in_num_dialects*2)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_max_output < 0x18) {
+			tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_num_dialects != conn->smb2.client.num_dialects) {
+			state->disconnect = true;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		for (i=0; i < in_num_dialects; i++) {
+			uint16_t v = SVAL(in_input.data, 0x18 + i*2);
+
+			if (conn->smb2.client.dialects[i] != v) {
+				state->disconnect = true;
+				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+				return tevent_req_post(req, ev);
+			}
+		}
+
+		if (!GUID_compare(&in_guid, &conn->smb2.client.guid)) {
+			state->disconnect = true;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_security_mode != conn->smb2.client.security_mode) {
+			state->disconnect = true;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_capabilities != conn->smb2.client.capabilities) {
+			state->disconnect = true;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		status = GUID_to_ndr_blob(&conn->smb2.server.guid, state,
+					  &out_guid_blob);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		state->out_output = data_blob_talloc(state, NULL, 0x18);
+		if (tevent_req_nomem(state->out_output.data, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		SIVAL(state->out_output.data, 0x00, conn->smb2.server.capabilities);
+		memcpy(state->out_output.data+0x04, out_guid_blob.data, 16);
+		SIVAL(state->out_output.data, 0x14, conn->smb2.server.security_mode);
+		SIVAL(state->out_output.data, 0x16, conn->smb2.server.dialect);
+
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
 	default: {
 		uint8_t *out_data = NULL;
 		uint32_t out_data_len = 0;
