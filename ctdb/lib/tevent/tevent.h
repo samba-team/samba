@@ -126,6 +126,20 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
 
 /**
+ * @brief Create a custom event context
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ * @param[in]  ops      The function pointer table of the backend.
+ * @param[in]  additional_data  The additional/private data to this instance
+ *
+ * @return              An allocated tevent context, NULL on error.
+ *
+ */
+struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
+					       const struct tevent_ops *ops,
+					       void *additional_data);
+
+/**
  * @brief List available backends.
  *
  * @param[in]  mem_ctx  The memory context to use.
