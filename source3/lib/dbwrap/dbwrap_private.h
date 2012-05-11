@@ -23,8 +23,6 @@
 #ifndef __DBWRAP_PRIVATE_H__
 #define __DBWRAP_PRIVATE_H__
 
-#include "dbwrap/dbwrap_open.h"
-
 struct db_record {
 	struct db_context *db;
 	TDB_DATA key, value;

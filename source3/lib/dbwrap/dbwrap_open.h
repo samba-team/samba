@@ -29,12 +29,6 @@ struct db_context;
  */
 bool db_is_local(const char *name);
 
-enum dbwrap_lock_order {
-	DBWRAP_LOCK_ORDER_1 = 1,
-	DBWRAP_LOCK_ORDER_2 = 2,
-	DBWRAP_LOCK_ORDER_3 = 3
-};
-
 /**
  * Convenience function that will determine whether to
  * open a tdb database via the tdb backend or via the ctdb

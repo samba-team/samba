@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "util_tdb.h"
+#include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_ctdb.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "lib/param/param.h"
