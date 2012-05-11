@@ -1734,7 +1734,7 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 
 static int samldb_member_check(struct samldb_ctx *ac)
 {
-	const char * const attrs[] = { "objectSid", "member", NULL };
+	const char * const attrs[] = { "objectSid", NULL };
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_message_element *el;
 	struct ldb_dn *member_dn;
