@@ -751,6 +751,7 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
  */
 static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 {
+	struct samldb_msds_intid_persistant *msds_intid_struct;
 	struct ldb_context *ldb;
         struct ldb_control *control;
 	struct replmd_replicated_request *ac;
@@ -1053,7 +1054,14 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	if (control) {
 		control->critical = 0;
 	}
+	if (ldb_dn_compare_base(ac->schema->base_dn, req->op.add.message->dn) != 0) {
 
+		/* Update the usn in the SAMLDB_MSDS_INTID_OPAQUE opaque */
+		msds_intid_struct = (struct samldb_msds_intid_persistant *) ldb_get_opaque(ldb, SAMLDB_MSDS_INTID_OPAQUE);
+		if (msds_intid_struct) {
+			msds_intid_struct->usn = ac->seq_num;
+		}
+	}
 	/* go on with the call chain */
 	return ldb_next_request(module, down_req);
 }
@@ -2294,6 +2302,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 
 static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	struct samldb_msds_intid_persistant *msds_intid_struct;
 	struct ldb_context *ldb;
 	struct replmd_replicated_request *ac;
 	struct ldb_request *down_req;
@@ -2423,6 +2432,14 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 			talloc_free(ac);
 			ldb_operr(ldb);
 			return ret;
+		}
+	}
+
+	if (!ldb_dn_compare_base(ac->schema->base_dn, msg->dn)) {
+		/* Update the usn in the SAMLDB_MSDS_INTID_OPAQUE opaque */
+		msds_intid_struct = (struct samldb_msds_intid_persistant *) ldb_get_opaque(ldb, SAMLDB_MSDS_INTID_OPAQUE);
+		if (msds_intid_struct) {
+			msds_intid_struct->usn = ac->seq_num;
 		}
 	}
 

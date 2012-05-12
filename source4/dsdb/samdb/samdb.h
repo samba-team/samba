@@ -191,6 +191,13 @@ struct dsdb_openldap_dereference_result_control {
 	struct dsdb_openldap_dereference_result **attributes;
 };
 
+struct samldb_msds_intid_persistant {
+	uint32_t msds_intid;
+	uint64_t usn;
+};
+
+#define SAMLDB_MSDS_INTID_OPAQUE "SAMLDB_MSDS_INTID_OPAQUE"
+
 #define DSDB_PARTITION_DN "@PARTITION"
 #define DSDB_PARTITION_ATTR "partition"
 
