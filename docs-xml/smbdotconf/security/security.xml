@@ -79,38 +79,6 @@
     <para>See also the <smbconfoption name="password server"/> parameter and
 	 the <smbconfoption name="encrypted passwords"/> parameter.</para>
 
-    <para><anchor id="SECURITYEQUALSSERVER"/><emphasis>SECURITY = SERVER</emphasis></para>
-
-    <para>
-	In this depicted mode Samba will try to validate the username/password by passing it to another SMB server, such as an
-	NT box. If this fails it will revert to <command moreinfo="none">security = user</command>. It expects the
-	<smbconfoption name="encrypted passwords"/> parameter to be set to <constant>yes</constant>, unless the remote
-	server does not support them.  However note that if encrypted passwords have been negotiated then Samba cannot
-	revert back to checking the UNIX password file, it must have a valid <filename
-	moreinfo="none">smbpasswd</filename> file to check users against. See the chapter about the User Database in
-	the Samba HOWTO Collection for details on how to set this up.
-</para>
-
-	<note><para>This mode of operation has
-    significant pitfalls since it is more vulnerable to
-    man-in-the-middle attacks and server impersonation.  In particular,
-    this mode of operation can cause significant resource consumption on
-    the PDC, as it must maintain an active connection for the duration
-    of the user's session.  Furthermore, if this connection is lost,
-    there is no way to reestablish it, and further authentications to the
-    Samba server may fail (from a single client, till it disconnects).
-	</para></note>
-
-	<note><para>If the client selects NTLMv2 authentication, then this mode of operation <emphasis>will fail</emphasis>
-	</para></note>
-
-	<note><para>From the client's point of 
-    view, <command moreinfo="none">security = server</command> is the
-    same as <command moreinfo="none">security = user</command>.  It
-    only affects how the server deals  with the authentication, it does
-	not in any way affect what the  client sees.</para></note>
-
-    <note><para>This option is deprecated, and may be removed in future</para></note>
 
     <para><emphasis>Note</emphasis> that the name of the resource being 
     requested is <emphasis>not</emphasis> sent to the server until after 
