@@ -16,14 +16,6 @@ bld.SAMBA_MODULE('auth4_anonymous',
 	)
 
 
-bld.SAMBA_MODULE('auth4_server',
-	source='auth_server.c',
-	subsystem='auth4',
-	init_function='auth4_server_init',
-	deps='samba-util LIBCLI_SMB CREDENTIALS_NTLM param_options'
-	)
-
-
 bld.SAMBA_MODULE('auth4_winbind',
 	source='auth_winbind.c',
 	subsystem='auth4',
