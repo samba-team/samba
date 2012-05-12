@@ -30,6 +30,7 @@
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					uint64_t in_session_id,
+					uint8_t in_flags,
 					uint8_t in_security_mode,
 					uint64_t in_previous_session_id,
 					DATA_BLOB in_security_buffer,
@@ -46,6 +47,7 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint64_t in_session_id;
+	uint8_t in_flags;
 	uint8_t in_security_mode;
 	uint64_t in_previous_session_id;
 	uint16_t in_security_offset;
@@ -66,7 +68,7 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 
 	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 
-	/* Flags = CVAL(inbody, 0x02); */
+	in_flags = CVAL(inbody, 0x02);
 	in_security_mode = CVAL(inbody, 0x03);
 	/* Capabilities = IVAL(inbody, 0x04) */
 	/* Channel = IVAL(inbody, 0x08) */
@@ -87,6 +89,7 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 
 	status = smbd_smb2_session_setup(smb2req,
 					 in_session_id,
+					 in_flags,
 					 in_security_mode,
 					 in_previous_session_id,
 					 in_security_buffer,
@@ -293,6 +296,7 @@ static NTSTATUS smbd_smb2_auth_generic(struct smbd_smb2_session *session,
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					uint64_t in_session_id,
+					uint8_t in_flags,
 					uint8_t in_security_mode,
 					uint64_t in_previous_session_id,
 					DATA_BLOB in_security_buffer,
