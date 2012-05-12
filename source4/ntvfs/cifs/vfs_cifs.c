@@ -179,7 +179,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
-	 * Later we will use security=server and auth_server.c.
 	 */
 	host = share_string_option(scfg, CIFS_SERVER, NULL);
 	user = share_string_option(scfg, CIFS_USER, NULL);
