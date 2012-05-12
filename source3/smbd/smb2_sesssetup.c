@@ -29,16 +29,6 @@
 #include "../libcli/security/security.h"
 #include "../lib/util/tevent_ntstatus.h"
 
-static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
-					uint64_t in_session_id,
-					uint8_t in_flags,
-					uint8_t in_security_mode,
-					uint64_t in_previous_session_id,
-					DATA_BLOB in_security_buffer,
-					uint16_t *out_session_flags,
-					DATA_BLOB *out_security_buffer,
-					uint64_t *out_session_id);
-
 static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbd_smb2_request *smb2req,
@@ -53,14 +43,13 @@ static NTSTATUS smbd_smb2_session_setup_recv(struct tevent_req *req,
 					DATA_BLOB *out_security_buffer,
 					uint64_t *out_session_id);
 
+static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq);
+
 NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 {
 	const uint8_t *inhdr;
 	const uint8_t *inbody;
 	int i = smb2req->current_idx;
-	uint8_t *outhdr;
-	DATA_BLOB outbody;
-	DATA_BLOB outdyn;
 	uint64_t in_session_id;
 	uint8_t in_flags;
 	uint8_t in_security_mode;
@@ -68,11 +57,8 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 	uint16_t in_security_offset;
 	uint16_t in_security_length;
 	DATA_BLOB in_security_buffer;
-	uint16_t out_session_flags;
-	uint64_t out_session_id;
-	uint16_t out_security_offset;
-	DATA_BLOB out_security_buffer = data_blob_null;
 	NTSTATUS status;
+	struct tevent_req *subreq;
 
 	status = smbd_smb2_request_verify_sizes(smb2req, 0x19);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -102,19 +88,54 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 	in_security_buffer.data = (uint8_t *)smb2req->in.vector[i+2].iov_base;
 	in_security_buffer.length = in_security_length;
 
-	status = smbd_smb2_session_setup(smb2req,
-					 in_session_id,
-					 in_flags,
-					 in_security_mode,
-					 in_previous_session_id,
-					 in_security_buffer,
-					 &out_session_flags,
-					 &out_security_buffer,
-					 &out_session_id);
+	subreq = smbd_smb2_session_setup_send(smb2req,
+					      smb2req->sconn->ev_ctx,
+					      smb2req,
+					      in_session_id,
+					      in_flags,
+					      in_security_mode,
+					      in_previous_session_id,
+					      in_security_buffer);
+	if (subreq == NULL) {
+		return smbd_smb2_request_error(smb2req, NT_STATUS_NO_MEMORY);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_request_sesssetup_done, smb2req);
+
+	return smbd_smb2_request_pending_queue(smb2req, subreq, 500);
+}
+
+static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *smb2req =
+		tevent_req_callback_data(subreq,
+		struct smbd_smb2_request);
+	int i = smb2req->current_idx;
+	uint8_t *outhdr;
+	DATA_BLOB outbody;
+	DATA_BLOB outdyn;
+	uint16_t out_session_flags;
+	uint64_t out_session_id;
+	uint16_t out_security_offset;
+	DATA_BLOB out_security_buffer = data_blob_null;
+	NTSTATUS status;
+	NTSTATUS error; /* transport error */
+
+	status = smbd_smb2_session_setup_recv(subreq,
+					      &out_session_flags,
+					      smb2req,
+					      &out_security_buffer,
+					      &out_session_id);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		status = nt_status_squash(status);
-		return smbd_smb2_request_error(smb2req, status);
+		error = smbd_smb2_request_error(smb2req, status);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(smb2req->sconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
 	out_security_offset = SMB2_HDR_BODY + 0x08;
@@ -123,7 +144,13 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 
 	outbody = data_blob_talloc(smb2req->out.vector, NULL, 0x08);
 	if (outbody.data == NULL) {
-		return smbd_smb2_request_error(smb2req, NT_STATUS_NO_MEMORY);
+		error = smbd_smb2_request_error(smb2req, NT_STATUS_NO_MEMORY);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(smb2req->sconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
 	SBVAL(outhdr, SMB2_HDR_SESSION_ID, out_session_id);
@@ -138,8 +165,13 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 
 	outdyn = out_security_buffer;
 
-	return smbd_smb2_request_done_ex(smb2req, status, outbody, &outdyn,
-					 __location__);
+	error = smbd_smb2_request_done_ex(smb2req, status, outbody, &outdyn,
+					   __location__);
+	if (!NT_STATUS_IS_OK(error)) {
+		smbd_server_connection_terminate(smb2req->sconn,
+						 nt_errstr(error));
+		return;
+	}
 }
 
 static int smbd_smb2_session_destructor(struct smbd_smb2_session *session)
