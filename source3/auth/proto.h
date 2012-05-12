@@ -140,10 +140,6 @@ NTSTATUS check_sam_security_info3(const DATA_BLOB *challenge,
 				  struct netr_SamInfo3 **pinfo3);
 NTSTATUS auth_sam_init(void);
 
-/* The following definitions come from auth/auth_server.c  */
-
-NTSTATUS auth_server_init(void);
-
 /* The following definitions come from auth/auth_unix.c  */
 
 NTSTATUS auth_unix_init(void);

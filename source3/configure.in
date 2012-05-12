@@ -433,7 +433,6 @@ default_static_modules="$default_static_modules auth_sam"
 default_static_modules="$default_static_modules auth_unix"
 default_static_modules="$default_static_modules auth_winbind"
 default_static_modules="$default_static_modules auth_wbc"
-default_static_modules="$default_static_modules auth_server"
 default_static_modules="$default_static_modules auth_domain"
 default_static_modules="$default_static_modules auth_builtin"
 default_static_modules="$default_static_modules vfs_default"
@@ -6496,7 +6495,6 @@ SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_unix, \$(AUTH_UNIX_OBJ), "bin/unix.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_wbc, \$(AUTH_WBC_OBJ), "bin/wbc.$SHLIBEXT", AUTH)
-SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/smbserver.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_script, \$(AUTH_SCRIPT_OBJ), "bin/script.$SHLIBEXT", AUTH)

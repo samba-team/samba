@@ -906,7 +906,6 @@ DCUTIL_OBJ  = libsmb/namequery_dc.o libsmb/trustdom_cache.o libsmb/trusts_util.o
 AUTH_BUILTIN_OBJ = auth/auth_builtin.o
 AUTH_DOMAIN_OBJ = auth/auth_domain.o
 AUTH_SAM_OBJ = auth/auth_sam.o auth/check_samsec.o
-AUTH_SERVER_OBJ = auth/auth_server.o
 AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
 AUTH_WBC_OBJ = auth/auth_wbc.o
@@ -2858,10 +2857,6 @@ bin/script.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SCRIPT_OBJ)
 bin/netlogond.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_NETLOGOND_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(AUTH_NETLOGOND_OBJ)
-
-bin/smbserver.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SERVER_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(AUTH_SERVER_OBJ)
 
 bin/winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_WINBIND_OBJ)
 	@echo "Building plugin $@"

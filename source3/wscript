@@ -1376,7 +1376,7 @@ main() {
     # if we include the module loader in iconv
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
-                                      auth_sam auth_unix auth_winbind auth_wbc auth_server
+                                      auth_sam auth_unix auth_winbind auth_wbc
                                       auth_domain auth_builtin vfs_default
                                       nss_info_template idmap_tdb idmap_passdb
                                       idmap_nss''')

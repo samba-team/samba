@@ -3,7 +3,6 @@
 AUTH_BUILTIN_SRC = 'auth_builtin.c'
 AUTH_DOMAIN_SRC = 'auth_domain.c'
 AUTH_SAM_SRC = 'auth_sam.c'
-AUTH_SERVER_SRC = 'auth_server.c'
 AUTH_UNIX_SRC = 'auth_unix.c'
 AUTH_WINBIND_SRC = 'auth_winbind.c'
 AUTH_WBC_SRC = 'auth_wbc.c'
@@ -68,14 +67,6 @@ bld.SAMBA3_MODULE('auth_wbc',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_wbc'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_wbc'))
-
-bld.SAMBA3_MODULE('auth_server',
-                 subsystem='auth',
-                 source=AUTH_SERVER_SRC,
-                 deps='samba-util',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_server'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_server'))
 
 bld.SAMBA3_MODULE('auth_domain',
                  subsystem='auth',
