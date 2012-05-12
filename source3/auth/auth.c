@@ -494,12 +494,6 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 				talloc_tos(), "guest sam winbind:ntdomain",
 				NULL);
 			break;
-		case SEC_SERVER:
-			DEBUG(5,("Making default auth method list for security=server\n"));
-			auth_method_list = str_list_make_v3(
-				talloc_tos(), "guest sam smbserver",
-				NULL);
-			break;
 		case SEC_USER:
 			if (lp_encrypted_passwords()) {	
 				if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {

@@ -46,7 +46,6 @@ static const struct enum_list enum_protocol[] = {
 static const struct enum_list enum_security[] = {
 	{SEC_AUTO, "AUTO"},
 	{SEC_USER, "USER"},
-	{SEC_SERVER, "SERVER"},
 	{SEC_DOMAIN, "DOMAIN"},
 #if (defined(HAVE_ADS) || _SAMBA_BUILD_ >= 4)
 	{SEC_ADS, "ADS"},

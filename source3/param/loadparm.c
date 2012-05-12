@@ -9049,10 +9049,6 @@ static bool lp_load_ex(const char *pszFname,
 
 	set_allowed_client_auth();
 
-	if (lp_security() == SEC_SERVER) {
-		DEBUG(1, ("WARNING: The security=server option is deprecated\n"));
-	}
-
 	if (lp_security() == SEC_ADS && strchr(lp_passwordserver(), ':')) {
 		DEBUG(1, ("WARNING: The optional ':port' in password server = %s is deprecated\n",
 			  lp_passwordserver()));

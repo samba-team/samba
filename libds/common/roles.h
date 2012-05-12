@@ -60,10 +60,25 @@ enum server_role {
                  *|     *  *  *          | *
         _________)/\\_//(\/(/\)/\//\/\///|_)_______
 
- */
+                       --------------
+                      /              \
+                     /      REST      \
+                    /        IN        \
+                   /       PEACE        \
+                  /                      \
+                  |      SEC_SERVER      |
+                  |    security=server   |
+                  |                      |
+                  |                      |
+                  |       12 May         |
+                  |                      |
+                  |        2012          |
+                 *|     *  *  *          | *
+        _________)/\\_//(\/(/\)/\//\/\///|_)_______
+
+*/
 enum security_types {SEC_AUTO = 0, 
 		     SEC_USER = 2, 
-		     SEC_SERVER = 3,
 		     SEC_DOMAIN = 4,
 		     SEC_ADS = 5};
 

@@ -129,11 +129,9 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	 * Password server sanity checks.
 	 */
 
-	if((lp_security() == SEC_SERVER || lp_security() >= SEC_DOMAIN) && !*lp_passwordserver()) {
+	if((lp_security() >= SEC_DOMAIN) && !*lp_passwordserver()) {
 		const char *sec_setting;
-		if(lp_security() == SEC_SERVER)
-			sec_setting = "server";
-		else if(lp_security() == SEC_DOMAIN)
+		if(lp_security() == SEC_DOMAIN)
 			sec_setting = "domain";
 		else if(lp_security() == SEC_ADS)
 			sec_setting = "ads";
