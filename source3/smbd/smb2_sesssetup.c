@@ -27,6 +27,7 @@
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/security/security.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					uint64_t in_session_id,
@@ -35,6 +36,20 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 					uint64_t in_previous_session_id,
 					DATA_BLOB in_security_buffer,
 					uint16_t *out_session_flags,
+					DATA_BLOB *out_security_buffer,
+					uint64_t *out_session_id);
+
+static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbd_smb2_request *smb2req,
+					uint64_t in_session_id,
+					uint8_t in_flags,
+					uint8_t in_security_mode,
+					uint64_t in_previous_session_id,
+					DATA_BLOB in_security_buffer);
+static NTSTATUS smbd_smb2_session_setup_recv(struct tevent_req *req,
+					uint16_t *out_session_flags,
+					TALLOC_CTX *mem_ctx,
 					DATA_BLOB *out_security_buffer,
 					uint64_t *out_session_id);
 
@@ -360,6 +375,96 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 				      out_session_flags,
 				      out_security_buffer,
 				      out_session_id);
+}
+
+struct smbd_smb2_session_setup_state {
+	struct tevent_context *ev;
+	struct smbd_smb2_request *smb2req;
+	uint64_t in_session_id;
+	uint8_t in_flags;
+	uint8_t in_security_mode;
+	uint64_t in_previous_session_id;
+	DATA_BLOB in_security_buffer;
+	uint16_t out_session_flags;
+	DATA_BLOB out_security_buffer;
+	uint64_t out_session_id;
+};
+
+static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbd_smb2_request *smb2req,
+					uint64_t in_session_id,
+					uint8_t in_flags,
+					uint8_t in_security_mode,
+					uint64_t in_previous_session_id,
+					DATA_BLOB in_security_buffer)
+{
+	struct tevent_req *req;
+	struct smbd_smb2_session_setup_state *state;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbd_smb2_session_setup_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->smb2req = smb2req;
+	state->in_session_id = in_session_id;
+	state->in_flags = in_flags;
+	state->in_security_mode = in_security_mode;
+	state->in_previous_session_id = in_previous_session_id;
+	state->in_security_buffer = in_security_buffer;
+
+	status = smbd_smb2_session_setup(smb2req,
+					 in_session_id,
+					 in_flags,
+					 in_security_mode,
+					 in_previous_session_id,
+					 in_security_buffer,
+					 &state->out_session_flags,
+					 &state->out_security_buffer,
+					 &state->out_session_id);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
+	    NT_STATUS_IS_OK(status))
+	{
+		talloc_steal(state, state->out_security_buffer.data);
+	}
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS smbd_smb2_session_setup_recv(struct tevent_req *req,
+					uint16_t *out_session_flags,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *out_security_buffer,
+					uint64_t *out_session_id)
+{
+	struct smbd_smb2_session_setup_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_session_setup_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			tevent_req_received(req);
+			return status;
+		}
+	} else {
+		status = NT_STATUS_OK;
+	}
+
+	*out_session_flags = state->out_session_flags;
+	*out_security_buffer = state->out_security_buffer;
+	*out_session_id = state->out_session_id;
+
+	talloc_steal(mem_ctx, out_security_buffer->data);
+	tevent_req_received(req);
+	return status;
 }
 
 NTSTATUS smbd_smb2_request_process_logoff(struct smbd_smb2_request *req)
