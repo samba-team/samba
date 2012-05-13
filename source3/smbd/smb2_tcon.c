@@ -25,6 +25,7 @@
 #include "../libcli/security/security.h"
 #include "auth.h"
 #include "lib/param/loadparm.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       const char *in_path,
@@ -33,6 +34,17 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       uint32_t *out_capabilities,
 				       uint32_t *out_maximal_access,
 				       uint32_t *out_tree_id);
+
+static struct tevent_req *smbd_smb2_tree_connect_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbd_smb2_request *smb2req,
+					const char *in_path);
+static NTSTATUS smbd_smb2_tree_connect_recv(struct tevent_req *req,
+					    uint8_t *out_share_type,
+					    uint32_t *out_share_flags,
+					    uint32_t *out_capabilities,
+					    uint32_t *out_maximal_access,
+					    uint32_t *out_tree_id);
 
 NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 {
@@ -278,6 +290,73 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	*out_maximal_access = tcon->compat_conn->share_access;
 
 	*out_tree_id = tcon->tid;
+	return NT_STATUS_OK;
+}
+
+struct smbd_smb2_tree_connect_state {
+	const char *in_path;
+	uint8_t out_share_type;
+	uint32_t out_share_flags;
+	uint32_t out_capabilities;
+	uint32_t out_maximal_access;
+	uint32_t out_tree_id;
+};
+
+static struct tevent_req *smbd_smb2_tree_connect_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbd_smb2_request *smb2req,
+					const char *in_path)
+{
+	struct tevent_req *req;
+	struct smbd_smb2_tree_connect_state *state;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbd_smb2_tree_connect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->in_path = in_path;
+
+	status = smbd_smb2_tree_connect(smb2req,
+					state->in_path,
+					&state->out_share_type,
+					&state->out_share_flags,
+					&state->out_capabilities,
+					&state->out_maximal_access,
+					&state->out_tree_id);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS smbd_smb2_tree_connect_recv(struct tevent_req *req,
+					    uint8_t *out_share_type,
+					    uint32_t *out_share_flags,
+					    uint32_t *out_capabilities,
+					    uint32_t *out_maximal_access,
+					    uint32_t *out_tree_id)
+{
+	struct smbd_smb2_tree_connect_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_tree_connect_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out_share_type = state->out_share_type;
+	*out_share_flags = state->out_share_flags;
+	*out_capabilities = state->out_capabilities;
+	*out_maximal_access = state->out_maximal_access;
+	*out_tree_id = state->out_tree_id;
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
