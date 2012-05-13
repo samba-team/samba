@@ -8,12 +8,14 @@ bld.SAMBA_LIBRARY('socket_wrapper',
                   deps='replace')
 
 bld.SAMBA_PYTHON('py_socket_wrapper',
-                source='py_socket_wrapper.c',
-                deps='socket_wrapper',
-                public_deps='talloc pytalloc-util',
-                realname='samba/socket_wrapper.so')
+                 source='py_socket_wrapper.c',
+                 deps='socket_wrapper',
+                 enabled=bld.CONFIG_SET('SOCKET_WRAPPER'),
+                 public_deps='talloc pytalloc-util',
+                 realname='samba/socket_wrapper.so')
 
-bld.SAMBA_SCRIPT('python_socket',
-                pattern='socket.py',
-                installdir='python',
-                installname='samba/socket.py')
+if bld.CONFIG_SET('SOCKET_WRAPPER'):
+    bld.SAMBA_SCRIPT('python_socket',
+                     pattern='socket.py',
+                     installdir='python',
+                     installname='samba/socket.py')
