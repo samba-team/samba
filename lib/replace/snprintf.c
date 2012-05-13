@@ -1187,7 +1187,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 	return max;
 }
 
- int vsnprintf (char *str, size_t count, const char *fmt, va_list args)
+ int rep_vsnprintf (char *str, size_t count, const char *fmt, va_list args)
 {
 	return dopr(str, count, fmt, args);
 }
@@ -1200,7 +1200,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
  * that doesn't work properly according to the autoconf test.
  */
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
- int snprintf(char *str,size_t count,const char *fmt,...)
+ int rep_snprintf(char *str,size_t count,const char *fmt,...)
 {
 	size_t ret;
 	va_list ap;
@@ -1213,7 +1213,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 #endif
 
 #ifndef HAVE_C99_VSNPRINTF
- int printf(const char *fmt, ...)
+ int rep_printf(const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
@@ -1234,7 +1234,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 #endif
 
 #ifndef HAVE_C99_VSNPRINTF
- int fprintf(FILE *stream, const char *fmt, ...)
+ int rep_fprintf(FILE *stream, const char *fmt, ...)
 {
 	va_list ap;
 	int ret;
@@ -1257,7 +1257,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 #endif 
 
 #ifndef HAVE_VASPRINTF
- int vasprintf(char **ptr, const char *format, va_list ap)
+ int rep_vasprintf(char **ptr, const char *format, va_list ap)
 {
 	int ret;
 	va_list ap2;
@@ -1280,7 +1280,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 
 
 #ifndef HAVE_ASPRINTF
- int asprintf(char **ptr, const char *format, ...)
+ int rep_asprintf(char **ptr, const char *format, ...)
 {
 	va_list ap;
 	int ret;
