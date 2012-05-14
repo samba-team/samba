@@ -1474,7 +1474,7 @@ int main(int argc, char **argv, char **envp)
 
 	winbindd_register_handlers(!Fork);
 
-	status = init_system_info();
+	status = init_system_session_info();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("ERROR: failed to setup system user info: %s.\n",
 			  nt_errstr(status)));

@@ -1424,7 +1424,7 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	status = init_system_info();
+	status = init_system_session_info();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("ERROR: failed to setup system user info: %s.\n",
 			  nt_errstr(status)));
