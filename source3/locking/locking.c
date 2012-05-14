@@ -620,7 +620,9 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 	num_props += (EXCLUSIVE_OPLOCK_TYPE(e->op_type) ? 1 : 0);
 	num_props += (LEVEL_II_OPLOCK_TYPE(e->op_type) ? 1 : 0);
 
-	SMB_ASSERT(num_props <= 1);
+	if (serverid_exists(&e->pid) && (num_props > 1)) {
+		smb_panic("Invalid share mode entry");
+	}
 	return (num_props != 0);
 }
 
