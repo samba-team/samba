@@ -297,7 +297,7 @@ NTSTATUS smb2cli_ioctl(struct smbXcli_conn *conn,
 		       DATA_BLOB *out_output_buffer)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
