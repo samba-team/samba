@@ -247,7 +247,7 @@ NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 			uint64_t *fid_volatile)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -258,7 +258,7 @@ NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
