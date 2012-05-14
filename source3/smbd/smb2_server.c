@@ -1247,8 +1247,9 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	const uint8_t *inhdr;
 	int i = req->current_idx;
 	uint32_t in_flags;
+	uint16_t in_opcode;
 	uint64_t in_session_id;
-	struct smbXsrv_session *session;
+	struct smbXsrv_session *session = NULL;
 	struct auth_session_info *session_info;
 	NTSTATUS status;
 	NTTIME now = timeval_to_nttime(&req->request_time);
@@ -1259,6 +1260,7 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 
 	in_flags = IVAL(inhdr, SMB2_HDR_FLAGS);
+	in_opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
 	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 
 	if (in_flags & SMB2_HDR_FLAG_CHAINED) {
@@ -1269,6 +1271,36 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	status = smb2srv_session_lookup(req->sconn->conn,
 					in_session_id, now,
 					&session);
+	if (session) {
+		req->session = session;
+		req->last_session_id = in_session_id;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+		switch (in_opcode) {
+		case SMB2_OP_SESSSETUP:
+			status = NT_STATUS_OK;
+			break;
+		default:
+			break;
+		}
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		switch (in_opcode) {
+		case SMB2_OP_TCON:
+		case SMB2_OP_CREATE:
+		case SMB2_OP_GETINFO:
+		case SMB2_OP_SETINFO:
+			return NT_STATUS_INVALID_HANDLE;
+		default:
+			/*
+			 * Notice the check for
+			 * (session_info == NULL)
+			 * below.
+			 */
+			status = NT_STATUS_OK;
+			break;
+		}
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1281,9 +1313,6 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	set_current_user_info(session_info->unix_info->sanitized_username,
 			      session_info->unix_info->unix_name,
 			      session_info->info->domain_name);
-
-	req->session = session;
-	req->last_session_id = in_session_id;
 
 	return NT_STATUS_OK;
 }
@@ -1394,6 +1423,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	uint32_t allowed_flags;
 	NTSTATUS return_value;
 	struct smbXsrv_session *x = NULL;
+	bool signing_required = false;
 
 	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
 
@@ -1447,6 +1477,15 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	session_status = smbd_smb2_request_check_session(req);
 	x = req->session;
 
+	if (x != NULL) {
+		signing_required = x->global->signing_required;
+
+		if (opcode == SMB2_OP_SESSSETUP &&
+		    x->global->channels[0].signing_key.length) {
+			signing_required = true;
+		}
+	}
+
 	req->do_signing = false;
 	if (flags & SMB2_HDR_FLAG_SIGNED) {
 		struct smbXsrv_connection *conn = x->connection;
@@ -1465,7 +1504,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 	} else if (opcode == SMB2_OP_CANCEL) {
 		/* Cancel requests are allowed to skip the signing */
-	} else if (x && x->global->signing_required) {
+	} else if (signing_required) {
 		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
 	}
 

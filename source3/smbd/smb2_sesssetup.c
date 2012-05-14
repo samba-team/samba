@@ -305,6 +305,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	session->global->auth_session_info_seqnum += 1;
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
+	session->global->expiration_time = gensec_expire_time(session->gensec);
 
 	status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -323,6 +324,77 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	if (!guest) {
 		smb2req->do_signing = true;
 	}
+
+	global_client_caps |= (CAP_LEVEL_II_OPLOCKS|CAP_STATUS32);
+
+	*out_session_id = session->global->session_wire_id;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
+					struct smbd_smb2_request *smb2req,
+					uint16_t *out_session_flags,
+					uint64_t *out_session_id)
+{
+	NTSTATUS status;
+	struct smbXsrv_session *x = session;
+	struct auth_session_info *session_info;
+	struct smbXsrv_connection *conn = session->connection;
+
+	status = gensec_session_info(session->gensec,
+				     session->global,
+				     &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(session);
+		return status;
+	}
+
+	data_blob_clear_free(&session_info->session_key);
+	session_info->session_key = data_blob_dup_talloc(session_info,
+						x->global->application_key);
+	if (session_info->session_key.data == NULL) {
+		TALLOC_FREE(session);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session->compat->session_info = session_info;
+	session->compat->vuid = session->global->session_wire_id;
+
+	session->compat->homes_snum =
+			register_homes_share(session_info->unix_info->unix_name);
+
+	set_current_user_info(session_info->unix_info->sanitized_username,
+			      session_info->unix_info->unix_name,
+			      session_info->info->domain_name);
+
+	reload_services(smb2req->sconn, conn_snum_used, true);
+
+	session->status = NT_STATUS_OK;
+	TALLOC_FREE(session->global->auth_session_info);
+	session->global->auth_session_info = session_info;
+	session->global->auth_session_info_seqnum += 1;
+	session->global->channels[0].auth_session_info_seqnum =
+		session->global->auth_session_info_seqnum;
+	session->global->expiration_time = gensec_expire_time(session->gensec);
+
+	status = smbXsrv_session_update(session);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
+			  (unsigned long long)session->compat->vuid,
+			  nt_errstr(status)));
+		TALLOC_FREE(session);
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	conn_clear_vuid_caches(conn->sconn, session->compat->vuid);
+
+	/*
+	 * we attach the session to the request
+	 * so that the response can be signed
+	 */
+	smb2req->session = session;
+	smb2req->do_signing = true;
 
 	global_client_caps |= (CAP_LEVEL_II_OPLOCKS|CAP_STATUS32);
 
@@ -381,6 +453,13 @@ static NTSTATUS smbd_smb2_auth_generic(struct smbXsrv_session *session,
 		return status;
 	}
 
+	if (session->global->auth_session_info != NULL) {
+		return smbd_smb2_reauth_generic_return(session,
+						       smb2req,
+						       out_session_flags,
+						       out_session_id);
+	}
+
 	return smbd_smb2_auth_generic_return(session,
 					     smb2req,
 					     in_security_mode,
@@ -418,8 +497,13 @@ static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
 		status = smb2srv_session_lookup(smb2req->sconn->conn,
 						in_session_id, now,
 						&session);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+			status = NT_STATUS_OK;
+		}
 		if (NT_STATUS_IS_OK(status)) {
-			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+			session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+			TALLOC_FREE(session->gensec);
 		}
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			return status;
