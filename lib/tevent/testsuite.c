@@ -51,7 +51,7 @@ static void finished_handler(struct tevent_context *ev_ctx, struct tevent_timer 
 	(*finished) = 1;
 }
 
-static void count_handler(struct tevent_context *ev_ctx, struct signal_event *te,
+static void count_handler(struct tevent_context *ev_ctx, struct tevent_signal *te,
 			  int signum, int count, void *info, void *private_data)
 {
 	int *countp = (int *)private_data;
@@ -77,7 +77,7 @@ static bool test_event_context(struct torture_context *test,
 	struct timeval t;
 	char c = 0;
 
-	ev_ctx = event_context_init_byname(test, backend);
+	ev_ctx = tevent_context_init_byname(test, backend);
 	if (ev_ctx == NULL) {
 		torture_comment(test, "event backend '%s' not supported\n", backend);
 		return true;
@@ -91,21 +91,21 @@ static bool test_event_context(struct torture_context *test,
 	/* create a pipe */
 	pipe(fd);
 
-	fde = event_add_fd(ev_ctx, ev_ctx, fd[0], EVENT_FD_READ,
-			   fde_handler, fd);
+	fde = tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_READ,
+			    fde_handler, fd);
 	tevent_fd_set_auto_close(fde);
 
-	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(2,0), 
-			finished_handler, &finished);
+	tevent_add_timer(ev_ctx, ev_ctx, timeval_current_ofs(2,0),
+			 finished_handler, &finished);
 
 #ifdef SA_RESTART
-	se1 = event_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESTART, count_handler, &alarm_count);
+	se1 = tevent_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESTART, count_handler, &alarm_count);
 #endif
 #ifdef SA_RESETHAND
-	se2 = event_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESETHAND, count_handler, &alarm_count);
+	se2 = tevent_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESETHAND, count_handler, &alarm_count);
 #endif
 #ifdef SA_SIGINFO
-	se3 = event_add_signal(ev_ctx, ev_ctx, SIGUSR1, SA_SIGINFO, count_handler, &info_count);
+	se3 = tevent_add_signal(ev_ctx, ev_ctx, SIGUSR1, SA_SIGINFO, count_handler, &info_count);
 #endif
 
 	write(fd[1], &c, 1);
@@ -113,7 +113,7 @@ static bool test_event_context(struct torture_context *test,
 	t = timeval_current();
 	while (!finished) {
 		errno = 0;
-		if (event_loop_once(ev_ctx) == -1) {
+		if (tevent_loop_once(ev_ctx) == -1) {
 			talloc_free(ev_ctx);
 			torture_fail(test, talloc_asprintf(test, "Failed event loop %s\n", strerror(errno)));
 		}
@@ -123,7 +123,7 @@ static bool test_event_context(struct torture_context *test,
 	close(fd[1]);
 
 	while (alarm_count < fde_count+1) {
-		if (event_loop_once(ev_ctx) == -1) {
+		if (tevent_loop_once(ev_ctx) == -1) {
 			break;
 		}
 	}
@@ -149,7 +149,7 @@ static bool test_event_context(struct torture_context *test,
 struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "event");
-	const char **list = event_backend_list(suite);
+	const char **list = tevent_backend_list(suite);
 	int i;
 
 	for (i=0;list && list[i];i++) {
