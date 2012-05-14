@@ -83,9 +83,7 @@ cp -pr "tests/bin/" "${ctdb_libdir}"
 ctdb_bindir="${destdir}${bindir}"
 echo "Installing wrapper scripts into ${ctdb_bindir}..."
 mkdir -p "${ctdb_bindir}"
-for i in tests/run_tests.sh tests/run_cluster_tests.sh ; do
-    b=$(basename "$i" ".sh")
-    out="${ctdb_bindir}/ctdb_${b}"
-    sed -e "s@^test_dir=.*@test_dir=${datarootdir}/ctdb-tests\nexport TEST_BIN_DIR=\"${libdir}/ctdb-tests\"@" "$i" >"${out}"
-    chmod 755 "$out"
-done
+out="${ctdb_bindir}/ctdb_run_tests"
+sed -e "s@^test_dir=.*@test_dir=${datarootdir}/ctdb-tests\nexport TEST_BIN_DIR=\"${libdir}/ctdb-tests\"@" "tests/run_tests.sh" >"$out"
+chmod 755 "$out"
+ln -s "ctdb_run_tests" "${ctdb_bindir}/ctdb_run_cluster_tests"

@@ -155,23 +155,42 @@ run_one_test ()
     [ -x "$_f" ] || die "test \"$_f\" is not executable"
     tests_total=$(($tests_total + 1))
 
-    export TEST_SCRIPTS_DIR=$(dirname "$0")
-
     ctdb_test_run "$_f" | tee "$tf" | show_progress
     status=$?
     if $with_summary ; then
 	if [ $status -eq 0 ] ; then
 	    tests_passed=$(($tests_passed + 1))
-	    t=" PASSED "
+	    _t=" PASSED "
 	else
-	    t="*FAILED*"
+	    _t="*FAILED*"
 	    tests_failed=$(($tests_failed + 1))
 	fi
 	if $with_desc ; then
 	    desc=$(tail -n +4 $tf | head -n 1)
 	    _f="$desc"
 	fi
-	echo "$t $_f" >>"$sf"
+	echo "$_t $_f" >>"$sf"
+    fi
+}
+
+find_and_run_one_test ()
+{
+    _t="$1"
+    _dir="$2"
+
+    _f="${_dir}${_dir:+/}${_t}"
+
+    if [ -d "$_f" ] ; then
+	for _i in $(ls "${_f%/}/"*".sh" 2>/dev/null) ; do
+	    run_one_test "$_i"
+	    if $exit_on_fail && [ $status -ne 0 ] ; then
+		break
+	    fi
+	done
+    elif [ -f "$_f" ] ; then
+	run_one_test "$_f"
+    else
+	status=127
     fi
 }
 
@@ -181,21 +200,26 @@ mkdir -p "$TEST_VAR_DIR"
 TEST_VAR_DIR=$(cd "$TEST_VAR_DIR"; echo "$PWD")
 echo "TEST_VAR_DIR=$TEST_VAR_DIR"
 
+export TEST_SCRIPTS_DIR=$(dirname "$0")
+
 for f ; do
-    if [ -d "$f" ] ; then
-	for i in $(ls "${f%/}/"*".sh" 2>/dev/null) ; do
-	    run_one_test "$i"
-	    if $exit_on_fail && [ $status -ne 0 ] ; then
-		break
-	    fi
-	done
-    elif [ -f "$f" ] ; then
-	run_one_test "$f"
-	if $exit_on_fail && [ $status -ne 0 ] ; then
+    find_and_run_one_test "$f"
+
+    if [ $status -eq 127 ] ; then
+	# Find the the top-level tests directory
+	tests_dir=$(dirname $(cd $TEST_SCRIPTS_DIR; echo $PWD))
+	# Strip off current directory from beginning, if there, just
+	# to make paths more friendly.
+	tests_dir=${tests_dir#$PWD/}
+	find_and_run_one_test "$f" "$tests_dir"
+    fi
+
+    if [ $status -eq 127 ] ; then
+	    die "test \"$f\" is not recognised"
+    fi
+
+    if $exit_on_fail && [ $status -ne 0 ] ; then
 	    break
-	fi
-    else
-	die "test \"$f\" is not recognised"
     fi
 done
 
