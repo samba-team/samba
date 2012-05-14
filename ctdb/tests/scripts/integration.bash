@@ -505,9 +505,9 @@ daemons_setup ()
 {
     mkdir -p "${TEST_VAR_DIR}/test.db/persistent"
 
-    local public_addresses="${TEST_VAR_DIR}/public_addresses.txt"
+    local public_addresses_all="${TEST_VAR_DIR}/public_addresses_all"
     local no_public_addresses="${TEST_VAR_DIR}/no_public_addresses.txt"
-    rm -f $CTDB_NODES $public_addresses $no_public_addresses
+    rm -f $CTDB_NODES $public_addresses_all $no_public_addresses
 
     # If there are (strictly) greater than 2 nodes then we'll randomly
     # choose a node to have no public addresses.
@@ -534,8 +534,8 @@ daemons_setup ()
 	    echo 127.0.0.$i >> $CTDB_NODES
 	    # 2 public addresses on most nodes, just to make things interesting.
 	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
-		echo "192.0.2.$i/24 lo" >> $public_addresses
-		echo "192.0.2.$(($i + $TEST_LOCAL_DAEMONS))/24 lo" >> $public_addresses
+		echo "192.0.2.$i/24 lo" >>"$public_addresses_all"
+		echo "192.0.2.$(($i + $TEST_LOCAL_DAEMONS))/24 lo" >>"$public_addresses_all"
 	    fi
 	fi
     done
@@ -546,7 +546,8 @@ daemons_start_1 ()
     local pnn="$1"
     shift # "$@" gets passed to ctdbd
 
-    local public_addresses="${TEST_VAR_DIR}/public_addresses.txt"
+    local public_addresses_all="${TEST_VAR_DIR}/public_addresses_all"
+    local public_addresses_mine="${TEST_VAR_DIR}/public_addresses.${pnn}"
     local no_public_addresses="${TEST_VAR_DIR}/no_public_addresses.txt"
 
     local no_public_ips=-1
@@ -566,7 +567,8 @@ daemons_start_1 ()
     if [ $pnn -eq $no_public_ips ] ; then
 	ctdb_options="$ctdb_options --public-addresses=/dev/null"
     else
-	ctdb_options="$ctdb_options --public-addresses=$public_addresses"
+	cp "$public_addresses_all" "$public_addresses_mine"
+	ctdb_options="$ctdb_options --public-addresses=$public_addresses_mine"
     fi
 
     # We'll use "pkill -f" to kill the daemons with
