@@ -528,10 +528,10 @@ daemons_setup ()
     local i
     for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
 	if [ "${CTDB_USE_IPV6}x" != "x" ]; then
-	    echo ::$i >> $nodes
+	    echo ::$i >>"$CTDB_NODES"
 	    ip addr add ::$i/128 dev lo
 	else
-	    echo 127.0.0.$i >> $CTDB_NODES
+	    echo 127.0.0.$i >>"$CTDB_NODES"
 	    # 2 public addresses on most nodes, just to make things interesting.
 	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
 		echo "192.0.2.$i/24 lo" >>"$public_addresses_all"
