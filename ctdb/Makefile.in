@@ -369,7 +369,7 @@ install_tests: all
 	tests/INSTALL --destdir=$(DESTDIR) --datarootdir=$(prefix)/share --libdir=$(libdir) --bindir=$(bindir) --etcdir=$(etcdir)
 
 test: all
-	tests/run_tests.sh
+	tests/run_tests.sh -V tests/var
 
 test_cluster: all
 	tests/run_cluster_tests.sh
