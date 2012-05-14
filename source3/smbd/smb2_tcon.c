@@ -27,14 +27,6 @@
 #include "lib/param/loadparm.h"
 #include "../lib/util/tevent_ntstatus.h"
 
-static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
-				       const char *in_path,
-				       uint8_t *out_share_type,
-				       uint32_t *out_share_flags,
-				       uint32_t *out_capabilities,
-				       uint32_t *out_maximal_access,
-				       uint32_t *out_tree_id);
-
 static struct tevent_req *smbd_smb2_tree_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbd_smb2_request *smb2req,
@@ -46,24 +38,20 @@ static NTSTATUS smbd_smb2_tree_connect_recv(struct tevent_req *req,
 					    uint32_t *out_maximal_access,
 					    uint32_t *out_tree_id);
 
+static void smbd_smb2_request_tcon_done(struct tevent_req *subreq);
+
 NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
 	int i = req->current_idx;
-	uint8_t *outhdr;
-	DATA_BLOB outbody;
 	uint16_t in_path_offset;
 	uint16_t in_path_length;
 	DATA_BLOB in_path_buffer;
 	char *in_path_string;
 	size_t in_path_string_size;
-	uint8_t out_share_type = 0;
-	uint32_t out_share_flags = 0;
-	uint32_t out_capabilities = 0;
-	uint32_t out_maximal_access = 0;
-	uint32_t out_tree_id = 0;
 	NTSTATUS status;
 	bool ok;
+	struct tevent_req *subreq;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x09);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -102,21 +90,62 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_BAD_NETWORK_NAME);
 	}
 
-	status = smbd_smb2_tree_connect(req, in_path_string,
-					&out_share_type,
-					&out_share_flags,
-					&out_capabilities,
-					&out_maximal_access,
-					&out_tree_id);
+	subreq = smbd_smb2_tree_connect_send(req,
+					     req->sconn->ev_ctx,
+					     req,
+					     in_path_string);
+	if (subreq == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_request_tcon_done, req);
+
+	return smbd_smb2_request_pending_queue(req, subreq, 500);
+}
+
+static void smbd_smb2_request_tcon_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *req =
+		tevent_req_callback_data(subreq,
+		struct smbd_smb2_request);
+	int i = req->current_idx;
+	uint8_t *outhdr;
+	DATA_BLOB outbody;
+	uint8_t out_share_type = 0;
+	uint32_t out_share_flags = 0;
+	uint32_t out_capabilities = 0;
+	uint32_t out_maximal_access = 0;
+	uint32_t out_tree_id = 0;
+	NTSTATUS status;
+	NTSTATUS error;
+
+	status = smbd_smb2_tree_connect_recv(subreq,
+					     &out_share_type,
+					     &out_share_flags,
+					     &out_capabilities,
+					     &out_maximal_access,
+					     &out_tree_id);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		return smbd_smb2_request_error(req, status);
+		error = smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->sconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
 	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x10);
 	if (outbody.data == NULL) {
-		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->sconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
 	SIVAL(outhdr, SMB2_HDR_TID, out_tree_id);
@@ -132,7 +161,12 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	SIVAL(outbody.data, 0x0C,
 	      out_maximal_access);		/* maximal access */
 
-	return smbd_smb2_request_done(req, outbody, NULL);
+	error = smbd_smb2_request_done(req, outbody, NULL);
+	if (!NT_STATUS_IS_OK(error)) {
+		smbd_server_connection_terminate(req->sconn,
+						 nt_errstr(error));
+		return;
+	}
 }
 
 static int smbd_smb2_tcon_destructor(struct smbd_smb2_tcon *tcon)
