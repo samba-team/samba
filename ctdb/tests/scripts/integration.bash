@@ -739,6 +739,27 @@ ctdb_restart_when_done ()
     ctdb_test_restart_scheduled=true
 }
 
+get_ctdbd_command_line_option ()
+{
+    local pnn="$1"
+    local option="$2"
+
+    try_command_on_node "$pnn" "$CTDB getpid" || \
+	die "Unable to get PID of ctdbd on node $pnn"
+
+    local pid="${out#*:}"
+    try_command_on_node "$pnn" "ps -p $pid -o args hww" || \
+	die "Unable to get command-line of PID $pid"
+
+    # Strip everything up to and including --option
+    local t="${out#*--${option}}"
+    # Strip leading '=' or space if present
+    t="${t#=}"
+    t="${t# }"
+    # Strip any following options and print
+    echo "${t%% -*}"
+}
+
 #######################################
 
 install_eventscript ()
