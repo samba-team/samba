@@ -144,7 +144,6 @@ sub get_interface($)
     $interfaces{"locals3dc2"} = 2;
     $interfaces{"localmember3"} = 3;
     $interfaces{"localshare4"} = 4;
-    $interfaces{"localserver5"} = 5;
     $interfaces{"localktest6"} = 6;
     $interfaces{"maptoguest"} = 7;
 

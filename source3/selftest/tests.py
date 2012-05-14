@@ -165,10 +165,7 @@ plantestsuite("samba3.ntlm_auth.krb5(ktest:local) old ccache", "ktest:local", [o
 plantestsuite("samba3.ntlm_auth.krb5(ktest:local)", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, binpath('ntlm_auth3'), '$PREFIX/ktest/krb5_ccache-3', '$SERVER', configuration])
 
 
-for env in ["secserver"]:
-    plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) domain creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN\\\\$DC_USERNAME', '$DC_PASSWORD', binpath('smbclient3'), configuration + " --option=clientntlmv2auth=no"])
-
-for env in ["maptoguest", "secshare", "secserver"]:
+for env in ["maptoguest", "secshare"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) local creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', binpath('smbclient3'), configuration + " --option=clientntlmv2auth=no --option=clientlanmanauth=yes"])
 
 env = "maptoguest"

@@ -159,13 +159,6 @@ sub setup_env($$$)
 		return $self->setup_maptoguest("$path/maptoguest");
 	} elsif ($envname eq "ktest") {
 		return $self->setup_ktest("$path/ktest");
-	} elsif ($envname eq "secserver") {
-		if (not defined($self->{vars}->{s3dc})) {
-			if (not defined($self->setup_s3dc("$path/s3dc"))) {
-			        return undef;
-			}
-		}
-		return $self->setup_secserver("$path/secserver", $self->{vars}->{s3dc});
 	} elsif ($envname eq "member") {
 		if (not defined($self->{vars}->{s3dc})) {
 			if (not defined($self->setup_s3dc("$path/s3dc"))) {
@@ -373,39 +366,6 @@ sub setup_secshare($$)
 	$self->{vars}->{secshare} = $vars;
 
 	return $vars;
-}
-
-sub setup_secserver($$$)
-{
-	my ($self, $prefix, $s3dcvars) = @_;
-
-	print "PROVISIONING server with security=server...";
-
-	my $secserver_options = "
-	security = server
-        password server = $s3dcvars->{SERVER_IP}
-";
-
-	my $ret = $self->provision($prefix,
-				   "LOCALSERVER5",
-				   "localserver5pass",
-				   $secserver_options);
-
-	$ret or return undef;
-
-	$self->check_or_start($ret, "yes", "no", "yes");
-
-	if (not $self->wait_for_start($ret)) {
-	       return undef;
-	}
-
-	$ret->{DC_SERVER} = $s3dcvars->{SERVER};
-	$ret->{DC_SERVER_IP} = $s3dcvars->{SERVER_IP};
-	$ret->{DC_NETBIOSNAME} = $s3dcvars->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $s3dcvars->{USERNAME};
-	$ret->{DC_PASSWORD} = $s3dcvars->{PASSWORD};
-
-	return $ret;
 }
 
 sub setup_ktest($$$)
