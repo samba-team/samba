@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/addrchange.h"
+#include "lib/util/tevent_ntstatus.h"
 #include "proto.h"
 
 extern int torture_numops;
