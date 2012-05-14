@@ -280,4 +280,14 @@ NTSTATUS smb2cli_session_setup_recv(struct tevent_req *req,
 				    struct iovec **recv_iov,
 				    DATA_BLOB *out_security_buffer);
 
+struct tevent_req *smb2cli_logoff_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct smbXcli_conn *conn,
+				       uint32_t timeout_msec,
+				       struct smbXcli_session *session);
+NTSTATUS smb2cli_logoff_recv(struct tevent_req *req);
+NTSTATUS smb2cli_logoff(struct smbXcli_conn *conn,
+			uint32_t timeout_msec,
+			struct smbXcli_session *session);
+
 #endif /* _SMBXCLI_BASE_H_ */
