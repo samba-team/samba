@@ -3145,7 +3145,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 		ZERO_STRUCT(old_lm_hash);
 		ZERO_STRUCT(new_lm_hash);
 		memcpy(old_lm_hash.hash, pass1, MIN(strlen(pass1), 16));
-		memcpy(new_lm_hash.hash, pass1, MIN(strlen(pass2), 16));
+		memcpy(new_lm_hash.hash, pass2, MIN(strlen(pass2), 16));
 	}
 
 	status = dcerpc_samr_ChangePasswordUser(b, mem_ctx,
