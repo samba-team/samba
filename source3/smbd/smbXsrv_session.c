@@ -37,6 +37,7 @@
 #include "librpc/gen_ndr/ndr_smbXsrv.h"
 #include "serverid.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "msg_channel.h"
 
 struct smbXsrv_session_table {
 	struct {
@@ -48,6 +49,7 @@ struct smbXsrv_session_table {
 	struct {
 		struct db_context *db_ctx;
 	} global;
+	struct msg_channel *close_channel;
 };
 
 static struct db_context *smbXsrv_session_global_db_ctx = NULL;
@@ -155,12 +157,16 @@ static NTSTATUS smbXsrv_session_local_key_to_id(TDB_DATA key, uint32_t *id)
 	return NT_STATUS_OK;
 }
 
+static void smbXsrv_session_close_loop(struct tevent_req *subreq);
+
 static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 					   uint32_t lowest_id,
 					   uint32_t highest_id)
 {
 	struct smbXsrv_session_table *table;
 	NTSTATUS status;
+	struct tevent_req *subreq;
+	int ret;
 
 	table = talloc_zero(conn, struct smbXsrv_session_table);
 	if (table == NULL) {
@@ -183,8 +189,156 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 
 	table->global.db_ctx = smbXsrv_session_global_db_ctx;
 
+	dbwrap_watch_db(table->global.db_ctx, conn->msg_ctx);
+
+	ret = msg_channel_init(table, conn->msg_ctx,
+			       MSG_SMBXSRV_SESSION_CLOSE,
+			       &table->close_channel);
+	if (ret != 0) {
+		status = map_nt_error_from_unix_common(errno);
+		TALLOC_FREE(table);
+		return status;
+	}
+
+	subreq = msg_read_send(table, conn->ev_ctx, table->close_channel);
+	if (subreq == NULL) {
+		TALLOC_FREE(table);
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, smbXsrv_session_close_loop, conn);
+
 	conn->session_table = table;
 	return NT_STATUS_OK;
+}
+
+static void smbXsrv_session_close_loop(struct tevent_req *subreq)
+{
+	struct smbXsrv_connection *conn =
+		tevent_req_callback_data(subreq,
+		struct smbXsrv_connection);
+	struct smbXsrv_session_table *table = conn->session_table;
+	int ret;
+	struct messaging_rec *rec = NULL;
+	struct smbXsrv_session_closeB close_blob;
+	enum ndr_err_code ndr_err;
+	struct smbXsrv_session_close0 *close_info0 = NULL;
+	struct smbXsrv_session *session = NULL;
+	NTSTATUS status;
+	struct timeval tv = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv);
+
+	ret = msg_read_recv(subreq, talloc_tos(), &rec);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		goto next;
+	}
+
+	ndr_err = ndr_pull_struct_blob(&rec->buf, rec, &close_blob,
+			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_session_closeB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1,("smbXsrv_session_close_loop: "
+			 "ndr_pull_struct_blob - %s\n",
+			 nt_errstr(status)));
+		goto next;
+	}
+
+	DEBUG(10,("smbXsrv_session_close_loop: MSG_SMBXSRV_SESSION_CLOSE\n"));
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
+	}
+
+	if (close_blob.version != SMBXSRV_VERSION_0) {
+		DEBUG(0,("smbXsrv_session_close_loop: "
+			 "ignore invalid version %u\n", close_blob.version));
+		NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
+		goto next;
+	}
+
+	close_info0 = close_blob.info.info0;
+	if (close_info0 == NULL) {
+		DEBUG(0,("smbXsrv_session_close_loop: "
+			 "ignore NULL info %u\n", close_blob.version));
+		NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
+		goto next;
+	}
+
+	status = smb2srv_session_lookup(conn, close_info0->old_session_wire_id,
+					now, &session);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
+		DEBUG(4,("smbXsrv_session_close_loop: "
+			 "old_session_wire_id %llu not found\n",
+			 (unsigned long long)close_info0->old_session_wire_id));
+		if (DEBUGLVL(4)) {
+			NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
+		}
+		goto next;
+	}
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+		DEBUG(1,("smbXsrv_session_close_loop: "
+			 "old_session_wire_id %llu - %s\n",
+			 (unsigned long long)close_info0->old_session_wire_id,
+			 nt_errstr(status)));
+		if (DEBUGLVL(1)) {
+			NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
+		}
+		goto next;
+	}
+
+	if (session->global->session_global_id != close_info0->old_session_global_id) {
+		DEBUG(1,("smbXsrv_session_close_loop: "
+			 "old_session_wire_id %llu - global %u != %u\n",
+			 (unsigned long long)close_info0->old_session_wire_id,
+			 session->global->session_global_id,
+			 close_info0->old_session_global_id));
+		if (DEBUGLVL(1)) {
+			NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
+		}
+		goto next;
+	}
+
+	if (session->global->creation_time != close_info0->old_creation_time) {
+		DEBUG(1,("smbXsrv_session_close_loop: "
+			 "old_session_wire_id %llu - "
+			 "creation %s (%llu) != %s (%llu)\n",
+			 (unsigned long long)close_info0->old_session_wire_id,
+			 nt_time_string(rec, session->global->creation_time),
+			 (unsigned long long)session->global->creation_time,
+			 nt_time_string(rec, close_info0->old_creation_time),
+			 (unsigned long long)close_info0->old_creation_time));
+		if (DEBUGLVL(1)) {
+			NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
+		}
+		goto next;
+	}
+
+	/*
+	 * TODO: cancel all outstanding requests on the session
+	 */
+	status = smbXsrv_session_logoff(session);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("smbXsrv_session_close_loop: "
+			  "smbXsrv_session_logoff(%llu) failed: %s\n",
+			  (unsigned long long)session->global->session_wire_id,
+			  nt_errstr(status)));
+		if (DEBUGLVL(1)) {
+			NDR_PRINT_DEBUG(smbXsrv_session_closeB, &close_blob);
+		}
+	}
+	TALLOC_FREE(session);
+
+next:
+	TALLOC_FREE(rec);
+
+	subreq = msg_read_send(table, conn->ev_ctx, table->close_channel);
+	if (subreq == NULL) {
+		smbd_server_connection_terminate(conn->sconn,
+						 "msg_read_send() failed");
+		return;
+	}
+	tevent_req_set_callback(subreq, smbXsrv_session_close_loop, conn);
 }
 
 struct smb1srv_session_local_allocate_state {
