@@ -771,6 +771,44 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
+				 struct passwd *pwd,
+				 struct netr_SamInfo3 *info3)
+{
+	struct dom_sid domain_sid;
+	const char *tmp;
+
+	/* Set account name */
+	tmp = talloc_strdup(mem_ctx, pwd->pw_name);
+	if (tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	init_lsa_String(&info3->base.account_name, tmp);
+
+	/* Set domain name */
+	tmp = talloc_strdup(mem_ctx, get_global_sam_name());
+	if (tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	init_lsa_StringLarge(&info3->base.logon_domain, tmp);
+
+	/* Domain sid */
+	sid_copy(&domain_sid, get_global_sam_sid());
+
+	info3->base.domain_sid = dom_sid_dup(mem_ctx, &domain_sid);
+	if (info3->base.domain_sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Admin rid */
+	info3->base.rid = DOMAIN_RID_ADMINISTRATOR;
+
+	/* Primary gid */
+	info3->base.primary_gid = dom_sid_parse_talloc(mem_ctx, SID_NT_SYSTEM);
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 				struct netr_SamInfo3 *info3)
 {
@@ -898,6 +936,60 @@ done:
   it.
 ****************************************************************************/
 
+static NTSTATUS make_system_session_info_from_pw(TALLOC_CTX *mem_ctx,
+						 struct passwd *pwd,
+						 struct auth_session_info **session_info)
+{
+	struct auth_serversupplied_info *server_info;
+	const char *domain = lp_netbios_name();
+	struct netr_SamInfo3 info3;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCT(info3);
+
+	status = get_system_info3(tmp_ctx, pwd, &info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed creating system info3 with %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	status = make_server_info_info3(tmp_ctx,
+					pwd->pw_name,
+					domain,
+					&server_info,
+					&info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("make_server_info_info3 failed with %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	server_info->nss_token = true;
+
+	/* Now turn the server_info into a session_info with the full token etc */
+	status = create_local_token(mem_ctx, server_info, NULL, pwd->pw_name, session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("create_local_token failed: %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	talloc_free(server_info);
+	talloc_steal(mem_ctx, *session_info);
+
+	status = NT_STATUS_OK;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
+}
+
 static NTSTATUS make_session_info_from_pw(TALLOC_CTX *mem_ctx,
 					  struct passwd *pwd,
 					  bool is_guest,
@@ -937,10 +1029,9 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	status = make_session_info_from_pw(mem_ctx,
-					   pwd,
-					   false,
-					   session_info);
+	status = make_system_session_info_from_pw(mem_ctx,
+						  pwd,
+						  session_info);
 	TALLOC_FREE(pwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
