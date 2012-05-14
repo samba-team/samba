@@ -50,11 +50,11 @@ static int nbt_name_request_destructor(struct nbt_name_request *req)
 		req->te = NULL;
 	}
 	if (req->nbtsock->send_queue == NULL) {
-		EVENT_FD_NOT_WRITEABLE(req->nbtsock->fde);
+		TEVENT_FD_NOT_WRITEABLE(req->nbtsock->fde);
 	}
 	if (req->nbtsock->num_pending == 0 &&
 	    req->nbtsock->incoming.handler == NULL) {
-		EVENT_FD_NOT_READABLE(req->nbtsock->fde);
+		TEVENT_FD_NOT_READABLE(req->nbtsock->fde);
 	}
 	return 0;
 }
@@ -87,12 +87,12 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 		if (req->is_reply) {
 			talloc_free(req);
 		} else {
-			EVENT_FD_READABLE(nbtsock->fde);
+			TEVENT_FD_READABLE(nbtsock->fde);
 			nbtsock->num_pending++;
 		}
 	}
 
-	EVENT_FD_NOT_WRITEABLE(nbtsock->fde);
+	TEVENT_FD_NOT_WRITEABLE(nbtsock->fde);
 	talloc_free(tmp_ctx);
 	return;
 
@@ -122,15 +122,15 @@ static void nbt_name_socket_timeout(struct tevent_context *ev, struct tevent_tim
 
 	if (req->num_retries != 0) {
 		req->num_retries--;
-		req->te = event_add_timed(req->nbtsock->event_ctx, req,
-					  timeval_add(&t, req->timeout, 0),
-					  nbt_name_socket_timeout, req);
+		req->te = tevent_add_timer(req->nbtsock->event_ctx, req,
+					   timeval_add(&t, req->timeout, 0),
+					   nbt_name_socket_timeout, req);
 		if (req->state != NBT_REQUEST_SEND) {
 			req->state = NBT_REQUEST_SEND;
 			DLIST_ADD_END(req->nbtsock->send_queue, req,
 				      struct nbt_name_request *);
 		}
-		EVENT_FD_WRITEABLE(req->nbtsock->fde);
+		TEVENT_FD_WRITEABLE(req->nbtsock->fde);
 		return;
 	}
 
@@ -273,9 +273,9 @@ void nbt_name_socket_handle_response_packet(struct nbt_name_request *req,
 			ttl = 5 + 4*25;
 		}
 		req->timeout = ttl;
-		req->te = event_add_timed(req->nbtsock->event_ctx, req,
-					  timeval_current_ofs(req->timeout, 0),
-					  nbt_name_socket_timeout, req);
+		req->te = tevent_add_timer(req->nbtsock->event_ctx, req,
+					   timeval_current_ofs(req->timeout, 0),
+					   nbt_name_socket_timeout, req);
 		return;
 	}
 
@@ -318,10 +318,10 @@ static void nbt_name_socket_handler(struct tevent_context *ev, struct tevent_fd 
 {
 	struct nbt_name_socket *nbtsock = talloc_get_type(private_data,
 							  struct nbt_name_socket);
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		nbt_name_socket_send(nbtsock);
 	}
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		nbt_name_socket_recv(nbtsock);
 	}
 }
@@ -358,9 +358,9 @@ _PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	nbtsock->incoming.handler = NULL;
 	nbtsock->unexpected.handler = NULL;
 
-	nbtsock->fde = event_add_fd(nbtsock->event_ctx, nbtsock,
-				    socket_get_fd(nbtsock->sock), 0,
-				    nbt_name_socket_handler, nbtsock);
+	nbtsock->fde = tevent_add_fd(nbtsock->event_ctx, nbtsock,
+				     socket_get_fd(nbtsock->sock), 0,
+				     nbt_name_socket_handler, nbtsock);
 
 	return nbtsock;
 
@@ -407,9 +407,9 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	request->name_trn_id = id;
 	req->name_trn_id     = id;
 
-	req->te = event_add_timed(nbtsock->event_ctx, req,
-				  timeval_current_ofs(req->timeout, 0),
-				  nbt_name_socket_timeout, req);
+	req->te = tevent_add_timer(nbtsock->event_ctx, req,
+				   timeval_current_ofs(req->timeout, 0),
+				   nbt_name_socket_timeout, req);
 
 	talloc_set_destructor(req, nbt_name_request_destructor);
 
@@ -426,7 +426,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 		NDR_PRINT_DEBUG(nbt_name_packet, request);
 	}
 
-	EVENT_FD_WRITEABLE(nbtsock->fde);
+	TEVENT_FD_WRITEABLE(nbtsock->fde);
 
 	return req;
 
@@ -471,7 +471,7 @@ _PUBLIC_ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 
 	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
 
-	EVENT_FD_WRITEABLE(nbtsock->fde);
+	TEVENT_FD_WRITEABLE(nbtsock->fde);
 
 	return NT_STATUS_OK;
 
@@ -488,7 +488,7 @@ NTSTATUS nbt_name_request_recv(struct nbt_name_request *req)
 	if (!req) return NT_STATUS_NO_MEMORY;
 
 	while (req->state < NBT_REQUEST_DONE) {
-		if (event_loop_once(req->nbtsock->event_ctx) != 0) {
+		if (tevent_loop_once(req->nbtsock->event_ctx) != 0) {
 			req->state = NBT_REQUEST_ERROR;
 			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 			break;
@@ -508,7 +508,7 @@ _PUBLIC_ NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
 {
 	nbtsock->incoming.handler = handler;
 	nbtsock->incoming.private_data = private_data;
-	EVENT_FD_READABLE(nbtsock->fde);
+	TEVENT_FD_READABLE(nbtsock->fde);
 	return NT_STATUS_OK;
 }
 
@@ -522,7 +522,7 @@ NTSTATUS nbt_set_unexpected_handler(struct nbt_name_socket *nbtsock,
 {
 	nbtsock->unexpected.handler = handler;
 	nbtsock->unexpected.private_data = private_data;
-	EVENT_FD_READABLE(nbtsock->fde);
+	TEVENT_FD_READABLE(nbtsock->fde);
 	return NT_STATUS_OK;
 }
 
