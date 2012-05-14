@@ -1420,7 +1420,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 
 		if (setting_acl) {
 			/* See if the owning user is in any of the other groups in
-			   the ACE, or if there's a matching user entry.
+			   the ACE, or if there's a matching user entry (by uid
+			   or in the case of ID_TYPE_BOTH by SID).
 			   If so, OR in the permissions from that entry. */
 
 			canon_ace *pace_iter;
@@ -1430,7 +1431,9 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 						pace_iter->unix_ug.uid == pace->unix_ug.uid) {
 					pace->perms |= pace_iter->perms;
 				} else if (pace_iter->type == SMB_ACL_GROUP_OBJ || pace_iter->type == SMB_ACL_GROUP) {
-					if (uid_entry_in_group(conn, pace, pace_iter)) {
+					if (dom_sid_equal(&pace->trustee, &pace_iter->trustee)) {
+						pace->perms |= pace_iter->perms;
+					} else if (uid_entry_in_group(conn, pace, pace_iter)) {
 						pace->perms |= pace_iter->perms;
 					}
 				}
