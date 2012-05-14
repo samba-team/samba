@@ -19,6 +19,7 @@
 
 #include "../replace/replace.h"
 #include "tevent_ntstatus.h"
+#include "libcli/util/error.h"
 
 #define TEVENT_NTERROR_MAGIC (0x917b5acd)
 
@@ -96,4 +97,15 @@ void tevent_req_simple_finish_ntstatus(struct tevent_req *subreq,
 		return;
 	}
 	tevent_req_done(req);
+}
+
+bool tevent_req_poll_ntstatus(struct tevent_req *req,
+			      struct tevent_context *ev,
+			      NTSTATUS *status)
+{
+	bool ret = tevent_req_poll(req, ev);
+	if (!ret) {
+		*status = map_nt_error_from_unix_common(errno);
+	}
+	return ret;
 }

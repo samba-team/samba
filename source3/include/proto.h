@@ -536,9 +536,6 @@ void split_domain_user(TALLOC_CTX *mem_ctx,
 		       char **domain,
 		       char **user);
 const char *strip_hostname(const char *s);
-bool tevent_req_poll_ntstatus(struct tevent_req *req,
-			      struct tevent_context *ev,
-			      NTSTATUS *status);
 bool any_nt_status_not_ok(NTSTATUS err1, NTSTATUS err2, NTSTATUS *result);
 int timeval_to_msec(struct timeval t);
 char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname);

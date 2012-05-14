@@ -2262,17 +2262,6 @@ const char *strip_hostname(const char *s)
 	return s;
 }
 
-bool tevent_req_poll_ntstatus(struct tevent_req *req,
-			      struct tevent_context *ev,
-			      NTSTATUS *status)
-{
-	bool ret = tevent_req_poll(req, ev);
-	if (!ret) {
-		*status = map_nt_error_from_unix_common(errno);
-	}
-	return ret;
-}
-
 bool any_nt_status_not_ok(NTSTATUS err1, NTSTATUS err2, NTSTATUS *result)
 {
 	if (!NT_STATUS_IS_OK(err1)) {
