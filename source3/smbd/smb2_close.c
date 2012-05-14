@@ -24,18 +24,6 @@
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
 
-static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
-				uint16_t in_flags,
-				uint64_t in_file_id_volatile,
-				uint16_t *out_flags,
-				NTTIME *out_creation_time,
-				NTTIME *out_last_access_time,
-				NTTIME *out_last_write_time,
-				NTTIME *out_change_time,
-				uint64_t *out_allocation_size,
-				uint64_t *out_end_of_file,
-				uint32_t *out_file_attributes);
-
 static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
@@ -51,34 +39,23 @@ static NTSTATUS smbd_smb2_close_recv(struct tevent_req *req,
 				     uint64_t *out_end_of_file,
 				     uint32_t *out_file_attributes);
 
+static void smbd_smb2_request_close_done(struct tevent_req *subreq);
+
 NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
 	int i = req->current_idx;
-	DATA_BLOB outbody;
 	uint16_t in_flags;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
-	uint16_t out_flags;
-	NTTIME out_creation_time;
-	NTTIME out_last_access_time;
-	NTTIME out_last_write_time;
-	NTTIME out_change_time;
-	uint64_t out_allocation_size;
-	uint64_t out_end_of_file;
-	uint32_t out_file_attributes;
 	NTSTATUS status;
+	struct tevent_req *subreq;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x18);
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
 	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
-
-	outbody = data_blob_talloc(req->out.vector, NULL, 0x3C);
-	if (outbody.data == NULL) {
-		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
-	}
 
 	in_flags		= SVAL(inbody, 0x02);
 	in_file_id_persistent	= BVAL(inbody, 0x08);
@@ -90,19 +67,64 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 
-	status = smbd_smb2_close(req,
-				in_flags,
-				in_file_id_volatile,
-				&out_flags,
-				&out_creation_time,
-				&out_last_access_time,
-				&out_last_write_time,
-				&out_change_time,
-				&out_allocation_size,
-				&out_end_of_file,
-				&out_file_attributes);
+	subreq = smbd_smb2_close_send(req,
+				      req->sconn->ev_ctx,
+				      req,
+				      in_flags,
+				      in_file_id_volatile);
+	if (subreq == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_request_close_done, req);
+
+	return smbd_smb2_request_pending_queue(req, subreq, 500);
+}
+
+static void smbd_smb2_request_close_done(struct tevent_req *subreq)
+{
+	struct smbd_smb2_request *req =
+		tevent_req_callback_data(subreq,
+		struct smbd_smb2_request);
+	DATA_BLOB outbody;
+	uint16_t out_flags;
+	NTTIME out_creation_time;
+	NTTIME out_last_access_time;
+	NTTIME out_last_write_time;
+	NTTIME out_change_time;
+	uint64_t out_allocation_size;
+	uint64_t out_end_of_file;
+	uint32_t out_file_attributes;
+	NTSTATUS status;
+	NTSTATUS error;
+
+	status = smbd_smb2_close_recv(subreq,
+				      &out_flags,
+				      &out_creation_time,
+				      &out_last_access_time,
+				      &out_last_write_time,
+				      &out_change_time,
+				      &out_allocation_size,
+				      &out_end_of_file,
+				      &out_file_attributes);
 	if (!NT_STATUS_IS_OK(status)) {
-		return smbd_smb2_request_error(req, status);
+		error = smbd_smb2_request_error(req, status);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->sconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
+	}
+
+	outbody = data_blob_talloc(req->out.vector, NULL, 0x3C);
+	if (outbody.data == NULL) {
+		error = smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+		if (!NT_STATUS_IS_OK(error)) {
+			smbd_server_connection_terminate(req->sconn,
+							 nt_errstr(error));
+			return;
+		}
+		return;
 	}
 
 	SSVAL(outbody.data, 0x00, 0x3C);	/* struct size */
@@ -116,7 +138,12 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 	SBVAL(outbody.data, 0x30, out_end_of_file);
 	SIVAL(outbody.data, 0x38, out_file_attributes);
 
-	return smbd_smb2_request_done(req, outbody, NULL);
+	error = smbd_smb2_request_done(req, outbody, NULL);
+	if (!NT_STATUS_IS_OK(error)) {
+		smbd_server_connection_terminate(req->sconn,
+						 nt_errstr(error));
+		return;
+	}
 }
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
