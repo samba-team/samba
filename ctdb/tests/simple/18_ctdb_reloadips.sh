@@ -25,8 +25,6 @@ ctdb_test_init "$@"
 
 set -e
 
-ctdb_test_check_real_cluster
-
 cluster_is_healthy
 
 # Reset configuration
@@ -36,8 +34,8 @@ select_test_node_and_ips
 
 echo "Emptying public addresses file on $test_node"
 
-[ -n "$CTDB_BASE" ] || CTDB_BASE="/etc/ctdb"
-addresses="${CTDB_BASE}/public_addresses"
+addresses=$(get_ctdbd_command_line_option $test_node "public-addresses")
+echo "Public addresses file on node $test_node is \"$addresses\""
 backup="${addresses}.$$"
 
 restore_public_addresses ()
