@@ -22,6 +22,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 				uint16_t in_flags,
@@ -34,6 +35,21 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 				uint64_t *out_allocation_size,
 				uint64_t *out_end_of_file,
 				uint32_t *out_file_attributes);
+
+static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct smbd_smb2_request *smb2req,
+					       uint16_t in_flags,
+					       uint64_t in_file_id_volatile);
+static NTSTATUS smbd_smb2_close_recv(struct tevent_req *req,
+				     uint16_t *out_flags,
+				     NTTIME *out_creation_time,
+				     NTTIME *out_last_access_time,
+				     NTTIME *out_last_write_time,
+				     NTTIME *out_change_time,
+				     uint64_t *out_allocation_size,
+				     uint64_t *out_end_of_file,
+				     uint32_t *out_file_attributes);
 
 NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 {
@@ -222,5 +238,88 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	*out_end_of_file = file_size;
 	*out_file_attributes = dos_attrs;
 
+	return NT_STATUS_OK;
+}
+
+struct smbd_smb2_close_state {
+	uint16_t in_flags;
+	uint64_t in_file_id_volatile;
+	uint16_t out_flags;
+	NTTIME out_creation_time;
+	NTTIME out_last_access_time;
+	NTTIME out_last_write_time;
+	NTTIME out_change_time;
+	uint64_t out_allocation_size;
+	uint64_t out_end_of_file;
+	uint32_t out_file_attributes;
+};
+
+static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct smbd_smb2_request *smb2req,
+					       uint16_t in_flags,
+					       uint64_t in_file_id_volatile)
+{
+	struct tevent_req *req;
+	struct smbd_smb2_close_state *state;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbd_smb2_close_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->in_flags = in_flags;
+	state->in_file_id_volatile = in_file_id_volatile;
+
+	status = smbd_smb2_close(smb2req,
+				 state->in_flags,
+				 state->in_file_id_volatile,
+				 &state->out_flags,
+				 &state->out_creation_time,
+				 &state->out_last_access_time,
+				 &state->out_last_write_time,
+				 &state->out_change_time,
+				 &state->out_allocation_size,
+				 &state->out_end_of_file,
+				 &state->out_file_attributes);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS smbd_smb2_close_recv(struct tevent_req *req,
+				     uint16_t *out_flags,
+				     NTTIME *out_creation_time,
+				     NTTIME *out_last_access_time,
+				     NTTIME *out_last_write_time,
+				     NTTIME *out_change_time,
+				     uint64_t *out_allocation_size,
+				     uint64_t *out_end_of_file,
+				     uint32_t *out_file_attributes)
+{
+	struct smbd_smb2_close_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_close_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out_flags = state->out_flags;
+	*out_creation_time = state->out_creation_time;
+	*out_last_access_time = state->out_last_access_time;
+	*out_last_write_time = state->out_last_write_time;
+	*out_change_time = state->out_change_time;
+	*out_allocation_size = state->out_allocation_size;
+	*out_end_of_file = state->out_end_of_file;
+	*out_file_attributes = state->out_file_attributes;
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
