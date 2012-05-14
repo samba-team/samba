@@ -26,7 +26,14 @@
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 				uint16_t in_flags,
 				uint64_t in_file_id_volatile,
-				DATA_BLOB *outbody);
+				uint16_t *out_flags,
+				NTTIME *out_creation_time,
+				NTTIME *out_last_access_time,
+				NTTIME *out_last_write_time,
+				NTTIME *out_change_time,
+				uint64_t *out_allocation_size,
+				uint64_t *out_end_of_file,
+				uint32_t *out_file_attributes);
 
 NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 {
@@ -36,6 +43,14 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 	uint16_t in_flags;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
+	uint16_t out_flags;
+	NTTIME out_creation_time;
+	NTTIME out_last_access_time;
+	NTTIME out_last_write_time;
+	NTTIME out_change_time;
+	uint64_t out_allocation_size;
+	uint64_t out_end_of_file;
+	uint32_t out_file_attributes;
 	NTSTATUS status;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x18);
@@ -62,10 +77,28 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 	status = smbd_smb2_close(req,
 				in_flags,
 				in_file_id_volatile,
-				&outbody);
+				&out_flags,
+				&out_creation_time,
+				&out_last_access_time,
+				&out_last_write_time,
+				&out_change_time,
+				&out_allocation_size,
+				&out_end_of_file,
+				&out_file_attributes);
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
+
+	SSVAL(outbody.data, 0x00, 0x3C);	/* struct size */
+	SSVAL(outbody.data, 0x02, out_flags);
+	SIVAL(outbody.data, 0x04, 0);		/* reserved */
+	SBVAL(outbody.data, 0x08, out_creation_time);
+	SBVAL(outbody.data, 0x10, out_last_access_time);
+	SBVAL(outbody.data, 0x18, out_last_write_time);
+	SBVAL(outbody.data, 0x20, out_change_time);
+	SBVAL(outbody.data, 0x28, out_allocation_size);
+	SBVAL(outbody.data, 0x30, out_end_of_file);
+	SIVAL(outbody.data, 0x38, out_file_attributes);
 
 	return smbd_smb2_request_done(req, outbody, NULL);
 }
@@ -73,7 +106,14 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 				uint16_t in_flags,
 				uint64_t in_file_id_volatile,
-				DATA_BLOB *outbody)
+				uint16_t *out_flags,
+				NTTIME *out_creation_time,
+				NTTIME *out_last_access_time,
+				NTTIME *out_last_write_time,
+				NTTIME *out_change_time,
+				uint64_t *out_allocation_size,
+				uint64_t *out_end_of_file,
+				uint32_t *out_file_attributes)
 {
 	NTSTATUS status;
 	struct smb_request *smbreq;
@@ -84,13 +124,22 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	uint64_t allocation_size = 0;
 	uint64_t file_size = 0;
 	uint32_t dos_attrs = 0;
-	uint16_t out_flags = 0;
+	uint16_t flags = 0;
 	bool posix_open = false;
 
 	ZERO_STRUCT(create_date_ts);
 	ZERO_STRUCT(adate_ts);
 	ZERO_STRUCT(mdate_ts);
 	ZERO_STRUCT(cdate_ts);
+
+	*out_flags = 0;
+	*out_creation_time = 0;
+	*out_last_access_time = 0;
+	*out_last_write_time = 0;
+	*out_change_time = 0;
+	*out_allocation_size = 0;
+	*out_end_of_file = 0;
+	*out_file_attributes = 0;
 
 	DEBUG(10,("smbd_smb2_close: file_id[0x%016llX]\n",
 		  (unsigned long long)in_file_id_volatile));
@@ -134,7 +183,7 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 			ret = SMB_VFS_STAT(conn, smb_fname);
 		}
 		if (ret == 0) {
-			out_flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
+			flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
 			dos_attrs = dos_mode(conn, smb_fname);
 			mdate_ts = smb_fname->st.st_ex_mtime;
 			adate_ts = smb_fname->st.st_ex_atime;
@@ -155,20 +204,23 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 		}
 	}
 
-	SSVAL(outbody->data, 0x00, 0x3C);	/* struct size */
-	SSVAL(outbody->data, 0x02, out_flags);	/* flags */
-	SIVAL(outbody->data, 0x04, 0);		/* reserved */
-	put_long_date_timespec(conn->ts_res,
-		(char *)&outbody->data[0x8],create_date_ts); /* creation time */
-	put_long_date_timespec(conn->ts_res,
-		(char *)&outbody->data[0x10],adate_ts); /* last access time */
-	put_long_date_timespec(conn->ts_res,
-		(char *)&outbody->data[0x18],mdate_ts); /* last write time */
-	put_long_date_timespec(conn->ts_res,
-		(char *)&outbody->data[0x20],cdate_ts); /* change time */
-	SBVAL(outbody->data, 0x28, allocation_size);/* allocation size */
-	SBVAL(outbody->data, 0x30, file_size);	/* end of file */
-	SIVAL(outbody->data, 0x38, dos_attrs);	/* file attributes */
+	*out_flags = flags;
+
+	round_timespec(conn->ts_res, &create_date_ts);
+	unix_timespec_to_nt_time(out_creation_time, create_date_ts);
+
+	round_timespec(conn->ts_res, &adate_ts);
+	unix_timespec_to_nt_time(out_last_access_time, adate_ts);
+
+	round_timespec(conn->ts_res, &mdate_ts);
+	unix_timespec_to_nt_time(out_last_write_time, mdate_ts);
+
+	round_timespec(conn->ts_res, &cdate_ts);
+	unix_timespec_to_nt_time(out_change_time, cdate_ts);
+
+	*out_allocation_size = allocation_size;
+	*out_end_of_file = file_size;
+	*out_file_attributes = dos_attrs;
 
 	return NT_STATUS_OK;
 }
