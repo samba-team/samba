@@ -316,7 +316,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 	      NT_STATUS_EQUAL(last_dns_status,NT_STATUS_CONNECTION_REFUSED)) &&
 	     (last_dns_check+DNS_FAILED_WAITTIME) > now )
 	{
-		DEBUG(10,("last_dns_check: Returning cached status (%s)\n",
+		DEBUG(10,("dns_send_req: last dns check returning cached status (%s)\n",
 			  nt_errstr(last_dns_status) ));
 		return last_dns_status;
 	}
@@ -331,7 +331,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 		if (buf_len) {
 			if ((buffer = talloc_array(ctx, uint8_t, buf_len))
 					== NULL ) {
-				DEBUG(0,("ads_dns_lookup_srv: "
+				DEBUG(0,("dns_send_req: "
 					"talloc() failed!\n"));
 				last_dns_status = NT_STATUS_NO_MEMORY;
 				last_dns_check = time_mono(NULL);
@@ -341,7 +341,7 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 
 		if ((resp_len = res_query(name, C_IN, q_type, buffer, buf_len))
 				< 0 ) {
-			DEBUG(3,("ads_dns_lookup_srv: "
+			DEBUG(3,("dns_send_req: "
 				"Failed to resolve %s (%s)\n",
 				name, strerror(errno)));
 			TALLOC_FREE( buffer );

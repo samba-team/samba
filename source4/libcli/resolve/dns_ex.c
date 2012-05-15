@@ -98,7 +98,7 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx, uint32_t *a_num,
 	}
 	*cur_addrs = addrs;
 
-	for (i = 0; reply->answers[i]; i++) {
+	for (i = 0; i < reply->num_answers; i++) {
 		rr = reply->answers[i];
 
 		/* we are only interested in the IN class */
