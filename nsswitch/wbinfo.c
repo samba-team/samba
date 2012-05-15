@@ -1389,6 +1389,7 @@ static bool wbinfo_lookup_sids(const char *arg)
 			 domains[names[i].domain_index].short_name,
 			 names[i].name, names[i].type);
 	}
+	wbcFreeMemory(names);
 	return true;
 }
 
