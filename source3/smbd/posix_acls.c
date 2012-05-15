@@ -26,6 +26,7 @@
 #include "trans2.h"
 #include "passdb/lookup_sid.h"
 #include "auth.h"
+#include "../librpc/gen_ndr/idmap.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -1614,6 +1615,181 @@ static void check_owning_objs(canon_ace *ace, struct dom_sid *pfile_owner_sid, s
 		DEBUG(10,("check_owning_objs: ACL is missing an owning group entry.\n"));
 }
 
+static bool add_current_ace_to_acl(files_struct *fsp, struct security_ace *psa,
+				   canon_ace **file_ace, canon_ace **dir_ace,
+				   bool *got_file_allow, bool *got_dir_allow,
+				   bool *all_aces_are_inherit_only,
+				   canon_ace *current_ace)
+{
+
+	/*
+	 * Map the given NT permissions into a UNIX mode_t containing only
+	 * S_I(R|W|X)USR bits.
+	 */
+
+	current_ace->perms |= map_nt_perms( &psa->access_mask, S_IRUSR);
+	current_ace->attr = (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? ALLOW_ACE : DENY_ACE;
+
+	/* Store the ace_flag. */
+	current_ace->ace_flags = psa->flags;
+
+	/*
+	 * Now add the created ace to either the file list, the directory
+	 * list, or both. We *MUST* preserve the order here (hence we use
+	 * DLIST_ADD_END) as NT ACLs are order dependent.
+	 */
+
+	if (fsp->is_directory) {
+
+		/*
+		 * We can only add to the default POSIX ACE list if the ACE is
+		 * designed to be inherited by both files and directories.
+		 */
+
+		if ((psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) ==
+		    (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+
+			canon_ace *current_dir_ace = current_ace;
+			DLIST_ADD_END(*dir_ace, current_ace, canon_ace *);
+
+			/*
+			 * Note if this was an allow ace. We can't process
+			 * any further deny ace's after this.
+			 */
+
+			if (current_ace->attr == ALLOW_ACE)
+				*got_dir_allow = True;
+
+			if ((current_ace->attr == DENY_ACE) && *got_dir_allow) {
+				DEBUG(0,("add_current_ace_to_acl: "
+					 "malformed ACL in "
+					 "inheritable ACL! Deny entry "
+					 "after Allow entry. Failing "
+					 "to set on file %s.\n",
+					 fsp_str_dbg(fsp)));
+				return False;
+			}
+
+			if( DEBUGLVL( 10 )) {
+				dbgtext("add_current_ace_to_acl: adding dir ACL:\n");
+				print_canon_ace( current_ace, 0);
+			}
+
+			/*
+			 * If this is not an inherit only ACE we need to add a duplicate
+			 * to the file acl.
+			 */
+
+			if (!(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
+				canon_ace *dup_ace = dup_canon_ace(current_ace);
+
+				if (!dup_ace) {
+					DEBUG(0,("add_current_ace_to_acl: malloc fail !\n"));
+					return False;
+				}
+
+				/*
+				 * We must not free current_ace here as its
+				 * pointer is now owned by the dir_ace list.
+				 */
+				current_ace = dup_ace;
+				/* We've essentially split this ace into two,
+				 * and added the ace with inheritance request
+				 * bits to the directory ACL. Drop those bits for
+				 * the ACE we're adding to the file list. */
+				current_ace->ace_flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|
+							    SEC_ACE_FLAG_CONTAINER_INHERIT|
+							    SEC_ACE_FLAG_INHERIT_ONLY);
+			} else {
+				/*
+				 * We must not free current_ace here as its
+				 * pointer is now owned by the dir_ace list.
+				 */
+				current_ace = NULL;
+			}
+
+			/*
+			 * current_ace is now either owned by file_ace
+			 * or is NULL. We can safely operate on current_dir_ace
+			 * to treat mapping for default acl entries differently
+			 * than access acl entries.
+			 */
+
+			if (current_dir_ace->owner_type == UID_ACE) {
+				/*
+				 * We already decided above this is a uid,
+				 * for default acls ace's only CREATOR_OWNER
+				 * maps to ACL_USER_OBJ. All other uid
+				 * ace's are ACL_USER.
+				 */
+				if (dom_sid_equal(&current_dir_ace->trustee,
+						  &global_sid_Creator_Owner)) {
+					current_dir_ace->type = SMB_ACL_USER_OBJ;
+				} else {
+					current_dir_ace->type = SMB_ACL_USER;
+				}
+			}
+
+			if (current_dir_ace->owner_type == GID_ACE) {
+				/*
+				 * We already decided above this is a gid,
+				 * for default acls ace's only CREATOR_GROUP
+				 * maps to ACL_GROUP_OBJ. All other uid
+				 * ace's are ACL_GROUP.
+				 */
+				if (dom_sid_equal(&current_dir_ace->trustee,
+						  &global_sid_Creator_Group)) {
+					current_dir_ace->type = SMB_ACL_GROUP_OBJ;
+				} else {
+					current_dir_ace->type = SMB_ACL_GROUP;
+				}
+			}
+		}
+	}
+
+	/*
+	 * Only add to the file ACL if not inherit only.
+	 */
+
+	if (current_ace && !(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
+		DLIST_ADD_END(*file_ace, current_ace, canon_ace *);
+
+		/*
+		 * Note if this was an allow ace. We can't process
+		 * any further deny ace's after this.
+		 */
+
+		if (current_ace->attr == ALLOW_ACE)
+			*got_file_allow = True;
+
+		if ((current_ace->attr == DENY_ACE) && got_file_allow) {
+			DEBUG(0,("add_current_ace_to_acl: malformed "
+				 "ACL in file ACL ! Deny entry after "
+				 "Allow entry. Failing to set on file "
+				 "%s.\n", fsp_str_dbg(fsp)));
+			return False;
+		}
+
+		if( DEBUGLVL( 10 )) {
+			dbgtext("add_current_ace_to_acl: adding file ACL:\n");
+			print_canon_ace( current_ace, 0);
+		}
+		*all_aces_are_inherit_only = False;
+		/*
+		 * We must not free current_ace here as its
+		 * pointer is now owned by the file_ace list.
+		 */
+		current_ace = NULL;
+	}
+
+	/*
+	 * Free if ACE was not added.
+	 */
+
+	TALLOC_FREE(current_ace);
+	return true;
+}
+
 /****************************************************************************
  Unpack a struct security_descriptor into two canonical ace lists.
 ****************************************************************************/
@@ -1807,180 +1983,16 @@ static bool create_canon_ace_lists(files_struct *fsp,
 				  "%s to uid or gid.\n",
 				  sid_string_dbg(&current_ace->trustee)));
 			TALLOC_FREE(current_ace);
-			return False;
+			return false;
 		}
-
-		/*
-		 * Map the given NT permissions into a UNIX mode_t containing only
-		 * S_I(R|W|X)USR bits.
-		 */
-
-		current_ace->perms |= map_nt_perms( &psa->access_mask, S_IRUSR);
-		current_ace->attr = (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? ALLOW_ACE : DENY_ACE;
-
-		/* Store the ace_flag. */
-		current_ace->ace_flags = psa->flags;
-
-		/*
-		 * Now add the created ace to either the file list, the directory
-		 * list, or both. We *MUST* preserve the order here (hence we use
-		 * DLIST_ADD_END) as NT ACLs are order dependent.
-		 */
-
-		if (fsp->is_directory) {
-
-			/*
-			 * We can only add to the default POSIX ACE list if the ACE is
-			 * designed to be inherited by both files and directories.
-			 */
-
-			if ((psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) ==
-				(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
-
-				canon_ace *current_dir_ace = current_ace;
-				DLIST_ADD_END(dir_ace, current_ace, canon_ace *);
-
-				/*
-				 * Note if this was an allow ace. We can't process
-				 * any further deny ace's after this.
-				 */
-
-				if (current_ace->attr == ALLOW_ACE)
-					got_dir_allow = True;
-
-				if ((current_ace->attr == DENY_ACE) && got_dir_allow) {
-					DEBUG(0,("create_canon_ace_lists: "
-						 "malformed ACL in "
-						 "inheritable ACL! Deny entry "
-						 "after Allow entry. Failing "
-						 "to set on file %s.\n",
-						 fsp_str_dbg(fsp)));
-					free_canon_ace_list(file_ace);
-					free_canon_ace_list(dir_ace);
-					return False;
-				}	
-
-				if( DEBUGLVL( 10 )) {
-					dbgtext("create_canon_ace_lists: adding dir ACL:\n");
-					print_canon_ace( current_ace, 0);
-				}
-
-				/*
-				 * If this is not an inherit only ACE we need to add a duplicate
-				 * to the file acl.
-				 */
-
-				if (!(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
-					canon_ace *dup_ace = dup_canon_ace(current_ace);
-
-					if (!dup_ace) {
-						DEBUG(0,("create_canon_ace_lists: malloc fail !\n"));
-						free_canon_ace_list(file_ace);
-						free_canon_ace_list(dir_ace);
-						return False;
-					}
-
-					/*
-					 * We must not free current_ace here as its
-					 * pointer is now owned by the dir_ace list.
-					 */
-					current_ace = dup_ace;
-					/* We've essentially split this ace into two,
-					 * and added the ace with inheritance request
-					 * bits to the directory ACL. Drop those bits for
-					 * the ACE we're adding to the file list. */
-					current_ace->ace_flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|
-								SEC_ACE_FLAG_CONTAINER_INHERIT|
-								SEC_ACE_FLAG_INHERIT_ONLY);
-				} else {
-					/*
-					 * We must not free current_ace here as its
-					 * pointer is now owned by the dir_ace list.
-					 */
-					current_ace = NULL;
-				}
-
-				/*
-				 * current_ace is now either owned by file_ace
-				 * or is NULL. We can safely operate on current_dir_ace
-				 * to treat mapping for default acl entries differently
-				 * than access acl entries.
-				 */
-
-				if (current_dir_ace->owner_type == UID_ACE) {
-					/*
-					 * We already decided above this is a uid,
-					 * for default acls ace's only CREATOR_OWNER
-					 * maps to ACL_USER_OBJ. All other uid
-					 * ace's are ACL_USER.
-					 */
-					if (dom_sid_equal(&current_dir_ace->trustee,
-							&global_sid_Creator_Owner)) {
-						current_dir_ace->type = SMB_ACL_USER_OBJ;
-					} else {
-						current_dir_ace->type = SMB_ACL_USER;
-					}
-				}
-
-				if (current_dir_ace->owner_type == GID_ACE) {
-					/*
-					 * We already decided above this is a gid,
-					 * for default acls ace's only CREATOR_GROUP
-					 * maps to ACL_GROUP_OBJ. All other uid
-					 * ace's are ACL_GROUP.
-					 */
-					if (dom_sid_equal(&current_dir_ace->trustee,
-							&global_sid_Creator_Group)) {
-						current_dir_ace->type = SMB_ACL_GROUP_OBJ;
-					} else {
-						current_dir_ace->type = SMB_ACL_GROUP;
-					}
-				}
-			}
+		/* handles the talloc_free of current_ace if not added for some reason */
+		if (!add_current_ace_to_acl(fsp, psa, &file_ace, &dir_ace,
+					    &got_file_allow, &got_dir_allow,
+					    &all_aces_are_inherit_only, current_ace)) {
+			free_canon_ace_list(file_ace);
+			free_canon_ace_list(dir_ace);
+			return false;
 		}
-
-		/*
-		 * Only add to the file ACL if not inherit only.
-		 */
-
-		if (current_ace && !(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
-			DLIST_ADD_END(file_ace, current_ace, canon_ace *);
-
-			/*
-			 * Note if this was an allow ace. We can't process
-			 * any further deny ace's after this.
-			 */
-
-			if (current_ace->attr == ALLOW_ACE)
-				got_file_allow = True;
-
-			if ((current_ace->attr == DENY_ACE) && got_file_allow) {
-				DEBUG(0,("create_canon_ace_lists: malformed "
-					 "ACL in file ACL ! Deny entry after "
-					 "Allow entry. Failing to set on file "
-					 "%s.\n", fsp_str_dbg(fsp)));
-				free_canon_ace_list(file_ace);
-				free_canon_ace_list(dir_ace);
-				return False;
-			}	
-
-			if( DEBUGLVL( 10 )) {
-				dbgtext("create_canon_ace_lists: adding file ACL:\n");
-				print_canon_ace( current_ace, 0);
-			}
-			all_aces_are_inherit_only = False;
-			/*
-			 * We must not free current_ace here as its
-			 * pointer is now owned by the file_ace list.
-			 */
-			current_ace = NULL;
-		}
-
-		/*
-		 * Free if ACE was not added.
-		 */
-
-		TALLOC_FREE(current_ace);
 	}
 
 	if (fsp->is_directory && all_aces_are_inherit_only) {
