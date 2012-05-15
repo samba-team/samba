@@ -626,7 +626,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     ../libcli/smb/smb2cli_flush.o \
 	     ../libcli/smb/smb2cli_read.o \
 	     ../libcli/smb/smb2cli_write.o \
-	     libsmb/smb2cli_query_directory.o \
+	     ../libcli/smb/smb2cli_query_directory.o \
 	     libsmb/smb2cli_ioctl.o \
 	     ../libcli/smb/smb2cli_query_info.o \
 	     ../libcli/smb/smb2cli_set_info.o \
