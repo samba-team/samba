@@ -31,10 +31,10 @@ struct smb2cli_create_state {
 
 	uint8_t oplock_level;
 	uint32_t create_action;
-	struct timespec creation_time;
-	struct timespec last_access_time;
-	struct timespec last_write_time;
-	struct timespec change_time;
+	NTTIME creation_time;
+	NTTIME last_access_time;
+	NTTIME last_write_time;
+	NTTIME change_time;
 	uint64_t allocation_size;
 	uint64_t end_of_file;
 	uint32_t file_attributes;
@@ -183,10 +183,10 @@ static void smb2cli_create_done(struct tevent_req *subreq)
 
 	state->oplock_level	= CVAL(body, 2);
 	state->create_action	= IVAL(body, 4);
-	state->creation_time	= interpret_long_date((char *)body + 8);
-	state->last_access_time	= interpret_long_date((char *)body + 16);
-	state->last_write_time	= interpret_long_date((char *)body + 24);
-	state->change_time	= interpret_long_date((char *)body + 32);
+	state->creation_time	= BVAL(body, 8);
+	state->last_access_time	= BVAL(body, 16);
+	state->last_write_time	= BVAL(body, 24);
+	state->change_time	= BVAL(body, 32);
 	state->allocation_size	= BVAL(body, 40);
 	state->end_of_file	= BVAL(body, 48);
 	state->file_attributes	= IVAL(body, 56);
