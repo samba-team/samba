@@ -53,32 +53,6 @@ NTSTATUS smb2cli_flush(struct smbXcli_conn *conn,
 		       uint64_t fid_persistent,
 		       uint64_t fid_volatile);
 
-struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      struct smbXcli_conn *conn,
-				      uint32_t timeout_msec,
-				      struct smbXcli_session *session,
-				      uint32_t tcon_id,
-				      uint32_t length,
-				      uint64_t offset,
-				      uint64_t fid_persistent,
-				      uint64_t fid_volatile,
-				      uint32_t remaining_bytes,
-				      uint32_t flags,
-				      const uint8_t *data);
-NTSTATUS smb2cli_write_recv(struct tevent_req *req);
-NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
-		       uint32_t timeout_msec,
-		       struct smbXcli_session *session,
-		       uint32_t tcon_id,
-		       uint32_t length,
-		       uint64_t offset,
-		       uint64_t fid_persistent,
-		       uint64_t fid_volatile,
-		       uint32_t remaining_bytes,
-		       uint32_t flags,
-		       const uint8_t *data);
-
 struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct smbXcli_conn *conn,
