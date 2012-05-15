@@ -37,39 +37,4 @@ struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
 NTSTATUS smb2cli_tdis_recv(struct tevent_req *req);
 NTSTATUS smb2cli_tdis(struct cli_state *cli);
 
-l
-struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      struct smbXcli_conn *conn,
-				      uint32_t timeout_msec,
-				      struct smbXcli_session *session,
-				      uint32_t tcon_id,
-				      uint64_t in_fid_persistent,
-				      uint64_t in_fid_volatile,
-				      uint32_t in_ctl_code,
-				      uint32_t in_max_input_length,
-				      const DATA_BLOB *in_input_buffer,
-				      uint32_t in_max_output_length,
-				      const DATA_BLOB *in_output_buffer,
-				      uint32_t in_flags);
-NTSTATUS smb2cli_ioctl_recv(struct tevent_req *req,
-			    TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *out_input_buffer,
-			    DATA_BLOB *out_output_buffer);
-NTSTATUS smb2cli_ioctl(struct smbXcli_conn *conn,
-		       uint32_t timeout_msec,
-		       struct smbXcli_session *session,
-		       uint32_t tcon_id,
-		       uint64_t in_fid_persistent,
-		       uint64_t in_fid_volatile,
-		       uint32_t in_ctl_code,
-		       uint32_t in_max_input_length,
-		       const DATA_BLOB *in_input_buffer,
-		       uint32_t in_max_output_length,
-		       const DATA_BLOB *in_output_buffer,
-		       uint32_t in_flags,
-		       TALLOC_CTX *mem_ctx,
-		       DATA_BLOB *out_input_buffer,
-		       DATA_BLOB *out_output_buffer);
-
 #endif /* __SMB2CLI_H__ */

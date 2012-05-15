@@ -18,13 +18,11 @@
 */
 
 #include "includes.h"
-#include "client.h"
-#include "async_smb.h"
-#include "../libcli/smb/smbXcli_base.h"
-#include "smb2cli.h"
-#include "libsmb/proto.h"
+#include "system/network.h"
 #include "lib/util/tevent_ntstatus.h"
-#include "../librpc/ndr/libndr.h"
+#include "smb_common.h"
+#include "smbXcli_base.h"
+#include "librpc/ndr/libndr.h"
 
 struct smb2cli_ioctl_state {
 	uint8_t fixed[0x38];
