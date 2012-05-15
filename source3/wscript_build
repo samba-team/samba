@@ -132,7 +132,6 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clisigning.c
              libsmb/smb2cli_tcon.c
              libsmb/smb2cli_flush.c
-             libsmb/smb2cli_read.c
              libsmb/smb2cli_write.c
              libsmb/smb2cli_query_directory.c
              libsmb/smb2cli_ioctl.c
