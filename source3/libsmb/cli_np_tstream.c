@@ -21,6 +21,7 @@
 #include "system/network.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/smb2cli.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/tsocket/tsocket_internal.h"
