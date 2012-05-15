@@ -215,7 +215,7 @@ sub Bitmap($$$$)
 
 	$self->pidl_code("if (parent_tree) {");
 	$self->indent;
-	$self->pidl_code("item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, $e->{ALIGN}, TRUE);");
+	$self->pidl_code("item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, $e->{ALIGN}, DREP_ENC_INTEGER(drep));");
 	$self->pidl_code("tree = proto_item_add_subtree(item,ett_$ifname\_$name);");
 	$self->deindent;
 	$self->pidl_code("}\n");
@@ -648,7 +648,7 @@ sub Struct($$$$)
 	$self->pidl_code("");
 	$self->pidl_code("if (parent_tree) {");
 	$self->indent;
-	$self->pidl_code("item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, TRUE);");
+	$self->pidl_code("item = proto_tree_add_item(parent_tree, hf_index, tvb, offset, -1, ENC_NA);");
 	$self->pidl_code("tree = proto_item_add_subtree(item, ett_$ifname\_$name);");
 	$self->deindent;
 	$self->pidl_code("}");
