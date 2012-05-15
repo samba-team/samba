@@ -411,7 +411,7 @@ static int db_rbt_trans_dummy(struct db_context *db)
 static void db_rbt_id(struct db_context *db, const uint8_t **id, size_t *idlen)
 {
 	*id = (uint8_t *)db;
-	*idlen = sizeof(db);
+	*idlen = sizeof(struct db_context *);
 }
 
 struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
