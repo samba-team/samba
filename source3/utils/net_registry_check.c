@@ -788,7 +788,7 @@ static int check_tdb_action(struct db_record *rec, void *check_ctx)
 		}
 
 		if (invalid_path) {
-			int action;
+			unsigned char action;
 			if (ctx->opt.output == NULL) {
 				action = first_iter ? 'r' : 's';
 			} else if (ctx->opt.automatic) {
