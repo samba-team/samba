@@ -109,7 +109,7 @@ def abi_check_task(self):
             got_error = True
 
     if got_error:
-        raise Utils.WafError('ABI for %s has changed - please fix library version then build with --abi-update\nSee http://wiki.samba.org/index.php/Waf#ABI_Checking for more information' % libname)
+        raise Utils.WafError('ABI for %s has changed - please fix library version then build with --abi-update\nSee http://wiki.samba.org/index.php/Waf#ABI_Checking for more information\nIf you have not changed any ABI, and your platform always gives this error, please configure with --abi-check-disable to skip this check' % libname)
 
 
 t = Task.task_type_from_func('abi_check', abi_check_task, color='BLUE', ext_in='.bin')
