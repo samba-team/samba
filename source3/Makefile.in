@@ -629,7 +629,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/smb2cli_query_directory.o \
 	     libsmb/smb2cli_ioctl.o \
 	     libsmb/smb2cli_query_info.o \
-	     libsmb/smb2cli_set_info.o \
+	     ../libcli/smb/smb2cli_set_info.o \
 	     libsmb/cli_np_tstream.o \
 	     libsmb/smbsock_connect.o \
 	     $(LIBSAMBA_OBJ) \
