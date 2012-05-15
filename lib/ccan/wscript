@@ -117,8 +117,12 @@ def configure(conf):
                     addmain=False, link=False, cflags="-Werror",
                     define='HAVE_WARN_UNUSED_RESULT')
 
+    # backtrace could be in libexecinfo or in libc
+    conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
+
 def build(bld):
     bld.SAMBA_LIBRARY('ccan',
                       vnum="0.1-init-1161-g661d41f",
                       source=bld.path.ant_glob('*/*.c'),
+                      deps='execinfo',
                       private_library=True)
