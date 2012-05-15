@@ -1938,53 +1938,123 @@ static bool create_canon_ace_lists(files_struct *fsp,
 			 */
 			psa->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
-		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid)) {
-			current_ace->owner_type = UID_ACE;
-			/* If it's the owning user, this is a user_obj, not
-			 * a user. */
-			if (current_ace->unix_ug.uid == pst->st_ex_uid) {
-				current_ace->type = SMB_ACL_USER_OBJ;
-			} else {
-				current_ace->type = SMB_ACL_USER;
-			}
-		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid)) {
-			current_ace->owner_type = GID_ACE;
-			/* If it's the primary group, this is a group_obj, not
-			 * a group. */
-			if (current_ace->unix_ug.gid == pst->st_ex_gid) {
-				current_ace->type = SMB_ACL_GROUP_OBJ;
-			} else {
-				current_ace->type = SMB_ACL_GROUP;
-			}
 		} else {
-			/*
-			 * Silently ignore map failures in non-mappable SIDs (NT Authority, BUILTIN etc).
-			 */
+			struct unixid unixid;
 
-			if (non_mappable_sid(&psa->trustee)) {
-				DEBUG(10, ("create_canon_ace_lists: ignoring "
-					   "non-mappable SID %s\n",
-					   sid_string_dbg(&psa->trustee)));
+			if (!sids_to_unixids(&current_ace->trustee, 1, &unixid)) {
+				free_canon_ace_list(file_ace);
+				free_canon_ace_list(dir_ace);
 				TALLOC_FREE(current_ace);
-				continue;
+				DEBUG(0, ("create_canon_ace_lists: sids_to_unixids "
+					"failed for %s (allocation failure)\n",
+					sid_string_dbg(&current_ace->trustee)));
+				return false;
 			}
 
-			if (lp_force_unknown_acl_user(SNUM(fsp->conn))) {
-				DEBUG(10, ("create_canon_ace_lists: ignoring "
-					"unknown or foreign SID %s\n",
-					sid_string_dbg(&psa->trustee)));
-				TALLOC_FREE(current_ace);
-				continue;
-			}
+			if (unixid.type == ID_TYPE_BOTH) {
+				/* If it's the owning user, this is a
+				 * user_obj, not a user.  This way, we
+				 * get a valid ACL for groups that own
+				 * files, without putting user ACL
+				 * entries in for groups otherwise */
+				if (unixid.id == pst->st_ex_uid) {
+					current_ace->owner_type = UID_ACE;
+					current_ace->unix_ug.uid = unixid.id;
+					current_ace->type = SMB_ACL_USER_OBJ;
 
-			free_canon_ace_list(file_ace);
-			free_canon_ace_list(dir_ace);
-			DEBUG(0, ("create_canon_ace_lists: unable to map SID "
-				  "%s to uid or gid.\n",
-				  sid_string_dbg(&current_ace->trustee)));
-			TALLOC_FREE(current_ace);
-			return false;
+					/* Add the user object to the posix ACL,
+					   and proceed to the group mapping
+					   below. This handles the talloc_free
+					   of current_ace if not added for some
+					   reason */
+					if (!add_current_ace_to_acl(fsp,
+							psa,
+							&file_ace,
+							&dir_ace,
+							&got_file_allow,
+							&got_dir_allow,
+							&all_aces_are_inherit_only,
+							current_ace)) {
+						free_canon_ace_list(file_ace);
+						free_canon_ace_list(dir_ace);
+						return false;
+					}
+
+					if ((current_ace = talloc(talloc_tos(),
+							canon_ace)) == NULL) {
+						free_canon_ace_list(file_ace);
+						free_canon_ace_list(dir_ace);
+						DEBUG(0,("create_canon_ace_lists: "
+							"malloc fail.\n"));
+						return False;
+					}
+
+					ZERO_STRUCTP(current_ace);
+				}
+
+				sid_copy(&current_ace->trustee, &psa->trustee);
+
+				current_ace->unix_ug.gid = unixid.id;
+				current_ace->owner_type = GID_ACE;
+				/* If it's the primary group, this is a
+				   group_obj, not a group. */
+				if (current_ace->unix_ug.gid == pst->st_ex_gid) {
+					current_ace->type = SMB_ACL_GROUP_OBJ;
+				} else {
+					current_ace->type = SMB_ACL_GROUP;
+				}
+
+			} else if (unixid.type == ID_TYPE_UID) {
+				current_ace->owner_type = UID_ACE;
+				current_ace->unix_ug.uid = unixid.id;
+				/* If it's the owning user, this is a user_obj,
+				   not a user. */
+				if (current_ace->unix_ug.uid == pst->st_ex_uid) {
+					current_ace->type = SMB_ACL_USER_OBJ;
+				} else {
+					current_ace->type = SMB_ACL_USER;
+				}
+			} else if (unixid.type == ID_TYPE_GID) {
+				current_ace->unix_ug.gid = unixid.id;
+				current_ace->owner_type = GID_ACE;
+				/* If it's the primary group, this is a
+				   group_obj, not a group. */
+				if (current_ace->unix_ug.gid == pst->st_ex_gid) {
+					current_ace->type = SMB_ACL_GROUP_OBJ;
+				} else {
+					current_ace->type = SMB_ACL_GROUP;
+				}
+			} else {
+				/*
+				 * Silently ignore map failures in non-mappable SIDs (NT Authority, BUILTIN etc).
+				 */
+
+				if (non_mappable_sid(&psa->trustee)) {
+					DEBUG(10, ("create_canon_ace_lists: ignoring "
+						   "non-mappable SID %s\n",
+						   sid_string_dbg(&psa->trustee)));
+					TALLOC_FREE(current_ace);
+					continue;
+				}
+
+				if (lp_force_unknown_acl_user(SNUM(fsp->conn))) {
+					DEBUG(10, ("create_canon_ace_lists: ignoring "
+						"unknown or foreign SID %s\n",
+						sid_string_dbg(&psa->trustee)));
+					TALLOC_FREE(current_ace);
+					continue;
+				}
+
+				free_canon_ace_list(file_ace);
+				free_canon_ace_list(dir_ace);
+				DEBUG(0, ("create_canon_ace_lists: unable to map SID "
+					  "%s to uid or gid.\n",
+					  sid_string_dbg(&current_ace->trustee)));
+				TALLOC_FREE(current_ace);
+				return false;
+			}
 		}
+
 		/* handles the talloc_free of current_ace if not added for some reason */
 		if (!add_current_ace_to_acl(fsp, psa, &file_ace, &dir_ace,
 					    &got_file_allow, &got_dir_allow,
