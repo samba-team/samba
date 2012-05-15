@@ -103,36 +103,4 @@ NTSTATUS smb2cli_ioctl(struct smbXcli_conn *conn,
 		       DATA_BLOB *out_input_buffer,
 		       DATA_BLOB *out_output_buffer);
 
-struct tevent_req *smb2cli_query_info_send(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev,
-					   struct smbXcli_conn *conn,
-					   uint32_t timeout_msec,
-					   struct smbXcli_session *session,
-					   uint32_t tcon_id,
-					   uint8_t in_info_type,
-					   uint8_t in_file_info_class,
-					   uint32_t in_max_output_length,
-					   const DATA_BLOB *in_input_buffer,
-					   uint32_t in_additional_info,
-					   uint32_t in_flags,
-					   uint64_t in_fid_persistent,
-					   uint64_t in_fid_volatile);
-NTSTATUS smb2cli_query_info_recv(struct tevent_req *req,
-				 TALLOC_CTX *mem_ctx,
-				 DATA_BLOB *out_output_buffer);
-NTSTATUS smb2cli_query_info(struct smbXcli_conn *conn,
-			    uint32_t timeout_msec,
-			    struct smbXcli_session *session,
-			    uint32_t tcon_id,
-			    uint8_t in_info_type,
-			    uint8_t in_file_info_class,
-			    uint32_t in_max_output_length,
-			    const DATA_BLOB *in_input_buffer,
-			    uint32_t in_additional_info,
-			    uint32_t in_flags,
-			    uint64_t in_fid_persistent,
-			    uint64_t in_fid_volatile,
-			    TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *out_output_buffer);
-
 #endif /* __SMB2CLI_H__ */
