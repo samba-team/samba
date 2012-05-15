@@ -325,4 +325,22 @@ NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 			uint64_t *fid_persistent,
 			uint64_t *fid_volatile);
 
+struct tevent_req *smb2cli_close_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct smbXcli_conn *conn,
+				      uint32_t timeout_msec,
+				      struct smbXcli_session *session,
+				      uint32_t tcon_id,
+				      uint16_t flags,
+				      uint64_t fid_persistent,
+				      uint64_t fid_volatile);
+NTSTATUS smb2cli_close_recv(struct tevent_req *req);
+NTSTATUS smb2cli_close(struct smbXcli_conn *conn,
+		       uint32_t timeout_msec,
+		       struct smbXcli_session *session,
+		       uint32_t tcon_id,
+		       uint16_t flags,
+		       uint64_t fid_persistent,
+		       uint64_t fid_volatile);
+
 #endif /* _SMBXCLI_BASE_H_ */

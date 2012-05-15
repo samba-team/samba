@@ -18,12 +18,10 @@
 */
 
 #include "includes.h"
-#include "client.h"
-#include "async_smb.h"
-#include "../libcli/smb/smbXcli_base.h"
-#include "smb2cli.h"
-#include "libsmb/proto.h"
+#include "system/network.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "smb_common.h"
+#include "smbXcli_base.h"
 
 struct smb2cli_close_state {
 	uint8_t fixed[24];

@@ -622,7 +622,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     ../libcli/smb/smb2cli_create.o \
 	     ../libcli/smb/smb2_create_blob.o \
 	     ../libcli/smb/smb2_signing.o \
-	     libsmb/smb2cli_close.o \
+	     ../libcli/smb/smb2cli_close.o \
 	     libsmb/smb2cli_flush.o \
 	     libsmb/smb2cli_read.o \
 	     libsmb/smb2cli_write.o \
