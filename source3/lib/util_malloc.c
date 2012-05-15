@@ -40,20 +40,6 @@ void *malloc_(size_t size)
 }
 
 /****************************************************************************
- Internal calloc wrapper. Not externally visible.
-****************************************************************************/
-
-static void *calloc_(size_t count, size_t size)
-{
-	if (size == 0 || count == 0) {
-		return NULL;
-	}
-#undef calloc
-	return calloc(count, size);
-#define calloc(n,s) __ERROR_DONT_USE_CALLOC_DIRECTLY
-}
-
-/****************************************************************************
  Internal realloc wrapper. Not externally visible.
 ****************************************************************************/
 
