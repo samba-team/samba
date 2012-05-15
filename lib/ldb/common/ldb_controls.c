@@ -368,6 +368,25 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 		return res;
 	}
 
+	if (strcmp(control->oid, LDB_CONTROL_VERIFY_NAME_OID) == 0) {
+		struct ldb_verify_name_control *rep_control = talloc_get_type(control->data, struct ldb_verify_name_control);
+
+		if (rep_control->gc != NULL) {
+			res = talloc_asprintf(mem_ctx, "%s:%d:%d:%s",
+						LDB_CONTROL_VERIFY_NAME_NAME,
+						control->critical,
+						rep_control->flags,
+						rep_control->gc);
+
+		} else {
+			res = talloc_asprintf(mem_ctx, "%s:%d:%d",
+						LDB_CONTROL_VERIFY_NAME_NAME,
+						control->critical,
+						rep_control->flags);
+		}
+		return res;
+	}
+
 	/*
 	 * From here we don't know the control
 	 */
@@ -1016,6 +1035,40 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->critical = crit;
 		ctrl->data = NULL;
 
+		return ctrl;
+	}
+	if (LDB_CONTROL_CMP(control_strings, LDB_CONTROL_VERIFY_NAME_NAME) == 0) {
+		const char *p;
+		char gc[1024];
+		int crit, flags, ret;
+		struct ldb_verify_name_control *control;
+
+		gc[0] = '\0';
+
+		p = &(control_strings[sizeof(LDB_CONTROL_VERIFY_NAME_NAME)]);
+		ret = sscanf(p, "%d:%d:%1023[^$]", &crit, &flags, gc);
+		if ((ret != 3) || (crit < 0) || (crit > 1)) {
+			ret = sscanf(p, "%d:%d", &crit, &flags);
+			if ((ret != 2) || (crit < 0) || (crit > 1)) {
+				error_string = talloc_asprintf(mem_ctx, "invalid verify_name control syntax\n");
+				error_string = talloc_asprintf_append(error_string, " syntax: crit(b):flags(i)[:gc(s)]\n");
+				error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
+				error_string = talloc_asprintf_append(error_string, "   note: i = integer");
+				error_string = talloc_asprintf_append(error_string, "   note: s = string");
+				ldb_set_errstring(ldb, error_string);
+				talloc_free(error_string);
+				talloc_free(ctrl);
+				return NULL;
+			}
+		}
+
+		ctrl->oid = LDB_CONTROL_VERIFY_NAME_OID;
+		ctrl->critical = crit;
+		control = talloc(ctrl, struct ldb_verify_name_control);
+		control->gc = talloc_strdup(control, gc);
+		control->gc_len = strlen(gc);
+		control->flags = flags;
+		ctrl->data = control;
 		return ctrl;
 	}
 	/*

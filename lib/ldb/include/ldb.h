@@ -708,6 +708,15 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
 #define LDB_CONTROL_RELAX_NAME	"relax"
 
+/**
+   OID for the allowing some kind of relax check for attributes with DNs
+
+
+   \sa 3.1.1.3.4.1.16 in [MS-ADTS].pdf
+*/
+#define LDB_CONTROL_VERIFY_NAME_OID "1.2.840.113556.1.4.1338"
+#define LDB_CONTROL_VERIFY_NAME_NAME	"verify_name"
+
 /* Extended operations */
 
 /**
@@ -841,6 +850,12 @@ struct ldb_vlv_resp_control {
 	int vlv_result;
 	int ctxid_len;
 	char *contextId;
+};
+
+struct ldb_verify_name_control {
+	int flags;
+	size_t gc_len;
+	char *gc;
 };
 
 struct ldb_control {
