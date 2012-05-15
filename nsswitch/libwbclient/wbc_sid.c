@@ -295,7 +295,7 @@ static void wbcTranslatedNamesDestructor(void *ptr)
 	struct wbcTranslatedName *n = (struct wbcTranslatedName *)ptr;
 
 	while (n->name != NULL) {
-		free(n->name);
+		wbcFreeMemory(n->name);
 		n += 1;
 	}
 }
