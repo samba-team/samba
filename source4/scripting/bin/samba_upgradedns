@@ -26,7 +26,7 @@ import grp
 from base64 import b64encode
 import shlex
 
-sys.path.insert(0, 'bin/python')
+sys.path.insert(0, "bin/python")
 
 import ldb
 import samba
