@@ -119,12 +119,12 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	}
 	unbecome_root();
 	if (ret) {
-		errno = saved_errno;
 		DEBUG(5, ("store_acl_blob_fsp: setting attr failed for file %s"
 			"with error %s\n",
 			fsp_str_dbg(fsp),
-			strerror(errno) ));
-		return map_nt_error_from_unix(errno);
+			strerror(saved_errno) ));
+		errno = saved_errno;
+		return map_nt_error_from_unix(saved_errno);
 	}
 	return NT_STATUS_OK;
 }

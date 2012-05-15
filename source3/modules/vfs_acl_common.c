@@ -592,10 +592,13 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		NDR_PRINT_DEBUG(security_descriptor,
 			discard_const_p(struct security_descriptor, psd));
 	}
+	/*
+	 * Perhaps create_acl_blob should have a status return as well
+	 */
 	create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
-	store_acl_blob_fsp(handle, fsp, &blob);
+	status = store_acl_blob_fsp(handle, fsp, &blob);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 static int acl_common_remove_object(vfs_handle_struct *handle,
