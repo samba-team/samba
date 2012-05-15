@@ -51,6 +51,11 @@ struct extended_search_context {
 	int extended_type;
 };
 
+static const char *wkattr[] = {
+	"wellKnownObjects",
+	"otherWellKnownObjects",
+	NULL
+};
 /* An extra layer of indirection because LDB does not allow the original request to be altered */
 
 static int extended_final_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -88,7 +93,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 	struct ldb_request *down_req;
 	struct ldb_message_element *el;
 	int ret;
-	unsigned int i;
+	unsigned int i, j;
 	size_t wkn_len = 0;
 	char *valstr = NULL;
 	const char *found = NULL;
@@ -125,29 +130,35 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 
 		wkn_len = strlen(ac->wellknown_object);
 
-		el = ldb_msg_find_element(ares->message, "wellKnownObjects");
-		if (!el) {
-			ac->basedn = NULL;
-			break;
-		}
+		for (j=0; wkattr[j]; j++) {
 
-		for (i=0; i < el->num_values; i++) {
-			valstr = talloc_strndup(ac,
-						(const char *)el->values[i].data,
-						el->values[i].length);
-			if (!valstr) {
-				ldb_oom(ldb_module_get_ctx(ac->module));
-				return ldb_module_done(ac->req, NULL, NULL,
-						       LDB_ERR_OPERATIONS_ERROR);
-			}
-
-			if (strncasecmp(valstr, ac->wellknown_object, wkn_len) != 0) {
-				talloc_free(valstr);
+			el = ldb_msg_find_element(ares->message, wkattr[j]);
+			if (!el) {
+				ac->basedn = NULL;
 				continue;
 			}
 
-			found = &valstr[wkn_len];
-			break;
+			for (i=0; i < el->num_values; i++) {
+				valstr = talloc_strndup(ac,
+							(const char *)el->values[i].data,
+							el->values[i].length);
+				if (!valstr) {
+					ldb_oom(ldb_module_get_ctx(ac->module));
+					return ldb_module_done(ac->req, NULL, NULL,
+							LDB_ERR_OPERATIONS_ERROR);
+				}
+
+				if (strncasecmp(valstr, ac->wellknown_object, wkn_len) != 0) {
+					talloc_free(valstr);
+					continue;
+				}
+
+				found = &valstr[wkn_len];
+				break;
+			}
+			if (found) {
+				break;
+			}
 		}
 
 		if (!found) {
@@ -523,10 +534,6 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 	const char * const *base_dn_attrs = NULL;
 	char *wellknown_object = NULL;
 	static const char *no_attr[] = {
-		NULL
-	};
-	static const char *wkattr[] = {
-		"wellKnownObjects",
 		NULL
 	};
 	bool all_partitions = false;
