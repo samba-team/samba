@@ -290,4 +290,39 @@ NTSTATUS smb2cli_logoff(struct smbXcli_conn *conn,
 			uint32_t timeout_msec,
 			struct smbXcli_session *session);
 
+struct tevent_req *smb2cli_create_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct smbXcli_conn *conn,
+	uint32_t timeout_msec,
+	struct smbXcli_session *session,
+	uint32_t tcon_id,
+	const char *filename,
+	uint8_t  oplock_level,		/* SMB2_OPLOCK_LEVEL_* */
+	uint32_t impersonation_level,	/* SMB2_IMPERSONATION_* */
+	uint32_t desired_access,
+	uint32_t file_attributes,
+	uint32_t share_access,
+	uint32_t create_disposition,
+	uint32_t create_options,
+	struct smb2_create_blobs *blobs);
+NTSTATUS smb2cli_create_recv(struct tevent_req *req,
+			     uint64_t *fid_persistent,
+			     uint64_t *fid_volatile);
+NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
+			uint32_t timeout_msec,
+			struct smbXcli_session *session,
+			uint32_t tcon_id,
+			const char *filename,
+			uint8_t  oplock_level,	     /* SMB2_OPLOCK_LEVEL_* */
+			uint32_t impersonation_level, /* SMB2_IMPERSONATION_* */
+			uint32_t desired_access,
+			uint32_t file_attributes,
+			uint32_t share_access,
+			uint32_t create_disposition,
+			uint32_t create_options,
+			struct smb2_create_blobs *blobs,
+			uint64_t *fid_persistent,
+			uint64_t *fid_volatile);
+
 #endif /* _SMBXCLI_BASE_H_ */

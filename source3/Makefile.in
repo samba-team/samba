@@ -619,7 +619,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     ../libcli/smb/smb1cli_trans.o \
 	     ../libcli/smb/smb2cli_session.o \
 	     libsmb/smb2cli_tcon.o \
-	     libsmb/smb2cli_create.o \
+	     ../libcli/smb/smb2cli_create.o \
 	     ../libcli/smb/smb2_create_blob.o \
 	     ../libcli/smb/smb2_signing.o \
 	     libsmb/smb2cli_close.o \

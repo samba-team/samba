@@ -18,13 +18,11 @@
 */
 
 #include "includes.h"
-#include "client.h"
-#include "async_smb.h"
-#include "../libcli/smb/smbXcli_base.h"
-#include "smb2cli.h"
-#include "libsmb/proto.h"
+#include "system/network.h"
 #include "lib/util/tevent_ntstatus.h"
-#include "libcli/smb/smb2_create_blob.h"
+#include "smb_common.h"
+#include "smbXcli_base.h"
+#include "smb2_create_blob.h"
 
 struct smb2cli_create_state {
 	uint8_t fixed[56];

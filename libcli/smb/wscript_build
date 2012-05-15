@@ -9,6 +9,7 @@ bld.SAMBA_LIBRARY('cli_smb_common',
 		smbXcli_base.c
 		smb1cli_trans.c
 		smb2cli_session.c
+                smb2cli_create.c
 	''',
 	deps='LIBCRYPTO errors gensec krb5samba LIBASYNC_REQ',
 	public_deps='talloc samba-util',
