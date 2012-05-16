@@ -845,6 +845,7 @@ sub provision($$$$$$)
 	interfaces = $server_ip/8
 	bind interfaces only = yes
 	panic action = $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
+	smbd:suicide mode = yes
 
 	workgroup = $domain
 
