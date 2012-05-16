@@ -427,6 +427,8 @@ static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_set
 	return 0;
 }
 
+static void smbd_smb2_session_setup_done(struct tevent_req *subreq);
+
 static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbd_smb2_request *smb2req,
@@ -440,6 +442,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_session_setup_state *state;
 	NTSTATUS status;
 	NTTIME now = timeval_to_nttime(&smb2req->request_time);
+	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_session_setup_state);
@@ -500,15 +503,37 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	}
 
 	become_root();
-	status = gensec_update(state->session->gensec,
-			       state, NULL,
-			       state->in_security_buffer,
-			       &state->out_security_buffer);
+	subreq = gensec_update_send(state, state->ev,
+				    state->session->gensec,
+				    state->in_security_buffer);
 	unbecome_root();
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_session_setup_done, req);
+
+	return req;
+}
+
+static void smbd_smb2_session_setup_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smbd_smb2_session_setup_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_session_setup_state);
+	NTSTATUS status;
+
+	become_root();
+	status = gensec_update_recv(subreq, state,
+				    &state->out_security_buffer);
+	unbecome_root();
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) &&
 	    !NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
+		return;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -516,7 +541,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 		/* we want to keep the session */
 		state->session = NULL;
 		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
+		return;
 	}
 
 	if (state->session->global->auth_session_info != NULL) {
@@ -525,12 +550,12 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 							 &state->out_session_flags,
 							 &state->out_session_id);
 		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
+			return;
 		}
 		/* we want to keep the session */
 		state->session = NULL;
 		tevent_req_done(req);
-		return tevent_req_post(req, ev);
+		return;
 	}
 
 	status = smbd_smb2_auth_generic_return(state->session,
@@ -541,13 +566,13 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 					       &state->out_session_flags,
 					       &state->out_session_id);
 	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
 
 	/* we want to keep the session */
 	state->session = NULL;
 	tevent_req_done(req);
-	return tevent_req_post(req, ev);
+	return;
 }
 
 static NTSTATUS smbd_smb2_session_setup_recv(struct tevent_req *req,
