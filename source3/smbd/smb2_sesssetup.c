@@ -484,7 +484,7 @@ static NTSTATUS smbd_smb2_session_setup_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			tevent_req_received(req);
-			return status;
+			return nt_status_squash(status);
 		}
 	} else {
 		status = NT_STATUS_OK;
