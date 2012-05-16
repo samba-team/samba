@@ -1535,6 +1535,37 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 			}
 		}
 
+		/* If the SID is equal for the user and group that we need
+		   to add the duplicate for, add only the group */
+		if (!got_duplicate_user && !got_duplicate_group
+				&& dom_sid_equal(&pace_group->trustee,
+						&pace_user->trustee)) {
+			/* Add a duplicate SMB_ACL_GROUP entry, this
+			 * will cover the owning SID as well, as it
+			 * will always be mapped to both a uid and
+			 * gid. */
+
+			if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
+				DEBUG(0,("ensure_canon_entry_valid: talloc fail.\n"));
+				return false;
+			}
+
+			ZERO_STRUCTP(pace);
+			pace->type = SMB_ACL_GROUP;;
+			pace->owner_type = GID_ACE;
+			pace->unix_ug.gid = pace_group->unix_ug.gid;
+			pace->trustee = pace_group->trustee;
+			pace->attr = pace_group->attr;
+			pace->perms = pace_group->perms;
+
+			DLIST_ADD(*pp_ace, pace);
+
+			/* We're done here, make sure the
+			   statements below are not executed. */
+			got_duplicate_user = true;
+			got_duplicate_group = true;
+		}
+
 		if (!got_duplicate_user) {
 			/* Add a duplicate SMB_ACL_USER entry. */
 			if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
@@ -1551,6 +1582,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 			pace->perms = pace_user->perms;
 
 			DLIST_ADD(*pp_ace, pace);
+
+			got_duplicate_user = true;
 		}
 
 		if (!got_duplicate_group) {
@@ -1569,6 +1602,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 			pace->perms = pace_group->perms;
 
 			DLIST_ADD(*pp_ace, pace);
+
+			got_duplicate_group = true;
 		}
 
 	}
