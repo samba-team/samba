@@ -228,6 +228,12 @@ nfs_check_rpc_service ()
 	    _restart="echo 'Trying to restart NFS service'"
 	    _restart="${_restart}; startstop_nfs restart"
 	    ;;
+	ganesha)
+	    _rpc_prog=nfs
+	    _version=${_v:-3}
+	    _restart="echo 'Trying to restart Ganesha NFS service'"
+	    _restart="${_restart}; startstop_ganesha restart"
+	    ;;
 	mountd)
 	    _opts="${MOUNTD_PORT:+ -p }${MOUNTD_PORT}"
 	    ;;
@@ -675,6 +681,31 @@ tickle_tcp_connections() {
 	echo "Failed to send tickle control"
 	return;
     }
+}
+
+########################################################
+# start/stop the Ganesha nfs service
+########################################################
+startstop_ganesha()
+{
+    _ganesha_fsal_list="gpfs"
+    for _fsal in $_ganesha_fsal_list ; do
+        _service_name="nfs-ganesha-${_fsal}"
+	if [ -x /etc/init.d/$_service_name ] ; then
+	    break
+	fi
+    done
+    case "$1" in
+	start)
+	    service "$_service_name" start
+	    ;;
+	stop)
+	    service "$_service_name" stop
+	    ;;
+	restart)
+	    service "$_service_name" restart
+	    ;;
+    esac
 }
 
 ########################################################
