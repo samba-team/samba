@@ -403,123 +403,6 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_auth_generic(struct smbXsrv_session *session,
-				       struct smbd_smb2_request *smb2req,
-				       uint8_t in_security_mode,
-				       uint64_t in_previous_session_id,
-				       DATA_BLOB in_security_buffer,
-				       uint16_t *out_session_flags,
-				       DATA_BLOB *out_security_buffer,
-				       uint64_t *out_session_id)
-{
-	NTSTATUS status;
-
-	*out_security_buffer = data_blob_null;
-
-	if (session->gensec == NULL) {
-		status = auth_generic_prepare(session,
-					      session->connection->remote_address,
-					      &session->gensec);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(session);
-			return status;
-		}
-
-		gensec_want_feature(session->gensec, GENSEC_FEATURE_SESSION_KEY);
-		gensec_want_feature(session->gensec, GENSEC_FEATURE_UNIX_TOKEN);
-
-		status = gensec_start_mech_by_oid(session->gensec,
-						  GENSEC_OID_SPNEGO);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(session);
-			return status;
-		}
-	}
-
-	become_root();
-	status = gensec_update(session->gensec,
-			       smb2req, NULL,
-			       in_security_buffer,
-			       out_security_buffer);
-	unbecome_root();
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) &&
-	    !NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(session);
-		return nt_status_squash(status);
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		*out_session_id = session->global->session_wire_id;
-		return status;
-	}
-
-	if (session->global->auth_session_info != NULL) {
-		return smbd_smb2_reauth_generic_return(session,
-						       smb2req,
-						       out_session_flags,
-						       out_session_id);
-	}
-
-	return smbd_smb2_auth_generic_return(session,
-					     smb2req,
-					     in_security_mode,
-					     in_previous_session_id,
-					     in_security_buffer,
-					     out_session_flags,
-					     out_session_id);
-}
-
-static NTSTATUS smbd_smb2_session_setup(struct smbd_smb2_request *smb2req,
-					uint64_t in_session_id,
-					uint8_t in_flags,
-					uint8_t in_security_mode,
-					uint64_t in_previous_session_id,
-					DATA_BLOB in_security_buffer,
-					uint16_t *out_session_flags,
-					DATA_BLOB *out_security_buffer,
-					uint64_t *out_session_id)
-{
-	struct smbXsrv_session *session;
-	NTSTATUS status;
-	NTTIME now = timeval_to_nttime(&smb2req->request_time);
-
-	*out_session_flags = 0;
-	*out_session_id = 0;
-
-	if (in_session_id == 0) {
-		/* create a new session */
-		status = smbXsrv_session_create(smb2req->sconn->conn,
-					        now, &session);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	} else {
-		status = smb2srv_session_lookup(smb2req->sconn->conn,
-						in_session_id, now,
-						&session);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
-			status = NT_STATUS_OK;
-		}
-		if (NT_STATUS_IS_OK(status)) {
-			session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-			TALLOC_FREE(session->gensec);
-		}
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			return status;
-		}
-	}
-
-	return smbd_smb2_auth_generic(session,
-				      smb2req,
-				      in_security_mode,
-				      in_previous_session_id,
-				      in_security_buffer,
-				      out_session_flags,
-				      out_security_buffer,
-				      out_session_id);
-}
-
 struct smbd_smb2_session_setup_state {
 	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
@@ -528,10 +411,21 @@ struct smbd_smb2_session_setup_state {
 	uint8_t in_security_mode;
 	uint64_t in_previous_session_id;
 	DATA_BLOB in_security_buffer;
+	struct smbXsrv_session *session;
 	uint16_t out_session_flags;
 	DATA_BLOB out_security_buffer;
 	uint64_t out_session_id;
 };
+
+static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_setup_state *state)
+{
+	/*
+	 * if state->session is not NULL,
+	 * we remove the session on failure
+	 */
+	TALLOC_FREE(state->session);
+	return 0;
+}
 
 static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -545,6 +439,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbd_smb2_session_setup_state *state;
 	NTSTATUS status;
+	NTTIME now = timeval_to_nttime(&smb2req->request_time);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_session_setup_state);
@@ -559,24 +454,98 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	state->in_previous_session_id = in_previous_session_id;
 	state->in_security_buffer = in_security_buffer;
 
-	status = smbd_smb2_session_setup(smb2req,
-					 in_session_id,
-					 in_flags,
-					 in_security_mode,
-					 in_previous_session_id,
-					 in_security_buffer,
-					 &state->out_session_flags,
-					 &state->out_security_buffer,
-					 &state->out_session_id);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) ||
-	    NT_STATUS_IS_OK(status))
-	{
-		talloc_steal(state, state->out_security_buffer.data);
+	talloc_set_destructor(state, smbd_smb2_session_setup_state_destructor);
+
+	if (state->in_session_id == 0) {
+		/* create a new session */
+		status = smbXsrv_session_create(state->smb2req->sconn->conn,
+					        now, &state->session);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		status = smb2srv_session_lookup(state->smb2req->sconn->conn,
+						state->in_session_id, now,
+						&state->session);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+			status = NT_STATUS_OK;
+		}
+		if (NT_STATUS_IS_OK(status)) {
+			state->session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+			TALLOC_FREE(state->session->gensec);
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
 	}
+
+	if (state->session->gensec == NULL) {
+		status = auth_generic_prepare(state->session,
+					      state->session->connection->remote_address,
+					      &state->session->gensec);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		gensec_want_feature(state->session->gensec, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(state->session->gensec, GENSEC_FEATURE_UNIX_TOKEN);
+
+		status = gensec_start_mech_by_oid(state->session->gensec,
+						  GENSEC_OID_SPNEGO);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	become_root();
+	status = gensec_update(state->session->gensec,
+			       state, NULL,
+			       state->in_security_buffer,
+			       &state->out_security_buffer);
+	unbecome_root();
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) &&
+	    !NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		state->out_session_id = state->session->global->session_wire_id;
+		/* we want to keep the session */
+		state->session = NULL;
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	if (state->session->global->auth_session_info != NULL) {
+		status = smbd_smb2_reauth_generic_return(state->session,
+							 state->smb2req,
+							 &state->out_session_flags,
+							 &state->out_session_id);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		/* we want to keep the session */
+		state->session = NULL;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	status = smbd_smb2_auth_generic_return(state->session,
+					       state->smb2req,
+					       state->in_security_mode,
+					       state->in_previous_session_id,
+					       state->in_security_buffer,
+					       &state->out_session_flags,
+					       &state->out_session_id);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 
+	/* we want to keep the session */
+	state->session = NULL;
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
