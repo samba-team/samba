@@ -90,6 +90,10 @@ for t in tests:
     plantestsuite("samba3.smbtorture_s3.crypt(s3dc).%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "-e", "-l $LOCAL_PATH"])
     plantestsuite("samba3.smbtorture_s3.plain(dc).%s" % t, "dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "", "-l $LOCAL_PATH"])
 
+env = "s3dc:local"
+t = "CLEANUP3"
+plantestsuite("samba3.smbtorture_s3.plain(%s).%s" % (env, t), env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "", "-l $LOCAL_PATH"])
+
 local_tests=[
 	"LOCAL-SUBSTITUTE",
 	"LOCAL-GENCACHE",
