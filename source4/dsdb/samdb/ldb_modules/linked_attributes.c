@@ -64,7 +64,58 @@ struct la_context {
 	struct la_op_store *ops;
 	struct ldb_extended *op_response;
 	struct ldb_control **op_controls;
+	/*
+	 * For futur use
+	 * will tell which GC to use for resolving links
+	 */
+	char *gc_dns_name;
 };
+
+
+static int handle_verify_name_control(TALLOC_CTX *ctx, struct ldb_context *ldb,
+					struct ldb_control *control, struct la_context *ac)
+{
+	/*
+	 * If we are a GC let's remove the control,
+	 * if there is a specified GC check that is us.
+	 */
+	struct ldb_verify_name_control *lvnc = (struct ldb_verify_name_control *)control->data;
+	if (samdb_is_gc(ldb)) {
+		/* Because we can't easily talloc a struct ldb_dn*/
+		struct ldb_dn **dn = talloc_array(ctx, struct ldb_dn *, 1);
+		int ret = samdb_server_reference_dn(ldb, ctx, dn);
+		const char *dns;
+
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
+
+		dns = samdb_dn_to_dnshostname(ldb, ctx, *dn);
+		if (!dns) {
+			return ldb_operr(ldb);
+		}
+		if (!lvnc->gc || strcasecmp(dns, lvnc->gc) == 0) {
+			if (!ldb_save_controls(control, ctx, NULL)) {
+				return ldb_operr(ldb);
+			}
+		} else {
+			control->critical = true;
+		}
+		talloc_free(dn);
+	} else {
+		/* For the moment we don't remove the control is this case in order
+		 * to fail the request. It's better than having the client thinking
+		 * that we honnor its control.
+		 * Hopefully only a very small set of usecase should hit this problem.
+		 */
+		if (lvnc->gc) {
+			ac->gc_dns_name = talloc_strdup(ac, lvnc->gc);
+		}
+		control->critical = true;
+	}
+
+	return LDB_SUCCESS;
+}
 
 static struct la_context *linked_attributes_init(struct ldb_module *module,
 						 struct ldb_request *req)
@@ -189,6 +240,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 	const char *attr_name;
 	struct ldb_control *ctrl;
 	unsigned int i, j;
+	struct ldb_control *control;
 	int ret;
 
 	ldb = ldb_module_get_ctx(module);
@@ -198,22 +250,32 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 		return ldb_next_request(module, req);
 	}
 
-	if (!(ctrl = ldb_request_get_control(req, DSDB_CONTROL_APPLY_LINKS))) {
-		/* don't do anything special for linked attributes, repl_meta_data has done it */
-		return ldb_next_request(module, req);
-	}
-	ctrl->critical = false;
-
 	ac = linked_attributes_init(module, req);
 	if (!ac) {
 		return ldb_operr(ldb);
 	}
+
+	control = ldb_request_get_control(req, LDB_CONTROL_VERIFY_NAME_OID);
+	if (control != NULL && control->data != NULL) {
+		ret = handle_verify_name_control(req, ldb, control, ac);
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
+	}
+
+	if (!(ctrl = ldb_request_get_control(req, DSDB_CONTROL_APPLY_LINKS))) {
+		/* don't do anything special for linked attributes, repl_meta_data has done it */
+		talloc_free(ac);
+		return ldb_next_request(module, req);
+	}
+	ctrl->critical = false;
 
 	if (!ac->schema) {
 		/* without schema, this doesn't make any sense */
 		talloc_free(ac);
 		return ldb_next_request(module, req);
 	}
+
 
 	/* Need to ensure we only have forward links being specified */
 	for (i=0; i < req->op.add.message->num_elements; i++) {
@@ -409,6 +471,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 	/* Determine the effect of the modification */
 	/* Apply the modify to the linked entry */
 
+	struct ldb_control *control;
 	struct ldb_context *ldb;
 	unsigned int i, j;
 	struct la_context *ac;
@@ -424,16 +487,25 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		return ldb_next_request(module, req);
 	}
 
-	if (!(ctrl = ldb_request_get_control(req, DSDB_CONTROL_APPLY_LINKS))) {
-		/* don't do anything special for linked attributes, repl_meta_data has done it */
-		return ldb_next_request(module, req);
-	}
-	ctrl->critical = false;
-
 	ac = linked_attributes_init(module, req);
 	if (!ac) {
 		return ldb_operr(ldb);
 	}
+
+	control = ldb_request_get_control(req, LDB_CONTROL_VERIFY_NAME_OID);
+	if (control != NULL && control->data != NULL) {
+		ret = handle_verify_name_control(req, ldb, control, ac);
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
+	}
+
+	if (!(ctrl = ldb_request_get_control(req, DSDB_CONTROL_APPLY_LINKS))) {
+		/* don't do anything special for linked attributes, repl_meta_data has done it */
+		talloc_free(ac);
+		return ldb_next_request(module, req);
+	}
+	ctrl->critical = false;
 
 	if (!ac->schema) {
 		/* without schema, this doesn't make any sense */
@@ -1089,12 +1161,27 @@ static int linked_attributes_del_transaction(struct ldb_module *module)
 	return ldb_next_del_trans(module);
 }
 
+static int linked_attributes_ldb_init(struct ldb_module *module)
+{
+	int ret;
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_VERIFY_NAME_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
+			"verify_name: Unable to register control with rootdse!\n");
+		return ldb_operr(ldb_module_get_ctx(module));
+	}
+
+	return ldb_next_init(module);
+}
+
 
 static const struct ldb_module_ops ldb_linked_attributes_module_ops = {
 	.name		   = "linked_attributes",
 	.add               = linked_attributes_add,
 	.modify            = linked_attributes_modify,
 	.rename            = linked_attributes_rename,
+	.init_context      = linked_attributes_ldb_init,
 	.start_transaction = linked_attributes_start_transaction,
 	.prepare_commit    = linked_attributes_prepare_commit,
 	.del_transaction   = linked_attributes_del_transaction,
