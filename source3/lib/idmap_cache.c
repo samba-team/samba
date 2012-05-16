@@ -37,7 +37,7 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 {
 	fstring sidstr;
 	char *key;
-	char *value;
+	char *value = NULL;
 	char *endptr;
 	time_t timeout;
 	bool ret;
@@ -50,8 +50,7 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 	}
 	ret = gencache_get(key, &value, &timeout);
 	if (!ret) {
-		TALLOC_FREE(key);
-		return false;
+		goto done;
 	}
 
 	DEBUG(10, ("Parsing value for key [%s]: value=[%s]\n", key, value));
@@ -76,31 +75,28 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 			break;
 
 		case '\0':
-			TALLOC_FREE(key);
-			SAFE_FREE(value);
 			DEBUG(0, ("FAILED to parse value for key [%s] "
 				  "(id=[%llu], endptr=[%s]): "
 				  "no type character after colon\n",
 				  key, (unsigned long long)tmp_id.id, endptr));
-			return false;
+			ret = false;
+			goto done;
 		default:
-			TALLOC_FREE(key);
-			SAFE_FREE(value);
 			DEBUG(0, ("FAILED to parse value for key [%s] "
 				  "(id=[%llu], endptr=[%s]): "
 				  "illegal type character '%c'\n",
 				  key, (unsigned long long)tmp_id.id, endptr,
 				  endptr[1]));
-			return false;
+			ret = false;
+			goto done;
 		}
 		if (endptr[2] != '\0') {
-			TALLOC_FREE(key);
-			SAFE_FREE(value);
 			DEBUG(0, ("FAILED to parse value for key [%s] "
 				  "(id=[%llu], endptr=[%s]): "
 				  "more than 1 type character after colon\n",
 				  key, (unsigned long long)tmp_id.id, endptr));
-			return false;
+			ret = false;
+			goto done;
 		}
 
 		*id = tmp_id;
@@ -110,6 +106,8 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 			  "colon missing after id=[%llu]\n",
 			  key, value, (unsigned long long)tmp_id.id));
 	}
+
+done:
 	TALLOC_FREE(key);
 	SAFE_FREE(value);
 	return ret;
