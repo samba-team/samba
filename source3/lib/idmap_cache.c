@@ -53,9 +53,12 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 		TALLOC_FREE(key);
 		return false;
 	}
+
+	DEBUG(10, ("Parsing value for key [%s]: value=[%s]\n", key, value));
+
 	tmp_id.id = strtol(value, &endptr, 10);
-	DEBUG(10, ("Parsing result of %s, endptr=%s, id=%llu\n",
-		   key, endptr, (unsigned long long)tmp_id.id));
+	DEBUG(10, ("Parsing value for key [%s]: id=[%llu], endptr=[%s]\n",
+		   key, (unsigned long long)tmp_id.id, endptr));
 
 	ret = (*endptr == ':');
 	if (ret) {
@@ -73,23 +76,39 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 			break;
 
 		case '\0':
+			TALLOC_FREE(key);
+			SAFE_FREE(value);
+			DEBUG(0, ("FAILED to parse value for key [%s] "
+				  "(id=[%llu], endptr=[%s]): "
+				  "no type character after colon\n",
+				  key, (unsigned long long)tmp_id.id, endptr));
+			return false;
 		default:
 			TALLOC_FREE(key);
 			SAFE_FREE(value);
-			DEBUG(0, ("FAILED Parsing result of %s, endptr=%s, id=%llu\n", key, endptr, (unsigned long long)tmp_id.id));
+			DEBUG(0, ("FAILED to parse value for key [%s] "
+				  "(id=[%llu], endptr=[%s]): "
+				  "illegal type character '%c'\n",
+				  key, (unsigned long long)tmp_id.id, endptr,
+				  endptr[1]));
 			return false;
 		}
 		if (endptr[2] != '\0') {
 			TALLOC_FREE(key);
 			SAFE_FREE(value);
-			DEBUG(0, ("FAILED (2) Parsing result of %s, endptr=%s, id=%llu\n", key, endptr, (unsigned long long)tmp_id.id));
+			DEBUG(0, ("FAILED to parse value for key [%s] "
+				  "(id=[%llu], endptr=[%s]): "
+				  "more than 1 type character after colon\n",
+				  key, (unsigned long long)tmp_id.id, endptr));
 			return false;
 		}
 
 		*id = tmp_id;
 		*expired = (timeout <= time(NULL));
 	} else {
-		DEBUG(0, ("FAILED (3) Parsing result of %s, value=%s\n", key, value));
+		DEBUG(0, ("FAILED to parse value for key [%s] (value=[%s]): "
+			  "colon missing after id=[%llu]\n",
+			  key, value, (unsigned long long)tmp_id.id));
 	}
 	TALLOC_FREE(key);
 	SAFE_FREE(value);
