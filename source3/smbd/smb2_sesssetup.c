@@ -177,8 +177,7 @@ static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
 static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 					struct smbd_smb2_request *smb2req,
 					uint8_t in_security_mode,
-					uint64_t in_previous_session_id,
-					DATA_BLOB in_security_buffer,
+					struct auth_session_info *session_info,
 					uint16_t *out_session_flags,
 					uint64_t *out_session_id)
 {
@@ -186,20 +185,11 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	bool guest = false;
 	uint8_t session_key[16];
 	struct smbXsrv_session *x = session;
-	struct auth_session_info *session_info;
 	struct smbXsrv_connection *conn = session->connection;
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == SMB_SIGNING_REQUIRED) {
 		x->global->signing_required = true;
-	}
-
-	status = gensec_session_info(session->gensec,
-				     session->global,
-				     &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(session);
-		return status;
 	}
 
 	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
@@ -334,21 +324,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 
 static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 					struct smbd_smb2_request *smb2req,
+					struct auth_session_info *session_info,
 					uint16_t *out_session_flags,
 					uint64_t *out_session_id)
 {
 	NTSTATUS status;
 	struct smbXsrv_session *x = session;
-	struct auth_session_info *session_info;
 	struct smbXsrv_connection *conn = session->connection;
-
-	status = gensec_session_info(session->gensec,
-				     session->global,
-				     &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(session);
-		return status;
-	}
 
 	data_blob_clear_free(&session_info->session_key);
 	session_info->session_key = data_blob_dup_talloc(session_info,
@@ -412,6 +394,7 @@ struct smbd_smb2_session_setup_state {
 	uint64_t in_previous_session_id;
 	DATA_BLOB in_security_buffer;
 	struct smbXsrv_session *session;
+	struct auth_session_info *session_info;
 	uint16_t out_session_flags;
 	DATA_BLOB out_security_buffer;
 	uint64_t out_session_id;
@@ -427,7 +410,7 @@ static int smbd_smb2_session_setup_state_destructor(struct smbd_smb2_session_set
 	return 0;
 }
 
-static void smbd_smb2_session_setup_done(struct tevent_req *subreq);
+static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -510,12 +493,12 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, smbd_smb2_session_setup_done, req);
+	tevent_req_set_callback(subreq, smbd_smb2_session_setup_gensec_done, req);
 
 	return req;
 }
 
-static void smbd_smb2_session_setup_done(struct tevent_req *subreq)
+static void smbd_smb2_session_setup_gensec_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
@@ -544,9 +527,17 @@ static void smbd_smb2_session_setup_done(struct tevent_req *subreq)
 		return;
 	}
 
+	status = gensec_session_info(state->session->gensec,
+				     state->session->global,
+				     &state->session_info);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
 	if (state->session->global->auth_session_info != NULL) {
 		status = smbd_smb2_reauth_generic_return(state->session,
 							 state->smb2req,
+							 state->session_info,
 							 &state->out_session_flags,
 							 &state->out_session_id);
 		if (tevent_req_nterror(req, status)) {
@@ -561,8 +552,7 @@ static void smbd_smb2_session_setup_done(struct tevent_req *subreq)
 	status = smbd_smb2_auth_generic_return(state->session,
 					       state->smb2req,
 					       state->in_security_mode,
-					       state->in_previous_session_id,
-					       state->in_security_buffer,
+					       state->session_info,
 					       &state->out_session_flags,
 					       &state->out_session_id);
 	if (tevent_req_nterror(req, status)) {
