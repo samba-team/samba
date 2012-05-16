@@ -43,10 +43,6 @@ VFS_SYNCOPS_SRC = 'vfs_syncops.c'
 VFS_ACL_XATTR_SRC = 'vfs_acl_xattr.c'
 VFS_ACL_TDB_SRC = 'vfs_acl_tdb.c'
 VFS_SMB_TRAFFIC_ANALYZER_SRC = 'vfs_smb_traffic_analyzer.c'
-VFS_ONEFS_SRC = '''vfs_onefs.c onefs_acl.c onefs_system.c
-                onefs_open.c onefs_streams.c onefs_dir.c
-                onefs_cbrl.c onefs_notify.c onefs_config.c'''
-VFS_ONEFS_SHADOW_COPY_SRC = 'vfs_onefs_shadow_copy.c onefs_shadow_copy.c'
 VFS_DIRSORT_SRC = 'vfs_dirsort.c'
 VFS_SCANNEDONLY_SRC = 'vfs_scannedonly.c'
 VFS_CROSSRENAME_SRC = 'vfs_crossrename.c'
@@ -416,22 +412,6 @@ bld.SAMBA3_MODULE('vfs_smb_traffic_analyzer',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_smb_traffic_analyzer'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_smb_traffic_analyzer'))
 
-bld.SAMBA3_MODULE('vfs_onefs',
-                 subsystem='vfs',
-                 source=VFS_ONEFS_SRC,
-                 deps='samba-util',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_onefs'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_onefs'))
-
-bld.SAMBA3_MODULE('vfs_onefs_shadow_copy',
-                 subsystem='vfs',
-                 source=VFS_ONEFS_SHADOW_COPY_SRC,
-                 deps='samba-util',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_onefs_shadow_copy'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_onefs_shadow_copy'))
-
 bld.SAMBA3_MODULE('vfs_dirsort',
                  subsystem='vfs',
                  source=VFS_DIRSORT_SRC,
@@ -480,19 +460,11 @@ bld.SAMBA3_MODULE('vfs_dfs_samba4',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_dfs_samba4'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_dfs_samba4'))
 
-PERFCOUNT_ONEFS_SRC = 'perfcount_onefs.c'
 PERFCOUNT_TEST_SRC = 'perfcount_test.c'
 
 bld.SAMBA3_SUBSYSTEM('perfcount',
                     source='',
                      deps='smbd_base')
-
-bld.SAMBA3_MODULE('perfcount_onefs',
-                 subsystem='perfcount',
-                 source=PERFCOUNT_ONEFS_SRC,
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('perfcount_onefs'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('perfcount_onefs'))
 
 bld.SAMBA3_MODULE('perfcount_test',
                  subsystem='perfcount',

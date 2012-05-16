@@ -696,10 +696,6 @@ int linux_set_lease_sighandler(int fd);
 int linux_setlease(int fd, int leasetype);
 struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *sconn);
 
-/* The following definitions come from smbd/oplock_onefs.c  */
-
-struct kernel_oplocks *onefs_init_kernel_oplocks(struct smbd_server_connection *sconn);
-
 /* The following definitions come from smbd/password.c  */
 
 user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,

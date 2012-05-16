@@ -833,8 +833,7 @@ PROFILES_OBJ = utils/profiles.o \
                $(POPT_LIB_OBJ) \
 	       $(REGFIO_OBJ)
 
-OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o \
-	     smbd/oplock_onefs.o
+OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
 NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o \
 	     librpc/gen_ndr/ndr_notify.o
@@ -884,11 +883,6 @@ VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
 VFS_ACL_TDB_OBJ = modules/vfs_acl_tdb.o
 VFS_SMB_TRAFFIC_ANALYZER_OBJ = modules/vfs_smb_traffic_analyzer.o
-VFS_ONEFS_OBJ = modules/vfs_onefs.o modules/onefs_acl.o modules/onefs_system.o \
-		modules/onefs_open.o modules/onefs_streams.o modules/onefs_dir.o \
-		modules/onefs_cbrl.o modules/onefs_notify.o modules/onefs_config.o
-VFS_ONEFS_SHADOW_COPY_OBJ = modules/vfs_onefs_shadow_copy.o modules/onefs_shadow_copy.o
-PERFCOUNT_ONEFS_OBJ = modules/perfcount_onefs.o
 PERFCOUNT_TEST_OBJ = modules/perfcount_test.o
 VFS_DIRSORT_OBJ = modules/vfs_dirsort.o
 VFS_SCANNEDONLY_OBJ = modules/vfs_scannedonly.o
@@ -3098,18 +3092,6 @@ bin/smb_traffic_analyzer.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SMB_TRAFFIC_ANALYZE
 bin/acl_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_TDB_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_ACL_TDB_OBJ)
-
-bin/onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ONEFS_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_ONEFS_OBJ) @ONEFS_LIBS@
-
-bin/onefs_shadow_copy.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ONEFS_SHADOW_COPY_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_ONEFS_SHADOW_COPY_OBJ)
-
-bin/pc_onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(PERFCOUNT_ONEFS_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(PERFCOUNT_ONEFS_OBJ)
 
 bin/pc_test.@SHLIBEXT@: $(BINARY_PREREQS) $(PERFCOUNT_TEST_OBJ)
 	@echo "Building plugin $@"

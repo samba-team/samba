@@ -223,8 +223,7 @@ GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''
 PROFILE_SRC = '''profile/profile.c'''
 PROFILES_SRC = '''utils/profiles.c'''
 
-OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c
-             smbd/oplock_onefs.c'''
+OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c'''
 
 NOTIFY_SRC = '''smbd/notify.c smbd/notify_inotify.c smbd/notify_internal.c'''
 
