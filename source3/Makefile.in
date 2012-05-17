@@ -1837,7 +1837,7 @@ lib/pidfile.o: lib/pidfile.c
 		echo "$(COMPILE_CC_PATH)" 1>&2;\
 		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
-lib/version.o: lib/version.c include/version.h
+lib/version.o: lib/version.c include/autoconf/version.h
 	@echo Compiling $*.c
 	@$(COMPILE_CC_PATH) && exit 0;\
 		echo "The following command failed:" 1>&2;\

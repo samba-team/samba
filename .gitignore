@@ -76,7 +76,7 @@ source3/include/autoconf/config.h
 source3/include/autoconf/config.h.in
 source3/include/includes.h.gch
 source3/include/stamp-h
-source3/include/version.h
+source3/include/autoconf/version.h
 source3/lib/netapi/examples/Makefile
 source3/lib/netapi/tests/Makefile
 source3/library-versions
