@@ -13,6 +13,9 @@
     <para>Keepalives should, in general, not be needed if the socket 
     has the SO_KEEPALIVE attribute set on it by default. (see <smbconfoption name="socket options"/>). 
 Basically you should only use this option if you strike difficulties.</para>
+
+    <para>Please note this option only applies to SMB1 client connections, and
+    has no effect on SMB2 clients.</para>
 </description>
 
 <value type="default">300</value>
