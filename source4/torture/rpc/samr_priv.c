@@ -64,10 +64,7 @@ static bool test_samr_queryUserInfo(struct torture_context *tctx,
 					     tctx,
 					     &r);
 	torture_assert_ntstatus_ok(tctx, status, "queryUserInfo failed");
-	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_OK)) {
-		torture_comment(tctx, "queryUserInfo failed");
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result, "queryUserInfo failed");
 
 	return true;
 }
@@ -124,12 +121,8 @@ static bool test_samr_CreateUser(struct torture_context *tctx,
 
 	status = dcerpc_samr_CreateUser_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "CreateUser failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "CreateUser failed");
-		return false;
-	}
 
-	return true;
+	return NT_STATUS_IS_OK(r.out.result);
 }
 
 static bool test_samr_OpenUser(struct torture_context *tctx,
@@ -158,11 +151,8 @@ static bool test_samr_OpenUser(struct torture_context *tctx,
 	r.out.user_handle = user_handle;
 
 	status = dcerpc_samr_OpenUser_r(b, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "CreateUser failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "CreateUser failed");
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "OpenUser failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "OpenUser failed");
 
 	return true;
 }
@@ -186,10 +176,7 @@ static bool test_samr_openDomain(struct torture_context *tctx,
 
 	status = dcerpc_samr_LookupDomain_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "LookupDomain failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result, "LookupDomain failed");
 
 	r2.in.connect_handle = connect_handle;
 	r2.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -198,10 +185,7 @@ static bool test_samr_openDomain(struct torture_context *tctx,
 
 	status = dcerpc_samr_OpenDomain_r(b, tctx, &r2);
 	torture_assert_ntstatus_ok(tctx, status, "OpenDomain failed");
-	if (!NT_STATUS_IS_OK(r2.out.result)) {
-		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r2.out.result, "OpenDomain failed");
 
 	return true;
 }
@@ -219,10 +203,7 @@ static bool test_samr_Connect(struct torture_context *tctx,
 
 	status = dcerpc_samr_Connect_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "SAMR connect failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "Connect failed - %s\n", nt_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result, "SAMR connect failed");
 
 	return true;
 }
@@ -259,6 +240,8 @@ static bool test_samr_create_user(struct torture_context *tctx,
 				  name,
 				  &user_handle);
 
+	/* We don't check ok with torture macros here because the
+	 * caller might be looking for failure */
 	test_samr_handle_Close(b, tctx, &domain_handle);
 	test_samr_handle_Close(b, tctx, &connect_handle);
 
@@ -360,9 +343,7 @@ static bool torture_rpc_samr_caching(struct torture_context *tctx,
 				                              lpcfg_workgroup(tctx->lp_ctx)),
 				       ACB_NORMAL,
 				       &password);
-	if (join == NULL) {
-		return false;
-	}
+	torture_assert(tctx, join, "failed to join domain");
 
 	torture_comment(tctx, "- Query user information\n");
 	for (i = 0; i < NUM_RUNS; i++) {
@@ -374,11 +355,7 @@ static bool torture_rpc_samr_caching(struct torture_context *tctx,
 	status = torture_delete_testuser(tctx,
 					 join,
 					 name);
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "DeleteUser failed - %s\n",
-				      nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "DeleteUser failed");
 
 	torture_comment(tctx, "- Try to query user information again (should fail)\n");
 	for (i = 0; i < NUM_RUNS; i++) {
@@ -502,9 +479,7 @@ static bool torture_rpc_samr_access_setup(struct torture_context *tctx,
 				       t->user.domain,
 				       ACB_NORMAL,
 				       &t->user.password);
-	if (join == NULL) {
-		return false;
-	}
+	torture_assert(tctx, join, "failed to join domain");
 	t->join = join;
 
 	test_credentials = cli_credentials_init(tctx);
@@ -560,9 +535,7 @@ static bool torture_rpc_samr_access(struct torture_context *tctx,
 	torture_comment(tctx, "Testing non-privileged user access\n");
 
 	t = talloc_zero(tctx, struct torture_access_context);
-	if (t == NULL) {
-		return false;
-	}
+	torture_assert(tctx, t, "talloc failed");
 
 	t->user.username = talloc_asprintf(t, "%s%04d", TEST_ACCOUNT_NAME, 100);
 
@@ -570,9 +543,7 @@ static bool torture_rpc_samr_access(struct torture_context *tctx,
 			      "***\n");
 
 	ok = torture_rpc_samr_access_setup(tctx, p, t);
-	if (!ok) {
-		return false;
-	}
+	torture_assert(tctx, ok, "torture_rpc_samr_access_setup failed");
 
 	testuser = talloc_asprintf(t, "%s%04d", TEST_ACCOUNT_NAME, 200);
 
@@ -581,16 +552,10 @@ static bool torture_rpc_samr_access(struct torture_context *tctx,
 			      "***\n", testuser);
 
 	ok = test_samr_create_user(tctx, t, testuser);
-	if (!ok) {
-		torture_comment(tctx, "*** Creating user (%s) failed, which is "
-				      "correct!\n", testuser);
-		return true;
-	}
 
-	torture_comment(tctx, "*** Creating user (%s) was successful, but "
-			      "should fail!\n", testuser);
+	torture_assert(tctx, ok == false, "*** Creating user was successful but it should fail");
 
-	return false;
+	return true;
 }
 
 struct torture_suite *torture_rpc_samr_priv(TALLOC_CTX *mem_ctx)
