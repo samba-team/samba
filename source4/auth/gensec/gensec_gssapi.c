@@ -553,9 +553,11 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			case GENSEC_CLIENT:
 				creds = gensec_gssapi_state->client_cred->creds;
 				role = "client";
+				break;
 			case GENSEC_SERVER:
 				creds = gensec_gssapi_state->server_cred->creds;
 				role = "server";
+				break;
 			}
 
 			maj_stat = gss_inquire_cred(&min_stat, 
