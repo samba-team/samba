@@ -1,9 +1,74 @@
 # a set of config tests that use the samba_autoconf functions
 # to test for commonly needed configuration options
 
-import os, Build, shutil, Utils, re
+import os, shutil, re
+import Build, Configure, Utils
 from Configure import conf
 from samba_utils import *
+
+
+def add_option(self, *k, **kw):
+    '''syntax help: provide the "match" attribute to opt.add_option() so that folders can be added to specific config tests'''
+    match = kw.get('match', [])
+    if match:
+        del kw['match']
+    opt = self.parser.add_option(*k, **kw)
+    opt.match = match
+    return opt
+Options.Handler.add_option = add_option
+
+@conf
+def check(self, *k, **kw):
+    '''Override the waf defaults to inject --with-directory options'''
+
+    if not 'env' in kw:
+        kw['env'] = self.env.copy()
+
+    # match the configuration test with speficic options, for example:
+    # --with-libiconv -> Options.options.iconv_open -> "Checking for library iconv"
+    additional_dirs = []
+    if 'msg' in kw:
+        msg = kw['msg']
+        for x in Options.Handler.parser.parser.option_list:
+             if getattr(x, 'match', None) and msg in x.match:
+                 d = getattr(Options.options, x.dest, '')
+                 if d:
+                     additional_dirs.append(d)
+
+    # we add the additional dirs twice: once for the test data, and again if the compilation test suceeds below
+    def add_options_dir(dirs, env):
+        for x in dirs:
+             if not x in env.CPPPATH:
+                 env.CPPPATH = [os.path.join(x, 'include')] + env.CPPPATH
+             if not x in env.LIBPATH:
+                 env.LIBPATH = [os.path.join(x, 'lib')] + env.LIBPATH
+
+    add_options_dir(additional_dirs, kw['env'])
+
+    self.validate_c(kw)
+    self.check_message_1(kw['msg'])
+    ret = None
+    try:
+        ret = self.run_c_code(*k, **kw)
+    except Configure.ConfigurationError, e:
+        self.check_message_2(kw['errmsg'], 'YELLOW')
+        if 'mandatory' in kw and kw['mandatory']:
+            if Logs.verbose > 1:
+                raise
+            else:
+                self.fatal('the configuration failed (see %r)' % self.log.name)
+    else:
+        kw['success'] = ret
+        self.check_message_2(self.ret_msg(kw['okmsg'], kw))
+
+        # success! keep the CPPPATH/LIBPATH
+        add_options_dir(additional_dirs, self.env)
+
+    self.post_check(*k, **kw)
+    if not kw.get('execute', False):
+        return ret == 0
+    return ret
+
 
 @conf
 def CHECK_ICONV(conf, define='HAVE_NATIVE_ICONV'):

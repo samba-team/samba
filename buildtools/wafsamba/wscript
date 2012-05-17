@@ -77,6 +77,11 @@ def set_options(opt):
                    help=("private library directory [PREFIX/lib/%s]" % Utils.g_module.APPNAME),
                    action="store", dest='PRIVATELIBDIR', default=None)
 
+    opt.add_option('--with-libiconv',
+                   help='installation directory for libiconv',
+                   action='store', dest='iconv_open', default=None,
+                   match = ['Checking for library iconv', 'Checking for iconv_open', 'Checking for header iconv.h'])
+
     gr = opt.option_group('developer options')
 
     gr.add_option('-C',
