@@ -28,7 +28,8 @@
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
 #include "libcli/security/security.h"
-
+#include "libcli/resolve/resolve.h"
+#include "lib/param/param.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -791,6 +792,119 @@ done:
 	return ret;
 }
 
+static bool test_session_expire1(struct torture_context *tctx)
+{
+	NTSTATUS status;
+	bool ret = false;
+	struct smbcli_options options;
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = cmdline_credentials;
+	struct smb2_tree *tree;
+	enum credentials_use_kerberos use_kerberos;
+	char fname[256];
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_create io1;
+	union smb_fileinfo qfinfo;
+	size_t i;
+
+	use_kerberos = cli_credentials_get_kerberos_state(credentials);
+	if (use_kerberos != CRED_MUST_USE_KERBEROS) {
+		torture_warning(tctx, "smb2.session.expire1 requires -k yes!");
+		torture_skip(tctx, "smb2.session.expire1 requires -k yes!");
+	}
+
+	torture_assert_int_equal(tctx, use_kerberos, CRED_MUST_USE_KERBEROS,
+				 "please use -k yes");
+
+	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
+
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+
+	/* Add some random component to the file name. */
+	snprintf(fname, 256, "session_expire1_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io1.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+
+	status = smb2_create(tree, tctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+
+	/* get the security descriptor */
+
+	ZERO_STRUCT(qfinfo);
+
+	qfinfo.access_information.level = RAW_FILEINFO_ACCESS_INFORMATION;
+	qfinfo.access_information.in.file.handle = _h1;
+
+	for (i=0; i < 2; i++) {
+		torture_comment(tctx, "query info => OK\n");
+
+		ZERO_STRUCT(qfinfo.access_information.out);
+		status = smb2_getinfo_file(tree, tctx, &qfinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		torture_comment(tctx, "sleep 5 seconds\n");
+		smb_msleep(5*1000);
+
+		torture_comment(tctx, "query info => EXPIRED\n");
+		ZERO_STRUCT(qfinfo.access_information.out);
+		status = smb2_getinfo_file(tree, tctx, &qfinfo);
+		CHECK_STATUS(status, NT_STATUS_NETWORK_SESSION_EXPIRED);
+
+		/*
+		 * the krb5 library may not handle expired creds
+		 * well, lets start with an empty ccache.
+		 */
+		cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
+
+		torture_comment(tctx, "reauth => OK\n");
+		status = smb2_session_setup_spnego(tree->session,
+						   credentials,
+						   0 /* previous_session_id */);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+	ZERO_STRUCT(qfinfo.access_information.out);
+	status = smb2_getinfo_file(tree, tctx, &qfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ret = true;
+done:
+	if (h1 != NULL) {
+		smb2_util_close(tree, *h1);
+	}
+
+	talloc_free(tree);
+	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=0");
+	return ret;
+}
+
 struct torture_suite *torture_smb2_session_init(void)
 {
 	struct torture_suite *suite =
@@ -803,6 +917,7 @@ struct torture_suite *torture_smb2_session_init(void)
 	torture_suite_add_1smb2_test(suite, "reauth3", test_session_reauth3);
 	torture_suite_add_1smb2_test(suite, "reauth4", test_session_reauth4);
 	torture_suite_add_1smb2_test(suite, "reauth5", test_session_reauth5);
+	torture_suite_add_simple_test(suite, "expire1", test_session_expire1);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
 
