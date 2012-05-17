@@ -1,11 +1,12 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   endpoint server for the drsuapi pipe
+   crachnames implementation for the drsuapi pipe
    DsCrackNames()
 
    Copyright (C) Stefan Metzmacher 2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
+   Copyright (C) Matthieu Patou <mat@matws.net> 2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,7 +42,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				   enum drsuapi_DsNameFormat format_desired,
 				   struct ldb_dn *name_dn, const char *name, 
 				   const char *domain_filter, const char *result_filter, 
-				   struct drsuapi_DsNameInfo1 *info1);
+				   struct drsuapi_DsNameInfo1 *info1, int scope, struct ldb_dn *search_dn);
 static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 					enum drsuapi_DsNameFormat format_offered,
 					enum drsuapi_DsNameFormat format_desired,
@@ -184,7 +185,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	WERROR wret;
 	krb5_error_code ret;
 	krb5_principal principal;
-	krb5_data *component;
+	const krb5_data *component;
 	const char *service, *dns_name;
 	char *new_service;
 	char *new_princ;
@@ -344,10 +345,98 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				      smb_krb5_context, 
 				      format_flags, format_offered, format_desired, 
 				      NULL, unparsed_name_short, domain_filter, result_filter, 
-				      info1);
+				      info1, LDB_SCOPE_SUBTREE, NULL);
 	free(unparsed_name_short);
 
 	return status;
+}
+
+/*
+ * This function will workout the filtering parameter in order to be able to do
+ * the adapted search when the incomming format is format_functional.
+ * This boils down to defining the search_dn (passed as pointer to ldb_dn *) and the
+ * ldap filter request.
+ * Main input parameters are:
+ * * name, which is the portion of the functional name after the
+ * first '/'.
+ * * domain_filter, which is a ldap search filter used to find the NC DN given the
+ * function name to crack.
+ */
+static WERROR get_format_functional_filtering_param(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
+			char *name, struct drsuapi_DsNameInfo1 *info1,
+			struct ldb_dn **psearch_dn, const char *domain_filter, const char **presult_filter)
+{
+	struct ldb_result *domain_res = NULL;
+	const char * const domain_attrs[] = {"ncName", NULL};
+	struct ldb_dn *partitions_basedn = samdb_partitions_dn(sam_ctx, mem_ctx);
+	int ldb_ret;
+	char *account,  *s, *result_filter = NULL;
+	struct ldb_dn *search_dn = NULL;
+
+	*psearch_dn = NULL;
+	*presult_filter = NULL;
+
+	ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
+				partitions_basedn,
+				LDB_SCOPE_ONELEVEL,
+				domain_attrs,
+				"%s", domain_filter);
+
+	if (ldb_ret != LDB_SUCCESS) {
+		DEBUG(2, ("DsCrackNameOne domain ref search failed: %s\n", ldb_errstring(sam_ctx)));
+		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+		return WERR_FOOBAR;
+	}
+
+	if (domain_res->count == 1) {
+		struct ldb_dn *tmp_dn = samdb_result_dn(sam_ctx, mem_ctx, domain_res->msgs[0], "ncName", NULL);
+		const char * const name_attrs[] = {"name", NULL};
+
+		account = name;
+		s = strchr(account, '/');
+		while(s) {
+			s[0] = '\0';
+			s++;
+			talloc_free(domain_res);
+
+			ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
+						tmp_dn,
+						LDB_SCOPE_ONELEVEL,
+						name_attrs,
+						"name=%s", account);
+
+			if (ldb_ret != LDB_SUCCESS) {
+				DEBUG(2, ("DsCrackNameOne domain ref search failed: %s\n", ldb_errstring(sam_ctx)));
+				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+				return WERR_OK;
+			}
+			switch (domain_res->count) {
+			case 1:
+				break;
+			case 0:
+				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+				return WERR_OK;
+			default:
+				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
+				return WERR_OK;
+			}
+
+			talloc_free(tmp_dn);
+			tmp_dn = talloc_steal(mem_ctx, domain_res->msgs[0]->dn);
+			talloc_free(domain_res);
+			search_dn = tmp_dn;
+			account = s;
+			s = strchr(account, '/');
+		}
+		account = ldb_binary_encode_string(mem_ctx, account);
+		W_ERROR_HAVE_NO_MEMORY(account);
+		result_filter = talloc_asprintf(mem_ctx, "(name=%s)",
+						account);
+		W_ERROR_HAVE_NO_MEMORY(result_filter);
+	}
+	*psearch_dn = search_dn;
+	*presult_filter = result_filter;
+	return WERR_OK;
 }
 
 /* Crack a single 'name', from format_offered into format_desired, returning the result in info1 */
@@ -361,8 +450,10 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	const char *domain_filter = NULL;
 	const char *result_filter = NULL;
 	struct ldb_dn *name_dn = NULL;
+	struct ldb_dn *search_dn = NULL;
 
 	struct smb_krb5_context *smb_krb5_context = NULL;
+	int scope = LDB_SCOPE_SUBTREE;
 
 	info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 	info1->dns_domain_name = NULL;
@@ -406,6 +497,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
 	{
 		char *str, *s, *account;
+		scope = LDB_SCOPE_ONELEVEL;
 
 		if (strlen(name) == 0) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
@@ -442,19 +534,20 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(domain_filter);
 
 		/* There may not be anything after the domain component (search for the domain itself) */
-		if (s[0]) {
-
-			account = strrchr(s, '/');
-			if (!account) {
-				account = s;
-			} else {
-				account++;
+		account = s;
+		if (account && *account) {
+			WERROR werr = get_format_functional_filtering_param(sam_ctx,
+										mem_ctx,
+										account,
+										info1,
+										&search_dn,
+										domain_filter,
+										&result_filter);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
 			}
-			account = ldb_binary_encode_string(mem_ctx, account);
-			W_ERROR_HAVE_NO_MEMORY(account);
-			result_filter = talloc_asprintf(mem_ctx, "(name=%s)",
-							account);	       
-			W_ERROR_HAVE_NO_MEMORY(result_filter);
+			if (info1->status != DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR)
+				return WERR_OK;
 		}
 		break;
 	}
@@ -686,7 +779,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				    format_flags, format_offered, format_desired, 
 				    name_dn, name, 
 				    domain_filter, result_filter, 
-				    info1);
+				    info1, scope, search_dn);
 }
 
 /* Subcase of CrackNames.  It is possible to translate a LDAP-style DN
@@ -738,7 +831,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				   enum drsuapi_DsNameFormat format_desired,
 				   struct ldb_dn *name_dn, const char *name, 
 				   const char *domain_filter, const char *result_filter, 
-				   struct drsuapi_DsNameInfo1 *info1)
+				   struct drsuapi_DsNameInfo1 *info1,
+				   int scope, struct ldb_dn *search_dn)
 {
 	int ldb_ret;
 	struct ldb_result *domain_res = NULL;
@@ -834,14 +928,18 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		int ret;
 		struct ldb_result *res;
 		uint32_t dsdb_flags = 0;
-		struct ldb_dn *search_dn;
+		struct ldb_dn *real_search_dn;
 
 		if (domain_res) {
-			dsdb_flags = 0;
-			search_dn = samdb_result_dn(sam_ctx, mem_ctx, domain_res->msgs[0], "ncName", NULL);
+			if (!search_dn) {
+				struct ldb_dn *tmp_dn = samdb_result_dn(sam_ctx, mem_ctx, domain_res->msgs[0], "ncName", NULL);
+				real_search_dn = tmp_dn;
+			} else {
+				real_search_dn = search_dn;
+			}
 		} else {
 			dsdb_flags = DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
-			search_dn = NULL;
+			real_search_dn = NULL;
 		}
 		if (format_desired == DRSUAPI_DS_NAME_FORMAT_GUID){
 			 dsdb_flags = dsdb_flags| DSDB_SEARCH_SHOW_DELETED;
@@ -849,8 +947,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 
 		/* search with the 'phantom root' flag */
 		ret = dsdb_search(sam_ctx, mem_ctx, &res,
-				  search_dn,
-				  LDB_SCOPE_SUBTREE,
+				  real_search_dn,
+				  scope,
 				  result_attrs,
 				  dsdb_flags,
 				  "%s", result_filter);
