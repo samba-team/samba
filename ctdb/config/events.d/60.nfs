@@ -27,7 +27,7 @@ service_reconfigure ()
 
 loadconfig
 
-[ "$NFS_SERVER_MODE" != "GANESHA" ] || exit 0
+[ "$NFS_SERVER_MODE" != "ganesha" ] || exit 0
 
 ctdb_setup_service_state_dir
 
@@ -98,7 +98,7 @@ case "$1" in
 
 	# check that lockd responds to rpc requests
 	nfs_check_rpc_service "lockd" \
-	    -ge 15 "verbose restart unhealthy" \
+	    -ge 15 "verbose restart:b unhealthy" \
 	    -eq 10 "restart:bs"
 
 	# mountd is sometimes not started correctly on RHEL5

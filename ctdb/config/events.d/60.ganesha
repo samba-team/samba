@@ -1,25 +1,51 @@
 #!/bin/sh
 # script to manage nfs in a clustered environment
 
-start_nfs() {
-       mkdir -p $CTDB_VARDIR/state/nfs
-       mkdir -p $CTDB_VARDIR/state/statd/ip
-       ctdb_service_stop
-       ctdb_service_start
-       echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle
-}
-
 . $CTDB_BASE/functions
 
-loadconfig nfs
-
-[ "$NFS_SERVER_MODE" = "GANESHA" ] || exit 0
-
 service_name="nfs-ganesha-gpfs"
+
+
+service_start ()
+{
+    startstop_ganesha stop
+    startstop_ganesha start
+    set_proc "sys/net/ipv4/tcp_tw_recycle" 1
+}
+
+service_stop ()
+{
+    startstop_ganesha stop
+}
+
+service_reconfigure ()
+{
+    # if the ips have been reallocated, we must restart ganesha
+    # across all nodes and ping all statd listeners
+    [ -x $CTDB_BASE/statd-callout ] && {
+	$CTDB_BASE/statd-callout notify &
+    } >/dev/null 2>&1
+}
+loadconfig "nfs"
+
+[ "$NFS_SERVER_MODE" == "ganesha" ] || exit 0
+
+ctdb_setup_service_state_dir
+
+statd_update_trigger="$service_state_dir/update-trigger"
+# We want this file to always exist.  The corner case is when
+# auto-start/stop is switched off, NFS is added as a managed service
+# some time after ctdbd is started and someone else starts the NFS
+# service for us.  In this case this file might not otherwise exist
+# when we get to a monitor event.
+touch "$statd_update_trigger"
+
 
 ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
+
+ctdb_service_check_reconfigure
 
 case "$1" in
      init)
@@ -27,8 +53,6 @@ case "$1" in
        ;;
      startup)
        ctdb_service_start
-       mkdir -p $CTDB_VARDIR/state/statd
-       touch $CTDB_VARDIR/state/statd/update-trigger
        ;;
 
      shutdown)
@@ -44,111 +68,68 @@ case "$1" in
        ;;
 
       monitor)
-       if ctdb_service_needs_reconfigure ; then
-           ctdb_service_reconfigure
-           exit 0
-       fi
 
        update_tickles 2049
+	# check that statd responds to rpc requests
+	# if statd is not running we try to restart it
+	# we only do this IF we have a rpc.statd command.
+	# For platforms where rpc.statd does not exist, we skip
+	# the check completely
+        p="rpc.statd"
+        which $p >/dev/null 2>/dev/null && \
+	    nfs_check_rpc_service "statd" 1 \
+	        -ge 6 "verbose unhealthy" \
+	        -eq 4 "verbose restart" \
+		-eq 2 "restart:bs"
+       
+    PIDFILE="/var/run/ganesha.pid" 
+    RUNNING=0
+    if [ -e $PIDFILE ]
+    then
+       PID=`cat $PIDFILE`
+       GANESHA="/usr/bin/gpfs.ganesha.nfsd"
+       RUNNING=`cat /proc/$PID/cmdline | grep $GANESHA | wc -l`
+    fi
+    if [ $RUNNING != 1 ]
+    then
+        echo "Trying fast restart of NFS service"
+        startstop_ganesha restart
+    fi
 
-       # check that statd responds to rpc requests
-       # if statd is not running we try to restart it
-       if ctdb_check_rpc "STATD" status 1 >/dev/null ; then
-               (service_name="nfs_statd"; ctdb_counter_init)
-       else
-               p="rpc.statd" ; cmd="$p"
-               cmd="${cmd}${STATD_HOSTNAME:+ -n }${STATD_HOSTNAME}"
-               cmd="${cmd}${STATD_PORT:+ -p }${STATD_PORT}"
-               cmd="${cmd}${STATD_OUTGOING_PORT:+ -o }${STATD_OUTGOING_PORT}"
-               (
-                       service_name="nfs_statd"
-                       ctdb_counter_incr
-                       ctdb_check_counter_limit 10 quiet >/dev/null
-               ) || {
-                       echo "$ctdb_check_rpc_out"
-                       echo "Trying to restart STATD [$cmd]"
-               }
-               $cmd
-       fi
+	# check that NFS responds to rpc requests
+	if [ "$CTDB_NFS_SKIP_KNFSD_ALIVE_CHECK" != "yes" ] ; then
+	    nfs_check_rpc_service "ganesha" \
+		-ge 6 "verbose unhealthy" \
+		-eq 4 "verbose restart" \
+		-eq 2 "restart:bs"
+	fi
 
-       # check that NFS responds to rpc requests
-       [ "$CTDB_NFS_SKIP_KNFSD_ALIVE_CHECK" = "yes" ] || {
-           if ctdb_check_rpc "NFS" nfs 3 >/dev/null ; then
-               (service_name="nfs_knfsd"; ctdb_counter_init)
-           else
-               (
-                       service_name="nfs_knfsd"
-                       ctdb_counter_incr
 
-                       ctdb_check_counter_equal 10 || {
-                               echo "Trying to restart NFS service"
-                               ctdb_service_stop
-                               ctdb_service_start
-                               exit 0
-                       }
+	# rquotad is sometimes not started correctly on RHEL5
+	# not a critical service so we dont flag the node as unhealthy
+	nfs_check_rpc_service "rquotad" 1\
+	    -gt 0 "verbose restart:b"
 
-                       ctdb_check_counter_limit 15 quiet >/dev/null
-               ) || {
-                       echo "$ctdb_check_rpc_out"
-                       echo "Trying to restart NFS service"
-                       ctdb_service_stop
-                       ctdb_service_start
-                       exit 1
-               }
-           fi
-       }
 
-       # and that its directories are available
-       [ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
-           grep Path /etc/ganesha/gpfs.ganesha.exports.conf |
-           cut -f2 -d\" | ctdb_check_directories
-       } || exit $?
+    # Check that directories for shares actually exist.
+    [ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
+        grep Path /etc/ganesha/gpfs.ganesha.exports.conf |
+        cut -f2 -d\" | ctdb_check_directories
+    } || exit $?
 
-       # check that lockd responds to rpc requests
-       ctdb_check_rpc "LOCKD" nlockmgr 4 || {
-               echo "Trying to restart lock manager service"
-               ctdb_service_stop
-               ctdb_service_start
-               exit 1
-       }
-
-       # check mounts responds to rpc requests
-       ctdb_check_rpc "MOUNTD" mountd 1 >/dev/null || {
-               echo "Trying to restart mountd service"
-               ctdb_service_stop
-               ctdb_service_start
-               exit 1
-       }
-
-       # rquotad needs special handling since it is sometimes not started
-       # correctly on RHEL5
-       # this is not a critical service so we dont flag the node as unhealthy
-       ctdb_check_rpc "RQUOTAD" rquotad 1 || {
-               p="rpc.rquotad"
-               cmd="${p}${RQUOTAD_PORT:+ -p }${RQUOTAD_PORT}"
-               echo "Trying to restart RQUOTAD [${cmd}]"
-               killall -q -9 $p
-               $cmd &
-       }
-
-       # once every 60 seconds, update the statd state database for which
-       # clients need notifications
-       LAST_UPDATE=`stat --printf="%Y" $CTDB_VARDIR/state/statd/update-trigger 2>/dev/null`
-       CURRENT_TIME=`date +"%s"`
-       [ $CURRENT_TIME -ge $(($LAST_UPDATE + 60)) ] && {
-           mkdir -p $CTDB_VARDIR/state/statd
-           touch $CTDB_VARDIR/state/statd/update-trigger
-           $CTDB_BASE/statd-callout updatelocal &
-           $CTDB_BASE/statd-callout updateremote &
-       }
-               ;;
+    # once every 60 seconds, update the statd state database for which
+    # clients need notifications
+    LAST_UPDATE=`stat --printf="%Y" "$statd_update_trigger" 2>/dev/null`
+    CURRENT_TIME=`date +"%s"`
+    [ $CURRENT_TIME -ge $(($LAST_UPDATE + 60)) ] && {
+	    touch "$statd_update_trigger"
+        $CTDB_BASE/statd-callout updatelocal &
+        $CTDB_BASE/statd-callout updateremote &
+    }
+        ;;
 
     ipreallocated)
-       # if the ips have been reallocated, we must restart the lockmanager
-       # across all nodes and ping all statd listeners
-       [ -x $CTDB_BASE/statd-callout ] && {
-               $CTDB_BASE/statd-callout notify &
-       } >/dev/null 2>&1
+       ctdb_service_set_reconfigure
        ;;
     *)
        ctdb_standard_event_handler "$@"

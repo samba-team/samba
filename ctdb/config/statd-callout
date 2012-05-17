@@ -138,11 +138,15 @@ case "$1" in
 	# will respond "strangely" immediately after restarting it, which
 	# causes clients to fail to reclaim the locks.
 	# 
-	startstop_nfslock stop > /dev/null 2>&1
-	sleep 2
-
-	# now start lockmanager again with the new state directory.
-	startstop_nfslock start > /dev/null 2>&1
+	if [ "$NFS_SERVER_MODE" = "ganesha" ] ; then
+            startstop_ganesha stop >/dev/null 2>&1
+            sleep 2
+            startstop_ganesha start >/dev/null 2>&1
+	else
+            startstop_nfslock stop >/dev/null 2>&1
+            sleep 2
+            startstop_nfslock start >/dev/null 2>&1
+	fi
 
 	# we now need to send out additional statd notifications to ensure
 	# that clients understand that the lockmanager has restarted.
