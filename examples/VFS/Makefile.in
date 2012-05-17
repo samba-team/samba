@@ -10,6 +10,7 @@ OBJEXT		= @OBJEXT@
 FLAGS		=  $(CFLAGS) $(CPPFLAGS) -fPIC \
 		-Iinclude -I$(SAMBA_SOURCE)/include \
 		-I$(SAMBA_SOURCE)/include/autoconf \
+		-I$(SAMBA_SOURCE)/autoconf \
 		-I$(SAMBA_SOURCE)/../popt  \
 		-I$(SAMBA_SOURCE)/../lib/replace  \
 		-I$(SAMBA_SOURCE)/../lib/talloc  \

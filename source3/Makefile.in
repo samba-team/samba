@@ -172,6 +172,8 @@ FLAGS = -I. \
 	$(ISA) \
 	-I$(srcdir)/lib \
 	-I.. \
+	-Iautoconf \
+	-Iautoconf/librpc \
 	-I./../lib/ldb/include \
 	-D_SAMBA_BUILD_=3
 
@@ -287,9 +289,9 @@ PASSCHANGE_OBJ = libsmb/passchange.o
 
 LIBNDR_DRSUAPI_OBJ = ../librpc/ndr/ndr_drsuapi.o \
 		     ../librpc/ndr/ndr_compression.o \
-		     librpc/gen_ndr/ndr_drsuapi.o \
+		     autoconf/librpc/gen_ndr/ndr_drsuapi.o \
 		     ../librpc/ndr/ndr_drsblobs.o \
-		     librpc/gen_ndr/ndr_drsblobs.o
+		     autoconf/librpc/gen_ndr/ndr_drsblobs.o
 
 ZLIB_OBJ = @ZLIB_OBJS@
 
@@ -299,101 +301,101 @@ COMPRESSION_OBJ = ../lib/compression/lzxpress.o \
 DRSUAPI_OBJ = $(LIBNDR_DRSUAPI_OBJ) \
 	      $(COMPRESSION_OBJ)
 
-LIBNDR_NTLMSSP_OBJ = librpc/gen_ndr/ndr_ntlmssp.o \
+LIBNDR_NTLMSSP_OBJ = autoconf/librpc/gen_ndr/ndr_ntlmssp.o \
 		     ../librpc/ndr/ndr_ntlmssp.o
 
 LIBNDR_OBJ = ../librpc/ndr/ndr_basic.o \
 	     ../librpc/ndr/ndr.o \
 	     ../librpc/ndr/ndr_misc.o \
-	     librpc/gen_ndr/ndr_misc.o \
-	     librpc/gen_ndr/ndr_security.o \
+	     autoconf/librpc/gen_ndr/ndr_misc.o \
+	     autoconf/librpc/gen_ndr/ndr_security.o \
 	     ../librpc/ndr/ndr_sec_helper.o \
 	     ../librpc/ndr/ndr_string.o \
 	     ../librpc/ndr/uuid.o \
 	     ../librpc/ndr/util.o \
-	     librpc/gen_ndr/ndr_server_id.o \
-	     librpc/gen_ndr/ndr_file_id.o \
-	     librpc/gen_ndr/ndr_dcerpc.o
+	     autoconf/librpc/gen_ndr/ndr_server_id.o \
+	     autoconf/librpc/gen_ndr/ndr_file_id.o \
+	     autoconf/librpc/gen_ndr/ndr_dcerpc.o
 
-LIBNDR_GEN_OBJ0 = librpc/gen_ndr/ndr_samr.o \
-		  librpc/gen_ndr/ndr_lsa.o
+LIBNDR_GEN_OBJ0 = autoconf/librpc/gen_ndr/ndr_samr.o \
+		  autoconf/librpc/gen_ndr/ndr_lsa.o
 
-LIBNDR_NETLOGON_OBJ = librpc/gen_ndr/ndr_netlogon.o \
+LIBNDR_NETLOGON_OBJ = autoconf/librpc/gen_ndr/ndr_netlogon.o \
 		  ../librpc/ndr/ndr_netlogon.o
 
-LIBNDR_SCHANNEL_OBJ = librpc/gen_ndr/ndr_schannel.o \
+LIBNDR_SCHANNEL_OBJ = autoconf/librpc/gen_ndr/ndr_schannel.o \
 		      ../librpc/ndr/ndr_schannel.o
 
-LIBNDR_SPOOLSS_OBJ = librpc/gen_ndr/ndr_spoolss.o \
+LIBNDR_SPOOLSS_OBJ = autoconf/librpc/gen_ndr/ndr_spoolss.o \
 		  ../librpc/ndr/ndr_spoolss_buf.o
 
-LIBNDR_NTPRINTING_OBJ = librpc/gen_ndr/ndr_ntprinting.o \
+LIBNDR_NTPRINTING_OBJ = autoconf/librpc/gen_ndr/ndr_ntprinting.o \
 			../librpc/ndr/ndr_ntprinting.o \
 
-LIBNDR_PREG_OBJ = librpc/gen_ndr/ndr_preg.o \
+LIBNDR_PREG_OBJ = autoconf/librpc/gen_ndr/ndr_preg.o \
 		  ../librpc/ndr/ndr_preg.o
 
-LIBNDR_XATTR_OBJ = librpc/gen_ndr/ndr_xattr.o \
+LIBNDR_XATTR_OBJ = autoconf/librpc/gen_ndr/ndr_xattr.o \
 		   ../librpc/ndr/ndr_xattr.o
 
-LIBCLI_SPOOLSS_OBJ = librpc/gen_ndr/ndr_spoolss_c.o \
+LIBCLI_SPOOLSS_OBJ = autoconf/librpc/gen_ndr/ndr_spoolss_c.o \
 		     rpc_client/cli_spoolss.o \
 		     rpc_client/init_spoolss.o \
 		     rpc_client/cli_winreg_spoolss.o \
 		     printing/nt_printing_os2.o
 
-LIBCLI_EVENTLOG_OBJ = librpc/gen_ndr/ndr_eventlog_c.o
+LIBCLI_EVENTLOG_OBJ = autoconf/librpc/gen_ndr/ndr_eventlog_c.o
 
-LIBCLI_WINREG_OBJ = librpc/gen_ndr/ndr_winreg_c.o \
+LIBCLI_WINREG_OBJ = autoconf/librpc/gen_ndr/ndr_winreg_c.o \
 		    rpc_client/cli_winreg.o
 
 LIBCLI_WINREG_INT_OBJ = $(LIBCLI_WINREG_OBJ) \
 			rpc_client/cli_winreg_int.o
 
-LIBCLI_NTSVCS_OBJ = librpc/gen_ndr/ndr_ntsvcs_c.o
+LIBCLI_NTSVCS_OBJ = autoconf/librpc/gen_ndr/ndr_ntsvcs_c.o
 
-LIBCLI_DRSUAPI_OBJ = librpc/gen_ndr/ndr_drsuapi_c.o
+LIBCLI_DRSUAPI_OBJ = autoconf/librpc/gen_ndr/ndr_drsuapi_c.o
 
-LIBCLI_DFS_OBJ = librpc/gen_ndr/ndr_dfs_c.o
+LIBCLI_DFS_OBJ = autoconf/librpc/gen_ndr/ndr_dfs_c.o
 
-LIBCLI_ECHO_OBJ = librpc/gen_ndr/ndr_echo_c.o
+LIBCLI_ECHO_OBJ = autoconf/librpc/gen_ndr/ndr_echo_c.o
 
-LIBCLI_INITSHUTDOWN_OBJ = librpc/gen_ndr/ndr_initshutdown_c.o
+LIBCLI_INITSHUTDOWN_OBJ = autoconf/librpc/gen_ndr/ndr_initshutdown_c.o
 
-LIBCLI_DSSETUP_OBJ = librpc/gen_ndr/ndr_dssetup_c.o
+LIBCLI_DSSETUP_OBJ = autoconf/librpc/gen_ndr/ndr_dssetup_c.o
 
-LIBCLI_SVCCTL_OBJ = librpc/gen_ndr/ndr_svcctl_c.o
+LIBCLI_SVCCTL_OBJ = autoconf/librpc/gen_ndr/ndr_svcctl_c.o
 
-LIBCLI_WKSSVC_OBJ = librpc/gen_ndr/ndr_wkssvc_c.o
+LIBCLI_WKSSVC_OBJ = autoconf/librpc/gen_ndr/ndr_wkssvc_c.o
 
-LIBCLI_SRVSVC_OBJ = librpc/gen_ndr/ndr_srvsvc_c.o
+LIBCLI_SRVSVC_OBJ = autoconf/librpc/gen_ndr/ndr_srvsvc_c.o
 
-LIBCLI_LSA_OBJ = librpc/gen_ndr/ndr_lsa_c.o \
+LIBCLI_LSA_OBJ = autoconf/librpc/gen_ndr/ndr_lsa_c.o \
 		 rpc_client/cli_lsarpc.o \
 		 rpc_client/init_lsa.o
 
-LIBCLI_SAMR_OBJ = librpc/gen_ndr/ndr_samr_c.o \
+LIBCLI_SAMR_OBJ = autoconf/librpc/gen_ndr/ndr_samr_c.o \
 		  rpc_client/cli_samr.o
 
-LIBCLI_NETLOGON_OBJ = librpc/gen_ndr/ndr_netlogon_c.o \
+LIBCLI_NETLOGON_OBJ = autoconf/librpc/gen_ndr/ndr_netlogon_c.o \
 		      rpc_client/cli_netlogon.o \
 		      rpc_client/util_netlogon.o
 
-LIBCLI_EPMAPPER_OBJ = librpc/gen_ndr/ndr_epmapper_c.o
+LIBCLI_EPMAPPER_OBJ = autoconf/librpc/gen_ndr/ndr_epmapper_c.o
 
-LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
+LIBNDR_GEN_OBJ = autoconf/librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
-		 librpc/gen_ndr/ndr_dfs.o \
-		 librpc/gen_ndr/ndr_dfsblobs.o \
-		 librpc/gen_ndr/ndr_echo.o \
-		 librpc/gen_ndr/ndr_winreg.o \
-		 librpc/gen_ndr/ndr_initshutdown.o \
-		 librpc/gen_ndr/ndr_srvsvc.o \
-		 librpc/gen_ndr/ndr_eventlog.o \
+		 autoconf/librpc/gen_ndr/ndr_dfs.o \
+		 autoconf/librpc/gen_ndr/ndr_dfsblobs.o \
+		 autoconf/librpc/gen_ndr/ndr_echo.o \
+		 autoconf/librpc/gen_ndr/ndr_winreg.o \
+		 autoconf/librpc/gen_ndr/ndr_initshutdown.o \
+		 autoconf/librpc/gen_ndr/ndr_srvsvc.o \
+		 autoconf/librpc/gen_ndr/ndr_eventlog.o \
 		 $(LIBNDR_NETLOGON_OBJ) \
-		 librpc/gen_ndr/ndr_dssetup.o \
-		 librpc/gen_ndr/ndr_epmapper.o \
-		 librpc/gen_ndr/ndr_ntsvcs.o \
+		 autoconf/librpc/gen_ndr/ndr_dssetup.o \
+		 autoconf/librpc/gen_ndr/ndr_epmapper.o \
+		 autoconf/librpc/gen_ndr/ndr_ntsvcs.o \
 		 $(LIBNDR_SPOOLSS_OBJ)
 
 # this includes only the low level parse code, not stuff
@@ -434,7 +436,7 @@ CRYPTO_OBJ = ../lib/crypto/crc32.o @CRYPTO_MD5_OBJ@ \
 			 ../lib/crypto/aes_cmac_128.o
 
 LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
-	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
+	  lib/messages.o autoconf/librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	  lib/messages_ctdbd.o lib/ctdb_packet.o lib/ctdbd_conn.o \
 	  lib/ctdb_conn.o \
 	  lib/msg_channel.o \
@@ -525,19 +527,19 @@ LIBADS_OBJ = libads/ldap.o \
 
 LIBADS_SERVER_OBJ = libads/authdata.o ../auth/kerberos/kerberos_pac.o \
 		    ../librpc/ndr/ndr_krb5pac.o \
-		    librpc/gen_ndr/ndr_krb5pac.o
+		    autoconf/librpc/gen_ndr/ndr_krb5pac.o
 
 LIBADS_PRINTER_OBJ = libads/ldap_printer.o
 
 SECRETS_OBJ = passdb/secrets.o passdb/machine_account_secrets.o passdb/machine_sid.o \
-	      librpc/gen_ndr/ndr_secrets.o \
+	      autoconf/librpc/gen_ndr/ndr_secrets.o \
 	      passdb/secrets_lsa.o
 
 LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
 	     ../libcli/netlogon/netlogon.o \
-	     librpc/gen_ndr/ndr_nbt.o \
+	     autoconf/librpc/gen_ndr/ndr_nbt.o \
 	     ../librpc/ndr/ndr_nbt.o \
-	     librpc/gen_ndr/ndr_svcctl.o \
+	     autoconf/librpc/gen_ndr/ndr_svcctl.o \
 	     ../librpc/ndr/ndr_svcctl.o
 
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
@@ -705,62 +707,62 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 	       $(REG_BACKENDS_EXTRA_OBJ) \
 	       $(REG_INIT_FULL_OBJ) \
 	       registry/reg_perfcount.o \
-	       librpc/gen_ndr/ndr_perfcount.o
+	       autoconf/librpc/gen_ndr/ndr_perfcount.o
 
 LIB_EVENTLOG_OBJ = lib/eventlog/eventlog.o
 
 DCE_RPC_EP_OBJ = librpc/rpc/dcerpc_ep.o
 
 RPC_LSARPC_OBJ = rpc_server/lsa/srv_lsa_nt.o \
-		 librpc/gen_ndr/srv_lsa.o \
+		 autoconf/librpc/gen_ndr/srv_lsa.o \
 		 ../libcli/lsarpc/util_lsarpc.o
 
 RPC_NETLOGON_OBJ = rpc_server/netlogon/srv_netlog_nt.o \
-		   librpc/gen_ndr/srv_netlogon.o
+		   autoconf/librpc/gen_ndr/srv_netlogon.o
 
 RPC_SAMR_OBJ = rpc_server/samr/srv_samr_nt.o \
                rpc_server/samr/srv_samr_util.o \
                rpc_server/samr/srv_samr_chgpasswd.o \
-	       librpc/gen_ndr/srv_samr.o
+	       autoconf/librpc/gen_ndr/srv_samr.o
 
-RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/initshutdown/srv_initshutdown_nt.o
+RPC_INITSHUTDOWN_OBJ =  autoconf/librpc/gen_ndr/srv_initshutdown.o rpc_server/initshutdown/srv_initshutdown_nt.o
 
 RPC_WINREG_OBJ =  rpc_server/winreg/srv_winreg_nt.o \
-		  librpc/gen_ndr/srv_winreg.o
+		  autoconf/librpc/gen_ndr/srv_winreg.o
 
-RPC_DSSETUP_OBJ =  rpc_server/dssetup/srv_dssetup_nt.o librpc/gen_ndr/srv_dssetup.o
+RPC_DSSETUP_OBJ =  rpc_server/dssetup/srv_dssetup_nt.o autoconf/librpc/gen_ndr/srv_dssetup.o
 
 RPC_SRVSVC_OBJ = rpc_server/srvsvc/srv_srvsvc_nt.o \
-		 librpc/gen_ndr/srv_srvsvc.o
+		 autoconf/librpc/gen_ndr/srv_srvsvc.o
 
-RPC_WKSSVC_OBJ =  librpc/gen_ndr/srv_wkssvc.o \
+RPC_WKSSVC_OBJ =  autoconf/librpc/gen_ndr/srv_wkssvc.o \
 		  rpc_server/wkssvc/srv_wkssvc_nt.o
 
 RPC_SVCCTL_OBJ =  rpc_server/svcctl/srv_svcctl_nt.o \
 		  rpc_server/svcctl/srv_svcctl_reg.o \
-		  librpc/gen_ndr/srv_svcctl.o \
+		  autoconf/librpc/gen_ndr/srv_svcctl.o \
 		  services/svc_winreg_glue.o \
                   services/svc_spoolss.o services/svc_rcinit.o  \
                   services/svc_netlogon.o services/svc_winreg.o \
                   services/svc_wins.o
 
 RPC_NTSVCS_OBJ = rpc_server/ntsvcs/srv_ntsvcs_nt.o \
-		 librpc/gen_ndr/srv_ntsvcs.o
+		 autoconf/librpc/gen_ndr/srv_ntsvcs.o
 
-RPC_NETDFS_OBJ =  librpc/gen_ndr/srv_dfs.o \
+RPC_NETDFS_OBJ =  autoconf/librpc/gen_ndr/srv_dfs.o \
 		  rpc_server/dfs/srv_dfs_nt.o
 
 RPC_SPOOLSS_OBJ = rpc_server/spoolss/srv_spoolss_nt.o \
 		  rpc_server/spoolss/srv_spoolss_util.o \
-		  librpc/gen_ndr/srv_spoolss.o
+		  autoconf/librpc/gen_ndr/srv_spoolss.o
 
 RPC_EVENTLOG_OBJ = rpc_server/eventlog/srv_eventlog_nt.o \
 		   rpc_server/eventlog/srv_eventlog_reg.o \
-		   $(LIB_EVENTLOG_OBJ) librpc/gen_ndr/srv_eventlog.o
+		   $(LIB_EVENTLOG_OBJ) autoconf/librpc/gen_ndr/srv_eventlog.o
 
 NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o \
-		  librpc/gen_ndr/ndr_named_pipe_auth.o \
-		  ../auth/auth_sam_reply.o librpc/gen_ndr/ndr_auth.o ../librpc/ndr/ndr_auth.o
+		  autoconf/librpc/gen_ndr/ndr_named_pipe_auth.o \
+		  ../auth/auth_sam_reply.o autoconf/librpc/gen_ndr/ndr_auth.o ../librpc/ndr/ndr_auth.o
 
 RPC_NCACN_NP = rpc_server/srv_pipe_register.o rpc_server/rpc_ncacn_np.o \
 	       rpc_server/rpc_handles.o rpc_server/rpc_contexts.o \
@@ -775,9 +777,9 @@ RPC_CRYPTO = rpc_server/dcesrv_auth_generic.o
 RPC_PIPE_OBJ = rpc_server/srv_pipe.o rpc_server/srv_pipe_hnd.o \
 	       $(RPC_CONFIG) $(RPC_NCACN_NP) $(RPC_SERVICE) $(RPC_CRYPTO)
 
-RPC_RPCECHO_OBJ = rpc_server/echo/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
+RPC_RPCECHO_OBJ = rpc_server/echo/srv_echo_nt.o autoconf/librpc/gen_ndr/srv_echo.o
 
-RPC_EPMAPPER_OBJ = rpc_server/epmapper/srv_epmapper.o librpc/gen_ndr/srv_epmapper.o
+RPC_EPMAPPER_OBJ = rpc_server/epmapper/srv_epmapper.o autoconf/librpc/gen_ndr/srv_epmapper.o
 
 RPC_SERVER_REGISTER_OBJ = rpc_server/rpc_ep_register.o $(DCE_RPC_EP_OBJ)
 
@@ -803,7 +805,7 @@ RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 RPC_CLIENT_SCHANNEL_OBJ = rpc_client/cli_pipe_schannel.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o \
-		librpc/gen_ndr/ndr_open_files.o locking/share_mode_lock.o
+		autoconf/librpc/gen_ndr/ndr_open_files.o locking/share_mode_lock.o
 
 PRIVILEGES_BASIC_OBJ = ../libcli/security/privileges.o
 
@@ -836,7 +838,7 @@ PROFILES_OBJ = utils/profiles.o \
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
 NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o \
-	     librpc/gen_ndr/ndr_notify.o
+	     autoconf/librpc/gen_ndr/ndr_notify.o
 
 FNAME_UTIL_OBJ = lib/filename_util.o
 
@@ -987,7 +989,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
                printing/print_cups.o printing/print_generic.o \
                printing/lpq_parse.o printing/load.o \
                printing/print_iprint.o printing/print_standard.o \
-               printing/printer_list.o librpc/gen_ndr/ndr_printcap.o
+               printing/printer_list.o autoconf/librpc/gen_ndr/ndr_printcap.o
 
 PRINTBASE_OBJ = printing/notify.o printing/printing_db.o
 PRINTBACKEND_OBJ = printing/printing.o \
@@ -996,7 +998,7 @@ PRINTBACKEND_OBJ = printing/printing.o \
 		   printing/nt_printing_migrate.o \
 		   printing/nt_printing_migrate_internal.o \
 		   printing/nt_printing_ads.o \
-		   librpc/gen_ndr/ndr_ntprinting.o \
+		   autoconf/librpc/gen_ndr/ndr_ntprinting.o \
 		    ../librpc/ndr/ndr_ntprinting.o \
 		   printing/queue_process.o \
 		   $(PRINTBASE_OBJ)
@@ -1033,7 +1035,7 @@ SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(PRINTBASE_OBJ) $(LIBSMB_O
 
 STATUS_OBJ = utils/status.o utils/status_profile.o \
 	     $(LOCKING_OBJ) $(PARAM_OBJ) \
-	     smbd/notify_internal.o librpc/gen_ndr/ndr_notify.o \
+	     smbd/notify_internal.o autoconf/librpc/gen_ndr/ndr_notify.o \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	     $(LIBSMB_ERR_OBJ) $(FNAME_UTIL_OBJ)
 
@@ -1177,7 +1179,7 @@ PTHREADPOOLTEST_OBJ = lib/pthreadpool/pthreadpool.o \
 
 LIBNET_OBJ = libnet/libnet_join.o \
 	     libnet/libnet_keytab.o \
-	     librpc/gen_ndr/ndr_libnet_join.o
+	     autoconf/librpc/gen_ndr/ndr_libnet_join.o
 
 LIBNET_DSSYNC_OBJ = libnet/libnet_dssync.o \
 		    libnet/libnet_dssync_passdb.o \
@@ -1333,8 +1335,8 @@ EVTLOGADM_OBJ0	= utils/eventlogadm.o
 
 EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(LIBSMB_ERR_OBJ) $(LIB_EVENTLOG_OBJ) \
-		librpc/gen_ndr/ndr_eventlog.o \
-		librpc/gen_ndr/ndr_lsa.o
+		autoconf/librpc/gen_ndr/ndr_eventlog.o \
+		autoconf/librpc/gen_ndr/ndr_lsa.o
 
 SHARESEC_OBJ0 = utils/sharesec.o
 SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -1410,10 +1412,10 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_dual.o  \
 		winbindd/winbindd_dual_ndr.o  \
 		winbindd/winbindd_dual_srv.o  \
-		librpc/gen_ndr/ndr_wbint_c.o \
-		librpc/gen_ndr/srv_wbint.o \
-		librpc/gen_ndr/ndr_wbint.o \
-		librpc/gen_ndr/ndr_idmap.o \
+		autoconf/librpc/gen_ndr/ndr_wbint_c.o \
+		autoconf/librpc/gen_ndr/srv_wbint.o \
+		autoconf/librpc/gen_ndr/ndr_wbint.o \
+		autoconf/librpc/gen_ndr/ndr_idmap.o \
 		winbindd/winbindd_async.o \
 		winbindd/winbindd_creds.o \
 		winbindd/winbindd_cred_cache.o \
@@ -1665,15 +1667,15 @@ IDL_FILES = librpc/idl/messaging.idl \
 	    librpc/idl/libnet_join.idl
 
 samba3-idl::
-	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
+	@PIDL_OUTPUTDIR="autoconf/librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" ../librpc/build_idl.sh ../librpc/idl/*.idl
-	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
+	@PIDL_OUTPUTDIR="autoconf/librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(IDL_FILES)
 
 idl_full::
-	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
+	@PIDL_OUTPUTDIR="autoconf/librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" ../librpc/build_idl.sh --full ../librpc/idl/*.idl
-	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
+	@PIDL_OUTPUTDIR="autoconf/librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh --full $(IDL_FILES)
 
 mkparam: ../lib/param/param_local.h ../lib/param/param_global.h param/param_global.h ../lib/param/param_proto.h ../lib/param/s3_param.h
@@ -2452,7 +2454,7 @@ showlibs:: showlibaddns
 
 LIBNETAPI_OBJ0 = lib/netapi/netapi.o \
 		 lib/netapi/cm.o \
-		 librpc/gen_ndr/ndr_libnetapi.o \
+		 autoconf/librpc/gen_ndr/ndr_libnetapi.o \
 		 lib/netapi/libnetapi.o \
 		 lib/netapi/joindomain.o \
 		 lib/netapi/serverinfo.o \

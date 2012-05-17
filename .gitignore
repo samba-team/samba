@@ -81,7 +81,7 @@ source3/lib/netapi/examples/Makefile
 source3/lib/netapi/tests/Makefile
 source3/library-versions
 librpc/gen_ndr/*.*
-source3/librpc/gen_ndr/*.*
+source3/autoconf/librpc/gen_ndr/*.*
 source3/nsswitch/*.so
 source3/pkgconfig/*.pc
 source3/proto_exists

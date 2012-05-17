@@ -77,9 +77,9 @@ rm -rf autom4te*.cache
 
 if gcc -E tests/preproc-dummy.c -o /dev/null ;
 then
-    PIDL_OUTPUTDIR="librpc/gen_ndr" CPP="gcc -E" PIDL=../pidl/pidl \
+    PIDL_OUTPUTDIR="autoconf/librpc/gen_ndr" CPP="gcc -E" PIDL=../pidl/pidl \
 	srcdir=. ../librpc/build_idl.sh ../librpc/idl/*.idl
-    PIDL_OUTPUTDIR="librpc/gen_ndr" CPP="gcc -E" PIDL=../pidl/pidl \
+    PIDL_OUTPUTDIR="autoconf/librpc/gen_ndr" CPP="gcc -E" PIDL=../pidl/pidl \
 	srcdir=. script/build_idl.sh librpc/idl/*.idl
 else
    echo "Warning: Could not compile idl files in autogen, "
