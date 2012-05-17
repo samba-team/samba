@@ -92,6 +92,9 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # a script to run when node health changes
 # CTDB_NOTIFY_SCRIPT=/etc/ctdb/notify.sh
 
+# a script to collect data when an eventscript has hung
+# CTDB_DEBUG_HUNG_SCRIPT=/etc/ctdb/debug-hung-script.sh
+
 # the directory to put the local ctdb database files in
 # defaults to /var/ctdb
 # CTDB_DBDIR=/var/ctdb

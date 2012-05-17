@@ -95,6 +95,7 @@ build_ctdb_options () {
     maybe_set "--event-script-dir"       "$CTDB_EVENT_SCRIPT_DIR"
     maybe_set "--transport"              "$CTDB_TRANSPORT"
     maybe_set "-d"                       "$CTDB_DEBUGLEVEL"
+    maybe_set "--debug-hung-script"      "$CTDB_DEBUG_HUNG_SCRIPT"
     maybe_set "--notification-script"    "$CTDB_NOTIFY_SCRIPT"
     maybe_set "--start-as-disabled"      "$CTDB_START_AS_DISABLED"    "yes"
     maybe_set "--start-as-stopped "      "$CTDB_START_AS_STOPPED"     "yes"

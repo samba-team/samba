@@ -356,6 +356,7 @@ install: all $(PMDA_INSTALL)
 	if [ -f doc/ltdbtool.1 ]; then ${INSTALLCMD} -m 644 doc/ltdbtool.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ping_pong.1 ];then ${INSTALLCMD} -m 644 doc/ping_pong.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/notify.sh ];then ${INSTALLCMD} -m 755 config/notify.sh $(DESTDIR)$(etcdir)/ctdb; fi
+	${INSTALLCMD} -m 755 config/debug-hung-script.sh $(DESTDIR)$(etcdir)/ctdb
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/ctdb-crash-cleanup.sh ];then ${INSTALLCMD} -m 755 config/ctdb-crash-cleanup.sh $(DESTDIR)$(etcdir)/ctdb; fi
 
 install_pmda:
