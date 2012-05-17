@@ -693,7 +693,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL: {
 		krb5_principal principal;
 		char *unparsed_name_short;
-		krb5_data *component;
+		const krb5_data *component;
 		char *service;
 
 		ret = smb_krb5_init_context(mem_ctx, 
