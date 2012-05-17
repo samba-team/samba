@@ -703,7 +703,7 @@ void ctdb_request_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	struct ctdb_req_control *c = (struct ctdb_req_control *)hdr;
 	TDB_DATA data, *outdata;
 	int32_t status;
-	bool async_reply = False;
+	bool async_reply = false;
 	const char *errormsg = NULL;
 
 	data.dptr = &c->data[0];

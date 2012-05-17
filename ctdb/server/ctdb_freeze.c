@@ -335,7 +335,7 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 	DLIST_ADD(ctdb->freeze_handles[priority]->waiters, w);
 
 	/* we won't reply till later */
-	*async_reply = True;
+	*async_reply = true;
 	return 0;
 }
 

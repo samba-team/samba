@@ -28,7 +28,7 @@
   if BSD use FNDELAY
 **/
 
-_PUBLIC_ int set_blocking(int fd, BOOL set)
+_PUBLIC_ int set_blocking(int fd, bool set)
 {
 	int val;
 #ifdef O_NONBLOCK

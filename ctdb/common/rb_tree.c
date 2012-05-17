@@ -447,7 +447,7 @@ trbt_delete_case1(trbt_node_t *node)
 }
 
 static void
-delete_node(trbt_node_t *node, BOOL from_destructor)
+delete_node(trbt_node_t *node, bool from_destructor)
 {
 	trbt_node_t *parent, *child, dc;
 	trbt_node_t *temp = NULL;
@@ -606,7 +606,7 @@ finished:
  */
 static int node_destructor(trbt_node_t *node)
 {
-	delete_node(node, True);
+	delete_node(node, true);
 
 	return 0;
 }
@@ -746,7 +746,7 @@ trbt_delete32(trbt_tree_t *tree, uint32_t key)
 
 	while(node){
 		if(key==node->key32){
-			delete_node(node, False);
+			delete_node(node, false);
 			return;
 		}
 		if(key<node->key32){

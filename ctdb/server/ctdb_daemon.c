@@ -657,7 +657,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, 
 					   (struct ctdb_req_header *)c, &data,
-					   daemon_incoming_packet_wrap, w, True);
+					   daemon_incoming_packet_wrap, w, true);
 	if (ret == -2) {
 		/* will retry later */
 		CTDB_DECREMENT_STAT(ctdb, pending_calls);
@@ -1068,7 +1068,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 		return 0;
 	}
 
-	tdb_reopen_all(False);
+	tdb_reopen_all(false);
 
 	if (do_fork) {
 		setsid();

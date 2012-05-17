@@ -18,11 +18,6 @@
 
 #include "tevent.h"
 
-typedef bool BOOL;
-
-#define True 1
-#define False 0
-
 extern int LogLevel;
 extern int this_log_level;
 
@@ -64,7 +59,7 @@ double timeval_delta(struct timeval *tv2, struct timeval *tv);
 char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx);
 char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 _PUBLIC_ const char **str_list_add(const char **list, const char *s);
-_PUBLIC_ int set_blocking(int fd, BOOL set);
+_PUBLIC_ int set_blocking(int fd, bool set);
 
 #include "lib/util/debug.h"
 #include "lib/util/util.h"

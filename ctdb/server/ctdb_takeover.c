@@ -3874,6 +3874,6 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 			ctdb_reloadips_timeout_event, h);
 
 	/* we reply later */
-	*async_reply = True;
+	*async_reply = true;
 	return 0;
 }
