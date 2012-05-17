@@ -401,7 +401,7 @@ bool test_session_reauth4(struct torture_context *tctx, struct smb2_tree *tree)
 				| SECINFO_DACL
 				| SECINFO_PROTECTED_DACL
 				| SECINFO_UNPROTECTED_DACL;
-	struct security_descriptor *sd1, *sd2, sd3;
+	struct security_descriptor *sd1;
 	struct security_ace ace;
 	struct dom_sid *extra_sid;
 
@@ -523,7 +523,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 				| SECINFO_DACL
 				| SECINFO_PROTECTED_DACL
 				| SECINFO_UNPROTECTED_DACL;
-	struct security_descriptor *sd1, *sd2, sd3;
+	struct security_descriptor *sd1, *sd2;
 	struct security_ace ace;
 	struct dom_sid *extra_sid;
 
