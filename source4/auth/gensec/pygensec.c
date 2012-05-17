@@ -81,7 +81,7 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 	pytalloc_Object *self;
 	struct gensec_settings *settings;
 	const char *kwnames[] = { "settings", NULL };
-	PyObject *py_settings;
+	PyObject *py_settings = Py_None;
 	struct gensec_security *gensec;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", discard_const_p(char *, kwnames), &py_settings))
