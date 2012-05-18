@@ -45,9 +45,8 @@ static bool torture_locktest1(struct torture_context *tctx,
 	time_t t1, t2;
 	unsigned int lock_timeout;
 
-	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
+		       talloc_asprintf(tctx, "Unable to set up %s", BASEDIR));
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	torture_assert(tctx, fnum1 != -1,
@@ -163,9 +162,8 @@ static bool torture_locktest2(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\lockt2.lck";
 	int fnum1, fnum2, fnum3;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
+		       talloc_asprintf(tctx, "Unable to set up %s", BASEDIR));
 
 	torture_comment(tctx, "Testing pid context\n");
 	
@@ -282,9 +280,8 @@ static bool torture_locktest3(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing 32 bit offset ranges");
 
-	if (!torture_setup_dir(cli1, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli1, BASEDIR),
+		       talloc_asprintf(tctx, "Unable to set up %s", BASEDIR));
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	torture_assert(tctx, fnum1 != -1, 
