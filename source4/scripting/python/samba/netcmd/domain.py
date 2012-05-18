@@ -29,7 +29,6 @@ import os
 import tempfile
 import logging
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
-import samba.dckeytab
 import samba.ntacls
 from samba.join import join_RODC, join_DC, join_subdomain
 from samba.auth import system_session
@@ -69,28 +68,31 @@ def get_testparm_var(testparm, smbconf, varname):
     output = os.popen(cmd, 'r').readline()
     return output.strip()
 
+try:
+   import samba.dckeytab
+   class cmd_domain_export_keytab(Command):
+       """Dumps kerberos keys of the domain into a keytab"""
 
-class cmd_domain_export_keytab(Command):
-    """Dumps kerberos keys of the domain into a keytab"""
+       synopsis = "%prog <keytab> [options]"
 
-    synopsis = "%prog <keytab> [options]"
+       takes_optiongroups = {
+           "sambaopts": options.SambaOptions,
+           "credopts": options.CredentialsOptions,
+           "versionopts": options.VersionOptions,
+           }
 
-    takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
-        "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
-        }
+       takes_options = [
+           Option("--principal", help="extract only this principal", type=str),
+           ]
 
-    takes_options = [
-        Option("--principal", help="extract only this principal", type=str),
-        ]
+       takes_args = ["keytab"]
 
-    takes_args = ["keytab"]
-
-    def run(self, keytab, credopts=None, sambaopts=None, versionopts=None, principal=None):
-        lp = sambaopts.get_loadparm()
-        net = Net(None, lp)
-        net.export_keytab(keytab=keytab, principal=principal)
+       def run(self, keytab, credopts=None, sambaopts=None, versionopts=None, principal=None):
+           lp = sambaopts.get_loadparm()
+           net = Net(None, lp)
+           net.export_keytab(keytab=keytab, principal=principal)
+except:
+   cmd_domain_export_keytab = None
 
 
 class cmd_domain_info(Command):
@@ -928,7 +930,8 @@ class cmd_domain(SuperCommand):
 
     subcommands = {}
     subcommands["demote"] = cmd_domain_demote()
-    subcommands["exportkeytab"] = cmd_domain_export_keytab()
+    if type(cmd_domain_export_keytab).__name__ != 'NoneType':
+        subcommands["exportkeytab"] = cmd_domain_export_keytab()
     subcommands["info"] = cmd_domain_info()
     subcommands["join"] = cmd_domain_join()
     subcommands["level"] = cmd_domain_level()
