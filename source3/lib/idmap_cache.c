@@ -55,7 +55,22 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 
 	DEBUG(10, ("Parsing value for key [%s]: value=[%s]\n", key, value));
 
+	if (value[0] == '\0') {
+		DEBUG(0, ("Failed to parse value for key [%s]: "
+			  "value is empty\n", key));
+		ret = false;
+		goto done;
+	}
+
 	tmp_id.id = strtol(value, &endptr, 10);
+
+	if ((value == endptr) && (tmp_id.id == 0)) {
+		DEBUG(0, ("Failed to parse value for key [%s]: value[%s] does "
+			  "not start with a number\n", key, value));
+		ret = false;
+		goto done;
+	}
+
 	DEBUG(10, ("Parsing value for key [%s]: id=[%llu], endptr=[%s]\n",
 		   key, (unsigned long long)tmp_id.id, endptr));
 
