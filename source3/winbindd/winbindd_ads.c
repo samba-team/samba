@@ -188,8 +188,12 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	}
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
-	if (!ADS_ERR_OK(rc) || !res) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
+		status = ads_ntstatus(rc);
+	} else if (!res) {
+		DEBUG(1,("query_user_list ads_search returned NULL res\n"));
+
 		goto done;
 	}
 
@@ -340,8 +344,12 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	}
 
 	rc = ads_search_retry(ads, &res, filter, attrs);
-	if (!ADS_ERR_OK(rc) || !res) {
+	if (!ADS_ERR_OK(rc)) {
+		status = ads_ntstatus(rc);
 		DEBUG(1,("enum_dom_groups ads_search: %s\n", ads_errstr(rc)));
+		goto done;
+	} else if (!res) {
+		DEBUG(1,("enum_dom_groups ads_search returned NULL res\n"));
 		goto done;
 	}
 
@@ -550,10 +558,14 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	}
 	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
 	SAFE_FREE(ldap_exp);
-	if (!ADS_ERR_OK(rc) || !msg) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n",
 			 sid_string_dbg(sid), ads_errstr(rc)));
 		return ads_ntstatus(rc);
+	} else if (!msg) {
+		DEBUG(1,("query_user(sid=%s) ads_search returned NULL res\n",
+			 sid_string_dbg(sid)));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	count = ads_count_replies(ads, msg);
@@ -662,10 +674,14 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 
 	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
 
-	if (!ADS_ERR_OK(rc) || !res) {
+	if (!ADS_ERR_OK(rc)) {
 		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
 		return ads_ntstatus(rc);
+	} else if (!res) {
+		DEBUG(1,("lookup_usergroups ads_search returned NULL res\n"));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
+
 
 	count = ads_count_replies(ads, res);
 
