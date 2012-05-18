@@ -2493,7 +2493,6 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.validate_ldb		= dsdb_syntax_NTTIME_validate_ldb,
 		.equality               = "generalizedTimeMatch",
 		.comment                = "Generalized Time",
-		.ldb_syntax             = LDB_SYNTAX_UTC_TIME,
 		.auto_normalise		= true
 	},{
 	/* not used in w2k3 schema */
