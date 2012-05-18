@@ -84,6 +84,13 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 
 	while (--count) {
 
+		if (NT_STATUS_EQUAL(ads_ntstatus(status), NT_STATUS_IO_TIMEOUT) && ads->config.ldap_page_size >= 250) {
+			int new_page_size = (ads->config.ldap_page_size / 2);
+			DEBUG(1, ("Reducing LDAP page size from %d to %d due to IO_TIMEOUT\n",
+				  ads->config.ldap_page_size, new_page_size));
+			ads->config.ldap_page_size = new_page_size;
+		}
+
 		if (*res) 
 			ads_msgfree(ads, *res);
 		*res = NULL;

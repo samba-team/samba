@@ -149,6 +149,10 @@ ADS_STRUCT *ads_init(const char *realm,
 
 	ads->auth.flags = wrap_flags;
 
+	/* Start with a page size of 1000 when the connection is new,
+	 * we will drop it by half we get a timeout.   */
+	ads->config.ldap_page_size     = 1000;
+
 	return ads;
 }
 

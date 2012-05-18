@@ -61,6 +61,7 @@ typedef struct ads_struct {
 		time_t current_time;
 		char *schema_path;
 		char *config_path;
+		int ldap_page_size;
 	} config;
 
 	/* info about the current LDAP connection */
