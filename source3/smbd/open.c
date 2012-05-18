@@ -1024,11 +1024,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 		 * too */
 		if (share_conflict(&lck->data->share_modes[i],
 				   access_mask, share_access)) {
-
-			if (share_mode_stale_pid(lck->data, i)) {
-				continue;
-			}
-
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
@@ -1128,11 +1123,6 @@ static void find_oplock_types(files_struct *fsp,
 
 		if (BATCH_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
 			/* batch - can only be one. */
-			if (share_mode_stale_pid(lck->data, i)) {
-				DEBUG(10, ("find_oplock_types: Found stale "
-					"batch oplock\n"));
-				continue;
-			}
 			if (*pp_ex_or_batch || *pp_batch || *got_level2 || *got_no_oplock) {
 				smb_panic("Bad batch oplock entry.");
 			}
@@ -1140,11 +1130,6 @@ static void find_oplock_types(files_struct *fsp,
 		}
 
 		if (EXCLUSIVE_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
-			if (share_mode_stale_pid(lck->data, i)) {
-				DEBUG(10, ("find_oplock_types: Found stale "
-					"duplicate oplock\n"));
-				continue;
-			}
 			/* Exclusive or batch - can only be one. */
 			if (*pp_ex_or_batch || *got_level2 || *got_no_oplock) {
 				smb_panic("Bad exclusive or batch oplock entry.");
@@ -1154,11 +1139,6 @@ static void find_oplock_types(files_struct *fsp,
 
 		if (LEVEL_II_OPLOCK_TYPE(lck->data->share_modes[i].op_type)) {
 			if (*pp_batch || *pp_ex_or_batch) {
-				if (share_mode_stale_pid(lck->data, i)) {
-					DEBUG(10, ("find_oplock_types: Found "
-						"stale LevelII oplock\n"));
-					continue;
-				}
 				smb_panic("Bad levelII oplock entry.");
 			}
 			*got_level2 = true;
@@ -1166,11 +1146,6 @@ static void find_oplock_types(files_struct *fsp,
 
 		if (lck->data->share_modes[i].op_type == NO_OPLOCK) {
 			if (*pp_batch || *pp_ex_or_batch) {
-				if (share_mode_stale_pid(lck->data, i)) {
-					DEBUG(10, ("find_oplock_types: Found "
-						"stale NO_OPLOCK entry\n"));
-					continue;
-				}
 				smb_panic("Bad no oplock entry.");
 			}
 			*got_no_oplock = true;

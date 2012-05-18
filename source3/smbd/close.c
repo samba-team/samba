@@ -179,15 +179,9 @@ static void notify_deferred_opens(struct smbd_server_connection *sconn,
 
 	num_deferred = 0;
 	for (i=0; i<lck->data->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->data->share_modes[i];
-
-		if (!is_deferred_open_entry(e)) {
-			continue;
+		if (is_deferred_open_entry(&lck->data->share_modes[i])) {
+			num_deferred += 1;
 		}
-		if (share_mode_stale_pid(lck->data, i)) {
-			continue;
-		}
-		num_deferred += 1;
 	}
 	if (num_deferred == 0) {
 		return;
@@ -423,9 +417,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			if (is_valid_share_mode_entry(e) &&
 					e->name_hash == fsp->name_hash) {
 				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
-					continue;
-				}
-				if (share_mode_stale_pid(lck->data, i)) {
 					continue;
 				}
 				delete_file = False;
@@ -1076,9 +1067,6 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			if (is_valid_share_mode_entry(e) &&
 					e->name_hash == fsp->name_hash) {
 				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
-					continue;
-				}
-				if (share_mode_stale_pid(lck->data, i)) {
 					continue;
 				}
 				delete_dir = False;

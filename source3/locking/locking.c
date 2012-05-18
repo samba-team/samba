@@ -556,10 +556,6 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		if (share_mode_stale_pid(d, i)) {
-			continue;
-		}
-
 		DEBUG(10,("rename_share_filename: sending rename message to "
 			  "pid %s file_id %s sharepath %s base_name %s "
 			  "stream_name %s\n",
@@ -620,47 +616,13 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 	num_props += (EXCLUSIVE_OPLOCK_TYPE(e->op_type) ? 1 : 0);
 	num_props += (LEVEL_II_OPLOCK_TYPE(e->op_type) ? 1 : 0);
 
-	if (serverid_exists(&e->pid) && (num_props > 1)) {
-		smb_panic("Invalid share mode entry");
-	}
+	SMB_ASSERT(num_props <= 1);
 	return (num_props != 0);
 }
 
 bool is_deferred_open_entry(const struct share_mode_entry *e)
 {
 	return (e->op_type == DEFERRED_OPEN_ENTRY);
-}
-
-/*
- * In case d->share_modes[i] conflicts with something or otherwise is
- * being used, we need to make sure the corresponding process still
- * exists. This routine checks it and potentially removes the entry
- * from d->share_modes. Modifies d->num_share_modes, watch out in
- * routines iterating over that array.
- */
-bool share_mode_stale_pid(struct share_mode_data *d, unsigned i)
-{
-	struct share_mode_entry *e;
-
-	if (i > d->num_share_modes) {
-		DEBUG(1, ("Asking for index %u, only %u around\n",
-			  i, (unsigned)d->num_share_modes));
-		return false;
-	}
-	e = &d->share_modes[i];
-	if (serverid_exists(&e->pid)) {
-		DEBUG(10, ("PID %s (index %u out of %u) still exists\n",
-			   procid_str_static(&e->pid), i,
-			   (unsigned)d->num_share_modes));
-		return false;
-	}
-	DEBUG(10, ("PID %s (index %u out of %u) does not exist anymore\n",
-		   procid_str_static(&e->pid), i,
-		   (unsigned)d->num_share_modes));
-	*e = d->share_modes[d->num_share_modes-1];
-	d->num_share_modes -= 1;
-	d->modified = true;
-	return true;
 }
 
 /*******************************************************************

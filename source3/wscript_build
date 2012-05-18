@@ -1381,7 +1381,6 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  TLDAP
                  RPC_NDR_ECHO
                  WB_REQTRANS
-                 LOCKING
 		 idmap
                  ''',
                  vars=locals())

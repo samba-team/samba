@@ -8916,7 +8916,6 @@ static struct {
 	{ "SMB2-SESSION-REAUTH", run_smb2_session_reauth },
 	{ "CLEANUP1", run_cleanup1 },
 	{ "CLEANUP2", run_cleanup2 },
-	{ "CLEANUP3", run_cleanup3 },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
