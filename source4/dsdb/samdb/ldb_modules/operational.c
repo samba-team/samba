@@ -332,6 +332,42 @@ static int construct_parent_guid(struct ldb_module *module,
 	return ret;
 }
 
+static int construct_modifyTimeStamp(struct ldb_module *module,
+					struct ldb_message *msg, enum ldb_scope scope,
+					struct ldb_request *parent)
+{
+	struct operational_data *data = talloc_get_type(ldb_module_get_private(module), struct operational_data);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	/* We may be being called before the init function has finished */
+	if (!data) {
+		return LDB_SUCCESS;
+	}
+
+	/* Try and set this value up, if possible.  Don't worry if it
+	 * fails, we may not have the DB set up yet.
+	 */
+	if (!data->aggregate_dn) {
+		data->aggregate_dn = samdb_aggregate_schema_dn(ldb, data);
+	}
+
+	if (data->aggregate_dn && ldb_dn_compare(data->aggregate_dn, msg->dn) == 0) {
+		/*
+		 * If we have the DN for the object with common name = Aggregate and
+		 * the request is for this DN then let's do the following:
+		 * 1) search the object which changedUSN correspond to the one of the loaded
+		 * schema.
+		 * 2) Get the whenChanged attribute
+		 * 3) Generate the modifyTimestamp out of the whenChanged attribute
+		 */
+		const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
+		char *value = ldb_timestring(msg, schema->ts_last_change);
+
+		return ldb_msg_add_string(msg, "modifyTimeStamp", value);
+	}
+	return ldb_msg_copy_attr(msg, "whenChanged", "modifyTimeStamp");
+}
+
 /*
   construct a subSchemaSubEntry
 */
@@ -606,7 +642,7 @@ static const struct {
 	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope, struct ldb_request *);
 } search_sub[] = {
 	{ "createTimeStamp", "whenCreated", NULL , NULL },
-	{ "modifyTimeStamp", "whenChanged", NULL , NULL },
+	{ "modifyTimeStamp", "whenChanged", NULL , construct_modifyTimeStamp},
 	{ "structuralObjectClass", "objectClass", NULL , NULL },
 	{ "canonicalName", NULL, NULL , construct_canonical_name },
 	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
