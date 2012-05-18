@@ -27,8 +27,8 @@
 #include "torture/util.h"
 
 
-static bool test_session_reauth(struct torture_context *tctx,
-				struct smbcli_state *cli)
+static bool test_session_reauth1(struct torture_context *tctx,
+				 struct smbcli_state *cli)
 {
 	NTSTATUS status;
 	struct smb_composite_sesssetup io;
@@ -87,7 +87,7 @@ struct torture_suite *torture_raw_session(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "session");
 	suite->description = talloc_strdup(suite, "RAW-SESSION tests");
 
-	torture_suite_add_1smb_test(suite, "reauth", test_session_reauth);
+	torture_suite_add_1smb_test(suite, "reauth1", test_session_reauth1);
 
 	return suite;
 }
