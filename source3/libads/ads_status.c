@@ -81,6 +81,9 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 		if (status.err.rc == LDAP_SUCCESS) {
 			return NT_STATUS_OK;
 		}
+		if (status.err.rc == LDAP_TIMELIMIT_EXCEEDED) {
+			return NT_STATUS_IO_TIMEOUT;
+		}
 		return NT_STATUS_LDAP(status.err.rc);
 #endif
 #ifdef HAVE_KRB5
