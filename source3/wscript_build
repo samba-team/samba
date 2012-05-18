@@ -216,7 +216,8 @@ PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c
                 lib/util_nscd.c lib/winbind_util.c
                 passdb/pdb_util.c passdb/pdb_interface.c
                 passdb/pdb_ldap_schema.c
-                passdb/pdb_secrets.c'''
+                passdb/pdb_secrets.c
+                passdb/pdb_unixid.c'''
 #FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
 
 GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''

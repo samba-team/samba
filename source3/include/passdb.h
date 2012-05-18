@@ -917,4 +917,9 @@ NTSTATUS create_builtin_administrators(const struct dom_sid *sid);
 #include "passdb/machine_sid.h"
 #include "passdb/lookup_sid.h"
 
+/* The following definitions come from passdb/pdb_unixid.c */
+void unixid_from_uid(struct unixid *id, uint32_t some_uid);
+void unixid_from_gid(struct unixid *id, uint32_t some_gid);
+void unixid_from_both(struct unixid *id, uint32_t some_id);
+
 #endif /* _PASSDB_H */
